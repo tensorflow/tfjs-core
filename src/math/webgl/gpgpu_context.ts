@@ -16,7 +16,7 @@ limitations under the License.
 import * as gpgpu_util from './gpgpu_util';
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
-
+import {NDArray} from '../ndarray';
 import {WebGLLoseContextExtension} from './webgl_util';
 
 export class GPGPUContext {
