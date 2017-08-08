@@ -15,49 +15,50 @@ limitations under the License.
 
 import {MatrixOrientation} from '../math';
 import {Array2D} from '../ndarray';
+import {GPGPUProgram} from './gpgpu_context';
 
-import {GPGPUContext} from './gpgpu_context';
-import * as shader_compiler from './shader_compiler';
+export class MatMulProgram implements GPGPUProgram {
+  variableNames = ['matrixA', 'matrixB'];
 
-export function getFragmentShader(
-    a: Array2D, b: Array2D, out: Array2D, aOrientation: MatrixOrientation,
-    bOrientation: MatrixOrientation): string {
-  const sharedDim =
+  getUserCode(inputs: Array2D[], out: Array2D, aOrientation: MatrixOrientation,
+      bOrientation: MatrixOrientation): string {
+    const a = inputs[0];
+    const sharedDim =
       (aOrientation === MatrixOrientation.REGULAR ? a.shape[1] : a.shape[0]);
-  const aSnippet = (aOrientation === MatrixOrientation.REGULAR) ?
-      'aRow, i_float' : 'i_float, aRow';
-  const bSnippet = (bOrientation === MatrixOrientation.REGULAR) ?
-      'i_float, bCol' : 'bCol, i_float';
+    const aSnippet = (aOrientation === MatrixOrientation.REGULAR) ?
+        'aRow, i_float' : 'i_float, aRow';
+    const bSnippet = (bOrientation === MatrixOrientation.REGULAR) ?
+        'i_float, bCol' : 'bCol, i_float';
 
-  const inputs = [{name: 'matrixA', array: a}, {name: 'matrixB', array: b}];
-  const userCode = `
-    const int sharedDim = ${sharedDim};
+    return `
+      const int sharedDim = ${sharedDim};
 
-    float dotARowBCol(float aRow, float bCol) {
-      float result = 0.0;
-      for (int i = 0; i < sharedDim; i++) {
-        float i_float = float(i);
-        float a = getMatrixA(${aSnippet});
-        float b = getMatrixB(${bSnippet});
-        result += (a * b);
+      float dotARowBCol(float aRow, float bCol) {
+        float result = 0.0;
+        for (int i = 0; i < sharedDim; i++) {
+          float i_float = float(i);
+          float a = getMatrixA(${aSnippet});
+          float b = getMatrixB(${bSnippet});
+          result += (a * b);
+        }
+        return result;
       }
-      return result;
-    }
 
-    void main() {
-      vec2 resRC = getOutputCoords();
-      setOutput(dotARowBCol(resRC.x, resRC.y));
+      void main() {
+        vec2 resRC = getOutputCoords();
+        setOutput(dotARowBCol(resRC.x, resRC.y));
+      }
+    `;
+  }
+
+  validate(inputs: Array2D[], out: Array2D): boolean {
+    if (inputs.length !== 2) {
+      return false;
     }
-  `;
-  return shader_compiler.makeShader(inputs, out, userCode);
+    if (inputs[0].rank !== 2 || inputs[1].rank !== 2 || out.rank !== 2) {
+      return false;
+    }
+    return true;
+  }
 }
 
-export function multiplyMatrix(
-    gpgpu: GPGPUContext, multiplyProgram: WebGLProgram, a: WebGLTexture,
-    b: WebGLTexture, result: WebGLTexture, outTexShape: [number, number]) {
-  gpgpu.setOutputMatrixTexture(result, outTexShape[0], outTexShape[1]);
-  gpgpu.setProgram(multiplyProgram);
-  gpgpu.setInputMatrixTexture(a, 'matrixA', 0);
-  gpgpu.setInputMatrixTexture(b, 'matrixB', 1);
-  gpgpu.executeProgram();
-}

@@ -40,7 +40,7 @@ import * as max_pool_backprop_gpu from './webgl/max_pool_backprop_gpu';
 import * as max_pool_gpu from './webgl/max_pool_gpu';
 import * as min_pool_gpu from './webgl/min_pool_gpu';
 import * as minmax_gpu from './webgl/minmax_gpu';
-import * as mulmat_gpu from './webgl/mulmat_gpu';
+import {MatMulProgram} from './webgl/mulmat_gpu';
 import * as neg_gpu from './webgl/neg_gpu';
 import * as pool_gpu from './webgl/pool_gpu';
 import * as reducesum_gpu from './webgl/reducesum_gpu';
@@ -350,17 +350,14 @@ export class NDArrayMathGPU extends NDArrayMath {
     const outTexture = this.textureManager.acquireTexture(outTexShape);
     const out = new Array2D(
         outShape, {texture: outTexture, textureShapeRC: outTexShape});
-
-    const key = shader_compiler.makeShaderKey([a, b], out);
-    const program = this.getAndSaveProgram(
-        `${MATMUL_PROG}_${key}_${aOrientation}_${bOrientation}`,
-        () => mulmat_gpu.getFragmentShader(
-            a, b, out, aOrientation, bOrientation));
-
-    mulmat_gpu.multiplyMatrix(
-        this.gpgpu, program, a.getTexture(), b.getTexture(), outTexture,
-        outTexShape);
-
+    const matMulProgram = new MatMulProgram();
+    const key = gpgpu_util.makeShaderKey(matMulProgram.constructor.name, [a, b],
+        out, aOrientation, bOrientation);
+    const compiledProgram = this.getAndSaveCompiledProgram(key, () => {
+      return this.gpgpu.compileProgram(matMulProgram, [a, b], out, aOrientation,
+          bOrientation);
+    });
+    this.gpgpu.runProgram(compiledProgram, [a, b], out);
     return out;
   }
 

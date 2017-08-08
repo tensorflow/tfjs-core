@@ -16,8 +16,22 @@ limitations under the License.
 import * as gpgpu_util from './gpgpu_util';
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
-
 import {WebGLLoseContextExtension} from './webgl_util';
+import {NDArray} from '../ndarray';
+import * as shader_compiler from './shader_compiler';
+
+export interface GPGPUProgram {
+  variableNames: string[];
+  // tslint:disable-next-line:no-any
+  getUserCode(inputs: NDArray[], output: NDArray, ...params: any[]): string;
+  // tslint:disable-next-line:no-any
+  validate(inputs: NDArray[], output: NDArray, ...params: any[]): boolean;
+}
+
+export interface CompiledGPGPUProgram {
+  webGLProgram: WebGLProgram;
+  program: GPGPUProgram;
+}
 
 export class GPGPUContext {
   gl: WebGLRenderingContext;
@@ -149,6 +163,9 @@ export class GPGPUContext {
             this.gl, rows, columns));
   }
 
+  /**
+   * @deprecated Use #compileProgram() instead.
+   */
   public createProgram(fragmentShaderSource: string): WebGLProgram {
     this.throwIfDisposed();
     const gl = this.gl;
@@ -164,6 +181,23 @@ export class GPGPUContext {
     }
 
     return program;
+  }
+
+  public compileProgram(program: GPGPUProgram, inputs: NDArray[],
+      // tslint:disable-next-line:no-any
+      out: NDArray, ...params: any[]): CompiledGPGPUProgram {
+    if (!program.validate(inputs, out)) {
+      throw Error('Validation failed');
+    }
+    const userCode = program.getUserCode(inputs, out, ...params);
+    const programInputs = program.variableNames.map((x, i)  => {
+      return {name: x, array: inputs[i]};
+    });
+    const fullSource = shader_compiler.makeShader(programInputs, out, userCode);
+    return {
+      program,
+      webGLProgram: this.createProgram(fullSource),
+    };
   }
 
   public deleteProgram(program: WebGLProgram) {
@@ -232,6 +266,23 @@ export class GPGPUContext {
       webgl_util.validateProgram(this.gl, this.program);
     }
     webgl_util.validateFramebuffer(this.gl);
+  }
+
+  public runProgram(compiledProgram: CompiledGPGPUProgram, inputs: NDArray[],
+      output: NDArray): void {
+    if (!compiledProgram.program.validate(inputs, output)) {
+      throw Error('Validation failed');
+    }
+    const outTex = output.getTexture();
+    const outTexShape = output.getTextureShapeRC();
+    this.setOutputMatrixTexture(outTex, outTexShape[0], outTexShape[1]);
+    this.setProgram(compiledProgram.webGLProgram);
+    inputs.forEach((input, i) => {
+      const tex = input.getTexture();
+      this.setInputMatrixTexture(tex,
+          compiledProgram.program.variableNames[i], i);
+    });
+    this.executeProgram();
   }
 
   public executeProgram() {
