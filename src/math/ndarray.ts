@@ -61,7 +61,7 @@ export class NDArray {
 
   private data: NDArrayData;
 
-  protected constructor(shape: number[], data: NDArrayData) {
+  constructor(shape: number[], data: NDArrayData) {
     // Sanity checks.
     util.assert(
         data.values != null || data.texture != null,
