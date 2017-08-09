@@ -42,7 +42,7 @@ import * as min_pool_gpu from './webgl/min_pool_gpu';
 import * as minmax_gpu from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import * as pool_gpu from './webgl/pool_gpu';
-import * as reducesum_gpu from './webgl/reducesum_gpu';
+import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import * as reshape_gpu from './webgl/reshape_gpu';
 import * as resize_bilinear_gpu from './webgl/resize_bilinear_gpu';
 import * as shader_compiler from './webgl/shader_compiler';
@@ -65,7 +65,6 @@ const ADD_SCALED_MAT_PROG = 'addscaledmat';
 // Element-wise ops.
 const MAX_PROG = 'max';
 const MIN_PROG = 'min';
-const SUM_PROG = 'sum';
 const RESHAPE_PROG = 'reshape';
 const ADD_SUM_MUL_DIV_PROG = 'addsummuldiv';
 
@@ -450,21 +449,16 @@ export class NDArrayMathGPU extends NDArrayMath {
     throw new Error('Not yet implemented!');
   }
 
-  protected sumInternal(ndarray: NDArray): Scalar {
-    const textureShapeRC = ndarray.getTextureShapeRC();
-    const [numRows, numColumns] = textureShapeRC;
-
-    const program = this.getAndSaveProgram(
-        `${SUM_PROG}_${numRows}_${numColumns}`,
-        () => reducesum_gpu.getFragmentShaderSource(numRows, numColumns));
-
-    const resultTexture = this.textureManager.acquireTexture([1, 1]);
-
-    reducesum_gpu.reduceSum(
-        this.gpgpu, program, ndarray.getTexture(), numRows, numColumns,
-        resultTexture);
-
-    return new Scalar({texture: resultTexture});
+  protected sumInternal(a: NDArray): Scalar {
+    const reduceSum = new ReduceSumProgram();
+    const texture = this.textureManager.acquireTexture([1, 1]);
+    const out = new Scalar({texture});
+    const key = this.makeShaderKey(reduceSum, [a], out);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, reduceSum, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
   protected argMinInternal(ndarray: NDArray): Scalar {
