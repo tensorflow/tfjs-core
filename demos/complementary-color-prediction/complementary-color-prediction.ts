@@ -19,9 +19,7 @@ import {
     NDArray,
     NDArrayMath,
     NDArrayMathGPU,
-    NDArrayMathGPU,
     SGDOptimizer,
-    Scalar,
     Scalar,
     Session,
     Tensor
@@ -109,7 +107,7 @@ class ComplementaryColorModel {
 
     // Train 1 batch.
     let costValue = -1;
-    this.math.scope((keep, track) => {
+    this.math.scope(() => {
       const cost = this.session.train(
           this.costTensor, this.feedEntries, this.batchSize, this.optimizer,
           shouldFetchCost ? CostReduction.MEAN : CostReduction.NONE);
@@ -119,7 +117,8 @@ class ComplementaryColorModel {
         return;
       }
 
-      // Compute the cost, which requires transferring data from the GPU.
+      // Compute the cost (by calling get), which requires transferring data
+      // from the GPU.
       costValue = cost.get();
     });
     return costValue;
@@ -138,7 +137,7 @@ class ComplementaryColorModel {
     this.math.scope((keep, track) => {
       const mapping = [{
         tensor: this.inputTensor,
-        data: track(this.normalizeColor(rgbColor)),
+        data: Array1D.new(this.normalizeColor(rgbColor)),
       }];
       const evalOutput = this.session.eval(this.predictionTensor, mapping);
       const values = evalOutput.getValues();
@@ -156,7 +155,7 @@ class ComplementaryColorModel {
       sizeOfThisLayer: number) {
     return graph.layers.dense(
         'fully_connected_' + layerIndex, inputLayer, sizeOfThisLayer,
-        includeRelu ? (x) => graph.relu(x) : undefined, includeBias);
+        (x) => graph.relu(x));
   }
 
   /**

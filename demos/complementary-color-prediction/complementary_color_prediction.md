@@ -184,11 +184,94 @@ fullyConnectedLayer =
     this.createFullyConnectedLayer(graph, fullyConnectedLayer, 2, 16);
 ```
 
-We then create a layer that outputs the final, normalized prediction. It has 3 outputs, 1 for each color channel.
+We create a layer that outputs the normalized predicted complement color. It has 3 outputs, 1 for each channel.
 
 ```ts
 this.predictionTensor =
     this.createFullyConnectedLayer(graph, fullyConnectedLayer, 3, 3);
 ```
 
+We also add a cost tensor that specifies the loss function (mean squared).
 
+```ts
+this.costTensor =
+    graph.meanSquaredCost(this.predictionTensor, this.targetTensor);
+```
+
+Finally, we create a session for running training and inference.
+
+```ts
+this.session = new Session(graph, this.math);
+```
+
+## Train and Predict
+
+To train the model, we construct an optimizer (with an initial learning rate of 0.042),
+
+```ts
+this.optimizer = new SGDOptimizer(this.initialLearningRate);
+```
+
+and then write a function that trains on a batch of colors. Note that we wrap the call for the session to train within a `math.scope` callback. Using `math.scope` is obligatory here (and in other parts of the code) because it allows deeplearn.js to reap resources (such as data on the GPU) once they are no longer needed.
+
+Also note that the `train1Batch` method accepts a `shouldFetchCost` parameter. This allows an outer loop (that calls `train1Batch`) to fetch the value of the cost at only certain steps. Fetching the value of the cost from the GPU incurs latency because it involves transfer of data from the GPU, so we only do so now and then.
+
+```ts
+train1Batch(shouldFetchCost: boolean): number {
+  // Every 42 steps, lower the learning rate by 15%.
+  const learningRate =
+      this.initialLearningRate * Math.pow(0.85, Math.floor(step / 42));
+  this.optimizer.setLearningRate(learningRate);
+
+  // Train 1 batch.
+  let costValue = -1;
+  this.math.scope(() => {
+    const cost = this.session.train(
+        this.costTensor, this.feedEntries, this.batchSize, this.optimizer,
+        shouldFetchCost ? CostReduction.MEAN : CostReduction.NONE);
+
+    if (!shouldFetchCost) {
+      // We only train. We do not compute the cost.
+      return;
+    }
+
+    // Compute the cost (by calling get), which requires transferring data
+    // from the GPU.
+    costValue = cost.get();
+  });
+  return costValue;
+}
+```
+
+In addition, we write a method for performing inference on any given color. We create a `FeedEntry` called `mapping` to pass the input color to the model.
+
+```ts
+predict(rgbColor: number[]): number[] {
+  let complementColor: number[] = [];
+  this.math.scope((keep, track) => {
+    const mapping = [{
+      tensor: this.inputTensor,
+      data: Array1D.new(this.normalizeColor(rgbColor)),
+    }];
+    const evalOutput = this.session.eval(this.predictionTensor, mapping);
+    const values = evalOutput.getValues();
+    const colors = this.denormalizeColor(Array.prototype.slice.call(values));
+
+    // Make sure the values are within range.
+    complementColor = colors.map(
+        v => Math.round(Math.max(Math.min(v, 255), 0)));
+  });
+  return complementColor;
+}
+```
+
+## Updating the UI
+
+The rest of the logic within the `.ts` file mostly manages the UI. Calling the `trainAndMaybeRender` method starts a loop that performs training and renders in a way that is sync-ed with the browser viewport refresh rate (thanks to `requestAnimationFrame`). We stop training after 4242 steps. We also log the loss in the console.
+
+Based on a few sample colors, it seems like our model of `64 + 32 + 16 = 112` middle-layer nodes fairs alright.
+
+TODO(chihuahua): Update this image to complementary-color-prediction.png once it is checked in.
+![Predicting Complementary Colors]()
+
+Hopefully, perusing the code and the comments within it offer a simple example of how learnjs works. Keep us posted on interesting projects you pursue.
