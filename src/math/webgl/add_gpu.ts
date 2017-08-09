@@ -14,7 +14,11 @@ limitations under the License.
 ==============================================================================*/
 
 import {NDArray} from '../ndarray';
+<<<<<<< HEAD
 import {GPGPUProgram} from './gpgpu_math';
+=======
+import {GPGPUProgram} from './gpgpu_context';
+>>>>>>> 413f9b84d05c452f22664241b9cb9d21bebeca06
 import * as util from '../../util';
 
 export class AddProgram implements GPGPUProgram {
