@@ -35,7 +35,7 @@ import {GPGPUContext} from './webgl/gpgpu_context';
 import {GPGPUProgram, CompiledGPGPUProgram} from './webgl/gpgpu_math';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
-import * as logsumexp_gpu from './webgl/logsumexp_gpu';
+import {LogSumExpProgram} from './webgl/logsumexp_gpu';
 import * as max_pool_backprop_gpu from './webgl/max_pool_backprop_gpu';
 import * as max_pool_gpu from './webgl/max_pool_gpu';
 import * as min_pool_gpu from './webgl/min_pool_gpu';
@@ -66,7 +66,6 @@ const ADD_SCALED_MAT_PROG = 'addscaledmat';
 const MAX_PROG = 'max';
 const MIN_PROG = 'min';
 const SUM_PROG = 'sum';
-const LOGSUMEXP_PROG = 'logsumexp';
 const RESHAPE_PROG = 'reshape';
 const ADD_SUM_MUL_DIV_PROG = 'addsummuldiv';
 
@@ -599,21 +598,16 @@ export class NDArrayMathGPU extends NDArrayMath {
         a, b, a.shape, OperandType.MATRIX, '-', OperandType.MATRIX) as T;
   }
 
-  protected logSumExpInternal(ndarray: NDArray): Scalar {
-    const [numRows, numColumns] = ndarray.getTextureShapeRC();
-
-    const program = this.getAndSaveProgram(
-        `${LOGSUMEXP_PROG}_${numRows}_${numColumns}`,
-        () => logsumexp_gpu.getFragmentShaderSource(numRows, numColumns));
-
-    const result =
-        new Scalar({texture: this.textureManager.acquireTexture([1, 1])});
-
-    reducesum_gpu.reduceSum(
-        this.gpgpu, program, ndarray.getTexture(), numRows, numColumns,
-        result.getTexture());
-
-    return result;
+  protected logSumExpInternal(a: NDArray): Scalar {
+    const logsumexp = new LogSumExpProgram();
+    const texture = this.textureManager.acquireTexture([1, 1]);
+    const out = new Scalar({texture});
+    const key = this.makeShaderKey(logsumexp, [a], out);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, logsumexp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
   protected expInternal<T extends NDArray>(a: T): T {

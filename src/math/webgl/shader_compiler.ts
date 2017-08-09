@@ -44,6 +44,9 @@ function getInputSamplingSnippet(input: Input, output: NDArray) {
 
   let res = '';
   switch (shape.length) {
+    case 0:
+      res += getSamplerScalar(input.name);
+      break;
     case 1:
       res += getSampler1D(input.name, texShape);
       break;
@@ -62,12 +65,16 @@ function getInputSamplingSnippet(input: Input, output: NDArray) {
   if (util.arraysEqual(input.array.shape, output.shape)) {
     res += getSamplerAtOutputCoords(input.name, texShape, outTexShape);
   }
+  res += getSamplerFlat(input.name, texShape);
   return res;
 }
 
 function getOutputSamplingSnippet(
     outShape: number[], outTexShape: [number, number]): string {
   switch (outShape.length) {
+    case 0:
+      // Doesn't make sense to call getOutputCoords() when output is scalar.
+      return '';
     case 1:
       return getOutput1DCoords(outShape as [number], outTexShape);
     case 2:
@@ -183,8 +190,17 @@ function getOutput2DCoords(
   `;
 }
 
+function getSamplerScalar(texName: string): string {
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  return `
+    float ${funcName}() {
+      return texture2D(${texName}, halfCR).r;
+    }
+  `;
+}
+
 function getSampler1D(
-    texName: string, texShape: [number, number]) {
+    texName: string, texShape: [number, number]): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const tR = texShape[0];
   const tC = texShape[1];
@@ -213,7 +229,7 @@ function getSampler1D(
 
 function getSampler3D(
     texName: string, shape: [number, number, number],
-    texShape: [number, number]) {
+    texShape: [number, number]): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const tR = texShape[0];
   const tC = texShape[1];
@@ -228,7 +244,8 @@ function getSampler3D(
 }
 
 function getSampler2D(
-    texName: string, shape: [number, number], texShape: [number, number]) {
+    texName: string, shape: [number, number],
+    texShape: [number, number]): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const tR = texShape[0];
   const tC = texShape[1];
@@ -243,6 +260,21 @@ function getSampler2D(
   return `
     float ${funcName}(float row, float col) {
       return sample2D(${texName}, ${tR}.0, ${tC}.0, ${shape[1]}.0, row, col);
+    }
+  `;
+}
+
+function getSamplerFlat(texName: string, texShape: [number, number]): string {
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1) +
+      'Flat';
+  const tNumR = texShape[0];
+  const tNumC = texShape[1];
+  return `
+    float ${funcName}(float index) {
+      float texR = floor(index / ${tNumC}.0);
+      float texC = mod(index, ${tNumC}.0);
+      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tNumC}.0, ${tNumR}.0);
+      return texture2D(${texName}, uv).r;
     }
   `;
 }

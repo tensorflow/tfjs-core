@@ -17,10 +17,7 @@ import {Array1D, Array2D, Array3D, NDArray} from '../ndarray';
 import * as add_gpu from './add_gpu';
 import {NDArrayMathGPU} from '../math_gpu';
 import * as util from '../../util';
-<<<<<<< HEAD
 import * as gpgpu_math from './gpgpu_math';
-=======
->>>>>>> 413f9b84d05c452f22664241b9cb9d21bebeca06
 import {TextureManager} from './texture_manager';
 import {GPGPU} from '../ndarray';
 import {AddProgram} from './add_gpu';
@@ -70,7 +67,6 @@ function uploadRunAndDownload<T extends NDArray>(a: T, b: T): T {
   const outTexShape = a.getTextureShapeRC();
   const textureManager = new TextureManager(GPGPU);
   const outTexture = textureManager.acquireTexture(outTexShape);
-<<<<<<< HEAD
   const out = NDArray.make<T>(a.shape, {texture: outTexture,
     textureShapeRC: outTexShape});
   const addProgram = new AddProgram();
@@ -78,14 +74,5 @@ function uploadRunAndDownload<T extends NDArray>(a: T, b: T): T {
   gpgpu_math.runProgram(compiledProgram, [a, b], out);
   GPGPU.deleteProgram(compiledProgram.webGLProgram);
   return out;
-=======
-  const out = new NDArray(a.shape, {texture: outTexture,
-    textureShapeRC: outTexShape});
-  const addProgram = new AddProgram();
-  const compiledProgram = GPGPU.compileProgram(addProgram, [a, b], out);
-  GPGPU.runProgram(compiledProgram, [a, b], out);
-  GPGPU.deleteProgram(compiledProgram.webGLProgram);
-  return out as T;
->>>>>>> 413f9b84d05c452f22664241b9cb9d21bebeca06
 }
 
