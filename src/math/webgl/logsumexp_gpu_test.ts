@@ -64,12 +64,12 @@ export function uploadLogSumExpDownload(a: Float32Array, rows: number,
   initializeGPU(gpgpu, textureManager);
   const aArr = Array2D.new([rows, columns], a);
   const rScalar = Scalar.new(0);
-  const logSumExp = new LogSumExpProgram();
-  const program = gpgpu_math.compileProgram(gpgpu, logSumExp, [aArr], rScalar);
-  gpgpu_math.runProgram(program, [aArr], rScalar);
+  const program = new LogSumExpProgram();
+  const binary = gpgpu_math.compileProgram(gpgpu, program, [aArr], rScalar);
+  gpgpu_math.runProgram(binary, [aArr], rScalar);
   const result = rScalar.get();
   textureManager.dispose();
-  gpgpu.deleteProgram(program.webGLProgram);
+  gpgpu.deleteProgram(binary.webGLProgram);
   gpgpu.dispose();
   return result;
 }

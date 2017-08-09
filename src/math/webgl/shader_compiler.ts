@@ -96,6 +96,10 @@ const SHADER_PREFIX = `
   void setOutput(float val) {
     gl_FragColor = vec4(val, 0, 0, 0);
   }
+
+  bool isNaN(float val) {
+    return val == val ? false : true;
+  }
 `;
 
 const SAMPLE_1D_SNIPPET = `

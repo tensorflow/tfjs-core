@@ -354,13 +354,13 @@ export function uploadMultiplyMatrixDownload(
   const resArr =
       new Array2D(outShape, {texture: resultTexture, textureShapeRC: outShape});
 
-  const matMulProgram = new MatMulProgram(aOrientation, bOrientation);
-  const program =
-      gpgpu_math.compileProgram(gpgpu, matMulProgram, [aArr, bArr], resArr);
+  const program = new MatMulProgram(aOrientation, bOrientation);
+  const binary =
+      gpgpu_math.compileProgram(gpgpu, program, [aArr, bArr], resArr);
   gpgpu.uploadMatrixToTexture(aTexture, aNumRows, aNumCols, a);
   gpgpu.uploadMatrixToTexture(bTexture, bNumRows, bNumCols, b);
 
-  gpgpu_math.runProgram(program, [aArr, bArr], resArr);
+  gpgpu_math.runProgram(binary, [aArr, bArr], resArr);
 
   const result =
       gpgpu.downloadMatrixFromTexture(resultTexture, outNumRows, outNumCols);
@@ -368,7 +368,7 @@ export function uploadMultiplyMatrixDownload(
   gpgpu.deleteMatrixTexture(aTexture);
   gpgpu.deleteMatrixTexture(bTexture);
   gpgpu.deleteMatrixTexture(resultTexture);
-  gpgpu.deleteProgram(program.webGLProgram);
+  gpgpu.deleteProgram(binary.webGLProgram);
   gpgpu.dispose();
 
   return result;

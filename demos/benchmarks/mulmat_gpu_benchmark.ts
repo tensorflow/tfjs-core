@@ -37,8 +37,8 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
       [size, size], {texture: bTexture, textureShapeRC: [size, size]});
   const resArr = new Array2D(
       [size, size], {texture: resultTexture, textureShapeRC: [size, size]});
-  const matMulProgram = new MatMulProgram();
-  const program = gpgpu_math.compileProgram(gpgpu, matMulProgram, [aArr, bArr], resArr);
+  const program = new MatMulProgram();
+  const binary = gpgpu_math.compileProgram(gpgpu, program, [aArr, bArr], resArr);
   const a = test_util.randomArrayInRange(size * size, -1, 1);
   const b = test_util.randomArrayInRange(size * size, -1, 1);
   gpgpu.uploadMatrixToTexture(aTexture, size, size, a);
@@ -46,7 +46,7 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
 
   const start = performance.now();
   for (let i = 0; i < OP_RUNS; i++) {
-    gpgpu_math.runProgram(program, [aArr, bArr], resArr);
+    gpgpu_math.runProgram(binary, [aArr, bArr], resArr);
   }
 
   const actual = gpgpu.downloadMatrixFromTexture(resultTexture, size, size);
@@ -55,7 +55,7 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   gpgpu.deleteMatrixTexture(aTexture);
   gpgpu.deleteMatrixTexture(bTexture);
   gpgpu.deleteMatrixTexture(resultTexture);
-  gpgpu.deleteProgram(program.webGLProgram);
+  gpgpu.deleteProgram(binary.webGLProgram);
   gpgpu.dispose();
 
   return avgTime;

@@ -164,7 +164,7 @@ export class GPGPUContext {
   }
 
   /**
-   * @deprecated Use #compileProgram() instead.
+   * @deprecated Use #compileProgram instead.
    */
   public createProgram(fragmentShaderSource: string): WebGLProgram {
     this.throwIfDisposed();

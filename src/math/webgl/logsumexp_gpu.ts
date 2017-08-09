@@ -25,7 +25,7 @@ export class LogSumExpProgram implements GPGPUProgram {
     return `
       void main() {
         float aMax = getAFlat(0.0);
-        for (int i = 1; i < ${size}; i++) {
+        for (int i = 0; i < ${size}; i++) {
           aMax = max(aMax, getAFlat(float(i)));
         }
 

@@ -14,53 +14,36 @@ limitations under the License.
 ==============================================================================*/
 
 import {GPGPUContext} from './gpgpu_context';
-import {IS_NAN_SHADER_FUNC} from './webgl_util';
+import {GPGPUProgram} from './gpgpu_math';
+import {NDArray, Scalar} from '../ndarray';
 
-function getFragmentShaderSource(
-    rows: number, columns: number, compOp: string): string {
-  return `
-    precision highp float;
-    uniform sampler2D matrixA;
-    varying vec2 outputColumnRow;
+export class MinMaxProgram implements GPGPUProgram {
+  variableNames = ['A'];
 
-    const vec2 aDimCR = vec2(${columns}.0, ${rows}.0);
-    const vec2 halfCR = vec2(0.5, 0.5);
+  constructor(private opType: 'min'|'max') {}
 
-    ${IS_NAN_SHADER_FUNC}
-
-    void main() {
-      float value = texture2D(matrixA, halfCR / aDimCR).r;
-      for (int r = 0; r < ${rows}; r++) {
-        for (int c = 0; c < ${columns}; c++) {
-          vec2 cr = vec2(c, r);
-          vec2 uv = (cr + halfCR) / aDimCR;
-          float candidate = texture2D(matrixA, uv).r;
+  getUserCode(inputs: NDArray[], out: Scalar): string {
+    const size = inputs[0].size;
+    return `
+      void main() {
+        float value = getAFlat(0.0);
+        for (int i = 0; i < ${size}; i++) {
+          float candidate = getAFlat(float(i));
           if (isNaN(candidate)) {
-            gl_FragColor = vec4(candidate, 0, 0, 0);
+            setOutput(candidate);
             return;
           }
-          value = ${compOp}(value, candidate);
+          value = ${this.opType}(value, candidate);
         }
+        setOutput(value);
       }
-      gl_FragColor = vec4(value, 0, 0, 0);
-    }`;
-}
+    `;
+  }
 
-export function getMinFragmentShaderSource(
-    rows: number, columns: number): string {
-  return getFragmentShaderSource(rows, columns, 'min');
-}
-
-export function getMaxFragmentShaderSource(
-    rows: number, columns: number): string {
-  return getFragmentShaderSource(rows, columns, 'max');
-}
-
-export function minMax(
-    gpgpu: GPGPUContext, minMaxProgram: WebGLProgram, a: WebGLTexture,
-    rows: number, columns: number, result: WebGLTexture) {
-  gpgpu.setOutputMatrixTexture(result, 1, 1);
-  gpgpu.setProgram(minMaxProgram);
-  gpgpu.setInputMatrixTexture(a, 'matrixA', 0);
-  gpgpu.executeProgram();
+  validate(inputs: NDArray[], out: Scalar): boolean {
+    if (inputs.length !== 1 || out.rank !== 0) {
+      return false;
+    }
+    return true;
+  }
 }

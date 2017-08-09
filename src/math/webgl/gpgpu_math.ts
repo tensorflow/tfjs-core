@@ -9,15 +9,16 @@ export interface GPGPUProgram {
   validate(inputs: NDArray[], output: NDArray): boolean;
 }
 
-export interface CompiledGPGPUProgram {
+export interface GPGPUBinary {
   webGLProgram: WebGLProgram;
   program: GPGPUProgram;
   gpgpu: GPGPUContext;
+  source: string;
 }
 
 export function compileProgram(
     gpgpu: GPGPUContext, program: GPGPUProgram, inputs: NDArray[],
-    out: NDArray): CompiledGPGPUProgram {
+    out: NDArray): GPGPUBinary {
   if (!program.validate(inputs, out)) {
     throw Error('Validation failed');
   }
@@ -25,15 +26,16 @@ export function compileProgram(
   const programInputs = program.variableNames.map((x, i) => {
     return {name: x, array: inputs[i]};
   });
-  const fullSource = shader_compiler.makeShader(programInputs, out, userCode);
+  const source = shader_compiler.makeShader(programInputs, out, userCode);
   return {
     program,
-    webGLProgram: gpgpu.createProgram(fullSource),
+    source,
+    webGLProgram: gpgpu.createProgram(source),
     gpgpu
   };
 }
 
-export function runProgram(compiledProgram: CompiledGPGPUProgram,
+export function runProgram(compiledProgram: GPGPUBinary,
     inputs: NDArray[], output: NDArray): void {
   if (!compiledProgram.program.validate(inputs, output)) {
     throw Error('Validation failed');

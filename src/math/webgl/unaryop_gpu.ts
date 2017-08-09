@@ -70,7 +70,7 @@ function getOpSnippet(op: UnaryOp) {
       return `float e2x = exp(-2.0 * v);
               float r = (1.0 - e2x) / (1.0 + e2x);`;
     default:
-      throw Error('Unrecognized unary op type');
+      throw Error('Unrecognized unary op type ' + op);
   }
 }
 
@@ -79,12 +79,12 @@ export function uploadUnaryDownload(a: NDArray, op: UnaryOp): Float32Array {
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
   const out = Array2D.zerosLike(a);
-  const unaryOp = new UnaryOpProgram(op);
-  const program = gpgpu_math.compileProgram(gpgpu, unaryOp, [a], out);
-  gpgpu_math.runProgram(program, [a], out);
+  const program = new UnaryOpProgram(op);
+  const binary = gpgpu_math.compileProgram(gpgpu, program, [a], out);
+  gpgpu_math.runProgram(binary, [a], out);
   const result = out.getValues();
   textureManager.dispose();
-  gpgpu.deleteProgram(program.webGLProgram);
+  gpgpu.deleteProgram(binary.webGLProgram);
   gpgpu.dispose();
   return result;
 }

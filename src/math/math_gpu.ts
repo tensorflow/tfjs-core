@@ -23,8 +23,8 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import * as addscaledmat_gpu from './webgl/addscaledmat_gpu';
 import * as addsubmuldiv_gpu from './webgl/addsubmuldiv_gpu';
 import {OperandType} from './webgl/addsubmuldiv_gpu';
-import * as argmaxequals_gpu from './webgl/argmaxequals_gpu';
-import * as argminmax_gpu from './webgl/argminmax_gpu';
+import {ArgMaxEqualsProgram} from './webgl/argmaxequals_gpu';
+import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import * as avg_pool_gpu from './webgl/avg_pool_gpu';
 import * as batchnorm_gpu from './webgl/batchnorm_gpu';
 import * as concat3d_gpu from './webgl/concat3d_gpu';
@@ -32,14 +32,14 @@ import * as conv_backprop_gpu from './webgl/conv_backprop_gpu';
 import * as conv_gpu from './webgl/conv_gpu';
 import * as copy_gpu from './webgl/copy_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
-import {GPGPUProgram, CompiledGPGPUProgram} from './webgl/gpgpu_math';
+import {GPGPUProgram, GPGPUBinary} from './webgl/gpgpu_math';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
 import {LogSumExpProgram} from './webgl/logsumexp_gpu';
 import * as max_pool_backprop_gpu from './webgl/max_pool_backprop_gpu';
 import * as max_pool_gpu from './webgl/max_pool_gpu';
 import * as min_pool_gpu from './webgl/min_pool_gpu';
-import * as minmax_gpu from './webgl/minmax_gpu';
+import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import * as pool_gpu from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
@@ -50,10 +50,6 @@ import {TextureManager} from './webgl/texture_manager';
 import * as webgl_util from './webgl/webgl_util';
 import {UnaryOpProgram, UnaryOp} from './webgl/unaryop_gpu';
 
-const ARGMAX_PROG = 'argmax';
-const ARGMAX_EQUALS_PROG = 'argmaxequals';
-const ARGMIN_PROG = 'argmin';
-
 const BATCHNORM_PROG = 'batchnorm';
 
 const COPY_PROG = 'copy';
@@ -63,8 +59,6 @@ const CONCAT_PROG = 'concat';
 const ADD_SCALED_MAT_PROG = 'addscaledmat';
 
 // Element-wise ops.
-const MAX_PROG = 'max';
-const MIN_PROG = 'min';
 const RESHAPE_PROG = 'reshape';
 const ADD_SUM_MUL_DIV_PROG = 'addsummuldiv';
 
@@ -94,7 +88,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   private gpgpu: GPGPUContext;
   private textureManager: TextureManager;
   private programCache: {[key: string]: WebGLProgram} = {};
-  private compiledProgramCache: {[key: string]: CompiledGPGPUProgram} = {};
+  private compiledProgramCache: {[key: string]: GPGPUBinary} = {};
   private gpgpuCreatedLocally: boolean;
 
   constructor(gpgpu?: GPGPUContext, safeMode = true) {
@@ -291,16 +285,16 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
-    const unaryOp = new UnaryOpProgram(UnaryOp.NEG);
+    const program = new UnaryOpProgram(UnaryOp.NEG);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
     const out = NDArray.make<T>(
         a.shape, {texture: resultTexture, textureShapeRC});
-    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.NEG);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    const key = this.makeShaderKey(program, [a], out, UnaryOp.NEG);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
@@ -336,13 +330,13 @@ export class NDArrayMathGPU extends NDArrayMath {
     const outTexture = this.textureManager.acquireTexture(outTexShape);
     const out = new Array2D(
         outShape, {texture: outTexture, textureShapeRC: outTexShape});
-    const matMulProgram = new MatMulProgram(aOrientation, bOrientation);
-    const key = this.makeShaderKey(matMulProgram, [a, b], out,
+    const program = new MatMulProgram(aOrientation, bOrientation);
+    const key = this.makeShaderKey(program, [a, b], out,
         aOrientation, bOrientation);
-    const compiledProgram = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, matMulProgram, [a, b], out);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a, b], out);
     });
-    gpgpu_math.runProgram(compiledProgram, [a, b], out);
+    gpgpu_math.runProgram(binary, [a, b], out);
     return out;
   }
 
@@ -450,80 +444,51 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected sumInternal(a: NDArray): Scalar {
-    const reduceSum = new ReduceSumProgram();
+    const program = new ReduceSumProgram();
     const texture = this.textureManager.acquireTexture([1, 1]);
     const out = new Scalar({texture});
-    const key = this.makeShaderKey(reduceSum, [a], out);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, reduceSum, [a], out);
+    const key = this.makeShaderKey(program, [a], out);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
-  protected argMinInternal(ndarray: NDArray): Scalar {
-    const textureShapeRC = ndarray.getTextureShapeRC();
-    const [numRows, numColumns] = textureShapeRC;
-
-    const program = this.getAndSaveProgram(
-        `${ARGMIN_PROG}_${numRows}_${numColumns}`,
-        () => argminmax_gpu.getArgMinFragmentShaderSource(numRows, numColumns));
-
-    const resultTexture = this.textureManager.acquireTexture([1, 1]);
-
-    argminmax_gpu.argMinMax(
-        this.gpgpu, program, ndarray.getTexture(), numRows, numColumns,
-        resultTexture);
-
-    return new Scalar({texture: resultTexture});
+  protected argMinInternal(a: NDArray): Scalar {
+    const program = new ArgMinMaxProgram('min');
+    const texture = this.textureManager.acquireTexture([1, 1]);
+    const out = new Scalar({texture});
+    const key = this.makeShaderKey(program, [a], out, 'min');
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
+    });
+    gpgpu_math.runProgram(binary, [a], out);
+    return out;
   }
 
-  protected argMaxInternal(ndarray: NDArray): Scalar {
-    const textureShapeRC = ndarray.getTextureShapeRC();
-    const [numRows, numColumns] = textureShapeRC;
-
-    const program = this.getAndSaveProgram(
-        `${ARGMAX_PROG}_${numRows}_${numColumns}`,
-        () => argminmax_gpu.getArgMaxFragmentShaderSource(numRows, numColumns));
-
-    const resultTexture = this.textureManager.acquireTexture([1, 1]);
-
-    argminmax_gpu.argMinMax(
-        this.gpgpu, program, ndarray.getTexture(), numRows, numColumns,
-        resultTexture);
-
-    return new Scalar({texture: resultTexture});
+  protected argMaxInternal(a: NDArray): Scalar {
+    const program = new ArgMinMaxProgram('max');
+    const texture = this.textureManager.acquireTexture([1, 1]);
+    const out = new Scalar({texture});
+    const key = this.makeShaderKey(program, [a], out, 'max');
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
+    });
+    gpgpu_math.runProgram(binary, [a], out);
+    return out;
   }
 
   protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
-    // If the texture shapes doesn't match, do a physical reshape so they do.
-    const actualX1TexShape = x1.getTextureShapeRC();
-    const actualX2TexShape = x2.getTextureShapeRC();
-    let cleanupX2 = false;
-    if (!util.arraysEqual(actualX1TexShape, actualX2TexShape)) {
-      x2 = this.reshapeTexture(x2, actualX1TexShape);
-      cleanupX2 = true;
-    }
-
-    const textureShapeRC = x1.getTextureShapeRC();
-    const [numRows, numColumns] = textureShapeRC;
-
-    const program = this.getAndSaveProgram(
-        `${ARGMAX_EQUALS_PROG}_${numRows}_${numColumns}`,
-        () => argmaxequals_gpu.getArgMaxEqualsFragmentShaderSource(
-            numRows, numColumns));
-
-    const resultTexture = this.textureManager.acquireTexture([1, 1]);
-
-    argmaxequals_gpu.argMaxEquals(
-        this.gpgpu, program, x1.getTexture(), x2.getTexture(), numRows,
-        numColumns, resultTexture);
-
-    if (cleanupX2) {
-      x2.dispose();
-    }
-
-    return new Scalar({texture: resultTexture});
+    const program = new ArgMaxEqualsProgram();
+    const texture = this.textureManager.acquireTexture([1, 1]);
+    const out = new Scalar({texture});
+    const key = this.makeShaderKey(program, [x1, x2], out);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [x1, x2], out);
+    });
+    gpgpu_math.runProgram(binary, [x1, x2], out);
+    return out;
   }
 
   protected topKInternal(ndarray: NDArray, k: number):
@@ -531,38 +496,28 @@ export class NDArrayMathGPU extends NDArrayMath {
     throw new Error('topK GPU not yet implemented!');
   }
 
-  protected minInternal(ndarray: NDArray): Scalar {
-    const textureShapeRC = ndarray.getTextureShapeRC();
-    const [numRows, numColumns] = textureShapeRC;
-
-    const program = this.getAndSaveProgram(
-        `${MIN_PROG}_${numRows}_${numColumns}`,
-        () => minmax_gpu.getMinFragmentShaderSource(numRows, numColumns));
-
-    const resultTexture = this.textureManager.acquireTexture([1, 1]);
-
-    minmax_gpu.minMax(
-        this.gpgpu, program, ndarray.getTexture(), numRows, numColumns,
-        resultTexture);
-
-    return new Scalar({texture: resultTexture});
+  protected minInternal(a: NDArray): Scalar {
+    const program = new MinMaxProgram('min');
+    const texture = this.textureManager.acquireTexture([1, 1]);
+    const out = new Scalar({texture});
+    const key = this.makeShaderKey(program, [a], out, 'min');
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
+    });
+    gpgpu_math.runProgram(binary, [a], out);
+    return out;
   }
 
-  protected maxInternal(ndarray: NDArray): Scalar {
-    const textureShapeRC = ndarray.getTextureShapeRC();
-    const [numRows, numColumns] = textureShapeRC;
-
-    const program = this.getAndSaveProgram(
-        `${MAX_PROG}_${numRows}_${numColumns}`,
-        () => minmax_gpu.getMaxFragmentShaderSource(numRows, numColumns));
-
-    const resultTexture = this.textureManager.acquireTexture([1, 1]);
-
-    minmax_gpu.minMax(
-        this.gpgpu, program, ndarray.getTexture(), numRows, numColumns,
-        resultTexture);
-
-    return new Scalar({texture: resultTexture});
+  protected maxInternal(a: NDArray): Scalar {
+    const program = new MinMaxProgram('max');
+    const texture = this.textureManager.acquireTexture([1, 1]);
+    const out = new Scalar({texture});
+    const key = this.makeShaderKey(program, [a], out, 'max');
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
+    });
+    gpgpu_math.runProgram(binary, [a], out);
+    return out;
   }
 
   protected divideInternal<T extends NDArray>(a: T, b: T): T {
@@ -593,112 +548,112 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected logSumExpInternal(a: NDArray): Scalar {
-    const logsumexp = new LogSumExpProgram();
+    const program = new LogSumExpProgram();
     const texture = this.textureManager.acquireTexture([1, 1]);
     const out = new Scalar({texture});
-    const key = this.makeShaderKey(logsumexp, [a], out);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, logsumexp, [a], out);
+    const key = this.makeShaderKey(program, [a], out);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
   protected expInternal<T extends NDArray>(a: T): T {
-    const unaryOp = new UnaryOpProgram(UnaryOp.EXP);
+    const program = new UnaryOpProgram(UnaryOp.EXP);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
     const out = NDArray.make<T>(
         a.shape, {texture: resultTexture, textureShapeRC});
-    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.EXP);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    const key = this.makeShaderKey(program, [a], out, UnaryOp.EXP);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
   protected logInternal<T extends NDArray>(a: T): T {
-    const unaryOp = new UnaryOpProgram(UnaryOp.LOG);
+    const program = new UnaryOpProgram(UnaryOp.LOG);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
     const out = NDArray.make<T>(
         a.shape, {texture: resultTexture, textureShapeRC});
-    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.LOG);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    const key = this.makeShaderKey(program, [a], out, UnaryOp.LOG);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
   protected reluInternal<T extends NDArray>(a: T): T {
-    const unaryOp = new UnaryOpProgram(UnaryOp.RELU);
+    const program = new UnaryOpProgram(UnaryOp.RELU);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
     const out = NDArray.make<T>(
         a.shape, {texture: resultTexture, textureShapeRC});
-    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.RELU);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    const key = this.makeShaderKey(program, [a], out, UnaryOp.RELU);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
   protected sigmoidInternal<T extends NDArray>(a: T): T {
-    const unaryOp = new UnaryOpProgram(UnaryOp.SIGMOID);
+    const program = new UnaryOpProgram(UnaryOp.SIGMOID);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
     const out = NDArray.make<T>(
         a.shape, {texture: resultTexture, textureShapeRC});
-    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.SIGMOID);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    const key = this.makeShaderKey(program, [a], out, UnaryOp.SIGMOID);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
   protected tanhInternal<T extends NDArray>(a: T): T {
-    const unaryOp = new UnaryOpProgram(UnaryOp.TANH);
+    const program = new UnaryOpProgram(UnaryOp.TANH);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
     const out = NDArray.make<T>(
         a.shape, {texture: resultTexture, textureShapeRC});
-    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.TANH);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    const key = this.makeShaderKey(program, [a], out, UnaryOp.TANH);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
   protected sinInternal<T extends NDArray>(a: T): T {
-    const unaryOp = new UnaryOpProgram(UnaryOp.SIN);
+    const program = new UnaryOpProgram(UnaryOp.SIN);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
     const out = NDArray.make<T>(
         a.shape, {texture: resultTexture, textureShapeRC});
-    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.SIN);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    const key = this.makeShaderKey(program, [a], out, UnaryOp.SIN);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
   protected stepInternal<T extends NDArray>(a: T): T {
-    const unaryOp = new UnaryOpProgram(UnaryOp.STEP);
+    const program = new UnaryOpProgram(UnaryOp.STEP);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
     const out = NDArray.make<T>(
         a.shape, {texture: resultTexture, textureShapeRC});
-    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.STEP);
-    const program = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    const key = this.makeShaderKey(program, [a], out, UnaryOp.STEP);
+    const binary = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, program, [a], out);
     });
-    gpgpu_math.runProgram(program, [a], out);
+    gpgpu_math.runProgram(binary, [a], out);
     return out;
   }
 
@@ -1161,7 +1116,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   private getAndSaveCompiledProgram(key: string,
-      getCompiledProgram: () => CompiledGPGPUProgram) {
+      getCompiledProgram: () => GPGPUBinary) {
     if (!(key in this.compiledProgramCache)) {
       this.compiledProgramCache[key] = getCompiledProgram();
     }

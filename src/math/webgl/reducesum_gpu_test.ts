@@ -77,15 +77,15 @@ export function uploadReduceSumDownload(a: Float32Array, rows: number,
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
 
-  const reduceSum = new ReduceSumProgram();
-  const program = gpgpu_math.compileProgram(gpgpu, reduceSum, [arr], out);
-  gpgpu_math.runProgram(program, [arr], out);
+  const program = new ReduceSumProgram();
+  const binary = gpgpu_math.compileProgram(gpgpu, program, [arr], out);
+  gpgpu_math.runProgram(binary, [arr], out);
 
   const result = out.get();
   arr.dispose();
   out.dispose();
   textureManager.dispose();
-  gpgpu.deleteProgram(program.webGLProgram);
+  gpgpu.deleteProgram(binary.webGLProgram);
   gpgpu.dispose();
   return result;
 }
