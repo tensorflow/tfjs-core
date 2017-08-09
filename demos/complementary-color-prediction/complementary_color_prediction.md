@@ -1,3 +1,7 @@
+---
+layout: page
+order: 2
+---
 # Predicting Complementary Colors with deeplearn.js
 
 This tutorial takes the reader through coding a model that predicts the [complements of colors](https://en.wikipedia.org/wiki/Complementary_colors). This model may not be perfectly optimized, but will take us through important concepts of deeplearn.js.
