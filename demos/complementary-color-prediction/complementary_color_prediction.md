@@ -1,7 +1,3 @@
----
-layout: page
-order: 2
----
 # Predicting Complementary Colors with deeplearn.js
 
 This tutorial takes the reader through coding a model that predicts the [complements of colors](https://en.wikipedia.org/wiki/Complementary_colors). This model may not be perfectly optimized, but will take us through important concepts of deeplearn.js.
@@ -9,9 +5,6 @@ This tutorial takes the reader through coding a model that predicts the [complem
 The reader should already have read the [Introduction](https://github.com/PAIR-code/deeplearnjs/blob/master/docs/tutorials/intro.md) and possibly the [Guide for non-ML Experts](https://github.com/PAIR-code/deeplearnjs/blob/master/docs/tutorials/ml_beginners.md). This tutorial uses TypeScript, although knowledge of JavaScript suffices.
 
 All of the code for this tutorial resides within the `demos/complementary-color-predictions` directory.
-
-* TOC
-{:toc}
 
 As [Edd's answer on Stack Overflow](https://stackoverflow.com/a/37657940) shows, computing the complement of a color takes quite a bit of logic. Lets see how well a small [feed-forward neural network](https://en.wikipedia.org/wiki/Feedforward_neural_network) can learn that logic.
 
