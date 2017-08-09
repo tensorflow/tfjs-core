@@ -74,17 +74,15 @@ function getOpSnippet(op: UnaryOp) {
   }
 }
 
-export function uploadUnaryDownload(a: Float32Array, rows: number,
-    columns: number, op: UnaryOp): Float32Array {
+export function uploadUnaryDownload(a: NDArray, op: UnaryOp): Float32Array {
   const gpgpu = new GPGPUContext();
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
-  const aArr = Array2D.new([rows, columns], a);
-  const rArr = Array2D.zerosLike(aArr);
+  const out = Array2D.zerosLike(a);
   const unaryOp = new UnaryOpProgram(op);
-  const program = gpgpu_math.compileProgram(gpgpu, unaryOp, [aArr], rArr);
-  gpgpu_math.runProgram(program, [aArr], rArr);
-  const result = rArr.getValues();
+  const program = gpgpu_math.compileProgram(gpgpu, unaryOp, [a], out);
+  gpgpu_math.runProgram(program, [a], out);
+  const result = out.getValues();
   textureManager.dispose();
   gpgpu.deleteProgram(program.webGLProgram);
   gpgpu.dispose();

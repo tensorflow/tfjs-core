@@ -27,7 +27,7 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const gpgpu = new GPGPUContext();
   const texManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, texManager);
-  const out = new Scalar({texture: gpgpu.createMatrixTexture(1, 1)});
+  const out = new Scalar({texture: texManager.acquireTexture([1, 1])});
   const a = Array2D.randUniform([size, size], -1, 1);
   const logsumexp = new LogSumExpProgram();
   const program = gpgpu_math.compileProgram(gpgpu, logsumexp, [a], out);
@@ -38,7 +38,8 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   }
 
   const avgTime = (performance.now() - start) / OP_RUNS;
-
+  a.dispose();
+  out.dispose();
   texManager.dispose();
   gpgpu.deleteProgram(program.webGLProgram);
   gpgpu.dispose();
