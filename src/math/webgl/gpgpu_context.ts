@@ -163,9 +163,6 @@ export class GPGPUContext {
             this.gl, rows, columns));
   }
 
-  /**
-   * @deprecated Use #compileProgram instead.
-   */
   public createProgram(fragmentShaderSource: string): WebGLProgram {
     this.throwIfDisposed();
     const gl = this.gl;
