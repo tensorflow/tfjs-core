@@ -31,28 +31,24 @@ import * as concat3d_gpu from './webgl/concat3d_gpu';
 import * as conv_backprop_gpu from './webgl/conv_backprop_gpu';
 import * as conv_gpu from './webgl/conv_gpu';
 import * as copy_gpu from './webgl/copy_gpu';
-import * as exp_gpu from './webgl/exp_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
+import {GPGPUProgram, CompiledGPGPUProgram} from './webgl/gpgpu_math';
+import * as gpgpu_math from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
-import * as log_gpu from './webgl/log_gpu';
 import * as logsumexp_gpu from './webgl/logsumexp_gpu';
 import * as max_pool_backprop_gpu from './webgl/max_pool_backprop_gpu';
 import * as max_pool_gpu from './webgl/max_pool_gpu';
 import * as min_pool_gpu from './webgl/min_pool_gpu';
 import * as minmax_gpu from './webgl/minmax_gpu';
-import * as mulmat_gpu from './webgl/mulmat_gpu';
-import * as neg_gpu from './webgl/neg_gpu';
+import {MatMulProgram} from './webgl/mulmat_gpu';
 import * as pool_gpu from './webgl/pool_gpu';
 import * as reducesum_gpu from './webgl/reducesum_gpu';
-import * as relu_gpu from './webgl/relu_gpu';
 import * as reshape_gpu from './webgl/reshape_gpu';
 import * as resize_bilinear_gpu from './webgl/resize_bilinear_gpu';
 import * as shader_compiler from './webgl/shader_compiler';
-import * as sigmoid_gpu from './webgl/sigmoid_gpu';
-import * as step_gpu from './webgl/step_gpu';
 import {TextureManager} from './webgl/texture_manager';
-import * as trig_gpu from './webgl/trig_gpu';
 import * as webgl_util from './webgl/webgl_util';
+import {UnaryOpProgram, UnaryOp} from './webgl/unaryop_gpu';
 
 const ARGMAX_PROG = 'argmax';
 const ARGMAX_EQUALS_PROG = 'argmaxequals';
@@ -65,20 +61,11 @@ const CONCAT_PROG = 'concat';
 
 // Matrix algebra.
 const ADD_SCALED_MAT_PROG = 'addscaledmat';
-const MATMUL_PROG = 'matmul';
 
 // Element-wise ops.
-const RELU_PROG = 'relu';
-const TANH_PROG = 'tanh';
-const SIN_PROG = 'sin';
-const SIGMOID_PROG = 'sigmoid';
 const MAX_PROG = 'max';
 const MIN_PROG = 'min';
-const NEG_PROG = 'neg';
-const EXP_PROG = 'exp';
-const LOG_PROG = 'log';
 const SUM_PROG = 'sum';
-const STEP_PROG = 'step';
 const LOGSUMEXP_PROG = 'logsumexp';
 const RESHAPE_PROG = 'reshape';
 const ADD_SUM_MUL_DIV_PROG = 'addsummuldiv';
@@ -109,6 +96,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   private gpgpu: GPGPUContext;
   private textureManager: TextureManager;
   private programCache: {[key: string]: WebGLProgram} = {};
+  private compiledProgramCache: {[key: string]: CompiledGPGPUProgram} = {};
   private gpgpuCreatedLocally: boolean;
 
   constructor(gpgpu?: GPGPUContext, safeMode = true) {
@@ -305,17 +293,17 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
-    const program = this.getAndSaveProgram(
-        NEG_PROG, () => neg_gpu.getFragmentShaderSource());
-
+    const unaryOp = new UnaryOpProgram(UnaryOp.NEG);
     const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    neg_gpu.neg(
-        this.gpgpu, program, a.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], resultTexture);
-
-    return NDArray.make<T>(a.shape, {texture: resultTexture, textureShapeRC});
+    const out = NDArray.make<T>(
+        a.shape, {texture: resultTexture, textureShapeRC});
+    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.NEG);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
   private reshapeTexture<T extends NDArray>(a: T, newTextureShape: [
@@ -350,17 +338,13 @@ export class NDArrayMathGPU extends NDArrayMath {
     const outTexture = this.textureManager.acquireTexture(outTexShape);
     const out = new Array2D(
         outShape, {texture: outTexture, textureShapeRC: outTexShape});
-
-    const key = shader_compiler.makeShaderKey([a, b], out);
-    const program = this.getAndSaveProgram(
-        `${MATMUL_PROG}_${key}_${aOrientation}_${bOrientation}`,
-        () => mulmat_gpu.getFragmentShader(
-            a, b, out, aOrientation, bOrientation));
-
-    mulmat_gpu.multiplyMatrix(
-        this.gpgpu, program, a.getTexture(), b.getTexture(), outTexture,
-        outTexShape);
-
+    const matMulProgram = new MatMulProgram(aOrientation, bOrientation);
+    const key = this.makeShaderKey(matMulProgram, [a, b], out,
+        aOrientation, bOrientation);
+    const compiledProgram = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, matMulProgram, [a, b], out);
+    });
+    gpgpu_math.runProgram(compiledProgram, [a, b], out);
     return out;
   }
 
@@ -632,108 +616,102 @@ export class NDArrayMathGPU extends NDArrayMath {
     return result;
   }
 
-  protected expInternal<T extends NDArray>(ndarray: T): T {
-    const program = this.getAndSaveProgram(
-        EXP_PROG, () => exp_gpu.getFragmentShaderSource());
-
-    const textureShapeRC = ndarray.getTextureShapeRC();
+  protected expInternal<T extends NDArray>(a: T): T {
+    const unaryOp = new UnaryOpProgram(UnaryOp.EXP);
+    const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    exp_gpu.exp(
-        this.gpgpu, program, ndarray.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], resultTexture);
-
-    return NDArray.make<T>(
-        ndarray.shape, {texture: resultTexture, textureShapeRC});
+    const out = NDArray.make<T>(
+        a.shape, {texture: resultTexture, textureShapeRC});
+    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.EXP);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
-  protected logInternal<T extends NDArray>(ndarray: T): T {
-    const program = this.getAndSaveProgram(
-        LOG_PROG, () => log_gpu.getFragmentShaderSource());
-
-    const textureShapeRC = ndarray.getTextureShapeRC();
+  protected logInternal<T extends NDArray>(a: T): T {
+    const unaryOp = new UnaryOpProgram(UnaryOp.LOG);
+    const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    log_gpu.log(
-        this.gpgpu, program, ndarray.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], resultTexture);
-
-    return NDArray.make<T>(
-        ndarray.shape, {texture: resultTexture, textureShapeRC});
+    const out = NDArray.make<T>(
+        a.shape, {texture: resultTexture, textureShapeRC});
+    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.LOG);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
-  protected reluInternal<T extends NDArray>(ndarray: T): T {
-    const program = this.getAndSaveProgram(
-        RELU_PROG, () => relu_gpu.getFragmentShaderSource());
-
-    const textureShapeRC = ndarray.getTextureShapeRC();
+  protected reluInternal<T extends NDArray>(a: T): T {
+    const unaryOp = new UnaryOpProgram(UnaryOp.RELU);
+    const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    relu_gpu.relu(
-        this.gpgpu, program, ndarray.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], resultTexture);
-
-    return NDArray.make<T>(
-        ndarray.shape, {texture: resultTexture, textureShapeRC});
+    const out = NDArray.make<T>(
+        a.shape, {texture: resultTexture, textureShapeRC});
+    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.RELU);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
-  protected sigmoidInternal<T extends NDArray>(ndarray: T): T {
-    const program = this.getAndSaveProgram(
-        SIGMOID_PROG, () => sigmoid_gpu.getSigmoidFragmentShaderSource());
-
-    const textureShapeRC = ndarray.getTextureShapeRC();
+  protected sigmoidInternal<T extends NDArray>(a: T): T {
+    const unaryOp = new UnaryOpProgram(UnaryOp.SIGMOID);
+    const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    sigmoid_gpu.sigmoid(
-        this.gpgpu, program, ndarray.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], resultTexture);
-
-    return NDArray.make<T>(
-        ndarray.shape, {texture: resultTexture, textureShapeRC});
+    const out = NDArray.make<T>(
+        a.shape, {texture: resultTexture, textureShapeRC});
+    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.SIGMOID);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
-  protected tanhInternal<T extends NDArray>(ndarray: T): T {
-    const program = this.getAndSaveProgram(
-        TANH_PROG, () => trig_gpu.getTanhFragmentShaderSource());
-
-    const textureShapeRC = ndarray.getTextureShapeRC();
+  protected tanhInternal<T extends NDArray>(a: T): T {
+    const unaryOp = new UnaryOpProgram(UnaryOp.TANH);
+    const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    trig_gpu.tanh(
-        this.gpgpu, program, ndarray.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], resultTexture);
-
-    return NDArray.make<T>(
-        ndarray.shape, {texture: resultTexture, textureShapeRC});
+    const out = NDArray.make<T>(
+        a.shape, {texture: resultTexture, textureShapeRC});
+    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.TANH);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
-  protected sinInternal<T extends NDArray>(ndarray: T): T {
-    const program = this.getAndSaveProgram(
-        SIN_PROG, () => trig_gpu.getSinFragmentShaderSource());
-
-    const textureShapeRC = ndarray.getTextureShapeRC();
+  protected sinInternal<T extends NDArray>(a: T): T {
+    const unaryOp = new UnaryOpProgram(UnaryOp.SIN);
+    const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    trig_gpu.sin(
-        this.gpgpu, program, ndarray.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], resultTexture);
-
-    return NDArray.make<T>(
-        ndarray.shape, {texture: resultTexture, textureShapeRC});
+    const out = NDArray.make<T>(
+        a.shape, {texture: resultTexture, textureShapeRC});
+    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.SIN);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
-  protected stepInternal<T extends NDArray>(ndarray: T): T {
-    const program = this.getAndSaveProgram(
-        STEP_PROG, () => step_gpu.getFragmentShaderSource());
-
-    const textureShapeRC = ndarray.getTextureShapeRC();
+  protected stepInternal<T extends NDArray>(a: T): T {
+    const unaryOp = new UnaryOpProgram(UnaryOp.STEP);
+    const textureShapeRC = a.getTextureShapeRC();
     const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    step_gpu.step(
-        this.gpgpu, program, ndarray.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], resultTexture);
-
-    return NDArray.make<T>(
-        ndarray.shape, {texture: resultTexture, textureShapeRC});
+    const out = NDArray.make<T>(
+        a.shape, {texture: resultTexture, textureShapeRC});
+    const key = this.makeShaderKey(unaryOp, [a], out, UnaryOp.STEP);
+    const program = this.getAndSaveCompiledProgram(key, () => {
+      return gpgpu_math.compileProgram(this.gpgpu, unaryOp, [a], out);
+    });
+    gpgpu_math.runProgram(program, [a], out);
+    return out;
   }
 
   protected conv2dInternal(
@@ -1184,6 +1162,24 @@ export class NDArrayMathGPU extends NDArrayMath {
         newShapeRCD, {texture: resultTexture, textureShapeRC: resultTexShape});
   }
 
+  private makeShaderKey(gpGpuProgram: GPGPUProgram,
+      // tslint:disable-next-line:no-any
+      inputs: NDArray[], output: NDArray, ...params: Array<{}>): string {
+    const keyStart =
+        inputs.concat([output]).map(x => x.shape + '_' + x.getTextureShapeRC());
+    const keyEnd = params.map(p => p.toString());
+    const key = [gpGpuProgram.constructor.name].concat(keyStart, keyEnd);
+    return key.join('_');
+  }
+
+  private getAndSaveCompiledProgram(key: string,
+      getCompiledProgram: () => CompiledGPGPUProgram) {
+    if (!(key in this.compiledProgramCache)) {
+      this.compiledProgramCache[key] = getCompiledProgram();
+    }
+    return this.compiledProgramCache[key];
+  }
+
   private getAndSaveProgram(programKey: string, getShaderSource: () => string):
       WebGLProgram {
     if (!(programKey in this.programCache)) {
@@ -1293,6 +1289,9 @@ export class NDArrayMathGPU extends NDArrayMath {
       if (this.programCache.hasOwnProperty(programKey)) {
         this.gpgpu.deleteProgram(this.programCache[programKey]);
       }
+    }
+    for (const key in this.compiledProgramCache) {
+      this.gpgpu.deleteProgram(this.compiledProgramCache[key].webGLProgram);
     }
     this.textureManager.dispose();
 

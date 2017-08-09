@@ -15,12 +15,13 @@ limitations under the License.
 
 import * as test_util from '../../test_util';
 import * as util from '../../util';
-import * as trig_gpu from './trig_gpu';
+import {UnaryOp} from './unaryop_gpu';
+import * as unaryop_gpu from './unaryop_gpu';
 
 describe('sin_gpu', () => {
   it('returns a matrix with the same shape as the input matrix', () => {
     const a = new Float32Array(28 * 32);
-    const result = trig_gpu.uploadSinDownload(a, 28, 32);
+    const result = unaryop_gpu.uploadUnaryDownload(a, 28, 32, UnaryOp.SIN);
     expect(result.length).toEqual(a.length);
   });
 
@@ -31,7 +32,7 @@ describe('sin_gpu', () => {
     for (let i = 0; i < a.length; i++) {
       expectedResult[i] = Math.sin(a[i]);
     }
-    const result = trig_gpu.uploadSinDownload(a, 1, size);
+    const result = unaryop_gpu.uploadUnaryDownload(a, 1, size, UnaryOp.SIN);
     test_util.expectArraysClose(result, expectedResult, 1e-3);
   });
 });
@@ -40,7 +41,7 @@ describe('sin_gpu', () => {
 describe('tanh_gpu', () => {
   it('returns a matrix with the same shape as the input matrix', () => {
     const a = new Float32Array(28 * 32);
-    const result = trig_gpu.uploadTanhDownload(a, 28, 32);
+    const result = unaryop_gpu.uploadUnaryDownload(a, 28, 32, UnaryOp.TANH);
     expect(result.length).toEqual(a.length);
   });
 
@@ -51,7 +52,7 @@ describe('tanh_gpu', () => {
     for (let i = 0; i < a.length; i++) {
       expectedResult[i] = util.tanh(a[i]);
     }
-    const result = trig_gpu.uploadTanhDownload(a, 1, size);
+    const result = unaryop_gpu.uploadUnaryDownload(a, 1, size, UnaryOp.TANH);
     test_util.expectArraysClose(result, expectedResult, 1e-6);
   });
 });

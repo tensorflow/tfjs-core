@@ -14,42 +14,77 @@ limitations under the License.
 ==============================================================================*/
 
 import {GPGPUContext} from './gpgpu_context';
+import {GPGPUProgram} from './gpgpu_math';
+import {NDArray, Array2D} from '../ndarray';
+import * as util from '../../util';
+import * as gpgpu_math from './gpgpu_math';
 
-export function getFragmentShaderSource(resultOp: string): string {
-  return `
-    precision highp float;
-    uniform sampler2D matrixA;
-    varying vec2 resultUV;
-
-    void main() {
-      float value = texture2D(matrixA, resultUV).r;
-      ${resultOp}
-    }`;
+export enum UnaryOp {
+  EXP, LOG, NEG, RELU, SIGMOID, STEP, SIN, TANH
 }
 
-export function unaryOp(
-    gpgpu: GPGPUContext, unaryOpProgram: WebGLProgram, a: WebGLTexture,
-    rows: number, columns: number, result: WebGLTexture) {
-  gpgpu.setOutputMatrixTexture(result, rows, columns);
-  gpgpu.setProgram(unaryOpProgram);
-  gpgpu.setInputMatrixTexture(a, 'matrixA', 0);
-  gpgpu.executeProgram();
+export class UnaryOpProgram implements GPGPUProgram {
+  variableNames = ['A'];
+
+  constructor(private op: UnaryOp) {}
+
+  getUserCode(inputs: NDArray[], output: NDArray): string {
+    return `
+      void main() {
+        float v = getAAtOutCoords();
+        ${getOpSnippet(this.op)}
+        setOutput(r);
+      }
+    `;
+  }
+
+  validate(inputs: NDArray[], output: NDArray): boolean {
+    if (inputs.length !== 1) {
+      return false;
+    }
+    if (!util.arraysEqual(inputs[0].shape, output.shape)) {
+      return false;
+    }
+    return true;
+  }
 }
 
-export function uploadUnaryOpDownload(
-    a: Float32Array, rows: number, columns: number,
-    resultOp: string): Float32Array {
+function getOpSnippet(op: UnaryOp) {
+  switch(op) {
+    case UnaryOp.EXP:
+      return 'float r = exp(v);';
+    case UnaryOp.LOG:
+      return 'float r = log(v);';
+    case UnaryOp.NEG:
+      return 'float r = -v;';
+    case UnaryOp.RELU:
+      return 'float r = (v < 0.0) ? 0.0 : v;';
+    case UnaryOp.SIGMOID:
+      return 'float r = 1.0 / (1.0 + exp(-1.0 * v));';
+    case UnaryOp.STEP:
+      return 'float r = (v == v) ? (v > 0.0 ? 1.0 : 0.0) : v;';
+    case UnaryOp.SIN:
+      return 'float r = sin(v);';
+    case UnaryOp.TANH:
+      return `float e2x = exp(-2.0 * v);
+              float r = (1.0 - e2x) / (1.0 + e2x);`;
+    default:
+      throw Error('Unrecognized unary op type');
+  }
+}
+
+export function uploadUnaryDownload(a: Float32Array, rows: number,
+    columns: number, op: UnaryOp): Float32Array {
+  const aArr = Array2D.new([rows, columns], a);
+  const rArr = Array2D.zerosLike(aArr);
   const gpgpu = new GPGPUContext();
-  const fragmentShaderSrc = getFragmentShaderSource(resultOp);
-  const program: WebGLProgram = gpgpu.createProgram(fragmentShaderSrc);
-  const aTexture: WebGLTexture = gpgpu.createMatrixTexture(rows, columns);
-  const resultTexture: WebGLTexture = gpgpu.createMatrixTexture(rows, columns);
-  gpgpu.uploadMatrixToTexture(aTexture, rows, columns, a);
-  unaryOp(gpgpu, program, aTexture, rows, columns, resultTexture);
-  const result = gpgpu.downloadMatrixFromTexture(resultTexture, rows, columns);
-  gpgpu.deleteMatrixTexture(aTexture);
-  gpgpu.deleteMatrixTexture(resultTexture);
-  gpgpu.deleteProgram(program);
+  const unaryOp = new UnaryOpProgram(op);
+  const program = gpgpu_math.compileProgram(gpgpu, unaryOp, [aArr], rArr);
+  gpgpu_math.runProgram(program, [aArr], rArr);
+  const result = rArr.getValues();
+  aArr.dispose();
+  rArr.dispose();
+  gpgpu.deleteProgram(program.webGLProgram);
   gpgpu.dispose();
   return result;
 }

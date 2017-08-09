@@ -20,44 +20,61 @@ export type Input = {
   name: string; array: NDArray;
 };
 
-export function makeShaderKey(inputs: NDArray[], output: NDArray): string {
-  const ins = inputs.map(x => x.shape + '_' + x.getTextureShapeRC());
-  return ins.join('_') + '_' + output.shape + '_' + output.getTextureShapeRC();
-}
-
 export function makeShader(
     inputs: Input[], output: NDArray, userCode: string): string {
   const inputPrefixSnippet =
       inputs.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
-      inputs.map(x => getInputSamplingSnippet(x)).join('\n');
+      inputs.map(x => getInputSamplingSnippet(x, output)).join('\n');
   const outTexShape = output.getTextureShapeRC();
   const outputSamplingSnippet =
       getOutputSamplingSnippet(output.shape, outTexShape);
   const source = [
-    SHADER_PREFIX, inputPrefixSnippet, SAMPLE_2D_SNIPPET, inputSamplingSnippet,
-    outputSamplingSnippet, userCode
+    SHADER_PREFIX, inputPrefixSnippet, SAMPLE_1D_SNIPPET, SAMPLE_2D_SNIPPET,
+    SAMPLE_3D_SNIPPET, inputSamplingSnippet, outputSamplingSnippet, userCode
   ].join('\n');
   return source;
 }
 
-function getInputSamplingSnippet(input: Input) {
+function getInputSamplingSnippet(input: Input, output: NDArray) {
   const arr = input.array;
   const shape = arr.shape;
-  const texShape = arr.getTextureShapeRC(shape as [number, number]);
+  const texShape = arr.getTextureShapeRC();
+  const outTexShape = output.getTextureShapeRC();
+
+  let res = '';
   switch (shape.length) {
+    case 1:
+      res += getSampler1D(input.name, texShape);
+      break;
     case 2:
-      return getSampler2D(input.name, shape as [number, number], texShape);
+      res += getSampler2D(input.name, shape as [number, number], texShape);
+      break;
+    case 3:
+      res += getSampler3D(input.name, shape as [number, number, number], texShape);
+      break;
     default:
       throw new Error(`${arr.rank}-D input sampling is not yet supported`);
   }
+  // If input and output have matching logical shapes, add
+  // getTexNameAtOutCoord() method that samples the input texture using the
+  // output coordinates.
+  if (util.arraysEqual(input.array.shape, output.shape)) {
+    res += getSamplerAtOutputCoords(input.name, texShape, outTexShape);
+  }
+  return res;
 }
 
 function getOutputSamplingSnippet(
     outShape: number[], outTexShape: [number, number]): string {
   switch (outShape.length) {
+    case 1:
+      return getOutput1DCoords(outShape as [number], outTexShape);
     case 2:
       return getOutput2DCoords(outShape as [number, number], outTexShape);
+    case 3:
+      return getOutput3DCoords(outShape as [number, number, number],
+          outTexShape);
     default:
       throw new Error(
           `${outShape.length}-D output sampling is not yet supported`);
@@ -74,6 +91,15 @@ const SHADER_PREFIX = `
   }
 `;
 
+const SAMPLE_1D_SNIPPET = `
+  float sample1D(sampler2D texture, float texNumR, float texNumC, float index) {
+    float texR = floor(index / texNumC);
+    float texC = mod(index, texNumC);
+    vec2 uv = (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+    return texture2D(texture, uv).r;
+  }
+`;
+
 const SAMPLE_2D_SNIPPET = `
   float sample2D(sampler2D texture, float texNumR, float texNumC, float numC,
       float row, float col) {
@@ -85,8 +111,60 @@ const SAMPLE_2D_SNIPPET = `
   }
 `;
 
+const SAMPLE_3D_SNIPPET = `
+  float sample3D(sampler2D texture, float texNumR, float texNumC, float stride0,
+      float stride1, float row, float col, float depth) {
+    float index = dot(vec3(row, col, depth), vec3(stride0, stride1, 1.0));
+    float texR = floor(index / texNumC);
+    float texC = mod(index, texNumC);
+    vec2 uv = (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+    return texture2D(texture, uv).r;
+  }
+`;
+
+function getOutput1DCoords(
+    shape: [number], texShape: [number, number]): string {
+  if (texShape[0] === 1) {
+    return `
+      float getOutputCoords() {
+        return floor(gl_FragCoord.x);
+      }
+    `;
+  }
+  if (texShape[1] === 1) {
+    return `
+      float getOutputCoords() {
+        return floor(gl_FragCoord.y);
+      }
+    `;
+  }
+  return `
+    float getOutputCoords() {
+      vec2 resTexRC = floor(gl_FragCoord.yx);
+      return dot(resTexRC, vec2(${texShape[1]}.0, 1.0));
+    }
+  `;
+}
+
+function getOutput3DCoords(shape: [number, number, number],
+    texShape: [number, number]): string {
+  const stride0 = shape[1] * shape[2];
+  const stride1 = shape[2];
+  return `
+    vec3 getOutputCoords() {
+      vec2 resTexRC = floor(gl_FragCoord.yx);
+      float index = dot(resTexRC, vec2(${texShape[1]}.0, 1.0));
+      float r = floor(index / ${stride0}.0);
+      index -= r * ${stride0}.0;
+      float c = floor(index / ${stride1}.0);
+      float d = mod(index, ${stride1}.0);
+      return vec3(r, c, d);
+    }
+  `;
+}
+
 function getOutput2DCoords(
-    shape: [number, number], texShape: [number, number]) {
+    shape: [number, number], texShape: [number, number]): string {
   if (util.arraysEqual(shape, texShape)) {
     return `
       vec2 getOutputCoords() {
@@ -101,6 +179,50 @@ function getOutput2DCoords(
       float r = floor(index / ${shape[1]}.0);
       float c = mod(index, ${shape[1]}.0);
       return vec2(r, c);
+    }
+  `;
+}
+
+function getSampler1D(
+    texName: string, texShape: [number, number]) {
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const tR = texShape[0];
+  const tC = texShape[1];
+  if (texShape[1] === 1) {
+    return `
+      float ${funcName}(float index) {
+        vec2 uv = vec2(0.5, (index + 0.5) / ${tR}.0);
+        return texture2D(${texName}, uv).r;
+      }
+    `;
+  }
+  if (texShape[0] === 1) {
+    return `
+      float ${funcName}(float index) {
+        vec2 uv = vec2((index + 0.5) / ${tC}.0, 0.5);
+        return texture2D(${texName}, uv).r;
+      }
+    `;
+  }
+  return `
+    float ${funcName}(float index) {
+      return sample1D(${texName}, ${tR}.0, ${tC}.0, index);
+    }
+  `;
+}
+
+function getSampler3D(
+    texName: string, shape: [number, number, number],
+    texShape: [number, number]) {
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const tR = texShape[0];
+  const tC = texShape[1];
+  const stride0 = shape[1] * shape[2];
+  const stride1 = shape[2];
+  return `
+    float ${funcName}(float row, float col, float depth) {
+      return sample3D(${texName}, ${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0,
+          row, col, depth);
     }
   `;
 }
@@ -123,4 +245,29 @@ function getSampler2D(
       return sample2D(${texName}, ${tR}.0, ${tC}.0, ${shape[1]}.0, row, col);
     }
   `;
+}
+
+function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
+    outTexShape: [number, number]) {
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1) +
+    'AtOutCoords';
+  if (util.arraysEqual(inTexShape, outTexShape)) {
+    return `
+      float ${funcName}() {
+        return texture2D(${texName}, resultUV).r;
+      }
+    `;
+  }
+  return `
+    float ${funcName}() {
+      vec2 resTexRC = floor(gl_FragCoord.yx);
+      float index = dot(resTexRC, vec2(${outTexShape[1]}.0, 1.0));
+      float texR = floor(index / ${inTexShape[1]}.0);
+      float texC = mod(index, ${inTexShape[1]}.0);
+      vec2 uv = (vec2(texC, texR) + halfCR) /
+                 vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
+      return texture2D(${texName}, uv).r;
+    }
+  `;
+
 }
