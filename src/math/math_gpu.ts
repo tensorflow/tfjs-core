@@ -285,8 +285,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a, UnaryOp.NEG);
-    return this.compileAndRun<T, T>(program);
+    const program = new UnaryOpProgram(a.shape, UnaryOp.NEG);
+    return this.compileAndRun<T, T>(program, [a]);
   }
 
   private makeOutputArray<T extends NDArray>(shape: number[]): T {
@@ -297,13 +297,13 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   private compileAndRun<T extends NDArray, K extends NDArray>(
-      program: GPGPUProgram<T>): K {
+      program: GPGPUProgram, inputs: T[]): K {
     const output = this.makeOutputArray<K>(program.outputShape);
-    const key = gpgpu_math.makeShaderKey(program, output);
+    const key = gpgpu_math.makeShaderKey(program, inputs, output);
     const binary = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, program, output);
+      return gpgpu_math.compileProgram(this.gpgpu, program, inputs, output);
     });
-    gpgpu_math.runProgram(binary, program.inputs, output);
+    gpgpu_math.runProgram(binary, inputs, output);
     return output;
   }
 
@@ -327,8 +327,9 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected matMulInternal(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D {
-    const program = new MatMulProgram(a, b, aOrientation, bOrientation);
-    return this.compileAndRun<Array2D, Array2D>(program);
+    const program = new MatMulProgram(a.shape, b.shape, aOrientation,
+        bOrientation);
+    return this.compileAndRun<Array2D, Array2D>(program, [a, b]);
   }
 
   protected elementWiseMulInternal<T extends NDArray>(a: T, b: T): T {
@@ -435,23 +436,23 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected sumInternal(a: NDArray): Scalar {
-    const program = new ReduceSumProgram(a);
-    return this.compileAndRun(program);
+    const program = new ReduceSumProgram(a.size);
+    return this.compileAndRun(program, [a]);
   }
 
   protected argMinInternal(a: NDArray): Scalar {
-    const program = new ArgMinMaxProgram(a, 'min');
-    return this.compileAndRun(program);
+    const program = new ArgMinMaxProgram(a.size, 'min');
+    return this.compileAndRun(program, [a]);
   }
 
   protected argMaxInternal(a: NDArray): Scalar {
-    const program = new ArgMinMaxProgram(a, 'max');
-    return this.compileAndRun(program);
+    const program = new ArgMinMaxProgram(a.size, 'max');
+    return this.compileAndRun(program, [a]);
   }
 
   protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
-    const program = new ArgMaxEqualsProgram(x1, x2);
-    return this.compileAndRun(program);
+    const program = new ArgMaxEqualsProgram(x1.size, x2.size);
+    return this.compileAndRun(program, [x1, x2]);
   }
 
   protected topKInternal(ndarray: NDArray, k: number):
@@ -460,13 +461,13 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected minInternal(a: NDArray): Scalar {
-    const program = new MinMaxProgram(a, 'min');
-    return this.compileAndRun(program);
+    const program = new MinMaxProgram(a.size, 'min');
+    return this.compileAndRun(program, [a]);
   }
 
   protected maxInternal(a: NDArray): Scalar {
-    const program = new MinMaxProgram(a, 'max');
-    return this.compileAndRun(program);
+    const program = new MinMaxProgram(a.size, 'max');
+    return this.compileAndRun(program, [a]);
   }
 
   protected divideInternal<T extends NDArray>(a: T, b: T): T {
@@ -497,43 +498,43 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected logSumExpInternal(a: NDArray): Scalar {
-    const program = new LogSumExpProgram(a);
-    return this.compileAndRun(program);
+    const program = new LogSumExpProgram(a.size);
+    return this.compileAndRun(program, [a]);
   }
 
   protected expInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a, UnaryOp.EXP);
-    return this.compileAndRun<T, T>(program);
+    const program = new UnaryOpProgram(a.shape, UnaryOp.EXP);
+    return this.compileAndRun<T, T>(program, [a]);
   }
 
   protected logInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a, UnaryOp.LOG);
-    return this.compileAndRun<T, T>(program);
+    const program = new UnaryOpProgram(a.shape, UnaryOp.LOG);
+    return this.compileAndRun<T, T>(program, [a]);
   }
 
   protected reluInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a, UnaryOp.RELU);
-    return this.compileAndRun<T, T>(program);
+    const program = new UnaryOpProgram(a.shape, UnaryOp.RELU);
+    return this.compileAndRun<T, T>(program, [a]);
   }
 
   protected sigmoidInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a, UnaryOp.SIGMOID);
-    return this.compileAndRun<T, T>(program);
+    const program = new UnaryOpProgram(a.shape, UnaryOp.SIGMOID);
+    return this.compileAndRun<T, T>(program, [a]);
   }
 
   protected tanhInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a, UnaryOp.TANH);
-    return this.compileAndRun<T, T>(program);
+    const program = new UnaryOpProgram(a.shape, UnaryOp.TANH);
+    return this.compileAndRun<T, T>(program, [a]);
   }
 
   protected sinInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a, UnaryOp.SIN);
-    return this.compileAndRun<T, T>(program);
+    const program = new UnaryOpProgram(a.shape, UnaryOp.SIN);
+    return this.compileAndRun<T, T>(program, [a]);
   }
 
   protected stepInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a, UnaryOp.STEP);
-    return this.compileAndRun<T, T>(program);
+    const program = new UnaryOpProgram(a.shape, UnaryOp.STEP);
+    return this.compileAndRun<T, T>(program, [a]);
   }
 
   protected conv2dInternal(
@@ -984,13 +985,14 @@ export class NDArrayMathGPU extends NDArrayMath {
         newShapeRCD, {texture: resultTexture, textureShapeRC: resultTexShape});
   }
 
-  private getAndSaveCompiledProgram(key: string,
-      getCompiledProgram: () => GPGPUBinary<NDArray,NDArray>):
-      GPGPUBinary<NDArray,NDArray> {
+  private getAndSaveCompiledProgram<K extends NDArray, T extends NDArray>(
+      key: string,
+      getCompiledProgram: () => GPGPUBinary<K,T>):
+      GPGPUBinary<K,T> {
     if (!(key in this.compiledProgramCache)) {
       this.compiledProgramCache[key] = getCompiledProgram();
     }
-    return this.compiledProgramCache[key];
+    return this.compiledProgramCache[key] as GPGPUBinary<K, T>;
   }
 
   private getAndSaveProgram(programKey: string, getShaderSource: () => string):

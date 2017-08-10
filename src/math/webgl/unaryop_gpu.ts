@@ -24,16 +24,14 @@ export enum UnaryOp {
   EXP, LOG, NEG, RELU, SIGMOID, STEP, SIN, TANH
 }
 
-export class UnaryOpProgram<T extends NDArray> implements GPGPUProgram<T> {
+export class UnaryOpProgram implements GPGPUProgram {
   variableNames = ['A'];
   params: Array<{}>;
   userCode: string;
-  inputs: T[];
   outputShape: number[];
 
-  constructor(a: T, op: UnaryOp) {
-    this.outputShape = a.shape;
-    this.inputs = [a];
+  constructor(aShape: number[], op: UnaryOp) {
+    this.outputShape = aShape;
     this.params = [op];
     this.userCode = `
       void main() {
@@ -74,8 +72,8 @@ export function uploadUnaryDownload(a: NDArray, op: UnaryOp): Float32Array {
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
   const out = Array2D.zerosLike(a);
-  const program = new UnaryOpProgram(a, op);
-  const binary = gpgpu_math.compileProgram(gpgpu, program, out);
+  const program = new UnaryOpProgram(a.shape, op);
+  const binary = gpgpu_math.compileProgram(gpgpu, program, [a], out);
   gpgpu_math.runProgram(binary);
   const result = out.getValues();
   textureManager.dispose();

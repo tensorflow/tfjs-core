@@ -6,8 +6,7 @@ import * as util from '../../util';
 import {TextureManager} from './texture_manager';
 import * as webgl_util from './webgl_util';
 
-export interface GPGPUProgram<T extends NDArray> {
-  inputs: T[];
+export interface GPGPUProgram {
   variableNames: string[];
   outputShape: number[];
   params: Array<{}>;
@@ -16,20 +15,21 @@ export interface GPGPUProgram<T extends NDArray> {
 
 export interface GPGPUBinary<T extends NDArray, K extends NDArray> {
   webGLProgram: WebGLProgram;
-  program: GPGPUProgram<T>;
+  program: GPGPUProgram;
   gpgpu: GPGPUContext;
   source: string;
+  inputs: T[];
   output: K;
 }
 
 export function compileProgram<T extends NDArray, K extends NDArray>(
-    gpgpu: GPGPUContext, program: GPGPUProgram<T>,
+    gpgpu: GPGPUContext, program: GPGPUProgram, inputs: T[],
     output: K): GPGPUBinary<T,K> {
   const userCode = program.userCode;
   const programInputs = program.variableNames.map((x, i) => {
     const fullShape = {
-      shape: program.inputs[i].shape,
-      texShape: program.inputs[i].getTextureShapeRC()
+      shape: inputs[i].shape,
+      texShape: inputs[i].getTextureShapeRC()
     };
     return {name: x, fullShape};
   });
@@ -45,6 +45,7 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
     source,
     webGLProgram: gpgpu.createProgram(source),
     gpgpu,
+    inputs,
     output
   };
 }
@@ -70,9 +71,9 @@ function validateBinaryAndProgram(aArrays: NDArray[], bArrays: NDArray[]) {
 export function runProgram<T extends NDArray, K extends NDArray>(
     binary: GPGPUBinary<T,K>, inputs?: T[], output?: K): void {
   if (inputs == null) {
-    inputs = binary.program.inputs;
+    inputs = binary.inputs;
   } else {
-    validateBinaryAndProgram(binary.program.inputs, inputs);
+    validateBinaryAndProgram(binary.inputs, inputs);
   }
   if (output == null) {
     output = binary.output;
@@ -92,8 +93,8 @@ export function runProgram<T extends NDArray, K extends NDArray>(
 }
 
 export function makeShaderKey(
-    program: GPGPUProgram<NDArray>, output: NDArray): string {
-  const inputs = program.inputs;
+    program: GPGPUProgram, inputs: NDArray[],
+    output: NDArray): string {
   const params = program.params;
   const keyStart =
       inputs.concat(output).map(x => x.shape + '_' + x.getTextureShapeRC());

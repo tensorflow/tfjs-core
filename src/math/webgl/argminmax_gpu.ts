@@ -41,17 +41,15 @@ export function getArgMinMaxSnippet(op: 'min'|'max', texName: string,
   `;
 }
 
-export class ArgMinMaxProgram<T extends NDArray> implements GPGPUProgram<T> {
+export class ArgMinMaxProgram implements GPGPUProgram {
   variableNames = ['A'];
-  inputs: T[];
   outputShape: number[] = [];
   params: Array<{}>;
   userCode: string;
 
-  constructor(a: T, opType: 'min'|'max') {
-    this.inputs = [a];
+  constructor(aSize: number, opType: 'min'|'max') {
     this.params = [opType];
-    const aSnippet = getArgMinMaxSnippet(opType, 'A', a.size);
+    const aSnippet = getArgMinMaxSnippet(opType, 'A', aSize);
     this.userCode = `
       ${aSnippet}
 

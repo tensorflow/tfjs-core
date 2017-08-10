@@ -17,27 +17,25 @@ import {MatrixOrientation} from '../math';
 import {Array2D} from '../ndarray';
 import {GPGPUProgram} from './gpgpu_math';
 
-export class MatMulProgram implements GPGPUProgram<Array2D> {
+export class MatMulProgram implements GPGPUProgram {
   variableNames = ['matrixA', 'matrixB'];
   params: Array<{}>;
   outputShape: number[];
   userCode: string;
-  inputs: Array2D[];
 
-  constructor(a: Array2D, b: Array2D,
+  constructor(aShape: [number, number], bShape: [number, number],
       aOrient = MatrixOrientation.REGULAR,
       bOrient = MatrixOrientation.REGULAR) {
-    this.inputs = [a, b];
     this.params = [aOrient, bOrient];
 
     const outerShapeA =
-        (aOrient === MatrixOrientation.REGULAR) ? a.shape[0] : a.shape[1];
+        (aOrient === MatrixOrientation.REGULAR) ? aShape[0] : aShape[1];
     const outerShapeB =
-        (bOrient === MatrixOrientation.REGULAR) ? b.shape[1] : b.shape[0];
+        (bOrient === MatrixOrientation.REGULAR) ? bShape[1] : bShape[0];
     this.outputShape = [outerShapeA, outerShapeB];
 
     const sharedDim =
-      (aOrient === MatrixOrientation.REGULAR ? a.shape[1] : a.shape[0]);
+      (aOrient === MatrixOrientation.REGULAR ? aShape[1] : aShape[0]);
     const aSnippet = (aOrient === MatrixOrientation.REGULAR) ?
         'aRow, i_float' : 'i_float, aRow';
     const bSnippet = (bOrient === MatrixOrientation.REGULAR) ?

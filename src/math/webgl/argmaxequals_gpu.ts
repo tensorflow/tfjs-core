@@ -19,17 +19,15 @@ import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 import * as util from '../../util';
 
-export class ArgMaxEqualsProgram<T extends NDArray> implements GPGPUProgram<T> {
+export class ArgMaxEqualsProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
-  inputs: T[];
   outputShape: number[] = [];
   params: Array<{}> = [];
   userCode: string;
 
-  constructor(a: T, b: T) {
-    this.inputs = [a, b];
-    const aSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'A', a.size);
-    const bSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'B', b.size);
+  constructor(aSize: number, bSize: number) {
+    const aSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'A', aSize);
+    const bSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'B', bSize);
     this.userCode = `
       ${aSnippet}
       ${bSnippet}

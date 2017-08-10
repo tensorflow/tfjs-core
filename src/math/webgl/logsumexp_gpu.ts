@@ -17,24 +17,22 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 
-export class LogSumExpProgram<T extends NDArray> implements GPGPUProgram<T> {
+export class LogSumExpProgram implements GPGPUProgram {
   variableNames = ['A'];
   params: Array<{}> = [];
   outputShape: number[] = [];
-  inputs: T[];
   userCode: string;
 
-  constructor(a: T) {
-    this.inputs = [a];
+  constructor(aSize: number) {
     this.userCode = `
       void main() {
         float aMax = getAFlat(0.0);
-        for (int i = 0; i < ${a.size}; i++) {
+        for (int i = 0; i < ${aSize}; i++) {
           aMax = max(aMax, getAFlat(float(i)));
         }
 
         float expSum = 0.0;
-        for (int i = 0; i < ${a.size}; i++) {
+        for (int i = 0; i < ${aSize}; i++) {
           expSum += exp(getAFlat(float(i)) - aMax);
         }
 

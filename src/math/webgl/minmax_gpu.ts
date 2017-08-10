@@ -18,21 +18,18 @@ import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 import * as util from '../../util';
 
-export class MinMaxProgram<T extends NDArray> implements GPGPUProgram<T> {
+export class MinMaxProgram implements GPGPUProgram {
   variableNames = ['A'];
   params: Array<{}>;
   outputShape: number[] = [];
   userCode: string;
-  inputs: T[];
 
-  constructor(a: T, opType: 'min'|'max') {
-    this.inputs = [a];
+  constructor(aSize: number, opType: 'min'|'max') {
     this.params = [opType];
-    const size = util.sizeFromShape(this.inputs[0].shape);
     this.userCode = `
       void main() {
         float value = getAFlat(0.0);
-        for (int i = 0; i < ${size}; i++) {
+        for (int i = 0; i < ${aSize}; i++) {
           float candidate = getAFlat(float(i));
           if (isNaN(candidate)) {
             setOutput(candidate);

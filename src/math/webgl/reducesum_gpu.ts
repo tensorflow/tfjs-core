@@ -17,20 +17,17 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 
-export class ReduceSumProgram<T extends NDArray> implements GPGPUProgram<T> {
+export class ReduceSumProgram implements GPGPUProgram {
   variableNames = ['A'];
   params: Array<{}> = [];
   outputShape: number[] = [];
   userCode: string;
-  inputs: T[];
 
-  constructor(public a: T) {
-    const size = a.size;
-    this.inputs = [a];
+  constructor(public aSize: number) {
     this.userCode = `
       void main() {
         float sum = 0.0;
-        for (int i = 0; i < ${size}; i++) {
+        for (int i = 0; i < ${aSize}; i++) {
           sum += getAFlat(float(i));
         }
         setOutput(sum);
