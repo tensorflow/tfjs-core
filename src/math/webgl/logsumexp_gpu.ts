@@ -17,10 +17,11 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 
-export class LogSumExpProgram implements GPGPUProgram<Scalar> {
+export class LogSumExpProgram<T extends NDArray>
+    implements GPGPUProgram<Scalar> {
   variableNames = ['A'];
 
-  constructor(public inputs: NDArray[], public output: Scalar) {}
+  constructor(public inputs: T[], public output: Scalar) {}
 
   getParams(): Array<{}> {
     return [];

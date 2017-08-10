@@ -17,10 +17,11 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 
-export class ReduceSumProgram implements GPGPUProgram<Scalar> {
+export class ReduceSumProgram<T extends NDArray>
+    implements GPGPUProgram<Scalar> {
   variableNames = ['A'];
 
-  constructor(public inputs: NDArray[], public output: Scalar) {}
+  constructor(public inputs: T[], public output: Scalar) {}
 
   getParams(): Array<{}> { return []; }
 

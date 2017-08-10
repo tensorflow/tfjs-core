@@ -19,10 +19,11 @@ import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 import * as util from '../../util';
 
-export class ArgMaxEqualsProgram implements GPGPUProgram<Scalar> {
+export class ArgMaxEqualsProgram<T extends NDArray>
+    implements GPGPUProgram<Scalar> {
   variableNames = ['A', 'B'];
 
-  constructor(public inputs: NDArray[], public output: Scalar) {}
+  constructor(public inputs: T[], public output: Scalar) {}
 
   getParams(): Array<{}> { return [];}
 
