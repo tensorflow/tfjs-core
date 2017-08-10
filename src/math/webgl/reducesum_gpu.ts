@@ -19,14 +19,15 @@ import {NDArray, Scalar} from '../ndarray';
 
 export class ReduceSumProgram<T extends NDArray> implements GPGPUProgram<T> {
   variableNames = ['A'];
+  params: Array<{}> = [];
+  outputShape: number[] = [];
+  userCode: string;
+  inputs: T[];
 
-  constructor(public inputs: T[]) {}
-
-  getParams(): Array<{}> { return []; }
-
-  getUserCode(): string {
-    const size = this.inputs[0].size;
-    return `
+  constructor(public a: T) {
+    const size = a.size;
+    this.inputs = [a];
+    this.userCode = `
       void main() {
         float sum = 0.0;
         for (int i = 0; i < ${size}; i++) {
@@ -35,16 +36,5 @@ export class ReduceSumProgram<T extends NDArray> implements GPGPUProgram<T> {
         setOutput(sum);
       }
     `;
-  }
-
-  getOutputShape(): number[] {
-    return [];
-  }
-
-  validate(): boolean {
-    if (this.inputs.length !== 1) {
-      return false;
-    }
-    return true;
   }
 }

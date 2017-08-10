@@ -9,10 +9,9 @@ import * as webgl_util from './webgl_util';
 export interface GPGPUProgram<T extends NDArray> {
   inputs: T[];
   variableNames: string[];
-  getUserCode(): string;
-  validate(): boolean;
-  getParams(): Array<{}>;
-  getOutputShape(): number[];
+  outputShape: number[];
+  params: Array<{}>;
+  userCode: string;
 }
 
 export interface GPGPUBinary<T extends NDArray, K extends NDArray> {
@@ -26,10 +25,7 @@ export interface GPGPUBinary<T extends NDArray, K extends NDArray> {
 export function compileProgram<T extends NDArray, K extends NDArray>(
     gpgpu: GPGPUContext, program: GPGPUProgram<T>,
     output: K): GPGPUBinary<T,K> {
-  if (!program.validate()) {
-    throw Error('Validation failed');
-  }
-  const userCode = program.getUserCode();
+  const userCode = program.userCode;
   const programInputs = program.variableNames.map((x, i) => {
     const fullShape = {
       shape: program.inputs[i].shape,
@@ -98,7 +94,7 @@ export function runProgram<T extends NDArray, K extends NDArray>(
 export function makeShaderKey(
     program: GPGPUProgram<NDArray>, output: NDArray): string {
   const inputs = program.inputs;
-  const params = program.getParams();
+  const params = program.params;
   const keyStart =
       inputs.concat(output).map(x => x.shape + '_' + x.getTextureShapeRC());
   const keyEnd = params.map(p => p.toString());

@@ -19,39 +19,27 @@ import {NDArray, Scalar} from '../ndarray';
 
 export class LogSumExpProgram<T extends NDArray> implements GPGPUProgram<T> {
   variableNames = ['A'];
+  params: Array<{}> = [];
+  outputShape: number[] = [];
+  inputs: T[];
+  userCode: string;
 
-  constructor(public inputs: T[]) {}
-
-  getParams(): Array<{}> {
-    return [];
-  }
-
-  getOutputShape(): number[] {
-    return [];
-  }
-
-  getUserCode(): string {
-    const size = this.inputs[0].size;
-    return `
+  constructor(a: T) {
+    this.inputs = [a];
+    this.userCode = `
       void main() {
         float aMax = getAFlat(0.0);
-        for (int i = 0; i < ${size}; i++) {
+        for (int i = 0; i < ${a.size}; i++) {
           aMax = max(aMax, getAFlat(float(i)));
         }
 
         float expSum = 0.0;
-        for (int i = 0; i < ${size}; i++) {
+        for (int i = 0; i < ${a.size}; i++) {
           expSum += exp(getAFlat(float(i)) - aMax);
         }
 
         setOutput(aMax + log(expSum));
-      }`;
-  }
-
-  validate(): boolean {
-    if (this.inputs.length !== 1) {
-      return false;
-    }
-    return true;
+      }
+    `;
   }
 }

@@ -26,31 +26,22 @@ export enum UnaryOp {
 
 export class UnaryOpProgram<T extends NDArray> implements GPGPUProgram<T> {
   variableNames = ['A'];
+  params: Array<{}>;
+  userCode: string;
+  inputs: T[];
+  outputShape: number[];
 
-  constructor(public inputs: T[], private op: UnaryOp) {
-  }
-
-  getOutputShape(): number[] {
-    return this.inputs[0].shape;
-  }
-
-  getParams() { return [this.op]; }
-
-  getUserCode(): string {
-    return `
+  constructor(a: T, op: UnaryOp) {
+    this.outputShape = a.shape;
+    this.inputs = [a];
+    this.params = [op];
+    this.userCode = `
       void main() {
         float v = getAAtOutCoords();
-        ${getOpSnippet(this.op)}
+        ${getOpSnippet(op)}
         setOutput(r);
       }
     `;
-  }
-
-  validate(): boolean {
-    if (this.inputs.length !== 1) {
-      return false;
-    }
-    return true;
   }
 }
 
@@ -83,7 +74,7 @@ export function uploadUnaryDownload(a: NDArray, op: UnaryOp): Float32Array {
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
   const out = Array2D.zerosLike(a);
-  const program = new UnaryOpProgram([a], op);
+  const program = new UnaryOpProgram(a, op);
   const binary = gpgpu_math.compileProgram(gpgpu, program, out);
   gpgpu_math.runProgram(binary);
   const result = out.getValues();

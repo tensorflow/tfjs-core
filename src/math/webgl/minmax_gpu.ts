@@ -20,19 +20,16 @@ import * as util from '../../util';
 
 export class MinMaxProgram<T extends NDArray> implements GPGPUProgram<T> {
   variableNames = ['A'];
+  params: Array<{}>;
+  outputShape: number[] = [];
+  userCode: string;
+  inputs: T[];
 
-  constructor(public inputs: T[], private opType: 'min'|'max') {}
-
-  getParams() { return [this.opType]; }
-
-
-  getOutputShape(): number[] {
-    return [];
-  }
-
-  getUserCode(): string {
+  constructor(a: T, opType: 'min'|'max') {
+    this.inputs = [a];
+    this.params = [opType];
     const size = util.sizeFromShape(this.inputs[0].shape);
-    return `
+    this.userCode = `
       void main() {
         float value = getAFlat(0.0);
         for (int i = 0; i < ${size}; i++) {
@@ -41,17 +38,10 @@ export class MinMaxProgram<T extends NDArray> implements GPGPUProgram<T> {
             setOutput(candidate);
             return;
           }
-          value = ${this.opType}(value, candidate);
+          value = ${opType}(value, candidate);
         }
         setOutput(value);
       }
     `;
-  }
-
-  validate(): boolean {
-    if (this.inputs.length !== 1) {
-      return false;
-    }
-    return true;
   }
 }

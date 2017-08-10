@@ -19,36 +19,31 @@ import {GPGPUProgram} from './gpgpu_math';
 
 export class MatMulProgram implements GPGPUProgram<Array2D> {
   variableNames = ['matrixA', 'matrixB'];
+  params: Array<{}>;
+  outputShape: number[];
+  userCode: string;
+  inputs: Array2D[];
 
-  constructor(
-      public inputs: Array2D[],
-      private aOrient = MatrixOrientation.REGULAR,
-      private bOrient = MatrixOrientation.REGULAR) {}
+  constructor(a: Array2D, b: Array2D,
+      aOrient = MatrixOrientation.REGULAR,
+      bOrient = MatrixOrientation.REGULAR) {
+    this.inputs = [a, b];
+    this.params = [aOrient, bOrient];
 
-  getOutputShape(): number[] {
-    const a = this.inputs[0];
-    const b = this.inputs[1];
     const outerShapeA =
-        (this.aOrient === MatrixOrientation.REGULAR) ? a.shape[0] : a.shape[1];
+        (aOrient === MatrixOrientation.REGULAR) ? a.shape[0] : a.shape[1];
     const outerShapeB =
-        (this.bOrient === MatrixOrientation.REGULAR) ? b.shape[1] : b.shape[0];
-    return [outerShapeA, outerShapeB];
-  }
+        (bOrient === MatrixOrientation.REGULAR) ? b.shape[1] : b.shape[0];
+    this.outputShape = [outerShapeA, outerShapeB];
 
-  getParams() {
-    return [this.aOrient, this.bOrient];
-  }
-
-  getUserCode(): string {
-    const a = this.inputs[0];
     const sharedDim =
-      (this.aOrient === MatrixOrientation.REGULAR ? a.shape[1] : a.shape[0]);
-    const aSnippet = (this.aOrient === MatrixOrientation.REGULAR) ?
+      (aOrient === MatrixOrientation.REGULAR ? a.shape[1] : a.shape[0]);
+    const aSnippet = (aOrient === MatrixOrientation.REGULAR) ?
         'aRow, i_float' : 'i_float, aRow';
-    const bSnippet = (this.bOrient === MatrixOrientation.REGULAR) ?
+    const bSnippet = (bOrient === MatrixOrientation.REGULAR) ?
         'i_float, bCol' : 'bCol, i_float';
 
-    return `
+    this.userCode = `
       const int sharedDim = ${sharedDim};
 
       float dotARowBCol(float aRow, float bCol) {
@@ -67,16 +62,6 @@ export class MatMulProgram implements GPGPUProgram<Array2D> {
         setOutput(dotARowBCol(resRC.x, resRC.y));
       }
     `;
-  }
-
-  validate(): boolean {
-    if (this.inputs.length !== 2) {
-      return false;
-    }
-    if (this.inputs[0].rank !== 2 || this.inputs[1].rank !== 2) {
-      return false;
-    }
-    return true;
   }
 }
 

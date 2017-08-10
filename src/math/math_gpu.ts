@@ -285,7 +285,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram([a], UnaryOp.NEG);
+    const program = new UnaryOpProgram(a, UnaryOp.NEG);
     return this.compileAndRun<T, T>(program);
   }
 
@@ -298,7 +298,7 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   private compileAndRun<T extends NDArray, K extends NDArray>(
       program: GPGPUProgram<T>): K {
-    const output = this.makeOutputArray<K>(program.getOutputShape());
+    const output = this.makeOutputArray<K>(program.outputShape);
     const key = gpgpu_math.makeShaderKey(program, output);
     const binary = this.getAndSaveCompiledProgram(key, () => {
       return gpgpu_math.compileProgram(this.gpgpu, program, output);
@@ -327,7 +327,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected matMulInternal(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D {
-    const program = new MatMulProgram([a, b], aOrientation, bOrientation);
+    const program = new MatMulProgram(a, b, aOrientation, bOrientation);
     return this.compileAndRun<Array2D, Array2D>(program);
   }
 
@@ -435,22 +435,22 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected sumInternal(a: NDArray): Scalar {
-    const program = new ReduceSumProgram([a]);
+    const program = new ReduceSumProgram(a);
     return this.compileAndRun(program);
   }
 
   protected argMinInternal(a: NDArray): Scalar {
-    const program = new ArgMinMaxProgram([a], 'min');
+    const program = new ArgMinMaxProgram(a, 'min');
     return this.compileAndRun(program);
   }
 
   protected argMaxInternal(a: NDArray): Scalar {
-    const program = new ArgMinMaxProgram([a], 'max');
+    const program = new ArgMinMaxProgram(a, 'max');
     return this.compileAndRun(program);
   }
 
   protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
-    const program = new ArgMaxEqualsProgram([x1, x2]);
+    const program = new ArgMaxEqualsProgram(x1, x2);
     return this.compileAndRun(program);
   }
 
@@ -460,12 +460,12 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected minInternal(a: NDArray): Scalar {
-    const program = new MinMaxProgram([a], 'min');
+    const program = new MinMaxProgram(a, 'min');
     return this.compileAndRun(program);
   }
 
   protected maxInternal(a: NDArray): Scalar {
-    const program = new MinMaxProgram([a], 'max');
+    const program = new MinMaxProgram(a, 'max');
     return this.compileAndRun(program);
   }
 
@@ -497,42 +497,42 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected logSumExpInternal(a: NDArray): Scalar {
-    const program = new LogSumExpProgram([a]);
+    const program = new LogSumExpProgram(a);
     return this.compileAndRun(program);
   }
 
   protected expInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram([a], UnaryOp.EXP);
+    const program = new UnaryOpProgram(a, UnaryOp.EXP);
     return this.compileAndRun<T, T>(program);
   }
 
   protected logInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram([a], UnaryOp.LOG);
+    const program = new UnaryOpProgram(a, UnaryOp.LOG);
     return this.compileAndRun<T, T>(program);
   }
 
   protected reluInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram([a], UnaryOp.RELU);
+    const program = new UnaryOpProgram(a, UnaryOp.RELU);
     return this.compileAndRun<T, T>(program);
   }
 
   protected sigmoidInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram([a], UnaryOp.SIGMOID);
+    const program = new UnaryOpProgram(a, UnaryOp.SIGMOID);
     return this.compileAndRun<T, T>(program);
   }
 
   protected tanhInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram([a], UnaryOp.TANH);
+    const program = new UnaryOpProgram(a, UnaryOp.TANH);
     return this.compileAndRun<T, T>(program);
   }
 
   protected sinInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram([a], UnaryOp.SIN);
+    const program = new UnaryOpProgram(a, UnaryOp.SIN);
     return this.compileAndRun<T, T>(program);
   }
 
   protected stepInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram([a], UnaryOp.STEP);
+    const program = new UnaryOpProgram(a, UnaryOp.STEP);
     return this.compileAndRun<T, T>(program);
   }
 

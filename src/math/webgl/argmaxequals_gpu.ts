@@ -21,22 +21,16 @@ import * as util from '../../util';
 
 export class ArgMaxEqualsProgram<T extends NDArray> implements GPGPUProgram<T> {
   variableNames = ['A', 'B'];
+  inputs: T[];
+  outputShape: number[] = [];
+  params: Array<{}> = [];
+  userCode: string;
 
-  constructor(public inputs: T[]) {}
-
-  getOutputShape(): number[] {
-    return [];
-  }
-
-  getParams(): Array<{}> { return [];}
-
-  getUserCode(): string {
-    const aSize = this.inputs[0].size;
-    const bSize = this.inputs[1].size;
-    const aSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'A', aSize);
-    const bSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'B', bSize);
-
-    return `
+  constructor(a: T, b: T) {
+    this.inputs = [a, b];
+    const aSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'A', a.size);
+    const bSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'B', b.size);
+    this.userCode = `
       ${aSnippet}
       ${bSnippet}
 
@@ -56,15 +50,5 @@ export class ArgMaxEqualsProgram<T extends NDArray> implements GPGPUProgram<T> {
         setOutput(value);
       }
     `;
-  }
-
-  validate(): boolean {
-    if (this.inputs.length !== 2) {
-      return false;
-    }
-    if (!util.arraysEqual(this.inputs[0].shape, this.inputs[1].shape)) {
-      return false;
-    }
-    return true;
   }
 }

@@ -28,7 +28,7 @@ function uploadArgMaxEqualsDownload(
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
   const out = Scalar.new(0);
-  const program = new ArgMaxEqualsProgram([aArr, bArr]);
+  const program = new ArgMaxEqualsProgram(aArr, bArr);
   const binary = gpgpu_math.compileProgram(gpgpu, program, out);
   gpgpu_math.runProgram(binary);
   const result = out.get();

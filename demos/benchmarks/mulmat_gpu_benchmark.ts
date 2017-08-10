@@ -37,7 +37,7 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
       [size, size], {texture: bTexture, textureShapeRC: [size, size]});
   const resArr = new Array2D(
       [size, size], {texture: resultTexture, textureShapeRC: [size, size]});
-  const program = new MatMulProgram([aArr, bArr]);
+  const program = new MatMulProgram(aArr, bArr);
   const binary = gpgpu_math.compileProgram(gpgpu, program, resArr);
   const a = test_util.randomArrayInRange(size * size, -1, 1);
   const b = test_util.randomArrayInRange(size * size, -1, 1);
