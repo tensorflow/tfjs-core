@@ -17,11 +17,17 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 
-export class LogSumExpProgram implements GPGPUProgram {
+export class LogSumExpProgram implements GPGPUProgram<Scalar> {
   variableNames = ['A'];
 
-  getUserCode(inputs: NDArray[], out: Scalar): string {
-    const size = inputs[0].size;
+  constructor(public inputs: NDArray[], public output: Scalar) {}
+
+  getParams(): Array<{}> {
+    return [];
+  }
+
+  getUserCode(): string {
+    const size = this.inputs[0].size;
     return `
       void main() {
         float aMax = getAFlat(0.0);
@@ -38,8 +44,8 @@ export class LogSumExpProgram implements GPGPUProgram {
       }`;
   }
 
-  validate(inputs: NDArray[], out: Scalar): boolean {
-    if (inputs.length !== 1 || out.rank !== 0) {
+  validate(): boolean {
+    if (this.inputs.length !== 1 || this.output.rank !== 0) {
       return false;
     }
     return true;

@@ -27,9 +27,9 @@ function uploadArgMinMaxDownload(
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
   const out = Scalar.new(0);
-  const program = new ArgMinMaxProgram(op);
-  const binary = gpgpu_math.compileProgram(gpgpu, program, [arr], out);
-  gpgpu_math.runProgram(binary, [arr], out);
+  const program = new ArgMinMaxProgram([arr], out, op);
+  const binary = gpgpu_math.compileProgram(gpgpu, program);
+  gpgpu_math.runProgram(binary);
 
   const result = out.get();
   arr.dispose();

@@ -16,14 +16,18 @@ limitations under the License.
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
+import * as util from '../../util';
 
-export class MinMaxProgram implements GPGPUProgram {
+export class MinMaxProgram implements GPGPUProgram<Scalar> {
   variableNames = ['A'];
 
-  constructor(private opType: 'min'|'max') {}
+  constructor(public inputs: NDArray[], public output: Scalar,
+      private opType: 'min'|'max') {}
 
-  getUserCode(inputs: NDArray[], out: Scalar): string {
-    const size = inputs[0].size;
+  getParams() { return [this.opType]; }
+
+  getUserCode(): string {
+    const size = util.sizeFromShape(this.inputs[0].shape);
     return `
       void main() {
         float value = getAFlat(0.0);
@@ -40,8 +44,8 @@ export class MinMaxProgram implements GPGPUProgram {
     `;
   }
 
-  validate(inputs: NDArray[], out: Scalar): boolean {
-    if (inputs.length !== 1 || out.rank !== 0) {
+  validate(): boolean {
+    if (this.inputs.length !== 1 || this.output.rank !== 0) {
       return false;
     }
     return true;

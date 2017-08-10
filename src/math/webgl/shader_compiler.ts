@@ -54,7 +54,8 @@ function getInputSamplingSnippet(input: Input, output: NDArray) {
       res += getSampler2D(input.name, shape as [number, number], texShape);
       break;
     case 3:
-      res += getSampler3D(input.name, shape as [number, number, number], texShape);
+      res += getSampler3D(input.name, shape as [number, number, number],
+          texShape);
       break;
     default:
       throw new Error(`${arr.rank}-D input sampling is not yet supported`);

@@ -17,15 +17,21 @@ import {MatrixOrientation} from '../math';
 import {Array2D} from '../ndarray';
 import {GPGPUProgram} from './gpgpu_math';
 
-export class MatMulProgram implements GPGPUProgram {
+export class MatMulProgram implements GPGPUProgram<Array2D> {
   variableNames = ['matrixA', 'matrixB'];
 
   constructor(
+      public inputs: Array2D[],
+      public output: Array2D,
       private aOrientation = MatrixOrientation.REGULAR,
       private bOrientation = MatrixOrientation.REGULAR) {}
 
-  getUserCode(inputs: Array2D[], out: Array2D): string {
-    const a = inputs[0];
+  getParams() {
+    return [this.aOrientation, this.bOrientation];
+  }
+
+  getUserCode(): string {
+    const a = this.inputs[0];
     const sharedDim =
       (this.aOrientation === MatrixOrientation.REGULAR ? a.shape[1] : a.shape[0]);
     const aSnippet = (this.aOrientation === MatrixOrientation.REGULAR) ?
@@ -54,11 +60,13 @@ export class MatMulProgram implements GPGPUProgram {
     `;
   }
 
-  validate(inputs: Array2D[], out: Array2D): boolean {
-    if (inputs.length !== 2) {
+  validate(): boolean {
+    if (this.inputs.length !== 2) {
       return false;
     }
-    if (inputs[0].rank !== 2 || inputs[1].rank !== 2 || out.rank !== 2) {
+    if (this.inputs[0].rank !== 2 ||
+        this.inputs[1].rank !== 2 ||
+        this.output.rank !== 2) {
       return false;
     }
     return true;

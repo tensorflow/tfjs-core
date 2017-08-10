@@ -29,12 +29,12 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   initializeGPU(gpgpu, texManager);
   const out = new Scalar({texture: texManager.acquireTexture([1, 1])});
   const a = Array2D.randUniform([size, size], -1, 1);
-  const program = new LogSumExpProgram();
-  const binary = gpgpu_math.compileProgram(gpgpu, program, [a], out);
+  const program = new LogSumExpProgram([a], out);
+  const binary = gpgpu_math.compileProgram(gpgpu, program);
 
   const start = performance.now();
   for (let i = 0; i < OP_RUNS; i++) {
-    gpgpu_math.runProgram(binary, [a], out);
+    gpgpu_math.runProgram(binary);
   }
 
   const avgTime = (performance.now() - start) / OP_RUNS;

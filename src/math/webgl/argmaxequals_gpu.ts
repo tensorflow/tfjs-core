@@ -19,12 +19,16 @@ import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 import * as util from '../../util';
 
-export class ArgMaxEqualsProgram implements GPGPUProgram {
+export class ArgMaxEqualsProgram implements GPGPUProgram<Scalar> {
   variableNames = ['A', 'B'];
 
-  getUserCode(inputs: NDArray[], out: Scalar): string {
-    const aSize = inputs[0].size;
-    const bSize = inputs[1].size;
+  constructor(public inputs: NDArray[], public output: Scalar) {}
+
+  getParams(): Array<{}> { return [];}
+
+  getUserCode(): string {
+    const aSize = this.inputs[0].size;
+    const bSize = this.inputs[1].size;
     const aSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'A', aSize);
     const bSnippet = argminmax_gpu.getArgMinMaxSnippet('max', 'B', bSize);
 
@@ -50,11 +54,11 @@ export class ArgMaxEqualsProgram implements GPGPUProgram {
     `;
   }
 
-  validate(inputs: NDArray[], out: Scalar): boolean {
-    if (inputs.length !== 2 || out.rank !== 0) {
+  validate(): boolean {
+    if (this.inputs.length !== 2 || this.output.rank !== 0) {
       return false;
     }
-    if (!util.arraysEqual(inputs[0].shape, inputs[1].shape)) {
+    if (!util.arraysEqual(this.inputs[0].shape, this.inputs[1].shape)) {
       return false;
     }
     return true;

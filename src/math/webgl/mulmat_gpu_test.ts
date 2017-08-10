@@ -268,18 +268,17 @@ describe('mulmat_gpu (multiple matrices)', () => {
     const abArr = new Array2D(abShape, {texture: ab, textureShapeRC: abShape});
     const cArr = new Array2D(cShape, {texture: c, textureShapeRC: cShape});
     const rArr = new Array2D(rShape, {texture: r, textureShapeRC: rShape});
-    const matMulProgram = new MatMulProgram();
-    const axbProgram =
-        gpgpu_math.compileProgram(gpgpu, matMulProgram, [aArr, bArr], abArr);
-    const abxcProgram =
-        gpgpu_math.compileProgram(gpgpu, matMulProgram, [abArr, cArr], rArr);
+    const matMulProgram = new MatMulProgram([aArr, bArr], abArr);
+    const axbProgram = gpgpu_math.compileProgram(gpgpu, matMulProgram);
+    const matMulProgram2 = new MatMulProgram([abArr, cArr], rArr);
+    const abxcProgram = gpgpu_math.compileProgram(gpgpu, matMulProgram2);
 
     gpgpu.uploadMatrixToTexture(a, aShape[0], aShape[1], aData);
     gpgpu.uploadMatrixToTexture(b, bShape[0], bShape[1], bData);
     gpgpu.uploadMatrixToTexture(c, cShape[0], cShape[1], cData);
 
-    gpgpu_math.runProgram(axbProgram, [aArr, bArr], abArr);
-    gpgpu_math.runProgram(abxcProgram, [abArr, cArr], rArr);
+    gpgpu_math.runProgram(axbProgram);
+    gpgpu_math.runProgram(abxcProgram);
     const result = gpgpu.downloadMatrixFromTexture(r, rShape[0], rShape[1]);
     const expected = test_util.cpuMultiplyMatrix(
         test_util.cpuMultiplyMatrix(aData, 4, 2, bData, 2, 12), 4, 12, cData,
@@ -354,13 +353,14 @@ export function uploadMultiplyMatrixDownload(
   const resArr =
       new Array2D(outShape, {texture: resultTexture, textureShapeRC: outShape});
 
-  const program = new MatMulProgram(aOrientation, bOrientation);
+  const program =
+      new MatMulProgram([aArr, bArr], resArr, aOrientation, bOrientation);
   const binary =
-      gpgpu_math.compileProgram(gpgpu, program, [aArr, bArr], resArr);
+      gpgpu_math.compileProgram(gpgpu, program);
   gpgpu.uploadMatrixToTexture(aTexture, aNumRows, aNumCols, a);
   gpgpu.uploadMatrixToTexture(bTexture, bNumRows, bNumCols, b);
 
-  gpgpu_math.runProgram(binary, [aArr, bArr], resArr);
+  gpgpu_math.runProgram(binary);
 
   const result =
       gpgpu.downloadMatrixFromTexture(resultTexture, outNumRows, outNumCols);

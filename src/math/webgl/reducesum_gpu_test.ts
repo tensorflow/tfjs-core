@@ -77,9 +77,9 @@ export function uploadReduceSumDownload(a: Float32Array, rows: number,
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
 
-  const program = new ReduceSumProgram();
-  const binary = gpgpu_math.compileProgram(gpgpu, program, [arr], out);
-  gpgpu_math.runProgram(binary, [arr], out);
+  const program = new ReduceSumProgram([arr], out);
+  const binary = gpgpu_math.compileProgram(gpgpu, program);
+  gpgpu_math.runProgram(binary);
 
   const result = out.get();
   arr.dispose();
