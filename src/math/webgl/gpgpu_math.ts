@@ -53,55 +53,44 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
   };
 }
 
-function validateBinaryAndProgram<T extends NDArray, K extends NDArray>(
-    binary: GPGPUBinary<T,K>, program: GPGPUProgram<T>, output: K) {
-  const insOut = (program.inputs as NDArray[]).concat(output);
-  const binInsOut =
-      (binary.program.inputs as NDArray[]);
-      // TODO: check output as well!!
-      //.concat(binary.program.output);
-  insOut.forEach((arr, i) => {
-    const shape = arr.shape;
-    const texShape = arr.getTextureShapeRC();
-    const binShape = binInsOut[i].shape;
-    const binTexShape = binInsOut[i].getTextureShapeRC();
+function validateBinaryAndProgram(aArrays: NDArray[], bArrays: NDArray[]) {
+  aArrays.forEach((a, i) => {
+    const shapeA = a.shape;
+    const texShapeA = a.getTextureShapeRC();
+    const shapeB = bArrays[i].shape;
+    const texShapeB = bArrays[i].getTextureShapeRC();
 
-    if (!util.arraysEqual(shape, binShape)) {
+    if (!util.arraysEqual(shapeA, shapeB)) {
       throw Error(`Binary was compiled with different shapes than ` +
-          `the current program. Binary shape ${binShape}` +
-          ` but current shape is ${shape}`);
+          `the current args. Shapes ${shapeA} and ${shapeB} must match`);
     }
-    if (!util.arraysEqual(texShape, binTexShape)) {
-      throw Error(`Binary was compiled with different texture shapes ` +
-          `than the current program. Binary texture shape ${binTexShape} ` +
-          `but current texture shape is ${texShape}`);
+    if (!util.arraysEqual(texShapeA, texShapeB)) {
+      throw Error(`Binary was compiled with different texture shapes than the` +
+          ` current args. Shape ${texShapeA} and ${texShapeB} must match`);
     }
   });
 }
 
 export function runProgram<T extends NDArray, K extends NDArray>(
-    binary: GPGPUBinary<T,K>, output?: K, program?: GPGPUProgram<T>): void {
+    binary: GPGPUBinary<T,K>, inputs?: T[], output?: K): void {
+  if (inputs == null) {
+    inputs = binary.program.inputs;
+  } else {
+    validateBinaryAndProgram(binary.program.inputs, inputs);
+  }
   if (output == null) {
     output = binary.output;
+  } else {
+    validateBinaryAndProgram([binary.output], [output]);
   }
-  if (program == null) {
-    program = binary.program;
-  }
-  if (program !== binary.program) {
-    validateBinaryAndProgram(binary, program, output);
-  }
-  if (!program.validate()) {
-    throw Error('Validation failed');
-  }
-  const ins = program.inputs;
   const outTex = output.getTexture();
   const outTexShape = output.getTextureShapeRC();
   const gpgpu = binary.gpgpu;
   gpgpu.setOutputMatrixTexture(outTex, outTexShape[0], outTexShape[1]);
   gpgpu.setProgram(binary.webGLProgram);
-  ins.forEach((input, i) => {
+  inputs.forEach((input, i) => {
     const tex = input.getTexture();
-    gpgpu.setInputMatrixTexture(tex, program.variableNames[i], i);
+    gpgpu.setInputMatrixTexture(tex, binary.program.variableNames[i], i);
   });
   gpgpu.executeProgram();
 }

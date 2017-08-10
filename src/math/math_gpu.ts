@@ -303,7 +303,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     const binary = this.getAndSaveCompiledProgram(key, () => {
       return gpgpu_math.compileProgram(this.gpgpu, program, output);
     });
-    gpgpu_math.runProgram(binary, output, program);
+    gpgpu_math.runProgram(binary, program.inputs, output);
     return output;
   }
 

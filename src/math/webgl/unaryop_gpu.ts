@@ -85,7 +85,7 @@ export function uploadUnaryDownload(a: NDArray, op: UnaryOp): Float32Array {
   const out = Array2D.zerosLike(a);
   const program = new UnaryOpProgram([a], op);
   const binary = gpgpu_math.compileProgram(gpgpu, program, out);
-  gpgpu_math.runProgram(binary, out);
+  gpgpu_math.runProgram(binary);
   const result = out.getValues();
   textureManager.dispose();
   gpgpu.deleteProgram(binary.webGLProgram);
