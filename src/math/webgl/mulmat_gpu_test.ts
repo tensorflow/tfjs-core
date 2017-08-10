@@ -268,10 +268,10 @@ describe('mulmat_gpu (multiple matrices)', () => {
     const abArr = new Array2D(abShape, {texture: ab, textureShapeRC: abShape});
     const cArr = new Array2D(cShape, {texture: c, textureShapeRC: cShape});
     const rArr = new Array2D(rShape, {texture: r, textureShapeRC: rShape});
-    const matMulProgram = new MatMulProgram([aArr, bArr], abArr);
-    const axbProgram = gpgpu_math.compileProgram(gpgpu, matMulProgram);
-    const matMulProgram2 = new MatMulProgram([abArr, cArr], rArr);
-    const abxcProgram = gpgpu_math.compileProgram(gpgpu, matMulProgram2);
+    const matMulProgram = new MatMulProgram([aArr, bArr]);
+    const axbProgram = gpgpu_math.compileProgram(gpgpu, matMulProgram, abArr);
+    const matMulProgram2 = new MatMulProgram([abArr, cArr]);
+    const abxcProgram = gpgpu_math.compileProgram(gpgpu, matMulProgram2, rArr);
 
     gpgpu.uploadMatrixToTexture(a, aShape[0], aShape[1], aData);
     gpgpu.uploadMatrixToTexture(b, bShape[0], bShape[1], bData);
@@ -354,9 +354,9 @@ export function uploadMultiplyMatrixDownload(
       new Array2D(outShape, {texture: resultTexture, textureShapeRC: outShape});
 
   const program =
-      new MatMulProgram([aArr, bArr], resArr, aOrientation, bOrientation);
+      new MatMulProgram([aArr, bArr], aOrientation, bOrientation);
   const binary =
-      gpgpu_math.compileProgram(gpgpu, program);
+      gpgpu_math.compileProgram(gpgpu, program, resArr);
   gpgpu.uploadMatrixToTexture(aTexture, aNumRows, aNumCols, a);
   gpgpu.uploadMatrixToTexture(bTexture, bNumRows, bNumCols, b);
 

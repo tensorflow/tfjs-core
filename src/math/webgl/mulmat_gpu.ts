@@ -17,26 +17,35 @@ import {MatrixOrientation} from '../math';
 import {Array2D} from '../ndarray';
 import {GPGPUProgram} from './gpgpu_math';
 
-export class MatMulProgram implements GPGPUProgram<Array2D, Array2D> {
+export class MatMulProgram implements GPGPUProgram<Array2D> {
   variableNames = ['matrixA', 'matrixB'];
 
   constructor(
       public inputs: Array2D[],
-      public output: Array2D,
-      private aOrientation = MatrixOrientation.REGULAR,
-      private bOrientation = MatrixOrientation.REGULAR) {}
+      private aOrient = MatrixOrientation.REGULAR,
+      private bOrient = MatrixOrientation.REGULAR) {}
+
+  getOutputShape(): number[] {
+    const a = this.inputs[0];
+    const b = this.inputs[1];
+    const outerShapeA =
+        (this.aOrient === MatrixOrientation.REGULAR) ? a.shape[0] : a.shape[1];
+    const outerShapeB =
+        (this.bOrient === MatrixOrientation.REGULAR) ? b.shape[1] : b.shape[0];
+    return [outerShapeA, outerShapeB];
+  }
 
   getParams() {
-    return [this.aOrientation, this.bOrientation];
+    return [this.aOrient, this.bOrient];
   }
 
   getUserCode(): string {
     const a = this.inputs[0];
     const sharedDim =
-      (this.aOrientation === MatrixOrientation.REGULAR ? a.shape[1] : a.shape[0]);
-    const aSnippet = (this.aOrientation === MatrixOrientation.REGULAR) ?
+      (this.aOrient === MatrixOrientation.REGULAR ? a.shape[1] : a.shape[0]);
+    const aSnippet = (this.aOrient === MatrixOrientation.REGULAR) ?
         'aRow, i_float' : 'i_float, aRow';
-    const bSnippet = (this.bOrientation === MatrixOrientation.REGULAR) ?
+    const bSnippet = (this.bOrient === MatrixOrientation.REGULAR) ?
         'i_float, bCol' : 'bCol, i_float';
 
     return `
@@ -64,9 +73,7 @@ export class MatMulProgram implements GPGPUProgram<Array2D, Array2D> {
     if (this.inputs.length !== 2) {
       return false;
     }
-    if (this.inputs[0].rank !== 2 ||
-        this.inputs[1].rank !== 2 ||
-        this.output.rank !== 2) {
+    if (this.inputs[0].rank !== 2 || this.inputs[1].rank !== 2) {
       return false;
     }
     return true;

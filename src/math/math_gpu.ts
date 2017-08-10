@@ -285,22 +285,26 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    const out = NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC});
-    const program = new UnaryOpProgram([a], out, UnaryOp.NEG);
-    return this.compileAndRun(program);
+    const program = new UnaryOpProgram([a], UnaryOp.NEG);
+    return this.compileAndRun<T, T>(program);
+  }
+
+  private makeOutputArray<T extends NDArray>(shape: number[]): T {
+    const textureShapeRC =
+        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
+    const texture = this.textureManager.acquireTexture(textureShapeRC);
+    return NDArray.make<T>(shape, {texture, textureShapeRC});
   }
 
   private compileAndRun<T extends NDArray, K extends NDArray>(
-      program: GPGPUProgram<T,K>): K {
-    const key = gpgpu_math.makeShaderKey(program);
+      program: GPGPUProgram<T>): K {
+    const output = this.makeOutputArray<K>(program.getOutputShape());
+    const key = gpgpu_math.makeShaderKey(program, output);
     const binary = this.getAndSaveCompiledProgram(key, () => {
-      return gpgpu_math.compileProgram(this.gpgpu, program);
+      return gpgpu_math.compileProgram(this.gpgpu, program, output);
     });
-    gpgpu_math.runProgram(binary, program);
-    return program.output;
+    gpgpu_math.runProgram(binary, output, program);
+    return output;
   }
 
   private reshapeTexture<T extends NDArray>(a: T, newTextureShape: [
@@ -323,20 +327,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected matMulInternal(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D {
-    const sharedDim =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
-    const outerShapeA =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[0] : a.shape[1];
-    const outerShapeB =
-        (bOrientation === MatrixOrientation.REGULAR) ? b.shape[1] : b.shape[0];
-    const outShape: [number, number] = [outerShapeA, outerShapeB];
-    const outTexShape =
-        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, outShape);
-    const outTexture = this.textureManager.acquireTexture(outTexShape);
-    const out = new Array2D(
-        outShape, {texture: outTexture, textureShapeRC: outTexShape});
-    const program = new MatMulProgram([a, b], out, aOrientation, bOrientation);
-    return this.compileAndRun(program);
+    const program = new MatMulProgram([a, b], aOrientation, bOrientation);
+    return this.compileAndRun<Array2D, Array2D>(program);
   }
 
   protected elementWiseMulInternal<T extends NDArray>(a: T, b: T): T {
@@ -443,30 +435,22 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected sumInternal(a: NDArray): Scalar {
-    const texture = this.textureManager.acquireTexture([1, 1]);
-    const out = new Scalar({texture});
-    const program = new ReduceSumProgram([a], out);
+    const program = new ReduceSumProgram([a]);
     return this.compileAndRun(program);
   }
 
   protected argMinInternal(a: NDArray): Scalar {
-    const texture = this.textureManager.acquireTexture([1, 1]);
-    const out = new Scalar({texture});
-    const program = new ArgMinMaxProgram([a], out, 'min');
+    const program = new ArgMinMaxProgram([a], 'min');
     return this.compileAndRun(program);
   }
 
   protected argMaxInternal(a: NDArray): Scalar {
-    const texture = this.textureManager.acquireTexture([1, 1]);
-    const out = new Scalar({texture});
-    const program = new ArgMinMaxProgram([a], out, 'max');
+    const program = new ArgMinMaxProgram([a], 'max');
     return this.compileAndRun(program);
   }
 
   protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
-    const texture = this.textureManager.acquireTexture([1, 1]);
-    const out = new Scalar({texture});
-    const program = new ArgMaxEqualsProgram([x1, x2], out);
+    const program = new ArgMaxEqualsProgram([x1, x2]);
     return this.compileAndRun(program);
   }
 
@@ -476,16 +460,12 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected minInternal(a: NDArray): Scalar {
-    const texture = this.textureManager.acquireTexture([1, 1]);
-    const out = new Scalar({texture});
-    const program = new MinMaxProgram([a], out, 'min');
+    const program = new MinMaxProgram([a], 'min');
     return this.compileAndRun(program);
   }
 
   protected maxInternal(a: NDArray): Scalar {
-    const texture = this.textureManager.acquireTexture([1, 1]);
-    const out = new Scalar({texture});
-    const program = new MinMaxProgram([a], out, 'max');
+    const program = new MinMaxProgram([a], 'max');
     return this.compileAndRun(program);
   }
 
@@ -517,73 +497,43 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected logSumExpInternal(a: NDArray): Scalar {
-    const texture = this.textureManager.acquireTexture([1, 1]);
-    const out = new Scalar({texture});
-    const program = new LogSumExpProgram([a], out);
+    const program = new LogSumExpProgram([a]);
     return this.compileAndRun(program);
   }
 
   protected expInternal<T extends NDArray>(a: T): T {
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    const out = NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC});
-    const program = new UnaryOpProgram([a], out, UnaryOp.EXP);
-    return this.compileAndRun(program);
+    const program = new UnaryOpProgram([a], UnaryOp.EXP);
+    return this.compileAndRun<T, T>(program);
   }
 
   protected logInternal<T extends NDArray>(a: T): T {
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    const out = NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC});
-    const program = new UnaryOpProgram([a], out, UnaryOp.LOG);
-    return this.compileAndRun(program);
+    const program = new UnaryOpProgram([a], UnaryOp.LOG);
+    return this.compileAndRun<T, T>(program);
   }
 
   protected reluInternal<T extends NDArray>(a: T): T {
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    const out = NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC});
-    const program = new UnaryOpProgram([a], out, UnaryOp.RELU);
-    return this.compileAndRun(program);
+    const program = new UnaryOpProgram([a], UnaryOp.RELU);
+    return this.compileAndRun<T, T>(program);
   }
 
   protected sigmoidInternal<T extends NDArray>(a: T): T {
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    const out = NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC});
-    const program = new UnaryOpProgram([a], out, UnaryOp.SIGMOID);
-    return this.compileAndRun(program);
+    const program = new UnaryOpProgram([a], UnaryOp.SIGMOID);
+    return this.compileAndRun<T, T>(program);
   }
 
   protected tanhInternal<T extends NDArray>(a: T): T {
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    const out = NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC});
-    const program = new UnaryOpProgram([a], out, UnaryOp.TANH);
-    return this.compileAndRun(program);
+    const program = new UnaryOpProgram([a], UnaryOp.TANH);
+    return this.compileAndRun<T, T>(program);
   }
 
   protected sinInternal<T extends NDArray>(a: T): T {
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    const out = NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC});
-    const program = new UnaryOpProgram([a], out, UnaryOp.SIN);
-    return this.compileAndRun(program);
+    const program = new UnaryOpProgram([a], UnaryOp.SIN);
+    return this.compileAndRun<T, T>(program);
   }
 
   protected stepInternal<T extends NDArray>(a: T): T {
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-    const out = NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC});
-    const program = new UnaryOpProgram([a], out, UnaryOp.STEP);
-    return this.compileAndRun(program);
+    const program = new UnaryOpProgram([a], UnaryOp.STEP);
+    return this.compileAndRun<T, T>(program);
   }
 
   protected conv2dInternal(

@@ -16,17 +16,23 @@ limitations under the License.
 import * as util from '../../util';
 import {NDArray} from '../ndarray';
 
+export type NDArrayShape = {
+  shape: number[],
+  texShape: [number, number];
+};
+
 export type Input = {
-  name: string; array: NDArray;
+  name: string,
+  fullShape: NDArrayShape
 };
 
 export function makeShader(
-    inputs: Input[], output: NDArray, userCode: string): string {
+    inputs: Input[], output: NDArrayShape, userCode: string): string {
   const inputPrefixSnippet =
       inputs.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
       inputs.map(x => getInputSamplingSnippet(x, output)).join('\n');
-  const outTexShape = output.getTextureShapeRC();
+  const outTexShape = output.texShape;
   const outputSamplingSnippet =
       getOutputSamplingSnippet(output.shape, outTexShape);
   const source = [
@@ -36,11 +42,11 @@ export function makeShader(
   return source;
 }
 
-function getInputSamplingSnippet(input: Input, output: NDArray) {
-  const arr = input.array;
-  const shape = arr.shape;
-  const texShape = arr.getTextureShapeRC();
-  const outTexShape = output.getTextureShapeRC();
+function getInputSamplingSnippet(input: Input, output: NDArrayShape) {
+  const fullShape = input.fullShape;
+  const shape = fullShape.shape;
+  const texShape = fullShape.texShape;
+  const outTexShape = output.texShape;
 
   let res = '';
   switch (shape.length) {
@@ -58,12 +64,13 @@ function getInputSamplingSnippet(input: Input, output: NDArray) {
           texShape);
       break;
     default:
-      throw new Error(`${arr.rank}-D input sampling is not yet supported`);
+      throw new Error(`${fullShape.shape.length}-D input sampling is not yet ` +
+                      `supported`);
   }
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input texture using the
   // output coordinates.
-  if (util.arraysEqual(input.array.shape, output.shape)) {
+  if (util.arraysEqual(input.fullShape.shape, output.shape)) {
     res += getSamplerAtOutputCoords(input.name, texShape, outTexShape);
   }
   res += getSamplerFlat(input.name, texShape);

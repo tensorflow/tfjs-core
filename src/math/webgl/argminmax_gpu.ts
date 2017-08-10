@@ -41,12 +41,15 @@ export function getArgMinMaxSnippet(op: 'min'|'max', texName: string,
   `;
 }
 
-export class ArgMinMaxProgram<T extends NDArray>
-    implements GPGPUProgram<T, Scalar> {
+export class ArgMinMaxProgram<T extends NDArray> implements GPGPUProgram<T> {
   variableNames = ['A'];
 
-  constructor(public inputs: T[], public output: Scalar,
-    private opType: 'min'|'max') {}
+  constructor(public inputs: T[], private opType: 'min'|'max') {}
+
+
+  getOutputShape(): number[] {
+    return [];
+  }
 
   getParams() {
     return [this.opType];
@@ -65,7 +68,7 @@ export class ArgMinMaxProgram<T extends NDArray>
   }
 
   validate(): boolean {
-    if (this.inputs.length !== 1 || this.output.rank !== 0) {
+    if (this.inputs.length !== 1) {
       return false;
     }
     return true;

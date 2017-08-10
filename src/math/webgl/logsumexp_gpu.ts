@@ -17,13 +17,16 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 
-export class LogSumExpProgram<T extends NDArray>
-    implements GPGPUProgram<T, Scalar> {
+export class LogSumExpProgram<T extends NDArray> implements GPGPUProgram<T> {
   variableNames = ['A'];
 
-  constructor(public inputs: T[], public output: Scalar) {}
+  constructor(public inputs: T[]) {}
 
   getParams(): Array<{}> {
+    return [];
+  }
+
+  getOutputShape(): number[] {
     return [];
   }
 
@@ -46,7 +49,7 @@ export class LogSumExpProgram<T extends NDArray>
   }
 
   validate(): boolean {
-    if (this.inputs.length !== 1 || this.output.rank !== 0) {
+    if (this.inputs.length !== 1) {
       return false;
     }
     return true;

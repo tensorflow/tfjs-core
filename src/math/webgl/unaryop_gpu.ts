@@ -24,11 +24,14 @@ export enum UnaryOp {
   EXP, LOG, NEG, RELU, SIGMOID, STEP, SIN, TANH
 }
 
-export class UnaryOpProgram<T extends NDArray> implements GPGPUProgram<T, T> {
+export class UnaryOpProgram<T extends NDArray> implements GPGPUProgram<T> {
   variableNames = ['A'];
 
-  constructor(public inputs: T[], public output: T,
-      private op: UnaryOp) {
+  constructor(public inputs: T[], private op: UnaryOp) {
+  }
+
+  getOutputShape(): number[] {
+    return this.inputs[0].shape;
   }
 
   getParams() { return [this.op]; }
@@ -45,9 +48,6 @@ export class UnaryOpProgram<T extends NDArray> implements GPGPUProgram<T, T> {
 
   validate(): boolean {
     if (this.inputs.length !== 1) {
-      return false;
-    }
-    if (!util.arraysEqual(this.inputs[0].shape, this.output.shape)) {
       return false;
     }
     return true;
@@ -83,9 +83,9 @@ export function uploadUnaryDownload(a: NDArray, op: UnaryOp): Float32Array {
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
   const out = Array2D.zerosLike(a);
-  const program = new UnaryOpProgram([a], out, op);
-  const binary = gpgpu_math.compileProgram(gpgpu, program);
-  gpgpu_math.runProgram(binary);
+  const program = new UnaryOpProgram([a], op);
+  const binary = gpgpu_math.compileProgram(gpgpu, program, out);
+  gpgpu_math.runProgram(binary, out);
   const result = out.getValues();
   textureManager.dispose();
   gpgpu.deleteProgram(binary.webGLProgram);

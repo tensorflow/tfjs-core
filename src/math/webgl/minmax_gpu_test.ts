@@ -26,8 +26,8 @@ function uploadMinMaxDownload(a: Float32Array, rows: number,
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
   const out = Scalar.new(0);
-  const program = new MinMaxProgram([arr], out, op);
-  const binary = gpgpu_math.compileProgram(gpgpu, program);
+  const program = new MinMaxProgram([arr], op);
+  const binary = gpgpu_math.compileProgram(gpgpu, program, out);
   gpgpu_math.runProgram(binary);
   const result = out.get();
   arr.dispose();
