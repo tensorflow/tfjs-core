@@ -15,7 +15,6 @@ limitations under the License.
 
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
-import {NDArray} from '../ndarray';
 
 export function getWebGLContextAttributes(): WebGLContextAttributes {
   return {
@@ -256,14 +255,4 @@ export function downloadMatrixFromPackedOutputTexture(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
   const matrix = new Float32Array(rows * columns);
   return tex_util.decodeMatrixFromPackedRGBA(packedRGBA, rows, columns, matrix);
-}
-
-export function makeShaderKey(programName: string, inputs: NDArray[],
-    // tslint:disable-next-line:no-any
-    output: NDArray, ...params: Array<{}>): string {
-  const keyStart =
-      inputs.concat([output]).map(x => x.shape + '_' + x.getTextureShapeRC());
-  const keyEnd = params.map(p => p.toString());
-  const key = keyStart.concat(keyEnd);
-  return key.join('_');
 }
