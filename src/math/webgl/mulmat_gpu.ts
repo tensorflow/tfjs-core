@@ -17,7 +17,7 @@ import {MatrixOrientation} from '../math';
 import {Array2D} from '../ndarray';
 import {GPGPUProgram} from './gpgpu_math';
 
-export class MatMulProgram implements GPGPUProgram<Array2D> {
+export class MatMulProgram implements GPGPUProgram<Array2D, Array2D> {
   variableNames = ['matrixA', 'matrixB'];
 
   constructor(

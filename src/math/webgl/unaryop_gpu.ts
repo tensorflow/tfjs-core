@@ -24,7 +24,7 @@ export enum UnaryOp {
   EXP, LOG, NEG, RELU, SIGMOID, STEP, SIN, TANH
 }
 
-export class UnaryOpProgram<T extends NDArray> implements GPGPUProgram<T> {
+export class UnaryOpProgram<T extends NDArray> implements GPGPUProgram<T, T> {
   variableNames = ['A'];
 
   constructor(public inputs: T[], public output: T,

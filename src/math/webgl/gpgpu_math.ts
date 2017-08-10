@@ -4,24 +4,24 @@ import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import * as util from '../../util';
 
-export interface GPGPUProgram<T extends NDArray> {
-  inputs: NDArray[];
-  output: T;
+export interface GPGPUProgram<T extends NDArray, K extends NDArray> {
+  inputs: T[];
+  output: K;
   variableNames: string[];
   getUserCode(): string;
   validate(): boolean;
   getParams(): Array<{}>;
 }
 
-export interface GPGPUBinary<T extends NDArray> {
+export interface GPGPUBinary<T extends NDArray, K extends NDArray> {
   webGLProgram: WebGLProgram;
-  program: GPGPUProgram<T>;
+  program: GPGPUProgram<T,K>;
   gpgpu: GPGPUContext;
   source: string;
 }
 
-export function compileProgram<T extends NDArray>(
-    gpgpu: GPGPUContext, program: GPGPUProgram<T>): GPGPUBinary<T> {
+export function compileProgram<T extends NDArray, K extends NDArray>(
+    gpgpu: GPGPUContext, program: GPGPUProgram<T,K>): GPGPUBinary<T,K> {
   if (!program.validate()) {
     throw Error('Validation failed');
   }
@@ -39,10 +39,11 @@ export function compileProgram<T extends NDArray>(
   };
 }
 
-function validateBinaryAndProgram<T extends NDArray>(binary: GPGPUBinary<T>,
-    program?: GPGPUProgram<T>) {
-  const insOut = program.inputs.concat(program.output);
-  const binInsOut = binary.program.inputs.concat(binary.program.output);
+function validateBinaryAndProgram<T extends NDArray, K extends NDArray>(
+    binary: GPGPUBinary<T,K>, program?: GPGPUProgram<T,K>) {
+  const insOut = (program.inputs as NDArray[]).concat(program.output);
+  const binInsOut =
+      (binary.program.inputs as NDArray[]).concat(binary.program.output);
   insOut.forEach((arr, i) => {
     const shape = arr.shape;
     const texShape = arr.getTextureShapeRC();
@@ -62,8 +63,8 @@ function validateBinaryAndProgram<T extends NDArray>(binary: GPGPUBinary<T>,
   });
 }
 
-export function runProgram<T extends NDArray>(binary: GPGPUBinary<T>,
-    program?: GPGPUProgram<T>): void {
+export function runProgram<T extends NDArray, K extends NDArray>(
+    binary: GPGPUBinary<T,K>, program?: GPGPUProgram<T,K>): void {
   if (program == null) {
     program = binary.program;
   } else if (program !== binary.program) {
@@ -86,13 +87,14 @@ export function runProgram<T extends NDArray>(binary: GPGPUBinary<T>,
   gpgpu.executeProgram();
 }
 
-export function makeShaderKey<T extends NDArray>(
-    gpGpuProgram: GPGPUProgram<T>): string {
+export function makeShaderKey<T extends NDArray, K extends NDArray>(
+    gpGpuProgram: GPGPUProgram<T,K>): string {
   const inputs = gpGpuProgram.inputs;
   const out = gpGpuProgram.output;
   const params = gpGpuProgram.getParams();
-  const keyStart =
-      inputs.concat([out]).map(x => x.shape + '_' + x.getTextureShapeRC());
+  const keyStart = (inputs as NDArray[])
+                       .concat(out)
+                       .map(x => x.shape + '_' + x.getTextureShapeRC());
   const keyEnd = params.map(p => p.toString());
   const key = [gpGpuProgram.constructor.name].concat(keyStart, keyEnd);
   return key.join('_');

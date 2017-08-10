@@ -20,7 +20,7 @@ import {NDArray, Scalar} from '../ndarray';
 import * as util from '../../util';
 
 export class ArgMaxEqualsProgram<T extends NDArray>
-    implements GPGPUProgram<Scalar> {
+    implements GPGPUProgram<T, Scalar> {
   variableNames = ['A', 'B'];
 
   constructor(public inputs: T[], public output: Scalar) {}

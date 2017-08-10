@@ -88,7 +88,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   private gpgpu: GPGPUContext;
   private textureManager: TextureManager;
   private programCache: {[key: string]: WebGLProgram} = {};
-  private compiledProgramCache: {[key: string]: GPGPUBinary<NDArray>} = {};
+  private compiledProgramCache: {[key: string]: GPGPUBinary<NDArray, NDArray>} = {};
   private gpgpuCreatedLocally: boolean;
 
   constructor(gpgpu?: GPGPUContext, safeMode = true) {
@@ -293,7 +293,8 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program);
   }
 
-  private compileAndRun<T extends NDArray>(program: GPGPUProgram<T>): T {
+  private compileAndRun<T extends NDArray, K extends NDArray>(
+      program: GPGPUProgram<T,K>): K {
     const key = gpgpu_math.makeShaderKey(program);
     const binary = this.getAndSaveCompiledProgram(key, () => {
       return gpgpu_math.compileProgram(this.gpgpu, program);
@@ -1034,7 +1035,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   private getAndSaveCompiledProgram(key: string,
-      getCompiledProgram: () => GPGPUBinary<NDArray>): GPGPUBinary<NDArray> {
+      getCompiledProgram: () => GPGPUBinary<NDArray,NDArray>):
+      GPGPUBinary<NDArray,NDArray> {
     if (!(key in this.compiledProgramCache)) {
       this.compiledProgramCache[key] = getCompiledProgram();
     }

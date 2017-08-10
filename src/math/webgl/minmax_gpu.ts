@@ -18,7 +18,8 @@ import {GPGPUProgram} from './gpgpu_math';
 import {NDArray, Scalar} from '../ndarray';
 import * as util from '../../util';
 
-export class MinMaxProgram<T extends NDArray> implements GPGPUProgram<Scalar> {
+export class MinMaxProgram<T extends NDArray>
+    implements GPGPUProgram<T, Scalar> {
   variableNames = ['A'];
 
   constructor(public inputs: T[], public output: Scalar,
