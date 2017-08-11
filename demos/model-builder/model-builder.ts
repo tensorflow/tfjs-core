@@ -13,17 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-// tslint:disable-next-line:no-unused-variable
 import '../ndarray-image-visualizer';
 import '../ndarray-logits-visualizer';
 import './model-layer';
 import '../demo-header';
 import '../demo-footer';
 
+// tslint:disable-next-line:no-unused-variable
+import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
+
 import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, Scalar, Session, SGDOptimizer, Tensor, util} from '../deeplearnjs';
 import {NDArrayImageVisualizer} from '../ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from '../ndarray-logits-visualizer';
-import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 import * as xhr_dataset from '../xhr-dataset';
 import {XhrDataset, XhrDatasetConfig} from '../xhr-dataset';
 

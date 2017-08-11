@@ -50,7 +50,6 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
     gpgpu_math.runProgram(binary);
   }
 
-  const actual = gpgpu.downloadMatrixFromTexture(resultTexture, size, size);
   const avgTime = (performance.now() - start) / OP_RUNS;
 
   gpgpu.deleteMatrixTexture(aTexture);
@@ -83,8 +82,6 @@ export const BENCHMARK_TEST_PACKED: BenchmarkTest = (size: number) => {
         gpgpu, program, aTexture, bTexture, resultTexture, [size, size]);
   }
 
-  const actual =
-      gpgpu.downloadMatrixFromPackedTexture(resultTexture, size, size);
   const avgTime = (performance.now() - start) / OP_RUNS;
 
   gpgpu.deleteMatrixTexture(aTexture);

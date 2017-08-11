@@ -18,7 +18,6 @@ import * as graph_util from '../graph_util';
 import {MatrixOrientation, NDArrayMath} from '../math/math';
 import {Array1D, Array2D, NDArray} from '../math/ndarray';
 import {TensorArrayMap} from '../tensor_array_map';
-import * as util from '../util';
 
 import {Operation} from './op';
 
