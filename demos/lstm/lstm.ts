@@ -18,8 +18,8 @@ import {Array1D, Array2D, Array3D, CheckpointLoader, Graph, NDArray, NDArrayInit
 // manifest.json lives in the same directory.
 const reader = new CheckpointLoader('.');
 reader.getAllVariables().then(vars => {
-  const input_data = [8, 2, 8, 2, 3, 8, 8, 5, 3, 6, 0, 6, 2, 8, 8, 6, 2, 9, 6];
-  const expected = [2, 8, 2, 3, 8, 8, 5, 3, 6, 0, 6, 2, 8, 8, 6, 2, 9, 6, 1];
+  const input_data = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8];
+  const expected = [1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4];
   const math = new NDArrayMathGPU();
 
   const lstmKernel1 = vars[
