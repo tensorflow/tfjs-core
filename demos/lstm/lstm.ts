@@ -18,75 +18,115 @@ import {Array1D, Array2D, Array3D, CheckpointLoader, Graph, NDArray, NDArrayInit
 // manifest.json lives in the same directory.
 const reader = new CheckpointLoader('.');
 reader.getAllVariables().then(vars => {
-  const input_data = [6, 0, 9, 0, 2, 5, 9, 6, 7, 0, 8, 1, 7, 9, 9, 1, 2, 4, 9];
-  const expected = [0, 9, 0, 2, 5, 9, 6, 7, 0, 8, 1, 7, 9, 9, 1, 2, 4, 9, 3];
+  const input_data = [8, 2, 8, 2, 3, 8, 8, 5, 3, 6, 0, 6, 2, 8, 8, 6, 2, 9, 6];
+  const expected = [2, 8, 2, 3, 8, 8, 5, 3, 6, 0, 6, 2, 8, 8, 6, 2, 9, 6, 1];
   const math = new NDArrayMathGPU();
-  const evalMethod = buildModelMathAPI(math, vars);
-  const output_data = [] as number[];
+
+  const lstmKernel1 = vars[
+      'rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
+  const lstmBias1 = vars[
+      'rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
+
+  const lstmKernel2 = vars[
+      'rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
+  const lstmBias2 = vars[
+      'rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
+
+  const fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
+  const fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+
+  const output_data:number[] = [];
+
   math.scope((keep, track) => {
-    let c = track(Array2D.zeros([1, 50]));
-    let h = track(Array2D.zeros([1, 50]));
+    const lstm1 = buildBasicLSTMCell(math, lstmKernel1, lstmBias1);
+    const lstm2 = buildBasicLSTMCell(math, lstmKernel2, lstmBias2);
+    const lstm = buildMultiRNNCell(math, [lstm1, lstm2]);
+
+    let c = [track(Array2D.zeros([1, lstmBias1.shape[0] / 4])),
+        track(Array2D.zeros([1, lstmBias2.shape[0] / 4]))];
+    let h = [track(Array2D.zeros([1, lstmBias1.shape[0] / 4])),
+        track(Array2D.zeros([1, lstmBias2.shape[0] / 4]))];
     for (var input of input_data) {
       const onehot = track(Array1D.zeros([10]));
       onehot.set(1.0, input);
-      const output = evalMethod({
-        data: onehot,
-        c: c,
-        h: h,
-      });
+      const output = lstm(onehot, c, h);
 
-      // TODO: is this memory management correct?
-      output_data.push(output[0].get());
-      output[0].dispose();
-      c = output[1] as Array2D;
-      h = output[2] as Array2D;
+      c = output[0];
+      h = output[1];
+
+      // TODO(fjord): need to do memory management with outputs?
+
+      const output_h = h[1];
+      const weightedResult = math.matMul(output_h, fullyConnectedWeights);
+      const weightedResult1D = math.reshape(
+          weightedResult, [fullyConnectedBiases.shape[0]]) as Array1D;
+      const logits = math.add(
+        weightedResult1D,
+        fullyConnectedBiases);
+
+      output_data.push(math.argMax(logits).get());
     }
   });
   document.getElementById('expected').innerHTML = '' + expected;
   document.getElementById('results').innerHTML = '' + output_data;
 });
 
-interface LSTMInput {
-  data: Array1D;
-  c: Array2D;
-  h: Array2D;
-}
 
 /**
- * Builds an LSTM model.
+ * Builds a MultiRNNCell.
+ * Derived from tf.contrib.rn.MultiRNNCell.
  */
-function buildModelMathAPI(
-    math: NDArrayMath,
-    vars: {[varName: string]: NDArray}): (input: LSTMInput) => NDArray[] {
-  const fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
-  const fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
-  const lstmBias = vars['rnn/basic_lstm_cell/bias'] as Array1D;
-  const lstmKernel = vars['rnn/basic_lstm_cell/kernel'] as Array2D;
+function buildMultiRNNCell(math: NDArrayMath,
+    basicLSTMCells: ((data: Array1D, c: Array2D, h: Array2D) => Array2D[])[]):
+    (data: Array1D, c: Array2D[], h: Array2D[]) => Array2D[][] {
 
-  return (input: LSTMInput): NDArray[] => {
+  return (data: Array1D, c: Array2D[], h: Array2D[]): Array2D[][] => {
+    const res = math.scope((keep, track) => {
+      let input = data;
+      const new_states = []
+      for (var i = 0; i < basicLSTMCells.length; i++) {
+        const output = basicLSTMCells[i](input, c[i], h[i]);
+        new_states.push(output[0]);
+        new_states.push(output[1]);
+        input = math.reshape(output[1], [output[1].shape[1]]) as Array1D;
+      }
+
+      return new_states;
+    });
+    const new_c:Array2D[] = [];
+    const new_h:Array2D[] = [];
+    for (var i = 0; i < res.length; i += 2) {
+      new_c.push(res[i] as Array2D);
+      new_h.push(res[i + 1] as Array2D);
+    }
+    return [new_c, new_h];
+  };
+}
+
+
+/**
+ * Builds a BasicLSTMCell.
+ * Derived from tf.contrib.rnn.BasicLSTMCell.
+ */
+function buildBasicLSTMCell(
+    math: NDArrayMath, lstmKernel: Array2D, lstmBias: Array1D):
+    (data: Array1D, c: Array2D, h: Array2D) => Array2D[] {
+
+  return (data: Array1D, c: Array2D, h: Array2D): Array2D[] => {
     return math.scope((keep, track) => {
       const forget_bias = track(Scalar.new(1.0));
-
-      // inputs.shape = [10]
-      // h.shape = [1, 50]
 
       // concat(inputs, h, 1)
       // There is no concat1d, so reshape inputs and h to 3d, concat, then
       // reshape back to 1d.
       const data3D = math.reshape(
-          input.data, [1, 1, input.data.shape[0]]) as Array3D;
-      const h3D = math.reshape(input.h, [1, 1, input.h.shape[1]]) as Array3D;
+          data, [1, 1, data.shape[0]]) as Array3D;
+      const h3D = math.reshape(h, [1, 1, h.shape[1]]) as Array3D;
       const combined3D = math.concat3D(data3D, h3D, 2);
       const combined2D = math.reshape(
-          combined3D, [1, input.data.shape[0] + input.h.shape[1]]) as Array2D;
-
-      // combined2D.shape = [1, 60]
-      // lstmKernel = [60, 200]
+          combined3D, [1, data.shape[0] + h.shape[1]]) as Array2D;
 
       const weighted = math.matMul(combined2D, lstmKernel);
-
-      // weighted.shape = [1, 200]
-      // lstmBias.shape = [200]
 
       // tf.nn.bias_add(weighted, lstmBias)
       // There is no broadcast add, but we can assume a batch size of 1,
@@ -106,23 +146,12 @@ function buildModelMathAPI(
           [res.shape[0], res.shape[1] / 4]);
 
       const new_c = math.add(
-          math.elementWiseMul(input.c,
+          math.elementWiseMul(c,
               math.sigmoid(math.scalarPlusArray(forget_bias, f))),
           math.elementWiseMul(math.sigmoid(i), math.tanh(j)));
       const new_h = math.elementWiseMul(math.tanh(new_c), math.sigmoid(o));
 
-      // new_h.shape = [1, 50]
-
-      // fullyConnectedWeights.shape = [50, 10]
-      // fullyConnectedBiases.shape = [10]
-      const weightedResult = math.matMul(new_h, fullyConnectedWeights);
-      const weightedResult1D = math.reshape(
-          weightedResult, [fullyConnectedBiases.shape[0]]) as Array1D;
-      const logits = math.add(
-        weightedResult1D,
-        fullyConnectedBiases);
-
-      return [keep(math.argMax(logits)), keep(new_c), keep(new_h)];
+      return [keep(new_c), keep(new_h)];
     });
   };
 }
