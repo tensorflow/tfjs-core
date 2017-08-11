@@ -68,6 +68,8 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
         gpgpu, program, xTex, wTex, null, resultTex, resultTexRC);
   }
 
+  gpgpu.downloadMatrixFromTexture(resultTex, resultTexRC[0], resultTexRC[1]);
+
   const end = performance.now();
 
   const avgTime = (end - start) / OP_RUNS;
