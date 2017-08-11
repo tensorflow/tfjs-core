@@ -19,27 +19,31 @@ import {Array1D, Array2D, Array3D, CheckpointLoader, Graph, NDArray, NDArrayInit
 const reader = new CheckpointLoader('.');
 reader.getAllVariables().then(vars => {
   const input_data = [6, 0, 9, 0, 2, 5, 9, 6, 7, 0, 8, 1, 7, 9, 9, 1, 2, 4, 9];
+  const expected = [0, 9, 0, 2, 5, 9, 6, 7, 0, 8, 1, 7, 9, 9, 1, 2, 4, 9, 3];
   const math = new NDArrayMathGPU();
   const evalMethod = buildModelMathAPI(math, vars);
+  const output_data = [] as number[];
   math.scope((keep, track) => {
-		let c = track(Array2D.zeros([1, 50]));
-		let h = track(Array2D.zeros([1, 50]));
-		for (var input of input_data) {
-			const onehot = track(Array1D.zeros([10]));
-			onehot.set(1.0, input);
-			const output = evalMethod({
-				data: onehot,
-				c: c,
-				h: h,
-			});
+    let c = track(Array2D.zeros([1, 50]));
+    let h = track(Array2D.zeros([1, 50]));
+    for (var input of input_data) {
+      const onehot = track(Array1D.zeros([10]));
+      onehot.set(1.0, input);
+      const output = evalMethod({
+        data: onehot,
+        c: c,
+        h: h,
+      });
 
-			// TODO: memory management?
-			console.log(output[0].get());
-			output[0].dispose();
-			c = output[1] as Array2D;
-			h = output[2] as Array2D;
-		}
-	});
+      // TODO: is this memory management correct?
+      output_data.push(output[0].get());
+      output[0].dispose();
+      c = output[1] as Array2D;
+      h = output[2] as Array2D;
+    }
+  });
+  document.getElementById('expected').innerHTML = '' + expected;
+  document.getElementById('results').innerHTML = '' + output_data;
 });
 
 interface LSTMInput {
@@ -61,32 +65,36 @@ function buildModelMathAPI(
 
   return (input: LSTMInput): NDArray[] => {
     return math.scope((keep, track) => {
-			const forget_bias = track(Scalar.new(1.0));
+      const forget_bias = track(Scalar.new(1.0));
 
-			// inputs.shape = [10]
+      // inputs.shape = [10]
       // h.shape = [1, 50]
 
-			// concat(inputs, h, 1)
-			// There is no concat1d, so reshape inputs and h to 3d, concat, then reshape back to 1d.
-		  const data3D = math.reshape(input.data, [1, 1, input.data.shape[0]]) as Array3D;
-			const h3D = math.reshape(input.h, [1, 1, input.h.shape[1]]) as Array3D;
-			const combined3D = math.concat3D(data3D, h3D, 2);
-			const combined2D = math.reshape(combined3D, [1, input.data.shape[0] + input.h.shape[1]]) as Array2D;
+      // concat(inputs, h, 1)
+      // There is no concat1d, so reshape inputs and h to 3d, concat, then
+      // reshape back to 1d.
+      const data3D = math.reshape(
+          input.data, [1, 1, input.data.shape[0]]) as Array3D;
+      const h3D = math.reshape(input.h, [1, 1, input.h.shape[1]]) as Array3D;
+      const combined3D = math.concat3D(data3D, h3D, 2);
+      const combined2D = math.reshape(
+          combined3D, [1, input.data.shape[0] + input.h.shape[1]]) as Array2D;
 
-			// combined2D.shape = [1, 60]
-			// lstmKernel = [60, 200]
+      // combined2D.shape = [1, 60]
+      // lstmKernel = [60, 200]
 
-		  const weighted = math.matMul(combined2D, lstmKernel);
+      const weighted = math.matMul(combined2D, lstmKernel);
 
-			// weighted.shape = [1, 200]
-			// lstmBias.shape = [200]
+      // weighted.shape = [1, 200]
+      // lstmBias.shape = [200]
 
       // tf.nn.bias_add(weighted, lstmBias)
-			// There is no broadcast add, but we can assume a batch size of 1, just reshape and do a normal add.
-			const weighted1D = math.reshape(weighted, [lstmBias.shape[0]]) as Array1D;
+      // There is no broadcast add, but we can assume a batch size of 1,
+      // just reshape and do a normal add.
+      const weighted1D = math.reshape(weighted, [lstmBias.shape[0]]) as Array1D;
       const res1D = math.add(weighted1D, lstmBias);
-			// Convert back to 2D so we can do slice2D operations.
-		  const res = math.reshape(res1D, [1, res1D.shape[0]]) as Array2D;
+      // Convert back to 2D so we can do slice2D operations.
+      const res = math.reshape(res1D, [1, res1D.shape[0]]) as Array2D;
 
       // i = input_gate, j = new_input, f = forget_gate, o = output_gate
       const i = math.slice2D(res, [0, 0], [res.shape[0], res.shape[1] / 4]);
@@ -98,18 +106,20 @@ function buildModelMathAPI(
           [res.shape[0], res.shape[1] / 4]);
 
       const new_c = math.add(
-				math.elementWiseMul(input.c, math.sigmoid(math.scalarPlusArray(forget_bias, f))),
-				math.elementWiseMul(math.sigmoid(i), math.tanh(j)));
+          math.elementWiseMul(input.c,
+              math.sigmoid(math.scalarPlusArray(forget_bias, f))),
+          math.elementWiseMul(math.sigmoid(i), math.tanh(j)));
       const new_h = math.elementWiseMul(math.tanh(new_c), math.sigmoid(o));
 
-			// new_h.shape = [1, 50]
+      // new_h.shape = [1, 50]
 
-			// fullyConnectedWeights.shape = [50, 10]
-			// fullyConnectedBiases.shape = [10]
-			const weightedResult = math.matMul(new_h, fullyConnectedWeights);
-			const weightedResult1D = math.reshape(weightedResult, [fullyConnectedBiases.shape[0]]) as Array1D;
+      // fullyConnectedWeights.shape = [50, 10]
+      // fullyConnectedBiases.shape = [10]
+      const weightedResult = math.matMul(new_h, fullyConnectedWeights);
+      const weightedResult1D = math.reshape(
+          weightedResult, [fullyConnectedBiases.shape[0]]) as Array1D;
       const logits = math.add(
-				weightedResult1D,
+        weightedResult1D,
         fullyConnectedBiases);
 
       return [keep(math.argMax(logits)), keep(new_c), keep(new_h)];
