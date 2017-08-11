@@ -313,5 +313,4 @@ function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
       return texture2D(${texName}, uv).r;
     }
   `;
-
 }

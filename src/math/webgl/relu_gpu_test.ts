@@ -16,7 +16,7 @@ limitations under the License.
 import * as test_util from '../../test_util';
 import {GPGPUContext} from './gpgpu_context';
 import {UnaryOpProgram, UnaryOp} from './unaryop_gpu';
-import * as unaryop_gpu from './unaryop_gpu';
+import * as unaryop_gpu_test from './unaryop_gpu_test';
 import {Array2D, Array1D, NDArray, Scalar, Array3D} from '../ndarray';
 
 describe('relu_gpu', () => {
@@ -60,5 +60,5 @@ describe('relu_gpu', () => {
 });
 
 function uploadReluDownload(a: NDArray): Float32Array {
-  return unaryop_gpu.uploadUnaryDownload(a, UnaryOp.RELU);
+  return unaryop_gpu_test.uploadUnaryDownload(a, UnaryOp.RELU);
 }

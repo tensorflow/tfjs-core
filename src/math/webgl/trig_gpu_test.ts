@@ -16,13 +16,13 @@ limitations under the License.
 import * as test_util from '../../test_util';
 import * as util from '../../util';
 import {UnaryOp} from './unaryop_gpu';
-import * as unaryop_gpu from './unaryop_gpu';
+import * as unaryop_gpu_test from './unaryop_gpu_test';
 import {Array1D, Array2D, Array3D} from '../ndarray';
 
 describe('sin_gpu', () => {
   it('returns a matrix with the same shape as the input matrix', () => {
     const a = Array2D.zeros([28, 28]);
-    const result = unaryop_gpu.uploadUnaryDownload(a, UnaryOp.SIN);
+    const result = unaryop_gpu_test.uploadUnaryDownload(a, UnaryOp.SIN);
     expect(result.length).toEqual(a.size);
   });
 
@@ -34,7 +34,7 @@ describe('sin_gpu', () => {
       expectedResult[i] = Math.sin(a[i]);
     }
     const aArr = Array1D.new(a);
-    const result = unaryop_gpu.uploadUnaryDownload(aArr, UnaryOp.SIN);
+    const result = unaryop_gpu_test.uploadUnaryDownload(aArr, UnaryOp.SIN);
     test_util.expectArraysClose(result, expectedResult, 1e-3);
   });
 });
@@ -43,7 +43,7 @@ describe('sin_gpu', () => {
 describe('tanh_gpu', () => {
   it('returns a matrix with the same shape as the input matrix', () => {
     const a = Array3D.zeros([28, 14, 2]);
-    const result = unaryop_gpu.uploadUnaryDownload(a, UnaryOp.TANH);
+    const result = unaryop_gpu_test.uploadUnaryDownload(a, UnaryOp.TANH);
     expect(result.length).toEqual(a.size);
   });
 
@@ -55,7 +55,7 @@ describe('tanh_gpu', () => {
       expectedResult[i] = util.tanh(a[i]);
     }
     const aArr = Array2D.new([2, 5], a);
-    const result = unaryop_gpu.uploadUnaryDownload(aArr, UnaryOp.TANH);
+    const result = unaryop_gpu_test.uploadUnaryDownload(aArr, UnaryOp.TANH);
     test_util.expectArraysClose(result, expectedResult, 1e-6);
   });
 });

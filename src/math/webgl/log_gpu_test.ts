@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as test_util from '../../test_util';
 import {UnaryOpProgram, UnaryOp} from './unaryop_gpu';
-import * as unaryop_gpu from './unaryop_gpu';
+import * as unaryop_gpu_test from './unaryop_gpu_test';
 import {Array2D} from '../ndarray';
 
 describe('log_gpu', () => {
@@ -54,5 +54,5 @@ describe('log_gpu', () => {
 function uploadLogDownload(
     a: Float32Array, rows: number, cols: number): Float32Array {
   const arr = Array2D.new([rows, cols], a);
-  return unaryop_gpu.uploadUnaryDownload(arr, UnaryOp.LOG);
+  return unaryop_gpu_test.uploadUnaryDownload(arr, UnaryOp.LOG);
 }

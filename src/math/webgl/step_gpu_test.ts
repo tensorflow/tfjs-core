@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as test_util from '../../test_util';
 import {UnaryOpProgram, UnaryOp} from './unaryop_gpu';
-import * as unaryop_gpu from './unaryop_gpu';
+import * as unaryop_gpu_test from './unaryop_gpu_test';
 import {NDArray, Array2D, Array1D, Array3D, Scalar} from '../ndarray';
 
 describe('step_gpu', () => {
@@ -68,5 +68,5 @@ describe('step_gpu', () => {
 });
 
 function uploadStepDownload(a: NDArray): Float32Array {
-  return unaryop_gpu.uploadUnaryDownload(a, UnaryOp.STEP);
+  return unaryop_gpu_test.uploadUnaryDownload(a, UnaryOp.STEP);
 }

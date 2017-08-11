@@ -13,12 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
-import {NDArray, Array2D, initializeGPU} from '../ndarray';
-import * as util from '../../util';
-import * as gpgpu_math from './gpgpu_math';
-import {TextureManager} from './texture_manager';
 
 export enum UnaryOp {
   EXP, LOG, NEG, RELU, SIGMOID, STEP, SIN, TANH
@@ -65,19 +60,4 @@ function getOpSnippet(op: UnaryOp) {
     default:
       throw Error('Unrecognized unary op type ' + op);
   }
-}
-
-export function uploadUnaryDownload(a: NDArray, op: UnaryOp): Float32Array {
-  const gpgpu = new GPGPUContext();
-  const textureManager = new TextureManager(gpgpu);
-  initializeGPU(gpgpu, textureManager);
-  const out = Array2D.zerosLike(a);
-  const program = new UnaryOpProgram(a.shape, op);
-  const binary = gpgpu_math.compileProgram(gpgpu, program, [a], out);
-  gpgpu_math.runProgram(binary);
-  const result = out.getValues();
-  textureManager.dispose();
-  gpgpu.deleteProgram(binary.webGLProgram);
-  gpgpu.dispose();
-  return result;
 }
