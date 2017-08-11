@@ -88,7 +88,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   private gpgpu: GPGPUContext;
   private textureManager: TextureManager;
   private programCache: {[key: string]: WebGLProgram} = {};
-  private compiledProgramCache: {[key: string]: GPGPUBinary<NDArray, NDArray>} = {};
+  private binaryCache: {[key: string]: GPGPUBinary<NDArray, NDArray>} = {};
   private gpgpuCreatedLocally: boolean;
 
   constructor(gpgpu?: GPGPUContext, safeMode = true) {
@@ -300,7 +300,7 @@ export class NDArrayMathGPU extends NDArrayMath {
       program: GPGPUProgram, inputs: T[]): K {
     const output = this.makeOutputArray<K>(program.outputShape);
     const key = gpgpu_math.makeShaderKey(program, inputs, output);
-    const binary = this.getAndSaveCompiledProgram(key, () => {
+    const binary = this.getAndSaveBinary(key, () => {
       return gpgpu_math.compileProgram(this.gpgpu, program, inputs, output);
     });
     gpgpu_math.runProgram(binary, inputs, output);
@@ -985,14 +985,14 @@ export class NDArrayMathGPU extends NDArrayMath {
         newShapeRCD, {texture: resultTexture, textureShapeRC: resultTexShape});
   }
 
-  private getAndSaveCompiledProgram<K extends NDArray, T extends NDArray>(
+  private getAndSaveBinary<K extends NDArray, T extends NDArray>(
       key: string,
-      getCompiledProgram: () => GPGPUBinary<K,T>):
+      getBinary: () => GPGPUBinary<K,T>):
       GPGPUBinary<K,T> {
-    if (!(key in this.compiledProgramCache)) {
-      this.compiledProgramCache[key] = getCompiledProgram();
+    if (!(key in this.binaryCache)) {
+      this.binaryCache[key] = getBinary();
     }
-    return this.compiledProgramCache[key] as GPGPUBinary<K, T>;
+    return this.binaryCache[key] as GPGPUBinary<K, T>;
   }
 
   private getAndSaveProgram(programKey: string, getShaderSource: () => string):
@@ -1105,8 +1105,8 @@ export class NDArrayMathGPU extends NDArrayMath {
         this.gpgpu.deleteProgram(this.programCache[programKey]);
       }
     }
-    for (const key in this.compiledProgramCache) {
-      this.gpgpu.deleteProgram(this.compiledProgramCache[key].webGLProgram);
+    for (const key in this.binaryCache) {
+      this.gpgpu.deleteProgram(this.binaryCache[key].webGLProgram);
     }
     this.textureManager.dispose();
 
