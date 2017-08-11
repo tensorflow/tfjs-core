@@ -14,10 +14,7 @@ limitations under the License.
 ==============================================================================*/
 import '../demo-header';
 import '../demo-footer';
-
-// tslint:disable-next-line:no-unused-variable
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
-
 import {ActivationFunction, ColorMode, CPPN} from './cppn';
 
 const CANVAS_UPSCALE_FACTOR = 3;
@@ -26,7 +23,9 @@ const MAT_WIDTH = 30;
 const WEIGHTS_STDEV = .6;
 
 // tslint:disable-next-line:variable-name
-const NNArtPolymer = PolymerElement({is: 'nn-art', properties: {}});
+const NNArtPolymer: new () => PolymerHTMLElement = PolymerElement({
+  is: 'nn-art', properties: {}
+});
 
 class NNArt extends NNArtPolymer {
   private cppn: CPPN;

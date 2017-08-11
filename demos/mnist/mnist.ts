@@ -44,7 +44,7 @@ reader.getAllVariables().then(vars => {
   xhr.send();
 });
 
-interface SampleData {
+export interface SampleData {
   images: number[][];
   labels: number[];
 }
@@ -56,8 +56,7 @@ interface SampleData {
  * math.scope() so that NDArrays created by intermediate math commands are
  * automatically cleaned up.
  */
-// tslint:disable-next-line:no-unused-variable
-function buildModelMathAPI(
+export function buildModelMathAPI(
     math: NDArrayMath, data: SampleData,
     vars: {[varName: string]: NDArray}): (x: Array1D) => Scalar {
   const hidden1W = vars['hidden1/weights'] as Array2D;
@@ -86,8 +85,7 @@ function buildModelMathAPI(
  * Users do not need to worry about GPU-related memory leaks, other than their
  * input data.
  */
-// tslint:disable-next-line:no-unused-variable
-function buildModelGraphAPI(
+export function buildModelGraphAPI(
     data: SampleData, vars: {[varName: string]: NDArray}): Tensor[] {
   const g = new Graph();
   // TODO: Support batching.

@@ -15,14 +15,13 @@ limitations under the License.
 
 import '../demo-header';
 import '../demo-footer';
-import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearnjs';
+import {gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearnjs';
 import * as imagenet_util from '../models/imagenet_util';
 import {SqueezeNet} from '../models/squeezenet';
-// tslint:disable-next-line:no-unused-variable
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 
 // tslint:disable-next-line:variable-name
-export const ImagenetDemoPolymer = PolymerElement({
+export const ImagenetDemoPolymer: new () => PolymerHTMLElement = PolymerElement({
   is: 'imagenet-demo',
   properties: {
     layerNames: Array,

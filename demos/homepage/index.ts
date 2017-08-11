@@ -25,6 +25,7 @@ function isSafari() {
       return true;
     }
   }
+  return false;
 }
 function isMobile() {
   // tslint:disable-next-line:no-any

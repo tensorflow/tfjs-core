@@ -15,7 +15,6 @@ limitations under the License.
 
 import {Tensor} from '../graph';
 import {NDArrayMath} from '../math/math';
-import {NDArray} from '../math/ndarray';
 import {TensorArrayMap} from '../tensor_array_map';
 
 import {Operation} from './op';
