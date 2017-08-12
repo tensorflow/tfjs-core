@@ -286,23 +286,6 @@ for (let i = 0; i < NUM_BATCHES; i++) {
     console.log('last average cost (' + i + '): ' + cost.get());
   });
 }
-
-// Wrap session.eval in a scope so the intermediate values get cleaned up
-// automatically.
-math.scope((keep, track) => {
-  const testInput = track(Array1D.new([0.1, 0.2, 0.3]));
-
-  // session.eval can take NDArrays as input data.
-  const testFeedEntries: FeedEntry[] = [
-    {tensor: inputTensor, data: testInput}
-  ];
-
-  const testOutput = session.eval(outputTensor, testFeedEntries);
-
-  console.log('---inference output---');
-  console.log('shape: ' + testOutput.shape);
-  console.log('value: ' + testOutput.get());
-});
 ```
 
 After training, we can infer through the graph:
