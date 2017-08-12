@@ -16,11 +16,9 @@ import {
     FeedEntry,
     Graph,
     InCPUMemoryShuffledInputProviderBuilder,
-    NDArray,
     NDArrayMath,
     NDArrayMathGPU,
     SGDOptimizer,
-    Scalar,
     Session,
     Tensor
 } from '../deeplearnjs';
