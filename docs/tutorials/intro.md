@@ -243,10 +243,10 @@ keeping them in sync.
 Training with the `Graph` object from above:
 
 ```js
-const learningRate = .001;
-const batchSize = 2;
-
+const learningRate = .00001;
+const batchSize = 3;
 const math = new NDArrayMathGPU();
+
 const session = new Session(g, math);
 const optimizer = new SGDOptimizer(learningRate);
 
@@ -257,16 +257,16 @@ const inputs: Array1D[] = [
 ];
 
 const labels: Array1D[] = [
-  Array1D.new([2.0, 6.0, 12.0]),
-  Array1D.new([20.0, 60.0, 120.0]),
-  Array1D.new([200.0, 600.0, 1200.0])
+  Array1D.new([4.0]),
+  Array1D.new([40.0]),
+  Array1D.new([400.0])
 ];
 
 // Shuffles inputs and labels and keeps them mutually in sync.
 const shuffledInputProviderBuilder =
-   new InCPUMemoryShuffledInputProviderBuilder([inputs, labels]);
+  new InCPUMemoryShuffledInputProviderBuilder([inputs, labels]);
 const [inputProvider, labelProvider] =
-   shuffledInputProviderBuilder.getInputProviders();
+  shuffledInputProviderBuilder.getInputProviders();
 
 // Maps tensors to InputProviders.
 const feedEntries: FeedEntry[] = [
@@ -274,25 +274,23 @@ const feedEntries: FeedEntry[] = [
   {tensor: labelTensor, data: labelProvider}
 ];
 
-// Wrap session.train in a scope so the cost gets cleaned up automatically.
-math.scope(() => {
-  // Train takes a cost tensor to minimize. Trains one batch. Returns the
-  // average cost as a Scalar.
-  const cost = session.train(
-      costTensor, feedEntries, batchSize, optimizer, CostReduction.MEAN);
+const NUM_BATCHES = 10;
+for (let i = 0; i < NUM_BATCHES; i++) {
+  // Wrap session.train in a scope so the cost gets cleaned up automatically.
+  math.scope(() => {
+    // Train takes a cost tensor to minimize. Trains one batch. Returns the
+    // average cost as a Scalar.
+    const cost = session.train(
+        costTensor, feedEntries, batchSize, optimizer, CostReduction.MEAN);
 
-  console.log('last average cost: ' + cost.get());
-});
-```
-
-After training, we can infer through the graph:
-
-```js
+    console.log('last average cost (' + i + '): ' + cost.get());
+  });
+}
 
 // Wrap session.eval in a scope so the intermediate values get cleaned up
 // automatically.
 math.scope((keep, track) => {
-  const testInput = track(Array1D.new([1.0, 2.0, 3.0]));
+  const testInput = track(Array1D.new([0.1, 0.2, 0.3]));
 
   // session.eval can take NDArrays as input data.
   const testFeedEntries: FeedEntry[] = [
@@ -301,9 +299,30 @@ math.scope((keep, track) => {
 
   const testOutput = session.eval(outputTensor, testFeedEntries);
 
-  console.log('inference output:');
-  console.log(testOutput.shape);
-  console.log(testOutput.getValues());
+  console.log('---inference output---');
+  console.log('shape: ' + testOutput.shape);
+  console.log('value: ' + testOutput.get());
+});
+```
+
+After training, we can infer through the graph:
+
+```js
+// Wrap session.eval in a scope so the intermediate values get cleaned up
+// automatically.
+math.scope((keep, track) => {
+  const testInput = track(Array1D.new([0.1, 0.2, 0.3]));
+
+  // session.eval can take NDArrays as input data.
+  const testFeedEntries: FeedEntry[] = [
+    {tensor: inputTensor, data: testInput}
+  ];
+
+  const testOutput = session.eval(outputTensor, testFeedEntries);
+
+  console.log('---inference output---');
+  console.log('shape: ' + testOutput.shape);
+  console.log('value: ' + testOutput.get(0));
 });
 ```
 
