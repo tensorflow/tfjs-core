@@ -1,6 +1,6 @@
 # Predicting Complementary Colors with deeplearn.js
 
-This tutorial takes the reader through coding a model that predicts the [complements of colors](https://en.wikipedia.org/wiki/Complementary_colors). This model may not be perfectly optimized, but will take us through important concepts of deeplearn.js.
+This tutorial takes the reader through coding a model that predicts the [complements of colors](https://en.wikipedia.org/wiki/Complementary_colors). The hyper-parameters of this model may not be perfectly optimized, but building the model will take us through important concepts of deeplearn.js. Indeed, adding more layers seems to yield closer predictions of complement colors. We did not spend significant time optimizing hyper-parameters - we would love a pull request towards that end.
 
 The reader should already have read the [Introduction](https://github.com/PAIR-code/deeplearnjs/blob/master/docs/tutorials/intro.md) and possibly the [Guide for non-ML Experts](https://github.com/PAIR-code/deeplearnjs/blob/master/docs/tutorials/ml_beginners.md). This tutorial uses TypeScript, although knowledge of JavaScript suffices.
 
@@ -268,7 +268,6 @@ The rest of the logic within the `.ts` file mostly manages the UI. Calling the `
 
 Based on a few sample colors, it seems like our model of `64 + 32 + 16 = 112` middle-layer nodes fairs alright.
 
-TODO(chihuahua): Update this image to complementary-color-prediction.png once it is checked in.
-![Predicting Complementary Colors]()
+![Predicting Complementary Colors](https://raw.githubusercontent.com/chihuahua/deeplearnjs/master/demos/complementary-color-prediction/complementary-color-prediction.png)
 
-Hopefully, perusing the code and the comments within it offer a simple example of how learnjs works. Keep us posted on interesting projects you pursue.
+Hopefully, perusing the code and the comments within it offers a simple example of how learnjs works. Keep us posted on interesting projects you pursue.
