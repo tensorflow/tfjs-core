@@ -42,14 +42,14 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
   const userCode = program.userCode;
   const inputInfos = program.variableNames.map((x, i) => {
     const shapeInfo = {
-      shape: inputs[i].shape,
+      logicalShape: inputs[i].shape,
       texShape: inputs[i].getTextureShapeRC()
     };
     return {name: x, shapeInfo};
   });
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
   const outShapeInfo = {
-    shape: output.shape,
+    logicalShape: output.shape,
     texShape: output.getTextureShapeRC()
   };
   const source = shader_compiler.makeShader(inputInfos, outShapeInfo,
@@ -66,7 +66,7 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
 
 function validateBinaryAndProgram(shapeInfos: ShapeInfo[], bArrays: NDArray[]) {
   shapeInfos.forEach((s, i) => {
-    const shapeA = s.shape;
+    const shapeA = s.logicalShape;
     const texShapeA = s.texShape;
     const shapeB = bArrays[i].shape;
     const texShapeB = bArrays[i].getTextureShapeRC();

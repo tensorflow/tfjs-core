@@ -16,7 +16,7 @@ limitations under the License.
 import * as util from '../../util';
 
 export type ShapeInfo = {
-  shape: number[],
+  logicalShape: number[],
   texShape: [number, number];
 };
 
@@ -34,7 +34,7 @@ export function makeShader(
       inputsInfo.map(x => getInputSamplingSnippet(x, outputShape)).join('\n');
   const outTexShape = outputShape.texShape;
   const outputSamplingSnippet =
-      getOutputSamplingSnippet(outputShape.shape, outTexShape);
+      getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   const source = [
     SHADER_PREFIX, inputPrefixSnippet, SAMPLE_1D_SNIPPET, SAMPLE_2D_SNIPPET,
     SAMPLE_3D_SNIPPET, inputSamplingSnippet, outputSamplingSnippet, userCode
@@ -43,7 +43,7 @@ export function makeShader(
 }
 
 function getInputSamplingSnippet(inInfo: InputInfo, outShapeInfo: ShapeInfo) {
-  const shape = inInfo.shapeInfo.shape;
+  const shape = inInfo.shapeInfo.logicalShape;
   const texShape = inInfo.shapeInfo.texShape;
   const outTexShape = outShapeInfo.texShape;
 
@@ -70,7 +70,8 @@ function getInputSamplingSnippet(inInfo: InputInfo, outShapeInfo: ShapeInfo) {
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input texture using the
   // output coordinates.
-  if (util.arraysEqual(inInfo.shapeInfo.shape, outShapeInfo.shape)) {
+  if (util.arraysEqual(
+          inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
     res += getSamplerAtOutputCoords(inInfo.name, texShape, outTexShape);
   }
   res += getSamplerFlat(inInfo.name, texShape);
