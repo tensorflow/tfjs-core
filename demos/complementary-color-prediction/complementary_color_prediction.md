@@ -268,6 +268,6 @@ The rest of the logic within the `.ts` file mostly manages the UI. Calling the `
 
 Based on a few sample colors, it seems like our model of `64 + 32 + 16 = 112` middle-layer nodes fairs alright.
 
-![Predicting Complementary Colors](https://raw.githubusercontent.com/chihuahua/deeplearnjs/master/demos/complementary-color-prediction/complementary-color-prediction.png)
+![Predicting Complementary Colors](https://raw.githubusercontent.com/PAIR-code/deeplearnjs/master/demos/complementary-color-prediction/complementary-color-prediction.png)
 
 Hopefully, perusing the code and the comments within it offers a simple example of how learnjs works. Keep us posted on interesting projects you pursue.
