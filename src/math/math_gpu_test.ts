@@ -2155,3 +2155,36 @@ describe('NDArrayMathGPU batchNorm', () => {
     offset.dispose();
   });
 });
+
+describe('NDArrayMathGPU debug mode', () => {
+  let math: NDArrayMathGPU;
+
+  beforeEach(() => {
+    math = new NDArrayMathGPU();
+    math.startScope();
+  });
+
+  afterEach(() => {
+    math.endScope(null!);
+  });
+
+  it('debug mode does not error when no nans', () => {
+    math.enableDebugMode();
+    const a = Array1D.new([2, -1, 0, 3]);
+    const res = math.relu(a);
+    expect(res.getValues()).toEqual(new Float32Array([2, 0, 0, 3]));
+  });
+
+  it('debug mode errors when there are nans', () => {
+    math.enableDebugMode();
+    const a = Array1D.new([2, NaN]);
+    const f = () => math.relu(a);
+    expect(f).toThrowError();
+  });
+
+  it('no errors where there are nans, and debug mode is disabled', () => {
+    const a = Array1D.new([2, NaN]);
+    const res = math.relu(a);
+    expect(res.getValues()).toEqual(new Float32Array([2, NaN]));
+  });
+});
