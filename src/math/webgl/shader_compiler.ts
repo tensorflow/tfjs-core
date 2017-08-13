@@ -73,7 +73,8 @@ function getInputSamplingSnippet(
   // output coordinates.
   if (broadcast || util.arraysEqual(
           inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
-    res += getSamplerAtOutputCoords(inInfo.name, texShape, outTexShape);
+    res +=
+        getSamplerAtOutputCoords(inInfo.name, texShape, outTexShape, broadcast);
   }
   res += getSamplerFlat(inInfo.name, texShape);
   return res;
@@ -218,6 +219,13 @@ function getSampler1D(
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const tR = texShape[0];
   const tC = texShape[1];
+  if (texShape[0] === 1 && texShape[1] === 1) {
+    return `
+      float ${funcName}(float index) {
+        return texture2D(${texName}, halfCR).r;
+      }
+    `;
+  }
   if (texShape[1] === 1) {
     return `
       float ${funcName}(float index) {
@@ -283,6 +291,29 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
       'Flat';
   const tNumR = texShape[0];
   const tNumC = texShape[1];
+  if (tNumC === 1 && tNumR === 1) {
+    return `
+      float ${funcName}(float index) {
+        return texture2D(${texName}, halfCR).r;
+      }
+    `;
+  }
+  if (tNumC === 1) {
+    return `
+      float ${funcName}(float index) {
+        vec2 uv = vec2(0.5, (index + 0.5) / ${tNumR}.0);
+        return texture2D(${texName}, uv).r;
+      }
+    `;
+  }
+  if (tNumR === 1) {
+    return `
+      float ${funcName}(float index) {
+        vec2 uv = vec2((index + 0.5) / ${tNumC}.0, 0.5);
+        return texture2D(${texName}, uv).r;
+      }
+    `;
+  }
   return `
     float ${funcName}(float index) {
       float texR = floor(index / ${tNumC}.0);
@@ -294,7 +325,7 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
 }
 
 function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
-    outTexShape: [number, number]) {
+    outTexShape: [number, number], broadcast: boolean) {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1) +
     'AtOutCoords';
   if (util.arraysEqual(inTexShape, outTexShape)) {
@@ -305,11 +336,13 @@ function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
     `;
   }
   const inSize = util.sizeFromShape(inTexShape);
+  const broadcastSnippet = broadcast ? `index = mod(index, ${inSize}.0);` : '';
+
   return `
     float ${funcName}() {
       vec2 resTexRC = floor(gl_FragCoord.yx);
       float index = dot(resTexRC, vec2(${outTexShape[1]}.0, 1.0));
-      index = mod(index, ${inSize}.0);
+      ${broadcastSnippet}
       float texR = floor(index / ${inTexShape[1]}.0);
       float texC = mod(index, ${inTexShape[1]}.0);
       vec2 uv = (vec2(texC, texR) + halfCR) /

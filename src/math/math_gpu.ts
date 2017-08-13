@@ -236,11 +236,6 @@ export class NDArrayMathGPU extends NDArrayMath {
         resultShapeRCD, {texture: resultTex, textureShapeRC: resultTexShape});
   }
 
-  protected scalarPlusArrayInternal<T extends NDArray>(c: Scalar, a: T): T {
-    const program = new BinaryOpProgram('+', c.shape, a.shape);
-    return this.compileAndRun<NDArray, T>(program, [c, a]);
-  }
-
   protected scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T) {
     let cleanupB = false;

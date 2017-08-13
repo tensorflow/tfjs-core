@@ -575,9 +575,9 @@ export abstract class NDArrayMath {
   }
 
   /**
-   * Computes a scalar minus NDArray, A - c.
+   * Computes A - c. A is NDArray, c is Scalar.
    * @param a The NDArray A in A - c.
-   * @param c The scalar c in A - c.
+   * @param c The Scalar c in A - c.
    */
   arrayMinusScalar<T extends NDArray>(a: T, c: Scalar): T {
     util.assert(

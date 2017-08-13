@@ -183,28 +183,6 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make<T>(newShape, {values: newValues});
   }
 
-  protected scalarDividedByArrayInternal<T extends NDArray>(c: Scalar, a: T):
-      T {
-    const newValues = new Float32Array(a.size);
-    const aValues = a.getValues();
-    const cValue = c.get();
-    for (let i = 0; i < aValues.length; ++i) {
-      newValues[i] = cValue / aValues[i];
-    }
-    return NDArray.make<T>(a.shape, {values: newValues});
-  }
-
-  protected arrayDividedByScalarInternal<T extends NDArray>(a: T, c: Scalar):
-      T {
-    const newValues = new Float32Array(a.size);
-    const aValues = a.getValues();
-    const cValue = c.get();
-    for (let i = 0; i < aValues.length; ++i) {
-      newValues[i] = aValues[i] / cValue;
-    }
-    return NDArray.make<T>(a.shape, {values: newValues});
-  }
-
   protected sumInternal(ndarray: NDArray): Scalar {
     let sum = 0;
     const values = ndarray.getValues();
