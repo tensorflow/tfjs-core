@@ -18,7 +18,8 @@ import * as test_util from '../../test_util';
 import {BinaryOpProgram} from './binaryop_gpu';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
-import {NDArray, Array1D, Array2D, Array3D, Scalar, initializeGPU} from '../ndarray';
+import {NDArray, Array1D, Array2D, Array3D, Scalar,
+  initializeGPU} from '../ndarray';
 import * as util from '../../util';
 import {TextureManager} from './texture_manager';
 
