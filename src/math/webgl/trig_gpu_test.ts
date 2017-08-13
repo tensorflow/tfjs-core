@@ -71,7 +71,7 @@ describe('tanh_gpu', () => {
     expect(r).toBeCloseTo(0);
   });
 
-  it('tanh(0.01) approx 0.001', () => {
+  it('tanh(0.01) is close to 0.01', () => {
     const a = Scalar.new(0.01);
     const r = unaryop_gpu_test.uploadUnaryDownload(a, UnaryOp.TANH);
     expect(r).toBeCloseTo(0.01);
