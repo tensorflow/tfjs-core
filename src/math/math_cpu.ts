@@ -22,8 +22,8 @@ import {MatrixOrientation, NDArrayMath} from './math';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
 export class NDArrayMathCPU extends NDArrayMath {
-  constructor(safeMode = false, debugMode = false) {
-    super(safeMode, debugMode);
+  constructor(safeMode = false) {
+    super(safeMode);
   }
 
   protected cloneInternal<T extends NDArray>(ndarray: T): T {

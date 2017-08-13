@@ -28,20 +28,13 @@ export abstract class NDArrayMath {
   private ndarraysToKeep: NDArray[][] = [];
   private activeScopeNDArraysToKeep: NDArray[] = [];
 
+  private debugMode = false;
+
   /**
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
-   * @param debugMode In debug mode, the output of every math call will be
-   *     downloaded to the CPU and checked for NaNs. This significantly impacts
-   *     performance.
    */
-  constructor(private safeMode: boolean, private debugMode: boolean) {
-    if (debugMode) {
-      console.warn('Debugging mode is ON. The output of every math call will ' +
-                   'be downloaded to CPU and checked for NaNs. ' +
-                   'This significantly impacts performance.');
-    }
-  }
+  constructor(private safeMode: boolean) {}
 
   /**
    * Create a new math scope. Put chained math operations inside a scope
@@ -64,6 +57,18 @@ export abstract class NDArrayMath {
     this.endScope(result);
 
     return result;
+  }
+
+
+  /**
+   * In debug mode, the output of every math call will be downloaded to the CPU
+   * and checked for NaNs. This significantly impacts performance.
+   */
+  enableDebugMode() {
+    this.debugMode = true;
+    console.warn('Debugging mode is ON. The output of every math call will ' +
+                  'be downloaded to CPU and checked for NaNs. ' +
+                  'This significantly impacts performance.');
   }
 
   /**
