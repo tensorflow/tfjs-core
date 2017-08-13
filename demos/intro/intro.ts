@@ -36,7 +36,8 @@ import {NDArrayMathGPU, Scalar, Array1D, Array2D, Graph, Session, SGDOptimizer, 
 
     // Blocking call to actually read the values from average. Waits until the
     // GPU has finished executing the operations before returning values.
-    console.log('mean squared difference: ' + average.get());  // average is a Scalar so we use .get()
+    // average is a Scalar so we use .get()
+    console.log('mean squared difference: ' + average.get());
   });
 }
 
@@ -55,7 +56,8 @@ import {NDArrayMathGPU, Scalar, Array1D, Array2D, Graph, Session, SGDOptimizer, 
   const labelShape = [1];
   const labelTensor = g.placeholder('label', labelShape);
 
-  // Variables are containers that hold a value that can be updated from training.
+  // Variables are containers that hold a value that can be updated from
+  // training.
   // Here we initialize the multiplier variable randomly.
   const multiplier = g.variable('multiplier', Array2D.randNormal([1, 3]));
 
@@ -130,4 +132,8 @@ import {NDArrayMathGPU, Scalar, Array1D, Array2D, Graph, Session, SGDOptimizer, 
     console.log('shape: ' + testOutput.shape);
     console.log('value: ' + testOutput.get(0));
   });
+
+  // Cleanup training data.
+  inputs.forEach(input => input.dispose());
+  labels.forEach(label => label.dispose());
 }
