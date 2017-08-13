@@ -25,13 +25,13 @@ export type InputInfo = {
   shapeInfo: ShapeInfo
 };
 
-export function makeShader(
-    inputsInfo: InputInfo[], outputShape: ShapeInfo,
-    userCode: string): string {
+export function makeShader(inputsInfo: InputInfo[], outputShape: ShapeInfo,
+    userCode: string, broadcast: boolean): string {
   const inputPrefixSnippet =
       inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
-      inputsInfo.map(x => getInputSamplingSnippet(x, outputShape)).join('\n');
+      inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
+          .join('\n');
   const outTexShape = outputShape.texShape;
   const outputSamplingSnippet =
       getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
@@ -42,7 +42,8 @@ export function makeShader(
   return source;
 }
 
-function getInputSamplingSnippet(inInfo: InputInfo, outShapeInfo: ShapeInfo) {
+function getInputSamplingSnippet(
+    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean) {
   const shape = inInfo.shapeInfo.logicalShape;
   const texShape = inInfo.shapeInfo.texShape;
   const outTexShape = outShapeInfo.texShape;
@@ -70,7 +71,7 @@ function getInputSamplingSnippet(inInfo: InputInfo, outShapeInfo: ShapeInfo) {
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input texture using the
   // output coordinates.
-  if (util.arraysEqual(
+  if (broadcast || util.arraysEqual(
           inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
     res += getSamplerAtOutputCoords(inInfo.name, texShape, outTexShape);
   }
@@ -303,10 +304,12 @@ function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
       }
     `;
   }
+  const inSize = util.sizeFromShape(inTexShape);
   return `
     float ${funcName}() {
       vec2 resTexRC = floor(gl_FragCoord.yx);
       float index = dot(resTexRC, vec2(${outTexShape[1]}.0, 1.0));
+      index = mod(index, ${inSize}.0);
       float texR = floor(index / ${inTexShape[1]}.0);
       float texC = mod(index, ${inTexShape[1]}.0);
       vec2 uv = (vec2(texC, texR) + halfCR) /
