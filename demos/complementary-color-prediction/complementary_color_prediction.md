@@ -270,4 +270,14 @@ Based on a few sample colors, it seems like our model of `64 + 32 + 16 = 112` mi
 
 ![Predicting Complementary Colors](complementary-color-prediction.png)
 
-Hopefully, perusing the code and the comments within it offers a simple example of how learnjs works. Keep us posted on interesting projects you pursue.
+### Initialization of Weights Matters
+
+Now and then, a channel of the predicted complementary color may stay at 0 throughout training. For instance, in the instance below, the blue channel is stuck at 0.
+
+![Blue channel at 0](blue-channel-at-0.png)
+
+This behavior unfortunately reflects how weight initialization matters toward whether training happens. Sometimes, a channel stuck at 0 may resolve over time. Other times, a page refresh may be necessary.
+
+### End
+
+Hopefully, perusing the code (within this same directory) and the comments within it offers a simple example of how learnjs works. Keep us posted on interesting projects you pursue.
