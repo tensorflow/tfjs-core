@@ -30,9 +30,18 @@ export abstract class NDArrayMath {
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
-   * a math.scope() which will automatically clean up intermediate NDArrays.
+   *     a math.scope() which will automatically clean up intermediate NDArrays.
+   * @param debugMode In debug mode, the output of every math call will be
+   *     downloaded to the CPU and checked for NaNs. This significantly impacts
+   *     performance.
    */
-  constructor(private safeMode: boolean) {}
+  constructor(private safeMode: boolean, private debugMode: boolean) {
+    if (debugMode) {
+      console.warn('Debugging mode is ON. The output of every math call will ' +
+                   'be downloaded to CPU and checked for NaNs. ' +
+                   'This significantly impacts performance.');
+    }
+  }
 
   /**
    * Create a new math scope. Put chained math operations inside a scope
@@ -76,13 +85,14 @@ export abstract class NDArrayMath {
    * as scope() without the need for a function closure.
    */
   endScope(result: ScopeResult) {
+    let arraysToKeep = this.activeScopeNDArraysToKeep;
+    if (result != null) {
+      arraysToKeep = arraysToKeep.concat(result as NDArray|NDArray[]);
+    }
     // Dispose the current scope.
     for (let i = 0; i < this.activeScope.length; i++) {
       const ndarray = this.activeScope[i];
-
-      if (this.isNDArrayDataInList(ndarray, this.activeScopeNDArraysToKeep) ||
-          (result != null && result instanceof NDArray &&
-           ndarray.getData() === (result as NDArray).getData())) {
+      if (this.isNDArrayDataInList(ndarray, arraysToKeep)) {
         continue;
       }
       ndarray.dispose();
@@ -141,12 +151,24 @@ export abstract class NDArrayMath {
     return result;
   }
 
+  private checkForNaN(arr: NDArray): void {
+    const vals = arr.getValues();
+    for (let i = 0; i < vals.length; i++) {
+      if (isNaN(vals[i])) {
+        throw Error('The result NDArray of the last math call has NaNs.');
+      }
+    }
+  }
+
   /**
    * Tracks an NDArray in the current scope to be automatically cleaned up when
    * the current scope ends, and returns the value.
    * @param result The NDArray to track in the current scope.
    */
   track<T extends NDArray>(result: T): T {
+    if (this.debugMode) {
+      this.checkForNaN(result);
+    }
     if (this.activeScope == null) {
       if (this.safeMode) {
         throw new Error(
