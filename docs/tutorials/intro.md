@@ -14,6 +14,16 @@ functions that can be used directly.
 * TOC
 {:toc}
 
+You can find the code that supplements this tutorial
+[here](https://github.com/PAIR-code/deeplearnjs/tree/master/demos/intro).
+
+Run it yourself with:
+```ts
+./scripts/watch-demo demos/intro/intro.ts
+```
+
+And visit `http://localhost:8080/demos/intro/`.
+
 For the purposes of the documentation, we will use TypeScript code examples.
 For vanilla JavaScript, you may need to remove TypeScript syntax like
 `const`, `let`, or other type definitions.
