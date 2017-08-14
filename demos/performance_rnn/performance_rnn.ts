@@ -13,13 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, Array2D, Array3D, CheckpointLoader, Graph, NDArray, NDArrayInitializer, NDArrayMath, NDArrayMathGPU, Scalar, Session, Tensor} from '../deeplearnjs';
+import {Array1D, Array2D, Array3D, CheckpointLoader, NDArrayMath, NDArrayMathGPU, Scalar} from '../deeplearnjs';
+
+import Tone from '../../node_modules/tone/Tone/core/Tone';
 
 // manifest.json lives in the same directory.
 const reader = new CheckpointLoader('.');
 reader.getAllVariables().then(vars => {
   const INPUT_SIZE = 388;
-  const GENERATE_STEPS = 50;
+  const GENERATE_STEPS = 100;
 
   const PRIMER_IDX = 355; // shift 1s.
 
@@ -71,15 +73,13 @@ reader.getAllVariables().then(vars => {
       c = output[0];
       h = output[1];
 
-      // TODO(fjord): need to do memory management with outputs?
-
       const output_h = h[2];
       const weightedResult = math.matMul(output_h, fullyConnectedWeights);
       const weightedResult1D = math.reshape(
           weightedResult, [fullyConnectedBiases.shape[0]]) as Array1D;
       const logits = math.add(
         weightedResult1D,
-        fullyConnectedBiases);
+        fullyConnectedBiases) as Array1D;
 
       const softmax = math.softmax(logits).getValues();
       const rand = Scalar.randUniform([], 0, 1).get();
@@ -103,7 +103,7 @@ reader.getAllVariables().then(vars => {
       input = track(Array1D.zeros([INPUT_SIZE]));
       input.set(1.0, sampled_output);
     }
-    console.log(output_data);
+    document.getElementById('results').innerHTML = '' + output_data;
   });
 });
 
@@ -184,10 +184,11 @@ function buildBasicLSTMCell(
       const new_c = math.add(
           math.elementWiseMul(c,
               math.sigmoid(math.scalarPlusArray(forget_bias, f))),
-          math.elementWiseMul(math.sigmoid(i), math.tanh(j)));
-      const new_h = math.elementWiseMul(math.tanh(new_c), math.sigmoid(o));
+          math.elementWiseMul(math.sigmoid(i), math.tanh(j))) as Array2D;
+      const new_h = math.elementWiseMul(math.tanh(new_c),
+          math.sigmoid(o)) as Array2D;
 
-      return [keep(new_c), keep(new_h)];
+      return [new_c, new_h];
     });
   };
 }
