@@ -18,7 +18,7 @@ import {Array1D, Array2D, CheckpointLoader, NDArrayMathGPU, Scalar} from '../dee
 // manifest.json lives in the same directory.
 const reader = new CheckpointLoader('.');
 reader.getAllVariables().then(vars => {
-  const input_data = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8];
+  const primer_data = 3;
   const expected = [1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4];
   const math = new NDArrayMathGPU();
 
@@ -35,7 +35,7 @@ reader.getAllVariables().then(vars => {
   const fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
   const fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
 
-  const output_data:number[] = [];
+  const results:number[] = [];
 
   math.scope((keep, track) => {
     const forgetBias = track(Scalar.new(1.0));
@@ -46,7 +46,9 @@ reader.getAllVariables().then(vars => {
         track(Array2D.zeros([1, lstmBias2.shape[0] / 4]))];
     let h = [track(Array2D.zeros([1, lstmBias1.shape[0] / 4])),
         track(Array2D.zeros([1, lstmBias2.shape[0] / 4]))];
-    for (var input of input_data) {
+
+    let input = primer_data;
+    for (let i = 0; i <  expected.length; i++) {
       const onehot = track(Array1D.zeros([10]));
       onehot.set(1.0, input);
 
@@ -63,9 +65,28 @@ reader.getAllVariables().then(vars => {
         weightedResult1D,
         fullyConnectedBiases);
 
-      output_data.push(math.argMax(logits).get());
+      const result = math.argMax(logits).get();
+      results.push(result);
+      input = result;
     }
   });
   document.getElementById('expected').innerHTML = '' + expected;
-  document.getElementById('results').innerHTML = '' + output_data;
+  document.getElementById('results').innerHTML = '' + results;
+  if(checkArrays(expected, results)) {
+    document.getElementById('success').innerHTML = 'Success!';
+  } else {
+    document.getElementById('success').innerHTML = 'Failure.';
+  }
 });
+
+function checkArrays(expected: number[], results: number[]) {
+  if(expected.length != results.length) {
+    return false;
+  }
+  for(let i = 0; i < expected.length; i++) {
+    if(expected[i] != results[i]) {
+      return false;
+    }
+  }
+  return true;
+}

@@ -31,10 +31,10 @@ def main(unused_argv):
 
   tf.reset_default_graph()
 
-  x = tf.placeholder(dtype=tf.int32, shape=[1, 19])
-  y = tf.placeholder(dtype=tf.int32, shape=[1, 19])
+  x = tf.placeholder(dtype=tf.int32, shape=[1, data.shape[1] - 1])
+  y = tf.placeholder(dtype=tf.int32, shape=[1, data.shape[1] - 1])
 
-  NHIDDEN = 50
+  NHIDDEN = 20
   NLABELS = 10
 
   lstm1 = tf.contrib.rnn.BasicLSTMCell(NHIDDEN)
