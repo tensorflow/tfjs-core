@@ -153,16 +153,16 @@ const SAMPLE_3D_SNIPPET = `
 `;
 
 const SAMPLE_4D_SNIPPET = `
-float sample4D(sampler2D texture, float texNumR, float texNumC, float stride0,
-    float stride1, float stride2, float row, float col, float depth,
-    float depth2) {
-  float index = dot(vec4(row, col, depth, depth2),
-                    vec4(stride0, stride1, stride2, 1.0));
-  float texR = floor(index / texNumC);
-  float texC = mod(index, texNumC);
-  vec2 uv = (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-  return texture2D(texture, uv).r;
-}
+  float sample4D(sampler2D texture, float texNumR, float texNumC, float stride0,
+      float stride1, float stride2, float row, float col, float depth,
+      float depth2) {
+    float index = dot(vec4(row, col, depth, depth2),
+                      vec4(stride0, stride1, stride2, 1.0));
+    float texR = floor(index / texNumC);
+    float texC = mod(index, texNumC);
+    vec2 uv = (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+    return texture2D(texture, uv).r;
+  }
 `;
 
 function getOutput1DCoords(
@@ -208,26 +208,26 @@ function getOutput3DCoords(shape: [number, number, number],
 
 function getOutput4DCoords(shape: [number, number, number, number],
   texShape: [number, number]): string {
-const stride2 = shape[3];
-const stride1 = shape[2] * stride2;
-const stride0 = shape[1] * stride1;
-return `
-  vec4 getOutputCoords() {
-    vec2 resTexRC = floor(gl_FragCoord.yx);
-    float index = dot(resTexRC, vec2(${texShape[1]}.0, 1.0));
+  const stride2 = shape[3];
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+  return `
+    vec4 getOutputCoords() {
+      vec2 resTexRC = floor(gl_FragCoord.yx);
+      float index = dot(resTexRC, vec2(${texShape[1]}.0, 1.0));
 
-    float r = floor(index / ${stride0}.0);
-    index -= r * ${stride0}.0;
+      float r = floor(index / ${stride0}.0);
+      index -= r * ${stride0}.0;
 
-    float c = floor(index / ${stride1}.0);
-    index -= c * ${stride1}.0;
+      float c = floor(index / ${stride1}.0);
+      index -= c * ${stride1}.0;
 
-    float d = floor(index / ${stride2}.0);
-    float d2 = mod(index, ${stride2}.0);
+      float d = floor(index / ${stride2}.0);
+      float d2 = mod(index, ${stride2}.0);
 
-    return vec4(r, c, d, d2);
-  }
-`;
+      return vec4(r, c, d, d2);
+    }
+  `;
 }
 
 function getOutput2DCoords(
