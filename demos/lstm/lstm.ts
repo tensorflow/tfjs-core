@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, Array2D, Array3D, CheckpointLoader, Graph, NDArray, NDArrayInitializer, NDArrayMath, NDArrayMathGPU, Scalar, Session, Tensor} from '../deeplearnjs';
+import {Array1D, Array2D, CheckpointLoader, NDArrayMathGPU, Scalar} from '../deeplearnjs';
 
 // manifest.json lives in the same directory.
 const reader = new CheckpointLoader('.');
@@ -39,8 +39,8 @@ reader.getAllVariables().then(vars => {
 
   math.scope((keep, track) => {
     const forgetBias = track(Scalar.new(1.0));
-    const lstm1 = math.basicLSTMCell.bind(forgetBias, lstmKernel1, lstmBias1);
-    const lstm2 = math.basicLSTMCell.bind(forgetBias, lstmKernel2, lstmBias2);
+    const lstm1 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
+    const lstm2 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
 
     let c = [track(Array2D.zeros([1, lstmBias1.shape[0] / 4])),
         track(Array2D.zeros([1, lstmBias2.shape[0] / 4]))];

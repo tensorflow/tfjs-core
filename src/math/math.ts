@@ -21,11 +21,9 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
 export type ScopeResult = NDArray[]|NDArray|void;
 
-/*
 export interface LSTMCell {
   (data: Array1D, c: Array2D, h: Array2D): Array2D[];
 };
-*/
 
 
 export abstract class NDArrayMath {
@@ -1140,10 +1138,15 @@ export abstract class NDArrayMath {
   //////////////
 
   /**
-   * Builds a MultiRNNCell.
+   * Computes the next states and outputs of a stack of LSTMCells.
+   * Each cell output is used as input to the next cell.
    * Derived from tf.contrib.rn.MultiRNNCell.
+   * @param lstmCells Array of LSTMCell functions.
+   * @param data The input to the cell.
+   * @param c Array of previous cell states.
+   * @param h Array of previous cell outputs.
    */
-  multiRNNCell(lstmCells: ((data: Array1D, c: Array2D, h: Array2D) => Array2D[])[], data: Array1D, c: Array2D[],
+  multiRNNCell(lstmCells: LSTMCell[], data: Array1D, c: Array2D[],
       h: Array2D[]): Array2D[][] {
     const res = this.scope((keep, track) => {
       let input = data;
@@ -1165,7 +1168,6 @@ export abstract class NDArrayMath {
     }
     return [new_c, new_h];
   }
-
 
   /**
    * Computes the next state and output of a BasicLSTMCell.
@@ -1212,8 +1214,9 @@ export abstract class NDArrayMath {
       const new_c = this.add(
           this.elementWiseMul(c,
               this.sigmoid(this.scalarPlusArray(forgetBias, f))),
-          this.elementWiseMul(this.sigmoid(i), this.tanh(j)));
-      const new_h = this.elementWiseMul(this.tanh(new_c), this.sigmoid(o));
+          this.elementWiseMul(this.sigmoid(i), this.tanh(j))) as Array2D;
+      const new_h = this.elementWiseMul(
+          this.tanh(new_c), this.sigmoid(o)) as Array2D;
 
       return [new_c, new_h];
     });
