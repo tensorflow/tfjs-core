@@ -15,8 +15,6 @@ limitations under the License.
 
 import {Array1D, Array2D, Array3D, CheckpointLoader, NDArrayMath, NDArrayMathGPU, Scalar} from '../deeplearnjs';
 
-import Tone from '../../node_modules/tone/Tone/core/Tone';
-
 // manifest.json lives in the same directory.
 const reader = new CheckpointLoader('.');
 reader.getAllVariables().then(vars => {
@@ -45,8 +43,6 @@ reader.getAllVariables().then(vars => {
   const fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
   const fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
 
-  const output_data:number[] = [];
-
   math.scope((keep, track) => {
     const lstm1 = buildBasicLSTMCell(math, lstmKernel1, lstmBias1);
     const lstm2 = buildBasicLSTMCell(math, lstmKernel2, lstmBias2);
@@ -67,7 +63,7 @@ reader.getAllVariables().then(vars => {
     let input = track(Array1D.zeros([INPUT_SIZE]));
     input.set(1.0, PRIMER_IDX);
 
-    while (output_data.length < GENERATE_STEPS) {
+    for (let i = 0; i < GENERATE_STEPS; i++) {
       const output = lstm(input, c, h);
 
       c = output[0];
@@ -81,31 +77,76 @@ reader.getAllVariables().then(vars => {
         weightedResult1D,
         fullyConnectedBiases) as Array1D;
 
-      const softmax = math.softmax(logits).getValues();
-      const rand = Scalar.randUniform([], 0, 1).get();
-      let cdf = 0;
-      let sampled_output = -1;
-      for(var i = 0; i < softmax.length; i++) {
-        cdf += softmax[i];
-        if (cdf > rand) {
-          sampled_output = i;
-          break;
-        }
-      }
-      if (sampled_output == -1) {
-        // This happens when weightedResult is all NaN.
-        debugger;
-      }
+      const softmax = math.softmax(logits);
+      const sampled_output = sampleFromSoftmax(math, softmax);
 
-      output_data.push(sampled_output);
+      const decoded_output = decodeOutput(sampled_output);
+      document.getElementById('results').innerHTML += (
+          '(' + sampled_output + ') ' + decoded_output + '<br>');
 
       // use output as the next input.
       input = track(Array1D.zeros([INPUT_SIZE]));
       input.set(1.0, sampled_output);
     }
-    document.getElementById('results').innerHTML = '' + output_data;
   });
 });
+
+
+const MIN_MIDI_PITCH = 0;
+const MAX_MIDI_PITCH = 127;
+const VELOCITY_BINS = 32;
+const MAX_SHIFT_STEPS = 100;
+const STEPS_PER_SECOND = 100;
+
+const EVENT_RANGES = [
+    ['note_on', MIN_MIDI_PITCH, MAX_MIDI_PITCH],
+    ['note_off', MIN_MIDI_PITCH, MAX_MIDI_PITCH],
+    ['time_shift', 1, MAX_SHIFT_STEPS],
+    ['velocity_change', 1, VELOCITY_BINS],
+];
+
+function decodeOutput(index: number) {
+  let offset = 0;
+  for(let event_range of EVENT_RANGES) {
+    const event_type = event_range[0] as string;
+    const min_value = event_range[1] as number;
+    const max_value = event_range[2] as number;
+
+    if (offset <= index && index <= offset + max_value - min_value) {
+      if (event_type == 'note_on') {
+        return 'note_on: ' + (index - offset);
+      } else if (event_type == 'note_off') {
+        return 'note_off: ' + (index - offset);
+      } else if (event_type == 'time_shift') {
+        return 'time_shift: ' + ((index - offset + 1) / STEPS_PER_SECOND);
+      } else if (event_type == 'velocity_change') {
+        return 'velocity_change: ' + (
+            ((index - offset + 1) * Math.ceil(127 / VELOCITY_BINS)));
+      } else {
+        throw new Error('Could not decode event_type: ' + event_type);
+      }
+    }
+    offset += max_value - min_value + 1
+  }
+  throw new Error('Could not decode index: ' + index);
+}
+
+
+/**
+ * Sample from a softmax.
+ */
+function sampleFromSoftmax(math: NDArrayMath, softmax: Array1D): number {
+  const softmaxValues = softmax.getValues();
+  const rand = Scalar.randUniform([], 0, 1).get();
+  let cdf = 0;
+  for(let i = 0; i < softmaxValues.length; i++) {
+    cdf += softmaxValues[i];
+    if (cdf > rand) {
+      return i;
+    }
+  }
+  throw new Error('Could not sample from softmax.');
+}
 
 
 /**
@@ -120,7 +161,7 @@ function buildMultiRNNCell(math: NDArrayMath,
     const res = math.scope((keep, track) => {
       let input = data;
       const new_states = []
-      for (var i = 0; i < basicLSTMCells.length; i++) {
+      for (let i = 0; i < basicLSTMCells.length; i++) {
         const output = basicLSTMCells[i](input, c[i], h[i]);
         new_states.push(output[0]);
         new_states.push(output[1]);
@@ -131,7 +172,7 @@ function buildMultiRNNCell(math: NDArrayMath,
     });
     const new_c:Array2D[] = [];
     const new_h:Array2D[] = [];
-    for (var i = 0; i < res.length; i += 2) {
+    for (let i = 0; i < res.length; i += 2) {
       new_c.push(res[i] as Array2D);
       new_h.push(res[i + 1] as Array2D);
     }
