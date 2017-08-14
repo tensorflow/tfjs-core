@@ -311,16 +311,16 @@ function getSampler3D(
 }
 
 function getSampler4D(
-  texName: string, shape: [number, number, number, number],
-  texShape: [number, number]): string {
-const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-const tR = texShape[0];
-const tC = texShape[1];
-const stride2 = shape[3];
-const stride1 = shape[2] * stride2;
-const stride0 = shape[1] * stride1;
+    texName: string, shape: [number, number, number, number],
+    texShape: [number, number]): string {
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const tR = texShape[0];
+  const tC = texShape[1];
+  const stride2 = shape[3];
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
 
-return `
+  return `
   float ${funcName}(float row, float col, float depth, float depth2) {
     return sample4D(${texName}, ${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0,
         ${stride2}.0, row, col, depth, depth2);
