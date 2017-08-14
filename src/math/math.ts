@@ -21,6 +21,13 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
 export type ScopeResult = NDArray[]|NDArray|void;
 
+/*
+export interface LSTMCell {
+  (data: Array1D, c: Array2D, h: Array2D): Array2D[];
+};
+*/
+
+
 export abstract class NDArrayMath {
   private ndarrayScopes: NDArray[][] = [];
   private activeScope: NDArray[];
@@ -1127,6 +1134,91 @@ export abstract class NDArrayMath {
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
       varianceEpsilon: number, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D;
+
+  //////////////
+  // LSTM ops //
+  //////////////
+
+  /**
+   * Builds a MultiRNNCell.
+   * Derived from tf.contrib.rn.MultiRNNCell.
+   */
+  multiRNNCell(lstmCells: ((data: Array1D, c: Array2D, h: Array2D) => Array2D[])[], data: Array1D, c: Array2D[],
+      h: Array2D[]): Array2D[][] {
+    const res = this.scope((keep, track) => {
+      let input = data;
+      const new_states = []
+      for (let i = 0; i < lstmCells.length; i++) {
+        const output = lstmCells[i](input, c[i], h[i]);
+        new_states.push(output[0]);
+        new_states.push(output[1]);
+        input = this.reshape(output[1], [output[1].shape[1]]) as Array1D;
+      }
+
+      return new_states;
+    });
+    const new_c:Array2D[] = [];
+    const new_h:Array2D[] = [];
+    for (let i = 0; i < res.length; i += 2) {
+      new_c.push(res[i] as Array2D);
+      new_h.push(res[i + 1] as Array2D);
+    }
+    return [new_c, new_h];
+  }
+
+
+  /**
+   * Computes the next state and output of a BasicLSTMCell.
+   * Derived from tf.contrib.rnn.BasicLSTMCell.
+   * @param forgetBias Forget bias for the cell.
+   * @param lstmKernel The weights for the cell.
+   * @param lstmBias The biases for the cell.
+   * @param data The input to the cell.
+   * @param c Previous cell state.
+   * @param h Previous cell output.
+   */
+  basicLSTMCell(forgetBias: Scalar, lstmKernel: Array2D, lstmBias: Array1D,
+      data: Array1D, c: Array2D, h: Array2D): Array2D[] {
+    return this.scope((keep, track) => {
+      // concat(inputs, h, 1)
+      // There is no concat1d, so reshape inputs and h to 3d, concat, then
+      // reshape back to 1d.
+      const data3D = this.reshape(
+          data, [1, 1, data.shape[0]]) as Array3D;
+      const h3D = this.reshape(h, [1, 1, h.shape[1]]) as Array3D;
+      const combined3D = this.concat3D(data3D, h3D, 2);
+      const combined2D = this.reshape(
+          combined3D, [1, data.shape[0] + h.shape[1]]) as Array2D;
+
+      const weighted = this.matMul(combined2D, lstmKernel);
+
+      // tf.nn.bias_add(weighted, lstmBias)
+      // There is no broadcast add, but we can assume a batch size of 1,
+      // just reshape and do a normal add.
+      const weighted1D = this.reshape(weighted, [lstmBias.shape[0]]) as Array1D;
+      const res1D = this.add(weighted1D, lstmBias);
+      // Convert back to 2D so we can do slice2D operations.
+      const res = this.reshape(res1D, [1, res1D.shape[0]]) as Array2D;
+
+      // i = input_gate, j = new_input, f = forget_gate, o = output_gate
+      const i = this.slice2D(res, [0, 0], [res.shape[0], res.shape[1] / 4]);
+      const j = this.slice2D(res, [0, res.shape[1] / 4 * 1],
+          [res.shape[0], res.shape[1] / 4]);
+      const f = this.slice2D(res, [0, res.shape[1] / 4 * 2],
+          [res.shape[0], res.shape[1] / 4]);
+      const o = this.slice2D(res, [0, res.shape[1] / 4 * 3],
+          [res.shape[0], res.shape[1] / 4]);
+
+      const new_c = this.add(
+          this.elementWiseMul(c,
+              this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+          this.elementWiseMul(this.sigmoid(i), this.tanh(j)));
+      const new_h = this.elementWiseMul(this.tanh(new_c), this.sigmoid(o));
+
+      return [new_c, new_h];
+    });
+  }
+
 }
 
 export enum MatrixOrientation {
