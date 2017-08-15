@@ -39,8 +39,10 @@ reader.getAllVariables().then(vars => {
 
   math.scope((keep, track) => {
     const forgetBias = track(Scalar.new(1.0));
-    const lstm1 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
-    const lstm2 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
+    const lstm1 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel1,
+        lstmBias1);
+    const lstm2 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel2,
+        lstmBias2);
 
     let c = [track(Array2D.zeros([1, lstmBias1.shape[0] / 4])),
         track(Array2D.zeros([1, lstmBias2.shape[0] / 4]))];
