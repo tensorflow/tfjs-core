@@ -13,12 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, Array2D, CheckpointLoader, NDArrayMathGPU, Scalar} from '../deeplearnjs';
+import {Array1D, Array2D, CheckpointLoader, NDArrayMathGPU,
+    Scalar} from '../deeplearnjs';
 
 // manifest.json lives in the same directory.
 const reader = new CheckpointLoader('.');
 reader.getAllVariables().then(vars => {
-  const primer_data = 3;
+  const primerData = 3;
   const expected = [1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4];
   const math = new NDArrayMathGPU();
 
@@ -49,7 +50,7 @@ reader.getAllVariables().then(vars => {
     let h = [track(Array2D.zeros([1, lstmBias1.shape[0] / 4])),
         track(Array2D.zeros([1, lstmBias2.shape[0] / 4]))];
 
-    let input = primer_data;
+    let input = primerData;
     for (let i = 0; i <  expected.length; i++) {
       const onehot = track(Array1D.zeros([10]));
       onehot.set(1.0, input);
@@ -59,8 +60,8 @@ reader.getAllVariables().then(vars => {
       c = output[0];
       h = output[1];
 
-      const output_h = h[1];
-      const weightedResult = math.matMul(output_h, fullyConnectedWeights);
+      const outputH = h[1];
+      const weightedResult = math.matMul(outputH, fullyConnectedWeights);
       const weightedResult1D = math.reshape(
           weightedResult, [fullyConnectedBiases.shape[0]]) as Array1D;
       const logits = math.add(
@@ -82,11 +83,11 @@ reader.getAllVariables().then(vars => {
 });
 
 function checkArrays(expected: number[], results: number[]) {
-  if(expected.length != results.length) {
+  if(expected.length !== results.length) {
     return false;
   }
   for(let i = 0; i < expected.length; i++) {
-    if(expected[i] != results[i]) {
+    if(expected[i] !== results[i]) {
       return false;
     }
   }

@@ -23,7 +23,7 @@ export type ScopeResult = NDArray[]|NDArray|void;
 
 export interface LSTMCell {
   (data: Array1D, c: Array2D, h: Array2D): Array2D[];
-};
+}
 
 
 export abstract class NDArrayMath {
@@ -1150,23 +1150,23 @@ export abstract class NDArrayMath {
       h: Array2D[]): Array2D[][] {
     const res = this.scope((keep, track) => {
       let input = data;
-      const new_states = []
+      const newStates = [];
       for (let i = 0; i < lstmCells.length; i++) {
         const output = lstmCells[i](input, c[i], h[i]);
-        new_states.push(output[0]);
-        new_states.push(output[1]);
+        newStates.push(output[0]);
+        newStates.push(output[1]);
         input = this.reshape(output[1], [output[1].shape[1]]) as Array1D;
       }
 
-      return new_states;
+      return newStates;
     });
-    const new_c:Array2D[] = [];
-    const new_h:Array2D[] = [];
+    const newC:Array2D[] = [];
+    const newH:Array2D[] = [];
     for (let i = 0; i < res.length; i += 2) {
-      new_c.push(res[i] as Array2D);
-      new_h.push(res[i + 1] as Array2D);
+      newC.push(res[i] as Array2D);
+      newH.push(res[i + 1] as Array2D);
     }
-    return [new_c, new_h];
+    return [newC, newH];
   }
 
   /**
@@ -1196,7 +1196,7 @@ export abstract class NDArrayMath {
 
       // tf.nn.bias_add(weighted, lstmBias)
       // There is no broadcast add, but we can assume a batch size of 1,
-      // just reshape and do a normal add.
+      // so just reshape and do a normal add.
       const weighted1D = this.reshape(weighted, [lstmBias.shape[0]]) as Array1D;
       const res1D = this.add(weighted1D, lstmBias);
       // Convert back to 2D so we can do slice2D operations.
@@ -1211,14 +1211,14 @@ export abstract class NDArrayMath {
       const o = this.slice2D(res, [0, res.shape[1] / 4 * 3],
           [res.shape[0], res.shape[1] / 4]);
 
-      const new_c = this.add(
+      const newC = this.add(
           this.elementWiseMul(c,
               this.sigmoid(this.scalarPlusArray(forgetBias, f))),
           this.elementWiseMul(this.sigmoid(i), this.tanh(j))) as Array2D;
-      const new_h = this.elementWiseMul(
-          this.tanh(new_c), this.sigmoid(o)) as Array2D;
+      const newH = this.elementWiseMul(
+          this.tanh(newC), this.sigmoid(o)) as Array2D;
 
-      return [new_c, new_h];
+      return [newC, newH];
     });
   }
 
