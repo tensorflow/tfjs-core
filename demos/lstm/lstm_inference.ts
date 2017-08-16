@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, Array2D, CheckpointLoader, NDArrayMathGPU,
-    Scalar} from '../deeplearnjs';
+import {Array1D, Array2D, CheckpointLoader, NDArrayMathGPU, Scalar,
+    util} from '../deeplearnjs';
 
 // manifest.json lives in the same directory.
 const reader = new CheckpointLoader('.');
@@ -36,7 +36,7 @@ reader.getAllVariables().then(vars => {
   const fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
   const fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
 
-  const results:number[] = [];
+  const results: number[] = [];
 
   math.scope((keep, track) => {
     const forgetBias = track(Scalar.new(1.0));
@@ -51,7 +51,7 @@ reader.getAllVariables().then(vars => {
         track(Array2D.zeros([1, lstmBias2.shape[0] / 4]))];
 
     let input = primerData;
-    for (let i = 0; i <  expected.length; i++) {
+    for (let i = 0; i < expected.length; i++) {
       const onehot = track(Array1D.zeros([10]));
       onehot.set(1.0, input);
 
@@ -62,11 +62,7 @@ reader.getAllVariables().then(vars => {
 
       const outputH = h[1];
       const weightedResult = math.matMul(outputH, fullyConnectedWeights);
-      const weightedResult1D = math.reshape(
-          weightedResult, [fullyConnectedBiases.shape[0]]) as Array1D;
-      const logits = math.add(
-        weightedResult1D,
-        fullyConnectedBiases);
+      const logits = math.add( weightedResult, fullyConnectedBiases);
 
       const result = math.argMax(logits).get();
       results.push(result);
@@ -75,21 +71,9 @@ reader.getAllVariables().then(vars => {
   });
   document.getElementById('expected').innerHTML = '' + expected;
   document.getElementById('results').innerHTML = '' + results;
-  if(checkArrays(expected, results)) {
+  if(util.arraysEqual(expected, results)) {
     document.getElementById('success').innerHTML = 'Success!';
   } else {
     document.getElementById('success').innerHTML = 'Failure.';
   }
 });
-
-function checkArrays(expected: number[], results: number[]) {
-  if(expected.length !== results.length) {
-    return false;
-  }
-  for(let i = 0; i < expected.length; i++) {
-    if(expected[i] !== results[i]) {
-      return false;
-    }
-  }
-  return true;
-}
