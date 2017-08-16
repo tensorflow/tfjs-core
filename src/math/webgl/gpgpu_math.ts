@@ -66,12 +66,17 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
   };
 }
 
-function validateBinaryAndProgram(shapeInfos: ShapeInfo[], bArrays: NDArray[]) {
+function validateBinaryAndProgram(shapeInfos: ShapeInfo[], inputs: NDArray[]) {
+  if (shapeInfos.length !== inputs.length) {
+    throw Error(`Binary was compiled with ${shapeInfos.length} inputs, but ` +
+                `was executed with ${inputs.length} inputs`);
+  }
+
   shapeInfos.forEach((s, i) => {
     const shapeA = s.logicalShape;
     const texShapeA = s.texShape;
-    const shapeB = bArrays[i].shape;
-    const texShapeB = bArrays[i].getTextureShapeRC();
+    const shapeB = inputs[i].shape;
+    const texShapeB = inputs[i].getTextureShapeRC();
 
     if (!util.arraysEqual(shapeA, shapeB)) {
       throw Error(`Binary was compiled with different shapes than ` +

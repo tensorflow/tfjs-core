@@ -20,7 +20,7 @@ import * as conv_util from './conv_util';
 import {MatrixOrientation, NDArrayMath} from './math';
 import * as ndarray from './ndarray';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
-import * as addscaledmat_gpu from './webgl/addscaledmat_gpu';
+import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMaxEqualsProgram} from './webgl/argmaxequals_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import * as avg_pool_gpu from './webgl/avg_pool_gpu';
@@ -52,9 +52,6 @@ const BATCHNORM_PROG = 'batchnorm';
 
 const COPY_PROG = 'copy';
 const CONCAT_PROG = 'concat';
-
-// Matrix algebra.
-const ADD_SCALED_MAT_PROG = 'addscaledmat';
 
 // Element-wise ops.
 const RESHAPE_PROG = 'reshape';
@@ -238,27 +235,8 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T) {
-    let cleanupB = false;
-    if (!this.doGPUShapesMatch(a, b)) {
-      b = this.reshapeTexture(b, a.getTextureShapeRC());
-      cleanupB = true;
-    }
-
-    const program = this.getAndSaveProgram(
-        ADD_SCALED_MAT_PROG, () => addscaledmat_gpu.getFragmentShaderSource());
-
-    const textureShapeRC = a.getTextureShapeRC();
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    addscaledmat_gpu.addScaledMatrices(
-        this.gpgpu, program, a.getTexture(), b.getTexture(), textureShapeRC[0],
-        textureShapeRC[1], c1.getTexture(), c2.getTexture(), resultTexture);
-
-    if (cleanupB) {
-      b.dispose();
-    }
-    // Bring the result back to the original shape.
-    return NDArray.make<T>(a.shape, {texture: resultTexture, textureShapeRC});
+    const program = new AddScaledMatProgram(a.shape, b.shape);
+    return this.compileAndRun<NDArray, T>(program, [a, b, c1, c2]);
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
@@ -961,18 +939,6 @@ export class NDArrayMathGPU extends NDArrayMath {
           this.gpgpu.createProgram(getShaderSource());
     }
     return this.programCache[programKey];
-  }
-
-  private doGPUShapesMatch(a: NDArray, b: NDArray): boolean {
-    util.assertShapesMatch(a.shape, b.shape);
-    if (a.inGPU()) {
-      // Prefer B to have the shape of A.
-      b.getTextureShapeRC(a.getTextureShapeRC());
-    } else if (b.inGPU()) {
-      // Prefer A to have the shape of B.
-      a.getTextureShapeRC(b.getTextureShapeRC());
-    }
-    return util.arraysEqual(a.getTextureShapeRC(), b.getTextureShapeRC());
   }
 
   getTextureManager(): TextureManager {

@@ -36,8 +36,7 @@ export function makeShader(inputsInfo: InputInfo[], outputShape: ShapeInfo,
   const outputSamplingSnippet =
       getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   const source = [
-    SHADER_PREFIX, inputPrefixSnippet, SAMPLE_1D_SNIPPET, SAMPLE_2D_SNIPPET,
-    SAMPLE_3D_SNIPPET, SAMPLE_4D_SNIPPET, inputSamplingSnippet,
+    SHADER_PREFIX, inputPrefixSnippet, inputSamplingSnippet,
     outputSamplingSnippet, userCode
   ].join('\n');
   return source;
@@ -107,10 +106,62 @@ function getOutputSamplingSnippet(
   }
 }
 
+const SAMPLE_1D_SNIPPET = `
+vec2 UVfrom1D(float texNumR, float texNumC, float index) {
+  float texR = floor(index / texNumC);
+  float texC = mod(index, texNumC);
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+`;
+
+const SAMPLE_2D_SNIPPET = `
+vec2 UVfrom2D(float texNumR, float texNumC, float numC, float row,
+    float col) {
+  float index = dot(vec2(row, col), vec2(numC, 1.0));
+  float texR = floor(index / texNumC);
+  float texC = mod(index, texNumC);
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+`;
+
+const SAMPLE_3D_SNIPPET = `
+vec2 UVfrom3D(float texNumR, float texNumC, float stride0,
+    float stride1, float row, float col, float depth) {
+  float index = dot(vec3(row, col, depth), vec3(stride0, stride1, 1.0));
+  float texR = floor(index / texNumC);
+  float texC = mod(index, texNumC);
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+`;
+
+const SAMPLE_4D_SNIPPET = `
+vec2 UVfrom4D(float texNumR, float texNumC, float stride0,
+    float stride1, float stride2, float row, float col, float depth,
+    float depth2) {
+  float index = dot(vec4(row, col, depth, depth2),
+                    vec4(stride0, stride1, stride2, 1.0));
+  float texR = floor(index / texNumC);
+  float texC = mod(index, texNumC);
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+`;
+
 const SHADER_PREFIX = `
   precision highp float;
   varying vec2 resultUV;
   const vec2 halfCR = vec2(0.5, 0.5);
+
+  float sample(sampler2D texture, vec2 uv) {
+    return texture2D(texture, uv).r;
+  }
+
+  float sampleOrZeroPad(sampler2D texture, vec2 uv) {
+    bool lessThanZero = any(lessThan(uv, vec2(0, 0)));
+    bool greaterThanOne = any(greaterThan(uv, vec2(1, 1)));
+    bool outside = lessThanZero || greaterThanOne;
+    float value = sample(texture, uv);
+    return mix(value, 0.0, float(outside));
+  }
 
   void setOutput(float val) {
     gl_FragColor = vec4(val, 0, 0, 0);
@@ -119,50 +170,10 @@ const SHADER_PREFIX = `
   bool isNaN(float val) {
     return val == val ? false : true;
   }
-`;
-
-const SAMPLE_1D_SNIPPET = `
-  float sample1D(sampler2D texture, float texNumR, float texNumC, float index) {
-    float texR = floor(index / texNumC);
-    float texC = mod(index, texNumC);
-    vec2 uv = (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-    return texture2D(texture, uv).r;
-  }
-`;
-
-const SAMPLE_2D_SNIPPET = `
-  float sample2D(sampler2D texture, float texNumR, float texNumC, float numC,
-      float row, float col) {
-    float index = dot(vec2(row, col), vec2(numC, 1.0));
-    float texR = floor(index / texNumC);
-    float texC = mod(index, texNumC);
-    vec2 uv = (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-    return texture2D(texture, uv).r;
-  }
-`;
-
-const SAMPLE_3D_SNIPPET = `
-  float sample3D(sampler2D texture, float texNumR, float texNumC, float stride0,
-      float stride1, float row, float col, float depth) {
-    float index = dot(vec3(row, col, depth), vec3(stride0, stride1, 1.0));
-    float texR = floor(index / texNumC);
-    float texC = mod(index, texNumC);
-    vec2 uv = (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-    return texture2D(texture, uv).r;
-  }
-`;
-
-const SAMPLE_4D_SNIPPET = `
-  float sample4D(sampler2D texture, float texNumR, float texNumC, float stride0,
-      float stride1, float stride2, float row, float col, float depth,
-      float depth2) {
-    float index = dot(vec4(row, col, depth, depth2),
-                      vec4(stride0, stride1, stride2, 1.0));
-    float texR = floor(index / texNumC);
-    float texC = mod(index, texNumC);
-    vec2 uv = (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-    return texture2D(texture, uv).r;
-  }
+  ${SAMPLE_1D_SNIPPET}
+  ${SAMPLE_2D_SNIPPET}
+  ${SAMPLE_3D_SNIPPET}
+  ${SAMPLE_4D_SNIPPET}
 `;
 
 function getOutput1DCoords(
@@ -254,7 +265,7 @@ function getSamplerScalar(texName: string): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   return `
     float ${funcName}() {
-      return texture2D(${texName}, halfCR).r;
+      return sample(${texName}, halfCR);
     }
   `;
 }
@@ -267,7 +278,11 @@ function getSampler1D(
   if (texShape[0] === 1 && texShape[1] === 1) {
     return `
       float ${funcName}(float index) {
-        return texture2D(${texName}, halfCR).r;
+        return sample(${texName}, halfCR);
+      }
+
+      float ${funcName}OrZeroPad(float index) {
+        return sampleOrZeroPad(${texName}, halfCR);
       }
     `;
   }
@@ -275,7 +290,12 @@ function getSampler1D(
     return `
       float ${funcName}(float index) {
         vec2 uv = vec2(0.5, (index + 0.5) / ${tR}.0);
-        return texture2D(${texName}, uv).r;
+        return sample(${texName}, uv);
+      }
+
+      float ${funcName}OrZeroPad(float index) {
+        vec2 uv = vec2(0.5, (index + 0.5) / ${tR}.0);
+        return sampleOrZeroPad(${texName}, uv);
       }
     `;
   }
@@ -283,13 +303,24 @@ function getSampler1D(
     return `
       float ${funcName}(float index) {
         vec2 uv = vec2((index + 0.5) / ${tC}.0, 0.5);
-        return texture2D(${texName}, uv).r;
+        return sample(${texName}, uv);
+      }
+
+      float ${funcName}OrZeroPad(float index) {
+        vec2 uv = vec2((index + 0.5) / ${tC}.0, 0.5);
+        return sampleOrZeroPad(${texName}, uv);
       }
     `;
   }
   return `
     float ${funcName}(float index) {
-      return sample1D(${texName}, ${tR}.0, ${tC}.0, index);
+      vec2 uv = UVfrom1D(${tR}.0, ${tC}.0, index);
+      return sample(${texName}, uv);
+    }
+
+    float ${funcName}OrZeroPad(float index) {
+      vec2 uv = UVfrom1D(${tR}.0, ${tC}.0, index);
+      return sampleOrZeroPad(${texName}, uv);
     }
   `;
 }
@@ -304,8 +335,15 @@ function getSampler3D(
   const stride1 = shape[2];
   return `
     float ${funcName}(float row, float col, float depth) {
-      return sample3D(${texName}, ${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0,
-          row, col, depth);
+      vec2 uv = UVfrom3D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0, row,
+        col, depth);
+      return sample(${texName}, uv);
+    }
+
+    float ${funcName}OrZeroPad(float row, float col, float depth) {
+      vec2 uv = UVfrom3D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0, row,
+        col, depth);
+      return sampleOrZeroPad(${texName}, uv);
     }
   `;
 }
@@ -321,11 +359,19 @@ function getSampler4D(
   const stride0 = shape[1] * stride1;
 
   return `
-  float ${funcName}(float row, float col, float depth, float depth2) {
-    return sample4D(${texName}, ${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0,
-        ${stride2}.0, row, col, depth, depth2);
-  }
-`;
+    float ${funcName}(float row, float col, float depth, float depth2) {
+      vec2 uv = UVfrom4D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0,
+          ${stride2}.0, row, col, depth, depth2);
+      return sample(${texName}, uv);
+    }
+
+    float ${funcName}OrZeroPad(float row, float col, float depth,
+        float depth2) {
+      vec2 uv = UVfrom4D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0,
+          ${stride2}.0, row, col, depth, depth2);
+      return sampleOrZeroPad(${texName}, uv);
+    }
+  `;
 }
 
 function getSampler2D(
@@ -338,13 +384,24 @@ function getSampler2D(
     return `
       float ${funcName}(float row, float col) {
         vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
-        return texture2D(${texName}, uv).r;
+        return sample(${texName}, uv);
+      }
+
+      float ${funcName}OrZeroPad(float row, float col) {
+        vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
+        return sampleOrZeroPad(${texName}, uv);
       }
     `;
   }
   return `
     float ${funcName}(float row, float col) {
-      return sample2D(${texName}, ${tR}.0, ${tC}.0, ${shape[1]}.0, row, col);
+      vec2 uv = UVfrom2D(${tR}.0, ${tC}.0, ${shape[1]}.0, row, col);
+      return sample(${texName}, uv);
+    }
+
+    float ${funcName}OrZeroPad(float row, float col) {
+      vec2 uv = UVfrom2D(${tR}.0, ${tC}.0, ${shape[1]}.0, row, col);
+      return sampleOrZeroPad(${texName}, uv);
     }
   `;
 }
@@ -357,7 +414,7 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
   if (tNumC === 1 && tNumR === 1) {
     return `
       float ${funcName}(float index) {
-        return texture2D(${texName}, halfCR).r;
+        return sample(${texName}, halfCR);
       }
     `;
   }
@@ -365,7 +422,7 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
     return `
       float ${funcName}(float index) {
         vec2 uv = vec2(0.5, (index + 0.5) / ${tNumR}.0);
-        return texture2D(${texName}, uv).r;
+        return sample(${texName}, uv);
       }
     `;
   }
@@ -373,7 +430,7 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
     return `
       float ${funcName}(float index) {
         vec2 uv = vec2((index + 0.5) / ${tNumC}.0, 0.5);
-        return texture2D(${texName}, uv).r;
+        return sample(${texName}, uv);
       }
     `;
   }
@@ -382,7 +439,7 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
       float texR = floor(index / ${tNumC}.0);
       float texC = mod(index, ${tNumC}.0);
       vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tNumC}.0, ${tNumR}.0);
-      return texture2D(${texName}, uv).r;
+      return sample(${texName}, uv);
     }
   `;
 }
@@ -394,7 +451,7 @@ function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
   if (util.arraysEqual(inTexShape, outTexShape)) {
     return `
       float ${funcName}() {
-        return texture2D(${texName}, resultUV).r;
+        return sample(${texName}, resultUV);
       }
     `;
   }
@@ -410,7 +467,7 @@ function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
       float texC = mod(index, ${inTexShape[1]}.0);
       vec2 uv = (vec2(texC, texR) + halfCR) /
                  vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
-      return texture2D(${texName}, uv).r;
+      return sample(${texName}, uv);
     }
   `;
 }
