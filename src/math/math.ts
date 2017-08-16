@@ -22,7 +22,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 export type ScopeResult = NDArray[]|NDArray|void;
 
 export interface LSTMCell {
-  (data: Array1D, c: Array2D, h: Array2D): Array2D[];
+  (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
 }
 
 
@@ -1140,28 +1140,34 @@ export abstract class NDArrayMath {
   /**
    * Computes the next states and outputs of a stack of LSTMCells.
    * Each cell output is used as input to the next cell.
+   * This is only the forward mode.
    * Derived from tf.contrib.rn.MultiRNNCell.
    * @param lstmCells Array of LSTMCell functions.
    * @param data The input to the cell.
    * @param c Array of previous cell states.
    * @param h Array of previous cell outputs.
+   * @return Tuple [nextCellStates, cellOutputs]
    */
-  multiRNNCell(lstmCells: LSTMCell[], data: Array1D, c: Array2D[],
-      h: Array2D[]): Array2D[][] {
-    const res = this.scope((keep, track) => {
+  multiRNNCell(lstmCells: LSTMCell[], data: Array2D, c: Array2D[],
+      h: Array2D[]): [Array2D[], Array2D[]] {
+    util.assert(
+        data.shape[0] === 1,
+        `Error in multiRNNCell: first dimension of data is ${data.shape[0]}, ` +
+            `but batch sizes > 1 are not yet supported.`);
+    const res = this.scope(() => {
       let input = data;
       const newStates = [];
       for (let i = 0; i < lstmCells.length; i++) {
         const output = lstmCells[i](input, c[i], h[i]);
         newStates.push(output[0]);
         newStates.push(output[1]);
-        input = this.reshape(output[1], [output[1].shape[1]]) as Array1D;
+        input = output[1];
       }
 
       return newStates;
     });
-    const newC:Array2D[] = [];
-    const newH:Array2D[] = [];
+    const newC: Array2D[] = [];
+    const newH: Array2D[] = [];
     for (let i = 0; i < res.length; i += 2) {
       newC.push(res[i] as Array2D);
       newH.push(res[i + 1] as Array2D);
@@ -1171,6 +1177,7 @@ export abstract class NDArrayMath {
 
   /**
    * Computes the next state and output of a BasicLSTMCell.
+   * This is only the forward mode.
    * Derived from tf.contrib.rnn.BasicLSTMCell.
    * @param forgetBias Forget bias for the cell.
    * @param lstmKernel The weights for the cell.
@@ -1178,29 +1185,25 @@ export abstract class NDArrayMath {
    * @param data The input to the cell.
    * @param c Previous cell state.
    * @param h Previous cell output.
+   * @return Tuple [nextCellState, cellOutput]
    */
   basicLSTMCell(forgetBias: Scalar, lstmKernel: Array2D, lstmBias: Array1D,
-      data: Array1D, c: Array2D, h: Array2D): Array2D[] {
-    return this.scope((keep, track) => {
+      data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D] {
+    const res = this.scope(() => {
+      util.assert(
+          data.shape[0] === 1,
+          `Error in multiRNNCell: first dimension of data is ` +
+              `${data.shape[0]}, but batch sizes > 1 are not yet supported.`);
       // concat(inputs, h, 1)
       // There is no concat1d, so reshape inputs and h to 3d, concat, then
-      // reshape back to 1d.
-      const data3D = this.reshape(
-          data, [1, 1, data.shape[0]]) as Array3D;
-      const h3D = this.reshape(h, [1, 1, h.shape[1]]) as Array3D;
+      // reshape back to 2d.
+      const data3D = data.as3D(1, 1, data.shape[1]);
+      const h3D = h.as3D(1, 1, h.shape[1]);
       const combined3D = this.concat3D(data3D, h3D, 2);
-      const combined2D = this.reshape(
-          combined3D, [1, data.shape[0] + h.shape[1]]) as Array2D;
+      const combined2D = combined3D.as2D(1, data.shape[1] + h.shape[1]);
 
       const weighted = this.matMul(combined2D, lstmKernel);
-
-      // tf.nn.bias_add(weighted, lstmBias)
-      // There is no broadcast add, but we can assume a batch size of 1,
-      // so just reshape and do a normal add.
-      const weighted1D = this.reshape(weighted, [lstmBias.shape[0]]) as Array1D;
-      const res1D = this.add(weighted1D, lstmBias);
-      // Convert back to 2D so we can do slice2D operations.
-      const res = this.reshape(res1D, [1, res1D.shape[0]]) as Array2D;
+      const res = this.add(weighted, lstmBias) as Array2D;
 
       // i = input_gate, j = new_input, f = forget_gate, o = output_gate
       const i = this.slice2D(res, [0, 0], [res.shape[0], res.shape[1] / 4]);
@@ -1212,14 +1215,15 @@ export abstract class NDArrayMath {
           [res.shape[0], res.shape[1] / 4]);
 
       const newC = this.add(
-          this.elementWiseMul(c,
+          this.multiplyStrict(c,
               this.sigmoid(this.scalarPlusArray(forgetBias, f))),
-          this.elementWiseMul(this.sigmoid(i), this.tanh(j))) as Array2D;
-      const newH = this.elementWiseMul(
+          this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
+      const newH = this.multiplyStrict(
           this.tanh(newC), this.sigmoid(o)) as Array2D;
 
       return [newC, newH];
     });
+    return [res[0], res[1]];
   }
 
 }

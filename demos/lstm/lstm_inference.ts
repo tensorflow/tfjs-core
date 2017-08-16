@@ -52,8 +52,8 @@ reader.getAllVariables().then(vars => {
 
     let input = primerData;
     for (let i = 0; i < expected.length; i++) {
-      const onehot = track(Array1D.zeros([10]));
-      onehot.set(1.0, input);
+      const onehot = track(Array2D.zeros([1, 10]));
+      onehot.set(1.0, 0, input);
 
       const output = math.multiRNNCell([lstm1, lstm2], onehot, c, h);
 
