@@ -105,39 +105,6 @@ export class NDArrayMathGPU extends NDArrayMath {
         ndarray.shape, {texture: resultTexture, textureShapeRC});
   }
 
-  protected reshapeInternal<T1 extends NDArray, T2 extends NDArray>(
-      ndarray: T1, newShape: number[]): T2 {
-    let newTexShape: [number, number];
-
-    switch (newShape.length) {
-      case 0:
-        newTexShape = [1, 1];
-        break;
-      case 1:
-        newTexShape = [newShape[0], 1];
-        break;
-      case 2:
-        newTexShape = [newShape[0], newShape[1]];
-        break;
-      case 3:
-        newTexShape = [newShape[0], newShape[1] * newShape[2]];
-        break;
-      default:
-        throw Error(
-            `Reshapes into ${newShape.length}-dim ndarray is not yet ` +
-            `supported on GPU`);
-    }
-
-    const actualTexShape = ndarray.getTextureShapeRC(newTexShape);
-    let clonedArray: T1;
-    if (!util.arraysEqual(actualTexShape, newTexShape)) {
-      clonedArray = this.reshapeTexture(ndarray, newTexShape);
-    } else {
-      clonedArray = this.cloneInternal(ndarray);
-    }
-    return clonedArray.reshape<T2>(newShape);
-  }
-
   protected slice2DInternal(
       input: Array2D, beginRowCol: [number, number],
       sizeRowCol: [number, number]): Array2D {
