@@ -47,22 +47,26 @@ export class Conv2DProgram implements GPGPUProgram {
         // Convolve x(?, ?, d1) with w(:, :, d1, d2) to get y(yR, yC, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int wR = 0; wR < ${fieldSize}; wR++) {
-          float wR_float = float(wR);
-          float xR = xRCorner + wR_float;
+        for (int iwR = 0; iwR < ${fieldSize}; iwR++) {
+          float wR = float(iwR);
+          float xR = xRCorner + wR;
+
           if (xR < 0.0 || xR > ${xRowsLimit}) {
             continue;
           }
-          for (int wC = 0; wC < ${fieldSize}; wC++) {
-            float wC_float = float(wC);
-            float xC = xCCorner + wC_float;
+
+          for (int iwC = 0; iwC < ${fieldSize}; iwC++) {
+            float wC = float(iwC);
+            float xC = xCCorner + wC;
+
             if (xC < 0.0 || xC > ${xColsLimit}) {
               continue;
             }
-            for (int d1 = 0; d1 < ${inputDepth}; d1++) {
-              float d1_float = float(d1);
-              float xValue = getX(xR, xC, d1_float);
-              float wValue = getW(wR_float, wC_float, d1_float, d2);
+
+            for (int id1 = 0; id1 < ${inputDepth}; id1++) {
+              float d1 = float(id1);
+              float xValue = getX(xR, xC, d1);
+              float wValue = getW(wR, wC, d1, d2);
               dotProd += xValue * wValue;
             }
           }

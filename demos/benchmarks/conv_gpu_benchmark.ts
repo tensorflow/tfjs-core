@@ -14,25 +14,28 @@ limitations under the License.
 ==============================================================================*/
 
 import * as conv_util from '../../src/math/conv_util';
+import {Array1D, Array3D, Array4D, initializeGPU} from '../../src/math/ndarray';
 import {Conv2DProgram} from '../../src/math/webgl/conv_gpu';
 import {GPGPUContext} from '../../src/math/webgl/gpgpu_context';
 import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
-import {Array1D, Array3D, Array4D, initializeGPU} from '../../src/math/ndarray';
 import {TextureManager} from '../../src/math/webgl/texture_manager';
+
 import {BenchmarkTest} from './benchmark';
 
 const OP_RUNS = 40;
 
 export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
+  const gpgpu = new GPGPUContext();
+  const texManager = new TextureManager(gpgpu);
+  initializeGPU(gpgpu, texManager);
+
   const inputDepth = 1;
   const inputShape: [number, number, number] = [size, size, inputDepth];
   const outputDepth = 1;
   const fieldSize = 11;
   const stride = 1;
   const zeroPad = conv_util.computeDefaultPad(inputShape, fieldSize, stride);
-  const gpgpu = new GPGPUContext();
-  const texManager = new TextureManager(gpgpu);
-  initializeGPU(gpgpu, texManager);
+
   const program = new Conv2DProgram(
       inputShape, fieldSize, outputDepth, stride, zeroPad, true);
   const outputShape = program.outputShape as [number, number, number];

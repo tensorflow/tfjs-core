@@ -23,7 +23,6 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMaxEqualsProgram} from './webgl/argmaxequals_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
-import * as avg_pool_gpu from './webgl/avg_pool_gpu';
 import * as batchnorm_gpu from './webgl/batchnorm_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import * as concat3d_gpu from './webgl/concat3d_gpu';
@@ -36,12 +35,10 @@ import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
 import {LogSumExpProgram} from './webgl/logsumexp_gpu';
-import * as max_pool_backprop_gpu from './webgl/max_pool_backprop_gpu';
-import * as max_pool_gpu from './webgl/max_pool_gpu';
-import * as min_pool_gpu from './webgl/min_pool_gpu';
+import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
-import * as pool_gpu from './webgl/pool_gpu';
+import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import * as reshape_gpu from './webgl/reshape_gpu';
 import * as resize_bilinear_gpu from './webgl/resize_bilinear_gpu';
@@ -50,20 +47,9 @@ import {UnaryOp, UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
 
 const BATCHNORM_PROG = 'batchnorm';
-
 const COPY_PROG = 'copy';
 const CONCAT_PROG = 'concat';
-
-// Element-wise ops.
 const RESHAPE_PROG = 'reshape';
-
-// Convolution.
-const MAX_POOL_PROG = 'maxpool';
-const MAX_POOL_POSITIONS_PROG = 'maxpool_posn';
-const MAX_POOL_BACKPROP_PROG = 'maxpool_backprop';
-const MIN_POOL_PROG = 'minpool';
-const AVG_POOL_PROG = 'avgpool';
-
 const RESIZE_BILINEAR_PROG = 'resizebilin';
 
 function makeCopyProgramName(
@@ -488,50 +474,10 @@ export class NDArrayMathGPU extends NDArrayMath {
       x: Array3D, dy: Array3D, weights: Array4D, stride: number,
       pad: number): {dx: Array3D, dw: Array4D, db: Array1D} {
     const fSize = weights.shape[0];
-    const inputDepth = weights.shape[2];
-    const outputDepth = weights.shape[3];
-    const xTexShape = conv_util.computeTexShapeFrom3D(x.shape);
-    const wTexShape =
-        conv_util.computeWeightsTexShape(inputDepth, outputDepth, fSize);
-    const yTexShape = conv_util.computeTexShapeFrom3D(dy.shape);
-
-    // If the texture shapes doesn't match the shapes that shaders expect,
-    // do physical texture reshapes on the GPU.
-    let cleanupX = false;
-    const actualXTexShape = x.getTextureShapeRC(xTexShape);
-    if (!util.arraysEqual(actualXTexShape, xTexShape)) {
-      x = this.reshapeTexture(x, xTexShape);
-      cleanupX = true;
-    }
-
-    let cleanupW = false;
-    const actualWTexShape = weights.getTextureShapeRC(wTexShape);
-    if (!util.arraysEqual(actualWTexShape, wTexShape)) {
-      weights = this.reshapeTexture(weights, wTexShape);
-      cleanupW = true;
-    }
-
-    let cleanupY = false;
-    const actualYTexShape = dy.getTextureShapeRC(yTexShape);
-    if (!util.arraysEqual(actualYTexShape, yTexShape)) {
-      dy = this.reshapeTexture(dy, yTexShape);
-      cleanupY = true;
-    }
-
     const dw = this.conv2dDerWeights(x, dy, fSize, stride, pad);
     const db = this.conv2dDerBias(dy);
     const dx = this.conv2dTransposeInternal(
         dy, weights, null /** biases */, stride, pad);
-
-    if (cleanupX) {
-      x.dispose();
-    }
-    if (cleanupW) {
-      weights.dispose();
-    }
-    if (cleanupY) {
-      dy.dispose();
-    }
     return {dx, db, dw};
   }
 
@@ -560,149 +506,38 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [dY]);
   }
 
-  private pool(
-      program: WebGLProgram, x: Array3D, fSize: number, stride: number,
-      pad: number): Array3D {
-    const xTexShape = conv_util.computeTexShapeFrom3D(x.shape);
-
-    // If the texture shapes doesn't match the shapes that shaders expect,
-    // do physical texture reshapes on the GPU.
-    const actualXTexShape = x.getTextureShapeRC(xTexShape);
-    let cleanupX = false;
-    if (!util.arraysEqual(actualXTexShape, xTexShape)) {
-      x = this.reshapeTexture(x, xTexShape);
-      cleanupX = true;
-    }
-
-    const resultShape =
-        conv_util.computeOutputShape3D(x.shape, fSize, x.shape[2], stride, pad);
-    const resultTexShape = conv_util.computeTexShapeFrom3D(resultShape);
-    const poolResultTex = this.textureManager.acquireTexture(resultTexShape);
-
-    pool_gpu.poolCommon(
-        this.gpgpu, program, x.getTexture(), poolResultTex, resultTexShape);
-
-    if (cleanupX) {
-      x.dispose();
-    }
-
-    return NDArray.make<Array3D>(
-        resultShape, {texture: poolResultTex, textureShapeRC: resultTexShape});
-  }
-
   protected maxPoolInternal(
       x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    const maxPoolProgKey =
-        [MAX_POOL_PROG, x.shape, fSize, stride, pad].join('_');
-    const maxPoolProgram = this.getAndSaveProgram(maxPoolProgKey, () => {
-      return max_pool_gpu.getFragmentShaderMaxPoolSource(
-          x.shape, fSize, stride, pad);
-    });
-
-    return this.pool(maxPoolProgram, x, fSize, stride, pad);
+    const program =
+        new Pool2DProgram(x.shape, fSize, stride, pad, 'max', false);
+    return this.compileAndRun(program, [x]);
   }
 
   protected minPoolInternal(
       x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    const minPoolProgKey =
-        [MIN_POOL_PROG, x.shape, fSize, stride, pad].join('_');
-    const minPoolProgram = this.getAndSaveProgram(minPoolProgKey, () => {
-      return min_pool_gpu.getFragmentShaderMinPoolSource(
-          x.shape, fSize, stride, pad);
-    });
-
-    return this.pool(minPoolProgram, x, fSize, stride, pad);
+    const program =
+        new Pool2DProgram(x.shape, fSize, stride, pad, 'min', false);
+    return this.compileAndRun(program, [x]);
   }
 
   protected avgPoolInternal(
       x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    const avgPoolProgKey =
-        [AVG_POOL_PROG, x.shape, fSize, stride, pad].join('_');
-    const avgPoolProgram = this.getAndSaveProgram(avgPoolProgKey, () => {
-      return avg_pool_gpu.getFragmentShaderAvgPoolSource(
-          x.shape, fSize, stride, pad);
-    });
-
-    return this.pool(avgPoolProgram, x, fSize, stride, pad);
+    const program =
+        new Pool2DProgram(x.shape, fSize, stride, pad, 'avg', false);
+    return this.compileAndRun(program, [x]);
   }
 
   protected maxPoolBackpropInternal(
       dy: Array3D, x: Array3D, fSize: number, origStride: number,
       origPad: number): Array3D {
-    const maxPoolPositionsProgKey = [
-      MAX_POOL_POSITIONS_PROG, x.shape, fSize, origStride, origPad
-    ].join('_');
     const maxPoolPositionsProgram =
-        this.getAndSaveProgram(maxPoolPositionsProgKey, () => {
-          return max_pool_gpu.getFragmentShaderMaxPoolPositionsSource(
-              x.shape, fSize, origStride, origPad);
-        });
+        new Pool2DProgram(x.shape, fSize, origStride, origPad, 'max', true);
+    const maxPoolPositions: Array3D =
+        this.compileAndRun(maxPoolPositionsProgram, [x]);
 
-    const maxPoolResultShape = conv_util.computeOutputShape3D(
-        x.shape, fSize, x.shape[2], origStride, origPad);
-    const maxPoolResultTexShape =
-        conv_util.computeTexShapeFrom3D(maxPoolResultShape);
-    const maxPoolPositionsResultTex =
-        this.textureManager.acquireTexture(maxPoolResultTexShape);
-    // If the texture shapes doesn't match the shapes that shaders expect,
-    // do physical texture reshapes on the GPU.
-    const xTexShape = conv_util.computeTexShapeFrom3D(x.shape);
-    const actualXTexShape = x.getTextureShapeRC(xTexShape);
-    let cleanupX = false;
-    if (!util.arraysEqual(actualXTexShape, xTexShape)) {
-      x = this.reshapeTexture(x, xTexShape);
-      cleanupX = true;
-    }
-
-    max_pool_gpu.maxPoolCommon(
-        this.gpgpu, maxPoolPositionsProgram, x.getTexture(),
-        maxPoolPositionsResultTex, maxPoolResultTexShape);
-
-    const maxPoolBackpropProgKey = [
-      MAX_POOL_BACKPROP_PROG, dy.shape, fSize, origStride, origPad
-    ].join('_');
-    const program = this.getAndSaveProgram(maxPoolBackpropProgKey, () => {
-      return max_pool_backprop_gpu.getFragmentShaderMaxPoolBackprop(
-          dy.shape, fSize, origStride, origPad);
-    });
-
-    const dyTexShape = conv_util.computeTexShapeFrom3D(dy.shape);
-
-    // If the texture shapes doesn't match the shapes that shaders expect,
-    // do physical texture reshapes on the GPU.
-    const actualDyTexShape = dy.getTextureShapeRC(dyTexShape);
-    let cleanupDy = false;
-    if (!util.arraysEqual(actualDyTexShape, dyTexShape)) {
-      dy = this.reshapeTexture(dy, dyTexShape);
-      cleanupDy = true;
-    }
-
-    const dilatedDyRC =
-        conv_util.computeDilatedRC([dy.shape[0], dy.shape[1]], origStride);
-    const pad = fSize - 1 - origPad;
-    const resultShapeRCD = conv_util.computeOutputShape3D(
-        [dilatedDyRC[0], dilatedDyRC[1], dy.shape[2]], fSize, dy.shape[2], 1,
-        pad);
-    const resultTexShape = conv_util.computeTexShapeFrom3D(resultShapeRCD);
-    const resultTex = this.textureManager.acquireTexture(resultTexShape);
-
-    max_pool_backprop_gpu.maxPoolBackprop(
-        this.gpgpu, program, dy.getTexture(), maxPoolPositionsResultTex,
-        resultTex, resultTexShape);
-
-    if (cleanupDy) {
-      dy.dispose();
-    }
-
-    if (cleanupX) {
-      x.dispose();
-    }
-
-    this.textureManager.releaseTexture(
-        maxPoolPositionsResultTex, maxPoolResultTexShape);
-
-    return NDArray.make<Array3D>(
-        resultShapeRCD, {texture: resultTex, textureShapeRC: resultTexShape});
+    const maxPoolBackPropProgram =
+        new MaxPool2DBackpropProgram(dy.shape, fSize, origStride, origPad);
+    return this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
   }
 
   protected resizeBilinear3DInternal(

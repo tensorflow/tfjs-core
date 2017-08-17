@@ -16,11 +16,11 @@ limitations under the License.
 import * as test_util from '../../test_util';
 import * as conv_util from '../conv_util';
 import {NDArrayMathCPU} from '../math_cpu';
+import {Array1D, Array3D, Array4D, initializeGPU, NDArray} from '../ndarray';
 
 import {Conv2DProgram} from './conv_gpu';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
-import {NDArray, Array1D, Array3D, Array4D, initializeGPU} from '../ndarray';
 import {TextureManager} from './texture_manager';
 
 describe('conv_gpu', () => {
@@ -37,7 +37,6 @@ describe('conv_gpu', () => {
     const wShape =
         conv_util.computeWeightsShape4D(xShapeRCD[2], resultDepth, fieldSize);
     const W = Array4D.new(wShape, weights);
-
     const b = biasVals != null ? Array1D.new(biasVals) : null;
 
     const gpgpu = new GPGPUContext();
@@ -46,12 +45,10 @@ describe('conv_gpu', () => {
     initializeGPU(gpgpu, textureManager);
 
     const program = new Conv2DProgram(
-        xShapeRCD, fieldSize, resultDepth, stride, zeroPad,
-        biasVals != null);
+        xShapeRCD, fieldSize, resultDepth, stride, zeroPad, biasVals != null);
     const res = NDArray.zeros(program.outputShape);
     const inputs = biasVals != null ? [x, W, b] : [x, W];
-    const binary =
-        gpgpu_math.compileProgram(gpgpu, program, inputs, res);
+    const binary = gpgpu_math.compileProgram(gpgpu, program, inputs, res);
     gpgpu_math.runProgram(binary, inputs, res);
     const resValues = res.getValues();
 

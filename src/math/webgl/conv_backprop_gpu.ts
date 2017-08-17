@@ -45,19 +45,23 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
         // Convolve x(?, ?, d1) with dy(:, :, d2) to get dw(wR, wC, d1, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int yR = 0; yR < ${yNumRows}; yR++) {
-          float yR_float = float(yR);
-          float xR = wR + yR_float * ${stride}.0 - ${zeroPad}.0;
+        for (int iyR = 0; iyR < ${yNumRows}; iyR++) {
+          float yR = float(iyR);
+          float xR = wR + yR * ${stride}.0 - ${zeroPad}.0;
+
           if (xR < 0.0 || xR > ${xRowsLimit}) {
             continue;
           }
-          for (int yC = 0; yC < ${yNumCols}; yC++) {
-            float yC_float = float(yC);
-            float xC = wC + yC_float * ${stride}.0 - ${zeroPad}.0;
+
+          for (int iyC = 0; iyC < ${yNumCols}; iyC++) {
+            float yC = float(iyC);
+            float xC = wC + yC * ${stride}.0 - ${zeroPad}.0;
+
             if (xC < 0.0 || xC > ${xColsLimit}) {
               continue;
             }
-            float dyValue = getDy(yR_float, yC_float, d2);
+
+            float dyValue = getDy(yR, yC, d2);
             float xValue = getX(xR, xC, d1);
             dotProd += (xValue * dyValue);
           }
@@ -103,28 +107,30 @@ export class Conv2DTransposeProgram implements GPGPUProgram {
         // Convolve x(?, ?, d1) with w(:, :, d2, d1) to get y(yR, yC, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int wR = 0; wR < ${fSize}; wR++) {
-          float wR_float = float(wR);
-          float xR = (xRCorner + wR_float) / ${origStride}.0;
+        for (int iwR = 0; iwR < ${fSize}; iwR++) {
+          float wR = float(iwR);
+          float xR = (xRCorner + wR) / ${origStride}.0;
+
           if (xR < 0.0 || xR >= ${xRows}.0 || fract(xR) > 0.0) {
             continue;
           }
 
-          float wRPerm = ${fSize}.0 - 1.0 - wR_float;
+          float wRPerm = ${fSize}.0 - 1.0 - wR;
 
-          for (int wC = 0; wC < ${fSize}; wC++) {
-            float wC_float = float(wC);
-            float xC = (xCCorner + wC_float) / ${origStride}.0;
+          for (int iwC = 0; iwC < ${fSize}; iwC++) {
+            float wC = float(iwC);
+            float xC = (xCCorner + wC) / ${origStride}.0;
+
             if (xC < 0.0 || xC >= ${xCols}.0 || fract(xC) > 0.0) {
               continue;
             }
 
-            float wCPerm = ${fSize}.0 - 1.0 - wC_float;
+            float wCPerm = ${fSize}.0 - 1.0 - wC;
 
-            for (int d1 = 0; d1 < ${origOutputDepth}; d1++) {
-              float d1_float = float(d1);
-              float xValue = getX(xR, xC, d1_float);
-              float wValue = getW(wRPerm, wCPerm, d2, d1_float);
+            for (int id1 = 0; id1 < ${origOutputDepth}; id1++) {
+              float d1 = float(id1);
+              float xValue = getX(xR, xC, d1);
+              float wValue = getW(wRPerm, wCPerm, d2, d1);
               dotProd += xValue * wValue;
             }
           }

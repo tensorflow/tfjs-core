@@ -111,7 +111,7 @@ const SAMPLE_1D_SNIPPET = `
 vec2 UVfrom1D(float texNumR, float texNumC, float index) {
   float texR = floor(index / texNumC);
   float texC = mod(index, texNumC);
-  return vec2(texC, texR) / vec2(texNumC, texNumR);
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
 `;
 
@@ -121,7 +121,7 @@ vec2 UVfrom2D(float texNumR, float texNumC, float numC, float row,
   float index = dot(vec2(row, col), vec2(numC, 1.0));
   float texR = floor(index / texNumC);
   float texC = mod(index, texNumC);
-  return vec2(texC, texR) / vec2(texNumC, texNumR);
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
 `;
 
@@ -131,7 +131,7 @@ vec2 UVfrom3D(float texNumR, float texNumC, float stride0,
   float index = dot(vec3(row, col, depth), vec3(stride0, stride1, 1.0));
   float texR = floor(index / texNumC);
   float texC = mod(index, texNumC);
-  return vec2(texC, texR) / vec2(texNumC, texNumR);
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
 `;
 
@@ -143,13 +143,14 @@ vec2 UVfrom4D(float texNumR, float texNumC, float stride0,
                     vec4(stride0, stride1, stride2, 1.0));
   float texR = floor(index / texNumC);
   float texC = mod(index, texNumC);
-  return vec2(texC, texR) / vec2(texNumC, texNumR);
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
 `;
 
 const SHADER_PREFIX = `
   precision highp float;
   varying vec2 resultUV;
+  const vec2 halfCR = vec2(0.5, 0.5);
 
   float sample(sampler2D texture, vec2 uv) {
     return texture2D(texture, uv).r;
@@ -258,7 +259,7 @@ function getSamplerScalar(texName: string): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   return `
     float ${funcName}() {
-      return sample(${texName}, vec2(0.0, 0.0));
+      return sample(${texName}, halfCR);
     }
   `;
 }
@@ -270,7 +271,7 @@ function getSampler1D(texName: string, texShape: [number, number]): string {
   if (texShape[0] === 1 && texShape[1] === 1) {
     return `
       float ${funcName}(float index) {
-        return sample(${texName}, vec2(0.0, 0.0));
+        return sample(${texName}, halfCR);
       }
     `;
   }
@@ -311,7 +312,7 @@ function getSampler3D(
       float ${funcName}(float row, float col, float depth) {
         float texR = row;
         float texC = dot(vec2(col, depth), vec2(${stride1}, 1.0));
-        vec2 uv = vec2(texC, texR) / vec2(${tC}.0, ${tR}.0);
+        vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
         return sample(${texName}, uv);
       }
     `;
@@ -341,7 +342,7 @@ function getSampler4D(
         float texR = row;
         float texC = dot(vec3(col, depth, depth2),
                          vec3(${stride1}.0, ${stride2}.0, 1.0));
-        vec2 uv = vec2(texC, texR) / vec2(${tC}.0, ${tR}.0);
+        vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
         return sample(${texName}, uv);
       }
     `;
@@ -364,7 +365,7 @@ function getSampler2D(
   if (util.arraysEqual(shape, texShape)) {
     return `
       float ${funcName}(float row, float col) {
-        vec2 uv = vec2(col, row) / vec2(${tC}.0, ${tR}.0);
+        vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
         return sample(${texName}, uv);
       }
     `;
@@ -403,7 +404,7 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
   if (tNumC === 1 && tNumR === 1) {
     return `
       float ${funcName}(float index) {
-        return sample(${texName}, vec2(0.0, 0.0));
+        return sample(${texName}, halfCR);
       }
     `;
   }
@@ -427,7 +428,7 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
     float ${funcName}(float index) {
       float texR = floor(index / ${tNumC}.0);
       float texC = mod(index, ${tNumC}.0);
-      vec2 uv = vec2(texC, texR) / vec2(${tNumC}.0, ${tNumR}.0);
+      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tNumC}.0, ${tNumR}.0);
       return sample(${texName}, uv);
     }
   `;
@@ -455,8 +456,8 @@ function getSamplerAtOutputCoords(
       ${broadcastSnippet}
       float texR = floor(index / ${inTexShape[1]}.0);
       float texC = mod(index, ${inTexShape[1]}.0);
-      vec2 uv = vec2(texC, texR) /
-                vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
+      vec2 uv = (vec2(texC, texR) + halfCR) /
+                 vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
       return sample(${texName}, uv);
     }
   `;
