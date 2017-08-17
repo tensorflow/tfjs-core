@@ -29,6 +29,8 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
         xShape, fSize, outputDepth, stride, zeroPad);
     const yNumRows = yShape[0];
     const yNumCols = yShape[1];
+    const xRowsLimit = xShape[0] - 0.5;
+    const xColsLimit = xShape[1] - 0.5;
     this.outputShape =
         conv_util.computeWeightsShape4D(xShape[2], outputDepth, fSize);
     this.params = [stride, zeroPad];
@@ -46,13 +48,17 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
         for (int yR = 0; yR < ${yNumRows}; yR++) {
           float yR_float = float(yR);
           float xR = wR + yR_float * ${stride}.0 - ${zeroPad}.0;
-
+          if (xR < 0.0 || xR > ${xRowsLimit}) {
+            continue;
+          }
           for (int yC = 0; yC < ${yNumCols}; yC++) {
             float yC_float = float(yC);
             float xC = wC + yC_float * ${stride}.0 - ${zeroPad}.0;
-
+            if (xC < 0.0 || xC > ${xColsLimit}) {
+              continue;
+            }
             float dyValue = getDy(yR_float, yC_float, d2);
-            float xValue = getXOrZeroPad(xR, xC, d1);
+            float xValue = getX(xR, xC, d1);
             dotProd += (xValue * dyValue);
           }
         }
@@ -100,8 +106,6 @@ export class Conv2DTransposeProgram implements GPGPUProgram {
         for (int wR = 0; wR < ${fSize}; wR++) {
           float wR_float = float(wR);
           float xR = (xRCorner + wR_float) / ${origStride}.0;
-          // TODO(smilkov): Splice this with another version where you call
-          // getMatrixValueOrZeroPad(). Here and below.
           if (xR < 0.0 || xR >= ${xRows}.0 || fract(xR) > 0.0) {
             continue;
           }

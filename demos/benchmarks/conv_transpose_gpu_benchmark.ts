@@ -21,12 +21,12 @@ import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
 import {TextureManager} from '../../src/math/webgl/texture_manager';
 import {BenchmarkTest} from './benchmark';
 
-const OP_RUNS = 100;
+const OP_RUNS = 40;
 
 export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const origInputDepth = 1;
   const origOutputDepth = 2;
-  const xShape: [number, number, number] = [size, size, origOutputDepth];
+  const xShape: [number, number, number] = [size, size, 1];
   const fieldSize = 11;
   const origStride = 1;
   const origPad = 1;

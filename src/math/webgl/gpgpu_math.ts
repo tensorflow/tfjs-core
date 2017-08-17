@@ -13,12 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import * as util from '../../util';
 import {NDArray} from '../ndarray';
 
 import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import {ShapeInfo} from './shader_compiler';
-import * as util from '../../util';
 
 export interface GPGPUProgram {
   variableNames: string[];
@@ -59,17 +59,15 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
   return {
     program,
     source,
-    webGLProgram: gpgpu.createProgram(source),
-    gpgpu,
-    inShapeInfos,
-    outShapeInfo
+    webGLProgram: gpgpu.createProgram(source), gpgpu, inShapeInfos, outShapeInfo
   };
 }
 
 function validateBinaryAndProgram(shapeInfos: ShapeInfo[], inputs: NDArray[]) {
   if (shapeInfos.length !== inputs.length) {
-    throw Error(`Binary was compiled with ${shapeInfos.length} inputs, but ` +
-                `was executed with ${inputs.length} inputs`);
+    throw Error(
+        `Binary was compiled with ${shapeInfos.length} inputs, but ` +
+        `was executed with ${inputs.length} inputs`);
   }
 
   shapeInfos.forEach((s, i) => {
@@ -79,11 +77,13 @@ function validateBinaryAndProgram(shapeInfos: ShapeInfo[], inputs: NDArray[]) {
     const texShapeB = inputs[i].getTextureShapeRC();
 
     if (!util.arraysEqual(shapeA, shapeB)) {
-      throw Error(`Binary was compiled with different shapes than ` +
+      throw Error(
+          `Binary was compiled with different shapes than ` +
           `the current args. Shapes ${shapeA} and ${shapeB} must match`);
     }
     if (!util.arraysEqual(texShapeA, texShapeB)) {
-      throw Error(`Binary was compiled with different texture shapes than the` +
+      throw Error(
+          `Binary was compiled with different texture shapes than the` +
           ` current args. Shape ${texShapeA} and ${texShapeB} must match`);
     }
   });
@@ -107,8 +107,7 @@ export function runProgram<T extends NDArray, K extends NDArray>(
 }
 
 export function makeShaderKey(
-    program: GPGPUProgram, inputs: NDArray[],
-    output: NDArray): string {
+    program: GPGPUProgram, inputs: NDArray[], output: NDArray): string {
   const params = program.params;
   const keyStart =
       inputs.concat(output).map(x => x.shape + '_' + x.getTextureShapeRC());

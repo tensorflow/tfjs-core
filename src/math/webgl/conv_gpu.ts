@@ -29,7 +29,9 @@ export class Conv2DProgram implements GPGPUProgram {
         xShape, fieldSize, outputDepth, stride, pad);
     const inputDepth = xShape[2];
     this.params = [fieldSize, stride, pad, hasBias];
-
+    const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
+    const xRowsLimit = xShape[0] - 0.5;
+    const xColsLimit = xShape[1] - 0.5;
     this.userCode = `
       void main() {
         vec3 coords = getOutputCoords();
@@ -48,24 +50,24 @@ export class Conv2DProgram implements GPGPUProgram {
         for (int wR = 0; wR < ${fieldSize}; wR++) {
           float wR_float = float(wR);
           float xR = xRCorner + wR_float;
-
+          if (xR < 0.0 || xR > ${xRowsLimit}) {
+            continue;
+          }
           for (int wC = 0; wC < ${fieldSize}; wC++) {
             float wC_float = float(wC);
             float xC = xCCorner + wC_float;
-
+            if (xC < 0.0 || xC > ${xColsLimit}) {
+              continue;
+            }
             for (int d1 = 0; d1 < ${inputDepth}; d1++) {
               float d1_float = float(d1);
-              float xValue = getXOrZeroPad(xR, xC, d1_float);
+              float xValue = getX(xR, xC, d1_float);
               float wValue = getW(wR_float, wC_float, d1_float, d2);
               dotProd += xValue * wValue;
             }
           }
         }
-        ${hasBias ?
-        'dotProd += getBias(d2);' :
-        ''
-        }
-
+        ${biasSnippet}
         setOutput(dotProd);
       }
     `;

@@ -16,8 +16,7 @@ limitations under the License.
 import * as util from '../../util';
 
 export type ShapeInfo = {
-  logicalShape: number[],
-  texShape: [number, number];
+  logicalShape: number[]; texShape: [number, number];
 };
 
 export type InputInfo = {
@@ -25,8 +24,9 @@ export type InputInfo = {
   shapeInfo: ShapeInfo
 };
 
-export function makeShader(inputsInfo: InputInfo[], outputShape: ShapeInfo,
-    userCode: string, broadcast: boolean): string {
+export function makeShader(
+    inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
+    broadcast: boolean): string {
   const inputPrefixSnippet =
       inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
@@ -54,7 +54,7 @@ function getInputSamplingSnippet(
       res += getSamplerScalar(inInfo.name);
       break;
     case 1:
-      res += getSampler1D(inInfo.name, texShape, shape[0]);
+      res += getSampler1D(inInfo.name, texShape);
       break;
     case 2:
       res += getSampler2D(inInfo.name, shape as [number, number], texShape);
@@ -75,7 +75,8 @@ function getInputSamplingSnippet(
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input texture using the
   // output coordinates.
-  if (broadcast || util.arraysEqual(
+  if (broadcast ||
+      util.arraysEqual(
           inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
     res +=
         getSamplerAtOutputCoords(inInfo.name, texShape, outTexShape, broadcast);
@@ -95,11 +96,11 @@ function getOutputSamplingSnippet(
     case 2:
       return getOutput2DCoords(outShape as [number, number], outTexShape);
     case 3:
-      return getOutput3DCoords(outShape as [number, number, number],
-          outTexShape);
+      return getOutput3DCoords(
+          outShape as [number, number, number], outTexShape);
     case 4:
-      return getOutput4DCoords(outShape as [number, number, number, number],
-        outTexShape);
+      return getOutput4DCoords(
+          outShape as [number, number, number, number], outTexShape);
     default:
       throw new Error(
           `${outShape.length}-D output sampling is not yet supported`);
@@ -110,7 +111,7 @@ const SAMPLE_1D_SNIPPET = `
 vec2 UVfrom1D(float texNumR, float texNumC, float index) {
   float texR = floor(index / texNumC);
   float texC = mod(index, texNumC);
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+  return vec2(texC, texR) / vec2(texNumC, texNumR);
 }
 `;
 
@@ -120,7 +121,7 @@ vec2 UVfrom2D(float texNumR, float texNumC, float numC, float row,
   float index = dot(vec2(row, col), vec2(numC, 1.0));
   float texR = floor(index / texNumC);
   float texC = mod(index, texNumC);
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+  return vec2(texC, texR) / vec2(texNumC, texNumR);
 }
 `;
 
@@ -130,7 +131,7 @@ vec2 UVfrom3D(float texNumR, float texNumC, float stride0,
   float index = dot(vec3(row, col, depth), vec3(stride0, stride1, 1.0));
   float texR = floor(index / texNumC);
   float texC = mod(index, texNumC);
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+  return vec2(texC, texR) / vec2(texNumC, texNumR);
 }
 `;
 
@@ -142,14 +143,13 @@ vec2 UVfrom4D(float texNumR, float texNumC, float stride0,
                     vec4(stride0, stride1, stride2, 1.0));
   float texR = floor(index / texNumC);
   float texC = mod(index, texNumC);
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+  return vec2(texC, texR) / vec2(texNumC, texNumR);
 }
 `;
 
 const SHADER_PREFIX = `
   precision highp float;
   varying vec2 resultUV;
-  const vec2 halfCR = vec2(0.5, 0.5);
 
   float sample(sampler2D texture, vec2 uv) {
     return texture2D(texture, uv).r;
@@ -192,8 +192,8 @@ function getOutput1DCoords(
   `;
 }
 
-function getOutput3DCoords(shape: [number, number, number],
-    texShape: [number, number]): string {
+function getOutput3DCoords(
+    shape: [number, number, number], texShape: [number, number]): string {
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
   return `
@@ -209,8 +209,9 @@ function getOutput3DCoords(shape: [number, number, number],
   `;
 }
 
-function getOutput4DCoords(shape: [number, number, number, number],
-  texShape: [number, number]): string {
+function getOutput4DCoords(
+    shape: [number, number, number, number],
+    texShape: [number, number]): string {
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
@@ -257,20 +258,19 @@ function getSamplerScalar(texName: string): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   return `
     float ${funcName}() {
-      return sample(${texName}, halfCR);
+      return sample(${texName}, vec2(0.0, 0.0));
     }
   `;
 }
 
-function getSampler1D(
-    texName: string, texShape: [number, number], size: number): string {
+function getSampler1D(texName: string, texShape: [number, number]): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const tR = texShape[0];
   const tC = texShape[1];
   if (texShape[0] === 1 && texShape[1] === 1) {
     return `
       float ${funcName}(float index) {
-        return sample(${texName}, halfCR);
+        return sample(${texName}, vec2(0.0, 0.0));
       }
     `;
   }
@@ -306,21 +306,21 @@ function getSampler3D(
   const tC = texShape[1];
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
-  const [numRows, numCols, numDepths] = shape;
+  if (tC === stride0) {
+    return `
+      float ${funcName}(float row, float col, float depth) {
+        float texR = row;
+        float texC = dot(vec2(col, depth), vec2(${stride1}, 1.0));
+        vec2 uv = vec2(texC, texR) / vec2(${tC}.0, ${tR}.0);
+        return sample(${texName}, uv);
+      }
+    `;
+  }
   return `
     float ${funcName}(float row, float col, float depth) {
       vec2 uv = UVfrom3D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0, row,
         col, depth);
       return sample(${texName}, uv);
-    }
-
-    float ${funcName}OrZeroPad(float row, float col, float depth) {
-      vec3 coords = vec3(row, col, depth);
-      bool lessThanZero = any(lessThan(coords, vec3(0.0, 0.0, 0.0)));
-      bool greaterThanSize = any(greaterThan(coords,
-          vec3(${numRows}.0 - 0.5, ${numCols}.0 - 0.5, ${numDepths}.0 - 0.5)));
-      bool outside = lessThanZero || greaterThanSize;
-      return mix(${funcName}(row, col, depth), 0.0, float(outside));
     }
   `;
 }
@@ -335,6 +335,17 @@ function getSampler4D(
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
+  if (tC === stride0) {
+    return `
+      float ${funcName}(float row, float col, float depth, float depth2) {
+        float texR = row;
+        float texC = dot(vec3(col, depth, depth2),
+                         vec3(${stride1}.0, ${stride2}.0, 1.0));
+        vec2 uv = vec2(texC, texR) / vec2(${tC}.0, ${tR}.0);
+        return sample(${texName}, uv);
+      }
+    `;
+  }
   return `
     float ${funcName}(float row, float col, float depth, float depth2) {
       vec2 uv = UVfrom4D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0,
@@ -353,7 +364,25 @@ function getSampler2D(
   if (util.arraysEqual(shape, texShape)) {
     return `
       float ${funcName}(float row, float col) {
-        vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
+        vec2 uv = vec2(col, row) / vec2(${tC}.0, ${tR}.0);
+        return sample(${texName}, uv);
+      }
+    `;
+  }
+  if (tC === 1) {
+    return `
+      float ${funcName}(float row, float col) {
+        float index = dot(vec2(row, col), vec2(${shape[1]}.0, 1.0));
+        vec2 uv = vec2(0.5, (index + 0.5) / ${tR}.0);
+        return sample(${texName}, uv);
+      }
+    `;
+  }
+  if (tR === 1) {
+    return `
+      float ${funcName}(float row, float col) {
+        float index = dot(vec2(row, col), vec2(${shape[1]}.0, 1.0));
+        vec2 uv = vec2((index + 0.5) / ${tC}.0, 0.5);
         return sample(${texName}, uv);
       }
     `;
@@ -367,14 +396,14 @@ function getSampler2D(
 }
 
 function getSamplerFlat(texName: string, texShape: [number, number]): string {
-  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1) +
-      'Flat';
+  const funcName =
+      'get' + texName.charAt(0).toUpperCase() + texName.slice(1) + 'Flat';
   const tNumR = texShape[0];
   const tNumC = texShape[1];
   if (tNumC === 1 && tNumR === 1) {
     return `
       float ${funcName}(float index) {
-        return sample(${texName}, halfCR);
+        return sample(${texName}, vec2(0.0, 0.0));
       }
     `;
   }
@@ -398,16 +427,17 @@ function getSamplerFlat(texName: string, texShape: [number, number]): string {
     float ${funcName}(float index) {
       float texR = floor(index / ${tNumC}.0);
       float texC = mod(index, ${tNumC}.0);
-      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tNumC}.0, ${tNumR}.0);
+      vec2 uv = vec2(texC, texR) / vec2(${tNumC}.0, ${tNumR}.0);
       return sample(${texName}, uv);
     }
   `;
 }
 
-function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
+function getSamplerAtOutputCoords(
+    texName: string, inTexShape: [number, number],
     outTexShape: [number, number], broadcast: boolean) {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1) +
-    'AtOutCoords';
+      'AtOutCoords';
   if (util.arraysEqual(inTexShape, outTexShape)) {
     return `
       float ${funcName}() {
@@ -425,8 +455,8 @@ function getSamplerAtOutputCoords(texName: string, inTexShape: [number, number],
       ${broadcastSnippet}
       float texR = floor(index / ${inTexShape[1]}.0);
       float texC = mod(index, ${inTexShape[1]}.0);
-      vec2 uv = (vec2(texC, texR) + halfCR) /
-                 vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
+      vec2 uv = vec2(texC, texR) /
+                vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
       return sample(${texName}, uv);
     }
   `;

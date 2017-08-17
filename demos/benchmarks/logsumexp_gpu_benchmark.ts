@@ -13,14 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import {Array2D, initializeGPU, Scalar} from '../../src/math/ndarray';
 import {GPGPUContext} from '../../src/math/webgl/gpgpu_context';
-import {LogSumExpProgram} from '../../src/math/webgl/logsumexp_gpu';
 import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
-import {Scalar, Array2D, initializeGPU} from '../../src/math/ndarray';
+import {LogSumExpProgram} from '../../src/math/webgl/logsumexp_gpu';
 import {TextureManager} from '../../src/math/webgl/texture_manager';
+
 import {BenchmarkTest} from './benchmark';
 
-const OP_RUNS = 100;
+const OP_RUNS = 2;
 
 export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const gpgpu = new GPGPUContext();
