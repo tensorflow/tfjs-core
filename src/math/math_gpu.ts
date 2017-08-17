@@ -27,7 +27,7 @@ import * as avg_pool_gpu from './webgl/avg_pool_gpu';
 import * as batchnorm_gpu from './webgl/batchnorm_gpu';
 import * as concat3d_gpu from './webgl/concat3d_gpu';
 import * as conv_backprop_gpu from './webgl/conv_backprop_gpu';
-import * as conv_gpu from './webgl/conv_gpu';
+import {Conv2DProgram} from './webgl/conv_gpu';
 import * as copy_gpu from './webgl/copy_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
@@ -57,7 +57,6 @@ const CONCAT_PROG = 'concat';
 const RESHAPE_PROG = 'reshape';
 
 // Convolution.
-const CONV2D_PROG = 'conv';
 const CONV2D_TRANSPOSE_PROG = 'conv_transpose';
 const CONV2D_DERW_PROG = 'conv_derw';
 const CONV2D_DERB_PROG = 'conv_derb';
@@ -477,70 +476,14 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected conv2dInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
+      x: Array3D, weights: Array4D, bias: Array1D|null, stride: number,
       zeroPad: number): Array3D {
     const fieldSize = weights.shape[0];
-    const inputDepth = weights.shape[2];
     const outputDepth = weights.shape[3];
-    const progKey = [
-      CONV2D_PROG, x.shape, outputDepth, fieldSize, stride, biases != null
-    ].join('_');
-    const program = this.getAndSaveProgram(progKey, () => {
-      return conv_gpu.getFragmentShaderSource(
-          x.shape, outputDepth, fieldSize, stride, zeroPad, biases != null);
-    });
-
-    const xTexShape = conv_util.computeTexShapeFrom3D(x.shape);
-    const wTexShape =
-        conv_util.computeWeightsTexShape(inputDepth, outputDepth, fieldSize);
-    const biasTexShape = conv_util.computeBiasesTexShape(outputDepth);
-
-    // If the texture shapes doesn't match the shapes that shaders expect,
-    // do physical texture reshapes on the GPU.
-    const actualXTexShape = x.getTextureShapeRC(xTexShape);
-    let cleanupX = false;
-    if (!util.arraysEqual(actualXTexShape, xTexShape)) {
-      x = this.reshapeTexture(x, xTexShape);
-      cleanupX = true;
-    }
-
-    let cleanupW = false;
-    const actualWTexShape = weights.getTextureShapeRC(wTexShape);
-    if (!util.arraysEqual(actualWTexShape, wTexShape)) {
-      weights = this.reshapeTexture(weights, wTexShape);
-      cleanupW = true;
-    }
-
-    let cleanupB = false;
-    if (biases != null) {
-      const actualBTexShape = biases.getTextureShapeRC(biasTexShape);
-      if (!util.arraysEqual(actualBTexShape, biasTexShape)) {
-        biases = this.reshapeTexture(biases, biasTexShape);
-        cleanupB = true;
-      }
-    }
-
-    const resultShape = conv_util.computeOutputShape3D(
-        x.shape, fieldSize, outputDepth, stride, zeroPad);
-    const resultTexShape = conv_util.computeTexShapeFrom3D(resultShape);
-    const resultTex = this.textureManager.acquireTexture(resultTexShape);
-
-    conv_gpu.convolve(
-        this.gpgpu, program, x.getTexture(), weights.getTexture(),
-        biases != null ? biases.getTexture() : null, resultTex, resultTexShape);
-
-    if (cleanupX) {
-      x.dispose();
-    }
-    if (cleanupW) {
-      weights.dispose();
-    }
-    if (cleanupB && biases != null) {
-      biases.dispose();
-    }
-
-    return NDArray.make<Array3D>(
-        resultShape, {texture: resultTex, textureShapeRC: resultTexShape});
+    const program = new Conv2DProgram(
+        x.shape, fieldSize, outputDepth, stride, zeroPad, bias != null);
+    const inputs = bias != null ? [x, weights, bias] : [x, weights];
+    return this.compileAndRun(program, inputs);
   }
 
   protected conv2dBackPropInternal(

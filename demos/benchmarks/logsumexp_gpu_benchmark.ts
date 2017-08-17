@@ -35,7 +35,7 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   for (let i = 0; i < OP_RUNS; i++) {
     gpgpu_math.runProgram(binary, [a], out);
   }
-
+  out.getValues();
   const avgTime = (performance.now() - start) / OP_RUNS;
   a.dispose();
   out.dispose();

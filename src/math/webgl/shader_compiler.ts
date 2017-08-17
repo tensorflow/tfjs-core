@@ -54,7 +54,7 @@ function getInputSamplingSnippet(
       res += getSamplerScalar(inInfo.name);
       break;
     case 1:
-      res += getSampler1D(inInfo.name, texShape);
+      res += getSampler1D(inInfo.name, texShape, shape[0]);
       break;
     case 2:
       res += getSampler2D(inInfo.name, shape as [number, number], texShape);
@@ -153,14 +153,6 @@ const SHADER_PREFIX = `
 
   float sample(sampler2D texture, vec2 uv) {
     return texture2D(texture, uv).r;
-  }
-
-  float sampleOrZeroPad(sampler2D texture, vec2 uv) {
-    bool lessThanZero = any(lessThan(uv, vec2(0, 0)));
-    bool greaterThanOne = any(greaterThan(uv, vec2(1, 1)));
-    bool outside = lessThanZero || greaterThanOne;
-    float value = sample(texture, uv);
-    return mix(value, 0.0, float(outside));
   }
 
   void setOutput(float val) {
@@ -271,7 +263,7 @@ function getSamplerScalar(texName: string): string {
 }
 
 function getSampler1D(
-    texName: string, texShape: [number, number]): string {
+    texName: string, texShape: [number, number], size: number): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const tR = texShape[0];
   const tC = texShape[1];
@@ -279,10 +271,6 @@ function getSampler1D(
     return `
       float ${funcName}(float index) {
         return sample(${texName}, halfCR);
-      }
-
-      float ${funcName}OrZeroPad(float index) {
-        return sampleOrZeroPad(${texName}, halfCR);
       }
     `;
   }
@@ -292,11 +280,6 @@ function getSampler1D(
         vec2 uv = vec2(0.5, (index + 0.5) / ${tR}.0);
         return sample(${texName}, uv);
       }
-
-      float ${funcName}OrZeroPad(float index) {
-        vec2 uv = vec2(0.5, (index + 0.5) / ${tR}.0);
-        return sampleOrZeroPad(${texName}, uv);
-      }
     `;
   }
   if (texShape[0] === 1) {
@@ -305,22 +288,12 @@ function getSampler1D(
         vec2 uv = vec2((index + 0.5) / ${tC}.0, 0.5);
         return sample(${texName}, uv);
       }
-
-      float ${funcName}OrZeroPad(float index) {
-        vec2 uv = vec2((index + 0.5) / ${tC}.0, 0.5);
-        return sampleOrZeroPad(${texName}, uv);
-      }
     `;
   }
   return `
     float ${funcName}(float index) {
       vec2 uv = UVfrom1D(${tR}.0, ${tC}.0, index);
       return sample(${texName}, uv);
-    }
-
-    float ${funcName}OrZeroPad(float index) {
-      vec2 uv = UVfrom1D(${tR}.0, ${tC}.0, index);
-      return sampleOrZeroPad(${texName}, uv);
     }
   `;
 }
@@ -333,6 +306,7 @@ function getSampler3D(
   const tC = texShape[1];
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
+  const [numRows, numCols, numDepths] = shape;
   return `
     float ${funcName}(float row, float col, float depth) {
       vec2 uv = UVfrom3D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0, row,
@@ -341,9 +315,12 @@ function getSampler3D(
     }
 
     float ${funcName}OrZeroPad(float row, float col, float depth) {
-      vec2 uv = UVfrom3D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0, row,
-        col, depth);
-      return sampleOrZeroPad(${texName}, uv);
+      vec3 coords = vec3(row, col, depth);
+      bool lessThanZero = any(lessThan(coords, vec3(0.0, 0.0, 0.0)));
+      bool greaterThanSize = any(greaterThan(coords,
+          vec3(${numRows}.0 - 0.5, ${numCols}.0 - 0.5, ${numDepths}.0 - 0.5)));
+      bool outside = lessThanZero || greaterThanSize;
+      return mix(${funcName}(row, col, depth), 0.0, float(outside));
     }
   `;
 }
@@ -364,13 +341,6 @@ function getSampler4D(
           ${stride2}.0, row, col, depth, depth2);
       return sample(${texName}, uv);
     }
-
-    float ${funcName}OrZeroPad(float row, float col, float depth,
-        float depth2) {
-      vec2 uv = UVfrom4D(${tR}.0, ${tC}.0, ${stride0}.0, ${stride1}.0,
-          ${stride2}.0, row, col, depth, depth2);
-      return sampleOrZeroPad(${texName}, uv);
-    }
   `;
 }
 
@@ -386,22 +356,12 @@ function getSampler2D(
         vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
         return sample(${texName}, uv);
       }
-
-      float ${funcName}OrZeroPad(float row, float col) {
-        vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
-        return sampleOrZeroPad(${texName}, uv);
-      }
     `;
   }
   return `
     float ${funcName}(float row, float col) {
       vec2 uv = UVfrom2D(${tR}.0, ${tC}.0, ${shape[1]}.0, row, col);
       return sample(${texName}, uv);
-    }
-
-    float ${funcName}OrZeroPad(float row, float col) {
-      vec2 uv = UVfrom2D(${tR}.0, ${tC}.0, ${shape[1]}.0, row, col);
-      return sampleOrZeroPad(${texName}, uv);
     }
   `;
 }

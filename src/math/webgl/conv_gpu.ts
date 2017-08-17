@@ -31,12 +31,12 @@ export class Conv2DProgram implements GPGPUProgram {
 
     this.userCode = `
       void main() {
-        vec3 output = getOutputCoords();
-        float yR = output.x;
-        float yC = output.y;
-        float d2 = output.z;
+        vec3 coords = getOutputCoords();
+        float yR = coords.x;
+        float yC = coords.y;
+        float d2 = coords.z;
 
-        vec2 xRCCorner = vec2(yR, yC) * vec2(${stride}, ${stride}) -
+        vec2 xRCCorner = vec2(yR, yC) * vec2(${stride}.0, ${stride}.0) -
             vec2(${pad}.0, ${pad}.0);
         float xRCorner = xRCCorner.x;
         float xCCorner = xRCCorner.y;
@@ -60,9 +60,7 @@ export class Conv2DProgram implements GPGPUProgram {
             }
           }
         }
-        if (${hasBias}) {
-          dotProd += getBias(d2);
-        }
+        ${hasBias ? 'dotProd += getBias(d2);' : ''}
         setOutput(dotProd);
       }
     `;

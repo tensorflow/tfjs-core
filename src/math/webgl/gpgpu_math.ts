@@ -41,12 +41,12 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
     gpgpu: GPGPUContext, program: GPGPUProgram, inputs: T[],
     output: K): GPGPUBinary {
   const userCode = program.userCode;
-  const inputInfos = program.variableNames.map((x, i) => {
+  const inputInfos = inputs.map((input, i) => {
     const shapeInfo = {
-      logicalShape: inputs[i].shape,
-      texShape: inputs[i].getTextureShapeRC()
+      logicalShape: input.shape,
+      texShape: input.getTextureShapeRC()
     };
-    return {name: x, shapeInfo};
+    return {name: program.variableNames[i], shapeInfo};
   });
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
   const outShapeInfo = {

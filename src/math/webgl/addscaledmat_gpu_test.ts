@@ -18,7 +18,6 @@ import {AddScaledMatProgram} from './addscaledmat_gpu';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
 import {NDArray, Array1D, Array2D, Scalar, initializeGPU} from '../ndarray';
-import * as util from '../../util';
 import {TextureManager} from './texture_manager';
 
 function cpuAddScaledMatrices(
@@ -85,9 +84,8 @@ export function uploadAddScaledMatDownload(
   const textureManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, textureManager);
 
-  const outShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
-  const res = NDArray.zeros(outShape);
   const program = new AddScaledMatProgram(a.shape, b.shape);
+  const res = NDArray.zeros(program.outputShape);
   const binary = gpgpu_math.compileProgram(gpgpu, program, [a, b, c1, c2], res);
   gpgpu_math.runProgram(binary, [a, b, c1, c2], res);
 
