@@ -29,8 +29,8 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
         xShape, fSize, outputDepth, stride, zeroPad);
     const yNumRows = yShape[0];
     const yNumCols = yShape[1];
-    const xRowsLimit = xShape[0] - 0.5;
-    const xColsLimit = xShape[1] - 0.5;
+    const xNumRows = xShape[0];
+    const xNumCols = xShape[1];
     this.outputShape =
         conv_util.computeWeightsShape4D(xShape[2], outputDepth, fSize);
     this.params = [stride, zeroPad];
@@ -49,7 +49,7 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
           float yR = float(iyR);
           float xR = wR + yR * ${stride}.0 - ${zeroPad}.0;
 
-          if (xR < 0.0 || xR > ${xRowsLimit}) {
+          if (xR < 0.0 || xR >= ${xNumRows}.0) {
             continue;
           }
 
@@ -57,7 +57,7 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
             float yC = float(iyC);
             float xC = wC + yC * ${stride}.0 - ${zeroPad}.0;
 
-            if (xC < 0.0 || xC > ${xColsLimit}) {
+            if (xC < 0.0 || xC >= ${xNumCols}.0) {
               continue;
             }
 

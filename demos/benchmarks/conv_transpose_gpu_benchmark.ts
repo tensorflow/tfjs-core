@@ -36,9 +36,9 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   initializeGPU(gpgpu, texManager);
   gpgpu.enableAutomaticDebugValidation(true);
 
-
+  const hasBias = false;
   const program = new Conv2DTransposeProgram(
-      xShape, fieldSize, origInputDepth, origStride, origPad, false);
+      xShape, fieldSize, origInputDepth, origStride, origPad, hasBias);
   const outputShape = program.outputShape as [number, number, number];
   const out = Array3D.zeros(outputShape);
   const x = Array3D.randUniform(xShape, -1, 1);

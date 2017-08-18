@@ -36,8 +36,9 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const stride = 1;
   const zeroPad = conv_util.computeDefaultPad(inputShape, fieldSize, stride);
 
+  const hasBias = true;
   const program = new Conv2DProgram(
-      inputShape, fieldSize, outputDepth, stride, zeroPad, true);
+      inputShape, fieldSize, outputDepth, stride, zeroPad, hasBias);
   const outputShape = program.outputShape as [number, number, number];
   const out = Array3D.zeros(outputShape);
   const x = Array3D.randUniform(inputShape, -1, 1);

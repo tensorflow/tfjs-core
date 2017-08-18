@@ -30,8 +30,8 @@ export class Conv2DProgram implements GPGPUProgram {
     const inputDepth = xShape[2];
     this.params = [fieldSize, stride, pad, hasBias];
     const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
-    const xRowsLimit = xShape[0] - 0.5;
-    const xColsLimit = xShape[1] - 0.5;
+    const xNumRows = xShape[0];
+    const xNumCols = xShape[1];
     this.userCode = `
       void main() {
         vec3 coords = getOutputCoords();
@@ -51,7 +51,7 @@ export class Conv2DProgram implements GPGPUProgram {
           float wR = float(iwR);
           float xR = xRCorner + wR;
 
-          if (xR < 0.0 || xR > ${xRowsLimit}) {
+          if (xR < 0.0 || xR >= ${xNumRows}.0) {
             continue;
           }
 
@@ -59,7 +59,7 @@ export class Conv2DProgram implements GPGPUProgram {
             float wC = float(iwC);
             float xC = xCCorner + wC;
 
-            if (xC < 0.0 || xC > ${xColsLimit}) {
+            if (xC < 0.0 || xC >= ${xNumCols}.0) {
               continue;
             }
 

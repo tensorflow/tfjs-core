@@ -25,11 +25,13 @@ import {BenchmarkTest} from './benchmark';
 const OP_RUNS = 40;
 
 export const MAX_POOL_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
-  return testMaxPool(size, false);
+  const positions = false;
+  return testMaxPool(size, positions);
 };
 
 export const MAX_POOL_POSNS_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
-  return testMaxPool(size, true);
+  const positions = true;
+  return testMaxPool(size, positions);
 };
 
 function testMaxPool(size: number, positions: boolean): number {

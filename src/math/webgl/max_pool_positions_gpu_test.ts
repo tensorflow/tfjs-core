@@ -30,8 +30,9 @@ describe('max_pool_position', () => {
     gpgpu.enableAutomaticDebugValidation(true);
     const textureManager = new TextureManager(gpgpu);
     initializeGPU(gpgpu, textureManager);
+    const getPositions = true;
     const program =
-        new Pool2DProgram(xShape, fieldSize, stride, pad, 'max', true);
+        new Pool2DProgram(xShape, fieldSize, stride, pad, 'max', getPositions);
     const res = NDArray.zeros(program.outputShape);
     const x = Array3D.new(xShape, xVals);
     const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);
