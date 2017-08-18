@@ -59,10 +59,7 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
   return {
     program,
     source,
-    webGLProgram: gpgpu.createProgram(source),
-    gpgpu,
-    inShapeInfos,
-    outShapeInfo
+    webGLProgram: gpgpu.createProgram(source), gpgpu, inShapeInfos, outShapeInfo
   };
 }
 

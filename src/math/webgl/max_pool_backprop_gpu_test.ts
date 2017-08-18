@@ -33,8 +33,9 @@ describe('max_pool_backprop_gpu', () => {
     const textureManager = new TextureManager(gpgpu);
     initializeGPU(gpgpu, textureManager);
 
-    const positionsProgram =
-        new Pool2DProgram(x.shape, fSize, origStride, origPad, 'max', true);
+    const getPositions = true;
+    const positionsProgram = new Pool2DProgram(
+        x.shape, fSize, origStride, origPad, 'max', getPositions);
     const positionsRes = NDArray.zeros(positionsProgram.outputShape);
     const positionsBinary =
         gpgpu_math.compileProgram(gpgpu, positionsProgram, [x], positionsRes);

@@ -16,7 +16,8 @@ limitations under the License.
 import * as util from '../../util';
 
 export type ShapeInfo = {
-  logicalShape: number[]; texShape: [number, number];
+  logicalShape: number[],
+  texShape: [number, number]
 };
 
 export type InputInfo = {

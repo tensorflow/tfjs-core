@@ -497,8 +497,9 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected maxPoolBackpropInternal(
       dy: Array3D, x: Array3D, fSize: number, origStride: number,
       origPad: number): Array3D {
-    const maxPoolPositionsProgram =
-        new Pool2DProgram(x.shape, fSize, origStride, origPad, 'max', true);
+    const getPositions = true;
+    const maxPoolPositionsProgram = new Pool2DProgram(
+        x.shape, fSize, origStride, origPad, 'max', getPositions);
     const maxPoolPositions: Array3D =
         this.compileAndRun(maxPoolPositionsProgram, [x]);
 
