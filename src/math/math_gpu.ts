@@ -30,6 +30,7 @@ import * as concat3d_gpu from './webgl/concat3d_gpu';
 import {Conv2DDerBiasProgram, Conv2DDerWeightsProgram, Conv2DTransposeProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import * as copy_gpu from './webgl/copy_gpu';
+import {Copy2DProgram} from './webgl/copy_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
@@ -47,19 +48,9 @@ import {UnaryOp, UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
 
 const BATCHNORM_PROG = 'batchnorm';
-const COPY_PROG = 'copy';
 const CONCAT_PROG = 'concat';
 const RESHAPE_PROG = 'reshape';
 const RESIZE_BILINEAR_PROG = 'resizebilin';
-
-function makeCopyProgramName(
-    sourceShapeRowCol: [number, number], sourceSizeRowCol: [number, number],
-    destSizeRowCol: [number, number]): string {
-  const shapeName = `${sourceShapeRowCol[0]}_${sourceShapeRowCol[1]}`;
-  const srcSizeName = `${sourceSizeRowCol[0]}_${sourceSizeRowCol[1]}`;
-  const dstSizeName = `${destSizeRowCol[0]}_${destSizeRowCol[1]}`;
-  return `${COPY_PROG}_${shapeName}_${srcSizeName}_${dstSizeName}`;
-}
 
 export class NDArrayMathGPU extends NDArrayMath {
   private gpgpu: GPGPUContext;
@@ -89,20 +80,14 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected cloneInternal<T extends NDArray>(ndarray: T): T {
-    const textureShapeRC = ndarray.getTextureShapeRC();
-    const program = this.getAndSaveProgram(
-        makeCopyProgramName(textureShapeRC, textureShapeRC, textureShapeRC),
-        () => copy_gpu.getFragmentShaderSource(
-            textureShapeRC, textureShapeRC, textureShapeRC));
-
-    const resultTexture = this.textureManager.acquireTexture(textureShapeRC);
-
-    copy_gpu.copy(
-        this.gpgpu, program, ndarray.getTexture(), textureShapeRC, [0, 0],
-        textureShapeRC, resultTexture, textureShapeRC, [0, 0], textureShapeRC);
-
-    return NDArray.make<T>(
-        ndarray.shape, {texture: resultTexture, textureShapeRC});
+    const texShape = ndarray.getTextureShapeRC();
+    // Pretend the source was in logical shape that matches the texture shape.
+    const source = ndarray.as2D(texShape[0], texShape[1]);
+    // Do the same for output.
+    const output = this.makeOutputArray(texShape) as Array2D;
+    this.copy2D(source, [0, 0], texShape, output, [0, 0], texShape);
+    // Get back to the original logical shape.
+    return output.reshape(ndarray.shape);
   }
 
   protected slice2DInternal(
@@ -122,17 +107,10 @@ export class NDArrayMathGPU extends NDArrayMath {
       sourceSizeRowCol: [number, number], dest: Array2D,
       destBeginRowCol: [number, number],
       destSizeRowCol: [number, number]): void {
-    const sourceShapeRC = source.getTextureShapeRC();
-    const destShapeRC = dest.getTextureShapeRC();
-    const program = this.getAndSaveProgram(
-        makeCopyProgramName(sourceShapeRC, sourceSizeRowCol, destSizeRowCol),
-        () => copy_gpu.getFragmentShaderSource(
-            sourceShapeRC, sourceSizeRowCol, destSizeRowCol));
-
-    copy_gpu.copy(
-        this.gpgpu, program, source.getTexture(), sourceShapeRC,
-        sourceBeginRowCol, sourceSizeRowCol, dest.getTexture(), destShapeRC,
-        destBeginRowCol, destSizeRowCol);
+    const program = new Copy2DProgram(sourceSizeRowCol[1], destSizeRowCol[1]);
+    const customSetup = copy_gpu.getCustomSetupFunc(
+        sourceBeginRowCol, destBeginRowCol, destSizeRowCol);
+    this.compileAndRun(program, [source], dest, customSetup);
   }
 
   protected concat3DInternal(x1: Array3D, x2: Array3D, axis: number): Array3D {
@@ -202,13 +180,16 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   private compileAndRun<T extends NDArray, K extends NDArray>(
-      program: GPGPUProgram, inputs: T[]): K {
-    const output = this.makeOutputArray<K>(program.outputShape);
+      program: GPGPUProgram, inputs: T[], output?: K,
+      customSetup?: (gpgpu: GPGPUContext) => void): K {
+    if (output == null) {
+      output = this.makeOutputArray<K>(program.outputShape);
+    }
     const key = gpgpu_math.makeShaderKey(program, inputs, output);
     const binary = this.getAndSaveBinary(key, () => {
       return gpgpu_math.compileProgram(this.gpgpu, program, inputs, output);
     });
-    gpgpu_math.runProgram(binary, inputs, output);
+    gpgpu_math.runProgram(binary, inputs, output, customSetup);
     return output;
   }
 
