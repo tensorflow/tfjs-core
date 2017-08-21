@@ -15,7 +15,7 @@ limitations under the License.
 
 import {GPGPUProgram} from './gpgpu_math';
 
-export class ResizeBilinearProgram implements GPGPUProgram {
+export class ResizeBilinear3DProgram implements GPGPUProgram {
   variableNames = ['A'];
   params: Array<{}> = [];
   outputShape: number[] = [];
@@ -38,10 +38,8 @@ export class ResizeBilinearProgram implements GPGPUProgram {
         this.outputShape;
     this.userCode = `
       const vec2 effectiveInputOverOutputRatioRC = vec2(
-          ${effectiveInputShape[0] /
-        effectiveOutputShape[0]},
-          ${effectiveInputShape[1] /
-        effectiveOutputShape[1]});
+          ${effectiveInputShape[0] / effectiveOutputShape[0]},
+          ${effectiveInputShape[1] / effectiveOutputShape[1]});
       const vec2 inputShapeRC = vec2(${inputShape[0]}.0, ${inputShape[1]}.0);
 
       void main() {

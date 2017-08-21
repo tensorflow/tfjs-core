@@ -25,7 +25,6 @@ import {Concat3DProgram} from './webgl/concat3d_gpu';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasProgram, Conv2DDerWeightsProgram, Conv2DTransposeProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
-import * as copy_gpu from './webgl/copy_gpu';
 import {Copy2DProgram} from './webgl/copy_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
@@ -37,7 +36,7 @@ import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
-import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
+import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import {UnaryOp, UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -97,7 +96,7 @@ export class NDArrayMathGPU extends NDArrayMath {
       destBeginRowCol: [number, number],
       destSizeRowCol: [number, number]): void {
     const program = new Copy2DProgram(sourceSizeRowCol[1], destSizeRowCol[1]);
-    const customSetup = copy_gpu.getCustomSetupFunc(
+    const customSetup = program.getCustomSetupFunc(
         sourceBeginRowCol, destBeginRowCol, destSizeRowCol);
     this.compileAndRun(program, [source], dest, customSetup);
   }
@@ -349,14 +348,18 @@ export class NDArrayMathGPU extends NDArrayMath {
 
     const maxPoolBackPropProgram =
         new MaxPool2DBackpropProgram(dy.shape, fSize, origStride, origPad);
-    return this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
+
+    const result =
+        this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
+    maxPoolPositions.dispose();
+    return result as Array3D;
   }
 
   protected resizeBilinear3DInternal(
       x: Array3D, newShape2D: [number, number],
       alignCorners: boolean): Array3D {
     const program =
-        new ResizeBilinearProgram(x.shape, newShape2D, alignCorners);
+        new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
     return this.compileAndRun(program, [x]);
   }
 

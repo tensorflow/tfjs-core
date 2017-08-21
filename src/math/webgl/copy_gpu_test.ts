@@ -15,8 +15,6 @@ limitations under the License.
 
 import * as test_util from '../../test_util';
 import {Array2D, initializeGPU} from '../ndarray';
-
-import * as copy_gpu from './copy_gpu';
 import {Copy2DProgram} from './copy_gpu';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
@@ -36,8 +34,7 @@ function uploadCopyDownload(
   const dest = Array2D.new(destShape, destVals);
 
   const binary = gpgpu_math.compileProgram(gpgpu, program, [source], dest);
-  const customSetup =
-      copy_gpu.getCustomSetupFunc(srcStart, destStart, destSize);
+  const customSetup = program.getCustomSetupFunc(srcStart, destStart, destSize);
   gpgpu_math.runProgram(binary, [source], dest, customSetup);
   const result = dest.getValues();
 
@@ -174,7 +171,7 @@ describe('copy_gpu', () => {
 
     for (let i = 0; i < 10; ++i) {
       const offset: [number, number] = [0, i];
-      const customSetup = copy_gpu.getCustomSetupFunc(offset, offset, size);
+      const customSetup = program.getCustomSetupFunc(offset, offset, size);
       gpgpu_math.runProgram(binary, [source], dest, customSetup);
     }
     const res = dest.getValues();

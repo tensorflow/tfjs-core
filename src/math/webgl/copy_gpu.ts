@@ -40,17 +40,17 @@ export class Copy2DProgram implements GPGPUProgram {
       }
     `;
   }
-}
 
-export function getCustomSetupFunc(
-    sourceStart: [number, number], destStart: [number, number],
-    destSize: [number, number]) {
-  return (gpgpu: GPGPUContext) => {
-    gpgpu.setOutputMatrixWriteRegion(
-        destStart[0], destSize[0], destStart[1], destSize[1]);
-    const sourceStartCRLoc = gpgpu.getUniformLocation('sourceStart');
-    gpgpu.gl.uniform2f(sourceStartCRLoc, sourceStart[0], sourceStart[1]);
-    const destStartCRLoc = gpgpu.getUniformLocation('destStart');
-    gpgpu.gl.uniform2f(destStartCRLoc, destStart[0], destStart[1]);
-  };
+  getCustomSetupFunc(
+      sourceStart: [number, number], destStart: [number, number],
+      destSize: [number, number]) {
+    return (gpgpu: GPGPUContext) => {
+      gpgpu.setOutputMatrixWriteRegion(
+          destStart[0], destSize[0], destStart[1], destSize[1]);
+      const sourceStartCRLoc = gpgpu.getUniformLocation('sourceStart');
+      gpgpu.gl.uniform2f(sourceStartCRLoc, sourceStart[0], sourceStart[1]);
+      const destStartCRLoc = gpgpu.getUniformLocation('destStart');
+      gpgpu.gl.uniform2f(destStartCRLoc, destStart[0], destStart[1]);
+    };
+  }
 }

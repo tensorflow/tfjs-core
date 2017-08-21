@@ -18,7 +18,7 @@ import {Array3D, initializeGPU, NDArray} from '../ndarray';
 
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
-import {ResizeBilinearProgram} from './resize_bilinear_gpu';
+import {ResizeBilinear3DProgram} from './resize_bilinear_gpu';
 import {TextureManager} from './texture_manager';
 
 describe('resize bilinear', () => {
@@ -96,7 +96,7 @@ function uploadResizeBilinearDownload(
   initializeGPU(gpgpu, textureManager);
 
   const program =
-      new ResizeBilinearProgram(aShape, outputDimensionsRowCol, alignCorners);
+      new ResizeBilinear3DProgram(aShape, outputDimensionsRowCol, alignCorners);
   const aArr = Array3D.new(aShape, a);
   const rArr = NDArray.zeros(program.outputShape);
   const binary = gpgpu_math.compileProgram(gpgpu, program, [aArr], rArr);
