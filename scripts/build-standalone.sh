@@ -14,5 +14,5 @@
 # limitations under the License.
 # =============================================================================
 npm run prep
-node_modules/.bin/browserify --standalone deeplearn src/index.ts -p [tsify] > dist/deeplearn.js
+node_modules/.bin/browserify --standalone deeplearn src/index.ts -p [tsify] | node_modules/.bin/uglifyjs -c > dist/deeplearn.js
 echo 'Stored standalone library at dist/deeplearn.js'

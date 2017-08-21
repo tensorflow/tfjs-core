@@ -9,25 +9,49 @@ machine intelligence. **deeplearn.js** brings performant machine learning
 building blocks to the web, allowing you to train neural networks in a browser
 or run pre-trained models in inference mode.
 
-**deeplearn.js** has two APIs, an immediate execution model (think NumPy) and a
-deferred execution model mirroring the TensorFlow API.
-**deeplearn.js**
-was originally developed by the Google Brain PAIR team to build powerful
-interactive machine learning tools for the browser, but it can be used for
-everything from education, to model understanding, to art projects.
+We provide two APIs, an immediate execution model (think NumPy) and a deferred
+execution model mirroring the TensorFlow API.
+**deeplearn.js** was originally developed by the Google Brain PAIR team to build
+powerful interactive machine learning tools for the browser, but it can be used
+for everything from education, to model understanding, to art projects.
 
 ## Usage
 
-#### From JavaScript
+#### From Typescript / ES6 JavaScript
+
+```ts
+import {Array1D, NDArrayMathGPU, Scalar} from 'deeplearn';
+
+const math = new NDArrayMathGPU();
+const a = Array1D.new([1, 2, 3]);
+const b = Scalar.new(2);
+math.scope(() => {
+  const result = math.add(a, b);
+  console.log(result.getValues());  // Float32Array([3, 4, 5])
+});
+```
+
+#### From ES5 JavaScript
 
 Typescript is the preferred language of choice for **deeplearn.js**, however
-you can use it with plain JavaScript.
-
-For this use case, you can load the latest version of the library directly from
-Google CDN:
+you can use it with plain JavaScript. Load the latest version of the library directly from
+Google CDN.
 
 ```html
-<script src="https://storage.googleapis.com/learnjs-data/deeplearn.js"></script>
+<script src="https://storage.googleapis.com/learnjs-data/deeplearn-latest.js"></script>
+```
+
+After import, the library should be available as `deeplearn` in the global
+namespace.
+
+```js
+var math = new deeplearn.NDArrayMathGPU();
+var a = deeplearn.Array1D.new([1, 2, 3]);
+var b = deeplearn.Scalar.new(2);
+math.scope(function() {
+  var result = math.add(a, b);
+  console.log(result.getValues());  // Float32Array([3, 4, 5])
+});
 ```
 
 To use a different version, see the
