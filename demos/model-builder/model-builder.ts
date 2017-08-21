@@ -254,8 +254,8 @@ export class ModelBuilder extends ModelBuilderPolymer {
 
     this.querySelector('#environment-toggle')
         .addEventListener('change', (event) => {
-          // tslint:disable-next-line:no-any
           this.math =
+              // tslint:disable-next-line:no-any
               (event.target as any).active ? this.mathGPU : this.mathCPU;
           this.graphRunner.setMath(this.math);
         });
