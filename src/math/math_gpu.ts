@@ -13,19 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as util from '../util';
-
-import * as concat3d_util from './concat3d_util';
-import * as conv_util from './conv_util';
 import {MatrixOrientation, NDArrayMath} from './math';
 import * as ndarray from './ndarray';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMaxEqualsProgram} from './webgl/argmaxequals_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
-import * as batchnorm_gpu from './webgl/batchnorm_gpu';
+import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
-import * as concat3d_gpu from './webgl/concat3d_gpu';
+import {Concat3DProgram} from './webgl/concat3d_gpu';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasProgram, Conv2DDerWeightsProgram, Conv2DTransposeProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
@@ -41,21 +37,14 @@ import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
-import * as reshape_gpu from './webgl/reshape_gpu';
-import * as resize_bilinear_gpu from './webgl/resize_bilinear_gpu';
+import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import {UnaryOp, UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
 
-const BATCHNORM_PROG = 'batchnorm';
-const CONCAT_PROG = 'concat';
-const RESHAPE_PROG = 'reshape';
-const RESIZE_BILINEAR_PROG = 'resizebilin';
-
 export class NDArrayMathGPU extends NDArrayMath {
   private gpgpu: GPGPUContext;
   private textureManager: TextureManager;
-  private programCache: {[key: string]: WebGLProgram} = {};
   private binaryCache: {[key: string]: GPGPUBinary} = {};
   private gpgpuCreatedLocally: boolean;
 
@@ -114,51 +103,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected concat3DInternal(x1: Array3D, x2: Array3D, axis: number): Array3D {
-    const x1TexShapeRC: [number, number] =
-        conv_util.computeTexShapeFrom3D(x1.shape);
-    const x2TexShapeRC: [number, number] =
-        conv_util.computeTexShapeFrom3D(x2.shape);
-
-    // If the texture shapes doesn't match the shapes that shaders expect,
-    // do physical texture reshapes on the GPU.
-    const actualX1TexShape = x1.getTextureShapeRC(x1TexShapeRC);
-    let cleanupX1 = false;
-    if (!util.arraysEqual(actualX1TexShape, x1TexShapeRC)) {
-      x1 = this.reshapeTexture(x1, x1TexShapeRC);
-      cleanupX1 = true;
-    }
-    const actualX2TexShape = x2.getTextureShapeRC(x2TexShapeRC);
-    let cleanupX2 = false;
-    if (!util.arraysEqual(actualX2TexShape, x2TexShapeRC)) {
-      x2 = this.reshapeTexture(x2, x2TexShapeRC);
-      cleanupX2 = true;
-    }
-
-    const resultShapeRCD =
-        concat3d_util.computeConcat3DOutputShape(x1.shape, x2.shape, axis);
-
-    const program = this.getAndSaveProgram(
-        `${CONCAT_PROG}_${x1.shape}_${x2.shape}_${axis}`,
-        () => concat3d_gpu.getFragmentShaderSource(
-            x1.shape, x2.shape, resultShapeRCD, axis));
-
-    const resultTexShape = conv_util.computeTexShapeFrom3D(resultShapeRCD);
-    const resultTex = this.textureManager.acquireTexture(resultTexShape);
-
-    concat3d_gpu.concat3D(
-        this.gpgpu, program, x1.getTexture(), x2.getTexture(), resultTex,
-        resultTexShape);
-
-    if (cleanupX1) {
-      x1.dispose();
-    }
-
-    if (cleanupX2) {
-      x2.dispose();
-    }
-
-    return NDArray.make<Array3D>(
-        resultShapeRCD, {texture: resultTex, textureShapeRC: resultTexShape});
+    const program = new Concat3DProgram(x1.shape, x2.shape, axis);
+    return this.compileAndRun(program, [x1, x2]);
   }
 
   protected scaledArrayAddInternal<T extends NDArray>(
@@ -193,23 +139,6 @@ export class NDArrayMathGPU extends NDArrayMath {
     return output;
   }
 
-  private reshapeTexture<T extends NDArray>(a: T, newTextureShape: [
-    number, number
-  ]): T {
-    const aTexShape = a.getTextureShapeRC();
-
-    const program = this.getAndSaveProgram(
-        RESHAPE_PROG, () => reshape_gpu.getFragmentShaderSource());
-
-    const resultTexture = this.textureManager.acquireTexture(newTextureShape);
-    reshape_gpu.reshape(
-        this.gpgpu, program, a.getTexture(), aTexShape[0], aTexShape[1],
-        resultTexture, newTextureShape[0], newTextureShape[1]);
-
-    return NDArray.make<T>(
-        a.shape, {texture: resultTexture, textureShapeRC: newTextureShape});
-  }
-
   protected matMulInternal(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D {
@@ -225,92 +154,26 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected batchNormalization3DInternal(
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
-      varianceEpsilon: number, scale?: Array3D|Array1D,
+      varianceEpsilon = 0.000001, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D {
-    const xTexShape = x.getTextureShapeRC();
+    const inputs = [x, mean, variance];
 
-    let cleanupMean = false;
-    const preferredMeanTexShape: [number, number] =
-        mean.rank === 1 ? [1, mean.size] : xTexShape;
-    let meanTexShape = mean.getTextureShapeRC(preferredMeanTexShape);
-    if (!util.arraysEqual(meanTexShape, preferredMeanTexShape)) {
-      mean = this.reshapeTexture(mean, preferredMeanTexShape);
-      meanTexShape = preferredMeanTexShape;
-      cleanupMean = true;
-    }
-
-    let cleanupVariance = false;
-    const preferredVarianceTexShape: [number, number] =
-        variance.rank === 1 ? [1, variance.size] : xTexShape;
-    let varianceTexShape = variance.getTextureShapeRC(preferredMeanTexShape);
-    if (!util.arraysEqual(varianceTexShape, preferredVarianceTexShape)) {
-      variance = this.reshapeTexture(variance, preferredVarianceTexShape);
-      varianceTexShape = preferredVarianceTexShape;
-      cleanupVariance = true;
-    }
-
-    let scaleTexShape: [number, number]|null = null;
-    let cleanupScale = false;
-    if (scale != null) {
-      const preferredScaleTexShape: [number, number] =
-          scale.rank === 1 ? [1, scale.size] : xTexShape;
-
-      scaleTexShape = scale.getTextureShapeRC(preferredScaleTexShape);
-      if (!util.arraysEqual(scaleTexShape, preferredScaleTexShape)) {
-        scale = this.reshapeTexture(scale, preferredScaleTexShape);
-        scaleTexShape = preferredScaleTexShape;
-        cleanupScale = true;
-      }
-    }
-
-    let offsetTexShape: [number, number]|null = null;
-    let cleanupOffset = false;
+    let offsetShape = null;
     if (offset != null) {
-      const preferredOffsetTexShape: [number, number] =
-          offset.rank === 1 ? [1, offset.size] : xTexShape;
-
-      offsetTexShape = offset.getTextureShapeRC(preferredOffsetTexShape);
-      if (!util.arraysEqual(offsetTexShape, preferredOffsetTexShape)) {
-        offset = this.reshapeTexture(offset, preferredOffsetTexShape);
-        offsetTexShape = preferredOffsetTexShape;
-        cleanupOffset = true;
-      }
+      offsetShape = offset.shape;
+      inputs.push(offset);
     }
 
-    const resultTexShape: [number, number] = x.getTextureShapeRC();
-
-    const program = this.getAndSaveProgram(
-        `${BATCHNORM_PROG}_${xTexShape}_${meanTexShape}_${varianceTexShape}_` +
-            `${scaleTexShape!}_${offsetTexShape!}_${varianceEpsilon}`,
-        () => batchnorm_gpu.getFragmentShaderSource(
-            xTexShape, meanTexShape, varianceTexShape, offsetTexShape,
-            scaleTexShape, varianceEpsilon));
-
-    const resultTexture = this.textureManager.acquireTexture(resultTexShape);
-
-    batchnorm_gpu.batchNormalization(
-        this.gpgpu, program, x.getTexture(), xTexShape, mean.getTexture(),
-        meanTexShape, variance.getTexture(), varianceTexShape,
-        offset != null ? offset.getTexture() : null,
-        offset != null ? offsetTexShape : null,
-        scale != null ? scale.getTexture() : null,
-        scale != null ? scaleTexShape : null, resultTexture, resultTexShape);
-
-    if (cleanupMean) {
-      mean.dispose();
-    }
-    if (cleanupVariance) {
-      variance.dispose();
-    }
-    if (cleanupScale) {
-      scale!.dispose();
-    }
-    if (cleanupOffset) {
-      offset!.dispose();
+    let scaleShape = null;
+    if (scale != null) {
+      scaleShape = scale.shape;
+      inputs.push(scale);
     }
 
-    return NDArray.make<Array3D>(
-        x.shape, {texture: resultTexture, textureShapeRC: resultTexShape});
+    const program = new BatchNormProgram(
+        x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
+        varianceEpsilon);
+    return this.compileAndRun(program, inputs);
   }
 
   protected switchDimInternal<T extends NDArray>(a: T, newDim: number[]): T {
@@ -492,25 +355,9 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected resizeBilinear3DInternal(
       x: Array3D, newShape2D: [number, number],
       alignCorners: boolean): Array3D {
-    const programKey =
-        [RESIZE_BILINEAR_PROG, x.shape, newShape2D, alignCorners].join('_');
-
-    const newShapeRCD: [number, number, number] =
-        [newShape2D[0], newShape2D[1], x.shape[2]];
-    const resultTexShape = conv_util.computeTexShapeFrom3D(newShapeRCD);
-
-    const program = this.getAndSaveProgram(
-        programKey,
-        () => resize_bilinear_gpu.getFragmentShaderSource(
-            x.shape, newShape2D, alignCorners));
-
-    const resultTexture = this.textureManager.acquireTexture(resultTexShape);
-
-    resize_bilinear_gpu.resizeBilinear(
-        this.gpgpu, program, x.getTexture(), resultTexture, resultTexShape);
-
-    return NDArray.make<Array3D>(
-        newShapeRCD, {texture: resultTexture, textureShapeRC: resultTexShape});
+    const program =
+        new ResizeBilinearProgram(x.shape, newShape2D, alignCorners);
+    return this.compileAndRun(program, [x]);
   }
 
   private getAndSaveBinary(key: string, getBinary: () => GPGPUBinary):
@@ -521,25 +368,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.binaryCache[key];
   }
 
-  private getAndSaveProgram(programKey: string, getShaderSource: () => string):
-      WebGLProgram {
-    if (!(programKey in this.programCache)) {
-      this.programCache[programKey] =
-          this.gpgpu.createProgram(getShaderSource());
-    }
-    return this.programCache[programKey];
-  }
-
   getTextureManager(): TextureManager {
     return this.textureManager;
   }
 
   dispose() {
-    for (const programKey in this.programCache) {
-      if (this.programCache.hasOwnProperty(programKey)) {
-        this.gpgpu.deleteProgram(this.programCache[programKey]);
-      }
-    }
     for (const key in this.binaryCache) {
       this.gpgpu.deleteProgram(this.binaryCache[key].webGLProgram);
     }
