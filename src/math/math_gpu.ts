@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import {OutputInfo} from './conv_util';
 import {MatrixOrientation, NDArrayMath} from './math';
 import * as ndarray from './ndarray';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
@@ -270,12 +271,13 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected conv2dInternal(
-      x: Array3D, weights: Array4D, bias: Array1D|null, stride: number,
-      padding: 'valid'|'same'|number): Array3D {
-    const fieldSize = weights.shape[0];
-    const outputDepth = weights.shape[3];
+      x: Array3D, weights: Array4D, bias: Array1D|null, strideHeight: number,
+      strideWidth: number, outputInfo: OutputInfo): Array3D {
+    const filterHeight = weights.shape[0];
+    const filterWidth = weights.shape[1];
     const program = new Conv2DProgram(
-        x.shape, fieldSize, outputDepth, stride, padding, bias != null);
+        x.shape, filterHeight, filterWidth, strideHeight, strideWidth,
+        outputInfo, bias != null);
     const inputs = bias != null ? [x, weights, bias] : [x, weights];
     return this.compileAndRun(program, inputs);
   }
@@ -303,11 +305,12 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   conv2dDerWeights(
-      x: Array3D, dY: Array3D, fSize: number, stride: number,
-      zeroPad: number): Array4D {
-    const outputDepth = dY.shape[2];
+      x: Array3D, dY: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array4D {
     const program = new Conv2DDerWeightsProgram(
-        x.shape, fSize, outputDepth, stride, zeroPad);
+        x.shape, filterHeight, filterWidth, strideHeight, strideWidth,
+        outputInfo);
     return this.compileAndRun(program, [x, dY]);
   }
 

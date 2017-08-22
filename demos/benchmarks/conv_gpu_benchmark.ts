@@ -29,22 +29,24 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const texManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, texManager);
 
-  const inputDepth = 1;
-  const inputShape: [number, number, number] = [size, size, inputDepth];
-  const outputDepth = 1;
-  const fieldSize = 11;
+  const inDepth = 1;
+  const inShape: [number, number, number] = [size, size, inDepth];
+  const outDepth = 1;
+  const filterSize = 11;
   const stride = 1;
-  const zeroPad = conv_util.computeDefaultPad(inputShape, fieldSize, stride);
+  const zeroPad = conv_util.computeDefaultPad(inShape, filterSize, stride);
 
   const hasBias = true;
+  const outputInfo = conv_util.computeOutputInfo(
+      inShape, filterSize, filterSize, outDepth, stride, stride, zeroPad);
   const program = new Conv2DProgram(
-      inputShape, fieldSize, outputDepth, stride, zeroPad, hasBias);
+      inShape, filterSize, filterSize, stride, stride, outputInfo, hasBias);
   const outputShape = program.outputShape as [number, number, number];
   const out = Array3D.zeros(outputShape);
-  const x = Array3D.randUniform(inputShape, -1, 1);
-  const wShape = conv_util.computeWeightsShape4D(1, outputDepth, fieldSize);
+  const x = Array3D.randUniform(inShape, -1, 1);
+  const wShape = conv_util.computeWeightsShape4D(1, outDepth, filterSize);
   const W = Array4D.randUniform(wShape, -1, 1);
-  const b = Array1D.randUniform([outputDepth], -1, 1);
+  const b = Array1D.randUniform([outDepth], -1, 1);
   const inputs = [x, W, b];
   const binary = gpgpu_math.compileProgram(gpgpu, program, inputs, out);
 

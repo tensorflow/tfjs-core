@@ -15,11 +15,12 @@ limitations under the License.
 
 import * as util from '../util';
 import * as concat3d_util from './concat3d_util';
+import * as conv_util from './conv_util';
+import {OutputInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
-
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
-export type ScopeResult = NDArray[] | NDArray | void;
+export type ScopeResult = NDArray[]|NDArray|void;
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -852,18 +853,16 @@ export abstract class NDArrayMath {
 
   /**
    * Computes a 2D convolution over the input x.
-   * @param x The input image, must be rank 3, of shape [rows, cols, depth1].
-   * @param weights The weights NDArray, must be rank 4, of shape
-   *     [filterHeight, filterWidth, depth1, depth2].
-   * @param biases Optional biases NDArray, must be rank 1 of shape [depth2].
-   * @param strides The strides of the convolution [strideHeight, strideWidth].
-   * @param padding A string from: 'same', 'valid'. The type of padding
-   *     algorithm to use.
+   * @param x The input image, rank 3, of shape [height, width, inDepth].
+   * @param weights The weights, rank 4, of shape
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param bias Optional bias, rank 1 of shape [outDepth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    */
   conv2d(
-      x: Array3D, weights: Array4D, biases: Array1D|null,
-      strides: [number, number]|number,
-      padding: 'valid'|'same'|number): Array3D {
+      x: Array3D, weights: Array4D, bias: Array1D|null,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in conv2d: x must be rank 3, but got rank ${x.rank}.`);
@@ -871,11 +870,11 @@ export abstract class NDArrayMath {
         weights.rank === 4,
         `Error in conv2d: weights must be rank 4, but got rank ` +
             `${weights.rank}.`);
-    if (biases != null) {
+    if (bias != null) {
       util.assert(
-          biases.rank === 1,
-          `Error in conv2d: biases must be rank 1, but got rank ` +
-              `${biases.rank}.`);
+          bias.rank === 1,
+          `Error in conv2d: bias must be rank 1, but got rank ` +
+              `${bias.rank}.`);
     }
 
     util.assert(
@@ -883,28 +882,41 @@ export abstract class NDArrayMath {
         `Error in conv2d: depth of input (${x.shape[2]}) must match  ` +
             `input depth for weights ${weights.shape[2]}.`);
 
-
-    return this.track(
-        this.conv2dInternal(x, weights, biases, strides, padding));
+    const filterHeight = weights.shape[0];
+    const filterWidth = weights.shape[1];
+    const outDepth = weights.shape[3];
+    let strideHeight: number;
+    let strideWidth: number;
+    if (typeof strides === 'number') {
+      strideHeight = strides;
+      strideWidth = strides;
+    } else {
+      strideHeight = strides[0];
+      strideWidth = strides[1];
+    }
+    const outputInfo = conv_util.computeOutputInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.track(this.conv2dInternal(
+        x, weights, bias, strideHeight, strideWidth, outputInfo));
   }
   protected abstract conv2dInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null,
-      strides: [number, number],
-      padding: {left: number, right: number, top: number, bottom: number},
-      outputSize: [number, number, number]): Array3D;
+      x: Array3D, weights: Array4D, bias: Array1D|null, strideHeight: number,
+      strideWidth: number, outputInfo: OutputInfo): Array3D;
 
   /**
    * Computes the backprop of a 2D convolution.
-   * @param x The input image, must be rank 3, of shape [xrows, xcols, depth1].
-   * @param dy The dy image, must be rank 3, of shape [yrows, ycols, depth2].
-   * @param weights The weights NDArray, must be rank 4, of shape [f, f, depth1,
-   * depth2].
-   * @param stride The stride of the original convolution.
-   * @param pad The padding of the original convolution.
+   * @param x The input image, rank 3, of shape [height, width, inDepth].
+   * @param dy The dy image, rank 3, of shape [height, width, outDepth].
+   * @param weights The weights, rank 4, of shape
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    */
   conv2dBackProp(
-      x: Array3D, dy: Array3D, weights: Array4D, stride: number,
-      pad: number): {dx: Array3D, dw: Array4D, db: Array1D} {
+      x: Array3D, dy: Array3D, weights: Array4D,
+      strides: [number, number]|number,
+      pad: 'valid'|'same'|number): {dx: Array3D, dw: Array4D, db: Array1D} {
     util.assert(
         x.rank === 3,
         `Error in conv2dBackProp: x must be rank 3, but got shape ` +
@@ -926,8 +938,23 @@ export abstract class NDArrayMath {
         `Error in conv2dBackProp: depth of dy (${dy.shape[2]}) must ` +
             `match output depth for weights (${weights.shape[3]}).`);
 
-    const backpropResult =
-        this.conv2dBackPropInternal(x, dy, weights, stride, pad);
+    const filterHeight = weights.shape[0];
+    const filterWidth = weights.shape[1];
+    const outDepth = weights.shape[3];
+    let strideHeight: number;
+    let strideWidth: number;
+    if (typeof strides === 'number') {
+      strideHeight = strides;
+      strideWidth = strides;
+    } else {
+      strideHeight = strides[0];
+      strideWidth = strides[1];
+    }
+    const outputInfo = conv_util.computeOutputInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    const backpropResult = this.conv2dBackPropInternal(
+        x, dy, weights, strideHeight, strideWidth, outputInfo);
 
     this.track(backpropResult.db);
     this.track(backpropResult.dw);
@@ -936,23 +963,27 @@ export abstract class NDArrayMath {
     return backpropResult;
   }
   protected abstract conv2dBackPropInternal(
-      x: Array3D, dy: Array3D, weights: Array4D, stride: number,
-      pad: number): {dx: Array3D, dw: Array4D, db: Array1D};
+      x: Array3D, dy: Array3D, weights: Array4D, strideHeight: number,
+      strideWidth: number,
+      outputInfo: OutputInfo): {dx: Array3D, dw: Array4D, db: Array1D};
 
   /**
    * Computes the transposed 2D convolution of an image, also known as a
    * deconvolution.
-   * @param x The input image, must be rank 3, of shape [xrows, xcols, depth1].
-   * @param weights The weights NDArray, must be rank 4, of shape [f, f, depth1,
-   * depth2].
-   * @param biases Optional biases NDArray, must be rank 1 of shape [depth2].
-   * @param stride The stride of the convolution.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   *
+   * @param x The input image, rank 3, of shape [height, width, inDepth].
+   * @param weights The weights, rank 4, of shape
+   *     `[filterHeight, filterWidth, outDepth, inDepth]`.
+   *     `inDepth` must match `inDepth` in `x`.
+   * @param bias Optional bias, rank 1, of shape [outDepth].
+   * @param strides The strides of the original convolution:
+   *     `[strideHeight, strideWidth]`.
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     of the original convolutions.
    */
   conv2dTranspose(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      pad: number): Array3D {
+      x: Array3D, weights: Array4D, bias: Array1D|null,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in conv2dTranspose: x must be rank 3, but got rank ` +
@@ -961,23 +992,44 @@ export abstract class NDArrayMath {
         weights.rank === 4,
         `Error in conv2dTranspose: weights must be rank 4, but got ` +
             `rank ${weights.rank}`);
-    if (biases != null) {
+    if (bias != null) {
       util.assert(
-          biases.rank === 1,
-          `Error in conv2dTranspose: biases must be rank 1, but got ' +
-              'rank ${biases.rank}.`);
+          bias.rank === 1,
+          `Error in conv2dTranspose: bias must be rank 1, but got ' +
+              'rank ${bias.rank}.`);
     }
     util.assert(
         x.shape[2] === weights.shape[3],
         `Error in conv2dTranspose: depth of input (${x.shape[2]}) must ` +
             `match input depth for weights ${weights.shape[3]}.`);
 
-    return this.track(
-        this.conv2dTransposeInternal(x, weights, biases, stride, pad));
+    const filterHeight = weights.shape[0];
+    const filterWidth = weights.shape[1];
+    const outDepth = weights.shape[2];
+    const inDepth = weights.shape[3];
+    let strideHeight: number;
+    let strideWidth: number;
+    if (typeof strides === 'number') {
+      strideHeight = strides;
+      strideWidth = strides;
+    } else {
+      strideHeight = strides[0];
+      strideWidth = strides[1];
+    }
+    const xRows = x.shape[0];
+    const xCols = x.shape[1];
+    // Figure out the output shape by dilating the input.
+    const xRowsDilated = (xRows - 1) * strideHeight + 1;
+    const xColsDilated = (xCols - 1) * strideWidth + 1;
+    const outputInfo = conv_util.computeOutputInfo(
+        [xRowsDilated, xColsDilated, inDepth], filterHeight, filterWidth,
+        outDepth, 1, 1, newPad)
+    return this.track(this.conv2dTransposeInternal(
+        x, weights, bias, strideHeight, strideWidth, outputInfo));
   }
   protected abstract conv2dTransposeInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      pad: number): Array3D;
+      x: Array3D, weights: Array4D, bias: Array1D|null, strideHeight: number,
+      strideWidth: number, outputInfo: OutputInfo): Array3D;
 
   /**
    * Computes the 2D max pooling of an image.
@@ -1180,7 +1232,7 @@ export abstract class NDArrayMath {
    * Derived from tf.contrib.rnn.BasicLSTMCell.
    * @param forgetBias Forget bias for the cell.
    * @param lstmKernel The weights for the cell.
-   * @param lstmBias The biases for the cell.
+   * @param lstmBias The bias for the cell.
    * @param data The input to the cell.
    * @param c Previous cell state.
    * @param h Previous cell output.
@@ -1214,10 +1266,11 @@ export abstract class NDArrayMath {
       const o = this.slice2D(
           res, [0, res.shape[1] / 4 * 3], [res.shape[0], res.shape[1] / 4]);
 
-      const newC = this.add(
-          this.multiplyStrict(
-              c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
-          this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
+      const newC =
+          this.add(
+              this.multiplyStrict(
+                  c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+              this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
       const newH =
           this.multiplyStrict(this.tanh(newC), this.sigmoid(o)) as Array2D;
 

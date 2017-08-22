@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as conv_util from '../conv_util';
+import {OutputInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DDerWeightsProgram implements GPGPUProgram {
@@ -23,17 +24,20 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      xShape: [number, number, number], fSize: number, outputDepth: number,
-      stride: number, zeroPad: number) {
-    const yShape = conv_util.computeOutputShape3D(
-        xShape, fSize, outputDepth, stride, zeroPad);
-    const yNumRows = yShape[0];
-    const yNumCols = yShape[1];
-    const xNumRows = xShape[0];
-    const xNumCols = xShape[1];
-    this.outputShape =
-        conv_util.computeWeightsShape4D(xShape[2], outputDepth, fSize);
-    this.params = [stride, zeroPad];
+      xShape: [number, number, number], filterHeight: number,
+      filterWidth: number, strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo) {
+    const yShape = outputInfo.shape;
+    const [yNumRows, yNumCols, outDepth] = yShape;
+    const [xNumRows, xNumCols, inDepth] = xShape;
+
+    this.outputShape = conv_util.computeWeightsShape4D(
+        inDepth, outDepth, filterHeight, filterWidth);
+    const padTop = outputInfo.paddingInfo.top;
+    const padLeft = outputInfo.paddingInfo.left;
+
+    this.params = [strideHeight, strideWidth, padLeft, padTop];
+
     this.userCode = `
       void main() {
         vec4 coords = getOutputCoords();
@@ -47,7 +51,7 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
         float dotProd = 0.0;
         for (int iyR = 0; iyR < ${yNumRows}; iyR++) {
           float yR = float(iyR);
-          float xR = wR + yR * ${stride}.0 - ${zeroPad}.0;
+          float xR = wR + yR * ${strideHeight}.0 - ${padTop}.0;
 
           if (xR < 0.0 || xR >= ${xNumRows}.0) {
             continue;
@@ -55,7 +59,7 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
 
           for (int iyC = 0; iyC < ${yNumCols}; iyC++) {
             float yC = float(iyC);
-            float xC = wC + yC * ${stride}.0 - ${zeroPad}.0;
+            float xC = wC + yC * ${strideWidth}.0 - ${padLeft}.0;
 
             if (xC < 0.0 || xC >= ${xNumCols}.0) {
               continue;
@@ -79,8 +83,9 @@ export class Conv2DTransposeProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      xShape: [number, number, number], fSize: number, origInputDepth: number,
-      origStride: number, origPad: number, hasBias: boolean) {
+      xShape: [number, number, number], filterHeight: number,
+      filterWidth: number, origInputDepth: number, origStride: number,
+      origPad: number, hasBias: boolean) {
     const [xRows, xCols, origOutputDepth] = xShape;
     const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
 

@@ -15,53 +15,75 @@ limitations under the License.
 
 import * as util from '../util';
 
-export function computeOutputShape3DV2(
-    inputShape: [number, number, number], filterHeight: number,
-    filterWidth: number, depth: number, strideHeight: number,
-    strideWidth: number, padding: 'same'|'valid'): [number, number, number] {
-  const inHeight = inputShape[0];
-  const inWidth = inputShape[1];
+export type OutputInfo = {
+  shape: [number, number, number];
+  paddingInfo: {top: number, left: number, right: number, bottom: number};
+};
+
+export function computeOutputInfo(
+    inShape: [number, number, number], filterHeight: number,
+    filterWidth: number, outDepth: number, strideHeight: number,
+    strideWidth: number, padding: 'same'|'valid'|number): OutputInfo {
+  if (typeof padding === 'number') {
+    const outShape = computeOutputShape3D(
+        inShape, filterHeight, outDepth, strideHeight, padding);
+    return {
+      shape: outShape,
+      paddingInfo:
+          {top: padding, bottom: padding, left: padding, right: padding}
+    };
+  }
+  const inHeight = inShape[0];
+  const inWidth = inShape[1];
+  let outShape: [number, number, number];
+  let paddingInfo: {left: number, top: number, bottom: number, right: number};
   if (padding === 'same') {
-    const outputHeight = Math.ceil(inHeight / strideHeight);
-    const outputWidth = Math.ceil(inWidth / strideWidth);
-    return [outputHeight, outputWidth, depth];
+    const outHeight = Math.ceil(inHeight / strideHeight);
+    const outWidth = Math.ceil(inWidth / strideWidth);
+    outShape = [outHeight, outWidth, outDepth];
+    const padAlongHeight =
+        (outHeight - 1) * strideHeight + filterHeight - inHeight;
+    const padAlongWidth = (outWidth - 1) * strideWidth + filterWidth - inWidth;
+    const top = Math.floor(padAlongHeight / 2);
+    const bottom = padAlongHeight - top;
+    const left = Math.floor(padAlongWidth / 2);
+    const right = padAlongWidth - left;
+    paddingInfo = {top, bottom, left, right};
   } else if (padding === 'valid') {
-    const outputHeight =
-        Math.ceil((inHeight - filterHeight + 1) / strideHeight);
-    const outputWidth = Math.ceil((inWidth - filterWidth + 1) / strideWidth);
-    return [outputHeight, outputWidth, depth];
+    const outHeight = Math.ceil((inHeight - filterHeight + 1) / strideHeight);
+    const outWidth = Math.ceil((inWidth - filterWidth + 1) / strideWidth);
+    outShape = [outHeight, outWidth, outDepth];
+    paddingInfo = {top: 0, bottom: 0, left: 0, right: 0};
   } else {
     throw Error(`Unknown padding parameter: ${padding}`);
   }
+  return {shape: outShape, paddingInfo};
 }
 
+/**
+ * @deprecated Use `conv_util.computeOutputInfo` instead.
+ */
 export function computeOutputShape3D(
-    inputShapeRowColDepth: [number, number, number], filterHeight: number,
-    filterWidth: number, depth: number, stride: number,
-    padding: 'same'|'valid'|number): [number, number, number] {
-  if (typeof padding === 'string') {
-    return computeOutputShape3DV2(
-        inputShapeRowColDepth, fieldSize, depth, stride, padding);
+    inShape: [number, number, number], fieldSize: number, outDepth: number,
+    stride: number, zeroPad?: number): [number, number, number] {
+  if (zeroPad == null) {
+    zeroPad = computeDefaultPad(inShape, fieldSize, stride);
   }
-  if (padding == null) {
-    padding = computeDefaultPad(inputShapeRowColDepth, fieldSize, stride);
-  }
-  const inputRows = inputShapeRowColDepth[0];
-  const inputCols = inputShapeRowColDepth[1];
-  const outputRows =
-      (inputRows - fieldSize + beforePad + afterPad) / stride + 1;
+  const inputRows = inShape[0];
+  const inputCols = inShape[1];
+  const outputRows = (inputRows - fieldSize + 2 * zeroPad) / stride + 1;
   util.assert(
       util.isInt(outputRows),
       `The output # of rows (${outputRows}) must be an integer. Change the ` +
           `stride and/or zero pad parameters`);
 
-  const outputCols = (inputCols - fieldSize + 2 * padding) / stride + 1;
+  const outputCols = (inputCols - fieldSize + 2 * zeroPad) / stride + 1;
   util.assert(
       util.isInt(outputCols),
       `The output # of columns (${outputCols}) must be an integer. Change ` +
           `the stride and/or zero pad parameters`);
 
-  return [outputRows, outputCols, depth];
+  return [outputRows, outputCols, outDepth];
 }
 
 export function computeDefaultPad(
@@ -76,9 +98,9 @@ export function computeTexShapeFrom3D(
 }
 
 export function computeWeightsShape4D(
-    inputDepth: number, outputDepth: number,
-    fSize: number): [number, number, number, number] {
-  return [fSize, fSize, inputDepth, outputDepth];
+    inputDepth: number, outputDepth: number, filterHeight: number,
+    filterWidth: number): [number, number, number, number] {
+  return [filterHeight, filterWidth, inputDepth, outputDepth];
 }
 
 export function computeDilatedRC(

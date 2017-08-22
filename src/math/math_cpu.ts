@@ -13,10 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as conv_util from '../math/conv_util';
 import * as util from '../util';
 
 import * as concat3d_util from './concat3d_util';
+import * as conv_util from './conv_util';
+import {OutputInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath} from './math';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
@@ -362,40 +363,25 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null,
-      strides: [number, number]|number,
-      padding: 'valid'|'same'|number): Array3D {
+      x: Array3D, weights: Array4D, biases: Array1D|null, strideHeight: number,
+      strideWidth: number, outputInfo: OutputInfo): Array3D {
     const [xRows, xCols, inputDepth] = x.shape;
     const filterHeight = weights.shape[0];
     const filterWidth = weights.shape[1];
-    const outputDepth = weights.shape[3];
+    const outDepth = weights.shape[3];
+    const padLeft = outputInfo.paddingInfo.left;
+    const padTop = outputInfo.paddingInfo.top;
 
-    let strideHeight: number;
-    let strideWidth: number;
-    if (typeof strides === 'number') {
-      strideHeight = strides;
-      strideWidth = strides;
-    } else {
-      strideHeight = strides[0];
-      strideWidth = strides[1];
-    }
-    let outputShape: [number, number, number];
-    if (typeof padding === 'string') {
-      // outputShape = conv_util.computeOutputShape3DV2(x.shape, )
-    } else {
-      outputShape = conv_util.computeOutputShape3D(
-          x.shape, filterHeight, outputDepth, stride, padding);
-    }
-    const y = Array3D.zeros(outputShape);
-    for (let d2 = 0; d2 < outputDepth; ++d2) {
+    const y = Array3D.zeros(outputInfo.shape);
+    for (let d2 = 0; d2 < outDepth; ++d2) {
       for (let yR = 0; yR < y.shape[0]; ++yR) {
-        const xRCorner = yR * stride - padding;
+        const xRCorner = yR * strideHeight - padLeft;
         const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, fieldSize + xRCorner);
+        const xRMax = Math.min(xRows, filterHeight + xRCorner);
         for (let yC = 0; yC < y.shape[1]; ++yC) {
-          const xCCorner = yC * stride - padding;
+          const xCCorner = yC * strideWidth - padTop;
           const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, fieldSize + xCCorner);
+          const xCMax = Math.min(xCols, filterWidth + xCCorner);
           let dotProd = 0;
           for (let xR = xRMin; xR < xRMax; ++xR) {
             const wR = xR - xRCorner;

@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as conv_util from '../conv_util';
+import {OutputInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DProgram implements GPGPUProgram {
@@ -23,31 +23,36 @@ export class Conv2DProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      xShape: [number, number, number], fieldSize: number, outputDepth: number,
-      stride: number, pad: number, hasBias: boolean) {
-    this.outputShape = conv_util.computeOutputShape3D(
-        xShape, fieldSize, outputDepth, stride, pad);
+      xShape: [number, number, number], filterHeight: number,
+      filterWidth: number, strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo, hasBias: boolean) {
+    this.outputShape = outputInfo.shape;
     const inputDepth = xShape[2];
-    this.params = [fieldSize, stride, pad, hasBias];
     const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
     const xNumRows = xShape[0];
     const xNumCols = xShape[1];
+    const padTop = outputInfo.paddingInfo.top;
+    const padLeft = outputInfo.paddingInfo.left;
+    this.params = [strideHeight, strideWidth, hasBias, padLeft, padTop];
+
     this.userCode = `
+      const vec2 strides = vec2(${strideHeight}.0, ${strideWidth}.0);
+      const vec2 pads = vec2(${padTop}.0, ${padLeft}.0);
+
       void main() {
         vec3 coords = getOutputCoords();
         float yR = coords.x;
         float yC = coords.y;
         float d2 = coords.z;
 
-        vec2 xRCCorner = vec2(yR, yC) * vec2(${stride}.0, ${stride}.0) -
-            vec2(${pad}.0, ${pad}.0);
+        vec2 xRCCorner = vec2(yR, yC) * strides - pads;
         float xRCorner = xRCCorner.x;
         float xCCorner = xRCCorner.y;
 
         // Convolve x(?, ?, d1) with w(:, :, d1, d2) to get y(yR, yC, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int iwR = 0; iwR < ${fieldSize}; iwR++) {
+        for (int iwR = 0; iwR < ${filterHeight}; iwR++) {
           float wR = float(iwR);
           float xR = xRCorner + wR;
 
@@ -55,7 +60,7 @@ export class Conv2DProgram implements GPGPUProgram {
             continue;
           }
 
-          for (int iwC = 0; iwC < ${fieldSize}; iwC++) {
+          for (int iwC = 0; iwC < ${filterWidth}; iwC++) {
             float wC = float(iwC);
             float xC = xCCorner + wC;
 

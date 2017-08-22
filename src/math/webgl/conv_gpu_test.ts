@@ -26,16 +26,16 @@ import {TextureManager} from './texture_manager';
 describe('conv_gpu', () => {
 
   function uploadConvolveDownload(
-      xVals: Float32Array, xShapeRCD: [number, number, number],
-      weights: Float32Array, biasVals: Float32Array|null, resultDepth: number,
-      fieldSize: number, stride: number, zeroPad?: number): Float32Array {
+      xVals: Float32Array, xShape: [number, number, number],
+      weights: Float32Array, biasVals: Float32Array|null, outDepth: number,
+      filterSize: number, stride: number, zeroPad?: number): Float32Array {
     zeroPad = zeroPad != null ?
         zeroPad :
-        conv_util.computeDefaultPad(xShapeRCD, fieldSize, stride);
+        conv_util.computeDefaultPad(xShape, filterSize, stride);
 
-    const x = Array3D.new(xShapeRCD, xVals);
+    const x = Array3D.new(xShape, xVals);
     const wShape =
-        conv_util.computeWeightsShape4D(xShapeRCD[2], resultDepth, fieldSize);
+        conv_util.computeWeightsShape4D(xShape[2], outDepth, filterSize);
     const W = Array4D.new(wShape, weights);
     const b = biasVals != null ? Array1D.new(biasVals) : null;
 
@@ -44,8 +44,11 @@ describe('conv_gpu', () => {
     const textureManager = new TextureManager(gpgpu);
     initializeGPU(gpgpu, textureManager);
 
+    const outputInfo = conv_util.computeOutputInfo(
+        xShape, filterSize, filterSize, outDepth, stride, stride, zeroPad);
     const program = new Conv2DProgram(
-        xShapeRCD, fieldSize, resultDepth, stride, zeroPad, biasVals != null);
+        xShape, filterSize, filterSize, stride, stride, outputInfo,
+        biasVals != null);
     const res = NDArray.zeros(program.outputShape);
     const inputs = biasVals != null ? [x, W, b] : [x, W];
     const binary = gpgpu_math.compileProgram(gpgpu, program, inputs, res);
