@@ -854,14 +854,15 @@ export abstract class NDArrayMath {
    * Computes a 2D convolution over the input x.
    * @param x The input image, must be rank 3, of shape [rows, cols, depth1].
    * @param weights The weights NDArray, must be rank 4, of shape
-   *     [f, f, depth1, depth2].
+   *     [filterHeight, filterWidth, depth1, depth2].
    * @param biases Optional biases NDArray, must be rank 1 of shape [depth2].
-   * @param stride The stride of the convolution.
+   * @param strides The strides of the convolution [strideHeight, strideWidth].
    * @param padding A string from: 'same', 'valid'. The type of padding
    *     algorithm to use.
    */
   conv2d(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
+      x: Array3D, weights: Array4D, biases: Array1D|null,
+      strides: [number, number]|number,
       padding: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
@@ -883,11 +884,14 @@ export abstract class NDArrayMath {
             `input depth for weights ${weights.shape[2]}.`);
 
 
-    return this.track(this.conv2dInternal(x, weights, biases, stride, padding));
+    return this.track(
+        this.conv2dInternal(x, weights, biases, strides, padding));
   }
   protected abstract conv2dInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      padding: 'valid'|'same'|number): Array3D;
+      x: Array3D, weights: Array4D, biases: Array1D|null,
+      strides: [number, number],
+      padding: {left: number, right: number, top: number, bottom: number},
+      outputSize: [number, number, number]): Array3D;
 
   /**
    * Computes the backprop of a 2D convolution.
