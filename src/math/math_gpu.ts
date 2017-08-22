@@ -271,11 +271,11 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected conv2dInternal(
       x: Array3D, weights: Array4D, bias: Array1D|null, stride: number,
-      zeroPad: number): Array3D {
+      padding: 'valid'|'same'|number): Array3D {
     const fieldSize = weights.shape[0];
     const outputDepth = weights.shape[3];
     const program = new Conv2DProgram(
-        x.shape, fieldSize, outputDepth, stride, zeroPad, bias != null);
+        x.shape, fieldSize, outputDepth, stride, padding, bias != null);
     const inputs = bias != null ? [x, weights, bias] : [x, weights];
     return this.compileAndRun(program, inputs);
   }

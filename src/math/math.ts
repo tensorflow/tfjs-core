@@ -19,7 +19,7 @@ import * as copy2d_util from './copy2d_util';
 
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
-export type ScopeResult = NDArray[]|NDArray|void;
+export type ScopeResult = NDArray[] | NDArray | void;
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -853,16 +853,16 @@ export abstract class NDArrayMath {
   /**
    * Computes a 2D convolution over the input x.
    * @param x The input image, must be rank 3, of shape [rows, cols, depth1].
-   * @param weights The weights NDArray, must be rank 4, of shape [f, f, depth1,
-   * depth2].
+   * @param weights The weights NDArray, must be rank 4, of shape
+   *     [f, f, depth1, depth2].
    * @param biases Optional biases NDArray, must be rank 1 of shape [depth2].
    * @param stride The stride of the convolution.
-   * @param zeroPad The zero padding of each side of the input NDArray. Will pad
-   * equally on all sides.
+   * @param padding A string from: 'same', 'valid'. The type of padding
+   *     algorithm to use.
    */
   conv2d(
       x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      zeroPad: number): Array3D {
+      padding: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in conv2d: x must be rank 3, but got rank ${x.rank}.`);
@@ -883,11 +883,11 @@ export abstract class NDArrayMath {
             `input depth for weights ${weights.shape[2]}.`);
 
 
-    return this.track(this.conv2dInternal(x, weights, biases, stride, zeroPad));
+    return this.track(this.conv2dInternal(x, weights, biases, stride, padding));
   }
   protected abstract conv2dInternal(
       x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      zeroPad: number): Array3D;
+      padding: 'valid'|'same'|number): Array3D;
 
   /**
    * Computes the backprop of a 2D convolution.
@@ -1210,11 +1210,10 @@ export abstract class NDArrayMath {
       const o = this.slice2D(
           res, [0, res.shape[1] / 4 * 3], [res.shape[0], res.shape[1] / 4]);
 
-      const newC =
-          this.add(
-              this.multiplyStrict(
-                  c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
-              this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
+      const newC = this.add(
+          this.multiplyStrict(
+              c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+          this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
       const newH =
           this.multiplyStrict(this.tanh(newC), this.sigmoid(o)) as Array2D;
 

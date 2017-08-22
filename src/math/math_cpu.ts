@@ -367,12 +367,12 @@ export class NDArrayMathCPU extends NDArrayMath {
    */
   protected conv2dInternal(
       x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      pad: number): Array3D {
+      padding: 'valid'|'same'|number): Array3D {
     const [xRows, xCols, inputDepth] = x.shape;
     const fieldSize = weights.shape[0];
     const outputDepth = weights.shape[3];
     const outputShape = conv_util.computeOutputShape3D(
-        [xRows, xCols, inputDepth], fieldSize, outputDepth, stride, pad);
+        [xRows, xCols, inputDepth], fieldSize, outputDepth, stride, padding);
     const y = Array3D.zeros(outputShape);
     for (let d2 = 0; d2 < outputDepth; ++d2) {
       for (let yR = 0; yR < y.shape[0]; ++yR) {
