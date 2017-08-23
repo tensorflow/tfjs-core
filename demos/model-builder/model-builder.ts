@@ -183,7 +183,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
           totalTimeSec.toFixed(1),
     };
     this.graphRunner = new GraphRunner(this.math, this.session, eventObserver);
-    this.optimizer = MomentumOptimizer(LEARNING_RATE, MOMENTUM);
+    this.optimizer = new MomentumOptimizer(LEARNING_RATE, MOMENTUM);
 
     // Set up datasets.
     this.populateDatasets();
