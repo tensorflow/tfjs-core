@@ -13,19 +13,15 @@ limitations under the License.
 import {Node} from './graph';
 import {NDArrayMath} from './math/math';
 import {NDArray, Scalar} from './math/ndarray';
-import {Optimizer} from './optimizer';
+import {SGDOptimizer} from './sgd_optimizer';
 import {SessionRuntime} from './session';
 import * as session_util from './session_util';
 import {TensorArrayMap} from './tensor_array_map';
 
-export class MomentumOptimizer extends Optimizer {
-  constructor(private learningRate: number, private momentum: 
-      number, specifiedVariableList?: Node[]) {
-    super(specifiedVariableList);
-    if(specifiedVariableList == null)
-    {
-      this.variableVelocities = null;
-    }
+export class MomentumOptimizer extends SGDOptimizer {
+  constructor(protected learningRate: number, 
+    private momentum: number, specifiedVariableList?: Node[]) {
+    super(learningRate, specifiedVariableList);
   }
 
   beforeBatch(
@@ -35,53 +31,34 @@ export class MomentumOptimizer extends Optimizer {
         session_util.getVariableNodesFromEvaluationSet(runtime.nodes) :
         this.specifiedVariableNodes;
         this.m = Scalar.new(this.momentum);
+
     if (batchSize !== this.prevBatchSize) {
       this.prevBatchSize = batchSize;
-      this.c = Scalar.new(-this.learningRate / batchSize);
-      
-    }
-    if (this.variableVelocities == null){
-    this.variableVelocities = new TensorArrayMap();
-    this.variableNodes.forEach(
-        node => {          
-          this.variableVelocities.set(node.output,
-             NDArray.zeros(node.output.shape));
-          });
+      this.c = Scalar.new(-this.learningRate / batchSize); 
     }
 
-
-    this.variableNodes.forEach(
-        node => {
-          this.variableGradients.set(node.output, 
-              NDArray.zeros(node.output.shape));
-          });
-  }
-
-  afterExample(
-      math: NDArrayMath, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap, gradientArrayMap: TensorArrayMap) {
-    math.scope((keep) => {
-      this.variableNodes!.forEach(node => {
-
-        const gradient = gradientArrayMap.get(node.output);
-        const accumulatedGradient = this.variableGradients.get(node.output);
-        this.variableGradients.set(
-            node.output, keep(math.add(gradient, accumulatedGradient)));
-        accumulatedGradient.dispose();
+    if (this.variableVelocities.size() === 0) {
+      this.variableNodes.forEach(node => {          
+      this.variableVelocities.set(node.output,
+         NDArray.zeros(node.output.shape));
       });
-    });
+    }
+    this.variableNodes.forEach(node => {
+      this.variableGradients.set(node.output, 
+          NDArray.zeros(node.output.shape));
+      });
   }
 
   afterBatch(
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap, gradientArrayMap: TensorArrayMap) {
     math.scope((keep) => {
-      this.variableNodes!.forEach(node => {
+      this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
         const oldVelocity = this.variableVelocities.get(node.output);
-        const velocity = math.scaledArrayAdd(this.m!,
-            oldVelocity, this.one!, gradient);
+        const velocity = math.scaledArrayAdd(this.m,
+            oldVelocity, this.one, gradient);
         const variable =
             math.scaledArrayAdd(this.c!, velocity, this.one!, oldVariable);
         this.variableVelocities.set(node.output, keep(velocity));
@@ -108,18 +85,10 @@ export class MomentumOptimizer extends Optimizer {
     this.variableVelocities.dispose();
   }
 
-  setLearningRate(learningRate: number) {
-    this.learningRate = learningRate;
-  }
-
   setMomentum(momentum: number) {
     this.momentum = momentum;
   }
 
-  private variableGradients = new TensorArrayMap();
   private variableVelocities = new TensorArrayMap();
-  private prevBatchSize: number;
-  private one = Scalar.new(1);
-  private c: Scalar;
   private m: Scalar;
 }

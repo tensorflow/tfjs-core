@@ -297,7 +297,7 @@ describe('Session', () => {
     const y = g.reduceSum(g.add(g.matmul(w, x), b));
 
     const safeMode = true;
-    const optimizer = new MomentumOptimizer(0.1,0.5);
+    const optimizer = new MomentumOptimizer(0.1, 0.5);
     const math = new NDArrayMathCPU(safeMode);
     const session = new Session(g, math);
     const inputProvider: InputProvider = {
@@ -313,12 +313,14 @@ describe('Session', () => {
       //                momentum* old_vel_w2 + x_2] = [2,4]
       // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.2, -0.4]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
+      const dydw = session.activationArrayMap.get(w).getValues();
+      test_util.expectArraysClose(dydw, new Float32Array([-.2, -0.4]), 1e-5);
       // velocity_w = [momentum* old_vel_w1 + x_1,
       //                momentum* old_vel_w2 + x_2] = [3,6]
       // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.5, -1.0]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
-      const dydw = session.activationArrayMap.get(w).getValues();
-      test_util.expectArraysClose(dydw, new Float32Array([-.5,-1.0]), 2e-5);
+      const dydw2 = session.activationArrayMap.get(w).getValues();
+      test_util.expectArraysClose(dydw2, new Float32Array([-.5, -1.0]), 2e-5);
     });
   });
 

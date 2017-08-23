@@ -22,7 +22,7 @@ import * as session_util from './session_util';
 import {TensorArrayMap} from './tensor_array_map';
 
 export class SGDOptimizer extends Optimizer {
-  constructor(private learningRate: number, specifiedVariableList?: Node[]) {
+  constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
     super(specifiedVariableList);
   }
 
@@ -86,8 +86,8 @@ export class SGDOptimizer extends Optimizer {
     this.learningRate = learningRate;
   }
 
-  private variableGradients = new TensorArrayMap();
-  private prevBatchSize: number;
-  private one = Scalar.new(1);
-  private c: Scalar;
+  protected variableGradients = new TensorArrayMap();
+  protected prevBatchSize: number;
+  protected one = Scalar.new(1);
+  protected c: Scalar;
 }
