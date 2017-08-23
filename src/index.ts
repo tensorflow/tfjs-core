@@ -38,6 +38,5 @@ export {Optimizer} from './optimizer';
 export {CostReduction, FeedEntry, Session} from './session';
 export {SGDOptimizer} from './sgd_optimizer';
 export {MomentumOptimizer} from './momentumOptimizer';
-
 // Second level exports.
 export {conv_util, gpgpu_util, render_ndarray_gpu_util, util, webgl_util};
