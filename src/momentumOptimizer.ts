@@ -15,7 +15,6 @@ import {NDArrayMath} from './math/math';
 import {NDArray, Scalar} from './math/ndarray';
 import {SGDOptimizer} from './sgd_optimizer';
 import {SessionRuntime} from './session';
-import * as session_util from './session_util';
 import {TensorArrayMap} from './tensor_array_map';
 
 export class MomentumOptimizer extends SGDOptimizer {
@@ -25,28 +24,18 @@ export class MomentumOptimizer extends SGDOptimizer {
   }
 
   beforeBatch(
-      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap, gradientArrayMap: TensorArrayMap) {
-    this.variableNodes = this.specifiedVariableNodes == null ?
-        session_util.getVariableNodesFromEvaluationSet(runtime.nodes) :
-        this.specifiedVariableNodes;
-        this.m = Scalar.new(this.momentum);
+    math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
+    activationArrayMap: TensorArrayMap, gradientArrayMap: TensorArrayMap) {
+    super.beforeBatch(math, batchSize, runtime,
+    	activationArrayMap, gradientArrayMap);
 
-    if (batchSize !== this.prevBatchSize) {
-      this.prevBatchSize = batchSize;
-      this.c = Scalar.new(-this.learningRate / batchSize); 
+    this.m = Scalar.new(this.momentum);
+    if (this.variableVelocities.size() === 0){
+	    this.variableNodes.forEach(node => {
+	        this.variableVelocities.set(node.output,
+	        NDArray.zeros(node.output.shape));
+	    });
     }
-
-    if (this.variableVelocities.size() === 0) {
-      this.variableNodes.forEach(node => {          
-      this.variableVelocities.set(node.output,
-         NDArray.zeros(node.output.shape));
-      });
-    }
-    this.variableNodes.forEach(node => {
-      this.variableGradients.set(node.output, 
-          NDArray.zeros(node.output.shape));
-      });
   }
 
   afterBatch(

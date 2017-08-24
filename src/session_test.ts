@@ -302,7 +302,7 @@ describe('Session', () => {
     const session = new Session(g, math);
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([2, 4 ]);
+        return Array1D.new([2, 4]);
       },
       disposeCopy(math, example) {}
     };
