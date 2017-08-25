@@ -27,10 +27,8 @@ export class Conv2DProgram implements GPGPUProgram {
       filterWidth: number, strideHeight: number, strideWidth: number,
       outputInfo: OutputInfo, hasBias: boolean) {
     this.outputShape = outputInfo.shape;
-    const inputDepth = xShape[2];
     const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
-    const xNumRows = xShape[0];
-    const xNumCols = xShape[1];
+    const [xNumRows, xNumCols, inputDepth] = xShape;
     const padTop = outputInfo.paddingInfo.top;
     const padLeft = outputInfo.paddingInfo.left;
     this.params = [strideHeight, strideWidth, hasBias, padLeft, padTop];

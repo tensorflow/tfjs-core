@@ -23,21 +23,20 @@ export type OutputInfo = {
 export function computeOutputInfo(
     inShape: [number, number, number], filterHeight: number,
     filterWidth: number, outDepth: number, strideHeight: number,
-    strideWidth: number, padding: 'same'|'valid'|number): OutputInfo {
-  if (typeof padding === 'number') {
+    strideWidth: number, pad: 'same'|'valid'|number): OutputInfo {
+  if (typeof pad === 'number') {
     const outShape = computeOutputShape3D(
-        inShape, filterHeight, outDepth, strideHeight, padding);
+        inShape, filterHeight, outDepth, strideHeight, pad);
     return {
       shape: outShape,
-      paddingInfo:
-          {top: padding, bottom: padding, left: padding, right: padding}
+      paddingInfo: {top: pad, bottom: pad, left: pad, right: pad}
     };
   }
   const inHeight = inShape[0];
   const inWidth = inShape[1];
   let outShape: [number, number, number];
   let paddingInfo: {left: number, top: number, bottom: number, right: number};
-  if (padding === 'same') {
+  if (pad === 'same') {
     const outHeight = Math.ceil(inHeight / strideHeight);
     const outWidth = Math.ceil(inWidth / strideWidth);
     outShape = [outHeight, outWidth, outDepth];
@@ -49,15 +48,33 @@ export function computeOutputInfo(
     const left = Math.floor(padAlongWidth / 2);
     const right = padAlongWidth - left;
     paddingInfo = {top, bottom, left, right};
-  } else if (padding === 'valid') {
+  } else if (pad === 'valid') {
     const outHeight = Math.ceil((inHeight - filterHeight + 1) / strideHeight);
     const outWidth = Math.ceil((inWidth - filterWidth + 1) / strideWidth);
     outShape = [outHeight, outWidth, outDepth];
     paddingInfo = {top: 0, bottom: 0, left: 0, right: 0};
   } else {
-    throw Error(`Unknown padding parameter: ${padding}`);
+    throw Error(`Unknown padding parameter: ${pad}`);
   }
   return {shape: outShape, paddingInfo};
+}
+
+export function computeOutputInfoDerInput(
+    inShape: [number, number, number], filterHeight: number,
+    filterWidth: number, outDepth: number, strideHeight: number,
+    strideWidth: number, pad: 'same'|'valid'|number): OutputInfo {
+  // Compute the padding information for the regular convolution. This helps
+  // us find the padding for the transposed convolution.
+  const outputInfo = computeOutputInfo(
+      inShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+      pad);
+  outputInfo.shape = inShape;
+  outputInfo.paddingInfo.top = filterHeight - 1 - outputInfo.paddingInfo.top;
+  outputInfo.paddingInfo.left = filterWidth - 1 - outputInfo.paddingInfo.left;
+  outputInfo.paddingInfo.bottom =
+      filterHeight - 1 - outputInfo.paddingInfo.bottom;
+  outputInfo.paddingInfo.right = filterWidth - 1 - outputInfo.paddingInfo.right;
+  return outputInfo;
 }
 
 /**

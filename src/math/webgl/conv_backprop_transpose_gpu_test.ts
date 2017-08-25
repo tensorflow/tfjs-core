@@ -14,8 +14,9 @@ limitations under the License.
 ==============================================================================*/
 
 import * as test_util from '../../test_util';
+import * as conv_util from '../conv_util';
 import {NDArrayMathCPU} from '../math_cpu';
-import {Array1D, Array3D, Array4D, initializeGPU, NDArray} from '../ndarray';
+import {Array3D, Array4D, initializeGPU, NDArray} from '../ndarray';
 
 import {Conv2DTransposeProgram} from './conv_backprop_gpu';
 import {GPGPUContext} from './gpgpu_context';
@@ -25,17 +26,24 @@ import {TextureManager} from './texture_manager';
 describe('conv_gpu transpose', () => {
 
   function uploadConvTransposeDownload(
-      x: Array3D, W: Array4D, bias: Array1D|null, fSize: number,
-      origStride: number, origPad: number): Float32Array {
+      x: Array3D, W: Array4D, outputShape: [number, number, number],
+      fSize: number, origStride: number, origPad: number): Float32Array {
     const gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
     const textureManager = new TextureManager(gpgpu);
     initializeGPU(gpgpu, textureManager);
-    const origInputDepth = W.shape[2];
+
+    const filterHeight = W.shape[0];
+    const filterWidth = W.shape[1];
+    const origOutDepth = W.shape[3];
+    const origInputShape = outputShape;
+    const outInfo = conv_util.computeOutputInfoDerInput(
+        origInputShape, filterHeight, filterWidth, origOutDepth, origStride,
+        origStride, origPad);
     const program = new Conv2DTransposeProgram(
-        x.shape, fSize, origInputDepth, origStride, origPad, bias != null);
+        x.shape, fSize, fSize, origStride, origStride, outInfo);
     const res = NDArray.zeros(program.outputShape);
-    const inputs = bias != null ? [x, W, bias] : [x, W];
+    const inputs = [x, W];
     const binary = gpgpu_math.compileProgram(gpgpu, program, inputs, res);
     gpgpu_math.runProgram(binary, inputs, res);
     const resValues = res.getValues();
@@ -56,13 +64,12 @@ describe('conv_gpu transpose', () => {
 
     const weights = NDArray.randNormal<Array4D>(
         [fSize, fSize, origInputDepth, origOutputDepth]);
-    const biases = NDArray.randNormal<Array1D>([origInputDepth]);
 
     const mathCPU = new NDArrayMathCPU();
-    const yCPU =
-        mathCPU.conv2dTranspose(x, weights, biases, origStride, origPad);
+    const yCPU = mathCPU.conv2dTranspose(
+        x, weights, origInputShape, origStride, origPad);
     const yGPU = uploadConvTransposeDownload(
-        x, weights, biases, fSize, origStride, origPad);
+        x, weights, origInputShape, fSize, origStride, origPad);
     test_util.expectArraysClose(yGPU, yCPU.getValues(), 1e-5);
   }
 

@@ -27,8 +27,7 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
       xShape: [number, number, number], filterHeight: number,
       filterWidth: number, strideHeight: number, strideWidth: number,
       outputInfo: OutputInfo) {
-    const yShape = outputInfo.shape;
-    const [yNumRows, yNumCols, outDepth] = yShape;
+    const [yNumRows, yNumCols, outDepth] = outputInfo.shape;
     const [xNumRows, xNumCols, inDepth] = xShape;
 
     this.outputShape = conv_util.computeWeightsShape4D(
@@ -77,62 +76,59 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
 }
 
 export class Conv2DTransposeProgram implements GPGPUProgram {
-  variableNames = ['x', 'W', 'bias'];
+  variableNames = ['x', 'W'];
   params: Array<{}>;
   outputShape: number[];
   userCode: string;
 
   constructor(
       xShape: [number, number, number], filterHeight: number,
-      filterWidth: number, origInputDepth: number, origStride: number,
-      origPad: number, hasBias: boolean) {
-    const [xRows, xCols, origOutputDepth] = xShape;
-    const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
+      filterWidth: number, strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo) {
+    const [xRows, xCols, inDepth] = xShape;
 
-    // Figure out the output shape by dilating the input.
-    const xRowsDilated = (xRows - 1) * origStride + 1;
-    const xColsDilated = (xCols - 1) * origStride + 1;
-    const pad = fSize - 1 - origPad;
-    this.outputShape = conv_util.computeOutputShape3D(
-        [xRowsDilated, xColsDilated, origOutputDepth], fSize, origInputDepth, 1,
-        pad);
-    this.params = [pad, fSize, origStride, hasBias];
+    this.outputShape = outputInfo.shape;
+    const padTop = outputInfo.paddingInfo.top;
+    const padLeft = outputInfo.paddingInfo.left;
+    this.params = [strideHeight, strideWidth, padLeft, padTop];
 
     this.userCode = `
+      const vec2 pads = vec2(${padTop}.0, ${padLeft}.0);
+
       void main() {
         vec3 coords = getOutputCoords();
         float yR = coords.x;
         float yC = coords.y;
         float d2 = coords.z;
 
-        vec2 xRCCorner = vec2(yR, yC) - vec2(${pad}.0, ${pad}.0);
+        vec2 xRCCorner = vec2(yR, yC) - pads;
         float xRCorner = xRCCorner.x;
         float xCCorner = xRCCorner.y;
 
         // Convolve x(?, ?, d1) with w(:, :, d2, d1) to get y(yR, yC, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int iwR = 0; iwR < ${fSize}; iwR++) {
+        for (int iwR = 0; iwR < ${filterHeight}; iwR++) {
           float wR = float(iwR);
-          float xR = (xRCorner + wR) / ${origStride}.0;
+          float xR = (xRCorner + wR) / ${strideHeight}.0;
 
           if (xR < 0.0 || xR >= ${xRows}.0 || fract(xR) > 0.0) {
             continue;
           }
 
-          float wRPerm = ${fSize}.0 - 1.0 - wR;
+          float wRPerm = ${filterHeight}.0 - 1.0 - wR;
 
-          for (int iwC = 0; iwC < ${fSize}; iwC++) {
+          for (int iwC = 0; iwC < ${filterWidth}; iwC++) {
             float wC = float(iwC);
-            float xC = (xCCorner + wC) / ${origStride}.0;
+            float xC = (xCCorner + wC) / ${strideWidth}.0;
 
             if (xC < 0.0 || xC >= ${xCols}.0 || fract(xC) > 0.0) {
               continue;
             }
 
-            float wCPerm = ${fSize}.0 - 1.0 - wC;
+            float wCPerm = ${filterWidth}.0 - 1.0 - wC;
 
-            for (int id1 = 0; id1 < ${origOutputDepth}; id1++) {
+            for (int id1 = 0; id1 < ${inDepth}; id1++) {
               float d1 = float(id1);
               float xValue = getX(xR, xC, d1);
               float wValue = getW(wRPerm, wCPerm, d2, d1);
@@ -140,7 +136,6 @@ export class Conv2DTransposeProgram implements GPGPUProgram {
             }
           }
         }
-        ${biasSnippet}
         setOutput(dotProd);
       }
     `;

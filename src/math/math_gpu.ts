@@ -271,40 +271,29 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected conv2dInternal(
-      x: Array3D, weights: Array4D, bias: Array1D|null, strideHeight: number,
+      x: Array3D, filter: Array4D, bias: Array1D|null, strideHeight: number,
       strideWidth: number, outputInfo: OutputInfo): Array3D {
-    const filterHeight = weights.shape[0];
-    const filterWidth = weights.shape[1];
+    const filterHeight = filter.shape[0];
+    const filterWidth = filter.shape[1];
     const program = new Conv2DProgram(
         x.shape, filterHeight, filterWidth, strideHeight, strideWidth,
         outputInfo, bias != null);
-    const inputs = bias != null ? [x, weights, bias] : [x, weights];
+    const inputs = bias != null ? [x, filter, bias] : [x, filter];
     return this.compileAndRun(program, inputs);
   }
 
-  protected conv2dBackPropInternal(
-      x: Array3D, dy: Array3D, weights: Array4D, stride: number,
-      pad: number): {dx: Array3D, dw: Array4D, db: Array1D} {
-    const fSize = weights.shape[0];
-    const dw = this.conv2dDerWeights(x, dy, fSize, stride, pad);
-    const db = this.conv2dDerBias(dy);
-    const dx = this.conv2dTransposeInternal(
-        dy, weights, null /** biases */, stride, pad);
-    return {dx, db, dw};
-  }
-
-  protected conv2dTransposeInternal(
-      x: Array3D, weights: Array4D, bias: Array1D|null, origStride: number,
-      origPad: number): Array3D {
-    const origInputDepth = weights.shape[2];
-    const fieldSize = weights.shape[0];
+  protected conv2dDerInputInternal(
+      dy: Array3D, filter: Array4D, strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D {
+    const filterHeight = filter.shape[0];
+    const filterWidth = filter.shape[1];
     const program = new Conv2DTransposeProgram(
-        x.shape, fieldSize, origInputDepth, origStride, origPad, bias != null);
-    const inputs = bias != null ? [x, weights, bias] : [x, weights];
-    return this.compileAndRun(program, inputs);
+        dy.shape, filterHeight, filterWidth, strideHeight, strideWidth,
+        outputInfo);
+    return this.compileAndRun(program, [dy, filter]);
   }
 
-  conv2dDerWeights(
+  protected conv2dDerFilterInternal(
       x: Array3D, dY: Array3D, filterHeight: number, filterWidth: number,
       strideHeight: number, strideWidth: number,
       outputInfo: OutputInfo): Array4D {
@@ -314,7 +303,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [x, dY]);
   }
 
-  conv2dDerBias(dY: Array3D): Array1D {
+  protected conv2dDerBiasInternal(dY: Array3D): Array1D {
     const program = new Conv2DDerBiasProgram(dY.shape);
     return this.compileAndRun(program, [dY]);
   }

@@ -25,8 +25,8 @@ const OP_RUNS = 40;
 
 export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const origInputDepth = 1;
-  const origOutputDepth = 2;
-  const xShape: [number, number, number] = [size, size, 1];
+  const origOutputDepth = 1;
+  const xShape: [number, number, number] = [size, size, origOutputDepth];
   const fieldSize = 11;
   const origStride = 1;
   const origPad = 1;
@@ -36,14 +36,16 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   initializeGPU(gpgpu, texManager);
   gpgpu.enableAutomaticDebugValidation(true);
 
-  const hasBias = false;
+  const outInfo = conv_util.computeOutputInfoDerInput(
+      xShape, fieldSize, fieldSize, origOutputDepth, origStride, origStride,
+      origPad);
   const program = new Conv2DTransposeProgram(
-      xShape, fieldSize, origInputDepth, origStride, origPad, hasBias);
+      xShape, fieldSize, fieldSize, origStride, origStride, outInfo);
   const outputShape = program.outputShape as [number, number, number];
   const out = Array3D.zeros(outputShape);
   const x = Array3D.randUniform(xShape, -1, 1);
   const wShape = conv_util.computeWeightsShape4D(
-      origInputDepth, origOutputDepth, fieldSize);
+      origInputDepth, origOutputDepth, fieldSize, fieldSize);
   const W = Array4D.randUniform(wShape, -1, 1);
   const inputs = [x, W];
   const binary = gpgpu_math.compileProgram(gpgpu, program, inputs, out);

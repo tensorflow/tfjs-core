@@ -854,22 +854,22 @@ export abstract class NDArrayMath {
   /**
    * Computes a 2D convolution over the input x.
    * @param x The input image, rank 3, of shape [height, width, inDepth].
-   * @param weights The weights, rank 4, of shape
+   * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param bias Optional bias, rank 1 of shape [outDepth].
    * @param strides The strides of the convolution: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    */
   conv2d(
-      x: Array3D, weights: Array4D, bias: Array1D|null,
+      x: Array3D, filter: Array4D, bias: Array1D|null,
       strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in conv2d: x must be rank 3, but got rank ${x.rank}.`);
     util.assert(
-        weights.rank === 4,
-        `Error in conv2d: weights must be rank 4, but got rank ` +
-            `${weights.rank}.`);
+        filter.rank === 4,
+        `Error in conv2d: filter must be rank 4, but got rank ` +
+            `${filter.rank}.`);
     if (bias != null) {
       util.assert(
           bias.rank === 1,
@@ -878,13 +878,13 @@ export abstract class NDArrayMath {
     }
 
     util.assert(
-        x.shape[2] === weights.shape[2],
+        x.shape[2] === filter.shape[2],
         `Error in conv2d: depth of input (${x.shape[2]}) must match  ` +
-            `input depth for weights ${weights.shape[2]}.`);
+            `input depth for filter ${filter.shape[2]}.`);
 
-    const filterHeight = weights.shape[0];
-    const filterWidth = weights.shape[1];
-    const outDepth = weights.shape[3];
+    const filterHeight = filter.shape[0];
+    const filterWidth = filter.shape[1];
+    const outDepth = filter.shape[3];
     let strideHeight: number;
     let strideWidth: number;
     if (typeof strides === 'number') {
@@ -898,49 +898,139 @@ export abstract class NDArrayMath {
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.track(this.conv2dInternal(
-        x, weights, bias, strideHeight, strideWidth, outputInfo));
+        x, filter, bias, strideHeight, strideWidth, outputInfo));
   }
   protected abstract conv2dInternal(
-      x: Array3D, weights: Array4D, bias: Array1D|null, strideHeight: number,
+      x: Array3D, filter: Array4D, bias: Array1D|null, strideHeight: number,
       strideWidth: number, outputInfo: OutputInfo): Array3D;
 
   /**
    * Computes the backprop of a 2D convolution.
    * @param x The input image, rank 3, of shape [height, width, inDepth].
    * @param dy The dy image, rank 3, of shape [height, width, outDepth].
-   * @param weights The weights, rank 4, of shape
+   * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param strides The strides of the convolution: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    */
   conv2dBackProp(
-      x: Array3D, dy: Array3D, weights: Array4D,
+      x: Array3D, dy: Array3D, filter: Array4D,
       strides: [number, number]|number,
       pad: 'valid'|'same'|number): {dx: Array3D, dw: Array4D, db: Array1D} {
+    const dw = this.conv2dDerFilter(x, dy, filter.shape, strides, pad);
+    const db = this.conv2dDerBias(dy);
+    const dx = this.conv2dDerInput(x.shape, dy, filter, strides, pad);
+    return {db, dw, dx};
+  }
+
+  /**
+   * Computes the derivative of the input of a 2D convolution.
+   *
+   * @param inShape The shape of the input. Length 3 [height, width, inDepth].
+   * @param dy The derivative of the output. Rank 3
+   *     [outHeight, outWidth, outDepth].
+   * @param filter The filter, rank 4, of shape
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   */
+  conv2dDerInput(
+      inShape: [number, number, number], dy: Array3D, filter: Array4D,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
+    const inDepth = inShape[2];
+    const outDepth = dy.shape[2];
+    util.assert(
+        inShape.length === 3,
+        `Error in conv2dDerInput: x must be rank 3, but got rank ` +
+            `${inShape.length}.`);
+    util.assert(
+        dy.rank === 3,
+        `Error in conv2dDerInput: dy must be rank 3, but got ` +
+            `rank ${dy.rank}`);
+    util.assert(
+        filter.rank === 4,
+        `Error in conv2dDerInput: filter must be rank 4, but got ` +
+            `rank ${filter.rank}`);
+    util.assert(
+        inDepth === filter.shape[2],
+        `Error in conv2dDerInput: depth of input (${inDepth}) must ` +
+            `match input depth for filter ${filter.shape[2]}.`);
+    util.assert(
+        outDepth === filter.shape[3],
+        `Error in conv2dDerInput: depth of output (${outDepth}) must` +
+            `match output depth for filter ${filter.shape[3]}.`);
+
+    const filterHeight = filter.shape[0];
+    const filterWidth = filter.shape[1];
+
+    let strideHeight: number;
+    let strideWidth: number;
+    if (typeof strides === 'number') {
+      strideHeight = strides;
+      strideWidth = strides;
+    } else {
+      strideHeight = strides[0];
+      strideWidth = strides[1];
+    }
+
+    const outputInfo = conv_util.computeOutputInfoDerInput(
+        inShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.track(this.conv2dDerInputInternal(
+        dy, filter, strideHeight, strideWidth, outputInfo));
+  }
+  protected abstract conv2dDerInputInternal(
+      dy: Array3D, filter: Array4D, strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D;
+
+  /**
+   * Computes the derivative of the bias of a 2D convolution.
+   *
+   * @param dy The gradient for the output of this op. Rank 3 of shape
+   *     [height, width, outDepth].
+   */
+  conv2dDerBias(dy: Array3D): Array1D {
+    return this.track(this.conv2dDerBiasInternal(dy));
+  }
+  protected abstract conv2dDerBiasInternal(dY: Array3D): Array1D;
+
+  /**
+   * Computes the derivative of the filter of a 2D convolution.
+   *
+   * @param x The input image, rank 3, of shape [height, width, inDepth].
+   * @param dy The dy image, rank 3, of shape [height, width, outDepth].
+   * @param filterSize The size of the filter, length 4,
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   */
+  conv2dDerFilter(
+      x: Array3D, dy: Array3D, filterSize: [number, number, number, number],
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array4D {
     util.assert(
         x.rank === 3,
-        `Error in conv2dBackProp: x must be rank 3, but got shape ` +
+        `Error in conv2dDerFilter: x must be rank 3, but got shape ` +
             `${x.shape}.`);
     util.assert(
         dy.rank === 3,
-        `Error in conv2dBackProp: dy must be rank 3, but got shape ` +
+        `Error in conv2dDerFilter: dy must be rank 3, but got shape ` +
             `${dy.shape}.`);
     util.assert(
-        weights.rank === 4,
-        `Error in conv2dBackProp: weights must be rank 4, but got shape ` +
-            `${weights.shape}.`);
+        filterSize.length === 4,
+        `Error in conv2dDerFilter: filterSize must be length 4, but got ` +
+            `${filterSize}.`);
     util.assert(
-        x.shape[2] === weights.shape[2],
-        `Error in conv2dBackProp: depth of x ${x.shape[2]}) must ` +
-            `match input depth for weights (${weights.shape[2]}.`);
+        x.shape[2] === filterSize[2],
+        `Error in conv2dDerFilter: depth of x ${x.shape[2]}) must ` +
+            `match input depth in filter (${filterSize[2]}.`);
     util.assert(
-        dy.shape[2] === weights.shape[3],
-        `Error in conv2dBackProp: depth of dy (${dy.shape[2]}) must ` +
-            `match output depth for weights (${weights.shape[3]}).`);
+        dy.shape[2] === filterSize[3],
+        `Error in conv2dDerFilter: depth of dy (${dy.shape[2]}) must ` +
+            `match output depth for filter (${filterSize[3]}).`);
 
-    const filterHeight = weights.shape[0];
-    const filterWidth = weights.shape[1];
-    const outDepth = weights.shape[3];
+    const filterHeight = filterSize[0];
+    const filterWidth = filterSize[1];
+    const outDepth = filterSize[3];
     let strideHeight: number;
     let strideWidth: number;
     if (typeof strides === 'number') {
@@ -953,83 +1043,34 @@ export abstract class NDArrayMath {
     const outputInfo = conv_util.computeOutputInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    const backpropResult = this.conv2dBackPropInternal(
-        x, dy, weights, strideHeight, strideWidth, outputInfo);
-
-    this.track(backpropResult.db);
-    this.track(backpropResult.dw);
-    this.track(backpropResult.dx);
-
-    return backpropResult;
+    return this.track(this.conv2dDerFilterInternal(
+        x, dy, filterHeight, filterWidth, strideHeight, strideWidth,
+        outputInfo));
   }
-  protected abstract conv2dBackPropInternal(
-      x: Array3D, dy: Array3D, weights: Array4D, strideHeight: number,
-      strideWidth: number,
-      outputInfo: OutputInfo): {dx: Array3D, dw: Array4D, db: Array1D};
+  protected abstract conv2dDerFilterInternal(
+      x: Array3D, dy: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array4D;
 
   /**
    * Computes the transposed 2D convolution of an image, also known as a
    * deconvolution.
    *
    * @param x The input image, rank 3, of shape [height, width, inDepth].
-   * @param weights The weights, rank 4, of shape
+   * @param filter The filter, rank 4, of shape
    *     `[filterHeight, filterWidth, outDepth, inDepth]`.
    *     `inDepth` must match `inDepth` in `x`.
-   * @param bias Optional bias, rank 1, of shape [outDepth].
+   * @param outputShape Output shape, rank 3 [height, width, outDepth].
    * @param strides The strides of the original convolution:
    *     `[strideHeight, strideWidth]`.
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     of the original convolutions.
    */
   conv2dTranspose(
-      x: Array3D, weights: Array4D, bias: Array1D|null,
+      x: Array3D, filter: Array4D, outputShape: [number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
-    util.assert(
-        x.rank === 3,
-        `Error in conv2dTranspose: x must be rank 3, but got rank ` +
-            `${x.rank}.`);
-    util.assert(
-        weights.rank === 4,
-        `Error in conv2dTranspose: weights must be rank 4, but got ` +
-            `rank ${weights.rank}`);
-    if (bias != null) {
-      util.assert(
-          bias.rank === 1,
-          `Error in conv2dTranspose: bias must be rank 1, but got ' +
-              'rank ${bias.rank}.`);
-    }
-    util.assert(
-        x.shape[2] === weights.shape[3],
-        `Error in conv2dTranspose: depth of input (${x.shape[2]}) must ` +
-            `match input depth for weights ${weights.shape[3]}.`);
-
-    const filterHeight = weights.shape[0];
-    const filterWidth = weights.shape[1];
-    const outDepth = weights.shape[2];
-    const inDepth = weights.shape[3];
-    let strideHeight: number;
-    let strideWidth: number;
-    if (typeof strides === 'number') {
-      strideHeight = strides;
-      strideWidth = strides;
-    } else {
-      strideHeight = strides[0];
-      strideWidth = strides[1];
-    }
-    const xRows = x.shape[0];
-    const xCols = x.shape[1];
-    // Figure out the output shape by dilating the input.
-    const xRowsDilated = (xRows - 1) * strideHeight + 1;
-    const xColsDilated = (xCols - 1) * strideWidth + 1;
-    const outputInfo = conv_util.computeOutputInfo(
-        [xRowsDilated, xColsDilated, inDepth], filterHeight, filterWidth,
-        outDepth, 1, 1, newPad)
-    return this.track(this.conv2dTransposeInternal(
-        x, weights, bias, strideHeight, strideWidth, outputInfo));
+    return this.conv2dDerInput(outputShape, x, filter, strides, pad);
   }
-  protected abstract conv2dTransposeInternal(
-      x: Array3D, weights: Array4D, bias: Array1D|null, strideHeight: number,
-      strideWidth: number, outputInfo: OutputInfo): Array3D;
 
   /**
    * Computes the 2D max pooling of an image.

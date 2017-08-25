@@ -363,12 +363,12 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null, strideHeight: number,
+      x: Array3D, filter: Array4D, bias: Array1D|null, strideHeight: number,
       strideWidth: number, outputInfo: OutputInfo): Array3D {
     const [xRows, xCols, inputDepth] = x.shape;
-    const filterHeight = weights.shape[0];
-    const filterWidth = weights.shape[1];
-    const outDepth = weights.shape[3];
+    const filterHeight = filter.shape[0];
+    const filterWidth = filter.shape[1];
+    const outDepth = filter.shape[3];
     const padLeft = outputInfo.paddingInfo.left;
     const padTop = outputInfo.paddingInfo.top;
 
@@ -389,147 +389,73 @@ export class NDArrayMathCPU extends NDArrayMath {
               const wC = xC - xCCorner;
               for (let d1 = 0; d1 < inputDepth; ++d1) {
                 const pixel = x.get(xR, xC, d1);
-                const weight = weights.get(wR, wC, d1, d2);
+                const weight = filter.get(wR, wC, d1, d2);
                 dotProd += pixel * weight;
               }
             }
           }
-          const bias = (biases != null) ? biases.get(d2) : 0;
-          y.set(dotProd + bias, yR, yC, d2);
+          const biasVal = (bias != null) ? bias.get(d2) : 0;
+          y.set(dotProd + biasVal, yR, yC, d2);
         }
       }
     }
     return y;
   }
 
-  protected conv2dBackPropInternal(
-      x: Array3D, dy: Array3D, weights: Array4D, stride: number,
-      pad: number): {dx: Array3D, dw: Array4D, db: Array1D} {
-    const fSize = weights.shape[0];
-    const dw = this.conv2dDerWeights(x, dy, fSize, stride, pad);
-    const db = this.conv2dDerBias(dy);
-    const dx = this.conv2dTransposeInternal(dy, weights, null, stride, pad);
-    return {dx, db, dw};
-  }
+  protected conv2dDerInputInternal(
+      dy: Array3D, filter: Array4D, strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D {
+    const inDepth = filter.shape[2];
+    const outDepth = filter.shape[3];
+    const xRows = dy.shape[0];
+    const xCols = dy.shape[1];
+    const leftPad = outputInfo.paddingInfo.left;
+    const topPad = outputInfo.paddingInfo.top;
+    const filterHeight = filter.shape[0];
+    const filterWidth = filter.shape[1];
 
-  /**
-   * image is of shape [r, c, d1].
-   * weights is of shape [F, F, d1, d2].
-   */
-  protected conv2dTransposeInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null, origStride: number,
-      origPad: number): Array3D {
-    const fSize = weights.shape[0];
-    const pad = fSize - 1 - origPad;
-    const origInputDepth = weights.shape[2];
-    const origOutputDepth = weights.shape[3];
-    const xRows = x.shape[0];
-    const xCols = x.shape[1];
-
-    // Dilate the input.
-    const xRowsDilated = (xRows - 1) * origStride + 1;
-    const xColsDilated = (xCols - 1) * origStride + 1;
-
-    const outputShape = conv_util.computeOutputShape3D(
-        [xRowsDilated, xColsDilated, origOutputDepth], fSize, origInputDepth, 1,
-        pad);
-    const y = Array3D.zeros(outputShape);
-    for (let d2 = 0; d2 < origInputDepth; ++d2) {
+    const y = Array3D.zeros(outputInfo.shape);
+    for (let d1 = 0; d1 < inDepth; ++d1) {
       for (let yR = 0; yR < y.shape[0]; ++yR) {
-        const xRCorner = yR - pad;
-        const xRMin = Math.max(0, Math.ceil(xRCorner / origStride));
-        const xRMax = Math.min(xRows, (fSize + xRCorner) / origStride);
+        const xRCorner = yR - leftPad;
+        const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
+        const xRMax = Math.min(xRows, (filterHeight + xRCorner) / strideHeight);
 
         for (let yC = 0; yC < y.shape[1]; ++yC) {
-          const xCCorner = yC - pad;
-          const xCMin = Math.max(0, Math.ceil(xCCorner / origStride));
-          const xCMax = Math.min(xCols, (fSize + xCCorner) / origStride);
+          const xCCorner = yC - topPad;
+          const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
+          const xCMax = Math.min(xCols, (filterWidth + xCCorner) / strideWidth);
 
           let dotProd = 0;
           for (let xR = xRMin; xR < xRMax; ++xR) {
-            const wR = xR * origStride - xRCorner;
+            const wR = xR * strideHeight - xRCorner;
 
             for (let xC = xCMin; xC < xCMax; ++xC) {
-              const wC = xC * origStride - xCCorner;
+              const wC = xC * strideWidth - xCCorner;
 
-              for (let d1 = 0; d1 < origOutputDepth; ++d1) {
-                const pixel = x.get(xR, xC, d1);
-                const weight =
-                    weights.get(fSize - 1 - wR, fSize - 1 - wC, d2, d1);
+              for (let d2 = 0; d2 < outDepth; ++d2) {
+                const pixel = dy.get(xR, xC, d2);
+                const weight = filter.get(
+                    filterHeight - 1 - wR, filterWidth - 1 - wC, d1, d2);
                 dotProd += pixel * weight;
               }
             }
           }
-          const bias = biases != null ? biases.get(d2) : 0;
-          y.set(dotProd + bias, yR, yC, d2);
+          y.set(dotProd, yR, yC, d1);
         }
       }
     }
     return y;
   }
 
-  /**
-   * image is of shape [r, c, d1].
-   * weights is of shape [F, F, d1, d2].
-   */
-  protected conv2dTransposeShaderLike(
-      x: Array3D, origWeights: Array4D, origStride: number,
-      origPad: number): Array3D {
-    const fSize = origWeights.shape[0];
-    const pad = fSize - 1 - origPad;
-    const origInputDepth = origWeights.shape[2];
-    const origOutputDepth = origWeights.shape[3];
-    const xRows = x.shape[0];
-    const xCols = x.shape[1];
-
-    // Dilate the input.
-    const xRowsDilated = (xRows - 1) * origStride + 1;
-    const xColsDilated = (xCols - 1) * origStride + 1;
-
-    const outputShape = conv_util.computeOutputShape3D(
-        [xRowsDilated, xColsDilated, origOutputDepth], fSize, origInputDepth, 1,
-        pad);
-    const y = Array3D.zeros(outputShape);
-
-    for (let d2 = 0; d2 < origInputDepth; ++d2) {
-      for (let yR = 0; yR < y.shape[0]; ++yR) {
-        for (let yC = 0; yC < y.shape[1]; ++yC) {
-          // Shader code begins.
-          const xRCorner = yR - pad;
-          const xCCorner = yC - pad;
-          let dotProd = 0;
-          for (let wR = 0; wR < fSize; ++wR) {
-            const xR = (xRCorner + wR) / origStride;
-            if (xR < 0 || xR >= xRows || Math.floor(xR) !== xR) {
-              continue;
-            }
-            for (let wC = 0; wC < fSize; ++wC) {
-              const xC = (xCCorner + wC) / origStride;
-              if (xC < 0 || xC >= xCols || Math.floor(xC) !== xC) {
-                continue;
-              }
-              for (let d1 = 0; d1 < origOutputDepth; ++d1) {
-                const pixel = x.get(xR, xC, d1);
-                const weight =
-                    origWeights.get(fSize - 1 - wR, fSize - 1 - wC, d2, d1);
-                dotProd += pixel * weight;
-              }
-            }
-          }
-          y.set(dotProd, yR, yC, d2);
-        }
-      }
-    }
-    return y;
-  }
-
-  conv2dDerWeights(
-      x: Array3D, dY: Array3D, fSize: number, stride: number,
-      zeroPad: number): Array4D {
+  protected conv2dDerFilterInternal(
+      x: Array3D, dY: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array4D {
     const inputDepth = x.shape[2];
     const outputDepth = dY.shape[2];
-    const weightsShape =
-        conv_util.computeWeightsShape4D(inputDepth, outputDepth, fSize);
+    const weightsShape = conv_util.computeWeightsShape4D(
+        inputDepth, outputDepth, filterHeight, filterWidth);
     const dW = Array4D.zeros(weightsShape);
 
     const yNumRows = dY.shape[0];
@@ -537,22 +463,26 @@ export class NDArrayMathCPU extends NDArrayMath {
     const xNumRows = x.shape[0];
     const xNumCols = x.shape[1];
 
-    for (let wR = 0; wR < fSize; ++wR) {
-      const yRMin = Math.max(0, Math.ceil((zeroPad - wR) / stride));
-      const yRMax = Math.min(yNumRows, (xNumRows + zeroPad - wR) / stride);
+    const leftPad = outputInfo.paddingInfo.left;
+    const topPad = outputInfo.paddingInfo.top;
 
-      for (let wC = 0; wC < fSize; ++wC) {
-        const yCMin = Math.max(0, Math.ceil((zeroPad - wC) / stride));
-        const yCMax = Math.min(yNumCols, (xNumCols + zeroPad - wC) / stride);
+    for (let wR = 0; wR < filterHeight; ++wR) {
+      const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
+      const yRMax = Math.min(yNumRows, (xNumRows + topPad - wR) / strideHeight);
+
+      for (let wC = 0; wC < filterWidth; ++wC) {
+        const yCMin = Math.max(0, Math.ceil((leftPad - wC) / strideWidth));
+        const yCMax =
+            Math.min(yNumCols, (xNumCols + leftPad - wC) / strideWidth);
 
         for (let d1 = 0; d1 < inputDepth; ++d1) {
           for (let d2 = 0; d2 < outputDepth; ++d2) {
             // Need to convolve.
             let dotProd = 0;
             for (let yR = yRMin; yR < yRMax; ++yR) {
-              const xR = wR + yR * stride - zeroPad;
+              const xR = wR + yR * strideHeight - topPad;
               for (let yC = yCMin; yC < yCMax; ++yC) {
-                const xC = wC + yC * stride - zeroPad;
+                const xC = wC + yC * strideWidth - leftPad;
                 dotProd += x.get(xR, xC, d1) * dY.get(yR, yC, d2);
               }
             }
@@ -564,7 +494,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return dW;
   }
 
-  conv2dDerBias(dY: Array3D): Array1D {
+  protected conv2dDerBiasInternal(dY: Array3D): Array1D {
     const outputDepth = dY.shape[2];
     const numRows = dY.shape[0];
     const numCols = dY.shape[1];

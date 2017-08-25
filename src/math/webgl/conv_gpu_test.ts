@@ -34,8 +34,8 @@ describe('conv_gpu', () => {
         conv_util.computeDefaultPad(xShape, filterSize, stride);
 
     const x = Array3D.new(xShape, xVals);
-    const wShape =
-        conv_util.computeWeightsShape4D(xShape[2], outDepth, filterSize);
+    const wShape = conv_util.computeWeightsShape4D(
+        xShape[2], outDepth, filterSize, filterSize);
     const W = Array4D.new(wShape, weights);
     const b = biasVals != null ? Array1D.new(biasVals) : null;
 
