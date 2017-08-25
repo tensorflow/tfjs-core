@@ -27,14 +27,14 @@ export class MomentumOptimizer extends SGDOptimizer {
     math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
     activationArrayMap: TensorArrayMap, gradientArrayMap: TensorArrayMap) {
     super.beforeBatch(math, batchSize, runtime,
-    	activationArrayMap, gradientArrayMap);
+      activationArrayMap, gradientArrayMap);
 
     this.m = Scalar.new(this.momentum);
     if (this.variableVelocities.size() === 0){
-	    this.variableNodes.forEach(node => {
-	        this.variableVelocities.set(node.output,
-	        NDArray.zeros(node.output.shape));
-	    });
+      this.variableNodes.forEach(node => {
+        this.variableVelocities.set(node.output,
+        NDArray.zeros(node.output.shape));
+      });
     }
   }
 
