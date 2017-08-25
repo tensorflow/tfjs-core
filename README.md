@@ -131,4 +131,9 @@ Check back soon!
 * [Demos](http://pair-code.github.io/deeplearnjs/index.html#demos)
 * [Roadmap](http://pair-code.github.io/deeplearnjs/docs/roadmap.html)
 
+## Thanks
+Thanks to BrowserStack for providing testing support for this project.
+
+<img height="43" src="https://bstacksupport.zendesk.com/attachments/token/shKVx2ss0kJiMmpqh3NDkPj8l/?name=Logo.eps" style="height: 43px; width: 188px">
+
 This is not an official Google product.
