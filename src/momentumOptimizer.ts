@@ -33,7 +33,7 @@ export class MomentumOptimizer extends SGDOptimizer {
     if (this.variableVelocities.size() === 0) {
       this.variableNodes.forEach(node => {
         this.variableVelocities.set(node.output,
-        NDArray.zeros(node.output.shape));
+          NDArray.zeros(node.output.shape));
       });
     }
   }
