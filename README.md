@@ -134,7 +134,9 @@ Check back soon!
 ## Thanks
 
 <div style="display:flex; align-items:center;">
-  <img src="https://www.browserstack.com/images/layout/browserstack-logo-600x315.png" height="60" style="height:60px;"> <span>for providing testing support for this project.</span>
+<p>
+  <img src="https://www.browserstack.com/images/layout/browserstack-logo-600x315.png" height="70" style="height:70px;"> <span>&nbsp; for providing testing support for this project.</span>
+</p>
 </div>
 
 This is not an official Google product.
