@@ -133,8 +133,8 @@ Check back soon!
 
 ## Thanks
 
-<img height="43" width="188" src="https://bstacksupport.zendesk.com/attachments/token/shKVx2ss0kJiMmpqh3NDkPj8l/?name=Logo.eps" style="height: 43px; width: 188px;">
-
-for providing testing support for this project.
+<div style="display:flex; align-items:center;">
+  <img src="https://www.browserstack.com/images/layout/browserstack-logo-600x315.png" style="height:100px"> for providing testing support for this project.
+</div>
 
 This is not an official Google product.
