@@ -30,7 +30,7 @@ export class MomentumOptimizer extends SGDOptimizer {
       activationArrayMap, gradientArrayMap);
 
     this.m = Scalar.new(this.momentum);
-    if (this.variableVelocities.size() === 0){
+    if (this.variableVelocities.size() === 0) {
       this.variableNodes.forEach(node => {
         this.variableVelocities.set(node.output,
         NDArray.zeros(node.output.shape));
