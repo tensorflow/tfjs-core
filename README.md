@@ -133,10 +133,11 @@ Check back soon!
 
 ## Thanks
 
-<div style="display:flex; align-items:center;">
-<p>
-  <img src="https://www.browserstack.com/images/layout/browserstack-logo-600x315.png" height="70" style="height:70px;"> <span>&nbsp; for providing testing support for this project.</span>
+<p style="display:flex; align-items:center;">
+  <a href="https://www.browserstack.com/">
+    <img src="https://www.browserstack.com/images/layout/browserstack-logo-600x315.png" height="70" style="height:70px;">
+  </a>
+  <span>&nbsp; for providing testing support.</span>
 </p>
-</div>
 
 This is not an official Google product.
