@@ -18,7 +18,7 @@ import * as conv_util from '../conv_util';
 import {NDArrayMathCPU} from '../math_cpu';
 import {Array3D, Array4D, initializeGPU, NDArray} from '../ndarray';
 
-import {Conv2DTransposeProgram} from './conv_backprop_gpu';
+import {Conv2DDerInputProgram} from './conv_backprop_gpu';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
 import {TextureManager} from './texture_manager';
@@ -40,7 +40,7 @@ describe('conv_gpu transpose', () => {
     const outInfo = conv_util.computeOutputInfoDerInput(
         origInputShape, filterHeight, filterWidth, origOutDepth, origStride,
         origStride, origPad);
-    const program = new Conv2DTransposeProgram(
+    const program = new Conv2DDerInputProgram(
         x.shape, fSize, fSize, origStride, origStride, outInfo);
     const res = NDArray.zeros(program.outputShape);
     const inputs = [x, W];

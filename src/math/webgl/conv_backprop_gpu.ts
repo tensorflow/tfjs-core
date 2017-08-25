@@ -75,17 +75,17 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
   }
 }
 
-export class Conv2DTransposeProgram implements GPGPUProgram {
-  variableNames = ['x', 'W'];
+export class Conv2DDerInputProgram implements GPGPUProgram {
+  variableNames = ['dy', 'W'];
   params: Array<{}>;
   outputShape: number[];
   userCode: string;
 
   constructor(
-      xShape: [number, number, number], filterHeight: number,
+      dyShape: [number, number, number], filterHeight: number,
       filterWidth: number, strideHeight: number, strideWidth: number,
       outputInfo: OutputInfo) {
-    const [xRows, xCols, inDepth] = xShape;
+    const [yRows, yCols, outDepth] = dyShape;
 
     this.outputShape = outputInfo.shape;
     const padTop = outputInfo.paddingInfo.top;
@@ -97,22 +97,22 @@ export class Conv2DTransposeProgram implements GPGPUProgram {
 
       void main() {
         vec3 coords = getOutputCoords();
-        float yR = coords.x;
-        float yC = coords.y;
-        float d2 = coords.z;
+        float xR = coords.x;
+        float xC = coords.y;
+        float d1 = coords.z;
 
-        vec2 xRCCorner = vec2(yR, yC) - pads;
-        float xRCorner = xRCCorner.x;
-        float xCCorner = xRCCorner.y;
+        vec2 dyCorner = vec2(xR, xC) - pads;
+        float dyRCorner = dyCorner.x;
+        float dyCCorner = dyCorner.y;
 
-        // Convolve x(?, ?, d1) with w(:, :, d2, d1) to get y(yR, yC, d2).
+        // Convolve dy(?, ?, d2) with w(:, :, d1, d2) to compute dx(xR, xC, d1).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
         for (int iwR = 0; iwR < ${filterHeight}; iwR++) {
           float wR = float(iwR);
-          float xR = (xRCorner + wR) / ${strideHeight}.0;
+          float dyR = (dyRCorner + wR) / ${strideHeight}.0;
 
-          if (xR < 0.0 || xR >= ${xRows}.0 || fract(xR) > 0.0) {
+          if (dyR < 0.0 || dyR >= ${yRows}.0 || fract(dyR) > 0.0) {
             continue;
           }
 
@@ -120,18 +120,18 @@ export class Conv2DTransposeProgram implements GPGPUProgram {
 
           for (int iwC = 0; iwC < ${filterWidth}; iwC++) {
             float wC = float(iwC);
-            float xC = (xCCorner + wC) / ${strideWidth}.0;
+            float dyC = (dyCCorner + wC) / ${strideWidth}.0;
 
-            if (xC < 0.0 || xC >= ${xCols}.0 || fract(xC) > 0.0) {
+            if (dyC < 0.0 || dyC >= ${yCols}.0 || fract(dyC) > 0.0) {
               continue;
             }
 
             float wCPerm = ${filterWidth}.0 - 1.0 - wC;
 
-            for (int id1 = 0; id1 < ${inDepth}; id1++) {
-              float d1 = float(id1);
-              float xValue = getX(xR, xC, d1);
-              float wValue = getW(wRPerm, wCPerm, d2, d1);
+            for (int id2 = 0; id2 < ${outDepth}; id2++) {
+              float d2 = float(id2);
+              float xValue = getDy(dyR, dyC, d2);
+              float wValue = getW(wRPerm, wCPerm, d1, d2);
               dotProd += xValue * wValue;
             }
           }

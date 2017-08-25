@@ -24,7 +24,7 @@ import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {Concat3DProgram} from './webgl/concat3d_gpu';
 // tslint:disable-next-line:max-line-length
-import {Conv2DDerBiasProgram, Conv2DDerWeightsProgram, Conv2DTransposeProgram} from './webgl/conv_backprop_gpu';
+import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {Copy2DProgram} from './webgl/copy_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -287,7 +287,7 @@ export class NDArrayMathGPU extends NDArrayMath {
       outputInfo: OutputInfo): Array3D {
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
-    const program = new Conv2DTransposeProgram(
+    const program = new Conv2DDerInputProgram(
         dy.shape, filterHeight, filterWidth, strideHeight, strideWidth,
         outputInfo);
     return this.compileAndRun(program, [dy, filter]);
