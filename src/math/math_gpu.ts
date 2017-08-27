@@ -244,6 +244,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun<T, T>(program, [a]);
   }
 
+  protected sqrtInternal<T extends NDArray>(a: T): T {
+    const program = new UnaryOpProgram(a.shape, UnaryOp.SQRT);
+    return this.compileAndRun<T, T>(program, [a]);
+  }
+
   protected reluInternal<T extends NDArray>(a: T): T {
     const program = new UnaryOpProgram(a.shape, UnaryOp.RELU);
     return this.compileAndRun<T, T>(program, [a]);

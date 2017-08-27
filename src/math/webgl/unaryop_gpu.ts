@@ -16,7 +16,7 @@ limitations under the License.
 import {GPGPUProgram} from './gpgpu_math';
 
 export enum UnaryOp {
-  EXP, LOG, NEG, RELU, SIGMOID, STEP, SIN, TANH
+  EXP, LOG, SQRT, NEG, RELU, SIGMOID, STEP, SIN, TANH
 }
 
 export class UnaryOpProgram implements GPGPUProgram {
@@ -31,8 +31,12 @@ export class UnaryOpProgram implements GPGPUProgram {
     this.userCode = `
       void main() {
         float v = getAAtOutCoords();
-        ${getOpSnippet(op)}
-        setOutput(r);
+        if (isNaN(v)) {
+          setOutput(v);
+        } else {
+          ${getOpSnippet(op)}
+          setOutput(r);
+        }
       }
     `;
   }
@@ -44,6 +48,8 @@ function getOpSnippet(op: UnaryOp) {
       return 'float r = exp(v);';
     case UnaryOp.LOG:
       return 'float r = log(v);';
+    case UnaryOp.SQRT:
+      return 'float r = sqrt(v);';
     case UnaryOp.NEG:
       return 'float r = -v;';
     case UnaryOp.RELU:
