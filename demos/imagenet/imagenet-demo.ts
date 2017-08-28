@@ -87,6 +87,10 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
       this.staticImgElement.src = 'images/' + event.detail.selected + '.jpg';
     });
 
+    const navigatorAny = navigator as any;
+    navigator.getUserMedia = navigator.getUserMedia ||
+        navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia || 
+        navigatorAny.msGetUserMedia;
     if (navigator.getUserMedia) {
       navigator.getUserMedia(
           {video: true},
