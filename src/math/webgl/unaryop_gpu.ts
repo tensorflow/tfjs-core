@@ -39,10 +39,10 @@ export class UnaryOpProgram implements GPGPUProgram {
 }
 
 const CHECK_NAN_SNIPPET = `
-if (isNaN(v)) {
-  setOutput(v);
-  return;
-}
+  if (isNaN(v)) {
+    setOutput(v);
+    return;
+  }
 `;
 
 function getOpSnippet(op: UnaryOp) {
