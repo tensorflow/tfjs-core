@@ -21,7 +21,6 @@ const startTsFilePath = process.argv[2];
 const outDir = process.argv[3];
 
 let outputPath;
-
 if (outDir != null) {
   outputPath = path.join(outDir, 'bundle.js');
 } else {
