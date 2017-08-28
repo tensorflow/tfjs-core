@@ -63,7 +63,8 @@ function getOpSnippet(op: UnaryOp) {
     case UnaryOp.STEP:
       return 'float r = (v == v) ? (v > 0.0 ? 1.0 : 0.0) : v;';
     case UnaryOp.SIN:
-      return CHECK_NAN_SNIPPET + 'float r = sin(v);';
+      return CHECK_NAN_SNIPPET +
+          'float r = sin(v);';
     case UnaryOp.TANH:
       return `float e2x = exp(-2.0 * abs(v));
               float r = sign(v) * (1.0 - e2x) / (1.0 + e2x);`;
