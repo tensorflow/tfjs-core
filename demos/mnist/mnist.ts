@@ -147,7 +147,7 @@ function renderMnistImage(array: Array1D) {
   console.log('renderMnistImage', array);
   const width = 28;
   const height = 28;
-  const canvas = document.createElement('canvas')
+  const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
@@ -168,7 +168,7 @@ function renderMnistImage(array: Array1D) {
 function renderResults(array: Array1D,
     label: number, predictedLabel: number) {
   const root = document.createElement('div');
-  root.appendChild(renderMnistImage(array))
+  root.appendChild(renderMnistImage(array));
   const actual = document.createElement('div');
   actual.innerHTML = `Actual: ${label}`;
   root.appendChild(actual);
@@ -177,9 +177,9 @@ function renderResults(array: Array1D,
   root.appendChild(predicted);
 
   if (label !== predictedLabel) {
-    root.classList.add('error')
+    root.classList.add('error');
   }
 
   root.classList.add('result');
-  return root
+  return root;
 }
