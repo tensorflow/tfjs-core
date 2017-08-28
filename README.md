@@ -112,6 +112,8 @@ $ ./scripts/build-npm.sh # Builds npm package.
 >> Stored npm package at dist/deeplearn-VERSION.tgz
 ```
 
+> On Windows, use bash (available through git) to use the scripts above.
+
 ## Supported environments
 
 **deeplearn.js** targets WebGL 1.0 devices with the `OES_texture_float`
@@ -128,5 +130,14 @@ Check back soon!
 * [API Reference](http://pair-code.github.io/deeplearnjs/docs/api/globals.html)
 * [Demos](http://pair-code.github.io/deeplearnjs/index.html#demos)
 * [Roadmap](http://pair-code.github.io/deeplearnjs/docs/roadmap.html)
+
+## Thanks
+
+<p style="display:flex; align-items:center;">
+  <a href="https://www.browserstack.com/">
+    <img src="https://www.browserstack.com/images/layout/browserstack-logo-600x315.png" height="70" style="height:70px;">
+  </a>
+  <span>&nbsp; for providing testing support.</span>
+</p>
 
 This is not an official Google product.
