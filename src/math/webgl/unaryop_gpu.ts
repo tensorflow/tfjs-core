@@ -31,15 +31,20 @@ export class UnaryOpProgram implements GPGPUProgram {
     this.userCode = `
       void main() {
         float v = getAAtOutCoords();
-        if (isNaN(v)) {
-          setOutput(v);
-        } else {
-          ${getOpSnippet(op)}
-          setOutput(r);
-        }
+        ${getOpSnippet(op)}
+        setOutput(r);
       }
     `;
   }
+}
+
+function checkNaNSnippet(): string {
+  return `
+    if (isNaN(v)) {
+      setOutput(v);
+      return;
+    }
+  `;
 }
 
 function getOpSnippet(op: UnaryOp) {
@@ -49,7 +54,8 @@ function getOpSnippet(op: UnaryOp) {
     case UnaryOp.LOG:
       return 'float r = log(v);';
     case UnaryOp.SQRT:
-      return 'float r = sqrt(v);';
+      return checkNaNSnippet() +
+          'float r = sqrt(v);';
     case UnaryOp.NEG:
       return 'float r = -v;';
     case UnaryOp.RELU:
@@ -59,7 +65,7 @@ function getOpSnippet(op: UnaryOp) {
     case UnaryOp.STEP:
       return 'float r = (v == v) ? (v > 0.0 ? 1.0 : 0.0) : v;';
     case UnaryOp.SIN:
-      return 'float r = sin(v);';
+      return checkNaNSnippet() + 'float r = sin(v);';
     case UnaryOp.TANH:
       return `float e2x = exp(-2.0 * abs(v));
               float r = sign(v) * (1.0 - e2x) / (1.0 + e2x);`;
