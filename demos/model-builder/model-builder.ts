@@ -415,7 +415,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
 
   private updateSelectedDataset(datasetName: string) {
     if (this.dataSet != null) {
-      this.dataSet.removeNormalization(IMAGE_DATA_INDEX);      
+      this.dataSet.removeNormalization(IMAGE_DATA_INDEX);
     }
 
     this.graphRunner.stopTraining();
@@ -506,7 +506,6 @@ export class ModelBuilder extends ModelBuilderPolymer {
         modelNames.push(modelName);
       }
     }
-    this.selectedModelName = '';    
     this.modelNames = modelNames;
     this.selectedModelName = modelNames[modelNames.length - 1];
     this.updateSelectedModel(this.selectedModelName);
