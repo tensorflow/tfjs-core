@@ -35,13 +35,14 @@ reader.getAllVariables().then(vars => {
         const inputData = Array1D.new(data.images[i]);
         const probsVal = sess.eval(probs, [{tensor: input, data: inputData}]);
         console.log(`Item ${i}, probsVal ${probsVal.get()}.`);
-        const label = data.labels[i]
-        const predictedLabel = probsVal.get()
+        const label = data.labels[i];
+        const predictedLabel = probsVal.get();
         if (label === predictedLabel) {
           numCorrect++;
         }
-        const result = renderResults(Array1D.new(data.images[i]), label, predictedLabel)
-        document.body.appendChild(result)
+        const result = renderResults(Array1D.new(data.images[i]),
+          label, predictedLabel);
+        document.body.appendChild(result);
       }
       const accuracy = numCorrect * 100 / data.images.length;
       document.getElementById('accuracy').innerHTML = accuracy + '%';
@@ -146,15 +147,15 @@ function renderMnistImage(array: Array1D) {
   console.log('renderMnistImage', array);
   const width = 28;
   const height = 28;
-  let canvas = document.createElement('canvas')
+  const canvas = document.createElement('canvas')
   canvas.width = width;
   canvas.height = height;
-  let ctx = canvas.getContext('2d');
-  let float32Array = array.getData().values;
-  let imageData = ctx.createImageData(width, height);
+  const ctx = canvas.getContext('2d');
+  const float32Array = array.getData().values;
+  const imageData = ctx.createImageData(width, height);
   for (let i = 0; i < float32Array.length; i++) {
-    let j = i * 4;
-    let value = Math.round(float32Array[i] * 255);
+    const j = i * 4;
+    const value = Math.round(float32Array[i] * 255);
     imageData.data[j+0] = value;
     imageData.data[j+1] = value;
     imageData.data[j+2] = value;
