@@ -39,7 +39,8 @@ import {NDArrayMathGPU, Scalar, NDArray, Array1D, Array2D, Graph, Session, Tenso
   const a: Tensor = graph.variable('a', Scalar.new(Math.random()));
   const b: Tensor = graph.variable('b', Scalar.new(Math.random()));
   const c: Tensor = graph.variable('c', Scalar.new(Math.random()));
-  // Make new tensors representing the output of the operations of the quadratic.
+  // Make new tensors representing the output of the operations of the
+  // quadratic.
   const order2: Tensor = graph.multiply(a, graph.square(x));
   const order1: Tensor = graph.multiply(b, x);
   const y: Tensor = graph.add(graph.add(order2, order1), c);
