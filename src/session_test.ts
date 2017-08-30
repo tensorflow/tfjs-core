@@ -140,7 +140,7 @@ describe('Session', () => {
     });
   });
 
-  it('Eval 2 tensor that share graph (split): y=x^2 + x, z=y + 1', () => {
+  it('Eval 2 tensors that share a split graph: y=x^2 + x, z=y + 1', () => {
     const x = g.placeholder('x', [2]);
     const xSquared = g.square(x);
     const y = g.add(xSquared, x);
@@ -153,7 +153,7 @@ describe('Session', () => {
           session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
       const expectedY = new Float32Array([30, 20]);
       test_util.expectArraysClose(result1.getValues(), expectedY, 1e-5);
-    
+
       const result2 =
           session.eval(z, [{tensor: x, data: Array1D.new([5, 4])}]);
       const expectedZ = new Float32Array([31, 21]);      
