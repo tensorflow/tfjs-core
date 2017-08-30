@@ -17,7 +17,7 @@ import {Tensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {NDArrayMath} from '../math/math';
 import {NDArray, Scalar} from '../math/ndarray';
-import {TensorArrayMap} from '../tensor_array_map';
+import {TensorArrayMap, SummedTensorArrayMap} from '../tensor_array_map';
 import * as util from '../util';
 
 import {Operation} from './op';
@@ -59,7 +59,7 @@ export class Subtract extends Operation {
 
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
-      gradientArrays: TensorArrayMap) {
+      gradientArrays: SummedTensorArrayMap) {
     const dy = gradientArrays.get(this.outTensor);
 
     math.scope((keep) => {
@@ -69,10 +69,10 @@ export class Subtract extends Operation {
           if (this.dySizeScalar == null) {
             this.dySizeScalar = Scalar.new(dy.size);
           }
-          gradientArrays.set(
-              this.t1, keep(math.divide(sum, this.dySizeScalar)));
+          gradientArrays.add(
+              math, this.t1, keep(math.divide(sum, this.dySizeScalar)));
         } else {
-          gradientArrays.set(this.t1, keep(dy));
+          gradientArrays.add(math, this.t1, keep(dy));
         }
       }
 
@@ -83,10 +83,10 @@ export class Subtract extends Operation {
           if (this.dySizeScalar == null) {
             this.dySizeScalar = Scalar.new(dy.size);
           }
-          gradientArrays.set(
-              this.t2, keep(math.divide(negSum, this.dySizeScalar)));
+          gradientArrays.add(
+              math, this.t2, keep(math.divide(negSum, this.dySizeScalar)));
         } else {
-          gradientArrays.set(this.t2, keep(math.neg(dy)));
+          gradientArrays.add(math, this.t2, keep(math.neg(dy)));
         }
       }
     });

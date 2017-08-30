@@ -17,7 +17,7 @@ import {Tensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {MatrixOrientation, NDArrayMath} from '../math/math';
 import {Array1D, Array2D} from '../math/ndarray';
-import {TensorArrayMap} from '../tensor_array_map';
+import {TensorArrayMap, SummedTensorArrayMap} from '../tensor_array_map';
 
 import {Operation} from './op';
 
@@ -53,7 +53,7 @@ export class MatMul extends Operation {
 
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
-      gradientArrays: TensorArrayMap) {
+      gradientArrays: SummedTensorArrayMap) {
     let x1 = inferenceArrays.get(this.x1Tensor);
     let x2 = inferenceArrays.get(this.x2Tensor);
     let dy = gradientArrays.get(this.yTensor);
@@ -75,16 +75,16 @@ export class MatMul extends Operation {
         const dx1 = math.matMul(
             dy as Array2D, x2 as Array2D, MatrixOrientation.REGULAR,
             MatrixOrientation.TRANSPOSED);
-        gradientArrays.set(
-            this.x1Tensor,
+        gradientArrays.add(
+            math, this.x1Tensor,
             keep(this.x1Tensor.shape.length === 1 ? dx1.as1D() : dx1));
       }
       if (graph_util.shouldBackProp(this.x2Tensor)) {
         const dx2 = math.matMul(
             x1 as Array2D, dy as Array2D, MatrixOrientation.TRANSPOSED,
             MatrixOrientation.REGULAR);
-        gradientArrays.set(
-            this.x2Tensor,
+        gradientArrays.add(
+            math, this.x2Tensor,
             keep(this.x2Tensor.shape.length === 1 ? dx2.as1D() : dx2));
       }
     });

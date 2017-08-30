@@ -17,7 +17,7 @@ import {Tensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {NDArrayMath} from '../math/math';
 import {NDArray} from '../math/ndarray';
-import {TensorArrayMap} from '../tensor_array_map';
+import {TensorArrayMap, SummedTensorArrayMap} from '../tensor_array_map';
 import * as util from '../util';
 
 import {Operation} from './op';
@@ -61,7 +61,7 @@ export class Multiply extends Operation {
 
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
-      gradientArrays: TensorArrayMap) {
+      gradientArrays: SummedTensorArrayMap) {
     const x1 = inferenceArrays.get(this.x1Tensor);
     const x2 = inferenceArrays.get(this.x2Tensor);
     const dy = gradientArrays.get(this.yTensor);
@@ -71,13 +71,14 @@ export class Multiply extends Operation {
         if (util.isScalarShape(this.x1Tensor.shape)) {
           const mul = math.elementWiseMul(dy, x2);
 
-          gradientArrays.set(this.x1Tensor, keep(math.sum(mul)));
+          gradientArrays.add(math, this.x1Tensor, keep(math.sum(mul)));
 
         } else if (util.isScalarShape(x2.shape)) {
-          gradientArrays.set(
-              this.x1Tensor, keep(math.scalarTimesArray(x2, dy)));
+          gradientArrays.add(
+              math, this.x1Tensor, keep(math.scalarTimesArray(x2, dy)));
         } else {
-          gradientArrays.set(this.x1Tensor, keep(math.elementWiseMul(x2, dy)));
+          gradientArrays.add(
+              math, this.x1Tensor, keep(math.elementWiseMul(x2, dy)));
         }
       }
 
@@ -85,13 +86,14 @@ export class Multiply extends Operation {
         if (util.isScalarShape(this.x2Tensor.shape)) {
           const mul = math.elementWiseMul(dy, x1);
 
-          gradientArrays.set(this.x2Tensor, keep(math.sum(mul)));
+          gradientArrays.add(math, this.x2Tensor, keep(math.sum(mul)));
 
         } else if (util.isScalarShape(x1.shape)) {
-          gradientArrays.set(
-              this.x2Tensor, keep(math.scalarTimesArray(x1, dy)));
+          gradientArrays.add(
+              math, this.x2Tensor, keep(math.scalarTimesArray(x1, dy)));
         } else {
-          gradientArrays.set(this.x2Tensor, keep(math.elementWiseMul(x1, dy)));
+          gradientArrays.add(
+              math, this.x2Tensor, keep(math.elementWiseMul(x1, dy)));
         }
       }
     });
