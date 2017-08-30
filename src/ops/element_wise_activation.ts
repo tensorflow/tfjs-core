@@ -35,7 +35,7 @@ export class ElementWiseActivation extends Operation {
     const x = inferenceArrays.get(this.xTensor);
 
     math.scope((keep) => {
-      inferenceArrays.set(this.yTensor, this.func.output(math, x));
+      inferenceArrays.set(this.yTensor, keep(this.func.output(math, x)));
     });
   }
 
