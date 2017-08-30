@@ -66,9 +66,9 @@ export class SoftmaxCrossEntropyCost extends Operation {
     const softmax = inferenceArrays.get(this.softmaxTensor);
     const label = inferenceArrays.get(this.labelTensor);
 
-    math.scope((keep) => {
+    math.scope(() => {
       gradientArrays.add(
-          math, this.logitsTensor, keep(math.sub(softmax, label)));
+          math, this.logitsTensor, math.sub(softmax, label));
     });
   }
 

@@ -78,12 +78,12 @@ export class Convolution2D extends Operation {
     const x = inferenceArrays.get(this.xTensor) as Array3D;
     const dy = gradientArrays.get(this.yTensor) as Array3D;
 
-    math.scope((keep) => {
+    math.scope(() => {
       const {dw, db, dx} =
           math.conv2dBackProp(x, dy, weights, this.stride, this.zeroPad);
-      gradientArrays.add(math, this.wTensor, keep(dw));
-      gradientArrays.add(math, this.bTensor, keep(db));
-      gradientArrays.add(math, this.xTensor, keep(dx));
+      gradientArrays.add(math, this.wTensor, dw);
+      gradientArrays.add(math, this.bTensor, db);
+      gradientArrays.add(math, this.xTensor, dx);
     });
   }
 

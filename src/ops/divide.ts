@@ -70,19 +70,19 @@ export class Divide extends Operation {
     const x1IsScalar = util.isScalarShape(x1.shape);
     const x2IsScalar = util.isScalarShape(x2.shape);
 
-    math.scope((keep) => {
+    math.scope(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         if (x1IsScalar) {
           const div = math.divide(dy, x2);
 
-          gradientArrays.add(math, this.x1Tensor, keep(math.sum(div)));
+          gradientArrays.add(math, this.x1Tensor, math.sum(div));
 
           div.dispose();
         } else if (x2IsScalar) {
           gradientArrays.add(
-              math, this.x1Tensor, keep(math.arrayDividedByScalar(dy, x2)));
+              math, this.x1Tensor, math.arrayDividedByScalar(dy, x2));
         } else {
-          gradientArrays.add(math, this.x1Tensor, keep(math.divide(dy, x2)));
+          gradientArrays.add(math, this.x1Tensor, math.divide(dy, x2));
         }
       }
 
@@ -104,9 +104,9 @@ export class Divide extends Operation {
 
         if (x2IsScalar) {
           gradientArrays.add(
-              math, this.x2Tensor, keep(math.sum(dyTimesDerivative)));
+              math, this.x2Tensor, math.sum(dyTimesDerivative));
         } else {
-          gradientArrays.add(math, this.x2Tensor, keep(dyTimesDerivative));
+          gradientArrays.add(math, this.x2Tensor, dyTimesDerivative);
         }
       }
     });

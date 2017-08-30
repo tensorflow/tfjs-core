@@ -125,7 +125,7 @@ export class SummedTensorArrayMap extends TensorArrayMapBase {
    */
   add(math: NDArrayMath, tensor: Tensor, array: NDArray) {
     if (this.dict[tensor.id] == null) {
-      this.dict[tensor.id] = array;
+      this.dict[tensor.id] = math.keep(array);
     } else {
       const oldValue = this.get(tensor);
       const newValue = math.keep(math.addStrict(oldValue, array));

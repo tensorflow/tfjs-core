@@ -35,7 +35,7 @@ export class ElementWiseActivation extends Operation {
     const x = inferenceArrays.get(this.xTensor);
 
     math.scope((keep) => {
-      inferenceArrays.set(this.yTensor, keep(this.func.output(math, x)));
+      inferenceArrays.set(this.yTensor, this.func.output(math, x));
     });
   }
 
@@ -48,10 +48,10 @@ export class ElementWiseActivation extends Operation {
     const y = inferenceArrays.get(this.yTensor);
     const dy = gradientArrays.get(this.yTensor);
 
-    math.scope((keep) => {
+    math.scope(() => {
       const dydx = this.func.der(math, x, y);
       gradientArrays.add(
-          math, this.xTensor, keep(math.elementWiseMul(dy, dydx)));
+          math, this.xTensor, math.elementWiseMul(dy, dydx));
       dydx.dispose();
     });
   }

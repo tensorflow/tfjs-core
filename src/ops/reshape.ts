@@ -44,9 +44,9 @@ export class Reshape<T1 extends NDArray, T2 extends NDArray> extends Operation {
       gradientArrays: SummedTensorArrayMap) {
     const dy = gradientArrays.get(this.yTensor) as T2;
 
-    math.scope(keep => {
+    math.scope(() => {
       gradientArrays.add(
-          math, this.xTensor, keep(dy.reshape(this.xTensor.shape)));
+          math, this.xTensor, dy.reshape(this.xTensor.shape));
     });
   }
 }

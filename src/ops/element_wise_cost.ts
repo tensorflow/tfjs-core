@@ -54,14 +54,14 @@ export class ElementWiseCost extends Operation {
     const x1 = inferenceArrays.get(this.x1Tensor);
     const x2 = inferenceArrays.get(this.x2Tensor);
 
-    math.scope((keep) => {
+    math.scope(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         gradientArrays.add(
-            math, this.x1Tensor, keep(this.func.der(math, x1, x2)));
+            math, this.x1Tensor, this.func.der(math, x1, x2));
       }
       if (graph_util.shouldBackProp(this.x2Tensor)) {
         gradientArrays.add(
-            math, this.x2Tensor, keep(this.func.der(math, x2, x1)));
+            math, this.x2Tensor, this.func.der(math, x2, x1));
       }
     });
   }

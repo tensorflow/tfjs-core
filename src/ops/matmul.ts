@@ -67,7 +67,7 @@ export class MatMul extends Operation {
       dy = dy.reshape([dy.size, 1]);
     }
 
-    math.scope((keep) => {
+    math.scope(() => {
       // y = x1 * x2
       // dx1 = dy * x2T
       // dx2 = x1T * dy
@@ -77,7 +77,7 @@ export class MatMul extends Operation {
             MatrixOrientation.TRANSPOSED);
         gradientArrays.add(
             math, this.x1Tensor,
-            keep(this.x1Tensor.shape.length === 1 ? dx1.as1D() : dx1));
+            this.x1Tensor.shape.length === 1 ? dx1.as1D() : dx1);
       }
       if (graph_util.shouldBackProp(this.x2Tensor)) {
         const dx2 = math.matMul(
@@ -85,7 +85,7 @@ export class MatMul extends Operation {
             MatrixOrientation.REGULAR);
         gradientArrays.add(
             math, this.x2Tensor,
-            keep(this.x2Tensor.shape.length === 1 ? dx2.as1D() : dx2));
+            this.x2Tensor.shape.length === 1 ? dx2.as1D() : dx2);
       }
     });
   }

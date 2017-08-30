@@ -58,25 +58,25 @@ export class LinearCombination extends Operation {
     const c2 = inferenceArrays.get(this.c2Tensor);
     const dy = gradientArrays.get(this.outTensor);
 
-    math.scope((keep) => {
+    math.scope(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         gradientArrays.add(
-            math, this.x1Tensor, keep(math.scalarTimesArray(c1, dy)));
+            math, this.x1Tensor, math.scalarTimesArray(c1, dy));
       }
 
       if (graph_util.shouldBackProp(this.x2Tensor)) {
         gradientArrays.add(
-            math, this.x2Tensor, keep(math.scalarTimesArray(c2, dy)));
+            math, this.x2Tensor, math.scalarTimesArray(c2, dy));
       }
 
       if (graph_util.shouldBackProp(this.c1Tensor)) {
         const dotProduct1 = math.elementWiseMul(x1, dy);
-        gradientArrays.add(math, this.c1Tensor, keep(math.sum(dotProduct1)));
+        gradientArrays.add(math, this.c1Tensor, math.sum(dotProduct1));
       }
 
       if (graph_util.shouldBackProp(this.c2Tensor)) {
         const dotProduct2 = math.elementWiseMul(x2, dy);
-        gradientArrays.add(math, this.c2Tensor, keep(math.sum(dotProduct2)));
+        gradientArrays.add(math, this.c2Tensor, math.sum(dotProduct2));
       }
     });
   }

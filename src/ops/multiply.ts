@@ -66,19 +66,19 @@ export class Multiply extends Operation {
     const x2 = inferenceArrays.get(this.x2Tensor);
     const dy = gradientArrays.get(this.yTensor);
 
-    math.scope((keep) => {
+    math.scope(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         if (util.isScalarShape(this.x1Tensor.shape)) {
           const mul = math.elementWiseMul(dy, x2);
 
-          gradientArrays.add(math, this.x1Tensor, keep(math.sum(mul)));
+          gradientArrays.add(math, this.x1Tensor, math.sum(mul));
 
         } else if (util.isScalarShape(x2.shape)) {
           gradientArrays.add(
-              math, this.x1Tensor, keep(math.scalarTimesArray(x2, dy)));
+              math, this.x1Tensor, math.scalarTimesArray(x2, dy));
         } else {
           gradientArrays.add(
-              math, this.x1Tensor, keep(math.elementWiseMul(x2, dy)));
+              math, this.x1Tensor, math.elementWiseMul(x2, dy));
         }
       }
 
@@ -86,14 +86,14 @@ export class Multiply extends Operation {
         if (util.isScalarShape(this.x2Tensor.shape)) {
           const mul = math.elementWiseMul(dy, x1);
 
-          gradientArrays.add(math, this.x2Tensor, keep(math.sum(mul)));
+          gradientArrays.add(math, this.x2Tensor, math.sum(mul));
 
         } else if (util.isScalarShape(x1.shape)) {
           gradientArrays.add(
-              math, this.x2Tensor, keep(math.scalarTimesArray(x1, dy)));
+              math, this.x2Tensor, math.scalarTimesArray(x1, dy));
         } else {
           gradientArrays.add(
-              math, this.x2Tensor, keep(math.elementWiseMul(x1, dy)));
+              math, this.x2Tensor, math.elementWiseMul(x1, dy));
         }
       }
     });

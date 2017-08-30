@@ -62,7 +62,7 @@ export class Subtract extends Operation {
       gradientArrays: SummedTensorArrayMap) {
     const dy = gradientArrays.get(this.outTensor);
 
-    math.scope((keep) => {
+    math.scope(() => {
       if (graph_util.shouldBackProp(this.t1)) {
         if (util.isScalarShape(this.t1.shape)) {
           const sum = math.sum(dy);
@@ -70,9 +70,9 @@ export class Subtract extends Operation {
             this.dySizeScalar = Scalar.new(dy.size);
           }
           gradientArrays.add(
-              math, this.t1, keep(math.divide(sum, this.dySizeScalar)));
+              math, this.t1, math.divide(sum, this.dySizeScalar));
         } else {
-          gradientArrays.add(math, this.t1, keep(dy));
+          gradientArrays.add(math, this.t1, dy);
         }
       }
 
@@ -84,9 +84,9 @@ export class Subtract extends Operation {
             this.dySizeScalar = Scalar.new(dy.size);
           }
           gradientArrays.add(
-              math, this.t2, keep(math.divide(negSum, this.dySizeScalar)));
+              math, this.t2, math.divide(negSum, this.dySizeScalar));
         } else {
-          gradientArrays.add(math, this.t2, keep(math.neg(dy)));
+          gradientArrays.add(math, this.t2, math.neg(dy));
         }
       }
     });

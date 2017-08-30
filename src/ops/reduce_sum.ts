@@ -49,7 +49,7 @@ export class ReduceSum extends Operation {
       return;
     }
 
-    math.scope((keep) => {
+    math.scope(() => {
       const dy = gradientArrays.get(this.outTensor);
       if (this.ones == null) {
         const xArray = inferenceArrays.get(this.x);
@@ -57,7 +57,7 @@ export class ReduceSum extends Operation {
         this.ones.fill(1);
       }
       gradientArrays.add(
-          math, this.x, keep(math.scalarTimesArray(dy, this.ones)));
+          math, this.x, math.scalarTimesArray(dy, this.ones));
     });
   }
 }
