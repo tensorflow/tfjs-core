@@ -51,7 +51,7 @@ export class ElementWiseActivation extends Operation {
     math.scope(() => {
       const dydx = this.func.der(math, x, y);
       gradientArrays.add(
-          math, this.xTensor, math.elementWiseMul(dy, dydx));
+          this.xTensor, math.elementWiseMul(dy, dydx));
       dydx.dispose();
     });
   }

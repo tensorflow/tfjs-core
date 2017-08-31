@@ -33,7 +33,7 @@ describe('add operation', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -79,7 +79,7 @@ describe('add operation', () => {
             x1.get(1, 2) * x2.get(2, 1));
 
     const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
-    gradients.add(math, y, dy);
+    gradients.add(y, dy);
 
     matmulOp.backProp(math, activations, gradients);
 
@@ -140,7 +140,7 @@ describe('add operation', () => {
 
     // Back prop.
     const dy = Array1D.new([2, 3]);
-    gradients.add(math, y, dy);
+    gradients.add(y, dy);
 
     op.backProp(math, activations, gradients);
 
@@ -181,7 +181,7 @@ describe('add operation', () => {
 
     // Back prop.
     const dy = Array1D.new([2, 3]);
-    gradients.add(math, y, dy);
+    gradients.add(y, dy);
 
     op.backProp(math, activations, gradients);
 

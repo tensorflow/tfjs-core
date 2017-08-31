@@ -71,14 +71,14 @@ export class Multiply extends Operation {
         if (util.isScalarShape(this.x1Tensor.shape)) {
           const mul = math.elementWiseMul(dy, x2);
 
-          gradientArrays.add(math, this.x1Tensor, math.sum(mul));
+          gradientArrays.add(this.x1Tensor, math.sum(mul));
 
         } else if (util.isScalarShape(x2.shape)) {
           gradientArrays.add(
-              math, this.x1Tensor, math.scalarTimesArray(x2, dy));
+              this.x1Tensor, math.scalarTimesArray(x2, dy));
         } else {
           gradientArrays.add(
-              math, this.x1Tensor, math.elementWiseMul(x2, dy));
+              this.x1Tensor, math.elementWiseMul(x2, dy));
         }
       }
 
@@ -86,14 +86,14 @@ export class Multiply extends Operation {
         if (util.isScalarShape(this.x2Tensor.shape)) {
           const mul = math.elementWiseMul(dy, x1);
 
-          gradientArrays.add(math, this.x2Tensor, math.sum(mul));
+          gradientArrays.add(this.x2Tensor, math.sum(mul));
 
         } else if (util.isScalarShape(x1.shape)) {
           gradientArrays.add(
-              math, this.x2Tensor, math.scalarTimesArray(x1, dy));
+              this.x2Tensor, math.scalarTimesArray(x1, dy));
         } else {
           gradientArrays.add(
-              math, this.x2Tensor, math.elementWiseMul(x1, dy));
+              this.x2Tensor, math.elementWiseMul(x1, dy));
         }
       }
     });

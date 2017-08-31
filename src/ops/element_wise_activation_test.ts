@@ -29,7 +29,7 @@ describe('Element wise activation', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -54,7 +54,7 @@ describe('Element wise activation', () => {
 
     // Backprop.
     const dy = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
 
@@ -81,7 +81,7 @@ describe('Element wise activation', () => {
 
     // Backprop.
     const dy = Array1D.new([2, 4, 3]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
 
@@ -108,7 +108,7 @@ describe('Element wise activation', () => {
 
     // Backprop.
     const dy = Array1D.new([2, 4, 3]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
 
@@ -133,7 +133,7 @@ describe('Element wise activation', () => {
 
     // Backprop.
     const dy = Array1D.new([1, 2, 3]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
 

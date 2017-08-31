@@ -33,7 +33,7 @@ describe('divide operation', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -65,7 +65,7 @@ describe('divide operation', () => {
     expect(y.get(2)).toEqual(3 * 6);
 
     const dy = Array1D.new([3, 4, 5]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     multiplyOp.backProp(math, activations, gradients);
 
@@ -100,7 +100,7 @@ describe('divide operation', () => {
     expect(y.get(2)).toEqual(2 * 6);
 
     const dy = Array1D.new([3, 4, 5]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     multiplyOp.backProp(math, activations, gradients);
 
@@ -134,7 +134,7 @@ describe('divide operation', () => {
     expect(y.get(2)).toEqual(2 * 6);
 
     const dy = Array1D.new([3, 4, 5]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     multiplyOp.backProp(math, activations, gradients);
 

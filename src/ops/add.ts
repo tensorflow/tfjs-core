@@ -71,9 +71,9 @@ export class Add extends Operation {
             this.dySizeScalar = Scalar.new(dy.size);
           }
           gradientArrays.add(
-              math, this.x1Tensor, math.divide(sum, this.dySizeScalar));
+              this.x1Tensor, math.divide(sum, this.dySizeScalar));
         } else {
-          gradientArrays.add(math, this.x1Tensor, dy);
+          gradientArrays.add(this.x1Tensor, dy);
         }
       }
 
@@ -84,9 +84,9 @@ export class Add extends Operation {
             this.dySizeScalar = Scalar.new(dy.size);
           }
           gradientArrays.add(
-              math, this.x2Tensor, math.divide(sum, this.dySizeScalar));
+              this.x2Tensor, math.divide(sum, this.dySizeScalar));
         } else {
-          gradientArrays.add(math, this.x2Tensor, dy);
+          gradientArrays.add(this.x2Tensor, dy);
         }
       }
     });

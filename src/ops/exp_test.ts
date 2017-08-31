@@ -32,7 +32,7 @@ describe('exp operation', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -60,7 +60,7 @@ describe('exp operation', () => {
     expect(y.get(2)).toBeCloseTo(Math.exp(x.get(2)));
 
     const dy = Array1D.new([1, 2, 3]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     expOp.backProp(math, activations, gradients);
 

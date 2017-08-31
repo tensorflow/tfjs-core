@@ -70,9 +70,9 @@ export class Subtract extends Operation {
             this.dySizeScalar = Scalar.new(dy.size);
           }
           gradientArrays.add(
-              math, this.t1, math.divide(sum, this.dySizeScalar));
+              this.t1, math.divide(sum, this.dySizeScalar));
         } else {
-          gradientArrays.add(math, this.t1, dy);
+          gradientArrays.add(this.t1, dy);
         }
       }
 
@@ -84,9 +84,9 @@ export class Subtract extends Operation {
             this.dySizeScalar = Scalar.new(dy.size);
           }
           gradientArrays.add(
-              math, this.t2, math.divide(negSum, this.dySizeScalar));
+              this.t2, math.divide(negSum, this.dySizeScalar));
         } else {
-          gradientArrays.add(math, this.t2, math.neg(dy));
+          gradientArrays.add(this.t2, math.neg(dy));
         }
       }
     });

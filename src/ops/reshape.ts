@@ -46,7 +46,7 @@ export class Reshape<T1 extends NDArray, T2 extends NDArray> extends Operation {
 
     math.scope(() => {
       gradientArrays.add(
-          math, this.xTensor, dy.reshape(this.xTensor.shape));
+          this.xTensor, dy.reshape(this.xTensor.shape));
     });
   }
 }

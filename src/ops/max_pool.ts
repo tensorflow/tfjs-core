@@ -64,7 +64,7 @@ export class MaxPool extends Operation {
 
     math.scope(() => {
       gradientArrays.add(
-          math, this.xTensor,
+          this.xTensor,
           math.maxPoolBackprop(
               dy, x, this.fieldSize, this.stride, this.pad));
     });

@@ -75,14 +75,14 @@ export class Divide extends Operation {
         if (x1IsScalar) {
           const div = math.divide(dy, x2);
 
-          gradientArrays.add(math, this.x1Tensor, math.sum(div));
+          gradientArrays.add(this.x1Tensor, math.sum(div));
 
           div.dispose();
         } else if (x2IsScalar) {
           gradientArrays.add(
-              math, this.x1Tensor, math.arrayDividedByScalar(dy, x2));
+              this.x1Tensor, math.arrayDividedByScalar(dy, x2));
         } else {
-          gradientArrays.add(math, this.x1Tensor, math.divide(dy, x2));
+          gradientArrays.add(this.x1Tensor, math.divide(dy, x2));
         }
       }
 
@@ -104,9 +104,9 @@ export class Divide extends Operation {
 
         if (x2IsScalar) {
           gradientArrays.add(
-              math, this.x2Tensor, math.sum(dyTimesDerivative));
+              this.x2Tensor, math.sum(dyTimesDerivative));
         } else {
-          gradientArrays.add(math, this.x2Tensor, dyTimesDerivative);
+          gradientArrays.add(this.x2Tensor, dyTimesDerivative);
         }
       }
     });

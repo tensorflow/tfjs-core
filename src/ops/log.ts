@@ -47,7 +47,7 @@ export class Log extends Operation {
 
     math.scope(() => {
       if (graph_util.shouldBackProp(this.xTensor)) {
-        gradientArrays.add(math, this.xTensor, math.divide(dy, x));
+        gradientArrays.add(this.xTensor, math.divide(dy, x));
       }
     });
   }

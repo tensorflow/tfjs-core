@@ -118,17 +118,21 @@ export class TensorArrayMap extends TensorArrayMapBase {
 }
 
 export class SummedTensorArrayMap extends TensorArrayMapBase {
+  constructor(private math: NDArrayMath) {
+    super();
+  }
+
   /**
    * Aggregate by summing to an entry in the map.
    * @param tensor The tensor key.
    * @param array The NDArray value.
    */
-  add(math: NDArrayMath, tensor: Tensor, array: NDArray) {
+  add(tensor: Tensor, array: NDArray) {
     if (this.dict[tensor.id] == null) {
-      this.dict[tensor.id] = math.keep(array);
+      this.dict[tensor.id] = this.math.keep(array);
     } else {
       const oldValue = this.get(tensor);
-      const newValue = math.keep(math.addStrict(oldValue, array));
+      const newValue = this.math.keep(this.math.addStrict(oldValue, array));
       this.dict[tensor.id] = newValue;
       oldValue.dispose();
     }

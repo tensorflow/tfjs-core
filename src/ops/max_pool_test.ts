@@ -33,7 +33,7 @@ describe('Max pool', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -68,7 +68,7 @@ describe('Max pool', () => {
 
     // Backprop.
     const dy = Array3D.new([2, 2, depth], [50, 60, 90, 80]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
 

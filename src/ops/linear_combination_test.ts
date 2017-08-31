@@ -32,7 +32,7 @@ describe('Linear combination', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -75,7 +75,7 @@ describe('Linear combination', () => {
     expect(y.get(2)).toBe(x1.get(2) * c1.get() + x2.get(2) * c2.get());
 
     const dy = Array1D.new([2, 4, 6]);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
     op.backProp(math, activations, gradients);
 
     const dx1 = gradients.get(x1Tensor);

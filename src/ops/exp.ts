@@ -48,7 +48,7 @@ export class Exp extends Operation {
     math.scope(() => {
       if (graph_util.shouldBackProp(this.xTensor)) {
         gradientArrays.add(
-            math, this.xTensor, math.elementWiseMul(y, dy));
+            this.xTensor, math.elementWiseMul(y, dy));
       }
     });
   }

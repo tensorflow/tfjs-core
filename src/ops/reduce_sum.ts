@@ -57,7 +57,7 @@ export class ReduceSum extends Operation {
         this.ones.fill(1);
       }
       gradientArrays.add(
-          math, this.x, math.scalarTimesArray(dy, this.ones));
+          this.x, math.scalarTimesArray(dy, this.ones));
     });
   }
 }

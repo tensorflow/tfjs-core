@@ -31,7 +31,7 @@ describe('softmax cross entropy cost', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -67,7 +67,7 @@ describe('softmax cross entropy cost', () => {
         3);
 
     const dy = Scalar.new(1);
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
 

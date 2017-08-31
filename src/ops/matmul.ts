@@ -76,7 +76,7 @@ export class MatMul extends Operation {
             dy as Array2D, x2 as Array2D, MatrixOrientation.REGULAR,
             MatrixOrientation.TRANSPOSED);
         gradientArrays.add(
-            math, this.x1Tensor,
+            this.x1Tensor,
             this.x1Tensor.shape.length === 1 ? dx1.as1D() : dx1);
       }
       if (graph_util.shouldBackProp(this.x2Tensor)) {
@@ -84,7 +84,7 @@ export class MatMul extends Operation {
             x1 as Array2D, dy as Array2D, MatrixOrientation.TRANSPOSED,
             MatrixOrientation.REGULAR);
         gradientArrays.add(
-            math, this.x2Tensor,
+            this.x2Tensor,
             this.x2Tensor.shape.length === 1 ? dx2.as1D() : dx2);
       }
     });

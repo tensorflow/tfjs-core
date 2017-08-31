@@ -40,7 +40,7 @@ describe('Convolution', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -259,7 +259,7 @@ describe('Convolution', () => {
 
     const dy3d = NDArray.randNormal<Array3D>([2, 2, 1]);
 
-    gradients.add(math, yTensor, dy3d);
+    gradients.add(yTensor, dy3d);
 
     conv.backProp(math, activations, gradients);
 
@@ -341,7 +341,7 @@ describe('Convolution', () => {
 
     const dy = NDArray.randNormal<Array3D>(result.shape);
 
-    gradients.add(math, yTensor, dy);
+    gradients.add(yTensor, dy);
 
     conv.backProp(math, activations, gradients);
 

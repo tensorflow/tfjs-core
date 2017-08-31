@@ -61,22 +61,22 @@ export class LinearCombination extends Operation {
     math.scope(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         gradientArrays.add(
-            math, this.x1Tensor, math.scalarTimesArray(c1, dy));
+            this.x1Tensor, math.scalarTimesArray(c1, dy));
       }
 
       if (graph_util.shouldBackProp(this.x2Tensor)) {
         gradientArrays.add(
-            math, this.x2Tensor, math.scalarTimesArray(c2, dy));
+            this.x2Tensor, math.scalarTimesArray(c2, dy));
       }
 
       if (graph_util.shouldBackProp(this.c1Tensor)) {
         const dotProduct1 = math.elementWiseMul(x1, dy);
-        gradientArrays.add(math, this.c1Tensor, math.sum(dotProduct1));
+        gradientArrays.add(this.c1Tensor, math.sum(dotProduct1));
       }
 
       if (graph_util.shouldBackProp(this.c2Tensor)) {
         const dotProduct2 = math.elementWiseMul(x2, dy);
-        gradientArrays.add(math, this.c2Tensor, math.sum(dotProduct2));
+        gradientArrays.add(this.c2Tensor, math.sum(dotProduct2));
       }
     });
   }

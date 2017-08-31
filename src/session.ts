@@ -73,7 +73,9 @@ export class Session {
    * @param graph The graph to associate with this Session.
    * @param math The NDArrayMath interface that this Session should use.
    */
-  constructor(graph: Graph, private math: NDArrayMath) {}
+  constructor(graph: Graph, private math: NDArrayMath) {
+    this.gradientArrayMap = new SummedTensorArrayMap(this.math);
+  }
 
   /**
    * Release all system resources associated with this Session.
@@ -181,7 +183,7 @@ export class Session {
     const activations = this.activationArrayMap;
     const gradients = this.gradientArrayMap;
     gradients.nullify(costTensor);
-    gradients.add(this.math, costTensor, this.oneScalar);
+    gradients.add(costTensor, this.oneScalar);
 
     session_util.addPersistentArraysToTensorArrayMap(
         runtime.nodes, activations);
@@ -268,7 +270,7 @@ export class Session {
   activationArrayMap = new TensorArrayMap();
 
   /** Maps each tensor of the graph to its derivative wrt the cost function. */
-  gradientArrayMap = new SummedTensorArrayMap();
+  gradientArrayMap: SummedTensorArrayMap;
   private runtimeCache: {[key: string]: SessionRuntime} = {};
   /** Batch size of the previous train() call. */
   private prevBatchSize: number;

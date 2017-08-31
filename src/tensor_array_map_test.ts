@@ -113,16 +113,16 @@ describe('SummedTensorArrayMap.add', () => {
   let t: Tensor;
   let math: NDArrayMathCPU;
   beforeEach(() => {
-    map = new SummedTensorArrayMap();
-    t = new Tensor([]);
     math = new NDArrayMathCPU();
+    map = new SummedTensorArrayMap(math);
+    t = new Tensor([]);
   });
 
   it('add sums gradients', () => {
-    map.add(math, t, Array1D.new([1, 2, 3]));
+    map.add(t, Array1D.new([1, 2, 3]));
     expect(map.get(t).getValues()).toEqual(new Float32Array([1, 2, 3]));
 
-    map.add(math, t, Array1D.new([30, 20, 10]));   
-    expect(map.get(t).getValues()).toEqual(new Float32Array([31, 22, 13]));    
+    map.add(t, Array1D.new([30, 20, 10]));
+    expect(map.get(t).getValues()).toEqual(new Float32Array([31, 22, 13]));
   });
 });

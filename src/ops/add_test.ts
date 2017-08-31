@@ -33,7 +33,7 @@ describe('add operation', () => {
   beforeEach(() => {
     math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
-    gradients = new SummedTensorArrayMap();
+    gradients = new SummedTensorArrayMap(math);
   });
 
   afterEach(() => {
@@ -64,7 +64,7 @@ describe('add operation', () => {
     expect(yVal.getValues()).toEqual(new Float32Array([4, 6, 8]));
 
     const dy = Array1D.new([6, 7, 8]);
-    gradients.add(math, y, dy);
+    gradients.add(y, dy);
 
     addOp.backProp(math, activations, gradients);
 
@@ -97,7 +97,7 @@ describe('add operation', () => {
     expect(yVal.getValues()).toEqual(new Float32Array([4, 6, 8, 11, 13, 15]));
 
     const dy = Array2D.new([2, 3], [10, 11, 12, 13, 14, 15]);
-    gradients.add(math, y, dy);
+    gradients.add(y, dy);
 
     addOp.backProp(math, activations, gradients);
 
@@ -130,7 +130,7 @@ describe('add operation', () => {
     expect(yVal.getValues()).toEqual(new Float32Array([3, 4, 5, 6, 7, 8]));
 
     const dy = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
-    gradients.add(math, y, dy);
+    gradients.add(y, dy);
 
     addOp.backProp(math, activations, gradients);
 
@@ -163,7 +163,7 @@ describe('add operation', () => {
     expect(yVal.getValues()).toEqual(new Float32Array([3, 4, 5, 6, 7, 8]));
 
     const dy = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
-    gradients.add(math, y, dy);
+    gradients.add(y, dy);
 
     addOp.backProp(math, activations, gradients);
 
