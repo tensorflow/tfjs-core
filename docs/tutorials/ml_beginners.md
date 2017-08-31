@@ -17,7 +17,7 @@ Run it yourself with:
 
 And visit `http://localhost:8080/demos/ml_beginners/`.
 
-Or just look at the demo we have hosted [here](https://pair-code.github.io/deeplearnjs/demos/ml_beginners/)
+Or just view the demo we have hosted [here](https://pair-code.github.io/deeplearnjs/demos/ml_beginners/).
 
 ### NDArrays, Tensors, and numbers
 
