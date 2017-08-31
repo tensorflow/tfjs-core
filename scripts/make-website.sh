@@ -35,6 +35,7 @@ cp -r "demos" "$TMP_DIR/"
     demos/nn-art/nn-art-demo.html $TMP_DIR/demos/nn-art
 ./scripts/deploy-demo demos/benchmarks/math-benchmark.ts \
     demos/benchmarks/benchmark-demo.html $TMP_DIR/demos/benchmarks
+
 ./scripts/deploy-demo demos/intro/intro.ts \
     demos/intro/index.html $TMP_DIR/demos/intro
 ./scripts/deploy-demo demos/ml_beginners/ml_beginners.ts \
