@@ -156,7 +156,7 @@ describe('Session', () => {
 
       const result2 =
           session.eval(z, [{tensor: x, data: Array1D.new([5, 4])}]);
-      const expectedZ = new Float32Array([31, 21]);      
+      const expectedZ = new Float32Array([31, 21]);
       test_util.expectArraysClose(result2.getValues(), expectedZ, 1e-5);
     });
   });
