@@ -169,8 +169,8 @@ export function createFragmentShader(
   callAndCheck(gl, () => gl.shaderSource(fragmentShader, fragmentShaderSource));
   callAndCheck(gl, () => gl.compileShader(fragmentShader));
   if (gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS) === false) {
-    console.log(gl.getShaderInfoLog(fragmentShader));
     console.log(fragmentShaderSource);
+    console.log(gl.getShaderInfoLog(fragmentShader));
     throw new Error('Failed to compile fragment shader.');
   }
   return fragmentShader;

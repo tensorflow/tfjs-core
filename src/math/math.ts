@@ -386,7 +386,7 @@ export abstract class NDArrayMath {
   copy2D(
       source: Array2D, sourceBegin: [number, number],
       sourceSize: [number, number], dest: Array2D, destBegin: [number, number],
-      destSize: [number, number]) {
+      destSize: [number, number]): void {
     util.assert(
         sourceBegin[0] + sourceSize[0] <= source.shape[0] &&
             sourceBegin[1] + sourceSize[1] <= source.shape[1],
@@ -401,8 +401,11 @@ export abstract class NDArrayMath {
             `shape ${dest.shape}.`);
     copy2d_util.validateShapes(sourceSize, destSize);
 
-    return this.copy2DInternal(
-        source, sourceBegin, sourceSize, dest, destBegin, destSize);
+    this.executeOp('copy2D', () => {
+      this.copy2DInternal(
+          source, sourceBegin, sourceSize, dest, destBegin, destSize);
+      return dest;
+    });
   }
   protected abstract copy2DInternal(
       source: Array2D, sourceBegin: [number, number],
@@ -510,8 +513,11 @@ export abstract class NDArrayMath {
         k <= ndarray.size,
         `Error in topK: k value (${k}) must be less than size of input ` +
             `ndarray, got shape ${ndarray.shape}.`);
-    const result = this.topKInternal(ndarray, k);
-    this.track(result.values);
+    let result: {values: Array1D, indices: Array1D};
+    this.executeOp('topK', () => {
+      result = this.topKInternal(ndarray, k);
+      return result.values;
+    });
     this.track(result.indices);
     return result;
   }
@@ -958,14 +964,15 @@ export abstract class NDArrayMath {
         `Error in conv2dBackProp: depth of dy (${dy.shape[2]}) must ` +
             `match output depth for weights (${weights.shape[3]}).`);
 
-    const backpropResult =
-        this.conv2dBackPropInternal(x, dy, weights, stride, pad);
 
-    this.track(backpropResult.db);
-    this.track(backpropResult.dw);
-    this.track(backpropResult.dx);
-
-    return backpropResult;
+    let result: {dx: Array3D, dw: Array4D, db: Array1D};
+    this.executeOp('conv2dBackProp', () => {
+      result = this.conv2dBackPropInternal(x, dy, weights, stride, pad);
+      return result.dx;
+    });
+    this.track(result.db);
+    this.track(result.dw);
+    return result;
   }
   protected abstract conv2dBackPropInternal(
       x: Array3D, dy: Array3D, weights: Array4D, stride: number,
