@@ -331,6 +331,16 @@ describe('mulmat_gpu (transposed versions)', () => {
   });
 });
 
+describe('mulmat_gpu max tex size', () => {
+  it('vector times matrix', () => {
+    const a = test_util.randomArrayInRange(5, -1, 1);
+    const matrix = test_util.randomArrayInRange(5 * 20000, -1, 1);
+    const result = uploadMultiplyMatrixDownload(a, 1, 5, matrix, 5, 20000);
+    const cpuResult = test_util.cpuMultiplyMatrix(a, 1, 5, matrix, 5, 20000);
+    test_util.expectArraysClose(result, cpuResult, 1e-5);
+  });
+});
+
 export function uploadMultiplyMatrixDownload(
     a: Float32Array, aNumRows: number, aNumCols: number, b: Float32Array,
     bNumRows: number, bNumCols: number,
