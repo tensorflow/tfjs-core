@@ -39,28 +39,26 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
 
     this.userCode = `
       void main() {
-        vec4 coords = getOutputCoords();
-        float wR = coords.x;
-        float wC = coords.y;
-        float d1 = coords.z;
-        float d2 = coords.w;
+        ivec4 coords = getOutputCoords();
+        int wR = coords.x;
+        int wC = coords.y;
+        int d1 = coords.z;
+        int d2 = coords.w;
 
         // Convolve x(?, ?, d1) with dy(:, :, d2) to get dw(wR, wC, d1, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int iyR = 0; iyR < ${yNumRows}; iyR++) {
-          float yR = float(iyR);
-          float xR = wR + yR * ${strideHeight}.0 - ${padTop}.0;
+        for (int yR = 0; yR < ${yNumRows}; yR++) {
+          int xR = wR + yR * ${strideHeight} - ${padTop};
 
-          if (xR < 0.0 || xR >= ${xNumRows}.0) {
+          if (xR < 0 || xR >= ${xNumRows}) {
             continue;
           }
 
-          for (int iyC = 0; iyC < ${yNumCols}; iyC++) {
-            float yC = float(iyC);
-            float xC = wC + yC * ${strideWidth}.0 - ${padLeft}.0;
+          for (int yC = 0; yC < ${yNumCols}; yC++) {
+            int xC = wC + yC * ${strideWidth} - ${padLeft};
 
-            if (xC < 0.0 || xC >= ${xNumCols}.0) {
+            if (xC < 0 || xC >= ${xNumCols}) {
               continue;
             }
 
@@ -93,44 +91,41 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
     this.params = [strideHeight, strideWidth, padLeft, padTop];
 
     this.userCode = `
-      const vec2 pads = vec2(${padTop}.0, ${padLeft}.0);
+      const ivec2 pads = vec2(${padTop}, ${padLeft});
 
       void main() {
-        vec3 coords = getOutputCoords();
-        float xR = coords.x;
-        float xC = coords.y;
-        float d1 = coords.z;
+        ivec3 coords = getOutputCoords();
+        int d1 = coords.z;
 
-        vec2 dyCorner = vec2(xR, xC) - pads;
-        float dyRCorner = dyCorner.x;
-        float dyCCorner = dyCorner.y;
+        ivec2 dyCorner = coords.xy - pads;
+        int dyRCorner = dyCorner.x;
+        int dyCCorner = dyCorner.y;
 
         // Convolve dy(?, ?, d2) with w(:, :, d1, d2) to compute dx(xR, xC, d1).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int iwR = 0; iwR < ${filterHeight}; iwR++) {
-          float wR = float(iwR);
-          float dyR = (dyRCorner + wR) / ${strideHeight}.0;
+        for (int wR = 0; wR < ${filterHeight}; wR++) {
+          float dyR = float(dyRCorner + wR) / ${strideHeight}.0;
 
           if (dyR < 0.0 || dyR >= ${yRows}.0 || fract(dyR) > 0.0) {
             continue;
           }
+          idyR = int(dyR);
 
-          float wRPerm = ${filterHeight}.0 - 1.0 - wR;
+          int wRPerm = ${filterHeight} - 1 - wR;
 
-          for (int iwC = 0; iwC < ${filterWidth}; iwC++) {
-            float wC = float(iwC);
-            float dyC = (dyCCorner + wC) / ${strideWidth}.0;
+          for (int wC = 0; wC < ${filterWidth}; wC++) {
+            float dyC = float(dyCCorner + wC) / ${strideWidth}.0;
 
             if (dyC < 0.0 || dyC >= ${yCols}.0 || fract(dyC) > 0.0) {
               continue;
             }
+            idyC = int(dyC);
 
-            float wCPerm = ${filterWidth}.0 - 1.0 - wC;
+            int wCPerm = ${filterWidth} - 1 - wC;
 
-            for (int id2 = 0; id2 < ${outDepth}; id2++) {
-              float d2 = float(id2);
-              float xValue = getDy(dyR, dyC, d2);
+            for (int d2 = 0; d2 < ${outDepth}; d2++) {
+              float xValue = getDy(idyR, idyC, d2);
               float wValue = getW(wRPerm, wCPerm, d1, d2);
               dotProd += xValue * wValue;
             }
@@ -153,13 +148,11 @@ export class Conv2DDerBiasProgram implements GPGPUProgram {
     this.outputShape = [outputDepth];
     this.userCode = `
       void main() {
-        float d2 = getOutputCoords();
+        int d2 = getOutputCoords();
 
         float derBias = 0.0;
-        for (int iyR = 0; iyR < ${yNumRows}; iyR++) {
-          float yR = float(iyR);
-          for (int iyC = 0; iyC < ${yNumCols}; iyC++) {
-            float yC = float(iyC);
+        for (int yR = 0; yR < ${yNumRows}; yR++) {
+          for (int yC = 0; yC < ${yNumCols}; yC++) {
             derBias += getDy(yR, yC, d2);
           }
         }

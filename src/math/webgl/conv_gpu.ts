@@ -34,40 +34,35 @@ export class Conv2DProgram implements GPGPUProgram {
     this.params = [strideHeight, strideWidth, hasBias, padLeft, padTop];
 
     this.userCode = `
-      const vec2 strides = vec2(${strideHeight}.0, ${strideWidth}.0);
-      const vec2 pads = vec2(${padTop}.0, ${padLeft}.0);
+      const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
+      const ivec2 pads = ivec2(${padTop}, ${padLeft});
 
       void main() {
-        vec3 coords = getOutputCoords();
-        float yR = coords.x;
-        float yC = coords.y;
-        float d2 = coords.z;
+        ivec3 coords = getOutputCoords();
+        int d2 = coords.z;
 
-        vec2 xRCCorner = vec2(yR, yC) * strides - pads;
-        float xRCorner = xRCCorner.x;
-        float xCCorner = xRCCorner.y;
+        ivec2 xRCCorner = coords.xy * strides - pads;
+        int xRCorner = xRCCorner.x;
+        int xCCorner = xRCCorner.y;
 
         // Convolve x(?, ?, d1) with w(:, :, d1, d2) to get y(yR, yC, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int iwR = 0; iwR < ${filterHeight}; iwR++) {
-          float wR = float(iwR);
-          float xR = xRCorner + wR;
+        for (int wR = 0; wR < ${filterHeight}; wR++) {
+          int xR = xRCorner + wR;
 
-          if (xR < 0.0 || xR >= ${xNumRows}.0) {
+          if (xR < 0 || xR >= ${xNumRows}) {
             continue;
           }
 
-          for (int iwC = 0; iwC < ${filterWidth}; iwC++) {
-            float wC = float(iwC);
-            float xC = xCCorner + wC;
+          for (int wC = 0; wC < ${filterWidth}; wC++) {
+            int xC = xCCorner + wC;
 
-            if (xC < 0.0 || xC >= ${xNumCols}.0) {
+            if (xC < 0 || xC >= ${xNumCols}) {
               continue;
             }
 
-            for (int id1 = 0; id1 < ${inputDepth}; id1++) {
-              float d1 = float(id1);
+            for (int d1 = 0; d1 < ${inputDepth}; d1++) {
               float xValue = getX(xR, xC, d1);
               float wValue = getW(wR, wC, d1, d2);
               dotProd += xValue * wValue;
