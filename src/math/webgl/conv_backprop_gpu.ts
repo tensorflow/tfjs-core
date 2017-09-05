@@ -91,7 +91,7 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
     this.params = [strideHeight, strideWidth, padLeft, padTop];
 
     this.userCode = `
-      const ivec2 pads = vec2(${padTop}, ${padLeft});
+      const ivec2 pads = ivec2(${padTop}, ${padLeft});
 
       void main() {
         ivec3 coords = getOutputCoords();
@@ -110,7 +110,7 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
           if (dyR < 0.0 || dyR >= ${yRows}.0 || fract(dyR) > 0.0) {
             continue;
           }
-          idyR = int(dyR);
+          int idyR = int(dyR);
 
           int wRPerm = ${filterHeight} - 1 - wR;
 
@@ -120,7 +120,7 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
             if (dyC < 0.0 || dyC >= ${yCols}.0 || fract(dyC) > 0.0) {
               continue;
             }
-            idyC = int(dyC);
+            int idyC = int(dyC);
 
             int wCPerm = ${filterWidth} - 1 - wC;
 
