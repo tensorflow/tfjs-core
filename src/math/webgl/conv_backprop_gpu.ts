@@ -80,14 +80,14 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      dyShape: [number, number, number], filterHeight: number,
+      xShape: [number, number, number], filterHeight: number,
       filterWidth: number, strideHeight: number, strideWidth: number,
       outputInfo: OutputInfo) {
-    const [yRows, yCols, outDepth] = dyShape;
+    const [yRows, yCols, outDepth] = outputInfo.shape;
 
-    this.outputShape = outputInfo.shape;
-    const padTop = outputInfo.paddingInfo.top;
-    const padLeft = outputInfo.paddingInfo.left;
+    this.outputShape = xShape;
+    const padTop = filterHeight - 1 - outputInfo.paddingInfo.top;
+    const padLeft = filterWidth - 1 - outputInfo.paddingInfo.left;
     this.params = [strideHeight, strideWidth, padLeft, padTop];
 
     this.userCode = `

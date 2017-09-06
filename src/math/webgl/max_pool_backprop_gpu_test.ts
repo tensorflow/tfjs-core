@@ -14,9 +14,9 @@ limitations under the License.
 ==============================================================================*/
 
 import * as test_util from '../../test_util';
+import * as conv_util from '../conv_util';
 import {NDArrayMathCPU} from '../math_cpu';
 import {Array3D, initializeGPU, NDArray} from '../ndarray';
-
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
 import {MaxPool2DBackpropProgram} from './max_pool_backprop_gpu';
@@ -34,15 +34,18 @@ describe('max_pool_backprop_gpu', () => {
     initializeGPU(gpgpu, textureManager);
 
     const getPositions = true;
+    const outDepth = x.shape[2];
+    const outInfo = conv_util.computeOutputInfo(
+        x.shape, fSize, fSize, outDepth, origStride, origStride, origPad);
     const positionsProgram = new Pool2DProgram(
-        x.shape, fSize, origStride, origPad, 'max', getPositions);
+        x.shape, fSize, fSize, origStride, origStride, outInfo, 'max',
+        getPositions);
     const positionsRes = NDArray.zeros(positionsProgram.outputShape);
     const positionsBinary =
         gpgpu_math.compileProgram(gpgpu, positionsProgram, [x], positionsRes);
     gpgpu_math.runProgram(positionsBinary, [x], positionsRes);
-
-    const program =
-        new MaxPool2DBackpropProgram(dy.shape, fSize, origStride, origPad);
+    const program = new MaxPool2DBackpropProgram(
+        x.shape, fSize, fSize, origStride, origStride, outInfo);
     const res = NDArray.zeros(program.outputShape);
     const binary =
         gpgpu_math.compileProgram(gpgpu, program, [dy, positionsRes], res);

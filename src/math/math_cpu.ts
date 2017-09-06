@@ -413,18 +413,19 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, strideHeight: number, strideWidth: number,
+      dy: Array3D, xShape: [number, number, number], filter: Array4D,
+      strideHeight: number, strideWidth: number,
       outputInfo: OutputInfo): Array3D {
     const inDepth = filter.shape[2];
     const outDepth = filter.shape[3];
     const xRows = dy.shape[0];
     const xCols = dy.shape[1];
-    const leftPad = outputInfo.paddingInfo.left;
-    const topPad = outputInfo.paddingInfo.top;
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
+    const topPad = filterHeight - 1 - outputInfo.paddingInfo.top;
+    const leftPad = filterWidth - 1 - outputInfo.paddingInfo.left;
 
-    const y = Array3D.zeros(outputInfo.shape);
+    const y = Array3D.zeros(xShape);
     for (let d1 = 0; d1 < inDepth; ++d1) {
       for (let yR = 0; yR < y.shape[0]; ++yR) {
         const xRCorner = yR - leftPad;
@@ -545,21 +546,22 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   private pool(
-      x: Array3D, fSize: number, stride: number, pad: number,
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number, outputInfo: OutputInfo,
       poolType: 'max'|'min'|'avg') {
     const [xRows, xCols, depth] = x.shape;
-    const outputShape = conv_util.computeOutputShape3D(
-        [xRows, xCols, depth], fSize, depth, stride, pad);
-    const y = Array3D.zeros(outputShape);
+    const y = Array3D.zeros(outputInfo.shape);
+    const padTop = outputInfo.paddingInfo.top;
+    const padLeft = outputInfo.paddingInfo.left;
     for (let d = 0; d < depth; ++d) {
       for (let yR = 0; yR < y.shape[0]; ++yR) {
-        const xRCorner = yR * stride - pad;
+        const xRCorner = yR * strideHeight - padTop;
         const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, fSize + xRCorner);
+        const xRMax = Math.min(xRows, filterHeight + xRCorner);
         for (let yC = 0; yC < y.shape[1]; ++yC) {
-          const xCCorner = yC * stride - pad;
+          const xCCorner = yC * strideWidth - padLeft;
           const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, fSize + xCCorner);
+          const xCMax = Math.min(xCols, filterWidth + xCCorner);
 
 
           let minMaxValue =
@@ -579,7 +581,7 @@ export class NDArrayMathCPU extends NDArrayMath {
                   (poolType === 'min' && pixel < minMaxValue)) {
                 minMaxValue = pixel;
               } else if (poolType === 'avg') {
-                avgValue += pixel / (fSize * fSize);
+                avgValue += pixel / (filterHeight * filterWidth);
               }
             }
             if (isNaN(minMaxValue)) {
@@ -594,24 +596,32 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected maxPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    return this.pool(x, fSize, stride, pad, 'max');
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D {
+    return this.pool(
+        x, filterHeight, filterWidth, strideHeight, strideWidth, outputInfo,
+        'max');
   }
 
-  maxPoolPositions(x: Array3D, fSize: number, stride: number, pad: number) {
+  maxPoolPositions(
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number, outInfo: OutputInfo) {
     const [xRows, xCols, depth] = x.shape;
-    const outputShape =
-        conv_util.computeOutputShape3D(x.shape, fSize, depth, stride, pad);
+    const outputShape = outInfo.shape;
     const maxPositions = Array3D.zeros(outputShape);
+    const padTop = outInfo.paddingInfo.top;
+    const padLeft = outInfo.paddingInfo.left;
+
     for (let d = 0; d < depth; ++d) {
       for (let yR = 0; yR < outputShape[0]; ++yR) {
-        const xRCorner = yR * stride - pad;
+        const xRCorner = yR * strideHeight - padTop;
         const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, fSize + xRCorner);
+        const xRMax = Math.min(xRows, filterHeight + xRCorner);
         for (let yC = 0; yC < outputShape[1]; ++yC) {
-          const xCCorner = yC * stride - pad;
+          const xCCorner = yC * strideWidth - padLeft;
           const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, fSize + xCCorner);
+          const xCMax = Math.min(xCols, filterWidth + xCCorner);
           let maxValue = Number.NEGATIVE_INFINITY;
           let maxPosition = -1;
           for (let xR = xRMin; xR < xRMax; ++xR) {
@@ -621,7 +631,7 @@ export class NDArrayMathCPU extends NDArrayMath {
               const pixel = x.get(xR, xC, d);
               if (pixel > maxValue) {
                 maxValue = pixel;
-                maxPosition = wR * fSize + wC;
+                maxPosition = wR * filterWidth + wC;
               }
             }
           }
@@ -633,39 +643,35 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, fSize: number, origStride: number,
-      origPad: number): Array3D {
-    const maxPositions = this.maxPoolPositions(x, fSize, origStride, origPad);
-    const pad = fSize - 1 - origPad;
+      dy: Array3D, x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number, outInfo: OutputInfo): Array3D {
+    const maxPositions = this.maxPoolPositions(
+        x, filterHeight, filterWidth, strideHeight, strideWidth, outInfo);
+    const padLeft = filterWidth - 1 - outInfo.paddingInfo.left;
+    const padTop = filterHeight - 1 - outInfo.paddingInfo.top;
     const [dyRows, dyCols, depth] = dy.shape;
-
-    // Dilate the input.
-    const dyRowsDilated = (dyRows - 1) * origStride + 1;
-    const dxColsDilated = (dyCols - 1) * origStride + 1;
-
-    const outputShape = conv_util.computeOutputShape3D(
-        [dyRowsDilated, dxColsDilated, depth], fSize, depth, 1, pad);
-    const dx = Array3D.zeros(outputShape);
+    const dx = Array3D.zeros(x.shape);
 
     for (let d = 0; d < depth; ++d) {
       for (let dxR = 0; dxR < dx.shape[0]; ++dxR) {
         for (let dxC = 0; dxC < dx.shape[1]; ++dxC) {
           // Shader code begins.
-          const dyRCorner = dxR - pad;
-          const dyCCorner = dxC - pad;
+          const dyRCorner = dxR - padTop;
+          const dyCCorner = dxC - padLeft;
           let dotProd = 0;
-          for (let wR = 0; wR < fSize; ++wR) {
-            const dyR = (dyRCorner + wR) / origStride;
+          for (let wR = 0; wR < filterHeight; ++wR) {
+            const dyR = (dyRCorner + wR) / strideHeight;
             if (dyR < 0 || dyR >= dyRows || Math.floor(dyR) !== dyR) {
               continue;
             }
-            for (let wC = 0; wC < fSize; ++wC) {
-              const dyC = (dyCCorner + wC) / origStride;
+            for (let wC = 0; wC < filterWidth; ++wC) {
+              const dyC = (dyCCorner + wC) / strideWidth;
               if (dyC < 0 || dyC >= dyCols || Math.floor(dyC) !== dyC) {
                 continue;
               }
-              const maxPos = fSize * fSize - 1 - maxPositions.get(dyR, dyC, d);
-              const curPos = wR * fSize + wC;
+              const maxPos = filterHeight * filterWidth - 1 -
+                  maxPositions.get(dyR, dyC, d);
+              const curPos = wR * filterWidth + wC;
 
               const mask = maxPos === curPos ? 1 : 0;
               if (mask === 0) {
@@ -684,13 +690,21 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected minPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    return this.pool(x, fSize, stride, pad, 'min');
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D {
+    return this.pool(
+        x, filterHeight, filterWidth, strideHeight, strideWidth, outputInfo,
+        'min');
   }
 
   protected avgPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    return this.pool(x, fSize, stride, pad, 'avg');
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D {
+    return this.pool(
+        x, filterHeight, filterWidth, strideHeight, strideWidth, outputInfo,
+        'avg');
   }
 
   protected resizeBilinear3DInternal(

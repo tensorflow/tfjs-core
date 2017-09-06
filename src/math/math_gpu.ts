@@ -292,12 +292,13 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, strideHeight: number, strideWidth: number,
+      dy: Array3D, xShape: [number, number, number], filter: Array4D,
+      strideHeight: number, strideWidth: number,
       outputInfo: OutputInfo): Array3D {
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
     const program = new Conv2DDerInputProgram(
-        dy.shape, filterHeight, filterWidth, strideHeight, strideWidth,
+        xShape, filterHeight, filterWidth, strideHeight, strideWidth,
         outputInfo);
     return this.compileAndRun(program, [dy, filter]);
   }
@@ -318,37 +319,47 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected maxPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    const program =
-        new Pool2DProgram(x.shape, fSize, stride, pad, 'max', false);
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D {
+    const program = new Pool2DProgram(
+        x.shape, filterHeight, filterWidth, strideHeight, strideWidth,
+        outputInfo, 'max', false);
     return this.compileAndRun(program, [x]);
   }
 
   protected minPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    const program =
-        new Pool2DProgram(x.shape, fSize, stride, pad, 'min', false);
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D {
+    const program = new Pool2DProgram(
+        x.shape, filterHeight, filterWidth, strideHeight, strideWidth,
+        outputInfo, 'min', false);
     return this.compileAndRun(program, [x]);
   }
 
   protected avgPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D {
-    const program =
-        new Pool2DProgram(x.shape, fSize, stride, pad, 'avg', false);
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D {
+    const program = new Pool2DProgram(
+        x.shape, filterHeight, filterWidth, strideHeight, strideWidth,
+        outputInfo, 'avg', false);
     return this.compileAndRun(program, [x]);
   }
 
   protected maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, fSize: number, origStride: number,
-      origPad: number): Array3D {
+      dy: Array3D, x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number, outInfo: OutputInfo): Array3D {
     const getPositions = true;
     const maxPoolPositionsProgram = new Pool2DProgram(
-        x.shape, fSize, origStride, origPad, 'max', getPositions);
+        x.shape, filterHeight, filterWidth, strideHeight, strideWidth, outInfo,
+        'max', getPositions);
     const maxPoolPositions: Array3D =
         this.compileAndRun(maxPoolPositionsProgram, [x]);
 
-    const maxPoolBackPropProgram =
-        new MaxPool2DBackpropProgram(dy.shape, fSize, origStride, origPad);
+    const maxPoolBackPropProgram = new MaxPool2DBackpropProgram(
+        x.shape, filterHeight, filterWidth, strideHeight, strideWidth, outInfo);
 
     const result =
         this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);

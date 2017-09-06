@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as test_util from '../../test_util';
+import * as conv_util from '../conv_util';
 import {NDArrayMathCPU} from '../math_cpu';
 import {Array3D, initializeGPU, NDArray} from '../ndarray';
 
@@ -31,8 +32,12 @@ describe('max_pool_position', () => {
     const textureManager = new TextureManager(gpgpu);
     initializeGPU(gpgpu, textureManager);
     const getPositions = true;
-    const program =
-        new Pool2DProgram(xShape, fieldSize, stride, pad, 'max', getPositions);
+    const outDepth = xShape[2];
+    const outInfo = conv_util.computeOutputInfo(
+        xShape, fieldSize, fieldSize, outDepth, stride, stride, pad);
+    const program = new Pool2DProgram(
+        xShape, fieldSize, fieldSize, stride, stride, outInfo, 'max',
+        getPositions);
     const res = NDArray.zeros(program.outputShape);
     const x = Array3D.new(xShape, xVals);
     const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);
@@ -51,7 +56,11 @@ describe('max_pool_position', () => {
     const x = NDArray.randNormal<Array3D>(xShape);
 
     const mathCPU = new NDArrayMathCPU();
-    const yCPU = mathCPU.maxPoolPositions(x, fSize, stride, pad);
+    const outDepth = x.shape[2];
+    const outInfo = conv_util.computeOutputInfo(
+        x.shape, fSize, fSize, outDepth, stride, stride, pad);
+    const yCPU =
+        mathCPU.maxPoolPositions(x, fSize, fSize, stride, stride, outInfo);
     const yGPU = uploadMaxPoolPositionDownload(
         x.getValues(), x.shape, fSize, stride, pad);
     test_util.expectArraysClose(yGPU, yCPU.getValues(), 1e-5);

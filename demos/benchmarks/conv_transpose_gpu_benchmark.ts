@@ -36,7 +36,7 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   initializeGPU(gpgpu, texManager);
   gpgpu.enableAutomaticDebugValidation(true);
 
-  const outInfo = conv_util.computeOutputInfoDerInput(
+  const outInfo = conv_util.computeOutputInfo(
       xShape, fieldSize, fieldSize, origOutputDepth, origStride, origStride,
       origPad);
   const program = new Conv2DDerInputProgram(

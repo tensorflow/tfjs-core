@@ -925,15 +925,7 @@ export abstract class NDArrayMath {
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
     const outDepth = filter.shape[3];
-    let strideHeight: number;
-    let strideWidth: number;
-    if (typeof strides === 'number') {
-      strideHeight = strides;
-      strideWidth = strides;
-    } else {
-      strideHeight = strides[0];
-      strideWidth = strides[1];
-    }
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
     const outputInfo = conv_util.computeOutputInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
@@ -1005,26 +997,19 @@ export abstract class NDArrayMath {
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
 
-    let strideHeight: number;
-    let strideWidth: number;
-    if (typeof strides === 'number') {
-      strideHeight = strides;
-      strideWidth = strides;
-    } else {
-      strideHeight = strides[0];
-      strideWidth = strides[1];
-    }
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
 
-    const outputInfo = conv_util.computeOutputInfoDerInput(
+    const outputInfo = conv_util.computeOutputInfo(
         inShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
         'conv2dDerInput',
         () => this.conv2dDerInputInternal(
-            dy, filter, strideHeight, strideWidth, outputInfo));
+            dy, inShape, filter, strideHeight, strideWidth, outputInfo));
   }
   protected abstract conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, strideHeight: number, strideWidth: number,
+      dy: Array3D, xShape: [number, number, number], filter: Array4D,
+      strideHeight: number, strideWidth: number,
       outputInfo: OutputInfo): Array3D;
 
   /**
@@ -1075,15 +1060,7 @@ export abstract class NDArrayMath {
     const filterHeight = filterSize[0];
     const filterWidth = filterSize[1];
     const outDepth = filterSize[3];
-    let strideHeight: number;
-    let strideWidth: number;
-    if (typeof strides === 'number') {
-      strideHeight = strides;
-      strideWidth = strides;
-    } else {
-      strideHeight = strides[0];
-      strideWidth = strides[1];
-    }
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
     const outputInfo = conv_util.computeOutputInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
@@ -1118,34 +1095,46 @@ export abstract class NDArrayMath {
 
   /**
    * Computes the 2D max pooling of an image.
-   * @param x The input image, must be rank 3.
-   * @param fSize The field size of the max pool.
-   * @param stride The stride of the max pool.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    */
-  maxPool(x: Array3D, fSize: number, stride: number, pad: number): Array3D {
+  maxPool(
+      x: Array3D, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         'Error in maxPool: x must be rank 3 but got rank ' + x.rank + '.');
+
+    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const outDepth = x.shape[2];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const outputInfo = conv_util.computeOutputInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
     return this.executeOp(
-        'maxPool', () => this.maxPoolInternal(x, fSize, stride, pad));
+        'maxPool',
+        () => this.maxPoolInternal(
+            x, filterHeight, filterWidth, strideHeight, strideWidth,
+            outputInfo));
   }
   protected abstract maxPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D;
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D;
 
   /**
    * Computes the backprop of a max pool.
    * @param dy The dy error.
-   * @param x The input image, must be rank 3.
-   * @param fSize The field size of the max pool.
-   * @param stride The stride of the max pool.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    */
   maxPoolBackprop(
-      dy: Array3D, x: Array3D, fSize: number, stride: number,
-      pad: number): Array3D {
+      dy: Array3D, x: Array3D, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         dy.rank === 3,
         `Error in maxPoolBackprop: dy must be rank 3 but got rank ` +
@@ -1155,49 +1144,83 @@ export abstract class NDArrayMath {
         `Error in maxPoolBackprop: x must be rank 3 but got rank ` +
             `${x.rank}.`);
 
+    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const outDepth = x.shape[2];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const outputInfo = conv_util.computeOutputInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
     return this.executeOp(
         'maxPoolBackprop',
-        () => this.maxPoolBackpropInternal(dy, x, fSize, stride, pad));
+        () => this.maxPoolBackpropInternal(
+            dy, x, filterHeight, filterWidth, strideHeight, strideWidth,
+            outputInfo));
   }
   protected abstract maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, fSize: number, stride: number,
-      pad: number): Array3D;
+      dy: Array3D, x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number, outInfo: OutputInfo): Array3D;
 
   /**
    * Computes the 2D min pooling of an image.
-   * @param x The input image, must be rank 3.
-   * @param fSize The field size of the max pool.
-   * @param stride The stride of the max pool.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    */
-  minPool(x: Array3D, fSize: number, stride: number, pad: number): Array3D {
+  minPool(
+      x: Array3D, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in minPool: x must be rank 3 but got rank ${x.rank}.`);
+
+    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const outDepth = x.shape[2];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const outputInfo = conv_util.computeOutputInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
     return this.executeOp(
-        'minPool', () => this.minPoolInternal(x, fSize, stride, pad));
+        'minPool',
+        () => this.minPoolInternal(
+            x, filterHeight, filterWidth, strideHeight, strideWidth,
+            outputInfo));
   }
   protected abstract minPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D;
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D;
 
   /**
    * Computes the 2D average pooling of an image.
-   * @param x The input image, must be rank 3.
-   * @param fSize The field size of the max pool.
-   * @param stride The stride of the max pool.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    */
-  avgPool(x: Array3D, fSize: number, stride: number, pad: number): Array3D {
+  avgPool(
+      x: Array3D, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in avgPool: x must be rank 3 but got rank ${x.rank}.`);
+
+    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const outDepth = x.shape[2];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const outputInfo = conv_util.computeOutputInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
     return this.executeOp(
-        'avgPool', () => this.avgPoolInternal(x, fSize, stride, pad));
+        'avgPool',
+        () => this.avgPoolInternal(
+            x, filterHeight, filterWidth, strideHeight, strideWidth,
+            outputInfo));
   }
   protected abstract avgPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D;
+      x: Array3D, filterHeight: number, filterWidth: number,
+      strideHeight: number, strideWidth: number,
+      outputInfo: OutputInfo): Array3D;
 
   /*
    * Bilinear resize a 3D array per each channel to a new 2D shape.
@@ -1375,4 +1398,17 @@ export abstract class NDArrayMath {
 export enum MatrixOrientation {
   REGULAR,
   TRANSPOSED
+}
+
+function parseTupleParam(param: number|[number, number]): [number, number] {
+  let param1: number;
+  let param2: number;
+  if (typeof param === 'number') {
+    param1 = param;
+    param2 = param;
+  } else {
+    param1 = param[0];
+    param2 = param[1];
+  }
+  return [param1, param2];
 }

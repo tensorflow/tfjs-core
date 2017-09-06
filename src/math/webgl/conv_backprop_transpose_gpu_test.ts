@@ -26,7 +26,7 @@ import {TextureManager} from './texture_manager';
 describe('conv_gpu transpose', () => {
 
   function uploadConvTransposeDownload(
-      x: Array3D, W: Array4D, outputShape: [number, number, number],
+      x: Array3D, W: Array4D, origInputShape: [number, number, number],
       fSize: number, origStride: number, origPad: number): Float32Array {
     const gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
@@ -36,12 +36,11 @@ describe('conv_gpu transpose', () => {
     const filterHeight = W.shape[0];
     const filterWidth = W.shape[1];
     const origOutDepth = W.shape[3];
-    const origInputShape = outputShape;
-    const outInfo = conv_util.computeOutputInfoDerInput(
+    const outInfo = conv_util.computeOutputInfo(
         origInputShape, filterHeight, filterWidth, origOutDepth, origStride,
         origStride, origPad);
     const program = new Conv2DDerInputProgram(
-        x.shape, fSize, fSize, origStride, origStride, outInfo);
+        origInputShape, fSize, fSize, origStride, origStride, outInfo);
     const res = NDArray.zeros(program.outputShape);
     const inputs = [x, W];
     const binary = gpgpu_math.compileProgram(gpgpu, program, inputs, res);
@@ -57,10 +56,12 @@ describe('conv_gpu transpose', () => {
   function compareToCPU(
       origInputShape: [number, number, number], fSize: number,
       origOutputDepth: number, origStride: number, origPad: number) {
-    const [xNumRows, xNumCols, origInputDepth] = origInputShape;
+    const origInputDepth = origInputShape[2];
 
-    const x =
-        NDArray.randNormal<Array3D>([xNumRows, xNumCols, origOutputDepth]);
+    const outInfo = conv_util.computeOutputInfo(
+        origInputShape, fSize, fSize, origOutputDepth, origStride, origStride,
+        origPad);
+    const x = NDArray.randNormal<Array3D>(outInfo.shape);
 
     const weights = NDArray.randNormal<Array4D>(
         [fSize, fSize, origInputDepth, origOutputDepth]);
@@ -75,12 +76,12 @@ describe('conv_gpu transpose', () => {
 
   it('matches CPU on random input, d1=1,d2=1,f=2,s=1,p=0', () => {
     const inputDepth = 1;
-    const inputShape: [number, number, number] = [8, 8, inputDepth];
+    const origInputShape: [number, number, number] = [8, 8, inputDepth];
     const fSize = 2;
     const outputDepth = 1;
     const stride = 1;
     const zeroPad = 0;
-    compareToCPU(inputShape, fSize, outputDepth, stride, zeroPad);
+    compareToCPU(origInputShape, fSize, outputDepth, stride, zeroPad);
   });
 
   it('matches CPU on random input, d1=1,d2=1,f=3,s=2,p=1', () => {

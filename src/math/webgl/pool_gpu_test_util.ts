@@ -12,6 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
+import * as conv_util from '../conv_util';
 import {Array3D, initializeGPU, NDArray} from '../ndarray';
 
 import {GPGPUContext} from './gpgpu_context';
@@ -28,8 +29,11 @@ export function uploadPoolDownload(
   initializeGPU(gpgpu, textureManager);
 
   const x = Array3D.new(xShape, a);
-  const program =
-      new Pool2DProgram(xShape, fieldSize, stride, zeroPad, op, false);
+  const outDepth = x.shape[2];
+  const outInfo = conv_util.computeOutputInfo(
+      xShape, fieldSize, fieldSize, outDepth, stride, stride, zeroPad);
+  const program = new Pool2DProgram(
+      xShape, fieldSize, fieldSize, stride, stride, outInfo, op, false);
   const res = NDArray.zeros(program.outputShape);
   const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);
   gpgpu_math.runProgram(binary, [x], res);
