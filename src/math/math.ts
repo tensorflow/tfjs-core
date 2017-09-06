@@ -229,18 +229,18 @@ export abstract class NDArrayMath {
   private executeOp<T extends NDArray>(name: string, f: () => T): T {
     let start: number;
     if (this.debugMode) {
-      start = Date.now();
+      start = performance.now();
     }
     const result = f();
     if (this.debugMode) {
       const vals = result.getValues();
-      const time = util.rightPad((Date.now() - start) + 'ms', 9);
+      const time = util.rightPad((performance.now() - start) + 'ms', 9);
       const paddedName = util.rightPad(name, 25);
       const rank = result.rank;
       const size = result.size;
       const shape = util.rightPad(result.shape + '', 14);
       console.log(
-          `%cmath.${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
+          `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
           'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
       this.checkForNaN(vals, name);
     }
