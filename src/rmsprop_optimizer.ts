@@ -12,16 +12,19 @@ limitations under the License.
 
 import {Node} from './graph';
 import {NDArrayMath} from './math/math';
-import {Scalar} from './math/ndarray';
-import {AdagradOptimizer} from './adagrad_optimizer';
+import {NDArray, Scalar} from './math/ndarray';
+import {Optimizer} from './optimizer';
 import {SessionRuntime} from './session';
 import {TensorArrayMap, SummedTensorArrayMap} from './tensor_array_map';
 
-export class RmspropOptimizer extends AdagradOptimizer {
+export class RmspropOptimizer extends Optimizer {
   constructor(protected learningRate: number,
     protected momentum: number, private gamma: number,
     specifiedVariableList?: Node[]) {
-    super(learningRate, momentum, specifiedVariableList);
+    super(learningRate, specifiedVariableList);
+    this.m = Scalar.new(momentum);
+    this.eps = Scalar.new(1e-6);
+    this.g = Scalar.new(this.gamma);
   }
 
   beforeBatch(
@@ -30,9 +33,13 @@ export class RmspropOptimizer extends AdagradOptimizer {
     gradientArrayMap: SummedTensorArrayMap) {
     super.beforeBatch(math, batchSize, runtime,
       activationArrayMap, gradientArrayMap);
-
-    this.g = Scalar.new(this.gamma);
-  }
+      if (this.cache.size() === 0) {
+        this.variableNodes.forEach(node => {
+          this.cache.set(node.output,
+            NDArray.zeros(node.output.shape));
+        });
+      }
+    }
 
 
   afterBatch(
@@ -46,10 +53,10 @@ export class RmspropOptimizer extends AdagradOptimizer {
         const oldCache = this.cache.get(node.output);
         const gradientSquare = math.multiply(gradient, gradient);
         const cache = math.scaledArrayAdd(this.g!, oldCache,
-          math.sub(this.one, this.g)!, gradientSquare);
+            math.sub(this.one, this.g)!, gradientSquare);
         const variable = math.scaledArrayAdd(this.c!,
-          math.divide( gradient, math.sqrt( math.add(cache, this.eps))),
-              this.one!, oldVariable);
+            math.divide(gradient, math.add(math.sqrt( cache), this.eps)),
+                this.one!, oldVariable);
         this.cache.set(node.output, keep(cache));
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
@@ -64,18 +71,15 @@ export class RmspropOptimizer extends AdagradOptimizer {
   }
 
   dispose() {
-    if (this.c != null) {
-      this.c.dispose();
-    }
-    if (this.m != null) {
-      this.m.dispose();
-    }
-    this.one.dispose();
+    super.dispose();
+    this.m.dispose();
+    this.eps.dispose();
+    this.g.dispose();
     this.cache.dispose();
   }
 
-  setMomentum(momentum: number) {
-    this.momentum = momentum;
-  }
+  private cache = new TensorArrayMap();
+  private m: Scalar;
+  private eps: Scalar;
   private g: Scalar;
 }

@@ -18,9 +18,10 @@ import {SessionRuntime} from './session';
 import {TensorArrayMap, SummedTensorArrayMap} from './tensor_array_map';
 
 export class MomentumOptimizer extends SGDOptimizer {
-  constructor(protected learningRate: number, 
+  constructor(protected learningRate: number,
     private momentum: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
+    this.m = Scalar.new(this.momentum);
   }
 
   beforeBatch(
@@ -30,7 +31,6 @@ export class MomentumOptimizer extends SGDOptimizer {
     super.beforeBatch(math, batchSize, runtime,
       activationArrayMap, gradientArrayMap);
 
-    this.m = Scalar.new(this.momentum);
     if (this.variableVelocities.size() === 0) {
       this.variableNodes.forEach(node => {
         this.variableVelocities.set(node.output,
@@ -66,13 +66,8 @@ export class MomentumOptimizer extends SGDOptimizer {
   }
 
   dispose() {
-    if (this.c != null) {
-      this.c.dispose();
-    }
-    if (this.m != null) {
-      this.m.dispose();
-    }
-    this.one.dispose();
+    super.dispose();
+    this.m.dispose();
     this.variableVelocities.dispose();
   }
 

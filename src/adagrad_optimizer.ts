@@ -13,14 +13,16 @@ limitations under the License.
 import {Node} from './graph';
 import {NDArrayMath} from './math/math';
 import {NDArray, Scalar} from './math/ndarray';
-import {SGDOptimizer} from './sgd_optimizer';
+import {Optimizer} from './optimizer';
 import {SessionRuntime} from './session';
 import {TensorArrayMap, SummedTensorArrayMap} from './tensor_array_map';
 
-export class AdagradOptimizer extends SGDOptimizer {
+export class AdagradOptimizer extends Optimizer {
   constructor(protected learningRate: number,
     protected momentum: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
+    this.m = Scalar.new(momentum);
+    this.eps = Scalar.new(1e-6);
   }
 
   beforeBatch(
@@ -30,8 +32,6 @@ export class AdagradOptimizer extends SGDOptimizer {
     super.beforeBatch(math, batchSize, runtime,
       activationArrayMap, gradientArrayMap);
 
-    this.m = Scalar.new(this.momentum);
-    this.eps = Scalar.new(1e-6);
     if (this.cache.size() === 0) {
       this.variableNodes.forEach(node => {
         this.cache.set(node.output,
@@ -52,7 +52,7 @@ export class AdagradOptimizer extends SGDOptimizer {
         const gradientSquare = math.multiply(gradient, gradient);
         const cache = math.add(oldCache, gradientSquare);
         const variable = math.scaledArrayAdd(this.c!,
-          math.divide( gradient, math.sqrt( math.add(cache, this.eps))),
+          math.divide(gradient, math.add(math.sqrt( cache), this.eps)),
               this.one!, oldVariable);
         this.cache.set(node.output, keep(cache));
         activationArrayMap.set(node.output, keep(variable));
@@ -68,21 +68,13 @@ export class AdagradOptimizer extends SGDOptimizer {
   }
 
   dispose() {
-    if (this.c != null) {
-      this.c.dispose();
-    }
-    if (this.m != null) {
-      this.m.dispose();
-    }
-    this.one.dispose();
+    super.dispose();
+    this.m.dispose();
+    this.eps.dispose();
     this.cache.dispose();
   }
 
-  setMomentum(momentum: number) {
-    this.momentum = momentum;
-  }
-
-  protected cache = new TensorArrayMap();
-  protected m: Scalar;
-  protected eps: Scalar;
+  private cache = new TensorArrayMap();
+  private m: Scalar;
+  private eps: Scalar;
 }
