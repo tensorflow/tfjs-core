@@ -59,27 +59,6 @@ export function computeOutputInfo(
   return {shape: outShape, paddingInfo};
 }
 
-// export function computeOutputInfoDerInput(
-//     inShape: [number, number, number], filterHeight: number,
-//     filterWidth: number, outDepth: number, strideHeight: number,
-//     strideWidth: number, pad: 'same'|'valid'|number): OutputInfo {
-//   // Compute the padding information for the regular convolution. This helps
-//   // us find the padding for the transposed convolution.
-//   const outputInfo = computeOutputInfo(
-//       inShape, filterHeight, filterWidth, outDepth, strideHeight,
-//       strideWidth,
-//       pad);
-//   outputInfo.shape = inShape;
-//   outputInfo.paddingInfo.top = filterHeight - 1 - outputInfo.paddingInfo.top;
-//   outputInfo.paddingInfo.left = filterWidth - 1 -
-//   outputInfo.paddingInfo.left;
-//   outputInfo.paddingInfo.bottom =
-//       filterHeight - 1 - outputInfo.paddingInfo.bottom;
-//   outputInfo.paddingInfo.right = filterWidth - 1 -
-//   outputInfo.paddingInfo.right;
-//   return outputInfo;
-// }
-
 /**
  * @deprecated Use `conv_util.computeOutputInfo` instead.
  */
