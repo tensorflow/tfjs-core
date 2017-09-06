@@ -26,6 +26,7 @@ module.exports = function(config) {
       tsconfig: "tsconfig.json"
     },
     reporters: ['progress', 'karma-typescript'],
-    browsers: ['Chrome', 'Firefox']
+    browsers: ['Chrome', 'Firefox'],
+    singleRun: true
   });
 };
