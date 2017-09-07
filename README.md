@@ -116,11 +116,7 @@ $ ./scripts/build-npm.sh
 >> Stored npm package at dist/deeplearn-VERSION.tgz
 ```
 
-To build and publish an npm package, update the version number in `package.json` and run:
-
-```bash
-$./scripts/publish-npm.sh
-```
+To install it locally, run `npm install ./dist/deeplearn-VERSION.tgz`.
 
 > On Windows, use bash (available through git) to use the scripts above.
 
