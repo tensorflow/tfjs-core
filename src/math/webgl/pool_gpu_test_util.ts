@@ -21,8 +21,9 @@ import {Pool2DProgram} from './pool_gpu';
 import {TextureManager} from './texture_manager';
 
 export function uploadPoolDownload(
-    a: Float32Array, xShape: [number, number, number], fieldSize: number,
-    stride: number, zeroPad: number, op: 'min'|'max'|'avg'): Float32Array {
+    a: Float32Array, xShape: [number, number, number],
+    filterSizes: [number, number]|number, strides: [number, number]|number,
+    zeroPad: number|'valid'|'same', op: 'min'|'max'|'avg'): Float32Array {
   const gpgpu = new GPGPUContext();
   gpgpu.enableAutomaticDebugValidation(true);
   const textureManager = new TextureManager(gpgpu);
@@ -30,8 +31,11 @@ export function uploadPoolDownload(
 
   const x = Array3D.new(xShape, a);
   const outDepth = x.shape[2];
+  const [filterHeight, filterWidth] = parseTuple(filterSizes);
+  const [strideHeight, strideWidth] = parseTuple(strides);
   const convInfo = conv_util.computeConvInfo(
-      xShape, fieldSize, fieldSize, outDepth, stride, stride, zeroPad);
+      xShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+      zeroPad);
   const program = new Pool2DProgram(convInfo, op, false);
   const res = NDArray.zeros(program.outputShape);
   const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);
@@ -42,4 +46,8 @@ export function uploadPoolDownload(
   gpgpu.deleteProgram(binary.webGLProgram);
   gpgpu.dispose();
   return resValues;
+}
+
+function parseTuple(a: number|[number, number]): [number, number] {
+  return typeof a === 'number' ? [a, a] : a;
 }
