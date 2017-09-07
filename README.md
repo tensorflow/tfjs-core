@@ -74,6 +74,9 @@ $ cd deeplearnjs
 $ npm run prep # Installs node modules and bower components.
 ```
 
+We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
+development. Make sure to install `clang-format` for IDE auto-formatting.
+
 To interactively develop any of the demos (e.g. `demos/nn-art/`):
 
 ```bash
