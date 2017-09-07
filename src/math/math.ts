@@ -20,7 +20,7 @@ import {ConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
-export type ScopeResult = NDArray[] | NDArray | void;
+export type ScopeResult = NDArray[]|NDArray|void;
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -899,6 +899,12 @@ export abstract class NDArrayMath {
    * @param bias Optional bias, rank 1 of shape [outDepth].
    * @param strides The strides of the convolution: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
   conv2d(
       x: Array3D, filter: Array4D, bias: Array1D|null,
@@ -943,7 +949,8 @@ export abstract class NDArrayMath {
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param strides The strides of the convolution: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
    */
   conv2dBackProp(
       x: Array3D, dy: Array3D, filter: Array4D,
@@ -964,7 +971,8 @@ export abstract class NDArrayMath {
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param strides The strides of the convolution: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
    */
   conv2dDerInput(
       inShape: [number, number, number], dy: Array3D, filter: Array4D,
@@ -1026,7 +1034,8 @@ export abstract class NDArrayMath {
    * @param filterSize The size of the filter, length 4,
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param strides The strides of the convolution: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
    */
   conv2dDerFilter(
       x: Array3D, dy: Array3D, filterSize: [number, number, number, number],
@@ -1076,7 +1085,7 @@ export abstract class NDArrayMath {
    * @param strides The strides of the original convolution:
    *     `[strideHeight, strideWidth]`.
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
-   *     of the original convolutions.
+   *     used in the non-transpose version of the op.
    */
   conv2dTranspose(
       x: Array3D, filter: Array4D, outputShape: [number, number, number],
@@ -1090,6 +1099,12 @@ export abstract class NDArrayMath {
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
   maxPool(
       x: Array3D, filterSize: [number, number]|number,
@@ -1114,7 +1129,8 @@ export abstract class NDArrayMath {
    * @param x The input image, rank 3 of shape [height, width, inDepth].
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
    */
   maxPoolBackprop(
       dy: Array3D, x: Array3D, filterSize: [number, number]|number,
@@ -1146,6 +1162,12 @@ export abstract class NDArrayMath {
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
   minPool(
       x: Array3D, filterSize: [number, number]|number,
@@ -1170,6 +1192,12 @@ export abstract class NDArrayMath {
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
   avgPool(
       x: Array3D, filterSize: [number, number]|number,
@@ -1348,10 +1376,11 @@ export abstract class NDArrayMath {
       const o = this.slice2D(
           res, [0, res.shape[1] / 4 * 3], [res.shape[0], res.shape[1] / 4]);
 
-      const newC = this.add(
-          this.multiplyStrict(
-              c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
-          this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
+      const newC =
+          this.add(
+              this.multiplyStrict(
+                  c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+              this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
       const newH =
           this.multiplyStrict(this.tanh(newC), this.sigmoid(o)) as Array2D;
 
