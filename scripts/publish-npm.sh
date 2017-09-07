@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-npm run prep
-rm -rf dist/
-node_modules/.bin/tsc
+npm run prep && \
+rm -rf dist/ && \
+node_modules/.bin/tsc && \
 npm publish
 echo 'Yay! Published a new package to npm.'
