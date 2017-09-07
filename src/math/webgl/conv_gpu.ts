@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {OutputInfo} from '../conv_util';
+import {ConvInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DProgram implements GPGPUProgram {
@@ -22,15 +22,17 @@ export class Conv2DProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(
-      xShape: [number, number, number], filterHeight: number,
-      filterWidth: number, strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo, hasBias: boolean) {
-    this.outputShape = outputInfo.shape;
+  constructor(convInfo: ConvInfo, hasBias: boolean) {
+    this.outputShape = convInfo.outShape;
     const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
-    const [xNumRows, xNumCols, inputDepth] = xShape;
-    const padTop = outputInfo.paddingInfo.top;
-    const padLeft = outputInfo.paddingInfo.left;
+    const [xNumRows, xNumCols, inputDepth] = convInfo.inShape;
+    const padTop = convInfo.padInfo.top;
+    const padLeft = convInfo.padInfo.left;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+
     this.params = [strideHeight, strideWidth, hasBias, padLeft, padTop];
 
     this.userCode = `

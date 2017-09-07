@@ -34,11 +34,9 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const xShape: [number, number, number] = [size, size, depth];
   const fSize = 11;
   const stride = 1;
-  const zeroPad = conv_util.computeDefaultPad(xShape, fSize, stride);
-  const outInfo = conv_util.computeOutputInfo(
-      xShape, fSize, fSize, depth, stride, stride, zeroPad);
-  const program = new MaxPool2DBackpropProgram(
-      xShape, fSize, fSize, stride, stride, outInfo);
+  const convInfo = conv_util.computeConvInfo(
+      xShape, fSize, fSize, depth, stride, stride, 'same');
+  const program = new MaxPool2DBackpropProgram(convInfo);
   const res = NDArray.zeros(program.outputShape);
   const dy = Array3D.randUniform(dyShape, -1, 1);
   const positionsData = new Float32Array(dy.size);

@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {OutputInfo} from '../conv_util';
+import {ConvInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Pool2DProgram implements GPGPUProgram {
@@ -23,13 +23,16 @@ export class Pool2DProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      xShape: [number, number, number], filterHeight: number,
-      filterWidth: number, strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo, poolType: 'max'|'min'|'avg',
+      convInfo: ConvInfo, poolType: 'max'|'min'|'avg',
       computePositions: boolean) {
     if (poolType === 'avg' && computePositions) {
       throw new Error('Cannot compute positions for average pool.');
     }
+
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
 
     let returnValue = 'minMaxValue';
     if (computePositions) {
@@ -37,14 +40,14 @@ export class Pool2DProgram implements GPGPUProgram {
     } else if (poolType === 'avg') {
       returnValue = `avgValue / ${filterHeight * filterWidth}.0`;
     }
-    const xNumRows = xShape[0];
-    const xNumCols = xShape[1];
-    const padTop = outputInfo.paddingInfo.top;
-    const padLeft = outputInfo.paddingInfo.left;
+    const xNumRows = convInfo.inShape[0];
+    const xNumCols = convInfo.inShape[1];
+    const padTop = convInfo.padInfo.top;
+    const padLeft = convInfo.padInfo.left;
     this.params = [
       strideHeight, strideWidth, padLeft, padTop, poolType, computePositions
     ];
-    this.outputShape = outputInfo.shape;
+    this.outputShape = convInfo.outShape;
 
     const isAvgPool = poolType === 'avg';
     const compareOp = poolType === 'min' ? '<=' : '>=';

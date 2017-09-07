@@ -34,10 +34,9 @@ describe('conv_gpu derWeights', () => {
     gpgpu.enableAutomaticDebugValidation(true);
     const outputDepth = dy.shape[2];
     const inDepth = x.shape[2];
-    const outInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, fSize, fSize, outputDepth, stride, stride, zeroPad);
-    const program = new Conv2DDerWeightsProgram(
-        x.shape, fSize, fSize, stride, stride, outInfo);
+    const program = new Conv2DDerWeightsProgram(convInfo);
     const out = Array4D.zeros(
         conv_util.computeWeightsShape4D(inDepth, outputDepth, fSize, fSize));
     const binary = gpgpu_math.compileProgram(gpgpu, program, [x, dy], out);

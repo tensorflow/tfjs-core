@@ -36,11 +36,10 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   initializeGPU(gpgpu, texManager);
   gpgpu.enableAutomaticDebugValidation(true);
 
-  const outInfo = conv_util.computeOutputInfo(
+  const convInfo = conv_util.computeConvInfo(
       xShape, fieldSize, fieldSize, origOutputDepth, origStride, origStride,
       origPad);
-  const program = new Conv2DDerInputProgram(
-      xShape, fieldSize, fieldSize, origStride, origStride, outInfo);
+  const program = new Conv2DDerInputProgram(convInfo);
   const outputShape = program.outputShape as [number, number, number];
   const out = Array3D.zeros(outputShape);
   const x = Array3D.randUniform(xShape, -1, 1);

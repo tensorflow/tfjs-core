@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {OutputInfo} from '../conv_util';
+import {ConvInfo} from '../conv_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 
@@ -23,15 +23,17 @@ export class MaxPool2DBackpropProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(
-      xShape: [number, number, number], filterHeight: number,
-      filterWidth: number, strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo) {
-    this.outputShape = xShape;
-    const dyRows = outputInfo.shape[0];
-    const dyCols = outputInfo.shape[1];
-    const padTop = filterHeight - 1 - outputInfo.paddingInfo.top;
-    const padLeft = filterWidth - 1 - outputInfo.paddingInfo.left;
+  constructor(convInfo: ConvInfo) {
+    this.outputShape = convInfo.inShape;
+    const dyRows = convInfo.outShape[0];
+    const dyCols = convInfo.outShape[1];
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+
+    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     this.params =
         [filterHeight, filterWidth, strideHeight, strideWidth, padTop, padLeft];
 

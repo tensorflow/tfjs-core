@@ -30,10 +30,9 @@ export function uploadPoolDownload(
 
   const x = Array3D.new(xShape, a);
   const outDepth = x.shape[2];
-  const outInfo = conv_util.computeOutputInfo(
+  const convInfo = conv_util.computeConvInfo(
       xShape, fieldSize, fieldSize, outDepth, stride, stride, zeroPad);
-  const program = new Pool2DProgram(
-      xShape, fieldSize, fieldSize, stride, stride, outInfo, op, false);
+  const program = new Pool2DProgram(convInfo, op, false);
   const res = NDArray.zeros(program.outputShape);
   const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);
   gpgpu_math.runProgram(binary, [x], res);

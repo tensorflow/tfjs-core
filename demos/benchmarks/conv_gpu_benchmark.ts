@@ -34,13 +34,10 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const outDepth = 1;
   const filterSize = 11;
   const stride = 1;
-  const zeroPad = conv_util.computeDefaultPad(inShape, filterSize, stride);
-
   const hasBias = true;
-  const outputInfo = conv_util.computeOutputInfo(
-      inShape, filterSize, filterSize, outDepth, stride, stride, zeroPad);
-  const program = new Conv2DProgram(
-      inShape, filterSize, filterSize, stride, stride, outputInfo, hasBias);
+  const convInfo = conv_util.computeConvInfo(
+      inShape, filterSize, filterSize, outDepth, stride, stride, 'same');
+  const program = new Conv2DProgram(convInfo, hasBias);
   const outputShape = program.outputShape as [number, number, number];
   const out = Array3D.zeros(outputShape);
   const x = Array3D.randUniform(inShape, -1, 1);

@@ -43,11 +43,9 @@ function testMaxPool(size: number, positions: boolean): number {
   const xShape: [number, number, number] = [size, size, outputDepth];
   const fieldSize = 11;
   const stride = 1;
-  const zeroPad = conv_util.computeDefaultPad(xShape, fieldSize, stride);
-  const outInfo = conv_util.computeOutputInfo(
-      xShape, fieldSize, fieldSize, outputDepth, stride, stride, zeroPad);
-  const program = new Pool2DProgram(
-      xShape, fieldSize, fieldSize, stride, stride, outInfo, 'max', positions);
+  const convInfo = conv_util.computeConvInfo(
+      xShape, fieldSize, fieldSize, outputDepth, stride, stride, 'same');
+  const program = new Pool2DProgram(convInfo, 'max', positions);
   const res = NDArray.zeros(program.outputShape);
   const x = Array3D.randUniform(xShape, -1, 1);
   const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);

@@ -33,11 +33,9 @@ describe('max_pool_position', () => {
     initializeGPU(gpgpu, textureManager);
     const getPositions = true;
     const outDepth = xShape[2];
-    const outInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         xShape, fieldSize, fieldSize, outDepth, stride, stride, pad);
-    const program = new Pool2DProgram(
-        xShape, fieldSize, fieldSize, stride, stride, outInfo, 'max',
-        getPositions);
+    const program = new Pool2DProgram(convInfo, 'max', getPositions);
     const res = NDArray.zeros(program.outputShape);
     const x = Array3D.new(xShape, xVals);
     const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);
@@ -57,10 +55,9 @@ describe('max_pool_position', () => {
 
     const mathCPU = new NDArrayMathCPU();
     const outDepth = x.shape[2];
-    const outInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, fSize, fSize, outDepth, stride, stride, pad);
-    const yCPU =
-        mathCPU.maxPoolPositions(x, fSize, fSize, stride, stride, outInfo);
+    const yCPU = mathCPU.maxPoolPositions(x, convInfo);
     const yGPU = uploadMaxPoolPositionDownload(
         x.getValues(), x.shape, fSize, stride, pad);
     test_util.expectArraysClose(yGPU, yCPU.getValues(), 1e-5);

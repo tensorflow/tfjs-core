@@ -36,11 +36,10 @@ describe('conv_gpu transpose', () => {
     const filterHeight = W.shape[0];
     const filterWidth = W.shape[1];
     const origOutDepth = W.shape[3];
-    const outInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         origInputShape, filterHeight, filterWidth, origOutDepth, origStride,
         origStride, origPad);
-    const program = new Conv2DDerInputProgram(
-        origInputShape, fSize, fSize, origStride, origStride, outInfo);
+    const program = new Conv2DDerInputProgram(convInfo);
     const res = NDArray.zeros(program.outputShape);
     const inputs = [x, W];
     const binary = gpgpu_math.compileProgram(gpgpu, program, inputs, res);
@@ -58,10 +57,10 @@ describe('conv_gpu transpose', () => {
       origOutputDepth: number, origStride: number, origPad: number) {
     const origInputDepth = origInputShape[2];
 
-    const outInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         origInputShape, fSize, fSize, origOutputDepth, origStride, origStride,
         origPad);
-    const x = NDArray.randNormal<Array3D>(outInfo.shape);
+    const x = NDArray.randNormal<Array3D>(convInfo.outShape);
 
     const weights = NDArray.randNormal<Array4D>(
         [fSize, fSize, origInputDepth, origOutputDepth]);

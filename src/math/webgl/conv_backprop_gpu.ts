@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as conv_util from '../conv_util';
-import {OutputInfo} from '../conv_util';
+import {ConvInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DDerWeightsProgram implements GPGPUProgram {
@@ -23,17 +23,15 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(
-      xShape: [number, number, number], filterHeight: number,
-      filterWidth: number, strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo) {
-    const [yNumRows, yNumCols, outDepth] = outputInfo.shape;
-    const [xNumRows, xNumCols, inDepth] = xShape;
-
+  constructor(convInfo: ConvInfo) {
+    const [yNumRows, yNumCols, outDepth] = convInfo.outShape;
+    const [xNumRows, xNumCols, inDepth] = convInfo.inShape;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
     this.outputShape = conv_util.computeWeightsShape4D(
-        inDepth, outDepth, filterHeight, filterWidth);
-    const padTop = outputInfo.paddingInfo.top;
-    const padLeft = outputInfo.paddingInfo.left;
+        inDepth, outDepth, convInfo.filterHeight, convInfo.filterWidth);
+    const padTop = convInfo.padInfo.top;
+    const padLeft = convInfo.padInfo.left;
 
     this.params = [strideHeight, strideWidth, padLeft, padTop];
 
@@ -79,15 +77,17 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(
-      xShape: [number, number, number], filterHeight: number,
-      filterWidth: number, strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo) {
-    const [yRows, yCols, outDepth] = outputInfo.shape;
+  constructor(convInfo: ConvInfo) {
+    const [yRows, yCols, outDepth] = convInfo.outShape;
 
-    this.outputShape = xShape;
-    const padTop = filterHeight - 1 - outputInfo.paddingInfo.top;
-    const padLeft = filterWidth - 1 - outputInfo.paddingInfo.left;
+    this.outputShape = convInfo.inShape;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+
+    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     this.params = [strideHeight, strideWidth, padLeft, padTop];
 
     this.userCode = `

@@ -15,27 +15,46 @@ limitations under the License.
 
 import * as util from '../util';
 
-export type OutputInfo = {
-  shape: [number, number, number];
-  paddingInfo: {top: number, left: number, right: number, bottom: number};
+/**
+ * Information about the forward pass of a convolution/pooling operation.
+ * It includes input and output shape, strides, filter size and padding
+ * information.
+ */
+export type ConvInfo = {
+  inShape: [number, number, number],
+  outShape: [number, number, number],
+  strideHeight: number,
+  strideWidth: number,
+  filterHeight: number,
+  filterWidth: number,
+  padInfo: {top: number, left: number, right: number, bottom: number}
 };
 
-export function computeOutputInfo(
+/**
+ * Computes the information about a forward pass of a convolution/pooling
+ * operation.
+ */
+export function computeConvInfo(
     inShape: [number, number, number], filterHeight: number,
     filterWidth: number, outDepth: number, strideHeight: number,
-    strideWidth: number, pad: 'same'|'valid'|number): OutputInfo {
+    strideWidth: number, pad: 'same'|'valid'|number): ConvInfo {
   if (typeof pad === 'number') {
     const outShape = computeOutputShape3D(
         inShape, filterHeight, outDepth, strideHeight, pad);
     return {
-      shape: outShape,
-      paddingInfo: {top: pad, bottom: pad, left: pad, right: pad}
+      inShape,
+      outShape,
+      padInfo: {top: pad, bottom: pad, left: pad, right: pad},
+      strideHeight,
+      strideWidth,
+      filterHeight,
+      filterWidth
     };
   }
   const inHeight = inShape[0];
   const inWidth = inShape[1];
   let outShape: [number, number, number];
-  let paddingInfo: {left: number, top: number, bottom: number, right: number};
+  let padInfo: {left: number, top: number, bottom: number, right: number};
   if (pad === 'same') {
     const outHeight = Math.ceil(inHeight / strideHeight);
     const outWidth = Math.ceil(inWidth / strideWidth);
@@ -47,20 +66,28 @@ export function computeOutputInfo(
     const bottom = padAlongHeight - top;
     const left = Math.floor(padAlongWidth / 2);
     const right = padAlongWidth - left;
-    paddingInfo = {top, bottom, left, right};
+    padInfo = {top, bottom, left, right};
   } else if (pad === 'valid') {
     const outHeight = Math.ceil((inHeight - filterHeight + 1) / strideHeight);
     const outWidth = Math.ceil((inWidth - filterWidth + 1) / strideWidth);
     outShape = [outHeight, outWidth, outDepth];
-    paddingInfo = {top: 0, bottom: 0, left: 0, right: 0};
+    padInfo = {top: 0, bottom: 0, left: 0, right: 0};
   } else {
     throw Error(`Unknown padding parameter: ${pad}`);
   }
-  return {shape: outShape, paddingInfo};
+  return {
+    inShape,
+    outShape,
+    padInfo,
+    strideHeight,
+    strideWidth,
+    filterHeight,
+    filterWidth
+  };
 }
 
 /**
- * @deprecated Use `conv_util.computeOutputInfo` instead.
+ * @deprecated Use `conv_util.computeConvInfo` instead.
  */
 export function computeOutputShape3D(
     inShape: [number, number, number], fieldSize: number, outDepth: number,

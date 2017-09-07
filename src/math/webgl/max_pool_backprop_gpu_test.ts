@@ -35,17 +35,14 @@ describe('max_pool_backprop_gpu', () => {
 
     const getPositions = true;
     const outDepth = x.shape[2];
-    const outInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, fSize, fSize, outDepth, origStride, origStride, origPad);
-    const positionsProgram = new Pool2DProgram(
-        x.shape, fSize, fSize, origStride, origStride, outInfo, 'max',
-        getPositions);
+    const positionsProgram = new Pool2DProgram(convInfo, 'max', getPositions);
     const positionsRes = NDArray.zeros(positionsProgram.outputShape);
     const positionsBinary =
         gpgpu_math.compileProgram(gpgpu, positionsProgram, [x], positionsRes);
     gpgpu_math.runProgram(positionsBinary, [x], positionsRes);
-    const program = new MaxPool2DBackpropProgram(
-        x.shape, fSize, fSize, origStride, origStride, outInfo);
+    const program = new MaxPool2DBackpropProgram(convInfo);
     const res = NDArray.zeros(program.outputShape);
     const binary =
         gpgpu_math.compileProgram(gpgpu, program, [dy, positionsRes], res);

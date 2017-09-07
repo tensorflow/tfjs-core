@@ -16,7 +16,7 @@ limitations under the License.
 import * as util from '../util';
 import * as concat3d_util from './concat3d_util';
 import * as conv_util from './conv_util';
-import {OutputInfo} from './conv_util';
+import {ConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
@@ -926,17 +926,15 @@ export abstract class NDArrayMath {
     const filterWidth = filter.shape[1];
     const outDepth = filter.shape[3];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const outputInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
-        'conv2d',
-        () => this.conv2dInternal(
-            x, filter, bias, strideHeight, strideWidth, outputInfo));
+        'conv2d', () => this.conv2dInternal(x, filter, bias, convInfo));
   }
   protected abstract conv2dInternal(
-      x: Array3D, filter: Array4D, bias: Array1D|null, strideHeight: number,
-      strideWidth: number, outputInfo: OutputInfo): Array3D;
+      x: Array3D, filter: Array4D, bias: Array1D|null,
+      convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the backprop of a 2D convolution.
@@ -999,18 +997,15 @@ export abstract class NDArrayMath {
 
     const [strideHeight, strideWidth] = parseTupleParam(strides);
 
-    const outputInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         inShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
         'conv2dDerInput',
-        () => this.conv2dDerInputInternal(
-            dy, inShape, filter, strideHeight, strideWidth, outputInfo));
+        () => this.conv2dDerInputInternal(dy, filter, convInfo));
   }
   protected abstract conv2dDerInputInternal(
-      dy: Array3D, xShape: [number, number, number], filter: Array4D,
-      strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo): Array3D;
+      dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the derivative of the bias of a 2D convolution.
@@ -1061,17 +1056,13 @@ export abstract class NDArrayMath {
     const filterWidth = filterSize[1];
     const outDepth = filterSize[3];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const outputInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.track(this.conv2dDerFilterInternal(
-        x, dy, filterHeight, filterWidth, strideHeight, strideWidth,
-        outputInfo));
+    return this.track(this.conv2dDerFilterInternal(x, dy, convInfo));
   }
   protected abstract conv2dDerFilterInternal(
-      x: Array3D, dy: Array3D, filterHeight: number, filterWidth: number,
-      strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo): Array4D;
+      x: Array3D, dy: Array3D, convInfo: ConvInfo): Array4D;
 
   /**
    * Computes the transposed 2D convolution of an image, also known as a
@@ -1110,19 +1101,12 @@ export abstract class NDArrayMath {
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const outputInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp(
-        'maxPool',
-        () => this.maxPoolInternal(
-            x, filterHeight, filterWidth, strideHeight, strideWidth,
-            outputInfo));
+    return this.executeOp('maxPool', () => this.maxPoolInternal(x, convInfo));
   }
-  protected abstract maxPoolInternal(
-      x: Array3D, filterHeight: number, filterWidth: number,
-      strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo): Array3D;
+  protected abstract maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the backprop of a max pool.
@@ -1147,18 +1131,14 @@ export abstract class NDArrayMath {
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const outputInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
-        'maxPoolBackprop',
-        () => this.maxPoolBackpropInternal(
-            dy, x, filterHeight, filterWidth, strideHeight, strideWidth,
-            outputInfo));
+        'maxPoolBackprop', () => this.maxPoolBackpropInternal(dy, x, convInfo));
   }
   protected abstract maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, filterHeight: number, filterWidth: number,
-      strideHeight: number, strideWidth: number, outInfo: OutputInfo): Array3D;
+      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the 2D min pooling of an image.
@@ -1177,19 +1157,12 @@ export abstract class NDArrayMath {
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const outputInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp(
-        'minPool',
-        () => this.minPoolInternal(
-            x, filterHeight, filterWidth, strideHeight, strideWidth,
-            outputInfo));
+    return this.executeOp('minPool', () => this.minPoolInternal(x, convInfo));
   }
-  protected abstract minPoolInternal(
-      x: Array3D, filterHeight: number, filterWidth: number,
-      strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo): Array3D;
+  protected abstract minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the 2D average pooling of an image.
@@ -1208,19 +1181,12 @@ export abstract class NDArrayMath {
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const outputInfo = conv_util.computeOutputInfo(
+    const convInfo = conv_util.computeConvInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp(
-        'avgPool',
-        () => this.avgPoolInternal(
-            x, filterHeight, filterWidth, strideHeight, strideWidth,
-            outputInfo));
+    return this.executeOp('avgPool', () => this.avgPoolInternal(x, convInfo));
   }
-  protected abstract avgPoolInternal(
-      x: Array3D, filterHeight: number, filterWidth: number,
-      strideHeight: number, strideWidth: number,
-      outputInfo: OutputInfo): Array3D;
+  protected abstract avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /*
    * Bilinear resize a 3D array per each channel to a new 2D shape.
@@ -1401,14 +1367,5 @@ export enum MatrixOrientation {
 }
 
 function parseTupleParam(param: number|[number, number]): [number, number] {
-  let param1: number;
-  let param2: number;
-  if (typeof param === 'number') {
-    param1 = param;
-    param2 = param;
-  } else {
-    param1 = param[0];
-    param2 = param[1];
-  }
-  return [param1, param2];
+  return typeof param === 'number' ? [param, param] : param;
 }
