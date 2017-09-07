@@ -109,11 +109,17 @@ $ ./scripts/build-standalone.sh VERSION # Builds standalone library.
 >> Stored standalone library at dist/deeplearn-VERSION(.min).js
 ```
 
-To build an npm package/es6 module:
+To do a dry run and test building an npm package:
 
 ```bash
-$ ./scripts/build-npm.sh # Builds npm package.
+$ ./scripts/build-npm.sh
 >> Stored npm package at dist/deeplearn-VERSION.tgz
+```
+
+To build and publish an npm package, update the version number in `package.json` and run:
+
+```bash
+$./scripts/publish-npm.sh
 ```
 
 > On Windows, use bash (available through git) to use the scripts above.
