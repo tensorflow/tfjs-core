@@ -76,7 +76,7 @@ $ npm run prep # Installs node modules and bower components.
 
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
 development. Make sure to install the `clang-format` command line tool as
-well as the Clang-Format VSCode extension for auto-formatting.
+well as the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting.
 
 To interactively develop any of the demos (e.g. `demos/nn-art/`):
 
