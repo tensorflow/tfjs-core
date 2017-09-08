@@ -28,6 +28,8 @@ export type InputInfo = {
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
     broadcast: boolean): string {
+  const sampleSnippet = getSampleSnippet();
+  const setOutputSnippet = getSetOutputSnippet();
   const inputPrefixSnippet =
       inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
@@ -37,10 +39,25 @@ export function makeShader(
   const outputSamplingSnippet =
       getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   const source = [
-    SHADER_PREFIX, inputPrefixSnippet, inputSamplingSnippet,
+    SHADER_PREFIX, sampleSnippet, setOutputSnippet, inputPrefixSnippet, inputSamplingSnippet,
     outputSamplingSnippet, userCode
   ].join('\n');
   return source;
+}
+
+function getSampleSnippet() {
+  // pass through
+  if (util != null) {
+    return INTEGER_TEXTURE_SAMPLE_SNIPPET;    
+  }
+  return FLOAT_TEXTURE_SAMPLE_SNIPPET;
+}
+
+function getSetOutputSnippet() {
+  if (util != null) {
+    return INTEGER_TEXTURE_SETOUTPUT_SNIPPET;    
+  }
+  return FLOAT_TEXTURE_SETOUTPUT_SNIPPET;
 }
 
 function getInputSamplingSnippet(
@@ -148,18 +165,85 @@ vec2 UVfrom4D(float texNumR, float texNumC, float stride0,
 }
 `;
 
+const INTEGER_TEXTURE_SAMPLE_SNIPPET = `
+  float sample(sampler2D texture, vec2 uv) {
+    vec4 val = texture2D(texture, uv);
+
+    vec4 scl = floor(255.0 * val + 0.5);
+    float sgn = (scl.a < 128.0) ? 1.0 : -1.0;
+    float exn = mod(scl.a * 2.0, 256.0) + floor(scl.b / 128.0) - 127.0;
+    float man = 1.0 +
+        (scl.r / 8388608.0) + 
+        (scl.g / 32768.0) +
+        mod(scl.b, 128.0) / 128.0;
+    return sgn * man * pow(2.0, exn);
+  }
+`;
+
+const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
+  // https://github.com/mikolalysenko/glsl-read-float/blob/master/index.glsl
+  #define FLOAT_MAX  1.70141184e38
+  #define FLOAT_MIN  1.17549435e-38
+
+  vec4 encode(float v) {
+    highp float av = abs(v);
+
+    //Handle special cases
+    if (av < FLOAT_MIN) {
+      return vec4(0.0, 0.0, 0.0, 0.0);
+    } else if (v > FLOAT_MAX) {
+      return vec4(127.0, 128.0, 0.0, 0.0) / 255.0;
+    } else if (v < -FLOAT_MAX) {
+      return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;
+    }
+
+    highp vec4 c = vec4(0,0,0,0);
+
+    // Compute exponent and mantissa.
+    highp float e = floor(log2(av));
+    highp float m = av * pow(2.0, -e) - 1.0;
+    
+    // Unpack mantissa.
+    c[1] = floor(128.0 * m);
+    m -= c[1] / 128.0;
+    c[2] = floor(32768.0 * m);
+    m -= c[2] / 32768.0;
+    c[3] = floor(8388608.0 * m);
+    
+    // Unpack exponent.
+    highp float ebias = e + 127.0;
+    c[0] = floor(ebias / 2.0);
+    ebias -= c[0] * 2.0;
+    c[1] += floor(ebias) * 128.0; 
+
+    // Unpack sign bit.
+    c[0] += 128.0 * step(0.0, -v);
+
+    // Scale back to range.
+    return c.abgr / 255.0;
+  }
+
+  void setOutput(float v) {
+    gl_FragColor = encode(v);    
+  }
+`;
+
+const FLOAT_TEXTURE_SAMPLE_SNIPPET = `
+  float sample(sampler2D texture, vec2 uv) {
+    return texture2D(texture, uv).r;
+  }
+`;
+
+const FLOAT_TEXTURE_SETOUTPUT_SNIPPET = `
+  void setOutput(float val) {
+    gl_FragColor = vec4(val, 0, 0, 0);
+  }
+`;
+
 const SHADER_PREFIX = `
   precision highp float;
   varying vec2 resultUV;
   const vec2 halfCR = vec2(0.5, 0.5);
-
-  float sample(sampler2D texture, vec2 uv) {
-    return texture2D(texture, uv).r;
-  }
-
-  void setOutput(float val) {
-    gl_FragColor = vec4(val, 0, 0, 0);
-  }
 
   bool isNaN(float val) {
     return val == val ? false : true;

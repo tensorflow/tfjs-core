@@ -97,6 +97,11 @@ function getTextureFormat(
   return gl.RGBA;
 }
 
+function getTextureType(gl: WebGLRenderingContext) {
+  return gl.UNSIGNED_BYTE;
+  //return gl.FLOAT
+}
+
 function createAndConfigureTexture(
     gl: WebGLRenderingContext, width: number, height: number,
     numChannels: number): WebGLTexture {
@@ -118,7 +123,7 @@ function createAndConfigureTexture(
   webgl_util.callAndCheck(
       gl,
       () => gl.texImage2D(
-          tex2d, 0, internalFormat, width, height, 0, format, gl.FLOAT, null));
+          tex2d, 0, internalFormat, width, height, 0, format, getTextureType(gl), null));
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, null));
   return texture;
 }
@@ -179,13 +184,13 @@ export function uploadPixelDataToTexture(
   webgl_util.callAndCheck(
       gl,
       () => gl.texImage2D(
-          gl.TEXTURE_2D, 0, internalFormat, gl.RGBA, gl.FLOAT, pixels));
+          gl.TEXTURE_2D, 0, internalFormat, gl.RGBA, getTextureType(gl), pixels));
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 
 function uploadDataToTexture(
     gl: WebGLRenderingContext, texture: WebGLTexture, width: number,
-    height: number, data: Float32Array, numChannels: number) {
+    height: number, data: ArrayBufferView, numChannels: number) {
   const textureFormat = getTextureFormat(gl, numChannels);
 
   webgl_util.validateTextureSize(gl, width, height);
@@ -193,7 +198,7 @@ function uploadDataToTexture(
   webgl_util.callAndCheck(
       gl,
       () => gl.texSubImage2D(
-          gl.TEXTURE_2D, 0, 0, 0, width, height, textureFormat, gl.FLOAT,
+          gl.TEXTURE_2D, 0, 0, 0, width, height, textureFormat, getTextureType(gl),
           data));
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
@@ -206,9 +211,16 @@ export function uploadMatrixToTexture(
 
   const channelsPerTexture =
       numChannels === 1 ? webgl_util.getChannelsPerTexture() : numChannels;
+  console.log(channelsPerTexture);
+  /*
   const unpackedArray =
       new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-          matrix.length, channelsPerTexture));
+          matrix.length, channelsPerTexture));*/
+  const unpackedArray = new Uint8Array(tex_util.getUnpackedArraySizeFromMatrixSize(
+    matrix.length, channelsPerTexture));
+  console.log(matrix.length);
+  console.log(unpackedArray.length);
+
   tex_util.encodeMatrixToUnpackedArray(
       matrix, unpackedArray, channelsPerTexture);
 
@@ -236,7 +248,7 @@ export function downloadMatrixFromOutputTexture(
       new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
           rows * columns, channelsPerTexture));
   webgl_util.callAndCheck(
-      gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, unpackedArray));
+      gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, getTextureType(gl), unpackedArray));
 
   const matrix = new Float32Array(rows * columns);
   tex_util.decodeMatrixFromUnpackedArray(
@@ -250,7 +262,7 @@ export function downloadMatrixFromPackedOutputTexture(
   const packedRGBA = new Float32Array(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
   webgl_util.callAndCheck(
-      gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
+      gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, getTextureType(gl), packedRGBA));
   const matrix = new Float32Array(rows * columns);
   return tex_util.decodeMatrixFromPackedRGBA(packedRGBA, rows, columns, matrix);
 }

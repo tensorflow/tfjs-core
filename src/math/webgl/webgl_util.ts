@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-let USE_WEBGL2_WHEN_AVAILABLE = true;
+let USE_WEBGL2_WHEN_AVAILABLE = false;
 let WEBGL2_ENABLED: boolean|undefined = null;
 let MAX_TEXTURE_SIZE: number = null;
 
@@ -146,6 +146,7 @@ export function getExtensionOrThrow(
       gl, () => gl.getExtension(extensionName),
       'Extension "' + extensionName + '" not supported on this browser.');
 }
+
 
 export function createVertexShader(
     gl: WebGLRenderingContext, vertexShaderSource: string): WebGLShader {
