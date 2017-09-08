@@ -167,41 +167,43 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
 const INTEGER_TEXTURE_SAMPLE_SNIPPET = `
   const vec4 floatDeltas = vec4(
       1.0,
-      1.0 / (256.0),
-      1.0 / (256.0 * 256.0),
-      1.0 / (256.0 * 256.0 * 256.0)
+      1.0 / (255.0),
+      1.0 / (255.0 * 255.0),
+      1.0 / (255.0 * 255.0 * 255.0)
   );
   const float minValue = ${tex_util.FLOAT_MIN}.0;
   const float maxValue = ${tex_util.FLOAT_MAX}.0;
   const float range = maxValue - minValue;
 
   float sample(sampler2D texture, vec2 uv) {
-    vec4 encValue = texture2D(texture, uv);
+    vec4 encValue = texture2D(texture, uv); //;;//vec4(0.8, 0.00001, 0.00001, 0.00001); //texture2D(texture, uv);
+
 
     float decodedValue = dot(encValue, floatDeltas);
 
-    return -1.0;
-    //return encValue[0];
-    //return minValue + (decodedValue * range);
+
+    //return -.;
+    return minValue + (decodedValue * range);
   }
 `;
 
 const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
   const vec4 floatPowers = vec4(
     1.0,
-    256.0,
-    256.0 * 256.0,
-    256.0 * 256.0 * 256.0
+    255.0,
+    255.0 * 255.0,
+    255.0 * 255.0 * 255.0
   );
 
   void setOutput(float decodedValue) {
-    float d = -.5; //decodedValue
-    float normalizedValue = (d - minValue) / range;
+    //float d = -1; //decodedValue
+    float normalizedValue = (decodedValue - minValue) / range;
 
     vec4 f = normalizedValue * floatPowers;
     vec4 frac = fract(f);
 
     //decodedValue = 1.0
+
     gl_FragColor = frac;  //vec4(decodedValue); //vec4(.9999999, .9999999, .9999999, .9999999); //uvec4(frac * 256.0);
   }
 `;

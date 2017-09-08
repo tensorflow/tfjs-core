@@ -56,14 +56,14 @@ export function encodeMatrixToUnpackedArray(
   }
 }
 
-export const FLOAT_MAX = 1;   // 10000;
-export const FLOAT_MIN = -1;  //-FLOAT_MAX;
+export const FLOAT_MAX = 1000;  // 10000;
+export const FLOAT_MIN = -FLOAT_MAX;
 const FLOAT_RANGE = FLOAT_MAX - FLOAT_MIN;
 
 const FLOAT_DELTAS = [
-  1 / 256, 1 / (256 * 256), 1 / (256 * 256 * 256), 1 / (256 * 256 * 256 * 256)
+  1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255), 1 / (255 * 255 * 255 * 255)
 ];
-const FLOAT_POWERS = [1, 256, 256 * 256, 256 * 256 * 256];
+const FLOAT_POWERS = [1, 255, 255 * 255, 255 * 255 * 255];
 
 export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
   const uintArray = new Uint8Array(floatArray.length * 4);
@@ -74,7 +74,7 @@ export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
 
     const enc = FLOAT_POWERS.map(pow => pow * normalizedValue);
     const frac = enc.map(value => value % 1);
-    const buckets = frac.map(value => value * 256);
+    const buckets = frac.map(value => value * 255);
     const intBuckets = buckets.map(value => Math.floor(value));
 
     uintView.setUint8(i * 4, intBuckets[0]);

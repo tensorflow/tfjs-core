@@ -16,7 +16,15 @@ limitations under the License.
 import {GPGPUProgram} from './gpgpu_math';
 
 export enum UnaryOp {
-  EXP, LOG, SQRT, NEG, RELU, SIGMOID, STEP, SIN, TANH
+  EXP,
+  LOG,
+  SQRT,
+  NEG,
+  RELU,
+  SIGMOID,
+  STEP,
+  SIN,
+  TANH
 }
 
 export class UnaryOpProgram implements GPGPUProgram {
@@ -46,25 +54,23 @@ const CHECK_NAN_SNIPPET = `
 `;
 
 function getOpSnippet(op: UnaryOp) {
-  switch(op) {
+  switch (op) {
     case UnaryOp.EXP:
       return 'float r = exp(v);';
     case UnaryOp.LOG:
       return 'float r = log(v);';
     case UnaryOp.SQRT:
-      return CHECK_NAN_SNIPPET +
-          'float r = sqrt(v);';
+      return CHECK_NAN_SNIPPET + 'float r = sqrt(v);';
     case UnaryOp.NEG:
       return 'float r = -v;';
     case UnaryOp.RELU:
-      return 'float r = (v < 0.0) ? 0.0 : v;';
+      return 'float r = v;//= (v < 0.0) ? 0.0 : v;';
     case UnaryOp.SIGMOID:
       return 'float r = 1.0 / (1.0 + exp(-1.0 * v));';
     case UnaryOp.STEP:
       return 'float r = (v == v) ? (v > 0.0 ? 1.0 : 0.0) : v;';
     case UnaryOp.SIN:
-      return CHECK_NAN_SNIPPET +
-          'float r = sin(v);';
+      return CHECK_NAN_SNIPPET + 'float r = sin(v);';
     case UnaryOp.TANH:
       return `float e2x = exp(-2.0 * abs(v));
               float r = sign(v) * (1.0 - e2x) / (1.0 + e2x);`;

@@ -14,9 +14,10 @@ limitations under the License.
 ==============================================================================*/
 
 import * as test_util from '../../test_util';
+import {Array1D, Array2D, Array3D, NDArray, Scalar} from '../ndarray';
+
 import {UnaryOp} from './unaryop_gpu';
 import * as unaryop_gpu_test from './unaryop_gpu_test';
-import {Array2D, Array1D, NDArray, Scalar, Array3D} from '../ndarray';
 
 describe('relu_gpu', () => {
   it('returns a matrix with the shape of the input matrix', () => {
@@ -38,13 +39,13 @@ describe('relu_gpu', () => {
   });
 
   it('preserves zero values', () => {
-    const a = Scalar.new(0);
+    const a = Scalar.new(8.8);
     const result = uploadReluDownload(a);
     expect(result[0]).toEqual(0);
   });
 
   it('operates on multiple values', () => {
-    const a = Array2D.new([3, 3],  [[-1, 2, -3], [4, -5, 6], [-7, 8, -9]]);
+    const a = Array2D.new([3, 3], [[-1, 2, -3], [4, -5, 6], [-7, 8, -9]]);
     const result = uploadReluDownload(a);
     test_util.expectArraysClose(
         result, new Float32Array([0, 2, 0, 4, 0, 6, 0, 8, 0]), 0.0001);
