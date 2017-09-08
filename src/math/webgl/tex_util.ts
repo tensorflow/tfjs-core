@@ -38,11 +38,10 @@ export function getMatrixSizeFromUnpackedArraySize(
   return unpackedSize / channelsPerTexture;
 }
 
-export type TypedArray = Float32Array | Uint8Array;
+export type TypedArray = Float32Array|Uint8Array;
 
 export function encodeMatrixToUnpackedArray(
-    matrix: TypedArray, unpackedArray: TypedArray,
-    channelsPerTexture: number) {
+    matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {
   const requiredSize =
       getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture);
   if (unpackedArray.length < requiredSize) {
@@ -57,62 +56,55 @@ export function encodeMatrixToUnpackedArray(
   }
 }
 
-const FLOAT_MAX = 1.70141184e38;
-const FLOAT_MIN = 1.17549435e-38;
+export const FLOAT_MAX = 1;   // 10000;
+export const FLOAT_MIN = -1;  //-FLOAT_MAX;
+const FLOAT_RANGE = FLOAT_MAX - FLOAT_MIN;
 
-export function encodeFloat(v: number): [number, number, number, number] {
-  const av = Math.abs(v);
+const FLOAT_DELTAS = [
+  1 / 256, 1 / (256 * 256), 1 / (256 * 256 * 256), 1 / (256 * 256 * 256 * 256)
+];
+const FLOAT_POWERS = [1, 256, 256 * 256, 256 * 256 * 256];
 
-  // Handle special cases.
-  if(av < FLOAT_MIN) {
-    return [0, 0, 0, 0];
-  } else if(v > FLOAT_MAX) {
-    return [127.0 / 255.0, 128.0, 0.0, 0.0) / 255.0];
-  } else if(v < -FLOAT_MAX) {
-    return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;
+export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
+  const uintArray = new Uint8Array(floatArray.length * 4);
+  const uintView = new DataView(uintArray.buffer);
+  for (let i = 0; i < floatArray.length; i++) {
+    const value = floatArray[i];
+    const normalizedValue = (value - FLOAT_MIN) / FLOAT_RANGE;
+
+    const enc = FLOAT_POWERS.map(pow => pow * normalizedValue);
+    const frac = enc.map(value => value % 1);
+    const buckets = frac.map(value => value * 256);
+    const intBuckets = buckets.map(value => Math.floor(value));
+
+    uintView.setUint8(i * 4, intBuckets[0]);
+    uintView.setUint8(i * 4 + 1, intBuckets[1]);
+    uintView.setUint8(i * 4 + 2, intBuckets[2]);
+    uintView.setUint8(i * 4 + 3, intBuckets[3]);
   }
+  return uintArray;
 }
 
-/*
-lowp vec4 encode_float(highp float v) {
-  highp float av = abs(v);
+export function decodeToFloatArray(uintArray: Uint8Array): Float32Array {
+  const floatArray = new Float32Array(uintArray.length / 4);
+  const uintView = new DataView(uintArray.buffer);
+  for (let i = 0; i < uintArray.length; i += 4) {
+    const intBuckets = [
+      uintView.getUint8(i), uintView.getUint8(i + 1), uintView.getUint8(i + 2),
+      uintView.getUint8(i + 3)
+    ];
 
-  //Handle special cases
-  if(av < FLOAT_MIN) {
-    return vec4(0.0, 0.0, 0.0, 0.0);
-  } else if(v > FLOAT_MAX) {
-    return vec4(127.0, 128.0, 0.0, 0.0) / 255.0;
-  } else if(v < -FLOAT_MAX) {
-    return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;
+    let dot = 0;
+    for (let j = 0; j < FLOAT_DELTAS.length; j++) {
+      dot += FLOAT_DELTAS[j] * intBuckets[j];
+    }
+
+    const value = dot * FLOAT_RANGE + FLOAT_MIN;
+
+    floatArray[i / 4] = value;
   }
-
-  highp vec4 c = vec4(0,0,0,0);
-
-  //Compute exponent and mantissa
-  highp float e = floor(log2(av));
-  highp float m = av * pow(2.0, -e) - 1.0;
-  
-  //Unpack mantissa
-  c[1] = floor(128.0 * m);
-  m -= c[1] / 128.0;
-  c[2] = floor(32768.0 * m);
-  m -= c[2] / 32768.0;
-  c[3] = floor(8388608.0 * m);
-  
-  //Unpack exponent
-  highp float ebias = e + 127.0;
-  c[0] = floor(ebias / 2.0);
-  ebias -= c[0] * 2.0;
-  c[1] += floor(ebias) * 128.0; 
-
-  //Unpack sign bit
-  c[0] += 128.0 * step(0.0, -v);
-
-  //Scale back to range
-  return c / 255.0;
+  return floatArray;
 }
-
-*/
 
 export function decodeMatrixFromUnpackedArray(
     unpackedArray: Float32Array, matrix: Float32Array,

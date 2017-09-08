@@ -196,7 +196,7 @@ export function uploadPixelDataToTexture(
 
 function uploadDataToTexture(
     gl: WebGLRenderingContext, texture: WebGLTexture, width: number,
-    height: number, data: ArrayBufferView, numChannels: number) {
+    height: number, data: Float32Array|Uint8Array, numChannels: number) {
   const textureFormat = getTextureFormat(gl, numChannels);
 
   webgl_util.validateTextureSize(gl, width, height);
@@ -227,13 +227,15 @@ export function uploadMatrixToTexture(
   // No need to allocate a temporary array.
   // unpackedArray = matrix;
   //} else {
-  unpackedArray = new Uint8Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-      matrix.length, channelsPerTexture));
+  /*
+unpackedArray = new Uint8Array(tex_util.getUnpackedArraySizeFromMatrixSize(
+    matrix.length, channelsPerTexture));*/
+  unpackedArray = tex_util.encodeFloatArray(matrix);
   //}
   console.log(unpackedArray.length);
 
-  tex_util.encodeMatrixToUnpackedArray(
-      matrix, unpackedArray, channelsPerTexture);
+  // tex_util.encodeMatrixToUnpackedArray(
+  //    matrix, unpackedArray, channelsPerTexture);
 
   uploadDataToTexture(gl, texture, w, h, unpackedArray, numChannels);
 }
@@ -255,18 +257,21 @@ export function downloadMatrixFromOutputTexture(
       tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
 
   const channelsPerTexture = 4;
-  const unpackedArray =
-      new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-          rows * columns, channelsPerTexture));
+  // const unpackedArray =
+  //    new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
+  //        rows * columns, channelsPerTexture));
+  const unpackedArray = new Uint8Array(rows * columns * channelsPerTexture);
   webgl_util.callAndCheck(
       gl,
       () => gl.readPixels(
           0, 0, w, h, gl.RGBA, getTextureType(gl), unpackedArray));
 
-  const matrix = new Float32Array(rows * columns);
-  tex_util.decodeMatrixFromUnpackedArray(
-      unpackedArray, matrix, channelsPerTexture);
-  return matrix;
+
+  return tex_util.decodeToFloatArray(unpackedArray);
+  // const matrix = new Float32Array(rows * columns);
+  // tex_util.decodeMatrixFromUnpackedArray(
+  //    unpackedArray, matrix, channelsPerTexture);
+  // return matrix;
 }
 
 export function downloadMatrixFromPackedOutputTexture(

@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as util from '../../util';
+import * as tex_util from './tex_util';
 
 export type ShapeInfo = {
   logicalShape: number[],
@@ -39,8 +40,8 @@ export function makeShader(
   const outputSamplingSnippet =
       getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   const source = [
-    SHADER_PREFIX, sampleSnippet, setOutputSnippet, inputPrefixSnippet, inputSamplingSnippet,
-    outputSamplingSnippet, userCode
+    SHADER_PREFIX, sampleSnippet, setOutputSnippet, inputPrefixSnippet,
+    inputSamplingSnippet, outputSamplingSnippet, userCode
   ].join('\n');
   return source;
 }
@@ -48,14 +49,14 @@ export function makeShader(
 function getSampleSnippet() {
   // pass through
   if (util != null) {
-    return INTEGER_TEXTURE_SAMPLE_SNIPPET;    
+    return INTEGER_TEXTURE_SAMPLE_SNIPPET;
   }
   return FLOAT_TEXTURE_SAMPLE_SNIPPET;
 }
 
 function getSetOutputSnippet() {
   if (util != null) {
-    return INTEGER_TEXTURE_SETOUTPUT_SNIPPET;    
+    return INTEGER_TEXTURE_SETOUTPUT_SNIPPET;
   }
   return FLOAT_TEXTURE_SETOUTPUT_SNIPPET;
 }
@@ -164,65 +165,44 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
 `;
 
 const INTEGER_TEXTURE_SAMPLE_SNIPPET = `
-  float sample(sampler2D texture, vec2 uv) {
-    vec4 val = texture2D(texture, uv);
+  const vec4 floatDeltas = vec4(
+      1.0,
+      1.0 / (256.0),
+      1.0 / (256.0 * 256.0),
+      1.0 / (256.0 * 256.0 * 256.0)
+  );
+  const float minValue = ${tex_util.FLOAT_MIN}.0;
+  const float maxValue = ${tex_util.FLOAT_MAX}.0;
+  const float range = maxValue - minValue;
 
-    vec4 scl = floor(255.0 * val + 0.5);
-    float sgn = (scl.a < 128.0) ? 1.0 : -1.0;
-    float exn = mod(scl.a * 2.0, 256.0) + floor(scl.b / 128.0) - 127.0;
-    float man = 1.0 +
-        (scl.r / 8388608.0) + 
-        (scl.g / 32768.0) +
-        mod(scl.b, 128.0) / 128.0;
-    return sgn * man * pow(2.0, exn);
+  float sample(sampler2D texture, vec2 uv) {
+    vec4 encValue = texture2D(texture, uv);
+
+    float decodedValue = dot(encValue, floatDeltas);
+
+    return -1.0;
+    //return encValue[0];
+    //return minValue + (decodedValue * range);
   }
 `;
 
 const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
-  // https://github.com/mikolalysenko/glsl-read-float/blob/master/index.glsl
-  #define FLOAT_MAX  1.70141184e38
-  #define FLOAT_MIN  1.17549435e-38
+  const vec4 floatPowers = vec4(
+    1.0,
+    256.0,
+    256.0 * 256.0,
+    256.0 * 256.0 * 256.0
+  );
 
-  vec4 encode(float v) {
-    highp float av = abs(v);
+  void setOutput(float decodedValue) {
+    float d = -.5; //decodedValue
+    float normalizedValue = (d - minValue) / range;
 
-    //Handle special cases
-    if (av < FLOAT_MIN) {
-      return vec4(0.0, 0.0, 0.0, 0.0);
-    } else if (v > FLOAT_MAX) {
-      return vec4(127.0, 128.0, 0.0, 0.0) / 255.0;
-    } else if (v < -FLOAT_MAX) {
-      return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;
-    }
+    vec4 f = normalizedValue * floatPowers;
+    vec4 frac = fract(f);
 
-    highp vec4 c = vec4(0,0,0,0);
-
-    // Compute exponent and mantissa.
-    highp float e = floor(log2(av));
-    highp float m = av * pow(2.0, -e) - 1.0;
-    
-    // Unpack mantissa.
-    c[1] = floor(128.0 * m);
-    m -= c[1] / 128.0;
-    c[2] = floor(32768.0 * m);
-    m -= c[2] / 32768.0;
-    c[3] = floor(8388608.0 * m);
-    
-    // Unpack exponent.
-    highp float ebias = e + 127.0;
-    c[0] = floor(ebias / 2.0);
-    ebias -= c[0] * 2.0;
-    c[1] += floor(ebias) * 128.0; 
-
-    // Unpack sign bit.
-    c[0] += 128.0 * step(0.0, -v);
-
-    // Scale back to range.
-    return c.abgr / 255.0;
-  }
-
-  void setOutput(float v) {
-    gl_FragColor = encode(v);    
+    //decodedValue = 1.0
+    gl_FragColor = frac;  //vec4(decodedValue); //vec4(.9999999, .9999999, .9999999, .9999999); //uvec4(frac * 256.0);
   }
 `;
 
