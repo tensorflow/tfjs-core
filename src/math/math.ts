@@ -15,8 +15,9 @@ limitations under the License.
 
 import * as util from '../util';
 import * as concat3d_util from './concat3d_util';
+import * as conv_util from './conv_util';
+import {ConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
-
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
 export type ScopeResult = NDArray[]|NDArray|void;
@@ -162,11 +163,10 @@ export abstract class NDArrayMath {
     return result;
   }
 
-  private checkForNaN(arr: NDArray): void {
-    const vals = arr.getValues();
+  private checkForNaN(vals: Float32Array, name: string): void {
     for (let i = 0; i < vals.length; i++) {
       if (isNaN(vals[i])) {
-        throw Error('The result NDArray of the last math call has NaNs.');
+        throw Error(`The result of the last math.${name} has NaNs.`);
       }
     }
   }
@@ -177,9 +177,6 @@ export abstract class NDArrayMath {
    * @param result The NDArray to track in the current scope.
    */
   track<T extends NDArray>(result: T): T {
-    if (this.debugMode) {
-      this.checkForNaN(result);
-    }
     if (this.activeScope == null) {
       if (this.safeMode) {
         throw new Error(
@@ -225,8 +222,31 @@ export abstract class NDArrayMath {
             `${b.shape} and orientations ${MatrixOrientation[aOrientation]}` +
             ` and ${MatrixOrientation[bOrientation]} must match.`);
 
-    return this.track(this.matMulInternal(a, b, aOrientation, bOrientation));
+    return this.executeOp(
+        'matMul', () => this.matMulInternal(a, b, aOrientation, bOrientation));
   }
+
+  private executeOp<T extends NDArray>(name: string, f: () => T): T {
+    let start: number;
+    if (this.debugMode) {
+      start = performance.now();
+    }
+    const result = f();
+    if (this.debugMode) {
+      const vals = result.getValues();
+      const time = util.rightPad((performance.now() - start) + 'ms', 9);
+      const paddedName = util.rightPad(name, 25);
+      const rank = result.rank;
+      const size = result.size;
+      const shape = util.rightPad(result.shape + '', 14);
+      console.log(
+          `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
+          'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
+      this.checkForNaN(vals, name);
+    }
+    return this.track(result);
+  }
+
   protected abstract matMulInternal(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D;
@@ -317,7 +337,7 @@ export abstract class NDArrayMath {
    * @param ndarray The NDArray to clone.
    */
   clone<T extends NDArray>(ndarray: T): T {
-    return this.track(this.cloneInternal(ndarray));
+    return this.executeOp('clone', () => this.cloneInternal(ndarray));
   }
   protected abstract cloneInternal<T extends NDArray>(ndarray: T): T;
 
@@ -347,7 +367,8 @@ export abstract class NDArrayMath {
             begin[1] + size[1] <= input.shape[1],
         `Error in slice2D: requested start position ${begin} and size ` +
             `${size} would overflow input of shape ${input.shape}.`);
-    return this.track(this.slice2DInternal(input, begin, size));
+    return this.executeOp(
+        'slice2D', () => this.slice2DInternal(input, begin, size));
   }
   protected abstract slice2DInternal(
       input: Array2D, begin: [number, number], size: [number, number]): Array2D;
@@ -366,7 +387,7 @@ export abstract class NDArrayMath {
   copy2D(
       source: Array2D, sourceBegin: [number, number],
       sourceSize: [number, number], dest: Array2D, destBegin: [number, number],
-      destSize: [number, number]) {
+      destSize: [number, number]): void {
     util.assert(
         sourceBegin[0] + sourceSize[0] <= source.shape[0] &&
             sourceBegin[1] + sourceSize[1] <= source.shape[1],
@@ -381,8 +402,11 @@ export abstract class NDArrayMath {
             `shape ${dest.shape}.`);
     copy2d_util.validateShapes(sourceSize, destSize);
 
-    return this.copy2DInternal(
-        source, sourceBegin, sourceSize, dest, destBegin, destSize);
+    this.executeOp('copy2D', () => {
+      this.copy2DInternal(
+          source, sourceBegin, sourceSize, dest, destBegin, destSize);
+      return dest;
+    });
   }
   protected abstract copy2DInternal(
       source: Array2D, sourceBegin: [number, number],
@@ -422,7 +446,8 @@ export abstract class NDArrayMath {
   concat3D(ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D {
     concat3d_util.assertConcat3DShapesMatch(
         ndarray1.shape, ndarray2.shape, axis, 'Error in concat3d: ');
-    return this.track(this.concat3DInternal(ndarray1, ndarray2, axis));
+    return this.executeOp(
+        'concat3D', () => this.concat3DInternal(ndarray1, ndarray2, axis));
   }
   protected abstract concat3DInternal(
       ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D;
@@ -436,7 +461,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray to compute the logSumExp over.
    */
   logSumExp(ndarray: NDArray): Scalar {
-    return this.track(this.logSumExpInternal(ndarray));
+    return this.executeOp('logSumExp', () => this.logSumExpInternal(ndarray));
   }
   protected abstract logSumExpInternal(ndarray: NDArray): Scalar;
 
@@ -445,7 +470,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray to compute the sum over.
    */
   sum(ndarray: NDArray): Scalar {
-    return this.track(this.sumInternal(ndarray));
+    return this.executeOp('sum', () => this.sumInternal(ndarray));
   }
   protected abstract sumInternal(ndarray: NDArray): Scalar;
 
@@ -454,7 +479,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   argMin(ndarray: NDArray): Scalar {
-    return this.track(this.argMinInternal(ndarray));
+    return this.executeOp('argMin', () => this.argMinInternal(ndarray));
   }
   protected abstract argMinInternal(ndarray: NDArray): Scalar;
 
@@ -463,7 +488,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   argMax(ndarray: NDArray): Scalar {
-    return this.track(this.argMaxInternal(ndarray));
+    return this.executeOp('argMax', () => this.argMaxInternal(ndarray));
   }
   protected abstract argMaxInternal(ndarray: NDArray): Scalar;
 
@@ -474,7 +499,8 @@ export abstract class NDArrayMath {
    */
   argMaxEquals(x1: NDArray, x2: NDArray): Scalar {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return this.track(this.argMaxEqualsInternal(x1, x2));
+    return this.executeOp(
+        'argMaxEquals', () => this.argMaxEqualsInternal(x1, x2));
   }
   protected abstract argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar;
 
@@ -488,8 +514,11 @@ export abstract class NDArrayMath {
         k <= ndarray.size,
         `Error in topK: k value (${k}) must be less than size of input ` +
             `ndarray, got shape ${ndarray.shape}.`);
-    const result = this.topKInternal(ndarray, k);
-    this.track(result.values);
+    let result: {values: Array1D, indices: Array1D};
+    this.executeOp('topK', () => {
+      result = this.topKInternal(ndarray, k);
+      return result.values;
+    });
     this.track(result.indices);
     return result;
   }
@@ -501,7 +530,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   min(ndarray: NDArray): Scalar {
-    return this.track(this.minInternal(ndarray));
+    return this.executeOp('min', () => this.minInternal(ndarray));
   }
   protected abstract minInternal(ndarray: NDArray): Scalar;
 
@@ -510,7 +539,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   max(ndarray: NDArray): Scalar {
-    return this.track(this.maxInternal(ndarray));
+    return this.executeOp('max', () => this.maxInternal(ndarray));
   }
   protected abstract maxInternal(ndarray: NDArray): Scalar;
 
@@ -519,12 +548,14 @@ export abstract class NDArrayMath {
    * @param x The input vector.
    */
   softmax(x: Array1D): Array1D {
-    return this.scope(() => {
-      // Do it in log space for numerical stability.
-      // exp(X - logSumExp(X))
-      const lse = this.logSumExp(x);
-      const logResult = this.arrayMinusScalar(x, lse);
-      return this.exp(logResult);
+    return this.executeOp('softmax', () => {
+      return this.scope(() => {
+        // Do it in log space for numerical stability.
+        // exp(X - logSumExp(X))
+        const lse = this.logSumExp(x);
+        const logResult = this.arrayMinusScalar(x, lse);
+        return this.exp(logResult);
+      });
     });
   }
 
@@ -542,7 +573,7 @@ export abstract class NDArrayMath {
         a.rank === newDim.length,
         `Error in switchDim: length of input shape ${a.shape} ` +
             `must match size of newDim array ${newDim}.`);
-    return this.track(this.switchDimInternal(a, newDim));
+    return this.executeOp('switchDim', () => this.switchDimInternal(a, newDim));
   }
   protected abstract switchDimInternal<T extends NDArray>(
       a: T, newDim: number[]): T;
@@ -591,7 +622,7 @@ export abstract class NDArrayMath {
    * @param a The input array.
    */
   neg<T extends NDArray>(a: T): T {
-    return this.track(this.negInternal(a));
+    return this.executeOp('neg', () => this.negInternal(a));
   }
   protected abstract negInternal<T extends NDArray>(a: T): T;
 
@@ -604,7 +635,7 @@ export abstract class NDArrayMath {
    */
   add(a: NDArray, b: NDArray): NDArray {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
-    return this.track(this.addInternal(a, b));
+    return this.executeOp('add', () => this.addInternal(a, b));
   }
   protected abstract addInternal(a: NDArray, b: NDArray): NDArray;
 
@@ -629,7 +660,7 @@ export abstract class NDArrayMath {
    */
   sub(a: NDArray, b: NDArray): NDArray {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
-    return this.track(this.subInternal(a, b));
+    return this.executeOp('sub', () => this.subInternal(a, b));
   }
   protected abstract subInternal(a: NDArray, b: NDArray): NDArray;
 
@@ -654,7 +685,7 @@ export abstract class NDArrayMath {
    */
   multiply(a: NDArray, b: NDArray): NDArray {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
-    return this.track(this.multiplyInternal(a, b));
+    return this.executeOp('multiply', () => this.multiplyInternal(a, b));
   }
   protected abstract multiplyInternal<T extends NDArray>(a: T, b: T): T;
 
@@ -686,7 +717,7 @@ export abstract class NDArrayMath {
    */
   divide(a: NDArray, b: NDArray): NDArray {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
-    return this.track(this.divideInternal(a, b));
+    return this.executeOp('divide', () => this.divideInternal(a, b));
   }
   protected abstract divideInternal(a: NDArray, b: NDArray): NDArray;
 
@@ -735,7 +766,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   exp<T extends NDArray>(ndarray: T): T {
-    return this.track(this.expInternal(ndarray));
+    return this.executeOp('exp', () => this.expInternal(ndarray));
   }
   protected abstract expInternal<T extends NDArray>(ndarray: T): T;
 
@@ -744,7 +775,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   log<T extends NDArray>(ndarray: T): T {
-    return this.track(this.logInternal(ndarray));
+    return this.executeOp('log', () => this.logInternal(ndarray));
   }
   protected abstract logInternal<T extends NDArray>(ndarray: T): T;
 
@@ -753,7 +784,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   sqrt<T extends NDArray>(ndarray: T): T {
-    return this.track(this.sqrtInternal(ndarray));
+    return this.executeOp('sqrt', () => this.sqrtInternal(ndarray));
   }
   protected abstract sqrtInternal<T extends NDArray>(ndarray: T): T;
 
@@ -762,7 +793,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   relu<T extends NDArray>(ndarray: T): T {
-    return this.track(this.reluInternal(ndarray));
+    return this.executeOp('relu', () => this.reluInternal(ndarray));
   }
   protected abstract reluInternal<T extends NDArray>(ndarray: T): T;
 
@@ -771,7 +802,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   sigmoid<T extends NDArray>(ndarray: T): T {
-    return this.track(this.sigmoidInternal(ndarray));
+    return this.executeOp('sigmoid', () => this.sigmoidInternal(ndarray));
   }
   protected abstract sigmoidInternal<T extends NDArray>(ndarray: T): T;
 
@@ -780,7 +811,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   tanh<T extends NDArray>(ndarray: T): T {
-    return this.track(this.tanhInternal(ndarray));
+    return this.executeOp('tanh', () => this.tanhInternal(ndarray));
   }
   protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
@@ -789,7 +820,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   sin<T extends NDArray>(ndarray: T): T {
-    return this.track(this.sinInternal(ndarray));
+    return this.executeOp('sin', () => this.sinInternal(ndarray));
   }
   protected abstract sinInternal<T extends NDArray>(ndarray: T): T;
 
@@ -799,7 +830,7 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   step<T extends NDArray>(ndarray: T): T {
-    return this.track(this.stepInternal(ndarray));
+    return this.executeOp('step', () => this.stepInternal(ndarray));
   }
   protected abstract stepInternal<T extends NDArray>(ndarray: T): T;
 
@@ -821,7 +852,8 @@ export abstract class NDArrayMath {
             `NDArray of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
-    return this.track(this.scaledArrayAddInternal(c1, a, c2, b));
+    return this.executeOp(
+        'scaledArrayAdd', () => this.scaledArrayAddInternal(c1, a, c2, b));
   }
   protected abstract scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T;
@@ -861,158 +893,248 @@ export abstract class NDArrayMath {
 
   /**
    * Computes a 2D convolution over the input x.
-   * @param x The input image, must be rank 3, of shape [rows, cols, depth1].
-   * @param weights The weights NDArray, must be rank 4, of shape [f, f, depth1,
-   * depth2].
-   * @param biases Optional biases NDArray, must be rank 1 of shape [depth2].
-   * @param stride The stride of the convolution.
-   * @param zeroPad The zero padding of each side of the input NDArray. Will pad
-   * equally on all sides.
+   * @param x The input image, rank 3, of shape [height, width, inDepth].
+   * @param filter The filter, rank 4, of shape
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param bias Optional bias, rank 1 of shape [outDepth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
   conv2d(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      zeroPad: number): Array3D {
+      x: Array3D, filter: Array4D, bias: Array1D|null,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in conv2d: x must be rank 3, but got rank ${x.rank}.`);
     util.assert(
-        weights.rank === 4,
-        `Error in conv2d: weights must be rank 4, but got rank ` +
-            `${weights.rank}.`);
-    if (biases != null) {
+        filter.rank === 4,
+        `Error in conv2d: filter must be rank 4, but got rank ` +
+            `${filter.rank}.`);
+    if (bias != null) {
       util.assert(
-          biases.rank === 1,
-          `Error in conv2d: biases must be rank 1, but got rank ` +
-              `${biases.rank}.`);
+          bias.rank === 1,
+          `Error in conv2d: bias must be rank 1, but got rank ` +
+              `${bias.rank}.`);
     }
 
     util.assert(
-        x.shape[2] === weights.shape[2],
+        x.shape[2] === filter.shape[2],
         `Error in conv2d: depth of input (${x.shape[2]}) must match  ` +
-            `input depth for weights ${weights.shape[2]}.`);
+            `input depth for filter ${filter.shape[2]}.`);
 
-
-    return this.track(this.conv2dInternal(x, weights, biases, stride, zeroPad));
+    const filterHeight = filter.shape[0];
+    const filterWidth = filter.shape[1];
+    const outDepth = filter.shape[3];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const convInfo = conv_util.computeConvInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.executeOp(
+        'conv2d', () => this.conv2dInternal(x, filter, bias, convInfo));
   }
   protected abstract conv2dInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      zeroPad: number): Array3D;
+      x: Array3D, filter: Array4D, bias: Array1D|null,
+      convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the backprop of a 2D convolution.
-   * @param x The input image, must be rank 3, of shape [xrows, xcols, depth1].
-   * @param dy The dy image, must be rank 3, of shape [yrows, ycols, depth2].
-   * @param weights The weights NDArray, must be rank 4, of shape [f, f, depth1,
-   * depth2].
-   * @param stride The stride of the original convolution.
-   * @param pad The padding of the original convolution.
+   * @param x The input image, rank 3, of shape [height, width, inDepth].
+   * @param dy The dy image, rank 3, of shape [height, width, outDepth].
+   * @param filter The filter, rank 4, of shape
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
    */
   conv2dBackProp(
-      x: Array3D, dy: Array3D, weights: Array4D, stride: number,
-      pad: number): {dx: Array3D, dw: Array4D, db: Array1D} {
+      x: Array3D, dy: Array3D, filter: Array4D,
+      strides: [number, number]|number,
+      pad: 'valid'|'same'|number): {dx: Array3D, dw: Array4D, db: Array1D} {
+    const dw = this.conv2dDerFilter(x, dy, filter.shape, strides, pad);
+    const db = this.conv2dDerBias(dy);
+    const dx = this.conv2dDerInput(x.shape, dy, filter, strides, pad);
+    return {db, dw, dx};
+  }
+
+  /**
+   * Computes the derivative of the input of a 2D convolution.
+   *
+   * @param inShape The shape of the input. Length 3 [height, width, inDepth].
+   * @param dy The derivative of the output. Rank 3
+   *     [outHeight, outWidth, outDepth].
+   * @param filter The filter, rank 4, of shape
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
+   */
+  conv2dDerInput(
+      inShape: [number, number, number], dy: Array3D, filter: Array4D,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
+    const inDepth = inShape[2];
+    const outDepth = dy.shape[2];
+    util.assert(
+        inShape.length === 3,
+        `Error in conv2dDerInput: x must be rank 3, but got rank ` +
+            `${inShape.length}.`);
+    util.assert(
+        dy.rank === 3,
+        `Error in conv2dDerInput: dy must be rank 3, but got ` +
+            `rank ${dy.rank}`);
+    util.assert(
+        filter.rank === 4,
+        `Error in conv2dDerInput: filter must be rank 4, but got ` +
+            `rank ${filter.rank}`);
+    util.assert(
+        inDepth === filter.shape[2],
+        `Error in conv2dDerInput: depth of input (${inDepth}) must ` +
+            `match input depth for filter ${filter.shape[2]}.`);
+    util.assert(
+        outDepth === filter.shape[3],
+        `Error in conv2dDerInput: depth of output (${outDepth}) must` +
+            `match output depth for filter ${filter.shape[3]}.`);
+
+    const filterHeight = filter.shape[0];
+    const filterWidth = filter.shape[1];
+
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+
+    const convInfo = conv_util.computeConvInfo(
+        inShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.executeOp(
+        'conv2dDerInput',
+        () => this.conv2dDerInputInternal(dy, filter, convInfo));
+  }
+  protected abstract conv2dDerInputInternal(
+      dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D;
+
+  /**
+   * Computes the derivative of the bias of a 2D convolution.
+   *
+   * @param dy The gradient for the output of this op. Rank 3 of shape
+   *     [height, width, outDepth].
+   */
+  conv2dDerBias(dy: Array3D): Array1D {
+    return this.track(this.conv2dDerBiasInternal(dy));
+  }
+  protected abstract conv2dDerBiasInternal(dY: Array3D): Array1D;
+
+  /**
+   * Computes the derivative of the filter of a 2D convolution.
+   *
+   * @param x The input image, rank 3, of shape [height, width, inDepth].
+   * @param dy The dy image, rank 3, of shape [height, width, outDepth].
+   * @param filterSize The size of the filter, length 4,
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
+   */
+  conv2dDerFilter(
+      x: Array3D, dy: Array3D, filterSize: [number, number, number, number],
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array4D {
     util.assert(
         x.rank === 3,
-        `Error in conv2dBackProp: x must be rank 3, but got shape ` +
+        `Error in conv2dDerFilter: x must be rank 3, but got shape ` +
             `${x.shape}.`);
     util.assert(
         dy.rank === 3,
-        `Error in conv2dBackProp: dy must be rank 3, but got shape ` +
+        `Error in conv2dDerFilter: dy must be rank 3, but got shape ` +
             `${dy.shape}.`);
     util.assert(
-        weights.rank === 4,
-        `Error in conv2dBackProp: weights must be rank 4, but got shape ` +
-            `${weights.shape}.`);
+        filterSize.length === 4,
+        `Error in conv2dDerFilter: filterSize must be length 4, but got ` +
+            `${filterSize}.`);
     util.assert(
-        x.shape[2] === weights.shape[2],
-        `Error in conv2dBackProp: depth of x ${x.shape[2]}) must ` +
-            `match input depth for weights (${weights.shape[2]}.`);
+        x.shape[2] === filterSize[2],
+        `Error in conv2dDerFilter: depth of x ${x.shape[2]}) must ` +
+            `match input depth in filter (${filterSize[2]}.`);
     util.assert(
-        dy.shape[2] === weights.shape[3],
-        `Error in conv2dBackProp: depth of dy (${dy.shape[2]}) must ` +
-            `match output depth for weights (${weights.shape[3]}).`);
+        dy.shape[2] === filterSize[3],
+        `Error in conv2dDerFilter: depth of dy (${dy.shape[2]}) must ` +
+            `match output depth for filter (${filterSize[3]}).`);
 
-    const backpropResult =
-        this.conv2dBackPropInternal(x, dy, weights, stride, pad);
-
-    this.track(backpropResult.db);
-    this.track(backpropResult.dw);
-    this.track(backpropResult.dx);
-
-    return backpropResult;
+    const filterHeight = filterSize[0];
+    const filterWidth = filterSize[1];
+    const outDepth = filterSize[3];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const convInfo = conv_util.computeConvInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.track(this.conv2dDerFilterInternal(x, dy, convInfo));
   }
-  protected abstract conv2dBackPropInternal(
-      x: Array3D, dy: Array3D, weights: Array4D, stride: number,
-      pad: number): {dx: Array3D, dw: Array4D, db: Array1D};
+  protected abstract conv2dDerFilterInternal(
+      x: Array3D, dy: Array3D, convInfo: ConvInfo): Array4D;
 
   /**
    * Computes the transposed 2D convolution of an image, also known as a
    * deconvolution.
-   * @param x The input image, must be rank 3, of shape [xrows, xcols, depth1].
-   * @param weights The weights NDArray, must be rank 4, of shape [f, f, depth1,
-   * depth2].
-   * @param biases Optional biases NDArray, must be rank 1 of shape [depth2].
-   * @param stride The stride of the convolution.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   *
+   * @param x The input image, rank 3, of shape [height, width, inDepth].
+   * @param filter The filter, rank 4, of shape
+   *     `[filterHeight, filterWidth, outDepth, inDepth]`.
+   *     `inDepth` must match `inDepth` in `x`.
+   * @param outputShape Output shape, rank 3 [height, width, outDepth].
+   * @param strides The strides of the original convolution:
+   *     `[strideHeight, strideWidth]`.
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the non-transpose version of the op.
    */
   conv2dTranspose(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      pad: number): Array3D {
-    util.assert(
-        x.rank === 3,
-        `Error in conv2dTranspose: x must be rank 3, but got rank ` +
-            `${x.rank}.`);
-    util.assert(
-        weights.rank === 4,
-        `Error in conv2dTranspose: weights must be rank 4, but got ` +
-            `rank ${weights.rank}`);
-    if (biases != null) {
-      util.assert(
-          biases.rank === 1,
-          `Error in conv2dTranspose: biases must be rank 1, but got ' +
-              'rank ${biases.rank}.`);
-    }
-    util.assert(
-        x.shape[2] === weights.shape[3],
-        `Error in conv2dTranspose: depth of input (${x.shape[2]}) must ` +
-            `match input depth for weights ${weights.shape[3]}.`);
-
-    return this.track(
-        this.conv2dTransposeInternal(x, weights, biases, stride, pad));
+      x: Array3D, filter: Array4D, outputShape: [number, number, number],
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
+    return this.conv2dDerInput(outputShape, x, filter, strides, pad);
   }
-  protected abstract conv2dTransposeInternal(
-      x: Array3D, weights: Array4D, biases: Array1D|null, stride: number,
-      pad: number): Array3D;
 
   /**
    * Computes the 2D max pooling of an image.
-   * @param x The input image, must be rank 3.
-   * @param fSize The field size of the max pool.
-   * @param stride The stride of the max pool.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  maxPool(x: Array3D, fSize: number, stride: number, pad: number): Array3D {
+  maxPool(
+      x: Array3D, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         'Error in maxPool: x must be rank 3 but got rank ' + x.rank + '.');
-    return this.track(this.maxPoolInternal(x, fSize, stride, pad));
+
+    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const outDepth = x.shape[2];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const convInfo = conv_util.computeConvInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.executeOp('maxPool', () => this.maxPoolInternal(x, convInfo));
   }
-  protected abstract maxPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D;
+  protected abstract maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the backprop of a max pool.
    * @param dy The dy error.
-   * @param x The input image, must be rank 3.
-   * @param fSize The field size of the max pool.
-   * @param stride The stride of the max pool.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
    */
   maxPoolBackprop(
-      dy: Array3D, x: Array3D, fSize: number, stride: number,
-      pad: number): Array3D {
+      dy: Array3D, x: Array3D, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         dy.rank === 3,
         `Error in maxPoolBackprop: dy must be rank 3 but got rank ` +
@@ -1022,45 +1144,77 @@ export abstract class NDArrayMath {
         `Error in maxPoolBackprop: x must be rank 3 but got rank ` +
             `${x.rank}.`);
 
-    return this.track(this.maxPoolBackpropInternal(dy, x, fSize, stride, pad));
+    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const outDepth = x.shape[2];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const convInfo = conv_util.computeConvInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.executeOp(
+        'maxPoolBackprop', () => this.maxPoolBackpropInternal(dy, x, convInfo));
   }
   protected abstract maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, fSize: number, stride: number,
-      pad: number): Array3D;
+      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the 2D min pooling of an image.
-   * @param x The input image, must be rank 3.
-   * @param fSize The field size of the max pool.
-   * @param stride The stride of the max pool.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  minPool(x: Array3D, fSize: number, stride: number, pad: number): Array3D {
+  minPool(
+      x: Array3D, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in minPool: x must be rank 3 but got rank ${x.rank}.`);
-    return this.track(this.minPoolInternal(x, fSize, stride, pad));
+
+    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const outDepth = x.shape[2];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const convInfo = conv_util.computeConvInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.executeOp('minPool', () => this.minPoolInternal(x, convInfo));
   }
-  protected abstract minPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D;
+  protected abstract minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the 2D average pooling of an image.
-   * @param x The input image, must be rank 3.
-   * @param fSize The field size of the max pool.
-   * @param stride The stride of the max pool.
-   * @param pad The padding of each side of the input NDArray. Will pad equally
-   * on all sides.
+   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  avgPool(x: Array3D, fSize: number, stride: number, pad: number): Array3D {
+  avgPool(
+      x: Array3D, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
         `Error in avgPool: x must be rank 3 but got rank ${x.rank}.`);
-    return this.track(this.avgPoolInternal(x, fSize, stride, pad));
+
+    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const outDepth = x.shape[2];
+    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const convInfo = conv_util.computeConvInfo(
+        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
+        pad);
+    return this.executeOp('avgPool', () => this.avgPoolInternal(x, convInfo));
   }
-  protected abstract avgPoolInternal(
-      x: Array3D, fSize: number, stride: number, pad: number): Array3D;
+  protected abstract avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /*
    * Bilinear resize a 3D array per each channel to a new 2D shape.
@@ -1081,8 +1235,9 @@ export abstract class NDArrayMath {
         newShape2D.length === 2,
         `Error in resizeBilinear3D: new shape must 2D, but got shape ` +
             `${newShape2D}.`);
-    return this.track(
-        this.resizeBilinear3DInternal(x, newShape2D, alignCorners));
+    return this.executeOp(
+        'resizeBilinear3D',
+        () => this.resizeBilinear3DInternal(x, newShape2D, alignCorners));
   }
   protected abstract resizeBilinear3DInternal(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
@@ -1128,8 +1283,10 @@ export abstract class NDArrayMath {
               `but got rank ${offset.rank}.`);
     }
 
-    return this.track(this.batchNormalization3DInternal(
-        x, mean, variance, varianceEpsilon, scale, offset));
+    return this.executeOp(
+        'batchNorm3D',
+        () => this.batchNormalization3DInternal(
+            x, mean, variance, varianceEpsilon, scale, offset));
   }
   protected abstract batchNormalization3DInternal(
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
@@ -1185,7 +1342,7 @@ export abstract class NDArrayMath {
    * Derived from tf.contrib.rnn.BasicLSTMCell.
    * @param forgetBias Forget bias for the cell.
    * @param lstmKernel The weights for the cell.
-   * @param lstmBias The biases for the cell.
+   * @param lstmBias The bias for the cell.
    * @param data The input to the cell.
    * @param c Previous cell state.
    * @param h Previous cell output.
@@ -1236,4 +1393,8 @@ export abstract class NDArrayMath {
 export enum MatrixOrientation {
   REGULAR,
   TRANSPOSED
+}
+
+function parseTupleParam(param: number|[number, number]): [number, number] {
+  return typeof param === 'number' ? [param, param] : param;
 }

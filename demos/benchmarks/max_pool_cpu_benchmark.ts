@@ -14,54 +14,38 @@ limitations under the License.
 ==============================================================================*/
 
 import * as conv_util from '../../src/math/conv_util';
-import {Array3D, initializeGPU, NDArray} from '../../src/math/ndarray';
-import {GPGPUContext} from '../../src/math/webgl/gpgpu_context';
-import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
-import {Pool2DProgram} from '../../src/math/webgl/pool_gpu';
-import {TextureManager} from '../../src/math/webgl/texture_manager';
+import {NDArrayMathCPU} from '../../src/math/math_cpu';
+import {Array3D} from '../../src/math/ndarray';
 
 import {BenchmarkTest} from './benchmark';
 
 const OP_RUNS = 40;
 
 export const MAX_POOL_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
+  if (size > 512) {
+    return -1;
+  }
   const positions = false;
   return testMaxPool(size, positions);
 };
 
-export const MAX_POOL_POSNS_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
-  const positions = true;
-  return testMaxPool(size, positions);
-};
-
 function testMaxPool(size: number, positions: boolean): number {
-  const gpgpu = new GPGPUContext();
-  const texManager = new TextureManager(gpgpu);
-  initializeGPU(gpgpu, texManager);
-
+  const math = new NDArrayMathCPU();
   const outputDepth = 1;
   const xShape: [number, number, number] = [size, size, outputDepth];
   const fieldSize = 11;
   const stride = 1;
-  const convInfo = conv_util.computeConvInfo(
-      xShape, fieldSize, fieldSize, outputDepth, stride, stride, 'same');
-  const program = new Pool2DProgram(convInfo, 'max', positions);
-  const res = NDArray.zeros(program.outputShape);
+  const zeroPad = conv_util.computeDefaultPad(xShape, fieldSize, stride);
+
   const x = Array3D.randUniform(xShape, -1, 1);
-  const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);
 
   const start = performance.now();
   for (let i = 0; i < OP_RUNS; i++) {
-    gpgpu_math.runProgram(binary, [x], res);
+    math.maxPool(x as Array3D, fieldSize, stride, zeroPad);
   }
-  res.getValues();
   const avgTime = (performance.now() - start) / OP_RUNS;
 
   x.dispose();
-  res.dispose();
-  texManager.dispose();
-  gpgpu.deleteProgram(binary.webGLProgram);
-  gpgpu.dispose();
 
   return avgTime;
 }

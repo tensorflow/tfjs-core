@@ -694,10 +694,9 @@ export class MaxPoolNode extends Node {
       graph: Graph, private x: Tensor, public fieldSize: number,
       public stride = 1, public zeroPad?: number) {
     super(
-        graph, 'Max pool', {x},
-        new Tensor(conv_util.computeOutputShape3D(
-            x.shape as [number, number, number], fieldSize, x.shape[2], stride,
-            zeroPad)));
+        graph, 'Max pool', {x}, new Tensor(conv_util.computeOutputShape3D(
+                                    x.shape as [number, number, number],
+                                    fieldSize, x.shape[2], stride, zeroPad)));
   }
   validate() {
     util.assert(
@@ -872,34 +871,7 @@ export class ArgMaxEqualsNode extends Node {
 }
 
 /**
- * Split nodes are used to accumulate backprop derivatives when a node's output
- * tensor is consumed by multiple nodes.
- * @hidden
- */
-export class SplitNode extends Node {
-  static readonly X = 'x';
-
-  outputs: Tensor[] = [];
-
-  constructor(graph: Graph, x: Tensor) {
-    super(graph, 'SplitNode', {x}, new Tensor(x.shape));
-  }
-
-  /**
-   * Registers a new consumer of this split node, i.e. a new node that uses the
-   * node's output tensor.
-   */
-  getNewOutputTensor(): Tensor {
-    const output = new Tensor(this.inputs[SplitNode.X].shape);
-    output.node = this;
-    this.outputs.push(output);
-    return output;
-  }
-  validate() {}
-}
-
-/**
  * @hidden
  */
 export type ArrayData =
-    NDArray|number|number[]|number[][]|number[][][]|number[][][][];
+    NDArray | number | number[] | number[][] | number[][][] | number[][][][];

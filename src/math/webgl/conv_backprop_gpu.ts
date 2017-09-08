@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as conv_util from '../conv_util';
+import {ConvInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DDerWeightsProgram implements GPGPUProgram {
@@ -22,42 +23,40 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(
-      xShape: [number, number, number], fSize: number, outputDepth: number,
-      stride: number, zeroPad: number) {
-    const yShape = conv_util.computeOutputShape3D(
-        xShape, fSize, outputDepth, stride, zeroPad);
-    const yNumRows = yShape[0];
-    const yNumCols = yShape[1];
-    const xNumRows = xShape[0];
-    const xNumCols = xShape[1];
-    this.outputShape =
-        conv_util.computeWeightsShape4D(xShape[2], outputDepth, fSize);
-    this.params = [stride, zeroPad];
+  constructor(convInfo: ConvInfo) {
+    const [yNumRows, yNumCols, outDepth] = convInfo.outShape;
+    const [xNumRows, xNumCols, inDepth] = convInfo.inShape;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    this.outputShape = conv_util.computeWeightsShape4D(
+        inDepth, outDepth, convInfo.filterHeight, convInfo.filterWidth);
+    const padTop = convInfo.padInfo.top;
+    const padLeft = convInfo.padInfo.left;
+
+    this.params = [strideHeight, strideWidth, padLeft, padTop];
+
     this.userCode = `
       void main() {
-        vec4 coords = getOutputCoords();
-        float wR = coords.x;
-        float wC = coords.y;
-        float d1 = coords.z;
-        float d2 = coords.w;
+        ivec4 coords = getOutputCoords();
+        int wR = coords.x;
+        int wC = coords.y;
+        int d1 = coords.z;
+        int d2 = coords.w;
 
         // Convolve x(?, ?, d1) with dy(:, :, d2) to get dw(wR, wC, d1, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int iyR = 0; iyR < ${yNumRows}; iyR++) {
-          float yR = float(iyR);
-          float xR = wR + yR * ${stride}.0 - ${zeroPad}.0;
+        for (int yR = 0; yR < ${yNumRows}; yR++) {
+          int xR = wR + yR * ${strideHeight} - ${padTop};
 
-          if (xR < 0.0 || xR >= ${xNumRows}.0) {
+          if (xR < 0 || xR >= ${xNumRows}) {
             continue;
           }
 
-          for (int iyC = 0; iyC < ${yNumCols}; iyC++) {
-            float yC = float(iyC);
-            float xC = wC + yC * ${stride}.0 - ${zeroPad}.0;
+          for (int yC = 0; yC < ${yNumCols}; yC++) {
+            int xC = wC + yC * ${strideWidth} - ${padLeft};
 
-            if (xC < 0.0 || xC >= ${xNumCols}.0) {
+            if (xC < 0 || xC >= ${xNumCols}) {
               continue;
             }
 
@@ -72,70 +71,66 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
   }
 }
 
-export class Conv2DTransposeProgram implements GPGPUProgram {
-  variableNames = ['x', 'W', 'bias'];
+export class Conv2DDerInputProgram implements GPGPUProgram {
+  variableNames = ['dy', 'W'];
   params: Array<{}>;
   outputShape: number[];
   userCode: string;
 
-  constructor(
-      xShape: [number, number, number], fSize: number, origInputDepth: number,
-      origStride: number, origPad: number, hasBias: boolean) {
-    const [xRows, xCols, origOutputDepth] = xShape;
-    const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
+  constructor(convInfo: ConvInfo) {
+    const [yRows, yCols, outDepth] = convInfo.outShape;
 
-    // Figure out the output shape by dilating the input.
-    const xRowsDilated = (xRows - 1) * origStride + 1;
-    const xColsDilated = (xCols - 1) * origStride + 1;
-    const pad = fSize - 1 - origPad;
-    this.outputShape = conv_util.computeOutputShape3D(
-        [xRowsDilated, xColsDilated, origOutputDepth], fSize, origInputDepth, 1,
-        pad);
-    this.params = [pad, fSize, origStride, hasBias];
+    this.outputShape = convInfo.inShape;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+
+    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
+    this.params = [strideHeight, strideWidth, padLeft, padTop];
 
     this.userCode = `
+      const ivec2 pads = ivec2(${padTop}, ${padLeft});
+
       void main() {
-        vec3 coords = getOutputCoords();
-        float yR = coords.x;
-        float yC = coords.y;
-        float d2 = coords.z;
+        ivec3 coords = getOutputCoords();
+        int d1 = coords.z;
 
-        vec2 xRCCorner = vec2(yR, yC) - vec2(${pad}.0, ${pad}.0);
-        float xRCorner = xRCCorner.x;
-        float xCCorner = xRCCorner.y;
+        ivec2 dyCorner = coords.xy - pads;
+        int dyRCorner = dyCorner.x;
+        int dyCCorner = dyCorner.y;
 
-        // Convolve x(?, ?, d1) with w(:, :, d2, d1) to get y(yR, yC, d2).
+        // Convolve dy(?, ?, d2) with w(:, :, d1, d2) to compute dx(xR, xC, d1).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int iwR = 0; iwR < ${fSize}; iwR++) {
-          float wR = float(iwR);
-          float xR = (xRCorner + wR) / ${origStride}.0;
+        for (int wR = 0; wR < ${filterHeight}; wR++) {
+          float dyR = float(dyRCorner + wR) / ${strideHeight}.0;
 
-          if (xR < 0.0 || xR >= ${xRows}.0 || fract(xR) > 0.0) {
+          if (dyR < 0.0 || dyR >= ${yRows}.0 || fract(dyR) > 0.0) {
             continue;
           }
+          int idyR = int(dyR);
 
-          float wRPerm = ${fSize}.0 - 1.0 - wR;
+          int wRPerm = ${filterHeight} - 1 - wR;
 
-          for (int iwC = 0; iwC < ${fSize}; iwC++) {
-            float wC = float(iwC);
-            float xC = (xCCorner + wC) / ${origStride}.0;
+          for (int wC = 0; wC < ${filterWidth}; wC++) {
+            float dyC = float(dyCCorner + wC) / ${strideWidth}.0;
 
-            if (xC < 0.0 || xC >= ${xCols}.0 || fract(xC) > 0.0) {
+            if (dyC < 0.0 || dyC >= ${yCols}.0 || fract(dyC) > 0.0) {
               continue;
             }
+            int idyC = int(dyC);
 
-            float wCPerm = ${fSize}.0 - 1.0 - wC;
+            int wCPerm = ${filterWidth} - 1 - wC;
 
-            for (int id1 = 0; id1 < ${origOutputDepth}; id1++) {
-              float d1 = float(id1);
-              float xValue = getX(xR, xC, d1);
-              float wValue = getW(wRPerm, wCPerm, d2, d1);
+            for (int d2 = 0; d2 < ${outDepth}; d2++) {
+              float xValue = getDy(idyR, idyC, d2);
+              float wValue = getW(wRPerm, wCPerm, d1, d2);
               dotProd += xValue * wValue;
             }
           }
         }
-        ${biasSnippet}
         setOutput(dotProd);
       }
     `;
@@ -153,13 +148,11 @@ export class Conv2DDerBiasProgram implements GPGPUProgram {
     this.outputShape = [outputDepth];
     this.userCode = `
       void main() {
-        float d2 = getOutputCoords();
+        int d2 = getOutputCoords();
 
         float derBias = 0.0;
-        for (int iyR = 0; iyR < ${yNumRows}; iyR++) {
-          float yR = float(iyR);
-          for (int iyC = 0; iyC < ${yNumCols}; iyC++) {
-            float yC = float(iyC);
+        for (int yR = 0; yR < ${yNumRows}; yR++) {
+          for (int yC = 0; yC < ${yNumCols}; yC++) {
             derBias += getDy(yR, yC, d2);
           }
         }
