@@ -22,7 +22,7 @@ import {FeedDictionary, FeedEntry, Session} from './session';
 import {SGDOptimizer} from './sgd_optimizer';
 import {MomentumOptimizer} from './momentum_optimizer';
 import {AdagradOptimizer} from './adagrad_optimizer';
-import {RmspropOptimizer} from './rmsprop_optimizer';
+import {RMSPropOptimizer} from './rmsprop_optimizer';
 
 import * as test_util from './test_util';
 
@@ -393,7 +393,7 @@ describe('Session', () => {
     const b = g.variable('b', NDArray.zeros([1]));
     const y = g.reduceSum(g.add(g.matmul(w, x), b));
     const safeMode = true;
-    const optimizer = new RmspropOptimizer(0.1, 0.5, 0.8);
+    const optimizer = new RMSPropOptimizer(0.1, 0.5, 0.8);
     const math = new NDArrayMathCPU(safeMode);
     const session = new Session(g, math);
     const inputProvider: InputProvider = {
