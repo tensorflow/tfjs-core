@@ -74,6 +74,10 @@ $ cd deeplearnjs
 $ npm run prep # Installs node modules and bower components.
 ```
 
+We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
+development. Make sure to install the `clang-format` command line tool as
+well as the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting.
+
 To interactively develop any of the demos (e.g. `demos/nn-art/`):
 
 ```bash
@@ -105,12 +109,14 @@ $ ./scripts/build-standalone.sh VERSION # Builds standalone library.
 >> Stored standalone library at dist/deeplearn-VERSION(.min).js
 ```
 
-To build an npm package/es6 module:
+To do a dry run and test building an npm package:
 
 ```bash
-$ ./scripts/build-npm.sh # Builds npm package.
+$ ./scripts/build-npm.sh
 >> Stored npm package at dist/deeplearn-VERSION.tgz
 ```
+
+To install it locally, run `npm install ./dist/deeplearn-VERSION.tgz`.
 
 > On Windows, use bash (available through git) to use the scripts above.
 
