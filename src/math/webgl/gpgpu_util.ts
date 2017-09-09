@@ -215,14 +215,13 @@ export function uploadMatrixToTexture(
   const [w, h] =
       tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
 
-  const channelsPerTexture =
-      numChannels === 1 ? webgl_util.getChannelsPerTexture() : numChannels;
-  console.log(channelsPerTexture);
+  // const channelsPerTexture =
+  //     numChannels === 1 ? webgl_util.getChannelsPerTexture() : numChannels;
   /*
   const unpackedArray =
       new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
           matrix.length, channelsPerTexture));*/
-  let unpackedArray: Uint8Array;
+  // let unpackedArray: Uint8Array;
   // if (channelsPerTexture === 1) {
   // No need to allocate a temporary array.
   // unpackedArray = matrix;
@@ -230,9 +229,9 @@ export function uploadMatrixToTexture(
   /*
 unpackedArray = new Uint8Array(tex_util.getUnpackedArraySizeFromMatrixSize(
     matrix.length, channelsPerTexture));*/
-  unpackedArray = tex_util.encodeFloatArray(matrix);
+  const unpackedArray = tex_util.encodeFloatArray(matrix);
   //}
-  console.log(unpackedArray.length);
+  // console.log(unpackedArray.length);
 
   // tex_util.encodeMatrixToUnpackedArray(
   //    matrix, unpackedArray, channelsPerTexture);
@@ -256,17 +255,17 @@ export function downloadMatrixFromOutputTexture(
   const [w, h] =
       tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
 
-  const channelsPerTexture = 4;
+  // const channelsPerTexture = 4;
   // const unpackedArray =
   //    new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
   //        rows * columns, channelsPerTexture));
-  const unpackedArray = new Uint8Array(rows * columns * channelsPerTexture);
+  const unpackedArray = new Uint8Array(rows * columns * 4);
   webgl_util.callAndCheck(
       gl,
       () => gl.readPixels(
           0, 0, w, h, gl.RGBA, getTextureType(gl), unpackedArray));
 
-
+  console.log('after readpixels', unpackedArray);
   return tex_util.decodeToFloatArray(unpackedArray);
   // const matrix = new Float32Array(rows * columns);
   // tex_util.decodeMatrixFromUnpackedArray(

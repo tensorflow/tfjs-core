@@ -38,7 +38,7 @@ export function getMatrixSizeFromUnpackedArraySize(
   return unpackedSize / channelsPerTexture;
 }
 
-export type TypedArray = Float32Array|Uint8Array;
+export type TypedArray = Float32Array | Uint8Array;
 
 export function encodeMatrixToUnpackedArray(
     matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {
@@ -46,8 +46,8 @@ export function encodeMatrixToUnpackedArray(
       getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture);
   if (unpackedArray.length < requiredSize) {
     throw new Error(
-        'unpackedArray length (' + unpackedArray.length +
-        ') must be >= ' + requiredSize);
+        'unpackedArray length (' + unpackedArray.length + ') must be >= ' +
+        requiredSize);
   }
   let dst = 0;
   for (let src = 0; src < matrix.length; ++src) {
@@ -58,49 +58,35 @@ export function encodeMatrixToUnpackedArray(
 
 export const FLOAT_MAX = 1000;  // 10000;
 export const FLOAT_MIN = -FLOAT_MAX;
-const FLOAT_RANGE = FLOAT_MAX - FLOAT_MIN;
+const FLOAT_RANGE = (FLOAT_MAX - FLOAT_MIN) / 255;
 
-const FLOAT_DELTAS = [
-  1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255), 1 / (255 * 255 * 255 * 255)
-];
-const FLOAT_POWERS = [1, 255, 255 * 255, 255 * 255 * 255];
+const FLOAT_DELTAS = [1, 1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255)];
+const FLOAT_POWERS = [1, 255, 255 * 255];
 
 export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
   const uintArray = new Uint8Array(floatArray.length * 4);
-  const uintView = new DataView(uintArray.buffer);
-  for (let i = 0; i < floatArray.length; i++) {
-    const value = floatArray[i];
+  for (let i = 0; i < uintArray.length; i += 4) {
+    const value = floatArray[i / 4];
     const normalizedValue = (value - FLOAT_MIN) / FLOAT_RANGE;
-
     const enc = FLOAT_POWERS.map(pow => pow * normalizedValue);
-    const frac = enc.map(value => value % 1);
-    const buckets = frac.map(value => value * 255);
-    const intBuckets = buckets.map(value => Math.floor(value));
+    const buckets = enc.map(value => Math.floor((value % 1) * 255));
 
-    uintView.setUint8(i * 4, intBuckets[0]);
-    uintView.setUint8(i * 4 + 1, intBuckets[1]);
-    uintView.setUint8(i * 4 + 2, intBuckets[2]);
-    uintView.setUint8(i * 4 + 3, intBuckets[3]);
+    uintArray[i] = Math.floor(normalizedValue);
+    uintArray[i + 1] = buckets[0];
+    uintArray[i + 2] = buckets[1];
+    uintArray[i + 3] = buckets[2];
   }
   return uintArray;
 }
 
 export function decodeToFloatArray(uintArray: Uint8Array): Float32Array {
   const floatArray = new Float32Array(uintArray.length / 4);
-  const uintView = new DataView(uintArray.buffer);
   for (let i = 0; i < uintArray.length; i += 4) {
-    const intBuckets = [
-      uintView.getUint8(i), uintView.getUint8(i + 1), uintView.getUint8(i + 2),
-      uintView.getUint8(i + 3)
-    ];
-
     let dot = 0;
-    for (let j = 0; j < FLOAT_DELTAS.length; j++) {
-      dot += FLOAT_DELTAS[j] * intBuckets[j];
-    }
-
+    FLOAT_DELTAS.forEach((delta, j) => {
+      dot += delta * uintArray[i + j];
+    });
     const value = dot * FLOAT_RANGE + FLOAT_MIN;
-
     floatArray[i / 4] = value;
   }
   return floatArray;
@@ -138,8 +124,8 @@ export function encodeMatrixToPackedRGBA(
   const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
   if (packedRGBA.length < requiredSize) {
     throw new Error(
-        'packedRGBA length (' + packedRGBA.length +
-        ') must be >= ' + requiredSize);
+        'packedRGBA length (' + packedRGBA.length + ') must be >= ' +
+        requiredSize);
   }
   /*
     Unpacked matrix, row-major order in Float32Array[16]:  A B C D

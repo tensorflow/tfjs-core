@@ -64,7 +64,7 @@ function getOpSnippet(op: UnaryOp) {
     case UnaryOp.NEG:
       return 'float r = -v;';
     case UnaryOp.RELU:
-      return 'float r = v;//= (v < 0.0) ? 0.0 : v;';
+      return 'float r = (v < 0.0) ? 0.0 : v;';
     case UnaryOp.SIGMOID:
       return 'float r = 1.0 / (1.0 + exp(-1.0 * v));';
     case UnaryOp.STEP:

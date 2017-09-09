@@ -29,19 +29,19 @@ describe('relu_gpu', () => {
   it('does nothing to positive values', () => {
     const a = Array1D.new([1]);
     const result = uploadReluDownload(a);
-    expect(result[0]).toEqual(1);
+    expect(result[0]).toBeCloseTo(1);
   });
 
   it('sets negative values to 0', () => {
     const a = Array1D.new([-1]);
     const result = uploadReluDownload(a);
-    expect(result[0]).toEqual(0);
+    expect(result[0]).toBeCloseTo(0);
   });
 
   it('preserves zero values', () => {
-    const a = Scalar.new(8.8);
+    const a = Scalar.new(0);
     const result = uploadReluDownload(a);
-    expect(result[0]).toEqual(0);
+    expect(result[0]).toBeCloseTo(0);
   });
 
   it('operates on multiple values', () => {
