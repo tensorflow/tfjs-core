@@ -13,8 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {GPGPUProgram} from './gpgpu_math';
 import * as util from '../../util';
+
+import {GPGPUProgram} from './gpgpu_math';
 
 export class BinaryOpProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
@@ -23,7 +24,7 @@ export class BinaryOpProgram implements GPGPUProgram {
   userCode: string;
   supportsBroadcasting = true;
 
-  constructor(op: '+' | '-' | '*' | '/', aShape: number[], bShape: number[]) {
+  constructor(op: '+'|'-'|'*'|'/', aShape: number[], bShape: number[]) {
     this.params = [op];
     this.outputShape = util.assertAndGetBroadcastedShape(aShape, bShape);
     this.userCode = `

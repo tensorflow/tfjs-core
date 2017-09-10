@@ -166,25 +166,25 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
 
 const INTEGER_TEXTURE_SAMPLE_SNIPPET = `
   const vec4 floatDeltas = vec4(
-      255.0,
       1.0,
       1.0 / 255.0,
-      1.0 / (255.0 * 255.0)
+      1.0 / (255.0 * 255.0),
+      1.0 / (255.0 * 255.0 * 255.0)
   );
   const float minValue = ${tex_util.FLOAT_MIN}.0;
   const float maxValue = ${tex_util.FLOAT_MAX}.0;
   const float range = (maxValue - minValue) / 255.0;
-  const float range255 = range * 255.0;
+  const float range255 = maxValue - minValue;
 
   float sample(sampler2D texture, vec2 uv) {
-    vec4 encValue = texture2D(texture, uv);
+    vec4 encValue = floor(texture2D(texture, uv) * 255.0 + 0.5);
     float decodedValue = dot(encValue, floatDeltas);
     return minValue + (decodedValue * range);
   }
 `;
 
 const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
-  const highp vec4 floatPowers = vec4(
+  const vec4 floatPowers = vec4(
     1.0 / 255.0,
     1.0,
     255.0,
@@ -193,11 +193,11 @@ const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
   const float delta = 0.5 / 255.0;
 
   void setOutput(float decodedValue) {
-    float a = (decodedValue - minValue) / range255;
-    float b = fract(a * 255.0);
-    float c = fract(b * 255.0);
-    float d = fract(c * 255.0);
-    gl_FragColor = vec4(a, b, c, d) - delta;
+    float a = (decodedValue - minValue) / range;
+    float b = fract(a) * 255.0;
+    float c = fract(b) * 255.0;
+    float d = fract(c) * 255.0;
+    gl_FragColor = floor(vec4(a, b, c, d)) / 255.0;
 
     // TODO(dsmilkov): Version above gets better accuracy but probably slower
     // than the version below. Benchmark to determine if the accuracy is worth

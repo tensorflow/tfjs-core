@@ -22,7 +22,7 @@ const outputPath = path.join(path.dirname(startTsFilePath), 'bundle.js')
 
 const cmd = path.join('node_modules', '.bin', 'watchify');
 const watchify = spawn(cmd, [startTsFilePath, '-p', '[tsify]', '-v', '--debug',
-    '-o' , outputPath], {detached: false});
+  '-o', outputPath], { detached: false });
 watchify.stdout.pipe(process.stdout);
 watchify.stderr.pipe(process.stderr);
 
@@ -33,7 +33,7 @@ watchify.stderr.on('data', (data) => {
   if (data.toString().includes(`written to ${path.dirname(startTsFilePath)}`)) {
     if (!httpServerStarted) {
       const httpCmd = path.join('node_modules', '.bin', 'http-server');
-      const httpServer = spawn(httpCmd, ['-c-1'], { detached: false});
+      const httpServer = spawn(httpCmd, ['-c-1'], { detached: false });
       httpServer.stdout.pipe(process.stdout);
       httpServer.stderr.pipe(process.stderr);
       httpServerStarted = true;

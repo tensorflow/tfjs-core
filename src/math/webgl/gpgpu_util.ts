@@ -264,8 +264,6 @@ export function downloadMatrixFromOutputTexture(
       gl,
       () => gl.readPixels(
           0, 0, w, h, gl.RGBA, getTextureType(gl), unpackedArray));
-
-  console.log('after readpixels', unpackedArray);
   return tex_util.decodeToFloatArray(unpackedArray);
   // const matrix = new Float32Array(rows * columns);
   // tex_util.decodeMatrixFromUnpackedArray(

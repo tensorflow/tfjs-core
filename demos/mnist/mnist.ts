@@ -36,12 +36,12 @@ reader.getAllVariables().then(vars => {
         const probsVal = sess.eval(probs, [{tensor: input, data: inputData}]);
         console.log(`Item ${i}, probsVal ${probsVal.get()}.`);
         const label = data.labels[i];
-        const predictedLabel = probsVal.get();
+        const predictedLabel = Math.round(probsVal.get());
         if (label === predictedLabel) {
           numCorrect++;
         }
-        const result = renderResults(Array1D.new(data.images[i]),
-          label, predictedLabel);
+        const result =
+            renderResults(Array1D.new(data.images[i]), label, predictedLabel);
         document.body.appendChild(result);
       }
       const accuracy = numCorrect * 100 / data.images.length;
@@ -76,12 +76,10 @@ export function buildModelMathAPI(
 
   return (x: Array1D): Scalar => {
     return math.scope(() => {
-      const hidden1 =
-          math.relu(math.add(math.vectorTimesMatrix(x, hidden1W), hidden1B)) as
-          Array1D;
-      const hidden2 =
-          math.relu(math.add(
-              math.vectorTimesMatrix(hidden1, hidden2W), hidden2B)) as Array1D;
+      const hidden1 = math.relu(
+          math.add(math.vectorTimesMatrix(x, hidden1W), hidden1B)) as Array1D;
+      const hidden2 = math.relu(math.add(
+          math.vectorTimesMatrix(hidden1, hidden2W), hidden2B)) as Array1D;
       const logits =
           math.add(math.vectorTimesMatrix(hidden2, softmaxW), softmaxB);
       return math.argMax(logits);
@@ -156,17 +154,16 @@ function renderMnistImage(array: Array1D) {
   for (let i = 0; i < float32Array.length; i++) {
     const j = i * 4;
     const value = Math.round(float32Array[i] * 255);
-    imageData.data[j+0] = value;
-    imageData.data[j+1] = value;
-    imageData.data[j+2] = value;
-    imageData.data[j+3] = 255;
+    imageData.data[j + 0] = value;
+    imageData.data[j + 1] = value;
+    imageData.data[j + 2] = value;
+    imageData.data[j + 3] = 255;
   }
   ctx.putImageData(imageData, 0, 0);
   return canvas;
 }
 
-function renderResults(array: Array1D,
-    label: number, predictedLabel: number) {
+function renderResults(array: Array1D, label: number, predictedLabel: number) {
   const root = document.createElement('div');
   root.appendChild(renderMnistImage(array));
   const actual = document.createElement('div');
