@@ -185,12 +185,11 @@ const INTEGER_TEXTURE_SAMPLE_SNIPPET = `
 
 const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
   const vec4 floatPowers = vec4(
-    1.0 / 255.0,
     1.0,
     255.0,
-    255.0 * 255.0
+    255.0 * 255.0,
+    255.0 * 255.0 * 255.0
   );
-  const float delta = 0.5 / 255.0;
 
   void setOutput(float decodedValue) {
     float a = (decodedValue - minValue) / range;
@@ -203,9 +202,9 @@ const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
     // than the version below. Benchmark to determine if the accuracy is worth
     // the cost.
 
-    // float normalizedValue = (decodedValue - minValue) / range;
-    // vec4 f = normalizedValue * floatPowers;
-    // gl_FragColor = fract(f) - delta;
+    // float normValue = (decodedValue - minValue) / range255;
+    // vec4 f = normValue * floatPowers;
+    // gl_FragColor = floor(fract(f) * 255.0) / 255.0;
   }
 `;
 
