@@ -174,12 +174,12 @@ const INTEGER_TEXTURE_SAMPLE_SNIPPET = `
   const float minValue = ${tex_util.FLOAT_MIN}.0;
   const float maxValue = ${tex_util.FLOAT_MAX}.0;
   const float range = (maxValue - minValue) / 255.0;
-  const float range255 = maxValue - minValue;
+  const vec2 dotRange = vec2(1.0, range);
 
   float sample(sampler2D texture, vec2 uv) {
     vec4 encValue = floor(texture2D(texture, uv) * 255.0 + 0.5);
     float decodedValue = dot(encValue, floatDeltas);
-    return minValue + (decodedValue * range);
+    return dot(vec2(minValue, decodedValue), dotRange);
   }
 `;
 
@@ -190,9 +190,11 @@ const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
     255.0 * 255.0,
     255.0 * 255.0 * 255.0
   );
+  const vec2 recipRange = vec2(1.0/range);
+  const vec2 recipRange255 = vec2(1.0/(maxValue - minValue));
 
   void setOutput(float decodedValue) {
-    float a = (decodedValue - minValue) / range;
+    float a = dot(vec2(decodedValue, -minValue), recipRange);
     float b = fract(a) * 255.0;
     float c = fract(b) * 255.0;
     float d = fract(c) * 255.0;
@@ -202,7 +204,7 @@ const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
     // than the version below. Benchmark to determine if the accuracy is worth
     // the cost.
 
-    // float normValue = (decodedValue - minValue) / range255;
+    // float normValue = dot(vec2(decodedValue, -minValue), recipRange255);
     // vec4 f = normValue * floatPowers;
     // gl_FragColor = floor(fract(f) * 255.0) / 255.0;
   }
