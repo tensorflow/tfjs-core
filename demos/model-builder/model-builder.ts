@@ -22,7 +22,7 @@ import '../demo-header';
 import '../demo-footer';
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, Scalar, Session, Tensor, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from '../deeplearn';
+import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, Scalar, Session, Tensor, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from '../deeplearn';
 import {NDArrayImageVisualizer} from '../ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from '../ndarray-logits-visualizer';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
@@ -73,8 +73,11 @@ export let ModelBuilderPolymer: new () => PolymerHTMLElement = PolymerElement({
     datasetNames: Array,
     selectedDatasetName: String,
     modelNames: Array,
+    selectedOptimizerName: String,
+    optimizerNames: Array,
     learningRate: Number,
     momentum: Number,
+    gamma: Number,
     batchSize: Number,
     selectedModelName: String,
     selectedNormalizationOption:
@@ -119,6 +122,8 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private selectedDatasetName: string;
   private modelNames: string[];
   private selectedModelName: string;
+  private optimizerNames: string[];
+  private selectedOptimizerName: string;
   private loadedWeights: LayerWeightsDict[]|null;
   private dataSets: {[datasetName: string]: InMemoryDataset};
   private dataSet: InMemoryDataset;
@@ -126,6 +131,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private datasetStats: DataStats[];
   private learingRate: number;
   private momentum: number;
+  private gamma: number;
   private batchSize: number;
 
   // Stats.
@@ -225,7 +231,11 @@ export class ModelBuilder extends ModelBuilderPolymer {
     }
     this.learningRate = 0.1;
     this.momentum = 0.1;
+    this.gamma = 0.1;
     this.batchSize = 64;
+    // Default optimizer is momentum
+    this.selectedOptimizerName = "momentum";
+    this.optimizerNames = ["sgd", "momentum", "rmsprop", "adagrad"];
 
     this.applicationState = ApplicationState.IDLE;
     this.loadedWeights = null;
@@ -322,12 +332,34 @@ export class ModelBuilder extends ModelBuilderPolymer {
     }
   }
 
+  private createOptimizer() {
+    switch(this.selectedOptimizerName) {
+      case "sgd": {
+        return new SGDOptimizer(+this.learningRate);
+      }
+      case "momentum": {
+        return new MomentumOptimizer(+this.learningRate, +this.momentum);
+      }
+      case "rmsprop": {
+        return new RMSPropOptimizer(+this.learningRate, +this.momentum, 
+          +this.gamma);
+      }
+      case "gamma": {
+        return new AdagradOptimizer(+this.learningRate, +this.momentum);
+      }
+      default: {
+        throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
+      }
+    }
+  }
+
   private startTraining() {
     const trainingData = this.getTrainingData();
     const testData = this.getTestData();
 
-    // Recreate optimizer with the latest learning rate.
-    this.optimizer = new MomentumOptimizer(+this.learningRate, +this.momentum);
+    // Recreate optimizer with the selected optimizer and hyperparameters.
+    this.optimizer = this.createOptimizer();
+    console.log(this.optimizer);
 
     if (this.isValid && (trainingData != null) && (testData != null)) {
       this.recreateCharts();
