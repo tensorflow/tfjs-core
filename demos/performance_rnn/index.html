@@ -124,6 +124,7 @@
 
 	#status {
 	  position: absolute;
+	  font-family: Lato, sans-serif;
 	  left: 0px;
 	  height: 20px;
 	  top: 50%;
@@ -137,7 +138,7 @@
 	  -webkit-transform: translate(0px, -50%);
 	  /*-ms-transform: translate(0px, -50%);*/
 	  transform: translate(0px, -50%);
-	  color: #000;
+	  color: #7f7f7f;
 	  font-size: 30px;
 	  text-align: center;
 	}
@@ -146,12 +147,40 @@
 		visibility: hidden;
 
 	}
+	.image {
+	  position: absolute;
+	  left: 0px;
+	  bottom: 0px;
+	  margin-top: 40px;
+	  margin-bottom: 40px;
+	  margin-left: 40px;
+	}
+
+	.text-block {
+	  position: absolute;
+	  right: 40px;
+	  bottom: 40px;
+	  width: 450px;
+	  font-family: Lato, sans-serif;
+	  color: #7f7f7f;
+	  font-size: 15px;
+	  line-height: 25px;
+	}
+
+	.link {
+	  color: #6fc9c6;
+	}
+
   </style>
 </head>
 <body>
-  <div id="status">Loading...</div>
-  <div id="container"></div>
-  <div id="results"></div>
-  <script src="bundle.js"></script>
+	<div id="status">Loading...</div>
+	<div id="container"></div>
+	<div id="results"></div>
+	<div class="text-block">This RNN was trained in TensorFlow on MIDI from piano performances recorded at the International Piano-e-competition.<br> It was then ported to run in the browser using only Javascript in the deeplearn.js environment.
+	<br>
+	<a href="http://magenta.tensorflow.org/performance-rnn pair-code.github.io/deeplearnjs/" class="link">More details</a></div>
+	<img class="image" sizes="128px" src="images/magenta-logo-bottom-text2.png" srcset="images/magenta-logo-bottom-text2.png 500w, images/magenta-logo-bottom-text2.png 640w" width="128"></body>  
+	<script src="bundle.js"></script>
 </body>
 </html>
