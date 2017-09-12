@@ -827,6 +827,15 @@ export abstract class NDArrayMath {
   protected abstract sinInternal<T extends NDArray>(ndarray: T): T;
 
   /**
+   * Computes atan of the input NDArray element-wise, y = atan(x).
+   * @param ndarray The input NDArray.
+   */
+  atan<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('atan', () => this.atanInternal(ndarray));
+  }
+  protected abstract atanInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
    * Computes step of the input NDArray element-wise, y = 1 if x > 0 | 0 if x <=
    * 0
    * @param ndarray The input NDArray.

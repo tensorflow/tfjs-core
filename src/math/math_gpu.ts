@@ -273,6 +273,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]);
   }
 
+  protected atanInternal<T extends NDArray>(a: T): T {
+    const program = new UnaryOpProgram(a.shape, UnaryOp.ATAN);
+    return this.compileAndRun(program, [a]);
+  }
+
   protected stepInternal<T extends NDArray>(a: T): T {
     const program = new UnaryOpProgram(a.shape, UnaryOp.STEP);
     return this.compileAndRun(program, [a]);
