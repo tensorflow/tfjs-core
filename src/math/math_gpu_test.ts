@@ -874,6 +874,15 @@ describe('NDArrayMathGPU unary ops', () => {
     math.dispose();
   });
 
+  it('custom unary op', () => {
+    const x = Array1D.new([1, -2, 0, 3, -0.1]);
+    const result = math.unary(x, 'return x * x + 1.0;');
+
+    expect(result.getValues()).toEqual(new Float32Array([2, 5, 1, 10, 1.01]));
+
+    x.dispose();
+  });
+
   it('relu', () => {
     const a = Array1D.new([1, -2, 0, 3, -0.1]);
     const result = math.relu(a);
@@ -886,6 +895,23 @@ describe('NDArrayMathGPU unary ops', () => {
     const a = Array1D.new([1, -2, 0, 3, -0.1, NaN]);
     const result = math.relu(a);
     expect(result.getValues()).toEqual(new Float32Array([1, 0, 0, 3, 0, NaN]));
+    a.dispose();
+  });
+
+  it('abs', () => {
+    const a = Array1D.new([1, -2, 0, 3, -0.1]);
+    const result = math.abs(a);
+    expect(result.getValues()).toEqual(new Float32Array([1, 2, 0, 3, 0.1]));
+
+    a.dispose();
+  });
+
+  it('abs propagates NaNs', () => {
+    const a = Array1D.new([1, -2, 0, 3, -0.1, NaN]);
+    const result = math.abs(a);
+    expect(result.getValues()).toEqual(new Float32Array([
+      1, 2, 0, 3, 0.1, NaN
+    ]));
     a.dispose();
   });
 
@@ -929,27 +955,6 @@ describe('NDArrayMathGPU unary ops', () => {
     a.dispose();
   });
 
-  it('tanh', () => {
-    const values = [1, -3, 2, 7, -4];
-    const a = Array1D.new(values);
-    const result = math.tanh(a);
-    const expected = new Float32Array(a.size);
-    for (let i = 0; i < a.size; i++) {
-      expected[i] = util.tanh(values[i]);
-    }
-    test_util.expectArraysClose(result.getValues(), expected, 1e-6);
-
-    a.dispose();
-  });
-
-  it('tanh propagates NaNs', () => {
-    const a = Array1D.new([4, NaN, 0]);
-    const res = math.tanh(a).getValues();
-    const expected = [util.tanh(4), NaN, util.tanh(0)];
-    test_util.expectArraysClose(res, new Float32Array(expected), 1e-5);
-    a.dispose();
-  });
-
   it('sigmoid', () => {
     const values = [1, -3, 2, 7, -4];
     const a = Array1D.new(values);
@@ -989,6 +994,174 @@ describe('NDArrayMathGPU unary ops', () => {
     const res = math.sin(a).getValues();
     const expected = [Math.sin(4), NaN, Math.sin(0)];
     test_util.expectArraysClose(res, new Float32Array(expected), 1e-4);
+    a.dispose();
+  });
+
+  it('cos', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.cos(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.cos(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+
+    a.dispose();
+  });
+
+  it('cos propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.cos(a).getValues();
+    const expected = [Math.cos(4), NaN, Math.cos(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-4);
+    a.dispose();
+  });
+
+  it('tan', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.tan(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.tan(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+
+    a.dispose();
+  });
+
+  it('tan propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.tan(a).getValues();
+    const expected = [Math.tan(4), NaN, Math.tan(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-4);
+    a.dispose();
+  });
+
+  it('asin', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.asin(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.asin(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+
+    a.dispose();
+  });
+
+  it('asin propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.asin(a).getValues();
+    const expected = [Math.asin(4), NaN, Math.asin(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-4);
+    a.dispose();
+  });
+
+  it('acos', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.acos(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.acos(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+
+    a.dispose();
+  });
+
+  it('acos propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.acos(a).getValues();
+    const expected = [Math.acos(4), NaN, Math.acos(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-4);
+    a.dispose();
+  });
+
+  it('atan', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.atan(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.atan(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+
+    a.dispose();
+  });
+
+  it('atan propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.atan(a).getValues();
+    const expected = [Math.atan(4), NaN, Math.atan(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-4);
+    a.dispose();
+  });
+
+  it('sinh', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.sinh(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.sinh(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+
+    a.dispose();
+  });
+
+  it('sinh propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.sinh(a).getValues();
+    const expected = [Math.sinh(4), NaN, Math.sinh(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-5);
+    a.dispose();
+  });
+
+  it('cosh', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.cosh(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.cosh(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+
+    a.dispose();
+  });
+
+  it('cosh propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.cosh(a).getValues();
+    const expected = [Math.cosh(4), NaN, Math.cosh(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-5);
+    a.dispose();
+  });
+
+  it('tanh', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.tanh(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = util.tanh(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-6);
+
+    a.dispose();
+  });
+
+  it('tanh propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.tanh(a).getValues();
+    const expected = [util.tanh(4), NaN, util.tanh(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-5);
     a.dispose();
   });
 });
