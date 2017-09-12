@@ -914,6 +914,20 @@ describe('NDArrayMathCPU unary ops', () => {
     const expected = [Math.sin(4), NaN, Math.sin(0)];
     expect(res).toEqual(new Float32Array(expected));
   });
+
+  it('atan', () => {
+    const a = Array1D.new([4, -3, 0]);
+    const res = math.atan(a).getValues();
+    const expected = [Math.atan(4), Math.atan(-3), Math.atan(0)];
+    expect(res).toEqual(new Float32Array(expected));
+  });
+
+  it('atan propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.atan(a).getValues();
+    const expected = [Math.atan(4), NaN, Math.atan(0)];
+    expect(res).toEqual(new Float32Array(expected));
+  });
 });
 
 describe('NDArrayMathCPU scalar OP ndarray', () => {

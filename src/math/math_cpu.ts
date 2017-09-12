@@ -364,6 +364,15 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make<T>(ndarray.shape, {values: resultValues});
   }
 
+  protected atanInternal<T extends NDArray>(ndarray: T): T {
+    const resultValues = new Float32Array(ndarray.size);
+    const values = ndarray.getValues();
+    for (let i = 0; i < values.length; ++i) {
+      resultValues[i] = Math.atan(values[i]);
+    }
+    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+  }
+
   protected stepInternal<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();

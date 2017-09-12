@@ -991,6 +991,27 @@ describe('NDArrayMathGPU unary ops', () => {
     test_util.expectArraysClose(res, new Float32Array(expected), 1e-4);
     a.dispose();
   });
+
+  it('atan', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = Array1D.new(values);
+    const result = math.atan(a);
+    const expected = new Float32Array(a.size);
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.atan(values[i]);
+    }
+    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+
+    a.dispose();
+  });
+
+  it('atan propagates NaNs', () => {
+    const a = Array1D.new([4, NaN, 0]);
+    const res = math.atan(a).getValues();
+    const expected = [Math.atan(4), NaN, Math.atan(0)];
+    test_util.expectArraysClose(res, new Float32Array(expected), 1e-4);
+    a.dispose();
+  });
 });
 
 describe('NDArrayMathGPU min/max', () => {

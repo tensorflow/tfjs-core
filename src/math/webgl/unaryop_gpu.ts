@@ -18,7 +18,7 @@
 import {GPGPUProgram} from './gpgpu_math';
 
 export enum UnaryOp {
-  EXP, LOG, SQRT, NEG, RELU, SIGMOID, STEP, SIN, TANH
+  EXP, LOG, SQRT, NEG, RELU, SIGMOID, STEP, SIN, TANH, ATAN
 }
 
 export class UnaryOpProgram implements GPGPUProgram {
@@ -70,6 +70,9 @@ function getOpSnippet(op: UnaryOp) {
     case UnaryOp.TANH:
       return `float e2x = exp(-2.0 * abs(v));
               float r = sign(v) * (1.0 - e2x) / (1.0 + e2x);`;
+    case UnaryOp.ATAN:
+      return CHECK_NAN_SNIPPET +
+          'float r = atan(v);';
     default:
       throw Error('Unrecognized unary op type ' + op);
   }
