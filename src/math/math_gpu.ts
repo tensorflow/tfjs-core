@@ -230,10 +230,10 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]);
   }
 
-  binary<T extends NDArray>(a: T, b: T, opSnippet: string) {
+  binary<T extends NDArray>(a: T, b: T, opSnippet: string): T {
     return this.executeOp('binary ' + opSnippet, () => {
       const program = new BinaryOpProgram(opSnippet, a.shape, b.shape);
-      return this.compileAndRun<T, T>(program, [a]);
+      return this.compileAndRun<NDArray, T>(program, [a, b]);
     });
   }
 
