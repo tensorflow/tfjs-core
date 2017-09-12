@@ -1,9 +1,156 @@
 <html>
 <head>
   <title>performance_rnn</title>
+  <style type="text/css">
+	#container,
+	body {
+	    width: 100%;
+	    height: 100%;
+	    position: absolute;
+	    top: 0;
+	    left: 0;
+	    margin: 0;
+	    background-color: #fff
+	}
+	#container #keyboard,
+	body #keyboard {
+		position: absolute;
+		left: 0px;
+		height: 20px;
+		top: 50%;
+		right: 0px;
+		bottom: 0px;
+		z-index: 10;
+		display: block;
+		height: auto;
+		margin-right: auto;
+		margin-left: auto;
+		-webkit-transform: translate(0px, -50%);
+		/*-ms-transform: translate(0px, -50%);*/
+		transform: translate(0px, -50%);
+	    position: absolute;
+	    bottom: -70px;
+	    left: 0;
+	    height: 100px
+	}
+	#container #glow,
+	#container #roll,
+	body #glow,
+	body #roll {
+		display: none;
+	    width: 100%;
+	    height: calc(100% - 130px);
+	    position: absolute;
+	    top: 0;
+	    left: 0
+	}
+	#container #bottom,
+	body #bottom {
+	    width: 100%;
+	    height: 30px;
+	    bottom: 0;
+	    left: 0;
+	    position: absolute;
+	    background-color: #222;
+	    box-shadow: inset 0 12px 30px -5px rgba(0, 0, 0, .75)
+	}
+	#container.focus {
+	    -webkit-filter: none;
+	    filter: none;
+	    opacity: 1
+	}
+	#keyboard {
+	    width: calc(100% - 2 * 2px);
+	}
+	#keyboard,
+	#keyboard .key {
+	    position: absolute;
+	    -webkit-user-select: none;
+	    -moz-user-select: none;
+	    -ms-user-select: none;
+	    user-select: none
+	}
+	#keyboard .key {
+	    height: calc(100% - 2 * 2px);
+	    width: 10px;
+	    left: 0;
+	    top: 0
+	}
+	#keyboard .key.black {
+	    z-index: 1;
+	    height: 50%
+	}
+	#keyboard .key.black #fill {
+	    background-color: #7f7f7f;
+
+	    width: calc(100% - 8px);
+	    left: 4px
+	}
+	#keyboard .key.white {
+	    z-index: 0
+	}
+	#keyboard .key.white #fill {
+	    background-color: #e5e5e5
+	}
+	#keyboard .key.black.hover #fill,
+	#keyboard .key.white.hover #fill {
+	    border-color: #fff;
+	    background-color: #aaa
+	}
+	#keyboard .key #fill {
+	    border: 2px solid #d7d7d7
+	}
+	#keyboard .key #fill,
+	#keyboard .key .highlight {
+	    position: absolute;
+	    top: 0;
+	    left: 0;
+	    width: 100%;
+	    height: 100%;
+	    pointer-events: none
+	}
+	#keyboard .key .highlight {
+	    background-color: #fff;
+	    opacity: 0;
+	    transition: opacity .6s
+	}
+	#keyboard .key .highlight.active {
+	    opacity: 1
+	}
+	#keyboard .key .highlight.ai {
+	    background-color: #fff
+	}
+
+
+	#status {
+	  position: absolute;
+	  left: 0px;
+	  height: 20px;
+	  top: 50%;
+	  right: 0px;
+	  bottom: 0px;
+	  z-index: 10;
+	  display: block;
+	  height: auto;
+	  margin-right: auto;
+	  margin-left: auto;
+	  -webkit-transform: translate(0px, -50%);
+	  /*-ms-transform: translate(0px, -50%);*/
+	  transform: translate(0px, -50%);
+	  color: #000;
+	  font-size: 30px;
+	  text-align: center;
+	}
+
+	.hidden {
+		visibility: hidden;
+
+	}
+  </style>
 </head>
 <body>
-  <div id="status">Loading</div>
+  <div id="status">Loading...</div>
+  <div id="container"></div>
   <div id="results"></div>
   <script src="bundle.js"></script>
 </body>

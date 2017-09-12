@@ -15,21 +15,21 @@ limitations under the License.
 
 import {Array1D, Array2D, CheckpointLoader, NDArrayMath, NDArrayMathGPU,
     Scalar} from '../deeplearnjs';
+import {KeyboardElement} from './js/Element';
 
-const Piano:any = require('tone-piano').Piano
+const Piano:any = require('tone-piano').Piano;
 
-const piano = new Piano({velocities : 4}).toMaster()
-
-// manifest.json lives in the same directory.
-piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
-	const reader = new CheckpointLoader('.');
-	return reader.getAllVariables()
-}).then((vars: any) => {
-	document.querySelector('#status').textContent = 'Playing'
-	//start it at the audio context current time
-	currentTime = piano.now()
-	generateStep(vars)
-});
+let lstmKernel1: any;
+let lstmBias1: any;
+let lstmKernel2: any;
+let lstmBias2: any;
+let lstmKernel3: any;
+let lstmBias3: any;
+let c: any;
+let h: any;
+let fullyConnectedBiases: any;
+let fullyConnectedWeights: any;
+const forgetBias = Scalar.new(1.0);
 
 let currentTime = 0;
 let currentVelocity = 1;
@@ -37,57 +37,92 @@ const math = new NDArrayMathGPU();
 
 const INPUT_SIZE = 388;
 const PRIMER_IDX = 355; // shift 1s.
-let lastSample = PRIMER_IDX
+let lastSample = PRIMER_IDX;
 
-function generateStep(vars: any){
 
-	const lstmKernel1 = vars[
+const container = document.querySelector('#container');
+let keyboardInterface = new KeyboardElement(container, 0, 4);
+
+const piano = new Piano({velocities : 4}).toMaster();
+let output: any;
+
+piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
+	const reader = new CheckpointLoader('.');
+	return reader.getAllVariables();
+}).then((vars: any) => {
+	document.querySelector('#status').classList.add('hidden');
+
+	lstmKernel1 = vars[
 		'rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
-	const lstmBias1 = vars[
+	lstmBias1 = vars[
 		'rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
 
-	const lstmKernel2 = vars[
+	lstmKernel2 = vars[
 		'rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
-	const lstmBias2 = vars[
+	lstmBias2 = vars[
 		'rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
 
-	const lstmKernel3 = vars[
+	lstmKernel3 = vars[
 		'rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
-	const lstmBias3 = vars[
+	lstmBias3 = vars[
 		'rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
 
-	const fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
-	const fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+	fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
+	fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+	c = [
+		Array2D.zeros([1, lstmBias1.shape[0] / 4]),
+		Array2D.zeros([1, lstmBias2.shape[0] / 4]),
+		Array2D.zeros([1, lstmBias3.shape[0] / 4]),
+	];
+	h = [
+		Array2D.zeros([1, lstmBias1.shape[0] / 4]),
+		Array2D.zeros([1, lstmBias2.shape[0] / 4]),
+		Array2D.zeros([1, lstmBias3.shape[0] / 4]),
+	];
+	//start it at the audio context current time
+	currentTime = piano.now();
+	generateStep();
+});
 
-	// const startTime = currentTime
+window.addEventListener('resize', resize);
+
+function resize() {
+	const keyWidth = 20;
+	let octaves = Math.round((window.innerWidth / keyWidth) / 12);
+	octaves = Math.max(octaves, 2);
+	octaves = Math.min(octaves, 7);
+	let baseNote = 48;
+	if (octaves > 5){
+		baseNote -= (octaves - 5) * 12;
+	}
+	keyboardInterface.resize(baseNote, octaves)
+}
+
+resize();
+
+function generateStep(){
 
 	math.scope((keep, track) => {
-		const forgetBias = track(Scalar.new(1.0));
+		
 		const lstm1 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel1,
 		  lstmBias1);
 		const lstm2 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel2,
 		  lstmBias2);
 		const lstm3 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel3,
-		  lstmBias3);
-
-		let c = [
-		  track(Array2D.zeros([1, lstmBias1.shape[0] / 4])),
-		  track(Array2D.zeros([1, lstmBias2.shape[0] / 4])),
-		  track(Array2D.zeros([1, lstmBias3.shape[0] / 4])),
-		  ];
-		let h = [
-		  track(Array2D.zeros([1, lstmBias1.shape[0] / 4])),
-		  track(Array2D.zeros([1, lstmBias2.shape[0] / 4])),
-		  track(Array2D.zeros([1, lstmBias3.shape[0] / 4])),
-		  ];
+		  lstmBias3);	
 
 		let input = track(Array2D.zeros([1, INPUT_SIZE]));
 		input.set(1.0, 0, lastSample);
-
 		//generate some notes
-		for (let i = 0; i < 100; i++){
-			const output = math.multiRNNCell([lstm1, lstm2, lstm3], input, c, h);
+		for (let i = 0; i < 10; i++) {
 
+			output = math.multiRNNCell([lstm1, lstm2, lstm3], input, c, h);
+			output[0].map((val:Array2D) => {
+				keep(val);
+			});
+			output[1].map((val:Array2D) => {
+				keep(val);
+			});
 			c = output[0];
 			h = output[1];
 
@@ -108,7 +143,7 @@ function generateStep(vars: any){
 	});
 	// document.querySelector('#status').textContent = `Playing ${currentTime} ${piano.now()}`
 	const delta = currentTime - piano.now()
-	setTimeout(() => generateStep(vars), delta * 1000)
+	setTimeout(() => generateStep(), delta * 1000)
 }
 
 
@@ -133,9 +168,21 @@ function playOutput(index: number) {
 		const maxValue = eventRange[2] as number;
 		if (offset <= index && index <= offset + maxValue - minValue) {
 			if (eventType === 'note_on') {
-				return piano.keyDown(index - offset, currentTime, currentVelocity)
+				const noteNum = index - offset;
+				// keyboardInterface.keyDown(noteNum);
+				setTimeout(function() { 
+					keyboardInterface.keyDown(noteNum); 
+					setTimeout(function() {
+						keyboardInterface.keyUp(noteNum);
+					}, 100);
+				}, (currentTime - piano.now())*1000);
+				return piano.keyDown(noteNum, currentTime, currentVelocity)
 			} else if (eventType === 'note_off') {
-				return 	piano.keyUp(index - offset, currentTime)
+				const noteNum = index - offset;
+				// setTimeout(function() { keyboardInterface.keyUp(noteNum); }, (currentTime - piano.now())*1000);
+				// console.log('Note: ' + index + ' off: ' + (currentTime - piano.now()));
+				// console.log('up' + noteNum );
+				return 	piano.keyUp(noteNum, currentTime)
 			} else if (eventType === 'time_shift') {
 				currentTime += (index - offset + 1) / STEPS_PER_SECOND
 				return currentTime
