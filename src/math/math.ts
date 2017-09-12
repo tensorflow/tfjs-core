@@ -228,7 +228,7 @@ export abstract class NDArrayMath {
         'matMul', () => this.matMulInternal(a, b, aOrientation, bOrientation));
   }
 
-  protected executeOp<T extends NDArray>(name: string, f: () => T): T {
+  private executeOp<T extends NDArray>(name: string, f: () => T): T {
     let start: number;
     if (this.debugMode) {
       start = performance.now();

@@ -874,26 +874,6 @@ describe('NDArrayMathGPU unary ops', () => {
     math.dispose();
   });
 
-  it('custom unary op', () => {
-    const x = Array1D.new([1, -2, 0, 3, -0.1]);
-    const result = math.unary(x, 'return x * x + 1.0;');
-
-    expect(result.getValues()).toEqual(new Float32Array([2, 5, 1, 10, 1.01]));
-
-    x.dispose();
-  });
-
-  it('custom binary op', () => {
-    const a = Array1D.new([1, -2, 0, 3, -0.1]);
-    const b = Array1D.new([0, 1, 2, 3, 4]);
-    const result = math.binary(a, b, 'return a + 2.0 - b;');
-
-    expect(result.getValues()).toEqual(new Float32Array([3, -1, 0, 2, -2.1]));
-
-    a.dispose();
-    b.dispose();
-  });
-
   it('relu', () => {
     const a = Array1D.new([1, -2, 0, 3, -0.1]);
     const result = math.relu(a);

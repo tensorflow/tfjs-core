@@ -117,21 +117,6 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun<NDArray, T>(program, [a, b, c1, c2]);
   }
 
-  /**
-   * Constructs a custom elementwise unary operation with a custom glsl
-   * snippet that represents the values given from x.
-   * @param x The x NDArray to compute a unary operation on.
-   * @param glslSnippet The glsl snippet that represents the body of the unary
-   * operation function. The value passed to the function 'x' is a float. The
-   * user should return the value. For example: 'return x * x + 1'.
-   */
-  unary<T extends NDArray>(x: T, opSnippet: string) {
-    return this.executeOp('unary ' + opSnippet, () => {
-      const program = new UnaryOpProgram(x.shape, opSnippet);
-      return this.compileAndRun<T, T>(program, [x]);
-    });
-  }
-
   protected negInternal<T extends NDArray>(a: T): T {
     const program = new UnaryOpProgram(a.shape, unary_op.NEG);
     return this.compileAndRun<T, T>(program, [a]);
@@ -236,23 +221,6 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected maxInternal(a: NDArray): Scalar {
     const program = new MinMaxProgram(a.size, 'max');
     return this.compileAndRun(program, [a]);
-  }
-
-  /**
-   * Constructs a custom element wise binary operation with a custom glsl
-   * snippet that represents the values given from a and b.
-   * @param a The a NDArray to compute a binary operation on.
-   * @param b The b NDArray to compute a binary operation on.
-   * @param glslSnippet The glsl snippet that represents the body of the unary
-   * operation function. The values passed to the function are 'a' and 'b',
-   * which are floats. The user should return the value. For example:
-   * 'return a * a + b;'.
-   */
-  binary<T extends NDArray>(a: T, b: T, glslSnippet: string): T {
-    return this.executeOp('binary ' + glslSnippet, () => {
-      const program = new BinaryOpProgram(glslSnippet, a.shape, b.shape);
-      return this.compileAndRun<NDArray, T>(program, [a, b]);
-    });
   }
 
   protected divideInternal<T extends NDArray>(a: T, b: T): T {
