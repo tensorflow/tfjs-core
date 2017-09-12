@@ -108,7 +108,7 @@ export const SINH = `
   return (e2x - 1.0 / e2x) / 2.0;
 `;
 
-export const COSH = CHECK_NAN_SNIPPET + `
+export const COSH = `
   float e2x = exp(-x);
   return (e2x + 1.0 / e2x) / 2.0;
 `;
