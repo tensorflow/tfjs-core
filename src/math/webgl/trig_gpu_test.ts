@@ -160,6 +160,12 @@ describe('sinh_gpu', () => {
     const result = unaryop_gpu_test.uploadUnaryDownload(aArr, unaryop_gpu.SINH);
     test_util.expectArraysClose(result, expectedResult, 1e-3);
   });
+
+  it('sinh(0) = 0', () => {
+    const a = Scalar.new(0);
+    const r = unaryop_gpu_test.uploadUnaryDownload(a, unaryop_gpu.SINH);
+    expect(r).toBeCloseTo(0);
+  });
 });
 
 describe('cosh_gpu', () => {
@@ -179,6 +185,12 @@ describe('cosh_gpu', () => {
     const aArr = Array1D.new(a);
     const result = unaryop_gpu_test.uploadUnaryDownload(aArr, unaryop_gpu.COSH);
     test_util.expectArraysClose(result, expectedResult, 1e-3);
+  });
+
+  it('cosh(0) = 1', () => {
+    const a = Scalar.new(0);
+    const r = unaryop_gpu_test.uploadUnaryDownload(a, unaryop_gpu.COSH);
+    expect(r).toBeCloseTo(1);
   });
 });
 
