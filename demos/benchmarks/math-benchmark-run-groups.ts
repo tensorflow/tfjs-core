@@ -28,7 +28,7 @@ import * as mulmat_gpu_benchmark from './mulmat_gpu_benchmark';
 export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
   {
     name:
-        'Matrix Multiplication (CPU vs GPU): ' +
+        'Matrix Multiplication (CPU vs GPU vs GPU (packed texture)): ' +
             'matmul([size, size], [size, size])',
     min: 0,
     max: 1024,
@@ -36,7 +36,9 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
       new BenchmarkRun('mulmat_gpu', mulmat_gpu_benchmark.BENCHMARK_TEST),
-      new BenchmarkRun('mulmat_cpu', mulmat_cpu_benchmark.BENCHMARK_TEST)
+      new BenchmarkRun('mulmat_gpu_pack',
+        mulmat_gpu_benchmark.BENCHMARK_TEST_PACKED),
+      new BenchmarkRun('mulmat_cpu', mulmat_cpu_benchmark.BENCHMARK_TEST),
     ],
   },
   {
