@@ -17,22 +17,22 @@
 import {RollNote} from './RollNote'
 
 export class Note{
-	constructor(container, ai){
-		this.element = document.createElement('div')
-		this.element.classList.add('highlight')
-		this.element.classList.add('active')
-		if (ai){
-			this.element.classList.add('ai')
-		}
-		container.appendChild(this.element)
+  constructor(container, ai){
+    this.element = document.createElement('div')
+    this.element.classList.add('highlight')
+    this.element.classList.add('active')
+    if (ai){
+      this.element.classList.add('ai')
+    }
+    container.appendChild(this.element)
 
-		// this.rollNote = new RollNote(container, ai)
-	}
-	noteOff(){
-		this.element.classList.remove('active')
-		// this.rollNote.noteOff()
-		setTimeout(() => {
-			this.element.remove()
-		}, 1000)
-	}
+    // this.rollNote = new RollNote(container, ai)
+  }
+  noteOff(){
+    this.element.classList.remove('active')
+    // this.rollNote.noteOff()
+    setTimeout(() => {
+      this.element.remove()
+    }, 1000)
+  }
 }
