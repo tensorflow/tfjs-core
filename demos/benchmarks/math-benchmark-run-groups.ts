@@ -20,16 +20,15 @@ import * as conv_gpu_benchmark from './conv_gpu_benchmark';
 import * as conv_transpose_gpu_benchmark from './conv_transpose_gpu_benchmark';
 import * as logsumexp_cpu_benchmark from './logsumexp_cpu_benchmark';
 import * as logsumexp_gpu_benchmark from './logsumexp_gpu_benchmark';
-import * as max_pool_gpu_benchmark from './max_pool_gpu_benchmark';
 import * as max_pool_cpu_benchmark from './max_pool_cpu_benchmark';
+import * as max_pool_gpu_benchmark from './max_pool_gpu_benchmark';
 import * as mulmat_cpu_benchmark from './mulmat_cpu_benchmark';
 import * as mulmat_gpu_benchmark from './mulmat_gpu_benchmark';
 
 export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
   {
-    name:
-        'Matrix Multiplication (CPU vs GPU): ' +
-            'matmul([size, size], [size, size])',
+    name: 'Matrix Multiplication (CPU vs GPU): ' +
+        'matmul([size, size], [size, size])',
     min: 0,
     max: 1024,
     stepSize: 64,
@@ -40,7 +39,7 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     ],
   },
   {
-    name: 'Convolution (GPU): conv over image [size, size, 1]',
+    name: 'Convolution (GPU): conv over image [size, size, 10]',
     min: 0,
     max: 1024,
     stepSize: 64,
@@ -64,10 +63,10 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     stepSize: 64,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
-      new BenchmarkRun('max_pool_gpu',
-        max_pool_gpu_benchmark.MAX_POOL_BENCHMARK_TEST),
-      new BenchmarkRun('max_pool_cpu',
-        max_pool_cpu_benchmark.MAX_POOL_BENCHMARK_TEST)
+      new BenchmarkRun(
+          'max_pool_gpu', max_pool_gpu_benchmark.MAX_POOL_BENCHMARK_TEST),
+      new BenchmarkRun(
+          'max_pool_cpu', max_pool_cpu_benchmark.MAX_POOL_BENCHMARK_TEST)
     ],
   },
   {
@@ -77,8 +76,7 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     stepSize: 64,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
-      new BenchmarkRun(
-          'logsumexp_gpu', logsumexp_gpu_benchmark.BENCHMARK_TEST),
+      new BenchmarkRun('logsumexp_gpu', logsumexp_gpu_benchmark.BENCHMARK_TEST),
       new BenchmarkRun('logsumexp_cpu', logsumexp_cpu_benchmark.BENCHMARK_TEST)
     ],
   }
