@@ -15,29 +15,34 @@ limitations under the License.
 
 const offsets = [0, 0.5, 1, 1.5, 2, 3, 3.5, 4, 4.5, 5, 5.5, 6];
 
+const minNote = 21;
+const maxNote = 108;
+
 export class KeyboardElement {
   private container: Element;
   private keys: {[key: number]: Element};
   private notes: {[key: number]: Note[]};
 
-  constructor(container: Element, lowest=36, octaves=4){
+  constructor(container: Element){
     this.container = document.createElement('div');
     this.container.id = 'keyboard';
     container.appendChild(this.container);
 
     this.keys = {};
 
-    this.resize(lowest, octaves);
+    this.resize();
     this.notes = {};
   }
 
-  resize(lowest: number, octaves: number){
+  resize(){
+    // clear the previous ones.
     this.keys = {};
-    // clear the previous ones
     this.container.innerHTML = '';
-    // each of the keys
-    const keyWidth = (1 / 7) / octaves;
-    for (let i = lowest; i < lowest + octaves * 12; i++){
+
+    // each of the keys.
+    const keyWidth = 1 / 52;
+
+    for (let i = minNote; i <= maxNote; i++){
       const key = document.createElement('div');
       key.classList.add('key');
       const isSharp = ([1, 3, 6, 8, 10].indexOf(i % 12) !== -1);
@@ -45,14 +50,14 @@ export class KeyboardElement {
       this.container.appendChild(key);
       // position the element
 
-      const noteOctave = Math.floor(i / 12) - Math.floor(lowest / 12);
-      const offset = offsets[i % 12] + noteOctave * 7;
+      const noteOctave = Math.floor(i / 12) - Math.floor(minNote / 12);
+      const offset = offsets[i % 12] + noteOctave * 7 - 5;
       key.style.width = `${keyWidth * 100}%`;
       key.style.left = `${offset * keyWidth * 100}%`;
       key.id = i.toString();
 
       const fill = document.createElement('div');
-      fill.id = 'fill';
+      fill.classList.add('fill');
       key.appendChild(fill);
       this.keys[i] = key;
     }
@@ -61,9 +66,8 @@ export class KeyboardElement {
   keyDown(noteNum: number){
     if (this.keys.hasOwnProperty(noteNum)){
       const key = this.keys[noteNum];
-      key.classList.remove('hover');
 
-      const note = new Note(key.querySelector('#fill'));
+      const note = new Note(key.querySelector('.fill'));
       if (!this.notes[noteNum]){
         this.notes[noteNum] = [] as Note[];
       }

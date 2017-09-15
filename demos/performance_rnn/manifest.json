@@ -21,7 +21,7 @@
   "rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel": {
     "filename": "rnn_multi_rnn_cell_cell_0_basic_lstm_cell_kernel", 
     "shape": [
-      900, 
+      920, 
       2048
     ]
   }, 
