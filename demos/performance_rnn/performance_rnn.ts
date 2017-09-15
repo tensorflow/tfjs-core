@@ -14,21 +14,22 @@ limitations under the License.
 ==============================================================================*/
 
 import {Array1D, Array2D, CheckpointLoader, NDArrayMath, NDArrayMathGPU,
-    Scalar} from '../deeplearnjs';
+    NDArray, Scalar} from '../deeplearnjs';
 import {KeyboardElement} from './keyboard_element';
 
-const Piano:any = require('tone-piano').Piano;
+// tslint:disable-next-line:no-require-imports
+const Piano = require('tone-piano').Piano;
 
-let lstmKernel1: any;
-let lstmBias1: any;
-let lstmKernel2: any;
-let lstmBias2: any;
-let lstmKernel3: any;
-let lstmBias3: any;
-let c: any;
-let h: any;
-let fullyConnectedBiases: any;
-let fullyConnectedWeights: any;
+let lstmKernel1: Array2D;
+let lstmBias1: Array1D;
+let lstmKernel2: Array2D;
+let lstmBias2: Array1D;
+let lstmKernel3: Array2D;
+let lstmBias3: Array1D;
+let c: Array2D[];
+let h: Array2D[];
+let fullyConnectedBiases: Array1D;
+let fullyConnectedWeights: Array2D;
 const forgetBias = Scalar.new(1.0);
 
 let currentTime = 0;
@@ -41,15 +42,15 @@ let lastSample = PRIMER_IDX;
 
 
 const container = document.querySelector('#container');
-let keyboardInterface = new KeyboardElement(container, 0, 4);
+const keyboardInterface = new KeyboardElement(container, 0, 4);
 
 const piano = new Piano({velocities : 4}).toMaster();
-let output: any;
+let output: [Array2D[], Array2D[]];
 
 piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
   const reader = new CheckpointLoader('.');
   return reader.getAllVariables();
-}).then((vars: any) => {
+  }).then((vars: {[varName: string]: NDArray}) => {
   document.querySelector('#status').classList.add('hidden');
 
   lstmKernel1 = vars[
@@ -95,7 +96,7 @@ function resize() {
   if (octaves > 5){
     baseNote -= (octaves - 5) * 12;
   }
-  keyboardInterface.resize(baseNote, octaves)
+  keyboardInterface.resize(baseNote, octaves);
 }
 
 resize();
@@ -134,16 +135,15 @@ function generateStep(){
       const sampledOutput = sampleFromSoftmax(math, softmax);
 
       playOutput(sampledOutput);
-      lastSample = sampledOutput
+      lastSample = sampledOutput;
 
       // use output as the next input.
       input = track(Array2D.zeros([1, INPUT_SIZE]));
       input.set(1.0, 0, lastSample);
     }
   });
-  // document.querySelector('#status').textContent = `Playing ${currentTime} ${piano.now()}`
-  const delta = currentTime - piano.now()
-  setTimeout(() => generateStep(), delta * 1000)
+  const delta = currentTime - piano.now();
+  setTimeout(() => generateStep(), delta * 1000);
 }
 
 
@@ -170,26 +170,23 @@ function playOutput(index: number) {
       if (eventType === 'note_on') {
         const noteNum = index - offset;
         // keyboardInterface.keyDown(noteNum);
-        setTimeout(function() {
+        setTimeout(() => {
           keyboardInterface.keyDown(noteNum);
-          setTimeout(function() {
+          setTimeout(() => {
             keyboardInterface.keyUp(noteNum);
           }, 100);
         }, (currentTime - piano.now())*1000);
-        return piano.keyDown(noteNum, currentTime, currentVelocity)
+        return piano.keyDown(noteNum, currentTime, currentVelocity);
       } else if (eventType === 'note_off') {
         const noteNum = index - offset;
-        // setTimeout(function() { keyboardInterface.keyUp(noteNum); }, (currentTime - piano.now())*1000);
-        // console.log('Note: ' + index + ' off: ' + (currentTime - piano.now()));
-        // console.log('up' + noteNum );
-        return   piano.keyUp(noteNum, currentTime)
+        return piano.keyUp(noteNum, currentTime);
       } else if (eventType === 'time_shift') {
-        currentTime += (index - offset + 1) / STEPS_PER_SECOND
-        return currentTime
+        currentTime += (index - offset + 1) / STEPS_PER_SECOND;
+        return currentTime;
       } else if (eventType === 'velocity_change') {
-        currentVelocity = (index - offset + 1) * Math.ceil(127 / VELOCITY_BINS)
-        currentVelocity = currentVelocity/127
-        return currentVelocity
+        currentVelocity = (index - offset + 1) * Math.ceil(127 / VELOCITY_BINS);
+        currentVelocity = currentVelocity/127;
+        return currentVelocity;
       } else {
         throw new Error('Could not decode eventType: ' + eventType);
       }
@@ -201,8 +198,8 @@ function playOutput(index: number) {
 
 
 /**
-* Sample from a softmax.
-*/
+ * Sample from a softmax.
+ */
 function sampleFromSoftmax(math: NDArrayMath, softmax: Array1D): number {
   const softmaxValues = softmax.getValues();
   const rand = Scalar.randUniform([], 0, 1).get();
