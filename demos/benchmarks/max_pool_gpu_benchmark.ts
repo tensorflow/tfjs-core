@@ -41,7 +41,7 @@ function testMaxPool(size: number, positions: boolean): number {
   const texManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, texManager);
 
-  const outputDepth = 16;
+  const outputDepth = 512;
   const xShape: [number, number, number] = [size, size, outputDepth];
   const fieldSize = 11;
   const stride = 1;

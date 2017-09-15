@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as avg_pool_cpu_benchmark from './avg_pool_cpu_benchmark';
 import * as avg_pool_gpu_benchmark from './avg_pool_gpu_benchmark';
 import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
 import * as conv_gpu_benchmark from './conv_gpu_benchmark';
@@ -78,9 +79,9 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
       new BenchmarkRun(
-          'avg_pool_gpu', avg_pool_gpu_benchmark.MAX_POOL_BENCHMARK_TEST),
+          'avg_pool_gpu', avg_pool_gpu_benchmark.AVG_POOL_BENCHMARK_TEST),
       new BenchmarkRun(
-          'avg_pool_cpu', max_pool_cpu_benchmark.MAX_POOL_BENCHMARK_TEST)
+          'avg_pool_cpu', avg_pool_cpu_benchmark.AVG_POOL_BENCHMARK_TEST)
     ],
   },
   {

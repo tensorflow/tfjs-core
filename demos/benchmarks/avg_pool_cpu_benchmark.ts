@@ -24,7 +24,7 @@ import {BenchmarkTest} from './benchmark';
 const OP_RUNS = 40;
 
 export const AVG_POOL_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
-  if (size > 512) {
+  if (size > 128) {
     return -1;
   }
 
