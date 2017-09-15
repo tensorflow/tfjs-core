@@ -26,28 +26,18 @@ import {BenchmarkTest} from './benchmark';
 
 const OP_RUNS = 40;
 
-export const MAX_POOL_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
-  const positions = false;
-  return testMaxPool(size, positions);
-};
-
-export const MAX_POOL_POSNS_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
-  const positions = true;
-  return testMaxPool(size, positions);
-};
-
-function testMaxPool(size: number, positions: boolean): number {
+export const AVG_POOL_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const gpgpu = new GPGPUContext();
   const texManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, texManager);
 
-  const outputDepth = 16;
+  const outputDepth = 512;
   const xShape: [number, number, number] = [size, size, outputDepth];
-  const fieldSize = 11;
+  const fieldSize = 13;
   const stride = 1;
   const convInfo = conv_util.computeConvInfo(
       xShape, fieldSize, fieldSize, outputDepth, stride, stride, 'same');
-  const program = new Pool2DProgram(convInfo, 'max', positions);
+  const program = new Pool2DProgram(convInfo, 'avg', false);
   const res = NDArray.zeros(program.outputShape);
   const x = Array3D.randUniform(xShape, -1, 1);
   const binary = gpgpu_math.compileProgram(gpgpu, program, [x], res);

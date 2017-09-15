@@ -78,6 +78,24 @@ describe('max_pool_gpu', () => {
     compareToCPU(inputShape, fSize, stride, zeroPad);
   });
 
+  it('matches CPU on random input, d=3,f=3,s=3,p=1', () => {
+    const depth = 3;
+    const inputShape: [number, number, number] = [9, 2, depth];
+    const fSize = 3;
+    const stride = 3;
+    const zeroPad = 1;
+    compareToCPU(inputShape, fSize, stride, zeroPad);
+  });
+
+  it('matches CPU on random input, d=3,f=3,s=3,p=1', () => {
+    const depth = 3;
+    const inputShape: [number, number, number] = [11, 1, depth];
+    const fSize = 3;
+    const stride = 3;
+    const zeroPad = 1;
+    compareToCPU(inputShape, fSize, stride, zeroPad);
+  });
+
   it('non even filter 1x2 on 3x3 input', () => {
     const x = Array3D.new([3, 3, 1], [1, 2, 3, 4, 5, 6, 7, 8, 9]);
     const res =

@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as avg_pool_gpu_benchmark from './avg_pool_gpu_benchmark';
 import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
 import * as conv_gpu_benchmark from './conv_gpu_benchmark';
 import * as conv_transpose_gpu_benchmark from './conv_transpose_gpu_benchmark';
@@ -57,7 +58,7 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
         'd1=1, d2=1, f=11, s=1', conv_transpose_gpu_benchmark.BENCHMARK_TEST)],
   },
   {
-    name: 'Max pool (CPU vs GPU): d1=1, d2=1, f=11, s=1',
+    name: 'Max pool (CPU vs GPU): d1=16, f=11, s=1',
     min: 0,
     max: 1024,
     stepSize: 64,
@@ -67,6 +68,19 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
           'max_pool_gpu', max_pool_gpu_benchmark.MAX_POOL_BENCHMARK_TEST),
       new BenchmarkRun(
           'max_pool_cpu', max_pool_cpu_benchmark.MAX_POOL_BENCHMARK_TEST)
+    ],
+  },
+  {
+    name: 'Avg pool (CPU vs GPU): d=512, f=13, s=1',
+    min: 0,
+    max: 1024,
+    stepSize: 64,
+    stepToSizeTransformation: (step: number) => Math.max(1, step),
+    benchmarkRuns: [
+      new BenchmarkRun(
+          'avg_pool_gpu', avg_pool_gpu_benchmark.MAX_POOL_BENCHMARK_TEST),
+      new BenchmarkRun(
+          'avg_pool_cpu', max_pool_cpu_benchmark.MAX_POOL_BENCHMARK_TEST)
     ],
   },
   {
