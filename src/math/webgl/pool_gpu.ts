@@ -47,8 +47,6 @@ export class Pool2DProgram implements GPGPUProgram {
     this.outputShape = convInfo.outShape;
 
     const isAvgPool = poolType === 'avg';
-    const compareOp = poolType === 'min' ? '<=' : '>=';
-    const compareOp2 = poolType === 'min' ? 'min' : 'max';
 
     let initializationValue = '0.0';
     if (!isAvgPool) {
@@ -60,6 +58,8 @@ export class Pool2DProgram implements GPGPUProgram {
     }
 
     if (computePositions) {
+      const compareOp = poolType === 'min' ? '<=' : '>=';
+
       this.userCode = `
         const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
         const ivec2 pads = ivec2(${padTop}, ${padLeft});
@@ -115,6 +115,8 @@ export class Pool2DProgram implements GPGPUProgram {
         }
       `;
     } else {
+      const compareOp = poolType === 'min' ? 'min' : 'max';
+
       let returnValue = `${poolType}(${poolType}(${poolType}(` +
           'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
       if (poolType === 'avg') {
@@ -129,7 +131,7 @@ export class Pool2DProgram implements GPGPUProgram {
         if (${isAvgPool}) {
           avgValue += dot(values, ones);
         } else {
-          minMaxValue = ${compareOp2}(values, minMaxValue);
+          minMaxValue = ${compareOp}(values, minMaxValue);
         }
       `;
 
