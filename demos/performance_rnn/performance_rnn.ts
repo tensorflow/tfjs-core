@@ -31,27 +31,58 @@ let h: Array2D[];
 let fullyConnectedBiases: Array1D;
 let fullyConnectedWeights: Array2D;
 const forgetBias = Scalar.new(1.0);
+const activeNotes = new Map<number, number>();
+
+const NOTES_PER_OCTAVE = 12;
+const DENSITY_BIN_RANGES = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0];
+const PITCH_HISTOGRAM_SIZE = NOTES_PER_OCTAVE;
+const MAX_NOTE_DURATION = 5;
+
+let pitchHistogramEncoding: Array1D;
+let noteDensityEncoding: Array1D;
 
 let currentTime = 0;
-let currentVelocity = 1;
+let currentVelocity = 100;
 const math = new NDArrayMathGPU();
 
-const INPUT_SIZE = 388;
+const MIN_MIDI_PITCH = 0;
+const MAX_MIDI_PITCH = 127;
+const VELOCITY_BINS = 32;
+const MAX_SHIFT_STEPS = 100;
+const STEPS_PER_SECOND = 100;
+
+const EVENT_RANGES = [
+  ['note_on', MIN_MIDI_PITCH, MAX_MIDI_PITCH],
+  ['note_off', MIN_MIDI_PITCH, MAX_MIDI_PITCH],
+  ['time_shift', 1, MAX_SHIFT_STEPS],
+  ['velocity_change', 1, VELOCITY_BINS],
+];
+
+function calculateEventSize(): number {
+  let eventOffset = 0;
+  for(const eventRange of EVENT_RANGES) {
+    const minValue = eventRange[1] as number;
+    const maxValue = eventRange[2] as number;
+    eventOffset += maxValue - minValue + 1;
+  }
+  return eventOffset;
+}
+
+const EVENT_SIZE = calculateEventSize();
 const PRIMER_IDX = 355; // shift 1s.
 let lastSample = PRIMER_IDX;
 
-
 const container = document.querySelector('#container');
-const keyboardInterface = new KeyboardElement(container, 0, 4);
+const keyboardInterface = new KeyboardElement(container);
 
 const piano = new Piano({velocities : 4}).toMaster();
-let output: [Array2D[], Array2D[]];
 
 piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
   const reader = new CheckpointLoader('.');
   return reader.getAllVariables();
-  }).then((vars: {[varName: string]: NDArray}) => {
+}).then((vars: {[varName: string]: NDArray}) => {
   document.querySelector('#status').classList.add('hidden');
+  document.querySelector('#controls').classList.remove('hidden');
 
   lstmKernel1 = vars[
     'rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
@@ -80,7 +111,7 @@ piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
     Array2D.zeros([1, lstmBias2.shape[0] / 4]),
     Array2D.zeros([1, lstmBias3.shape[0] / 4]),
   ];
-  //start it at the audio context current time
+  // Start it at the audio context current time.
   currentTime = piano.now();
   generateStep();
 });
@@ -88,23 +119,90 @@ piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
 window.addEventListener('resize', resize);
 
 function resize() {
-  const keyWidth = 20;
-  let octaves = Math.round((window.innerWidth / keyWidth) / 12);
-  octaves = Math.max(octaves, 2);
-  octaves = Math.min(octaves, 7);
-  let baseNote = 48;
-  if (octaves > 5){
-    baseNote -= (octaves - 5) * 12;
-  }
-  keyboardInterface.resize(baseNote, octaves);
+  keyboardInterface.resize();
 }
 
 resize();
 
-function generateStep(){
+const densityControl = document.getElementById(
+    'note-density') as HTMLInputElement;
+const densityDisplay = document.getElementById('note-density-display');
 
+const pitchHistogramElements = [
+  document.getElementById('pitch-c'),
+  document.getElementById('pitch-cs'),
+  document.getElementById('pitch-d'),
+  document.getElementById('pitch-ds'),
+  document.getElementById('pitch-e'),
+  document.getElementById('pitch-f'),
+  document.getElementById('pitch-fs'),
+  document.getElementById('pitch-g'),
+  document.getElementById('pitch-gs'),
+  document.getElementById('pitch-a'),
+  document.getElementById('pitch-as'),
+  document.getElementById('pitch-b'),
+] as HTMLInputElement[];
+
+
+function updateConditioningParams() {
+  const pitchHistogram = pitchHistogramElements.map((e) => {
+    return parseInt(e.value, 10) || 0;
+  });
+
+  if (noteDensityEncoding !== undefined) {
+    noteDensityEncoding.dispose();
+    noteDensityEncoding = undefined;
+  }
+  const noteDensityIdx = parseInt(densityControl.value, 10) || 0;
+  const noteDensity = DENSITY_BIN_RANGES[noteDensityIdx];
+  densityDisplay.innerHTML = noteDensity.toString();
+  noteDensityEncoding = Array1D.zeros([DENSITY_BIN_RANGES.length + 1]);
+  noteDensityEncoding.set(1.0, noteDensityIdx + 1);
+
+  if (pitchHistogramEncoding !== undefined) {
+    pitchHistogramEncoding.dispose();
+    pitchHistogramEncoding = undefined;
+  }
+  pitchHistogramEncoding = Array1D.zeros([PITCH_HISTOGRAM_SIZE]);
+  const pitchHistogramTotal = pitchHistogram.reduce((prev, val) => {
+    return prev + val;
+  });
+  for (let i = 0; i < PITCH_HISTOGRAM_SIZE; i++) {
+    pitchHistogramEncoding.set(pitchHistogram[i] / pitchHistogramTotal, i);
+  }
+}
+
+document.getElementById('note-density').oninput = updateConditioningParams;
+pitchHistogramElements.map((e) => {
+  e.oninput = updateConditioningParams;
+});
+updateConditioningParams();
+
+function updatePitchHistogram(newHist: number[]) {
+  for (let i = 0; i < newHist.length; i++) {
+    pitchHistogramElements[i].value = newHist[i].toString();
+  }
+  updateConditioningParams();
+}
+
+document.getElementById('c-major').onclick = () => {
+  updatePitchHistogram([2, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]);
+};
+
+document.getElementById('f-major').onclick = () => {
+  updatePitchHistogram([1, 0, 1, 0, 1, 2, 0, 1, 0, 1, 1, 0]);
+};
+
+document.getElementById('d-minor').onclick = () => {
+  updatePitchHistogram([1, 0, 2, 0, 1, 1, 0, 1, 0, 1, 1, 0]);
+};
+
+document.getElementById('whole-tone').onclick = () => {
+  updatePitchHistogram([1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]);
+};
+
+function generateStep() {
   math.scope((keep, track) => {
-
     const lstm1 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel1,
       lstmBias1);
     const lstm2 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel2,
@@ -112,18 +210,28 @@ function generateStep(){
     const lstm3 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel3,
       lstmBias3);
 
-    let input = track(Array2D.zeros([1, INPUT_SIZE]));
-    input.set(1.0, 0, lastSample);
-    //generate some notes
+    c.map(val => {
+      track(val);
+    });
+    h.map(val => {
+      track(val);
+    });
+    // Generate some notes.
     for (let i = 0; i < 10; i++) {
+      // Use last sampled output as the next input.
+      const eventInput = track(Array1D.zeros([EVENT_SIZE]));
+      eventInput.set(1.0, lastSample);
+      const conditioning3D = math.concat3D(
+          noteDensityEncoding.as3D(1, 1, noteDensityEncoding.shape[0]),
+          pitchHistogramEncoding.as3D(1, 1, pitchHistogramEncoding.shape[0]),
+          2);
+      const input3D = math.concat3D(
+          conditioning3D,
+          eventInput.as3D(1, 1, eventInput.shape[0]),
+          2);
+      const input = input3D.as2D(1, input3D.shape[2]);
 
-      output = math.multiRNNCell([lstm1, lstm2, lstm3], input, c, h);
-      output[0].map((val:Array2D) => {
-        keep(val);
-      });
-      output[1].map((val:Array2D) => {
-        keep(val);
-      });
+      const output = math.multiRNNCell([lstm1, lstm2, lstm3], input, c, h);
       c = output[0];
       h = output[1];
 
@@ -136,30 +244,22 @@ function generateStep(){
 
       playOutput(sampledOutput);
       lastSample = sampledOutput;
-
-      // use output as the next input.
-      input = track(Array2D.zeros([1, INPUT_SIZE]));
-      input.set(1.0, 0, lastSample);
     }
+    c.map(val => {
+      keep(val);
+    });
+    h.map(val => {
+      keep(val);
+    });
   });
   const delta = currentTime - piano.now();
   setTimeout(() => generateStep(), delta * 1000);
 }
 
 
-const MIN_MIDI_PITCH = 0;
-const MAX_MIDI_PITCH = 127;
-const VELOCITY_BINS = 32;
-const MAX_SHIFT_STEPS = 100;
-const STEPS_PER_SECOND = 100;
-
-const EVENT_RANGES = [
-    ['note_on', MIN_MIDI_PITCH, MAX_MIDI_PITCH],
-    ['note_off', MIN_MIDI_PITCH, MAX_MIDI_PITCH],
-    ['time_shift', 1, MAX_SHIFT_STEPS],
-    ['velocity_change', 1, VELOCITY_BINS],
-];
-
+/**
+ * Decode the output index and play it on the piano and keyboardInterface.
+ */
 function playOutput(index: number) {
   let offset = 0;
   for(const eventRange of EVENT_RANGES) {
@@ -169,19 +269,29 @@ function playOutput(index: number) {
     if (offset <= index && index <= offset + maxValue - minValue) {
       if (eventType === 'note_on') {
         const noteNum = index - offset;
-        // keyboardInterface.keyDown(noteNum);
         setTimeout(() => {
           keyboardInterface.keyDown(noteNum);
           setTimeout(() => {
             keyboardInterface.keyUp(noteNum);
           }, 100);
         }, (currentTime - piano.now())*1000);
+        if (activeNotes.has(noteNum)) {
+          piano.keyUp(noteNum, currentTime);
+        }
+        activeNotes.set(noteNum, currentTime);
         return piano.keyDown(noteNum, currentTime, currentVelocity);
       } else if (eventType === 'note_off') {
         const noteNum = index - offset;
+        activeNotes.delete(noteNum);
         return piano.keyUp(noteNum, currentTime);
       } else if (eventType === 'time_shift') {
         currentTime += (index - offset + 1) / STEPS_PER_SECOND;
+        activeNotes.forEach((time, noteNum) => {
+          if (currentTime - time > MAX_NOTE_DURATION) {
+            activeNotes.delete(noteNum);
+            piano.keyUp(noteNum, currentTime);
+          }
+        });
         return currentTime;
       } else if (eventType === 'velocity_change') {
         currentVelocity = (index - offset + 1) * Math.ceil(127 / VELOCITY_BINS);

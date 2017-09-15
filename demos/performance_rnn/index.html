@@ -11,6 +11,8 @@
       left: 0;
       margin: 0;
       background-color: #fff
+      font-family: Lato, sans-serif;
+      color: #7f7f7f;
   }
   #container #keyboard,
   body #keyboard {
@@ -60,7 +62,7 @@
       opacity: 1
   }
   #keyboard {
-      width: calc(100% - 2 * 2px);
+      width: calc(100% - 20px);
   }
   #keyboard,
   #keyboard .key {
@@ -80,7 +82,7 @@
       z-index: 1;
       height: 50%
   }
-  #keyboard .key.black #fill {
+  #keyboard .key.black .fill {
       background-color: #7f7f7f;
 
       width: calc(100% - 8px);
@@ -89,18 +91,13 @@
   #keyboard .key.white {
       z-index: 0
   }
-  #keyboard .key.white #fill {
+  #keyboard .key.white .fill {
       background-color: #e5e5e5
   }
-  #keyboard .key.black.hover #fill,
-  #keyboard .key.white.hover #fill {
-      border-color: #fff;
-      background-color: #aaa
-  }
-  #keyboard .key #fill {
+  #keyboard .key .fill {
       border: 2px solid #d7d7d7
   }
-  #keyboard .key #fill,
+  #keyboard .key .fill,
   #keyboard .key .highlight {
       position: absolute;
       top: 0;
@@ -124,7 +121,6 @@
 
   #status {
     position: absolute;
-    font-family: Lato, sans-serif;
     left: 0px;
     height: 20px;
     top: 50%;
@@ -138,7 +134,6 @@
     -webkit-transform: translate(0px, -50%);
     /*-ms-transform: translate(0px, -50%);*/
     transform: translate(0px, -50%);
-    color: #7f7f7f;
     font-size: 30px;
     text-align: center;
   }
@@ -161,15 +156,11 @@
     right: 40px;
     bottom: 40px;
     width: 450px;
-    font-family: Lato, sans-serif;
-    color: #7f7f7f;
     font-size: 15px;
     line-height: 25px;
   }
 
   .header {
-    font-family: Lato, sans-serif;
-    color: #7f7f7f;
     font-size: 50px;
     position: absolute;
     width: 100%;
@@ -182,12 +173,90 @@
     color: #6fc9c6;
   }
 
+  #controls {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    margin-top: 100px;
+  }
+
+  .control {
+    display: inline-block;
+  }
+
+  .control .pitch {
+    width: 3em;
+  }
+
   </style>
 </head>
 <body>
   <div id="status">Loading...</div>
   <div id="container"></div>
   <div class="header">Performance RNN</div>
+  <div id="controls" class="hidden">
+    <div class="control" style="margin-right: 20px;">
+      Note Density<br/>
+      <input type="range" min="0" max="6" id="note-density"><br />
+      <span id="note-density-display"></span>
+    </div>
+    <div class="control">
+      Pitch Histogram<br/>
+      <div class="control">
+        <input class="pitch" id="pitch-c" type="number" min="0" value="2"><br/>
+        C
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-cs" type="number" min="0" value="0"><br/>
+        C#
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-d" type="number" min="0" value="1"><br/>
+        D
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-ds" type="number" min="0" value="0"><br/>
+        D#
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-e" type="number" min="0" value="1"><br/>
+        E
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-f" type="number" min="0" value="1"><br/>
+        F
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-fs" type="number" min="0" value="0"><br/>
+        F#
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-g" type="number" min="0" value="1"><br/>
+        G
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-gs" type="number" min="0" value="0"><br/>
+        G#
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-a" type="number" min="0" value="1"><br/>
+        A
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-as" type="number" min="0" value="0"><br/>
+        A#
+      </div>
+      <div class="control">
+        <input class="pitch" id="pitch-b" type="number" min="0" value="1"><br/>
+        B
+      </div>
+      <br />
+      <input type="button" value="C Major" id="c-major">
+      <input type="button" value="F Major" id="f-major">
+      <input type="button" value="D Minor" id="d-minor">
+      <input type="button" value="Whole Tone" id="whole-tone">
+    </div>
+  </div>
   <div class="text-block"><a href="https://magenta.tensorflow.org/performance-rnn">Performance RNN</a> was trained in TensorFlow on MIDI from piano performances recorded at the <a href="http://piano-e-competition.com/">International Piano-e-competition</a>.<br> It was then ported to run in the browser using only Javascript in the <a href="https://pair-code.github.io/deeplearnjs/">deeplearn.js</a> environment.</div>
   <img class="image" sizes="128px" src="images/magenta-logo-bottom-text2.png" srcset="images/magenta-logo-bottom-text2.png 500w, images/magenta-logo-bottom-text2.png 640w" width="128">
   <script src="bundle.js"></script>
