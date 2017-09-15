@@ -31,7 +31,7 @@ export const BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   const texManager = new TextureManager(gpgpu);
   initializeGPU(gpgpu, texManager);
 
-  const inDepth = 10;
+  const inDepth = 32;
   const inShape: [number, number, number] = [size, size, inDepth];
   const outDepth = 1;
   const filterSize = 11;
