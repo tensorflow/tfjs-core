@@ -1,17 +1,19 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
 import * as gpgpu_util from './gpgpu_util';
 import * as tex_util from './tex_util';
@@ -50,8 +52,9 @@ export class GPGPUContext {
           webgl_util.getExtensionOrThrow(this.gl, 'EXT_color_buffer_float');
     }
 
-    this.loseContextExtension = webgl_util.getExtensionOrThrow(
-        this.gl, 'WEBGL_lose_context') as WebGLLoseContextExtension;
+    this.loseContextExtension =
+        webgl_util.getExtensionOrThrow(this.gl, 'WEBGL_lose_context') as
+        WebGLLoseContextExtension;
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
     this.framebuffer = webgl_util.createFramebuffer(this.gl);
@@ -186,20 +189,21 @@ export class GPGPUContext {
     webgl_util.callAndCheck(this.gl, () => this.gl.useProgram(program));
   }
 
-  public getUniformLocation(uniformName: string): WebGLUniformLocation {
+  public getUniformLocation(program: WebGLProgram, uniformName: string):
+      WebGLUniformLocation {
     this.throwIfDisposed();
-    this.throwIfNoProgram();
     return webgl_util.getProgramUniformLocationOrThrow(
-        this.gl, this.program, uniformName);
+        this.gl, program, uniformName);
   }
 
   public setInputMatrixTexture(
-      inputMatrixTexture: WebGLTexture, uniformName: string,
+      inputMatrixTexture: WebGLTexture, uniformLocation: WebGLUniformLocation,
       textureUnit: number) {
     this.throwIfDisposed();
     this.throwIfNoProgram();
     webgl_util.bindTextureToProgramUniformSampler(
-        this.gl, this.program, inputMatrixTexture, uniformName, textureUnit);
+        this.gl, this.program, inputMatrixTexture, uniformLocation,
+        textureUnit);
   }
 
   public setOutputMatrixTexture(

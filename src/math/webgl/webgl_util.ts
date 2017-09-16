@@ -1,17 +1,19 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
 let USE_WEBGL2_WHEN_AVAILABLE = true;
 let WEBGL2_ENABLED: boolean|undefined = null;
@@ -67,9 +69,10 @@ export function isWebGL2Enabled() {
     if (gl != null) {
       WEBGL2_ENABLED = true;
 
-      const loseContextExtension = getExtensionOrThrow(
-          gl as WebGLRenderingContext,
-          'WEBGL_lose_context') as WebGLLoseContextExtension;
+      const loseContextExtension =
+          getExtensionOrThrow(
+              gl as WebGLRenderingContext, 'WEBGL_lose_context') as
+          WebGLLoseContextExtension;
       loseContextExtension.loseContext();
     } else {
       WEBGL2_ENABLED = false;
@@ -85,10 +88,9 @@ export function createWebGLRenderingContextFromCanvas(
   if (isWebGL2Enabled()) {
     gl = canvas.getContext('webgl2', attributes) as WebGLRenderingContext;
   } else {
-    gl =
-        (canvas.getContext('webgl', attributes) ||
-         canvas.getContext(
-             'experimental-webgl', attributes)) as WebGLRenderingContext;
+    gl = (canvas.getContext('webgl', attributes) ||
+          canvas.getContext('experimental-webgl', attributes)) as
+        WebGLRenderingContext;
   }
 
   if (gl == null) {
@@ -169,11 +171,37 @@ export function createFragmentShader(
   callAndCheck(gl, () => gl.shaderSource(fragmentShader, fragmentShaderSource));
   callAndCheck(gl, () => gl.compileShader(fragmentShader));
   if (gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS) === false) {
-    console.log(fragmentShaderSource);
-    console.log(gl.getShaderInfoLog(fragmentShader));
+    logShaderSourceAndInfoLog(
+        fragmentShaderSource, gl.getShaderInfoLog(fragmentShader));
     throw new Error('Failed to compile fragment shader.');
   }
   return fragmentShader;
+}
+
+const lineNumberRegex = /^ERROR: [0-9]+:([0-9]+):/g;
+function logShaderSourceAndInfoLog(
+    shaderSource: string, shaderInfoLog: string) {
+  const lineNumber = +lineNumberRegex.exec(shaderInfoLog)[1];
+
+  const shaderLines = shaderSource.split('\n');
+  const pad = ('' + shaderLines.length).length + 2;
+  const linesWithLineNumbers = shaderLines.map(
+      (line, lineNumber) => util.rightPad('' + (lineNumber + 1), pad) + line);
+  let maxLineLength = 0;
+  for (let i = 0; i < linesWithLineNumbers.length; i++) {
+    maxLineLength = Math.max(linesWithLineNumbers[i].length, maxLineLength);
+  }
+
+  const beforeErrorLines = linesWithLineNumbers.slice(0, lineNumber - 1);
+  const errorLine = linesWithLineNumbers.slice(lineNumber - 1, lineNumber);
+  const afterErrorLines = linesWithLineNumbers.slice(lineNumber);
+
+  console.log(beforeErrorLines.join('\n'));
+  console.log(shaderInfoLog.split('\n')[0]);
+  console.log(
+      `%c ${util.rightPad(errorLine[0], maxLineLength)}`,
+      'border:1px solid red; background-color:#e3d2d2; color:#a61717');
+  console.log(afterErrorLines.join('\n'));
 }
 
 export function createProgram(gl: WebGLRenderingContext): WebGLProgram {
@@ -304,11 +332,9 @@ export function getProgramUniformLocationOrThrow(
 
 export function bindTextureToProgramUniformSampler(
     gl: WebGLRenderingContext, program: WebGLProgram, texture: WebGLTexture,
-    uniformSamplerName: string, textureUnit: number) {
+    uniformSamplerLocation: WebGLUniformLocation, textureUnit: number) {
   callAndCheck(gl, () => bindTextureUnit(gl, texture, textureUnit));
-  const samplerLocation =
-      getProgramUniformLocationOrThrow(gl, program, uniformSamplerName);
-  callAndCheck(gl, () => gl.uniform1i(samplerLocation, textureUnit));
+  callAndCheck(gl, () => gl.uniform1i(uniformSamplerLocation, textureUnit));
 }
 
 export function bindCanvasToFramebuffer(gl: WebGLRenderingContext) {

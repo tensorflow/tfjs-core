@@ -1,21 +1,24 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
 import {MatrixOrientation} from '../math';
 
 import {GPGPUContext} from './gpgpu_context';
+import * as webgl_util from './webgl_util';
 
 export function getFragmentShaderSource(
     sharedDimension: number, aOrientation: MatrixOrientation,
@@ -79,8 +82,12 @@ export function multiplyMatrixPacked(
   gpgpu.setOutputPackedMatrixTexture(
       result, resultShapeRowCol[0], resultShapeRowCol[1]);
   gpgpu.setProgram(multiplyProgram);
-  gpgpu.setInputMatrixTexture(a, 'matrixA', 0);
-  gpgpu.setInputMatrixTexture(b, 'matrixB', 1);
+  const matrixASamplerLocation = webgl_util.getProgramUniformLocationOrThrow(
+      gpgpu.gl, multiplyProgram, 'matrixA');
+  const matrixBSamplerLocation = webgl_util.getProgramUniformLocationOrThrow(
+      gpgpu.gl, multiplyProgram, 'matrixB');
+  gpgpu.setInputMatrixTexture(a, matrixASamplerLocation, 0);
+  gpgpu.setInputMatrixTexture(b, matrixBSamplerLocation, 1);
   gpgpu.executeProgram();
 }
 
