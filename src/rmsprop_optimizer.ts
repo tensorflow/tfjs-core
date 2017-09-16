@@ -10,12 +10,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Node} from './graph';
-import {NDArrayMath} from './math/math';
-import {NDArray, Scalar} from './math/ndarray';
-import {Optimizer} from './optimizer';
-import {SessionRuntime} from './session';
-import {TensorArrayMap, SummedTensorArrayMap} from './tensor_array_map';
+import { Node } from './graph';
+import { NDArrayMath } from './math/math';
+import { NDArray, Scalar } from './math/ndarray';
+import { Optimizer } from './optimizer';
+import { SessionRuntime } from './session';
+import { TensorArrayMap, SummedTensorArrayMap } from './tensor_array_map';
 
 export class RMSPropOptimizer extends Optimizer {
   constructor(protected learningRate: number,
@@ -33,19 +33,19 @@ export class RMSPropOptimizer extends Optimizer {
     gradientArrayMap: SummedTensorArrayMap) {
     super.beforeBatch(math, batchSize, runtime,
       activationArrayMap, gradientArrayMap);
-      if (this.cache.size() === 0) {
-        this.variableNodes.forEach(node => {
-          this.cache.set(node.output,
-            NDArray.zeros(node.output.shape));
-        });
-      }
+    if (this.cache.size() === 0) {
+      this.variableNodes.forEach(node => {
+        this.cache.set(node.output,
+          NDArray.zeros(node.output.shape));
+      });
     }
+  }
 
 
   afterBatch(
-      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap,
-      gradientArrayMap: SummedTensorArrayMap) {
+    math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
+    activationArrayMap: TensorArrayMap,
+    gradientArrayMap: SummedTensorArrayMap) {
     math.scope((keep) => {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
@@ -53,10 +53,10 @@ export class RMSPropOptimizer extends Optimizer {
         const oldCache = this.cache.get(node.output);
         const gradientSquare = math.multiply(gradient, gradient);
         const cache = math.scaledArrayAdd(this.g, oldCache,
-            math.sub(this.one, this.g), gradientSquare);
+          math.sub(this.one, this.g), gradientSquare);
         const variable = math.scaledArrayAdd(this.c,
-            math.divide(gradient, math.add(math.sqrt( cache), this.eps)),
-                this.one, oldVariable);
+          math.divide(gradient, math.add(math.sqrt(cache), this.eps)),
+          this.one, oldVariable);
         this.cache.set(node.output, keep(cache));
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;

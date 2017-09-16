@@ -21,24 +21,24 @@ import * as render_ndarray_gpu_util from './math/webgl/render_ndarray_gpu_util';
 import * as webgl_util from './math/webgl/webgl_util';
 import * as util from './util';
 
-export {CheckpointLoader} from './checkpoint_loader';
-export {DataStats, InMemoryDataset} from './dataset';
-export {Graph, Tensor} from './graph';
+export { CheckpointLoader } from './checkpoint_loader';
+export { DataStats, InMemoryDataset } from './dataset';
+export { Graph, Tensor } from './graph';
 // tslint:disable-next-line:max-line-length
-export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph_runner';
+export { GraphRunner, GraphRunnerEventObserver, MetricReduction } from './graph_runner';
 // tslint:disable-next-line:max-line-length
-export {ConstantInitializer, Initializer, NDArrayInitializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, VarianceScalingInitializer, ZerosInitializer} from './initializers';
+export { ConstantInitializer, Initializer, NDArrayInitializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, VarianceScalingInitializer, ZerosInitializer } from './initializers';
 // tslint:disable-next-line:max-line-length
-export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider} from './input_provider';
-export {MatrixOrientation, NDArrayMath} from './math/math';
-export {NDArrayMathCPU} from './math/math_cpu';
-export {NDArrayMathGPU} from './math/math_gpu';
+export { InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider } from './input_provider';
+export { MatrixOrientation, NDArrayMath } from './math/math';
+export { NDArrayMathCPU } from './math/math_cpu';
+export { NDArrayMathGPU } from './math/math_gpu';
 // tslint:disable-next-line:max-line-length
-export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './math/ndarray';
-export {GPGPUContext} from './math/webgl/gpgpu_context';
-export {Optimizer} from './optimizer';
-export {CostReduction, FeedEntry, Session} from './session';
-export {SGDOptimizer} from './sgd_optimizer';
-export {MomentumOptimizer} from './momentum_optimizer';
+export { Array1D, Array2D, Array3D, Array4D, NDArray, Scalar } from './math/ndarray';
+export { GPGPUContext } from './math/webgl/gpgpu_context';
+export { Optimizer } from './optimizer';
+export { CostReduction, FeedEntry, Session } from './session';
+export { SGDOptimizer } from './sgd_optimizer';
+export { MomentumOptimizer } from './momentum_optimizer';
 // Second level exports.
-export {conv_util, gpgpu_util, render_ndarray_gpu_util, util, webgl_util};
+export { conv_util, gpgpu_util, render_ndarray_gpu_util, util, webgl_util };

@@ -15,49 +15,49 @@
  * =============================================================================
  */
 
-import {Node} from './graph';
-import {NDArrayMath} from './math/math';
-import {NDArray, Scalar} from './math/ndarray';
-import {SessionRuntime} from './session';
-import {SGDOptimizer} from './sgd_optimizer';
-import {SummedTensorArrayMap, TensorArrayMap} from './tensor_array_map';
+import { Node } from './graph';
+import { NDArrayMath } from './math/math';
+import { NDArray, Scalar } from './math/ndarray';
+import { SessionRuntime } from './session';
+import { SGDOptimizer } from './sgd_optimizer';
+import { SummedTensorArrayMap, TensorArrayMap } from './tensor_array_map';
 
 export class MomentumOptimizer extends SGDOptimizer {
   constructor(
-      protected learningRate: number, private momentum: number,
-      specifiedVariableList?: Node[]) {
+    protected learningRate: number, private momentum: number,
+    specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.m = Scalar.new(this.momentum);
   }
 
   beforeBatch(
-      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap,
-      gradientArrayMap: SummedTensorArrayMap) {
+    math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
+    activationArrayMap: TensorArrayMap,
+    gradientArrayMap: SummedTensorArrayMap) {
     super.beforeBatch(
-        math, batchSize, runtime, activationArrayMap, gradientArrayMap);
+      math, batchSize, runtime, activationArrayMap, gradientArrayMap);
 
     if (this.variableVelocities.size() === 0) {
       this.variableNodes.forEach(node => {
         this.variableVelocities.set(
-            node.output, NDArray.zeros(node.output.shape));
+          node.output, NDArray.zeros(node.output.shape));
       });
     }
   }
 
   afterBatch(
-      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap,
-      gradientArrayMap: SummedTensorArrayMap) {
+    math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
+    activationArrayMap: TensorArrayMap,
+    gradientArrayMap: SummedTensorArrayMap) {
     math.scope((keep) => {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
         const oldVelocity = this.variableVelocities.get(node.output);
         const velocity =
-            math.scaledArrayAdd(this.m, oldVelocity, this.one, gradient);
+          math.scaledArrayAdd(this.m, oldVelocity, this.one, gradient);
         const variable =
-            math.scaledArrayAdd(this.c, velocity, this.one, oldVariable);
+          math.scaledArrayAdd(this.c, velocity, this.one, oldVariable);
         this.variableVelocities.set(node.output, keep(velocity));
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
