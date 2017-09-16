@@ -46,4 +46,4 @@ export const AVG_POOL_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   x.dispose();
 
   return avgTime;
-}
+};

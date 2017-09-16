@@ -56,4 +56,4 @@ export const AVG_POOL_BENCHMARK_TEST: BenchmarkTest = (size: number) => {
   gpgpu.dispose();
 
   return avgTime;
-}
+};
