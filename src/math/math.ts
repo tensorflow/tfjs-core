@@ -1,17 +1,19 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
 import * as util from '../util';
 import * as concat3d_util from './concat3d_util';
@@ -789,6 +791,15 @@ export abstract class NDArrayMath {
   protected abstract sqrtInternal<T extends NDArray>(ndarray: T): T;
 
   /**
+   * Computes absolute value element-wise.
+   * @param ndarray The input NDArray.
+   */
+  abs<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('abs', () => this.absInternal(ndarray));
+  }
+  protected abstract absInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
    * Computes rectified linear element-wise, max(x, 0).
    * @param ndarray The input NDArray.
    */
@@ -807,6 +818,78 @@ export abstract class NDArrayMath {
   protected abstract sigmoidInternal<T extends NDArray>(ndarray: T): T;
 
   /**
+   * Computes sin of the input NDArray element-wise, y = sin(x).
+   * @param ndarray The input NDArray.
+   */
+  sin<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('sin', () => this.sinInternal(ndarray));
+  }
+  protected abstract sinInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes cos of the input NDArray element-wise, y = cos(x).
+   * @param ndarray The input NDArray.
+   */
+  cos<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('cos', () => this.cosInternal(ndarray));
+  }
+  protected abstract cosInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes tan of the input NDArray element-wise, y = tan(x).
+   * @param ndarray The input NDArray.
+   */
+  tan<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('tan', () => this.tanInternal(ndarray));
+  }
+  protected abstract tanInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes asin of the input NDArray element-wise, y = asin(x).
+   * @param ndarray The input NDArray.
+   */
+  asin<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('asin', () => this.asinInternal(ndarray));
+  }
+  protected abstract asinInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes acos of the input NDArray element-wise, y = acos(x).
+   * @param ndarray The input NDArray.
+   */
+  acos<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('acos', () => this.acosInternal(ndarray));
+  }
+  protected abstract acosInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes atan of the input NDArray element-wise, y = atan(x).
+   * @param ndarray The input NDArray.
+   */
+  atan<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('atan', () => this.atanInternal(ndarray));
+  }
+  protected abstract atanInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes hyperbolic sin of the input NDArray element-wise, y = sinh(x).
+   * @param ndarray The input NDArray.
+   */
+  sinh<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('sinh', () => this.sinhInternal(ndarray));
+  }
+  protected abstract sinhInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes hyperbolic cos of the input NDArray element-wise, y = cosh(x).
+   * @param ndarray The input NDArray.
+   */
+  cosh<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('cosh', () => this.coshInternal(ndarray));
+  }
+  protected abstract coshInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
    * Computes hyperbolic tangent of the input NDArray element-wise.
    * @param ndarray The input NDArray.
    */
@@ -815,14 +898,6 @@ export abstract class NDArrayMath {
   }
   protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
-  /**
-   * Computes sin of the input NDArray element-wise, y = sin(x).
-   * @param ndarray The input NDArray.
-   */
-  sin<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sin', () => this.sinInternal(ndarray));
-  }
-  protected abstract sinInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes step of the input NDArray element-wise, y = 1 if x > 0 | 0 if x <=
