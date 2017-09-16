@@ -36,9 +36,9 @@ export class AdagradOptimizer extends Optimizer {
     super.beforeBatch(math, batchSize, runtime,
       activationArrayMap, gradientArrayMap);
 
-    if (this.cache.size() === 0) {
+    if (this.accumulatedSquaredGradients.size() === 0) {
       this.variableNodes.forEach(node => {
-        this.cache.set(node.output,
+        this.accumulatedSquaredGradients.set(node.output,
           NDArray.zeros(node.output.shape));
       });
     }
@@ -52,13 +52,13 @@ export class AdagradOptimizer extends Optimizer {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
-        const oldCache = this.cache.get(node.output);
+        const oldCache = this.accumulatedSquaredGradients.get(node.output);
         const gradientSquare = math.multiply(gradient, gradient);
         const cache = math.add(oldCache, gradientSquare);
         const variable = math.scaledArrayAdd(this.c,
           math.divide(gradient, math.add(math.sqrt(cache), this.eps)),
           this.one, oldVariable);
-        this.cache.set(node.output, keep(cache));
+        this.accumulatedSquaredGradients.set(node.output, keep(cache));
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
         oldVariable.dispose();
@@ -74,10 +74,10 @@ export class AdagradOptimizer extends Optimizer {
     super.dispose();
     this.m.dispose();
     this.eps.dispose();
-    this.cache.dispose();
+    this.accumulatedSquaredGradients.dispose();
   }
 
-  private cache = new TensorArrayMap();
+  private accumulatedSquaredGradients = new TensorArrayMap();
   private m: Scalar;
   private eps: Scalar;
 }
