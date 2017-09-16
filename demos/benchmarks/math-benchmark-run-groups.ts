@@ -24,6 +24,7 @@ import * as max_pool_gpu_benchmark from './max_pool_gpu_benchmark';
 import * as max_pool_cpu_benchmark from './max_pool_cpu_benchmark';
 import * as mulmat_cpu_benchmark from './mulmat_cpu_benchmark';
 import * as mulmat_gpu_benchmark from './mulmat_gpu_benchmark';
+import * as unary_ops_benchmark from './unary_ops_benchmark';
 
 export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
   {
@@ -33,6 +34,7 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     min: 0,
     max: 1024,
     stepSize: 64,
+    hasOptions: false,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
       new BenchmarkRun('mulmat_gpu', mulmat_gpu_benchmark.BENCHMARK_TEST),
@@ -44,6 +46,7 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     min: 0,
     max: 1024,
     stepSize: 64,
+    hasOptions: false,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [new BenchmarkRun(
         'd1=1, d2=1, f=11, s=1', conv_gpu_benchmark.BENCHMARK_TEST)],
@@ -53,6 +56,7 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     min: 0,
     max: 1024,
     stepSize: 64,
+    hasOptions: false,    
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [new BenchmarkRun(
         'd1=1, d2=1, f=11, s=1', conv_transpose_gpu_benchmark.BENCHMARK_TEST)],
@@ -62,6 +66,7 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     min: 0,
     max: 1024,
     stepSize: 64,
+    hasOptions: false,    
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
       new BenchmarkRun('max_pool_gpu',
@@ -75,11 +80,31 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
     min: 0,
     max: 1024,
     stepSize: 64,
+    hasOptions: false,    
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
       new BenchmarkRun(
           'logsumexp_gpu', logsumexp_gpu_benchmark.BENCHMARK_TEST),
       new BenchmarkRun('logsumexp_cpu', logsumexp_cpu_benchmark.BENCHMARK_TEST)
+    ],
+  },
+  {
+    name: 'Unary Op Benchmark (CPU vs GPU): input [size, size]',
+    min: 0,
+    max: 1024,
+    hasOptions: true,
+    options: [
+      "log", "exp", "neg", "sqrt", "abs", "relu", "sigmoid", 
+      "sin", "cos", "tan", "asin", "acos", "atan", "sinh", 
+      "cosh", "tanh", "logSumExp"
+    ],
+    selectedOption: "max",
+    stepSize: 64,
+        benchmarkRuns: [
+      new BenchmarkRun(
+        'unary ops CPU', unary_ops_benchmark.UNARY_OPS_CPU_BENCHMARK_TEST),
+      new BenchmarkRun(
+        'unary ops GPU', unary_ops_benchmark.UNARY_OPS_GPU_BENCHMARK_TEST)
     ],
   }
 ];
