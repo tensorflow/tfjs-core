@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
-import { Node } from './graph';
-import { NDArrayMath } from './math/math';
-import { Optimizer } from './optimizer';
-import { SessionRuntime } from './session';
-import { TensorArrayMap, SummedTensorArrayMap } from './tensor_array_map';
+import {Node} from './graph';
+import {NDArrayMath} from './math/math';
+import {Optimizer} from './optimizer';
+import {SessionRuntime} from './session';
+import {SummedTensorArrayMap, TensorArrayMap} from './tensor_array_map';
 
 export class SGDOptimizer extends Optimizer {
   constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
@@ -27,15 +27,15 @@ export class SGDOptimizer extends Optimizer {
   }
 
   afterBatch(
-    math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-    activationArrayMap: TensorArrayMap,
-    gradientArrayMap: SummedTensorArrayMap) {
+      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
+      activationArrayMap: TensorArrayMap,
+      gradientArrayMap: SummedTensorArrayMap) {
     math.scope((keep) => {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
         const variable =
-          math.scaledArrayAdd(this.c, gradient, this.one, oldVariable);
+            math.scaledArrayAdd(this.c, gradient, this.one, oldVariable);
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
 

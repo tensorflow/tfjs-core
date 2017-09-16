@@ -15,16 +15,16 @@
  * =============================================================================
  */
 
-import { Node, VariableNode } from './graph';
-import { NDArrayMath } from './math/math';
-import { NDArray, Scalar } from './math/ndarray';
-import { SessionRuntime } from './session';
+import {Node, VariableNode} from './graph';
+import {NDArrayMath} from './math/math';
+import {NDArray, Scalar} from './math/ndarray';
+import {SessionRuntime} from './session';
 import * as session_util from './session_util';
-import { TensorArrayMap, SummedTensorArrayMap } from './tensor_array_map';
+import {SummedTensorArrayMap, TensorArrayMap} from './tensor_array_map';
 
 export abstract class Optimizer {
   protected variableNodes: VariableNode[];
-  protected specifiedVariableNodes: VariableNode[] | null;
+  protected specifiedVariableNodes: VariableNode[]|null;
 
   constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
     if (specifiedVariableList != null) {
@@ -33,12 +33,12 @@ export abstract class Optimizer {
   }
 
   beforeBatch(
-    math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-    activationArrayMap: TensorArrayMap,
-    gradientArrayMap: SummedTensorArrayMap) {
+      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
+      activationArrayMap: TensorArrayMap,
+      gradientArrayMap: SummedTensorArrayMap) {
     this.variableNodes = this.specifiedVariableNodes == null ?
-      session_util.getVariableNodesFromEvaluationSet(runtime.nodes) :
-      this.specifiedVariableNodes;
+        session_util.getVariableNodesFromEvaluationSet(runtime.nodes) :
+        this.specifiedVariableNodes;
     if (batchSize !== this.prevBatchSize) {
       if (this.c != null) {
         this.c.dispose();
@@ -47,29 +47,29 @@ export abstract class Optimizer {
       this.c = Scalar.new(-this.learningRate / batchSize);
     }
     this.variableNodes.forEach(
-      node => this.variableGradients.set(
-        node.output, NDArray.zeros(node.output.shape)));
+        node => this.variableGradients.set(
+            node.output, NDArray.zeros(node.output.shape)));
   }
 
   afterExample(
-    math: NDArrayMath, runtime: SessionRuntime,
-    activationArrayMap: TensorArrayMap,
-    gradientArrayMap: SummedTensorArrayMap) {
+      math: NDArrayMath, runtime: SessionRuntime,
+      activationArrayMap: TensorArrayMap,
+      gradientArrayMap: SummedTensorArrayMap) {
     math.scope((keep) => {
       this.variableNodes.forEach(node => {
         const gradient = gradientArrayMap.get(node.output);
         const accumulatedGradient = this.variableGradients.get(node.output);
         this.variableGradients.set(
-          node.output, keep(math.add(gradient, accumulatedGradient)));
+            node.output, keep(math.add(gradient, accumulatedGradient)));
         accumulatedGradient.dispose();
       });
     });
   }
 
   abstract afterBatch(
-    math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-    activationArrayMap: TensorArrayMap,
-    gradientArrayMap: SummedTensorArrayMap): void;
+      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
+      activationArrayMap: TensorArrayMap,
+      gradientArrayMap: SummedTensorArrayMap): void;
 
   dispose() {
     if (this.c != null) {
