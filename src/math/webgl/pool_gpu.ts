@@ -114,108 +114,109 @@ export class Pool2DProgram implements GPGPUProgram {
           setOutput(float(minMaxPosition));
         }
       `;
-    } else {
-      const compareOp = poolType === 'min' ? 'min' : 'max';
+      return;
+    }
 
-      let returnValue = `${poolType}(${poolType}(${poolType}(` +
-          'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
-      if (poolType === 'avg') {
-        returnValue = `avgValue / ${filterHeight * filterWidth}.0`;
+    const compareOp = poolType === 'min' ? 'min' : 'max';
+
+    let returnValue = `${poolType}(${poolType}(${poolType}(` +
+        'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
+    if (poolType === 'avg') {
+      returnValue = `avgValue / ${filterHeight * filterWidth}.0`;
+    }
+
+    const filterWidthNearestVec4 = Math.floor(filterWidth / 4) * 4;
+    const filterWidthVec4Remainder = filterWidth % 4;
+
+    const updateSnippet = `
+      if (hasNaN(values)) {
+        setOutput(getNaN(values));
+        return;
+      }
+      if (${isAvgPool}) {
+        avgValue += dot(values, ones);
+      } else {
+        minMaxValue = ${compareOp}(values, minMaxValue);
+      }
+    `;
+
+    this.userCode = `
+      const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
+      const ivec2 pads = ivec2(${padTop}, ${padLeft});
+      const float initializationValue = ${initializationValue};
+      const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
+
+      float getValue(int xR, int xC, int d) {
+        if (xC < 0 || xC >= ${xNumCols}) {
+          return initializationValue;
+        }
+        return getX(xR, xC, d);
       }
 
-      const filterSize = filterWidth * filterHeight;
-      const filterNearestVec4 = Math.floor(filterSize / 4) * 4;
-      const filterVec4Remainder = filterSize % 4;
+      void main() {
+        ivec3 coords = getOutputCoords();
+        int d = coords.z;
 
-      const updateSnippet = `
-        if (${isAvgPool}) {
-          avgValue += dot(values, ones);
-        } else {
-          minMaxValue = ${compareOp}(values, minMaxValue);
-        }
-      `;
+        ivec2 xRCCorner = coords.xy * strides - pads;
+        int xRCorner = xRCCorner.x;
+        int xCCorner = xRCCorner.y;
 
-      this.userCode = `
-        const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
-        const ivec2 pads = ivec2(${padTop}, ${padLeft});
-        const float initializationValue = ${initializationValue};
-        const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
+        // max/min x(?, ?, d) to get y(yR, yC, d).
+        // ? = to be determined
+        vec4 minMaxValue = vec4(${initializationValue});
+        float avgValue = 0.0;
 
-        float getValue(int xRCorner, int xCCorner, int d, int f) {
-          int wR = f / ${filterWidth};
+        for (int wR = 0; wR < ${filterHeight}; wR++) {
           int xR = xRCorner + wR;
 
-          int wC = f - wR * ${filterWidth};
-          int xC = xCCorner + wC;
-
-          if (xR < 0 || xR >= ${xNumRows} || xC < 0 || xC >= ${xNumCols}) {
-            return initializationValue;
+          if (xR < 0 || xR >= ${xNumRows}) {
+            continue;
           }
-          return getX(xR, xC, d);
+
+          for (int wC = 0; wC < ${filterWidthNearestVec4}; wC += 4) {
+            int xC = xCCorner + wC;
+
+            vec4 values = vec4(
+              getValue(xR, xC, d),
+              getValue(xR, xC + 1, d),
+              getValue(xR, xC + 2, d),
+              getValue(xR, xC + 3, d)
+            );
+
+            ${updateSnippet}
+          }
+
+          int xC = xCCorner + ${filterWidthNearestVec4};
+          if (${filterWidthVec4Remainder === 1}) {
+            vec4 values = vec4(
+              getValue(xR, xC, d),
+              initializationValue,
+              initializationValue,
+              initializationValue
+            );
+            ${updateSnippet}
+          } else if (${filterWidthVec4Remainder === 2}) {
+            vec4 values = vec4(
+              getValue(xR, xC, d),
+              getValue(xR, xC + 1, d),
+              initializationValue,
+              initializationValue
+            );
+
+            ${updateSnippet}
+          } else if (${filterWidthVec4Remainder === 3}) {
+            vec4 values = vec4(
+              getValue(xR, xC, d),
+              getValue(xR, xC + 1, d),
+              getValue(xR, xC + 2, d),
+              initializationValue
+            );
+
+            ${updateSnippet}
+          }
         }
-
-        void main() {
-          ivec3 coords = getOutputCoords();
-          int d = coords.z;
-
-          ivec2 xRCCorner = coords.xy * strides - pads;
-          int xRCorner = xRCCorner.x;
-          int xCCorner = xRCCorner.y;
-
-          // max/min x(?, ?, d) to get y(yR, yC, d).
-          // ? = to be determined
-          vec4 minMaxValue = vec4(${initializationValue});
-          float minMaxValueFound = 0.0;
-          int minMaxPosition = 0;
-          float avgValue = 0.0;
-
-          for (int f = 0; f < ${filterNearestVec4}; f+=4) {
-            vec4 values = vec4(
-              getValue(xRCorner, xCCorner, d, f),
-              getValue(xRCorner, xCCorner, d, f + 1),
-              getValue(xRCorner, xCCorner, d, f + 2),
-              getValue(xRCorner, xCCorner, d, f + 3)
-            );
-
-            if (hasNaN(values)) {
-               setOutput(getNaN(values));
-               return;
-            }
-
-            ${updateSnippet}
-          }
-
-          if (${filterVec4Remainder === 1}) {
-            vec4 values = vec4(
-              getValue(xRCorner, xCCorner, d, ${filterNearestVec4}),
-              initializationValue,
-              initializationValue,
-              initializationValue
-            );
-            ${updateSnippet}
-          } else if (${filterVec4Remainder === 2}) {
-            vec4 values = vec4(
-              getValue(xRCorner, xCCorner, d, ${filterNearestVec4}),
-              getValue(xRCorner, xCCorner, d, ${filterNearestVec4} + 1),
-              initializationValue,
-              initializationValue
-            );
-
-            ${updateSnippet}
-          } else if (${filterVec4Remainder === 3}) {
-            vec4 values = vec4(
-              getValue(xRCorner, xCCorner, d, ${filterNearestVec4}),
-              getValue(xRCorner, xCCorner, d, ${filterNearestVec4} + 1),
-              getValue(xRCorner, xCCorner, d, ${filterNearestVec4} + 2),
-              initializationValue
-            );
-
-            ${updateSnippet}
-          }
-
-          setOutput(${returnValue});
-        }
-      `;
-    }
+        setOutput(${returnValue});
+      }
+    `;
   }
 }
