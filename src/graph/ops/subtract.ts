@@ -73,7 +73,7 @@ export class Subtract extends Operation {
           }
           gradientArrays.add(this.t1, math.divide(sum, this.dySizeScalar));
         } else {
-          gradientArrays.add(this.t1, dy);
+          gradientArrays.add(this.t1, math.clone(dy));
         }
       }
 
