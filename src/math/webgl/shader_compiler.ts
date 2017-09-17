@@ -224,6 +224,7 @@ const FLOAT_TEXTURE_SETOUTPUT_SNIPPET = `
 
 const SHADER_PREFIX = `
   precision highp float;
+  precision highp int;
   varying vec2 resultUV;
   const vec2 halfCR = vec2(0.5, 0.5);
 
@@ -241,20 +242,21 @@ function getOutput1DCoords(
   if (texShape[0] === 1) {
     return `
       int getOutputCoords() {
-        return int(gl_FragCoord.x);
+        return int(resultUV.x * ${texShape[1]}.0);
       }
     `;
   }
   if (texShape[1] === 1) {
     return `
       int getOutputCoords() {
-        return int(gl_FragCoord.y);
+        return int(resultUV.y * ${texShape[0]}.0);
       }
     `;
   }
   return `
     int getOutputCoords() {
-      ivec2 resTexRC = ivec2(gl_FragCoord.yx);
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${texShape[0]}, ${texShape[1]}));
       return resTexRC.x * ${texShape[1]} + resTexRC.y;
     }
   `;
@@ -266,7 +268,8 @@ function getOutput3DCoords(
   const stride1 = shape[2];
   return `
     ivec3 getOutputCoords() {
-      ivec2 resTexRC = ivec2(gl_FragCoord.yx);
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${texShape[0]}, ${texShape[1]}));
       int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
       int r = index / ${stride0};
       index -= r * ${stride0};
@@ -285,7 +288,8 @@ function getOutput4DCoords(
   const stride0 = shape[1] * stride1;
   return `
     ivec4 getOutputCoords() {
-      ivec2 resTexRC = ivec2(gl_FragCoord.yx);
+      ivec2 resTexRC = ivec2(resultUV.yx *
+        vec2(${texShape[0]}, ${texShape[1]}));
       int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
 
       int r = index / ${stride0};
@@ -307,14 +311,15 @@ function getOutput2DCoords(
   if (util.arraysEqual(shape, texShape)) {
     return `
       ivec2 getOutputCoords() {
-        return ivec2(gl_FragCoord.yx);
+        return ivec2(resultUV.yx * vec2(${texShape[0]}, ${texShape[1]}));
       }
     `;
   }
   if (shape[1] === 1) {
     return `
       ivec2 getOutputCoords() {
-        ivec2 resTexRC = ivec2(gl_FragCoord.yx);
+        ivec2 resTexRC = ivec2(resultUV.yx *
+                               vec2(${texShape[0]}, ${texShape[1]}));
         int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
         return ivec2(index, 0);
       }
@@ -323,7 +328,8 @@ function getOutput2DCoords(
   if (shape[0] === 1) {
     return `
       ivec2 getOutputCoords() {
-        ivec2 resTexRC = ivec2(gl_FragCoord.yx);
+        ivec2 resTexRC = ivec2(resultUV.yx *
+                               vec2(${texShape[0]}, ${texShape[1]}));
         int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
         return ivec2(0, index);
       }
@@ -331,7 +337,8 @@ function getOutput2DCoords(
   }
   return `
     ivec2 getOutputCoords() {
-      ivec2 resTexRC = ivec2(gl_FragCoord.yx);
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${texShape[0]}, ${texShape[1]}));
       int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
       int r = index / ${shape[1]};
       int c = index - r * ${shape[1]};
@@ -555,7 +562,8 @@ function getSamplerAtOutputCoords(
   }
   return `
     float ${funcName}() {
-      ivec2 resTexRC = ivec2(gl_FragCoord.yx);
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${outTexShape[0]}, ${outTexShape[1]}));
       int index = resTexRC.x * ${outTexShape[1]} + resTexRC.y;
       ${broadcastSnippet}
       int texR = index / ${inTexShape[1]};

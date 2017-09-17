@@ -56,7 +56,7 @@ export function encodeMatrixToUnpackedArray(
   }
 }
 
-export const FLOAT_MAX = 1000;  // 10000;
+export const FLOAT_MAX = 10000;
 export const FLOAT_MIN = -FLOAT_MAX;
 const FLOAT_RANGE = (FLOAT_MAX - FLOAT_MIN) / 255;
 
