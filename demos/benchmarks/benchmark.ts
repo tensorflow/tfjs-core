@@ -25,7 +25,7 @@ export interface BenchmarkRunGroup {
   // A transformation of step to the size passed to the benchmark test.
   stepToSizeTransformation?: (step: number) => number;
   benchmarkRuns: BenchmarkRun[];
-  params: Object;
+  params: {};
 }
 
 export class BenchmarkRun {
@@ -41,6 +41,6 @@ export class BenchmarkRun {
 }
 
 export abstract class BenchmarkTest {
-  constructor(protected params?: Object) {}
+  constructor(protected params?: {}) {}
   abstract run(size: number): number;
 }

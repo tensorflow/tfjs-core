@@ -19,7 +19,7 @@ import {initializeGPU} from '../../src/math/ndarray';
 import {Conv2DProgram} from '../../src/math/webgl/conv_gpu';
 import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
 import {TextureManager} from '../../src/math/webgl/texture_manager';
-import {Array1D, Array3D, Array4D, conv_util, GPGPUContext} from '../deeplearnjs';
+import {Array1D, Array3D, Array4D, conv_util, GPGPUContext} from '../deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 
@@ -79,5 +79,5 @@ export class ConvGPUBenchmark extends ConvBenchmark {
     gpgpu.dispose();
 
     return avgTime;
-  };
+  }
 }

@@ -18,9 +18,12 @@
 
 import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
 import {ConvBenchmarkParams, ConvGPUBenchmark} from './conv_benchmarks';
+// tslint:disable-next-line:max-line-length
 import {ConvTransposedBenchmarkParams, ConvTransposedGPUBenchmark} from './conv_transposed_benchmarks';
+// tslint:disable-next-line:max-line-length
 import {LogSumExpCPUBenchmark, LogSumExpGPUBenchmark} from './logsumexp_benchmarks';
 import {MatmulCPUBenchmark, MatmulGPUBenchmark} from './matmul_benchmarks';
+// tslint:disable-next-line:max-line-length
 import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from './pool_benchmarks';
 
 export function getRunGroups(): BenchmarkRunGroup[] {
@@ -105,7 +108,7 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
       new BenchmarkRun('logsumexp_gpu', new LogSumExpGPUBenchmark()),
-      new BenchmarkRun('logsumexp_cpu', new LogSumExpCPUBenchmark)
+      new BenchmarkRun('logsumexp_cpu', new LogSumExpCPUBenchmark())
     ],
     params: {}
   });

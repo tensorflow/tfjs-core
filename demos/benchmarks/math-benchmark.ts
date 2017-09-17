@@ -27,7 +27,7 @@ import {getRunGroups} from './math-benchmark-run-groups';
 export let MathBenchmarkPolymer: new () => PolymerHTMLElement = PolymerElement(
     {is: 'math-benchmark', properties: {benchmarkRunGroupNames: Array}});
 
-function getDisplayParams(params?: Object): string {
+function getDisplayParams(params?: {}): string {
   if (params == null) {
     return '';
   }

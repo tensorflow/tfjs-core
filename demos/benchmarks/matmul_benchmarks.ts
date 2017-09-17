@@ -18,7 +18,7 @@
 import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
 import {MatMulProgram} from '../../src/math/webgl/mulmat_gpu';
 import * as test_util from '../../src/test_util';
-import {Array2D, GPGPUContext, NDArray, NDArrayMathCPU} from '../deeplearnjs';
+import {Array2D, GPGPUContext, NDArray, NDArrayMathCPU} from '../deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 
@@ -36,7 +36,7 @@ export class MatmulCPUBenchmark extends BenchmarkTest {
     math.matMul(a, b);
     const end = performance.now();
     return end - start;
-  };
+  }
 }
 
 export class MatmulGPUBenchmark extends BenchmarkTest {
@@ -74,5 +74,5 @@ export class MatmulGPUBenchmark extends BenchmarkTest {
     gpgpu.dispose();
 
     return avgTime;
-  };
+  }
 }

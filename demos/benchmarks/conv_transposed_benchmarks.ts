@@ -19,7 +19,7 @@ import {initializeGPU} from '../../src/math/ndarray';
 import {Conv2DDerInputProgram} from '../../src/math/webgl/conv_backprop_gpu';
 import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
 import {TextureManager} from '../../src/math/webgl/texture_manager';
-import {Array3D, Array4D, conv_util, GPGPUContext} from '../deeplearnjs';
+import {Array3D, Array4D, conv_util, GPGPUContext} from '../deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 
@@ -75,5 +75,5 @@ export class ConvTransposedGPUBenchmark extends ConvTransposedBenchmark {
     gpgpu.deleteProgram(binary.webGLProgram);
     gpgpu.dispose();
     return avgTime;
-  };
+  }
 }
