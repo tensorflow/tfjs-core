@@ -25,7 +25,10 @@ import {getRunGroups} from './math-benchmark-run-groups';
 
 // tslint:disable-next-line:variable-name
 export let MathBenchmarkPolymer: new () => PolymerHTMLElement = PolymerElement(
-    {is: 'math-benchmark', properties: {benchmarks: Array, benchmarkRunGroupNames: Array}});
+    {is: 'math-benchmark', properties: {
+      benchmarks: Array, 
+      benchmarkRunGroupNames: Array
+    }});
 
 function getDisplayParams(params?: {}): string {
   if (params == null) {

@@ -26,7 +26,8 @@ const OPS_PER_RUN = 10;
 
 export abstract class ReductionOpsBenchmark extends BenchmarkTest {
 
-  protected getReductionOp(option: string, math: NDArrayMath): (input: NDArray) => Scalar {
+  protected getReductionOp(option: string, math: NDArrayMath): 
+      (input: NDArray) => Scalar {
 	switch (option) {
 		case "max":
 			return (input: NDArray) => math.max(input);
