@@ -15,80 +15,113 @@
  * =============================================================================
  */
 
-import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
-import * as conv_gpu_benchmark from './conv_gpu_benchmark';
-import * as conv_transpose_gpu_benchmark from './conv_transpose_gpu_benchmark';
-import * as logsumexp_cpu_benchmark from './logsumexp_cpu_benchmark';
-import * as logsumexp_gpu_benchmark from './logsumexp_gpu_benchmark';
-import * as max_pool_gpu_benchmark from './max_pool_gpu_benchmark';
-import * as max_pool_cpu_benchmark from './max_pool_cpu_benchmark';
-import * as mulmat_cpu_benchmark from './mulmat_cpu_benchmark';
-import * as mulmat_gpu_benchmark from './mulmat_gpu_benchmark';
-import * as unary_ops_benchmark from './unary_ops_benchmark';
 
-export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
-  {
-    name:
-        'Matrix Multiplication (CPU vs GPU): ' +
-            'matmul([size, size], [size, size])',
+import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
+import {ConvBenchmarkParams, ConvGPUBenchmark} from './conv_benchmarks';
+// tslint:disable-next-line:max-line-length
+import {ConvTransposedBenchmarkParams, ConvTransposedGPUBenchmark} from './conv_transposed_benchmarks';
+// tslint:disable-next-line:max-line-length
+import {LogSumExpCPUBenchmark, LogSumExpGPUBenchmark} from './logsumexp_benchmarks';
+import {MatmulCPUBenchmark, MatmulGPUBenchmark} from './matmul_benchmarks';
+// tslint:disable-next-line:max-line-length
+import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from './pool_benchmarks';
+import {UnaryOpsCPUBenchmark, UnaryOpsGPUBenchmark} from './unary_ops_benchmark';
+import {ReductionOpsCPUBenchmark, ReductionOpsGPUBenchmark} from './reduction_ops_benchmark';
+
+export function getRunGroups(): BenchmarkRunGroup[] {
+  const groups: BenchmarkRunGroup[] = [];
+
+  groups.push({
+    name: 'Matrix Multiplication: ' +
+        'matmul([size, size], [size, size])',
     min: 0,
     max: 1024,
     stepSize: 64,
     hasOptions: false,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
-      new BenchmarkRun('mulmat_gpu', mulmat_gpu_benchmark.BENCHMARK_TEST),
-      new BenchmarkRun('mulmat_cpu', mulmat_cpu_benchmark.BENCHMARK_TEST)
+      new BenchmarkRun('mulmat_gpu', new MatmulGPUBenchmark()),
+      new BenchmarkRun('mulmat_cpu', new MatmulCPUBenchmark())
     ],
-  },
-  {
-    name: 'Convolution (GPU): conv over image [size, size, 1]',
+    params: {}
+  });
+
+  const convParams:
+      ConvBenchmarkParams = {inDepth: 8, outDepth: 3, filterSize: 7, stride: 1};
+  groups.push({
+    name: 'Convolution: image [size, size]',
     min: 0,
     max: 1024,
     stepSize: 64,
     hasOptions: false,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
-    benchmarkRuns: [new BenchmarkRun(
-        'd1=1, d2=1, f=11, s=1', conv_gpu_benchmark.BENCHMARK_TEST)],
-  },
-  {
-    name: 'Convolution Transposed (GPU): deconv over image [size, size, 1]',
+    benchmarkRuns:
+        [new BenchmarkRun('conv_gpu', new ConvGPUBenchmark(convParams))],
+    params: convParams
+  });
+
+  const convTransposedParams: ConvTransposedBenchmarkParams =
+      {inDepth: 8, outDepth: 3, filterSize: 7, stride: 1};
+  groups.push({
+    name: 'Convolution Transposed: deconv over image [size, size]',
     min: 0,
     max: 1024,
     stepSize: 64,
     hasOptions: false,    
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [new BenchmarkRun(
-        'd1=1, d2=1, f=11, s=1', conv_transpose_gpu_benchmark.BENCHMARK_TEST)],
-  },
-  {
-    name: 'Max pool (CPU vs GPU): d1=1, d2=1, f=11, s=1',
+        'conv_transpose_gpu',
+        new ConvTransposedGPUBenchmark(convTransposedParams))],
+    params: convTransposedParams
+  });
+
+  const maxPoolParams:
+      PoolBenchmarkParams = {depth: 8, fieldSize: 4, stride: 4, type: 'max'};
+  groups.push({
+    name: 'Max pool',
+    min: 0,
+    max: 1024,
+    stepSize: 64,
+    hasOptions: false,    
+    stepToSizeTransformation: (step: number) => Math.max(4, step),
+    benchmarkRuns: [
+      new BenchmarkRun('max_pool_gpu', new PoolGPUBenchmark(maxPoolParams)),
+      new BenchmarkRun('max_pool_cpu', new PoolCPUBenchmark(maxPoolParams))
+    ],
+    params: maxPoolParams
+  });
+
+  const avgPoolParams:
+      PoolBenchmarkParams = {depth: 8, fieldSize: 4, stride: 4, type: 'avg'};
+  groups.push({
+    name: 'Avg pool',
+    min: 0,
+    max: 1024,
+    stepSize: 64,
+    hasOptions: false,
+    stepToSizeTransformation: (step: number) => Math.max(4, step),
+    benchmarkRuns: [
+      new BenchmarkRun('avg_pool_gpu', new PoolGPUBenchmark(avgPoolParams)),
+      new BenchmarkRun('avg_pool_cpu', new PoolCPUBenchmark(avgPoolParams))
+    ],
+    params: avgPoolParams
+  });
+
+  groups.push({
+    name: 'LogSumExp: input [size, size]',
     min: 0,
     max: 1024,
     stepSize: 64,
     hasOptions: false,    
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
-      new BenchmarkRun('max_pool_gpu',
-        max_pool_gpu_benchmark.MAX_POOL_BENCHMARK_TEST),
-      new BenchmarkRun('max_pool_cpu',
-        max_pool_cpu_benchmark.MAX_POOL_BENCHMARK_TEST)
+      new BenchmarkRun('logsumexp_gpu', new LogSumExpGPUBenchmark()),
+      new BenchmarkRun('logsumexp_cpu', new LogSumExpCPUBenchmark())
     ],
-  },
-  {
-    name: 'LogSumExp (CPU vs GPU): input [size, size]',
-    min: 0,
-    max: 1024,
-    stepSize: 64,
-    hasOptions: false,    
-    stepToSizeTransformation: (step: number) => Math.max(1, step),
-    benchmarkRuns: [
-      new BenchmarkRun(
-          'logsumexp_gpu', logsumexp_gpu_benchmark.BENCHMARK_TEST),
-      new BenchmarkRun('logsumexp_cpu', logsumexp_cpu_benchmark.BENCHMARK_TEST)
-    ],
-  },
-  {
+    params: {}
+  });
+
+  groups.push({
     name: 'Unary Op Benchmark (CPU vs GPU): input [size, size]',
     min: 0,
     max: 1024,
@@ -98,13 +131,35 @@ export const BENCHMARK_RUN_GROUPS: BenchmarkRunGroup[] = [
       "sin", "cos", "tan", "asin", "acos", "atan", "sinh", 
       "cosh", "tanh", "logSumExp"
     ],
+    selectedOption: "log",
+    stepSize: 64,
+    benchmarkRuns: [
+      new BenchmarkRun(
+        'unary ops CPU', new UnaryOpsCPUBenchmark()),
+      new BenchmarkRun(
+        'unary ops GPU', new UnaryOpsGPUBenchmark())
+    ],
+    params: {}
+  });
+
+    groups.push({
+    name: 'Reduction Op Benchmark (CPU vs GPU): input [size, size]',
+    min: 0,
+    max: 1024,
+    hasOptions: true,
+    options: [
+      "max", "min", "sum"
+    ],
     selectedOption: "max",
     stepSize: 64,
-        benchmarkRuns: [
+    benchmarkRuns: [
       new BenchmarkRun(
-        'unary ops CPU', unary_ops_benchmark.UNARY_OPS_CPU_BENCHMARK_TEST),
+        'reduction ops CPU', new ReductionOpsCPUBenchmark()),
       new BenchmarkRun(
-        'unary ops GPU', unary_ops_benchmark.UNARY_OPS_GPU_BENCHMARK_TEST)
+        'reduction ops GPU', new ReductionOpsGPUBenchmark())
     ],
-  }
-];
+    params: {}
+  });
+
+  return groups;
+}

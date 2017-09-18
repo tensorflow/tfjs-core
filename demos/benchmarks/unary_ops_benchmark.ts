@@ -21,23 +21,11 @@ import {NDArrayMathGPU} from '../../src/math/math_gpu';
 import {Array2D, NDArray} from '../../src/math/ndarray';
 import {BenchmarkTest} from './benchmark';
 
-export const UNARY_OPS_CPU_BENCHMARK_TEST: BenchmarkTest 
-  = (size: number, option?: string) => {
-	return testUnaryOpCPU(size, option);
-};
-
-export const UNARY_OPS_GPU_BENCHMARK_TEST: BenchmarkTest 
-  = (size: number, option?: string) => {
-  	if (size === 0) {
-  		// Zero size texture is not supported.
-  		return -1;
-  	}
-	return testUnaryOpGPU(size, option);
-};
-
 const OPS_PER_RUN = 10;
 
-function getUnaryOp(option: string, math: NDArrayMath) {
+export abstract class UnaryOpsBenchmark extends BenchmarkTest {
+
+  protected getUnaryOp(option: string, math: NDArrayMath) {
 	switch (option) {
 		case "log":
 			return (input: NDArray) => math.log(input);
@@ -76,34 +64,39 @@ function getUnaryOp(option: string, math: NDArrayMath) {
 		default:
 			throw new Error(`Not found such ops: ${option}`);
 	}
+  }
 }
 
-function testUnaryOpCPU(size: number, option: string): number {
-	const math = new NDArrayMathCPU();
-	const input = NDArray.randUniform<Array2D>([size, size], -1, 1);
-	const op = getUnaryOp(option, math);
-	const start = performance.now();
+export class UnaryOpsCPUBenchmark extends UnaryOpsBenchmark {
+	run(size: number, option: string) {
+		const math = new NDArrayMathCPU();
+		const input = NDArray.randUniform<Array2D>([size, size], -1, 1);
+		const op = this.getUnaryOp(option, math);
+		const start = performance.now();
 
-	for (let i = 0; i < OPS_PER_RUN; i++) {
-		math.scope(() => {
-			op(input).get();
-		});
+	    for (let i = 0; i < OPS_PER_RUN; i++) {
+		    math.scope(() => {
+                op(input).get();
+		    });
+        }
+		const end = performance.now();
+		return (end - start) / OPS_PER_RUN;
 	}
-	const end = performance.now();
-	return (end - start) / OPS_PER_RUN;
 }
 
-function testUnaryOpGPU(size: number, option: string): number {
-	const math = new NDArrayMathGPU();
-	const input = NDArray.randUniform<Array2D>([size, size], -1, 1);
-	const op = getUnaryOp(option, math);
-	const start = performance.now();
-
-	for (let i = 0; i < OPS_PER_RUN; i++) {
-		math.scope(() => {
-			op(input).get();
-		});
+export class UnaryOpsGPUBenchmark extends UnaryOpsBenchmark {
+	run(size: number, option: string) {
+		const math = new NDArrayMathGPU();
+		const input = NDArray.randUniform<Array2D>([size, size], -1, 1);
+		const op = this.getUnaryOp(option, math);
+		const start = performance.now();
+	
+		for (let i = 0; i < OPS_PER_RUN; i++) {
+			math.scope(() => {
+				op(input).get();
+			});
+		}
+		const end = performance.now();
+		return (end - start) / OPS_PER_RUN;
 	}
-	const end = performance.now();
-	return (end - start) / OPS_PER_RUN;
 }

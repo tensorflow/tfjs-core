@@ -29,6 +29,7 @@ export interface BenchmarkRunGroup {
   options?: string[];
   selectedOption?: string;
   benchmarkRuns: BenchmarkRun[];
+  params: {};
 }
 
 export class BenchmarkRun {
@@ -43,4 +44,7 @@ export class BenchmarkRun {
   }
 }
 
-export interface BenchmarkTest { (size: number, option?: string): number; }
+export abstract class BenchmarkTest {
+  constructor(protected params?: {}) {}
+  abstract run(size: number, option?: string): number;
+}
