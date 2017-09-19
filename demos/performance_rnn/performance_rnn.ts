@@ -33,10 +33,22 @@ let fullyConnectedWeights: Array2D;
 const forgetBias = Scalar.new(1.0);
 const activeNotes = new Map<number, number>();
 
+// How many steps to generate per generateStep call.
+// Generating more steps makes it less likely that we'll lag behind in note
+// generation. Generating fewer steps makes it less likely that the browser UI
+// thread will be starved for cycles.
+const STEPS_PER_GENERATE_CALL = 2;
+// How much time to try to generate ahead. More time means fewer buffer
+// underruns, but also makes the lag from UI change to output larger.
+const GENERATION_BUFFER_SECONDS = .5;
+// If we're this far behind, reset currentTime time to piano.now().
+const MAX_GENERATION_LAG_SECONDS = 1;
+// If a note is held longer than this, release it.
+const MAX_NOTE_DURATION_SECONDS = 3;
+
 const NOTES_PER_OCTAVE = 12;
 const DENSITY_BIN_RANGES = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0];
 const PITCH_HISTOGRAM_SIZE = NOTES_PER_OCTAVE;
-const MAX_NOTE_DURATION = 5;
 
 let pitchHistogramEncoding: Array1D;
 let noteDensityEncoding: Array1D;
@@ -101,6 +113,10 @@ piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
 
   fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
   fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+  resetRnn();
+});
+
+function resetRnn() {
   c = [
     Array2D.zeros([1, lstmBias1.shape[0] / 4]),
     Array2D.zeros([1, lstmBias2.shape[0] / 4]),
@@ -111,10 +127,10 @@ piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
     Array2D.zeros([1, lstmBias2.shape[0] / 4]),
     Array2D.zeros([1, lstmBias3.shape[0] / 4]),
   ];
-  // Start it at the audio context current time.
+  lastSample = PRIMER_IDX;
   currentTime = piano.now();
   generateStep();
-});
+}
 
 window.addEventListener('resize', resize);
 
@@ -143,6 +159,35 @@ const pitchHistogramElements = [
   document.getElementById('pitch-b'),
 ] as HTMLInputElement[];
 
+let preset1 = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+let preset2 = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+
+try {
+  parseHash();
+} catch (e) {
+  // If we didn't successfully parse the hash, we can just use defaults.
+  console.warn(e);
+}
+
+function parseHash() {
+  if (!window.location.hash) {
+    return;
+  }
+  const params = window.location.hash.substr(1).split('|');
+  densityControl.value = params[0];
+  const pitches = params[1].split(',');
+  for (let i = 0; i < pitchHistogramElements.length; i++) {
+    pitchHistogramElements[i].value = pitches[i];
+  }
+  const preset1Values = params[2].split(',');
+  for (let i = 0; i < preset1.length; i++) {
+    preset1[i] = parseInt(preset1Values[i], 10);
+  }
+  const preset2Values = params[3].split(',');
+  for (let i = 0; i < preset2.length; i++) {
+    preset2[i] = parseInt(preset2Values[i], 10);
+  }
+}
 
 function updateConditioningParams() {
   const pitchHistogram = pitchHistogramElements.map((e) => {
@@ -153,6 +198,11 @@ function updateConditioningParams() {
     noteDensityEncoding.dispose();
     noteDensityEncoding = undefined;
   }
+
+  window.location.assign(
+      '#' + densityControl.value + '|' + pitchHistogram.join(',') + '|' +
+      preset1.join(',') + '|' + preset2.join(','));
+
   const noteDensityIdx = parseInt(densityControl.value, 10) || 0;
   const noteDensity = DENSITY_BIN_RANGES[noteDensityIdx];
   densityDisplay.innerHTML = noteDensity.toString();
@@ -201,6 +251,36 @@ document.getElementById('whole-tone').onclick = () => {
   updatePitchHistogram([1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]);
 };
 
+document.getElementById('pentatonic').onclick = () => {
+  updatePitchHistogram([0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0]);
+};
+
+document.getElementById('reset-rnn').onclick = () => {
+  resetRnn();
+};
+
+document.getElementById('preset-1').onclick = () => {
+  updatePitchHistogram(preset1);
+};
+
+document.getElementById('preset-2').onclick = () => {
+  updatePitchHistogram(preset2);
+};
+
+document.getElementById('save-1').onclick = () => {
+  preset1 = pitchHistogramElements.map((e) => {
+    return parseInt(e.value, 10) || 0;
+  });
+  updateConditioningParams();
+};
+
+document.getElementById('save-2').onclick = () => {
+  preset2 = pitchHistogramElements.map((e) => {
+    return parseInt(e.value, 10) || 0;
+  });
+  updateConditioningParams();
+};
+
 function generateStep() {
   math.scope((keep, track) => {
     const lstm1 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel1,
@@ -217,7 +297,7 @@ function generateStep() {
       track(val);
     });
     // Generate some notes.
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < STEPS_PER_GENERATE_CALL; i++) {
       // Use last sampled output as the next input.
       const eventInput = track(Array1D.zeros([EVENT_SIZE]));
       eventInput.set(1.0, lastSample);
@@ -252,7 +332,14 @@ function generateStep() {
       keep(val);
     });
   });
-  const delta = currentTime - piano.now();
+  if (piano.now() - currentTime > MAX_GENERATION_LAG_SECONDS) {
+    console.warn(
+        `Generation is ${piano.now() - currentTime} seconds behind, which ` +
+        `is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
+    currentTime = piano.now();
+  }
+  const delta = Math.max(
+      0, currentTime - piano.now() - GENERATION_BUFFER_SECONDS);
   setTimeout(() => generateStep(), delta * 1000);
 }
 
@@ -275,21 +362,24 @@ function playOutput(index: number) {
             keyboardInterface.keyUp(noteNum);
           }, 100);
         }, (currentTime - piano.now())*1000);
-        if (activeNotes.has(noteNum)) {
-          piano.keyUp(noteNum, currentTime);
-        }
         activeNotes.set(noteNum, currentTime);
         return piano.keyDown(noteNum, currentTime, currentVelocity);
       } else if (eventType === 'note_off') {
         const noteNum = index - offset;
+        piano.keyUp(
+            noteNum, Math.max(currentTime, activeNotes.get(noteNum) + .5));
         activeNotes.delete(noteNum);
-        return piano.keyUp(noteNum, currentTime);
+        return;
       } else if (eventType === 'time_shift') {
         currentTime += (index - offset + 1) / STEPS_PER_SECOND;
         activeNotes.forEach((time, noteNum) => {
-          if (currentTime - time > MAX_NOTE_DURATION) {
-            activeNotes.delete(noteNum);
+          if (currentTime - time > MAX_NOTE_DURATION_SECONDS) {
+            console.info(
+                `Note ${noteNum} has been active for ${currentTime - time}, ` +
+                `seconds which is over ${MAX_NOTE_DURATION_SECONDS}, will ` +
+                `release.`);
             piano.keyUp(noteNum, currentTime);
+            activeNotes.delete(noteNum);
           }
         });
         return currentTime;
