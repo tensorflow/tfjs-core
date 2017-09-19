@@ -197,7 +197,7 @@
   <div id="controls" class="hidden">
     <div class="control" style="margin-right: 20px;">
       Note Density<br/>
-      <input type="range" min="0" max="6" id="note-density"><br />
+      <input type="range" min="0" max="6" value="2" id="note-density"><br />
       <span id="note-density-display"></span>
     </div>
     <div class="control">
@@ -255,6 +255,14 @@
       <input type="button" value="F Major" id="f-major">
       <input type="button" value="D Minor" id="d-minor">
       <input type="button" value="Whole Tone" id="whole-tone">
+      <input type="button" value="Pentatonic" id="pentatonic">
+      <input type="button" value="Preset 1" id="preset-1">
+      <input type="button" value="Preset 2" id="preset-2">
+      <br />
+      <br />
+      <input type="button" value="Reset RNN" id="reset-rnn">
+      <input type="button" value="Save Preset 1" id="save-1">
+      <input type="button" value="Save Preset 2" id="save-2">
     </div>
   </div>
   <div class="text-block"><a href="https://magenta.tensorflow.org/performance-rnn">Performance RNN</a> was trained in TensorFlow on MIDI from piano performances recorded at the <a href="http://piano-e-competition.com/">International Piano-e-competition</a>.<br> It was then ported to run in the browser using only Javascript in the <a href="https://pair-code.github.io/deeplearnjs/">deeplearn.js</a> environment.</div>
