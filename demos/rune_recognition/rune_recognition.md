@@ -18,12 +18,12 @@ The final step would be to export the trained model to use it in an actual appli
 The complete code to follow along with this tutorial can be found in `demos/rune_recognition`. If you run into trouble during this tutorial, you might find inspiration in [the GitHub issue](https://github.com/PAIR-code/deeplearnjs/issues/20) that inspired this tutorial.
 
 ## Introduction
-Suppose that you are making an app for recognizing runes, the old Germanic letters that were carved in stone during the first millennium. The time and space where these runes were created means that there is a lot of variation in the exact shape of these characters, but luckily the Unicode Consortium has 
-defined [a set of "idealized glyphs"](https://en.wikipedia.org/wiki/Runic_\(Unicode_block\)) that represent ideas of different runes. The variance in shapes makes rune recognition an interesting problem to solve through machine learning, so let's try to make a neural network that can recognize individual runes. To this end, we train a convolutional neural network (CNN) to interpret images of runes. The model builder demo is already well-equipped with the common task to import a set of images along with their labels, so we add our own runic data set and try it out.
+Suppose that you are making an app for recognizing runes, [the old Germanic letters](https://en.wikipedia.org/wiki/Runes) that were carved in stone and wood during the first millennium. The time and space where these runes were created varies a lot, and this leads to a lot of variation in the exact shape of these characters. Luckily the Unicode Consortium has 
+defined [a set of "idealized glyphs"](https://en.wikipedia.org/wiki/Runic_\(Unicode_block\)) that represent ideas of distinct runes. The variance in shapes makes the mapping of a given rune image to the Unicode pointer an interesting problem to solve through machine learning, so let's try to make a neural network that can recognize individual runes. To this end, we train a convolutional neural network (CNN) to interpret images of runes. The model builder demo is already well-equipped with the common task to import a set of images along with their labels, so we add our own runic data set and try it out.
 
 Before following along, make sure you have installed [Python](https://www.python.org/) and [node.js](https://nodejs.org/en/). I assume some rudimentary knowledge about neural networks / machine learning.
 
-We get started by cloning the deeplearn.js source code `git clone https://github.com/PAIR-code/deeplearnjs.git`.
+We get started by cloning the deeplearn.js source code: `git clone https://github.com/PAIR-code/deeplearnjs.git`.
 
 ## Prepare data set
 The model builder expects two files that it can use for training a network: one file containing all inputs and one file containing all ouputs. The inputs file is a png image in which every horizontal row represents one example instance, where individual pixels represent node activations. The labels file is likewise a large list of node activations, but it in a slightly different format.
