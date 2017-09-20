@@ -26,7 +26,9 @@ Before following along, make sure you have installed [Python](https://www.python
 We get started by cloning the deeplearn.js source code `git clone https://github.com/PAIR-code/deeplearnjs.git`.
 
 ## Prepare data set
-I have prepared a reference set of runes, handdrawn and rendered by differents fonts, which you can find in the folder `demos/rune_recognition/runes`. If you your own samples, you can open `demos/rune_recognition/generate_train_examples_runes.html` in your browser to generate your own examples.
+The model builder expects two files that it can use for training a network: one file containing all inputs and one file containing all ouputs. The inputs file is a png image in which every horizontal row represents one example instance, where individual pixels represent node activations. The labels file is likewise a large list of node activations, but it in a slightly different format.
+
+I have prepared a reference set of rune images, handdrawn and rendered by differents fonts, which you can find in the folder `demos/rune_recognition/runes`. If you your own samples, you can open `demos/rune_recognition/generate_train_examples_runes.html` in your browser to generate your own examples.
 
 Create a folder containing the example images and a file named `generate_rune_data_for_model_builder.py`. The script we are creating is inspired a helper script in the repository which you can find at `scripts/convert_uint8_tensor_to_png.py`.
 
@@ -109,7 +111,7 @@ print('...Saved label names to:', output_file_label_names)
 
 ### Encode images
 
-The input to our neural network is likewise an array of nodes. Our image is multi-dimensional, so we "squash" the image into a linear list of pixel activations. The neural network should then figure how these nodes are related to each other. Because our images are just black pixels on a transparent background, we throw away all color information and just select the transparency value.
+The input to our neural network is likewise an array of nodes. Our images are multi-dimensional, so we "squash" the image into a linear list of pixel activations. The neural network should then figure how these nodes are related to each other. Because our images are just black pixels on a transparent background, we throw away all color information and just select the transparency value. Note that we assume that all images are the same size!
 
 ```
 def select_alpha_channel(image_array):
@@ -139,6 +141,7 @@ im.save(output_file_image_collage)
 print('Saved image with width/height', im.size, 'at', output_file_image_collage)
 ```
 
+Open the output png file. You should see a large black image strewn with white dots. Each row in this image represents one of the images in the `runes` folder, as we shall when we load our data set in the model builder.
 
 ## Modify model builder demo
 
