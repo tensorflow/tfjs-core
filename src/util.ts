@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-export type Vector = number[] | Float64Array | Float32Array | Int32Array |
-    Int8Array | Int16Array;
+export type Vector =
+    number[]|Float64Array|Float32Array|Int32Array|Int8Array|Int16Array;
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -105,8 +105,7 @@ export function flatten(arr: any[], ret?: number[]): number[] {
   return ret;
 }
 
-export type ArrayData =
-    number | number[] | number[][] | number[][][] | number[][][][];
+export type ArrayData = number|number[]|number[][]|number[][][]|number[][][][];
 
 export function inferShape(arr: ArrayData): number[] {
   const shape: number[] = [];
@@ -221,4 +220,28 @@ export function rightPad(a: string, size: number): string {
     return a;
   }
   return a + ' '.repeat(size - a.length);
+}
+
+export function tryWithBackoff(
+    checkFn: () => boolean, backoffTimersMs: number[]): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let tryCount = 0;
+
+    const tryFn = () => {
+      if (checkFn()) {
+        resolve();
+        return;
+      }
+
+      tryCount++;
+
+      if (tryCount >= backoffTimersMs.length) {
+        reject();
+        return;
+      }
+      setTimeout(tryFn, backoffTimersMs[tryCount]);
+    };
+
+    setTimeout(tryFn, backoffTimersMs[0]);
+  });
 }
