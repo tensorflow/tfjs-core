@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {Array1D, Array2D, CheckpointLoader, NDArrayMath, NDArrayMathGPU,
-    NDArray, Scalar} from '../deeplearnjs';
+    NDArray, Scalar} from '../deeplearn';
 import {KeyboardElement} from './keyboard_element';
 
 // tslint:disable-next-line:no-require-imports
