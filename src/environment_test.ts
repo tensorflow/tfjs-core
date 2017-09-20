@@ -15,12 +15,13 @@
  * limitations under the License.
  * =============================================================================
  */
-import * as device_utils from './device_utils';
+import * as device_util from './device_util';
 import {Environment, Feature} from './environment';
+import * as webgl_util from './math/webgl/webgl_util';
 
 describe('disjoint query timer', () => {
   it('mobile', () => {
-    spyOn(device_utils, 'isMobile').and.returnValue(true);
+    spyOn(device_util, 'isMobile').and.returnValue(true);
 
     const env = new Environment();
 
@@ -28,10 +29,39 @@ describe('disjoint query timer', () => {
   });
 
   it('not mobile', () => {
-    spyOn(device_utils, 'isMobile').and.returnValue(false);
+    spyOn(device_util, 'isMobile').and.returnValue(false);
 
     const env = new Environment();
 
     expect(env.enabled(Feature.DISJOINT_QUERY_TIMER)).toBe(true);
+  });
+});
+
+describe('WebGL version', () => {
+  it('webgl 1', () => {
+    spyOn(webgl_util, 'isWebGL1Enabled').and.returnValue(true);
+    spyOn(webgl_util, 'isWebGL2Enabled').and.returnValue(false);
+
+    const env = new Environment();
+
+    expect(env.getNumber(Feature.WEBGL_VERSION)).toBe(1);
+  });
+
+  it('webgl 2', () => {
+    spyOn(webgl_util, 'isWebGL1Enabled').and.returnValue(true);
+    spyOn(webgl_util, 'isWebGL2Enabled').and.returnValue(true);
+
+    const env = new Environment();
+
+    expect(env.getNumber(Feature.WEBGL_VERSION)).toBe(2);
+  });
+
+  it('no webgl', () => {
+    spyOn(webgl_util, 'isWebGL1Enabled').and.returnValue(false);
+    spyOn(webgl_util, 'isWebGL2Enabled').and.returnValue(false);
+
+    const env = new Environment();
+
+    expect(env.getNumber(Feature.WEBGL_VERSION)).toBe(0);
   });
 });

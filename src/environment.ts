@@ -15,23 +15,36 @@
  * =============================================================================
  */
 
-import * as device_utils from './device_utils';
+import * as device_util from './device_util';
+import * as webgl_util from './math/webgl/webgl_util';
 
 export enum Feature {
-  DISJOINT_QUERY_TIMER = 'DISJOINT_QUERY_TIMER'
+  DISJOINT_QUERY_TIMER = 'DISJOINT_QUERY_TIMER',
+  // 0 when WebGL is not enabled, 1 or 2 for WebGL version when available.
+  WEBGL_VERSION = 'WEBGL_VERSION'
 }
+
 
 function getFeatureEvaluators(): {[feature: string]: () => FeatureValue} {
   const featureEvaluators: {[feature: string]: () => FeatureValue} = {};
 
   featureEvaluators[Feature.DISJOINT_QUERY_TIMER] = () => {
-    return !device_utils.isMobile();
+    return !device_util.isMobile();
+  };
+
+  featureEvaluators[Feature.WEBGL_VERSION] = () => {
+    if (webgl_util.isWebGL2Enabled()) {
+      return 2;
+    } else if (webgl_util.isWebGL1Enabled()) {
+      return 1;
+    }
+    return 0;
   };
 
   return featureEvaluators;
 }
 
-export type FeatureValue = boolean|string;
+export type FeatureValue = boolean|string|number;
 export type FeatureValueMap = {
   [feature: string]: FeatureValue
 };
@@ -84,6 +97,14 @@ export class Environment {
     }
     return numberValue as boolean;
   }
+
+  getFeatureValues(): FeatureValueMap {
+    return this.features;
+  }
 }
 
 export let ENV = new Environment();
+
+export function setEnvironment(environment: Environment) {
+  ENV = environment;
+}

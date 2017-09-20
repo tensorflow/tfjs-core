@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV, Feature} from '../../environment';
 import * as util from '../../util';
 
 import * as gpgpu_util from './gpgpu_util';
@@ -43,7 +44,7 @@ export class GPGPUContext {
     }
 
     // WebGL 2.0 enables texture floats without an extension.
-    if (!webgl_util.isWebGL2Enabled()) {
+    if (ENV.getNumber(Feature.WEBGL_VERSION) === 1) {
       this.textureFloatExtension =
           webgl_util.getExtensionOrThrow(this.gl, 'OES_texture_float');
       this.colorBufferFloatExtension =
@@ -259,7 +260,7 @@ export class GPGPUContext {
   }
 
   public runBenchmark(benchmark: () => void): Promise<number> {
-    if (webgl_util.isWebGL2Enabled()) {
+    if (ENV.getNumber(Feature.WEBGL_VERSION) === 2) {
       return this.runBenchmarkWebGL2(benchmark);
     }
     return this.runBenchmarkWebGL1(benchmark);
