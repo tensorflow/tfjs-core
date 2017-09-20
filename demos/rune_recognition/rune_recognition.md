@@ -50,8 +50,8 @@ from os.path import isfile, join
 import json
 
 path_to_images = "runes/"
-output_file_image_collage = 'output.png'
-output_file_labels_packed = "labels"
+output_file_image_collage = 'rune_images.png'
+output_file_labels_packed = 'rune_labels'
 output_file_label_names = 'labelNames.json'
 number_of_channels = 1
 
@@ -153,21 +153,21 @@ First we verify that we can run the model builder. From the project root, run:
 * run `./scripts/watch-demo demos/model-builder/model-builder.ts`
 * visit http://127.0.0.1:8080/demos/model-builder/model-builder-demo.html
 
-If it works, open the file `./demos/model-builder/model-builder-datasets-config.json`. The model builder defines its data sets in this file, so we are going to add our runes data set:
+If it works, open the file `demos/model-builder/model-builder-datasets-config.json`. The model builder defines its data sets in this file, so we are going to add our runes data set:
 
 ```
 {
   "Runes": {
     "data": [{
       "name": "images",
-      "path": "https://storage.googleapis.com/learnjs-data/model-builder/mnist_images.png",
+      "path": "rune_images.png",
       "dataType": "png",
-      "shape": [28, 28, 1]
+      "shape": [32, 32, 1]
     }, {
       "name": "labels",
-      "path": "https://storage.googleapis.com/learnjs-data/model-builder/mnist_labels_uint8",
+      "path": "rune_labels",
       "dataType": "uint8",
-      "shape": [10]
+      "shape": [90]
     }],
     "modelConfigs": {
       "Fully connected": {
