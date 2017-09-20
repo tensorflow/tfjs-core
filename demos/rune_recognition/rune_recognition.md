@@ -150,7 +150,7 @@ Open the output png file. You should see a large black image strewn with white d
 First we verify that we can run the model builder. From the project root, run:
 
 * `npm install`
-* run `./scripts/watch-demo demos/model-builder/model-builder.ts`
+* `./scripts/watch-demo demos/model-builder/model-builder.ts`
 * visit http://127.0.0.1:8080/demos/model-builder/model-builder-demo.html
 
 If it works, open the file `demos/model-builder/model-builder-datasets-config.json`. The model builder defines its data sets in this file, so we are going to add our runes data set:
