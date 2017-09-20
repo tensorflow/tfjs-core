@@ -13,7 +13,7 @@ We will perform the following steps:
 * Convert the data to a format that the model builder demo can work with
 * Add the data set to the model builder and actually train a neural network
 
-The final step would be to export the trained model to use it in actual application, but [the team is still working on that](https://github.com/PAIR-code/deeplearnjs/issues/33#issuecomment-323891195).
+The final step would be to export the trained model to use it in an actual application, but [the team is still working on that](https://github.com/PAIR-code/deeplearnjs/issues/33#issuecomment-323891195).
 
 The complete code to follow along with this tutorial can be found in `demos/rune_recognition`. If you run into trouble during this tutorial, you might find inspiration in [the GitHub issue](https://github.com/PAIR-code/deeplearnjs/issues/20) that inspired this tutorial.
 
