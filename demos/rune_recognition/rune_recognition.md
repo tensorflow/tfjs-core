@@ -184,6 +184,6 @@ Just copy the `mnist-fully-connected.json` and `mnist-conv.json` files in this f
 
 Now refresh the model builder. You should see the new runes data set. Select the convolutional model and click "Train". It should look something like this:
 
-![Screenshot of model builder trained on runes](https://github.com/digitalheir/deeplearnjs/raw/rune_recognition_tutorial/demos/rune_recognition/runes_cnn.jpg).
+![Screenshot of model builder trained on runes](https://github.com/digitalheir/deeplearnjs/raw/rune_recognition_tutorial/demos/rune_recognition/runes_cnn.jpg)
 
 Congratulations! You added just trained a neural network for recognizing runes.
