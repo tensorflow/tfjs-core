@@ -24,8 +24,10 @@ import {BenchmarkRunGroup} from './benchmark';
 import {getRunGroups} from './math-benchmark-run-groups';
 
 // tslint:disable-next-line:variable-name
-export let MathBenchmarkPolymer: new () => PolymerHTMLElement = PolymerElement(
-    {is: 'math-benchmark', properties: {benchmarkRunGroupNames: Array}});
+export let MathBenchmarkPolymer: new () => PolymerHTMLElement = PolymerElement({
+  is: 'math-benchmark',
+  properties: {benchmarks: Array, benchmarkRunGroupNames: Array}
+});
 
 function getDisplayParams(params?: {}): string {
   if (params == null) {
@@ -46,19 +48,23 @@ function getDisplayParams(params?: {}): string {
 export class MathBenchmark extends MathBenchmarkPolymer {
   // Polymer properties.
   private benchmarkRunGroupNames: string[];
+  private benchmarks: BenchmarkRunGroup[];
   private stopMessages: boolean[];
 
   ready() {
     const groups = getRunGroups();
     // Set up the benchmarks UI.
     const benchmarkRunGroupNames: string[] = [];
+    const benchmarks: BenchmarkRunGroup[] = [];
     this.stopMessages = [];
     for (let i = 0; i < groups.length; i++) {
       benchmarkRunGroupNames.push(
           groups[i].name + ': ' + getDisplayParams(groups[i].params));
+      benchmarks.push(groups[i]);
       this.stopMessages.push(false);
     }
     this.benchmarkRunGroupNames = benchmarkRunGroupNames;
+    this.benchmarks = benchmarks;
 
     // In a setTimeout to let the UI update before we add event listeners.
     setTimeout(() => {
@@ -210,7 +216,8 @@ export class MathBenchmark extends MathBenchmarkPolymer {
           benchmarkRunGroup.stepToSizeTransformation(step) :
           step;
 
-      runPromises.push(benchmarkTest.run(size));
+      runPromises.push(
+          benchmarkTest.run(size, benchmarkRunGroup.selectedOption));
     }
 
     Promise.all(runPromises).then(results => {
