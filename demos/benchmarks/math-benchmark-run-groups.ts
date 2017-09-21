@@ -117,41 +117,34 @@ export function getRunGroups(): BenchmarkRunGroup[] {
   });
 
   groups.push({
-    name: 'Unary Op Benchmark (CPU vs GPU): input [size, size]',
-    min: 0,
-    max: 1024,
-    options: [
-      "log", "exp", "neg", "sqrt", "abs", "relu", "sigmoid", 
-      "sin", "cos", "tan", "asin", "acos", "atan", "sinh", 
-      "cosh", "tanh", "logSumExp"
+    name : 'Unary Op Benchmark (CPU vs GPU): input [size, size]',
+    min : 0,
+    max : 1024,
+    options : [
+      "log", "exp", "neg", "sqrt", "abs", "relu", "sigmoid", "sin", "cos",
+      "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "logSumExp"
     ],
-    selectedOption: "log",
-    stepSize: 64,
-    benchmarkRuns: [
-      new BenchmarkRun(
-        'unary ops CPU', new UnaryOpsCPUBenchmark()),
-      new BenchmarkRun(
-        'unary ops GPU', new UnaryOpsGPUBenchmark())
+    selectedOption : "log",
+    stepSize : 64,
+    benchmarkRuns : [
+      new BenchmarkRun('unary ops CPU', new UnaryOpsCPUBenchmark()),
+      new BenchmarkRun('unary ops GPU', new UnaryOpsGPUBenchmark())
     ],
-    params: {}
+    params : {}
   });
 
-    groups.push({
-    name: 'Reduction Op Benchmark (CPU vs GPU): input [size, size]',
-    min: 0,
-    max: 1024,
-    options: [
-      "max", "min", "sum"
+  groups.push({
+    name : 'Reduction Op Benchmark (CPU vs GPU): input [size, size]',
+    min : 0,
+    max : 1024,
+    options : [ "max", "min", "sum" ],
+    selectedOption : "max",
+    stepSize : 64,
+    benchmarkRuns : [
+      new BenchmarkRun('reduction ops CPU', new ReductionOpsCPUBenchmark()),
+      new BenchmarkRun('reduction ops GPU', new ReductionOpsGPUBenchmark())
     ],
-    selectedOption: "max",
-    stepSize: 64,
-    benchmarkRuns: [
-      new BenchmarkRun(
-        'reduction ops CPU', new ReductionOpsCPUBenchmark()),
-      new BenchmarkRun(
-        'reduction ops GPU', new ReductionOpsGPUBenchmark())
-    ],
-    params: {}
+    params : {}
   });
 
   return groups;
