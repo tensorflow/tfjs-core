@@ -38,7 +38,6 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     min: 0,
     max: 1024,
     stepSize: 64,
-    hasOptions: false,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
       new BenchmarkRun('mulmat_gpu', new MatmulGPUBenchmark()),
@@ -54,7 +53,6 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     min: 0,
     max: 1024,
     stepSize: 64,
-    hasOptions: false,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns:
         [new BenchmarkRun('conv_gpu', new ConvGPUBenchmark(convParams))],
@@ -68,7 +66,6 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     min: 0,
     max: 1024,
     stepSize: 64,
-    hasOptions: false,    
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [new BenchmarkRun(
         'conv_transpose_gpu',
@@ -83,7 +80,6 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     min: 0,
     max: 1024,
     stepSize: 64,
-    hasOptions: false,    
     stepToSizeTransformation: (step: number) => Math.max(4, step),
     benchmarkRuns: [
       new BenchmarkRun('max_pool_gpu', new PoolGPUBenchmark(maxPoolParams)),
@@ -99,7 +95,6 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     min: 0,
     max: 1024,
     stepSize: 64,
-    hasOptions: false,
     stepToSizeTransformation: (step: number) => Math.max(4, step),
     benchmarkRuns: [
       new BenchmarkRun('avg_pool_gpu', new PoolGPUBenchmark(avgPoolParams)),
@@ -113,7 +108,6 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     min: 0,
     max: 1024,
     stepSize: 64,
-    hasOptions: false,    
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns: [
       new BenchmarkRun('logsumexp_gpu', new LogSumExpGPUBenchmark()),
@@ -126,7 +120,6 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     name: 'Unary Op Benchmark (CPU vs GPU): input [size, size]',
     min: 0,
     max: 1024,
-    hasOptions: true,
     options: [
       "log", "exp", "neg", "sqrt", "abs", "relu", "sigmoid", 
       "sin", "cos", "tan", "asin", "acos", "atan", "sinh", 
@@ -147,7 +140,6 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     name: 'Reduction Op Benchmark (CPU vs GPU): input [size, size]',
     min: 0,
     max: 1024,
-    hasOptions: true,
     options: [
       "max", "min", "sum"
     ],

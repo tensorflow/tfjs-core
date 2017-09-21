@@ -24,7 +24,6 @@ export interface BenchmarkRunGroup {
   stepSize: number;
   // A transformation of step to the size passed to the benchmark test.
   stepToSizeTransformation?: (step: number) => number;
-  hasOptions: boolean;
   // Option parameters which is given to the benchmark test. (e.g. ops types)
   options?: string[];
   selectedOption?: string;
