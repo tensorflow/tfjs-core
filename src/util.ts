@@ -223,7 +223,7 @@ export function rightPad(a: string, size: number): string {
 }
 
 export function tryWithBackoff(
-    checkFn: () => boolean, backoffTimersMs: number[]): Promise<void> {
+    checkFn: () => boolean, maxBackoffMs: number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     let tryCount = 0;
 
@@ -235,13 +235,29 @@ export function tryWithBackoff(
 
       tryCount++;
 
-      if (tryCount >= backoffTimersMs.length) {
+      const nextBackoff = Math.pow(2, tryCount);
+
+      if (nextBackoff >= maxBackoffMs) {
         reject();
         return;
       }
-      setTimeout(tryFn, backoffTimersMs[tryCount]);
+      setTimeout(tryFn, nextBackoff);
     };
 
-    setTimeout(tryFn, backoffTimersMs[0]);
+    setTimeout(tryFn, 0);
   });
+}
+
+export function getQueryParams(queryString: string): {[key: string]: string} {
+  const params = {};
+  queryString.replace(/[?&]([^=?&]+)(?:=([^&]*))?/g, (s, ...t) => {
+    decodeParam(params, t[0], t[1]);
+    return t.join('=');
+  });
+  return params;
+}
+
+function decodeParam(
+    params: {[key: string]: string}, name: string, value?: string) {
+  params[decodeURIComponent(name)] = decodeURIComponent(value || '');
 }

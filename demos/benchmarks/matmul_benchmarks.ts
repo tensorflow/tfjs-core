@@ -18,7 +18,7 @@ import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
 import {MatMulProgram} from '../../src/math/webgl/mulmat_gpu';
 import * as test_util from '../../src/test_util';
 // tslint:disable-next-line:max-line-length
-import {Array2D, ENV, Feature, GPGPUContext, NDArray, NDArrayMathCPU} from '../deeplearn';
+import {Array2D, ENV, GPGPUContext, NDArray, NDArrayMathCPU} from '../deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 
@@ -80,7 +80,7 @@ export class MatmulGPUBenchmark extends BenchmarkTest {
         gpgpu.dispose();
       };
 
-      if (ENV.get(Feature.DISJOINT_QUERY_TIMER)) {
+      if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER')) {
         gpgpu.runBenchmark(benchmark).then((timeElapsed: number) => {
           delayedCleanup();
           resolve(timeElapsed);

@@ -20,7 +20,7 @@ import {Conv2DProgram} from '../../src/math/webgl/conv_gpu';
 import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
 import {TextureManager} from '../../src/math/webgl/texture_manager';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, conv_util, ENV, Feature, GPGPUContext} from '../deeplearn';
+import {Array1D, Array3D, Array4D, conv_util, ENV, GPGPUContext} from '../deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 
@@ -80,7 +80,7 @@ export class ConvGPUBenchmark extends ConvBenchmark {
         gpgpu.dispose();
       };
 
-      if (ENV.get(Feature.DISJOINT_QUERY_TIMER)) {
+      if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER')) {
         gpgpu.runBenchmark(benchmark).then((timeElapsed: number) => {
           delayedCleanup();
           resolve(timeElapsed);

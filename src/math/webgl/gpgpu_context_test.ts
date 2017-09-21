@@ -16,7 +16,7 @@
  */
 
 import * as environment from '../../environment';
-import {Environment, Feature, FeatureValueMap} from '../../environment';
+import {Environment, Features} from '../../environment';
 import * as test_util from '../../test_util';
 
 import {GPGPUContext} from './gpgpu_context';
@@ -77,8 +77,8 @@ describe('GPGPUContext downloadMatrixFromTexture WebGL 1.0', () => {
   let texture: WebGLTexture;
 
   beforeEach(() => {
-    const featureValues: FeatureValueMap = {};
-    featureValues[Feature.WEBGL_VERSION] = 1;
+    const featureValues: Features = {};
+    featureValues['WEBGL_VERSION'] = 1;
     environment.setEnvironment(new Environment(featureValues));
 
     gpgpu = new GPGPUContext();
@@ -191,8 +191,8 @@ describe('GPGPUContext setOutputMatrixTexture WebGL 1.0', () => {
   let texture: WebGLTexture;
 
   beforeEach(() => {
-    const featureValues: FeatureValueMap = {};
-    featureValues[Feature.WEBGL_VERSION] = 1;
+    const featureValues: Features = {};
+    featureValues['WEBGL_VERSION'] = 1;
     environment.setEnvironment(new Environment(featureValues));
 
     gpgpu = new GPGPUContext();
@@ -256,8 +256,8 @@ describe('GPGPUContext setOutputMatrixTexture WebGL 2.0', () => {
   let texture: WebGLTexture;
 
   beforeEach(() => {
-    const featureValues: FeatureValueMap = {};
-    featureValues[Feature.WEBGL_VERSION] = 2;
+    const featureValues: Features = {};
+    featureValues['WEBGL_VERSION'] = 2;
     environment.setEnvironment(new Environment(featureValues));
 
     gpgpu = new GPGPUContext();

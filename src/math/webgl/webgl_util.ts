@@ -18,7 +18,7 @@
 let MAX_TEXTURE_SIZE: number = null;
 
 import * as util from '../../util';
-import {ENV, Feature} from '../../environment';
+import {ENV} from '../../environment';
 
 export interface WebGLContextAttributes {
   alpha?: boolean;
@@ -74,7 +74,7 @@ export function createWebGLRenderingContextFromCanvas(
     canvas: HTMLCanvasElement,
     attributes: WebGLContextAttributes): WebGLRenderingContext {
   let gl: WebGLRenderingContext;
-  const webglVersion = ENV.getNumber(Feature.WEBGL_VERSION);
+  const webglVersion = ENV.get('WEBGL_VERSION');
   if (webglVersion === 2) {
     gl = canvas.getContext('webgl2', attributes) as WebGLRenderingContext;
   } else if (webglVersion === 1) {
@@ -253,7 +253,7 @@ export function queryMaxTextureSize(gl: WebGLRenderingContext): number {
 }
 
 export function getChannelsPerTexture(): number {
-  if (ENV.getNumber(Feature.WEBGL_VERSION) === 2) {
+  if (ENV.get('WEBGL_VERSION') === 2) {
     return 1;
   }
   return 4;

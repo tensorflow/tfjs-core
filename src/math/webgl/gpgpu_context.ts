@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV, Feature} from '../../environment';
+import {ENV} from '../../environment';
 import * as util from '../../util';
 
 import * as gpgpu_util from './gpgpu_util';
@@ -44,7 +44,7 @@ export class GPGPUContext {
     }
 
     // WebGL 2.0 enables texture floats without an extension.
-    if (ENV.getNumber(Feature.WEBGL_VERSION) === 1) {
+    if (ENV.get('WEBGL_VERSION') === 1) {
       this.textureFloatExtension =
           webgl_util.getExtensionOrThrow(this.gl, 'OES_texture_float');
       this.colorBufferFloatExtension =
@@ -260,7 +260,7 @@ export class GPGPUContext {
   }
 
   public runBenchmark(benchmark: () => void): Promise<number> {
-    if (ENV.getNumber(Feature.WEBGL_VERSION) === 2) {
+    if (ENV.get('WEBGL_VERSION') === 2) {
       return this.runBenchmarkWebGL2(benchmark);
     }
     return this.runBenchmarkWebGL1(benchmark);
@@ -281,34 +281,39 @@ export class GPGPUContext {
     (this.gl as any).endQuery((ext as any).TIME_ELAPSED_EXT);
 
     return new Promise<number>((resolve, reject) => {
-      util.tryWithBackoff(
-              () => {
-                const available =
+      const queryGPU = () => {
+        const available =
+            // tslint:disable-next-line:no-any
+            (this.gl as any)
+                .getQueryParameter(
                     // tslint:disable-next-line:no-any
-                    (this.gl as any)
-                        .getQueryParameter(
-                            // tslint:disable-next-line:no-any
-                            query, (this.gl as any).QUERY_RESULT_AVAILABLE);
+                    query, (this.gl as any).QUERY_RESULT_AVAILABLE);
 
-                const disjoint =
-                    // tslint:disable-next-line:no-any
-                    this.gl.getParameter((ext as any).GPU_DISJOINT_EXT);
-                return available && !disjoint;
-              },
-              [0, 100, 1000])
-          .then(() => {
-            const timeElapsed =
+        const disjoint =
+            // tslint:disable-next-line:no-any
+            this.gl.getParameter((ext as any).GPU_DISJOINT_EXT);
+        return available && !disjoint;
+      };
+
+      const getTimeElapsed = () => {
+        const timeElapsed =
+            // tslint:disable-next-line:no-any
+            (this.gl as any)
                 // tslint:disable-next-line:no-any
-                (this.gl as any)
-                    // tslint:disable-next-line:no-any
-                    .getQueryParameter(query, (this.gl as any).QUERY_RESULT);
-            // Return milliseconds.
-            resolve(timeElapsed / 1000000);
-          })
-          .catch(() => {
-            console.warn('Disjoint query timer never available.');
-            resolve(-1);
-          });
+                .getQueryParameter(query, (this.gl as any).QUERY_RESULT);
+        // Return milliseconds.
+        resolve(timeElapsed / 1000000);
+      };
+
+      const resolveWithWarning = () => {
+        console.warn('Disjoint query timer never available.');
+        resolve(-1);
+      };
+
+      const maxBackoffMs = 2048;
+      util.tryWithBackoff(queryGPU, maxBackoffMs)
+          .then(getTimeElapsed)
+          .catch(resolveWithWarning);
     });
   }
 
@@ -325,26 +330,30 @@ export class GPGPUContext {
     ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
 
     return new Promise<number>((resolve, reject) => {
-      util.tryWithBackoff(
-              () => {
-                const available = ext.getQueryObjectEXT(
-                    query, ext.QUERY_RESULT_AVAILABLE_EXT);
+      const queryGPU = () => {
+        const available =
+            ext.getQueryObjectEXT(query, ext.QUERY_RESULT_AVAILABLE_EXT);
 
-                const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+        const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
 
-                return available && !disjoint;
-              },
-              [0, 100, 1000])
-          .then(() => {
-            const timeElapsed =
-                ext.getQueryObjectEXT(query, ext.QUERY_RESULT_EXT);
-            // Return milliseconds.
-            resolve(timeElapsed / 1000000);
-          })
-          .catch(() => {
-            console.warn('Disjoint query timer never available.');
-            resolve(-1);
-          });
+        return available && !disjoint;
+      };
+
+      const getTimeElapsed = () => {
+        const timeElapsed = ext.getQueryObjectEXT(query, ext.QUERY_RESULT_EXT);
+        // Return milliseconds.
+        resolve(timeElapsed / 1000000);
+      };
+
+      const resolveWithWarning = () => {
+        console.warn('Disjoint query timer never available.');
+        resolve(-1);
+      };
+
+      const maxBackoffMs = 2048;
+      util.tryWithBackoff(queryGPU, maxBackoffMs)
+          .then(getTimeElapsed)
+          .catch(resolveWithWarning);
     });
   }
 

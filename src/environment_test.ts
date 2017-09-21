@@ -1,4 +1,3 @@
-
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -16,7 +15,7 @@
  * =============================================================================
  */
 import * as device_util from './device_util';
-import {Environment, Feature} from './environment';
+import {Environment} from './environment';
 import * as webgl_util from './math/webgl/webgl_util';
 
 describe('disjoint query timer', () => {
@@ -25,7 +24,7 @@ describe('disjoint query timer', () => {
 
     const env = new Environment();
 
-    expect(env.enabled(Feature.DISJOINT_QUERY_TIMER)).toBe(false);
+    expect(env.get('WEBGL_DISJOINT_QUERY_TIMER')).toBe(false);
   });
 
   it('not mobile', () => {
@@ -33,7 +32,7 @@ describe('disjoint query timer', () => {
 
     const env = new Environment();
 
-    expect(env.enabled(Feature.DISJOINT_QUERY_TIMER)).toBe(true);
+    expect(env.get('WEBGL_DISJOINT_QUERY_TIMER')).toBe(true);
   });
 });
 
@@ -44,7 +43,7 @@ describe('WebGL version', () => {
 
     const env = new Environment();
 
-    expect(env.getNumber(Feature.WEBGL_VERSION)).toBe(1);
+    expect(env.get('WEBGL_VERSION')).toBe(1);
   });
 
   it('webgl 2', () => {
@@ -53,7 +52,7 @@ describe('WebGL version', () => {
 
     const env = new Environment();
 
-    expect(env.getNumber(Feature.WEBGL_VERSION)).toBe(2);
+    expect(env.get('WEBGL_VERSION')).toBe(2);
   });
 
   it('no webgl', () => {
@@ -62,6 +61,6 @@ describe('WebGL version', () => {
 
     const env = new Environment();
 
-    expect(env.getNumber(Feature.WEBGL_VERSION)).toBe(0);
+    expect(env.get('WEBGL_VERSION')).toBe(0);
   });
 });

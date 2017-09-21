@@ -20,7 +20,7 @@ import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
 import {Pool2DProgram} from '../../src/math/webgl/pool_gpu';
 import {TextureManager} from '../../src/math/webgl/texture_manager';
 // tslint:disable-next-line:max-line-length
-import {Array3D, conv_util, ENV, Feature, GPGPUContext, NDArray, NDArrayMathCPU} from '../deeplearn';
+import {Array3D, conv_util, ENV, GPGPUContext, NDArray, NDArrayMathCPU} from '../deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 
@@ -96,7 +96,7 @@ export class PoolGPUBenchmark extends PoolBenchmark {
         gpgpu.dispose();
       };
 
-      if (ENV.get(Feature.DISJOINT_QUERY_TIMER)) {
+      if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER')) {
         gpgpu.runBenchmark(benchmark).then((timeElapsed: number) => {
           delayedCleanup();
           resolve(timeElapsed);
