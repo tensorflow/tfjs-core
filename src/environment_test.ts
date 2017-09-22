@@ -31,12 +31,15 @@ describe('disjoint query timer enabled', () => {
 
     spyOn(document, 'createElement').and.returnValue({
       getContext: (context: string) => {
-        if (context === 'webgl') {
+        if (context === 'webgl' || context === 'experimental-webgl') {
           return {
             getExtension: (extensionName: string) => {
               if (extensionName === 'EXT_disjoint_timer_query') {
                 return {};
+              } else if (extensionName === 'WEBGL_lose_context') {
+                return {loseContext: () => {}};
               }
+              console.log('returning null');
               return null;
             }
           };
@@ -60,6 +63,8 @@ describe('disjoint query timer enabled', () => {
             getExtension: (extensionName: string) => {
               if (extensionName === 'EXT_disjoint_timer_query_webgl2') {
                 return {};
+              } else if (extensionName === 'WEBGL_lose_context') {
+                return {loseContext: () => {}};
               }
               return null;
             }
