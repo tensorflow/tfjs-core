@@ -28,9 +28,9 @@ export class MinMaxProgram implements GPGPUProgram {
     const sizeNearestVec4 = Math.floor(size / 4) * 4;
     const sizeVec4Remainder = size % 4;
 
-    const remainder1 = sizeNearestVec4;
-    const remainder2 = sizeNearestVec4 + 1;
-    const remainder3 = sizeNearestVec4 + 2;
+    const r1 = sizeNearestVec4;
+    const r2 = sizeNearestVec4 + 1;
+    const r3 = sizeNearestVec4 + 2;
 
     this.userCode = `
       void main() {
@@ -46,14 +46,12 @@ export class MinMaxProgram implements GPGPUProgram {
         }
         vec4 aVec;
         if (${sizeVec4Remainder === 1}) {
-          aVec = vec4(bestVec.xyz, getAFlat(${remainder1}));
+          aVec = vec4(bestVec.xyz, getAFlat(${r1}));
         } else if (${sizeVec4Remainder === 2}) {
-          aVec = vec4(bestVec.xy,
-              vec2(getAFlat(${remainder1}), getAFlat(${remainder2})));
+          aVec = vec4(bestVec.xy, vec2(getAFlat(${r1}), getAFlat(${r2})));
         } else if (${sizeVec4Remainder === 3}) {
           aVec = vec4(bestVec.x,
-              vec3(getAFlat(${remainder1}), getAFlat(${remainder2}),
-                   getAFlat(${remainder3})));
+                      vec3(getAFlat(${r1}), getAFlat(${r2}), getAFlat(${r3})));
         }
         if (${sizeVec4Remainder > 0}) {
           if (hasNaN(aVec)) {
