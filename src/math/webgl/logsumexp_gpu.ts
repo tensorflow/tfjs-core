@@ -23,20 +23,56 @@ export class LogSumExpProgram implements GPGPUProgram {
   outputShape: number[] = [];
   userCode: string;
 
-  constructor(aSize: number) {
+  constructor(size: number) {
+    const sizeNearestVec4 = Math.floor(size / 4) * 4;
+    const sizeVec4Remainder = size % 4;
+
+    const remainder1 = sizeNearestVec4;
+    const remainder2 = sizeNearestVec4 + 1;
+    const remainder3 = sizeNearestVec4 + 2;
+
     this.userCode = `
+      const vec2 ones2 = vec2(1, 1);
+      const vec3 ones3 = vec3(1, 1, 1);
+      const vec4 ones4 = vec4(1, 1, 1, 1);
+
       void main() {
-        float aMax = getAFlat(0);
-        for (int i = 0; i < ${aSize}; i++) {
-          aMax = max(aMax, getAFlat(i));
+        vec4 maxVec = vec4(getAFlat(0));
+        for (int i = 0; i < ${sizeNearestVec4}; i += 4) {
+          vec4 aVec = vec4(getAFlat(i), getAFlat(i+1),
+                           getAFlat(i+2), getAFlat(i+3));
+          maxVec = max(maxVec, aVec);
         }
+        if (${sizeVec4Remainder === 1}) {
+          maxVec = max(maxVec, vec4(maxVec.xyz, getAFlat(${remainder1})));
+        } else if (${sizeVec4Remainder === 2}) {
+          vec2 aVec = vec2(getAFlat(${remainder1}), getAFlat(${remainder2}));
+          maxVec = max(maxVec, vec4(maxVec.xy, aVec));
+        } else if (${sizeVec4Remainder === 3}) {
+          vec3 aVec = vec3(getAFlat(${remainder1}), getAFlat(${remainder2}),
+                           getAFlat(${remainder3}));
+          maxVec = max(maxVec, vec4(maxVec.x, aVec));
+        }
+        float finalMax = max(maxVec.x, max(maxVec.y, max(maxVec.z, maxVec.w)));
 
         float expSum = 0.0;
-        for (int i = 0; i < ${aSize}; i++) {
-          expSum += exp(getAFlat(i) - aMax);
+        for (int i = 0; i < ${sizeNearestVec4}; i += 4) {
+          vec4 aVec = vec4(getAFlat(i), getAFlat(i+1),
+                           getAFlat(i+2), getAFlat(i+3));
+          expSum += dot(ones4, exp(aVec - finalMax));
+        }
+        if (${sizeVec4Remainder === 1}) {
+          expSum += exp(getAFlat(${remainder1}) - finalMax);
+        } else if (${sizeVec4Remainder === 2}) {
+          vec2 aVec = vec2(getAFlat(${remainder1}), getAFlat(${remainder2}));
+          expSum += dot(ones2, exp(aVec - finalMax));
+        } else if (${sizeVec4Remainder === 3}) {
+          vec3 aVec = vec3(getAFlat(${remainder1}), getAFlat(${remainder2}),
+              getAFlat(${remainder3}));
+          expSum += dot(ones3, exp(aVec - finalMax));
         }
 
-        setOutput(aMax + log(expSum));
+        setOutput(finalMax + log(expSum));
       }
     `;
   }
