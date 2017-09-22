@@ -59,7 +59,7 @@ function loseContext(gl: WebGLRenderingContext) {
     const loseContextExtension = gl.getExtension('WEBGL_lose_context');
     if (loseContextExtension == null) {
       throw new Error(
-          'Extension WEBGL_lose_context_extension not supported on this browser.');
+          'Extension WEBGL_lose_context not supported on this browser.');
     }
     loseContextExtension.loseContext();
   }
