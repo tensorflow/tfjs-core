@@ -15,7 +15,11 @@
  * =============================================================================
  */
 import * as device_util from './device_util';
+<<<<<<< HEAD
 import {Environment, Features} from './environment';
+=======
+import {Environment} from './environment';
+>>>>>>> origin
 
 describe('disjoint query timer enabled', () => {
   it('no webgl', () => {
