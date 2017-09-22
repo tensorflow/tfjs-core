@@ -56,8 +56,11 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
 
 function loseContext(gl: WebGLRenderingContext) {
   if (gl != null) {
-    console.log(gl);
     const loseContextExtension = gl.getExtension('WEBGL_lose_context');
+    if (loseContextExtension == null) {
+      throw new Error(
+          'Extension WEBGL_lose_context_extension not supported on this browser.');
+    }
     loseContextExtension.loseContext();
   }
 }
