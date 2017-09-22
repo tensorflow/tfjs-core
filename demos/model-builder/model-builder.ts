@@ -77,7 +77,9 @@ export let ModelBuilderPolymer: new () => PolymerHTMLElement = PolymerElement({
     optimizerNames: Array,
     learningRate: Number,
     momentum: Number,
+    needMomentum: Boolean,
     gamma: Number,
+    needGamma: Boolean,
     batchSize: Number,
     selectedModelName: String,
     selectedNormalizationOption:
@@ -131,7 +133,9 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private datasetStats: DataStats[];
   private learingRate: number;
   private momentum: number;
+  private needMomentum: boolean;
   private gamma: number;
+  private needGamma: boolean;
   private batchSize: number;
 
   // Stats.
@@ -229,9 +233,16 @@ export class ModelBuilder extends ModelBuilderPolymer {
         this.setupDatasetStats();
       });
     }
+    this.querySelector("#optimizer-dropdown .dropdown-content")
+        .addEventListener('iron-activate', (event: any) => {
+          // Activate, deactivate hyper parameter inputs.
+          this.refreshHyperParamRequirements(event.detail.selected);
+        });
     this.learningRate = 0.1;
     this.momentum = 0.1;
+    this.needMomentum = true;
     this.gamma = 0.1;
+    this.needGamma = false;
     this.batchSize = 64;
     // Default optimizer is momentum
     this.selectedOptimizerName = "momentum";
@@ -289,6 +300,8 @@ export class ModelBuilder extends ModelBuilderPolymer {
     return applicationState === ApplicationState.IDLE;
   }
 
+
+
   private getTestData(): NDArray[][] {
     const data = this.dataSet.getData();
     if (data == null) {
@@ -332,6 +345,40 @@ export class ModelBuilder extends ModelBuilderPolymer {
     }
   }
 
+  private resetHyperParamRequirements() {
+    this.needMomentum = false;
+    this.needGamma = false;
+  }
+
+  /**
+   * Set flag to disable input by optimizer selection.
+   */
+  private refreshHyperParamRequirements(optimizerName: string) {
+    this.resetHyperParamRequirements();
+    switch (optimizerName) {
+    case "sgd": {
+      // No additional hyper parameters
+      break;
+    }
+    case "momentum": {
+      this.needMomentum = true;
+      break;
+    }
+    case "rmsprop": {
+      this.needMomentum = true;
+      this.needGamma = true;
+      break;
+    }
+    case "adagrad": {
+      this.needMomentum = true;
+      break;
+    }
+    default: {
+      throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
+    }
+    }
+  }
+
   private createOptimizer() {
     switch(this.selectedOptimizerName) {
       case "sgd": {
@@ -344,7 +391,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
         return new RMSPropOptimizer(+this.learningRate, +this.momentum, 
           +this.gamma);
       }
-      case "gamma": {
+      case "adagrad": {
         return new AdagradOptimizer(+this.learningRate, +this.momentum);
       }
       default: {
@@ -359,7 +406,6 @@ export class ModelBuilder extends ModelBuilderPolymer {
 
     // Recreate optimizer with the selected optimizer and hyperparameters.
     this.optimizer = this.createOptimizer();
-    console.log(this.optimizer);
 
     if (this.isValid && (trainingData != null) && (testData != null)) {
       this.recreateCharts();
