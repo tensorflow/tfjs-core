@@ -16,7 +16,6 @@
  */
 
 import * as device_util from './device_util';
-import * as webgl_util from './math/webgl/webgl_util';
 import * as util from './util';
 
 export enum Type {
@@ -25,12 +24,14 @@ export enum Type {
 }
 
 export interface Features {
-  'WEBGL_DISJOINT_QUERY_TIMER'?: boolean;
+  'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED'?: boolean;
+  'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'?: boolean;
   'WEBGL_VERSION'?: number;
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
-  {name: 'WEBGL_DISJOINT_QUERY_TIMER', type: Type.BOOLEAN},
+  {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED', type: Type.BOOLEAN},
+  {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER}
 ];
 
@@ -39,18 +40,48 @@ export interface URLProperty {
   type: Type;
 }
 
-function evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
-  if (feature === 'WEBGL_DISJOINT_QUERY_TIMER') {
-    return !device_util.isMobile();
-  } else if (feature === 'WEBGL_VERSION') {
-    if (webgl_util.isWebGL2Enabled()) {
-      return 2;
-    } else if (webgl_util.isWebGL1Enabled()) {
-      return 1;
-    }
-    return 0;
+function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
+  if (webGLVersion === 0) {
+    throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
   }
-  throw new Error(`Unknown feature ${feature}.`);
+
+  const tempCanvas = document.createElement('canvas');
+  if (webGLVersion === 1) {
+    return (tempCanvas.getContext('webgl') ||
+            tempCanvas.getContext('experimental-webgl')) as
+        WebGLRenderingContext;
+  }
+  return tempCanvas.getContext('webgl2') as WebGLRenderingContext;
+}
+
+function loseContext(gl: WebGLRenderingContext) {
+  if (gl != null) {
+    console.log(gl);
+    const loseContextExtension = gl.getExtension('WEBGL_lose_context');
+    loseContextExtension.loseContext();
+  }
+}
+
+function isWebGLVersionEnabled(webGLVersion: 1|2) {
+  const gl = getWebGLRenderingContext(webGLVersion);
+  if (gl != null) {
+    loseContext(gl);
+    return true;
+  }
+  return false;
+}
+
+function isWebGLDisjointQueryTimerEnabled(webGLVersion: number) {
+  const gl = getWebGLRenderingContext(webGLVersion);
+
+  const extensionName = webGLVersion === 1 ? 'EXT_disjoint_timer_query' :
+                                             'EXT_disjoint_timer_query_webgl2';
+  const ext = gl.getExtension(extensionName);
+  const isExtEnabled = ext != null;
+  if (gl != null) {
+    loseContext(gl);
+  }
+  return isExtEnabled;
 }
 
 export class Environment {
@@ -67,9 +98,32 @@ export class Environment {
       return this.features[feature];
     }
 
-    this.features[feature] = evaluateFeature(feature);
+    this.features[feature] = this.evaluateFeature(feature);
 
     return this.features[feature];
+  }
+
+  private evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
+    if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED') {
+      const webGLVersion = this.get('WEBGL_VERSION');
+
+      if (webGLVersion === 0) {
+        return false;
+      }
+
+      return isWebGLDisjointQueryTimerEnabled(webGLVersion);
+    } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE') {
+      return this.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED') &&
+          !device_util.isMobile();
+    } else if (feature === 'WEBGL_VERSION') {
+      if (isWebGLVersionEnabled(2)) {
+        return 2;
+      } else if (isWebGLVersionEnabled(1)) {
+        return 1;
+      }
+      return 0;
+    }
+    throw new Error(`Unknown feature ${feature}.`);
   }
 }
 

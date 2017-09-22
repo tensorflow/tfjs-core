@@ -158,14 +158,14 @@ describe('util.tryWithBackoff', () => {
       return false;
     };
 
-    util.tryWithBackoff(checkFn, 128).then(doneFn).catch(() => {
+    util.repeatedTry(checkFn).then(doneFn).catch(() => {
       throw new Error('Rejected backoff.');
     });
   });
   it('rejects', (doneFn) => {
     const checkFn = () => false;
 
-    util.tryWithBackoff(checkFn, 32)
+    util.repeatedTry(checkFn, () => 0, 100)
         .then(() => {
           throw new Error('Backoff resolved');
         })

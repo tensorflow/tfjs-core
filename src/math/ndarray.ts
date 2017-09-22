@@ -15,11 +15,13 @@
  * =============================================================================
  */
 
+import {ENV} from '../environment';
 import * as util from '../util';
 
 import {GPGPUContext} from './webgl/gpgpu_context';
 import {TextureManager} from './webgl/texture_manager';
 import * as webgl_util from './webgl/webgl_util';
+
 
 // These global variables need to be initialized to null so that closure knows
 // not to seal them.
@@ -241,6 +243,27 @@ export class NDArray {
       this.disposeTexture();
     }
     return this.data.values;
+  }
+
+  getValuesAsync(): Promise<Float32Array> {
+    return new Promise<Float32Array>((resolve, reject) => {
+      if (this.data.values != null) {
+        resolve(this.data.values);
+        return;
+      }
+
+      if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+        resolve(this.getValues());
+        return;
+      }
+
+      // Construct an empty query. We're just interested in getting a callback
+      // when the GPU command queue has executed until this point in time.
+      const queryFn = () => {};
+      GPGPU.runQuery(queryFn).then(() => {
+        resolve(this.getValues());
+      });
+    });
   }
 
   private uploadToGPU(preferredTexShape?: [number, number]) {
