@@ -234,6 +234,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
       });
     }
     this.querySelector("#optimizer-dropdown .dropdown-content")
+        // tslint:disable-next-line:no-any
         .addEventListener('iron-activate', (event: any) => {
           // Activate, deactivate hyper parameter inputs.
           this.refreshHyperParamRequirements(event.detail.selected);
