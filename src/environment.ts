@@ -24,8 +24,12 @@ export enum Type {
 }
 
 export interface Features {
+  // Whether the disjoint_query_timer extension is an available extension.
   'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED'?: boolean;
+  // Whether the timer object from the disjoint_query_timer extension gives
+  // timing information that is reliable.
   'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'?: boolean;
+  // 0: No WebGL, 1: WebGL 1.0, 2: WebGL 2.0.
   'WEBGL_VERSION'?: number;
 }
 

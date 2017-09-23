@@ -224,7 +224,7 @@ export function rightPad(a: string, size: number): string {
 
 export function repeatedTry(
     checkFn: () => boolean, delayFn = (counter: number) => 0,
-    maxCounter?: number) {
+    maxCounter?: number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     let tryCount = 0;
 

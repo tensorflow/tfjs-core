@@ -39,7 +39,6 @@ describe('disjoint query timer enabled', () => {
               } else if (extensionName === 'WEBGL_lose_context') {
                 return {loseContext: () => {}};
               }
-              console.log('returning null');
               return null;
             }
           };

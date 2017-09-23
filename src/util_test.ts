@@ -147,7 +147,7 @@ describe('util.getBroadcastedShape', () => {
   });
 });
 
-describe('util.tryWithBackoff', () => {
+describe('util.repeatedTry', () => {
   it('resolves', (doneFn) => {
     let counter = 0;
     const checkFn = () => {
@@ -165,7 +165,7 @@ describe('util.tryWithBackoff', () => {
   it('rejects', (doneFn) => {
     const checkFn = () => false;
 
-    util.repeatedTry(checkFn, () => 0, 100)
+    util.repeatedTry(checkFn, () => 0, 5)
         .then(() => {
           throw new Error('Backoff resolved');
         })

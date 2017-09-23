@@ -263,7 +263,7 @@ export class GPGPUContext {
    * Executes a query function which contains GL commands and resolves when
    * the command buffer has finished executing the query.
    * @param queryFn The query function containing GL commands to execute.
-   * @return a promise that resolves with the ellapsed time.
+   * @return a promise that resolves with the ellapsed time in milliseconds.
    */
   public runQuery(queryFn: () => void): Promise<number> {
     if (ENV.get('WEBGL_VERSION') === 2) {
@@ -302,13 +302,13 @@ export class GPGPUContext {
       };
 
       const getTimeElapsed = () => {
-        const timeElapsedMicros =
+        const timeElapsedNanos =
             // tslint:disable-next-line:no-any
             (this.gl as any)
                 // tslint:disable-next-line:no-any
                 .getQueryParameter(query, (this.gl as any).QUERY_RESULT);
         // Return milliseconds.
-        resolve(timeElapsedMicros / 1000000);
+        resolve(timeElapsedNanos / 1000000);
       };
 
       const resolveWithWarning = () => {
@@ -343,10 +343,10 @@ export class GPGPUContext {
       };
 
       const getTimeElapsed = () => {
-        const timeElapsedMicros =
+        const timeElapsedNanos =
             ext.getQueryObjectEXT(query, ext.QUERY_RESULT_EXT);
         // Return milliseconds.
-        resolve(timeElapsedMicros / 1000000);
+        resolve(timeElapsedNanos / 1000000);
       };
 
       const resolveWithWarning = () => {
