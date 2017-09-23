@@ -18,11 +18,7 @@
 import * as test_util from '../../test_util';
 import {Array1D, Array2D, Array3D, NDArray, Scalar} from '../ndarray';
 
-<<<<<<< HEAD
-import {UnaryOp} from './unaryop_gpu';
-=======
 import * as unaryop_gpu from './unaryop_gpu';
->>>>>>> origin
 import * as unaryop_gpu_test from './unaryop_gpu_test';
 
 describe('relu_gpu', () => {

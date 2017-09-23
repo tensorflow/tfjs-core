@@ -15,11 +15,6 @@
  * =============================================================================
  */
 
-<<<<<<< HEAD
-let USE_WEBGL2_WHEN_AVAILABLE = false;
-let WEBGL2_ENABLED: boolean|undefined = null;
-=======
->>>>>>> origin
 let MAX_TEXTURE_SIZE: number = null;
 
 import * as util from '../../util';

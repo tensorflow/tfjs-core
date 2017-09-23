@@ -17,21 +17,6 @@
 
 import {GPGPUProgram} from './gpgpu_math';
 
-<<<<<<< HEAD
-export enum UnaryOp {
-  EXP,
-  LOG,
-  SQRT,
-  NEG,
-  RELU,
-  SIGMOID,
-  STEP,
-  SIN,
-  TANH
-}
-
-=======
->>>>>>> origin
 export class UnaryOpProgram implements GPGPUProgram {
   variableNames = ['A'];
   params: Array<{}>;
@@ -62,33 +47,6 @@ export const CHECK_NAN_SNIPPET = `
   }
 `;
 
-<<<<<<< HEAD
-function getOpSnippet(op: UnaryOp) {
-  switch (op) {
-    case UnaryOp.EXP:
-      return 'float r = exp(v);';
-    case UnaryOp.LOG:
-      return 'float r = log(v);';
-    case UnaryOp.SQRT:
-      return CHECK_NAN_SNIPPET + 'float r = sqrt(v);';
-    case UnaryOp.NEG:
-      return 'float r = -v;';
-    case UnaryOp.RELU:
-      return 'float r = (v < 0.0) ? 0.0 : v;';
-    case UnaryOp.SIGMOID:
-      return 'float r = 1.0 / (1.0 + exp(-1.0 * v));';
-    case UnaryOp.STEP:
-      return 'float r = (v == v) ? (v > 0.0 ? 1.0 : 0.0) : v;';
-    case UnaryOp.SIN:
-      return CHECK_NAN_SNIPPET + 'float r = sin(v);';
-    case UnaryOp.TANH:
-      return `float e2x = exp(-2.0 * abs(v));
-              float r = sign(v) * (1.0 - e2x) / (1.0 + e2x);`;
-    default:
-      throw Error('Unrecognized unary op type ' + op);
-  }
-}
-=======
 export const ABS = `
   return abs(x);
 `;
@@ -159,4 +117,3 @@ export const TANH = `
   float e2x = exp(-2.0 * abs(x));
   return sign(x) * (1.0 - e2x) / (1.0 + e2x);
 `;
->>>>>>> origin
