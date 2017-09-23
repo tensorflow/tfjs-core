@@ -357,42 +357,41 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private refreshHyperParamRequirements(optimizerName: string) {
     this.resetHyperParamRequirements();
     switch (optimizerName) {
-    case "sgd": {
-      // No additional hyper parameters
-      break;
-    }
-    case "momentum": {
-      this.needMomentum = true;
-      break;
-    }
-    case "rmsprop": {
-      this.needMomentum = true;
-      this.needGamma = true;
-      break;
-    }
-    case "adagrad": {
-      this.needMomentum = true;
-      break;
-    }
-    default: {
-      throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
-    }
+      case "sgd": {
+        // No additional hyper parameters
+        break;
+      }
+      case "momentum": {
+        this.needMomentum = true;
+        break;
+      }
+      case "rmsprop": {
+        this.needMomentum = true;
+        this.needGamma = true;
+        break;
+      }
+      case "adagrad": {
+        this.needMomentum = true;
+        break;
+      }
+      default: {
+        throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
+      }
     }
   }
 
   private createOptimizer() {
-    switch(this.selectedOptimizerName) {
-      case "sgd": {
+    switch (this.selectedOptimizerName) {
+      case 'sgd': {
         return new SGDOptimizer(+this.learningRate);
       }
-      case "momentum": {
+      case 'momentum': {
         return new MomentumOptimizer(+this.learningRate, +this.momentum);
       }
-      case "rmsprop": {
-        return new RMSPropOptimizer(+this.learningRate, +this.momentum, 
-          +this.gamma);
+      case 'rmsprop': {
+        return new RMSPropOptimizer(+this.learningRate, +this.gamma);
       }
-      case "adagrad": {
+      case 'adagrad': {
         return new AdagradOptimizer(+this.learningRate, +this.momentum);
       }
       default: {
