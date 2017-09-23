@@ -1,19 +1,22 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array4D, conv_util, Graph, Initializer, NDArray, NDArrayInitializer, Tensor, util, VarianceScalingInitializer, ZerosInitializer} from '../deeplearnjs';
+import {Array1D, Array2D, Array4D, conv_util, Graph, Initializer, NDArray, NDArrayInitializer, Tensor, util, VarianceScalingInitializer, ZerosInitializer} from '../deeplearn';
 
 /**
  * Classes that specify operation parameters, how they affect output shape,
@@ -21,8 +24,8 @@ import {Array1D, Array2D, Array4D, conv_util, Graph, Initializer, NDArray, NDArr
  * to the model builder UI should be added here.
  */
 
-export type LayerName = 'Fully connected' | 'ReLU' | 'Convolution' |
-    'Max pool' | 'Reshape' | 'Flatten';
+export type LayerName =
+    'Fully connected'|'ReLU'|'Convolution'|'Max pool'|'Reshape'|'Flatten';
 
 /**
  * Creates a layer builder object.
@@ -207,7 +210,7 @@ export class Convolution2DLayerBuilder implements LayerBuilder {
       {
         label: 'Output depth',
         initialValue: (inputShape: number[]) =>
-                          this.outputDepth != null ? this.outputDepth : 1,
+            this.outputDepth != null ? this.outputDepth : 1,
         type: 'number',
         min: 1,
         max: 1000,
@@ -319,7 +322,7 @@ export class ReshapeLayerBuilder implements LayerBuilder {
       initialValue: (inputShape: number[]) => inputShape.join(', '),
       type: 'text' as 'text',
       setValue: (value: string) => this.outputShape =
-                    value.split(',').map((value) => +value),
+          value.split(',').map((value) => +value),
       getValue: () => this.outputShape.join(', ')
     }];
   }

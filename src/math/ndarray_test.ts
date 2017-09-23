@@ -1,17 +1,19 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
 import * as ndarray from './ndarray';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
@@ -125,7 +127,7 @@ describe('NDArray', () => {
     expect(a.get(1, 2)).toBe(10);
   });
 
-  it('NDArray CPU --> GPU', () => {
+  it('NDArray getValues CPU --> GPU', () => {
     const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
 
     expect(a.inGPU()).toBe(false);
@@ -141,7 +143,7 @@ describe('NDArray', () => {
     a.dispose();
   });
 
-  it('NDArray GPU --> CPU', () => {
+  it('NDArray getValues GPU --> CPU', () => {
     const texture = textureManager.acquireTexture([3, 2]);
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -151,6 +153,40 @@ describe('NDArray', () => {
 
     expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
     expect(a.inGPU()).toBe(false);
+  });
+
+  it('NDArray getValuesAsync CPU --> GPU', (doneFn) => {
+    const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
+
+    expect(a.inGPU()).toBe(false);
+
+    a.getValuesAsync().then(values => {
+      expect(values).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+
+      expect(a.inGPU()).toBe(false);
+
+      // Upload to GPU.
+      expect(a.getTexture() != null).toBe(true);
+
+      expect(a.inGPU()).toBe(true);
+      a.dispose();
+      doneFn();
+    });
+  });
+
+  it('NDArray getValuesAsync GPU --> CPU', (doneFn) => {
+    const texture = textureManager.acquireTexture([3, 2]);
+    gpgpu.uploadMatrixToTexture(
+        texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
+
+    const a = new Array2D([3, 2], {texture, textureShapeRC: [3, 2]});
+    expect(a.inGPU()).toBe(true);
+
+    a.getValuesAsync().then(values => {
+      expect(values).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+      expect(a.inGPU()).toBe(false);
+      doneFn();
+    });
   });
 
   it('Scalar basic methods', () => {

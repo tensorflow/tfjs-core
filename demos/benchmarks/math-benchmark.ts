@@ -1,17 +1,19 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
 import '../demo-header';
 import '../demo-footer';
@@ -19,26 +21,50 @@ import '../demo-footer';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 import {BenchmarkRunGroup} from './benchmark';
 
-import {BENCHMARK_RUN_GROUPS} from './math-benchmark-run-groups';
+import {getRunGroups} from './math-benchmark-run-groups';
 
 // tslint:disable-next-line:variable-name
-export let MathBenchmarkPolymer: new () => PolymerHTMLElement = PolymerElement(
-    {is: 'math-benchmark', properties: {benchmarkRunGroupNames: Array}});
+export let MathBenchmarkPolymer: new () => PolymerHTMLElement = PolymerElement({
+  is: 'math-benchmark',
+  properties: {benchmarks: Array, benchmarkRunGroupNames: Array}
+});
 
+function getDisplayParams(params?: {}): string {
+  if (params == null) {
+    return '';
+  }
+
+  const kvParams = params as {[key: string]: string};
+  const out: string[] = [];
+  const keys = Object.keys(kvParams);
+  if (keys.length === 0) {
+    return '';
+  }
+  for (let i = 0; i < keys.length; i++) {
+    out.push(keys[i] + ': ' + kvParams[keys[i]]);
+  }
+  return '{' + out.join(', ') + '}';
+}
 export class MathBenchmark extends MathBenchmarkPolymer {
   // Polymer properties.
   private benchmarkRunGroupNames: string[];
+  private benchmarks: BenchmarkRunGroup[];
   private stopMessages: boolean[];
 
   ready() {
+    const groups = getRunGroups();
     // Set up the benchmarks UI.
     const benchmarkRunGroupNames: string[] = [];
+    const benchmarks: BenchmarkRunGroup[] = [];
     this.stopMessages = [];
-    for (let i = 0; i < BENCHMARK_RUN_GROUPS.length; i++) {
-      benchmarkRunGroupNames.push(BENCHMARK_RUN_GROUPS[i].name);
+    for (let i = 0; i < groups.length; i++) {
+      benchmarkRunGroupNames.push(
+          groups[i].name + ': ' + getDisplayParams(groups[i].params));
+      benchmarks.push(groups[i]);
       this.stopMessages.push(false);
     }
     this.benchmarkRunGroupNames = benchmarkRunGroupNames;
+    this.benchmarks = benchmarks;
 
     // In a setTimeout to let the UI update before we add event listeners.
     setTimeout(() => {
@@ -46,7 +72,7 @@ export class MathBenchmark extends MathBenchmarkPolymer {
       const stopButtons = this.querySelectorAll('.run-stop');
       for (let i = 0; i < runButtons.length; i++) {
         runButtons[i].addEventListener('click', () => {
-          this.runBenchmarkGroup(i);
+          this.runBenchmarkGroup(groups, i);
         });
         stopButtons[i].addEventListener('click', () => {
           this.stopMessages[i] = true;
@@ -55,8 +81,9 @@ export class MathBenchmark extends MathBenchmarkPolymer {
     }, 0);
   }
 
-  private runBenchmarkGroup(benchmarkRunGroupIndex: number) {
-    const benchmarkRunGroup = BENCHMARK_RUN_GROUPS[benchmarkRunGroupIndex];
+  private runBenchmarkGroup(
+      groups: BenchmarkRunGroup[], benchmarkRunGroupIndex: number) {
+    const benchmarkRunGroup = groups[benchmarkRunGroupIndex];
 
     const canvas = this.querySelectorAll('.run-plot')[benchmarkRunGroupIndex] as
         HTMLCanvasElement;
@@ -179,6 +206,7 @@ export class MathBenchmark extends MathBenchmarkPolymer {
     const runNumberRowElement = document.createElement('div');
     runNumberRowElement.className = 'run-numbers-row math-benchmark';
 
+    const runPromises: Array<Promise<number>> = [];
     const rowValues: string[] = ['' + step];
     for (let i = 0; i < benchmarkRunGroup.benchmarkRuns.length; i++) {
       const benchmarkRun = benchmarkRunGroup.benchmarkRuns[i];
@@ -188,37 +216,49 @@ export class MathBenchmark extends MathBenchmarkPolymer {
           benchmarkRunGroup.stepToSizeTransformation(step) :
           step;
 
-      let resultString: string;
-      let logString: string;
-      let time = 0;
-      let success = true;
-
-      try {
-        time = benchmarkTest(size);
-        resultString = time.toFixed(3) + 'ms';
-        logString = resultString;
-      } catch (e) {
-        success = false;
-        resultString = 'Error';
-        logString = e.message;
-      }
-
-      if (time >= 0) {
-        if (success) {
-          benchmarkRun.chartData.push({x: step, y: time});
-        }
-        rowValues.push(resultString);
-      }
-      console.log(benchmarkRun.name + '[' + step + ']: ' + logString);
+      runPromises.push(
+          benchmarkTest.run(size, benchmarkRunGroup.selectedOption));
     }
-    runNumbersTable.appendChild(this.buildRunNumbersRow(rowValues));
 
-    step += benchmarkRunGroup.stepSize;
-    // Allow the UI to update.
-    setTimeout(
-        () => this.runBenchmarkSteps(
-            chart, benchmarkRunGroup, benchmarkRunGroupIndex, step),
-        100);
+    Promise.all(runPromises).then(results => {
+      for (let i = 0; i < benchmarkRunGroup.benchmarkRuns.length; i++) {
+        const benchmarkRun = benchmarkRunGroup.benchmarkRuns[i];
+
+        const size = benchmarkRunGroup.stepToSizeTransformation != null ?
+            benchmarkRunGroup.stepToSizeTransformation(step) :
+            step;
+
+        let resultString: string;
+        let logString: string;
+        let time = 0;
+        let success = true;
+        try {
+          time = results[i];
+          resultString = time.toFixed(3) + 'ms';
+          logString = resultString;
+        } catch (e) {
+          success = false;
+          resultString = 'Error';
+          logString = e.message;
+        }
+
+        if (time >= 0) {
+          if (success) {
+            benchmarkRun.chartData.push({x: step, y: time});
+          }
+          rowValues.push(resultString);
+        }
+        console.log(benchmarkRun.name + '[' + size + ']: ' + logString);
+      }
+      runNumbersTable.appendChild(this.buildRunNumbersRow(rowValues));
+
+      step += benchmarkRunGroup.stepSize;
+      // Allow the UI to update.
+      setTimeout(
+          () => this.runBenchmarkSteps(
+              chart, benchmarkRunGroup, benchmarkRunGroupIndex, step),
+          100);
+    });
   }
 }
 document.registerElement(MathBenchmark.prototype.is, MathBenchmark);

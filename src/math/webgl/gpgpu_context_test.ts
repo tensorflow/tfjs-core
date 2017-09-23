@@ -1,22 +1,26 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
-
+import * as environment from '../../environment';
+import {Environment, Features} from '../../environment';
 import * as test_util from '../../test_util';
+
 import {GPGPUContext} from './gpgpu_context';
 import * as tex_util from './tex_util';
-import * as webgl_util from './webgl_util';
 
 describe('GPGPUContext downloadMatrixFromTexture WebGL 2.0', () => {
   let gpgpu: GPGPUContext;
@@ -73,7 +77,10 @@ describe('GPGPUContext downloadMatrixFromTexture WebGL 1.0', () => {
   let texture: WebGLTexture;
 
   beforeEach(() => {
-    webgl_util.preferWebGL1();
+    const featureValues: Features = {};
+    featureValues['WEBGL_VERSION'] = 1;
+    environment.setEnvironment(new Environment(featureValues));
+
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
     texture = gpgpu.createMatrixTexture(1, 1);
@@ -82,7 +89,7 @@ describe('GPGPUContext downloadMatrixFromTexture WebGL 1.0', () => {
   afterEach(() => {
     gpgpu.deleteMatrixTexture(texture);
     gpgpu.dispose();
-    webgl_util.preferWebGL2();
+    environment.setEnvironment(new Environment());
   });
 
   it('returns clear color from the output texture', () => {
@@ -184,14 +191,18 @@ describe('GPGPUContext setOutputMatrixTexture WebGL 1.0', () => {
   let texture: WebGLTexture;
 
   beforeEach(() => {
-    webgl_util.preferWebGL1();
+    const featureValues: Features = {};
+    featureValues['WEBGL_VERSION'] = 1;
+    environment.setEnvironment(new Environment(featureValues));
+
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
     texture = gpgpu.createMatrixTexture(1, 1);
   });
 
   afterEach(() => {
-    webgl_util.preferWebGL2();
+    environment.setEnvironment(new Environment());
+
     gpgpu.deleteMatrixTexture(texture);
     gpgpu.dispose();
   });
@@ -245,13 +256,17 @@ describe('GPGPUContext setOutputMatrixTexture WebGL 2.0', () => {
   let texture: WebGLTexture;
 
   beforeEach(() => {
-    webgl_util.preferWebGL2();
+    const featureValues: Features = {};
+    featureValues['WEBGL_VERSION'] = 2;
+    environment.setEnvironment(new Environment(featureValues));
+
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
     texture = gpgpu.createMatrixTexture(1, 1);
   });
 
   afterEach(() => {
+    environment.setEnvironment(new Environment());
     gpgpu.deleteMatrixTexture(texture);
     gpgpu.dispose();
   });

@@ -1,27 +1,29 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
-
-import {Graph, Tensor} from './graph';
+import {Graph, Tensor} from './graph/graph';
+import {Optimizer} from './graph/optimizers/optimizer';
+import {SGDOptimizer} from './graph/optimizers/sgd_optimizer';
+import {CostReduction, FeedEntry, Session} from './graph/session';
 // tslint:disable-next-line:max-line-length
 import {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph_runner';
 import {NDArrayMath} from './math/math';
 import {NDArrayMathCPU} from './math/math_cpu';
 import {Array1D, NDArray, Scalar} from './math/ndarray';
-import {Optimizer} from './optimizer';
-import {CostReduction, FeedEntry, Session} from './session';
-import {SGDOptimizer} from './sgd_optimizer';
 
 const FAKE_LEARNING_RATE = 1.0;
 const FAKE_BATCH_SIZE = 10;

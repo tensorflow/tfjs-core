@@ -1,18 +1,21 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
-
+import {ENV} from '../environment';
 import * as util from '../util';
 
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -239,6 +242,27 @@ export class NDArray {
       this.disposeTexture();
     }
     return this.data.values;
+  }
+
+  getValuesAsync(): Promise<Float32Array> {
+    return new Promise<Float32Array>((resolve, reject) => {
+      if (this.data.values != null) {
+        resolve(this.data.values);
+        return;
+      }
+
+      if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+        resolve(this.getValues());
+        return;
+      }
+
+      // Construct an empty query. We're just interested in getting a callback
+      // when the GPU command queue has executed until this point in time.
+      const queryFn = () => {};
+      GPGPU.runQuery(queryFn).then(() => {
+        resolve(this.getValues());
+      });
+    });
   }
 
   private uploadToGPU(preferredTexShape?: [number, number]) {

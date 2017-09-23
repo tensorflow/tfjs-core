@@ -1,24 +1,27 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
 import * as test_util from '../../test_util';
-import {ReduceSumProgram} from './reducesum_gpu';
-import {GPGPUContext} from './gpgpu_context';
 import {Array2D, initializeGPU, Scalar} from '../ndarray';
-import {TextureManager} from './texture_manager';
+
+import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
+import {ReduceSumProgram} from './reducesum_gpu';
+import {TextureManager} from './texture_manager';
 
 describe('reducesum_gpu', () => {
   it('returns 0 when A is [0]', () => {
@@ -66,10 +69,46 @@ describe('reducesum_gpu', () => {
     const result = uploadReduceSumDownload(a, 3, 2);
     expect(result).toEqual(7);
   });
+
+  it('sum across 2 elements', () => {
+    const a = new Float32Array([3, 5]);
+    const result = uploadReduceSumDownload(a, 2, 1);
+    expect(result).toEqual(8);
+  });
+
+  it('sum across 3 elements', () => {
+    const a = new Float32Array([3, 5, 1]);
+    const result = uploadReduceSumDownload(a, 3, 1);
+    expect(result).toEqual(9);
+  });
+
+  it('sum across 4 elements', () => {
+    const a = new Float32Array([3, 5, 1, 2]);
+    const result = uploadReduceSumDownload(a, 4, 1);
+    expect(result).toEqual(11);
+  });
+
+  it('sum across 5 elements', () => {
+    const a = new Float32Array([3, 5, 1, 2, 1]);
+    const result = uploadReduceSumDownload(a, 5, 1);
+    expect(result).toEqual(12);
+  });
+
+  it('sum across 6 elements', () => {
+    const a = new Float32Array([3, 5, 1, 2, 1, -3]);
+    const result = uploadReduceSumDownload(a, 6, 1);
+    expect(result).toEqual(9);
+  });
+
+  it('sum across 7 elements', () => {
+    const a = new Float32Array([3, 5, 1, 2, 1, -3, 5]);
+    const result = uploadReduceSumDownload(a, 7, 1);
+    expect(result).toEqual(14);
+  });
 });
 
-export function uploadReduceSumDownload(a: Float32Array, rows: number,
-    cols: number): number {
+export function uploadReduceSumDownload(
+    a: Float32Array, rows: number, cols: number): number {
   const arr = Array2D.new([rows, cols], a);
   const out = Scalar.new(0);
 

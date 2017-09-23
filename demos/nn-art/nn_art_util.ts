@@ -1,19 +1,21 @@
-/* Copyright 2017 Google Inc. All Rights Reserved.
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
-
-import {Array2D, GPGPUContext, webgl_util} from '../deeplearnjs';
+import {Array2D, GPGPUContext, webgl_util} from '../deeplearn';
 
 export function createInputAtlas(
     imageSize: number, inputNumDimensions: number, numLatentVariables: number) {
@@ -64,8 +66,12 @@ export function addLatentVariables(
     z2: number) {
   gpgpu.setOutputMatrixTexture(resultTex, shapeRowCol[0], shapeRowCol[1]);
   gpgpu.setProgram(addZShader);
-  gpgpu.setInputMatrixTexture(sourceTex, 'source', 0);
-  const zLoc = gpgpu.getUniformLocation('z');
+
+  const sourceSamplerLocation = webgl_util.getProgramUniformLocationOrThrow(
+      gpgpu.gl, addZShader, 'source');
+  gpgpu.setInputMatrixTexture(sourceTex, sourceSamplerLocation, 0);
+
+  const zLoc = gpgpu.getUniformLocation(addZShader, 'z');
   gpgpu.gl.uniform2f(zLoc, z1, z2);
   gpgpu.executeProgram();
 }
@@ -147,11 +153,14 @@ export function render(
     outputNumDimensions: number, colorMode: number) {
   webgl_util.bindCanvasToFramebuffer(gpgpu.gl);
   gpgpu.setProgram(renderShader);
-  gpgpu.setInputMatrixTexture(sourceTex, 'source', 0);
-  const colorModeLoc = gpgpu.getUniformLocation('colorMode');
+
+  const sourceSamplerLocation = webgl_util.getProgramUniformLocationOrThrow(
+      gpgpu.gl, renderShader, 'source');
+  gpgpu.setInputMatrixTexture(sourceTex, sourceSamplerLocation, 0);
+  const colorModeLoc = gpgpu.getUniformLocation(renderShader, 'colorMode');
   gpgpu.gl.uniform1i(colorModeLoc, colorMode);
   const outputNumDimensionsLoc =
-      gpgpu.getUniformLocation('outputNumDimensions');
+      gpgpu.getUniformLocation(renderShader, 'outputNumDimensions');
   gpgpu.gl.uniform1f(outputNumDimensionsLoc, outputNumDimensions);
   gpgpu.executeProgram();
 }
