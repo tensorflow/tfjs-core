@@ -34,6 +34,11 @@ export class NDArrayMathCPU extends NDArrayMath {
         ndarray.shape, {values: new Float32Array(ndarray.getValues())}) as T;
   }
 
+  protected slice1DInternal(input: Array1D, begin: number, size: number):
+      Array1D {
+    throw new Error('Method not implemented.');
+  }
+
   protected slice2DInternal(
       input: Array2D, beginRowCol: [number, number],
       sizeRowCol: [number, number]): Array2D {

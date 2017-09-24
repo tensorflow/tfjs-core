@@ -273,7 +273,7 @@ export abstract class NDArrayMath {
             `must match inner dimension of second rank 2 input, but got ` +
             `rank ${matrix.rank}.`);
 
-    return this.matMul(v.as2D(1, v.size), matrix).as1D();
+    return this.matMul(v.as2D(1, -1), matrix).as1D();
   }
 
   /**
@@ -296,7 +296,7 @@ export abstract class NDArrayMath {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return this.matMul(matrix, v.as2D(v.size, 1)).as1D();
+    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
   }
 
   /**
@@ -313,7 +313,7 @@ export abstract class NDArrayMath {
         v1.size === v2.size,
         `Error in dotProduct: size of inputs (${v1.size}) and (` +
             `${v2.size}) must match.`);
-    return this.matMul(v1.as2D(1, v1.size), v2.as2D(v2.size, 1)).asScalar();
+    return this.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
   }
 
   /**
@@ -327,7 +327,7 @@ export abstract class NDArrayMath {
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +
             `${v1.rank} and ${v2.rank}.`);
 
-    return this.matMul(v1.as2D(v1.size, 1), v2.as2D(1, v2.size));
+    return this.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
   }
 
   ///////////////
@@ -355,12 +355,31 @@ export abstract class NDArrayMath {
   }
 
   /**
-   * Extracts a slice from a matrix. The operation extraces a slice from input
-   * that starts at coordinates `begin` and is of size `size`.
-   * @param input The input matrix to slice from.
-   * @param begin The 2D coordinates in the input matrix to start the slice
-   * from.
-   * @param size The sice of the 2D window to slice.
+   * Extracts a 1D slice from 1D array starting at coordinates `begin` and is of
+   * length `size`.
+   *
+   * @param input The input array to slice from.
+   * @param begin The offset to start the slice from.
+   * @param size The size of the slice.
+   */
+  slice1D(input: Array1D, begin: number, size: number): Array1D {
+    util.assert(
+        begin + size <= input.size,
+        `Error in slice1D: requested start ${begin} and size ${size} ` +
+            `would overflow input of size ${input.size}`);
+    return this.executeOp(
+        'slice1D', () => this.slice1DInternal(input, begin, size));
+  }
+  protected abstract slice1DInternal(
+      input: Array1D, begin: number, size: number): Array1D;
+
+  /**
+   * Extracts a 2D slice from a 2D array starting at coordinates `begin` and is
+   * of size `size`.
+   *
+   * @param input The input array to slice from.
+   * @param begin The [row, col] 2d coordinates to start the slice from.
+   * @param size The size of the slice.
    */
   slice2D(input: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
@@ -1487,36 +1506,33 @@ export abstract class NDArrayMath {
           data.shape[0] === 1,
           `Error in multiRNNCell: first dimension of data is ` +
               `${data.shape[0]}, but batch sizes > 1 are not yet supported.`);
-      // concat(inputs, h, 1)
-      // There is no concat1d, so reshape inputs and h to 3d, concat, then
-      // reshape back to 2d.
-      const data3D = data.as3D(1, 1, data.shape[1]);
-      const h3D = h.as3D(1, 1, h.shape[1]);
-      const combined3D = this.concat3D(data3D, h3D, 2);
-      const combined2D = combined3D.as2D(1, data.shape[1] + h.shape[1]);
-
-      const weighted = this.matMul(combined2D, lstmKernel);
-      const res = this.add(weighted, lstmBias) as Array2D;
+      const combined = this.concat1D(data.as1D(), h.as1D());
+      console.log('combined', combined.getValues());
+      const weighted = this.vectorTimesMatrix(combined, lstmKernel);
+      console.log('weighted', weighted.getValues());
+      const res = this.addStrict(weighted, lstmBias);
+      console.log('res', res.getValues());
 
       // i = input_gate, j = new_input, f = forget_gate, o = output_gate
-      const i = this.slice2D(res, [0, 0], [res.shape[0], res.shape[1] / 4]);
-      const j = this.slice2D(
-          res, [0, res.shape[1] / 4 * 1], [res.shape[0], res.shape[1] / 4]);
-      const f = this.slice2D(
-          res, [0, res.shape[1] / 4 * 2], [res.shape[0], res.shape[1] / 4]);
-      const o = this.slice2D(
-          res, [0, res.shape[1] / 4 * 3], [res.shape[0], res.shape[1] / 4]);
+      const sliceSize = res.size / 4;
+      const i = this.slice1D(res, 0, sliceSize);
+      const j = this.slice1D(res, sliceSize, sliceSize);
+      const f = this.slice1D(res, sliceSize * 2, sliceSize);
+      const o = this.slice1D(res, sliceSize * 3, sliceSize);
+      console.log('i', i.getValues());
+      console.log('j', j.getValues());
+      console.log('f', f.getValues());
+      console.log('o', o.getValues());
 
-      const newC = this.add(
+      const newC = this.addStrict(
           this.multiplyStrict(
-              c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
-          this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
-      const newH =
-          this.multiplyStrict(this.tanh(newC), this.sigmoid(o)) as Array2D;
+              c.as1D(), this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+          this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
+      const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
 
       return [newC, newH];
     });
-    return [res[0], res[1]];
+    return [res[0].as2D(1, -1), res[1].as2D(1, -1)];
   }
 }
 

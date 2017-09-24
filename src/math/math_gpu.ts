@@ -43,6 +43,7 @@ import {MatMulProgram} from './webgl/mulmat_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
+import {Slice1DProgram} from './webgl/slice1d_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
@@ -83,6 +84,12 @@ export class NDArrayMathGPU extends NDArrayMath {
     this.copy2D(source, [0, 0], texShape, output, [0, 0], texShape);
     // Get back to the original logical shape.
     return output.reshape(a.shape) as T;
+  }
+
+  protected slice1DInternal(input: Array1D, begin: number, size: number):
+      Array1D {
+    const program = new Slice1DProgram(size);
+    return this.compileAndRun(program, [input]);
   }
 
   protected slice2DInternal(
