@@ -1480,8 +1480,8 @@ export abstract class NDArrayMath {
     const newC: Array2D[] = [];
     const newH: Array2D[] = [];
     for (let i = 0; i < res.length; i += 2) {
-      newC.push(res[i] as Array2D);
-      newH.push(res[i + 1] as Array2D);
+      newC.push(res[i]);
+      newH.push(res[i + 1]);
     }
     return [newC, newH];
   }
@@ -1507,11 +1507,8 @@ export abstract class NDArrayMath {
           `Error in multiRNNCell: first dimension of data is ` +
               `${data.shape[0]}, but batch sizes > 1 are not yet supported.`);
       const combined = this.concat1D(data.as1D(), h.as1D());
-      console.log('combined', combined.getValues());
       const weighted = this.vectorTimesMatrix(combined, lstmKernel);
-      console.log('weighted', weighted.getValues());
       const res = this.addStrict(weighted, lstmBias);
-      console.log('res', res.getValues());
 
       // i = input_gate, j = new_input, f = forget_gate, o = output_gate
       const sliceSize = res.size / 4;
@@ -1519,10 +1516,6 @@ export abstract class NDArrayMath {
       const j = this.slice1D(res, sliceSize, sliceSize);
       const f = this.slice1D(res, sliceSize * 2, sliceSize);
       const o = this.slice1D(res, sliceSize * 3, sliceSize);
-      console.log('i', i.getValues());
-      console.log('j', j.getValues());
-      console.log('f', f.getValues());
-      console.log('o', o.getValues());
 
       const newC = this.addStrict(
           this.multiplyStrict(

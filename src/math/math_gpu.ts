@@ -89,7 +89,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected slice1DInternal(input: Array1D, begin: number, size: number):
       Array1D {
     const program = new Slice1DProgram(size);
-    return this.compileAndRun(program, [input]);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [input], null, customSetup);
   }
 
   protected slice2DInternal(
