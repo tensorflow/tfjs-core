@@ -35,6 +35,7 @@ export {AdadeltaOptimizer} from './graph/optimizers/adadelta_optimizer';
 export {Optimizer} from './graph/optimizers/optimizer';
 export {RMSPropOptimizer} from './graph/optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './graph/optimizers/sgd_optimizer';
+export {AdamOptimizer} from './graph/optimizers/adam_optimizer';
 export {CostReduction, FeedEntry, Session} from './graph/session';
 // tslint:disable-next-line:max-line-length
 export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph_runner';
