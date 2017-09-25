@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, Array2D, CheckpointLoader, NDArrayMath, NDArrayMathGPU,
-    NDArray, Scalar} from '../deeplearn';
+import {Array1D, Array2D, Array3D, CheckpointLoader, NDArrayMath,
+    NDArrayMathGPU, NDArray, Scalar} from '../deeplearn';
 import {KeyboardElement} from './keyboard_element';
 
 // tslint:disable-next-line:no-require-imports
@@ -52,6 +52,7 @@ const PITCH_HISTOGRAM_SIZE = NOTES_PER_OCTAVE;
 
 let pitchHistogramEncoding: Array1D;
 let noteDensityEncoding: Array1D;
+let conditioningOff:boolean =  true;
 
 let currentTime = 0;
 let currentVelocity = 100;
@@ -143,6 +144,14 @@ resize();
 const densityControl = document.getElementById(
     'note-density') as HTMLInputElement;
 const densityDisplay = document.getElementById('note-density-display');
+const conditioningOffElem = document.getElementById(
+    'conditioning-off') as HTMLInputElement;
+conditioningOffElem.onchange = updateConditioningParams;
+const conditioningOnElem = document.getElementById(
+    'conditioning-on') as HTMLInputElement;
+conditioningOnElem.onchange = updateConditioningParams;
+const conditioningControlsElem = document.getElementById(
+    'conditioning-controls') as HTMLDivElement;
 
 const pitchHistogramElements = [
   document.getElementById('pitch-c'),
@@ -187,6 +196,11 @@ function parseHash() {
   for (let i = 0; i < preset2.length; i++) {
     preset2[i] = parseInt(preset2Values[i], 10);
   }
+  if (!!parseInt(params[4], 10)) {
+    conditioningOffElem.checked = true;
+  } else {
+    conditioningOnElem.checked = true;
+  }
 }
 
 function updateConditioningParams() {
@@ -199,9 +213,18 @@ function updateConditioningParams() {
     noteDensityEncoding = undefined;
   }
 
+  if (conditioningOffElem.checked) {
+    conditioningOff = true;
+    conditioningControlsElem.classList.add('inactive');
+  } else {
+    conditioningOff = false;
+    conditioningControlsElem.classList.remove('inactive');
+  }
+
   window.location.assign(
       '#' + densityControl.value + '|' + pitchHistogram.join(',') + '|' +
-      preset1.join(',') + '|' + preset2.join(','));
+      preset1.join(',') + '|' + preset2.join(',') + '|' +
+      (conditioningOff ? '1' : '0'));
 
   const noteDensityIdx = parseInt(densityControl.value, 10) || 0;
   const noteDensity = DENSITY_BIN_RANGES[noteDensityIdx];
@@ -281,6 +304,26 @@ document.getElementById('save-2').onclick = () => {
   updateConditioningParams();
 };
 
+function getConditioning(math: NDArrayMath): Array3D {
+  return math.scope((keep, track) => {
+    if (conditioningOff) {
+      const conditioning3D = track(Array3D.zeros([1, 1,
+          1 + noteDensityEncoding.shape[0] + pitchHistogramEncoding.shape[0]]));
+      conditioning3D.set(1.0, 0, 0, 0);
+      return conditioning3D;
+    } else {
+      const conditioningValues3D = math.concat3D(
+          noteDensityEncoding.as3D(1, 1, noteDensityEncoding.shape[0]),
+          pitchHistogramEncoding.as3D(1, 1, pitchHistogramEncoding.shape[0]),
+          2);
+      return math.concat3D(
+          track(Scalar.new(0.0).as3D(1, 1, 1)),  // conditioning on.
+          conditioningValues3D,
+          2);
+    }
+  });
+}
+
 function generateStep() {
   math.scope((keep, track) => {
     const lstm1 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel1,
@@ -301,10 +344,7 @@ function generateStep() {
       // Use last sampled output as the next input.
       const eventInput = track(Array1D.zeros([EVENT_SIZE]));
       eventInput.set(1.0, lastSample);
-      const conditioning3D = math.concat3D(
-          noteDensityEncoding.as3D(1, 1, noteDensityEncoding.shape[0]),
-          pitchHistogramEncoding.as3D(1, 1, pitchHistogramEncoding.shape[0]),
-          2);
+      const conditioning3D = getConditioning(math);
       const input3D = math.concat3D(
           conditioning3D,
           eventInput.as3D(1, 1, eventInput.shape[0]),
