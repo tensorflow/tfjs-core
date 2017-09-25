@@ -36,27 +36,59 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected slice1DInternal(input: Array1D, begin: number, size: number):
       Array1D {
-    throw new Error('Method not implemented.');
+    const newVals = input.getValues().slice(begin, begin + size);
+    return Array1D.new(newVals);
   }
 
-  protected slice2DInternal(
-      input: Array2D, beginRowCol: [number, number],
-      sizeRowCol: [number, number]): Array2D {
-    const result = Array2D.zeros(sizeRowCol);
-    this.copy2DInternal(
-        input, beginRowCol, sizeRowCol, result, [0, 0], sizeRowCol);
+  protected slice2DInternal(input: Array2D, begin: [number, number], size: [
+    number, number
+  ]): Array2D {
+    const result = Array2D.zeros(size);
+    const [startI, startJ] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        const val = input.get(i + startI, j + startJ);
+        result.set(val, i, j);
+      }
+    }
     return result;
   }
 
   protected slice3DInternal(
       input: Array3D, begin: [number, number, number],
       size: [number, number, number]): Array3D {
-    throw new Error('Method not implemented.');
+    const result = Array3D.zeros(size);
+    const [startI, startJ, startK] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        for (let k = 0; k < size[2]; ++k) {
+          const val = input.get(i + startI, j + startJ, k + startK);
+          result.set(val, i, j, k);
+        }
+      }
+    }
+    return result;
   }
   protected slice4DInternal(
       input: Array4D, begin: [number, number, number, number],
       size: [number, number, number, number]): Array4D {
-    throw new Error('Method not implemented.');
+    const result = Array4D.zeros(size);
+    const [startI, startJ, startK, startL] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        for (let k = 0; k < size[2]; ++k) {
+          for (let l = 0; l < size[3]; ++l) {
+            const val =
+                input.get(i + startI, j + startJ, k + startK, l + startL);
+            result.set(val, i, j, k, l);
+          }
+        }
+      }
+    }
+    return result;
   }
 
   protected copy2DInternal(
