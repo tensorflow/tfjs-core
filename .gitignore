@@ -9,4 +9,3 @@ npm-debug.log
 .DS_Store
 dist/
 .idea/
-demos/performance_rnn
