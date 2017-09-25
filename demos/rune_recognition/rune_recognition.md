@@ -19,20 +19,20 @@ The complete code to follow along with this tutorial can be found in `demos/rune
 
 ## Introduction
 Suppose that you are making an app for recognizing runes, [the old Germanic letters](https://en.wikipedia.org/wiki/Runes) that were carved in stone and wood during the first millennium. The time and space where these runes were created varies a lot, and this leads to a lot of variation in the exact shape of these characters. Luckily the Unicode Consortium has 
-defined [a set of "idealized glyphs"](https://en.wikipedia.org/wiki/Runic_\(Unicode_block\)) that represent ideas of distinct runes. The variance in shapes makes the mapping of a given rune image to the Unicode pointer an interesting problem to solve through machine learning, so let's try to make a neural network that can recognize individual runes. To this end, we train a convolutional neural network (CNN) to interpret images of runes. The model builder demo is already well-equipped with the common task to import a set of images along with their labels, so we add our own runic data set and try it out.
+defined [a set of "idealized glyphs"](https://en.wikipedia.org/wiki/Runic_\(Unicode_block\)) that represent ideas of distinct runes. The variance in shapes makes the mapping of a given rune image to the Unicode pointer an interesting problem to solve through machine learning, so let's try to make a neural network that can recognize individual runes. To this end, we train a convolutional neural network (CNN) to interpret images of runes. The deeplearn.js model builder demo is already well-equipped with the common task to import a set of images along with their labels, so we add our own runic data set and try it out.
 
 Before following along, make sure you have installed [Python](https://www.python.org/) and [node.js](https://nodejs.org/en/). I assume some rudimentary knowledge about neural networks / machine learning.
 
 We get started by cloning the deeplearn.js source code: `git clone https://github.com/PAIR-code/deeplearnjs.git`.
 
 ## Prepare data set
-The model builder expects two files that it can use for training a network: one file containing all inputs and one file containing all ouputs. The inputs file is a png image in which every horizontal row represents one example instance, where individual pixels represent node activations. The labels file is likewise a large list of node activations, but it in a slightly different format.
+The model builder expects two files that it can use for training a network: one file containing all example inputs and one file containing all example outputs. The inputs file is a png image in which every horizontal row represents one example instance, where individual pixels represent node activations. The labels file is likewise a large list of node activations, but it in a slightly different format.
 
-I have prepared a reference set of rune images, handdrawn and rendered by differents fonts, which you can find in the folder `demos/rune_recognition/runes`. If you your own samples, you can open `demos/rune_recognition/generate_train_examples_runes.html` in your browser to generate your own examples.
+I have prepared a reference set of rune images, handdrawn and rendered by differents fonts, which you can find in the folder `demos/rune_recognition/runes`. If you your own samples, you can open `demos/rune_recognition/generate_train_examples_runes.html` in your browser to generate your own labeled examples.
 
 Create a folder containing the example images and a file named `generate_rune_data_for_model_builder.py`. The script we are creating is inspired a helper script in the repository which you can find at `scripts/convert_uint8_tensor_to_png.py`.
 
-First we some bookkeeping out of the way:
+First we get some bookkeeping out of the way:
 
 ````py
 from __future__ import absolute_import
@@ -55,8 +55,10 @@ output_file_labels_packed = 'rune_labels'
 output_file_label_names = 'labelNames.json'
 number_of_channels = 1
 
+# Get all individual image paths from folder
 paths_to_images = [f for f in listdir(path_to_images) if
                    isfile(join(path_to_images, f)) and re.match(".*\.png", f)]
+# A convention we use in our file names: {any text}_{label}.png
 example_file_pattern = r".*_([^(\s]+)(?: ?\([0-9]+\))?\.png$"
 
 ```` 
