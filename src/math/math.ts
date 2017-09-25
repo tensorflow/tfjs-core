@@ -21,6 +21,7 @@ import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+import * as slice_util from './slice_util';
 
 export type ScopeResult = NDArray[] | NDArray | void;
 
@@ -363,10 +364,7 @@ export abstract class NDArrayMath {
    * @param size The size of the slice.
    */
   slice1D(input: Array1D, begin: number, size: number): Array1D {
-    util.assert(
-        begin + size <= input.size,
-        `Error in slice1D: requested start ${begin} and size ${size} ` +
-            `would overflow input of size ${input.size}`);
+    slice_util.assertParams(input, [begin], [size]);
     return this.executeOp(
         'slice1D', () => this.slice1DInternal(input, begin, size));
   }
@@ -383,16 +381,51 @@ export abstract class NDArrayMath {
    */
   slice2D(input: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    util.assert(
-        begin[0] + size[0] <= input.shape[0] &&
-            begin[1] + size[1] <= input.shape[1],
-        `Error in slice2D: requested start position ${begin} and size ` +
-            `${size} would overflow input of shape ${input.shape}.`);
+    slice_util.assertParams(input, begin, size);
     return this.executeOp(
         'slice2D', () => this.slice2DInternal(input, begin, size));
   }
   protected abstract slice2DInternal(
       input: Array2D, begin: [number, number], size: [number, number]): Array2D;
+
+  /**
+   * Extracts a 3D slice from a 3D array starting at coordinates `begin` and is
+   * of size `size`.
+   *
+   * @param input The input array to slice from.
+   * @param begin The [row, col, depth] 3d coordinates to start the slice from.
+   * @param size The size of the slice.
+   */
+  slice3D(input: Array3D, begin: [number, number, number], size: [
+    number, number, number
+  ]): Array3D {
+    slice_util.assertParams(input, begin, size);
+    return this.executeOp(
+        'slice3D', () => this.slice3DInternal(input, begin, size));
+  }
+  protected abstract slice3DInternal(
+      input: Array3D, begin: [number, number, number],
+      size: [number, number, number]): Array3D;
+
+  /**
+   * Extracts a 4D slice from a 4D array starting at coordinates `begin` and is
+   * of size `size`.
+   *
+   * @param input The input array to slice from.
+   * @param begin The [row, col, depth, depth2] 4d coordinates to start the
+   *              slice from.
+   * @param size The size of the slice.
+   */
+  slice4D(input: Array4D, begin: [number, number, number, number], size: [
+    number, number, number, number
+  ]): Array4D {
+    slice_util.assertParams(input, begin, size);
+    return this.executeOp(
+        'slice4D', () => this.slice4DInternal(input, begin, size));
+  }
+  protected abstract slice4DInternal(
+      input: Array4D, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D;
 
   /**
    * Copies a window from the `source` matrix starting at `sourceBegin` and is
@@ -447,8 +480,7 @@ export abstract class NDArrayMath {
    * @return The concatenated array.
    */
   concat1D(a: Array1D, b: Array1D): Array1D {
-    concat_util.assertConcatShapesMatch(
-        a.shape, b.shape, 1, 0, 'Error in concat1D: ');
+    concat_util.assertParams(a.shape, b.shape, 0);
     return this.executeOp('concat1D', () => this.concat1DInternal(a, b));
   }
   protected abstract concat1DInternal(a: Array1D, b: Array1D): Array1D;
@@ -482,8 +514,7 @@ export abstract class NDArrayMath {
    * @return The concatenated array.
    */
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-    concat_util.assertConcatShapesMatch(
-        a.shape, b.shape, 2, axis, 'Error in concat2D: ');
+    concat_util.assertParams(a.shape, b.shape, axis);
     return this.executeOp('concat2D', () => this.concat2DInternal(a, b, axis));
   }
   protected abstract concat2DInternal(a: Array2D, b: Array2D, axis: number):
@@ -521,13 +552,29 @@ export abstract class NDArrayMath {
    * @return The concatenated array.
    */
   concat3D(ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D {
-    concat_util.assertConcatShapesMatch(
-        ndarray1.shape, ndarray2.shape, 3, axis, 'Error in concat3D: ');
+    concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
     return this.executeOp(
         'concat3D', () => this.concat3DInternal(ndarray1, ndarray2, axis));
   }
   protected abstract concat3DInternal(
       ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D;
+
+  /**
+   * Concatenates two 4D ndarrays along a given axis. See math.concat2D() for
+   * documentation.
+   *
+   * @param ndarray1 The first array to concat.
+   * @param ndarray2 The second array to conat.
+   * @param axis The axis to concate along.
+   * @return The concatenated array.
+   */
+  concat4D(ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D {
+    concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
+    return this.executeOp(
+        'concat4D', () => this.concat4DInternal(ndarray1, ndarray2, axis));
+  }
+  protected abstract concat4DInternal(
+      ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D;
 
   ///////////////////
   // Reduction ops //

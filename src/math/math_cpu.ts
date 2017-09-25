@@ -48,6 +48,17 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
+  protected slice3DInternal(
+      input: Array3D, begin: [number, number, number],
+      size: [number, number, number]): Array3D {
+    throw new Error('Method not implemented.');
+  }
+  protected slice4DInternal(
+      input: Array4D, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D {
+    throw new Error('Method not implemented.');
+  }
+
   protected copy2DInternal(
       source: Array2D, sourceBeginRowCol: [number, number],
       sourceSizeRowCol: [number, number], dest: Array2D,
@@ -69,9 +80,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected concat1DInternal(a: Array1D, b: Array1D): Array1D {
-    const outputShape =
-        concat_util.computeConcatOutputShape(a.shape, b.shape, 0);
-    const result = Array1D.zeros(outputShape);
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, 0);
+    const result = Array1D.zeros(outShape as [number]);
 
     // Use built-in TypedArray.set() method for speed.
     const aVals = a.getValues();
@@ -84,9 +94,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected concat2DInternal(a: Array2D, b: Array2D, axis: number): Array2D {
-    const outputShape =
-        concat_util.computeConcatOutputShape(a.shape, b.shape, axis);
-    const result = Array2D.zeros(outputShape);
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
+    const result = Array2D.zeros(outShape as [number, number]);
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
@@ -98,8 +107,8 @@ export class NDArrayMathCPU extends NDArrayMath {
       return result;
     }
 
-    for (let i = 0; i < outputShape[0]; i++) {
-      for (let j = 0; j < outputShape[1]; j++) {
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
         const index: [number, number] = [i, j];
         let value: number;
         if (index[axis] < a.shape[axis]) {
@@ -117,10 +126,9 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected concat3DInternal(a: Array3D, b: Array3D, axis: number): Array3D {
-    const outputShape =
-        concat_util.computeConcatOutputShape(a.shape, b.shape, axis);
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
 
-    const result = Array3D.zeros(outputShape);
+    const result = Array3D.zeros(outShape as [number, number, number]);
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
@@ -132,9 +140,9 @@ export class NDArrayMathCPU extends NDArrayMath {
       return result;
     }
 
-    for (let i = 0; i < outputShape[0]; i++) {
-      for (let j = 0; j < outputShape[1]; j++) {
-        for (let k = 0; k < outputShape[2]; k++) {
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
+        for (let k = 0; k < outShape[2]; ++k) {
           // Shader begins.
           const index: [number, number, number] = [i, j, k];
           let value: number;
@@ -147,6 +155,44 @@ export class NDArrayMathCPU extends NDArrayMath {
           }
 
           result.set(value, i, j, k);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  protected concat4DInternal(a: Array4D, b: Array4D, axis: number): Array4D {
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
+    const result = Array4D.zeros(outShape as [number, number, number, number]);
+
+    if (axis === 0) {
+      // Use built-in TypedArray.set() method for speed.
+      const aVals = a.getValues();
+      const bVals = b.getValues();
+      const vals = result.getValues();
+      vals.set(aVals, 0);
+      vals.set(bVals, a.size);
+      return result;
+    }
+
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
+        for (let k = 0; k < outShape[2]; ++k) {
+          for (let l = 0; l < outShape[3]; ++l) {
+            // Shader begins.
+            const index: [number, number, number, number] = [i, j, k, l];
+            let value: number;
+            if (index[axis] < a.shape[axis]) {
+              value = a.get(i, j, k, l);
+            } else {
+              index[axis] -= a.shape[axis];
+              const [i2, j2, k2, l2] = index;
+              value = b.get(i2, j2, k2, l2);
+            }
+
+            result.set(value, i, j, k, l);
+          }
         }
       }
     }
