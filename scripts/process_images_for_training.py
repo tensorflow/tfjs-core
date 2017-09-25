@@ -15,31 +15,24 @@
 # ======================================================================
 # This program converts input images into a format suitable for use with deeplearnjs.
 #
-# Before running this program: 
-#   - Create a directory structure as follows:
-#     <topDir>
-#       preprocess.py
-#           <yourProjectDir>
-#               <yourImageDir>    # default to 'images'           
-#               <yourImageDir2>             
-#   - Put all images under <yourImageDir>
-#       (or if using your own directory name, i.e., <yourImageDir>) 
-#           specify it using the --path parameter from command line).
-#   - You may have <yourImageDir2>, <yourImageDir3>, etc., to facilitate experimentations.   
+# Before running this program:            
+#   - Put all images under <yourImageDir>   
 #   - Each image must be prefixed with its class label, followed by '_'.
 #       For example, cat_image00005.jpg
 # To run: 
-#   1.  $ cd <yourProjectDir>
-#   2a. $ python ../preprocess.py; or
-#   2b. $ python ../preprocess.py --outimgs newimgs #if prefering non-default parameters
+#   1. python process_images_for_training.py --inimgs <absolutePathToImages>
+#       Example: python process_images_for_training.py --inimgs "/mnt/data/myBirdImages/*.jpg"
 #
-# Results: find in the current directoty an image file 'images.png' (extension '.png' added automatically), and a labels file 'labels' (or per command line options)
+# Results: find in the current directoty an image file 'images.png' (extension '.png' added automatically),
+# and a labels file 'labels' (or per command line options)
+#
 # Note:
-#   - Make sure that the model-builder-datasets-configuration's data.labels.shape matches the number of classes found in data
+#   - Make sure that the model-builder-datasets-configuration's data.labels.shape 
+#     matches the number of classes found in data
 #   - Make sure that the NN model's output layer matches the number of classes
 # To-do:
 #   - This code is not suitable for processing large number of images.
-#   - Tested with python v2.7. Saw some problem with V3.5
+#   - Tested with python v2.7 and v3.5
 #======================================================================
 
 from __future__ import absolute_import
@@ -57,8 +50,6 @@ import re
 import sys
 
 # for images
-#path = './train/*.jpg'
-#path = './birds/*.jpg'
 targetW = 32
 targetH = 32
 outImageFile = 'images.png'
@@ -68,7 +59,7 @@ delimiter = '_'
 
 #---------------------------------------
 def preprocessImages(FLAGS):
-    path = FLAGS.path
+    path = FLAGS.inimgs
     targetW = FLAGS.size
     targetH = FLAGS.size
     outImageFile = FLAGS.outimgs
@@ -77,18 +68,21 @@ def preprocessImages(FLAGS):
 
     cwd = os.getcwd()
     print('...Current working directory =', cwd)
+    print(len(sys.argv))
+    if path:
+        inputImages = path
+    else:
+        inputImages = cwd
+        
+    print('...Input imagefiles =', inputImages) 
 
-    pathList = path.split(',')
     fileList = []
-    for path in pathList:
-        path = cwd+'/'+path
-        newFiles = glob.glob(path)
+    newFiles = glob.glob(path)
+    if newFiles is not None:
+        print('...', len(newFiles), 'image files found')
+        fileList.extend(newFiles)
 
-        if newFiles is not None:
-            print('...', len(newFiles), 'image files found')
-            fileList.extend(newFiles)
-
-    print('...Read a total of', len(fileList), 'images')
+    print('...Found a total of', len(fileList), 'images')
     if FLAGS.replicate > 1:
         fileList = np.tile(fileList, FLAGS.replicate)
         print('...Dataset has been replicated', FLAGS.replicate, 'times')
@@ -104,9 +98,6 @@ def preprocessImages(FLAGS):
     imageList = np.array(imageList, dtype='uint8')
 
     a = imageList
-    print('...Created', a.shape[0], 'images')
-    #print('min/max pixel values: ', a.min(), '/', a.max())
-
     b = a.reshape([a.shape[0], -1, 3]).squeeze()
     im = Image.fromarray(b)
     im.save(outImageFile+'.png')
@@ -116,7 +107,6 @@ def preprocessImages(FLAGS):
     #-------------
     # Process class labels
     pattern = '([a-zA-Z_]*)' + delimiter + '.*$'
-    print('...delimiter pattern=', pattern)
     labels = [re.search(pattern, ntpath.basename(s)).group(1) for s in fileList]
 
     classesClearText = np.unique(np.asarray(labels))
@@ -168,10 +158,10 @@ def pack(classes, labels, FLAGS):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--path',
+        '--inimgs',
         type=str,
-        default='./train/*.*',
-        help='File path to the images, default=./train/*.*')
+        default='train/*.*',
+        help='File path to the input images, default=./train/*.*')
     parser.add_argument(
         '--outimgs', type=str, default='images', help='Output file name (without extension) for the composed image')
     parser.add_argument(
