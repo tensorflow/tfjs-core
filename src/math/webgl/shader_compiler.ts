@@ -15,7 +15,9 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import * as util from '../../util';
+
 import * as tex_util from './tex_util';
 
 export type ShapeInfo = {
@@ -49,18 +51,15 @@ export function makeShader(
 }
 
 function getSampleSnippet() {
-  // pass through
-  if (util != null) {
-    return INTEGER_TEXTURE_SAMPLE_SNIPPET;
-  }
-  return FLOAT_TEXTURE_SAMPLE_SNIPPET;
+  return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
+      FLOAT_TEXTURE_SAMPLE_SNIPPET :
+      INTEGER_TEXTURE_SAMPLE_SNIPPET;
 }
 
 function getSetOutputSnippet() {
-  if (util != null) {
-    return INTEGER_TEXTURE_SETOUTPUT_SNIPPET;
-  }
-  return FLOAT_TEXTURE_SETOUTPUT_SNIPPET;
+  return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
+      FLOAT_TEXTURE_SETOUTPUT_SNIPPET :
+      INTEGER_TEXTURE_SETOUTPUT_SNIPPET;
 }
 
 function getInputSamplingSnippet(
