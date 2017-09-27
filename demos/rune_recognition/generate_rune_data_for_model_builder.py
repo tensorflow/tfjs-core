@@ -12,9 +12,9 @@ from os import listdir
 from os.path import isfile, join
 import json
 
-path_to_images = "runes/"
+path_to_images = 'runes/'
 output_file_image_collage = 'output.png'
-output_file_labels_packed = "labels"
+output_file_labels_packed = 'labels'
 output_file_label_names = 'labelNames.json'
 number_of_channels = 1
 
@@ -42,14 +42,14 @@ def determine_image_alpha_channel(image):
     return np.apply_along_axis(select_alpha_channel, axis=2, arr=image_as_array)
 
 paths_to_images = [f for f in listdir(path_to_images) if
-                   isfile(join(path_to_images, f)) and re.match(".*\.png", f)]
-example_file_pattern = r".*_([^(\s]+)(?: ?\([0-9]+\))?\.png$"
+                   isfile(join(path_to_images, f)) and re.match('.*\.png', f)]
+example_file_pattern = r'.*_([^(\s]+)(?: ?\([0-9]+\))?\.png$'
 
 
 # Determine label from filename
 labels = [re.search(example_file_pattern, s).group(1) for s in paths_to_images]
 if len(labels) != len(paths_to_images):
-    raise ValueError("Expected number of labels to be equal to the number of example images!")
+    raise ValueError('Expected number of labels to be equal to the number of example images!')
 
 # Get array of distinct labels
 labels_clear_text = np.unique(np.asarray(labels))
