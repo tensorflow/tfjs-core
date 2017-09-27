@@ -22,6 +22,11 @@ for everything from education, to model understanding, to art projects.
 ```
 npm install deeplearn
 ```
+Or
+```
+yarn add deeplearn
+```
+
 
 A simple example that sums an array with a scalar (broadcasted):
 
@@ -71,7 +76,7 @@ the dev environment:
 ```bash
 $ git clone https://github.com/PAIR-code/deeplearnjs.git
 $ cd deeplearnjs
-$ npm run prep # Installs node modules and bower components.
+$ yarn prep # Installs node modules and bower components.
 ```
 
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
@@ -97,8 +102,8 @@ cycle when developing apps.
 Before submitting a pull request, make sure the code passes all the tests and is clean of lint errors:
 
 ```bash
-$ npm run test
-$ npm run lint
+$ yarn test
+$ yarn lint
 ```
 
 To build a standalone ES5 library that can be imported in the browser with a
