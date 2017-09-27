@@ -297,6 +297,44 @@ describe('NDArrayMathCPU slice3D', () => {
   });
 });
 
+describe('NDArrayMathCPU slice4D', () => {
+  let math: NDArrayMathGPU;
+  beforeEach(() => {
+    math = new NDArrayMathGPU();
+    math.startScope();
+  });
+
+  afterEach(() => {
+    math.endScope(null);
+    math.dispose();
+  });
+
+  it('slices 1x1x1x1 into shape 1x1x1x1 (effectively a copy)', () => {
+    const a = Array4D.new([1, 1, 1, 1], [[[[5]]]]);
+    const result = math.slice4D(a, [0, 0, 0, 0], [1, 1, 1, 1]);
+    expect(result.shape).toEqual([1, 1, 1, 1]);
+    expect(result.get(0, 0, 0, 0)).toBe(5);
+  });
+
+  it('slices 2x2x2x2 array into 1x2x2x2 starting at [1, 0, 0, 0]', () => {
+    const a = Array4D.new(
+        [2, 2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88]);
+    const result = math.slice4D(a, [1, 0, 0, 0], [1, 2, 2, 2]);
+    expect(result.shape).toEqual([1, 2, 2, 2]);
+    expect(result.getValues()).toEqual(new Float32Array([
+      11, 22, 33, 44, 55, 66, 77, 88
+    ]));
+  });
+
+  it('slices 2x2x2x2 array into 2x1x1x1 starting at [0, 1, 1, 1]', () => {
+    const a = Array4D.new(
+        [2, 2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88]);
+    const result = math.slice4D(a, [0, 1, 1, 1], [2, 1, 1, 1]);
+    expect(result.shape).toEqual([2, 1, 1, 1]);
+    expect(result.getValues()).toEqual(new Float32Array([8, 88]));
+  });
+});
+
 describe('NDArrayMathGPU copy2D', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
@@ -1967,8 +2005,7 @@ describe('NDArrayMathGPU conv2d', () => {
     const stride = 1;
 
     const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-    const w = Array4D.randNormal(
-        [fSize, fSize, wrongInputDepth, outputDepth]);
+    const w = Array4D.randNormal([fSize, fSize, wrongInputDepth, outputDepth]);
     const bias = Array1D.new([-1]);
 
     expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();

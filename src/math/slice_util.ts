@@ -19,7 +19,7 @@ import * as util from '../util';
 
 import {NDArray} from './ndarray';
 
-export function assertParams(
+export function assertParamsValid(
     input: NDArray, begin: number[], size: number[]): void {
   util.assert(
       input.rank === begin.length,
@@ -34,7 +34,7 @@ export function assertParams(
     util.assert(
         begin[i] + size[i] <= input.shape[i],
         `Error in slice${input.rank}D: begin[${i}] + size[${i}] ` +
-            `(${begin[i] +
-            size[i]}) would overflow input.shape[${i}] (${input.shape[i]})`);
+            `(${begin[i] + size[i]}) would overflow input.shape[${i}] (${
+                input.shape[i]})`);
   }
 }

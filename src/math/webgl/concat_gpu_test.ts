@@ -17,7 +17,8 @@
 
 import * as test_util from '../../test_util';
 import {NDArrayMathCPU} from '../math_cpu';
-import {Array1D, Array2D, Array3D, initializeGPU, NDArray} from '../ndarray';
+// tslint:disable-next-line:max-line-length
+import {Array1D, Array2D, Array3D, Array4D, initializeGPU, NDArray} from '../ndarray';
 import {ConcatProgram} from './concat_gpu';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
@@ -291,3 +292,69 @@ function uploadConcat3dDownload(
 
   return result;
 }
+
+describe('concat4d_gpu', () => {
+  it('concat axis=0', () => {
+    const x1 = Array4D.new([1, 2, 3, 1], [1, 11, 111, 2, 22, 222]);
+    const x2 = Array4D.new(
+        [2, 2, 3, 1], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
+
+    const result = doConcat4D(x1, x2, 0);
+    test_util.expectArraysClose(
+        result, new Float32Array([
+          1, 11, 111, 2, 22, 222, 5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888
+        ]),
+        1e-6);
+
+  });
+
+  it('concat axis=1', () => {
+    const x1 = Array4D.new([2, 1, 3, 1], [1, 11, 111, 3, 33, 333]);
+    const x2 = Array4D.new(
+        [2, 2, 3, 1], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
+
+    const result = doConcat4D(x1, x2, 1);
+    test_util.expectArraysClose(
+        result, new Float32Array([
+          1, 11, 111, 5, 55, 555, 6, 66, 666, 3, 33, 333, 7, 77, 777, 8, 88, 888
+        ]),
+        1e-6);
+  });
+
+  it('concat axis=2', () => {
+    const x1 = Array4D.new([2, 2, 2, 1], [1, 11, 2, 22, 3, 33, 4, 44]);
+    const x2 = Array4D.new(
+        [2, 2, 3, 1], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
+
+    const result = doConcat4D(x1, x2, 2);
+    test_util.expectArraysClose(
+        result, new Float32Array([
+          1, 11, 5, 55, 555, 2, 22, 6, 66, 666,
+          3, 33, 7, 77, 777, 4, 44, 8, 88, 888
+        ]),
+        1e-6);
+  });
+
+  function doConcat4D(a: Array4D, b: Array4D, axis: number): Float32Array {
+    const gpgpu = new GPGPUContext();
+    gpgpu.enableAutomaticDebugValidation(true);
+    const textureManager = new TextureManager(gpgpu);
+    initializeGPU(gpgpu, textureManager);
+
+    const program = new ConcatProgram(a.shape, b.shape, axis);
+    const rArr =
+        Array4D.zeros(program.outputShape as [number, number, number, number]);
+    const binary = gpgpu_math.compileProgram(gpgpu, program, [a, b], rArr);
+    gpgpu_math.runProgram(binary, [a, b], rArr);
+    const result = rArr.getValues();
+
+    a.dispose();
+    b.dispose();
+    rArr.dispose();
+    textureManager.dispose();
+    gpgpu.deleteProgram(binary.webGLProgram);
+    gpgpu.dispose();
+
+    return result;
+  }
+});

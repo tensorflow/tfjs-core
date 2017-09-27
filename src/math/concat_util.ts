@@ -18,22 +18,22 @@
 import * as util from '../util';
 
 export function assertParams(aShape: number[], bShape: number[], axis: number) {
-  const rank = aShape.length;
+  const aRank = aShape.length;
   const bRank = bShape.length;
   util.assert(
       aShape.length === bShape.length,
-      `Error in concat${rank}D: rank of x1 (${rank}) and x2 (${bRank}) ` +
+      `Error in concat${aRank}D: rank of x1 (${aRank}) and x2 (${bRank}) ` +
           `must be the same.`);
 
   util.assert(
-      axis >= 0 && axis < rank,
-      `Error in concat${rank}D: axis must be ` +
-          `between 0 and ${rank - 1}.`);
+      axis >= 0 && axis < aRank,
+      `Error in concat${aRank}D: axis must be ` +
+          `between 0 and ${aRank - 1}.`);
 
-  for (let i = 0; i < rank; i++) {
+  for (let i = 0; i < aRank; i++) {
     util.assert(
         (i === axis) || (aShape[i] === bShape[i]),
-        `Error in concat${rank}D: Shape (${aShape}) does not match ` +
+        `Error in concat${aRank}D: Shape (${aShape}) does not match ` +
             `(${bShape}) along the non-concatenated axis ${i}.`);
   }
 }

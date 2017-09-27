@@ -23,7 +23,7 @@ import * as copy2d_util from './copy2d_util';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 
-export type ScopeResult = NDArray[] | NDArray | void;
+export type ScopeResult = NDArray[]|NDArray|void;
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -364,7 +364,7 @@ export abstract class NDArrayMath {
    * @param size The size of the slice.
    */
   slice1D(input: Array1D, begin: number, size: number): Array1D {
-    slice_util.assertParams(input, [begin], [size]);
+    slice_util.assertParamsValid(input, [begin], [size]);
     return this.executeOp(
         'slice1D', () => this.slice1DInternal(input, begin, size));
   }
@@ -381,7 +381,7 @@ export abstract class NDArrayMath {
    */
   slice2D(input: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    slice_util.assertParams(input, begin, size);
+    slice_util.assertParamsValid(input, begin, size);
     return this.executeOp(
         'slice2D', () => this.slice2DInternal(input, begin, size));
   }
@@ -399,7 +399,7 @@ export abstract class NDArrayMath {
   slice3D(input: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
-    slice_util.assertParams(input, begin, size);
+    slice_util.assertParamsValid(input, begin, size);
     return this.executeOp(
         'slice3D', () => this.slice3DInternal(input, begin, size));
   }
@@ -419,7 +419,7 @@ export abstract class NDArrayMath {
   slice4D(input: Array4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Array4D {
-    slice_util.assertParams(input, begin, size);
+    slice_util.assertParamsValid(input, begin, size);
     return this.executeOp(
         'slice4D', () => this.slice4DInternal(input, begin, size));
   }

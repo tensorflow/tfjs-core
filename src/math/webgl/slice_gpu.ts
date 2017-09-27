@@ -54,7 +54,12 @@ export class SliceProgram implements GPGPUProgram {
     }
     return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
       if (this.startLoc == null) {
-        this.startLoc = gpgpu.getUniformLocation(webGLProgram, 'start');
+        this.startLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'start');
+        if (this.startLoc == null) {
+          // This means the compiler has optimized and realized it doesn't need
+          // the uniform.
+          return;
+        }
       }
       if (this.rank === 1) {
         gpgpu.gl.uniform1i(this.startLoc, start[0]);
