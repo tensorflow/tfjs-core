@@ -16,11 +16,12 @@
  */
 
 import * as util from '../util';
-import * as concat3d_util from './concat3d_util';
+import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+import * as slice_util from './slice_util';
 
 export type ScopeResult = NDArray[]|NDArray|void;
 
@@ -273,7 +274,7 @@ export abstract class NDArrayMath {
             `must match inner dimension of second rank 2 input, but got ` +
             `rank ${matrix.rank}.`);
 
-    return this.matMul(v.as2D(1, v.size), matrix).as1D();
+    return this.matMul(v.as2D(1, -1), matrix).as1D();
   }
 
   /**
@@ -296,7 +297,7 @@ export abstract class NDArrayMath {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return this.matMul(matrix, v.as2D(v.size, 1)).as1D();
+    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
   }
 
   /**
@@ -313,7 +314,7 @@ export abstract class NDArrayMath {
         v1.size === v2.size,
         `Error in dotProduct: size of inputs (${v1.size}) and (` +
             `${v2.size}) must match.`);
-    return this.matMul(v1.as2D(1, v1.size), v2.as2D(v2.size, 1)).asScalar();
+    return this.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
   }
 
   /**
@@ -327,7 +328,7 @@ export abstract class NDArrayMath {
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +
             `${v1.rank} and ${v2.rank}.`);
 
-    return this.matMul(v1.as2D(v1.size, 1), v2.as2D(1, v2.size));
+    return this.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
   }
 
   ///////////////
@@ -351,29 +352,80 @@ export abstract class NDArrayMath {
     console.warn(
         'math.reshape() is deprecated. Please call reshape() ' +
         'directly on the ndarray object');
-    return ndarray.reshape(newShape);
+    return ndarray.reshape(newShape) as T2;
   }
 
   /**
-   * Extracts a slice from a matrix. The operation extraces a slice from input
-   * that starts at coordinates `begin` and is of size `size`.
-   * @param input The input matrix to slice from.
-   * @param begin The 2D coordinates in the input matrix to start the slice
-   * from.
-   * @param size The sice of the 2D window to slice.
+   * Extracts a 1D slice from 1D array starting at coordinates `begin` and is of
+   * length `size`.
+   *
+   * @param input The input array to slice from.
+   * @param begin The offset to start the slice from.
+   * @param size The size of the slice.
+   */
+  slice1D(input: Array1D, begin: number, size: number): Array1D {
+    slice_util.assertParamsValid(input, [begin], [size]);
+    return this.executeOp(
+        'slice1D', () => this.slice1DInternal(input, begin, size));
+  }
+  protected abstract slice1DInternal(
+      input: Array1D, begin: number, size: number): Array1D;
+
+  /**
+   * Extracts a 2D slice from a 2D array starting at coordinates `begin` and is
+   * of size `size`.
+   *
+   * @param input The input array to slice from.
+   * @param begin The [row, col] 2d coordinates to start the slice from.
+   * @param size The size of the slice.
    */
   slice2D(input: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    util.assert(
-        begin[0] + size[0] <= input.shape[0] &&
-            begin[1] + size[1] <= input.shape[1],
-        `Error in slice2D: requested start position ${begin} and size ` +
-            `${size} would overflow input of shape ${input.shape}.`);
+    slice_util.assertParamsValid(input, begin, size);
     return this.executeOp(
         'slice2D', () => this.slice2DInternal(input, begin, size));
   }
   protected abstract slice2DInternal(
       input: Array2D, begin: [number, number], size: [number, number]): Array2D;
+
+  /**
+   * Extracts a 3D slice from a 3D array starting at coordinates `begin` and is
+   * of size `size`.
+   *
+   * @param input The input array to slice from.
+   * @param begin The [row, col, depth] 3d coordinates to start the slice from.
+   * @param size The size of the slice.
+   */
+  slice3D(input: Array3D, begin: [number, number, number], size: [
+    number, number, number
+  ]): Array3D {
+    slice_util.assertParamsValid(input, begin, size);
+    return this.executeOp(
+        'slice3D', () => this.slice3DInternal(input, begin, size));
+  }
+  protected abstract slice3DInternal(
+      input: Array3D, begin: [number, number, number],
+      size: [number, number, number]): Array3D;
+
+  /**
+   * Extracts a 4D slice from a 4D array starting at coordinates `begin` and is
+   * of size `size`.
+   *
+   * @param input The input array to slice from.
+   * @param begin The [row, col, depth, depth2] 4d coordinates to start the
+   *              slice from.
+   * @param size The size of the slice.
+   */
+  slice4D(input: Array4D, begin: [number, number, number, number], size: [
+    number, number, number, number
+  ]): Array4D {
+    slice_util.assertParamsValid(input, begin, size);
+    return this.executeOp(
+        'slice4D', () => this.slice4DInternal(input, begin, size));
+  }
+  protected abstract slice4DInternal(
+      input: Array4D, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D;
 
   /**
    * Copies a window from the `source` matrix starting at `sourceBegin` and is
@@ -416,6 +468,59 @@ export abstract class NDArrayMath {
       destSize: [number, number]): void;
 
   /**
+   * Concatenates two 1D arrays.
+   *
+   * For example, if:
+   * A: shape(3) = |r1, g1, b1|
+   * B: shape(2) = |r2, g2|
+   * C = concat1D(A, B) == |r1, g1, b1, r2, g2|
+   *
+   * @param a The first array.
+   * @param b The second array.
+   * @return The concatenated array.
+   */
+  concat1D(a: Array1D, b: Array1D): Array1D {
+    concat_util.assertParams(a.shape, b.shape, 0);
+    return this.executeOp('concat1D', () => this.concat1DInternal(a, b));
+  }
+  protected abstract concat1DInternal(a: Array1D, b: Array1D): Array1D;
+
+  /**
+   * Concatenates two 2D arrays along a given axis.
+   *
+   * For example, if:
+   * A: shape(2, 3) = | r1, g1, b1 |
+   *                  | r2, g2, b2 |
+   *
+   * B: shape(2, 3) = | r3, g3, b3 |
+   *                  | r4, g4, b4 |
+   *
+   * C = concat2D(A, B, axis)
+   *
+   * if axis = 0:
+   * C: shape(4, 3) = | r1, g1, b1 |
+   *                  | r2, g2, b2 |
+   *                  | r3, g3, b3 |
+   *                  | r4, g4, b4 |
+   *
+   * if axis = 1:
+   * C = shape(2, 6) = | r1, g1, b1, r3, g3, b3 |
+   *                   | r2, g2, b2, r4, g4, b4 |
+   *
+   *
+   * @param a The first array.
+   * @param b The second array.
+   * @param axis The axis to concatenate along.
+   * @return The concatenated array.
+   */
+  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
+    concat_util.assertParams(a.shape, b.shape, axis);
+    return this.executeOp('concat2D', () => this.concat2DInternal(a, b, axis));
+  }
+  protected abstract concat2DInternal(a: Array2D, b: Array2D, axis: number):
+      Array2D;
+
+  /**
    * Concatenates two 3D ndarrays along a given axis.
    *
    * For example, if:
@@ -444,15 +549,32 @@ export abstract class NDArrayMath {
    * @param ndarray1 The first array to concat.
    * @param ndarray2 The second array to conat.
    * @param axis The axis to concate along.
+   * @return The concatenated array.
    */
   concat3D(ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D {
-    concat3d_util.assertConcat3DShapesMatch(
-        ndarray1.shape, ndarray2.shape, axis, 'Error in concat3d: ');
+    concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
     return this.executeOp(
         'concat3D', () => this.concat3DInternal(ndarray1, ndarray2, axis));
   }
   protected abstract concat3DInternal(
       ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D;
+
+  /**
+   * Concatenates two 4D ndarrays along a given axis. See math.concat2D() for
+   * documentation.
+   *
+   * @param ndarray1 The first array to concat.
+   * @param ndarray2 The second array to conat.
+   * @param axis The axis to concate along.
+   * @return The concatenated array.
+   */
+  concat4D(ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D {
+    concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
+    return this.executeOp(
+        'concat4D', () => this.concat4DInternal(ndarray1, ndarray2, axis));
+  }
+  protected abstract concat4DInternal(
+      ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D;
 
   ///////////////////
   // Reduction ops //
@@ -1405,8 +1527,8 @@ export abstract class NDArrayMath {
     const newC: Array2D[] = [];
     const newH: Array2D[] = [];
     for (let i = 0; i < res.length; i += 2) {
-      newC.push(res[i] as Array2D);
-      newH.push(res[i + 1] as Array2D);
+      newC.push(res[i]);
+      newH.push(res[i + 1]);
     }
     return [newC, newH];
   }
@@ -1431,37 +1553,26 @@ export abstract class NDArrayMath {
           data.shape[0] === 1,
           `Error in multiRNNCell: first dimension of data is ` +
               `${data.shape[0]}, but batch sizes > 1 are not yet supported.`);
-      // concat(inputs, h, 1)
-      // There is no concat1d, so reshape inputs and h to 3d, concat, then
-      // reshape back to 2d.
-      const data3D = data.as3D(1, 1, data.shape[1]);
-      const h3D = h.as3D(1, 1, h.shape[1]);
-      const combined3D = this.concat3D(data3D, h3D, 2);
-      const combined2D = combined3D.as2D(1, data.shape[1] + h.shape[1]);
-
-      const weighted = this.matMul(combined2D, lstmKernel);
-      const res = this.add(weighted, lstmBias) as Array2D;
+      const combined = this.concat1D(data.as1D(), h.as1D());
+      const weighted = this.vectorTimesMatrix(combined, lstmKernel);
+      const res = this.addStrict(weighted, lstmBias);
 
       // i = input_gate, j = new_input, f = forget_gate, o = output_gate
-      const i = this.slice2D(res, [0, 0], [res.shape[0], res.shape[1] / 4]);
-      const j = this.slice2D(
-          res, [0, res.shape[1] / 4 * 1], [res.shape[0], res.shape[1] / 4]);
-      const f = this.slice2D(
-          res, [0, res.shape[1] / 4 * 2], [res.shape[0], res.shape[1] / 4]);
-      const o = this.slice2D(
-          res, [0, res.shape[1] / 4 * 3], [res.shape[0], res.shape[1] / 4]);
+      const sliceSize = res.size / 4;
+      const i = this.slice1D(res, 0, sliceSize);
+      const j = this.slice1D(res, sliceSize, sliceSize);
+      const f = this.slice1D(res, sliceSize * 2, sliceSize);
+      const o = this.slice1D(res, sliceSize * 3, sliceSize);
 
-      const newC =
-          this.add(
-              this.multiplyStrict(
-                  c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
-              this.multiplyStrict(this.sigmoid(i), this.tanh(j))) as Array2D;
-      const newH =
-          this.multiplyStrict(this.tanh(newC), this.sigmoid(o)) as Array2D;
+      const newC = this.addStrict(
+          this.multiplyStrict(
+              c.as1D(), this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+          this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
+      const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
 
       return [newC, newH];
     });
-    return [res[0], res[1]];
+    return [res[0].as2D(1, -1), res[1].as2D(1, -1)];
   }
 }
 

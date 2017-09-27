@@ -17,7 +17,7 @@
 
 import * as util from '../util';
 
-import * as concat3d_util from './concat3d_util';
+import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
@@ -30,16 +30,64 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected cloneInternal<T extends NDArray>(ndarray: T): T {
-    return NDArray.make<T>(
-        ndarray.shape, {values: new Float32Array(ndarray.getValues())});
+    return NDArray.make(
+        ndarray.shape, {values: new Float32Array(ndarray.getValues())}) as T;
   }
 
-  protected slice2DInternal(
-      input: Array2D, beginRowCol: [number, number],
-      sizeRowCol: [number, number]): Array2D {
-    const result = Array2D.zeros(sizeRowCol);
-    this.copy2DInternal(
-        input, beginRowCol, sizeRowCol, result, [0, 0], sizeRowCol);
+  protected slice1DInternal(input: Array1D, begin: number, size: number):
+      Array1D {
+    const newVals = input.getValues().slice(begin, begin + size);
+    return Array1D.new(newVals);
+  }
+
+  protected slice2DInternal(input: Array2D, begin: [number, number], size: [
+    number, number
+  ]): Array2D {
+    const result = Array2D.zeros(size);
+    const [startI, startJ] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        const val = input.get(i + startI, j + startJ);
+        result.set(val, i, j);
+      }
+    }
+    return result;
+  }
+
+  protected slice3DInternal(
+      input: Array3D, begin: [number, number, number],
+      size: [number, number, number]): Array3D {
+    const result = Array3D.zeros(size);
+    const [startI, startJ, startK] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        for (let k = 0; k < size[2]; ++k) {
+          const val = input.get(i + startI, j + startJ, k + startK);
+          result.set(val, i, j, k);
+        }
+      }
+    }
+    return result;
+  }
+  protected slice4DInternal(
+      input: Array4D, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D {
+    const result = Array4D.zeros(size);
+    const [startI, startJ, startK, startL] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        for (let k = 0; k < size[2]; ++k) {
+          for (let l = 0; l < size[3]; ++l) {
+            const val =
+                input.get(i + startI, j + startJ, k + startK, l + startL);
+            result.set(val, i, j, k, l);
+          }
+        }
+      }
+    }
     return result;
   }
 
@@ -63,32 +111,125 @@ export class NDArrayMathCPU extends NDArrayMath {
     }
   }
 
-  protected concat3DInternal(x1: Array3D, x2: Array3D, axis: number): Array3D {
-    const outputShape =
-        concat3d_util.computeConcat3DOutputShape(x1.shape, x2.shape, axis);
+  protected concat1DInternal(a: Array1D, b: Array1D): Array1D {
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, 0);
+    const result = Array1D.zeros(outShape as [number]);
 
-    const values = Array3D.zeros(outputShape);
+    // Use built-in TypedArray.set() method for speed.
+    const aVals = a.getValues();
+    const bVals = b.getValues();
+    const vals = result.getValues();
+    vals.set(aVals, 0);
+    vals.set(bVals, a.size);
 
-    for (let i = 0; i < outputShape[0]; i++) {
-      for (let j = 0; j < outputShape[1]; j++) {
-        for (let k = 0; k < outputShape[2]; k++) {
+    return result;
+  }
+
+  protected concat2DInternal(a: Array2D, b: Array2D, axis: number): Array2D {
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
+    const result = Array2D.zeros(outShape as [number, number]);
+
+    if (axis === 0) {
+      // Use built-in TypedArray.set() method for speed.
+      const aVals = a.getValues();
+      const bVals = b.getValues();
+      const vals = result.getValues();
+      vals.set(aVals, 0);
+      vals.set(bVals, a.size);
+      return result;
+    }
+
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
+        const index: [number, number] = [i, j];
+        let value: number;
+        if (index[axis] < a.shape[axis]) {
+          value = a.get(i, j);
+        } else {
+          index[axis] -= a.shape[axis];
+          const [i2, j2] = index;
+          value = b.get(i2, j2);
+        }
+
+        result.set(value, i, j);
+      }
+    }
+    return result;
+  }
+
+  protected concat3DInternal(a: Array3D, b: Array3D, axis: number): Array3D {
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
+
+    const result = Array3D.zeros(outShape as [number, number, number]);
+
+    if (axis === 0) {
+      // Use built-in TypedArray.set() method for speed.
+      const aVals = a.getValues();
+      const bVals = b.getValues();
+      const vals = result.getValues();
+      vals.set(aVals, 0);
+      vals.set(bVals, a.size);
+      return result;
+    }
+
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
+        for (let k = 0; k < outShape[2]; ++k) {
           // Shader begins.
           const index: [number, number, number] = [i, j, k];
           let value: number;
-          if (index[axis] < x1.shape[axis]) {
-            value = x1.get(i, j, k);
+          if (index[axis] < a.shape[axis]) {
+            value = a.get(i, j, k);
           } else {
-            index[axis] -= x1.shape[axis];
+            index[axis] -= a.shape[axis];
             const [i2, j2, k2] = index;
-            value = x2.get(i2, j2, k2);
+            value = b.get(i2, j2, k2);
           }
 
-          values.set(value, i, j, k);
+          result.set(value, i, j, k);
         }
       }
     }
 
-    return values;
+    return result;
+  }
+
+  protected concat4DInternal(a: Array4D, b: Array4D, axis: number): Array4D {
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
+    const result = Array4D.zeros(outShape as [number, number, number, number]);
+
+    if (axis === 0) {
+      // Use built-in TypedArray.set() method for speed.
+      const aVals = a.getValues();
+      const bVals = b.getValues();
+      const vals = result.getValues();
+      vals.set(aVals, 0);
+      vals.set(bVals, a.size);
+      return result;
+    }
+
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
+        for (let k = 0; k < outShape[2]; ++k) {
+          for (let l = 0; l < outShape[3]; ++l) {
+            // Shader begins.
+            const index: [number, number, number, number] = [i, j, k, l];
+            let value: number;
+            if (index[axis] < a.shape[axis]) {
+              value = a.get(i, j, k, l);
+            } else {
+              index[axis] -= a.shape[axis];
+              const [i2, j2, k2, l2] = index;
+              value = b.get(i2, j2, k2, l2);
+            }
+
+            result.set(value, i, j, k, l);
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   protected scaledArrayAddInternal<T extends NDArray>(
@@ -103,7 +244,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < newValues.length; ++i) {
       newValues[i] = c1Val * aValues[i % a.size] + c2Val * bValues[i % b.size];
     }
-    return NDArray.make<T>(newShape, {values: newValues});
+    return NDArray.make(newShape, {values: newValues}) as T;
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
@@ -165,7 +306,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < newValues.length; ++i) {
       newValues[i] = aValues[i % a.size] * bValues[i % b.size];
     }
-    return NDArray.make<T>(newShape, {values: newValues});
+    return NDArray.make(newShape, {values: newValues}) as T;
   }
 
   protected divideInternal<T extends NDArray>(a: T, b: T): T {
@@ -178,7 +319,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < newValues.length; ++i) {
       newValues[i] = aValues[i % a.size] / bValues[i % b.size];
     }
-    return NDArray.make<T>(newShape, {values: newValues});
+    return NDArray.make(newShape, {values: newValues}) as T;
   }
 
   protected sumInternal(ndarray: NDArray): Scalar {
@@ -288,7 +429,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.exp(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: newValues});
+    return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
   protected logInternal<T extends NDArray>(ndarray: T): T {
@@ -298,7 +439,7 @@ export class NDArrayMathCPU extends NDArrayMath {
       const value = values[i];
       newValues[i] = Math.log(value);
     }
-    return NDArray.make<T>(ndarray.shape, {values: newValues});
+    return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
   protected sqrtInternal<T extends NDArray>(ndarray: T): T {
@@ -308,7 +449,7 @@ export class NDArrayMathCPU extends NDArrayMath {
       const value = values[i];
       newValues[i] = Math.sqrt(value);
     }
-    return NDArray.make<T>(ndarray.shape, {values: newValues});
+    return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
   protected logSumExpInternal(ndarray: NDArray): Scalar {
@@ -334,7 +475,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.max(0, values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected absInternal<T extends NDArray>(ndarray: T): T {
@@ -343,7 +484,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.abs(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected sigmoidInternal<T extends NDArray>(ndarray: T): T {
@@ -352,7 +493,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = 1 / (1 + Math.exp(-values[i]));
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected sinInternal<T extends NDArray>(ndarray: T): T {
@@ -361,7 +502,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.sin(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected cosInternal<T extends NDArray>(ndarray: T): T {
@@ -370,7 +511,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.cos(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected tanInternal<T extends NDArray>(ndarray: T): T {
@@ -379,7 +520,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.tan(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected asinInternal<T extends NDArray>(ndarray: T): T {
@@ -388,7 +529,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.asin(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected acosInternal<T extends NDArray>(ndarray: T): T {
@@ -397,7 +538,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.acos(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected atanInternal<T extends NDArray>(ndarray: T): T {
@@ -406,7 +547,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.atan(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected sinhInternal<T extends NDArray>(ndarray: T): T {
@@ -415,7 +556,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.sinh(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected coshInternal<T extends NDArray>(ndarray: T): T {
@@ -424,7 +565,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.cosh(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected tanhInternal<T extends NDArray>(ndarray: T): T {
@@ -433,7 +574,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = util.tanh(values[i]);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected stepInternal<T extends NDArray>(ndarray: T): T {
@@ -443,7 +584,7 @@ export class NDArrayMathCPU extends NDArrayMath {
       const value = values[i];
       resultValues[i] = value > 0 ? 1 : (value < 0 ? 0 : value);
     }
-    return NDArray.make<T>(ndarray.shape, {values: resultValues});
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected conv2dInternal(
@@ -605,7 +746,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     }
     const resultValues = new Float32Array(t.size);
     const values = t.getValues();
-    const result = NDArray.make<T>(newShape, {values: resultValues});
+    const result = NDArray.make(newShape, {values: resultValues}) as T;
     for (let i = 0; i < t.size; ++i) {
       const loc = t.indexToLoc(i);
 
@@ -839,6 +980,6 @@ export class NDArrayMathCPU extends NDArrayMath {
               Math.sqrt(
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
-    return NDArray.make<Array3D>(x.shape, {values: outValues});
+    return Array3D.make(x.shape, {values: outValues});
   }
 }

@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import * as util from '../util';
 
 import {NDArrayMathGPU} from './math_gpu';
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, Scalar} from './ndarray';
 import * as webgl_util from './webgl/webgl_util';
 
 
@@ -178,6 +178,40 @@ describe('NDArrayMathGPU clone', () => {
   });
 });
 
+describe('NDArrayMathCPU slice1D', () => {
+  let math: NDArrayMathGPU;
+  beforeEach(() => {
+    math = new NDArrayMathGPU();
+    math.startScope();
+  });
+
+  afterEach(() => {
+    math.endScope(null);
+    math.dispose();
+  });
+
+  it('slices 1x1 into 1x1 (effectively a copy)', () => {
+    const a = Array1D.new([5]);
+    const result = math.slice1D(a, 0, 1);
+    expect(result.shape).toEqual([1]);
+    expect(result.get(0)).toBe(5);
+  });
+
+  it('slices 5x1 into shape 2x1 starting at 3', () => {
+    const a = Array1D.new([1, 2, 3, 4, 5]);
+    const result = math.slice1D(a, 3, 2);
+    expect(result.shape).toEqual([2]);
+    expect(result.getValues()).toEqual(new Float32Array([4, 5]));
+  });
+
+  it('slices 5x1 into shape 3x1 starting at 1', () => {
+    const a = Array1D.new([1, 2, 3, 4, 5]);
+    const result = math.slice1D(a, 1, 3);
+    expect(result.shape).toEqual([3]);
+    expect(result.getValues()).toEqual(new Float32Array([2, 3, 4]));
+  });
+});
+
 describe('NDArrayMathGPU slice2D', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
@@ -205,7 +239,7 @@ describe('NDArrayMathGPU slice2D', () => {
   });
 
   it('returns the upper-left submatrix when begin is [0, 0]', () => {
-    const a = NDArray.randUniform<Array2D>([10, 10], -1, 1);
+    const a = Array2D.randUniform([10, 10], -1, 1);
     const b = math.slice2D(a, [0, 0], [2, 2]);
     const aValues = a.getValues();
     const expected =
@@ -226,6 +260,78 @@ describe('NDArrayMathGPU slice2D', () => {
     const a = Array2D.new([4, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(() => math.slice2D(a, [1, 1], [10, 10])).toThrowError();
     a.dispose();
+  });
+});
+
+describe('NDArrayMathCPU slice3D', () => {
+  let math: NDArrayMathGPU;
+  beforeEach(() => {
+    math = new NDArrayMathGPU();
+    math.startScope();
+  });
+
+  afterEach(() => {
+    math.endScope(null);
+    math.dispose();
+  });
+
+  it('slices 1x1x1 into shape 1x1x1 (effectively a copy)', () => {
+    const a = Array3D.new([1, 1, 1], [[[5]]]);
+    const result = math.slice3D(a, [0, 0, 0], [1, 1, 1]);
+    expect(result.shape).toEqual([1, 1, 1]);
+    expect(result.get(0, 0, 0)).toBe(5);
+  });
+
+  it('slices 2x2x2 array into 1x2x2 starting at [1, 0, 0]', () => {
+    const a = Array3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
+    const result = math.slice3D(a, [1, 0, 0], [1, 2, 2]);
+    expect(result.shape).toEqual([1, 2, 2]);
+    expect(result.getValues()).toEqual(new Float32Array([5, 6, 7, 8]));
+  });
+
+  it('slices 2x2x2 array into 2x1x1 starting at [0, 1, 1]', () => {
+    const a = Array3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
+    const result = math.slice3D(a, [0, 1, 1], [2, 1, 1]);
+    expect(result.shape).toEqual([2, 1, 1]);
+    expect(result.getValues()).toEqual(new Float32Array([4, 8]));
+  });
+});
+
+describe('NDArrayMathCPU slice4D', () => {
+  let math: NDArrayMathGPU;
+  beforeEach(() => {
+    math = new NDArrayMathGPU();
+    math.startScope();
+  });
+
+  afterEach(() => {
+    math.endScope(null);
+    math.dispose();
+  });
+
+  it('slices 1x1x1x1 into shape 1x1x1x1 (effectively a copy)', () => {
+    const a = Array4D.new([1, 1, 1, 1], [[[[5]]]]);
+    const result = math.slice4D(a, [0, 0, 0, 0], [1, 1, 1, 1]);
+    expect(result.shape).toEqual([1, 1, 1, 1]);
+    expect(result.get(0, 0, 0, 0)).toBe(5);
+  });
+
+  it('slices 2x2x2x2 array into 1x2x2x2 starting at [1, 0, 0, 0]', () => {
+    const a = Array4D.new(
+        [2, 2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88]);
+    const result = math.slice4D(a, [1, 0, 0, 0], [1, 2, 2, 2]);
+    expect(result.shape).toEqual([1, 2, 2, 2]);
+    expect(result.getValues()).toEqual(new Float32Array([
+      11, 22, 33, 44, 55, 66, 77, 88
+    ]));
+  });
+
+  it('slices 2x2x2x2 array into 2x1x1x1 starting at [0, 1, 1, 1]', () => {
+    const a = Array4D.new(
+        [2, 2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88]);
+    const result = math.slice4D(a, [0, 1, 1, 1], [2, 1, 1, 1]);
+    expect(result.shape).toEqual([2, 1, 1, 1]);
+    expect(result.getValues()).toEqual(new Float32Array([8, 88]));
   });
 });
 
@@ -338,7 +444,8 @@ describe('NDArrayMathGPU scaledNDArrayAdd', () => {
   it('throws when passed non-scalars', () => {
     const a = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
     const b = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-    const c1 = Array1D.randNormal([10]);
+    // tslint:disable-next-line:no-any
+    const c1: any = Array1D.randNormal([10]);
     const c2 = Scalar.new(2);
 
     expect(() => math.scaledArrayAdd<Array2D>(c1 as Scalar, a, c2, b))
@@ -364,6 +471,117 @@ describe('NDArrayMathGPU scaledNDArrayAdd', () => {
     b.dispose();
     c1.dispose();
     c2.dispose();
+  });
+});
+
+describe('NDArrayMathGPU concat1D', () => {
+  let math: NDArrayMathGPU;
+
+  beforeEach(() => {
+    math = new NDArrayMathGPU();
+    math.startScope();
+  });
+
+  afterEach(() => {
+    math.endScope(null);
+    math.dispose();
+  });
+
+  it('3 + 5', () => {
+    const a = Array1D.new([3]);
+    const b = Array1D.new([5]);
+
+    const result = math.concat1D(a, b);
+    const expected = new Float32Array([3, 5]);
+    test_util.expectArraysClose(result.getValues(), expected);
+  });
+
+  it('3 + [5,7]', () => {
+    const a = Array1D.new([3]);
+    const b = Array1D.new([5, 7]);
+
+    const result = math.concat1D(a, b);
+    const expected = new Float32Array([3, 5, 7]);
+    test_util.expectArraysClose(result.getValues(), expected);
+  });
+
+  it('[3,5] + 7', () => {
+    const a = Array1D.new([3, 5]);
+    const b = Array1D.new([7]);
+
+    const result = math.concat1D(a, b);
+    const expected = new Float32Array([3, 5, 7]);
+    test_util.expectArraysClose(result.getValues(), expected);
+  });
+});
+
+describe('NDArrayMathGPU concat2D', () => {
+  let math: NDArrayMathGPU;
+
+  beforeEach(() => {
+    math = new NDArrayMathGPU();
+    math.startScope();
+  });
+
+  afterEach(() => {
+    math.endScope(null);
+    math.dispose();
+  });
+
+  it('[[3]] + [[5]], axis=0', () => {
+    const axis = 0;
+    const a = Array2D.new([1, 1], [3]);
+    const b = Array2D.new([1, 1], [5]);
+
+    const result = math.concat2D(a, b, axis);
+    const expected = new Float32Array([3, 5]);
+
+    expect(result.shape).toEqual([2, 1]);
+    test_util.expectArraysClose(result.getValues(), expected);
+  });
+
+  it('[[3]] + [[5]], axis=1', () => {
+    const axis = 1;
+    const a = Array2D.new([1, 1], [3]);
+    const b = Array2D.new([1, 1], [5]);
+
+    const result = math.concat2D(a, b, axis);
+    const expected = new Float32Array([3, 5]);
+
+    expect(result.shape).toEqual([1, 2]);
+    test_util.expectArraysClose(result.getValues(), expected);
+  });
+
+  it('[[1, 2], [3, 4]] + [[5, 6]], axis=0', () => {
+    const axis = 0;
+    const a = Array2D.new([2, 2], [[1, 2], [3, 4]]);
+    const b = Array2D.new([1, 2], [[5, 6]]);
+
+    const result = math.concat2D(a, b, axis);
+    const expected = new Float32Array([1, 2, 3, 4, 5, 6]);
+
+    expect(result.shape).toEqual([3, 2]);
+    test_util.expectArraysClose(result.getValues(), expected);
+  });
+
+  it('[[1, 2], [3, 4]] + [[5, 6]], axis=1 throws error', () => {
+    const axis = 1;
+    const a = Array2D.new([2, 2], [[1, 2], [3, 4]]);
+    const b = Array2D.new([1, 2], [[5, 6]]);
+
+    expect(() => math.concat2D(a, b, axis)).toThrowError();
+  });
+
+  it('[[1, 2], [3, 4]] + [[5, 6], [7, 8]], axis=1', () => {
+    const axis = 1;
+    const a = Array2D.new([2, 2], [[1, 2], [3, 4]]);
+    const b = Array2D.new([2, 2], [[5, 6], [7, 8]]);
+
+    const result = math.concat2D(a, b, axis);
+    const expected = new Float32Array([1, 2, 5, 6, 3, 4, 7, 8]);
+
+    expect(result.shape).toEqual([2, 4]);
+    test_util.expectArraysClose(result.getValues(), expected);
   });
 });
 
@@ -1787,8 +2005,7 @@ describe('NDArrayMathGPU conv2d', () => {
     const stride = 1;
 
     const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-    const w = NDArray.randNormal<Array4D>(
-        [fSize, fSize, wrongInputDepth, outputDepth]);
+    const w = Array4D.randNormal([fSize, fSize, wrongInputDepth, outputDepth]);
     const bias = Array1D.new([-1]);
 
     expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();
@@ -1882,7 +2099,7 @@ describe('NDArrayMathGPU conv2dTranspose', () => {
     const origStride = 1;
 
     const x = Array3D.new(inputShape, [2, 2]);
-    const w = NDArray.randNormal<Array4D>(
+    const w = Array4D.randNormal(
         [fSize, fSize, origInputDepth, wrongOrigOutputDepth]);
 
     expect(() => math.conv2dTranspose(x, w, [2, 2, 2], origStride, origPad))
