@@ -34,7 +34,6 @@
 #   - This code is not suitable for processing large number of images.
 #   - Tested with python v2.7 and v3.5
 #======================================================================
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -169,7 +168,6 @@ if __name__ == '__main__':
     '--replicate', type=int, default=1, help='Replicate this dataset this many times, default=1')
   parser.add_argument(
     '--nClasses', type=int, help='Set the number of classes. If absent then compute based on data')
-
   parser.add_argument(
     '--vsOthers', type=str, help='When specified this regular expression causes all unmatched sample classes to be lumped into one single class')
 
