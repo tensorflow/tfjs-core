@@ -90,8 +90,13 @@ const keyboardInterface = new KeyboardElement(container);
 
 const piano = new Piano({velocities : 4}).toMaster();
 
-piano.load('https://tambien.github.io/Piano/Salamander/').then(() => {
-  const reader = new CheckpointLoader('.');
+const SALAMANDER_URL = 'http://storage.googleapis.com/learnjs-data/' +
+    'Piano/Salamander/';
+const CHECKPOINT_URL = 'http://storage.googleapis.com/learnjs-data/' +
+    'checkpoint_zoo/performance_rnn';
+
+piano.load(SALAMANDER_URL).then(() => {
+  const reader = new CheckpointLoader(CHECKPOINT_URL);
   return reader.getAllVariables();
 }).then((vars: {[varName: string]: NDArray}) => {
   document.querySelector('#status').classList.add('hidden');
