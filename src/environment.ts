@@ -139,7 +139,9 @@ const DEEPLEARNJS_FLAGS_PREFIX = 'dljsflags';
 function getFeaturesFromURL(): Features {
   const features: Features = {};
 
-  if(typeof window === 'undefined') return features;
+  if(typeof window === 'undefined') {
+    return features;
+  }  
 
   const urlParams = util.getQueryParams(window.location.search);
   if (DEEPLEARNJS_FLAGS_PREFIX in urlParams) {
