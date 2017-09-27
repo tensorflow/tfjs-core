@@ -28,7 +28,7 @@ We get started by cloning the deeplearn.js source code: `git clone https://githu
 ## Prepare data set
 The model builder expects two files that it can use for training a network: one file containing all example inputs and one file containing all example outputs. The inputs file is a png image in which every horizontal row represents one example instance, where individual pixels represent node activations. The labels file is likewise a large list of node activations, but it in a slightly different format.
 
-I have prepared a reference set of rune images, handdrawn and rendered by differents fonts, which you can find in the folder `demos/rune_recognition/runes`. If you your own samples, you can open `demos/rune_recognition/generate_train_examples_runes.html` in your browser to generate your own labeled examples.
+I have prepared a reference set of rune images, hand-drawn and rendered by differents fonts, which you can find [here](https://github.com/digitalheir/deeplearnjs/releases/latest). If you want to generate your own samples, you can open `demos/rune_recognition/generate_train_examples_runes.html` in your browser.  
 
 Create a folder containing the example images and a file named `generate_rune_data_for_model_builder.py`. The script we are creating is inspired a helper script in the repository which you can find at `scripts/convert_uint8_tensor_to_png.py`.
 
