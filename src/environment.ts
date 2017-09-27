@@ -141,7 +141,7 @@ function getFeaturesFromURL(): Features {
 
   if(typeof window === 'undefined') {
     return features;
-  }  
+  }
 
   const urlParams = util.getQueryParams(window.location.search);
   if (DEEPLEARNJS_FLAGS_PREFIX in urlParams) {
