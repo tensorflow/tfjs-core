@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-export type Vector = number[] | Float64Array | Float32Array | Int32Array |
-    Int8Array | Int16Array;
+export type Vector =
+    number[]|Float64Array|Float32Array|Int32Array|Int8Array|Int16Array;
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -105,8 +105,7 @@ export function flatten(arr: any[], ret?: number[]): number[] {
   return ret;
 }
 
-export type ArrayData =
-    number | number[] | number[][] | number[][][] | number[][][][];
+export type ArrayData = number|number[]|number[][]|number[][][]|number[][][][];
 
 export function inferShape(arr: ArrayData): number[] {
   const shape: number[] = [];
@@ -221,4 +220,45 @@ export function rightPad(a: string, size: number): string {
     return a;
   }
   return a + ' '.repeat(size - a.length);
+}
+
+export function repeatedTry(
+    checkFn: () => boolean, delayFn = (counter: number) => 0,
+    maxCounter?: number): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let tryCount = 0;
+
+    const tryFn = () => {
+      if (checkFn()) {
+        resolve();
+        return;
+      }
+
+      tryCount++;
+
+      const nextBackoff = delayFn(tryCount);
+
+      if (maxCounter != null && tryCount >= maxCounter) {
+        reject();
+        return;
+      }
+      setTimeout(tryFn, nextBackoff);
+    };
+
+    setTimeout(tryFn, 0);
+  });
+}
+
+export function getQueryParams(queryString: string): {[key: string]: string} {
+  const params = {};
+  queryString.replace(/[?&]([^=?&]+)(?:=([^&]*))?/g, (s, ...t) => {
+    decodeParam(params, t[0], t[1]);
+    return t.join('=');
+  });
+  return params;
+}
+
+function decodeParam(
+    params: {[key: string]: string}, name: string, value?: string) {
+  params[decodeURIComponent(name)] = decodeURIComponent(value || '');
 }

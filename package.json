@@ -1,6 +1,6 @@
 {
   "name": "deeplearn",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/src/index.js",
@@ -26,6 +26,7 @@
     "polymer-bundler": "~3.0.1",
     "tsify": "~3.0.1",
     "tslint": "~5.6.0",
+    "tslint-no-circular-imports": "~0.2.0",
     "typedoc": "~0.8.0",
     "typescript": "2.4.2",
     "uglify-js": "~3.0.28",

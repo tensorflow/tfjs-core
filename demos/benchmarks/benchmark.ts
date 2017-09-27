@@ -24,6 +24,9 @@ export interface BenchmarkRunGroup {
   stepSize: number;
   // A transformation of step to the size passed to the benchmark test.
   stepToSizeTransformation?: (step: number) => number;
+  // Option parameters which is given to the benchmark test. (e.g. ops types)
+  options?: string[];
+  selectedOption?: string;
   benchmarkRuns: BenchmarkRun[];
   params: {};
 }
@@ -38,9 +41,13 @@ export class BenchmarkRun {
     this.benchmarkTest = benchmarkTest;
     this.chartData = [];
   }
+
+  clearChartData() {
+    this.chartData = [];
+  }
 }
 
 export abstract class BenchmarkTest {
   constructor(protected params?: {}) {}
-  abstract run(size: number): number;
+  abstract run(size: number, option?: string): Promise<number>;
 }
