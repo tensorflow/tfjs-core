@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import {MatrixOrientation} from './math';
 import {NDArrayMathCPU} from './math_cpu';
-import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, Scalar} from './ndarray';
 
 describe('NDArrayMathCPU clone', () => {
   it('returns a ndarray with the same shape and data', () => {
@@ -29,6 +29,34 @@ describe('NDArrayMathCPU clone', () => {
     const aPrime = math.clone(a);
     expect(aPrime.shape).toEqual(a.shape);
     expect(aPrime.getValues()).toEqual(a.getValues());
+  });
+});
+
+describe('NDArrayMathCPU slice1D', () => {
+  let math: NDArrayMathCPU;
+  beforeEach(() => {
+    math = new NDArrayMathCPU();
+  });
+
+  it('slices 1x1 into 1x1 (effectively a copy)', () => {
+    const a = Array1D.new([5]);
+    const result = math.slice1D(a, 0, 1);
+    expect(result.shape).toEqual([1]);
+    expect(result.get(0)).toBe(5);
+  });
+
+  it('slices 5x1 into shape 2x1 starting at 3', () => {
+    const a = Array1D.new([1, 2, 3, 4, 5]);
+    const result = math.slice1D(a, 3, 2);
+    expect(result.shape).toEqual([2]);
+    expect(result.getValues()).toEqual(new Float32Array([4, 5]));
+  });
+
+  it('slices 5x1 into shape 3x1 starting at 1', () => {
+    const a = Array1D.new([1, 2, 3, 4, 5]);
+    const result = math.slice1D(a, 1, 3);
+    expect(result.shape).toEqual([3]);
+    expect(result.getValues()).toEqual(new Float32Array([2, 3, 4]));
   });
 });
 
@@ -56,7 +84,7 @@ describe('NDArrayMathCPU slice2D', () => {
     const aValues = a.getValues();
     const expected =
         new Float32Array([aValues[0], aValues[1], aValues[10], aValues[11]]);
-    test_util.expectArraysClose(b.getValues(), expected, 0);
+    test_util.expectArraysClose(b.getValues(), expected);
   });
 
   it('returns the rectangle specified', () => {
@@ -69,6 +97,66 @@ describe('NDArrayMathCPU slice2D', () => {
   it('throws when requesting out of bounds slice', () => {
     const a = Array2D.new([4, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(() => math.slice2D(a, [1, 1], [10, 10])).toThrowError();
+  });
+});
+
+describe('NDArrayMathCPU slice3D', () => {
+  let math: NDArrayMathCPU;
+  beforeEach(() => {
+    math = new NDArrayMathCPU();
+  });
+
+  it('slices 1x1x1 into shape 1x1x1 (effectively a copy)', () => {
+    const a = Array3D.new([1, 1, 1], [[[5]]]);
+    const result = math.slice3D(a, [0, 0, 0], [1, 1, 1]);
+    expect(result.shape).toEqual([1, 1, 1]);
+    expect(result.get(0, 0, 0)).toBe(5);
+  });
+
+  it('slices 2x2x2 array into 1x2x2 starting at [1, 0, 0]', () => {
+    const a = Array3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
+    const result = math.slice3D(a, [1, 0, 0], [1, 2, 2]);
+    expect(result.shape).toEqual([1, 2, 2]);
+    expect(result.getValues()).toEqual(new Float32Array([5, 6, 7, 8]));
+  });
+
+  it('slices 2x2x2 array into 2x1x1 starting at [0, 1, 1]', () => {
+    const a = Array3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
+    const result = math.slice3D(a, [0, 1, 1], [2, 1, 1]);
+    expect(result.shape).toEqual([2, 1, 1]);
+    expect(result.getValues()).toEqual(new Float32Array([4, 8]));
+  });
+});
+
+describe('NDArrayMathCPU slice4D', () => {
+  let math: NDArrayMathCPU;
+  beforeEach(() => {
+    math = new NDArrayMathCPU();
+  });
+
+  it('slices 1x1x1x1 into shape 1x1x1x1 (effectively a copy)', () => {
+    const a = Array4D.new([1, 1, 1, 1], [[[[5]]]]);
+    const result = math.slice4D(a, [0, 0, 0, 0], [1, 1, 1, 1]);
+    expect(result.shape).toEqual([1, 1, 1, 1]);
+    expect(result.get(0, 0, 0, 0)).toBe(5);
+  });
+
+  it('slices 2x2x2x2 array into 1x2x2x2 starting at [1, 0, 0, 0]', () => {
+    const a = Array4D.new(
+        [2, 2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88]);
+    const result = math.slice4D(a, [1, 0, 0, 0], [1, 2, 2, 2]);
+    expect(result.shape).toEqual([1, 2, 2, 2]);
+    expect(result.getValues()).toEqual(new Float32Array([
+      11, 22, 33, 44, 55, 66, 77, 88
+    ]));
+  });
+
+  it('slices 2x2x2x2 array into 2x1x1x1 starting at [0, 1, 1, 1]', () => {
+    const a = Array4D.new(
+        [2, 2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88]);
+    const result = math.slice4D(a, [0, 1, 1, 1], [2, 1, 1, 1]);
+    expect(result.shape).toEqual([2, 1, 1, 1]);
+    expect(result.getValues()).toEqual(new Float32Array([8, 88]));
   });
 });
 
@@ -714,10 +802,8 @@ describe('NDArrayMathCPU scaledNDArrayAdd', () => {
     const c1: any = Array1D.randNormal([10]);
     const c2 = Scalar.new(2);
 
-    expect(() => math.scaledArrayAdd(c1 as Scalar, a, c2, b))
-        .toThrowError();
-    expect(() => math.scaledArrayAdd(c2, a, c1 as Scalar, b))
-        .toThrowError();
+    expect(() => math.scaledArrayAdd(c1 as Scalar, a, c2, b)).toThrowError();
+    expect(() => math.scaledArrayAdd(c2, a, c1 as Scalar, b)).toThrowError();
   });
 
   it('throws when NDArrays are different shape', () => {
@@ -777,9 +863,9 @@ describe('NDArrayMathCPU argmin/max, argmaxequals, min/max', () => {
   it('topk', () => {
     const topk = math.topK(Array1D.new([1, -1, 100, -5, -10.6, 3.3, 5]), 3);
     test_util.expectArraysClose(
-        topk.values.getValues(), new Float32Array([100, 5, 3.3]), 1e-6);
+        topk.values.getValues(), new Float32Array([100, 5, 3.3]));
     test_util.expectArraysClose(
-        topk.indices.getValues(), new Float32Array([2, 6, 5]), 1e-6);
+        topk.indices.getValues(), new Float32Array([2, 6, 5]));
   });
 
   it('Arg min', () => {
@@ -1474,7 +1560,7 @@ describe('NDArrayMathCPU resizeBilinear', () => {
 
     test_util.expectArraysClose(
         output.getValues(),
-        new Float32Array([2, 2, 2, 10 / 3, 10 / 3, 10 / 3, 4, 4, 4]), 1e-4);
+        new Float32Array([2, 2, 2, 10 / 3, 10 / 3, 10 / 3, 4, 4, 4]));
   });
 
   it('simple alignCorners=true', () => {
@@ -1482,8 +1568,7 @@ describe('NDArrayMathCPU resizeBilinear', () => {
     const output = math.resizeBilinear3D(input, [3, 3], true);
 
     test_util.expectArraysClose(
-        output.getValues(), new Float32Array([2, 2, 2, 3, 3, 3, 4, 4, 4]),
-        1e-4);
+        output.getValues(), new Float32Array([2, 2, 2, 3, 3, 3, 4, 4, 4]));
   });
 
   it('matches tensorflow w/ random numbers alignCorners=false', () => {
@@ -1503,8 +1588,7 @@ describe('NDArrayMathCPU resizeBilinear', () => {
           0.69152176,  0.44905344, 1.07186723, 0.03823943, 1.19864893,
           0.6183514,   3.49600649, 1.50272655, 1.73724651, 1.68149579,
           0.69152176,  0.44905344, 1.07186723, 0.03823943, 1.19864893
-        ]),
-        1e-4);
+        ]));
   });
 
   it('matches tensorflow w/ random numbers alignCorners=true', () => {
@@ -1524,8 +1608,7 @@ describe('NDArrayMathCPU resizeBilinear', () => {
           1.70539713, 1.3923912,  1.68282723, 1.54382229, 1.66025746,
           1.62451875, 1.83673346, 1.38198328, 1.92833281, 1.13944793,
           2.01993227, 1.57932377, 2.34758639, 2.01919961, 2.67524052
-        ]),
-        1e-4);
+        ]));
   });
 });
 
@@ -1554,8 +1637,7 @@ describe('NDArrayMathCPU batchNorm', () => {
               Math.sqrt(variance.get(0) + varianceEpsilon),
           (x.get(1, 0, 1) - mean.get(1)) * 1 /
               Math.sqrt(variance.get(1) + varianceEpsilon)
-        ]),
-        1e-6);
+        ]));
   });
 
   it('simple batchnorm, no offset, 2x1x2', () => {
@@ -1578,8 +1660,7 @@ describe('NDArrayMathCPU batchNorm', () => {
               Math.sqrt(variance.get(0) + varianceEpsilon),
           (x.get(1, 0, 1) - mean.get(1)) * scale.get(1) /
               Math.sqrt(variance.get(1) + varianceEpsilon)
-        ]),
-        1e-6);
+        ]));
   });
 
   it('simple batchnorm, no scale, 2x1x2', () => {
@@ -1607,8 +1688,7 @@ describe('NDArrayMathCPU batchNorm', () => {
           offset.get(1) +
               (x.get(1, 0, 1) - mean.get(1)) * 1 /
                   Math.sqrt(variance.get(1) + varianceEpsilon)
-        ]),
-        1e-6);
+        ]));
   });
 
   it('simple batchnorm, 2x1x2', () => {
@@ -1637,8 +1717,7 @@ describe('NDArrayMathCPU batchNorm', () => {
           offset.get(1) +
               (x.get(1, 0, 1) - mean.get(1)) * scale.get(1) /
                   Math.sqrt(variance.get(1) + varianceEpsilon)
-        ]),
-        1e-6);
+        ]));
   });
 
   it('batchnorm matches tensorflow, 2x3x3', () => {
@@ -1664,7 +1743,6 @@ describe('NDArrayMathCPU batchNorm', () => {
           1.52106473, -0.07704776, 0.26144429, 1.28010017, -1.14422404,
           -1.15776136, 1.15425493, 1.82644104, -0.52249442, 1.04803919,
           0.74932291, 0.40568101, 1.2844412
-        ]),
-        1e-5);
+        ]));
   });
 });
