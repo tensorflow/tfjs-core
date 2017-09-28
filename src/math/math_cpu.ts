@@ -31,7 +31,8 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected cloneInternal<T extends NDArray>(ndarray: T): T {
     return NDArray.make(
-        ndarray.shape, {values: new Float32Array(ndarray.getValues())}) as T;
+               ndarray.shape,
+               {values: new Float32Array(ndarray.getValues())}) as T;
   }
 
   protected slice1DInternal(input: Array1D, begin: number, size: number):

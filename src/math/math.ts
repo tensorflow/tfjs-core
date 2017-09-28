@@ -1574,6 +1574,21 @@ export abstract class NDArrayMath {
     });
     return [res[0].as2D(1, -1), res[1].as2D(1, -1)];
   }
+
+  /**
+   * Draws samples from a multinomial distribution.
+   *
+   * @param probabilities 1D array with normalized outcome probabilities.
+   * @param numSamples Number of samples to draw.
+   * @param seed Optional. The seed number.
+   */
+  multinomial(probabilities: Array1D, numSamples: number, seed?: number):
+      Array1D {
+    return this.track(
+        this.multinomialInternal(probabilities, numSamples, seed));
+  }
+  protected abstract multinomialInternal(
+      probabilities: Array1D, numSamples: number, seed: number): Array1D;
 }
 
 export enum MatrixOrientation {

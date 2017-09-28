@@ -38,6 +38,7 @@ import {LogSumExpProgram} from './webgl/logsumexp_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
+import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
@@ -422,6 +423,13 @@ export class NDArrayMathGPU extends NDArrayMath {
     const program =
         new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
     return this.compileAndRun(program, [x]);
+  }
+
+  protected multinomialInternal(
+      probs: Array1D, numSamples: number, seed: number): Array1D {
+    const program = new MultinomialProgram(probs.size, numSamples);
+    const customSetup = program.getCustomSetupFunc(seed || Math.random());
+    return this.compileAndRun(program, [probs], null, customSetup);
   }
 
   private getAndSaveBinary(key: string, getBinary: () => GPGPUBinary):
