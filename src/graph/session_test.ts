@@ -19,15 +19,15 @@ import {InputProvider} from '../data/input_provider';
 import {NDArrayMathCPU} from '../math/math_cpu';
 import {NDArrayMathGPU} from '../math/math_gpu';
 import {Array1D, NDArray, Scalar} from '../math/ndarray';
+import * as test_util from '../test_util';
 
 import {Graph, Tensor} from './graph';
 import {AdagradOptimizer} from './optimizers/adagrad_optimizer';
 import {MomentumOptimizer} from './optimizers/momentum_optimizer';
 import {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
+import {SGDOptimizer} from './optimizers/sgd_optimizer';
 import {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 import {FeedDictionary, FeedEntry, Session} from './session';
-import {SGDOptimizer} from './optimizers/sgd_optimizer';
-import * as test_util from '../test_util';
 
 
 describe('FeedDictionary', () => {
@@ -96,7 +96,7 @@ describe('Session', () => {
     const session = new Session(g, new NDArrayMathCPU());
     const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
     const expected = new Float32Array([28, 19]);
-    test_util.expectArraysClose(yVal.getValues(), expected, 1e-5);
+    test_util.expectArraysClose(yVal.getValues(), expected);
   });
 
   it('y=x^2 + 3: GPU', () => {
@@ -108,7 +108,7 @@ describe('Session', () => {
     math.scope(() => {
       const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
       const expected = new Float32Array([28, 19]);
-      test_util.expectArraysClose(yVal.getValues(), expected, 1e-5);
+      test_util.expectArraysClose(yVal.getValues(), expected);
     });
   });
 
@@ -123,7 +123,7 @@ describe('Session', () => {
       const yVal =
           session.eval(y, [{tensor: xSquared, data: Array1D.new([25, 16])}]);
       const expected = new Float32Array([28, 19]);
-      test_util.expectArraysClose(yVal.getValues(), expected, 1e-5);
+      test_util.expectArraysClose(yVal.getValues(), expected);
     });
   });
 
@@ -140,8 +140,8 @@ describe('Session', () => {
           session.evalAll([y, z], [{tensor: x, data: Array1D.new([5, 4])}]);
       const expectedY = new Float32Array([28, 19]);
       const expectedZ = new Float32Array([27, 18]);
-      test_util.expectArraysClose(result[0].getValues(), expectedY, 1e-5);
-      test_util.expectArraysClose(result[1].getValues(), expectedZ, 1e-5);
+      test_util.expectArraysClose(result[0].getValues(), expectedY);
+      test_util.expectArraysClose(result[1].getValues(), expectedZ);
     });
   });
 
@@ -156,11 +156,11 @@ describe('Session', () => {
     math.scope(() => {
       const result1 = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
       const expectedY = new Float32Array([30, 20]);
-      test_util.expectArraysClose(result1.getValues(), expectedY, 1e-5);
+      test_util.expectArraysClose(result1.getValues(), expectedY);
 
       const result2 = session.eval(z, [{tensor: x, data: Array1D.new([5, 4])}]);
       const expectedZ = new Float32Array([31, 21]);
-      test_util.expectArraysClose(result2.getValues(), expectedZ, 1e-5);
+      test_util.expectArraysClose(result2.getValues(), expectedZ);
     });
   });
 
@@ -215,7 +215,7 @@ describe('Session', () => {
     // dw/dx = [2*x_1 + 1, 2*x_2 + 1]
     session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);
     const dwdx = session.gradientArrayMap.get(x).getValues();
-    test_util.expectArraysClose(dwdx, new Float32Array([5, 9]), 1e-5);
+    test_util.expectArraysClose(dwdx, new Float32Array([5, 9]));
   });
 
   it('Specify which variables to update (var_list)', () => {
@@ -249,8 +249,8 @@ describe('Session', () => {
     const b0After1 = session.activationArrayMap.get(b0).getValues();
     const b1After1 = session.activationArrayMap.get(b1).getValues();
 
-    test_util.expectArraysClose(b0After1, new Float32Array([-0.8, -1.6]), 1e-5);
-    test_util.expectArraysClose(b1After1, new Float32Array([0, 0]), 1e-5);
+    test_util.expectArraysClose(b0After1, new Float32Array([-0.8, -1.6]));
+    test_util.expectArraysClose(b1After1, new Float32Array([0, 0]));
 
     // Update both b0 and b1
     const optimizerAll = new SGDOptimizer(0.1);
@@ -284,7 +284,7 @@ describe('Session', () => {
     math.scope(() => {
       const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
       const expected = new Float32Array([25, 16]);
-      test_util.expectArraysClose(yVal.getValues(), expected, 1e-5);
+      test_util.expectArraysClose(yVal.getValues(), expected);
     });
   });
 
@@ -310,7 +310,7 @@ describe('Session', () => {
       // dw/dx = [2*x_1 + 1, 2*x_2 + 1]
       session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dwdx = session.gradientArrayMap.get(x).getValues();
-      test_util.expectArraysClose(dwdx, new Float32Array([5, 9]), 1e-5);
+      test_util.expectArraysClose(dwdx, new Float32Array([5, 9]));
     });
   });
 
@@ -338,13 +338,13 @@ describe('Session', () => {
       // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.2, -0.4]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).getValues();
-      test_util.expectArraysClose(dydw, new Float32Array([-.2, -0.4]), 1e-5);
+      test_util.expectArraysClose(dydw, new Float32Array([-.2, -0.4]));
       // velocity_w = [momentum* old_vel_w1 + x_1,
       //                momentum* old_vel_w2 + x_2] = [3,6]
       // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.5, -1.0]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).getValues();
-      test_util.expectArraysClose(dydw2, new Float32Array([-.5, -1.0]), 2e-5);
+      test_util.expectArraysClose(dydw2, new Float32Array([-.5, -1.0]));
     });
   });
 
@@ -375,7 +375,7 @@ describe('Session', () => {
       //                = [-0.1, -0.1]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).getValues();
-      test_util.expectArraysClose(dydw, new Float32Array([-.1, -0.1]), 1e-5);
+      test_util.expectArraysClose(dydw, new Float32Array([-.1, -0.1]));
       // cache = [old_cache_w1 + grad_w1**2,
       //                old_cache_w2 + grad_w2**2] = [4,16]
       // w = [ w1_old - lr*grad_w1/sqrt(cahce_w2 + eps),
@@ -383,8 +383,7 @@ describe('Session', () => {
       //                = [-0.1707, -0.1707]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).getValues();
-      test_util.expectArraysClose(
-          dydw2, new Float32Array([-.1707, -.1707]), 2e-5);
+      test_util.expectArraysClose(dydw2, new Float32Array([-.1707, -.1707]));
     });
   });
 
@@ -414,8 +413,7 @@ describe('Session', () => {
       //            = [-0.2236, -0.2236]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).getValues();
-      test_util.expectArraysClose(
-          dydw, new Float32Array([-.2236, -0.2236]), 1e-5);
+      test_util.expectArraysClose(dydw, new Float32Array([-.2236, -0.2236]));
       // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
       //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
       //            = [1.44, 5.76]
@@ -424,8 +422,7 @@ describe('Session', () => {
       //            = [-.39027, -.39027]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).getValues();
-      test_util.expectArraysClose(
-          dydw2, new Float32Array([-.39027, -.39027]), 2e-5);
+      test_util.expectArraysClose(dydw2, new Float32Array([-.39027, -.39027]));
     });
   });
 
