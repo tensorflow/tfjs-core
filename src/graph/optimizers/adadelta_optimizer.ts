@@ -48,7 +48,6 @@ export class AdadeltaOptimizer extends Optimizer {
     }
   }
 
-
   afterBatch(
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,

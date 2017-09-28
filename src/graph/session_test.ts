@@ -452,7 +452,7 @@ describe('Session', () => {
         .toThrowError();
   });
 
-  it('Safe mode math, math scope train does not throw', () => {
+  it('adadelta', () => {
     const x = g.placeholder('x', [2]);
     const w = g.variable('w', NDArray.zeros([1, 2]));
     const b = g.variable('b', NDArray.zeros([1]));
