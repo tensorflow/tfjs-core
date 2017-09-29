@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
+import * as seedrandom from 'seedrandom';
 import * as util from '../util';
-
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -982,5 +982,37 @@ export class NDArrayMathCPU extends NDArrayMath {
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
     return Array3D.make(x.shape, {values: outValues});
+  }
+
+  protected multinomialInternal(
+      probabilities: Array1D, numSamples: number, seed: number): Array1D {
+    const probVals = probabilities.getValues();
+
+    // The cdf won't include the last event. It will be implicit if not other
+    // event happened.
+    const cdf = new Float32Array(probabilities.size - 1);
+    cdf[0] = probVals[0];
+    for (let event = 1; event < cdf.length; ++event) {
+      cdf[event] = cdf[event - 1] + probVals[event];
+    }
+
+    const random = seedrandom(seed.toString());
+    const res = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; ++i) {
+      const r = random();
+
+      // Assume last event happened by default.
+      res[i] = cdf.length;
+
+      for (let event = 0; event < cdf.length; event++) {
+        if (r < cdf[event]) {
+          res[i] = event;
+          break;
+        }
+      }
+    }
+
+    return Array1D.new(res);
   }
 }

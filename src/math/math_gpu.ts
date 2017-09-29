@@ -428,7 +428,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected multinomialInternal(
       probs: Array1D, numSamples: number, seed: number): Array1D {
     const program = new MultinomialProgram(probs.size, numSamples);
-    const customSetup = program.getCustomSetupFunc(seed || Math.random());
+    const customSetup = program.getCustomSetupFunc(seed);
     return this.compileAndRun(program, [probs], null, customSetup);
   }
 

@@ -15,30 +15,26 @@
  * =============================================================================
  */
 
-import {Array1D, initializeGPU} from '../ndarray';
-import {GPGPUContext} from './gpgpu_context';
-import * as gpgpu_math from './gpgpu_math';
-import {MultinomialProgram} from './multinomial_gpu';
-import {TextureManager} from './texture_manager';
+import {NDArrayMath} from './math';
+import {NDArrayMathCPU} from './math_cpu';
+import {NDArrayMathGPU} from './math_gpu';
+import {Array1D} from './ndarray';
 
-describe('multinomial_gpu', () => {
-  let gpgpu: GPGPUContext;
-  let texManager: TextureManager;
+function executeTests(mathFactory: () => NDArrayMath) {
+  let math: NDArrayMath;
 
-  beforeAll(() => {
-    gpgpu = new GPGPUContext();
-    texManager = new TextureManager(gpgpu);
-    initializeGPU(gpgpu, texManager);
+  beforeEach(() => {
+    math = mathFactory();
+    math.startScope();
   });
 
-  afterAll(() => {
-    texManager.dispose();
-    gpgpu.dispose();
+  afterEach(() => {
+    math.endScope(null);
   });
 
   it('Flip a fair coin and check bounds', () => {
     const probs = Array1D.new([0.5, 0.5]);
-    const result = doMultinomial(probs, 100);
+    const result = math.multinomial(probs, 100);
     expect(result.shape).toEqual([100]);
     const [min, max] = getBounds(result.getValues());
     expect(min >= 0 - 1e-4);
@@ -47,7 +43,7 @@ describe('multinomial_gpu', () => {
 
   it('Flip a two-sided coin with 100% of heads', () => {
     const probs = Array1D.new([1, 0]);
-    const result = doMultinomial(probs, 100);
+    const result = math.multinomial(probs, 100);
     expect(result.shape).toEqual([100]);
     const [min, max] = getBounds(result.getValues());
     expect(min).toBeCloseTo(0, 1e-4);
@@ -56,20 +52,16 @@ describe('multinomial_gpu', () => {
 
   it('Flip a two-sided coin with 100% of tails', () => {
     const probs = Array1D.new([0, 1]);
-    const result = doMultinomial(probs, 100);
+    const result = math.multinomial(probs, 100);
     expect(result.shape).toEqual([100]);
     const [min, max] = getBounds(result.getValues());
     expect(min).toBeCloseTo(1, 1e-4);
     expect(max).toBeCloseTo(1, 1e-4);
   });
 
-  it('Flip a single-sided coin', () => {
+  it('Flip a single-sided coin throws error', () => {
     const probs = Array1D.new([1]);
-    const result = doMultinomial(probs, 100);
-    expect(result.shape).toEqual([100]);
-    const [min, max] = getBounds(result.getValues());
-    expect(min).toBeCloseTo(0, 1e-4);
-    expect(max).toBeCloseTo(0, 1e-4);
+    expect(() => math.multinomial(probs, 100)).toThrowError();
   });
 
   it('Flip a ten-sided coin and check bounds', () => {
@@ -78,7 +70,7 @@ describe('multinomial_gpu', () => {
     for (let i = 0; i < n; ++i) {
       probs.set(1 / n, i);
     }
-    const result = doMultinomial(probs, 100);
+    const result = math.multinomial(probs, 100);
     expect(result.shape).toEqual([100]);
     const [min, max] = getBounds(result.getValues());
     expect(min >= 0 - 1e-4);
@@ -95,17 +87,12 @@ describe('multinomial_gpu', () => {
     }
     return [min, max];
   }
+}
 
-  function doMultinomial(probs: Array1D, numSamples: number): Array1D {
-    const program = new MultinomialProgram(probs.size, numSamples);
-    const result = Array1D.zeros([numSamples]);
+describe('mathCPU.multinomial', () => {
+  executeTests(() => new NDArrayMathCPU());
+});
 
-    const binary = gpgpu_math.compileProgram(gpgpu, program, [probs], result);
-    const customSetup = program.getCustomSetupFunc(Math.random());
-    gpgpu_math.runProgram(binary, [probs], result, customSetup);
-
-    probs.dispose();
-    gpgpu.deleteProgram(binary.webGLProgram);
-    return result;
-  }
+describe('mathGPU.multinomial', () => {
+  executeTests(() => new NDArrayMathGPU());
 });

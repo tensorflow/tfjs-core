@@ -47,7 +47,7 @@ export class MultinomialProgram implements GPGPUProgram {
         float r = random(seed);
         float cdf = 0.0;
 
-        for (int i = 0; i < ${numOutcomes}; i++) {
+        for (int i = 0; i < ${numOutcomes - 1}; i++) {
           cdf += getProbs(i);
 
           if (r < cdf) {
@@ -55,6 +55,8 @@ export class MultinomialProgram implements GPGPUProgram {
             return;
           }
         }
+
+        // If no other event happened, last event happened.
         setOutput(float(${numOutcomes - 1}));
       }
     `;

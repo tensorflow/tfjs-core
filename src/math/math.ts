@@ -270,9 +270,8 @@ export abstract class NDArrayMath {
             `rank ${matrix.rank}.`);
     util.assert(
         v.size === matrix.shape[0],
-        `Error in vectorTimesMatrix: size of first rank 1 input (${v.size}) ` +
-            `must match inner dimension of second rank 2 input, but got ` +
-            `rank ${matrix.rank}.`);
+        `Error in vectorTimesMatrix: size of vector (${v.size}) ` +
+            `must match first dimension of matrix (${matrix.shape[0]})`);
 
     return this.matMul(v.as2D(1, -1), matrix).as1D();
   }
@@ -1584,8 +1583,16 @@ export abstract class NDArrayMath {
    */
   multinomial(probabilities: Array1D, numSamples: number, seed?: number):
       Array1D {
-    return this.track(
-        this.multinomialInternal(probabilities, numSamples, seed));
+    const numOutcomes = probabilities.size;
+    if (numOutcomes < 2) {
+      throw new Error(
+          `Error in multinomial: you need at least 2 outcomes, but got ` +
+          `${numOutcomes}.`);
+    }
+    seed = seed || Math.random();
+    return this.executeOp(
+        'multinomial',
+        () => this.multinomialInternal(probabilities, numSamples, seed));
   }
   protected abstract multinomialInternal(
       probabilities: Array1D, numSamples: number, seed: number): Array1D;
