@@ -1015,4 +1015,15 @@ export class NDArrayMathCPU extends NDArrayMath {
 
     return Array1D.new(res);
   }
+
+  protected oneHotInternal(
+      indices: Array1D, depth: number, onValue: number,
+      offValue: number): Array2D {
+    const res = new Float32Array(indices.size * depth);
+
+    for (let event = 0; event < indices.size; ++event) {
+      res[event * depth + indices.get(event)] = 1;
+    }
+    return Array2D.new([indices.size, depth], res);
+  }
 }

@@ -39,6 +39,7 @@ import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
+import {OneHotProgram} from './webgl/onehot_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
@@ -430,6 +431,13 @@ export class NDArrayMathGPU extends NDArrayMath {
     const program = new MultinomialProgram(probs.size, numSamples);
     const customSetup = program.getCustomSetupFunc(seed);
     return this.compileAndRun(program, [probs], null, customSetup);
+  }
+
+  protected oneHotInternal(
+      indices: ndarray.Array1D, depth: number, onValue: number,
+      offValue: number): ndarray.Array2D {
+    const program = new OneHotProgram(indices.size, depth, onValue, offValue);
+    return this.compileAndRun(program, [indices]);
   }
 
   private getAndSaveBinary(key: string, getBinary: () => GPGPUBinary):

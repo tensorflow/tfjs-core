@@ -173,6 +173,10 @@ const SHADER_PREFIX = `
     return dot(vec4(1), values);
   }
 
+  int round(float value) {
+    return int(floor(value + 0.5));
+  }
+
   ${SAMPLE_1D_SNIPPET}
   ${SAMPLE_2D_SNIPPET}
   ${SAMPLE_3D_SNIPPET}

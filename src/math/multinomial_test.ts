@@ -89,10 +89,10 @@ function executeTests(mathFactory: () => NDArrayMath) {
   }
 }
 
-describe('mathCPU.multinomial', () => {
+describe('mathCPU multinomial', () => {
   executeTests(() => new NDArrayMathCPU());
 });
 
-describe('mathGPU.multinomial', () => {
+describe('mathGPU multinomial', () => {
   executeTests(() => new NDArrayMathGPU());
 });

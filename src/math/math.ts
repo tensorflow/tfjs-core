@@ -1596,6 +1596,36 @@ export abstract class NDArrayMath {
   }
   protected abstract multinomialInternal(
       probabilities: Array1D, numSamples: number, seed: number): Array1D;
+
+  /**
+   * Returns a one-hot tensor. The locations represented by `indices` take
+   * value `onValue` (defaults to 1), while all other locations take value
+   * `offValue` (defaults to 0).
+   *
+   * @param indices 1D Array of indices.
+   * @param depth The depth of the one hot dimension.
+   * @param onValue A number used to fill in output when the index matches the
+   *     location.
+   * @param offValue A number used to fill in the output when the index does not
+   *     match the location.
+   */
+  oneHot(indices: Array1D, depth: number, onValue?: number, offValue?: number):
+      Array2D {
+    if (depth < 2) {
+      throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
+    }
+    if (onValue == null) {
+      onValue = 1;
+    }
+    if (offValue == null) {
+      offValue = 0;
+    }
+    return this.executeOp(
+        'oneHot', () => this.oneHotInternal(indices, depth, onValue, offValue));
+  }
+  protected abstract oneHotInternal(
+      indices: Array1D, depth: number, onValue: number,
+      offValue: number): Array2D;
 }
 
 export enum MatrixOrientation {
