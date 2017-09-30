@@ -25,9 +25,7 @@ import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
-import {Concat1DProgram} from './webgl/concat1d_gpu';
-import {Concat2DProgram} from './webgl/concat2d_gpu';
-import {Concat3DProgram} from './webgl/concat3d_gpu';
+import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
@@ -40,9 +38,12 @@ import {LogSumExpProgram} from './webgl/logsumexp_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
+import {MultinomialProgram} from './webgl/multinomial_gpu';
+import {OneHotProgram} from './webgl/onehot_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
+import {SliceProgram} from './webgl/slice_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
@@ -85,13 +86,35 @@ export class NDArrayMathGPU extends NDArrayMath {
     return output.reshape(a.shape) as T;
   }
 
-  protected slice2DInternal(
-      input: Array2D, beginRowCol: [number, number],
-      sizeRowCol: [number, number]): Array2D {
-    const result = this.makeOutputArray<Array2D>(sizeRowCol);
-    this.copy2DInternal(
-        input, beginRowCol, sizeRowCol, result, [0, 0], sizeRowCol);
-    return result;
+  protected slice1DInternal(input: Array1D, begin: number, size: number):
+      Array1D {
+    const program = new SliceProgram([size]);
+    const customSetup = program.getCustomSetupFunc([begin]);
+    return this.compileAndRun(program, [input], null, customSetup);
+  }
+
+  protected slice2DInternal(input: Array2D, begin: [number, number], size: [
+    number, number
+  ]): Array2D {
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [input], null, customSetup);
+  }
+
+  protected slice3DInternal(
+      input: Array3D, begin: [number, number, number],
+      size: [number, number, number]): Array3D {
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [input], null, customSetup);
+  }
+
+  protected slice4DInternal(
+      input: Array4D, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D {
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [input], null, customSetup);
   }
 
   protected copy2DInternal(
@@ -106,17 +129,22 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected concat1DInternal(a: Array1D, b: Array1D): Array1D {
-    const program = new Concat1DProgram(a.size, b.size);
+    const program = new ConcatProgram(a.shape, b.shape, 0);
     return this.compileAndRun(program, [a, b]);
   }
 
   protected concat2DInternal(a: Array2D, b: Array2D, axis: number): Array2D {
-    const program = new Concat2DProgram(a.shape, b.shape, axis);
+    const program = new ConcatProgram(a.shape, b.shape, axis);
     return this.compileAndRun(program, [a, b]);
   }
 
   protected concat3DInternal(x1: Array3D, x2: Array3D, axis: number): Array3D {
-    const program = new Concat3DProgram(x1.shape, x2.shape, axis);
+    const program = new ConcatProgram(x1.shape, x2.shape, axis);
+    return this.compileAndRun(program, [x1, x2]);
+  }
+
+  protected concat4DInternal(x1: Array4D, x2: Array4D, axis: number): Array4D {
+    const program = new ConcatProgram(x1.shape, x2.shape, axis);
     return this.compileAndRun(program, [x1, x2]);
   }
 
@@ -396,6 +424,20 @@ export class NDArrayMathGPU extends NDArrayMath {
     const program =
         new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
     return this.compileAndRun(program, [x]);
+  }
+
+  protected multinomialInternal(
+      probs: Array1D, numSamples: number, seed: number): Array1D {
+    const program = new MultinomialProgram(probs.size, numSamples);
+    const customSetup = program.getCustomSetupFunc(seed);
+    return this.compileAndRun(program, [probs], null, customSetup);
+  }
+
+  protected oneHotInternal(
+      indices: ndarray.Array1D, depth: number, onValue: number,
+      offValue: number): ndarray.Array2D {
+    const program = new OneHotProgram(indices.size, depth, onValue, offValue);
+    return this.compileAndRun(program, [indices]);
   }
 
   private getAndSaveBinary(key: string, getBinary: () => GPGPUBinary):

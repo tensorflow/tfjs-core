@@ -15,38 +15,39 @@
  * =============================================================================
  */
 
-import * as concat_util from '../concat_util';
+import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
-export class Concat2DProgram implements GPGPUProgram {
-  variableNames = ['A', 'B'];
-  params: Array<{}> = [];
-  outputShape: number[] = [];
+export class OneHotProgram implements GPGPUProgram {
+  variableNames = ['indices'];
+  params: Array<{}>;
+  outputShape: number[];
   userCode: string;
 
+  // Caching uniform location for speed.
+  seedLoc: WebGLUniformLocation;
+
   constructor(
-      x1Shape: [number, number], x2Shape: [number, number], axis: number) {
-    const yAxes = ['yR', 'yC'];
-    const concatAxis = yAxes[axis];
-    this.params = [axis];
-    this.outputShape =
-        concat_util.computeConcatOutputShape(x1Shape, x2Shape, axis);
+      numIndices: number, depth: number, onValue: number, offValue: number) {
+    this.outputShape = [numIndices, depth];
+    this.params = [onValue, offValue];
+
     this.userCode = `
       void main() {
         ivec2 coords = getOutputCoords();
-        int yR = coords.x;
-        int yC = coords.y;
-
-        float value = 0.0;
-        if (${concatAxis} < ${x1Shape[axis]}) {
-          value = getA(yR, yC);
-        } else {
-          ${concatAxis} -= ${x1Shape[axis]};
-          value = getB(yR, yC);
-        }
-
-        setOutput(value);
+        int index = round(getIndices(coords.x));
+        setOutput(mix(float(${offValue}), float(${onValue}),
+                      float(index == coords.y)));
       }
     `;
+  }
+
+  getCustomSetupFunc(seed: number) {
+    return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
+      if (this.seedLoc == null) {
+        this.seedLoc = gpgpu.getUniformLocation(webGLProgram, 'seed');
+      }
+      gpgpu.gl.uniform1f(this.seedLoc, seed);
+    };
   }
 }
