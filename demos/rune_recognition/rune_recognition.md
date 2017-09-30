@@ -185,7 +185,7 @@ If it works, open the file `demos/model-builder/model-builder-datasets-config.js
 ```
 
 The data set definition refers to two different models: one for a fully connected neural net and one for a convolutional neural network. Because our task is so close to the task of recognizing hand-written digits, we make it easy for ourselves. 
-Just copy the `mnist-fully-connected.json` and `mnist-conv.json` files in this folder and changes their names to `runes-fully-connected.json` and `runes-conv.json`. 
+Just copy the `mnist-fully-connected.json` and `mnist-conv.json` files in this folder and changes their names to `runes-fully-connected.json` and `runes-conv.json`. There is one change though. We need to specify the number of labels in the output layer: in the `fully connected` layers, change the `hiddenUnits` field to the number of labels (90 for the example data set).
 
 Now refresh the model builder. You should see the new runes data set. Select the convolutional model and click "Train". It should look something like this:
 
