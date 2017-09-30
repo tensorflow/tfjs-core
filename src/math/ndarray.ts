@@ -376,7 +376,7 @@ export class Array1D extends NDArray {
 
   static new(values: Float32Array|number[]) {
     if (!(values instanceof Float32Array)) {
-      const inferredShape = util.inferShape(values);
+      const inferredShape = util.inferShape(<ArrayData>values);
       util.assert(
           inferredShape.length === 1,
           `Error constructing Array1D. Shape of values ${inferredShape} is ` +
@@ -441,7 +441,7 @@ export class Array2D extends NDArray {
   static new(
       shape: [number, number], values: Float32Array|number[]|number[][]) {
     if (!(values instanceof Float32Array)) {
-      const inferredShape = util.inferShape(values);
+      const inferredShape = util.inferShape(<ArrayData>values);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
@@ -512,7 +512,7 @@ export class Array3D extends NDArray {
       shape: [number, number, number],
       values: Float32Array|number[]|number[][][]) {
     if (!(values instanceof Float32Array)) {
-      const inferredShape = util.inferShape(values);
+      const inferredShape = util.inferShape(<ArrayData>values);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
@@ -589,7 +589,7 @@ export class Array4D extends NDArray {
       shape: [number, number, number, number],
       values: Float32Array|number[]|number[][][][]) {
     if (!(values instanceof Float32Array)) {
-      const inferredShape = util.inferShape(values);
+      const inferredShape = util.inferShape(<ArrayData>values);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
@@ -658,5 +658,5 @@ export class Array4D extends NDArray {
 type ArrayData = Float32Array|number[]|number[][]|number[][][]|number[][][][];
 
 function toTypedArray(a: ArrayData): Float32Array {
-  return (a instanceof Float32Array) ? a : new Float32Array(util.flatten(a));
+  return (a instanceof Float32Array) ? a : new Float32Array(util.flatten(<any[]>a));
 }
