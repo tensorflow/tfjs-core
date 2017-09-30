@@ -34,15 +34,6 @@ export class MultinomialProgram implements GPGPUProgram {
     this.userCode = `
       uniform float seed;
 
-      const vec2 K1 = vec2(
-        23.14069263277926, // e^pi (Gelfond's constant)
-         2.665144142690225 // 2^sqrt(2) (Gelfond–Schneider constant)
-      );
-
-      float random(float seed) {
-          return fract(cos(dot(resultUV * seed, K1)) * 12345.6789);
-      }
-
       void main() {
         float r = random(seed);
         float cdf = 0.0;

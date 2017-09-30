@@ -177,6 +177,15 @@ const SHADER_PREFIX = `
     return int(floor(value + 0.5));
   }
 
+  const vec2 randomConst = vec2(
+    23.14069263277926, // e^pi (Gelfond's constant)
+     2.665144142690225 // 2^sqrt(2) (Gelfond–Schneider constant)
+  );
+
+  float random(float seed) {
+      return fract(cos(dot(resultUV * seed, randomConst)) * 12345.6789);
+  }
+
   ${SAMPLE_1D_SNIPPET}
   ${SAMPLE_2D_SNIPPET}
   ${SAMPLE_3D_SNIPPET}

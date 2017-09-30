@@ -194,6 +194,9 @@ export abstract class NDArrayMath {
     return result;
   }
 
+  /** Disposes the math object and any resources used by it. */
+  dispose() {}
+
   /**
    * Computes the dot product of two matrices, A * B. These must be matrices,
    * use matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct
@@ -1609,16 +1612,9 @@ export abstract class NDArrayMath {
    * @param offValue A number used to fill in the output when the index does not
    *     match the location.
    */
-  oneHot(indices: Array1D, depth: number, onValue?: number, offValue?: number):
-      Array2D {
+  oneHot(indices: Array1D, depth: number, onValue = 1, offValue = 0): Array2D {
     if (depth < 2) {
       throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
-    }
-    if (onValue == null) {
-      onValue = 1;
-    }
-    if (offValue == null) {
-      offValue = 0;
     }
     return this.executeOp(
         'oneHot', () => this.oneHotInternal(indices, depth, onValue, offValue));

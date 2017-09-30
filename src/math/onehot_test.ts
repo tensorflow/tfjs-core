@@ -31,6 +31,7 @@ function executeTests(mathFactory: () => NDArrayMath) {
 
   afterEach(() => {
     math.endScope(null);
+    math.dispose();
   });
 
   it('Depth 1 throws error', () => {
@@ -59,6 +60,14 @@ function executeTests(mathFactory: () => NDArrayMath) {
     const res = math.oneHot(indices, 3);
     const expected = new Float32Array([0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0]);
     expect(res.shape).toEqual([4, 3]);
+    test_util.expectArraysClose(res.getValues(), expected);
+  });
+
+  it('Depth 2 onValue=3, offValue=-2', () => {
+    const indices = Array1D.new([0, 1]);
+    const res = math.oneHot(indices, 2, 3, -2);
+    const expected = new Float32Array([3, -2, -2, 3]);
+    expect(res.shape).toEqual([2, 2]);
     test_util.expectArraysClose(res.getValues(), expected);
   });
 }

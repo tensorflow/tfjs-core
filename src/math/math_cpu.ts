@@ -1020,9 +1020,10 @@ export class NDArrayMathCPU extends NDArrayMath {
       indices: Array1D, depth: number, onValue: number,
       offValue: number): Array2D {
     const res = new Float32Array(indices.size * depth);
+    res.fill(offValue);
 
     for (let event = 0; event < indices.size; ++event) {
-      res[event * depth + indices.get(event)] = 1;
+      res[event * depth + indices.get(event)] = onValue;
     }
     return Array2D.new([indices.size, depth], res);
   }

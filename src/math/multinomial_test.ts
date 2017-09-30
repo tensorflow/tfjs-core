@@ -30,6 +30,7 @@ function executeTests(mathFactory: () => NDArrayMath) {
 
   afterEach(() => {
     math.endScope(null);
+    math.dispose();
   });
 
   it('Flip a fair coin and check bounds', () => {
