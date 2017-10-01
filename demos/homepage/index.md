@@ -250,7 +250,6 @@ limitations under the License.
         nikhil(author1);
         daniel(author2);
       }
- 
     </script>
   </div>
   <div class="mdl-layout-spacer mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
