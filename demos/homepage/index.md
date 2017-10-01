@@ -240,7 +240,7 @@ limitations under the License.
         elem.href = 'https://twitter.com/nsthorat';
         elem.innerText = 'Nikhil Thorat';
       }
-   
+
       var author1 = document.getElementById('author1');
       var author2 = document.getElementById('author2');
       if (Math.random() > .5) {
