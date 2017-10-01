@@ -594,11 +594,62 @@ export abstract class NDArrayMath {
   /**
    * Computes the sum of all the entries in the input NDArray.
    * @param ndarray The input NDArray to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  sum(ndarray: NDArray): Scalar {
-    return this.executeOp('sum', () => this.sumInternal(ndarray));
+  sum<T extends NDArray>(
+      ndarray: NDArray, axis: number[] = null, keepDims = false): T {
+    // TODO normalize the params.
+    return this.executeOp(
+        'sum', () => this.sumInternal(ndarray, axis, keepDims));
   }
-  protected abstract sumInternal(ndarray: NDArray): Scalar;
+  protected abstract sumInternal<T extends NDArray>(
+      ndarray: NDArray, axis: number[], keepDims: boolean): T;
+
+  /**
+   * Computes the sum of the entries in 1D array.
+   * @param ndarray The 1D NDArray to compute the sum over.
+   */
+  sum1D(ndarray: Array1D): Scalar {
+    return this.sum(ndarray);
+  }
+
+  /**
+   * Computes the sum of the entries in 2D array.
+   * @param ndarray The 2D NDArray to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   */
+  sum2D<T extends NDArray>(
+      ndarray: Array2D, axis: number[] = null, keepDims = false): T {
+    return this.sum(ndarray, axis, keepDims);
+  }
+
+  /**
+   * Computes the sum of the entries in 3D array.
+   * @param ndarray The 3D NDArray to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   */
+  sum3D<T extends NDArray>(
+      ndarray: Array3D, axis: number[] = null, keepDims = false): T {
+    return this.sum(ndarray, axis, keepDims);
+  }
+
+  /**
+   * Computes the sum of the entries in 4D array.
+   * @param ndarray The 4D NDArray to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   */
+  sum4D<T extends NDArray>(
+      ndarray: Array4D, axis: number[] = null, keepDims = false): T {
+    return this.sum(ndarray, axis, keepDims);
+  }
 
   /**
    * Computes the flattened index of the minimum element in the ndarray.
@@ -759,11 +810,11 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to add element-wise.
    * @param b The second NDArray to add element-wise.
    */
-  add(a: NDArray, b: NDArray): NDArray {
+  add<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
     return this.executeOp('add', () => this.addInternal(a, b));
   }
-  protected abstract addInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract addInternal<T extends NDArray>(a: NDArray, b: NDArray): T;
 
   /**
    * Adds two NDArrays element-wise, A + B. Inputs must
@@ -784,11 +835,11 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to subtract element-wise.
    * @param b The second NDArray to subtract element-wise.
    */
-  sub(a: NDArray, b: NDArray): NDArray {
+  sub<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
     return this.executeOp('sub', () => this.subInternal(a, b));
   }
-  protected abstract subInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract subInternal<T extends NDArray>(a: NDArray, b: NDArray): T;
 
   /**
    * Subtracts two NDArrays element-wise, A - B. Inputs must

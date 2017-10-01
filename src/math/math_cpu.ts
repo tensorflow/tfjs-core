@@ -17,6 +17,7 @@
 
 import * as seedrandom from 'seedrandom';
 import * as util from '../util';
+import * as axis_util from './axis_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -234,7 +235,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected scaledArrayAddInternal<T extends NDArray>(
-      c1: Scalar, a: T, c2: Scalar, b: T) {
+      c1: Scalar, a: NDArray, c2: Scalar, b: NDArray) {
     const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
@@ -252,11 +253,11 @@ export class NDArrayMathCPU extends NDArrayMath {
     return this.scalarTimesArray(Scalar.NEG_ONE, a);
   }
 
-  protected addInternal<T extends NDArray>(a: T, b: T): T {
+  protected addInternal<T extends NDArray>(a: NDArray, b: NDArray): T {
     return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.ONE, b);
   }
 
-  protected subInternal<T extends NDArray>(a: T, b: T): T {
+  protected subInternal<T extends NDArray>(a: NDArray, b: NDArray): T {
     return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
   }
 
@@ -323,13 +324,15 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  protected sumInternal(ndarray: NDArray): Scalar {
-    let sum = 0;
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      sum += values[i];
+  protected sumInternal<T extends NDArray>(
+      a: NDArray, axis: number[], keepDims: boolean): T {
+    if (axis.length === a.rank) {
+      return sumAll(a) as T;
     }
-    return Scalar.new(sum);
+    if (axis_util.axisHasInnerMostDims(axis, a.rank)) {
+      // TODO
+    }
+    return reduceSum(a, axis) as T;
   }
 
   protected argMinInternal(ndarray: NDArray): Scalar {
@@ -1027,4 +1030,32 @@ export class NDArrayMathCPU extends NDArrayMath {
     }
     return Array2D.new([indices.size, depth], res);
   }
+}
+
+function sumAll(ndarray: NDArray): Scalar {
+  let sum = 0;
+  const values = ndarray.getValues();
+  for (let i = 0; i < values.length; ++i) {
+    sum += values[i];
+  }
+  return Scalar.new(sum);
+}
+
+function reduceSum(a: NDArray, axis: number[]): NDArray {
+  const [outShape, reduceShape] = axis_util.computeOutAndReduceShapes(a, axis);
+  const results = NDArray.zeros(outShape);
+  const reduceMock = NDArray.make(reduceShape, {values: null});
+
+  const vals = results.getValues();
+  for (let i = 0; i < vals.length; i++) {
+    const outLoc = results.indexToLoc(i);
+    let sum = 0;
+    for (let j = 0; j < reduceMock.size; j++) {
+      const reduceLoc = reduceMock.indexToLoc(j);
+      const loc = axis_util.computeLocation(outLoc, reduceLoc, axis);
+      sum += a.get(...loc);
+    }
+    vals[i] = sum;
+  }
+  return results;
 }
