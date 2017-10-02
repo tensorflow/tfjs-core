@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import {NDArray} from './ndarray';
-
 /**
  * Returns true if the axis specifies the inner most dimensions of the array.
  */
@@ -47,13 +45,14 @@ export function computeLocation(
 }
 
 export function computeOutAndReduceShapes(
-    a: NDArray, axis: number[]): [number[], number[]] {
+    aShape: number[], axis: number[]): [number[], number[]] {
   const outShape = [];
-  for (let dim = 0; dim < a.rank; dim++) {
+  const rank = aShape.length;
+  for (let dim = 0; dim < rank; dim++) {
     if (axis.indexOf(dim) === -1) {
-      outShape.push(a.shape[dim]);
+      outShape.push(aShape[dim]);
     }
   }
-  const reduceShape = axis.map(dim => a.shape[dim]);
+  const reduceShape = axis.map(dim => aShape[dim]);
   return [outShape, reduceShape];
 }

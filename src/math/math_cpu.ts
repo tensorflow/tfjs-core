@@ -1042,7 +1042,8 @@ function sumAll(ndarray: NDArray): Scalar {
 }
 
 function reduceSum(a: NDArray, axis: number[]): NDArray {
-  const [outShape, reduceShape] = axis_util.computeOutAndReduceShapes(a, axis);
+  const [outShape, reduceShape] =
+      axis_util.computeOutAndReduceShapes(a.shape, axis);
   const results = NDArray.zeros(outShape);
   const reduceMock = NDArray.make(reduceShape, {values: null});
 
