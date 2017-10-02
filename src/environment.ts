@@ -176,8 +176,14 @@ const DEEPLEARNJS_FLAGS_PREFIX = 'dljsflags';
 function getFeaturesFromURLOrKarma(): Features {
   const features: Features = {};
 
+  if (typeof window === 'undefined') {
+    return features;
+  }
+
   let paramsStr: string;
+  // tslint:disable-next-line:no-any
   if ((window as any).__karma__ != null) {
+    // tslint:disable-next-line:no-any
     paramsStr = (window as any).__karma__.config.args[0];
   } else {
     const urlParams = util.getQueryParams(window.location.search);
