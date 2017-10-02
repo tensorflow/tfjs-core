@@ -15,7 +15,11 @@
  * =============================================================================
  */
 
-import {ENV} from './environment';
+import * as environment from './environment';
+import {ENV, Environment, Features} from './environment';
+import {NDArrayMath} from './math/math';
+import {NDArrayMathCPU} from './math/math_cpu';
+import {NDArrayMathGPU} from './math/math_gpu';
 
 /** Accuracy for tests. */
 export const TEST_EPSILON =
@@ -104,4 +108,65 @@ export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
     d += a[i] * b[i];
   }
   return d;
+}
+
+export type MathTests =
+    (it: (name: string, testFn: (math: NDArrayMath) => void) => void) => void;
+
+export function describeMathCPU(
+    name: string, tests: MathTests[], featuresList?: Features[]) {
+  const testNameBase = 'math_cpu.' + name;
+  describeMathCommon(
+      testNameBase, tests, () => new NDArrayMathCPU(), featuresList);
+}
+
+export function describeMathGPU(
+    name: string, tests: MathTests[], featuresList?: Features[]) {
+  const testNameBase = 'math_gpu.' + name;
+  describeMathCommon(
+      testNameBase, tests, () => new NDArrayMathGPU(), featuresList);
+}
+
+function describeMathCommon(
+    testNameBase: string, tests: MathTests[], mathFactory: () => NDArrayMath,
+    featuresList?: Features[]) {
+  if (featuresList != null) {
+    featuresList.forEach(features => {
+      const testName = testNameBase + ' ' + JSON.stringify(features);
+      executeMathTests(testName, tests, mathFactory);
+    });
+  } else {
+    executeMathTests(testNameBase, tests, mathFactory);
+  }
+}
+
+export function executeMathTests(
+    testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
+    features?: Features) {
+  describe(testName, () => {
+    let math: NDArrayMath;
+    const itWrapper = (name: string, testFunc: (math: NDArrayMath) => void) => {
+      it(name, () => testFunc(math));
+    };
+
+    beforeEach(() => {
+      math = mathFactory();
+      math.startScope();
+
+      if (features != null) {
+        environment.setEnvironment(new Environment(features));
+      }
+    });
+
+    afterEach(() => {
+      math.endScope(null);
+      math.dispose();
+
+      if (features != null) {
+        environment.setEnvironment(new Environment());
+      }
+    });
+
+    tests.forEach(test => test(itWrapper));
+  });
 }
