@@ -999,23 +999,6 @@ describe('softmax', () => {
   });
 });
 
-describe('NDArrayMathCPU sum', () => {
-  let math: NDArrayMathCPU;
-  beforeEach(() => {
-    math = new NDArrayMathCPU();
-  });
-
-  it('sums values in ndarray', () => {
-    const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-    expect(math.sum(a).get()).toBe(7);
-  });
-
-  it('propagates NaNs', () => {
-    const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
-    expect(math.sum(a).get()).toEqual(NaN);
-  });
-});
-
 describe('NDArrayMathCPU unary ops', () => {
   let math: NDArrayMathCPU;
   beforeEach(() => {

@@ -17,13 +17,13 @@
 
 import * as seedrandom from 'seedrandom';
 import * as util from '../util';
-import * as axis_util from './axis_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath} from './math';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+import * as sum_cpu from './sum_cpu';
 
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
@@ -324,15 +324,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  protected sumInternal<T extends NDArray>(
-      a: NDArray, axis: number[], keepDims: boolean): T {
-    if (axis.length === a.rank) {
-      return sumAll(a) as T;
-    }
-    if (axis_util.axisHasInnerMostDims(axis, a.rank)) {
-      // TODO
-    }
-    return reduceSum(a, axis) as T;
+  protected sumInternal<T extends NDArray>(a: NDArray, axis: number[]): T {
+    return sum_cpu.sum(a, axis) as T;
   }
 
   protected argMinInternal(ndarray: NDArray): Scalar {
@@ -1030,33 +1023,4 @@ export class NDArrayMathCPU extends NDArrayMath {
     }
     return Array2D.new([indices.size, depth], res);
   }
-}
-
-function sumAll(ndarray: NDArray): Scalar {
-  let sum = 0;
-  const values = ndarray.getValues();
-  for (let i = 0; i < values.length; ++i) {
-    sum += values[i];
-  }
-  return Scalar.new(sum);
-}
-
-function reduceSum(a: NDArray, axis: number[]): NDArray {
-  const [outShape, reduceShape] =
-      axis_util.computeOutAndReduceShapes(a.shape, axis);
-  const results = NDArray.zeros(outShape);
-  const reduceMock = NDArray.make(reduceShape, {values: null});
-
-  const vals = results.getValues();
-  for (let i = 0; i < vals.length; i++) {
-    const outLoc = results.indexToLoc(i);
-    let sum = 0;
-    for (let j = 0; j < reduceMock.size; j++) {
-      const reduceLoc = reduceMock.indexToLoc(j);
-      const loc = axis_util.computeLocation(outLoc, reduceLoc, axis);
-      sum += a.get(...loc);
-    }
-    vals[i] = sum;
-  }
-  return results;
 }

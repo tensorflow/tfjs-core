@@ -16,6 +16,7 @@
  */
 
 import * as util from '../util';
+import * as axis_util from './axis_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -600,12 +601,23 @@ export abstract class NDArrayMath {
    */
   sum<T extends NDArray>(
       ndarray: NDArray, axis: number[] = null, keepDims = false): T {
-    // TODO normalize the params.
-    return this.executeOp(
-        'sum', () => this.sumInternal(ndarray, axis, keepDims));
+    if (axis == null) {
+      axis = ndarray.shape.map((v, i) => i);
+    }
+    return this.executeOp('sum', () => {
+      const res = this.sumInternal(ndarray, axis);
+      if (keepDims) {
+        const outSubShape = res.shape;
+        const reduceSubShape = axis.map(x => 1);
+        const newShape =
+            axis_util.computeLocation(outSubShape, reduceSubShape, axis);
+        return res.reshape(newShape) as T;
+      }
+      return res as T;
+    });
   }
   protected abstract sumInternal<T extends NDArray>(
-      ndarray: NDArray, axis: number[], keepDims: boolean): T;
+      ndarray: NDArray, axis: number[]): T;
 
   /**
    * Computes the sum of the entries in 1D array.

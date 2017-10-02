@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-export type Vector = number[] | Float64Array | Float32Array | Int32Array |
-    Int8Array | Int16Array;
+export type Vector =
+    number[]|Float64Array|Float32Array|Int32Array|Int8Array|Int16Array;
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -106,12 +106,7 @@ export function flatten(arr: any[], ret?: number[]): number[] {
 }
 
 export type ArrayData =
-    Float32Array |
-        number |
-        number[] |
-        number[][] |
-        number[][][] |
-        number[][][][];
+    Float32Array|number|number[]|number[][]|number[][][]|number[][][][];
 
 export function inferShape(arr: ArrayData): number[] {
   const shape: number[] = [];
