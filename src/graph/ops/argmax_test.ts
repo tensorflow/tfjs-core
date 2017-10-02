@@ -50,7 +50,7 @@ describe('Argmax oper', () => {
     const yVal = tensorArrayMap.get(y);
 
     expect(yVal.shape).toEqual([]);
-    expect(yVal.get()).toEqual(1);
+    expect(yVal.get()).toBeCloseTo(1);
   });
 
   it('argmax of Array2D', () => {
@@ -64,6 +64,6 @@ describe('Argmax oper', () => {
     const yVal = tensorArrayMap.get(y);
 
     expect(yVal.shape).toEqual([]);
-    expect(yVal.get()).toEqual(4);
+    expect(yVal.get()).toBeCloseTo(4);
   });
 });

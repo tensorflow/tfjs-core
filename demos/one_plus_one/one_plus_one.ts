@@ -22,6 +22,10 @@ const math = new NDArrayMathGPU();
 const a = Scalar.new(1);
 const b = Scalar.new(1);
 
+// const result = math.add(a, b).get();
+a.getTexture();
 const result = math.add(a, b).get();
+console.log(b);
+console.log(math);
 
 document.getElementById('output').innerText = '' + result;

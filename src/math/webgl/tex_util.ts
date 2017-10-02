@@ -40,7 +40,7 @@ export function getMatrixSizeFromUnpackedArraySize(
   return unpackedSize / channelsPerTexture;
 }
 
-export type TypedArray = Float32Array | Uint8Array;
+export type TypedArray = Float32Array|Uint8Array;
 
 export function encodeMatrixToUnpackedArray(
     matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {
@@ -48,8 +48,8 @@ export function encodeMatrixToUnpackedArray(
       getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture);
   if (unpackedArray.length < requiredSize) {
     throw new Error(
-        'unpackedArray length (' + unpackedArray.length + ') must be >= ' +
-        requiredSize);
+        'unpackedArray length (' + unpackedArray.length +
+        ') must be >= ' + requiredSize);
   }
   let dst = 0;
   for (let src = 0; src < matrix.length; ++src) {
@@ -58,17 +58,26 @@ export function encodeMatrixToUnpackedArray(
   }
 }
 
-export const FLOAT_MAX = 10000;
+export const FLOAT_MAX = 20000;
 export const FLOAT_MIN = -FLOAT_MAX;
 const FLOAT_RANGE = (FLOAT_MAX - FLOAT_MIN) / 255;
 
 const FLOAT_DELTAS = [1, 1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255)];
 const FLOAT_POWERS = [1, 255, 255 * 255];
 
+const BYTE_NAN_VALUE = 254;
 export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
   const uintArray = new Uint8Array(floatArray.length * 4);
   for (let i = 0; i < uintArray.length; i += 4) {
     const value = floatArray[i / 4];
+    if (isNaN(value)) {
+      uintArray[i] = BYTE_NAN_VALUE;
+      uintArray[i + 1] = BYTE_NAN_VALUE;
+      uintArray[i + 2] = BYTE_NAN_VALUE;
+      uintArray[i + 3] = BYTE_NAN_VALUE;
+      continue;
+    }
+
     const normalizedValue = (value - FLOAT_MIN) / FLOAT_RANGE;
     const enc = FLOAT_POWERS.map(pow => pow * normalizedValue);
     const buckets = enc.map(value => Math.floor((value % 1) * 255));
@@ -84,6 +93,16 @@ export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
 export function decodeToFloatArray(uintArray: Uint8Array): Float32Array {
   const floatArray = new Float32Array(uintArray.length / 4);
   for (let i = 0; i < uintArray.length; i += 4) {
+    // console.log(
+    //    uintArray[i], uintArray[i + 1], uintArray[i + 2], uintArray[i + 3]);
+    if (uintArray[i] === BYTE_NAN_VALUE &&
+        uintArray[i + 1] === BYTE_NAN_VALUE &&
+        uintArray[i + 2] === BYTE_NAN_VALUE &&
+        uintArray[i + 3] === BYTE_NAN_VALUE) {
+      floatArray[i / 4] = NaN;
+      continue;
+    }
+
     let dot = 0;
     FLOAT_DELTAS.forEach((delta, j) => {
       dot += delta * uintArray[i + j];
@@ -126,8 +145,8 @@ export function encodeMatrixToPackedRGBA(
   const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
   if (packedRGBA.length < requiredSize) {
     throw new Error(
-        'packedRGBA length (' + packedRGBA.length + ') must be >= ' +
-        requiredSize);
+        'packedRGBA length (' + packedRGBA.length +
+        ') must be >= ' + requiredSize);
   }
   /*
     Unpacked matrix, row-major order in Float32Array[16]:  A B C D

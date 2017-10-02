@@ -65,8 +65,8 @@ describe('copy_gpu', () => {
     const result = uploadCopyDownload(
         source, [1, 2], [0, 0], [1, 2], [0, 0], [1, 2], dest, [1, 2]);
     expect(result.length).toEqual(2);
-    expect(result[0]).toEqual(1);
-    expect(result[1]).toEqual(2);
+    expect(result[0]).toBeCloseTo(1);
+    expect(result[1]).toBeCloseTo(2);
   });
 
   it('copies a 2x1 source to a 2x1 dest', () => {
@@ -75,8 +75,8 @@ describe('copy_gpu', () => {
     const result = uploadCopyDownload(
         source, [2, 1], [0, 0], [2, 1], [0, 0], [2, 1], dest, [2, 1]);
     expect(result.length).toEqual(2);
-    expect(result[0]).toEqual(1);
-    expect(result[1]).toEqual(2);
+    expect(result[0]).toBeCloseTo(1);
+    expect(result[1]).toBeCloseTo(2);
   });
 
   it('copies a 2x2 source to a 2x2 dest', () => {
@@ -85,10 +85,10 @@ describe('copy_gpu', () => {
     const result = uploadCopyDownload(
         source, [2, 2], [0, 0], [2, 2], [0, 0], [2, 2], dest, [2, 2]);
     expect(result.length).toEqual(4);
-    expect(result[0]).toEqual(1);
-    expect(result[1]).toEqual(2);
-    expect(result[2]).toEqual(3);
-    expect(result[3]).toEqual(4);
+    expect(result[0]).toBeCloseTo(1);
+    expect(result[1]).toBeCloseTo(2);
+    expect(result[2]).toBeCloseTo(3);
+    expect(result[3]).toBeCloseTo(4);
   });
 
   it('copies inner 2x2 from a 4x4 source to a 2x2 dest', () => {
@@ -101,10 +101,10 @@ describe('copy_gpu', () => {
     const result = uploadCopyDownload(
         source, [4, 4], [1, 1], [2, 2], [0, 0], [2, 2], dest, [2, 2]);
     expect(result.length).toEqual(4);
-    expect(result[0]).toEqual(10);
-    expect(result[1]).toEqual(11);
-    expect(result[2]).toEqual(12);
-    expect(result[3]).toEqual(13);
+    expect(result[0]).toBeCloseTo(10);
+    expect(result[1]).toBeCloseTo(11);
+    expect(result[2]).toBeCloseTo(12);
+    expect(result[3]).toBeCloseTo(13);
   });
 
   it('copies a 1x4 row from source into a 2x2 dest', () => {
@@ -113,10 +113,10 @@ describe('copy_gpu', () => {
     const result = uploadCopyDownload(
         source, [1, 4], [0, 0], [1, 4], [0, 0], [2, 2], dest, [2, 2]);
     expect(result.length).toEqual(4);
-    expect(result[0]).toEqual(1);
-    expect(result[1]).toEqual(2);
-    expect(result[2]).toEqual(3);
-    expect(result[3]).toEqual(4);
+    expect(result[0]).toBeCloseTo(1);
+    expect(result[1]).toBeCloseTo(2);
+    expect(result[2]).toBeCloseTo(3);
+    expect(result[3]).toBeCloseTo(4);
   });
 
   it('copies a 1x4 row from source into a 4x1 dest', () => {
@@ -125,10 +125,10 @@ describe('copy_gpu', () => {
     const result = uploadCopyDownload(
         source, [1, 4], [0, 0], [1, 4], [0, 0], [4, 1], dest, [4, 1]);
     expect(result.length).toEqual(4);
-    expect(result[0]).toEqual(1);
-    expect(result[1]).toEqual(2);
-    expect(result[2]).toEqual(3);
-    expect(result[3]).toEqual(4);
+    expect(result[0]).toBeCloseTo(1);
+    expect(result[1]).toBeCloseTo(2);
+    expect(result[2]).toBeCloseTo(3);
+    expect(result[3]).toBeCloseTo(4);
   });
 
   it('copies a column from source into a dest row vector', () => {
@@ -149,7 +149,7 @@ describe('copy_gpu', () => {
     const result = uploadCopyDownload(
         source, [1, 1], [0, 0], [1, 1], [0, 1], [1, 1], dest, [1, 2]);
     expect(result[0]).toBeCloseTo(Math.PI);
-    expect(result[1]).toEqual(1);
+    expect(result[1]).toBeCloseTo(1);
   });
 
   it('accumulates results from previous copies into dest texture', () => {
@@ -159,7 +159,6 @@ describe('copy_gpu', () => {
     for (let i = 0; i < 100; ++i) {
       sourceVals[i] = i;
     }
-
 
     const gpgpu = new GPGPUContext();
     const texManager = new TextureManager(gpgpu);

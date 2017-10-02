@@ -305,6 +305,6 @@ describe('tex_util_float_packing', () => {
     const matrix = new Float32Array(elements);
     const uintArray = tex_util.encodeFloatArray(matrix);
     const floatArray = tex_util.decodeToFloatArray(uintArray);
-    test_util.expectArraysClose(matrix, floatArray, 1e-5);
+    test_util.expectArraysClose(matrix, floatArray);
   });
 });

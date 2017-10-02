@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import * as test_util from '../test_util';
+
 import * as ndarray from './ndarray';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -44,10 +46,10 @@ describe('NDArray', () => {
     expect(t instanceof Array1D).toBe(true);
     expect(t.rank).toBe(1);
     expect(t.size).toBe(3);
-    expect(t.getValues()).toEqual(new Float32Array([1, 2, 3]));
-    expect(t.get(0)).toBe(1);
-    expect(t.get(1)).toBe(2);
-    expect(t.get(2)).toBe(3);
+    test_util.expectArraysClose(t.getValues(), new Float32Array([1, 2, 3]));
+    expect(t.get(0)).toBeCloseTo(1);
+    expect(t.get(1)).toBeCloseTo(2);
+    expect(t.get(2)).toBeCloseTo(3);
     // Out of bounds indexing.
     expect(t.get(4)).toBeUndefined();
 
@@ -56,9 +58,9 @@ describe('NDArray', () => {
     expect(t instanceof Array2D).toBe(true);
     expect(t.rank).toBe(2);
     expect(t.size).toBe(3);
-    expect(t.get(0, 0)).toBe(1);
-    expect(t.get(0, 1)).toBe(2);
-    expect(t.get(0, 2)).toBe(3);
+    expect(t.get(0, 0)).toBeCloseTo(1);
+    expect(t.get(0, 1)).toBeCloseTo(2);
+    expect(t.get(0, 2)).toBeCloseTo(3);
     // Out of bounds indexing.
     expect(t.get(4)).toBeUndefined();
 
@@ -132,7 +134,8 @@ describe('NDArray', () => {
 
     expect(a.inGPU()).toBe(false);
 
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+    test_util.expectArraysClose(
+        a.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
 
     expect(a.inGPU()).toBe(false);
 
@@ -151,7 +154,8 @@ describe('NDArray', () => {
     const a = new Array2D([3, 2], {texture, textureShapeRC: [3, 2]});
     expect(a.inGPU()).toBe(true);
 
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+    test_util.expectArraysClose(
+        a.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
     expect(a.inGPU()).toBe(false);
   });
 
@@ -161,7 +165,7 @@ describe('NDArray', () => {
     expect(a.inGPU()).toBe(false);
 
     a.getValuesAsync().then(values => {
-      expect(values).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+      test_util.expectArraysClose(values, new Float32Array([1, 2, 3, 4, 5, 6]));
 
       expect(a.inGPU()).toBe(false);
 
@@ -183,7 +187,7 @@ describe('NDArray', () => {
     expect(a.inGPU()).toBe(true);
 
     a.getValuesAsync().then(values => {
-      expect(values).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+      test_util.expectArraysClose(values, new Float32Array([1, 2, 3, 4, 5, 6]));
       expect(a.inGPU()).toBe(false);
       doneFn();
     });
@@ -192,7 +196,7 @@ describe('NDArray', () => {
   it('Scalar basic methods', () => {
     const a = Scalar.new(5);
     expect(a.get()).toBe(5);
-    expect(a.getValues()).toEqual(new Float32Array([5]));
+    test_util.expectArraysClose(a.getValues(), new Float32Array([5]));
     expect(a.rank).toBe(0);
     expect(a.size).toBe(1);
     expect(a.shape).toEqual([]);
@@ -204,7 +208,7 @@ describe('NDArray', () => {
 
     const a = new Scalar({texture});
     expect(a.inGPU()).toBe(true);
-    expect(a.getValues()).toEqual(new Float32Array([10]));
+    test_util.expectArraysClose(a.getValues(), new Float32Array([10]));
     expect(a.inGPU()).toBe(false);
   });
 
@@ -214,7 +218,7 @@ describe('NDArray', () => {
 
     const a = new Array1D({texture, textureShapeRC: [1, 3]});
     expect(a.inGPU()).toBe(true);
-    expect(a.getValues()).toEqual(new Float32Array([10, 7, 3]));
+    test_util.expectArraysClose(a.getValues(), new Float32Array([10, 7, 3]));
     expect(a.inGPU()).toBe(false);
   });
 
@@ -242,7 +246,8 @@ describe('NDArray', () => {
     const a = new Array2D([2, 2], {texture, textureShapeRC: [2, 2]});
     const a1d = a.as1D();
 
-    expect(a1d.getValues()).toEqual(new Float32Array([10, 7, 3, 5]));
+    test_util.expectArraysClose(
+        a1d.getValues(), new Float32Array([10, 7, 3, 5]));
   });
 
   it('Array1D in GPU, reshaped to Array2D', () => {
@@ -252,7 +257,8 @@ describe('NDArray', () => {
     const a = new Array1D({texture, textureShapeRC: [1, 4]});
     const a2d = a.as2D(2, 2);
 
-    expect(a2d.getValues()).toEqual(new Float32Array([10, 7, 3, 5]));
+    test_util.expectArraysClose(
+        a2d.getValues(), new Float32Array([10, 7, 3, 5]));
   });
 
   it('Array2D in GPU with custom texture shape', () => {
@@ -261,7 +267,7 @@ describe('NDArray', () => {
 
     const a = new Array2D([2, 2], {texture, textureShapeRC: [4, 1]});
 
-    expect(a.getValues()).toEqual(new Float32Array([10, 7, 3, 5]));
+    test_util.expectArraysClose(a.getValues(), new Float32Array([10, 7, 3, 5]));
   });
 
   it('index2Loc Array1D', () => {
@@ -330,7 +336,7 @@ describe('NDArray', () => {
 describe('NDArray.new method', () => {
   it('Array1D.new() from number[]', () => {
     const a = Array1D.new([1, 2, 3]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3]));
+    test_util.expectArraysClose(a.getValues(), new Float32Array([1, 2, 3]));
   });
 
   it('Array1D.new() from number[][], shape mismatch', () => {
@@ -340,7 +346,8 @@ describe('NDArray.new method', () => {
 
   it('Array2D.new() from number[][]', () => {
     const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+    test_util.expectArraysClose(
+        a.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
   it('Array2D.new() from number[][], but shape does not match', () => {
@@ -350,7 +357,8 @@ describe('NDArray.new method', () => {
 
   it('Array3D.new() from number[][][]', () => {
     const a = Array3D.new([2, 3, 1], [[[1], [2], [3]], [[4], [5], [6]]]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+    test_util.expectArraysClose(
+        a.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
   it('Array3D.new() from number[][][], but shape does not match', () => {
@@ -361,7 +369,7 @@ describe('NDArray.new method', () => {
 
   it('Array4D.new() from number[][][][]', () => {
     const a = Array4D.new([2, 2, 1, 1], [[[[1]], [[2]]], [[[4]], [[5]]]]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 4, 5]));
+    test_util.expectArraysClose(a.getValues(), new Float32Array([1, 2, 4, 5]));
   });
 
   it('Array4D.new() from number[][][][], but shape does not match', () => {

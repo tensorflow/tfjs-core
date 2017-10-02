@@ -53,13 +53,13 @@ export function makeShader(
 function getSampleSnippet() {
   return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
       FLOAT_TEXTURE_SAMPLE_SNIPPET :
-      INTEGER_TEXTURE_SAMPLE_SNIPPET;
+      UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET;
 }
 
 function getSetOutputSnippet() {
   return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
       FLOAT_TEXTURE_SETOUTPUT_SNIPPET :
-      INTEGER_TEXTURE_SETOUTPUT_SNIPPET;
+      UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET;
 }
 
 function getInputSamplingSnippet(
@@ -165,7 +165,9 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
 }
 `;
 
-const INTEGER_TEXTURE_SAMPLE_SNIPPET = `
+const UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET = `
+  uniform float NaN;
+
   const vec4 floatDeltas = vec4(
       1.0,
       1.0 / 255.0,
@@ -178,13 +180,18 @@ const INTEGER_TEXTURE_SAMPLE_SNIPPET = `
   const vec2 dotRange = vec2(1.0, range);
 
   float sample(sampler2D texture, vec2 uv) {
-    vec4 encValue = floor(texture2D(texture, uv) * 255.0 + 0.5);
+    vec4 sampleValue = texture2D(texture, uv);
+    if (all(equal(sampleValue, vec4(1)))) {
+      return NaN;
+    }
+
+    vec4 encValue = floor(sampleValue * 255.0 + 0.5);
     float decodedValue = dot(encValue, floatDeltas);
     return dot(vec2(minValue, decodedValue), dotRange);
   }
 `;
 
-const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
+const UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET = `
   const vec4 floatPowers = vec4(
     1.0,
     255.0,
@@ -195,6 +202,11 @@ const INTEGER_TEXTURE_SETOUTPUT_SNIPPET = `
   const vec2 recipRange255 = vec2(1.0/(maxValue - minValue));
 
   void setOutput(float decodedValue) {
+    if (isNaN(decodedValue)) {
+      gl_FragColor = vec4(254.0/255.0);
+      return;
+    }
+
     float a = dot(vec2(decodedValue, -minValue), recipRange);
     float b = fract(a) * 255.0;
     float c = fract(b) * 255.0;
@@ -230,7 +242,7 @@ const SHADER_PREFIX = `
   const vec2 halfCR = vec2(0.5, 0.5);
 
   bool isNaN(float val) {
-    return val == val ? false : true;
+    return val >= ${tex_util.FLOAT_MAX}.0 || (val == val ? false : true);
   }
 
   bool hasNaN(vec4 values) {

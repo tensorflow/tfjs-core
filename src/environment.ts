@@ -173,39 +173,53 @@ export class Environment {
 
 // Expects flags from URL in the format ?dljsflags=FLAG1:1,FLAG2:true.
 const DEEPLEARNJS_FLAGS_PREFIX = 'dljsflags';
-function getFeaturesFromURL(): Features {
+function getFeaturesFromURLOrKarma(): Features {
   const features: Features = {};
 
-  const urlParams = util.getQueryParams(window.location.search);
-  if (DEEPLEARNJS_FLAGS_PREFIX in urlParams) {
-    const urlFlags: {[key: string]: string} = {};
+  let paramsStr: string;
+  if ((window as any).__karma__ != null) {
+    paramsStr = (window as any).__karma__.config.args[0];
+  } else {
+    const urlParams = util.getQueryParams(window.location.search);
 
-    const keyValues = urlParams[DEEPLEARNJS_FLAGS_PREFIX].split(',');
-    keyValues.forEach(keyValue => {
-      const [key, value] = keyValue.split(':') as [string, string];
-      urlFlags[key] = value;
-    });
+    if (!(DEEPLEARNJS_FLAGS_PREFIX in urlParams)) {
+      return features;
+    }
 
-    URL_PROPERTIES.forEach(urlProperty => {
-      if (urlProperty.name in urlFlags) {
-        console.log(
-            `Setting feature override from URL ${urlProperty.name}: ` +
-            `${urlFlags[urlProperty.name]}`);
-        if (urlProperty.type === Type.NUMBER) {
-          features[urlProperty.name] = +urlFlags[urlProperty.name];
-        } else if (urlProperty.type === Type.BOOLEAN) {
-          features[urlProperty.name] = urlFlags[urlProperty.name] === 'true';
-        } else {
-          console.warn(`Unknown URL param: ${urlProperty.name}.`);
-        }
-      }
-    });
+    paramsStr = urlParams[DEEPLEARNJS_FLAGS_PREFIX];
   }
+  if (paramsStr == null) {
+    return features;
+  }
+
+  const urlFlags: {[key: string]: string} = {};
+
+  const keyValues = paramsStr.split(',');
+  keyValues.forEach(keyValue => {
+    const [key, value] = keyValue.split(':') as [string, string];
+    urlFlags[key] = value;
+  });
+
+  URL_PROPERTIES.forEach(urlProperty => {
+    if (urlProperty.name in urlFlags) {
+      console.log(
+          `Setting feature override from URL ${urlProperty.name}: ` +
+          `${urlFlags[urlProperty.name]}`);
+      if (urlProperty.type === Type.NUMBER) {
+        features[urlProperty.name] = +urlFlags[urlProperty.name];
+      } else if (urlProperty.type === Type.BOOLEAN) {
+        features[urlProperty.name] = urlFlags[urlProperty.name] === 'true';
+      } else {
+        console.warn(`Unknown URL param: ${urlProperty.name}.`);
+      }
+    }
+  });
+
 
   return features;
 }
 
-export let ENV = new Environment(getFeaturesFromURL());
+export let ENV = new Environment(getFeaturesFromURLOrKarma());
 
 export function setEnvironment(environment: Environment) {
   ENV = environment;

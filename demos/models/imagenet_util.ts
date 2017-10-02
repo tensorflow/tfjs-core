@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {GPGPUContext, webgl_util} from '../deeplearn';
+import {ENV, GPGPUContext, webgl_util} from '../deeplearn';
 
 /**
  * Unpacks an RGB packed image texture into a 2D physical, 3D logical texture
@@ -24,6 +24,40 @@ import {GPGPUContext, webgl_util} from '../deeplearn';
  */
 export function getUnpackAndPreprocessInputShader(
     gpgpu: GPGPUContext, inputShapeRC: [number, number]): WebGLProgram {
+  let setOutputSnippet: string;
+
+  if (ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED')) {
+    setOutputSnippet = `
+      void setOutput(float decodedValue) {
+        gl_FragColor = vec4(decodedValue, 0, 0, 0);
+      }
+    `;
+  } else {
+    setOutputSnippet = `
+      const vec4 floatPowers = vec4(
+        1.0,
+        255.0,
+        255.0 * 255.0,
+        255.0 * 255.0 * 255.0
+      );
+
+      const float maxValue = 20000.0;
+      const float minValue = -maxValue;
+      const float range = (maxValue - minValue) / 255.0;
+
+      const vec2 recipRange = vec2(1.0/range);
+      const vec2 recipRange255 = vec2(1.0/(maxValue - minValue));
+
+      void setOutput(float decodedValue) {
+        float a = dot(vec2(decodedValue, -minValue), recipRange);
+        float b = fract(a) * 255.0;
+        float c = fract(b) * 255.0;
+        float d = fract(c) * 255.0;
+        gl_FragColor = floor(vec4(a, b, c, d)) / 255.0;
+      }
+    `;
+  }
+
   const fragmentShaderSource = `
     precision highp float;
     uniform sampler2D source;
@@ -32,6 +66,8 @@ export function getUnpackAndPreprocessInputShader(
     const vec2 inputShapeCR = vec2(${inputShapeRC[1]}.0, ${inputShapeRC[0]}.0);
 
     const vec2 halfCR = vec2(0.5, 0.5);
+
+    ${setOutputSnippet}
 
     void main() {
       vec2 outputCR = floor(gl_FragCoord.xy);
@@ -52,8 +88,9 @@ export function getUnpackAndPreprocessInputShader(
         channelValue = sourceValue.b - 123.68;
       }
 
-      gl_FragColor = vec4(channelValue, 0, 0, 0);
+      setOutput(channelValue);
     }`;
+
   return gpgpu.createProgram(fragmentShaderSource);
 }
 

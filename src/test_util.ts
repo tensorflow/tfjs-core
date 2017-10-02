@@ -15,11 +15,19 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
+
 /** Accuracy for tests. */
-const EPSILON = 1e-4;
+export const TEST_EPSILON =
+    ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ? 1e-4 : 1e-2;
+
+export const TEST_LOW_PRECISION =
+    ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ? 3 : 1;
+
+export const TEST_LOW_PRECISION_EPSILON = 1 / Math.pow(10, TEST_LOW_PRECISION);
 
 export function expectArraysClose(
-    actual: Float32Array, expected: Float32Array, epsilon = EPSILON) {
+    actual: Float32Array, expected: Float32Array, epsilon = TEST_EPSILON) {
   if (actual.length !== expected.length) {
     throw new Error(
         'Matrices have different lengths (' + actual.length + ' vs ' +

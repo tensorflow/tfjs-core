@@ -47,7 +47,8 @@ describe('NDArrayMathGPU scope', () => {
       // disposed.
       expect(math.getTextureManager().getNumUsedTextures())
           .toEqual(numUsedTexturesBefore + 3);
-      expect(result.getValues()).toEqual(new Float32Array([4, 8, 12]));
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([4, 8, 12]));
     });
 
     // a, b are new textures, result should be disposed.
@@ -73,8 +74,10 @@ describe('NDArrayMathGPU scope', () => {
       // disposed.
       expect(math.getTextureManager().getNumUsedTextures())
           .toEqual(numUsedTexturesBefore + 4);
-      expect(result[0].getValues()).toEqual(new Float32Array([1, 1, 4]));
-      expect(result[1].getValues()).toEqual(new Float32Array([1, 3, 2]));
+      test_util.expectArraysClose(
+          result[0].getValues(), new Float32Array([1, 1, 4]));
+      test_util.expectArraysClose(
+          result[1].getValues(), new Float32Array([1, 3, 2]));
     });
 
     // a, b are new textures, result should be disposed.
@@ -140,7 +143,8 @@ describe('NDArrayMathGPU scope', () => {
       // disposed.
       expect(math.getTextureManager().getNumUsedTextures())
           .toEqual(numUsedTexturesBefore + 3);
-      expect(result.getValues()).toEqual(new Float32Array([4, 8, 12]));
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([4, 8, 12]));
     });
     // a, b, are new textures, result should be disposed.
     expect(math.getTextureManager().getNumUsedTextures())
@@ -164,7 +168,7 @@ describe('NDArrayMathGPU clone', () => {
     const a = Array2D.new([3, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9]);
     const aPrime = math.clone(a);
     expect(aPrime.shape).toEqual(a.shape);
-    expect(aPrime.getValues()).toEqual(a.getValues());
+    test_util.expectArraysClose(aPrime.getValues(), a.getValues());
     a.dispose();
   });
 
@@ -178,7 +182,7 @@ describe('NDArrayMathGPU clone', () => {
   });
 });
 
-describe('NDArrayMathCPU slice1D', () => {
+describe('NDArrayMathGPU slice1D', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
     math = new NDArrayMathGPU();
@@ -194,21 +198,22 @@ describe('NDArrayMathCPU slice1D', () => {
     const a = Array1D.new([5]);
     const result = math.slice1D(a, 0, 1);
     expect(result.shape).toEqual([1]);
-    expect(result.get(0)).toBe(5);
+    expect(result.get(0)).toBeCloseTo(5);
   });
 
   it('slices 5x1 into shape 2x1 starting at 3', () => {
     const a = Array1D.new([1, 2, 3, 4, 5]);
     const result = math.slice1D(a, 3, 2);
     expect(result.shape).toEqual([2]);
-    expect(result.getValues()).toEqual(new Float32Array([4, 5]));
+    test_util.expectArraysClose(result.getValues(), new Float32Array([4, 5]));
   });
 
   it('slices 5x1 into shape 3x1 starting at 1', () => {
     const a = Array1D.new([1, 2, 3, 4, 5]);
     const result = math.slice1D(a, 1, 3);
     expect(result.shape).toEqual([3]);
-    expect(result.getValues()).toEqual(new Float32Array([2, 3, 4]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([2, 3, 4]));
   });
 });
 
@@ -252,7 +257,7 @@ describe('NDArrayMathGPU slice2D', () => {
     const a = Array2D.new([4, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     const b = math.slice2D(a, [1, 1], [3, 2]);
     const expected = new Float32Array([5, 6, 8, 9, 11, 12]);
-    expect(b.getValues()).toEqual(expected);
+    test_util.expectArraysClose(b.getValues(), expected);
     a.dispose();
   });
 
@@ -263,7 +268,7 @@ describe('NDArrayMathGPU slice2D', () => {
   });
 });
 
-describe('NDArrayMathCPU slice3D', () => {
+describe('NDArrayMathGPU slice3D', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
     math = new NDArrayMathGPU();
@@ -279,25 +284,26 @@ describe('NDArrayMathCPU slice3D', () => {
     const a = Array3D.new([1, 1, 1], [[[5]]]);
     const result = math.slice3D(a, [0, 0, 0], [1, 1, 1]);
     expect(result.shape).toEqual([1, 1, 1]);
-    expect(result.get(0, 0, 0)).toBe(5);
+    expect(result.get(0, 0, 0)).toBeCloseTo(5);
   });
 
   it('slices 2x2x2 array into 1x2x2 starting at [1, 0, 0]', () => {
     const a = Array3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
     const result = math.slice3D(a, [1, 0, 0], [1, 2, 2]);
     expect(result.shape).toEqual([1, 2, 2]);
-    expect(result.getValues()).toEqual(new Float32Array([5, 6, 7, 8]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([5, 6, 7, 8]));
   });
 
   it('slices 2x2x2 array into 2x1x1 starting at [0, 1, 1]', () => {
     const a = Array3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
     const result = math.slice3D(a, [0, 1, 1], [2, 1, 1]);
     expect(result.shape).toEqual([2, 1, 1]);
-    expect(result.getValues()).toEqual(new Float32Array([4, 8]));
+    test_util.expectArraysClose(result.getValues(), new Float32Array([4, 8]));
   });
 });
 
-describe('NDArrayMathCPU slice4D', () => {
+describe('NDArrayMathGPU slice4D', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
     math = new NDArrayMathGPU();
@@ -313,7 +319,7 @@ describe('NDArrayMathCPU slice4D', () => {
     const a = Array4D.new([1, 1, 1, 1], [[[[5]]]]);
     const result = math.slice4D(a, [0, 0, 0, 0], [1, 1, 1, 1]);
     expect(result.shape).toEqual([1, 1, 1, 1]);
-    expect(result.get(0, 0, 0, 0)).toBe(5);
+    expect(result.get(0, 0, 0, 0)).toBeCloseTo(5);
   });
 
   it('slices 2x2x2x2 array into 1x2x2x2 starting at [1, 0, 0, 0]', () => {
@@ -321,9 +327,8 @@ describe('NDArrayMathCPU slice4D', () => {
         [2, 2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88]);
     const result = math.slice4D(a, [1, 0, 0, 0], [1, 2, 2, 2]);
     expect(result.shape).toEqual([1, 2, 2, 2]);
-    expect(result.getValues()).toEqual(new Float32Array([
-      11, 22, 33, 44, 55, 66, 77, 88
-    ]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([11, 22, 33, 44, 55, 66, 77, 88]));
   });
 
   it('slices 2x2x2x2 array into 2x1x1x1 starting at [0, 1, 1, 1]', () => {
@@ -331,7 +336,7 @@ describe('NDArrayMathCPU slice4D', () => {
         [2, 2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88]);
     const result = math.slice4D(a, [0, 1, 1, 1], [2, 1, 1, 1]);
     expect(result.shape).toEqual([2, 1, 1, 1]);
-    expect(result.getValues()).toEqual(new Float32Array([8, 88]));
+    test_util.expectArraysClose(result.getValues(), new Float32Array([8, 88]));
   });
 });
 
@@ -363,9 +368,9 @@ describe('NDArrayMathGPU copy2D', () => {
     const source = Array2D.new([3, 4], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     const dest = Array2D.zeros([6, 2]);
     math.copy2D(source, [1, 1], [2, 3], dest, [2, 0], [3, 2]);
-    expect(dest.getValues()).toEqual(new Float32Array([
-      0, 0, 0, 0, 6, 7, 8, 10, 11, 12, 0, 0
-    ]));
+    test_util.expectArraysClose(
+        dest.getValues(),
+        new Float32Array([0, 0, 0, 0, 6, 7, 8, 10, 11, 12, 0, 0]));
     source.dispose();
     dest.dispose();
   });
@@ -415,7 +420,7 @@ describe('NDArrayMathGPU scaledNDArrayAdd', () => {
     const result = math.scaledArrayAdd<Array2D>(c1, a, c2, b);
 
     expect(result.shape).toEqual([2, 3]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     a.dispose();
     b.dispose();
@@ -433,7 +438,7 @@ describe('NDArrayMathGPU scaledNDArrayAdd', () => {
     const result = math.scaledArrayAdd<Array3D>(c1, a, c2, b);
 
     expect(result.shape).toEqual([2, 2, 2]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     a.dispose();
     b.dispose();
@@ -605,9 +610,10 @@ describe('NDArrayMathGPU concat3D', () => {
     const y = math.concat3D(x1, x2, axis);
 
     expect(y.shape).toEqual([3, 2, 3]);
-    expect(y.getValues()).toEqual(new Float32Array([
-      1, 11, 111, 2, 22, 222, 5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888
-    ]));
+    test_util.expectArraysClose(
+        y.getValues(), new Float32Array([
+          1, 11, 111, 2, 22, 222, 5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888
+        ]));
   });
 
   it('concat axis=1', () => {
@@ -618,9 +624,10 @@ describe('NDArrayMathGPU concat3D', () => {
     const result = math.concat3D(x1, x2, axis);
 
     expect(result.shape).toEqual([2, 3, 3]);
-    expect(result.getValues()).toEqual(new Float32Array([
-      1, 11, 111, 5, 55, 555, 6, 66, 666, 3, 33, 333, 7, 77, 777, 8, 88, 888
-    ]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([
+          1, 11, 111, 5, 55, 555, 6, 66, 666, 3, 33, 333, 7, 77, 777, 8, 88, 888
+        ]));
   });
 
   it('concat axis=2', () => {
@@ -631,10 +638,10 @@ describe('NDArrayMathGPU concat3D', () => {
     const result = math.concat3D(x1, x2, axis);
 
     expect(result.shape).toEqual([2, 2, 5]);
-    expect(result.getValues()).toEqual(new Float32Array([
-      1, 11, 5, 55, 555, 2, 22, 6, 66, 666,
-      3, 33, 7, 77, 777, 4, 44, 8, 88, 888
-    ]));
+    test_util.expectArraysClose(result.getValues(), new Float32Array([
+                                  1, 11, 5, 55, 555, 2, 22, 6, 66, 666,
+                                  3, 33, 7, 77, 777, 4, 44, 8, 88, 888
+                                ]));
   });
 
   it('concat throws when invalid non-axis shapes, axis=0', () => {
@@ -679,7 +686,8 @@ describe('NDArrayMathGPU matMul', () => {
     const b = Array2D.new([3, 2], [0, 1, -3, 2, 2, 1]);
     const c = math.matMul(a, b);
     expect(c.shape).toEqual([2, 2]);
-    expect(c.getValues()).toEqual(new Float32Array([0, 8, -3, 20]));
+    test_util.expectArraysClose(
+        c.getValues(), new Float32Array([0, 8, -3, 20]));
 
     a.dispose();
     b.dispose();
@@ -699,7 +707,8 @@ describe('NDArrayMathGPU matMul', () => {
     const result = math.matMul(a, b);
     expect(result.shape).toEqual([2, 2]);
     expect(result.getTextureShapeRC()).toEqual([2, 2]);
-    expect(result.getValues()).toEqual(new Float32Array([7, 5, 16, 17]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([7, 5, 16, 17]));
     a.dispose();
     b.dispose();
   });
@@ -731,7 +740,7 @@ describe('NDArrayMathGPU matMul', () => {
     const result = math.vectorTimesMatrix(v, matrix);
 
     const expected = new Float32Array([11, 16]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
     v.dispose();
     matrix.dispose();
     result.dispose();
@@ -746,7 +755,7 @@ describe('NDArrayMathGPU matMul', () => {
     const result = math.vectorTimesMatrix(v, matrix);
 
     const expected = new Float32Array([11, 16]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
     v.dispose();
     matrix.dispose();
   });
@@ -771,7 +780,7 @@ describe('NDArrayMathGPU matMul', () => {
     const result = math.matrixTimesVector(matrix, v);
 
     const expected = new Float32Array([8, 18]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
     matrix.dispose();
     v.dispose();
   });
@@ -785,7 +794,7 @@ describe('NDArrayMathGPU matMul', () => {
     v.fill(1);
     const result = math.matrixTimesVector(matrix, v);
     const expected = new Float32Array([maxTexSize + 4]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     matrix.dispose();
     v.dispose();
@@ -797,7 +806,7 @@ describe('NDArrayMathGPU matMul', () => {
     const result = math.matrixTimesVector(matrix, v);
 
     const expected = new Float32Array([NaN, NaN]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     matrix.dispose();
     v.dispose();
@@ -811,7 +820,7 @@ describe('NDArrayMathGPU matMul', () => {
     const result = math.matrixTimesVector(matrix, v);
 
     const expected = new Float32Array([8, 18]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
     matrix.dispose();
     v.dispose();
   });
@@ -835,7 +844,7 @@ describe('NDArrayMathGPU matMul', () => {
     const v2 = Array1D.new([2, 1]);
     const result = math.dotProduct(v1, v2);
 
-    expect(result.get()).toEqual(7);
+    expect(result.get()).toBeCloseTo(7);
     v1.dispose();
     v2.dispose();
     result.dispose();
@@ -861,7 +870,7 @@ describe('NDArrayMathGPU matMul', () => {
     expect(v2.getTextureShapeRC([1, 2])).toEqual([1, 2]);
 
     const result = math.dotProduct(v1, v2);
-    expect(result.get()).toEqual(7);
+    expect(result.get()).toBeCloseTo(7);
     v1.dispose();
     v2.dispose();
   });
@@ -894,7 +903,7 @@ describe('NDArrayMathGPU matMul', () => {
 
     const expected = new Float32Array([4, 2, 6, 3]);
     expect(result.shape).toEqual([2, 2]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
     v1.dispose();
     v2.dispose();
   });
@@ -911,7 +920,7 @@ describe('NDArrayMathGPU matMul', () => {
     const result = math.outerProduct(v1, v2);
     const expected = new Float32Array([4, 2, 6, 3]);
     expect(result.shape).toEqual([2, 2]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
     v1.dispose();
     v2.dispose();
   });
@@ -937,7 +946,7 @@ describe('NDArrayMathGPU element-wise mul/div', () => {
 
     expect(result.shape).toEqual([2, 2]);
     expect(result.inGPU()).toBe(true);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
     expect(result.inGPU()).toBe(false);
 
     a.dispose();
@@ -948,7 +957,7 @@ describe('NDArrayMathGPU element-wise mul/div', () => {
     const a = Array2D.new([2, 2], [1, 3, 4, 0]);
     const b = Array2D.new([2, 2], [NaN, 3, NaN, 3]);
     const result = math.elementWiseMul(a, b).getValues();
-    expect(result).toEqual(new Float32Array([NaN, 9, NaN, 0]));
+    test_util.expectArraysClose(result, new Float32Array([NaN, 9, NaN, 0]));
 
     a.dispose();
     b.dispose();
@@ -1095,7 +1104,8 @@ describe('NDArrayMathGPU unary ops', () => {
   it('relu', () => {
     const a = Array1D.new([1, -2, 0, 3, -0.1]);
     const result = math.relu(a);
-    expect(result.getValues()).toEqual(new Float32Array([1, 0, 0, 3, 0]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([1, 0, 0, 3, 0]));
 
     a.dispose();
   });
@@ -1103,14 +1113,16 @@ describe('NDArrayMathGPU unary ops', () => {
   it('relu propagates NaNs', () => {
     const a = Array1D.new([1, -2, 0, 3, -0.1, NaN]);
     const result = math.relu(a);
-    expect(result.getValues()).toEqual(new Float32Array([1, 0, 0, 3, 0, NaN]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([1, 0, 0, 3, 0, NaN]));
     a.dispose();
   });
 
   it('abs', () => {
     const a = Array1D.new([1, -2, 0, 3, -0.1]);
     const result = math.abs(a);
-    expect(result.getValues()).toEqual(new Float32Array([1, 2, 0, 3, 0.1]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([1, 2, 0, 3, 0.1]));
 
     a.dispose();
   });
@@ -1118,16 +1130,16 @@ describe('NDArrayMathGPU unary ops', () => {
   it('abs propagates NaNs', () => {
     const a = Array1D.new([1, -2, 0, 3, -0.1, NaN]);
     const result = math.abs(a);
-    expect(result.getValues()).toEqual(new Float32Array([
-      1, 2, 0, 3, 0.1, NaN
-    ]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([1, 2, 0, 3, 0.1, NaN]));
     a.dispose();
   });
 
   it('step with 1d ndarray', () => {
     const a = Array1D.new([1, -2, 0, 3, -0.1]);
     const result = math.step(a);
-    expect(result.getValues()).toEqual(new Float32Array([1, 0, 0, 1, 0]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([1, 0, 0, 1, 0]));
 
     a.dispose();
   });
@@ -1137,7 +1149,8 @@ describe('NDArrayMathGPU unary ops', () => {
     const result = math.step(a);
 
     expect(result.shape).toEqual([2, 2]);
-    expect(result.getValues()).toEqual(new Float32Array([1, 0, 0, 1]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([1, 0, 0, 1]));
 
     a.dispose();
   });
@@ -1145,14 +1158,16 @@ describe('NDArrayMathGPU unary ops', () => {
   it('step propagates NaNs', () => {
     const a = Array1D.new([1, -2, 0, 3, NaN]);
     const result = math.step(a);
-    expect(result.getValues()).toEqual(new Float32Array([1, 0, 0, 1, NaN]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([1, 0, 0, 1, NaN]));
     a.dispose();
   });
 
   it('neg', () => {
     const a = Array1D.new([1, -3, 2, 7, -4]);
     const result = math.neg(a);
-    expect(result.getValues()).toEqual(new Float32Array([-1, 3, -2, -7, 4]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([-1, 3, -2, -7, 4]));
 
     a.dispose();
   });
@@ -1160,7 +1175,8 @@ describe('NDArrayMathGPU unary ops', () => {
   it('neg propagate NaNs', () => {
     const a = Array1D.new([1, -3, 2, 7, NaN]);
     const expected = [-1, 3, -2, -7, NaN];
-    expect(math.neg(a).getValues()).toEqual(new Float32Array(expected));
+    const result = math.neg(a);
+    test_util.expectArraysClose(result.getValues(), new Float32Array(expected));
     a.dispose();
   });
 
@@ -1235,7 +1251,7 @@ describe('NDArrayMathGPU unary ops', () => {
     for (let i = 0; i < a.size; i++) {
       expected[i] = Math.tan(values[i]);
     }
-    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+    test_util.expectArraysClose(result.getValues(), expected, 1e-1);
 
     a.dispose();
   });
@@ -1319,7 +1335,7 @@ describe('NDArrayMathGPU unary ops', () => {
     for (let i = 0; i < a.size; i++) {
       expected[i] = Math.sinh(values[i]);
     }
-    test_util.expectArraysClose(result.getValues(), expected, 1e-3);
+    test_util.expectArraysClose(result.getValues(), expected, 1e-2);
 
     a.dispose();
   });
@@ -1333,7 +1349,7 @@ describe('NDArrayMathGPU unary ops', () => {
   });
 
   it('cosh', () => {
-    const values = [1, -3, 2, 7, -4];
+    const values = [1, -3, 2, -1, -4];
     const a = Array1D.new(values);
     const result = math.cosh(a);
     const expected = new Float32Array(a.size);
@@ -1391,7 +1407,7 @@ describe('NDArrayMathGPU min/max', () => {
     const a = Array1D.new([3, -1, 0, 100, -7, 2]);
     const r = math.max(a);
 
-    expect(r.get()).toBe(100);
+    expect(r.get()).toBeCloseTo(100);
 
     a.dispose();
   });
@@ -1399,7 +1415,7 @@ describe('NDArrayMathGPU min/max', () => {
   it('max with all elements being the same', () => {
     const a = Array1D.new([3, 3, 3]);
     const r = math.max(a);
-    expect(r.get()).toBe(3);
+    expect(r.get()).toBeCloseTo(3);
 
     a.dispose();
   });
@@ -1410,7 +1426,7 @@ describe('NDArrayMathGPU min/max', () => {
 
   it('min Array1D', () => {
     const a = Array1D.new([3, -1, 0, 100, -7, 2]);
-    expect(math.min(a).get()).toBe(-7);
+    expect(math.min(a).get()).toBeCloseTo(-7);
     a.dispose();
   });
 
@@ -1437,7 +1453,8 @@ describe('NDArrayMathGPU scalar and element-wise', () => {
     const c = Scalar.new(5);
     const a = Array1D.new([1, 2, 3]);
     const result = math.scalarPlusArray(c, a);
-    expect(result.getValues()).toEqual(new Float32Array([6, 7, 8]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([6, 7, 8]));
 
     a.dispose();
     c.dispose();
@@ -1466,7 +1483,8 @@ describe('NDArrayMathGPU scalar and element-wise', () => {
     const c = Scalar.new(5);
     const a = Array1D.new([7, 2, 3]);
     const result = math.scalarMinusArray(c, a);
-    expect(result.getValues()).toEqual(new Float32Array([-2, 3, 2]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([-2, 3, 2]));
 
     a.dispose();
     c.dispose();
@@ -1486,7 +1504,8 @@ describe('NDArrayMathGPU scalar and element-wise', () => {
     const a = Array1D.new([1, 2, -3]);
     const c = Scalar.new(5);
     const result = math.arrayMinusScalar(a, c);
-    expect(result.getValues()).toEqual(new Float32Array([-4, -3, -8]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([-4, -3, -8]));
 
     a.dispose();
     c.dispose();
@@ -1497,7 +1516,7 @@ describe('NDArrayMathGPU scalar and element-wise', () => {
     const a = Array1D.new([1, NaN, 3]);
     const c = Scalar.new(5);
     const res = math.arrayMinusScalar(a, c).getValues();
-    expect(res).toEqual(new Float32Array([-4, NaN, -2]));
+    test_util.expectArraysClose(res, new Float32Array([-4, NaN, -2]));
     a.dispose();
     c.dispose();
   });
@@ -1518,7 +1537,7 @@ describe('NDArrayMathGPU scalar and element-wise', () => {
     const expected = new Float32Array([-2, 3, 2]);
     const result = math.sub(a, b);
 
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     a.dispose();
     b.dispose();
@@ -1528,7 +1547,7 @@ describe('NDArrayMathGPU scalar and element-wise', () => {
     const a = Array1D.new([2, 5, 1]);
     const b = Array1D.new([4, NaN, -1]);
     const res = math.sub(a, b).getValues();
-    expect(res).toEqual(new Float32Array([-2, NaN, 2]));
+    test_util.expectArraysClose(res, new Float32Array([-2, NaN, 2]));
 
     a.dispose();
     b.dispose();
@@ -1550,7 +1569,7 @@ describe('NDArrayMathGPU scalar and element-wise', () => {
     const expected = new Float32Array([6, 7, 0]);
     const result = math.add(a, b);
 
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     a.dispose();
     b.dispose();
@@ -1560,7 +1579,7 @@ describe('NDArrayMathGPU scalar and element-wise', () => {
     const a = Array1D.new([2, 5, NaN]);
     const b = Array1D.new([4, 2, -1]);
     const res = math.add(a, b).getValues();
-    expect(res).toEqual(new Float32Array([6, 7, NaN]));
+    test_util.expectArraysClose(res, new Float32Array([6, 7, NaN]));
 
     a.dispose();
     b.dispose();
@@ -1596,7 +1615,7 @@ describe('NDArrayMathGPU scalarTimesNDArray', () => {
     const result = math.scalarTimesArray(c, a);
 
     expect(result.shape).toEqual([3, 2]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     a.dispose();
     c.dispose();
@@ -1639,7 +1658,7 @@ describe('NDArrayMathGPU log/exp', () => {
   it('exp propagates NaNs', () => {
     const a = Array1D.new([1, NaN, 0]);
     const r = math.exp(a).getValues();
-    expect(r).toEqual(new Float32Array([Math.exp(1), NaN, 1]));
+    test_util.expectArraysClose(r, new Float32Array([Math.exp(1), NaN, 1]));
     a.dispose();
   });
 
@@ -1656,7 +1675,7 @@ describe('NDArrayMathGPU log/exp', () => {
   it('log propagates NaNs', () => {
     const a = Array1D.new([1, NaN]);
     const r = math.log(a).getValues();
-    expect(r).toEqual(new Float32Array([Math.log(1), NaN]));
+    test_util.expectArraysClose(r, new Float32Array([Math.log(1), NaN]));
     a.dispose();
   });
 
@@ -1703,7 +1722,7 @@ describe('NDArrayMathGPU sqrt', () => {
   it('sqrt propagates NaNs', () => {
     const a = Array1D.new([1, NaN]);
     const r = math.sqrt(a).getValues();
-    expect(r).toEqual(new Float32Array([Math.sqrt(1), NaN]));
+    test_util.expectArraysClose(r, new Float32Array([Math.sqrt(1), NaN]));
     a.dispose();
   });
 });
@@ -1724,34 +1743,36 @@ describe('softmax', () => {
 
   it('regular test', () => {
     const y = math.softmax(Array1D.new([2, 1, 3]));
-    expect(y.get(0)).toBeCloseTo(0.24472847, 6);
-    expect(y.get(1)).toBeCloseTo(0.09003057, 6);
-    expect(y.get(2)).toBeCloseTo(0.66524095, 6);
-    expect(y.get(0) + y.get(1) + y.get(2)).toBeCloseTo(1, 6);
+    expect(y.get(0)).toBeCloseTo(0.24472847, test_util.TEST_LOW_PRECISION);
+    expect(y.get(1)).toBeCloseTo(0.09003057, test_util.TEST_LOW_PRECISION);
+    expect(y.get(2)).toBeCloseTo(0.66524095, test_util.TEST_LOW_PRECISION);
+    expect(y.get(0) + y.get(1) + y.get(2))
+        .toBeCloseTo(1, test_util.TEST_LOW_PRECISION);
   });
 
   it('overflow', () => {
     const y = math.softmax(Array1D.new([10000, 10000]));
-    expect(y.get(0)).toBeCloseTo(0.5, 3);
-    expect(y.get(1)).toBeCloseTo(0.5, 3);
+    expect(y.get(0)).toBeCloseTo(0.5, test_util.TEST_LOW_PRECISION);
+    expect(y.get(1)).toBeCloseTo(0.5, test_util.TEST_LOW_PRECISION);
   });
 
   it('underflow', () => {
     const y = math.softmax(Array1D.new([-10000, -10000]));
-    expect(y.get(0)).toBeCloseTo(0.5, 3);
-    expect(y.get(1)).toBeCloseTo(0.5, 3);
+    expect(y.get(0)).toBeCloseTo(0.5, test_util.TEST_LOW_PRECISION);
+    expect(y.get(1)).toBeCloseTo(0.5, test_util.TEST_LOW_PRECISION);
   });
 
   it('Huge difference between probabilities', () => {
     const y = math.softmax(Array1D.new([-10000, +10000]));
-    expect(y.get(0)).toBeCloseTo(0.0, 6);
-    expect(y.get(1)).toBeCloseTo(1, 6);
+    expect(y.get(0)).toBeCloseTo(0.0, test_util.TEST_LOW_PRECISION);
+    expect(y.get(1)).toBeCloseTo(1, test_util.TEST_LOW_PRECISION);
   });
 
   it('Propagates NaNs', () => {
     const a = Array1D.new([2, 1, NaN]);
     const y = math.softmax(a);
-    expect(y.getValues()).toEqual(new Float32Array([NaN, NaN, NaN]));
+    test_util.expectArraysClose(
+        y.getValues(), new Float32Array([NaN, NaN, NaN]));
     a.dispose();
   });
 });
@@ -1771,7 +1792,7 @@ describe('NDArrayMathGPU sum', () => {
   it('sum', () => {
     const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
     const result = math.sum(a);
-    expect(result.get()).toBe(7);
+    expect(result.get()).toBeCloseTo(7);
 
     a.dispose();
   });
@@ -1798,7 +1819,7 @@ describe('NDArrayMathGPU argmax', () => {
   it('Array1D', () => {
     const a = Array1D.new([1, 0, 3, 2]);
     const result = math.argMax(a);
-    expect(result.get()).toBe(2);
+    expect(result.get()).toBeCloseTo(2);
 
     a.dispose();
   });
@@ -1825,7 +1846,7 @@ describe('NDArrayMathGPU argmin', () => {
   it('argmin', () => {
     const a = Array1D.new([1, 0, 3, 2]);
     const result = math.argMin(a);
-    expect(result.get()).toBe(1);
+    expect(result.get()).toBeCloseTo(1);
 
     a.dispose();
   });
@@ -1854,14 +1875,14 @@ describe('NDArrayMathGPU argmax equals', () => {
     const a = Array1D.new([5, 0, 3, 7, 3]);
     const b = Array1D.new([-100.3, -20.0, -10.0, -5, -100]);
     const result = math.argMaxEquals(a, b);
-    expect(result.get()).toBe(1);
+    expect(result.get()).toBeCloseTo(1);
   });
 
   it('not equals', () => {
     const a = Array1D.new([5, 0, 3, 1, 3]);
     const b = Array1D.new([-100.3, -20.0, -10.0, -5, 0]);
     const result = math.argMaxEquals(a, b);
-    expect(result.get()).toBe(0);
+    expect(result.get()).toBeCloseTo(0);
   });
 
   it('propagates NaNs', () => {
@@ -1906,7 +1927,7 @@ describe('NDArrayMathGPU conv2d', () => {
     const expected = new Float32Array([1, 3, 5, 7]);
 
     expect(result.inGPU()).toBe(true);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
     x.dispose();
     w.dispose();
     bias.dispose();
@@ -1929,7 +1950,7 @@ describe('NDArrayMathGPU conv2d', () => {
     const expected = new Float32Array([19]);
 
     expect(result.inGPU()).toBe(true);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     x.dispose();
     w.dispose();
@@ -2045,7 +2066,7 @@ describe('NDArrayMathGPU conv2dTranspose', () => {
 
     expect(result.inGPU()).toBe(true);
     expect(result.shape).toEqual([2, 2, 1]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     x.dispose();
     w.dispose();
@@ -2141,7 +2162,8 @@ describe('NDArrayMathGPU conv2dDerWeights', () => {
 
     expect(result.inGPU()).toBe(true);
     expect(result.shape).toEqual(weightsShape);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(
+        result.getValues(), expected, test_util.TEST_LOW_PRECISION_EPSILON);
 
     x.dispose();
     dy.dispose();
@@ -2170,7 +2192,7 @@ describe('NDArrayMathGPU conv2dDerWeights', () => {
 
     expect(result.inGPU()).toBe(true);
     expect(result.shape).toEqual([outputDepth]);
-    expect(result.getValues()).toEqual(expected);
+    test_util.expectArraysClose(result.getValues(), expected);
 
     dy.dispose();
   });
@@ -2197,9 +2219,8 @@ describe('NDArrayMathGPU maxPool', () => {
 
     expect(result.inGPU()).toBe(true);
     expect(result.shape).toEqual([2, 2, 2]);
-    expect(result.getValues()).toEqual(new Float32Array([
-      5, 99, 6, 88, 9, 66, 9, 55
-    ]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([5, 99, 6, 88, 9, 66, 9, 55]));
     a.dispose();
   });
 
@@ -2208,7 +2229,8 @@ describe('NDArrayMathGPU maxPool', () => {
     const result = math.maxPool(a, 2, 1, 0);
 
     expect(result.shape).toEqual([2, 2, 1]);
-    expect(result.getValues()).toEqual(new Float32Array([5, 6, NaN, NaN]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([5, 6, NaN, NaN]));
     a.dispose();
   });
 
@@ -2220,7 +2242,8 @@ describe('NDArrayMathGPU maxPool', () => {
 
     expect(result.inGPU()).toBe(true);
     expect(result.shape).toEqual([2, 2, 1]);
-    expect(result.getValues()).toEqual(new Float32Array([5, 7, 13, 15]));
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([5, 7, 13, 15]));
 
     a.dispose();
   });
@@ -2253,7 +2276,7 @@ describe('NDArrayMathGPU maxPoolBackprop', () => {
     const dx = math.maxPoolBackprop(dy, maxPositions, 2, 2, 1);
 
     expect(dx.inGPU()).toBe(true);
-    expect(dx.getValues()).toEqual(expected);
+    test_util.expectArraysClose(dx.getValues(), expected);
 
     dy.dispose();
     maxPositions.dispose();
@@ -2271,7 +2294,7 @@ describe('NDArrayMathGPU maxPoolBackprop', () => {
     const dx = math.maxPoolBackprop(dy, x, 2, 1, 0);
 
     expect(dx.inGPU()).toBe(true);
-    expect(dx.getValues()).toEqual(expected);
+    test_util.expectArraysClose(dx.getValues(), expected);
 
     dy.dispose();
     x.dispose();
@@ -2287,7 +2310,7 @@ describe('NDArrayMathGPU maxPoolBackprop', () => {
     const dx = math.maxPoolBackprop(dy, x, 2, 1, 0);
 
     expect(dx.inGPU()).toBe(true);
-    expect(dx.getValues()).toEqual(expected);
+    test_util.expectArraysClose(dx.getValues(), expected);
 
     dy.dispose();
     x.dispose();
@@ -2401,7 +2424,8 @@ describe('NDArrayMathGPU batchNorm', () => {
               Math.sqrt(variance.get(0) + varianceEpsilon),
           (x.get(1, 0, 1) - mean.get(1)) * 1 /
               Math.sqrt(variance.get(1) + varianceEpsilon)
-        ]));
+        ]),
+        test_util.TEST_LOW_PRECISION);
     x.dispose();
     mean.dispose();
     variance.dispose();
@@ -2427,7 +2451,8 @@ describe('NDArrayMathGPU batchNorm', () => {
               Math.sqrt(variance.get(0) + varianceEpsilon),
           (x.get(1, 0, 1) - mean.get(1)) * scale.get(1) /
               Math.sqrt(variance.get(1) + varianceEpsilon)
-        ]));
+        ]),
+        test_util.TEST_LOW_PRECISION_EPSILON);
     x.dispose();
     mean.dispose();
     variance.dispose();
@@ -2459,7 +2484,8 @@ describe('NDArrayMathGPU batchNorm', () => {
           offset.get(1) +
               (x.get(1, 0, 1) - mean.get(1)) * 1 /
                   Math.sqrt(variance.get(1) + varianceEpsilon)
-        ]));
+        ]),
+        test_util.TEST_LOW_PRECISION_EPSILON);
     x.dispose();
     mean.dispose();
     variance.dispose();
@@ -2492,7 +2518,8 @@ describe('NDArrayMathGPU batchNorm', () => {
           offset.get(1) +
               (x.get(1, 0, 1) - mean.get(1)) * scale.get(1) /
                   Math.sqrt(variance.get(1) + varianceEpsilon)
-        ]));
+        ]),
+        test_util.TEST_LOW_PRECISION_EPSILON);
     x.dispose();
     mean.dispose();
     variance.dispose();
@@ -2523,7 +2550,8 @@ describe('NDArrayMathGPU batchNorm', () => {
           1.52106473, -0.07704776, 0.26144429, 1.28010017, -1.14422404,
           -1.15776136, 1.15425493, 1.82644104, -0.52249442, 1.04803919,
           0.74932291, 0.40568101, 1.2844412
-        ]));
+        ]),
+        test_util.TEST_LOW_PRECISION_EPSILON);
     x.dispose();
     mean.dispose();
     variance.dispose();
@@ -2548,7 +2576,8 @@ describe('NDArrayMathGPU debug mode', () => {
     math.enableDebugMode();
     const a = Array1D.new([2, -1, 0, 3]);
     const res = math.relu(a);
-    expect(res.getValues()).toEqual(new Float32Array([2, 0, 0, 3]));
+    test_util.expectArraysClose(
+        res.getValues(), new Float32Array([2, 0, 0, 3]));
   });
 
   it('debug mode errors when there are nans', () => {
@@ -2561,7 +2590,7 @@ describe('NDArrayMathGPU debug mode', () => {
   it('no errors where there are nans, and debug mode is disabled', () => {
     const a = Array1D.new([2, NaN]);
     const res = math.relu(a);
-    expect(res.getValues()).toEqual(new Float32Array([2, NaN]));
+    test_util.expectArraysClose(res.getValues(), new Float32Array([2, NaN]));
   });
 });
 

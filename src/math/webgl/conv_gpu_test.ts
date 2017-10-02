@@ -79,7 +79,7 @@ describe('conv_gpu', () => {
         x.getValues(), xShape, weights.getValues(), biases.getValues(),
         resultDepth, fSize, stride, pad);
 
-    test_util.expectArraysClose(yGPU, yCPU.getValues());
+    test_util.expectArraysClose(yGPU, yCPU.getValues(), 1e-1);
   }
 
   it('1x1x1 in, 1d out, 1x1 filter, 1 stride: [0] => [0]', () => {
@@ -133,7 +133,7 @@ describe('conv_gpu', () => {
     const biases = new Float32Array([0, 0]);
     const result =
         uploadConvolveDownload(a, [1, 1, 2], weights, biases, 1, 1, 1);
-    expect(result).toBeCloseTo(8);
+    expect(result).toBeCloseTo(8, test_util.TEST_EPSILON);
   });
 
   it('2x1x1 in, 1d out, 1x1 filter, 1 stride', () => {
@@ -217,12 +217,18 @@ describe('conv_gpu', () => {
     const result =
         uploadConvolveDownload(a, [2, 1, 2], weights, biases, 3, 1, 1);
     expect(result.length).toEqual(6);
-    expect(result[0]).toBeCloseTo(a[0] * weights[0] + a[1] * weights[3]);
-    expect(result[1]).toBeCloseTo(a[0] * weights[1] + a[1] * weights[4]);
-    expect(result[2]).toBeCloseTo(a[0] * weights[2] + a[1] * weights[5]);
-    expect(result[3]).toBeCloseTo(a[2] * weights[0] + a[3] * weights[3]);
-    expect(result[4]).toBeCloseTo(a[2] * weights[1] + a[3] * weights[4]);
-    expect(result[5]).toBeCloseTo(a[2] * weights[2] + a[3] * weights[5]);
+    expect(result[0]).toBeCloseTo(
+        a[0] * weights[0] + a[1] * weights[3], test_util.TEST_EPSILON);
+    expect(result[1]).toBeCloseTo(
+        a[0] * weights[1] + a[1] * weights[4], test_util.TEST_EPSILON);
+    expect(result[2]).toBeCloseTo(
+        a[0] * weights[2] + a[1] * weights[5], test_util.TEST_EPSILON);
+    expect(result[3]).toBeCloseTo(
+        a[2] * weights[0] + a[3] * weights[3], test_util.TEST_EPSILON);
+    expect(result[4]).toBeCloseTo(
+        a[2] * weights[1] + a[3] * weights[4], test_util.TEST_EPSILON);
+    expect(result[5]).toBeCloseTo(
+        a[2] * weights[2] + a[3] * weights[5], test_util.TEST_EPSILON);
   });
 
   it('2x2x1 in, 1d out, 2x2 filter, s=2, bias=0, p=1', () => {
@@ -231,10 +237,10 @@ describe('conv_gpu', () => {
     const bias = new Float32Array([0]);
     const result = uploadConvolveDownload(x, [2, 2, 1], w, bias, 1, 2, 2, 1);
     expect(result.length).toEqual(4);
-    expect(result[0]).toBe(0);
-    expect(result[1]).toBe(10);
-    expect(result[2]).toBe(3);
-    expect(result[3]).toBe(12);
+    expect(result[0]).toBeCloseTo(0);
+    expect(result[1]).toBeCloseTo(10);
+    expect(result[2]).toBeCloseTo(3);
+    expect(result[3]).toBeCloseTo(12);
   });
 
   it('2x2x1 in, 1d out, 2x1 filter, s=1, p=valid', () => {
@@ -243,7 +249,7 @@ describe('conv_gpu', () => {
     const bias: Float32Array = null;
     const result =
         uploadConvolveDownload(x, [2, 2, 1], w, bias, 1, [2, 1], 1, 'valid');
-    expect(result).toEqual(new Float32Array([18, 26]));
+    test_util.expectArraysClose(result, new Float32Array([18, 26]));
   });
 
   it('2x2x1 in, 1d out, 1x2 filter, s=1, p=valid', () => {
@@ -252,7 +258,7 @@ describe('conv_gpu', () => {
     const bias: Float32Array = null;
     const result =
         uploadConvolveDownload(x, [2, 2, 1], w, bias, 1, [1, 2], 1, 'valid');
-    expect(result).toEqual(new Float32Array([13, 29]));
+    test_util.expectArraysClose(result, new Float32Array([13, 29]));
   });
 
   it('2x2x1 in, 1d out, 2x2 filter, 1 stride, bias=-1', () => {
@@ -261,7 +267,7 @@ describe('conv_gpu', () => {
     const bias = new Float32Array([-1]);
     const result = uploadConvolveDownload(x, [2, 2, 1], w, bias, 1, 2, 1, 0);
     expect(result.length).toEqual(1);
-    expect(result[0]).toBe(19);
+    expect(result[0]).toBeCloseTo(19, test_util.TEST_EPSILON);
   });
 
   it('2x2x1 in, 1d out, 2x2 filter, 1 stride, no bias', () => {
@@ -270,7 +276,7 @@ describe('conv_gpu', () => {
     const bias: Float32Array|null = null;
     const result = uploadConvolveDownload(x, [2, 2, 1], w, bias, 1, 2, 1, 0);
     expect(result.length).toEqual(1);
-    expect(result[0]).toBe(20);
+    expect(result[0]).toBeCloseTo(20, test_util.TEST_EPSILON);
   });
 
   it('5x5x3 in, 2d out, 3x3 filter, s=2, p=1', () => {
@@ -342,12 +348,13 @@ describe('conv_gpu', () => {
         (-1 + 2 + 2 + 2 + 1 + -2 + 2) + 1 == 7
      */
 
-    expect(result[0]).toBeCloseTo(7);
+    expect(result[0]).toBeCloseTo(7, test_util.TEST_EPSILON);
 
     test_util.expectArraysClose(
         result,
         new Float32Array(
-            [7, -8, 8, -2, 7, -2, 5, 5, 4, 6, 1, 2, -1, 3, 7, -2, 1, 4]));
+            [7, -8, 8, -2, 7, -2, 5, 5, 4, 6, 1, 2, -1, 3, 7, -2, 1, 4]),
+        1e-1);
   });
 
   it('matches CPU on random input, d1=1,d2=1,f=2,s=1,p=0', () => {

@@ -163,11 +163,15 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
           track(this.squeezeNet.preprocessColorTextureToArray3D(
               canvasTexture, canvasTextureShape));
 
+      console.log('------------------------------');
+      console.log(preprocessedInput.getValues());
+
       const inferenceResult = this.squeezeNet.infer(preprocessedInput);
       const namedActivations = inferenceResult.namedActivations;
 
       this.layerNames = Object.keys(namedActivations);
       this.layerNames.forEach(layerName => track(namedActivations[layerName]));
+
 
       const topClassesToProbability =
           this.squeezeNet.getTopKClasses(inferenceResult.logits, TOP_K_CLASSES);

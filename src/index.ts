@@ -16,6 +16,7 @@
  */
 
 import * as xhr_dataset from './data/xhr-dataset';
+import * as environment from './environment';
 import * as conv_util from './math/conv_util';
 import * as gpgpu_util from './math/webgl/gpgpu_util';
 import * as render_ndarray_gpu_util from './math/webgl/render_ndarray_gpu_util';
@@ -27,7 +28,7 @@ export {DataStats, InMemoryDataset} from './data/dataset';
 // tslint:disable-next-line:max-line-length
 export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider} from './data/input_provider';
 export {XhrDataset, XhrDatasetConfig, XhrModelConfig} from './data/xhr-dataset';
-export {ENV, Features} from './environment';
+export {ENV, Environment, Features} from './environment';
 export {Graph, Tensor} from './graph/graph';
 export {AdagradOptimizer} from './graph/optimizers/adagrad_optimizer';
 export {MomentumOptimizer} from './graph/optimizers/momentum_optimizer';
@@ -48,6 +49,7 @@ export {GPGPUContext} from './math/webgl/gpgpu_context';
 // Second level exports.
 export {
   conv_util,
+  environment,
   gpgpu_util,
   render_ndarray_gpu_util,
   util,
