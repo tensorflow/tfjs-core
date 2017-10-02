@@ -5,7 +5,7 @@ order: 6
 
 # Example: Add a new data set to the model builder demo
 
-In this tutorial we add a data set to the [model builder demo](https://pair-code.github.io/deeplearnjs/demos/model-builder/model-builder-demo.html) and train a neural network that can recognize individual glyphs of runes. It is similar to the canonical [MNIST example](https://www.tensorflow.org/get_started/mnist/pros) for recognizing handwritten digits, but with a different alphabet. This tutorial is meant as a minimal scaffold to start off your adventures in deep learning.
+In this tutorial we add a data set to the [model builder demo](https://deeplearnjs.org/demos/model-builder/model-builder-demo.html) and train a neural network that can recognize individual glyphs of runes. It is similar to the canonical [MNIST example](https://www.tensorflow.org/get_started/mnist/pros) for recognizing handwritten digits, but with a different alphabet. This tutorial is meant as a minimal scaffold to start off your adventures in deep learning.
 
 We will perform the following steps:
 
@@ -18,7 +18,7 @@ The final step would be to export the trained model to use it in an actual appli
 The complete code to follow along with this tutorial can be found in `demos/rune_recognition`. If you run into trouble during this tutorial, you might find inspiration in [the GitHub issue](https://github.com/PAIR-code/deeplearnjs/issues/20) that inspired this tutorial.
 
 ## Introduction
-Suppose that you are making an app for recognizing runes, [the old Germanic letters](https://en.wikipedia.org/wiki/Runes) that were carved in stone and wood during the first millennium. The time and space where these runes were created varies a lot, and this leads to a lot of variation in the exact shape of these characters. Luckily the Unicode Consortium has 
+Suppose that you are making an app for recognizing runes, [the old Germanic letters](https://en.wikipedia.org/wiki/Runes) that were carved in stone and wood during the first millennium. The time and space where these runes were created varies a lot, and this leads to a lot of variation in the exact shape of these characters. Luckily the Unicode Consortium has
 defined [a set of "idealized glyphs"](https://en.wikipedia.org/wiki/Runic_\(Unicode_block\)) that represent ideas of distinct runes. The variance in shapes makes the mapping of a given rune image to the Unicode pointer an interesting problem to solve through machine learning, so let's try to make a neural network that can recognize individual runes. To this end, we train a convolutional neural network (CNN) to interpret images of runes. The deeplearn.js model builder demo is already well-equipped with the common task to import a set of images along with their labels, so we add our own runic data set and try it out.
 
 Before following along, make sure you have installed [Python](https://www.python.org/) and [node.js](https://nodejs.org/en/). I assume some rudimentary knowledge about neural networks / machine learning.
@@ -28,7 +28,7 @@ We get started by cloning the deeplearn.js source code: `git clone https://githu
 ## Prepare data set
 The model builder expects two files that it can use for training a network: one file containing all example inputs and one file containing all example outputs. The inputs file is a png image in which every horizontal row represents one example instance, where individual pixels represent node activations. The labels file is likewise a large list of node activations, but it in a slightly different format.
 
-I have prepared a reference set of rune images, hand-drawn and rendered by differents fonts, which you can find [here](https://github.com/digitalheir/deeplearnjs/releases/latest). If you want to generate your own samples, you can open `demos/rune_recognition/generate_train_examples_runes.html` in your browser.  
+I have prepared a reference set of rune images, hand-drawn and rendered by differents fonts, which you can find [here](https://github.com/digitalheir/deeplearnjs/releases/latest). If you want to generate your own samples, you can open `demos/rune_recognition/generate_train_examples_runes.html` in your browser.
 
 Create a folder containing the example images and a file named `generate_rune_data_for_model_builder.py`. The script we are creating is inspired a helper script in the repository which you can find at `scripts/convert_uint8_tensor_to_png.py`.
 
@@ -61,13 +61,13 @@ paths_to_images = [f for f in listdir(path_to_images) if
 # A convention we use in our file names: {any text}_{label}.png
 example_file_pattern = r".*_([^(\s]+)(?: ?\([0-9]+\))?\.png$"
 
-```` 
+````
 
 ### Encode labels
 
 In our neural network, the output layer is a list of nodes where each node represents one category. We encode our labels as a [one-hot](https://en.wikipedia.org/wiki/One-hot) array of zeros and ones so we can let the neural network know that these are the desired outputs.
 
-First we determine the image labels from the filenames: and print them to a file that the model builder understands. 
+First we determine the image labels from the filenames: and print them to a file that the model builder understands.
 
 ````py
 # Determine label from filename
@@ -81,7 +81,7 @@ indexed_classes = labels_clear_text.tolist()
 print('...', len(labels_clear_text), 'classes found')
 ````
 
-Then we encode the labels to a one-hot encoded array of `uint8` numbers: 
+Then we encode the labels to a one-hot encoded array of `uint8` numbers:
 
 ````py
 def pack_labels(classes, labels):
@@ -147,11 +147,11 @@ Open the output png file. You should see a large black image strewn with white d
 
 ## Modify model builder demo
 
-(See also the [development pointers](https://pair-code.github.io/deeplearnjs/#development))
+(See also the [development pointers](https://deeplearnjs.org/#development))
 
 First we verify that we can run the model builder. From the project root, run:
 
-* `npm install`
+* `npm run prep`
 * `./scripts/watch-demo demos/model-builder/model-builder.ts`
 * visit http://127.0.0.1:8080/demos/model-builder/model-builder-demo.html
 
@@ -184,7 +184,7 @@ If it works, open the file `demos/model-builder/model-builder-datasets-config.js
 }
 ```
 
-The data set definition refers to two different models: one for a fully connected neural net and one for a convolutional neural network. Because our task is so close to the task of recognizing hand-written digits, we make it easy for ourselves. 
+The data set definition refers to two different models: one for a fully connected neural net and one for a convolutional neural network. Because our task is so close to the task of recognizing hand-written digits, we make it easy for ourselves.
 Just copy the `mnist-fully-connected.json` and `mnist-conv.json` files in this folder and changes their names to `runes-fully-connected.json` and `runes-conv.json`. There is one change though. We need to specify the number of labels in the output layer: in the `fully connected` layers, change the `hiddenUnits` field to the number of labels (90 for the example data set).
 
 Now refresh the model builder. You should see the new runes data set. Select the convolutional model and click "Train". It should look something like this:
