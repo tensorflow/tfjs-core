@@ -90,7 +90,6 @@
 
   function clearCanvas() {
     ctx.clearRect(0, 0, 320, 320);
-    // document.getElementById("canvasimg").style.display = "none";
   }
 
   function save() {
@@ -147,7 +146,6 @@
     } else {
       charIndex = (charIndex + 1) % allChars.length;
     }
-    console.log("setting char " + charIndex);
     char = allChars[charIndex];
     document.getElementById("showchar").innerHTML = char;
   }
