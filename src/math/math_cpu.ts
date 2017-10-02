@@ -736,10 +736,10 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array1D.new(values);
   }
 
-  protected switchDimInternal<T extends NDArray>(t: T, newDim: number[]): T {
+  protected transposeInternal<T extends NDArray>(t: T, perm: number[]): T {
     const newShape: number[] = new Array(t.rank);
     for (let i = 0; i < newShape.length; i++) {
-      newShape[i] = t.shape[newDim[i]];
+      newShape[i] = t.shape[perm[i]];
     }
     const resultValues = new Float32Array(t.size);
     const values = t.getValues();
@@ -750,7 +750,7 @@ export class NDArrayMathCPU extends NDArrayMath {
       // Permute location.
       const newLoc: number[] = new Array(loc.length);
       for (let i = 0; i < newLoc.length; i++) {
-        newLoc[i] = loc[newDim[i]];
+        newLoc[i] = loc[perm[i]];
       }
 
       const newIndex = result.locToIndex(newLoc);

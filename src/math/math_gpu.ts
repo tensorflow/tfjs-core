@@ -222,11 +222,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, inputs) as Array3D;
   }
 
-  protected switchDimInternal<T extends NDArray>(a: T, newDim: number[]): T {
+  protected transposeInternal<T extends NDArray>(a: T, perm: number[]): T {
     throw new Error('Not yet implemented!');
   }
 
-  protected sumInternal<T extends NDArray>(a: NDArray): T {
+  protected sumInternal<T extends NDArray>(a: NDArray, axis: number[]): T {
     const program = new ReduceSumProgram(a.size);
     return this.compileAndRun(program, [a]);
   }

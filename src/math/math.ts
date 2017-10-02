@@ -753,19 +753,28 @@ export abstract class NDArrayMath {
   //////////////////////
 
   /**
-   * Switches dimensions of the input NDArray.
-   * @param a The input NDArray.
-   * @param newDim The new indices that define which shapes values to switch.
+   * @deprecated Use math.transpose() instead.
    */
-  switchDim<T extends NDArray>(a: T, newDim: number[]): T {
-    util.assert(
-        a.rank === newDim.length,
-        `Error in switchDim: length of input shape ${a.shape} ` +
-            `must match size of newDim array ${newDim}.`);
-    return this.executeOp('switchDim', () => this.switchDimInternal(a, newDim));
+  switchDim<T extends NDArray>(a: T, perm: number[]): T {
+    return this.transpose(a, perm);
   }
-  protected abstract switchDimInternal<T extends NDArray>(
-      a: T, newDim: number[]): T;
+
+  /**
+   * Transposes the array. Permutes the dimensions according to `perm`.
+   *
+   * The returned array's dimension `i` will correspond to the input dimension
+   * `perm[i]`. If `perm` is not given, it is set to `[n-1...0]`, where `n` is
+   * the rank of the input array. Hence by default, this operation performs a
+   * regular matrix transpose on 2-D input arrays.
+   *
+   * @param a The array to transpose.
+   * @param perm Optional. The permutation of the dimensions of a.
+   */
+  transpose<T extends NDArray>(a: T, perm?: number[]): T {
+    return this.executeOp('transpose', () => this.transposeInternal(a, perm));
+  }
+  protected abstract transposeInternal<T extends NDArray>(a: T, perm: number[]):
+      T;
 
   /**
    * Computes a scalar plus NDArray, c + A.
@@ -1664,7 +1673,7 @@ export abstract class NDArrayMath {
       probabilities: Array1D, numSamples: number, seed: number): Array1D;
 
   /**
-   * Returns a one-hot tensor. The locations represented by `indices` take
+   * Returns a one-hot array. The locations represented by `indices` take
    * value `onValue` (defaults to 1), while all other locations take value
    * `offValue` (defaults to 0).
    *
