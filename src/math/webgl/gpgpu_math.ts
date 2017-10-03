@@ -22,7 +22,7 @@ import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import {ShapeInfo} from './shader_compiler';
 
-const ATTRIBUTES_NAMES = ['uv', 'clipSpacePos'];
+const ATTRIBUTE_NAMES = ['uv', 'clipSpacePos'];
 
 export interface GPGPUProgram {
   variableNames: string[];
@@ -72,7 +72,7 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
         gpgpu.getUniformLocation(webGLProgram, uniformName);
   }
   const attributeLocations: {[name: string]: number} = {};
-  ATTRIBUTES_NAMES.forEach(attribute => {
+  ATTRIBUTE_NAMES.forEach(attribute => {
     attributeLocations[attribute] =
         gpgpu.getAttributeLocation(webGLProgram, attribute);
   });
