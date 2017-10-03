@@ -90,9 +90,9 @@ const keyboardInterface = new KeyboardElement(container);
 
 const piano = new Piano({velocities : 4}).toMaster();
 
-const SALAMANDER_URL = 'http://storage.googleapis.com/learnjs-data/' +
+const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'Piano/Salamander/';
-const CHECKPOINT_URL = 'http://storage.googleapis.com/learnjs-data/' +
+const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'checkpoint_zoo/performance_rnn';
 
 piano.load(SALAMANDER_URL).then(() => {
