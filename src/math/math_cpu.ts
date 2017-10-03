@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
+import * as seedrandom from 'seedrandom';
 import * as util from '../util';
-
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -31,15 +31,64 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected cloneInternal<T extends NDArray>(ndarray: T): T {
     return NDArray.make(
-        ndarray.shape, {values: new Float32Array(ndarray.getValues())}) as T;
+               ndarray.shape,
+               {values: new Float32Array(ndarray.getValues())}) as T;
   }
 
-  protected slice2DInternal(
-      input: Array2D, beginRowCol: [number, number],
-      sizeRowCol: [number, number]): Array2D {
-    const result = Array2D.zeros(sizeRowCol);
-    this.copy2DInternal(
-        input, beginRowCol, sizeRowCol, result, [0, 0], sizeRowCol);
+  protected slice1DInternal(input: Array1D, begin: number, size: number):
+      Array1D {
+    const newVals = input.getValues().slice(begin, begin + size);
+    return Array1D.new(newVals);
+  }
+
+  protected slice2DInternal(input: Array2D, begin: [number, number], size: [
+    number, number
+  ]): Array2D {
+    const result = Array2D.zeros(size);
+    const [startI, startJ] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        const val = input.get(i + startI, j + startJ);
+        result.set(val, i, j);
+      }
+    }
+    return result;
+  }
+
+  protected slice3DInternal(
+      input: Array3D, begin: [number, number, number],
+      size: [number, number, number]): Array3D {
+    const result = Array3D.zeros(size);
+    const [startI, startJ, startK] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        for (let k = 0; k < size[2]; ++k) {
+          const val = input.get(i + startI, j + startJ, k + startK);
+          result.set(val, i, j, k);
+        }
+      }
+    }
+    return result;
+  }
+  protected slice4DInternal(
+      input: Array4D, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D {
+    const result = Array4D.zeros(size);
+    const [startI, startJ, startK, startL] = begin;
+
+    for (let i = 0; i < size[0]; ++i) {
+      for (let j = 0; j < size[1]; ++j) {
+        for (let k = 0; k < size[2]; ++k) {
+          for (let l = 0; l < size[3]; ++l) {
+            const val =
+                input.get(i + startI, j + startJ, k + startK, l + startL);
+            result.set(val, i, j, k, l);
+          }
+        }
+      }
+    }
     return result;
   }
 
@@ -64,9 +113,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected concat1DInternal(a: Array1D, b: Array1D): Array1D {
-    const outputShape =
-        concat_util.computeConcatOutputShape(a.shape, b.shape, 0);
-    const result = Array1D.zeros(outputShape);
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, 0);
+    const result = Array1D.zeros(outShape as [number]);
 
     // Use built-in TypedArray.set() method for speed.
     const aVals = a.getValues();
@@ -79,9 +127,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected concat2DInternal(a: Array2D, b: Array2D, axis: number): Array2D {
-    const outputShape =
-        concat_util.computeConcatOutputShape(a.shape, b.shape, axis);
-    const result = Array2D.zeros(outputShape);
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
+    const result = Array2D.zeros(outShape as [number, number]);
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
@@ -93,8 +140,8 @@ export class NDArrayMathCPU extends NDArrayMath {
       return result;
     }
 
-    for (let i = 0; i < outputShape[0]; i++) {
-      for (let j = 0; j < outputShape[1]; j++) {
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
         const index: [number, number] = [i, j];
         let value: number;
         if (index[axis] < a.shape[axis]) {
@@ -112,10 +159,9 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected concat3DInternal(a: Array3D, b: Array3D, axis: number): Array3D {
-    const outputShape =
-        concat_util.computeConcatOutputShape(a.shape, b.shape, axis);
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
 
-    const result = Array3D.zeros(outputShape);
+    const result = Array3D.zeros(outShape as [number, number, number]);
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
@@ -127,9 +173,9 @@ export class NDArrayMathCPU extends NDArrayMath {
       return result;
     }
 
-    for (let i = 0; i < outputShape[0]; i++) {
-      for (let j = 0; j < outputShape[1]; j++) {
-        for (let k = 0; k < outputShape[2]; k++) {
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
+        for (let k = 0; k < outShape[2]; ++k) {
           // Shader begins.
           const index: [number, number, number] = [i, j, k];
           let value: number;
@@ -149,8 +195,46 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
+  protected concat4DInternal(a: Array4D, b: Array4D, axis: number): Array4D {
+    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
+    const result = Array4D.zeros(outShape as [number, number, number, number]);
+
+    if (axis === 0) {
+      // Use built-in TypedArray.set() method for speed.
+      const aVals = a.getValues();
+      const bVals = b.getValues();
+      const vals = result.getValues();
+      vals.set(aVals, 0);
+      vals.set(bVals, a.size);
+      return result;
+    }
+
+    for (let i = 0; i < outShape[0]; ++i) {
+      for (let j = 0; j < outShape[1]; ++j) {
+        for (let k = 0; k < outShape[2]; ++k) {
+          for (let l = 0; l < outShape[3]; ++l) {
+            // Shader begins.
+            const index: [number, number, number, number] = [i, j, k, l];
+            let value: number;
+            if (index[axis] < a.shape[axis]) {
+              value = a.get(i, j, k, l);
+            } else {
+              index[axis] -= a.shape[axis];
+              const [i2, j2, k2, l2] = index;
+              value = b.get(i2, j2, k2, l2);
+            }
+
+            result.set(value, i, j, k, l);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
   protected scaledArrayAddInternal<T extends NDArray>(
-      c1: Scalar, a: T, c2: Scalar, b: T) {
+      c1: Scalar, a: T, c2: Scalar, b: T): T {
     const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
@@ -698,7 +782,6 @@ export class NDArrayMathCPU extends NDArrayMath {
           const xCMin = Math.max(0, xCCorner);
           const xCMax = Math.min(xCols, filterWidth + xCCorner);
 
-
           let minMaxValue =
               (poolType === 'max' ? Number.NEGATIVE_INFINITY :
                                     Number.POSITIVE_INFINITY);
@@ -898,5 +981,49 @@ export class NDArrayMathCPU extends NDArrayMath {
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
     return Array3D.make(x.shape, {values: outValues});
+  }
+
+  protected multinomialInternal(
+      probabilities: Array1D, numSamples: number, seed: number): Array1D {
+    const probVals = probabilities.getValues();
+
+    // The cdf won't include the last event. It will be implicit if not other
+    // event happened.
+    const cdf = new Float32Array(probabilities.size - 1);
+    cdf[0] = probVals[0];
+    for (let event = 1; event < cdf.length; ++event) {
+      cdf[event] = cdf[event - 1] + probVals[event];
+    }
+
+    const random = seedrandom(seed.toString());
+    const res = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; ++i) {
+      const r = random();
+
+      // Assume last event happened by default.
+      res[i] = cdf.length;
+
+      for (let event = 0; event < cdf.length; event++) {
+        if (r < cdf[event]) {
+          res[i] = event;
+          break;
+        }
+      }
+    }
+
+    return Array1D.new(res);
+  }
+
+  protected oneHotInternal(
+      indices: Array1D, depth: number, onValue: number,
+      offValue: number): Array2D {
+    const res = new Float32Array(indices.size * depth);
+    res.fill(offValue);
+
+    for (let event = 0; event < indices.size; ++event) {
+      res[event * depth + indices.get(event)] = onValue;
+    }
+    return Array2D.new([indices.size, depth], res);
   }
 }

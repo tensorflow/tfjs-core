@@ -198,6 +198,12 @@ export class GPGPUContext {
         this.gl, program, uniformName);
   }
 
+  public getUniformLocationNoThrow(program: WebGLProgram, uniformName: string):
+      WebGLUniformLocation {
+    this.throwIfDisposed();
+    return this.gl.getUniformLocation(program, uniformName);
+  }
+
   public setInputMatrixTexture(
       inputMatrixTexture: WebGLTexture, uniformLocation: WebGLUniformLocation,
       textureUnit: number) {
@@ -357,7 +363,6 @@ export class GPGPUContext {
       util.repeatedTry(queryGPU).then(getTimeElapsed).catch(resolveWithWarning);
     });
   }
-
 
   private downloadMatrixDriver(
       texture: WebGLTexture,

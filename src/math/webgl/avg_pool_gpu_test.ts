@@ -20,7 +20,6 @@ import {NDArrayMathCPU} from '../math_cpu';
 import {Array3D} from '../ndarray';
 import * as pool_gpu_test_util from './pool_gpu_test_util';
 
-
 describe('avg_pool_gpu', () => {
   function uploadAvgPoolDownload(
       a: Float32Array, xShape: [number, number, number], fieldSize: number,
@@ -39,7 +38,7 @@ describe('avg_pool_gpu', () => {
     const yGPU =
         uploadAvgPoolDownload(x.getValues(), x.shape, fSize, stride, pad);
 
-    test_util.expectArraysClose(yGPU, yCPU.getValues(), 1e-5);
+    test_util.expectArraysClose(yGPU, yCPU.getValues());
   }
 
   it('matches CPU on random input, d1=1,d2=1,f=2,s=1,p=0', () => {

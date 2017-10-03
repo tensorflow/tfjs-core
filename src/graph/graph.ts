@@ -136,7 +136,6 @@ export class Graph {
         new FusedLinearCombinationNode(this, x1, x2, c1, c2));
   }
 
-
   /**
    * Adds two tensors (elementwise). Broadcasts if one of the tensors is scalar.
    * @param x1 The first input tensor.
@@ -623,12 +622,10 @@ export class Concat3DNode extends Node {
       public axis: number) {
     super(
         graph, 'Concat3D', {x1, x2},
-        new Tensor(
-            concat_util.computeConcatOutputShape(x1.shape, x2.shape, axis)));
+        new Tensor(concat_util.computeOutShape(x1.shape, x2.shape, axis)));
   }
   validate() {
-    concat_util.assertConcatShapesMatch(
-        this.x1.shape, this.x2.shape, 3, this.axis);
+    concat_util.assertParams(this.x1.shape, this.x2.shape, this.axis);
   }
 }
 
