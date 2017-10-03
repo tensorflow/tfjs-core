@@ -345,7 +345,7 @@ function generateStep() {
     h.map(val => {
       track(val);
     });
-
+    const start = performance.now();
     const outputs: Scalar[] = [];
     // Generate some notes.
     for (let i = 0; i < STEPS_PER_GENERATE_CALL; i++) {
@@ -380,28 +380,28 @@ function generateStep() {
     h.map(val => {
       keep(val);
     });
-
-    let numProcessedOutputs = outputs.length;
-    outputs.forEach(output => {
-      output.getValuesAsync().then(vals => {
+    outputs[outputs.length - 1].getValuesAsync().then(() => {
+      // Called when the last sample was processed on the gpu.
+      outputs.forEach(output => {
+        const vals = output.getValues();
         playOutput(vals[0]);
-        if (--numProcessedOutputs === 0) {
-          // Pro-actively upload the last sample to the gpu again and keep it
-          // for next time.
-          lastSample.getTexture();
-
-          if (piano.now() - currentTime > MAX_GENERATION_LAG_SECONDS) {
-            console.warn(
-                `Generation is ${
-                    piano.now() - currentTime} seconds behind, which ` +
-                `is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
-            currentTime = piano.now();
-          }
-          const delta = Math.max(
-              0, currentTime - piano.now() - GENERATION_BUFFER_SECONDS);
-          setTimeout(() => generateStep(), delta * 1000);
-        }
       });
+      const elapsed = (performance.now() - start) / STEPS_PER_GENERATE_CALL;
+      console.log('Took', elapsed.toFixed(2), 'ms/step');
+      // Pro-actively upload the last sample to the gpu again and keep it
+      // for next time.
+      lastSample.getTexture();
+
+      if (piano.now() - currentTime > MAX_GENERATION_LAG_SECONDS) {
+        console.warn(
+            `Generation is ${
+                piano.now() - currentTime} seconds behind, which ` +
+            `is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
+        currentTime = piano.now();
+      }
+      const delta =
+          Math.max(0, currentTime - piano.now() - GENERATION_BUFFER_SECONDS);
+      setTimeout(() => generateStep(), delta * 1000);
     });
   });
 }

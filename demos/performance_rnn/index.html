@@ -10,7 +10,7 @@
       top: 0;
       left: 0;
       margin: 0;
-      background-color: #fff
+      background-color: #fff;
       font-family: Lato, sans-serif;
       color: #7f7f7f;
   }
@@ -95,24 +95,18 @@
       background-color: #e5e5e5
   }
   #keyboard .key .fill {
-      border: 2px solid #d7d7d7
-  }
-  #keyboard .key .fill,
-  #keyboard .key .highlight {
+      border: 2px solid #d7d7d7;
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none
+      pointer-events: none;
+      transition: background-color 0.6s;
   }
-  #keyboard .key .highlight {
+  #keyboard .key .fill.active {
       background-color: #fff;
-      opacity: 0;
-      transition: opacity .6s
-  }
-  #keyboard .key .highlight.active {
-      opacity: 1
+      transition: background-color 0s;
   }
   #keyboard .key .highlight.ai {
       background-color: #fff
