@@ -344,7 +344,7 @@ function generateStep() {
       track(val);
     });
 
-    const start = performance.now();
+    // const start = performance.now();
     const outputs: Scalar[] = [];
     // Generate some notes.
     for (let i = 0; i < STEPS_PER_GENERATE_CALL; i++) {
@@ -374,8 +374,8 @@ function generateStep() {
     outputs.forEach(output => {
       playOutput(output.get());
     });
-    const t = (performance.now() - start) / STEPS_PER_GENERATE_CALL;
-    console.log(t.toFixed(2), 'ms/step');
+    // const t = (performance.now() - start) / STEPS_PER_GENERATE_CALL;
+    // console.log(t.toFixed(2), 'ms/step');
     // Pro-actively upload the last sample to the gpu again and keep it for
     // next time.
     lastSample.getTexture();
