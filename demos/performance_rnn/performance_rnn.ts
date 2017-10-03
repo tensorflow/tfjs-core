@@ -38,7 +38,7 @@ const activeNotes = new Map<number, number>();
 // Generating more steps makes it less likely that we'll lag behind in note
 // generation. Generating fewer steps makes it less likely that the browser UI
 // thread will be starved for cycles.
-const STEPS_PER_GENERATE_CALL = 5;
+const STEPS_PER_GENERATE_CALL = 10;
 // How much time to try to generate ahead. More time means fewer buffer
 // underruns, but also makes the lag from UI change to output larger.
 const GENERATION_BUFFER_SECONDS = .5;
