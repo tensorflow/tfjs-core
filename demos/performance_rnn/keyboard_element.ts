@@ -23,7 +23,7 @@ export class KeyboardElement {
   private keys: {[key: number]: Element};
   private notes: {[key: number]: Note[]};
 
-  constructor(container: Element){
+  constructor(container: Element) {
     this.container = document.createElement('div');
     this.container.id = 'keyboard';
     container.appendChild(this.container);
@@ -34,7 +34,7 @@ export class KeyboardElement {
     this.notes = {};
   }
 
-  resize(){
+  resize() {
     // clear the previous ones.
     this.keys = {};
     this.container.innerHTML = '';
@@ -42,7 +42,7 @@ export class KeyboardElement {
     // each of the keys.
     const keyWidth = 1 / 52;
 
-    for (let i = minNote; i <= maxNote; i++){
+    for (let i = minNote; i <= maxNote; i++) {
       const key = document.createElement('div');
       key.classList.add('key');
       const isSharp = ([1, 3, 6, 8, 10].indexOf(i % 12) !== -1);
@@ -63,21 +63,21 @@ export class KeyboardElement {
     }
   }
 
-  keyDown(noteNum: number){
-    if (this.keys.hasOwnProperty(noteNum)){
+  keyDown(noteNum: number) {
+    if (noteNum in this.keys) {
       const key = this.keys[noteNum];
 
       const note = new Note(key.querySelector('.fill'));
-      if (!this.notes[noteNum]){
+      if (!this.notes[noteNum]) {
         this.notes[noteNum] = [] as Note[];
       }
       this.notes[noteNum].push(note);
     }
   }
 
-  keyUp(noteNum: number){
-    if (this.keys.hasOwnProperty(noteNum)){
-      if (!(this.notes[noteNum] && this.notes[noteNum].length)){
+  keyUp(noteNum: number) {
+    if (noteNum in this.keys) {
+      if (!(this.notes[noteNum] && this.notes[noteNum].length)) {
         console.warn('note off before note on');
       } else {
         this.notes[noteNum].shift().noteOff();
@@ -89,17 +89,12 @@ export class KeyboardElement {
 class Note {
   private element: Element;
 
-  constructor(container: Element){
-    this.element = document.createElement('div');
-    this.element.classList.add('highlight');
+  constructor(element: Element) {
+    this.element = element;
     this.element.classList.add('active');
-    container.appendChild(this.element);
   }
 
-  noteOff(){
+  noteOff() {
     this.element.classList.remove('active');
-    setTimeout(() => {
-      this.element.remove();
-    }, 1000);
   }
 }

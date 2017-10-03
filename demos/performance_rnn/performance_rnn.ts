@@ -13,8 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, Array2D, CheckpointLoader, NDArrayMath,
-    NDArrayMathGPU, NDArray, Scalar} from '../deeplearn';
+// tslint:disable-next-line:max-line-length
+import {Array1D, Array2D, CheckpointLoader, NDArray, NDArrayMath, NDArrayMathGPU, Scalar} from '../deeplearn';
+
 import {KeyboardElement} from './keyboard_element';
 
 // tslint:disable-next-line:no-require-imports
@@ -52,7 +53,7 @@ const PITCH_HISTOGRAM_SIZE = NOTES_PER_OCTAVE;
 
 let pitchHistogramEncoding: Array1D;
 let noteDensityEncoding: Array1D;
-let conditioningOff =  true;
+let conditioningOff = true;
 
 let currentTime = 0;
 let currentVelocity = 100;
@@ -73,7 +74,7 @@ const EVENT_RANGES = [
 
 function calculateEventSize(): number {
   let eventOffset = 0;
-  for(const eventRange of EVENT_RANGES) {
+  for (const eventRange of EVENT_RANGES) {
     const minValue = eventRange[1] as number;
     const maxValue = eventRange[2] as number;
     eventOffset += maxValue - minValue + 1;
@@ -82,45 +83,47 @@ function calculateEventSize(): number {
 }
 
 const EVENT_SIZE = calculateEventSize();
-const PRIMER_IDX = 355; // shift 1s.
+const PRIMER_IDX = 355;  // shift 1s.
 let lastSample = Scalar.new(PRIMER_IDX);
 
 const container = document.querySelector('#container');
 const keyboardInterface = new KeyboardElement(container);
 
-const piano = new Piano({velocities : 4}).toMaster();
+const piano = new Piano({velocities: 4}).toMaster();
 
-const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
+const SALAMANDER_URL = 'http://storage.googleapis.com/learnjs-data/' +
     'Piano/Salamander/';
-const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
+const CHECKPOINT_URL = 'http://storage.googleapis.com/learnjs-data/' +
     'checkpoint_zoo/performance_rnn';
 
-piano.load(SALAMANDER_URL).then(() => {
-  const reader = new CheckpointLoader(CHECKPOINT_URL);
-  return reader.getAllVariables();
-}).then((vars: {[varName: string]: NDArray}) => {
-  document.querySelector('#status').classList.add('hidden');
-  document.querySelector('#controls').classList.remove('hidden');
+piano.load(SALAMANDER_URL)
+    .then(() => {
+      const reader = new CheckpointLoader(CHECKPOINT_URL);
+      return reader.getAllVariables();
+    })
+    .then((vars: {[varName: string]: NDArray}) => {
+      document.querySelector('#status').classList.add('hidden');
+      document.querySelector('#controls').classList.remove('hidden');
 
-  lstmKernel1 = vars[
-    'rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
-  lstmBias1 = vars[
-    'rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
+      lstmKernel1 =
+          vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
+      lstmBias1 =
+          vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
 
-  lstmKernel2 = vars[
-    'rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
-  lstmBias2 = vars[
-    'rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
+      lstmKernel2 =
+          vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
+      lstmBias2 =
+          vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
 
-  lstmKernel3 = vars[
-    'rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
-  lstmBias3 = vars[
-    'rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
+      lstmKernel3 =
+          vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
+      lstmBias3 =
+          vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
 
-  fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
-  fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
-  resetRnn();
-});
+      fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
+      fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+      resetRnn();
+    });
 
 function resetRnn() {
   c = [
@@ -146,17 +149,17 @@ function resize() {
 
 resize();
 
-const densityControl = document.getElementById(
-    'note-density') as HTMLInputElement;
+const densityControl =
+    document.getElementById('note-density') as HTMLInputElement;
 const densityDisplay = document.getElementById('note-density-display');
-const conditioningOffElem = document.getElementById(
-    'conditioning-off') as HTMLInputElement;
+const conditioningOffElem =
+    document.getElementById('conditioning-off') as HTMLInputElement;
 conditioningOffElem.onchange = updateConditioningParams;
-const conditioningOnElem = document.getElementById(
-    'conditioning-on') as HTMLInputElement;
+const conditioningOnElem =
+    document.getElementById('conditioning-on') as HTMLInputElement;
 conditioningOnElem.onchange = updateConditioningParams;
-const conditioningControlsElem = document.getElementById(
-    'conditioning-controls') as HTMLDivElement;
+const conditioningControlsElem =
+    document.getElementById('conditioning-controls') as HTMLDivElement;
 
 const pitchHistogramElements = [
   document.getElementById('pitch-c'),
@@ -318,9 +321,8 @@ function getConditioning(math: NDArrayMath): Array1D {
       conditioning.set(1.0, 0);
       return conditioning;
     } else {
-      const conditioningValues = math.concat1D(
-          noteDensityEncoding,
-          pitchHistogramEncoding);
+      const conditioningValues =
+          math.concat1D(noteDensityEncoding, pitchHistogramEncoding);
       return math.concat1D(
           track(Scalar.new(0.0).as1D()),  // conditioning on.
           conditioningValues);
@@ -330,12 +332,12 @@ function getConditioning(math: NDArrayMath): Array1D {
 
 function generateStep() {
   math.scope((keep, track) => {
-    const lstm1 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel1,
-      lstmBias1);
-    const lstm2 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel2,
-      lstmBias2);
-    const lstm3 = math.basicLSTMCell.bind(math, forgetBias, lstmKernel3,
-      lstmBias3);
+    const lstm1 =
+        math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
+    const lstm2 =
+        math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
+    const lstm3 =
+        math.basicLSTMCell.bind(math, forgetBias, lstmKernel3, lstmBias3);
 
     c.map(val => {
       track(val);
@@ -343,8 +345,7 @@ function generateStep() {
     h.map(val => {
       track(val);
     });
-
-    // const start = performance.now();
+    const start = performance.now();
     const outputs: Scalar[] = [];
     // Generate some notes.
     for (let i = 0; i < STEPS_PER_GENERATE_CALL; i++) {
@@ -357,8 +358,8 @@ function generateStep() {
       }
       const conditioning = getConditioning(math);
       const input = math.concat1D(conditioning, eventInput);
-      const output = math.multiRNNCell([lstm1, lstm2, lstm3],
-          input.as2D(1, -1), c, h);
+      const output =
+          math.multiRNNCell([lstm1, lstm2, lstm3], input.as2D(1, -1), c, h);
       c = output[0];
       h = output[1];
 
@@ -369,17 +370,9 @@ function generateStep() {
       const softmax = math.softmax(logits.as1D());
       const sampledOutput = math.multinomial(softmax, 1).asScalar();
       outputs.push(sampledOutput);
+      keep(sampledOutput);
       lastSample = sampledOutput;
     }
-    outputs.forEach(output => {
-      playOutput(output.get());
-    });
-    // const t = (performance.now() - start) / STEPS_PER_GENERATE_CALL;
-    // console.log(t.toFixed(2), 'ms/step');
-    // Pro-actively upload the last sample to the gpu again and keep it for
-    // next time.
-    lastSample.getTexture();
-    keep(lastSample);
 
     c.map(val => {
       keep(val);
@@ -387,25 +380,38 @@ function generateStep() {
     h.map(val => {
       keep(val);
     });
-  });
-  if (piano.now() - currentTime > MAX_GENERATION_LAG_SECONDS) {
-    console.warn(
-        `Generation is ${piano.now() - currentTime} seconds behind, which ` +
-        `is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
-    currentTime = piano.now();
-  }
-  const delta = Math.max(
-      0, currentTime - piano.now() - GENERATION_BUFFER_SECONDS);
-  setTimeout(() => generateStep(), delta * 1000);
-}
+    outputs[outputs.length - 1].getValuesAsync().then(() => {
+      // Called when the last sample was processed on the gpu.
+      outputs.forEach(output => {
+        const vals = output.getValues();
+        playOutput(vals[0]);
+      });
+      const elapsed = (performance.now() - start) / STEPS_PER_GENERATE_CALL;
+      console.log('Took', elapsed.toFixed(2), 'ms/step');
+      // Pro-actively upload the last sample to the gpu again and keep it
+      // for next time.
+      lastSample.getTexture();
 
+      if (piano.now() - currentTime > MAX_GENERATION_LAG_SECONDS) {
+        console.warn(
+            `Generation is ${
+                piano.now() - currentTime} seconds behind, which ` +
+            `is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
+        currentTime = piano.now();
+      }
+      const delta =
+          Math.max(0, currentTime - piano.now() - GENERATION_BUFFER_SECONDS);
+      setTimeout(() => generateStep(), delta * 1000);
+    });
+  });
+}
 
 /**
  * Decode the output index and play it on the piano and keyboardInterface.
  */
 function playOutput(index: number) {
   let offset = 0;
-  for(const eventRange of EVENT_RANGES) {
+  for (const eventRange of EVENT_RANGES) {
     const eventType = eventRange[0] as string;
     const minValue = eventRange[1] as number;
     const maxValue = eventRange[2] as number;
@@ -417,7 +423,7 @@ function playOutput(index: number) {
           setTimeout(() => {
             keyboardInterface.keyUp(noteNum);
           }, 100);
-        }, (currentTime - piano.now())*1000);
+        }, (currentTime - piano.now()) * 1000);
         activeNotes.set(noteNum, currentTime);
         return piano.keyDown(noteNum, currentTime, currentVelocity);
       } else if (eventType === 'note_off') {
@@ -441,7 +447,7 @@ function playOutput(index: number) {
         return currentTime;
       } else if (eventType === 'velocity_change') {
         currentVelocity = (index - offset + 1) * Math.ceil(127 / VELOCITY_BINS);
-        currentVelocity = currentVelocity/127;
+        currentVelocity = currentVelocity / 127;
         return currentVelocity;
       } else {
         throw new Error('Could not decode eventType: ' + eventType);
@@ -451,7 +457,6 @@ function playOutput(index: number) {
   }
   throw new Error('Could not decode index: ' + index);
 }
-
 
 // /**
 //  * Sample from a softmax.
