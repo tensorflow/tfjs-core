@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, Array2D, Array3D, CheckpointLoader, NDArrayMath,
+import {Array1D, Array2D, CheckpointLoader, NDArrayMath,
     NDArrayMathGPU, NDArray, Scalar} from '../deeplearn';
 import {KeyboardElement} from './keyboard_element';
 
@@ -37,7 +37,7 @@ const activeNotes = new Map<number, number>();
 // Generating more steps makes it less likely that we'll lag behind in note
 // generation. Generating fewer steps makes it less likely that the browser UI
 // thread will be starved for cycles.
-const STEPS_PER_GENERATE_CALL = 2;
+const STEPS_PER_GENERATE_CALL = 5;
 // How much time to try to generate ahead. More time means fewer buffer
 // underruns, but also makes the lag from UI change to output larger.
 const GENERATION_BUFFER_SECONDS = .5;
@@ -52,7 +52,7 @@ const PITCH_HISTOGRAM_SIZE = NOTES_PER_OCTAVE;
 
 let pitchHistogramEncoding: Array1D;
 let noteDensityEncoding: Array1D;
-let conditioningOff:boolean =  true;
+let conditioningOff =  true;
 
 let currentTime = 0;
 let currentVelocity = 100;
@@ -83,7 +83,7 @@ function calculateEventSize(): number {
 
 const EVENT_SIZE = calculateEventSize();
 const PRIMER_IDX = 355; // shift 1s.
-let lastSample = PRIMER_IDX;
+let lastSample = Scalar.new(PRIMER_IDX);
 
 const container = document.querySelector('#container');
 const keyboardInterface = new KeyboardElement(container);
@@ -133,7 +133,7 @@ function resetRnn() {
     Array2D.zeros([1, lstmBias2.shape[0] / 4]),
     Array2D.zeros([1, lstmBias3.shape[0] / 4]),
   ];
-  lastSample = PRIMER_IDX;
+  lastSample = Scalar.new(PRIMER_IDX);
   currentTime = piano.now();
   generateStep();
 }
@@ -309,22 +309,21 @@ document.getElementById('save-2').onclick = () => {
   updateConditioningParams();
 };
 
-function getConditioning(math: NDArrayMath): Array3D {
+function getConditioning(math: NDArrayMath): Array1D {
   return math.scope((keep, track) => {
     if (conditioningOff) {
-      const conditioning3D = track(Array3D.zeros([1, 1,
-          1 + noteDensityEncoding.shape[0] + pitchHistogramEncoding.shape[0]]));
-      conditioning3D.set(1.0, 0, 0, 0);
-      return conditioning3D;
+      const size =
+          1 + noteDensityEncoding.shape[0] + pitchHistogramEncoding.shape[0];
+      const conditioning = track(Array1D.zeros([size]));
+      conditioning.set(1.0, 0);
+      return conditioning;
     } else {
-      const conditioningValues3D = math.concat3D(
-          noteDensityEncoding.as3D(1, 1, noteDensityEncoding.shape[0]),
-          pitchHistogramEncoding.as3D(1, 1, pitchHistogramEncoding.shape[0]),
-          2);
-      return math.concat3D(
-          track(Scalar.new(0.0).as3D(1, 1, 1)),  // conditioning on.
-          conditioningValues3D,
-          2);
+      const conditioningValues = math.concat1D(
+          noteDensityEncoding,
+          pitchHistogramEncoding);
+      return math.concat1D(
+          track(Scalar.new(0.0).as1D()),  // conditioning on.
+          conditioningValues);
     }
   });
 }
@@ -344,19 +343,22 @@ function generateStep() {
     h.map(val => {
       track(val);
     });
+
+    const start = performance.now();
+    const outputs: Scalar[] = [];
     // Generate some notes.
     for (let i = 0; i < STEPS_PER_GENERATE_CALL; i++) {
       // Use last sampled output as the next input.
-      const eventInput = track(Array1D.zeros([EVENT_SIZE]));
-      eventInput.set(1.0, lastSample);
-      const conditioning3D = getConditioning(math);
-      const input3D = math.concat3D(
-          conditioning3D,
-          eventInput.as3D(1, 1, eventInput.shape[0]),
-          2);
-      const input = input3D.as2D(1, input3D.shape[2]);
-
-      const output = math.multiRNNCell([lstm1, lstm2, lstm3], input, c, h);
+      const eventInput = math.oneHot(lastSample.as1D(), EVENT_SIZE).as1D();
+      // Dispose the last sample from the previous generate call, since we
+      // kept it.
+      if (i === 0) {
+        lastSample.dispose();
+      }
+      const conditioning = getConditioning(math);
+      const input = math.concat1D(conditioning, eventInput);
+      const output = math.multiRNNCell([lstm1, lstm2, lstm3],
+          input.as2D(1, -1), c, h);
       c = output[0];
       h = output[1];
 
@@ -365,11 +367,20 @@ function generateStep() {
       const logits = math.add(weightedResult, fullyConnectedBiases);
 
       const softmax = math.softmax(logits.as1D());
-      const sampledOutput = sampleFromSoftmax(math, softmax);
-
-      playOutput(sampledOutput);
+      const sampledOutput = math.multinomial(softmax, 1).asScalar();
+      outputs.push(sampledOutput);
       lastSample = sampledOutput;
     }
+    outputs.forEach(output => {
+      playOutput(output.get());
+    });
+    const t = (performance.now() - start) / STEPS_PER_GENERATE_CALL;
+    console.log(t.toFixed(2), 'ms/step');
+    // Pro-actively upload the last sample to the gpu again and keep it for
+    // next time.
+    lastSample.getTexture();
+    keep(lastSample);
+
     c.map(val => {
       keep(val);
     });
@@ -442,18 +453,18 @@ function playOutput(index: number) {
 }
 
 
-/**
- * Sample from a softmax.
- */
-function sampleFromSoftmax(math: NDArrayMath, softmax: Array1D): number {
-  const softmaxValues = softmax.getValues();
-  const rand = Scalar.randUniform([], 0, 1).get();
-  let cdf = 0;
-  for(let i = 0; i < softmaxValues.length; i++) {
-    cdf += softmaxValues[i];
-    if (cdf > rand) {
-      return i;
-    }
-  }
-  throw new Error('Could not sample from softmax.');
-}
+// /**
+//  * Sample from a softmax.
+//  */
+// function sampleFromSoftmax(math: NDArrayMath, softmax: Array1D): number {
+//   const softmaxValues = softmax.getValues();
+//   const rand = Scalar.randUniform([], 0, 1).get();
+//   let cdf = 0;
+//   for(let i = 0; i < softmaxValues.length; i++) {
+//     cdf += softmaxValues[i];
+//     if (cdf > rand) {
+//       return i;
+//     }
+//   }
+//   throw new Error('Could not sample from softmax.');
+// }
