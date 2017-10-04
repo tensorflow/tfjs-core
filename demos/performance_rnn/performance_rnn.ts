@@ -103,8 +103,8 @@ const isDeviceSupported = demo_util.isWebGLSupported() && !demo_util.isSafari();
 
 if (!isDeviceSupported) {
   document.querySelector('#status').innerHTML =
-      'We do not yet support your device. Please try on ' +
-      'a desktop computer with Chrome/Firefox, or an Android phone.';
+      'We do not yet support your device. Please try on a desktop ' +
+      'computer with Chrome/Firefox, or an Android phone with WebGL support.';
 } else {
   start();
 }
