@@ -150,7 +150,6 @@ function logShaderSourceAndInfoLog(
 
   const lineNumber = +lineNumberRegexResult[1];
 
-
   const shaderLines = shaderSource.split('\n');
   const pad = ('' + shaderLines.length).length + 2;
   const linesWithLineNumbers = shaderLines.map(
@@ -258,14 +257,17 @@ export function createFramebuffer(gl: WebGLRenderingContext): WebGLFramebuffer {
 export function bindVertexBufferToProgramAttribute(
     gl: WebGLRenderingContext, program: WebGLProgram, attribute: string,
     buffer: WebGLBuffer, arrayEntriesPerItem: number, itemStrideInBytes: number,
-    itemOffsetInBytes: number) {
-  const loc = gl.getAttribLocation(program, attribute);
+    itemOffsetInBytes: number, attribLocations?: {[name: string]: number}) {
+  let loc = -1;
+  if ((attribLocations != null) && (attribute in attribLocations)) {
+    loc = attribLocations[attribute];
+  } else {
+    loc = gl.getAttribLocation(program, attribute);
+  }
   if (loc === -1) {
-    const error = new Error(
-        'Unable to get attribute "' + attribute + '" on WebGLProgram.');
-    // tslint:disable-next-line:no-any
-    (error as any).namedVertexAttributeNotFound = attribute;
-    throw error;
+    // The GPU compiler decided to strip out this attribute because it's unused,
+    // thus no need to bind.
+    return;
   }
   callAndCheck(gl, () => gl.bindBuffer(gl.ARRAY_BUFFER, buffer));
   callAndCheck(

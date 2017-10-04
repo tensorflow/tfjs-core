@@ -23,10 +23,10 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
 import {Optimizer} from './optimizer';
 
-export class RMSPropOptimizer extends Optimizer {
+export class AdadeltaOptimizer extends Optimizer {
   constructor(
-      protected learningRate: number,
-      private gamma: number, specifiedVariableList?: Node[]) {
+      protected learningRate: number, private gamma: number,
+      specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.eps = Scalar.new(1e-6);
     this.g = Scalar.new(this.gamma);
@@ -42,6 +42,8 @@ export class RMSPropOptimizer extends Optimizer {
       this.variableNodes.forEach(node => {
         this.accumulatedSquaredGradients.set(
             node.output, NDArray.zeros(node.output.shape));
+        this.accumulatedUpdates.set(
+            node.output, NDArray.zeros(node.output.shape));
       });
     }
   }
@@ -55,18 +57,35 @@ export class RMSPropOptimizer extends Optimizer {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
         const oldCache = this.accumulatedSquaredGradients.get(node.output);
+        const oldUpdates = this.accumulatedUpdates.get(node.output);
+
         const gradientSquare = math.multiply(gradient, gradient);
+        // Exponential decay of average squared gradients.
         const cache = math.scaledArrayAdd(
             this.g, oldCache, math.sub(this.one, this.g), gradientSquare);
-        const variable = math.scaledArrayAdd(
-            this.c, math.divide(gradient, math.add(math.sqrt(cache), this.eps)),
-            this.one, oldVariable);
+
+        const updates = math.multiply(
+            math.divide(
+                math.sqrt(math.add(oldUpdates, this.eps)),
+                math.sqrt(math.add(oldCache, this.eps))),
+            gradient);
+
+        const variable =
+            math.scaledArrayAdd(this.c, updates, this.one, oldVariable);
+
+        const updateSquare = math.multiply(updates, updates);
+        // Exponential decay of average updated values.
+        const newUpdates = math.scaledArrayAdd(
+            this.g, oldUpdates, math.sub(this.one, this.g), updateSquare);
+
         this.accumulatedSquaredGradients.set(node.output, keep(cache));
+        this.accumulatedUpdates.set(node.output, keep(newUpdates));
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
 
         oldVariable.dispose();
         oldCache.dispose();
+        oldUpdates.dispose();
       });
     });
 
@@ -79,9 +98,11 @@ export class RMSPropOptimizer extends Optimizer {
     this.eps.dispose();
     this.g.dispose();
     this.accumulatedSquaredGradients.dispose();
+    this.accumulatedUpdates.dispose();
   }
 
   private accumulatedSquaredGradients = new TensorArrayMap();
+  private accumulatedUpdates = new TensorArrayMap();
   private eps: Scalar;
   private g: Scalar;
 }

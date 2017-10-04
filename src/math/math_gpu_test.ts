@@ -22,7 +22,6 @@ import {NDArrayMathGPU} from './math_gpu';
 import {Array1D, Array2D, Array3D, Array4D, Scalar} from './ndarray';
 import * as webgl_util from './webgl/webgl_util';
 
-
 describe('NDArrayMathGPU scope', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
@@ -178,7 +177,7 @@ describe('NDArrayMathGPU clone', () => {
   });
 });
 
-describe('NDArrayMathCPU slice1D', () => {
+describe('NDArrayMathGPU slice1D', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
     math = new NDArrayMathGPU();
@@ -263,7 +262,7 @@ describe('NDArrayMathGPU slice2D', () => {
   });
 });
 
-describe('NDArrayMathCPU slice3D', () => {
+describe('NDArrayMathGPU slice3D', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
     math = new NDArrayMathGPU();
@@ -297,7 +296,7 @@ describe('NDArrayMathCPU slice3D', () => {
   });
 });
 
-describe('NDArrayMathCPU slice4D', () => {
+describe('NDArrayMathGPU slice4D', () => {
   let math: NDArrayMathGPU;
   beforeEach(() => {
     math = new NDArrayMathGPU();
@@ -1707,7 +1706,6 @@ describe('NDArrayMathGPU sqrt', () => {
     a.dispose();
   });
 });
-
 
 describe('softmax', () => {
   let math: NDArrayMathGPU;
