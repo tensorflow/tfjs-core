@@ -65,6 +65,9 @@ const VELOCITY_BINS = 32;
 const MAX_SHIFT_STEPS = 100;
 const STEPS_PER_SECOND = 100;
 
+// The unique id of the currently scheduled setTimeout loop.
+let currentLoopId = 0;
+
 const EVENT_RANGES = [
   ['note_on', MIN_MIDI_PITCH, MAX_MIDI_PITCH],
   ['note_off', MIN_MIDI_PITCH, MAX_MIDI_PITCH],
@@ -136,9 +139,13 @@ function resetRnn() {
     Array2D.zeros([1, lstmBias2.shape[0] / 4]),
     Array2D.zeros([1, lstmBias3.shape[0] / 4]),
   ];
+  if (lastSample != null) {
+    lastSample.dispose();
+  }
   lastSample = Scalar.new(PRIMER_IDX);
   currentTime = piano.now();
-  generateStep();
+  currentLoopId++;
+  generateStep(currentLoopId);
 }
 
 window.addEventListener('resize', resize);
@@ -330,7 +337,11 @@ function getConditioning(math: NDArrayMath): Array1D {
   });
 }
 
-function generateStep() {
+function generateStep(loopId: number) {
+  if (loopId < currentLoopId) {
+    // Was part of an outdated generateStep() scheduled via setTimeout.
+    return;
+  }
   math.scope((keep, track) => {
     const lstm1 =
         math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
@@ -401,7 +412,7 @@ function generateStep() {
       }
       const delta =
           Math.max(0, currentTime - piano.now() - GENERATION_BUFFER_SECONDS);
-      setTimeout(() => generateStep(), delta * 1000);
+      setTimeout(() => generateStep(loopId), delta * 1000);
     });
   });
 }
