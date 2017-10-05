@@ -23,6 +23,8 @@ import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import {ShapeInfo} from './shader_compiler';
 
+const ATTRIBUTE_NAMES = ['uv', 'clipSpacePos'];
+
 export interface GPGPUProgram {
   variableNames: string[];
   outputShape: number[];
@@ -35,6 +37,7 @@ export interface GPGPUBinary {
   webGLProgram: WebGLProgram;
   program: GPGPUProgram;
   uniformLocations: {[name: string]: WebGLUniformLocation};
+  attributeLocations: {[name: string]: number};
   gpgpu: GPGPUContext;
   source: string;
   inShapeInfos: ShapeInfo[];
@@ -75,6 +78,11 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
     uniformLocations[uniformName] =
         gpgpu.getUniformLocation(webGLProgram, uniformName);
   }
+  const attributeLocations: {[name: string]: number} = {};
+  ATTRIBUTE_NAMES.forEach(attribute => {
+    attributeLocations[attribute] =
+        gpgpu.getAttributeLocation(webGLProgram, attribute);
+  });
 
   if (shouldUploadNaNUniform()) {
     uniformLocations[NAN_UNIFORM_NAME] =
@@ -86,6 +94,7 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
     source,
     webGLProgram,
     uniformLocations,
+    attributeLocations,
     gpgpu,
     inShapeInfos,
     outShapeInfo
@@ -144,7 +153,7 @@ export function runProgram<T extends NDArray, K extends NDArray>(
   if (customSetup != null) {
     customSetup(gpgpu, binary.webGLProgram);
   }
-  gpgpu.executeProgram();
+  gpgpu.executeProgram(binary.attributeLocations);
 }
 
 export function makeShaderKey(
