@@ -44,6 +44,7 @@ export function createWebGLRenderingContextFromCanvas(
     canvas: HTMLCanvasElement,
     attributes: WebGLContextAttributes): WebGLRenderingContext {
   let gl: WebGLRenderingContext;
+
   const webglVersion = ENV.get('WEBGL_VERSION');
   if (webglVersion === 2) {
     gl = canvas.getContext('webgl2', attributes) as WebGLRenderingContext;

@@ -16,19 +16,13 @@
  */
 
 import * as environment from './environment';
-import {ENV, Environment, Features} from './environment';
+import {Environment, Features} from './environment';
 import {NDArrayMath} from './math/math';
 import {NDArrayMathCPU} from './math/math_cpu';
 import {NDArrayMathGPU} from './math/math_gpu';
 
 /** Accuracy for tests. */
-export const TEST_EPSILON =
-    ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ? 1e-4 : 1e-2;
-
-export const TEST_LOW_PRECISION =
-    ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ? 3 : 1;
-
-export const TEST_LOW_PRECISION_EPSILON = 1 / Math.pow(10, TEST_LOW_PRECISION);
+export const TEST_EPSILON = 1e-2;
 
 export function expectArraysClose(
     actual: Float32Array, expected: Float32Array, epsilon = TEST_EPSILON) {
@@ -40,15 +34,30 @@ export function expectArraysClose(
   for (let i = 0; i < expected.length; ++i) {
     const a = actual[i];
     const e = expected[i];
-    if (isNaN(a) && isNaN(e)) {
-      continue;
-    }
-    if (isNaN(a) || isNaN(e) || Math.abs(a - e) > epsilon) {
+
+    if (!areClose(a, e, epsilon)) {
       const actualStr = 'actual[' + i + '] === ' + a;
       const expectedStr = 'expected[' + i + '] === ' + e;
       throw new Error('Arrays differ: ' + actualStr + ', ' + expectedStr);
     }
   }
+}
+
+export function expectNumbersClose(
+    a: number, e: number, epsilon = TEST_EPSILON) {
+  if (!areClose(a, e, epsilon)) {
+    throw new Error('Numbers differ: actual === ' + a + ', expected === ' + e);
+  }
+}
+
+function areClose(a: number, e: number, epsilon: number): boolean {
+  if (isNaN(a) && isNaN(e)) {
+    return true;
+  }
+  if (isNaN(a) || isNaN(e) || Math.abs(a - e) > epsilon) {
+    return false;
+  }
+  return true;
 }
 
 export function randomArrayInRange(
@@ -133,7 +142,7 @@ function describeMathCommon(
   if (featuresList != null) {
     featuresList.forEach(features => {
       const testName = testNameBase + ' ' + JSON.stringify(features);
-      executeMathTests(testName, tests, mathFactory);
+      executeMathTests(testName, tests, mathFactory, features);
     });
   } else {
     executeMathTests(testNameBase, tests, mathFactory);
@@ -150,12 +159,12 @@ export function executeMathTests(
     };
 
     beforeEach(() => {
-      math = mathFactory();
-      math.startScope();
-
       if (features != null) {
         environment.setEnvironment(new Environment(features));
       }
+
+      math = mathFactory();
+      math.startScope();
     });
 
     afterEach(() => {

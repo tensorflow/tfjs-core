@@ -181,7 +181,7 @@ const UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET = `
 
   float sample(sampler2D texture, vec2 uv) {
     vec4 sampleValue = texture2D(texture, uv);
-    if (all(equal(sampleValue, vec4(1)))) {
+    if (all(equal(sampleValue, vec4(0)))) {
       return NaN;
     }
 
@@ -203,7 +203,7 @@ const UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET = `
 
   void setOutput(float decodedValue) {
     if (isNaN(decodedValue)) {
-      gl_FragColor = vec4(254.0/255.0);
+      gl_FragColor = vec4(0);
       return;
     }
 
@@ -242,7 +242,7 @@ const SHADER_PREFIX = `
   const vec2 halfCR = vec2(0.5, 0.5);
 
   bool isNaN(float val) {
-    return val >= ${tex_util.FLOAT_MAX}.0 || (val == val ? false : true);
+    return val == val ? false : true;
   }
 
   bool hasNaN(vec4 values) {

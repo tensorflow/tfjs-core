@@ -41,9 +41,9 @@ const tests: MathTests = it => {
 
     math.copy2D(source, [1, 1], [2, 3], dest, [2, 0], [3, 2]);
 
-    expect(dest.getValues()).toEqual(new Float32Array([
-      0, 0, 0, 0, 6, 7, 8, 10, 11, 12, 0, 0
-    ]));
+    test_util.expectArraysClose(
+        dest.getValues(),
+        new Float32Array([0, 0, 0, 0, 6, 7, 8, 10, 11, 12, 0, 0]));
 
     source.dispose();
     dest.dispose();

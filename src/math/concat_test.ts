@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
+import {Array1D, Array2D, Array3D} from './ndarray';
 
 // math.concat1D
 {
@@ -159,7 +159,8 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const ndarray2 = Array3D.new([1, 1, 3], [4, 5, 6]);
       const values = math.concat3D(ndarray1, ndarray2, 0);
       expect(values.shape).toEqual([2, 1, 3]);
-      expect(values.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+      test_util.expectArraysClose(
+          values.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
     });
 
     it('concat axis=0', math => {
@@ -168,9 +169,10 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
       const values = math.concat3D(ndarray1, ndarray2, 0);
       expect(values.shape).toEqual([3, 2, 3]);
-      expect(values.getValues()).toEqual(new Float32Array([
-        1, 11, 111, 2, 22, 222, 5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888
-      ]));
+      test_util.expectArraysClose(values.getValues(), new Float32Array([
+                                    1, 11, 111, 2, 22, 222, 5, 55, 555, 6, 66,
+                                    666, 7, 77, 777, 8, 88, 888
+                                  ]));
     });
 
     it('shapes correct concat axis=1', math => {
@@ -178,7 +180,8 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const ndarray2 = Array3D.new([1, 1, 3], [4, 5, 6]);
       const values = math.concat3D(ndarray1, ndarray2, 1);
       expect(values.shape).toEqual([1, 2, 3]);
-      expect(values.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+      test_util.expectArraysClose(
+          values.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
     });
 
     it('concat axis=1', math => {
@@ -187,9 +190,10 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
       const values = math.concat3D(ndarray1, ndarray2, 1);
       expect(values.shape).toEqual([2, 3, 3]);
-      expect(values.getValues()).toEqual(new Float32Array([
-        1, 11, 111, 5, 55, 555, 6, 66, 666, 3, 33, 333, 7, 77, 777, 8, 88, 888
-      ]));
+      test_util.expectArraysClose(values.getValues(), new Float32Array([
+                                    1, 11, 111, 5, 55, 555, 6, 66, 666, 3, 33,
+                                    333, 7, 77, 777, 8, 88, 888
+                                  ]));
     });
 
     it('shapes correct concat axis=2', math => {
@@ -197,7 +201,8 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const ndarray2 = Array3D.new([1, 1, 3], [4, 5, 6]);
       const values = math.concat3D(ndarray1, ndarray2, 2);
       expect(values.shape).toEqual([1, 1, 6]);
-      expect(values.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+      test_util.expectArraysClose(
+          values.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
     });
 
     it('concat axis=2', math => {
@@ -206,10 +211,10 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
       const values = math.concat3D(ndarray1, ndarray2, 2);
       expect(values.shape).toEqual([2, 2, 5]);
-      expect(values.getValues()).toEqual(new Float32Array([
-        1, 11, 5, 55, 555, 2, 22, 6, 66, 666,
-        3, 33, 7, 77, 777, 4, 44, 8, 88, 888
-      ]));
+      test_util.expectArraysClose(values.getValues(), new Float32Array([
+                                    1, 11, 5, 55, 555, 2, 22, 6, 66, 666,
+                                    3, 33, 7, 77, 777, 4, 44, 8, 88, 888
+                                  ]));
     });
 
     it('concat throws when invalid non-axis shapes, axis=0', math => {

@@ -64,12 +64,8 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const r = math.divide(a, c);
 
-      expect(r.get(0, 0)).toBeCloseTo(1);
-      expect(r.get(0, 1)).toBeCloseTo(1);
-      expect(r.get(0, 2)).toBeCloseTo(1);
-      expect(r.get(1, 0)).toBeCloseTo(1);
-      expect(r.get(1, 1)).toBeCloseTo(2.5);
-      expect(r.get(1, 2)).toBeCloseTo(6 / 5);
+      test_util.expectArraysClose(
+          r.getValues(), new Float32Array([1, 1, 1, 1, 2.5, 6 / 5]));
 
       a.dispose();
       c.dispose();
@@ -81,8 +77,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const r = math.divide(a, c).getValues();
 
-      expect(r[0]).toBeCloseTo(1 / 3);
-      expect(r[1]).toEqual(NaN);
+      test_util.expectArraysClose(r, new Float32Array([1 / 3, NaN]));
 
       a.dispose();
       c.dispose();
@@ -105,12 +100,9 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const r = math.scalarDividedByArray(c, a);
 
-      expect(r.get(0, 0)).toBeCloseTo(2 / 1);
-      expect(r.get(0, 1)).toBeCloseTo(2 / 2);
-      expect(r.get(0, 2)).toBeCloseTo(2 / 3);
-      expect(r.get(1, 0)).toBeCloseTo(2 / 4);
-      expect(r.get(1, 1)).toBeCloseTo(2 / 5);
-      expect(r.get(1, 2)).toBeCloseTo(2 / 6);
+      test_util.expectArraysClose(
+          r.getValues(),
+          new Float32Array([2 / 1, 2 / 2, 2 / 3, 2 / 4, 2 / 5, 2 / 6]));
 
       a.dispose();
       c.dispose();
@@ -145,12 +137,9 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const r = math.arrayDividedByScalar(a, c);
 
-      expect(r.get(0, 0)).toBeCloseTo(1 / 2);
-      expect(r.get(0, 1)).toBeCloseTo(2 / 2);
-      expect(r.get(0, 2)).toBeCloseTo(3 / 2);
-      expect(r.get(1, 0)).toBeCloseTo(4 / 2);
-      expect(r.get(1, 1)).toBeCloseTo(5 / 2);
-      expect(r.get(1, 2)).toBeCloseTo(6 / 2);
+      test_util.expectArraysClose(
+          r.getValues(),
+          new Float32Array([1 / 2, 2 / 2, 3 / 2, 4 / 2, 5 / 2, 6 / 2]));
 
       a.dispose();
       c.dispose();
@@ -161,10 +150,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const c = Scalar.new(2);
 
       const r = math.arrayDividedByScalar(a, c).getValues();
-
-      expect(r[0]).toBeCloseTo(1 / 2);
-      expect(r[1]).toBeCloseTo(2 / 2);
-      expect(r[2]).toEqual(NaN);
+      test_util.expectArraysClose(r, new Float32Array([1 / 2, 2 / 2, NaN]));
 
       a.dispose();
       c.dispose();
@@ -404,9 +390,11 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const c1 = Scalar.new(3);
       const c2 = Scalar.new(2);
 
-      const expected = Array2D.new([2, 3], [8, 16, 24, 32, 40, 48]);
-      expect(math.scaledArrayAdd<Array2D>(c1, a, c2, b).equals(expected))
-          .toBe(true);
+      const result = math.scaledArrayAdd<Array2D>(c1, a, c2, b);
+
+      expect(result.shape).toEqual([2, 3]);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([8, 16, 24, 32, 40, 48]));
 
       // Different sizes throws an error.
       const wrongSizeMat = Array2D.new([2, 2], [1, 2, 3, 4]);

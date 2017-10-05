@@ -246,7 +246,7 @@ export function uploadMatrixToTexture(
           matrix, unpackedArray, channelsPerTexture);
     }
   } else {
-    unpackedArray = tex_util.encodeFloatArray(matrix)
+    unpackedArray = tex_util.encodeFloatArray(matrix);
   }
 
   uploadDataToTexture(gl, texture, w, h, unpackedArray, numChannels);

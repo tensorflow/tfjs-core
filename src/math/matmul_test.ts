@@ -31,7 +31,8 @@ const commonTests: MathTests = it => {
     const c = math.matMul(a, b);
 
     expect(c.shape).toEqual([2, 2]);
-    expect(c.getValues()).toEqual(new Float32Array([0, 8, -3, 20]));
+    test_util.expectArraysClose(
+        c.getValues(), new Float32Array([0, 8, -3, 20]));
 
     a.dispose();
     b.dispose();
@@ -45,7 +46,7 @@ const commonTests: MathTests = it => {
         a, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED);
 
     const expected = new Float32Array([7, 10, 16, 31]);
-    expect(c.getValues()).toEqual(expected);
+    test_util.expectArraysClose(c.getValues(), expected);
 
     a.dispose();
     b.dispose();
@@ -59,7 +60,7 @@ const commonTests: MathTests = it => {
         a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR);
 
     const expected = new Float32Array([17, 12, 2, 22, 15, 4, 27, 18, 6]);
-    expect(c.getValues()).toEqual(expected);
+    test_util.expectArraysClose(c.getValues(), expected);
 
     a.dispose();
     b.dispose();
@@ -73,7 +74,7 @@ const commonTests: MathTests = it => {
         a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.TRANSPOSED);
 
     const expected = new Float32Array([11, 13, 14, 20]);
-    expect(c.getValues()).toEqual(expected);
+    test_util.expectArraysClose(c.getValues(), expected);
 
     a.dispose();
     b.dispose();
@@ -159,8 +160,6 @@ const commonTests: MathTests = it => {
 
   it('Vector times matrix with implicit reshape', math => {
     const v = Array1D.new([2, 3]);
-    // Make the texture shape be column on purpose.
-    expect(v.getTextureShapeRC([2, 1])).toEqual([2, 1]);
 
     const matrix = Array2D.new([2, 2], [1, 2, 3, 4]);
     const result = math.vectorTimesMatrix(v, matrix);
@@ -245,7 +244,7 @@ const commonTests: MathTests = it => {
     const v2 = Array1D.new([2, 1]);
     const result = math.dotProduct(v1, v2);
 
-    expect(result.get()).toBeCloseTo(7);
+    test_util.expectNumbersClose(result.get(), 7);
 
     v1.dispose();
     v2.dispose();
