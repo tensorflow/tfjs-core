@@ -122,7 +122,7 @@ limitations under the License.
           <h1 class="mdl-card__title-text">Performance RNN</h1>
         </div>
       </a>
-      <div class="mdl-card__supporting-text">Enjoy real-time piano performance by a neural network</div>
+      <div class="mdl-card__supporting-text">Enjoy a real-time piano performance by a neural network</div>
       <div class="mdl-card__actions mdl-card--border">
         <a href="demos/performance_rnn">
           <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
