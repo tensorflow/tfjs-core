@@ -17,16 +17,16 @@
 const path = require('path');
 const spawn = require('cross-spawn');
 
-const tsFilePath = process.argv[2];
-const htmlFilePath = path.join(path.dirname(tsFilePath), 'index.html')
+const demoPath = process.argv[2];
+const htmlFilePath = path.join(demoPath, 'index.html')
 const outDir = process.argv[3];
 
 const cmd = path.join('scripts', 'build-demo');
-const child = spawn(cmd, [tsFilePath, outDir], {detached: false});
+const child = spawn(cmd, [demoPath, outDir], {detached: false});
 child.stdout.pipe(process.stdout);
 child.stderr.pipe(process.stderr);
 child.on('close', () => {
-  const bundlePath = path.join(outDir, path.basename(htmlFilePath));
+  const bundlePath = path.join(outDir, htmlFilePath);
   const cmd = path.join('node_modules', '.bin', 'polymer-bundler');
   const child = spawn(cmd, ['--inline-scripts', '--inline-css',
     '--out-html', bundlePath, htmlFilePath], {detached: false});
