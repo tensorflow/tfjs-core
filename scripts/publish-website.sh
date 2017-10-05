@@ -23,6 +23,8 @@ pushd $TMP_DIR > /dev/null
 bundle exec jekyll build
 pushd $TMP_DIR/_site > /dev/null
 gsutil -m rsync -d -r . gs://deeplearnjs.org
-gsutil -m acl ch -u AllUsers:R -r gs://deeplearnjs.org/*
+gsutil -m setmeta -h "Cache-Control:private" "gs://deeplearnjs.org/**.html"
+gsutil -m setmeta -h "Cache-Control:private" "gs://deeplearnjs.org/**.css"
+gsutil -m setmeta -h "Cache-Control:private" "gs://deeplearnjs.org/**.js"
 popd > /dev/null
 popd > /dev/null
