@@ -26,7 +26,6 @@ export class AdagradOptimizer extends Optimizer {
   constructor(
       protected learningRate: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
-    this.m = Scalar.new(momentum);
     this.eps = Scalar.new(1e-6);
   }
 
