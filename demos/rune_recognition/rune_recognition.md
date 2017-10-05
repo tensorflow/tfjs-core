@@ -5,7 +5,7 @@ order: 6
 
 # Example: Add a new data set to the model builder demo
 
-In this tutorial we add a data set to the [model builder demo](https://deeplearnjs.org/demos/model-builder/model-builder-demo.html) and train a neural network that can recognize individual glyphs of runes. It is similar to the canonical [MNIST example](https://www.tensorflow.org/get_started/mnist/pros) for recognizing handwritten digits, but with a different alphabet. This tutorial is meant as a minimal scaffold to start off your adventures in deep learning.
+In this tutorial we add a data set to the [model builder demo](https://deeplearnjs.org/demos/model-builder/) and train a neural network that can recognize individual glyphs of runes. It is similar to the canonical [MNIST example](https://www.tensorflow.org/get_started/mnist/pros) for recognizing handwritten digits, but with a different alphabet. This tutorial is meant as a minimal scaffold to start off your adventures in deep learning.
 
 We will perform the following steps:
 
@@ -153,7 +153,7 @@ First we verify that we can run the model builder. From the project root, run:
 
 * `npm run prep`
 * `./scripts/watch-demo demos/model-builder/model-builder.ts`
-* visit http://127.0.0.1:8080/demos/model-builder/model-builder-demo.html
+* Will open a browser at http://127.0.0.1:8080/demos/model-builder/
 
 If it works, open the file `demos/model-builder/model-builder-datasets-config.json`. The model builder defines its data sets in this file, so we are going to add our runes data set:
 

@@ -42,6 +42,7 @@
     "lint": "tslint -p . --type-check -t verbose"
   },
   "dependencies": {
+    "opn": "^5.1.0",
     "seedrandom": "~2.4.3"
   }
 }
