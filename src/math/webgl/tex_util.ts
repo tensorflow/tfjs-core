@@ -65,7 +65,7 @@ const FLOAT_RANGE = (FLOAT_MAX - FLOAT_MIN) / 255;
 const FLOAT_DELTAS = [1, 1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255)];
 const FLOAT_POWERS = [1, 255, 255 * 255];
 
-const BYTE_NAN_VALUE = 254;
+const BYTE_NAN_VALUE = 0;
 export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
   const uintArray = new Uint8Array(floatArray.length * 4);
   for (let i = 0; i < uintArray.length; i += 4) {

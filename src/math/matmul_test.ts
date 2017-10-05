@@ -17,8 +17,8 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {MatrixOrientation} from './math';
 
+import {MatrixOrientation} from './math';
 import {NDArrayMathGPU} from './math_gpu';
 import {Array1D, Array2D, Array3D} from './ndarray';
 import * as webgl_util from './webgl/webgl_util';
@@ -320,12 +320,19 @@ const gpuTests: MathTests = it => {
   it('Matrix times vector, larger than max texture size', math => {
     const maxTexSize = webgl_util.queryMaxTextureSize(
         (math as NDArrayMathGPU).getGPGPUContext().gl);
-    const matrix = Array2D.zeros([1, maxTexSize + 4]);
-    matrix.fill(1);
-    const v = Array1D.zeros([maxTexSize + 4]);
-    v.fill(1);
+
+    const sharedDim = maxTexSize + 4;
+
+    const matrix = Array2D.zeros([1, sharedDim]);
+    matrix.set(1, 0, sharedDim - 3);
+    matrix.set(1, 0, sharedDim - 2);
+
+    const v = Array1D.zeros([sharedDim]);
+    v.set(1, sharedDim - 3);
+    v.set(1, sharedDim - 2);
+
     const result = math.matrixTimesVector(matrix, v);
-    const expected = new Float32Array([maxTexSize + 4]);
+    const expected = new Float32Array([2]);
     test_util.expectArraysClose(result.getValues(), expected);
 
     matrix.dispose();
