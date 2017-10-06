@@ -40,10 +40,10 @@ math.scope(() => {
 #### ES3/ES5 JavaScript
 
 You can also use **deeplearn.js** with plain JavaScript. Load the latest version
-of the library directly from the Google CDN:
+of the library from [unpkg](https://unpkg.com):
 
 ```html
-<script src="https://storage.googleapis.com/learnjs-data/deeplearn-latest.js"></script>
+<script src="https://unpkg.com/deeplearn"></script>
 ```
 
 To use a specific version, replace `latest` with a version number
@@ -81,7 +81,7 @@ well as the [Clang-Format VSCode extension](https://marketplace.visualstudio.com
 To interactively develop any of the demos (e.g. `demos/nn-art/`):
 
 ```bash
-$ ./scripts/watch-demo demos/nn-art/nn-art.ts
+$ ./scripts/watch-demo demos/nn-art
 >> Starting up http-server, serving ./
 >> Available on:
 >>   http://127.0.0.1:8080
@@ -89,7 +89,7 @@ $ ./scripts/watch-demo demos/nn-art/nn-art.ts
 >> 1357589 bytes written to dist/demos/nn-art/bundle.js (0.85 seconds) at 10:34:45 AM
 ```
 
-Then visit `http://localhost:8080/demos/nn-art/nn-art-demo.html`. The
+Then visit `http://localhost:8080/demos/nn-art/`. The
 `watch-demo` script monitors for changes of typescript code and does
 incremental compilation (~200-400ms), so users can have a fast edit-refresh
 cycle when developing apps.
@@ -105,8 +105,8 @@ To build a standalone ES5 library that can be imported in the browser with a
 `<script>` tag:
 
 ```bash
-$ ./scripts/build-standalone.sh VERSION # Builds standalone library.
->> Stored standalone library at dist/deeplearn-VERSION(.min).js
+$ ./scripts/build-standalone.sh # Builds standalone library.
+>> Stored standalone library at dist/deeplearn(.min).js
 ```
 
 To do a dry run and test building an npm package:

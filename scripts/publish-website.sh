@@ -13,24 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-if [ -z "$1" ]
-  then
-    echo "No version number found."
-    exit
-fi
 
-./scripts/build-standalone.sh $1 || exit 1
+# Deploys the staged website to https://deeplearnjs.org.
+# Before running this script, run ./scripts/make-website.sh which stages the
+# website and serves it on localhost:4000 for preview.
 
-# Push to GCP.
-echo "Pushing library to GCP..."
-
-gsutil cp dist/deeplearn-$1.js gs://learnjs-data/
-gsutil cp dist/deeplearn-$1.min.js gs://learnjs-data/
-gsutil cp dist/deeplearn.js gs://learnjs-data/
-gsutil cp dist/deeplearn.min.js gs://learnjs-data/
-gsutil cp dist/deeplearn-latest.js gs://learnjs-data/
-gsutil cp dist/deeplearn-latest.min.js gs://learnjs-data/
-
-gsutil -m acl ch -u AllUsers:R -r gs://learnjs-data/*
-
-echo "Stored standalone binaries in https://storage.googleapis.com/learnjs-data/."
+TMP_DIR="/tmp/deeplearn-website"
+pushd $TMP_DIR > /dev/null
+bundle exec jekyll build
+pushd $TMP_DIR/_site > /dev/null
+gsutil -m rsync -d -r . gs://deeplearnjs.org
+gsutil -m setmeta -h "Cache-Control:private" "gs://deeplearnjs.org/**.html"
+gsutil -m setmeta -h "Cache-Control:private" "gs://deeplearnjs.org/**.css"
+gsutil -m setmeta -h "Cache-Control:private" "gs://deeplearnjs.org/**.js"
+popd > /dev/null
+popd > /dev/null
