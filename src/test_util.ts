@@ -144,6 +144,16 @@ export function describeMathGPU(
       featuresList);
 }
 
+export function describeCustom(
+    name: string, tests: Tests[], featuresList?: Features[],
+    customBeforeEach?: () => void, customAfterEach?: () => void) {
+  describeWithFeaturesAndExecutor(
+      name, tests as Tests[],
+      (testName, tests, features) => executeTests(
+          testName, tests, features, customBeforeEach, customAfterEach),
+      featuresList);
+}
+
 function describeWithFeaturesAndExecutor(
     testNameBase: string, tests: Tests[],
     executor: (testName: string, tests: Tests[], features?: Features) => void,
@@ -175,27 +185,15 @@ export function executeMathTests(
   };
 
   executeTests(
-      testName, tests as Tests[], customBeforeEach, customAfterEach, customIt,
-      features);
+      testName, tests as Tests[], features, customBeforeEach, customAfterEach,
+      customIt);
 }
 
-function executeTestsWithFeatures(
-    testNameBase: string, tests: Tests[], featuresList: Features[]) {
-  if (featuresList != null) {
-    featuresList.forEach(features => {
-      const testName = testNameBase + ' ' + JSON.stringify(features);
-      executeTests(testName, tests, features);
-    });
-  } else {
-    executor(testNameBase, tests);
-  }
-}
 
 export function executeTests(
-    testName: string, tests: Tests[], customBeforeEach?: () => void,
-    customAfterEach?: () => void,
-    customIt: (expectation: string, testFunc: () => void) => void = it,
-    features?: Features) {
+    testName: string, tests: Tests[], features?: Features,
+    customBeforeEach?: () => void, customAfterEach?: () => void,
+    customIt: (expectation: string, testFunc: () => void) => void = it) {
   describe(testName, () => {
     beforeEach(() => {
       if (features != null) {
