@@ -222,11 +222,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, inputs) as Array3D;
   }
 
-  protected switchDimInternal<T extends NDArray>(a: T, newDim: number[]): T {
+  protected transposeInternal<T extends NDArray>(a: T, perm: number[]): T {
     throw new Error('Not yet implemented!');
   }
 
-  protected sumInternal(a: NDArray): Scalar {
+  protected sumInternal<T extends NDArray>(a: NDArray, axis: number[]): T {
     const program = new ReduceSumProgram(a.size);
     return this.compileAndRun(program, [a]);
   }
@@ -266,12 +266,12 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }
 
-  protected addInternal<T extends NDArray>(a: T, b: T): T {
+  protected addInternal<T extends NDArray>(a: NDArray, b: NDArray): T {
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }
 
-  protected subInternal<T extends NDArray>(a: T, b: T): T {
+  protected subInternal<T extends NDArray>(a: NDArray, b: NDArray): T {
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }

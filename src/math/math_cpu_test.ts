@@ -999,23 +999,6 @@ describe('softmax', () => {
   });
 });
 
-describe('NDArrayMathCPU sum', () => {
-  let math: NDArrayMathCPU;
-  beforeEach(() => {
-    math = new NDArrayMathCPU();
-  });
-
-  it('sums values in ndarray', () => {
-    const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-    expect(math.sum(a).get()).toBe(7);
-  });
-
-  it('propagates NaNs', () => {
-    const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
-    expect(math.sum(a).get()).toEqual(NaN);
-  });
-});
-
 describe('NDArrayMathCPU unary ops', () => {
   let math: NDArrayMathCPU;
   beforeEach(() => {
@@ -1165,44 +1148,6 @@ describe('NDArrayMathCPU scalar OP ndarray', () => {
     const c: any = Array1D.new([1, 2, 3]);
     const a = Array1D.new([1, 2, 3]);
     expect(() => math.arrayMinusScalar(a, c)).toThrowError();
-  });
-});
-
-describe('NDArrayMathCPU switchDim', () => {
-  let math: NDArrayMathCPU;
-  beforeEach(() => {
-    math = new NDArrayMathCPU();
-  });
-
-  it('Switch dim 2D (no change)', () => {
-    const t = Array2D.new([2, 4], [1, 11, 2, 22, 3, 33, 4, 44]);
-    const t2 = math.switchDim(t, [0, 1]);
-    expect(t2.shape).toEqual(t.shape);
-    expect(t2.getValues()).toEqual(t.getValues());
-  });
-
-  it('Switch dim 2D (transpose)', () => {
-    const t = Array2D.new([2, 4], [1, 11, 2, 22, 3, 33, 4, 44]);
-    const t2 = math.switchDim(t, [1, 0]);
-    expect(t2.shape).toEqual([4, 2]);
-    const expected = new Float32Array([1, 3, 11, 33, 2, 4, 22, 44]);
-    expect(t2.getValues()).toEqual(expected);
-  });
-
-  it('Switch dim 3D [r, c, d] => [d, r, c]', () => {
-    const t = Array3D.new([2, 2, 2], [1, 11, 2, 22, 3, 33, 4, 44]);
-    const t2 = math.switchDim(t, [2, 0, 1]);
-    expect(t2.shape).toEqual([2, 2, 2]);
-    const expected = new Float32Array([1, 2, 3, 4, 11, 22, 33, 44]);
-    expect(t2.getValues()).toEqual(expected);
-  });
-
-  it('Switch dim 3D [r, c, d] => [d, c, r]', () => {
-    const t = Array3D.new([2, 2, 2], [1, 11, 2, 22, 3, 33, 4, 44]);
-    const t2 = math.switchDim(t, [2, 1, 0]);
-    expect(t2.shape).toEqual([2, 2, 2]);
-    const expected = new Float32Array([1, 3, 2, 4, 11, 33, 22, 44]);
-    expect(t2.getValues()).toEqual(expected);
   });
 });
 

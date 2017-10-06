@@ -16,6 +16,7 @@
  */
 
 import * as util from '../util';
+import * as axis_util from './axis_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -592,11 +593,73 @@ export abstract class NDArrayMath {
   /**
    * Computes the sum of all the entries in the input NDArray.
    * @param ndarray The input NDArray to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  sum(ndarray: NDArray): Scalar {
-    return this.executeOp('sum', () => this.sumInternal(ndarray));
+  sum<T extends NDArray>(
+      ndarray: NDArray, axis: number[] = null, keepDims = false): T {
+    if (axis == null) {
+      axis = ndarray.shape.map((v, i) => i);
+    }
+    return this.executeOp('sum', () => {
+      const res = this.sumInternal(ndarray, axis);
+      if (keepDims) {
+        const outSubShape = res.shape;
+        const reduceSubShape = axis.map(x => 1);
+        const newShape =
+            axis_util.computeLocation(outSubShape, reduceSubShape, axis);
+        return res.reshape(newShape) as T;
+      }
+      return res as T;
+    });
   }
-  protected abstract sumInternal(ndarray: NDArray): Scalar;
+  protected abstract sumInternal<T extends NDArray>(
+      ndarray: NDArray, axis: number[]): T;
+
+  /**
+   * Computes the sum of the entries in 1D array.
+   * @param ndarray The 1D NDArray to compute the sum over.
+   */
+  sum1D(ndarray: Array1D): Scalar {
+    return this.sum(ndarray);
+  }
+
+  /**
+   * Computes the sum of the entries in 2D array.
+   * @param ndarray The 2D NDArray to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   */
+  sum2D<T extends NDArray>(
+      ndarray: Array2D, axis: number[] = null, keepDims = false): T {
+    return this.sum(ndarray, axis, keepDims);
+  }
+
+  /**
+   * Computes the sum of the entries in 3D array.
+   * @param ndarray The 3D NDArray to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   */
+  sum3D<T extends NDArray>(
+      ndarray: Array3D, axis: number[] = null, keepDims = false): T {
+    return this.sum(ndarray, axis, keepDims);
+  }
+
+  /**
+   * Computes the sum of the entries in 4D array.
+   * @param ndarray The 4D NDArray to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   */
+  sum4D<T extends NDArray>(
+      ndarray: Array4D, axis: number[] = null, keepDims = false): T {
+    return this.sum(ndarray, axis, keepDims);
+  }
 
   /**
    * Computes the flattened index of the minimum element in the ndarray.
@@ -688,19 +751,28 @@ export abstract class NDArrayMath {
   //////////////////////
 
   /**
-   * Switches dimensions of the input NDArray.
-   * @param a The input NDArray.
-   * @param newDim The new indices that define which shapes values to switch.
+   * @deprecated Use math.transpose() instead.
    */
-  switchDim<T extends NDArray>(a: T, newDim: number[]): T {
-    util.assert(
-        a.rank === newDim.length,
-        `Error in switchDim: length of input shape ${a.shape} ` +
-            `must match size of newDim array ${newDim}.`);
-    return this.executeOp('switchDim', () => this.switchDimInternal(a, newDim));
+  switchDim<T extends NDArray>(a: T, perm: number[]): T {
+    return this.transpose(a, perm);
   }
-  protected abstract switchDimInternal<T extends NDArray>(
-      a: T, newDim: number[]): T;
+
+  /**
+   * Transposes the array. Permutes the dimensions according to `perm`.
+   *
+   * The returned array's dimension `i` will correspond to the input dimension
+   * `perm[i]`. If `perm` is not given, it is set to `[n-1...0]`, where `n` is
+   * the rank of the input array. Hence by default, this operation performs a
+   * regular matrix transpose on 2-D input arrays.
+   *
+   * @param a The array to transpose.
+   * @param perm Optional. The permutation of the dimensions of a.
+   */
+  transpose<T extends NDArray>(a: T, perm?: number[]): T {
+    return this.executeOp('transpose', () => this.transposeInternal(a, perm));
+  }
+  protected abstract transposeInternal<T extends NDArray>(a: T, perm: number[]):
+      T;
 
   /**
    * Computes a scalar plus NDArray, c + A.
@@ -757,11 +829,11 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to add element-wise.
    * @param b The second NDArray to add element-wise.
    */
-  add(a: NDArray, b: NDArray): NDArray {
+  add<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
     return this.executeOp('add', () => this.addInternal(a, b));
   }
-  protected abstract addInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract addInternal<T extends NDArray>(a: NDArray, b: NDArray): T;
 
   /**
    * Adds two NDArrays element-wise, A + B. Inputs must
@@ -782,11 +854,11 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to subtract element-wise.
    * @param b The second NDArray to subtract element-wise.
    */
-  sub(a: NDArray, b: NDArray): NDArray {
+  sub<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
     return this.executeOp('sub', () => this.subInternal(a, b));
   }
-  protected abstract subInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract subInternal<T extends NDArray>(a: NDArray, b: NDArray): T;
 
   /**
    * Subtracts two NDArrays element-wise, A - B. Inputs must
@@ -1598,7 +1670,7 @@ export abstract class NDArrayMath {
       probabilities: Array1D, numSamples: number, seed: number): Array1D;
 
   /**
-   * Returns a one-hot tensor. The locations represented by `indices` take
+   * Returns a one-hot array. The locations represented by `indices` take
    * value `onValue` (defaults to 1), while all other locations take value
    * `offValue` (defaults to 0).
    *

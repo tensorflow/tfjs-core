@@ -86,19 +86,7 @@ export class NDArray {
 
     this.shape = shape;
     this.data = data;
-    const dim = this.shape.length;
-
-    if (dim < 2) {
-      this.strides = [];
-    } else {
-      // Last dimension has implicit stride of 1, thus having D-1 (instead of D)
-      // strides.
-      this.strides = new Array(dim - 1);
-      this.strides[dim - 2] = this.shape[dim - 1];
-      for (let i = dim - 3; i >= 0; --i) {
-        this.strides[i] = this.strides[i + 1] * this.shape[i + 1];
-      }
-    }
+    this.strides = computeStrides(shape);
   }
 
   /** Creates a ndarray of zeros with the specified shape. */
@@ -202,21 +190,11 @@ export class NDArray {
   }
 
   locToIndex(locs: number[]): number {
-    let index = locs[locs.length - 1];
-    for (let i = 0; i < locs.length - 1; ++i) {
-      index += this.strides[i] * locs[i];
-    }
-    return index;
+    return locToIndex(this.shape, locs, this.strides);
   }
 
   indexToLoc(index: number): number[] {
-    const locs: number[] = new Array(this.shape.length);
-    for (let i = 0; i < locs.length - 1; ++i) {
-      locs[i] = Math.floor(index / this.strides[i]);
-      index -= locs[i] * this.strides[i];
-    }
-    locs[locs.length - 1] = index;
-    return locs;
+    return indexToLoc(this.shape, index, this.strides);
   }
 
   fill(value: number) {
@@ -414,8 +392,8 @@ export class Array1D extends NDArray {
   }
 
   static randTruncatedNormal(shape: [number], mean = 0, stdDev = 1): Array1D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array1D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array1D;
   }
 
   static randUniform(shape: [number], a: number, b: number): Array1D {
@@ -483,8 +461,8 @@ export class Array2D extends NDArray {
 
   static randTruncatedNormal(shape: [number, number], mean = 0, stdDev = 1):
       Array2D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array2D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array2D;
   }
 
   static randUniform(shape: [number, number], a: number, b: number): Array2D {
@@ -557,8 +535,8 @@ export class Array3D extends NDArray {
 
   static randTruncatedNormal(
       shape: [number, number, number], mean = 0, stdDev = 1): Array3D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array3D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array3D;
   }
 
   static randUniform(shape: [number, number, number], a: number, b: number):
@@ -640,8 +618,8 @@ export class Array4D extends NDArray {
 
   static randTruncatedNormal(
       shape: [number, number, number, number], mean = 0, stdDev = 1): Array4D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array4D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array4D;
   }
 
   static randUniform(
@@ -658,7 +636,50 @@ export class Array4D extends NDArray {
 type ArrayData = Float32Array|number[]|number[][]|number[][][]|number[][][][];
 
 function toTypedArray(a: ArrayData): Float32Array {
-  return (a instanceof Float32Array) ?
-    // tslint:disable-next-line:no-any
-    a : new Float32Array(util.flatten(a as any[]));
+  if (a instanceof Float32Array) {
+    return a;
+  }
+  // tslint:disable-next-line:no-any
+  return new Float32Array(util.flatten(a as any[]));
+}
+
+export function computeStrides(shape: number[]): number[] {
+  const dim = shape.length;
+  let strides: number[] = [];
+  if (dim >= 2) {
+    // Last dimension has implicit stride of 1, thus having D-1 (instead of D)
+    // strides.
+    strides = new Array(dim - 1);
+    strides[dim - 2] = shape[dim - 1];
+    for (let i = dim - 3; i >= 0; --i) {
+      strides[i] = strides[i + 1] * shape[i + 1];
+    }
+  }
+  return strides;
+}
+
+export function indexToLoc(
+    shape: number[], index: number, strides?: number[]): number[] {
+  if (strides == null) {
+    strides = computeStrides(shape);
+  }
+  const locs: number[] = new Array(shape.length);
+  for (let i = 0; i < locs.length - 1; ++i) {
+    locs[i] = Math.floor(index / strides[i]);
+    index -= locs[i] * strides[i];
+  }
+  locs[locs.length - 1] = index;
+  return locs;
+}
+
+export function locToIndex(
+    shape: number[], locs: number[], strides?: number[]): number {
+  if (strides == null) {
+    strides = computeStrides(shape);
+  }
+  let index = locs[locs.length - 1];
+  for (let i = 0; i < locs.length - 1; ++i) {
+    index += strides[i] * locs[i];
+  }
+  return index;
 }

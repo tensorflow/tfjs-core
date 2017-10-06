@@ -23,6 +23,7 @@ import {ConvInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath} from './math';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+import * as sum_cpu from './sum_cpu';
 
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
@@ -234,7 +235,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected scaledArrayAddInternal<T extends NDArray>(
-      c1: Scalar, a: T, c2: Scalar, b: T): T {
+      c1: Scalar, a: NDArray, c2: Scalar, b: NDArray) {
     const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
@@ -252,11 +253,11 @@ export class NDArrayMathCPU extends NDArrayMath {
     return this.scalarTimesArray(Scalar.NEG_ONE, a);
   }
 
-  protected addInternal<T extends NDArray>(a: T, b: T): T {
+  protected addInternal<T extends NDArray>(a: NDArray, b: NDArray): T {
     return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.ONE, b);
   }
 
-  protected subInternal<T extends NDArray>(a: T, b: T): T {
+  protected subInternal<T extends NDArray>(a: NDArray, b: NDArray): T {
     return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
   }
 
@@ -323,13 +324,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  protected sumInternal(ndarray: NDArray): Scalar {
-    let sum = 0;
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      sum += values[i];
-    }
-    return Scalar.new(sum);
+  protected sumInternal<T extends NDArray>(a: NDArray, axis: number[]): T {
+    return sum_cpu.sum(a, axis) as T;
   }
 
   protected argMinInternal(ndarray: NDArray): Scalar {
@@ -740,10 +736,10 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array1D.new(values);
   }
 
-  protected switchDimInternal<T extends NDArray>(t: T, newDim: number[]): T {
+  protected transposeInternal<T extends NDArray>(t: T, perm: number[]): T {
     const newShape: number[] = new Array(t.rank);
     for (let i = 0; i < newShape.length; i++) {
-      newShape[i] = t.shape[newDim[i]];
+      newShape[i] = t.shape[perm[i]];
     }
     const resultValues = new Float32Array(t.size);
     const values = t.getValues();
@@ -754,7 +750,7 @@ export class NDArrayMathCPU extends NDArrayMath {
       // Permute location.
       const newLoc: number[] = new Array(loc.length);
       for (let i = 0; i < newLoc.length; i++) {
-        newLoc[i] = loc[newDim[i]];
+        newLoc[i] = loc[perm[i]];
       }
 
       const newIndex = result.locToIndex(newLoc);
