@@ -22,6 +22,7 @@ import {NDArrayMathCPU} from './math/math_cpu';
 import {NDArrayMathGPU} from './math/math_gpu';
 
 /** Accuracy for tests. */
+// TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
 export const TEST_EPSILON = 1e-2;
 
 export function expectArraysClose(

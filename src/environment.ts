@@ -221,7 +221,6 @@ function getFeaturesFromURLOrKarma(): Features {
     }
   });
 
-
   return features;
 }
 
