@@ -30,8 +30,15 @@ export let GPGPU: GPGPUContext = null;
 export let TEXTURE_MANAGER: TextureManager = null;
 
 /** @hidden */
-export interface NDArrayData {
-  values?: Float32Array;
+export interface DataType {
+  float32: Float32Array;
+  int32: Int32Array;
+  bool: Uint8Array;
+}
+
+/** @hidden */
+export interface NDArrayData<T extends keyof DataType> {
+  values?: DataType[T];
   texture?: WebGLTexture;
   /** [rows, columns] shape of the texture. */
   textureShapeRC?: [number, number];
@@ -50,7 +57,9 @@ function throwIfGPUNotInitialized() {
   }
 }
 
-export class NDArray {
+export type TypedArray = Float32Array|Int32Array|Uint8Array;
+
+export class NDArray<T extends keyof DataType> {
   /** The shape of the ndarray. */
   shape: number[];
   /** Number of elements in the ndarray. */
@@ -63,9 +72,10 @@ export class NDArray {
    */
   protected strides: number[];
 
-  private data: NDArrayData;
+  private data: NDArrayData<T>;
+  private dtype: T;
 
-  protected constructor(shape: number[], data: NDArrayData) {
+  protected constructor(shape: number[], data: NDArrayData<T>, dtype: T) {
     // Sanity checks.
     util.assert(
         data.values != null || data.texture != null,
@@ -86,6 +96,7 @@ export class NDArray {
 
     this.shape = shape;
     this.data = data;
+    this.dtype = dtype;
     const dim = this.shape.length;
 
     if (dim < 2) {
@@ -102,47 +113,50 @@ export class NDArray {
   }
 
   /** Creates a ndarray of zeros with the specified shape. */
-  static zeros(shape: number[]): NDArray {
+  static zeros<T extends keyof DataType>(shape: number[], dtype?: T):
+      NDArray<T> {
     const values = new Float32Array(util.sizeFromShape(shape));
-    return NDArray.make(shape, {values});
+    return NDArray.make(shape, {values}, dtype);
   }
 
   /**
    * Creates a ndarray of zeros with the same shape as the specified ndarray.
    */
-  static zerosLike<T extends NDArray>(another: T): T {
-    return NDArray.zeros(another.shape) as T;
+  static zerosLike<T extends keyof DataType>(another: NDArray<T>): NDArray<T> {
+    return NDArray.zeros(another.shape, another.dtype);
   }
 
   /** Creates a ndarray with the same values/shape as the specified ndarray. */
-  static like<T extends NDArray>(another: T): T {
+  static like<T extends keyof DataType>(another: NDArray<T>): NDArray<T> {
     const values = another.getValues();
-    return NDArray.make(another.shape, {values: new Float32Array(values)}) as T;
+    return NDArray.make(
+        another.shape, {values: new Float32Array(values)}, another.dtype);
   }
 
   /**
    * Makes a new ndarray with the provided shape and values. Values should be in
    * a flat array.
    */
-  static make(shape: number[], data: NDArrayData): NDArray {
+  static make<T extends keyof DataType>(
+      shape: number[], data: NDArrayData<T>, dtype?: T): NDArray<T> {
     switch (shape.length) {
       case 0:
-        return new Scalar(data);
+        return new Scalar(data, dtype);
       case 1:
-        return new Array1D(data);
+        return new Array1D(data, dtype);
       case 2:
-        return new Array2D(shape as [number, number], data);
-      case 3:
-        return new Array3D(shape as [number, number, number], data);
-      case 4:
-        return new Array4D(shape as [number, number, number, number], data);
+        return new Array2D(shape as [number, number], data, dtype);
+      // case 3:
+      //   return new Array3D(shape as [number, number, number], data);
+      // case 4:
+      //   return new Array4D(shape as [number, number, number, number], data);
       default:
-        return new NDArray(shape, data);
+        return new NDArray(shape, data, dtype);
     }
   }
 
   /** Reshapes the current ndarray into the provided shape. */
-  reshape(newShape: number[]): NDArray {
+  reshape(newShape: number[]): NDArray<T> {
     newShape = util.inferFromImplicitShape(newShape, this.size);
     if (util.arraysEqual(this.shape, newShape)) {
       // No-op.
@@ -156,26 +170,27 @@ export class NDArray {
     return NDArray.make(newShape, this.data);
   }
 
-  asScalar(): Scalar {
+  asScalar(): Scalar<T> {
     util.assert(this.size === 1, 'The array must have only 1 element.');
     return this.reshape([]);
   }
 
-  as1D(): Array1D {
-    return this.reshape([this.size]) as Array1D;
+  as1D(): Array1D<T> {
+    return this.reshape([this.size]) as Array1D<T>;
   }
 
-  as2D(rows: number, columns: number): Array2D {
-    return this.reshape([rows, columns]) as Array2D;
+  as2D(rows: number, columns: number): Array2D<T> {
+    return this.reshape([rows, columns]) as Array2D<T>;
   }
 
-  as3D(rows: number, columns: number, depth: number): Array3D {
-    return this.reshape([rows, columns, depth]) as Array3D;
-  }
+  // as3D(rows: number, columns: number, depth: number): Array3D<T> {
+  //   return this.reshape([rows, columns, depth]) as Array3D<T>;
+  // }
 
-  as4D(rows: number, columns: number, depth: number, depth2: number): Array4D {
-    return this.reshape([rows, columns, depth, depth2]) as Array4D;
-  }
+  // as4D(rows: number, columns: number, depth: number, depth2: number):
+  //     Array4D<T> {
+  //   return this.reshape([rows, columns, depth, depth2]) as Array4D<T>;
+  // }
 
   get rank(): number {
     return this.shape.length;
@@ -223,11 +238,11 @@ export class NDArray {
     this.getValues().fill(value);
   }
 
-  getData(): NDArrayData {
+  getData(): NDArrayData<T> {
     return this.data;
   }
 
-  getValues(): Float32Array {
+  getValues(): DataType[T] {
     if (this.data.values == null) {
       throwIfGPUNotInitialized();
       this.data.values = GPGPU.downloadMatrixFromTexture(
@@ -238,8 +253,8 @@ export class NDArray {
     return this.data.values;
   }
 
-  getValuesAsync(): Promise<Float32Array> {
-    return new Promise<Float32Array>((resolve, reject) => {
+  getValuesAsync(): Promise<DataType[T]> {
+    return new Promise<DataType[T]>((resolve, reject) => {
       if (this.data.values != null) {
         resolve(this.data.values);
         return;
@@ -306,12 +321,12 @@ export class NDArray {
     return this.data.texture != null;
   }
 
-  equals(t: NDArray): boolean {
-    return util.arraysEqual(this.shape, t.shape) &&
+  equals(t: NDArray<T>): boolean {
+    return this.dtype === t.dtype && util.arraysEqual(this.shape, t.shape) &&
         util.arraysEqual(this.getValues(), t.getValues());
   }
 
-  static rand(shape: number[], randFunction: () => number): NDArray {
+  static rand(shape: number[], randFunction: () => number): NDArray<'float32'> {
     const size = util.sizeFromShape(shape);
     const values = new Float32Array(size);
     for (let i = 0; i < size; i++) {
@@ -321,29 +336,31 @@ export class NDArray {
     return NDArray.make(shape, {values});
   }
 
-  static randNormal(shape: number[], mean = 0, stdDev = 1): NDArray {
+  static randNormal(shape: number[], mean = 0, stdDev = 1): NDArray<'float32'> {
     return NDArray.rand(shape, () => util.randGauss(mean, stdDev));
   }
 
-  static randTruncatedNormal(shape: number[], mean = 0, stdDev = 1): NDArray {
+  static randTruncatedNormal(shape: number[], mean = 0, stdDev = 1):
+      NDArray<'float32'> {
     return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true));
   }
 
-  static randUniform(shape: number[], a: number, b: number): NDArray {
+  static randUniform(shape: number[], a: number, b: number):
+      NDArray<'float32'> {
     return NDArray.rand(shape, () => util.randUniform(a, b));
   }
 }
 
-export class Scalar extends NDArray {
-  constructor(data: NDArrayData) {
+export class Scalar<T extends keyof DataType> extends NDArray<T> {
+  constructor(data: NDArrayData<T>, dtype: T) {
     if (data.texture != null) {
       data.textureShapeRC = [1, 1];
     }
-    super([], data);
+    super([], data, dtype);
   }
 
-  static new(value: number) {
-    return new Scalar({values: new Float32Array([value])});
+  static new<T extends keyof DataType>(value: number, dtype?: T) {
+    return new Scalar({values: new Float32Array([value])}, dtype);
   }
 
   static ZERO = Scalar.new(0);
@@ -364,17 +381,18 @@ export class Scalar extends NDArray {
   }
 }
 
-export class Array1D extends NDArray {
+export class Array1D<T extends keyof DataType> extends NDArray<T> {
   shape: [number];
 
-  constructor(data: NDArrayData) {
+  constructor(data: NDArrayData<T>, dtype: T) {
     const shape = (data.values != null) ?
         [data.values.length] :
         [util.sizeFromShape(data.textureShapeRC)];
-    super(shape, data);
+    super(shape, data, dtype);
   }
 
-  static new(values: Float32Array|number[]) {
+  static new<T extends keyof DataType>(
+      values: Float32Array|number[], dtype?: T) {
     if (!(values instanceof Float32Array)) {
       const inferredShape = util.inferShape(values);
       util.assert(
@@ -382,7 +400,7 @@ export class Array1D extends NDArray {
           `Error constructing Array1D. Shape of values ${inferredShape} is ` +
               `not 1 dimensional.`);
     }
-    return new Array1D({values: toTypedArray(values)});
+    return new Array1D({values: toTypedArray(values)}, dtype);
   }
 
   get(i: number): number {
@@ -405,41 +423,48 @@ export class Array1D extends NDArray {
     return [index];
   }
 
-  static zeros(shape: [number]): Array1D {
-    return NDArray.zeros(shape) as Array1D;
+  static zeros<T extends keyof DataType>(shape: [number], dtype?: T):
+      Array1D<T> {
+    return NDArray.zeros(shape, dtype) as Array1D<T>;
   }
 
-  static randNormal(shape: [number], mean = 0, stdDev = 1): Array1D {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as Array1D;
+  static randNormal(shape: [number], mean = 0, stdDev = 1): Array1D<'float32'> {
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as
+        Array1D<'float32'>;
   }
 
-  static randTruncatedNormal(shape: [number], mean = 0, stdDev = 1): Array1D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array1D;
+  static randTruncatedNormal(shape: [number], mean = 0, stdDev = 1):
+      Array1D<'float32'> {
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array1D<'float32'>;
   }
 
-  static randUniform(shape: [number], a: number, b: number): Array1D {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array1D;
+  static randUniform(shape: [number], a: number, b: number):
+      Array1D<'float32'> {
+    return NDArray.rand(shape, () => util.randUniform(a, b)) as
+        Array1D<'float32'>;
   }
 
-  static make(shape: [number], data: NDArrayData): Array1D {
-    return new Array1D(data);
+  static make<T extends keyof DataType>(
+      shape: [number], data: NDArrayData<T>, dtype?: T): Array1D<T> {
+    return new Array1D(data, dtype);
   }
 }
 
-export class Array2D extends NDArray {
+export class Array2D<T extends keyof DataType> extends NDArray<T> {
   shape: [number, number];
 
   private stride0: number;
 
-  constructor(shape: [number, number], data: NDArrayData) {
+  constructor(shape: [number, number], data: NDArrayData<T>, dtype: T) {
     util.assert(shape.length === 2, 'Shape should be of length 2');
-    super(shape, data);
+    super(shape, data, dtype);
     this.stride0 = this.strides[0];
   }
 
-  static new(
-      shape: [number, number], values: Float32Array|number[]|number[][]) {
+  static new<T extends keyof DataType>(
+      shape: [number, number], values: DataType[T]|number[]|number[][],
+      dtype?: T) {
     if (!(values instanceof Float32Array)) {
       const inferredShape = util.inferShape(values);
       if (inferredShape.length > 1) {
@@ -450,7 +475,7 @@ export class Array2D extends NDArray {
                 `${shape}. `);
       }
     }
-    return new Array2D(shape, {values: toTypedArray(values)});
+    return new Array2D(shape, {values: toTypedArray(values)}, dtype);
   }
 
   get(i: number, j: number) {
@@ -473,35 +498,42 @@ export class Array2D extends NDArray {
     return [Math.floor(index / this.stride0), index % this.stride0];
   }
 
-  static zeros(shape: [number, number]): Array2D {
-    return NDArray.zeros(shape) as Array2D;
+  static zeros<T extends keyof DataType>(shape: [number, number], dtype: T):
+      Array2D<T> {
+    return NDArray.zeros(shape, dtype) as Array2D<T>;
   }
 
-  static randNormal(shape: [number, number], mean = 0, stdDev = 1): Array2D {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as Array2D;
+  static randNormal(shape: [number, number], mean = 0, stdDev = 1):
+      Array2D<'float32'> {
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as
+        Array2D<'float32'>;
   }
 
   static randTruncatedNormal(shape: [number, number], mean = 0, stdDev = 1):
-      Array2D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array2D;
+      Array2D<'float32'> {
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array2D<'float32'>;
   }
 
-  static randUniform(shape: [number, number], a: number, b: number): Array2D {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array2D;
+  static randUniform(shape: [number, number], a: number, b: number):
+      Array2D<'float32'> {
+    return NDArray.rand(shape, () => util.randUniform(a, b)) as
+        Array2D<'float32'>;
   }
 
-  static make(shape: [number, number], data: NDArrayData): Array2D {
-    return new Array2D(shape, data);
+  static make<T extends keyof DataType>(
+      shape: [number, number], data: NDArrayData<T>, dtype?: T): Array2D<T> {
+    return new Array2D(shape, data, dtype);
   }
 }
 
-export class Array3D extends NDArray {
+/*
+export class Array3D<T extends TypedArray = Float32Array> extends NDArray<T> {
   shape: [number, number, number];
   private stride0: number;
   private stride1: number;
 
-  constructor(shape: [number, number, number], data: NDArrayData) {
+  constructor(shape: [number, number, number], data: NDArrayData<T>) {
     util.assert(shape.length === 3, 'Shape should be of length 3');
     super(shape, data);
     this.stride0 = this.strides[0];
@@ -557,8 +589,8 @@ export class Array3D extends NDArray {
 
   static randTruncatedNormal(
       shape: [number, number, number], mean = 0, stdDev = 1): Array3D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array3D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array3D;
   }
 
   static randUniform(shape: [number, number, number], a: number, b: number):
@@ -566,18 +598,19 @@ export class Array3D extends NDArray {
     return NDArray.rand(shape, () => util.randUniform(a, b)) as Array3D;
   }
 
-  static make(shape: [number, number, number], data: NDArrayData): Array3D {
-    return new Array3D(shape, data);
+  static make<T extends TypedArray = Float32Array>(
+      shape: [number, number, number], data: NDArrayData<T>): Array3D<T> {
+    return new Array3D<T>(shape, data);
   }
 }
 
-export class Array4D extends NDArray {
+export class Array4D<T extends TypedArray = Float32Array> extends NDArray<T> {
   shape: [number, number, number, number];
   private stride0: number;
   private stride1: number;
   private stride2: number;
 
-  constructor(shape: [number, number, number, number], data: NDArrayData) {
+  constructor(shape: [number, number, number, number], data: NDArrayData<T>) {
     util.assert(shape.length === 4, 'Shape should be of length 4');
     super(shape, data);
     this.stride0 = this.strides[0];
@@ -640,8 +673,8 @@ export class Array4D extends NDArray {
 
   static randTruncatedNormal(
       shape: [number, number, number, number], mean = 0, stdDev = 1): Array4D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array4D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array4D;
   }
 
   static randUniform(
@@ -649,16 +682,20 @@ export class Array4D extends NDArray {
     return NDArray.rand(shape, () => util.randUniform(a, b)) as Array4D;
   }
 
-  static make(shape: [number, number, number, number], data: NDArrayData):
-      Array4D {
-    return new Array4D(shape, data);
+  static make<T extends TypedArray = Float32Array>(
+      shape: [number, number, number, number],
+      data: NDArrayData<T>): Array4D<T> {
+    return new Array4D<T>(shape, data);
   }
 }
+*/
 
 type ArrayData = Float32Array|number[]|number[][]|number[][][]|number[][][][];
 
 function toTypedArray(a: ArrayData): Float32Array {
-  return (a instanceof Float32Array) ?
-    // tslint:disable-next-line:no-any
-    a : new Float32Array(util.flatten(a as any[]));
+  if (a instanceof Float32Array) {
+    return a;
+  }
+  // tslint:disable-next-line:no-any
+  return new Float32Array(util.flatten(a as any[]));
 }

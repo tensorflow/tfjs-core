@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-export type Vector =
-    number[]|Float64Array|Float32Array|Int32Array|Int8Array|Int16Array;
+export type Vector = number[]|Float64Array|Float32Array|Int32Array|Int16Array|
+    Int8Array|Uint8Array;
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -133,8 +133,7 @@ export function isScalarShape(shape: number[]): boolean {
   return shape.length === 0;
 }
 
-// tslint:disable-next-line:no-any
-export function arraysEqual(n1: any[]|Float32Array, n2: any[]|Float32Array) {
+export function arraysEqual(n1: Vector, n2: Vector) {
   if (n1.length !== n2.length) {
     return false;
   }
