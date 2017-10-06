@@ -189,7 +189,6 @@ export function executeMathTests(
       customIt);
 }
 
-
 export function executeTests(
     testName: string, tests: Tests[], features?: Features,
     customBeforeEach?: () => void, customAfterEach?: () => void,
