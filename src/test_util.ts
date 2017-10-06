@@ -122,61 +122,101 @@ export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
 
 export type MathTests =
     (it: (name: string, testFn: (math: NDArrayMath) => void) => void) => void;
+export type Tests = (it: (name: string, testFn: () => void) => void) => void;
 
 export function describeMathCPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
   const testNameBase = 'math_cpu.' + name;
-  describeMathCommon(
-      testNameBase, tests, () => new NDArrayMathCPU(), featuresList);
+  describeWithFeaturesAndExecutor(
+      testNameBase, tests as Tests[],
+      (testName, tests, features) => executeMathTests(
+          testName, tests, () => new NDArrayMathCPU(), features),
+      featuresList);
 }
 
 export function describeMathGPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
   const testNameBase = 'math_gpu.' + name;
-  describeMathCommon(
-      testNameBase, tests, () => new NDArrayMathGPU(), featuresList);
+  describeWithFeaturesAndExecutor(
+      testNameBase, tests as Tests[],
+      (testName, tests, features) => executeMathTests(
+          testName, tests, () => new NDArrayMathGPU(), features),
+      featuresList);
 }
 
-function describeMathCommon(
-    testNameBase: string, tests: MathTests[], mathFactory: () => NDArrayMath,
+function describeWithFeaturesAndExecutor(
+    testNameBase: string, tests: Tests[],
+    executor: (testName: string, tests: Tests[], features?: Features) => void,
     featuresList?: Features[]) {
   if (featuresList != null) {
     featuresList.forEach(features => {
       const testName = testNameBase + ' ' + JSON.stringify(features);
-      executeMathTests(testName, tests, mathFactory, features);
+      executor(testName, tests, features);
     });
   } else {
-    executeMathTests(testNameBase, tests, mathFactory);
+    executor(testNameBase, tests);
   }
 }
 
 export function executeMathTests(
     testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
     features?: Features) {
-  describe(testName, () => {
-    let math: NDArrayMath;
-    const itWrapper = (name: string, testFunc: (math: NDArrayMath) => void) => {
-      it(name, () => testFunc(math));
-    };
+  let math: NDArrayMath;
+  const customBeforeEach = () => {
+    math = mathFactory();
+    math.startScope();
+  };
+  const customAfterEach = () => {
+    math.endScope(null);
+    math.dispose();
+  };
+  const customIt = (name: string, testFunc: (math: NDArrayMath) => void) => {
+    it(name, () => testFunc(math));
+  };
 
+  executeTests(
+      testName, tests as Tests[], customBeforeEach, customAfterEach, customIt,
+      features);
+}
+
+function executeTestsWithFeatures(
+    testNameBase: string, tests: Tests[], featuresList: Features[]) {
+  if (featuresList != null) {
+    featuresList.forEach(features => {
+      const testName = testNameBase + ' ' + JSON.stringify(features);
+      executeTests(testName, tests, features);
+    });
+  } else {
+    executor(testNameBase, tests);
+  }
+}
+
+export function executeTests(
+    testName: string, tests: Tests[], customBeforeEach?: () => void,
+    customAfterEach?: () => void,
+    customIt: (expectation: string, testFunc: () => void) => void = it,
+    features?: Features) {
+  describe(testName, () => {
     beforeEach(() => {
       if (features != null) {
         environment.setEnvironment(new Environment(features));
       }
 
-      math = mathFactory();
-      math.startScope();
+      if (customBeforeEach != null) {
+        customBeforeEach();
+      }
     });
 
     afterEach(() => {
-      math.endScope(null);
-      math.dispose();
+      if (customAfterEach != null) {
+        customAfterEach();
+      }
 
       if (features != null) {
         environment.setEnvironment(new Environment());
       }
     });
 
-    tests.forEach(test => test(itWrapper));
+    tests.forEach(test => test(customIt));
   });
 }

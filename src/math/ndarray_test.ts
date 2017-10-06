@@ -16,12 +16,41 @@
  */
 
 import * as test_util from '../test_util';
+import {Tests} from '../test_util';
 
 import * as ndarray from './ndarray';
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_util from './webgl/gpgpu_util';
 import {TextureManager} from './webgl/texture_manager';
+
+const cpuTests: Tests = it => {
+  it('simple batchnorm, no offset or scale, 2x1x2', math => {
+    const x = Array3D.new([2, 1, 2], new Float32Array([2, 100, 4, 400]));
+    const mean = Array1D.new([1, 2]);
+    const variance = Array1D.new([2, 3]);
+    const varianceEpsilon = .001;
+
+    const result = math.batchNormalization3D(
+        x, mean, variance, varianceEpsilon, undefined, undefined);
+
+    test_util.expectArraysClose(
+        result.getValues(), new Float32Array([
+          (x.get(0, 0, 0) - mean.get(0)) * 1 /
+              Math.sqrt(variance.get(0) + varianceEpsilon),
+          (x.get(0, 0, 1) - mean.get(1)) * 1 /
+              Math.sqrt(variance.get(1) + varianceEpsilon),
+          (x.get(1, 0, 0) - mean.get(0)) * 1 /
+              Math.sqrt(variance.get(0) + varianceEpsilon),
+          (x.get(1, 0, 1) - mean.get(1)) * 1 /
+              Math.sqrt(variance.get(1) + varianceEpsilon)
+        ]));
+
+    x.dispose();
+    mean.dispose();
+    variance.dispose();
+  });
+};
 
 describe('NDArray', () => {
   let gl: WebGLRenderingContext;
@@ -47,9 +76,6 @@ describe('NDArray', () => {
     expect(t.rank).toBe(1);
     expect(t.size).toBe(3);
     test_util.expectArraysClose(t.getValues(), new Float32Array([1, 2, 3]));
-    expect(t.get(0)).toBeCloseTo(1);
-    expect(t.get(1)).toBeCloseTo(2);
-    expect(t.get(2)).toBeCloseTo(3);
     // Out of bounds indexing.
     expect(t.get(4)).toBeUndefined();
 
@@ -58,9 +84,7 @@ describe('NDArray', () => {
     expect(t instanceof Array2D).toBe(true);
     expect(t.rank).toBe(2);
     expect(t.size).toBe(3);
-    expect(t.get(0, 0)).toBeCloseTo(1);
-    expect(t.get(0, 1)).toBeCloseTo(2);
-    expect(t.get(0, 2)).toBeCloseTo(3);
+    test_util.expectArraysClose(t.getValues(), new Float32Array([1, 2, 3]));
     // Out of bounds indexing.
     expect(t.get(4)).toBeUndefined();
 
@@ -70,12 +94,10 @@ describe('NDArray', () => {
     expect(t instanceof Array2D).toBe(true);
     expect(t.rank).toBe(2);
     expect(t.size).toBe(6);
-    expect(t.get(0, 0)).toBe(1);
-    expect(t.get(0, 1)).toBe(2);
-    expect(t.get(0, 2)).toBe(3);
-    expect(t.get(1, 0)).toBe(4);
-    expect(t.get(1, 1)).toBe(5);
-    expect(t.get(1, 2)).toBe(6);
+
+    test_util.expectArraysClose(
+        t.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
+
     // Out of bounds indexing.
     expect(t.get(5, 3)).toBeUndefined();
 
