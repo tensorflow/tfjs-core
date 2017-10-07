@@ -266,11 +266,16 @@ describe('mulmat_gpu (multiple matrices)', () => {
     const c: WebGLTexture = gpgpu.createMatrixTexture(cShape[0], cShape[1]);
     const r: WebGLTexture = gpgpu.createMatrixTexture(rShape[0], rShape[1]);
 
-    const aArr = new Array2D(aShape, {texture: a, textureShapeRC: aShape});
-    const bArr = new Array2D(bShape, {texture: b, textureShapeRC: bShape});
-    const abArr = new Array2D(abShape, {texture: ab, textureShapeRC: abShape});
-    const cArr = new Array2D(cShape, {texture: c, textureShapeRC: cShape});
-    const rArr = new Array2D(rShape, {texture: r, textureShapeRC: rShape});
+    const aArr =
+        Array2D.make(aShape, {texture: a, textureShapeRC: aShape}) as Array2D;
+    const bArr =
+        Array2D.make(bShape, {texture: b, textureShapeRC: bShape}) as Array2D;
+    const abArr =
+        Array2D.make(abShape, {texture: ab, textureShapeRC: abShape}) as
+        Array2D;
+    const cArr =
+        Array2D.make(cShape, {texture: c, textureShapeRC: cShape}) as Array2D;
+    const rArr = Array2D.make(rShape, {texture: r, textureShapeRC: rShape});
     const matMulProgram = new MatMulProgram(aArr.shape, bArr.shape);
     const axbProgram =
         gpgpu_math.compileProgram(gpgpu, matMulProgram, [aArr, bArr], abArr);

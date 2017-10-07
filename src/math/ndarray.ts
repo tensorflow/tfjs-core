@@ -59,7 +59,7 @@ function throwIfGPUNotInitialized() {
 
 export type TypedArray = Float32Array|Int32Array|Uint8Array;
 
-export class NDArray<T extends keyof DataType> {
+export class NDArray<T extends keyof DataType = 'float32'> {
   /** The shape of the ndarray. */
   shape: number[];
   /** Number of elements in the ndarray. */
@@ -113,9 +113,9 @@ export class NDArray<T extends keyof DataType> {
   }
 
   /** Creates a ndarray of zeros with the specified shape. */
-  static zeros<T extends keyof DataType>(shape: number[], dtype?: T):
-      NDArray<T> {
-    const values = new Float32Array(util.sizeFromShape(shape));
+  static zeros<T extends keyof DataType = 'float32'>(
+      shape: number[], dtype?: T): NDArray<T> {
+    const values = makeZerosTypedArray(util.sizeFromShape(shape), dtype);
     return NDArray.make(shape, {values}, dtype);
   }
 
@@ -128,16 +128,15 @@ export class NDArray<T extends keyof DataType> {
 
   /** Creates a ndarray with the same values/shape as the specified ndarray. */
   static like<T extends keyof DataType>(another: NDArray<T>): NDArray<T> {
-    const values = another.getValues();
-    return NDArray.make(
-        another.shape, {values: new Float32Array(values)}, another.dtype);
+    const newValues = copyTypedArray(another.getValues(), another.dtype);
+    return NDArray.make(another.shape, {values: newValues}, another.dtype);
   }
 
   /**
    * Makes a new ndarray with the provided shape and values. Values should be in
    * a flat array.
    */
-  static make<T extends keyof DataType>(
+  static make<T extends keyof DataType = 'float32'>(
       shape: number[], data: NDArrayData<T>, dtype?: T): NDArray<T> {
     switch (shape.length) {
       case 0:
@@ -146,10 +145,11 @@ export class NDArray<T extends keyof DataType> {
         return new Array1D(data, dtype);
       case 2:
         return new Array2D(shape as [number, number], data, dtype);
-      // case 3:
-      //   return new Array3D(shape as [number, number, number], data);
-      // case 4:
-      //   return new Array4D(shape as [number, number, number, number], data);
+      case 3:
+        return new Array3D(shape as [number, number, number], data, dtype);
+      case 4:
+        return new Array4D(
+            shape as [number, number, number, number], data, dtype);
       default:
         return new NDArray(shape, data, dtype);
     }
@@ -183,14 +183,14 @@ export class NDArray<T extends keyof DataType> {
     return this.reshape([rows, columns]) as Array2D<T>;
   }
 
-  // as3D(rows: number, columns: number, depth: number): Array3D<T> {
-  //   return this.reshape([rows, columns, depth]) as Array3D<T>;
-  // }
+  as3D(rows: number, columns: number, depth: number): Array3D<T> {
+    return this.reshape([rows, columns, depth]) as Array3D<T>;
+  }
 
-  // as4D(rows: number, columns: number, depth: number, depth2: number):
-  //     Array4D<T> {
-  //   return this.reshape([rows, columns, depth, depth2]) as Array4D<T>;
-  // }
+  as4D(rows: number, columns: number, depth: number, depth2: number):
+      Array4D<T> {
+    return this.reshape([rows, columns, depth, depth2]) as Array4D<T>;
+  }
 
   get rank(): number {
     return this.shape.length;
@@ -351,7 +351,7 @@ export class NDArray<T extends keyof DataType> {
   }
 }
 
-export class Scalar<T extends keyof DataType> extends NDArray<T> {
+export class Scalar<T extends keyof DataType = 'float32'> extends NDArray<T> {
   constructor(data: NDArrayData<T>, dtype: T) {
     if (data.texture != null) {
       data.textureShapeRC = [1, 1];
@@ -359,8 +359,8 @@ export class Scalar<T extends keyof DataType> extends NDArray<T> {
     super([], data, dtype);
   }
 
-  static new<T extends keyof DataType>(value: number, dtype?: T) {
-    return new Scalar({values: new Float32Array([value])}, dtype);
+  static new<T extends keyof DataType = 'float32'>(value: number, dtype?: T) {
+    return new Scalar({values: toTypedArray([value], dtype)}, dtype);
   }
 
   static ZERO = Scalar.new(0);
@@ -381,7 +381,7 @@ export class Scalar<T extends keyof DataType> extends NDArray<T> {
   }
 }
 
-export class Array1D<T extends keyof DataType> extends NDArray<T> {
+export class Array1D<T extends keyof DataType = 'float32'> extends NDArray<T> {
   shape: [number];
 
   constructor(data: NDArrayData<T>, dtype: T) {
@@ -391,16 +391,16 @@ export class Array1D<T extends keyof DataType> extends NDArray<T> {
     super(shape, data, dtype);
   }
 
-  static new<T extends keyof DataType>(
-      values: Float32Array|number[], dtype?: T) {
-    if (!(values instanceof Float32Array)) {
+  static new<T extends keyof DataType = 'float32'>(
+      values: DataType[T]|number[], dtype?: T): Array1D<T> {
+    if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values);
       util.assert(
           inferredShape.length === 1,
           `Error constructing Array1D. Shape of values ${inferredShape} is ` +
               `not 1 dimensional.`);
     }
-    return new Array1D({values: toTypedArray(values)}, dtype);
+    return new Array1D({values: toTypedArray(values, dtype)}, dtype);
   }
 
   get(i: number): number {
@@ -423,8 +423,8 @@ export class Array1D<T extends keyof DataType> extends NDArray<T> {
     return [index];
   }
 
-  static zeros<T extends keyof DataType>(shape: [number], dtype?: T):
-      Array1D<T> {
+  static zeros<T extends keyof DataType = 'float32'>(
+      shape: [number], dtype?: T): Array1D<T> {
     return NDArray.zeros(shape, dtype) as Array1D<T>;
   }
 
@@ -444,14 +444,9 @@ export class Array1D<T extends keyof DataType> extends NDArray<T> {
     return NDArray.rand(shape, () => util.randUniform(a, b)) as
         Array1D<'float32'>;
   }
-
-  static make<T extends keyof DataType>(
-      shape: [number], data: NDArrayData<T>, dtype?: T): Array1D<T> {
-    return new Array1D(data, dtype);
-  }
 }
 
-export class Array2D<T extends keyof DataType> extends NDArray<T> {
+export class Array2D<T extends keyof DataType = 'float32'> extends NDArray<T> {
   shape: [number, number];
 
   private stride0: number;
@@ -462,10 +457,10 @@ export class Array2D<T extends keyof DataType> extends NDArray<T> {
     this.stride0 = this.strides[0];
   }
 
-  static new<T extends keyof DataType>(
+  static new<T extends keyof DataType = 'float32'>(
       shape: [number, number], values: DataType[T]|number[]|number[][],
-      dtype?: T) {
-    if (!(values instanceof Float32Array)) {
+      dtype?: T): Array2D<T> {
+    if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
@@ -475,7 +470,7 @@ export class Array2D<T extends keyof DataType> extends NDArray<T> {
                 `${shape}. `);
       }
     }
-    return new Array2D(shape, {values: toTypedArray(values)}, dtype);
+    return new Array2D(shape, {values: toTypedArray(values, dtype)}, dtype);
   }
 
   get(i: number, j: number) {
@@ -498,8 +493,8 @@ export class Array2D<T extends keyof DataType> extends NDArray<T> {
     return [Math.floor(index / this.stride0), index % this.stride0];
   }
 
-  static zeros<T extends keyof DataType>(shape: [number, number], dtype: T):
-      Array2D<T> {
+  static zeros<T extends keyof DataType = 'float32'>(
+      shape: [number, number], dtype?: T): Array2D<T> {
     return NDArray.zeros(shape, dtype) as Array2D<T>;
   }
 
@@ -520,30 +515,24 @@ export class Array2D<T extends keyof DataType> extends NDArray<T> {
     return NDArray.rand(shape, () => util.randUniform(a, b)) as
         Array2D<'float32'>;
   }
-
-  static make<T extends keyof DataType>(
-      shape: [number, number], data: NDArrayData<T>, dtype?: T): Array2D<T> {
-    return new Array2D(shape, data, dtype);
-  }
 }
 
-/*
-export class Array3D<T extends TypedArray = Float32Array> extends NDArray<T> {
+export class Array3D<T extends keyof DataType = 'float32'> extends NDArray<T> {
   shape: [number, number, number];
   private stride0: number;
   private stride1: number;
 
-  constructor(shape: [number, number, number], data: NDArrayData<T>) {
+  constructor(shape: [number, number, number], data: NDArrayData<T>, dtype: T) {
     util.assert(shape.length === 3, 'Shape should be of length 3');
-    super(shape, data);
+    super(shape, data, dtype);
     this.stride0 = this.strides[0];
     this.stride1 = this.strides[1];
   }
 
-  static new(
+  static new<T extends keyof DataType = 'float32'>(
       shape: [number, number, number],
-      values: Float32Array|number[]|number[][][]) {
-    if (!(values instanceof Float32Array)) {
+      values: DataType[T]|number[]|number[][][], dtype?: T) {
+    if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
@@ -553,7 +542,7 @@ export class Array3D<T extends TypedArray = Float32Array> extends NDArray<T> {
                 `${shape}. `);
       }
     }
-    return new Array3D(shape, {values: toTypedArray(values)});
+    return new Array3D(shape, {values: toTypedArray(values, dtype)}, dtype);
   }
 
   get(i: number, j: number, k: number) {
@@ -578,50 +567,51 @@ export class Array3D<T extends TypedArray = Float32Array> extends NDArray<T> {
     return [i, Math.floor(index / this.stride1), index % this.stride1];
   }
 
-  static zeros(shape: [number, number, number]): Array3D {
-    return NDArray.zeros(shape) as Array3D;
+  static zeros<T extends keyof DataType = 'float32'>(shape: [
+    number, number, number
+  ]): Array3D<T> {
+    return NDArray.zeros(shape) as Array3D<T>;
   }
 
   static randNormal(shape: [number, number, number], mean = 0, stdDev = 1):
-      Array3D {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as Array3D;
+      Array3D<'float32'> {
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as
+        Array3D<'float32'>;
   }
 
   static randTruncatedNormal(
-      shape: [number, number, number], mean = 0, stdDev = 1): Array3D {
+      shape: [number, number, number], mean = 0,
+      stdDev = 1): Array3D<'float32'> {
     return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
-        Array3D;
+        Array3D<'float32'>;
   }
 
   static randUniform(shape: [number, number, number], a: number, b: number):
-      Array3D {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array3D;
-  }
-
-  static make<T extends TypedArray = Float32Array>(
-      shape: [number, number, number], data: NDArrayData<T>): Array3D<T> {
-    return new Array3D<T>(shape, data);
+      Array3D<'float32'> {
+    return NDArray.rand(shape, () => util.randUniform(a, b)) as
+        Array3D<'float32'>;
   }
 }
 
-export class Array4D<T extends TypedArray = Float32Array> extends NDArray<T> {
+export class Array4D<T extends keyof DataType = 'float32'> extends NDArray<T> {
   shape: [number, number, number, number];
   private stride0: number;
   private stride1: number;
   private stride2: number;
 
-  constructor(shape: [number, number, number, number], data: NDArrayData<T>) {
+  constructor(
+      shape: [number, number, number, number], data: NDArrayData<T>, dtype: T) {
     util.assert(shape.length === 4, 'Shape should be of length 4');
-    super(shape, data);
+    super(shape, data, dtype);
     this.stride0 = this.strides[0];
     this.stride1 = this.strides[1];
     this.stride2 = this.strides[2];
   }
 
-  static new(
+  static new<T extends keyof DataType = 'float32'>(
       shape: [number, number, number, number],
-      values: Float32Array|number[]|number[][][][]) {
-    if (!(values instanceof Float32Array)) {
+      values: DataType[T]|number[]|number[][][][], dtype?: T) {
+    if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
@@ -631,7 +621,7 @@ export class Array4D<T extends TypedArray = Float32Array> extends NDArray<T> {
                 `${shape}. `);
       }
     }
-    return new Array4D(shape, {values: toTypedArray(values)});
+    return new Array4D(shape, {values: toTypedArray(values, dtype)}, dtype);
   }
 
   get(i: number, j: number, k: number, l: number) {
@@ -662,40 +652,76 @@ export class Array4D<T extends TypedArray = Float32Array> extends NDArray<T> {
     return [i, j, Math.floor(index / this.stride2), index % this.stride2];
   }
 
-  static zeros(shape: [number, number, number, number]): Array4D {
-    return NDArray.zeros(shape) as Array4D;
+  static zeros<T extends keyof DataType = 'float32'>(
+      shape: [number, number, number, number], dtype?: T): Array4D<T> {
+    return NDArray.zeros(shape, dtype) as Array4D<T>;
   }
 
   static randNormal(
-      shape: [number, number, number, number], mean = 0, stdDev = 1): Array4D {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as Array4D;
+      shape: [number, number, number, number], mean = 0,
+      stdDev = 1): Array4D<'float32'> {
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as
+        Array4D<'float32'>;
   }
 
   static randTruncatedNormal(
-      shape: [number, number, number, number], mean = 0, stdDev = 1): Array4D {
+      shape: [number, number, number, number], mean = 0,
+      stdDev = 1): Array4D<'float32'> {
     return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
-        Array4D;
+        Array4D<'float32'>;
   }
 
   static randUniform(
-      shape: [number, number, number, number], a: number, b: number): Array4D {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array4D;
-  }
-
-  static make<T extends TypedArray = Float32Array>(
-      shape: [number, number, number, number],
-      data: NDArrayData<T>): Array4D<T> {
-    return new Array4D<T>(shape, data);
+      shape: [number, number, number, number], a: number,
+      b: number): Array4D<'float32'> {
+    return NDArray.rand(shape, () => util.randUniform(a, b)) as
+        Array4D<'float32'>;
   }
 }
-*/
 
-type ArrayData = Float32Array|number[]|number[][]|number[][][]|number[][][][];
+type ArrayData = TypedArray|number[]|number[][]|number[][][]|number[][][][];
 
-function toTypedArray(a: ArrayData): Float32Array {
-  if (a instanceof Float32Array) {
-    return a;
+function copyTypedArray<T extends keyof DataType>(
+    array: DataType[T] | number[], dtype: T): DataType[T] {
+  if (dtype == null || dtype === 'float32') {
+    return new Float32Array(array);
+  } else if (dtype === 'int32') {
+    return new Int32Array(array);
+  } else if (dtype === 'bool') {
+    return new Uint8Array(array);
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
+}
+
+function makeTypedArray<T extends keyof DataType>(
+    values: number[], dtype: T): DataType[T] {
+  return copyTypedArray(values, dtype);
+}
+
+function instanceofTypedArray(a: ArrayData): boolean {
+  return a instanceof Float32Array || a instanceof Int32Array ||
+      a instanceof Uint8Array;
+}
+
+function toTypedArray<T extends keyof DataType>(
+    a: ArrayData, dtype: T): DataType[T] {
+  if (instanceofTypedArray(a)) {
+    return a as Float32Array | Int32Array | Uint8Array;
   }
   // tslint:disable-next-line:no-any
-  return new Float32Array(util.flatten(a as any[]));
+  return makeTypedArray(util.flatten(a as any[]), dtype);
+}
+
+function makeZerosTypedArray<T extends keyof DataType>(
+    size: number, dtype: T): DataType[T] {
+  if (dtype == null || dtype === 'float32') {
+    return new Float32Array(size);
+  } else if (dtype === 'int32') {
+    return new Int32Array(size);
+  } else if (dtype === 'bool') {
+    return new Uint8Array(size);
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
 }

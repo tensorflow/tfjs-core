@@ -148,7 +148,7 @@ describe('NDArray', () => {
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
 
-    const a = new Array2D([3, 2], {texture, textureShapeRC: [3, 2]});
+    const a = Array2D.make([3, 2], {texture, textureShapeRC: [3, 2]});
     expect(a.inGPU()).toBe(true);
 
     expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -179,7 +179,7 @@ describe('NDArray', () => {
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
 
-    const a = new Array2D([3, 2], {texture, textureShapeRC: [3, 2]});
+    const a = Array2D.make([3, 2], {texture, textureShapeRC: [3, 2]});
     expect(a.inGPU()).toBe(true);
 
     a.getValuesAsync().then(values => {
@@ -202,7 +202,7 @@ describe('NDArray', () => {
     const texture = textureManager.acquireTexture([1, 1]);
     gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([10]));
 
-    const a = new Scalar({texture});
+    const a = Scalar.make([], {texture});
     expect(a.inGPU()).toBe(true);
     expect(a.getValues()).toEqual(new Float32Array([10]));
     expect(a.inGPU()).toBe(false);
@@ -212,7 +212,7 @@ describe('NDArray', () => {
     const texture = textureManager.acquireTexture([1, 3]);
     gpgpu.uploadMatrixToTexture(texture, 1, 3, new Float32Array([10, 7, 3]));
 
-    const a = new Array1D({texture, textureShapeRC: [1, 3]});
+    const a = Array1D.make([3], {texture, textureShapeRC: [1, 3]});
     expect(a.inGPU()).toBe(true);
     expect(a.getValues()).toEqual(new Float32Array([10, 7, 3]));
     expect(a.inGPU()).toBe(false);
@@ -223,7 +223,7 @@ describe('NDArray', () => {
     gpgpu.uploadMatrixToTexture(texture, 1, 3, new Float32Array([10, 7, 3]));
 
     const f = () => {
-      return new Array1D({texture});
+      return Array1D.make([3], {texture});
     };
 
     expect(f).toThrowError();
@@ -239,7 +239,7 @@ describe('NDArray', () => {
     const texture = textureManager.acquireTexture([2, 2]);
     gpgpu.uploadMatrixToTexture(texture, 2, 2, new Float32Array([10, 7, 3, 5]));
 
-    const a = new Array2D([2, 2], {texture, textureShapeRC: [2, 2]});
+    const a = Array2D.make([2, 2], {texture, textureShapeRC: [2, 2]});
     const a1d = a.as1D();
 
     expect(a1d.getValues()).toEqual(new Float32Array([10, 7, 3, 5]));
@@ -249,7 +249,7 @@ describe('NDArray', () => {
     const texture = textureManager.acquireTexture([1, 4]);
     gpgpu.uploadMatrixToTexture(texture, 1, 4, new Float32Array([10, 7, 3, 5]));
 
-    const a = new Array1D({texture, textureShapeRC: [1, 4]});
+    const a = Array1D.make([4], {texture, textureShapeRC: [1, 4]});
     const a2d = a.as2D(2, 2);
 
     expect(a2d.getValues()).toEqual(new Float32Array([10, 7, 3, 5]));
@@ -259,7 +259,7 @@ describe('NDArray', () => {
     const texture = textureManager.acquireTexture([4, 1]);
     gpgpu.uploadMatrixToTexture(texture, 4, 1, new Float32Array([10, 7, 3, 5]));
 
-    const a = new Array2D([2, 2], {texture, textureShapeRC: [4, 1]});
+    const a = Array2D.make([2, 2], {texture, textureShapeRC: [4, 1]});
 
     expect(a.getValues()).toEqual(new Float32Array([10, 7, 3, 5]));
   });

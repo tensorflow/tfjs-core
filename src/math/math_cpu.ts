@@ -980,7 +980,7 @@ export class NDArrayMathCPU extends NDArrayMath {
               Math.sqrt(
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
-    return Array3D.make(x.shape, {values: outValues});
+    return Array3D.new(x.shape, outValues);
   }
 
   protected multinomialInternal(
