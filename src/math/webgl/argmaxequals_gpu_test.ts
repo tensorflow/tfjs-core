@@ -15,12 +15,11 @@
  * =============================================================================
  */
 
-import {Array2D, initializeGPU, Scalar} from '../ndarray';
-
 import {ArgMaxEqualsProgram} from './argmaxequals_gpu';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_math from './gpgpu_math';
 import {TextureManager} from './texture_manager';
+import {Array2D, Scalar, initializeGPU} from '../ndarray';
 
 function uploadArgMaxEqualsDownload(
     a: Float32Array, b: Float32Array, rows: number, columns: number): number {
@@ -47,20 +46,20 @@ describe('argmaxequals_gpu ArgMin', () => {
     const a = new Float32Array([3]);
     const b = new Float32Array([3]);
     const equals = uploadArgMaxEqualsDownload(a, b, 1, 1);
-    expect(equals).toBeCloseTo(1);
+    expect(equals).toEqual(1);
   });
 
   it('different argmax values', () => {
     const a = new Float32Array([2, 3]);
     const b = new Float32Array([3, 2]);
     const equals = uploadArgMaxEqualsDownload(a, b, 1, 2);
-    expect(equals).toBeCloseTo(0);
+    expect(equals).toEqual(0);
   });
 
   it('same argmax values', () => {
     const a = new Float32Array([1, 2, 3, 4, 5, 4, 3, 2, 1]);
     const b = new Float32Array([10, 2, 30, 4, 50, 4, 30, 2, 10]);
     const equals = uploadArgMaxEqualsDownload(a, b, 1, 9);
-    expect(equals).toBeCloseTo(1);
+    expect(equals).toEqual(1);
   });
 });

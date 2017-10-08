@@ -131,7 +131,7 @@ describe('binaryop_gpu Mul', () => {
     const b = Array2D.zerosLike(a);
     b.fill(1.0);
     const result = uploadBinaryOpDownload(a, b, binaryop_gpu.MUL);
-    test_util.expectArraysClose(result, expected);
+    expect(result).toEqual(expected);
   });
 
   it('sets all result entries to 0 if B is 0', () => {
@@ -140,7 +140,7 @@ describe('binaryop_gpu Mul', () => {
     const b = Array2D.zerosLike(a);
     const expected = b.getValues();
     const result = uploadBinaryOpDownload(a, b, binaryop_gpu.MUL);
-    test_util.expectArraysClose(result, expected);
+    expect(result).toEqual(expected);
   });
 
   it('sets all result entries to A if B is [1]', () => {
@@ -157,7 +157,7 @@ describe('binaryop_gpu Mul', () => {
     const b = Array1D.new(test_util.randomArrayInRange(64, -10, 10));
     const expected = cpuMultiply(a.getValues(), b.getValues());
     const result = uploadBinaryOpDownload(a, b, binaryop_gpu.MUL);
-    test_util.expectArraysClose(result, expected, 1e-1);
+    test_util.expectArraysClose(result, expected);
   });
 });
 
