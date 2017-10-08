@@ -110,7 +110,6 @@ export function getExtensionOrThrow(
       'Extension "' + extensionName + '" not supported on this browser.');
 }
 
-
 export function createVertexShader(
     gl: WebGLRenderingContext, vertexShaderSource: string): WebGLShader {
   const vertexShader: WebGLShader = throwIfNull<WebGLShader>(

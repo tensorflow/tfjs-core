@@ -131,7 +131,6 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
   ]);
 }
 
-
 // math.slice3D
 {
   const tests: MathTests = it => {

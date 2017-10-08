@@ -298,7 +298,6 @@ import {Array1D, Array2D} from './ndarray';
   ]);
 }
 
-
 // math.exp
 {
   const tests: MathTests = it => {
