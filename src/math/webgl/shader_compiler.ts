@@ -120,7 +120,7 @@ vec2 UVfrom1D(int texNumR, int texNumC, int index) {
 
 const SAMPLE_2D_SNIPPET = `
 vec2 UVfrom2D(int texNumR, int texNumC, int numC, int row, int col) {
-  int index = int(dot(vec2(row, col), vec2(numC, 1)));
+  int index = row * numC + col;
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
