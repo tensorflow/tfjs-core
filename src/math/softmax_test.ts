@@ -30,19 +30,19 @@ const tests: MathTests = it => {
   });
 
   it('overflow', math => {
-    const y = math.softmax(Array1D.new([10000, 10000]));
+    const y = math.softmax(Array1D.new([1000, 1000]));
 
     test_util.expectArraysClose(y.getValues(), new Float32Array([0.5, 0.5]));
   });
 
   it('underflow', math => {
-    const y = math.softmax(Array1D.new([-10000, -10000]));
+    const y = math.softmax(Array1D.new([-1000, -1000]));
 
     test_util.expectArraysClose(y.getValues(), new Float32Array([0.5, 0.5]));
   });
 
   it('Huge difference between probabilities', math => {
-    const y = math.softmax(Array1D.new([-10000, +10000]));
+    const y = math.softmax(Array1D.new([-1000, +1000]));
 
     test_util.expectArraysClose(y.getValues(), new Float32Array([0.0, 1]));
   });
