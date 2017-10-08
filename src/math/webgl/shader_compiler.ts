@@ -120,7 +120,7 @@ vec2 UVfrom1D(int texNumR, int texNumC, int index) {
 
 const SAMPLE_2D_SNIPPET = `
 vec2 UVfrom2D(int texNumR, int texNumC, int numC, int row, int col) {
-  int index = row * numC + col;
+  int index = int(dot(vec2(row, col), vec2(numC, 1)));
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -130,7 +130,9 @@ vec2 UVfrom2D(int texNumR, int texNumC, int numC, int row, int col) {
 const SAMPLE_3D_SNIPPET = `
 vec2 UVfrom3D(int texNumR, int texNumC, int stride0,
     int stride1, int row, int col, int depth) {
-  int index = row * stride0 + col * stride1 + depth;
+  vec3 v1 = vec3(row, col, depth);
+  vec3 v2 = vec3(stride0, stride1, 1);
+  int index = int(dot(v1, v2));
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -141,7 +143,9 @@ const SAMPLE_4D_SNIPPET = `
 vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
     int stride1, int stride2, int row, int col, int depth,
     int depth2) {
-  int index = row * stride0 + col * stride1 + depth * stride2 + depth2;
+  vec4 v1 = vec4(row, col, depth, depth2);
+  vec4 v2 = vec4(stride0, stride1, stride2, 1);
+  int index = int(dot(v1, v2));
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
