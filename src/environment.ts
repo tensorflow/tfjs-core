@@ -54,8 +54,6 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
   }
 
   const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = 1;
-  tempCanvas.height = 1;
 
   if (webGLVersion === 1) {
     return (tempCanvas.getContext('webgl') ||
