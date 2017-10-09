@@ -44,6 +44,7 @@ import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
+import {SwitchDimProgram} from './webgl/switch_dim_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
@@ -223,7 +224,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected switchDimInternal<T extends NDArray>(a: T, newDim: number[]): T {
-    throw new Error('Not yet implemented!');
+    const program = new SwitchDimProgram(a.shape, newDim);
+    return this.compileAndRun(program, [a]);
   }
 
   protected sumInternal(a: NDArray): Scalar {
