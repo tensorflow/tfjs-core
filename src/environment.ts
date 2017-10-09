@@ -54,6 +54,9 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
   }
 
   const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = 1;
+  tempCanvas.height = 1;
+
   if (webGLVersion === 1) {
     return (tempCanvas.getContext('webgl') ||
             tempCanvas.getContext('experimental-webgl')) as
@@ -100,20 +103,39 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
     return false;
   }
 
-  if (webGLVersion === 2) {
-    // WebGL 2 has floating point textures enabled by default.
-    return true;
-  }
-
   const gl = getWebGLRenderingContext(webGLVersion);
-  gl.getExtension('OES_texture_float');
-  gl.getExtension('WEBGL_color_buffer_float');
+
+  let floatExtension;
+  let colorBufferFloatExtension;
+  if (webGLVersion === 1) {
+    floatExtension = gl.getExtension('OES_texture_float');
+    colorBufferFloatExtension = gl.getExtension('WEBGL_color_buffer_float');
+    if (floatExtension == null || colorBufferFloatExtension == null) {
+      return false;
+    }
+  } else {
+    colorBufferFloatExtension = gl.getExtension('EXT_color_buffer_float');
+    if (colorBufferFloatExtension == null) {
+      return false;
+    }
+  }
 
   const frameBuffer = gl.createFramebuffer();
   const texture = gl.createTexture();
 
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
+
+  // tslint:disable-next-line:no-any
+  const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
+  gl.texImage2D(
+      gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
+
+  gl.texSubImage2D(
+      gl.TEXTURE_2D, 0, 0, 0, 1, 1, gl.RGBA, gl.FLOAT,
+      new Float32Array([1, 1, 1, 1]));
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(
       gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
