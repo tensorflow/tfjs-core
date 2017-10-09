@@ -46,9 +46,6 @@ export class SwitchDimProgram implements GPGPUProgram {
 
 function getSwitchedCoords(newDim: number[]): string {
   const rank = newDim.length;
-  if (rank === 1) {
-    return 'x';
-  } 
   if (rank > 4) {
     throw Error(`SwitchDim for rank ${rank} is not yet supported`);
   }
