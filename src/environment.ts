@@ -130,12 +130,6 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
   gl.texImage2D(
       gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
 
-  gl.texSubImage2D(
-      gl.TEXTURE_2D, 0, 0, 0, 1, 1, gl.RGBA, gl.FLOAT,
-      new Float32Array([1, 1, 1, 1]));
-
-  gl.bindTexture(gl.TEXTURE_2D, null);
-
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(
       gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
