@@ -145,10 +145,10 @@ export function describeMathGPU(
 }
 
 export function describeCustom(
-    name: string, tests: Tests[], featuresList?: Features[],
+    name: string, tests: Tests, featuresList?: Features[],
     customBeforeEach?: () => void, customAfterEach?: () => void) {
   describeWithFeaturesAndExecutor(
-      name, tests as Tests[],
+      name, [tests],
       (testName, tests, features) => executeTests(
           testName, tests, features, customBeforeEach, customAfterEach),
       featuresList);
