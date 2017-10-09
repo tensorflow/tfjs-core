@@ -18,7 +18,8 @@
 import * as test_util from '../test_util';
 
 import * as ndarray from './ndarray';
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+// tslint:disable-next-line:max-line-length
+import {Array1D, Array2D, Array3D, Array4D, DType, NDArray, Scalar} from './ndarray';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_util from './webgl/gpgpu_util';
 import {TextureManager} from './webgl/texture_manager';
@@ -378,7 +379,7 @@ test_util.describeCustom('NDArray.new', () => {
     };
     expect(f).toThrowError();
   });
-}, ENVS);
+});
 
 test_util.describeCustom('NDArray.zeros', () => {
   it('1D default dtype', () => {
@@ -654,7 +655,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([3]);
-    expect(b.getValues()).toEqual(new Uint8Array([1, 2, 3]));
+    expect(b.getValues()).toEqual(new Uint8Array([1, 1, 1]));
   });
 
   it('2D default dtype', () => {
@@ -686,7 +687,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([2, 2]);
-    expect(b.getValues()).toEqual(new Uint8Array([1, 2, 3, 4]));
+    expect(b.getValues()).toEqual(new Uint8Array([1, 1, 1, 1]));
   });
 
   it('3D default dtype', () => {
@@ -718,7 +719,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([2, 2, 1]);
-    expect(b.getValues()).toEqual(new Uint8Array([1, 2, 3, 4]));
+    expect(b.getValues()).toEqual(new Uint8Array([1, 1, 1, 1]));
   });
 
   it('4D default dtype', () => {
@@ -750,7 +751,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([2, 2, 1, 1]);
-    expect(b.getValues()).toEqual(new Uint8Array([1, 2, 3, 4]));
+    expect(b.getValues()).toEqual(new Uint8Array([1, 1, 1, 1]));
   });
 
 });
@@ -789,28 +790,28 @@ test_util.describeCustom('Scalar.new', () => {
   it('bool dtype, 3 => true, like numpy', () => {
     const a = Scalar.new(3, 'bool');
     expect(a.dtype).toBe('bool');
-    expect(a.get()).toBeTruthy();
+    expect(a.get()).toBe(1);
   });
 
   it('bool dtype, -2 => true, like numpy', () => {
     const a = Scalar.new(-2, 'bool');
     expect(a.dtype).toBe('bool');
-    expect(a.get()).toBeTruthy();
+    expect(a.get()).toBe(1);
   });
 
   it('bool dtype, 0 => false, like numpy', () => {
     const a = Scalar.new(0, 'bool');
     expect(a.dtype).toBe('bool');
-    expect(a.get()).toBeFalsy();
+    expect(a.get()).toBe(0);
   });
 
   it('bool dtype from boolean', () => {
     const a = Scalar.new(false, 'bool');
-    expect(a.get()).toBeFalsy();
+    expect(a.get()).toBe(0);
     expect(a.dtype).toBe('bool');
 
     const b = Scalar.new(true, 'bool');
-    expect(b.get()).toBeTruthy();
+    expect(b.get()).toBe(1);
     expect(b.dtype).toBe('bool');
   });
 
@@ -867,10 +868,10 @@ test_util.describeCustom('Array1D.new', () => {
     const a = Array1D.new([1, -2, 0, 3], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([4]);
-    expect(a.get(0)).toBeTruthy();
-    expect(a.get(1)).toBeTruthy();
-    expect(a.get(2)).toBeFalsy();
-    expect(a.get(3)).toBeTruthy();
+    expect(a.get(0)).toBe(1);
+    expect(a.get(1)).toBe(1);
+    expect(a.get(2)).toBe(0);
+    expect(a.get(3)).toBe(1);
   });
 
   it('default dtype from boolean[]', () => {
@@ -932,10 +933,10 @@ test_util.describeCustom('Array2D.new', () => {
     const a = Array2D.new([2, 2], [1, -2, 0, 3], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([2, 2]);
-    expect(a.get(0, 0)).toBeTruthy();
-    expect(a.get(0, 1)).toBeTruthy();
-    expect(a.get(1, 0)).toBeFalsy();
-    expect(a.get(1, 1)).toBeTruthy();
+    expect(a.get(0, 0)).toBe(1);
+    expect(a.get(0, 1)).toBe(1);
+    expect(a.get(1, 0)).toBe(0);
+    expect(a.get(1, 1)).toBe(1);
   });
 
   it('default dtype from boolean[]', () => {
@@ -997,10 +998,10 @@ test_util.describeCustom('Array3D.new', () => {
     const a = Array3D.new([2, 2, 1], [1, -2, 0, 3], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([2, 2, 1]);
-    expect(a.get(0, 0, 0)).toBeTruthy();
-    expect(a.get(0, 1, 0)).toBeTruthy();
-    expect(a.get(1, 0, 0)).toBeFalsy();
-    expect(a.get(1, 1, 0)).toBeTruthy();
+    expect(a.get(0, 0, 0)).toBe(1);
+    expect(a.get(0, 1, 0)).toBe(1);
+    expect(a.get(1, 0, 0)).toBe(0);
+    expect(a.get(1, 1, 0)).toBe(1);
   });
 
   it('default dtype from boolean[]', () => {
@@ -1065,10 +1066,10 @@ test_util.describeCustom('Array4D.new', () => {
     const a = Array4D.new([2, 2, 1, 1], [1, -2, 0, 3], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expect(a.get(0, 0, 0, 0)).toBeTruthy();
-    expect(a.get(0, 1, 0, 0)).toBeTruthy();
-    expect(a.get(1, 0, 0, 0)).toBeFalsy();
-    expect(a.get(1, 1, 0, 0)).toBeTruthy();
+    expect(a.get(0, 0, 0, 0)).toBe(1);
+    expect(a.get(0, 1, 0, 0)).toBe(1);
+    expect(a.get(1, 0, 0, 0)).toBe(0);
+    expect(a.get(1, 1, 0, 0)).toBe(1);
   });
 
   it('default dtype from boolean[]', () => {
@@ -1216,12 +1217,12 @@ test_util.describeCustom('NDArray.asType', () => {
   });
 
   it('array2d float32 -> bool', () => {
-    const a = Array2D.new([2, 2], [1.1, 3.9, -2.9, 0]).asType('bool');
+    const a = Array2D.new([2, 2], [1.1, 3.9, -2.9, 0]).asType(DType.bool);
     expect(a.dtype).toBe('bool');
-    expect(a.get(0, 0)).toBeTruthy();
-    expect(a.get(0, 1)).toBeTruthy();
-    expect(a.get(1, 0)).toBeTruthy();
-    expect(a.get(1, 1)).toBeFalsy();
+    expect(a.get(0, 0)).toBe(1);
+    expect(a.get(0, 1)).toBe(1);
+    expect(a.get(1, 0)).toBe(1);
+    expect(a.get(1, 1)).toBe(0);
   });
 
   it('array3d bool -> float32', () => {
