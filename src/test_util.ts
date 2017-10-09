@@ -154,9 +154,10 @@ export function describeCustom(
       featuresList);
 }
 
+type TestExecutor = (testName: string, tests: Tests[], features?: Features) =>
+    void;
 function describeWithFeaturesAndExecutor(
-    testNameBase: string, tests: Tests[],
-    executor: (testName: string, tests: Tests[], features?: Features) => void,
+    testNameBase: string, tests: Tests[], executor: TestExecutor,
     featuresList?: Features[]) {
   if (featuresList != null) {
     featuresList.forEach(features => {

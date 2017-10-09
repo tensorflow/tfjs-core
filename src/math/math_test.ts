@@ -196,8 +196,8 @@ import {Array1D} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('basicLSTMCell', [gpuTests]);
-  test_util.describeMathGPU('basicLSTMCell', [gpuTests], [
+  test_util.describeMathCPU('debug mode', [gpuTests]);
+  test_util.describeMathGPU('debug mode', [gpuTests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

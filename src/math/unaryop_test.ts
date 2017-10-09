@@ -84,35 +84,6 @@ import {Array1D, Array2D} from './ndarray';
   ]);
 }
 
-// math.abs
-{
-  const tests: MathTests = it => {
-    it('basic', math => {
-      const a = Array1D.new([1, -2, 0, 3, -0.1]);
-      const result = math.abs(a);
-      test_util.expectArraysClose(
-          result.getValues(), new Float32Array([1, 2, 0, 3, 0.1]));
-
-      a.dispose();
-    });
-
-    it('propagates NaNs', math => {
-      const a = Array1D.new([1, -2, 0, 3, -0.1, NaN]);
-      const result = math.abs(a);
-      test_util.expectArraysClose(
-          result.getValues(), new Float32Array([1, 2, 0, 3, 0.1, NaN]));
-      a.dispose();
-    });
-  };
-
-  test_util.describeMathCPU('abs', [tests]);
-  test_util.describeMathGPU('abs', [tests], [
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  ]);
-}
-
 // math.step
 {
   const tests: MathTests = it => {

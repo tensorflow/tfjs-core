@@ -31,8 +31,8 @@ export interface Features {
   'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'?: boolean;
   // 0: No WebGL, 1: WebGL 1.0, 2: WebGL 2.0.
   'WEBGL_VERSION'?: number;
-  // Whether writing to floating point textures is enabled. When false, fall
-  // back to using unsigned byte textures.
+  // Whether writing & reading floating point textures is enabled. When
+  // false, fall back to using unsigned byte textures.
   'WEBGL_FLOAT_TEXTURE_ENABLED'?: boolean;
 }
 
