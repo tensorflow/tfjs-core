@@ -95,6 +95,16 @@ import {Array1D, Array2D} from './ndarray';
       a.dispose();
     });
 
+    it('one value', math => {
+      const a = Array1D.new([10]);
+
+      const result = math.argMax(a);
+
+      expect(result.get()).toBeCloseTo(0);
+
+      a.dispose();
+    });
+
     it('propagates NaNs', math => {
       const a = Array1D.new([5, 0, 3, NaN, 3]);
       expect(math.argMax(a).get()).toEqual(NaN);
@@ -113,12 +123,22 @@ import {Array1D, Array2D} from './ndarray';
 // math.argmin
 {
   const tests: MathTests = it => {
-    it('argmin', math => {
+    it('Array1D', math => {
       const a = Array1D.new([1, 0, 3, 2]);
 
       const result = math.argMin(a);
 
       expect(result.get()).toBeCloseTo(1);
+
+      a.dispose();
+    });
+
+    it('one value', math => {
+      const a = Array1D.new([10]);
+
+      const result = math.argMin(a);
+
+      expect(result.get()).toBeCloseTo(0);
 
       a.dispose();
     });
