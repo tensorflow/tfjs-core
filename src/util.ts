@@ -93,20 +93,24 @@ export function assertShapesMatch(
 }
 
 // tslint:disable-next-line:no-any
-export function flatten(arr: any[], ret?: number[]): number[] {
-  ret = (ret === undefined ? [] : ret);
+export function flatten(
+    arr: number[]|number[][]|number[][][]|number[][][][]|boolean[]|boolean[][]|
+    boolean[][][]|boolean[][][][],
+    ret?: number[]): number[]|boolean[] {
+  ret = ret || [];
   for (let i = 0; i < arr.length; ++i) {
     if (Array.isArray(arr[i])) {
-      flatten(arr[i], ret);
+      // tslint:disable-next-line:no-any
+      flatten(arr[i] as any, ret);
     } else {
-      ret.push(arr[i]);
+      ret.push(arr[i] as number);
     }
   }
   return ret;
 }
 
-export type ArrayData =
-    Vector|number|number[]|number[][]|number[][][]|number[][][][];
+export type ArrayData = Vector|number|number[]|number[][]|number[][][]|
+    number[][][][]|boolean|boolean[]|boolean[][]|boolean[][][]|boolean[][][][];
 
 export function inferShape(arr: ArrayData): number[] {
   const shape: number[] = [];

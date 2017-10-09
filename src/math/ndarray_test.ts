@@ -372,3 +372,854 @@ describe('NDArray.new method', () => {
     expect(f).toThrowError();
   });
 });
+
+describe('NDArray.zeros', () => {
+  it('1D default dtype', () => {
+    const a = Array1D.zeros([3]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0]));
+  });
+
+  it('1D float32 dtype', () => {
+    const a = Array1D.zeros([3], 'float32');
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0]));
+  });
+
+  it('1D int32 dtype', () => {
+    const a = Array1D.zeros([3], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Int32Array([0, 0, 0]));
+  });
+
+  it('1D bool dtype', () => {
+    const a = Array1D.zeros([3], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Uint8Array([0, 0, 0]));
+  });
+
+  it('2D default dtype', () => {
+    const a = Array2D.zeros([3, 2]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3, 2]);
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0]));
+  });
+
+  it('2D float32 dtype', () => {
+    const a = Array2D.zeros([3, 2], 'float32');
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3, 2]);
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0]));
+  });
+
+  it('2D int32 dtype', () => {
+    const a = Array2D.zeros([3, 2], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([3, 2]);
+    expect(a.getValues()).toEqual(new Int32Array([0, 0, 0, 0, 0, 0]));
+  });
+
+  it('2D bool dtype', () => {
+    const a = Array2D.zeros([3, 2], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.shape).toEqual([3, 2]);
+    expect(a.getValues()).toEqual(new Uint8Array([0, 0, 0, 0, 0, 0]));
+  });
+
+  it('3D default dtype', () => {
+    const a = Array3D.zeros([2, 2, 2]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 2, 2]);
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0, 0, 0]));
+  });
+
+  it('3D float32 dtype', () => {
+    const a = Array3D.zeros([2, 2, 2], 'float32');
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 2, 2]);
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0, 0, 0]));
+  });
+
+  it('3D int32 dtype', () => {
+    const a = Array3D.zeros([2, 2, 2], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2, 2]);
+    expect(a.getValues()).toEqual(new Int32Array([0, 0, 0, 0, 0, 0, 0, 0]));
+  });
+
+  it('3D bool dtype', () => {
+    const a = Array3D.zeros([2, 2, 2], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.shape).toEqual([2, 2, 2]);
+    expect(a.getValues()).toEqual(new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]));
+  });
+
+  it('4D default dtype', () => {
+    const a = Array4D.zeros([3, 2, 1, 1]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0]));
+  });
+
+  it('4D float32 dtype', () => {
+    const a = Array4D.zeros([3, 2, 1, 1], 'float32');
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0]));
+  });
+
+  it('4D int32 dtype', () => {
+    const a = Array4D.zeros([3, 2, 1, 1], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([3, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Int32Array([0, 0, 0, 0, 0, 0]));
+  });
+
+  it('4D bool dtype', () => {
+    const a = Array4D.zeros([3, 2, 1, 1], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.shape).toEqual([3, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Uint8Array([0, 0, 0, 0, 0, 0]));
+  });
+});
+
+describe('NDArray.zerosLike', () => {
+  it('1D default dtype', () => {
+    const a = Array1D.new([1, 2, 3]);
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([3]);
+    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0]));
+  });
+
+  it('1D float32 dtype', () => {
+    const a = Array1D.new([1, 2, 3], 'float32');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([3]);
+    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0]));
+  });
+
+  it('1D int32 dtype', () => {
+    const a = Array1D.new([1, 2, 3], 'int32');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([3]);
+    expect(b.getValues()).toEqual(new Int32Array([0, 0, 0]));
+  });
+
+  it('1D bool dtype', () => {
+    const a = Array1D.new([1, 2, 3], 'bool');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([3]);
+    expect(b.getValues()).toEqual(new Uint8Array([0, 0, 0]));
+  });
+
+  it('2D default dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4]);
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2]);
+    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+  });
+
+  it('2D float32 dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4], 'float32');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2]);
+    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+  });
+
+  it('2D int32 dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4], 'int32');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([2, 2]);
+    expect(b.getValues()).toEqual(new Int32Array([0, 0, 0, 0]));
+  });
+
+  it('2D bool dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4], 'bool');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([2, 2]);
+    expect(b.getValues()).toEqual(new Uint8Array([0, 0, 0, 0]));
+  });
+
+  it('3D default dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4]);
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+  });
+
+  it('3D float32 dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4], 'float32');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+  });
+
+  it('3D int32 dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4], 'int32');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expect(b.getValues()).toEqual(new Int32Array([0, 0, 0, 0]));
+  });
+
+  it('3D bool dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4], 'bool');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expect(b.getValues()).toEqual(new Uint8Array([0, 0, 0, 0]));
+  });
+
+  it('4D default dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4]);
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+  });
+
+  it('4D float32 dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4], 'float32');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+  });
+
+  it('4D int32 dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4], 'int32');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expect(b.getValues()).toEqual(new Int32Array([0, 0, 0, 0]));
+  });
+
+  it('4D bool dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4], 'bool');
+    const b = NDArray.zerosLike(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expect(b.getValues()).toEqual(new Uint8Array([0, 0, 0, 0]));
+  });
+});
+
+describe('NDArray.like', () => {
+  it('1D default dtype', () => {
+    const a = Array1D.new([1, 2, 3]);
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([3]);
+    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3]));
+  });
+
+  it('1D float32 dtype', () => {
+    const a = Array1D.new([1, 2, 3], 'float32');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([3]);
+    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3]));
+  });
+
+  it('1D int32 dtype', () => {
+    const a = Array1D.new([1, 2, 3], 'int32');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([3]);
+    expect(b.getValues()).toEqual(new Int32Array([1, 2, 3]));
+  });
+
+  it('1D bool dtype', () => {
+    const a = Array1D.new([1, 2, 3], 'bool');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([3]);
+    expect(b.getValues()).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it('2D default dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4]);
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2]);
+    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('2D float32 dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4], 'float32');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2]);
+    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('2D int32 dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4], 'int32');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([2, 2]);
+    expect(b.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('2D bool dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4], 'bool');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([2, 2]);
+    expect(b.getValues()).toEqual(new Uint8Array([1, 2, 3, 4]));
+  });
+
+  it('3D default dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4]);
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('3D float32 dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4], 'float32');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('3D int32 dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4], 'int32');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expect(b.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('3D bool dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4], 'bool');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expect(b.getValues()).toEqual(new Uint8Array([1, 2, 3, 4]));
+  });
+
+  it('4D default dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4]);
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('4D float32 dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4], 'float32');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('4D int32 dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4], 'int32');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expect(b.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('4D bool dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4], 'bool');
+    const b = NDArray.like(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expect(b.getValues()).toEqual(new Uint8Array([1, 2, 3, 4]));
+  });
+});
+
+describe('Scalar.new', () => {
+  it('default dtype', () => {
+    const a = Scalar.new(3);
+    expect(a.dtype).toBe('float32');
+    expect(a.getValues()).toEqual(new Float32Array([3]));
+  });
+
+  it('float32 dtype', () => {
+    const a = Scalar.new(3, 'float32');
+    expect(a.dtype).toBe('float32');
+    expect(a.getValues()).toEqual(new Float32Array([3]));
+  });
+
+  it('int32 dtype', () => {
+    const a = Scalar.new(3, 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([3]));
+  });
+
+  it('int32 dtype, 3.9 => 3, like numpy', () => {
+    const a = Scalar.new(3.9, 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([3]));
+  });
+
+  it('int32 dtype, -3.9 => -3, like numpy', () => {
+    const a = Scalar.new(-3.9, 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([-3]));
+  });
+
+  it('bool dtype, 3 => true, like numpy', () => {
+    const a = Scalar.new(3, 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.get()).toBeTruthy();
+  });
+
+  it('bool dtype, -2 => true, like numpy', () => {
+    const a = Scalar.new(-2, 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.get()).toBeTruthy();
+  });
+
+  it('bool dtype, 0 => false, like numpy', () => {
+    const a = Scalar.new(0, 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.get()).toBeFalsy();
+  });
+
+  it('bool dtype from boolean', () => {
+    const a = Scalar.new(false, 'bool');
+    expect(a.get()).toBeFalsy();
+    expect(a.dtype).toBe('bool');
+
+    const b = Scalar.new(true, 'bool');
+    expect(b.get()).toBeTruthy();
+    expect(b.dtype).toBe('bool');
+  });
+
+  it('int32 dtype from boolean', () => {
+    const a = Scalar.new(true, 'int32');
+    expect(a.get()).toBe(1);
+    expect(a.dtype).toBe('int32');
+  });
+
+  it('default dtype from boolean', () => {
+    const a = Scalar.new(false);
+    expect(a.get()).toBe(0);
+    expect(a.dtype).toBe('float32');
+  });
+});
+
+describe('Array1D.new', () => {
+  it('default dtype', () => {
+    const a = Array1D.new([1, 2, 3]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3]));
+  });
+
+  it('float32 dtype', () => {
+    const a = Array1D.new([1, 2, 3], 'float32');
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3]));
+  });
+
+  it('int32 dtype', () => {
+    const a = Array1D.new([1, 2, 3], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 3]));
+  });
+
+  it('int32 dtype, non-ints get floored, like numpy', () => {
+    const a = Array1D.new([1.1, 2.5, 3.9], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 3]));
+  });
+
+  it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
+    const a = Array1D.new([-1.1, -2.5, -3.9], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([3]);
+    expect(a.getValues()).toEqual(new Int32Array([-1, -2, -3]));
+  });
+
+  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
+    const a = Array1D.new([1, -2, 0, 3], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.shape).toEqual([4]);
+    expect(a.get(0)).toBeTruthy();
+    expect(a.get(1)).toBeTruthy();
+    expect(a.get(2)).toBeFalsy();
+    expect(a.get(3)).toBeTruthy();
+  });
+
+  it('default dtype from boolean[]', () => {
+    const a = Array1D.new([false, false, true]);
+    expect(a.dtype).toBe('float32');
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 1]));
+  });
+
+  it('int32 dtype from boolean[]', () => {
+    const a = Array1D.new([false, false, true], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([0, 0, 1]));
+  });
+
+  it('bool dtype from boolean[]', () => {
+    const a = Array1D.new([false, false, true], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.getValues()).toEqual(new Uint8Array([0, 0, 1]));
+  });
+});
+
+describe('Array2D.new', () => {
+  it('default dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 2]);
+    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('float32 dtype', () => {
+    const a = Array2D.new([2, 2], [1, 2, 3, 4]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 2]);
+    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype', () => {
+    const a = Array2D.new([2, 2], [[1, 2], [3, 4]], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2]);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype, non-ints get floored, like numpy', () => {
+    const a = Array2D.new([2, 2], [1.1, 2.5, 3.9, 4.0], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2]);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
+    const a = Array2D.new([2, 2], [-1.1, -2.5, -3.9, -4.0], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2]);
+    expect(a.getValues()).toEqual(new Int32Array([-1, -2, -3, -4]));
+  });
+
+  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
+    const a = Array2D.new([2, 2], [1, -2, 0, 3], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.shape).toEqual([2, 2]);
+    expect(a.get(0, 0)).toBeTruthy();
+    expect(a.get(0, 1)).toBeTruthy();
+    expect(a.get(1, 0)).toBeFalsy();
+    expect(a.get(1, 1)).toBeTruthy();
+  });
+
+  it('default dtype from boolean[]', () => {
+    const a = Array2D.new([2, 2], [[false, false], [true, false]]);
+    expect(a.dtype).toBe('float32');
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 1, 0]));
+  });
+
+  it('int32 dtype from boolean[]', () => {
+    const a = Array2D.new([2, 2], [[false, false], [true, false]], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([0, 0, 1, 0]));
+  });
+
+  it('bool dtype from boolean[]', () => {
+    const a = Array2D.new([2, 2], [[false, false], [true, false]], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.getValues()).toEqual(new Uint8Array([0, 0, 1, 0]));
+  });
+});
+
+describe('Array3D.new', () => {
+  it('default dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 2, 1]);
+    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('float32 dtype', () => {
+    const a = Array3D.new([2, 2, 1], [1, 2, 3, 4]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 2, 1]);
+    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype', () => {
+    const a = Array3D.new([2, 2, 1], [[[1], [2]], [[3], [4]]], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2, 1]);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype, non-ints get floored, like numpy', () => {
+    const a = Array3D.new([2, 2, 1], [1.1, 2.5, 3.9, 4.0], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2, 1]);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
+    const a = Array3D.new([2, 2, 1], [-1.1, -2.5, -3.9, -4.0], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2, 1]);
+    expect(a.getValues()).toEqual(new Int32Array([-1, -2, -3, -4]));
+  });
+
+  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
+    const a = Array3D.new([2, 2, 1], [1, -2, 0, 3], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.shape).toEqual([2, 2, 1]);
+    expect(a.get(0, 0, 0)).toBeTruthy();
+    expect(a.get(0, 1, 0)).toBeTruthy();
+    expect(a.get(1, 0, 0)).toBeFalsy();
+    expect(a.get(1, 1, 0)).toBeTruthy();
+  });
+
+  it('default dtype from boolean[]', () => {
+    const a = Array3D.new([2, 2, 1], [[[false], [false]], [[true], [false]]]);
+    expect(a.dtype).toBe('float32');
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 1, 0]));
+  });
+
+  it('int32 dtype from boolean[]', () => {
+    const a = Array3D.new(
+        [2, 2, 1], [[[false], [false]], [[true], [false]]], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([0, 0, 1, 0]));
+  });
+
+  it('bool dtype from boolean[]', () => {
+    const a =
+        Array3D.new([2, 2, 1], [[[false], [false]], [[true], [false]]], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.getValues()).toEqual(new Uint8Array([0, 0, 1, 0]));
+  });
+});
+
+describe('Array4D.new', () => {
+  it('default dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('float32 dtype', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype', () => {
+    const a =
+        Array4D.new([2, 2, 1, 1], [[[[1]], [[2]]], [[[3]], [[4]]]], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype, non-ints get floored, like numpy', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1.1, 2.5, 3.9, 4.0], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 3, 4]));
+  });
+
+  it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
+    const a = Array4D.new([2, 2, 1, 1], [-1.1, -2.5, -3.9, -4.0], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([2, 2, 1, 1]);
+    expect(a.getValues()).toEqual(new Int32Array([-1, -2, -3, -4]));
+  });
+
+  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
+    const a = Array4D.new([2, 2, 1, 1], [1, -2, 0, 3], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.shape).toEqual([2, 2, 1, 1]);
+    expect(a.get(0, 0, 0, 0)).toBeTruthy();
+    expect(a.get(0, 1, 0, 0)).toBeTruthy();
+    expect(a.get(1, 0, 0, 0)).toBeFalsy();
+    expect(a.get(1, 1, 0, 0)).toBeTruthy();
+  });
+
+  it('default dtype from boolean[]', () => {
+    const a =
+        Array4D.new([1, 2, 2, 1], [[[[false], [false]], [[true], [false]]]]);
+    expect(a.dtype).toBe('float32');
+    expect(a.getValues()).toEqual(new Float32Array([0, 0, 1, 0]));
+  });
+
+  it('int32 dtype from boolean[]', () => {
+    const a = Array4D.new(
+        [1, 2, 2, 1], [[[[false], [false]], [[true], [false]]]], 'int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([0, 0, 1, 0]));
+  });
+
+  it('bool dtype from boolean[]', () => {
+    const a = Array4D.new(
+        [1, 2, 2, 1], [[[[false], [false]], [[true], [false]]]], 'bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.getValues()).toEqual(new Uint8Array([0, 0, 1, 0]));
+  });
+});
+
+describe('NDArray.reshape', () => {
+  it('Scalar default dtype', () => {
+    const a = Scalar.new(4);
+    const b = a.reshape([1, 1]);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([1, 1]);
+  });
+
+  it('Scalar bool dtype', () => {
+    const a = Scalar.new(4, 'bool');
+    const b = a.reshape([1, 1, 1]);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([1, 1, 1]);
+  });
+
+  it('Array1D default dtype', () => {
+    const a = Array1D.new([1, 2, 3, 4]);
+    const b = a.reshape([2, 2]);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2]);
+  });
+
+  it('Array1D int32 dtype', () => {
+    const a = Array1D.new([1, 2, 3, 4], 'int32');
+    const b = a.reshape([2, 2]);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([2, 2]);
+  });
+
+  it('Array2D default dtype', () => {
+    const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    const b = a.reshape([6]);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([6]);
+  });
+
+  it('Array2D bool dtype', () => {
+    const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6], 'bool');
+    const b = a.reshape([6]);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([6]);
+  });
+
+  it('Array3D default dtype', () => {
+    const a = Array3D.new([2, 3, 1], [1, 2, 3, 4, 5, 6]);
+    const b = a.reshape([6]);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([6]);
+  });
+
+  it('Array3D bool dtype', () => {
+    const a = Array3D.new([2, 3, 1], [1, 2, 3, 4, 5, 6], 'bool');
+    const b = a.reshape([6]);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([6]);
+  });
+
+  it('Array4D default dtype', () => {
+    const a = Array4D.new([2, 3, 1, 1], [1, 2, 3, 4, 5, 6]);
+    const b = a.reshape([2, 3]);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 3]);
+  });
+
+  it('Array4D int32 dtype', () => {
+    const a = Array4D.new([2, 3, 1, 1], [1, 2, 3, 4, 5, 6], 'int32');
+    const b = a.reshape([3, 2]);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([3, 2]);
+  });
+});
+
+describe('NDArray.asXD preserves dtype', () => {
+  it('scalar -> 2d', () => {
+    const a = Scalar.new(4, 'int32');
+    const b = a.as2D(1, 1);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([1, 1]);
+  });
+
+  it('1d -> 2d', () => {
+    const a = Array1D.new([4, 2, 1], 'bool');
+    const b = a.as2D(3, 1);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([3, 1]);
+  });
+
+  it('2d -> 4d', () => {
+    const a = Array2D.new([2, 2], [4, 2, 1, 3]);
+    const b = a.as4D(1, 1, 2, 2);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([1, 1, 2, 2]);
+  });
+
+  it('3d -> 2d', () => {
+    const a = Array3D.new([2, 2, 1], [4, 2, 1, 3], 'float32');
+    const b = a.as2D(2, 2);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2]);
+  });
+
+  it('4d -> 1d', () => {
+    const a = Array4D.new([2, 2, 1, 1], [4, 2, 1, 3], 'bool');
+    const b = a.as1D();
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([4]);
+  });
+});
+
+describe('NDArray.asType', () => {
+  it('scalar bool -> int32', () => {
+    const a = Scalar.new(true, 'bool').asType('int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.get()).toBe(1);
+  });
+
+  it('array1d float32 -> int32', () => {
+    const a = Array1D.new([1.1, 3.9, -2.9, 0]).asType('int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([1, 3, -2, 0]));
+  });
+
+  it('array2d float32 -> bool', () => {
+    const a = Array2D.new([2, 2], [1.1, 3.9, -2.9, 0]).asType('bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.get(0, 0)).toBeTruthy();
+    expect(a.get(0, 1)).toBeTruthy();
+    expect(a.get(1, 0)).toBeTruthy();
+    expect(a.get(1, 1)).toBeFalsy();
+  });
+
+  it('array3d bool -> float32', () => {
+    const a = Array3D.new([2, 2, 1], [true, false, false, true], 'bool')
+                  .asType('float32');
+    expect(a.dtype).toBe('float32');
+    expect(a.getValues()).toEqual(new Float32Array([1, 0, 0, 1]));
+  });
+});
