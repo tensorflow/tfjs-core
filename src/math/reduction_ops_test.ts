@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D} from './ndarray';
+import {Array1D, Array2D, Scalar} from './ndarray';
 
 // math.min
 {
@@ -202,11 +202,22 @@ import {Array1D, Array2D} from './ndarray';
 // math.logSumExp
 {
   const tests: MathTests = it => {
+    it('0', math => {
+      const a = Scalar.new(0);
+      const result = math.logSumExp(a);
+
+      test_util.expectNumbersClose(result.get(), 0);
+
+      a.dispose();
+      result.dispose();
+    });
+
     it('basic', math => {
       const a = Array1D.new([1, 2, -3]);
       const result = math.logSumExp(a);
-      expect(result.get())
-          .toBeCloseTo(Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
+
+      test_util.expectNumbersClose(
+          result.get(), Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
 
       a.dispose();
       result.dispose();
