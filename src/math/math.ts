@@ -928,6 +928,8 @@ export abstract class NDArrayMath {
    * @param max Upper-bound of range to be clamped to.
    */
   clamp<T extends NDArray>(ndarray: T, min: number, max: number): T {
+    util.assert((min <= max), `Error in clamp: min (${min}) must be` + 
+      `less than or equal to max (${max}).`)
     return this.executeOp('clamp',
       () => this.clampInternal(ndarray, min, max));
   }

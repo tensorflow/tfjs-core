@@ -25,6 +25,7 @@ import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
+import {ClampProgram} from './webgl/clamp_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from './webgl/conv_backprop_gpu';
@@ -303,7 +304,8 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected clampInternal<T extends NDArray>(
     a: T, min: number, max: number): T {
-    throw new Error('Not yet implemented!');
+    const program = new ClampProgram(a.shape, min, max);
+    return this.compileAndRun(program, [a]) as T;
   }
 
   protected absInternal<T extends NDArray>(a: T): T {
