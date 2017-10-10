@@ -16,10 +16,12 @@
  */
 
 import * as util from '../../util';
+import {TextureChannelPackingFormat} from '../ndarray';
 
 export type ShapeInfo = {
   logicalShape: number[],
-  texShape: [number, number]
+  texShape: [number, number],
+  textureChannelPackingFormat: TextureChannelPackingFormat
 };
 
 export type InputInfo = {
@@ -28,16 +30,16 @@ export type InputInfo = {
 };
 
 export function makeShader(
-    inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
+    inputsInfo: InputInfo[], outputShapeInfo: ShapeInfo, userCode: string,
     broadcast: boolean): string {
   const inputPrefixSnippet =
       inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
-      inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
+      inputsInfo
+          .map(x => getInputSamplingSnippet(x, outputShapeInfo, broadcast))
           .join('\n');
-  const outTexShape = outputShape.texShape;
-  const outputSamplingSnippet =
-      getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+  const outputSamplingSnippet = getOutputSamplingSnippet(outputShapeInfo);
+  const setOutputSnippet = getSetOutputSnippet(outputShapeInfo);
   const source = [
     SHADER_PREFIX, inputPrefixSnippet, inputSamplingSnippet,
     outputSamplingSnippet, userCode
@@ -88,25 +90,30 @@ function getInputSamplingSnippet(
   return res;
 }
 
-function getOutputSamplingSnippet(
-    outShape: number[], outTexShape: [number, number]): string {
-  switch (outShape.length) {
+function getOutputSamplingSnippet(outputShapeInfo: ShapeInfo): string {
+  switch (outputShapeInfo.logicalShape.length) {
     case 0:
       // Doesn't make sense to call getOutputCoords() when output is scalar.
       return '';
     case 1:
-      return getOutput1DCoords(outShape as [number], outTexShape);
+      return getOutput1DCoords(
+          outputShapeInfo.logicalShape as [number], outputShapeInfo.texShape);
     case 2:
-      return getOutput2DCoords(outShape as [number, number], outTexShape);
+      return getOutput2DCoords(
+          outputShapeInfo.logicalShape as [number, number],
+          outputShapeInfo.texShape);
     case 3:
       return getOutput3DCoords(
-          outShape as [number, number, number], outTexShape);
+          outputShapeInfo.logicalShape as [number, number, number],
+          outputShapeInfo.texShape);
     case 4:
       return getOutput4DCoords(
-          outShape as [number, number, number, number], outTexShape);
+          outputShapeInfo.logicalShape as [number, number, number, number],
+          outputShapeInfo.texShape);
     default:
-      throw new Error(
-          `${outShape.length}-D output sampling is not yet supported`);
+      throw new Error(`${
+          outputShapeInfo.logicalShape
+              .length}-D output sampling is not yet supported`);
   }
 }
 
@@ -147,6 +154,28 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
 `;
+
+
+const SINGLE_CHANNEL_R_SET_OUTPUT_SNIPPET = `
+void setOutput(float val) {
+  gl_FragColor = vec4(val, 0, 0, 0);
+}
+`;
+
+
+function getSetOutputSnippet(outputShapeInfo: ShapeInfo): string {
+  if (outputShapeInfo.textureChannelPackingFormat ===
+      TextureChannelPackingFormat.R) {
+    return SINGLE_CHANNEL_R_SET_OUTPUT_SNIPPET;
+  } else if (
+      outputShapeInfo.textureChannelPackingFormat ===
+      TextureChannelPackingFormat.RGBA_1_BY_4) {
+    // return
+  } else {
+    throw new Error(`Packing format ${
+        outputShapeInfo.textureChannelPackingFormat} not yet supported.`);
+  }
+}
 
 const SHADER_PREFIX = `
   precision highp float;
