@@ -19,8 +19,10 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {GPGPUContext} from './webgl/gpgpu_context';
+import {TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import * as webgl_util from './webgl/webgl_util';
+
 
 // These global variables need to be initialized to null so that closure knows
 // not to seal them.
@@ -35,6 +37,7 @@ export interface NDArrayData {
   texture?: WebGLTexture;
   /** [rows, columns] shape of the texture. */
   textureShapeRC?: [number, number];
+  textureType?: TextureType;
 }
 
 /** @hidden */
@@ -85,6 +88,10 @@ export class NDArray {
     }
 
     this.shape = shape;
+
+    if (data.textureType == null) {
+      data.textureType = TextureType.DEFAULT;
+    }
     this.data = data;
     const dim = this.shape.length;
 
@@ -139,6 +146,19 @@ export class NDArray {
       default:
         return new NDArray(shape, data);
     }
+  }
+
+  static fromPixels(
+      shape: [number, number, number],
+      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement): Array3D {
+    const textureShapeRC: [number, number] = [shape[0], shape[1]];
+    const texture = TEXTURE_MANAGER.acquireTexture(textureShapeRC);
+    const textureType = TextureType.RGBA_COLOR;
+
+    GPGPU.uploadPixelDataToTexture(texture, pixels);
+
+    return Array3D.make(shape, {texture, textureShapeRC, textureType});
   }
 
   /** Reshapes the current ndarray into the provided shape. */
@@ -265,6 +285,7 @@ export class NDArray {
         GPGPU.gl, this.shape, preferredTexShape);
     this.data.texture =
         TEXTURE_MANAGER.acquireTexture(this.data.textureShapeRC);
+    this.data.textureType = TextureType.DEFAULT;
 
     GPGPU.uploadMatrixToTexture(
         this.data.texture, this.data.textureShapeRC[0],
@@ -300,6 +321,7 @@ export class NDArray {
     TEXTURE_MANAGER.releaseTexture(this.data.texture, this.data.textureShapeRC);
     this.data.texture = null;
     this.data.textureShapeRC = null;
+    this.data.textureType = null;
   }
 
   inGPU(): boolean {
@@ -414,8 +436,8 @@ export class Array1D extends NDArray {
   }
 
   static randTruncatedNormal(shape: [number], mean = 0, stdDev = 1): Array1D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array1D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array1D;
   }
 
   static randUniform(shape: [number], a: number, b: number): Array1D {
@@ -483,8 +505,8 @@ export class Array2D extends NDArray {
 
   static randTruncatedNormal(shape: [number, number], mean = 0, stdDev = 1):
       Array2D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array2D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array2D;
   }
 
   static randUniform(shape: [number, number], a: number, b: number): Array2D {
@@ -557,8 +579,8 @@ export class Array3D extends NDArray {
 
   static randTruncatedNormal(
       shape: [number, number, number], mean = 0, stdDev = 1): Array3D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array3D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array3D;
   }
 
   static randUniform(shape: [number, number, number], a: number, b: number):
@@ -640,8 +662,8 @@ export class Array4D extends NDArray {
 
   static randTruncatedNormal(
       shape: [number, number, number, number], mean = 0, stdDev = 1): Array4D {
-    return NDArray.rand(
-        shape, () => util.randGauss(mean, stdDev, true)) as Array4D;
+    return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true)) as
+        Array4D;
   }
 
   static randUniform(
@@ -659,6 +681,7 @@ type ArrayData = Float32Array|number[]|number[][]|number[][][]|number[][][][];
 
 function toTypedArray(a: ArrayData): Float32Array {
   return (a instanceof Float32Array) ?
-    // tslint:disable-next-line:no-any
-    a : new Float32Array(util.flatten(a as any[]));
+      // tslint:disable-next-line:no-any
+      a :
+      new Float32Array(util.flatten(a as any[]));
 }

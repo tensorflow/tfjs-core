@@ -15,7 +15,7 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, CheckpointLoader, GPGPUContext, NDArray, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
+import {Array1D, Array3D, Array4D, CheckpointLoader, GPGPUContext, NDArray, NDArrayMathCPU, NDArrayMathGPU, Scalar} from '../deeplearn';
 
 import * as imagenet_classes from './imagenet_classes';
 import * as imagenet_util from './imagenet_util';
@@ -28,6 +28,9 @@ export class SqueezeNet {
   private variables: {[varName: string]: NDArray};
 
   private preprocessInputShader: WebGLShader;
+
+  private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
+  private multiplier = Scalar.new(255);
 
   constructor(private gpgpu: GPGPUContext, private math: NDArrayMathGPU) {
     this.preprocessInputShader =
@@ -79,19 +82,32 @@ export class SqueezeNet {
    * method returns named activations as well as pre-softmax logits. The user
    * needs to clean up namedActivations after inferring.
    *
-   * @param preprocessedInput preprocessed input Array.
+   * @param input un-preprocessed input Array.
    * @return Named activations and the pre-softmax logits.
    */
-  infer(preprocessedInput: Array3D):
+  infer(input: Array3D):
       {namedActivations: {[activationName: string]: Array3D}, logits: Array1D} {
     const namedActivations: {[key: string]: Array3D} = {};
 
     const avgpool10 = this.math.scope((keep) => {
+
+      // Preprocess the input
+      const scaledInput = this.math.multiply(input, this.multiplier);
+      // console.log('scaled input');
+      // console.log(scaledInput.getValues());
+      namedActivations['scaled'] = scaledInput as Array3D;
+      const preprocessedInput =
+          this.math.sub(scaledInput, this.preprocessOffset) as Array3D;
+      // console.log('subtraction');
+      // console.log(preprocessedInput.getValues());
+
       const conv1 = this.math.conv2d(
           preprocessedInput, this.variables['conv1_W:0'] as Array4D,
           this.variables['conv1_b:0'] as Array1D, 2, 0);
       const conv1relu = keep(this.math.relu(conv1));
       namedActivations['conv_1'] = conv1relu;
+      console.log('preprocessedInput out');
+      console.log(preprocessedInput.getValues());
 
       const pool1 = keep(this.math.maxPool(conv1relu, 3, 2, 0));
       namedActivations['maxpool_1'] = pool1;

@@ -17,8 +17,9 @@
 
 import '../demo-header';
 import '../demo-footer';
+
 // tslint:disable-next-line:max-line-length
-import {gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
+import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
 import * as imagenet_util from '../models/imagenet_util';
 import {SqueezeNet} from '../models/squeezenet';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
@@ -151,6 +152,10 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
     const isWebcam = this.selectedInputName === 'webcam';
 
+    const image = Array3D.fromPixels(
+        [IMAGE_SIZE, IMAGE_SIZE, 3],
+        isWebcam ? this.webcamVideoElement : this.staticImgElement);
+
     const canvasTextureShape: [number, number] = [IMAGE_SIZE, IMAGE_SIZE];
     const canvasTexture =
         this.math.getTextureManager().acquireTexture(canvasTextureShape);
@@ -159,11 +164,13 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.gpgpu.uploadPixelDataToTexture(canvasTexture, element);
 
     this.math.scope((keep, track) => {
-      const preprocessedInput =
-          track(this.squeezeNet.preprocessColorTextureToArray3D(
-              canvasTexture, canvasTextureShape));
+      // const preprocessedInput =
+      //    track(this.squeezeNet.preprocessColorTextureToArray3D(
+      //        canvasTexture, canvasTextureShape));
+      // console.log('preproceesed input: ');
+      // console.log(preprocessedInput.getValues());
 
-      const inferenceResult = this.squeezeNet.infer(preprocessedInput);
+      const inferenceResult = this.squeezeNet.infer(image);
       const namedActivations = inferenceResult.namedActivations;
 
       this.layerNames = Object.keys(namedActivations);

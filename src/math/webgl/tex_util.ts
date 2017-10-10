@@ -15,6 +15,12 @@
  * =============================================================================
  */
 
+export enum TextureType {
+  DEFAULT,
+  // When using a standard RGBA-packed color image.
+  RGBA_COLOR
+}
+
 export function getUnpackedMatrixTextureShapeWidthHeight(
     rows: number, columns: number): [number, number] {
   return [columns, rows];
