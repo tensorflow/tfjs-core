@@ -22,7 +22,7 @@ import {Array2D, Array3D} from './ndarray';
 
 // math.switchDim
 {
-  const cpuTests: MathTests = it => {
+  const tests: MathTests = it => {
     it('Switch dim 2D (no change)', math => {
       const t = Array2D.new([2, 4], [1, 11, 2, 22, 3, 33, 4, 44]);
 
@@ -71,5 +71,10 @@ import {Array2D, Array3D} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('switchDim', [cpuTests]);
+  test_util.describeMathCPU('switchDim', [tests]);
+  test_util.describeMathGPU('switchDim', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }
