@@ -922,6 +922,19 @@ export abstract class NDArrayMath {
   protected abstract absInternal<T extends NDArray>(ndarray: T): T;
 
   /**
+   * Clamps values element-wise.
+   * @param ndarray The input NDArray.
+   * @param min Lower-bound of range to be clamped to.
+   * @param max Upper-bound of range to be clamped to.
+   */
+  clamp<T extends NDArray>(ndarray: T, min: number, max: number): T {
+    return this.executeOp('clamp',
+      () => this.clampInternal(ndarray, min, max));
+  }
+  protected abstract clampInternal<T extends NDArray>(
+    ndarray: T, min: number, max: number): T;
+
+  /**
    * Computes rectified linear element-wise, max(x, 0).
    * @param ndarray The input NDArray.
    */

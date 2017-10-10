@@ -301,6 +301,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]) as T;
   }
 
+  protected clampInternal<T extends NDArray>(
+    a: T, min: number, max: number): T {
+    throw new Error('Not yet implemented!');
+  }
+
   protected absInternal<T extends NDArray>(a: T): T {
     const program = new UnaryOpProgram(a.shape, unary_op.ABS);
     return this.compileAndRun(program, [a]) as T;
