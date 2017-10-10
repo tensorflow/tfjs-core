@@ -47,6 +47,19 @@ import {Array1D} from './ndarray';
 
       a.dispose();
     });
+
+    it('min greater than max', math => {
+      const a = Array1D.new([3, -1, 0, 100, -7, 2, NaN]);
+      const min = 1;
+      const max = -1;
+
+      const f = () => {
+        math.clamp(a, min, max);
+      };
+      expect(f).toThrowError();
+
+      a.dispose();
+    });
   };
 
   test_util.describeMathCPU('clamp', [tests]);
