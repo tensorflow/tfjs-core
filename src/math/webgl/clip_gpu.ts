@@ -17,7 +17,7 @@
 
 import {GPGPUProgram} from './gpgpu_math';
 
-export class ClampProgram implements GPGPUProgram {
+export class ClipProgram implements GPGPUProgram {
   variableNames = ['A'];
   params: Array<{}>;
   userCode: string;
@@ -25,12 +25,12 @@ export class ClampProgram implements GPGPUProgram {
 
   constructor(aShape: number[], min: number, max: number) {
     this.outputShape = aShape;
-    this.params = [min, max];
     const minFixed = min.toFixed(20);
     const maxFixed = max.toFixed(20);
+    this.params = [minFixed, maxFixed];
     this.userCode = `
       void main() {
-        setOutput(clamp(getAAtOutCoords(), ${minFixed}, ${maxFixed}));
+        setOutput(clip(getAAtOutCoords(), ${minFixed}, ${maxFixed}));
       }
     `;
   }

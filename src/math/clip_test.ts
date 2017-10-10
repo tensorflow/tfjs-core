@@ -27,7 +27,7 @@ import {Array1D} from './ndarray';
       const min = -1;
       const max = 50;
 
-      const result = math.clamp(a, min, max);
+      const result = math.clip(a, min, max);
 
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([3, -1, 0, 50, -1, 2]));
@@ -40,7 +40,7 @@ import {Array1D} from './ndarray';
       const min = -1;
       const max = 50;
 
-      const result = math.clamp(a, min, max);
+      const result = math.clip(a, min, max);
 
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([3, -1, 0, 50, -1, 2, NaN]));
@@ -54,7 +54,7 @@ import {Array1D} from './ndarray';
       const max = -1;
 
       const f = () => {
-        math.clamp(a, min, max);
+        math.clip(a, min, max);
       };
       expect(f).toThrowError();
 
@@ -62,8 +62,8 @@ import {Array1D} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('clamp', [tests]);
-  test_util.describeMathGPU('clamp', [tests], [
+  test_util.describeMathCPU('clip', [tests]);
+  test_util.describeMathGPU('clip', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

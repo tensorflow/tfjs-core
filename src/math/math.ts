@@ -922,18 +922,18 @@ export abstract class NDArrayMath {
   protected abstract absInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Clamps values element-wise.
+   * Clips values element-wise.
    * @param ndarray The input NDArray.
-   * @param min Lower-bound of range to be clamped to.
-   * @param max Upper-bound of range to be clamped to.
+   * @param min Lower-bound of range to be clipped to.
+   * @param max Upper-bound of range to be clipped to.
    */
-  clamp<T extends NDArray>(ndarray: T, min: number, max: number): T {
-    util.assert((min <= max), `Error in clamp: min (${min}) must be` + 
+  clip<T extends NDArray>(ndarray: T, min: number, max: number): T {
+    util.assert((min <= max), `Error in clip: min (${min}) must be` + 
       `less than or equal to max (${max}).`);
-    return this.executeOp('clamp',
-      () => this.clampInternal(ndarray, min, max));
+    return this.executeOp('clip',
+      () => this.clipInternal(ndarray, min, max));
   }
-  protected abstract clampInternal<T extends NDArray>(
+  protected abstract clipInternal<T extends NDArray>(
     ndarray: T, min: number, max: number): T;
 
   /**
