@@ -49,7 +49,7 @@ import {Array1D} from './ndarray';
     });
 
     it('min greater than max', math => {
-      const a = Array1D.new([3, -1, 0, 100, -7, 2, NaN]);
+      const a = Array1D.new([3, -1, 0, 100, -7, 2]);
       const min = 1;
       const max = -1;
 
