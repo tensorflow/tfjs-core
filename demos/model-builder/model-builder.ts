@@ -22,12 +22,10 @@ import '../demo-header';
 import '../demo-footer';
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, Scalar, Session, Tensor, util} from '../deeplearnjs';
+import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, Scalar, Session, Tensor, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from '../deeplearn';
 import {NDArrayImageVisualizer} from '../ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from '../ndarray-logits-visualizer';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
-import * as xhr_dataset from '../xhr-dataset';
-import {XhrDataset, XhrDatasetConfig} from '../xhr-dataset';
 
 import {LayerBuilder, LayerWeightsDict} from './layer_builder';
 import {ModelLayer} from './model-layer';
@@ -75,8 +73,13 @@ export let ModelBuilderPolymer: new () => PolymerHTMLElement = PolymerElement({
     datasetNames: Array,
     selectedDatasetName: String,
     modelNames: Array,
+    selectedOptimizerName: String,
+    optimizerNames: Array,
     learningRate: Number,
     momentum: Number,
+    needMomentum: Boolean,
+    gamma: Number,
+    needGamma: Boolean,
     batchSize: Number,
     selectedModelName: String,
     selectedNormalizationOption:
@@ -121,6 +124,8 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private selectedDatasetName: string;
   private modelNames: string[];
   private selectedModelName: string;
+  private optimizerNames: string[];
+  private selectedOptimizerName: string;
   private loadedWeights: LayerWeightsDict[]|null;
   private dataSets: {[datasetName: string]: InMemoryDataset};
   private dataSet: InMemoryDataset;
@@ -128,6 +133,9 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private datasetStats: DataStats[];
   private learingRate: number;
   private momentum: number;
+  private needMomentum: boolean;
+  private gamma: number;
+  private needGamma: boolean;
   private batchSize: number;
 
   // Stats.
@@ -176,20 +184,18 @@ export class ModelBuilder extends ModelBuilderPolymer {
 
     const eventObserver: GraphRunnerEventObserver = {
       batchesTrainedCallback: (batchesTrained: number) =>
-                                  this.displayBatchesTrained(batchesTrained),
+          this.displayBatchesTrained(batchesTrained),
       avgCostCallback: (avgCost: Scalar) => this.displayCost(avgCost),
       metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
       inferenceExamplesCallback:
           (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) =>
               this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
-      inferenceExamplesPerSecCallback:
-          (examplesPerSec: number) =>
-              this.displayInferenceExamplesPerSec(examplesPerSec),
-      trainExamplesPerSecCallback:
-          (examplesPerSec: number) =>
-              this.displayExamplesPerSec(examplesPerSec),
+      inferenceExamplesPerSecCallback: (examplesPerSec: number) =>
+          this.displayInferenceExamplesPerSec(examplesPerSec),
+      trainExamplesPerSecCallback: (examplesPerSec: number) =>
+          this.displayExamplesPerSec(examplesPerSec),
       totalTimeCallback: (totalTimeSec: number) => this.totalTimeSec =
-                             totalTimeSec.toFixed(1),
+          totalTimeSec.toFixed(1),
     };
     this.graphRunner = new GraphRunner(this.math, this.session, eventObserver);
     this.optimizer = new MomentumOptimizer(this.learingRate, this.momentum);
@@ -227,9 +233,21 @@ export class ModelBuilder extends ModelBuilderPolymer {
         this.setupDatasetStats();
       });
     }
+    this.querySelector("#optimizer-dropdown .dropdown-content")
+        // tslint:disable-next-line:no-any
+        .addEventListener('iron-activate', (event: any) => {
+          // Activate, deactivate hyper parameter inputs.
+          this.refreshHyperParamRequirements(event.detail.selected);
+        });
     this.learningRate = 0.1;
     this.momentum = 0.1;
+    this.needMomentum = true;
+    this.gamma = 0.1;
+    this.needGamma = false;
     this.batchSize = 64;
+    // Default optimizer is momentum
+    this.selectedOptimizerName = "momentum";
+    this.optimizerNames = ["sgd", "momentum", "rmsprop", "adagrad"];
 
     this.applicationState = ApplicationState.IDLE;
     this.loadedWeights = null;
@@ -326,12 +344,65 @@ export class ModelBuilder extends ModelBuilderPolymer {
     }
   }
 
+  private resetHyperParamRequirements() {
+    this.needMomentum = false;
+    this.needGamma = false;
+  }
+
+  /**
+   * Set flag to disable input by optimizer selection.
+   */
+  private refreshHyperParamRequirements(optimizerName: string) {
+    this.resetHyperParamRequirements();
+    switch (optimizerName) {
+      case "sgd": {
+        // No additional hyper parameters
+        break;
+      }
+      case "momentum": {
+        this.needMomentum = true;
+        break;
+      }
+      case "rmsprop": {
+        this.needMomentum = true;
+        this.needGamma = true;
+        break;
+      }
+      case "adagrad": {
+        break;
+      }
+      default: {
+        throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
+      }
+    }
+  }
+
+  private createOptimizer() {
+    switch (this.selectedOptimizerName) {
+      case 'sgd': {
+        return new SGDOptimizer(+this.learningRate);
+      }
+      case 'momentum': {
+        return new MomentumOptimizer(+this.learningRate, +this.momentum);
+      }
+      case 'rmsprop': {
+        return new RMSPropOptimizer(+this.learningRate, +this.gamma);
+      }
+      case 'adagrad': {
+        return new AdagradOptimizer(+this.learningRate);
+      }
+      default: {
+        throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
+      }
+    }
+  }
+
   private startTraining() {
     const trainingData = this.getTrainingData();
     const testData = this.getTestData();
 
-    // Recreate optimizer with the latest learning rate.
-    this.optimizer = new MomentumOptimizer(+this.learningRate, +this.momentum);
+    // Recreate optimizer with the selected optimizer and hyperparameters.
+    this.optimizer = this.createOptimizer();
 
     if (this.isValid && (trainingData != null) && (testData != null)) {
       this.recreateCharts();
@@ -490,8 +561,9 @@ export class ModelBuilder extends ModelBuilderPolymer {
       inferenceExampleElement.className = 'inference-example';
 
       // Set up the input visualizer.
-      const ndarrayImageVisualizer = document.createElement(
-          'ndarray-image-visualizer') as NDArrayImageVisualizer;
+      const ndarrayImageVisualizer =
+          document.createElement('ndarray-image-visualizer') as
+          NDArrayImageVisualizer;
       ndarrayImageVisualizer.setShape(this.inputShape);
       ndarrayImageVisualizer.setSize(
           INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
@@ -499,8 +571,9 @@ export class ModelBuilder extends ModelBuilderPolymer {
       inferenceExampleElement.appendChild(ndarrayImageVisualizer);
 
       // Set up the output ndarray visualizer.
-      const ndarrayLogitsVisualizer = document.createElement(
-          'ndarray-logits-visualizer') as NDArrayLogitsVisualizer;
+      const ndarrayLogitsVisualizer =
+          document.createElement('ndarray-logits-visualizer') as
+          NDArrayLogitsVisualizer;
       ndarrayLogitsVisualizer.initialize(
           INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
       this.outputNDArrayVisualizers.push(ndarrayLogitsVisualizer);
@@ -616,7 +689,8 @@ export class ModelBuilder extends ModelBuilderPolymer {
       data: {
         datasets: [{
           data,
-          fill: false, label,
+          fill: false,
+          label,
           pointRadius: 0,
           borderColor: 'rgba(75,192,192,1)',
           borderWidth: 1,

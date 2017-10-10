@@ -146,3 +146,101 @@ describe('util.getBroadcastedShape', () => {
     expect(res).toEqual([7, 1, 1]);
   });
 });
+
+describe('util.repeatedTry', () => {
+  it('resolves', (doneFn) => {
+    let counter = 0;
+    const checkFn = () => {
+      counter++;
+      if (counter === 2) {
+        return true;
+      }
+      return false;
+    };
+
+    util.repeatedTry(checkFn).then(doneFn).catch(() => {
+      throw new Error('Rejected backoff.');
+    });
+  });
+  it('rejects', (doneFn) => {
+    const checkFn = () => false;
+
+    util.repeatedTry(checkFn, () => 0, 5)
+        .then(() => {
+          throw new Error('Backoff resolved');
+        })
+        .catch(doneFn);
+  });
+});
+
+describe('util.getQueryParams', () => {
+  it('basic', () => {
+    expect(util.getQueryParams('?a=1&b=hi&f=animal'))
+        .toEqual({'a': '1', 'b': 'hi', 'f': 'animal'});
+  });
+});
+
+describe('util.inferFromImplicitShape', () => {
+  it('empty shape', () => {
+    const result = util.inferFromImplicitShape([], 0);
+    expect(result).toEqual([]);
+  });
+
+  it('[2, 3, 4] -> [2, 3, 4]', () => {
+    const result = util.inferFromImplicitShape([2, 3, 4], 24);
+    expect(result).toEqual([2, 3, 4]);
+  });
+
+  it('[2, -1, 4] -> [2, 3, 4], size=24', () => {
+    const result = util.inferFromImplicitShape([2, -1, 4], 24);
+    expect(result).toEqual([2, 3, 4]);
+  });
+
+  it('[-1, 3, 4] -> [2, 3, 4], size=24', () => {
+    const result = util.inferFromImplicitShape([-1, 3, 4], 24);
+    expect(result).toEqual([2, 3, 4]);
+  });
+
+  it('[2, 3, -1] -> [2, 3, 4], size=24', () => {
+    const result = util.inferFromImplicitShape([2, 3, -1], 24);
+    expect(result).toEqual([2, 3, 4]);
+  });
+
+  it('[2, -1, -1] throws error', () => {
+    expect(() => util.inferFromImplicitShape([2, -1, -1], 24)).toThrowError();
+  });
+
+  it('[2, 3, -1] size=13 throws error', () => {
+    expect(() => util.inferFromImplicitShape([2, 3, -1], 13)).toThrowError();
+  });
+
+  it('[2, 3, 4] size=25 (should be 24) throws error', () => {
+    expect(() => util.inferFromImplicitShape([2, 3, 4], 25)).toThrowError();
+  });
+});
+
+describe('util.randGauss', () => {
+  it('standard normal', () => {
+    const a = util.randGauss();
+    expect(a != null);
+  });
+
+  it('truncated standard normal', () => {
+    const numSamples = 1000;
+    for (let i = 0; i < numSamples; ++i) {
+      const sample = util.randGauss(0, 1, true);
+      expect(Math.abs(sample) <= 2);
+    }
+  });
+
+  it('truncated normal, mu = 3, std=4', () => {
+    const numSamples = 1000;
+    const mean = 3;
+    const stdDev = 4;
+    for (let i = 0; i < numSamples; ++i) {
+      const sample = util.randGauss(mean, stdDev, true);
+      const normalizedSample = (sample - mean) / stdDev;
+      expect(Math.abs(normalizedSample) <= 2);
+    }
+  });
+});

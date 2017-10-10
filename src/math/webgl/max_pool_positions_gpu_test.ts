@@ -53,7 +53,7 @@ describe('max_pool_position', () => {
   function compareToCPU(
       xShape: [number, number, number], fSize: number, stride: number,
       pad: number) {
-    const x = NDArray.randNormal<Array3D>(xShape);
+    const x = Array3D.randNormal(xShape);
 
     const mathCPU = new NDArrayMathCPU();
     const outDepth = x.shape[2];
@@ -62,7 +62,7 @@ describe('max_pool_position', () => {
     const yCPU = mathCPU.maxPoolPositions(x, convInfo);
     const yGPU = uploadMaxPoolPositionDownload(
         x.getValues(), x.shape, fSize, stride, pad);
-    test_util.expectArraysClose(yGPU, yCPU.getValues(), 1e-5);
+    test_util.expectArraysClose(yGPU, yCPU.getValues());
   }
 
   it('matches CPU on random input, d1=1,d2=1,f=2,s=1,p=0', () => {

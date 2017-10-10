@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, CheckpointLoader, Graph, NDArray, NDArrayInitializer, NDArrayMath, NDArrayMathGPU, Scalar, Session, Tensor} from '../deeplearnjs';
+import {Array1D, Array2D, CheckpointLoader, Graph, NDArray, NDArrayInitializer, NDArrayMath, NDArrayMathGPU, Scalar, Session, Tensor} from '../deeplearn';
 
 // manifest.json lives in the same directory as the mnist demo.
 const reader = new CheckpointLoader('.');
@@ -39,7 +39,7 @@ reader.getAllVariables().then(vars => {
         const probsVal = sess.eval(probs, [{tensor: input, data: inputData}]);
         console.log(`Item ${i}, probsVal ${probsVal.get()}.`);
         const label = data.labels[i];
-        const predictedLabel = probsVal.get();
+        const predictedLabel = Math.round(probsVal.get());
         if (label === predictedLabel) {
           numCorrect++;
         }

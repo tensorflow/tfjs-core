@@ -15,15 +15,15 @@
  * =============================================================================
  */
 
-import {Graph, Tensor} from './graph';
+import {Graph, Tensor} from './graph/graph';
+import {Optimizer} from './graph/optimizers/optimizer';
+import {SGDOptimizer} from './graph/optimizers/sgd_optimizer';
+import {CostReduction, FeedEntry, Session} from './graph/session';
 // tslint:disable-next-line:max-line-length
 import {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph_runner';
 import {NDArrayMath} from './math/math';
 import {NDArrayMathCPU} from './math/math_cpu';
 import {Array1D, NDArray, Scalar} from './math/ndarray';
-import {Optimizer} from './optimizer';
-import {CostReduction, FeedEntry, Session} from './session';
-import {SGDOptimizer} from './sgd_optimizer';
 
 const FAKE_LEARNING_RATE = 1.0;
 const FAKE_BATCH_SIZE = 10;
@@ -159,7 +159,6 @@ describe('Model runner', () => {
     metricCallback = (metric: Scalar) => {
       expect(metric.get()).toEqual(.5);
     };
-
 
     graphRunner = new GraphRunner(math, session, fakeUserEvents);
 

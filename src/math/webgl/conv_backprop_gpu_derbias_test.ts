@@ -17,7 +17,7 @@
 
 import * as test_util from '../../test_util';
 import {NDArrayMathCPU} from '../math_cpu';
-import {Array1D, Array3D, initializeGPU, NDArray} from '../ndarray';
+import {Array1D, Array3D, initializeGPU} from '../ndarray';
 
 import {Conv2DDerBiasProgram} from './conv_backprop_gpu';
 import {GPGPUContext} from './gpgpu_context';
@@ -45,13 +45,13 @@ describe('conv_gpu derBias', () => {
   }
 
   function compareToCPU(dyShapeRCD: [number, number, number]) {
-    const dy = NDArray.randNormal<Array3D>(dyShapeRCD);
+    const dy = Array3D.randNormal(dyShapeRCD);
 
     const mathCPU = new NDArrayMathCPU();
     const dBiasCPU = mathCPU.conv2dDerBias(dy);
 
     const dBiasGPU = uploadDerBiasDownload(dy);
-    test_util.expectArraysClose(dBiasGPU, dBiasCPU.getValues(), 1e-5);
+    test_util.expectArraysClose(dBiasGPU, dBiasCPU.getValues());
   }
 
   it('matches CPU on random input. dy shape [3, 3, 2]', () => {

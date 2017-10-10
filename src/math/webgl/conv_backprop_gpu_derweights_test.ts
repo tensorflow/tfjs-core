@@ -18,7 +18,7 @@
 import * as test_util from '../../test_util';
 import * as conv_util from '../conv_util';
 import {NDArrayMathCPU} from '../math_cpu';
-import {Array3D, Array4D, initializeGPU, NDArray} from '../ndarray';
+import {Array3D, Array4D, initializeGPU} from '../ndarray';
 
 import {Conv2DDerWeightsProgram} from './conv_backprop_gpu';
 import {GPGPUContext} from './gpgpu_context';
@@ -55,10 +55,10 @@ describe('conv_gpu derWeights', () => {
   function compareToCPU(
       inputShape: [number, number, number], fSize: number, outDepth: number,
       stride: number, zeroPad: number) {
-    const x = NDArray.randNormal<Array3D>(inputShape);
+    const x = Array3D.randNormal(inputShape);
     const outputShape = conv_util.computeOutputShape3D(
         x.shape, fSize, outDepth, stride, zeroPad);
-    const dy = NDArray.randNormal<Array3D>(outputShape);
+    const dy = Array3D.randNormal(outputShape);
 
     const mathCPU = new NDArrayMathCPU();
     const inDepth = x.shape[2];
@@ -66,7 +66,7 @@ describe('conv_gpu derWeights', () => {
         x, dy, [fSize, fSize, inDepth, outDepth], stride, zeroPad);
 
     const dwGPU = uploadDerWeightsDownload(x, dy, fSize, stride, zeroPad);
-    test_util.expectArraysClose(dwGPU, dwCPU.getValues(), 1e-5);
+    test_util.expectArraysClose(dwGPU, dwCPU.getValues());
   }
 
   it('matches CPU on random input, d1=3,d2=4,f=2,s=1,p=0', () => {

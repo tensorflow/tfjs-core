@@ -17,7 +17,7 @@
 
 import * as test_util from '../../test_util';
 import {NDArrayMathCPU} from '../math_cpu';
-import {Array3D, NDArray} from '../ndarray';
+import {Array3D} from '../ndarray';
 import * as pool_gpu_test_util from './pool_gpu_test_util';
 
 describe('min_pool_gpu', () => {
@@ -31,14 +31,14 @@ describe('min_pool_gpu', () => {
   function compareToCPU(
       xShape: [number, number, number], fSize: number, stride: number,
       pad: number) {
-    const x = NDArray.randNormal<Array3D>(xShape);
+    const x = Array3D.randNormal(xShape);
 
     const mathCPU = new NDArrayMathCPU();
     const yCPU = mathCPU.minPool(x, fSize, stride, pad);
     const yGPU =
         uploadMinPoolDownload(x.getValues(), x.shape, fSize, stride, pad);
 
-    test_util.expectArraysClose(yGPU, yCPU.getValues(), 1e-5);
+    test_util.expectArraysClose(yGPU, yCPU.getValues());
   }
 
   it('matches CPU on random input, d1=1,d2=1,f=2,s=1,p=0', () => {

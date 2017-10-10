@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-npm run prep
-node_modules/.bin/browserify --standalone deeplearn src/index.ts -p [tsify] > dist/deeplearn-$1.js
-node_modules/.bin/uglifyjs dist/deeplearn-$1.js > dist/deeplearn-$1.min.js
-echo "Stored standalone library at dist/deeplearn-$1(.min).js"
+rm -rf dist/ && \
+npm run prep && \
+node_modules/.bin/browserify --standalone deeplearn src/index.ts -p [tsify] > dist/deeplearn.js && \
+node_modules/.bin/uglifyjs dist/deeplearn.js -c -m -o dist/deeplearn.min.js && \
+echo "Stored standalone library at dist/deeplearn(.min).js"

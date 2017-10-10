@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array4D, conv_util, Graph, Initializer, NDArray, NDArrayInitializer, Tensor, util, VarianceScalingInitializer, ZerosInitializer} from '../deeplearnjs';
+import {Array1D, Array2D, Array4D, conv_util, Graph, Initializer, NDArrayInitializer, Tensor, util, VarianceScalingInitializer, ZerosInitializer} from '../deeplearn';
 
 /**
  * Classes that specify operation parameters, how they affect output shape,
@@ -237,7 +237,7 @@ export class Convolution2DLayerBuilder implements LayerBuilder {
       w = Array4D.new(wShape, weights['W']);
       b = Array1D.new(weights['b']);
     } else {
-      w = NDArray.randTruncatedNormal<Array4D>(wShape, 0, 0.1);
+      w = Array4D.randTruncatedNormal(wShape, 0, 0.1);
       b = Array1D.zeros([this.outputDepth]);
     }
     const wTensor = g.variable('conv2d-' + index + '-w', w);

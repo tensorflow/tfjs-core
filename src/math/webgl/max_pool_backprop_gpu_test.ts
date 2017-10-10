@@ -61,14 +61,14 @@ describe('max_pool_backprop_gpu', () => {
   function compareToCPU(
       dyShape: [number, number, number], xShape: [number, number, number],
       fSize: number, origStride: number, origPad: number) {
-    const dy = NDArray.randNormal<Array3D>(dyShape);
-    const x = NDArray.randNormal<Array3D>(xShape);
+    const dy = Array3D.randNormal(dyShape);
+    const x = Array3D.randNormal(xShape);
 
     const mathCPU = new NDArrayMathCPU();
     const dxCPU = mathCPU.maxPoolBackprop(dy, x, fSize, origStride, origPad);
     const dxGPU =
         uploadMaxPoolBackpropDownload(dy, x, fSize, origStride, origPad);
-    test_util.expectArraysClose(dxGPU, dxCPU.getValues(), 1e-5);
+    test_util.expectArraysClose(dxGPU, dxCPU.getValues());
   }
 
   it('matches CPU on random input, d1=1,d2=1,f=2,s=1,p=0', () => {

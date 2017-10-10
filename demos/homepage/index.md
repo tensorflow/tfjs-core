@@ -107,29 +107,49 @@ limitations under the License.
   <div class="mdl-layout-spacer mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
 </div>
 <!-- Demo Section -->
-<div class="examples" id='demos'>
+<div class="examples" id="demos">
   <div class="section-title mdl-grid">
     <div class="mdl-layout-spacer mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
-    <p class='mdl-typography--display-2 mdl-cell mdl-cell--9-col'>Examples</p>
+    <p class="mdl-typography--display-2 mdl-cell mdl-cell--12-col">Examples</p>
     <div class="mdl-layout-spacer mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
   </div>
   <!-- Featured Card -->
-  <div class='featured-demo mdl-grid'>
+  <div class="featured-demo mdl-grid">
     <div class="mdl-layout-spacer mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
-    <div class="demo-card mdl-card mdl-shadow--4dp feature-card mdl-cell mdl-cell--9-col">
-      <a href="demos/model-builder/model-builder-demo.html">
-        <div class='mdl-card__title' id="model-builder">
-          <h1 class= 'mdl-card__title-text'>Model Builder</h1>
+    <div class="demo-card featured-demo mdl-card mdl-shadow--4dp feature-card mdl-cell mdl-cell--6-col">
+      <a href="demos/performance_rnn">
+        <div class="mdl-card__title" id="perf-rnn">
+          <h1 class="mdl-card__title-text">Performance RNN</h1>
         </div>
       </a>
-      <div class= 'mdl-card__supporting-text'>Build a neural network in your browser, without code!</div>
-      <div class='mdl-card__actions mdl-card--border'>
-        <a href="demos/model-builder/model-builder-demo.html">
+      <div class="mdl-card__supporting-text">Enjoy a real-time piano performance by a neural network</div>
+      <div class="mdl-card__actions mdl-card--border">
+        <a href="demos/performance_rnn">
           <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
             Demo
           </button>
         </a>
-        <a href="https://github.com/PAIR-code/deeplearnjs/tree/master/demos/model-builder/">
+        <a href="https://github.com/pair-code/deeplearnjs/tree/master/demos/performance_rnn">
+          <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
+            Code
+          </button>
+        </a>
+      </div>
+    </div>
+    <div class="demo-card featured-demo mdl-card mdl-shadow--4dp feature-card mdl-cell mdl-cell--6-col">
+      <a href="https://teachablemachine.withgoogle.com/">
+        <div class="mdl-card__title" id="teachable-machine">
+          <h1 class="mdl-card__title-text">Teachable Machine</h1>
+        </div>
+      </a>
+      <div class="mdl-card__supporting-text">Explore machine learning, no coding required!</div>
+      <div class="mdl-card__actions mdl-card--border">
+        <a href="https://teachablemachine.withgoogle.com/">
+          <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
+            Demo
+          </button>
+        </a>
+        <a href="https://github.com/googlecreativelab/teachable-machine">
           <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
             Code
           </button>
@@ -142,14 +162,34 @@ limitations under the License.
   <div class="demo-carousel mdl-grid">
     <div class="mdl-layout-spacer mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
     <div class="demo-card mdl-card mdl-shadow--2dp square-card mdl-cell mdl-cell--3-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
-      <a href="demos/imagenet/imagenet-demo.html">
-        <div class='mdl-card__title' id="webcam">
-          <span class='mdl-card__title-text'>Webcam Imagenet</span>
+      <a href="demos/model-builder/">
+        <div class="mdl-card__title" id="model-builder">
+          <span class="mdl-card__title-text">Model Builder</span>
         </div>
       </a>
-      <div class='mdl-card__supporting-text'>Squeezenet running in the browser</div>
-      <div class='mdl-card__actions mdl-card--border'>
-        <a href="demos/imagenet/imagenet-demo.html">
+      <div class="mdl-card__supporting-text">Build a neural network in your browser, without code!</div>
+      <div class="mdl-card__actions mdl-card--border">
+        <a href="demos/model-builder/">
+          <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
+            Demo
+          </button>
+        </a>
+        <a href="https://github.com/PAIR-code/deeplearnjs/tree/master/demos/model-builder/">
+          <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
+            Code
+          </button>
+        </a>
+      </div>
+    </div>
+    <div class="demo-card mdl-card mdl-shadow--2dp square-card mdl-cell mdl-cell--3-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+      <a href="demos/imagenet/">
+        <div class="mdl-card__title" id="webcam">
+          <span class="mdl-card__title-text">Webcam Imagenet</span>
+        </div>
+      </a>
+      <div class="mdl-card__supporting-text">Squeezenet running in the browser</div>
+      <div class="mdl-card__actions mdl-card--border">
+        <a href="demos/imagenet/">
           <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
             Demo
           </button>
@@ -162,14 +202,14 @@ limitations under the License.
       </div>
     </div>
     <div class="demo-card mdl-card mdl-shadow--2dp square-card mdl-cell mdl-cell--3-col mdl-cell--8-col-tablet mdl-cell--4-col-phone ">
-      <a href="demos/nn-art/nn-art-demo.html">
-        <div class='mdl-card__title' id="nnart">
-          <span class= 'mdl-card__title-text'>NNArt</span>
+      <a href="demos/nn-art/">
+        <div class="mdl-card__title" id="nnart">
+          <span class="mdl-card__title-text">NNArt</span>
         </div>
       </a>
-      <div class='mdl-card__supporting-text'>Play with an animating CPPN</div>
-      <div class='mdl-card__actions mdl-card--border'>
-        <a href="demos/nn-art/nn-art-demo.html">
+      <div class="mdl-card__supporting-text">Play with an animating CPPN</div>
+      <div class="mdl-card__actions mdl-card--border">
+        <a href="demos/nn-art/">
           <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
             Demo
           </button>
@@ -182,14 +222,14 @@ limitations under the License.
       </div>
     </div>
     <div class="demo-card mdl-card mdl-shadow--2dp square-card mdl-cell mdl-cell--3-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
-      <a href="demos/benchmarks/benchmark-demo.html">
-        <div class='mdl-card__title' id="benchmarks">
-          <span class= 'mdl-card__title-text'>Benchmarks</span>
+      <a href="demos/benchmarks/">
+        <div class="mdl-card__title" id="benchmarks">
+          <span class="mdl-card__title-text">Benchmarks</span>
         </div>
       </a>
-      <div class='mdl-card__supporting-text'>Test the library's performance</div>
-      <div class='mdl-card__actions mdl-card--border'>
-        <a href="demos/benchmarks/benchmark-demo.html">
+      <div class="mdl-card__supporting-text">Test the library's performance</div>
+      <div class="mdl-card__actions mdl-card--border">
+        <a href="demos/benchmarks/">
           <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
             Demo
           </button>
@@ -228,10 +268,29 @@ limitations under the License.
   <div class= "mdl-cell mdl-cell--5-col mdl-cell--8-col-tablet mdl-cell-4-col-phone">
     <p class="intro-body mdl-typography--body-1">
       <span class="deeplearn-shine">deeplearn.js</span> was originally developed by
-      <a href="https://twitter.com/nsthorat">Nikhil Thorat</a>,
-      <a href="https://twitter.com/dsmilkov">Daniel Smilkov</a> and
+      <a id="author1"></a>, <a id="author2"></a>, and
       <a href="https://twitter.com/c_nich">Charles Nicholson</a>.
     </p>
+    <script>
+      function daniel(elem) {
+        elem.href = 'https://twitter.com/dsmilkov';
+        elem.innerText = 'Daniel Smilkov';
+      }
+      function nikhil(elem) {
+        elem.href = 'https://twitter.com/nsthorat';
+        elem.innerText = 'Nikhil Thorat';
+      }
+
+      var author1 = document.getElementById('author1');
+      var author2 = document.getElementById('author2');
+      if (Math.random() > .5) {
+        daniel(author1);
+        nikhil(author2);
+      } else {
+        nikhil(author1);
+        daniel(author2);
+      }
+    </script>
   </div>
   <div class="mdl-layout-spacer mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
   <div class= "ack mdl-cell mdl-cell--4-col mdl-cell--8-col-tablet mdl-cell-4-col-phone">

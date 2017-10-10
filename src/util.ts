@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-export type Vector = number[] | Float64Array | Float32Array | Int32Array |
-    Int8Array | Int16Array;
+export type Vector =
+    number[]|Float64Array|Float32Array|Int32Array|Int8Array|Int16Array;
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -63,7 +63,7 @@ export function randGauss(mean = 0, stdDev = 1, truncated = false): number {
   } while (s > 1);
 
   const result = Math.sqrt(-2 * Math.log(s) / s) * v1;
-  if (truncated && result > 2) {
+  if (truncated && Math.abs(result) > 2) {
     return randGauss(mean, stdDev, true);
   }
   return mean + stdDev * result;
@@ -106,7 +106,7 @@ export function flatten(arr: any[], ret?: number[]): number[] {
 }
 
 export type ArrayData =
-    number | number[] | number[][] | number[][][] | number[][][][];
+    Float32Array|number|number[]|number[][]|number[][][]|number[][][][];
 
 export function inferShape(arr: ArrayData): number[] {
   const shape: number[] = [];
@@ -221,4 +221,92 @@ export function rightPad(a: string, size: number): string {
     return a;
   }
   return a + ' '.repeat(size - a.length);
+}
+
+export function repeatedTry(
+    checkFn: () => boolean, delayFn = (counter: number) => 0,
+    maxCounter?: number): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let tryCount = 0;
+
+    const tryFn = () => {
+      if (checkFn()) {
+        resolve();
+        return;
+      }
+
+      tryCount++;
+
+      const nextBackoff = delayFn(tryCount);
+
+      if (maxCounter != null && tryCount >= maxCounter) {
+        reject();
+        return;
+      }
+      setTimeout(tryFn, nextBackoff);
+    };
+
+    setTimeout(tryFn, 0);
+  });
+}
+
+export function getQueryParams(queryString: string): {[key: string]: string} {
+  const params = {};
+  queryString.replace(/[?&]([^=?&]+)(?:=([^&]*))?/g, (s, ...t) => {
+    decodeParam(params, t[0], t[1]);
+    return t.join('=');
+  });
+  return params;
+}
+
+function decodeParam(
+    params: {[key: string]: string}, name: string, value?: string) {
+  params[decodeURIComponent(name)] = decodeURIComponent(value || '');
+}
+
+/**
+ * Given the full size of the array and a shape that may contain -1 as the
+ * implicit dimension, returns the inferred shape where -1 is replaced.
+ * E.g. For shape=[2, -1, 3] and size=24, it will return [2, 4, 3].
+ *
+ * @param shape The shape, which may contain -1 in some dimension.
+ * @param size The full size (number of elements) of the array.
+ * @return The inferred shape where -1 is replaced with the inferred size.
+ */
+export function inferFromImplicitShape(
+    shape: number[], size: number): number[] {
+  let shapeProd = 1;
+  let implicitIdx = -1;
+
+  for (let i = 0; i < shape.length; ++i) {
+    if (shape[i] > 0) {
+      shapeProd *= shape[i];
+    } else if (shape[i] === -1) {
+      if (implicitIdx !== -1) {
+        throw Error(
+            `Shapes can only have 1 implicit size. ` +
+            `Found -1 at dim ${implicitIdx} and dim ${i}`);
+      }
+      implicitIdx = i;
+    } else if (shape[i] <= 0) {
+      throw Error(`Shapes can not be <= 0. Found ${shape[i]} at dim ${i}`);
+    }
+  }
+
+  if (implicitIdx === -1) {
+    if (size > 0 && size !== shapeProd) {
+      throw Error(`Size (${size}) must match the product of shape ${shape}`);
+    }
+    return shape;
+  }
+
+  if (size % shapeProd !== 0) {
+    throw Error(
+        `The implicit shape can't be a fractional number. ` +
+        `Got ${size} / ${shapeProd}`);
+  }
+
+  const newShape = shape.slice();
+  newShape[implicitIdx] = size / shapeProd;
+  return newShape;
 }

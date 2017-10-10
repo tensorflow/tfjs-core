@@ -62,17 +62,17 @@ describe('conv_gpu transpose', () => {
     const convInfo = conv_util.computeConvInfo(
         origInputShape, fSize, fSize, origOutputDepth, origStride, origStride,
         origPad);
-    const x = NDArray.randNormal<Array3D>(convInfo.outShape);
+    const x = Array3D.randNormal(convInfo.outShape);
 
-    const weights = NDArray.randNormal<Array4D>(
-        [fSize, fSize, origInputDepth, origOutputDepth]);
+    const weights =
+        Array4D.randNormal([fSize, fSize, origInputDepth, origOutputDepth]);
 
     const mathCPU = new NDArrayMathCPU();
     const yCPU = mathCPU.conv2dTranspose(
         x, weights, origInputShape, origStride, origPad);
     const yGPU = uploadConvTransposeDownload(
         x, weights, origInputShape, fSize, origStride, origPad);
-    test_util.expectArraysClose(yGPU, yCPU.getValues(), 1e-5);
+    test_util.expectArraysClose(yGPU, yCPU.getValues());
   }
 
   it('matches CPU on random input, d1=1,d2=1,f=2,s=1,p=0', () => {
