@@ -50,7 +50,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const result = math.relu(a);
 
-      test_util.expectNumbersClose(result.get(), 1);
+      test_util.expectNumbersClose(result.get(), 0);
 
       a.dispose();
     });
