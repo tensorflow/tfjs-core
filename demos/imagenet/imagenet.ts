@@ -17,7 +17,6 @@
 
 import '../demo-header';
 import '../demo-footer';
-
 // tslint:disable-next-line:max-line-length
 import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
 import * as imagenet_util from '../models/imagenet_util';
@@ -42,7 +41,6 @@ export const ImagenetDemoPolymer: new () => PolymerHTMLElement =
  *     http://localhost:5432
  */
 
-const IMAGE_SIZE = 227;
 const TOP_K_CLASSES = 5;
 
 const INPUT_NAMES = ['cat', 'dog1', 'dog2', 'beerbottle', 'piano', 'saxophone'];
@@ -153,7 +151,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     const isWebcam = this.selectedInputName === 'webcam';
 
     const image = Array3D.fromPixels(
-        [IMAGE_SIZE, IMAGE_SIZE, 3],
         isWebcam ? this.webcamVideoElement : this.staticImgElement);
 
     this.math.scope((keep, track) => {

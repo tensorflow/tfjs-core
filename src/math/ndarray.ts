@@ -149,9 +149,14 @@ export class NDArray {
   }
 
   static fromPixels(
-      shape: [number, number, number],
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|
-      HTMLVideoElement): Array3D {
+      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      numChannels = 3): Array3D {
+    if (numChannels > 4) {
+      throw new Error(
+          'Cannot construct NDArray with more than 4 channels from pixels.');
+    }
+    const shape: [number, number, number] =
+        [pixels.height, pixels.width, numChannels];
     const textureShapeRC: [number, number] = [shape[0], shape[1]];
     const texture = TEXTURE_MANAGER.acquireTexture(textureShapeRC);
     const textureType = TextureType.RGBA_COLOR;
