@@ -637,7 +637,7 @@ function getSamplerAtOutputCoords(
 
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1) +
       'AtOutCoords';
-  if (util.arraysEqual(inTexShape, outTexShape)) {
+  if (util.arraysEqual(inTexShape, outTexShape) && !isRGBAColorTexture) {
     return `
       float ${funcName}() {
         return sample(${texName}, resultUV);
@@ -645,10 +645,11 @@ function getSamplerAtOutputCoords(
     `;
   }
 
+  // For RGBA color textures, we expand the depth dimension to perform
+  // computations on the flattened texture before sampling.
   const inTexExpandedShape = isRGBAColorTexture ?
       [inTexShape[0], inTexShape[1] * inputInfo.shapeInfo.logicalShape[2]] :
       inTexShape;
-  console.log('in tex shapes: ' + inTexShape, inTexExpandedShape, outTexShape);
 
   const inSize = util.sizeFromShape(inTexExpandedShape);
 
@@ -660,17 +661,17 @@ function getSamplerAtOutputCoords(
     `;
   }
 
-  let rgbaColorSnippet = '';
   let sampleSnippet = `return sample(${texName}, uv);`;
+
+  let rgbaColorSnippet = '';
   if (isRGBAColorTexture) {
     rgbaColorSnippet = `
       int col = texC / ${inputInfo.shapeInfo.logicalShape[2]};
-      int depth = texC - col * ${inputInfo.shapeInfo.logicalShape[2]};
+      int texD = texC - col * ${inputInfo.shapeInfo.logicalShape[2]};
       texC = col;
-      //int depth = imod(resTexRC.y, ${inputInfo.shapeInfo.logicalShape[2]});
     `;
 
-    sampleSnippet = `return sampleUVAndDepth(${texName}, uv, depth);`;
+    sampleSnippet = `return sampleUVAndDepth(${texName}, uv, texD);`;
   }
 
   return `
@@ -679,8 +680,8 @@ function getSamplerAtOutputCoords(
                              vec2(${outTexShape[0]}, ${outTexShape[1]}));
       int index = resTexRC.x * ${outTexShape[1]} + resTexRC.y;
       ${broadcastSnippet}
-      int texR = index / ${inTexShape[1]};
-      int texC = index - texR * ${inTexShape[1]};
+      int texR = index / ${inTexExpandedShape[1]};
+      int texC = index - texR * ${inTexExpandedShape[1]};
 
       ${rgbaColorSnippet}
 

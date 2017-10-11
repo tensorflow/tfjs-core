@@ -115,7 +115,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.math = new NDArrayMathGPU(this.gpgpu);
     this.mathCPU = new NDArrayMathCPU();
 
-    this.squeezeNet = new SqueezeNet(this.gpgpu, this.math);
+    this.squeezeNet = new SqueezeNet(this.math);
     this.squeezeNet.loadVariables().then(() => {
       requestAnimationFrame(() => this.animate());
     });
@@ -156,25 +156,11 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
         [IMAGE_SIZE, IMAGE_SIZE, 3],
         isWebcam ? this.webcamVideoElement : this.staticImgElement);
 
-    const canvasTextureShape: [number, number] = [IMAGE_SIZE, IMAGE_SIZE];
-    const canvasTexture =
-        this.math.getTextureManager().acquireTexture(canvasTextureShape);
-
-    const element = isWebcam ? this.webcamVideoElement : this.staticImgElement;
-    this.gpgpu.uploadPixelDataToTexture(canvasTexture, element);
-
     this.math.scope((keep, track) => {
-      // const preprocessedInput =
-      //    track(this.squeezeNet.preprocessColorTextureToArray3D(
-      //        canvasTexture, canvasTextureShape));
-      // console.log('preproceesed input: ');
-      // console.log(preprocessedInput.getValues());
-
       const inferenceResult = this.squeezeNet.infer(image);
       const namedActivations = inferenceResult.namedActivations;
 
       this.layerNames = Object.keys(namedActivations);
-      this.layerNames.forEach(layerName => track(namedActivations[layerName]));
 
       const topClassesToProbability =
           this.squeezeNet.getTopKClasses(inferenceResult.logits, TOP_K_CLASSES);
@@ -221,8 +207,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
           this.inferenceCanvas.width, numRows);
     });
 
-    this.math.getTextureManager().releaseTexture(
-        canvasTexture, canvasTextureShape);
+    image.dispose();
 
     requestAnimationFrame(() => this.animate());
   }
