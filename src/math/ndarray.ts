@@ -119,7 +119,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   /** Creates a ndarray of zeros with the specified shape. */
-  static zeros<T extends keyof DataTypes = 'float32'>(
+  static zeros<T extends keyof DataTypes = keyof DataTypes>(
       shape: number[], dtype?: T): NDArray<T> {
     const values = makeZerosTypedArray(util.sizeFromShape(shape), dtype);
     return NDArray.make(shape, {values}, dtype);
@@ -143,7 +143,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * Makes a new ndarray with the provided shape and values. Values should be in
    * a flat array.
    */
-  static make<T extends keyof DataTypes = 'float32'>(
+  static make<T extends keyof DataTypes = keyof DataTypes>(
       shape: number[], data: NDArrayData<T>, dtype?: T): NDArray<T> {
     switch (shape.length) {
       case 0:
@@ -377,7 +377,7 @@ export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
     super([], data, dtype);
   }
 
-  static new<T extends keyof DataTypes = 'float32'>(
+  static new<T extends keyof DataTypes = keyof DataTypes>(
       value: number|boolean, dtype?: T) {
     const values = [value] as number[] | boolean[];
     return new Scalar({values: toTypedArray(values, dtype)}, dtype);
@@ -416,7 +416,7 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
     super(shape, data, dtype);
   }
 
-  static new<T extends keyof DataTypes = 'float32'>(
+  static new<T extends keyof DataTypes = keyof DataTypes>(
       values: DataTypes[T]|number[]|boolean[], dtype?: T): Array1D<T> {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values);
@@ -452,7 +452,7 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
     return super.asType(dtype) as Array1D<G>;
   }
 
-  static zeros<T extends keyof DataTypes = 'float32'>(
+  static zeros<T extends keyof DataTypes = keyof DataTypes>(
       shape: [number], dtype?: T): Array1D<T> {
     return NDArray.zeros(shape, dtype) as Array1D<T>;
   }
@@ -487,7 +487,7 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
     this.stride0 = this.strides[0];
   }
 
-  static new<T extends keyof DataTypes = 'float32'>(
+  static new<T extends keyof DataTypes = keyof DataTypes>(
       shape: [number, number],
       values: DataTypes[T]|number[]|number[][]|boolean[]|boolean[][],
       dtype?: T): Array2D<T> {
@@ -528,7 +528,7 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
     return super.asType(dtype) as Array2D<G>;
   }
 
-  static zeros<T extends keyof DataTypes = 'float32'>(
+  static zeros<T extends keyof DataTypes = keyof DataTypes>(
       shape: [number, number], dtype?: T): Array2D<T> {
     return NDArray.zeros(shape, dtype) as Array2D<T>;
   }
@@ -565,7 +565,7 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
     this.stride1 = this.strides[1];
   }
 
-  static new<T extends keyof DataTypes = 'float32'>(
+  static new<T extends keyof DataTypes = keyof DataTypes>(
       shape: [number, number, number],
       values: DataTypes[T]|number[]|number[][][]|boolean[]|boolean[][][],
       dtype?: T) {
@@ -608,7 +608,7 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
     return super.asType(dtype) as Array3D<G>;
   }
 
-  static zeros<T extends keyof DataTypes = 'float32'>(
+  static zeros<T extends keyof DataTypes = keyof DataTypes>(
       shape: [number, number, number], dtype?: T): Array3D<T> {
     return NDArray.zeros(shape, dtype) as Array3D<T>;
   }
@@ -649,7 +649,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
     this.stride2 = this.strides[2];
   }
 
-  static new<T extends keyof DataTypes = 'float32'>(
+  static new<T extends keyof DataTypes = keyof DataTypes>(
       shape: [number, number, number, number],
       values: DataTypes[T]|number[]|number[][][][]|boolean[]|boolean[][][][],
       dtype?: T) {
@@ -698,7 +698,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
     return super.asType(dtype) as Array4D<G>;
   }
 
-  static zeros<T extends keyof DataTypes = 'float32'>(
+  static zeros<T extends keyof DataTypes = keyof DataTypes>(
       shape: [number, number, number, number], dtype?: T): Array4D<T> {
     return NDArray.zeros(shape, dtype) as Array4D<T>;
   }

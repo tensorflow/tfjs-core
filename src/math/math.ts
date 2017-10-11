@@ -944,13 +944,14 @@ export abstract class NDArrayMath {
    * @param max Upper-bound of range to be clipped to.
    */
   clip<T extends NDArray>(ndarray: T, min: number, max: number): T {
-    util.assert((min <= max), `Error in clip: min (${min}) must be` + 
-      `less than or equal to max (${max}).`);
-    return this.executeOp('clip',
-      () => this.clipInternal(ndarray, min, max));
+    util.assert(
+        (min <= max),
+        `Error in clip: min (${min}) must be` +
+            `less than or equal to max (${max}).`);
+    return this.executeOp('clip', () => this.clipInternal(ndarray, min, max));
   }
   protected abstract clipInternal<T extends NDArray>(
-    ndarray: T, min: number, max: number): T;
+      ndarray: T, min: number, max: number): T;
 
   /**
    * Computes rectified linear element-wise, max(x, 0).
