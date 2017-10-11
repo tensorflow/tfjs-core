@@ -132,6 +132,21 @@ export function decodeMatrixFromUnpackedArray(
   }
 }
 
+export function decodeMatrixFromUnpackedColorRGBAArray(
+    unpackedArray: Float32Array, matrix: Float32Array, channels: number) {
+  const requiredSize = unpackedArray.length * channels / 4;
+  if (matrix.length < requiredSize) {
+    throw new Error(
+        'matrix length (' + matrix.length + ') must be >= ' + requiredSize);
+  }
+  let dst = 0;
+  for (let src = 0; src < unpackedArray.length; src += 4) {
+    for (let c = 0; c < channels; c++) {
+      matrix[dst++] = unpackedArray[src + c];
+    }
+  }
+}
+
 export function getPackedMatrixTextureShapeWidthHeight(
     rows: number, columns: number): [number, number] {
   return [Math.ceil(columns / 2), Math.ceil(rows / 2)];

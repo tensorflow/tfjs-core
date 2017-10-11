@@ -287,6 +287,19 @@ export function downloadMatrixFromOutputTexture(
   }
 }
 
+export function downloadMatrixFromRGBAColorTexture(
+    gl: WebGLRenderingContext, rows: number, columns: number,
+    channels: number): Float32Array {
+  const packedRGBA = new Float32Array(rows * columns * 4);
+  webgl_util.callAndCheck(
+      gl,
+      () => gl.readPixels(
+          0, 0, columns, rows, gl.RGBA, getTextureType(gl), packedRGBA));
+  const matrix = new Float32Array(rows * columns * channels);
+  tex_util.decodeMatrixFromUnpackedColorRGBAArray(packedRGBA, matrix, channels);
+  return matrix;
+}
+
 export function downloadMatrixFromPackedOutputTexture(
     gl: WebGLRenderingContext, rows: number, columns: number): Float32Array {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);

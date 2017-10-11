@@ -255,9 +255,17 @@ export class NDArray {
   getValues(): Float32Array {
     if (this.data.values == null) {
       throwIfGPUNotInitialized();
-      this.data.values = GPGPU.downloadMatrixFromTexture(
-          this.data.texture, this.data.textureShapeRC[0],
-          this.data.textureShapeRC[1]);
+
+      if (this.data.textureType === TextureType.DEFAULT) {
+        this.data.values = GPGPU.downloadMatrixFromTexture(
+            this.data.texture, this.data.textureShapeRC[0],
+            this.data.textureShapeRC[1]);
+      } else {
+        this.data.values = GPGPU.downloadMatrixFromRGBAColorTexture(
+            this.data.texture, this.data.textureShapeRC[0],
+            this.data.textureShapeRC[1], this.shape[2]);
+      }
+
       this.disposeTexture();
     }
     return this.data.values;
