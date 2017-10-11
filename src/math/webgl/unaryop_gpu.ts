@@ -63,6 +63,10 @@ export const NEG = `
   return -x;
 `;
 
+export const CEIL = `
+  return ceil(x);
+`;
+
 export const EXP = `
   return exp(x);
 `;

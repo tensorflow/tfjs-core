@@ -282,6 +282,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]);
   }
 
+  protected ceilInternal<T extends NDArray>(a: T): T {
+    const program = new UnaryOpProgram(a.shape, unary_op.CEIL);
+    return this.compileAndRun(program, [a]) as T;
+  }
+
   protected expInternal<T extends NDArray>(a: T): T {
     const program = new UnaryOpProgram(a.shape, unary_op.EXP);
     return this.compileAndRun(program, [a]) as T;

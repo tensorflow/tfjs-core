@@ -269,6 +269,40 @@ import {Array1D, Array2D} from './ndarray';
   ]);
 }
 
+// math.ceil
+{
+  const tests: MathTests = it => {
+    it('exp', math => {
+      const a = Array1D.new([1.5, 2.1, -1.4]);
+
+      const r = math.ceil(a);
+
+      expect(r.get(0)).toBeCloseTo(2);
+      expect(r.get(1)).toBeCloseTo(3);
+      expect(r.get(2)).toBeCloseTo(-1);
+
+      a.dispose();
+    });
+
+    it('exp propagates NaNs', math => {
+      const a = Array1D.new([1.5, NaN, -1.4]);
+
+      const r = math.ceil(a).getValues();
+
+      test_util.expectArraysClose(r, new Float32Array([2, NaN, -1]));
+
+      a.dispose();
+    });
+  };
+
+  test_util.describeMathCPU('ceil', [tests]);
+  test_util.describeMathGPU('ceil', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
 // math.exp
 {
   const tests: MathTests = it => {
