@@ -20,12 +20,11 @@ import {Environment, Features} from './environment';
 import {NDArrayMath} from './math/math';
 import {NDArrayMathCPU} from './math/math_cpu';
 import {NDArrayMathGPU} from './math/math_gpu';
+import {TypedArray} from './util';
 
 /** Accuracy for tests. */
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
 export const TEST_EPSILON = 1e-2;
-
-export type TypedArray = Float32Array|Int32Array|Uint8Array;
 
 export function expectArraysClose(
     actual: TypedArray, expected: TypedArray, epsilon = TEST_EPSILON) {

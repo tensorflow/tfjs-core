@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-
+import {ArrayData} from '../util';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import {TextureManager} from './webgl/texture_manager';
 import * as webgl_util from './webgl/webgl_util';
@@ -62,8 +62,6 @@ function throwIfGPUNotInitialized() {
     throw new Error('GPU not intialized.');
   }
 }
-
-export type TypedArray = Float32Array|Int32Array|Uint8Array;
 
 export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   /** The shape of the ndarray. */
@@ -419,7 +417,7 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
   static new<T extends keyof DataTypes = keyof DataTypes>(
       values: DataTypes[T]|number[]|boolean[], dtype?: T): Array1D<T> {
     if (!instanceofTypedArray(values)) {
-      const inferredShape = util.inferShape(values);
+      const inferredShape = util.inferShape(values as number[] | boolean[]);
       util.assert(
           inferredShape.length === 1,
           `Error constructing Array1D. Shape of values ${inferredShape} is ` +
@@ -492,7 +490,7 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
       values: DataTypes[T]|number[]|number[][]|boolean[]|boolean[][],
       dtype?: T): Array2D<T> {
     if (!instanceofTypedArray(values)) {
-      const inferredShape = util.inferShape(values);
+      const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
@@ -570,7 +568,7 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
       values: DataTypes[T]|number[]|number[][][]|boolean[]|boolean[][][],
       dtype?: T) {
     if (!instanceofTypedArray(values)) {
-      const inferredShape = util.inferShape(values);
+      const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
@@ -654,7 +652,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
       values: DataTypes[T]|number[]|number[][][][]|boolean[]|boolean[][][][],
       dtype?: T) {
     if (!instanceofTypedArray(values)) {
-      const inferredShape = util.inferShape(values);
+      const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
@@ -725,9 +723,6 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
   }
 }
 
-type ArrayData = TypedArray|number[]|number[][]|number[][][]|number[][][][]|
-    boolean[]|boolean[][]|boolean[][][]|boolean[][][][];
-
 function copyTypedArray<T extends keyof DataTypes>(
     array: DataTypes[T] | number[] | boolean[], dtype: T): DataTypes[T] {
   if (dtype == null || dtype === 'float32') {
@@ -764,7 +759,7 @@ function toTypedArray<T extends keyof DataTypes>(
     return a as DataTypes[T];
   }
   if (Array.isArray(a)) {
-    a = util.flatten(a as number[] | boolean[]);
+    a = util.flatten(a) as number[];
   }
   return copyTypedArray(a, dtype);
 }

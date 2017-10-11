@@ -15,8 +15,10 @@
  * =============================================================================
  */
 
-export type Vector = number[]|Float64Array|Float32Array|Int32Array|Int16Array|
-    Int8Array|Uint8Array;
+export type TypedArray = Float32Array|Int32Array|Uint8Array;
+export type FlatVector = boolean[]|number[]|TypedArray;
+export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
+export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -70,10 +72,10 @@ export function randGauss(mean = 0, stdDev = 1, truncated = false): number {
 }
 
 /** Returns squared eucledian distance between two vectors. */
-export function distSquared(a: Vector, b: Vector): number {
+export function distSquared(a: FlatVector, b: FlatVector): number {
   let result = 0;
   for (let i = 0; i < a.length; i++) {
-    const diff = a[i] - b[i];
+    const diff = Number(a[i]) - Number(b[i]);
     result += diff * diff;
   }
   return result;
@@ -94,25 +96,20 @@ export function assertShapesMatch(
 
 // tslint:disable-next-line:no-any
 export function flatten(
-    arr: number[]|number[][]|number[][][]|number[][][][]|boolean[]|boolean[][]|
-    boolean[][][]|boolean[][][][],
-    ret?: number[]): number[]|boolean[] {
-  ret = ret || [];
-  for (let i = 0; i < arr.length; ++i) {
-    if (Array.isArray(arr[i])) {
-      // tslint:disable-next-line:no-any
-      flatten(arr[i] as any, ret);
-    } else {
-      ret.push(arr[i] as number);
+    arr: number|boolean|RegularArray<number>|RegularArray<boolean>,
+    ret: Array<number|boolean> = []): Array<number|boolean> {
+  if (Array.isArray(arr)) {
+    for (let i = 0; i < arr.length; ++i) {
+      flatten(arr[i], ret);
     }
+  } else {
+    ret.push(arr);
   }
   return ret;
 }
 
-export type ArrayData = Vector|number|number[]|number[][]|number[][][]|
-    number[][][][]|boolean|boolean[]|boolean[][]|boolean[][][]|boolean[][][][];
-
-export function inferShape(arr: ArrayData): number[] {
+export function inferShape(arr: number|boolean|RegularArray<number>|
+                           RegularArray<boolean>): number[] {
   const shape: number[] = [];
   while (arr instanceof Array) {
     shape.push(arr.length);
@@ -137,7 +134,7 @@ export function isScalarShape(shape: number[]): boolean {
   return shape.length === 0;
 }
 
-export function arraysEqual(n1: Vector, n2: Vector) {
+export function arraysEqual(n1: FlatVector, n2: FlatVector) {
   if (n1.length !== n2.length) {
     return false;
   }

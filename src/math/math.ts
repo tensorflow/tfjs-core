@@ -16,12 +16,13 @@
  */
 
 import * as util from '../util';
+import {TypedArray} from '../util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar, TypedArray} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 
 export type ScopeResult = NDArray[]|NDArray|void;
