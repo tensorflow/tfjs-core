@@ -290,13 +290,34 @@ export function downloadMatrixFromOutputTexture(
 export function downloadMatrixFromRGBAColorTexture(
     gl: WebGLRenderingContext, rows: number, columns: number,
     channels: number): Float32Array {
-  const packedRGBA = new Float32Array(rows * columns * 4);
+  const isFloatTextureEnabled = ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED');
+
+  const size = rows * columns * 4;
+  let downloadTarget: Float32Array|Uint8Array;
+  if (isFloatTextureEnabled) {
+    downloadTarget = new Float32Array(size);
+  } else {
+    downloadTarget = new Uint8Array(size);
+  }
+
   webgl_util.callAndCheck(
       gl,
       () => gl.readPixels(
-          0, 0, columns, rows, gl.RGBA, getTextureType(gl), packedRGBA));
+          0, 0, columns, rows, gl.RGBA, getTextureType(gl), downloadTarget));
+
+  if (!isFloatTextureEnabled) {
+    const packedRGBA = new Float32Array(size);
+    for (let i = 0; i < downloadTarget.length; i++) {
+      packedRGBA[i] = downloadTarget[i] / 255.0;
+    }
+    downloadTarget = packedRGBA;
+  }
+
   const matrix = new Float32Array(rows * columns * channels);
-  tex_util.decodeMatrixFromUnpackedColorRGBAArray(packedRGBA, matrix, channels);
+
+  tex_util.decodeMatrixFromUnpackedColorRGBAArray(
+      downloadTarget as Float32Array, matrix, channels);
+
   return matrix;
 }
 

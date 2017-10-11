@@ -401,3 +401,173 @@ import {TextureManager} from './webgl/texture_manager';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
+
+// NDArray.fromPixels
+{
+  const tests: Tests = () => {
+    let gl: WebGLRenderingContext;
+    let gpgpu: GPGPUContext;
+    let textureManager: TextureManager;
+
+    beforeEach(() => {
+      gl = gpgpu_util.createWebGLContext();
+      gpgpu = new GPGPUContext(gl);
+      textureManager = new TextureManager(gpgpu);
+      ndarray.initializeGPU(gpgpu, textureManager);
+    });
+
+    afterEach(() => {
+      textureManager.dispose();
+      gpgpu.dispose();
+    });
+
+    it('ImageData 1x1x3', () => {
+      const pixels = new ImageData(1, 1);
+      pixels.data[0] = 255;
+      pixels.data[1] = 255;
+      pixels.data[2] = 255;
+      pixels.data[3] = 255;
+
+      const array = Array3D.fromPixels(pixels, 3);
+
+      test_util.expectArraysClose(
+          array.getValues(), new Float32Array([1, 1, 1]));
+    });
+
+    it('ImageData 1x1x4', () => {
+      const pixels = new ImageData(1, 1);
+      pixels.data[0] = 255;
+      pixels.data[1] = 255;
+      pixels.data[2] = 255;
+      pixels.data[3] = 255;
+
+      const array = Array3D.fromPixels(pixels, 4);
+
+      test_util.expectArraysClose(
+          array.getValues(), new Float32Array([1, 1, 1, 1]));
+    });
+
+    it('ImageData 2x2x3', () => {
+      const pixels = new ImageData(2, 2);
+
+      for (let i = 0; i < 8; i++) {
+        pixels.data[i] = 255;
+      }
+      for (let i = 8; i < 16; i++) {
+        pixels.data[i] = 127;
+      }
+
+      const array = Array3D.fromPixels(pixels, 3);
+
+      test_util.expectArraysClose(
+          array.getValues(),
+          new Float32Array([1, 1, 1, 1, 1, 1, .5, .5, .5, .5, .5, .5]));
+    });
+
+    it('ImageData 2x2x4', () => {
+      const pixels = new ImageData(2, 2);
+      for (let i = 0; i < 8; i++) {
+        pixels.data[i] = 255;
+      }
+      for (let i = 8; i < 16; i++) {
+        pixels.data[i] = 127;
+      }
+
+      const array = Array3D.fromPixels(pixels, 4);
+
+      test_util.expectArraysClose(
+          array.getValues(),
+          new Float32Array(
+              [1, 1, 1, 1, 1, 1, 1, 1, .5, .5, .5, .5, .5, .5, .5, .5]));
+    });
+
+    it('canvas 1x1x3', () => {
+      const pixels = new ImageData(1, 1);
+      pixels.data[0] = 255;
+      pixels.data[1] = 255;
+      pixels.data[2] = 255;
+      pixels.data[3] = 255;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = pixels.width;
+      canvas.height = pixels.width;
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(pixels, 0, 0);
+
+      const array = Array3D.fromPixels(canvas, 3);
+
+      test_util.expectArraysClose(
+          array.getValues(), new Float32Array([1, 1, 1]));
+    });
+
+    it('canvas 1x1x4', () => {
+      const pixels = new ImageData(1, 1);
+      pixels.data[0] = 255;
+      pixels.data[1] = 255;
+      pixels.data[2] = 255;
+      pixels.data[3] = 255;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = pixels.width;
+      canvas.height = pixels.width;
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(pixels, 0, 0);
+
+      const array = Array3D.fromPixels(canvas, 4);
+
+      test_util.expectArraysClose(
+          array.getValues(), new Float32Array([1, 1, 1, 1]));
+    });
+
+    it('canvas 2x2x3', () => {
+      const pixels = new ImageData(2, 2);
+      for (let i = 0; i < 8; i++) {
+        pixels.data[i] = 255;
+      }
+      for (let i = 8; i < 16; i++) {
+        pixels.data[i] = 127;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = pixels.width;
+      canvas.height = pixels.width;
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(pixels, 0, 0);
+
+      const array = Array3D.fromPixels(canvas, 3);
+
+      test_util.expectArraysClose(
+          array.getValues(),
+          new Float32Array([1, 1, 1, 1, 1, 1, .5, .5, .5, .5, .5, .5]));
+    });
+
+    it('canvas 2x2x4', () => {
+      const pixels = new ImageData(2, 2);
+      for (let i = 0; i < 8; i++) {
+        pixels.data[i] = 255;
+      }
+      for (let i = 8; i < 16; i++) {
+        pixels.data[i] = 127;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = pixels.width;
+      canvas.height = pixels.width;
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(pixels, 0, 0);
+
+      const array = Array3D.fromPixels(canvas, 4);
+
+      test_util.expectArraysClose(
+          array.getValues(),
+          new Float32Array(
+              [1, 1, 1, 1, 1, 1, 1, 1, .5, .5, .5, .5, .5, .5, .5, .5]));
+    });
+  };
+
+  test_util.describeCustom('NDArray.fromPixels', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
