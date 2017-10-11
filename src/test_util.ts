@@ -25,8 +25,16 @@ import {NDArrayMathGPU} from './math/math_gpu';
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
 export const TEST_EPSILON = 1e-2;
 
+export type TypedArray = Float32Array|Int32Array|Uint8Array;
+
 export function expectArraysClose(
-    actual: Float32Array, expected: Float32Array, epsilon = TEST_EPSILON) {
+    actual: TypedArray, expected: TypedArray, epsilon = TEST_EPSILON) {
+  const aType = actual.constructor.name;
+  const bType = expected.constructor.name;
+
+  if (aType !== bType) {
+    throw new Error(`Arrays are of different type ${aType} vs ${bType}`);
+  }
   if (actual.length !== expected.length) {
     throw new Error(
         'Matrices have different lengths (' + actual.length + ' vs ' +

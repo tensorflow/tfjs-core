@@ -65,7 +65,7 @@ function throwIfGPUNotInitialized() {
 
 export type TypedArray = Float32Array|Int32Array|Uint8Array;
 
-export class NDArray<T extends keyof DataTypes = 'float32'> {
+export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   /** The shape of the ndarray. */
   shape: number[];
   /** Number of elements in the ndarray. */
@@ -260,9 +260,10 @@ export class NDArray<T extends keyof DataTypes = 'float32'> {
   getValues(): DataTypes[T] {
     if (this.data.values == null) {
       throwIfGPUNotInitialized();
-      this.data.values = GPGPU.downloadMatrixFromTexture(
+      const values = GPGPU.downloadMatrixFromTexture(
           this.data.texture, this.data.textureShapeRC[0],
           this.data.textureShapeRC[1]);
+      this.data.values = convertFloat32ToDtype(values, this.dtype);
       this.disposeTexture();
     }
     return this.data.values;
@@ -367,7 +368,8 @@ export class NDArray<T extends keyof DataTypes = 'float32'> {
   }
 }
 
-export class Scalar<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
+export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
+    NDArray<T> {
   constructor(data: NDArrayData<T>, dtype: T) {
     if (data.texture != null) {
       data.textureShapeRC = [1, 1];
@@ -403,7 +405,8 @@ export class Scalar<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
   }
 }
 
-export class Array1D<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
+export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
+    NDArray<T> {
   shape: [number];
 
   constructor(data: NDArrayData<T>, dtype: T) {
@@ -472,7 +475,8 @@ export class Array1D<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
   }
 }
 
-export class Array2D<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
+export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
+    NDArray<T> {
   shape: [number, number];
 
   private stride0: number;
@@ -548,7 +552,8 @@ export class Array2D<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
   }
 }
 
-export class Array3D<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
+export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
+    NDArray<T> {
   shape: [number, number, number];
   private stride0: number;
   private stride1: number;
@@ -628,7 +633,8 @@ export class Array3D<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
   }
 }
 
-export class Array4D<T extends keyof DataTypes = 'float32'> extends NDArray<T> {
+export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
+    NDArray<T> {
   shape: [number, number, number, number];
   private stride0: number;
   private stride1: number;
@@ -723,7 +729,7 @@ type ArrayData = TypedArray|number[]|number[][]|number[][][]|number[][][][]|
     boolean[]|boolean[][]|boolean[][][]|boolean[][][][];
 
 function copyTypedArray<T extends keyof DataTypes>(
-    array: DataTypes[T]|number[]|boolean[], dtype: T): DataTypes[T] {
+    array: DataTypes[T] | number[] | boolean[], dtype: T): DataTypes[T] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
@@ -773,5 +779,21 @@ function makeZerosTypedArray<T extends keyof DataTypes>(
     return new Uint8Array(size);
   } else {
     throw new Error(`Unknown data type ${dtype}`);
+  }
+}
+
+function convertFloat32ToDtype<T extends keyof DataTypes>(
+    values: Float32Array, dtype: T): DataTypes[T] {
+  if (dtype === 'float32') {
+    return values;
+  } else if (dtype === 'int32' || dtype === 'bool') {
+    const result = (dtype === 'int32') ? new Int32Array(values.length) :
+                                         new Uint8Array(values.length);
+    for (let i = 0; i < result.length; ++i) {
+      result[i] = Math.round(values[i]);
+    }
+    return result;
+  } else {
+    throw new Error(`Unknown dtype ${dtype}`);
   }
 }

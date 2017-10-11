@@ -24,7 +24,7 @@ import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_util from './webgl/gpgpu_util';
 import {TextureManager} from './webgl/texture_manager';
 
-const ENVS = [
+const FEATURES = [
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
@@ -331,7 +331,7 @@ test_util.describeCustom('NDArray', () => {
     const t = Array4D.zeros([8, 2, 4, 4]);
     expect(t.getTextureShapeRC()).toEqual([8, 2 * 4 * 4]);
   });
-}, ENVS, customBeforeEach, customAfterEach);
+}, FEATURES, customBeforeEach, customAfterEach);
 
 test_util.describeCustom('NDArray.new', () => {
   it('Array1D.new() from number[]', () => {
@@ -1232,3 +1232,59 @@ test_util.describeCustom('NDArray.asType', () => {
     expect(a.getValues()).toEqual(new Float32Array([1, 0, 0, 1]));
   });
 });
+
+test_util.describeCustom('NDArray CPU <--> GPU with dtype', () => {
+  it('bool CPU -> GPU -> CPU', () => {
+    const a = Array1D.new([1, 2, 0, 0, 5], 'bool');
+    expect(a.inGPU()).toBe(false);
+    expect(a.getValues()).toEqual(new Uint8Array([1, 1, 0, 0, 1]));
+
+    // Upload to GPU.
+    expect(a.getTexture() != null).toBe(true);
+
+    expect(a.inGPU()).toBe(true);
+
+    expect(a.getValues()).toEqual(new Uint8Array([1, 1, 0, 0, 1]));
+    a.dispose();
+  });
+
+  it('bool GPU --> CPU', () => {
+    const shape: [number, number] = [1, 5];
+    const texture = textureManager.acquireTexture(shape);
+    gpgpu.uploadMatrixToTexture(
+        texture, shape[0], shape[1], new Float32Array([1, 1, 0, 0, 1]));
+
+    const a = Array1D.make(shape, {texture, textureShapeRC: shape}, 'bool');
+    expect(a.inGPU()).toBe(true);
+
+    expect(a.getValues()).toEqual(new Uint8Array([1, 1, 0, 0, 1]));
+    expect(a.inGPU()).toBe(false);
+  });
+
+  it('int32 CPU -> GPU -> CPU', () => {
+    const a = Array1D.new([1, 2, 0, 0, 5], 'int32');
+    expect(a.inGPU()).toBe(false);
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 0, 0, 5]));
+
+    // Upload to GPU.
+    expect(a.getTexture() != null).toBe(true);
+
+    expect(a.inGPU()).toBe(true);
+
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 0, 0, 5]));
+    a.dispose();
+  });
+
+  it('int32 GPU --> CPU', () => {
+    const shape: [number, number] = [1, 5];
+    const texture = textureManager.acquireTexture(shape);
+    gpgpu.uploadMatrixToTexture(
+        texture, shape[0], shape[1], new Float32Array([1, 5.003, 0, 0, 1.001]));
+
+    const a = Array1D.make(shape, {texture, textureShapeRC: shape}, 'int32');
+    expect(a.inGPU()).toBe(true);
+
+    expect(a.getValues()).toEqual(new Int32Array([1, 5, 0, 0, 1]));
+    expect(a.inGPU()).toBe(false);
+  });
+}, FEATURES, customBeforeEach, customAfterEach);
