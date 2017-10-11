@@ -29,7 +29,6 @@ export class AdamMaxOptimizer extends Optimizer {
       private beta1: number, private beta2: number,
       specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
-    this.eps = Scalar.new(1e-8);
     // b1, b2 keep initial value of beta* hyperparameters.
     this.b1 = Scalar.new(this.beta1);
     this.b2 = Scalar.new(this.beta2);
@@ -75,7 +74,7 @@ export class AdamMaxOptimizer extends Optimizer {
         const ut1 = math.abs(gradient);
 
         const newWeightedInfNorm = math.add(
-            math.relu(math.sub(ut0, ut1)), ut1);
+            math.relu(math.sub(ut0, ut1)), ut1); // update with element-wise max
 
         const variable = math.scaledArrayAdd(this.one, oldVariable,
             math.divide(this.c, math.sub(this.one, this.b1)),
@@ -87,8 +86,6 @@ export class AdamMaxOptimizer extends Optimizer {
         this.firstMoment.set(node.output, keep(newFirstMoment));
         this.weightedInfNorm.set(node.output, keep(newWeightedInfNorm));
         
-        ut0.dispose();
-        ut1.dispose();
         oldVariable.dispose();
         gradient.dispose();
         oldFirstMoment.dispose();
