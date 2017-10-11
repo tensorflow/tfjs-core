@@ -31,6 +31,7 @@ export interface GPGPUProgram {
   params: Array<{}>;
   userCode: string;
   supportsBroadcasting?: boolean;
+  isRenderShader?: boolean;
 }
 
 export interface GPGPUBinary {
@@ -57,15 +58,45 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
   const inputInfos = inputs.map((input, i) => {
     const shapeInfo = {
       logicalShape: input.shape,
-      texShape: input.getTextureShapeRC()
+      texShape: input.getTextureShapeRC(),
     };
     return {name: program.variableNames[i], shapeInfo};
   });
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
-  const outShapeInfo = {
-    logicalShape: output.shape,
-    texShape: output.getTextureShapeRC()
-  };
+
+  let outShapeInfo: ShapeInfo;
+  if (program.isRenderShader != null && program.isRenderShader) {
+    if (program.outputShape.length !== 2 && program.outputShape.length !== 3) {
+      throw new Error(
+          `Render shader must have rank 2 or 3 output shape, ` +
+          `but got rank ${program.outputShape.length}`);
+    } else if (program.outputShape.length === 2) {
+      outShapeInfo = {
+        logicalShape: program.outputShape,
+        texShape: program.outputShape as [number, number],
+        renderInfo: {numChannels: 1}
+      };
+    } else if (program.outputShape.length === 3) {
+      if (program.outputShape[2] !== 1 && program.outputShape[2] !== 3 &&
+          program.outputShape[2] !== 4) {
+        throw new Error(
+            `Render shader must have depth 1, 3, or 4, ` +
+            `but got ${program.outputShape[2]}`);
+      }
+      const matrixShape = program.outputShape.slice(0, 2) as [number, number];
+      outShapeInfo = {
+        logicalShape: matrixShape,
+        texShape: matrixShape,
+        renderInfo: {numChannels: program.outputShape[2]}
+      };
+    }
+  } else {
+    outShapeInfo = {
+      logicalShape: output.shape,
+      texShape: output.getTextureShapeRC()
+    };
+  }
+
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode,
       program.supportsBroadcasting === true);

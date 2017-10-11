@@ -29,12 +29,20 @@ export let GPGPU: GPGPUContext = null;
 /** @hidden */
 export let TEXTURE_MANAGER: TextureManager = null;
 
+export enum TextureChannelPackingFormat {
+  R,
+  RGBA_1_BY_4,
+  RGBA_2_BY_2
+}
+
 /** @hidden */
 export interface NDArrayData {
   values?: Float32Array;
   texture?: WebGLTexture;
   /** [rows, columns] shape of the texture. */
   textureShapeRC?: [number, number];
+  /** RGBA texture channel format. No value is [1, 1]. */
+  textureChannelPackingFormat?: TextureChannelPackingFormat;
 }
 
 /** @hidden */
@@ -74,6 +82,11 @@ export class NDArray {
     util.assert(
         data.texture == null || (data.textureShapeRC != null),
         '`textureShape` must be defined when `texture` is defined');
+
+    // Default to packing in R channel.
+    if (data.texture != null && data.textureChannelPackingFormat == null) {
+      data.textureChannelPackingFormat = TextureChannelPackingFormat.R;
+    }
 
     this.size = util.sizeFromShape(shape);
 
@@ -265,6 +278,7 @@ export class NDArray {
         GPGPU.gl, this.shape, preferredTexShape);
     this.data.texture =
         TEXTURE_MANAGER.acquireTexture(this.data.textureShapeRC);
+    this.data.textureChannelPackingFormat = TextureChannelPackingFormat.R;
 
     GPGPU.uploadMatrixToTexture(
         this.data.texture, this.data.textureShapeRC[0],
