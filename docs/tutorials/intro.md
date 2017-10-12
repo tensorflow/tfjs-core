@@ -75,28 +75,26 @@ These shaders read and write from `WebGLTexture`s which are owned by
 memory (not downloaded to the CPU between operations), which is critical for
 performance.
 
-Example of taking the mean squared difference between two matrices (more
-details about `math.scope`, `keep`, and `track` below):
+Example of taking the mean squared difference between two matrices:
 
 ```js
 const math = new NDArrayMathGPU();
 
-math.scope((keep, track) => {
-  const a = track(Array2D.new([2, 2], [1.0, 2.0, 3.0, 4.0]));
-  const b = track(Array2D.new([2, 2], [0.0, 2.0, 4.0, 6.0]));
+const a = Array2D.new([2, 2], [1.0, 2.0, 3.0, 4.0]);
+const b = Array2D.new([2, 2], [0.0, 2.0, 4.0, 6.0]);
 
-  // Non-blocking math calls.
-  const diff = math.sub(a, b);
-  const squaredDiff = math.elementWiseMul(diff, diff);
-  const sum = math.sum(squaredDiff);
-  const size = Scalar.new(a.size);
-  const average = math.divide(sum, size);
+// Non-blocking math calls.
+const diff = math.sub(a, b);
+const squaredDiff = math.elementWiseMul(diff, diff);
+const sum = math.sum(squaredDiff);
+const size = Scalar.new(a.size);
+const average = math.divide(sum, size);
 
-  // Blocking call to actually read the values from average. Waits until the
-  // GPU has finished executing the operations before returning values.
-  // average is a Scalar so we use .get()
-  console.log(average.get());
-});
+// Blocking call to actually read the values from average. Waits until the
+// GPU has finished executing the operations before returning values.
+// average is a Scalar so we use .get()
+console.log(average.get());
+
 ```
 
 > NOTE: `NDArray.get()` and `NDArray.getValues()` are blocking calls.
