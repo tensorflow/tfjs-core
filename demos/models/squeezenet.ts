@@ -46,6 +46,32 @@ export class SqueezeNet {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Preprocess an RGB color texture before inferring through squeezenet.
+   * @param rgbTexture The RGB color texture to process into an Array3D.
+   * @param imageDimensions The 2D dimensions of the image.
+   */
+  preprocessColorTextureToArray3D(rgbTexture: WebGLTexture, imageDimensions: [
+    number, number
+  ]): Array3D {
+    const preprocessResultShapeRC: [number, number] =
+        [imageDimensions[0], imageDimensions[0] * 3];
+
+    const preprocessResultTexture =
+        this.math.getTextureManager().acquireTexture(preprocessResultShapeRC);
+
+    imagenet_util.preprocessInput(
+        this.gpgpu, this.preprocessInputShader, rgbTexture,
+        preprocessResultTexture, preprocessResultShapeRC);
+    return Array3D.make([imageDimensions[0], imageDimensions[0], 3], {
+      texture: preprocessResultTexture,
+      textureShapeRC: preprocessResultShapeRC
+    }) as Array3D;
+  }
+
+  /**
+>>>>>>> origin
    * Infer through SqueezeNet, assumes variables have been loaded. This does
    * standard ImageNet pre-processing before inferring through the model. This
    * method returns named activations as well as pre-softmax logits.

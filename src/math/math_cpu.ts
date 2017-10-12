@@ -21,8 +21,9 @@ import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
-import {MatrixOrientation, NDArrayMath} from './math';
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
+// tslint:disable-next-line:max-line-length
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
@@ -323,13 +324,14 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  protected sumInternal(ndarray: NDArray): Scalar {
+  protected sumInternal<T extends keyof DataTypes>(ndarray: NDArray<T>):
+      Scalar<SumTypes[T]> {
     let sum = 0;
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
       sum += values[i];
     }
-    return Scalar.new(sum);
+    return Scalar.new(sum, SumTypesMap[ndarray.dtype]);
   }
 
   protected argMinInternal(ndarray: NDArray): Scalar {
@@ -424,6 +426,24 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Scalar.new(max);
   }
 
+  protected ceilInternal<T extends NDArray>(ndarray: T): T {
+    const values = ndarray.getValues();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      newValues[i] = Math.ceil(values[i]);
+    }
+    return NDArray.make(ndarray.shape, {values: newValues}) as T;
+  }
+
+  protected floorInternal<T extends NDArray>(ndarray: T): T {
+    const values = ndarray.getValues();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      newValues[i] = Math.floor(values[i]);
+    }
+    return NDArray.make(ndarray.shape, {values: newValues}) as T;
+  }
+
   protected expInternal<T extends NDArray>(ndarray: T): T {
     const values = ndarray.getValues();
     const newValues = new Float32Array(values.length);
@@ -475,6 +495,16 @@ export class NDArrayMathCPU extends NDArrayMath {
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.max(0, values[i]);
+    }
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+  }
+
+  protected clipInternal<T extends NDArray>(
+    ndarray: T, min: number, max: number): T {
+    const resultValues = new Float32Array(ndarray.size);
+    const values = ndarray.getValues();
+    for (let i = 0; i < values.length; ++i) {
+      resultValues[i] = Math.min(max, Math.max(min, values[i]));
     }
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
@@ -980,7 +1010,7 @@ export class NDArrayMathCPU extends NDArrayMath {
               Math.sqrt(
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
-    return Array3D.make(x.shape, {values: outValues});
+    return Array3D.new(x.shape, outValues);
   }
 
   protected multinomialInternal(

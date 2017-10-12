@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 
-import {Array1D, Array2D} from './ndarray';
+import {Array1D, Array2D, Scalar} from './ndarray';
 
 // math.relu
 {
@@ -31,6 +31,36 @@ import {Array1D, Array2D} from './ndarray';
 
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([1, 0, 0, 3, 0]));
+
+      a.dispose();
+    });
+
+    it('does nothing to positive values', math => {
+      const a = Scalar.new(1);
+
+      const result = math.relu(a);
+
+      test_util.expectNumbersClose(result.get(), 1);
+
+      a.dispose();
+    });
+
+    it('sets negative values to 0', math => {
+      const a = Scalar.new(-1);
+
+      const result = math.relu(a);
+
+      test_util.expectNumbersClose(result.get(), 0);
+
+      a.dispose();
+    });
+
+    it('preserves zero values', math => {
+      const a = Scalar.new(0);
+
+      const result = math.relu(a);
+
+      test_util.expectNumbersClose(result.get(), 0);
 
       a.dispose();
     });
@@ -263,6 +293,74 @@ import {Array1D, Array2D} from './ndarray';
 
   test_util.describeMathCPU('log', [tests]);
   test_util.describeMathGPU('log', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// math.ceil
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      const a = Array1D.new([1.5, 2.1, -1.4]);
+
+      const r = math.ceil(a);
+
+      expect(r.get(0)).toBeCloseTo(2);
+      expect(r.get(1)).toBeCloseTo(3);
+      expect(r.get(2)).toBeCloseTo(-1);
+
+      a.dispose();
+    });
+
+    it('propagates NaNs', math => {
+      const a = Array1D.new([1.5, NaN, -1.4]);
+
+      const r = math.ceil(a).getValues();
+
+      test_util.expectArraysClose(r, new Float32Array([2, NaN, -1]));
+
+      a.dispose();
+    });
+  };
+
+  test_util.describeMathCPU('ceil', [tests]);
+  test_util.describeMathGPU('ceil', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// math.floor
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      const a = Array1D.new([1.5, 2.1, -1.4]);
+
+      const r = math.floor(a);
+
+      expect(r.get(0)).toBeCloseTo(1);
+      expect(r.get(1)).toBeCloseTo(2);
+      expect(r.get(2)).toBeCloseTo(-2);
+
+      a.dispose();
+    });
+
+    it('propagates NaNs', math => {
+      const a = Array1D.new([1.5, NaN, -1.4]);
+
+      const r = math.floor(a).getValues();
+
+      test_util.expectArraysClose(r, new Float32Array([1, NaN, -2]));
+
+      a.dispose();
+    });
+  };
+
+  test_util.describeMathCPU('floor', [tests]);
+  test_util.describeMathGPU('floor', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

@@ -16,17 +16,31 @@
  */
 
 import * as util from '../util';
+import {TypedArray} from '../util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+// tslint:disable-next-line:max-line-length
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 
 export type ScopeResult = NDArray[]|NDArray|void;
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
+}
+
+export interface SumTypes {
+  float32: 'float32';
+  int32: 'int32';
+  bool: 'int32';
+}
+
+export enum SumTypesMap {
+  float32 = 'float32',
+  int32 = 'int32',
+  bool = 'int32'
 }
 
 export abstract class NDArrayMath {
@@ -164,7 +178,7 @@ export abstract class NDArrayMath {
     return result;
   }
 
-  private checkForNaN(vals: Float32Array, name: string): void {
+  private checkForNaN(vals: TypedArray, name: string): void {
     for (let i = 0; i < vals.length; i++) {
       if (isNaN(vals[i])) {
         throw Error(`The result of the last math.${name} has NaNs.`);
@@ -177,7 +191,7 @@ export abstract class NDArrayMath {
    * the current scope ends, and returns the value.
    * @param result The NDArray to track in the current scope.
    */
-  track<T extends NDArray>(result: T): T {
+  track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
     if (this.activeScope == null) {
       if (this.safeMode) {
         throw new Error(
@@ -230,7 +244,8 @@ export abstract class NDArrayMath {
         'matMul', () => this.matMulInternal(a, b, aOrientation, bOrientation));
   }
 
-  private executeOp<T extends NDArray>(name: string, f: () => T): T {
+  private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
+      name: string, f: () => T): T {
     let start: number;
     if (this.debugMode) {
       start = performance.now();
@@ -593,10 +608,12 @@ export abstract class NDArrayMath {
    * Computes the sum of all the entries in the input NDArray.
    * @param ndarray The input NDArray to compute the sum over.
    */
-  sum(ndarray: NDArray): Scalar {
-    return this.executeOp('sum', () => this.sumInternal(ndarray));
+  sum<T extends keyof DataTypes>(ndarray: NDArray<T>): Scalar<SumTypes[T]> {
+    return this.executeOp('sum', () => this.sumInternal(ndarray)) as
+        Scalar<SumTypes[T]>;
   }
-  protected abstract sumInternal(ndarray: NDArray): Scalar;
+  protected abstract sumInternal<T extends keyof DataTypes>(
+      ndarray: NDArray<T>): Scalar<SumTypes[T]>;
 
   /**
    * Computes the flattened index of the minimum element in the ndarray.
@@ -886,6 +903,24 @@ export abstract class NDArrayMath {
   }
 
   /**
+   * Computes ceiling of input NDArray element-wise. y = ceil(x)
+   * @param ndarray The input NDArray.
+   */
+  ceil<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('ceil', () => this.ceilInternal(ndarray));
+  }
+  protected abstract ceilInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes floor of input NDArray element-wise. y = floor(x)
+   * @param ndarray The input NDArray.
+   */
+  floor<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('floor', () => this.floorInternal(ndarray));
+  }
+  protected abstract floorInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
    * Computes exponential of the input NDArray element-wise. y = e ^ x
    * @param ndarray The input NDArray.
    */
@@ -920,6 +955,22 @@ export abstract class NDArrayMath {
     return this.executeOp('abs', () => this.absInternal(ndarray));
   }
   protected abstract absInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Clips values element-wise.
+   * @param ndarray The input NDArray.
+   * @param min Lower-bound of range to be clipped to.
+   * @param max Upper-bound of range to be clipped to.
+   */
+  clip<T extends NDArray>(ndarray: T, min: number, max: number): T {
+    util.assert(
+        (min <= max),
+        `Error in clip: min (${min}) must be` +
+            `less than or equal to max (${max}).`);
+    return this.executeOp('clip', () => this.clipInternal(ndarray, min, max));
+  }
+  protected abstract clipInternal<T extends NDArray>(
+      ndarray: T, min: number, max: number): T;
 
   /**
    * Computes rectified linear element-wise, max(x, 0).
@@ -1507,10 +1558,6 @@ export abstract class NDArrayMath {
   multiRNNCell(
       lstmCells: LSTMCell[], data: Array2D, c: Array2D[],
       h: Array2D[]): [Array2D[], Array2D[]] {
-    util.assert(
-        data.shape[0] === 1,
-        `Error in multiRNNCell: first dimension of data is ${data.shape[0]}, ` +
-            `but batch sizes > 1 are not yet supported.`);
     const res = this.scope(() => {
       let input = data;
       const newStates = [];
@@ -1548,30 +1595,28 @@ export abstract class NDArrayMath {
       forgetBias: Scalar, lstmKernel: Array2D, lstmBias: Array1D, data: Array2D,
       c: Array2D, h: Array2D): [Array2D, Array2D] {
     const res = this.scope(() => {
-      util.assert(
-          data.shape[0] === 1,
-          `Error in multiRNNCell: first dimension of data is ` +
-              `${data.shape[0]}, but batch sizes > 1 are not yet supported.`);
-      const combined = this.concat1D(data.as1D(), h.as1D());
-      const weighted = this.vectorTimesMatrix(combined, lstmKernel);
-      const res = this.addStrict(weighted, lstmBias);
+      const combined = this.concat2D(data, h, 1);
+      const weighted = this.matMul(combined, lstmKernel);
+      const res = this.add(weighted, lstmBias) as Array2D;
 
       // i = input_gate, j = new_input, f = forget_gate, o = output_gate
-      const sliceSize = res.size / 4;
-      const i = this.slice1D(res, 0, sliceSize);
-      const j = this.slice1D(res, sliceSize, sliceSize);
-      const f = this.slice1D(res, sliceSize * 2, sliceSize);
-      const o = this.slice1D(res, sliceSize * 3, sliceSize);
+      const batchSize = res.shape[0];
+      const sliceCols = res.shape[1] / 4;
+      const sliceSize: [number, number] = [batchSize, sliceCols];
+      const i = this.slice2D(res, [0, 0], sliceSize);
+      const j = this.slice2D(res, [0, sliceCols], sliceSize);
+      const f = this.slice2D(res, [0, sliceCols * 2], sliceSize);
+      const o = this.slice2D(res, [0, sliceCols * 3], sliceSize);
 
       const newC = this.addStrict(
           this.multiplyStrict(
-              c.as1D(), this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+              c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
           this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
       const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
 
       return [newC, newH];
     });
-    return [res[0].as2D(1, -1), res[1].as2D(1, -1)];
+    return [res[0], res[1]];
   }
 
   /**
