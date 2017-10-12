@@ -302,7 +302,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 // math.ceil
 {
   const tests: MathTests = it => {
-    it('exp', math => {
+    it('basic', math => {
       const a = Array1D.new([1.5, 2.1, -1.4]);
 
       const r = math.ceil(a);
@@ -314,7 +314,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       a.dispose();
     });
 
-    it('exp propagates NaNs', math => {
+    it('propagates NaNs', math => {
       const a = Array1D.new([1.5, NaN, -1.4]);
 
       const r = math.ceil(a).getValues();
@@ -336,7 +336,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 // math.floor
 {
   const tests: MathTests = it => {
-    it('exp', math => {
+    it('basic', math => {
       const a = Array1D.new([1.5, 2.1, -1.4]);
 
       const r = math.floor(a);
@@ -348,7 +348,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       a.dispose();
     });
 
-    it('exp propagates NaNs', math => {
+    it('propagates NaNs', math => {
       const a = Array1D.new([1.5, NaN, -1.4]);
 
       const r = math.floor(a).getValues();
