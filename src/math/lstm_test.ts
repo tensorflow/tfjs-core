@@ -89,6 +89,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       expect(newH.get(0, 0)).toEqual(newH.get(1, 0));
     });
   };
+
   test_util.describeMathCPU('basicLSTMCell', [tests]);
   test_util.describeMathGPU('basicLSTMCell', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},

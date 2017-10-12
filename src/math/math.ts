@@ -774,7 +774,7 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to add element-wise.
    * @param b The second NDArray to add element-wise.
    */
-  add<T extends NDArray, G extends NDArray>(a: T, b: G): NDArray {
+  add(a: NDArray, b: NDArray): NDArray {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
     return this.executeOp('add', () => this.addInternal(a, b));
   }
