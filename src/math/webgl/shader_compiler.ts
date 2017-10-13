@@ -225,11 +225,18 @@ const UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET = `
   }
 `;
 
-const FLOAT_TEXTURE_SAMPLE_SNIPPET = `
-  float sample(sampler2D texture, vec2 uv) {
-    return texture2D(texture, uv).r;
+function getFloatTextureSampleSnippet(isBatch: boolean) {
+  let BATCH_SNIPPET = '';
+  if (isBatch) {
+    BATCH_SNIPPET = `uv += getBatchOffset();`;
   }
-`;
+  return `
+    float sample(sampler2D texture, vec2 uv) {
+      ${BATCH_SNIPPET}
+      return texture2D(texture, uv).r;
+    }
+  `;
+}
 
 const FLOAT_TEXTURE_SETOUTPUT_SNIPPET = `
   void setOutput(float val) {

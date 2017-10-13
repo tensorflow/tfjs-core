@@ -17,6 +17,7 @@
 
 import * as seedrandom from 'seedrandom';
 import * as util from '../util';
+import * as axis_util from './axis_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -24,6 +25,7 @@ import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import * as sum_cpu from './sum_cpu';
 
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
@@ -324,14 +326,10 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  protected sumInternal<T extends keyof DataTypes>(ndarray: NDArray<T>):
-      Scalar<SumTypes[T]> {
-    let sum = 0;
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      sum += values[i];
-    }
-    return Scalar.new(sum, SumTypesMap[ndarray.dtype]);
+  protected sumInternal<T extends keyof DataTypes>(
+      input: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
+    return sum_cpu.sum(input, axes, SumTypesMap[input.dtype]) as
+        NDArray<SumTypes[T]>;
   }
 
   protected argMinInternal(ndarray: NDArray): Scalar {
@@ -473,11 +471,17 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
-  protected logSumExpInternal(ndarray: NDArray): Scalar {
-    const xMax = this.max(ndarray);
-    const a = this.arrayMinusScalar(ndarray, xMax);
+  protected logSumExpInternal(input: NDArray, axes: number[]): NDArray {
+    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
+      throw new Error(
+          `logSumExp reduction is supported only for the ` +
+          `inner-most axes for now. Got axes ${axes} and rank-${input.rank} ` +
+          `input.`);
+    }
+    const xMax = this.max(input, axes, true /* keepDim */);
+    const a = this.sub(input, xMax);
     const b = this.exp(a);
-    const c = this.sum(b);
+    const c = this.sum(b, axes);
     const d = this.log(c);
     const result = this.add(xMax, d);
 
@@ -500,7 +504,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected clipInternal<T extends NDArray>(
-    ndarray: T, min: number, max: number): T {
+      ndarray: T, min: number, max: number): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {

@@ -267,6 +267,33 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const sum = math.sum(a);
       expect(sum.get()).toBe(3);
     });
+
+    it('sums all values in 2D array with keep dim', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.sum(a, null, true /* keepDim */);
+      expect(res.shape).toEqual([1, 1]);
+      test_util.expectArraysClose(res.getValues(), new Float32Array([7]));
+    });
+
+    it('sums across axis=0 in 2D array throws error', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const f = () => math.sum(a, [0]);
+      expect(f).toThrowError();
+    });
+
+    it('sums across axis=1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.sum(a, [1]);
+      expect(res.shape).toEqual([3]);
+      test_util.expectArraysClose(res.getValues(), new Float32Array([3, 3, 1]));
+    });
+
+    it('sums across axis=0,1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.sum(a, [0, 1]);
+      expect(res.shape).toEqual([]);
+      test_util.expectArraysClose(res.getValues(), new Float32Array([7]));
+    });
   };
 
   test_util.describeMathCPU('sum', [tests]);

@@ -17,6 +17,8 @@
 
 import * as util from '../util';
 import {TypedArray} from '../util';
+
+import * as axis_util from './axis_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -596,24 +598,78 @@ export abstract class NDArrayMath {
   ///////////////////
 
   /**
-   * Computes the the log(sum(e ^ x)) for each x in the input ndarray.
-   * @param ndarray The input NDArray to compute the logSumExp over.
+   * Computes the log(sum(exp(elements across the reduction dimensions)).
+   *
+   * Reduces the input along the dimensions given in `axis`. Unless `keepDims`
+   * is true, the rank of the arrat is reduced by 1 for each entry in `axis`. If
+   * `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axis` has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
+   * @param input The input NDArray.
+   * @param axis Optional. The dimensions to reduce. If null (the default),
+   *     reduces all dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with length
+   *     of 1. Defaults to false.
    */
-  logSumExp(ndarray: NDArray): Scalar {
-    return this.executeOp('logSumExp', () => this.logSumExpInternal(ndarray));
+  logSumExp(input: NDArray, axis: number[] = null, keepDims = false): NDArray {
+    if (axis == null) {
+      axis = input.shape.map((s, i) => i);
+    }
+    if (axis.length === 0) {
+      throw new Error('Please specify a non-empty axis');
+    }
+    if (axis.length !== 1 || axis[0] !== input.rank - 1) {
+      throw Error(
+          'logSumExp along a non-last dimension is not yet supported.' +
+          `Input was rank ${input.rank} and axis was ${axis}.`);
+    }
+    return this.executeOp(
+        'logSumExp', () => this.logSumExpInternal(input, axis));
   }
-  protected abstract logSumExpInternal(ndarray: NDArray): Scalar;
+  protected abstract logSumExpInternal(ndarray: NDArray, axis: number[]):
+      NDArray;
 
   /**
-   * Computes the sum of all the entries in the input NDArray.
-   * @param ndarray The input NDArray to compute the sum over.
+   * Computes the sum of elements across dimensions of an array.
+   *
+   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
+   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If axes has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
+   * @param input The input array to compute the sum over.
+   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  sum<T extends keyof DataTypes>(ndarray: NDArray<T>): Scalar<SumTypes[T]> {
-    return this.executeOp('sum', () => this.sumInternal(ndarray)) as
-        Scalar<SumTypes[T]>;
+  sum<T extends keyof DataTypes>(
+      input: NDArray<T>, axes: number[] = null,
+      keepDims = false): NDArray<SumTypes[T]> {
+    if (axes == null) {
+      axes = input.shape.map((v, i) => i);
+    }
+    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
+      throw new Error(
+          'sum reduction is only supported across the ' +
+          `inner-most axes, but called with axes ${axes}`);
+    }
+
+    return this.executeOp('sum', () => {
+      const res = this.sumInternal(input, axes);
+      if (keepDims) {
+        const outSubShape = res.shape;
+        const reduceSubShape = axes.map(x => 1);
+        const newShape =
+            axis_util.combineLocations(outSubShape, reduceSubShape, axes);
+        return res.reshape(newShape);
+      }
+      return res;
+    });
   }
   protected abstract sumInternal<T extends keyof DataTypes>(
-      ndarray: NDArray<T>): Scalar<SumTypes[T]>;
+      ndarray: NDArray<T>, axes: number[]): NDArray<SumTypes[T]>;
 
   /**
    * Computes the flattened index of the minimum element in the ndarray.
@@ -676,26 +732,41 @@ export abstract class NDArrayMath {
   protected abstract minInternal(ndarray: NDArray): Scalar;
 
   /**
-   * Computes the maximum value from the input.
-   * @param ndarray The input NDArray.
+   * Computes the maximum of elements across dimensions of an array.
+   *
+   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
+   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axes` has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
    */
-  max(ndarray: NDArray): Scalar {
+  max(ndarray: NDArray, axes: number[] = null, keepDim = false): Scalar {
     return this.executeOp('max', () => this.maxInternal(ndarray));
   }
   protected abstract maxInternal(ndarray: NDArray): Scalar;
 
   /**
-   * Computes the softmax normalized vector from the input vector.
-   * @param x The input vector.
+   * Computes the softmax normalized vector given the logits.
+   * @param logits The logits vector.
+   * @param dim The dimension softmax would be performed on. Defaults to -1
+   *     which indicates the last dimension.
    */
-  softmax(x: Array1D): Array1D {
+  softmax<T extends NDArray>(logits: T, dim = -1): T {
+    if (dim === -1) {
+      dim = logits.rank - 1;
+    }
+    if (dim !== logits.rank - 1) {
+      throw Error(
+          'Softmax along a non-last dimension is not yet supported.' +
+          `Logits was rank ${logits.rank} and dim was ${dim}`);
+    }
     return this.executeOp('softmax', () => {
       return this.scope(() => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
-        const lse = this.logSumExp(x);
-        const logResult = this.arrayMinusScalar(x, lse);
-        return this.exp(logResult);
+        const lse = this.logSumExp(logits, [dim], true /* keepDim */);
+        const logResult = this.sub(logits, lse);
+        return this.exp(logResult) as T;
       });
     });
   }
@@ -799,11 +870,12 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to subtract element-wise.
    * @param b The second NDArray to subtract element-wise.
    */
-  sub(a: NDArray, b: NDArray): NDArray {
+  sub<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
     return this.executeOp('sub', () => this.subInternal(a, b));
   }
-  protected abstract subInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract subInternal<G extends keyof DataTypes>(
+      a: NDArray<G>, b: NDArray<G>): NDArray<G>;
 
   /**
    * Subtracts two NDArrays element-wise, A - B. Inputs must
@@ -1643,7 +1715,7 @@ export abstract class NDArrayMath {
       probabilities: Array1D, numSamples: number, seed: number): Array1D;
 
   /**
-   * Returns a one-hot tensor. The locations represented by `indices` take
+   * Returns a one-hot array. The locations represented by `indices` take
    * value `onValue` (defaults to 1), while all other locations take value
    * `offValue` (defaults to 0).
    *

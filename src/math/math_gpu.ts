@@ -232,9 +232,9 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]);
   }
 
-  protected sumInternal<T extends keyof DataTypes>(a: NDArray<T>):
-      Scalar<SumTypes[T]> {
-    const program = new ReduceSumProgram(a.size);
+  protected sumInternal<T extends keyof DataTypes>(
+      a: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
+    const program = new ReduceSumProgram(a.size, axes);
     const output =
         this.makeOutputArray(program.outputShape, SumTypesMap[a.dtype]);
     return this.compileAndRun(program, [a], output);
@@ -320,8 +320,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]) as T;
   }
 
-  protected clipInternal<T extends NDArray>(
-    a: T, min: number, max: number): T {
+  protected clipInternal<T extends NDArray>(a: T, min: number, max: number): T {
     const program = new ClipProgram(a.shape, min, max);
     return this.compileAndRun(program, [a]) as T;
   }

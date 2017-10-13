@@ -23,7 +23,7 @@ export class ReduceSumProgram implements GPGPUProgram {
   outputShape: number[] = [];
   userCode: string;
 
-  constructor(public size: number) {
+  constructor(size: number, axes: number[]) {
     const sizeNearestVec4 = Math.floor(size / 4) * 4;
     const sizeVec4Remainder = size % 4;
 
