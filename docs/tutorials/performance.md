@@ -10,11 +10,34 @@ more performant.
 ## Chrome Developer Tools - Performance Tab
 
 One of the most powerful tools for debugging your deeplearn.js application is
-the performance tab in Chrome developer tools.
+the performance tab in Chrome developer tools. There is much more information
+on the details of the performance tab
+[here](https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/),
+but we will focus on how to use it in a deeplearn.js application.
+
+Below is a performance trace of one of the core demos. The two rows to pay
+attention to are the "Main" thread and the "GPU" process:
 
 ![Chrome Developer Tools - Performance tab](devtools-performance.png "Chrome Developer Tools - Performance tab")
 
-## Understanding CPU / GPU interlocks
+The "Main" thread shows browser activity on the main CPU UI thread. This is
+where JavaScript is executed, and where page layout / some painting happens.
+
+The "GPU" process shows the activity of the GPU process. For compute intensive
+applications, we want this row to be solid green, which indicates we're maximally
+utilizing the GPU. If we are constantly introducing interlocks between the CPU
+and the GPU, the GPU process may look choppy as the GPU is waiting for more work
+to be scheduled. There are exceptions to this rule, for example if there isn't a
+lot of work to be done.
+
+
+### Understanding CPU / GPU interlocks
+
+The most common thing you'll see is a big "readPixels" call on the main thread.
+This is the underlying WebGL call that downloads NDArrays from a WebGL texture
+to the CPU.
+
+
 
 ## Memory leaks & math.scope
 
@@ -95,4 +118,7 @@ get cleaned up.
 This is not recommended, but is useful for `NDArrayMathCPU` since CPU-resident
 memory will get cleaned up automatically by the JavaScript garbage collector.
 
+### TODO(nsthorat|smilkov): How to track down memory leaks
+
 ## Debug mode
+
