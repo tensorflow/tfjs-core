@@ -19,7 +19,7 @@ import {GPGPUProgram} from './gpgpu_math';
 
 export class SwitchDimProgram implements GPGPUProgram {
   variableNames = ['A'];
-  params: Array<{}> = [];
+  params: Array<{}>;
   outputShape: number[];
   userCode: string;
   rank: number;
@@ -32,6 +32,7 @@ export class SwitchDimProgram implements GPGPUProgram {
     }
     this.outputShape = outputShape;
     this.rank = outputShape.length;
+    this.params = [newDim.toString()];
     const dtype = getDataType(this.rank);
     const switched = getSwitchedCoords(newDim);
 
@@ -52,7 +53,7 @@ function getSwitchedCoords(newDim: number[]): string {
   const originalOrder = ['resRC.x', 'resRC.y', 'resRC.z', 'resRC.w'];
   const switchedCoords = new Array(rank);
   for (let i = 0; i < newDim.length; i++) {
-    switchedCoords[newDim[i]] = (originalOrder[i]);
+    switchedCoords[newDim[i]] = originalOrder[i];
   }
   return switchedCoords.join();
 }
