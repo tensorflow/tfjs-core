@@ -210,20 +210,21 @@ import {Array1D, Array3D, Scalar} from './ndarray';
     it('debug mode does not error when no nans', math => {
       const pixels = new ImageData(2, 2);
       for (let i = 0; i < 8; i++) {
-        pixels.data[i] = 255;
+        pixels.data[i] = 100;
       }
       for (let i = 8; i < 16; i++) {
-        pixels.data[i] = 127;
+        pixels.data[i] = 250;
       }
 
       const a = Array3D.fromPixels(pixels, 4);
-      const b = Scalar.new(1);
+      const b = Scalar.new(20.5);
 
       const res = math.add(a, b);
 
       test_util.expectArraysClose(
           res.getValues(), new Float32Array([
-            2, 2, 2, 2, 2, 2, 2, 2, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5
+            120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 270.5,
+            270.5, 270.5, 270.5, 270.5, 270.5, 270.5, 270.5
           ]));
 
       a.dispose();

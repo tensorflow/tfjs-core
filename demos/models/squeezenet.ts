@@ -15,7 +15,7 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, CheckpointLoader, NDArray, NDArrayMathCPU, NDArrayMathGPU, Scalar} from '../deeplearn';
+import {Array1D, Array3D, Array4D, CheckpointLoader, NDArray, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
 
 import * as imagenet_classes from './imagenet_classes';
 
@@ -26,7 +26,6 @@ export class SqueezeNet {
   private variables: {[varName: string]: NDArray};
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
-  private multiplier = Scalar.new(255);
 
   constructor(private math: NDArrayMathGPU) {}
 
@@ -60,9 +59,8 @@ export class SqueezeNet {
 
     const avgpool10 = this.math.scope((keep) => {
       // Preprocess the input.
-      const scaledInput = this.math.multiply(input, this.multiplier);
       const preprocessedInput =
-          this.math.sub(scaledInput, this.preprocessOffset) as Array3D;
+          this.math.sub(input, this.preprocessOffset) as Array3D;
 
       const conv1 = this.math.conv2d(
           preprocessedInput, this.variables['conv1_W:0'] as Array4D,

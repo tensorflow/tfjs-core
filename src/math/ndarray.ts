@@ -167,9 +167,9 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     }
   }
 
-  static fromPixels<T extends keyof DataTypes = keyof DataTypes>(
+  static fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels = 3): Array3D<T> {
+      numChannels = 3): Array3D<'int32'> {
     if (numChannels > 4) {
       throw new Error(
           'Cannot construct NDArray with more than 4 channels from pixels.');
@@ -182,8 +182,9 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
     GPGPU.uploadPixelDataToTexture(texture, pixels);
 
-    return Array3D.make<T>(shape, {texture, textureShapeRC, textureType}) as
-        Array3D<T>;
+    return Array3D.make<'int32'>(
+               shape, {texture, textureShapeRC, textureType}) as
+        Array3D<'int32'>;
   }
 
   /** Reshapes the current ndarray into the provided shape. */

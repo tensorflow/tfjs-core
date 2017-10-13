@@ -276,15 +276,17 @@ const SHADER_PREFIX = `
   }
 
   float sampleUVAndDepth(sampler2D texture, vec2 uv, int depth) {
+    float value;
     if (depth == 0) {
-      return texture2D(texture, uv).r;
+      value = texture2D(texture, uv).r;
     } else if (depth == 1) {
-      return texture2D(texture, uv).g;
+      value = texture2D(texture, uv).g;
     } else if (depth == 2) {
-      return texture2D(texture, uv).b;
+      value = texture2D(texture, uv).b;
     } else if (depth == 3) {
-      return texture2D(texture, uv).a;
+      value = texture2D(texture, uv).a;
     }
+    return floor(value * 255.0 + 0.5);
   }
 
   ${SAMPLE_1D_SNIPPET}

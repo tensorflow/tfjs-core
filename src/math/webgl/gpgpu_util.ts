@@ -190,14 +190,11 @@ export function bindVertexProgramAttributeStreams(
 export function uploadPixelDataToTexture(
     gl: WebGLRenderingContext, texture: WebGLTexture,
     pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement) {
-  const numChannels = 4;
-  const internalFormat = getTextureInternalFormat(gl, numChannels);
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, texture));
   webgl_util.callAndCheck(
       gl,
       () => gl.texImage2D(
-          gl.TEXTURE_2D, 0, internalFormat, gl.RGBA, getTextureType(gl),
-          pixels));
+          gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, pixels));
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 
@@ -290,33 +287,23 @@ export function downloadMatrixFromOutputTexture(
 export function downloadMatrixFromRGBAColorTexture(
     gl: WebGLRenderingContext, rows: number, columns: number,
     channels: number): Float32Array {
-  const isFloatTextureEnabled = ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED');
-
   const size = rows * columns * 4;
-  let downloadTarget: Float32Array|Uint8Array;
-  if (isFloatTextureEnabled) {
-    downloadTarget = new Float32Array(size);
-  } else {
-    downloadTarget = new Uint8Array(size);
-  }
+
+  const downloadTarget = new Uint8Array(size);
 
   webgl_util.callAndCheck(
       gl,
       () => gl.readPixels(
-          0, 0, columns, rows, gl.RGBA, getTextureType(gl), downloadTarget));
+          0, 0, columns, rows, gl.RGBA, gl.UNSIGNED_BYTE, downloadTarget));
 
-  if (!isFloatTextureEnabled) {
-    const packedRGBA = new Float32Array(size);
-    for (let i = 0; i < downloadTarget.length; i++) {
-      packedRGBA[i] = downloadTarget[i] / 255.0;
-    }
-    downloadTarget = packedRGBA;
+  const packedRGBA = new Float32Array(size);
+  for (let i = 0; i < downloadTarget.length; i++) {
+    packedRGBA[i] = downloadTarget[i];
   }
 
   const matrix = new Float32Array(rows * columns * channels);
 
-  tex_util.decodeMatrixFromUnpackedColorRGBAArray(
-      downloadTarget as Float32Array, matrix, channels);
+  tex_util.decodeMatrixFromUnpackedColorRGBAArray(packedRGBA, matrix, channels);
 
   return matrix;
 }
