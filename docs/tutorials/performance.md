@@ -45,8 +45,8 @@ This means that the time you see in the performance tab corresponding to the
 time the UI thread is waiting for the result to be ready.
 
 By blocking the UI thread with the `getValues()` call, we don't allow the
-browser's UI thread to do anything else in that time, this includes layout,
-painting, responding to user events - practically everything in the webpage.
+browser's UI thread to do anything else in that time. This includes layout,
+painting, and responding to user events - practically everything in the webpage.
 This can cause serious jank issues that make the page unusable.
 
 To mitigate this, we introduced `NDArray.getValuesAsync()` which returns a
@@ -54,10 +54,10 @@ To mitigate this, we introduced `NDArray.getValuesAsync()` which returns a
 up to the given `NDArray`. This means that the UI thread can do other things
 while it is waiting for the GPU work to be done, mitigating jank issues.
 
-> You should *not* call other `NDArrayMath` functions while waiting for the
+> You should *not* call other `NDArrayMath` functions while waiting for the `getValuesAsync`
 `Promise` to resolve as this may introduce a stall when we call the underlying
 `gl.readPixels` command. A common pattern is to only call `NDArray.getValuesAsync()`
-at the end of your loop, and only call the loop function again inside the resolved
+at the end of your main application loop, and only call the loop function again inside the resolved
 `Promise`.
 
 
@@ -146,7 +146,15 @@ memory will get cleaned up automatically by the JavaScript garbage collector.
 
 Another way to monitor your application is by calling
 `NDArrayMath.enableDebugMode()`. In debug mode, we will profile every
-`NDArrayMath` function, logging the command, the wall time in milliseconds,
-the rank, shape and the size.
+`NDArrayMath` function that gets called while the application is running,
+logging the command, the wall time in milliseconds, the rank, shape and the
+size. We also will check the activations for NaNs and throw an exception as soon as a NaN is introduced.
 
 ![NDArrayMath.enableDebugMode](debugmode.png "NDArrayMath.enableDebugMode")
+
+This can give you a sense for which operations are the bottleneck in
+your application, and which activations are using large amounts of memory.
+
+> Keep in mind debug mode slows down your application as we download values
+after every operation to check for NaNs. You should not use this mode when
+you deploy your application to the world.
