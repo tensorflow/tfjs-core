@@ -244,7 +244,7 @@ const cost: Tensor = graph.meanSquaredCost(y, yLabel);
 const math = new NDArrayMathGPU();
 const session = new Session(graph, math);
 
-// For more information on scope / track, check out the tutorial on performance.
+// For more information on scope / track, check out the [tutorial on performance](performance.md).
 math.scope((keep, track) => {
   /**
    * Inference
