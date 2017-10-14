@@ -31,12 +31,34 @@ to be scheduled. There are exceptions to this rule, for example if there isn't a
 lot of work to be done.
 
 
-### Understanding CPU / GPU interlocks
+### Understanding CPU / GPU interlocks and `NDArray.getValuesAsync()`
 
-The most common thing you'll see is a big "readPixels" call on the main thread.
+The most common thing you'll see is a big `gl.readPixels` call on the main thread.
 This is the underlying WebGL call that downloads NDArrays from a WebGL texture
-to the CPU.
+to the CPU, which comes from a call to `NDArray.getValues()`. This function returns a
+`Float32Array` with the underlying values.
 
+`NDArray.getValues()` is a blocking call which waits for the GPU to finish its
+execution pipeline until the given NDArray is available, and then downloads it.
+This means that the time you see in the performance tab corresponding to the
+`gl.readPixels` call is not actually the time it takes to download, but the
+time the UI thread is waiting for the result to be ready.
+
+By blocking the UI thread with the `getValues()` call, we don't allow the
+browser's UI thread to do anything else in that time, this includes layout,
+painting, responding to user events - practically everything in the webpage.
+This can cause serious jank issues that make the page unusable.
+
+To mitigate this, we introduced `NDArray.getValuesAsync()` which returns a
+`Promise<Float32Array>` that resolves when the GPU process has completed work
+up to the given `NDArray`. This means that the UI thread can do other things
+while it is waiting for the GPU work to be done, mitigating jank issues.
+
+> You should *not* call other `NDArrayMath` functions while waiting for the
+`Promise` to resolve as this may introduce a stall when we call the underlying
+`gl.readPixels` command. A common pattern is to only call `NDArray.getValuesAsync()`
+at the end of your loop, and only call the loop function again inside the resolved
+`Promise`.
 
 
 ## Memory leaks & math.scope
@@ -122,3 +144,9 @@ memory will get cleaned up automatically by the JavaScript garbage collector.
 
 ## Debug mode
 
+Another way to monitor your application is by calling
+`NDArrayMath.enableDebugMode()`. In debug mode, we will profile every
+`NDArrayMath` function, logging the command, the wall time in milliseconds,
+the rank, shape and the size.
+
+![NDArrayMath.enableDebugMode](debugmode.png "NDArrayMath.enableDebugMode")
