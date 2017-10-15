@@ -54,7 +54,7 @@ as it is an implementation detail.
 If `NDArray` data is
 stored on the CPU, the first time a GPU mathematical operation is called the
 data will be uploaded to a texture automatically. If you call
-`NDArray.getValues()` on a GPU-resident `NDArray`, the
+`NDArray.getValuesAsync()` on a GPU-resident `NDArray`, the
 library will download the texture to the CPU and delete the texture.
 
 ### NDArrayMath
@@ -67,7 +67,7 @@ mathematical functions that operate on `NDArray`s.
 When using the `NDArrayMathGPU` implementation, these mathematical
 operations enqueue shader programs to be executed on the GPU. Unlike in
 `NDArrayMathCPU`, **these operations are not blocking**, but the user can
-synchronize the cpu with the gpu by calling `get()` or `getValues()` on
+synchronize the cpu with the gpu by calling `getValuesAsync()` on
 the `NDArray`, as we describe in detail below.
 
 These shaders read and write from `WebGLTexture`s which are owned by
@@ -90,14 +90,11 @@ const sum = math.sum(squaredDiff);
 const size = Scalar.new(a.size);
 const average = math.divide(sum, size);
 
-// Blocking call to actually read the values from average. Waits until the
-// GPU has finished executing the operations before returning values.
-// average is a Scalar so we use .get()
-console.log(average.get());
-
+average.getValuesAsync().then(
+    values => console.log('mean squared difference: ' + values[0]));
 ```
 
-> TIP: Avoid calling `get()` or `getValues()` between mathematical GPU
+> TIP: Avoid calling `get()` or `getValuesAsync()` between mathematical GPU
 operations unless you are debugging. This forces a texture download, and
 subsequent `NDArrayMathGPU` calls will have to re-upload the data to a new
 texture.

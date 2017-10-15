@@ -33,26 +33,29 @@ lot of work to be done.
 
 ### Understanding CPU / GPU interlocks and `NDArray.getValuesAsync()`
 
-The most common thing you'll see is a big `gl.readPixels` call on the main thread.
-This is the underlying WebGL call that downloads NDArrays from a WebGL texture
-to the CPU, which comes from a call to `NDArray.getValues()`. This function returns a
-`Float32Array` with the underlying values.
+The most common thing that will cause performance issues are blocking
+`gl.readPixels` calls on the main thread. This is the underlying WebGL call
+that downloads NDArrays from a WebGL texture to the CPU. This function returns
+a `Float32Array` with the underlying values from the `NDArray`
 
-`NDArray.getValues()` is a blocking call which waits for the GPU to finish its
+`gl.readPixels` is a CPU-blocking call which waits for the GPU to finish its
 execution pipeline until the given NDArray is available, and then downloads it.
 This means that the time you see in the performance tab corresponding to the
 `gl.readPixels` call is not actually the time it takes to download, but the
-time the UI thread is waiting for the result to be ready.
+time the UI thread is blocking and waiting for the result to be ready.
 
-By blocking the UI thread with the `getValues()` call, we don't allow the
-browser's UI thread to do anything else in that time. This includes layout,
-painting, and responding to user events - practically everything in the webpage.
-This can cause serious jank issues that make the page unusable.
+By blocking the UI thread with the `gl.readPixels` call, we don't allow the
+browser's UI thread to do anything else during that time. This includes layout,
+painting, responding to user events, and practically all interactivity. This
+will cause serious jank issues that make the webpage unusable.
 
-To mitigate this, we introduced `NDArray.getValuesAsync()` which returns a
-`Promise<Float32Array>` that resolves when the GPU process has completed work
-up to the given `NDArray`. This means that the UI thread can do other things
-while it is waiting for the GPU work to be done, mitigating jank issues.
+To mitigate this, you should always use `NDArray.getValuesAsync()` to resolve
+values to the CPU. This function returns a `Promise<Float32Array>` that
+only calls `gl.readPixels` when the GPU process has completed all the work
+necessary to resolve the values of the given `NDArray`. This means that the UI
+thread can do other things while it is waiting for the GPU work to be done,
+mitigating jank issues. This is why, in general, you should avoid
+`NDArray.getValues()`, which simply calls `gl.readPixels` directly.
 
 > You should *not* call other `NDArrayMath` functions while waiting for the `getValuesAsync`
 `Promise` to resolve as this may introduce a stall when we call the underlying

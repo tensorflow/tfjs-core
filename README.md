@@ -33,7 +33,8 @@ const a = Array1D.new([1, 2, 3]);
 const b = Scalar.new(2);
 
 const result = math.add(a, b);
-console.log(result.getValues());  // Float32Array([3, 4, 5])
+// Float32Array([3, 4, 5])
+result.getValuesAsync().then(values => console.log(values));
 ```
 
 #### ES3/ES5 JavaScript
@@ -59,7 +60,8 @@ var a = dl.Array1D.new([1, 2, 3]);
 var b = dl.Scalar.new(2);
 
 var result = math.add(a, b);
-console.log(result.getValues());  // Float32Array([3, 4, 5])
+// Float32Array([3, 4, 5])
+result.getValuesAsync().then(values => console.log(values));
 ```
 
 

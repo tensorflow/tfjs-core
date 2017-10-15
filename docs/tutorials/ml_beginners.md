@@ -109,7 +109,8 @@ const vector = Array1D.new([0, 1, 2]);
 const result = math.matrixTimesVector(matrix, vector);
 
 console.log("result shape:", result.shape);
-console.log("result", result.getValues());
+result.getValuesAsync().then(
+    values => console.log("values", values));
 
 ```
 
@@ -256,7 +257,7 @@ math.scope((keep, track) => {
   let result: NDArray =
       session.eval(y, [{tensor: x, data: track(Scalar.new(4))}]);
   console.log(result.shape);
-  console.log(result.getValues());
+  result.getValuesAsync().then(values => console.log(values));
 
   /**
    * Training
@@ -309,7 +310,7 @@ math.scope((keep, track) => {
   result = session.eval(y, [{tensor: x, data: track(Scalar.new(4))}]);
   console.log('result should be ~57.0:');
   console.log(result.shape);
-  console.log(result.getValues());
+  result.getValuesAsync().then(values => console.log(values));
 });
 ```
 
