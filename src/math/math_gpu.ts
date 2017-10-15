@@ -234,7 +234,7 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected sumInternal<T extends keyof DataTypes>(
       a: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
-    const program = new ReduceSumProgram(a.size, axes);
+    const program = new ReduceSumProgram(a.shape, axes);
     const output =
         this.makeOutputArray(program.outputShape, SumTypesMap[a.dtype]);
     return this.compileAndRun(program, [a], output);

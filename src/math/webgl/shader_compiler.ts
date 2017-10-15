@@ -30,22 +30,43 @@ export type InputInfo = {
   shapeInfo: ShapeInfo
 };
 
+function updateBatchedShapeInfo(info: ShapeInfo, numBatchDims: number) {
+  info.logicalShape = info.logicalShape.slice(numBatchDims);
+}
+
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
-    broadcast: boolean): string {
+    broadcast: boolean, numBatchDims: number): string {
+  let batchSnippet = '';
+  if (numBatchDims) {
+    if (inputsInfo.length !== 1) {
+      throw new Error(
+          `Batching for 2 or more inputs is not yet supported. ` +
+          `Got ${inputsInfo.length} inputs.`);
+    }
+    updateBatchedShapeInfo(inputsInfo[0].shapeInfo, numBatchDims);
+    updateBatchedShapeInfo(outputShape, numBatchDims);
+    const inputSize = util.sizeFromShape(inputsInfo[0].shapeInfo.logicalShape);
+    const outputSize = util.sizeFromShape(outputShape.logicalShape);
+    batchSnippet = getBatchSnippet(inputSize, outputSize, outputShape.texShape);
+  }
+
   const sampleSnippet = getSampleSnippet();
   const setOutputSnippet = getSetOutputSnippet();
   const inputPrefixSnippet =
       inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
-      inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
+      inputsInfo
+          .map(
+              x => getInputSamplingSnippet(
+                  x, outputShape, broadcast, numBatchDims))
           .join('\n');
   const outTexShape = outputShape.texShape;
   const outputSamplingSnippet =
       getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   const source = [
-    SHADER_PREFIX, sampleSnippet, setOutputSnippet, inputPrefixSnippet,
-    inputSamplingSnippet, outputSamplingSnippet, userCode
+    SHADER_PREFIX, batchSnippet, sampleSnippet, setOutputSnippet,
+    inputPrefixSnippet, inputSamplingSnippet, outputSamplingSnippet, userCode
   ].join('\n');
   return source;
 }
@@ -63,7 +84,8 @@ function getSetOutputSnippet() {
 }
 
 function getInputSamplingSnippet(
-    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean) {
+    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean,
+    numBatchDims: number) {
   const shape = inInfo.shapeInfo.logicalShape;
   const texShape = inInfo.shapeInfo.texShape;
   const outTexShape = outShapeInfo.texShape;
@@ -101,8 +123,23 @@ function getInputSamplingSnippet(
     res +=
         getSamplerAtOutputCoords(inInfo.name, texShape, outTexShape, broadcast);
   }
-  res += getSamplerFlat(inInfo.name, texShape);
+  res += getSamplerFlat(inInfo.name, texShape, numBatchDims);
   return res;
+}
+
+function getBatchSnippet(
+    inputSize: number, outputSize: number, texShape: [number, number]) {
+  return `
+    int batch;
+    int getBatchOffset() {
+      ivec2 resTexRC = ivec2(resultUV.yx *
+          vec2(${texShape[0]}, ${texShape[1]}));
+      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+      int b = index / ${outputSize};
+      batch = b;
+      return b * ${inputSize};
+    }
+  `;
 }
 
 function getOutputSamplingSnippet(
@@ -225,18 +262,11 @@ const UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET = `
   }
 `;
 
-function getFloatTextureSampleSnippet(isBatch: boolean) {
-  let BATCH_SNIPPET = '';
-  if (isBatch) {
-    BATCH_SNIPPET = `uv += getBatchOffset();`;
+const FLOAT_TEXTURE_SAMPLE_SNIPPET = `
+  float sample(sampler2D texture, vec2 uv) {
+    return texture2D(texture, uv).r;
   }
-  return `
-    float sample(sampler2D texture, vec2 uv) {
-      ${BATCH_SNIPPET}
-      return texture2D(texture, uv).r;
-    }
-  `;
-}
+`;
 
 const FLOAT_TEXTURE_SETOUTPUT_SNIPPET = `
   void setOutput(float val) {
@@ -546,11 +576,23 @@ function getSampler2D(
   `;
 }
 
-function getSamplerFlat(texName: string, texShape: [number, number]): string {
+function getSamplerFlat(
+    texName: string, texShape: [number, number], numBatchDims: number): string {
   const funcName =
       'get' + texName.charAt(0).toUpperCase() + texName.slice(1) + 'Flat';
   const tNumR = texShape[0];
   const tNumC = texShape[1];
+  if (numBatchDims) {
+    return `
+      float ${funcName}(int index) {
+        index += getBatchOffset();
+        int texR = index / ${tNumC};
+        int texC = index - texR * ${tNumC};
+        vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tNumC}.0, ${tNumR}.0);
+        return sample(${texName}, uv);
+      }
+    `;
+  }
   if (tNumC === 1 && tNumR === 1) {
     return `
       float ${funcName}(int index) {
