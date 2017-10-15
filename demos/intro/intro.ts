@@ -36,8 +36,7 @@ import {Array1D, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledIn
   const size = Scalar.new(a.size);
   const average = math.divide(sum, size);
 
-  average.getValuesAsync().then(
-      values => console.log('mean squared difference: ' + values[0]));
+  console.log('mean squared difference: ' + average.get());
 }
 
 {

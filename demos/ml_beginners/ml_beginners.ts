@@ -28,7 +28,7 @@ import {Array1D, Array2D, CostReduction, Graph, InCPUMemoryShuffledInputProvider
   const result = math.matrixTimesVector(matrix, vector);
 
   console.log('result shape:', result.shape);
-  result.getValuesAsync().then(values => console.log('result', values));
+  console.log('result', result.getValues());
 }
 
 {
@@ -116,6 +116,6 @@ import {Array1D, Array2D, CostReduction, Graph, InCPUMemoryShuffledInputProvider
     result = session.eval(y, [{tensor: x, data: track(Scalar.new(4))}]);
     console.log('result should be ~57.0:');
     console.log(result.shape);
-    result.getValuesAsync().then(values => console.log(values));
+    console.log(result.getValues());
   });
 }
