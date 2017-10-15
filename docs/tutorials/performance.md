@@ -33,16 +33,18 @@ lot of work to be done.
 
 ### Understanding CPU / GPU interlocks and `NDArray.getValuesAsync()`
 
-The most common thing that will cause performance issues are blocking
+The most common thing that will cause a performance issue is a blocking
 `gl.readPixels` calls on the main thread. This is the underlying WebGL call
 that downloads NDArrays from a WebGL texture to the CPU. This function returns
-a `Float32Array` with the underlying values from the `NDArray`
+a `Float32Array` with the underlying values from the `WebGLTexture`-backed
+`NDArray`.
 
 `gl.readPixels` is a CPU-blocking call which waits for the GPU to finish its
 execution pipeline until the given NDArray is available, and then downloads it.
-This means that the time you see in the performance tab corresponding to the
-`gl.readPixels` call is not actually the time it takes to download, but the
-time the UI thread is blocking and waiting for the result to be ready.
+This means that the time you see in the performance tab on the "Main" thread
+row corresponding to the `gl.readPixels` call is not actually the time it takes
+to download, but the time the UI thread is blocking and waiting for the result
+to be ready.
 
 By blocking the UI thread with the `gl.readPixels` call, we don't allow the
 browser's UI thread to do anything else during that time. This includes layout,
