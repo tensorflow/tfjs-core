@@ -56,3 +56,9 @@ export function computeOutAndReduceShapes(
   const reduceShape = axis.map(dim => aShape[dim]);
   return [outShape, reduceShape];
 }
+
+export function expandShapeToKeepDim(
+    shape: number[], axes: number[]): number[] {
+  const reduceSubShape = axes.map(x => 1);
+  return combineLocations(shape, reduceSubShape, axes);
+}

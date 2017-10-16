@@ -25,7 +25,6 @@ import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
-import * as sum_cpu from './sum_cpu';
 
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
@@ -328,8 +327,26 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected sumInternal<T extends keyof DataTypes>(
       input: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
-    return sum_cpu.sum(input, axes, SumTypesMap[input.dtype]) as
-        NDArray<SumTypes[T]>;
+    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
+      throw new Error('Sum is only supported across the inner-most dimensions');
+    }
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const resultDtype = SumTypesMap[input.dtype] as keyof SumTypes;
+    const result = NDArray.zeros(outShape, resultDtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let sum = 0;
+      for (let j = 0; j < reduceSize; ++j) {
+        sum += aVals[offset + j];
+      }
+      vals[i] = sum;
+    }
+    return result as NDArray<SumTypes[T]>;
   }
 
   protected argMinInternal(ndarray: NDArray): Scalar {
@@ -394,34 +411,64 @@ export class NDArrayMathCPU extends NDArrayMath {
     return {values: Array1D.new(topkValues), indices: Array1D.new(topkIndices)};
   }
 
-  protected minInternal(ndarray: NDArray): Scalar {
-    const values = ndarray.getValues();
-    let min = values[0];
-    for (let i = 1; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        return Scalar.new(NaN);
-      }
-      if (value < min) {
-        min = value;
-      }
+  protected minInternal<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[]): NDArray<G> {
+    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
+      throw new Error('Min is only supported across the inner-most dimensions');
     }
-    return Scalar.new(min);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const result = NDArray.zeros(outShape, input.dtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let min = aVals[0];
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        if (isNaN(value)) {
+          min = Number.NaN;
+          break;
+        }
+        if (value < min) {
+          min = value;
+        }
+      }
+      vals[i] = min;
+    }
+    return result;
   }
 
-  protected maxInternal(ndarray: NDArray): Scalar {
-    const values = ndarray.getValues();
-    let max = values[0];
-    for (let i = 1; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        return Scalar.new(NaN);
-      }
-      if (value > max) {
-        max = value;
-      }
+  protected maxInternal<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[]): NDArray<G> {
+    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
+      throw new Error('Max is only supported across the inner-most dimensions');
     }
-    return Scalar.new(max);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const result = NDArray.zeros(outShape, input.dtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let max = aVals[0];
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        if (isNaN(value)) {
+          max = Number.NaN;
+          break;
+        }
+        if (value > max) {
+          max = value;
+        }
+      }
+      vals[i] = max;
+    }
+    return result;
   }
 
   protected ceilInternal<T extends NDArray>(ndarray: T): T {
@@ -490,9 +537,9 @@ export class NDArrayMathCPU extends NDArrayMath {
     b.dispose();
     c.dispose();
     d.dispose();
-
     return result;
   }
+
 
   protected reluInternal<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);

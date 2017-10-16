@@ -260,13 +260,15 @@ export class NDArrayMathGPU extends NDArrayMath {
     throw new Error('topK GPU not yet implemented!');
   }
 
-  protected minInternal(a: NDArray): Scalar {
-    const program = new MinMaxProgram(a.size, 'min');
+  protected minInternal<G extends keyof DataTypes>(
+      a: NDArray<G>, axes: number[]): NDArray<G> {
+    const program = new MinMaxProgram(a.shape, axes, 'min');
     return this.compileAndRun(program, [a]);
   }
 
-  protected maxInternal(a: NDArray): Scalar {
-    const program = new MinMaxProgram(a.size, 'max');
+  protected maxInternal<G extends keyof DataTypes>(
+      a: NDArray<G>, axes: number[]): NDArray<G> {
+    const program = new MinMaxProgram(a.shape, axes, 'max');
     return this.compileAndRun(program, [a]);
   }
 
@@ -285,8 +287,8 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }
 
-  protected logSumExpInternal(a: NDArray): Scalar {
-    const program = new LogSumExpProgram(a.size);
+  protected logSumExpInternal(a: NDArray, axes: number[]): NDArray {
+    const program = new LogSumExpProgram(a.shape, axes);
     return this.compileAndRun(program, [a]);
   }
 

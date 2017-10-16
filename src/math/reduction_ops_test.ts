@@ -229,6 +229,34 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       expect(result.get()).toEqual(NaN);
       a.dispose();
     });
+
+    it('axes=0 in 2D array throws error', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const f = () => math.logSumExp(a, [0]);
+      expect(f).toThrowError();
+    });
+
+    it('axes=1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.logSumExp(a, [1]);
+      expect(res.shape).toEqual([3]);
+      const expected = new Float32Array([
+        Math.log(Math.exp(1) + Math.exp(2)),
+        Math.log(Math.exp(3) + Math.exp(0)),
+        Math.log(Math.exp(0) + Math.exp(1)),
+      ]);
+      test_util.expectArraysClose(res.getValues(), expected);
+    });
+
+    it('axes=0,1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.logSumExp(a, [0, 1]);
+      expect(res.shape).toEqual([]);
+      const expected = new Float32Array([Math.log(
+          Math.exp(1) + Math.exp(2) + Math.exp(3) + Math.exp(0) + Math.exp(0) +
+          Math.exp(1))]);
+      test_util.expectArraysClose(res.getValues(), expected);
+    });
   };
 
   test_util.describeMathCPU('logSumExp', [tests]);

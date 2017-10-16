@@ -607,25 +607,29 @@ export abstract class NDArrayMath {
    * single element is returned.
    *
    * @param input The input NDArray.
-   * @param axis Optional. The dimensions to reduce. If null (the default),
+   * @param axes Optional. The dimensions to reduce. If null (the default),
    *     reduces all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with length
    *     of 1. Defaults to false.
    */
-  logSumExp(input: NDArray, axis: number[] = null, keepDims = false): NDArray {
-    if (axis == null) {
-      axis = input.shape.map((s, i) => i);
+  logSumExp(input: NDArray, axes: number[] = null, keepDims = false): NDArray {
+    if (axes == null) {
+      axes = input.shape.map((s, i) => i);
     }
-    if (axis.length === 0) {
-      throw new Error('Please specify a non-empty axis');
-    }
-    if (axis.length !== 1 || axis[0] !== input.rank - 1) {
+    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
       throw Error(
-          'logSumExp along a non-last dimension is not yet supported.' +
-          `Input was rank ${input.rank} and axis was ${axis}.`);
+          'logSumExp reduction only along the inner most dimensions is ' +
+          `supported for now. Input was rank ${input.rank} and axis was ` +
+          `${axes}.`);
     }
-    return this.executeOp(
-        'logSumExp', () => this.logSumExpInternal(input, axis));
+    return this.executeOp('logSumExp', () => {
+      const res = this.logSumExpInternal(input, axes);
+      if (keepDims) {
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        return res.reshape(newShape);
+      }
+      return res;
+    });
   }
   protected abstract logSumExpInternal(ndarray: NDArray, axis: number[]):
       NDArray;
@@ -659,10 +663,7 @@ export abstract class NDArrayMath {
     return this.executeOp('sum', () => {
       const res = this.sumInternal(input, axes);
       if (keepDims) {
-        const outSubShape = res.shape;
-        const reduceSubShape = axes.map(x => 1);
-        const newShape =
-            axis_util.combineLocations(outSubShape, reduceSubShape, axes);
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
         return res.reshape(newShape);
       }
       return res;
@@ -724,12 +725,27 @@ export abstract class NDArrayMath {
 
   /**
    * Computes the minimum value from the input.
-   * @param ndarray The input NDArray.
+   * @param input The input NDArray.
    */
-  min(ndarray: NDArray): Scalar {
-    return this.executeOp('min', () => this.minInternal(ndarray));
+  min(input: NDArray, axes: number[] = null, keepDims = false): NDArray {
+    if (axes == null) {
+      axes = input.shape.map((v, i) => i);
+    }
+    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
+      throw new Error(
+          'min reduction is only supported across the ' +
+          `inner-most axes, but called with axes ${axes}`);
+    }
+    return this.executeOp('min', () => {
+      const res = this.minInternal(input, axes);
+      if (keepDims) {
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        return res.reshape(newShape);
+      }
+      return res;
+    });
   }
-  protected abstract minInternal(ndarray: NDArray): Scalar;
+  protected abstract minInternal(input: NDArray, axes: number[]): NDArray;
 
   /**
    * Computes the maximum of elements across dimensions of an array.
@@ -740,10 +756,27 @@ export abstract class NDArrayMath {
    * If `axes` has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
    */
-  max(ndarray: NDArray, axes: number[] = null, keepDim = false): Scalar {
-    return this.executeOp('max', () => this.maxInternal(ndarray));
+  max<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[] = null, keepDim = false): NDArray<G> {
+    if (axes == null) {
+      axes = input.shape.map((v, i) => i);
+    }
+    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
+      throw new Error(
+          'max reduction is only supported across the ' +
+          `inner-most axes, but called with axes ${axes}`);
+    }
+    return this.executeOp('max', () => {
+      const res = this.maxInternal(input, axes);
+      if (keepDim) {
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        return res.reshape(newShape);
+      }
+      return res;
+    });
   }
-  protected abstract maxInternal(ndarray: NDArray): Scalar;
+  protected abstract maxInternal<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[]): NDArray<G>;
 
   /**
    * Computes the softmax normalized vector given the logits.

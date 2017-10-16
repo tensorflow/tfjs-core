@@ -17,7 +17,6 @@
 
 import * as util from '../../util';
 import * as axis_util from '../axis_util';
-
 import {GPGPUProgram} from './gpgpu_math';
 
 export class ReduceSumProgram implements GPGPUProgram {
