@@ -826,6 +826,9 @@ export abstract class NDArrayMath {
    */
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
       a: T, perm?: number[]): T {
+    if (perm == null) {
+      perm = a.shape.map((s, i) => i).reverse();
+    }
     util.assert(
         a.rank === perm.length,
         `Error in switchDim: length of input shape ${a.shape} ` +

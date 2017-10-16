@@ -525,20 +525,20 @@ export class NDArrayMathCPU extends NDArrayMath {
           `inner-most axes for now. Got axes ${axes} and rank-${input.rank} ` +
           `input.`);
     }
-    const xMax = this.max(input, axes, true /* keepDim */);
-    // Switch the dimensions.
-    const a = this.sub(input, xMax);
-    const b = this.exp(a);
-    const c = this.sum(b, axes);
-    const d = this.log(c);
-    const result = this.add(xMax, d);
+    const xMax = this.max(input, axes);
 
-    xMax.dispose();
-    a.dispose();
-    b.dispose();
-    c.dispose();
-    d.dispose();
-    return result;
+    // Switch the dimensions, since we don't support generic broadcasting yet.
+    // TODO(smilkov): Remove transpose() once generic broadcasting works.
+    const xMaxT = this.transpose(xMax);
+    const inputT = this.transpose(input);
+
+    const a = this.sub(inputT, xMaxT);
+    const b = this.exp(a);
+    const c = this.sum(this.transpose(b), axes);
+    const d = this.log(c);
+
+    const result = this.add(xMaxT, this.transpose(d));
+    return this.transpose(result);
   }
 
   protected reluInternal<T extends NDArray>(ndarray: T): T {
