@@ -79,7 +79,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    */
   protected strides: number[];
 
-  private data: NDArrayData<T>;
+  private ndarrayData: NDArrayData<T>;
 
   protected constructor(shape: number[], data: NDArrayData<T>, dtype: T) {
     // Sanity checks.
@@ -105,7 +105,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     if (data.textureType == null) {
       data.textureType = TextureType.DEFAULT;
     }
-    this.data = data;
+    this.ndarrayData = data;
     this.dtype = dtype || ('float32' as T);
     const dim = this.shape.length;
 
@@ -198,7 +198,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
         this.size === util.sizeFromShape(newShape),
         'new shape and old shape must have the same number of elements.');
 
-    return NDArray.make(newShape, this.data, this.dtype);
+    return NDArray.make(newShape, this.ndarrayData, this.dtype);
   }
 
   asScalar(): Scalar<T> {
@@ -278,33 +278,33 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   getData(): NDArrayData<T> {
-    return this.data;
+    return this.ndarrayData;
   }
 
   getValues(): DataTypes[T] {
-    if (this.data.values == null) {
+    if (this.ndarrayData.values == null) {
       throwIfGPUNotInitialized();
 
       let values: Float32Array;
-      if (this.data.textureType === TextureType.DEFAULT) {
+      if (this.ndarrayData.textureType === TextureType.DEFAULT) {
         values = GPGPU.downloadMatrixFromTexture(
-            this.data.texture, this.data.textureShapeRC[0],
-            this.data.textureShapeRC[1]);
+            this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
+            this.ndarrayData.textureShapeRC[1]);
       } else {
         values = GPGPU.downloadMatrixFromRGBAColorTexture(
-            this.data.texture, this.data.textureShapeRC[0],
-            this.data.textureShapeRC[1], this.shape[2]);
+            this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
+            this.ndarrayData.textureShapeRC[1], this.shape[2]);
       }
-      this.data.values = convertFloat32ToDtype(values, this.dtype);
+      this.ndarrayData.values = convertFloat32ToDtype(values, this.dtype);
       this.disposeTexture();
     }
-    return this.data.values;
+    return this.ndarrayData.values;
   }
 
   getValuesAsync(): Promise<DataTypes[T]> {
     return new Promise<DataTypes[T]>((resolve, reject) => {
-      if (this.data.values != null) {
-        resolve(this.data.values);
+      if (this.ndarrayData.values != null) {
+        resolve(this.ndarrayData.values);
         return;
       }
 
@@ -322,54 +322,61 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     });
   }
 
+  async data(): Promise<DataTypes[T]> {
+    return await this.getValuesAsync();
+  }
+
   private uploadToGPU(preferredTexShape?: [number, number]) {
     throwIfGPUNotInitialized();
-    this.data.textureShapeRC = webgl_util.getTextureShapeFromLogicalShape(
-        GPGPU.gl, this.shape, preferredTexShape);
-    this.data.texture =
-        TEXTURE_MANAGER.acquireTexture(this.data.textureShapeRC);
-    this.data.textureType = TextureType.DEFAULT;
+    this.ndarrayData.textureShapeRC =
+        webgl_util.getTextureShapeFromLogicalShape(
+            GPGPU.gl, this.shape, preferredTexShape);
+    this.ndarrayData.texture =
+        TEXTURE_MANAGER.acquireTexture(this.ndarrayData.textureShapeRC);
+    this.ndarrayData.textureType = TextureType.DEFAULT;
 
     GPGPU.uploadMatrixToTexture(
-        this.data.texture, this.data.textureShapeRC[0],
+        this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
         // TODO(smilkov): Propagate the original typed array to gpgpu.
-        this.data.textureShapeRC[1], new Float32Array(this.data.values));
+        this.ndarrayData.textureShapeRC[1],
+        new Float32Array(this.ndarrayData.values));
 
-    this.data.values = null;
+    this.ndarrayData.values = null;
   }
 
   getTexture(preferredShapeRC?: [number, number]): WebGLTexture {
-    if (this.data.texture == null) {
+    if (this.ndarrayData.texture == null) {
       this.uploadToGPU(preferredShapeRC);
     }
-    return this.data.texture;
+    return this.ndarrayData.texture;
   }
 
   getTextureShapeRC(preferredShapeRC?: [number, number]): [number, number] {
-    if (this.data.textureShapeRC == null) {
+    if (this.ndarrayData.textureShapeRC == null) {
       this.uploadToGPU(preferredShapeRC);
     }
-    return this.data.textureShapeRC;
+    return this.ndarrayData.textureShapeRC;
   }
 
   dispose(): void {
-    this.data.values = null;
+    this.ndarrayData.values = null;
     this.shape = null;
-    if (this.data.texture != null) {
+    if (this.ndarrayData.texture != null) {
       this.disposeTexture();
     }
   }
 
   private disposeTexture() {
     throwIfGPUNotInitialized();
-    TEXTURE_MANAGER.releaseTexture(this.data.texture, this.data.textureShapeRC);
-    this.data.texture = null;
-    this.data.textureShapeRC = null;
-    this.data.textureType = null;
+    TEXTURE_MANAGER.releaseTexture(
+        this.ndarrayData.texture, this.ndarrayData.textureShapeRC);
+    this.ndarrayData.texture = null;
+    this.ndarrayData.textureShapeRC = null;
+    this.ndarrayData.textureType = null;
   }
 
   inGPU(): boolean {
-    return this.data.texture != null;
+    return this.ndarrayData.texture != null;
   }
 
   equals(t: NDArray<T>): boolean {
@@ -760,7 +767,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
 }
 
 function copyTypedArray<T extends keyof DataTypes>(
-    array: DataTypes[T]|number[]|boolean[], dtype: T): DataTypes[T] {
+    array: DataTypes[T] | number[] | boolean[], dtype: T): DataTypes[T] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
