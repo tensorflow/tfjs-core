@@ -46,7 +46,7 @@ import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
-import {SwitchDimProgram} from './webgl/switch_dim_gpu';
+import {TransposeProgram} from './webgl/switch_dim_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
@@ -227,8 +227,9 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, inputs) as Array3D;
   }
 
-  protected switchDimInternal<T extends NDArray>(a: T, newDim: number[]): T {
-    const program = new SwitchDimProgram(a.shape, newDim);
+  protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm: number[]): T {
+    const program = new TransposeProgram(a.shape, perm);
     return this.compileAndRun(program, [a]);
   }
 

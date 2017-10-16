@@ -644,7 +644,7 @@ export abstract class NDArrayMath {
    * single element is returned.
    *
    * @param input The input array to compute the sum over.
-   * @param axis Optional. The dimensions to reduce. By default it reduces all
+   * @param axes Optional. The dimensions to reduce. By default it reduces all
    *     dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
@@ -808,20 +808,32 @@ export abstract class NDArrayMath {
   // Element-wise ops //
   //////////////////////
 
-  /**
-   * Switches dimensions of the input NDArray.
-   * @param a The input NDArray.
-   * @param newDim The new indices that define which shapes values to switch.
-   */
+  /** @deprecated Use math.transpose() instead. */
   switchDim<T extends NDArray>(a: T, newDim: number[]): T {
-    util.assert(
-        a.rank === newDim.length,
-        `Error in switchDim: length of input shape ${a.shape} ` +
-            `must match size of newDim array ${newDim}.`);
-    return this.executeOp('switchDim', () => this.switchDimInternal(a, newDim));
+    return this.transpose(a, newDim);
   }
-  protected abstract switchDimInternal<T extends NDArray>(
-      a: T, newDim: number[]): T;
+
+  /**
+   * Transposes the array. Permutes the dimensions according to `perm`.
+   *
+   * The returned array's dimension `i` will correspond to the input dimension
+   * `perm[i]`. If `perm` is not given, it is set to `[n-1...0]`, where `n` is
+   * the rank of the input array. Hence by default, this operation performs a
+   * regular matrix transpose on 2-D input arrays.
+   *
+   * @param a The array to transpose.
+   * @param perm Optional. The permutation of the dimensions of a.
+   */
+  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm?: number[]): T {
+    util.assert(
+        a.rank === perm.length,
+        `Error in switchDim: length of input shape ${a.shape} ` +
+            `must match size of newDim array ${perm}.`);
+    return this.executeOp('transpose', () => this.transposeInternal(a, perm));
+  }
+  protected abstract transposeInternal<
+      D extends keyof DataTypes, T extends NDArray<D>>(a: T, perm: number[]): T;
 
   /**
    * Computes a scalar plus NDArray, c + A.

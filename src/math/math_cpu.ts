@@ -526,6 +526,7 @@ export class NDArrayMathCPU extends NDArrayMath {
           `input.`);
     }
     const xMax = this.max(input, axes, true /* keepDim */);
+    // Switch the dimensions.
     const a = this.sub(input, xMax);
     const b = this.exp(a);
     const c = this.sum(b, axes);
@@ -539,7 +540,6 @@ export class NDArrayMathCPU extends NDArrayMath {
     d.dispose();
     return result;
   }
-
 
   protected reluInternal<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
@@ -821,21 +821,22 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array1D.new(values);
   }
 
-  protected switchDimInternal<T extends NDArray>(t: T, newDim: number[]): T {
-    const newShape: number[] = new Array(t.rank);
+  protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm: number[]): T {
+    const newShape: number[] = new Array(a.rank);
     for (let i = 0; i < newShape.length; i++) {
-      newShape[i] = t.shape[newDim[i]];
+      newShape[i] = a.shape[perm[i]];
     }
-    const resultValues = new Float32Array(t.size);
-    const values = t.getValues();
+    const resultValues = new Float32Array(a.size);
+    const values = a.getValues();
     const result = NDArray.make(newShape, {values: resultValues}) as T;
-    for (let i = 0; i < t.size; ++i) {
-      const loc = t.indexToLoc(i);
+    for (let i = 0; i < a.size; ++i) {
+      const loc = a.indexToLoc(i);
 
       // Permute location.
       const newLoc: number[] = new Array(loc.length);
       for (let i = 0; i < newLoc.length; i++) {
-        newLoc[i] = loc[newDim[i]];
+        newLoc[i] = loc[perm[i]];
       }
 
       const newIndex = result.locToIndex(newLoc);
