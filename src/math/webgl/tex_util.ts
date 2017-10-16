@@ -15,6 +15,12 @@
  * =============================================================================
  */
 
+export enum TextureType {
+  DEFAULT,
+  // When using a standard RGBA-packed color image.
+  RGBA_COLOR
+}
+
 export function getUnpackedMatrixTextureShapeWidthHeight(
     rows: number, columns: number): [number, number] {
   return [columns, rows];
@@ -40,9 +46,10 @@ export function getMatrixSizeFromUnpackedArraySize(
   return unpackedSize / channelsPerTexture;
 }
 
+export type TypedArray = Float32Array|Uint8Array;
+
 export function encodeMatrixToUnpackedArray(
-    matrix: Float32Array, unpackedArray: Float32Array,
-    channelsPerTexture: number) {
+    matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {
   const requiredSize =
       getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture);
   if (unpackedArray.length < requiredSize) {
@@ -57,6 +64,59 @@ export function encodeMatrixToUnpackedArray(
   }
 }
 
+export const FLOAT_MAX = 20000;
+export const FLOAT_MIN = -FLOAT_MAX;
+const FLOAT_RANGE = (FLOAT_MAX - FLOAT_MIN) / 255;
+
+const FLOAT_DELTAS = [1, 1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255)];
+const FLOAT_POWERS = [1, 255, 255 * 255];
+
+export const BYTE_NAN_VALUE = 0;
+export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
+  const uintArray = new Uint8Array(floatArray.length * 4);
+  for (let i = 0; i < uintArray.length; i += 4) {
+    const value = floatArray[i / 4];
+    if (isNaN(value)) {
+      uintArray[i] = BYTE_NAN_VALUE;
+      uintArray[i + 1] = BYTE_NAN_VALUE;
+      uintArray[i + 2] = BYTE_NAN_VALUE;
+      uintArray[i + 3] = BYTE_NAN_VALUE;
+      continue;
+    }
+
+    const normalizedValue = (value - FLOAT_MIN) / FLOAT_RANGE;
+    const enc = FLOAT_POWERS.map(pow => pow * normalizedValue);
+    const buckets = enc.map(value => Math.floor((value % 1) * 255));
+
+    uintArray[i] = Math.floor(normalizedValue);
+    uintArray[i + 1] = buckets[0];
+    uintArray[i + 2] = buckets[1];
+    uintArray[i + 3] = buckets[2];
+  }
+  return uintArray;
+}
+
+export function decodeToFloatArray(uintArray: Uint8Array): Float32Array {
+  const floatArray = new Float32Array(uintArray.length / 4);
+  for (let i = 0; i < uintArray.length; i += 4) {
+    if (uintArray[i] === BYTE_NAN_VALUE &&
+        uintArray[i + 1] === BYTE_NAN_VALUE &&
+        uintArray[i + 2] === BYTE_NAN_VALUE &&
+        uintArray[i + 3] === BYTE_NAN_VALUE) {
+      floatArray[i / 4] = NaN;
+      continue;
+    }
+
+    let dot = 0;
+    FLOAT_DELTAS.forEach((delta, j) => {
+      dot += delta * uintArray[i + j];
+    });
+    const value = dot * FLOAT_RANGE + FLOAT_MIN;
+    floatArray[i / 4] = value;
+  }
+  return floatArray;
+}
+
 export function decodeMatrixFromUnpackedArray(
     unpackedArray: Float32Array, matrix: Float32Array,
     channelsPerTexture: number) {
@@ -69,6 +129,21 @@ export function decodeMatrixFromUnpackedArray(
   let dst = 0;
   for (let src = 0; src < unpackedArray.length; src += channelsPerTexture) {
     matrix[dst++] = unpackedArray[src];
+  }
+}
+
+export function decodeMatrixFromUnpackedColorRGBAArray(
+    unpackedArray: Float32Array, matrix: Float32Array, channels: number) {
+  const requiredSize = unpackedArray.length * channels / 4;
+  if (matrix.length < requiredSize) {
+    throw new Error(
+        'matrix length (' + matrix.length + ') must be >= ' + requiredSize);
+  }
+  let dst = 0;
+  for (let src = 0; src < unpackedArray.length; src += 4) {
+    for (let c = 0; c < channels; c++) {
+      matrix[dst++] = unpackedArray[src + c];
+    }
   }
 }
 

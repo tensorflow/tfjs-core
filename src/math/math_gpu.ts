@@ -16,15 +16,17 @@
  */
 
 import {ConvInfo} from './conv_util';
-import {MatrixOrientation, NDArrayMath} from './math';
+import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 import * as ndarray from './ndarray';
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+// tslint:disable-next-line:max-line-length
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMaxEqualsProgram} from './webgl/argmaxequals_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
+import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from './webgl/conv_backprop_gpu';
@@ -44,6 +46,7 @@ import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
+import {SwitchDimProgram} from './webgl/switch_dim_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
@@ -75,12 +78,13 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.gpgpu;
   }
 
-  protected cloneInternal<T extends NDArray>(a: T): T {
+  protected cloneInternal<G extends keyof DataTypes, T extends NDArray<G>>(
+      a: T): T {
     const texShape = a.getTextureShapeRC();
     // Pretend the source was in logical shape that matches the texture shape.
     const source = a.as2D(texShape[0], texShape[1]);
     // Do the same for output.
-    const output = this.makeOutputArray<Array2D>(texShape);
+    const output = this.makeOutputArray<G, Array2D<G>>(texShape, a.dtype);
     this.copy2D(source, [0, 0], texShape, output, [0, 0], texShape);
     // Get back to the original logical shape.
     return output.reshape(a.shape) as T;
@@ -159,11 +163,12 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]) as T;
   }
 
-  private makeOutputArray<T extends NDArray>(shape: number[]): T {
+  private makeOutputArray<G extends keyof DataTypes, T extends NDArray<G>>(
+      shape: number[], dtype: G): T {
     const textureShapeRC =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     const texture = this.textureManager.acquireTexture(textureShapeRC);
-    return NDArray.make(shape, {texture, textureShapeRC}) as T;
+    return NDArray.make(shape, {texture, textureShapeRC}, dtype) as T;
   }
 
   private compileAndRun<T extends NDArray, K extends NDArray>(
@@ -171,7 +176,7 @@ export class NDArrayMathGPU extends NDArrayMath {
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void):
       K {
     if (output == null) {
-      output = this.makeOutputArray<K>(program.outputShape);
+      output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
     const key = gpgpu_math.makeShaderKey(program, inputs, output);
     const binary = this.getAndSaveBinary(key, () => {
@@ -223,12 +228,16 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected switchDimInternal<T extends NDArray>(a: T, newDim: number[]): T {
-    throw new Error('Not yet implemented!');
+    const program = new SwitchDimProgram(a.shape, newDim);
+    return this.compileAndRun(program, [a]);
   }
 
-  protected sumInternal(a: NDArray): Scalar {
+  protected sumInternal<T extends keyof DataTypes>(a: NDArray<T>):
+      Scalar<SumTypes[T]> {
     const program = new ReduceSumProgram(a.size);
-    return this.compileAndRun(program, [a]);
+    const output =
+        this.makeOutputArray(program.outputShape, SumTypesMap[a.dtype]);
+    return this.compileAndRun(program, [a], output);
   }
 
   protected argMinInternal(a: NDArray): Scalar {
@@ -281,6 +290,16 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]);
   }
 
+  protected ceilInternal<T extends NDArray>(a: T): T {
+    const program = new UnaryOpProgram(a.shape, unary_op.CEIL);
+    return this.compileAndRun(program, [a]) as T;
+  }
+
+  protected floorInternal<T extends NDArray>(a: T): T {
+    const program = new UnaryOpProgram(a.shape, unary_op.FLOOR);
+    return this.compileAndRun(program, [a]) as T;
+  }
+
   protected expInternal<T extends NDArray>(a: T): T {
     const program = new UnaryOpProgram(a.shape, unary_op.EXP);
     return this.compileAndRun(program, [a]) as T;
@@ -298,6 +317,12 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected reluInternal<T extends NDArray>(a: T): T {
     const program = new UnaryOpProgram(a.shape, unary_op.RELU);
+    return this.compileAndRun(program, [a]) as T;
+  }
+
+  protected clipInternal<T extends NDArray>(
+    a: T, min: number, max: number): T {
+    const program = new ClipProgram(a.shape, min, max);
     return this.compileAndRun(program, [a]) as T;
   }
 
