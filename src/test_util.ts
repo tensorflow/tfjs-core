@@ -176,6 +176,21 @@ function describeWithFeaturesAndExecutor(
   }
 }
 
+const promiseIt = (name: string, testFunc: () => void|Promise<void>) => {
+  it(name, (done: DoneFn) => {
+    const result = testFunc();
+    if (result instanceof Promise) {
+      result.then(done, e => {
+        fail(e);
+        done();
+      });
+    } else {
+      done();
+    }
+  });
+
+};
+
 export function executeMathTests(
     testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
     features?: Features) {
@@ -188,9 +203,10 @@ export function executeMathTests(
     math.endScope(null);
     math.dispose();
   };
-  const customIt = (name: string, testFunc: (math: NDArrayMath) => void) => {
-    it(name, () => testFunc(math));
-  };
+  const customIt =
+      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
+        promiseIt(name, () => testFunc(math));
+      };
 
   executeTests(
       testName, tests as Tests[], features, customBeforeEach, customAfterEach,
@@ -200,7 +216,8 @@ export function executeMathTests(
 export function executeTests(
     testName: string, tests: Tests[], features?: Features,
     customBeforeEach?: () => void, customAfterEach?: () => void,
-    customIt: (expectation: string, testFunc: () => void) => void = it) {
+    customIt: (expectation: string, testFunc: () => void|Promise<void>) =>
+        void = promiseIt) {
   describe(testName, () => {
     beforeEach(() => {
       if (features != null) {
