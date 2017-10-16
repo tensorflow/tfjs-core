@@ -176,7 +176,9 @@ function describeWithFeaturesAndExecutor(
   }
 }
 
-const promiseIt = (name: string, testFunc: () => void|Promise<void>) => {
+// A wrapper around it() that calls done automatically if the function returns
+// a Promise, aka if it's an async/await function.
+const PROMISE_IT = (name: string, testFunc: () => void|Promise<void>) => {
   it(name, (done: DoneFn) => {
     const result = testFunc();
     if (result instanceof Promise) {
@@ -188,7 +190,6 @@ const promiseIt = (name: string, testFunc: () => void|Promise<void>) => {
       done();
     }
   });
-
 };
 
 export function executeMathTests(
@@ -205,7 +206,7 @@ export function executeMathTests(
   };
   const customIt =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
-        promiseIt(name, () => testFunc(math));
+        PROMISE_IT(name, () => testFunc(math));
       };
 
   executeTests(
@@ -217,7 +218,7 @@ export function executeTests(
     testName: string, tests: Tests[], features?: Features,
     customBeforeEach?: () => void, customAfterEach?: () => void,
     customIt: (expectation: string, testFunc: () => void|Promise<void>) =>
-        void = promiseIt) {
+        void = PROMISE_IT) {
   describe(testName, () => {
     beforeEach(() => {
       if (features != null) {
