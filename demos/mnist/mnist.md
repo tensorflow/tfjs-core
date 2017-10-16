@@ -78,7 +78,7 @@ to write our model. Here is a snippet demonstrating the use of
 import {CheckpointLoader, Graph} from 'deeplearn';
 // manifest.json is in the same dir as index.html.
 const varLoader = new CheckpointLoader('.');
-varLoader.getAllVariables().then(vars => {
+varLoader.getAllVariables().then(async vars => {
   // Write your model here.
   const g = new Graph();
   const input = g.placeholder('input', [784]);
@@ -89,10 +89,9 @@ varLoader.getAllVariables().then(vars => {
   ...
   const math = new NDArrayMathGPU();
   const sess = new Session(g, math);
-  math.scope(() => {
-    const result = sess.eval(...);
-    console.log(result.getValues());
-  });
+
+  const result = sess.eval(...);
+  console.log(await result.data);
 });
 ```
 

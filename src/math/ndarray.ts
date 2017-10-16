@@ -255,6 +255,11 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     this.getValues()[index] = value;
   }
 
+  async val(...locs: number[]): Promise<number> {
+    await this.data;
+    return this.get(...locs);
+  }
+
   locToIndex(locs: number[]): number {
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
@@ -303,27 +308,36 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   getValuesAsync(): Promise<DataTypes[T]> {
     return new Promise<DataTypes[T]>((resolve, reject) => {
+      this.ready.then(() => resolve(this.getValues()));
+    });
+  }
+
+  get ready(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       if (this.ndarrayData.values != null) {
-        resolve(this.ndarrayData.values);
+        resolve();
         return;
       }
 
       if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-        resolve(this.getValues());
+        this.getValues();
+        resolve();
         return;
       }
 
       // Construct an empty query. We're just interested in getting a callback
       // when the GPU command queue has executed until this point in time.
       const queryFn = () => {};
-      GPGPU.runQuery(queryFn).then(() => {
-        resolve(this.getValues());
-      });
+      GPGPU.runQuery(queryFn).then(() => resolve());
     });
   }
 
-  async data(): Promise<DataTypes[T]> {
-    return await this.getValuesAsync();
+  get data(): Promise<DataTypes[T]> {
+    return this.getValuesAsync();
+  }
+
+  get dataSync(): DataTypes[T] {
+    return this.getValues();
   }
 
   private uploadToGPU(preferredTexShape?: [number, number]) {
@@ -444,6 +458,11 @@ export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
   asType<G extends keyof DataTypes>(dtype: G): Scalar<G> {
     return super.asType(dtype);
   }
+
+  async val(): Promise<number> {
+    await this.data;
+    return this.get();
+  }
 }
 
 export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
@@ -475,6 +494,11 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
 
   set(value: number, i: number) {
     this.getValues()[i] = value;
+  }
+
+  async val(i: number): Promise<number> {
+    await this.data;
+    return this.get(i);
   }
 
   add(value: number, i: number) {
@@ -557,6 +581,11 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
     this.getValues()[this.stride0 * i + j] += value;
   }
 
+  async val(i: number, j: number): Promise<number> {
+    await this.data;
+    return this.get(i, j);
+  }
+
   locToIndex(locs: [number, number]): number {
     return this.stride0 * locs[0] + locs[1];
   }
@@ -629,6 +658,11 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
 
   set(value: number, i: number, j: number, k: number) {
     this.getValues()[this.stride0 * i + this.stride1 * j + k] = value;
+  }
+
+  async val(i: number, j: number, k: number): Promise<number> {
+    await this.data;
+    return this.get(i, j, k);
   }
 
   add(value: number, i: number, j: number, k: number) {
@@ -717,6 +751,11 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
         [this.stride0 * i + this.stride1 * j + this.stride2 * k + l] = value;
   }
 
+  async val(i: number, j: number, k: number, l: number): Promise<number> {
+    await this.data;
+    return this.get(i, j, k, l);
+  }
+
   add(value: number, i: number, j: number, k: number, l: number) {
     this.getValues()
         [this.stride0 * i + this.stride1 * j + this.stride2 * k + l] += value;
@@ -767,7 +806,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
 }
 
 function copyTypedArray<T extends keyof DataTypes>(
-    array: DataTypes[T] | number[] | boolean[], dtype: T): DataTypes[T] {
+    array: DataTypes[T]|number[]|boolean[], dtype: T): DataTypes[T] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
