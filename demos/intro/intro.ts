@@ -23,8 +23,7 @@ import {Array1D, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledIn
 /**
  * 'NDArrayMathGPU' section of tutorial
  */
-// This anonymous async function allows us to use top-level `await`s.
-(async () => {
+async function intro() {
   {
     const math = new NDArrayMathGPU();
 
@@ -79,14 +78,12 @@ import {Array1D, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledIn
     const session = new Session(g, math);
     const optimizer = new SGDOptimizer(learningRate);
 
-    const inputs: Array1D[] =
-              [
-                Array1D.new([1.0, 2.0, 3.0]), Array1D.new([10.0, 20.0, 30.0]),
-                Array1D.new([100.0, 200.0, 300.0])
-              ];
+    const inputs: Array1D[] = [
+      Array1D.new([1.0, 2.0, 3.0]), Array1D.new([10.0, 20.0, 30.0]),
+      Array1D.new([100.0, 200.0, 300.0])
+    ];
 
-    const
-    labels: Array1D[] =
+    const labels: Array1D[] =
         [Array1D.new([4.0]), Array1D.new([40.0]), Array1D.new([400.0])];
 
     // Shuffles inputs and labels and keeps them mutually in sync.
@@ -96,12 +93,10 @@ import {Array1D, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledIn
         shuffledInputProviderBuilder.getInputProviders();
 
     // Maps tensors to InputProviders.
-    const
-    feedEntries: FeedEntry[] =
-        [
-          {tensor: inputTensor, data: inputProvider},
-          {tensor: labelTensor, data: labelProvider}
-        ];
+    const feedEntries: FeedEntry[] = [
+      {tensor: inputTensor, data: inputProvider},
+      {tensor: labelTensor, data: labelProvider}
+    ];
 
     const NUM_BATCHES = 10;
     for (let i = 0; i < NUM_BATCHES; i++) {
@@ -120,8 +115,8 @@ import {Array1D, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledIn
     const testInput = Array1D.new([0.1, 0.2, 0.3]);
 
     // session.eval can take NDArrays as input data.
-    const
-    testFeedEntries: FeedEntry[] = [{tensor: inputTensor, data: testInput}];
+    const testFeedEntries: FeedEntry[] =
+        [{tensor: inputTensor, data: testInput}];
 
     const testOutput = session.eval(outputTensor, testFeedEntries);
 
@@ -129,4 +124,6 @@ import {Array1D, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledIn
     console.log('shape: ' + testOutput.shape);
     console.log('value: ' + await testOutput.val(0));
   }
-})();
+}
+
+intro();

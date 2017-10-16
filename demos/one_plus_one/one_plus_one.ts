@@ -18,7 +18,7 @@
 // tslint:disable-next-line:max-line-length
 import {NDArrayMathGPU, Scalar} from '../deeplearn';
 
-(async () => {
+async function onePlusOne() {
   const math = new NDArrayMathGPU();
   const a = Scalar.new(1);
   const b = Scalar.new(1);
@@ -26,4 +26,6 @@ import {NDArrayMathGPU, Scalar} from '../deeplearn';
   const result = await math.add(a, b).data;
 
   document.getElementById('output').innerText = '' + result;
-})();
+}
+
+onePlusOne();

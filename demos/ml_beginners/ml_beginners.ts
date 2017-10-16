@@ -18,8 +18,7 @@
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, CostReduction, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMathGPU, Scalar, Session, SGDOptimizer, Tensor} from '../deeplearn';
 
-// This anonymous async function allows us to use top-level `await`s.
-(async () => {
+async function mlBeginners() {
   // This file parallels (some of) the code in the ML Beginners tutorial.
   {
     const math = new NDArrayMathGPU();
@@ -39,34 +38,26 @@ import {Array1D, Array2D, CostReduction, Graph, InCPUMemoryShuffledInputProvider
     const x: Tensor = graph.placeholder('x', []);
     // Make new variables in the graph, 'a', 'b', 'c' with shape [] and random
     // initial values.
-    const
-    a: Tensor = graph.variable('a', Scalar.new(Math.random()));
-    const
-    b: Tensor = graph.variable('b', Scalar.new(Math.random()));
-    const
-    c: Tensor = graph.variable('c', Scalar.new(Math.random()));
+    const a: Tensor = graph.variable('a', Scalar.new(Math.random()));
+    const b: Tensor = graph.variable('b', Scalar.new(Math.random()));
+    const c: Tensor = graph.variable('c', Scalar.new(Math.random()));
     // Make new tensors representing the output of the operations of the
     // quadratic.
-    const
-    order2: Tensor = graph.multiply(a, graph.square(x));
-    const
-    order1: Tensor = graph.multiply(b, x);
-    const
-    y: Tensor = graph.add(graph.add(order2, order1), c);
+    const order2: Tensor = graph.multiply(a, graph.square(x));
+    const order1: Tensor = graph.multiply(b, x);
+    const y: Tensor = graph.add(graph.add(order2, order1), c);
 
     // When training, we need to provide a label and a cost function.
-    const
-    yLabel: Tensor = graph.placeholder('y label', []);
+    const yLabel: Tensor = graph.placeholder('y label', []);
     // Provide a mean squared cost function for training. cost = (y - yLabel)^2
-    const
-    cost: Tensor = graph.meanSquaredCost(y, yLabel);
+    const cost: Tensor = graph.meanSquaredCost(y, yLabel);
 
     // At this point the graph is set up, but has not yet been evaluated.
     // **deeplearn.js** needs a Session object to evaluate a graph.
     const math = new NDArrayMathGPU();
     const session = new Session(graph, math);
 
-    math.scope((keep, track) => {
+    await math.scope(async (keep, track) => {
       /**
        * Inference
        */
@@ -126,7 +117,9 @@ import {Array1D, Array2D, CostReduction, Graph, InCPUMemoryShuffledInputProvider
       result = session.eval(y, [{tensor: x, data: track(Scalar.new(4))}]);
       console.log('result should be ~57.0:');
       console.log(result.shape);
-      console.log(result.getValues());
+      console.log(await result.data);
     });
   }
-})();
+}
+
+mlBeginners();
