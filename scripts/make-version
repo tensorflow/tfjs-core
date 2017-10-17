@@ -22,7 +22,8 @@ const versionCode =
 `// This code is auto-generated, do not modify this file!
 // See the LICENSE file for the license.
 const version = '${version}';
-export {version};`
+export {version};
+`
 
 fs.writeFile('src/version.ts', versionCode, err => {
   if (err != null) {
