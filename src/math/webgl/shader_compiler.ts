@@ -674,32 +674,11 @@ function getSamplerFlat(inputInfo: InputInfo, numBatchDims: number): string {
   `;
 }
 
-function getSamplerAtOutputCoords(
-    inputInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean) {
-  const inTexShape = inputInfo.shapeInfo.texShape;
-  const texName = inputInfo.name;
-  const isRGBAColorTexture =
-      inputInfo.shapeInfo.textureType === TextureType.RGBA_COLOR;
-
-  const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
-  const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
-  const outTexShape = outShapeInfo.texShape;
-  if (util.arraysEqual(inTexShape, outTexShape) && !isRGBAColorTexture) {
-    return `
-      float ${funcName}() {
-        return sample(${texName}, resultUV);
-      }
-    `;
-  }
-
-  // For RGBA color textures, we expand the depth dimension to perform
-  // computations on the flattened texture before sampling.
-  const inTexExpandedShape = isRGBAColorTexture ?
-      [inTexShape[0], inTexShape[1] * inputInfo.shapeInfo.logicalShape[2]] :
-      inTexShape;
-
-  const outRank = outShapeInfo.logicalShape.length;
+function getBroadcastedOutputCoordsSampler(
+    inputInfo: InputInfo, outShapeInfo: ShapeInfo, texFuncSnippet: string,
+    funcName: string): string {
   const inRank = inputInfo.shapeInfo.logicalShape.length;
+  const outRank = outShapeInfo.logicalShape.length;
 
   let type = 'int';
   if (outRank === 2) {
@@ -732,15 +711,44 @@ function getSamplerAtOutputCoords(
                                 .reverse()
                                 .join(', ');
   }
+  return `
+    float ${funcName}() {
+      ${type} coords = getOutputCoords();
+      ${coordsSnippet}
+      return get${texFuncSnippet}(${unpackedCoordsSnippet});
+    }
+  `;
+}
+
+function getSamplerAtOutputCoords(
+    inputInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean) {
+  const inTexShape = inputInfo.shapeInfo.texShape;
+  const texName = inputInfo.name;
+  const isRGBAColorTexture =
+      inputInfo.shapeInfo.textureType === TextureType.RGBA_COLOR;
+
+  const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
+  const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
+
   if (broadcast) {
+    return getBroadcastedOutputCoordsSampler(
+        inputInfo, outShapeInfo, texFuncSnippet, funcName);
+  }
+
+  const outTexShape = outShapeInfo.texShape;
+  if (util.arraysEqual(inTexShape, outTexShape) && !isRGBAColorTexture) {
     return `
       float ${funcName}() {
-        ${type} coords = getOutputCoords();
-        ${coordsSnippet}
-        return get${texFuncSnippet}(${unpackedCoordsSnippet});
+        return sample(${texName}, resultUV);
       }
     `;
   }
+
+  // For RGBA color textures, we expand the depth dimension to perform
+  // computations on the flattened texture before sampling.
+  const inTexExpandedShape = isRGBAColorTexture ?
+      [inTexShape[0], inTexShape[1] * inputInfo.shapeInfo.logicalShape[2]] :
+      inTexShape;
 
   let sampleSnippet = `return sample(${texName}, uv);`;
 
