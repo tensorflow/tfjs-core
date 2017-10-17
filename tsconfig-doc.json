@@ -25,6 +25,6 @@
       "src/math/math_gpu.ts",
       "src/math/ndarray.ts",
       "src/math/webgl/gpgpu_context.ts",
-      "src/optimizers/*"
+      "src/optimizers/**/*"
     ]
 }
