@@ -192,19 +192,29 @@ export function assertAndGetBroadcastedShape(
   const l = Math.max(shapeA.length, shapeB.length);
 
   for (let i = 0; i < l; i++) {
-    const a = shapeA[i] || 1;
-    const b = shapeB[i] || 1;
+    const a = shapeA[shapeA.length - i - 1] || 1;
+    const b = shapeB[shapeB.length - i - 1] || 1;
     if (a > 1 && b > 1 && a !== b) {
       throw Error(errMsg);
     }
-    result.push(Math.max(a, b));
+    result.unshift(Math.max(a, b));
   }
   return result;
 }
 
 export function getBroadcastedDims(
-    shapeA: number[], shapeB: number[]): number[] {
-  return null;
+    inShape: number[], outShape: number[]): number[] {
+  const inRank = inShape.length;
+  const dims: number[] = [];
+  for (let i = 0; i < inRank; i++) {
+    const a = inShape[inRank - 1 - i] || 1;
+    const b = outShape[outShape.length - 1 - i] || 1;
+
+    if (b > 1 && a === 1) {
+      dims.push(i);
+    }
+  }
+  return dims;
 }
 
 export function rightPad(a: string, size: number): string {

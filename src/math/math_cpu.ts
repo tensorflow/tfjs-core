@@ -238,16 +238,30 @@ export class NDArrayMathCPU extends NDArrayMath {
   protected scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T {
     const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
-    const newValues = new Float32Array(util.sizeFromShape(newShape));
-
+    const result = NDArray.zeros(newShape);
+    const newValues = result.getValues();
     const aValues = a.getValues();
     const bValues = b.getValues();
     const c1Val = c1.get();
     const c2Val = c2.get();
+
+    const aBroadcastedDims = util.getBroadcastedDims(a.shape, newShape);
+    const bBroadcastedDims = util.getBroadcastedDims(b.shape, newShape);
+
     for (let i = 0; i < newValues.length; ++i) {
-      newValues[i] = c1Val * aValues[i % a.size] + c2Val * bValues[i % b.size];
+      const loc = result.indexToLoc(i);
+
+      const aLoc = loc.slice(-a.rank);
+      aBroadcastedDims.forEach(d => aLoc[aLoc.length - d - 1] = 0);
+      const aIndex = a.locToIndex(aLoc);
+
+      const bLoc = loc.slice(-b.rank);
+      bBroadcastedDims.forEach(d => bLoc[bLoc.length - d - 1] = 0);
+      const bIndex = b.locToIndex(bLoc);
+
+      newValues[i] = c1Val * aValues[aIndex] + c2Val * bValues[bIndex];
     }
-    return NDArray.make(newShape, {values: newValues}) as T;
+    return result as T;
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
@@ -525,20 +539,13 @@ export class NDArrayMathCPU extends NDArrayMath {
           `inner-most axes for now. Got axes ${axes} and rank-${input.rank} ` +
           `input.`);
     }
-    const xMax = this.max(input, axes);
-
-    // Switch the dimensions, since we don't support generic broadcasting yet.
-    // TODO(smilkov): Remove transpose() once generic broadcasting works.
-    const xMaxT = this.transpose(xMax);
-    const inputT = this.transpose(input);
-
-    const a = this.sub(inputT, xMaxT);
+    const xMax = this.max(input, axes, true /* keepDims */);
+    const a = this.sub(input, xMax);
     const b = this.exp(a);
-    const c = this.sum(this.transpose(b), axes);
+    const c = this.sum(b, axes);
     const d = this.log(c);
-
-    const result = this.add(xMaxT, this.transpose(d));
-    return this.transpose(result);
+    const result = this.add(xMax.reshape(d.shape), d);
+    return result;
   }
 
   protected reluInternal<T extends NDArray>(ndarray: T): T {

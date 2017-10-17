@@ -68,7 +68,7 @@ export function makeShader(
       getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   const source = [
     SHADER_PREFIX, batchSnippet, sampleSnippet, setOutputSnippet,
-    inputPrefixSnippet, inputSamplingSnippet, outputSamplingSnippet, userCode
+    inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
   return source;
 }
@@ -698,30 +698,39 @@ function getSamplerAtOutputCoords(
       [inTexShape[0], inTexShape[1] * inputInfo.shapeInfo.logicalShape[2]] :
       inTexShape;
 
-  const rank = outShapeInfo.logicalShape.length;
+  const outRank = outShapeInfo.logicalShape.length;
+  const inRank = inputInfo.shapeInfo.logicalShape.length;
+
   let type = 'int';
-  if (rank === 2) {
+  if (outRank === 2) {
     type = 'ivec2';
-  } else if (rank === 3) {
+  } else if (outRank === 3) {
     type = 'ivec3';
-  } else if (rank === 4) {
+  } else if (outRank === 4) {
     type = 'ivec4';
   }
   const broadcastedDims = util.getBroadcastedDims(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
   let coordsSnippet = '';
-  if (rank < 2 && broadcastedDims.length >= 1) {
+  if (outRank < 2 && broadcastedDims.length >= 1) {
     coordsSnippet = 'coords = 0;';
   } else {
-    coordsSnippet = broadcastedDims.map(d => `coords[${d}] = 0;`).join('\n');
+    coordsSnippet = broadcastedDims
+                        .map(d => {
+                          return `coords[${outRank - d - 1}] = 0;`;
+                        })
+                        .join('\n');
   }
   let unpackedCoordsSnippet = '';
-  if (rank < 2) {
+  if (outRank < 2 && inRank > 0) {
     unpackedCoordsSnippet = 'coords';
   } else {
-    unpackedCoordsSnippet =
-        inputInfo.shapeInfo.logicalShape.map((s, i) => `coords[${i}]`)
-            .join(', ');
+    unpackedCoordsSnippet = inputInfo.shapeInfo.logicalShape
+                                .map((s, i) => {
+                                  return `coords[${outRank - i - 1}]`;
+                                })
+                                .reverse()
+                                .join(', ');
   }
   if (broadcast) {
     return `
