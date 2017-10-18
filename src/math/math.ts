@@ -775,7 +775,7 @@ export abstract class NDArrayMath {
 
   /**
    * Computes the softmax normalized vector given the logits.
-   * @param logits The logits vector.
+   * @param logits The logits array.
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
