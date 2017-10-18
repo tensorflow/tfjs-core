@@ -19,9 +19,9 @@
  * Returns true if the axis specifies the inner most dimensions of the
  * array.
  */
-export function axesAreInnerMostDims(axis: number[], rank: number): boolean {
-  for (let i = 0; i < axis.length; ++i) {
-    if (axis[axis.length - i - 1] !== rank - 1 - i) {
+export function axesAreInnerMostDims(axes: number[], rank: number): boolean {
+  for (let i = 0; i < axes.length; ++i) {
+    if (axes[axes.length - i - 1] !== rank - 1 - i) {
       return false;
     }
   }
@@ -29,13 +29,13 @@ export function axesAreInnerMostDims(axis: number[], rank: number): boolean {
 }
 
 export function combineLocations(
-    outputLoc: number[], reduceLoc: number[], axis: number[]): number[] {
+    outputLoc: number[], reduceLoc: number[], axes: number[]): number[] {
   const rank = outputLoc.length + reduceLoc.length;
   const loc = [];
   let outIdx = 0;
   let reduceIdx = 0;
     for (let dim = 0; dim < rank; dim++) {
-    if (axis.indexOf(dim) === -1) {
+    if (axes.indexOf(dim) === -1) {
       loc.push(outputLoc[outIdx++]);
     } else {
       loc.push(reduceLoc[reduceIdx++]);
@@ -45,15 +45,15 @@ export function combineLocations(
 }
 
 export function computeOutAndReduceShapes(
-    aShape: number[], axis: number[]): [number[], number[]] {
+    aShape: number[], axes: number[]): [number[], number[]] {
   const outShape = [];
   const rank = aShape.length;
   for (let dim = 0; dim < rank; dim++) {
-    if (axis.indexOf(dim) === -1) {
+    if (axes.indexOf(dim) === -1) {
       outShape.push(aShape[dim]);
     }
   }
-  const reduceShape = axis.map(dim => aShape[dim]);
+  const reduceShape = axes.map(dim => aShape[dim]);
   return [outShape, reduceShape];
 }
 
@@ -61,4 +61,14 @@ export function expandShapeToKeepDim(
     shape: number[], axes: number[]): number[] {
   const reduceSubShape = axes.map(x => 1);
   return combineLocations(shape, reduceSubShape, axes);
+}
+
+export function parseAxisParam(
+    axis: number|number[], shape: number[]): number[] {
+  if (axis == null) {
+    axis = shape.map((s, i) => i);
+  } else if (typeof(axis) === 'number') {
+    axis = [axis];
+  }
+  return axis;
 }

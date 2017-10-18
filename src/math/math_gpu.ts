@@ -283,7 +283,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }
 
-  protected subInternal<T extends NDArray>(a: T, b: T): T {
+  protected subtractInternal<T extends NDArray>(a: T, b: T): T {
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }

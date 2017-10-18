@@ -302,15 +302,15 @@ export abstract class NDArrayMath {
   matrixTimesVector(matrix: Array2D, v: Array1D): Array1D {
     util.assert(
         v.rank === 1,
-        `Error in vectorTimesMatrix: second input must rank 1, but got ` +
+        `Error in matrixTimesVector: second input must rank 1, but got ` +
             `rank ${v.rank}.`);
     util.assert(
         matrix.rank === 2,
-        `Error in vectorTimesMatrix: first input must be a rank 2, but got ` +
+        `Error in matrixTimesVector: first input must be a rank 2, but got ` +
             `rank ${matrix.rank}.`);
     util.assert(
         v.size === matrix.shape[1],
-        `Error in vectorTimesMatrix: size of first rank 1 input ${v.size} ` +
+        `Error in matrixTimesVector: size of first rank 1 input ${v.size} ` +
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
@@ -601,26 +601,25 @@ export abstract class NDArrayMath {
    * Computes the log(sum(exp(elements across the reduction dimensions)).
    *
    * Reduces the input along the dimensions given in `axis`. Unless `keepDims`
-   * is true, the rank of the arrat is reduced by 1 for each entry in `axis`. If
+   * is true, the rank of the array is reduced by 1 for each entry in `axis`. If
    * `keepDims` is true, the reduced dimensions are retained with length 1.
    * If `axis` has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
    *
    * @param input The input NDArray.
-   * @param axes Optional. The dimensions to reduce. If null (the default),
+   * @param axis Optional. The dimension(s) to reduce. If null (the default),
    *     reduces all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with length
    *     of 1. Defaults to false.
    */
-  logSumExp(input: NDArray, axes: number[] = null, keepDims = false): NDArray {
-    if (axes == null) {
-      axes = input.shape.map((s, i) => i);
-    }
+  logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
+      NDArray {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
     if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
       throw Error(
           'logSumExp reduction only along the inner most dimensions is ' +
           `supported for now. Input was rank ${input.rank} and axis was ` +
-          `${axes}.`);
+          `${axis}.`);
     }
     return this.executeOp('logSumExp', () => {
       const res = this.logSumExpInternal(input, axes);
@@ -631,7 +630,7 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract logSumExpInternal(ndarray: NDArray, axis: number[]):
+  protected abstract logSumExpInternal(ndarray: NDArray, axes: number[]):
       NDArray;
 
   /**
@@ -644,16 +643,14 @@ export abstract class NDArrayMath {
    * single element is returned.
    *
    * @param input The input array to compute the sum over.
-   * @param axes Optional. The dimensions to reduce. By default it reduces all
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
    *     dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   sum<T extends keyof DataTypes>(
-      input: NDArray<T>, axes: number[] = null,
+      input: NDArray<T>, axis: number|number[] = null,
       keepDims = false): NDArray<SumTypes[T]> {
-    if (axes == null) {
-      axes = input.shape.map((v, i) => i);
-    }
+    const axes = axis_util.parseAxisParam(axis, input.shape);
     if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
       throw new Error(
           'sum reduction is only supported across the ' +
@@ -726,11 +723,14 @@ export abstract class NDArrayMath {
   /**
    * Computes the minimum value from the input.
    * @param input The input NDArray.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  min(input: NDArray, axes: number[] = null, keepDims = false): NDArray {
-    if (axes == null) {
-      axes = input.shape.map((v, i) => i);
-    }
+  min<G extends keyof DataTypes>(
+      input: NDArray<G>, axis: number|number[] = null,
+      keepDims = false): NDArray<G> {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
     if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
       throw new Error(
           'min reduction is only supported across the ' +
@@ -745,7 +745,8 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract minInternal(input: NDArray, axes: number[]): NDArray;
+  protected abstract minInternal<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[]): NDArray<G>;
 
   /**
    * Computes the maximum of elements across dimensions of an array.
@@ -755,12 +756,16 @@ export abstract class NDArrayMath {
    * If `keepDims` is true, the reduced dimensions are retained with length 1.
    * If `axes` has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
+   *
+   * @param input The input array.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   max<G extends keyof DataTypes>(
-      input: NDArray<G>, axes: number[] = null, keepDim = false): NDArray<G> {
-    if (axes == null) {
-      axes = input.shape.map((v, i) => i);
-    }
+      input: NDArray<G>, axis: number|number[] = null,
+      keepDims = false): NDArray<G> {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
     if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
       throw new Error(
           'max reduction is only supported across the ' +
@@ -768,7 +773,7 @@ export abstract class NDArrayMath {
     }
     return this.executeOp('max', () => {
       const res = this.maxInternal(input, axes);
-      if (keepDim) {
+      if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
         return res.reshape(newShape);
       }
@@ -790,7 +795,7 @@ export abstract class NDArrayMath {
     }
     if (dim !== logits.rank - 1) {
       throw Error(
-          'Softmax along a non-last dimension is not yet supported.' +
+          'Softmax along a non-last dimension is not yet supported. ' +
           `Logits was rank ${logits.rank} and dim was ${dim}`);
     }
     return this.executeOp('softmax', () => {
@@ -798,7 +803,7 @@ export abstract class NDArrayMath {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
         const lse = this.logSumExp(logits, [dim], true /* keepDim */);
-        const logResult = this.sub(logits, lse);
+        const logResult = this.subtract(logits, lse);
         return this.exp(logResult) as T;
       });
     });
@@ -838,11 +843,7 @@ export abstract class NDArrayMath {
   protected abstract transposeInternal<
       D extends keyof DataTypes, T extends NDArray<D>>(a: T, perm: number[]): T;
 
-  /**
-   * Computes a scalar plus NDArray, c + A.
-   * @param c The scalar c in c + A.
-   * @param a The NDArray A in c + A.
-   */
+  /** @deprecated Use math.add(c, A) instead. */
   scalarPlusArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
@@ -851,30 +852,22 @@ export abstract class NDArrayMath {
     return this.add(c, a) as T;
   }
 
-  /**
-   * Computes a scalar minus NDArray, c - A.
-   * @param c The scalar c in c - A.
-   * @param a The NDArray A in c - A.
-   */
+  /** @deprecated Use math.sub(c, A) instead. */
   scalarMinusArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
         `Error in scalarMinusArray: first argument must be rank 0, but got ` +
             `rank ${c.rank}.`);
-    return this.sub(c, a) as T;
+    return this.subtract(c, a) as T;
   }
 
-  /**
-   * Computes A - c. A is NDArray, c is Scalar.
-   * @param a The NDArray A in A - c.
-   * @param c The Scalar c in A - c.
-   */
+  /** @deprecated Use math.sub(A, c) instead. */
   arrayMinusScalar<T extends NDArray>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
         `Error in arrayMinusScalar: second argument must be rank 0, but ` +
             `got rank ${c.rank}.`);
-    return this.sub(a, c) as T;
+    return this.subtract(a, c) as T;
   }
 
   /**
@@ -893,11 +886,12 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to add element-wise.
    * @param b The second NDArray to add element-wise.
    */
-  add(a: NDArray, b: NDArray): NDArray {
+  add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
     return this.executeOp('add', () => this.addInternal(a, b));
   }
-  protected abstract addInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract addInternal<G extends keyof DataTypes>(
+      a: NDArray<G>, b: NDArray<G>): NDArray<G>;
 
   /**
    * Adds two NDArrays element-wise, A + B. Inputs must
@@ -906,7 +900,7 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  addStrict<T extends NDArray>(a: T, b: T): T {
+  addStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
     return this.add(a, b) as T;
   }
@@ -918,11 +912,17 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to subtract element-wise.
    * @param b The second NDArray to subtract element-wise.
    */
-  sub<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
+  subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
+      NDArray<G> {
     util.assertAndGetBroadcastedShape(a.shape, b.shape);
-    return this.executeOp('sub', () => this.subInternal(a, b));
+    return this.executeOp('subtract', () => this.subtractInternal(a, b));
   }
-  protected abstract subInternal<G extends keyof DataTypes>(
+
+  /** @deprecated Use math.subtract instead. */
+  sub<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
+    return this.subtract(a, b);
+  }
+  protected abstract subtractInternal<G extends keyof DataTypes>(
       a: NDArray<G>, b: NDArray<G>): NDArray<G>;
 
   /**
@@ -932,9 +932,9 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  subStrict<T extends NDArray>(a: T, b: T): T {
+  subStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
-    return this.sub(a, b) as T;
+    return this.subtract(a, b) as T;
   }
 
   /**
@@ -994,12 +994,7 @@ export abstract class NDArrayMath {
     return this.divide(a, b) as T;
   }
 
-  /**
-   * Computes a scalar divided by an NDArray, broadcasted over the NDArray, c /
-   * A.
-   * @param c The scalar value in c / A.
-   * @param a The NDArray value in c / A.
-   */
+  /** @deprecated Use math.divide(c, A) instead. */
   scalarDividedByArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
@@ -1008,12 +1003,7 @@ export abstract class NDArrayMath {
     return this.divide(c, a) as T;
   }
 
-  /**
-   * Computes an NDArray divided by a scalar, broadcasted over the NDArray, A /
-   * c.
-   * @param a The NDArray value in A / c.
-   * @param c The scalar value in A / c.
-   */
+  /** @deprecated Use math.divide(A, c) instead. */
   arrayDividedByScalar<T extends NDArray>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
@@ -1225,12 +1215,7 @@ export abstract class NDArrayMath {
   protected abstract scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T;
 
-  /**
-   * Computes a scalar times array operation broadcasted over the NDArray, c *
-   * A.
-   * @param c The scalar in the operation.
-   * @param A the NDArray in the operation that will be broadcasted over.
-   */
+  /** @deprecated Use math.multiply(c, A) instead. */
   scalarTimesArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,

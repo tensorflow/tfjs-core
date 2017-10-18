@@ -135,6 +135,11 @@ describe('util.getBroadcastedShape', () => {
     const res = util.assertAndGetBroadcastedShape([7, 1, 1], [7, 1, 1]);
     expect(res).toEqual([7, 1, 1]);
   });
+
+  it('3d and 3d, each gets broadcasted', () => {
+    const res = util.assertAndGetBroadcastedShape([4, 1, 7], [1, 3, 1]);
+    expect(res).toEqual([4, 3, 7]);
+  });
 });
 
 describe('util.repeatedTry', () => {

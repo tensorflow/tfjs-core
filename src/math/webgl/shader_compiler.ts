@@ -127,13 +127,11 @@ function getInputSamplingSnippet(
 function getBatchSnippet(
     inputSize: number, outputSize: number, texShape: [number, number]) {
   return `
-    int batch;
     int getBatchOffset() {
       ivec2 resTexRC = ivec2(resultUV.yx *
           vec2(${texShape[0]}, ${texShape[1]}));
       int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
       int b = index / ${outputSize};
-      batch = b;
       return b * ${inputSize};
     }
   `;

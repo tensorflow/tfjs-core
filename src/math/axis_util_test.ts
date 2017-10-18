@@ -17,7 +17,7 @@
 
 import * as axis_util from './axis_util';
 
-describe('axis_util computeLocation', () => {
+describe('axis_util combineLocations', () => {
   it('rank 4, reduce last 2 dims', () => {
     const loc = axis_util.combineLocations([4, 1], [3, 7], [2, 3]);
     expect(loc).toEqual([4, 1, 3, 7]);
@@ -98,7 +98,7 @@ describe('axis_util computeOutAndReduceShapes', () => {
   });
 });
 
-describe('axis_util axisHasInnerMostDims', () => {
+describe('axis_util axesAreInnerMostDims', () => {
   it('rank 4, reduce last dim', () => {
     const res = axis_util.axesAreInnerMostDims([3], 4);
     expect(res).toBe(true);
@@ -132,5 +132,27 @@ describe('axis_util axisHasInnerMostDims', () => {
   it('rank 4, reduce all but last', () => {
     const res = axis_util.axesAreInnerMostDims([0, 1, 2], 4);
     expect(res).toBe(false);
+  });
+});
+
+describe('axis_util expandShapeToKeepDim', () => {
+  it('2d -> 1d axis=0', () => {
+    const shape = axis_util.expandShapeToKeepDim([2], [0]);
+    expect(shape).toEqual([1, 2]);
+  });
+
+  it('2d -> 1d axis=1', () => {
+    const shape = axis_util.expandShapeToKeepDim([4], [1]);
+    expect(shape).toEqual([4, 1]);
+  });
+
+  it('3d -> 1d axis=1,2', () => {
+    const shape = axis_util.expandShapeToKeepDim([7], [1, 2]);
+    expect(shape).toEqual([7, 1, 1]);
+  });
+
+  it('3d -> 2d axis=1', () => {
+    const shape = axis_util.expandShapeToKeepDim([7, 3], [1]);
+    expect(shape).toEqual([7, 1, 3]);
   });
 });

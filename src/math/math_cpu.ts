@@ -272,7 +272,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.ONE, b);
   }
 
-  protected subInternal<T extends NDArray>(a: T, b: T): T {
+  protected subtractInternal<T extends NDArray>(a: T, b: T): T {
     return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
   }
 
@@ -540,7 +540,7 @@ export class NDArrayMathCPU extends NDArrayMath {
           `input.`);
     }
     const xMax = this.max(input, axes, true /* keepDims */);
-    const a = this.sub(input, xMax);
+    const a = this.subtract(input, xMax);
     const b = this.exp(a);
     const c = this.sum(b, axes);
     const d = this.log(c);
