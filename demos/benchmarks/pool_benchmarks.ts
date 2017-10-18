@@ -101,7 +101,7 @@ export class PoolGPUBenchmark extends PoolBenchmark {
       const start = performance.now();
 
       benchmark();
-      await res.dataSync;
+      res.dataSync();
 
       totalTime = performance.now() - start;
     }
