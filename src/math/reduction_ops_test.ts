@@ -164,6 +164,33 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       expect(math.argMax(a).get()).toEqual(NaN);
       a.dispose();
     });
+
+    it('2D', math => {
+      const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      expect(math.argMax(a).get()).toBeCloseTo(100);
+    });
+
+    it('2D axis=[0,1]', math => {
+      const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      expect(math.max(a, [0, 1]).get()).toBeCloseTo(100);
+    });
+
+    it('2D, axis=0 throws error', math => {
+      const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      expect(() => math.max(a, 0)).toThrowError();
+    });
+
+    it('2D, axis=1 provided as a number', math => {
+      const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const r = math.max(a, 1);
+      test_util.expectArraysClose(r.getValues(), new Float32Array([5, 100]));
+    });
+
+    it('2D, axis=[1]', math => {
+      const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const r = math.max(a, [1]);
+      test_util.expectArraysClose(r.getValues(), new Float32Array([5, 100]));
+    });
   };
 
   test_util.describeMathCPU('argmax', [tests]);
