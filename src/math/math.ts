@@ -16,7 +16,7 @@
  */
 
 import * as util from '../util';
-import {TypedArray} from '../util';
+import {sizeFromShape, TypedArray} from '../util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -368,6 +368,19 @@ export abstract class NDArrayMath {
         'math.reshape() is deprecated. Please call reshape() ' +
         'directly on the ndarray object');
     return ndarray.reshape(newShape) as T2;
+  }
+
+  /**
+   * Reshape a NDArray to a 1D array
+   * @param {T1} ndarray
+   * @returns {Array1D}
+   */
+  flatten<T1 extends NDArray>(ndarray: T1): Array1D {
+    util.assert(!(ndarray instanceof Array1D),
+        'flattening a 1d array is redundant');
+    return this.executeOp('flatten', () => {
+        return ndarray.reshape([sizeFromShape(ndarray.shape)]) as Array1D;
+    });
   }
 
   /**
