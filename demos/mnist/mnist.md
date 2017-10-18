@@ -91,7 +91,7 @@ varLoader.getAllVariables().then(async vars => {
   const sess = new Session(g, math);
 
   const result = sess.eval(...);
-  console.log(await result.data);
+  console.log(await result.data());
 });
 ```
 

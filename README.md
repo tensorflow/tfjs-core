@@ -36,14 +36,14 @@ const result = math.add(a, b);
 
 // Option 1: With async/await.
 // Caveat: in non-Chrome browsers you need to put this in an async function.
-console.log(await result.data);
+console.log(await result.data());
 
 // Option 2: With a Promise.
-result.data.then(data => console.log(data)); // Float32Array([3, 4, 5])
+result.data().then(data => console.log(data)); // Float32Array([3, 4, 5])
 
 // Option 3: Synchronous download of data.
 // This is simpler, but blocks the UI.
-console.log(result.dataSync);
+console.log(result.dataSync());
 ```
 
 #### ES3/ES5 JavaScript
@@ -71,10 +71,10 @@ var b = dl.Scalar.new(2);
 var result = math.add(a, b);
 
 // Option 1: With a Promise.
-result.data.then(data => console.log(data)); // Float32Array([3, 4, 5])
+result.data().then(data => console.log(data)); // Float32Array([3, 4, 5])
 
 // Option 2: Synchronous download of data. This is simpler, but blocks the UI.
-console.log(result.dataSync);
+console.log(result.dataSync());
 ```
 
 

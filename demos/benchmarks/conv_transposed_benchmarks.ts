@@ -87,7 +87,7 @@ export class ConvTransposedGPUBenchmark extends ConvTransposedBenchmark {
       const start = performance.now();
 
       benchmark();
-      await out.dataSync;
+      out.dataSync();
 
       totalTime = performance.now() - start;
     }

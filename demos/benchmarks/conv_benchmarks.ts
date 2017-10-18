@@ -87,7 +87,7 @@ export class ConvGPUBenchmark extends ConvBenchmark {
       const start = performance.now();
 
       benchmark();
-      await out.dataSync;
+      out.dataSync();
 
       totalTime = performance.now() - start;
     }

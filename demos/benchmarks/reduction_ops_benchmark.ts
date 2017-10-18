@@ -81,7 +81,7 @@ export class ReductionOpsGPUBenchmark extends ReductionOpsBenchmark {
       const start = performance.now();
 
       benchmark();
-      await output.dataSync;
+      output.dataSync();
 
       totalTime = performance.now() - start;
 

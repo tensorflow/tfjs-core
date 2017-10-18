@@ -23,7 +23,7 @@ async function onePlusOne() {
   const a = Scalar.new(1);
   const b = Scalar.new(1);
 
-  const result = await math.add(a, b).data;
+  const result = await math.add(a, b).data();
 
   document.getElementById('output').innerText = '' + result;
 }

@@ -91,7 +91,7 @@ export class MatmulGPUBenchmark extends BenchmarkTest {
       const start = performance.now();
 
       benchmark();
-      await resArr.dataSync;
+      resArr.dataSync();
 
       totalTime = performance.now() - start;
     }

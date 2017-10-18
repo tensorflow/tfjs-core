@@ -120,7 +120,7 @@ import {Array1D, Array3D, Scalar} from './ndarray';
           return math.add(a, b);
         });
 
-        const data = await result.data;
+        const data = await result.data();
 
         // a, b, and result are new textures. All intermediates should be
         // disposed.

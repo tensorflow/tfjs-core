@@ -147,8 +147,8 @@ export class SqueezeNet {
       Promise<{[className: string]: number}> {
     const predictions = this.math.softmax(logits);
     const topk = new NDArrayMathCPU().topK(predictions, topK);
-    const topkIndices = await topk.indices.data;
-    const topkValues = await topk.values.data;
+    const topkIndices = await topk.indices.data();
+    const topkValues = await topk.values.data();
 
     const topClassesToProbability: {[className: string]: number} = {};
     for (let i = 0; i < topkIndices.length; i++) {

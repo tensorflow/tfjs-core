@@ -200,7 +200,7 @@ test_util.describeCustom('NDArray', () => {
     const a = Array2D.make([3, 2], {texture, textureShapeRC: [3, 2]});
     expect(a.inGPU()).toBe(true);
 
-    const values = await a.data;
+    const values = await a.data();
     test_util.expectArraysClose(values, new Float32Array([1, 2, 3, 4, 5, 6]));
     expect(a.inGPU()).toBe(false);
   });

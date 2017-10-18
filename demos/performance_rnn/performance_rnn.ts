@@ -406,7 +406,7 @@ async function generateStep(loopId: number) {
       keep(val);
     });
 
-    await outputs[outputs.length - 1].data;
+    await outputs[outputs.length - 1].data();
 
     for (let i = 0; i < outputs.length; i++) {
       playOutput(await outputs[i].val());

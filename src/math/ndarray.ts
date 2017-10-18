@@ -256,7 +256,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   async val(...locs: number[]): Promise<number> {
-    await this.data;
+    await this.data();
     return this.get(...locs);
   }
 
@@ -286,30 +286,24 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     return this.ndarrayData;
   }
 
+  /** @deprecated Use dataSync() instead. */
   getValues(): DataTypes[T] {
-    if (this.ndarrayData.values == null) {
-      throwIfGPUNotInitialized();
-
-      let values: Float32Array;
-      if (this.ndarrayData.textureType === TextureType.DEFAULT) {
-        values = GPGPU.downloadMatrixFromTexture(
-            this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
-            this.ndarrayData.textureShapeRC[1]);
-      } else {
-        values = GPGPU.downloadMatrixFromRGBAColorTexture(
-            this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
-            this.ndarrayData.textureShapeRC[1], this.shape[2]);
-      }
-      this.ndarrayData.values = convertFloat32ToDtype(values, this.dtype);
-      this.disposeTexture();
-    }
-    return this.ndarrayData.values;
+    return this.dataSync();
   }
 
+  /** @deprecated Use data() instead. */
   getValuesAsync(): Promise<DataTypes[T]> {
+    return this.data();
+  }
+
+  /**
+   * Asynchronously downloads the values from the NDArray. Returns a promise
+   * that resolves when the data is ready.
+   */
+  data(): Promise<DataTypes[T]> {
     return new Promise<DataTypes[T]>((resolve, reject) => {
-      if (this.data.values != null) {
-        resolve(this.data.values);
+      if (this.ndarrayData.values != null) {
+        resolve(this.ndarrayData.values);
         return;
       }
 
@@ -327,12 +321,28 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     });
   }
 
-  data(): Promise<DataTypes[T]> {
-    return this.getValuesAsync();
-  }
-
+  /**
+   * Synchronously downloads the values from the NDArray. This blocks the UI
+   * thread until the values are ready, which can cause performance issues.
+   */
   dataSync(): DataTypes[T] {
-    return this.getValues();
+    if (this.ndarrayData.values == null) {
+      throwIfGPUNotInitialized();
+
+      let values: Float32Array;
+      if (this.ndarrayData.textureType === TextureType.DEFAULT) {
+        values = GPGPU.downloadMatrixFromTexture(
+            this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
+            this.ndarrayData.textureShapeRC[1]);
+      } else {
+        values = GPGPU.downloadMatrixFromRGBAColorTexture(
+            this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
+            this.ndarrayData.textureShapeRC[1], this.shape[2]);
+      }
+      this.ndarrayData.values = convertFloat32ToDtype(values, this.dtype);
+      this.disposeTexture();
+    }
+    return this.ndarrayData.values;
   }
 
   private uploadToGPU(preferredTexShape?: [number, number]) {
@@ -443,7 +453,7 @@ export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
   }
 
   async val(): Promise<number> {
-    await this.data;
+    await this.data();
     return this.get();
   }
 
@@ -500,7 +510,7 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
   }
 
   async val(i: number): Promise<number> {
-    await this.data;
+    await this.data();
     return this.get(i);
   }
 
@@ -585,7 +595,7 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
   }
 
   async val(i: number, j: number): Promise<number> {
-    await this.data;
+    await this.data();
     return this.get(i, j);
   }
 
@@ -664,7 +674,7 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
   }
 
   async val(i: number, j: number, k: number): Promise<number> {
-    await this.data;
+    await this.data();
     return this.get(i, j, k);
   }
 
@@ -755,7 +765,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
   }
 
   async val(i: number, j: number, k: number, l: number): Promise<number> {
-    await this.data;
+    await this.data();
     return this.get(i, j, k, l);
   }
 

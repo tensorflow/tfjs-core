@@ -105,7 +105,7 @@ export class UnaryOpsGPUBenchmark extends UnaryOpsBenchmark {
       const start = performance.now();
 
       benchmark();
-      await output.dataSync;
+      output.dataSync();
 
       totalTime = performance.now() - start;
     }

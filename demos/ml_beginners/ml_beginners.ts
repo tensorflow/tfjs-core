@@ -29,7 +29,7 @@ async function mlBeginners() {
     const result = math.matrixTimesVector(matrix, vector);
 
     console.log('result shape:', result.shape);
-    console.log('result', await result.data);
+    console.log('result', await result.data());
   }
 
   {
@@ -117,7 +117,7 @@ async function mlBeginners() {
       result = session.eval(y, [{tensor: x, data: track(Scalar.new(4))}]);
       console.log('result should be ~57.0:');
       console.log(result.shape);
-      console.log(await result.data);
+      console.log(await result.data());
     });
   }
 }

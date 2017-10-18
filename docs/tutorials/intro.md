@@ -29,8 +29,8 @@ Or just view the demo we have hosted [here](https://pair-code.github.io/deeplear
 For the purposes of the documentation, we will use TypeScript code examples.
 For vanilla JavaScript, you may need to remove the occasional TypeScript type annotation or definition.
 
-This includes `console.log(await ndarray.data)`, which in ES5 would be written as:
-`ndarray.data.then(data => console.log(data));`.
+This includes `console.log(await ndarray.data())`, which in ES5 would be written as:
+`ndarray.data().then(data => console.log(data));`.
 
 ## Core concepts
 

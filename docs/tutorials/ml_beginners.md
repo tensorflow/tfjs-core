@@ -22,8 +22,8 @@ Or just view the demo we have hosted [here](https://pair-code.github.io/deeplear
 For the purposes of the documentation, we will use TypeScript code examples.
 For vanilla JavaScript, you may need to remove the occasional TypeScript type annotation or definition.
 
-This includes `console.log(await ndarray.data)`, which in ES5 would be written as:
-`ndarray.data.then(data => console.log(data));`.
+This includes `console.log(await ndarray.data())`, which in ES5 would be written as:
+`ndarray.data().then(data => console.log(data));`.
 
 ### NDArrays, Tensors, and numbers
 
@@ -115,7 +115,7 @@ const vector = Array1D.new([0, 1, 2]);
 const result = math.matrixTimesVector(matrix, vector);
 
 console.log("result shape:", result.shape);
-console.log("result", await result.data);
+console.log("result", await result.data());
 ```
 
 For more information on `NDArrayMath`, see [Introduction and core concepts](intro.md).
@@ -261,7 +261,7 @@ await math.scope(async (keep, track) => {
   let result: NDArray =
       session.eval(y, [{tensor: x, data: track(Scalar.new(4))}]);
   console.log(result.shape);
-  console.log('result', await result.data);
+  console.log('result', await result.data());
 
   /**
    * Training
@@ -307,14 +307,14 @@ await math.scope(async (keep, track) => {
         [{tensor: x, data: xProvider}, {tensor: yLabel, data: yProvider}],
         BATCH_SIZE, optimizer, CostReduction.MEAN);
 
-    console.log('average cost: ' + await costValue.data);
+    console.log('average cost: ' + await costValue.data());
   }
 
   // Now print the value from the trained model for x = 4, should be ~57.0.
   result = session.eval(y, [{tensor: x, data: track(Scalar.new(4))}]);
   console.log('result should be ~57.0:');
   console.log(result.shape);
-  console.log(await result.data);
+  console.log(await result.data());
 });
 ```
 
