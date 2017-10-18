@@ -86,18 +86,6 @@ export function makeIdentity(n: number): Float32Array {
   return i;
 }
 
-export function setValue(
-    m: Float32Array, mNumRows: number, mNumCols: number, v: number, row: number,
-    column: number) {
-  if (row >= mNumRows) {
-    throw new Error('row (' + row + ') must be in [0 ' + mNumRows + '].');
-  }
-  if (column >= mNumCols) {
-    throw new Error('column (' + column + ') must be in [0 ' + mNumCols + '].');
-  }
-  m[(row * mNumCols) + column] = v;
-}
-
 export function cpuMultiplyMatrix(
     a: Float32Array, aRow: number, aCol: number, b: Float32Array, bRow: number,
     bCol: number) {

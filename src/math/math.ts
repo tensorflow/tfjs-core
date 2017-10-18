@@ -661,57 +661,35 @@ export abstract class NDArrayMath {
       ndarray: NDArray<T>, axes: number[]): NDArray<SumTypes[T]>;
 
   /**
-   * Returns the index with the smallest value across axes of a tensor.
+   * Returns the indices of the minimum values along an `axis`. The result has
+   * the same shape as `input` with the dimension along `axis` removed.
    *
    * @param input The input array.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
-   *     dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   * @param axis Optional. The dimension to reduce. By default it reduces across
+   * all axes and returns the flat index.
+   *
    */
-  argMin(input: NDArray, axis: number|number[] = null, keepDims = false):
-      NDArray<'int32'> {
+  argMin(input: NDArray, axis: number = null): NDArray<'int32'> {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error(
-          'argMin reduction is only supported across the ' +
-          `inner-most axes, but called with axes ${axes}`);
-    }
-    return this.executeOp('argMin', () => {
-      const res = this.argMinInternal(input, axes);
-      if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
-        return res.reshape(newShape);
-      }
-      return res;
-    });
+    axis_util.assertAxesAreInnerMostDims('argMin', axes, input.rank);
+    return this.executeOp('argMin', () => this.argMinInternal(input, axes));
   }
   protected abstract argMinInternal(ndarray: NDArray, axes: number[]):
       NDArray<'int32'>;
 
   /**
-   * Returns the index with the largest value across axes of a tensor.
+   * Returns the indices of the maximum values along an `axis`. The result has
+   * the same shape as `input` with the dimension along `axis` removed.
    *
    * @param input The input array.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
-   *     dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   * @param axis Optional. The dimension to reduce. By default it reduces across
+   * all axes and returns the flat index.
+   *
    */
-  argMax(input: NDArray, axis: number|number[] = null, keepDims = false):
-      NDArray<'int32'> {
+  argMax(input: NDArray, axis: number = null): NDArray<'int32'> {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error(
-          'argMax reduction is only supported across the ' +
-          `inner-most axes, but called with axes ${axes}`);
-    }
-    return this.executeOp('argMax', () => {
-      const res = this.argMaxInternal(input, axes);
-      if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
-        return res.reshape(newShape);
-      }
-      return res;
-    });
+    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
+    return this.executeOp('argMax', () => this.argMaxInternal(input, axes));
   }
   protected abstract argMaxInternal(ndarray: NDArray, axes: number[]):
       NDArray<'int32'>;

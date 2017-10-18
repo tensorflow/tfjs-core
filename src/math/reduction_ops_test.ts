@@ -158,35 +158,24 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       a.dispose();
     });
 
-    it('2D', math => {
+    it('2D, no axis specified', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(math.argMax(a).get()).toBeCloseTo(100);
-    });
-
-    it('2D axis=[0,1]', math => {
-      const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(math.max(a, [0, 1]).get()).toBeCloseTo(100);
+      expect(math.argMax(a).get()).toBe(3);
     });
 
     it('2D, axis=0 throws error', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(() => math.max(a, 0)).toThrowError();
+      expect(() => math.argMax(a, 0)).toThrowError();
     });
 
-    it('2D, axis=1 provided as a number', math => {
+    it('2D, axis=1', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
-      const r = math.max(a, 1);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([5, 100]));
-    });
-
-    it('2D, axis=[1]', math => {
-      const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
-      const r = math.max(a, [1]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([5, 100]));
+      const r = math.argMax(a, 1);
+      expect(r.getValues()).toEqual(new Int32Array([2, 0]));
     });
   };
 
-  test_util.describeMathCPU('argmax', [tests]);
+  // test_util.describeMathCPU('argmax', [tests]);
   test_util.describeMathGPU('argmax', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},

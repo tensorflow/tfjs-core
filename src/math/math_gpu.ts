@@ -248,7 +248,8 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected argMaxInternal(a: NDArray, axes: number[]): NDArray<'int32'> {
     const program = new ArgMinMaxProgram(a.shape, axes, 'max');
-    return this.compileAndRun(program, [a]);
+    const output = this.makeOutputArray(program.outputShape, 'int32');
+    return this.compileAndRun(program, [a], output);
   }
 
   protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
