@@ -442,6 +442,11 @@ export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
     return this.getValues()[0];
   }
 
+  async val(): Promise<number> {
+    await this.data;
+    return this.get();
+  }
+
   set(value: number) {
     this.getValues()[0] = value;
   }
@@ -454,9 +459,12 @@ export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
     return super.asType(dtype);
   }
 
-  async val(): Promise<number> {
-    await this.data;
-    return this.get();
+  locToIndex(loc: number[]): number {
+    return 0;
+  }
+
+  indexToLoc(index: number): number[] {
+    return [];
   }
 }
 
