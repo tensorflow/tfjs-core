@@ -25,9 +25,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
   const tests: MathTests = it => {
     it('Array1D', math => {
       const a = Array1D.new([3, -1, 0, 100, -7, 2]);
-
-      expect(math.min(a).get()).toBeCloseTo(-7);
-
+      test_util.expectNumbersClose(math.min(a).get(), -7);
       a.dispose();
     });
 
@@ -41,12 +39,13 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
     it('2D', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(math.min(a).get()).toBeCloseTo(-7);
+      test_util.expectNumbersClose(math.min(a).get(), -7);
+
     });
 
     it('2D axis=[0,1]', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(math.min(a, [0, 1]).get()).toBeCloseTo(-7);
+      test_util.expectNumbersClose(math.min(a, [0, 1]).get(), -7);
     });
 
     it('2D, axis=0 throws error', math => {
@@ -80,20 +79,16 @@ import {Array1D, Array2D, Scalar} from './ndarray';
   const tests: MathTests = it => {
     it('with one element dominating', math => {
       const a = Array1D.new([3, -1, 0, 100, -7, 2]);
-
       const r = math.max(a);
-
-      expect(r.get()).toBeCloseTo(100);
+      test_util.expectNumbersClose(r.get(), 100);
 
       a.dispose();
     });
 
     it('with all elements being the same', math => {
       const a = Array1D.new([3, 3, 3]);
-
       const r = math.max(a);
-
-      expect(r.get()).toBeCloseTo(3);
+      test_util.expectNumbersClose(r.get(), 3);
 
       a.dispose();
     });
@@ -104,12 +99,12 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
     it('2D', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(math.max(a).get()).toBeCloseTo(100);
+      test_util.expectNumbersClose(math.max(a).get(), 100);
     });
 
     it('2D axis=[0,1]', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(math.max(a, [0, 1]).get()).toBeCloseTo(100);
+      test_util.expectNumbersClose(math.max(a, [0, 1]).get(), 100);
     });
 
     it('2D, axis=0 throws error', math => {
@@ -144,17 +139,15 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('Array1D', math => {
       const a = Array1D.new([1, 0, 3, 2]);
       const result = math.argMax(a);
-      expect(result.get()).toBeCloseTo(2);
+      test_util.expectNumbersClose(result.get(), 2);
 
       a.dispose();
     });
 
     it('one value', math => {
       const a = Array1D.new([10]);
-
       const result = math.argMax(a);
-
-      expect(result.get()).toBeCloseTo(0);
+      test_util.expectNumbersClose(result.get(), 0);
 
       a.dispose();
     });
@@ -179,20 +172,16 @@ import {Array1D, Array2D, Scalar} from './ndarray';
   const tests: MathTests = it => {
     it('Array1D', math => {
       const a = Array1D.new([1, 0, 3, 2]);
-
       const result = math.argMin(a);
-
-      expect(result.get()).toBeCloseTo(1);
+      test_util.expectNumbersClose(result.get(), 1);
 
       a.dispose();
     });
 
     it('one value', math => {
       const a = Array1D.new([10]);
-
       const result = math.argMin(a);
-
-      expect(result.get()).toBeCloseTo(0);
+      test_util.expectNumbersClose(result.get(), 0);
 
       a.dispose();
     });
@@ -221,14 +210,14 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([5, 0, 3, 7, 3]);
       const b = Array1D.new([-100.3, -20.0, -10.0, -5, -100]);
       const result = math.argMaxEquals(a, b);
-      expect(result.get()).toBeCloseTo(1);
+      test_util.expectNumbersClose(result.get(), 1);
     });
 
     it('not equals', math => {
       const a = Array1D.new([5, 0, 3, 1, 3]);
       const b = Array1D.new([-100.3, -20.0, -10.0, -5, 0]);
       const result = math.argMaxEquals(a, b);
-      expect(result.get()).toBeCloseTo(0);
+      test_util.expectNumbersClose(result.get(), 0);
     });
 
     it('propagates NaNs', math => {
@@ -338,7 +327,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('basic', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const result = math.sum(a);
-      expect(result.get()).toBeCloseTo(7);
+      test_util.expectNumbersClose(result.get(), 7);
 
       a.dispose();
     });
@@ -363,7 +352,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
     it('sums all values in 2D array with keep dim', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const res = math.sum(a, null, true /* keepDim */);
+      const res = math.sum(a, null, true /* keepDims */);
       expect(res.shape).toEqual([1, 1]);
       test_util.expectArraysClose(res.getValues(), new Float32Array([7]));
     });
