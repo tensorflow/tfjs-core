@@ -8,25 +8,23 @@
         "lib": ["es2015", "dom"]
     },
     "include": [
-      "src/dataset.ts",
+      "src/data/dataset.ts",
       "src/math/conv_util.ts",
       "src/math/webgl/gpgpu_util.ts",
       "src/math/webgl/render_ndarray_gpu_util.ts",
       "src/math/webgl/webgl_util.ts",
       "src/util.ts",
-      "src/checkpoint_loader.ts",
-      "src/graph.ts",
+      "src/data/checkpoint_loader.ts",
+      "src/graph/graph.ts",
+      "src/graph/session.ts",
       "src/graph_runner.ts",
       "src/initializers.ts",
-      "src/input_provider.ts",
+      "src/data/input_provider.ts",
       "src/math/math.ts",
       "src/math/math_cpu.ts",
       "src/math/math_gpu.ts",
       "src/math/ndarray.ts",
       "src/math/webgl/gpgpu_context.ts",
-      "src/optimizer.ts",
-      "src/session.ts",
-      "src/sgd_optimizer.ts",
-      "src/momentum_optimizer.ts"
+      "src/optimizers/**/*"
     ]
 }
