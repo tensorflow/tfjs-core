@@ -67,8 +67,17 @@ export function parseAxisParam(
     axis: number|number[], shape: number[]): number[] {
   if (axis == null) {
     axis = shape.map((s, i) => i);
-  } else if (typeof(axis) === 'number') {
+  } else if (typeof (axis) === 'number') {
     axis = [axis];
   }
   return axis;
+}
+
+export function assertAxesAreInnerMostDims(
+    msg: string, axes: number[], rank: number): void {
+  if (!axesAreInnerMostDims(axes, rank)) {
+    throw new Error(
+        `${msg} supports only inner-most axes for now. ` +
+        `Got axes ${axes} and rank-${rank} input.`);
+  }
 }

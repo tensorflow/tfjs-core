@@ -341,9 +341,7 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected sumInternal<T extends keyof DataTypes>(
       input: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error('Sum is only supported across the inner-most dimensions');
-    }
+    axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
     const resultDtype = SumTypesMap[input.dtype] as keyof SumTypes;
@@ -427,9 +425,7 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected minInternal<G extends keyof DataTypes>(
       input: NDArray<G>, axes: number[]): NDArray<G> {
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error('Min is only supported across the inner-most dimensions');
-    }
+    axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
     const result = NDArray.zeros(outShape, input.dtype);
@@ -457,9 +453,7 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected maxInternal<G extends keyof DataTypes>(
       input: NDArray<G>, axes: number[]): NDArray<G> {
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error('Max is only supported across the inner-most dimensions');
-    }
+    axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
     const result = NDArray.zeros(outShape, input.dtype);
@@ -533,12 +527,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected logSumExpInternal(input: NDArray, axes: number[]): NDArray {
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error(
-          `logSumExp reduction is supported only for the ` +
-          `inner-most axes for now. Got axes ${axes} and rank-${input.rank} ` +
-          `input.`);
-    }
+    axis_util.assertAxesAreInnerMostDims('logSumExp', axes, input.rank);
     const xMax = this.max(input, axes, true /* keepDims */);
     const a = this.subtract(input, xMax);
     const b = this.exp(a);

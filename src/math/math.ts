@@ -615,12 +615,7 @@ export abstract class NDArrayMath {
   logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
       NDArray {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw Error(
-          'logSumExp reduction only along the inner most dimensions is ' +
-          `supported for now. Input was rank ${input.rank} and axis was ` +
-          `${axis}.`);
-    }
+    axis_util.assertAxesAreInnerMostDims('logSumExp', axes, input.rank);
     return this.executeOp('logSumExp', () => {
       const res = this.logSumExpInternal(input, axes);
       if (keepDims) {
@@ -651,11 +646,7 @@ export abstract class NDArrayMath {
       input: NDArray<T>, axis: number|number[] = null,
       keepDims = false): NDArray<SumTypes[T]> {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error(
-          'sum reduction is only supported across the ' +
-          `inner-most axes, but called with axes ${axes}`);
-    }
+    axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
 
     return this.executeOp('sum', () => {
       const res = this.sumInternal(input, axes);
@@ -760,6 +751,13 @@ export abstract class NDArrayMath {
 
   /**
    * Computes the minimum value from the input.
+   *
+   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
+   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axes` has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
    * @param input The input NDArray.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces all
    *     dimensions.
@@ -769,11 +767,7 @@ export abstract class NDArrayMath {
       input: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error(
-          'min reduction is only supported across the ' +
-          `inner-most axes, but called with axes ${axes}`);
-    }
+    axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
     return this.executeOp('min', () => {
       const res = this.minInternal(input, axes);
       if (keepDims) {
@@ -804,11 +798,7 @@ export abstract class NDArrayMath {
       input: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    if (!axis_util.axesAreInnerMostDims(axes, input.rank)) {
-      throw new Error(
-          'max reduction is only supported across the ' +
-          `inner-most axes, but called with axes ${axes}`);
-    }
+    axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
     return this.executeOp('max', () => {
       const res = this.maxInternal(input, axes);
       if (keepDims) {
@@ -823,7 +813,7 @@ export abstract class NDArrayMath {
 
   /**
    * Computes the softmax normalized vector given the logits.
-   * @param logits The logits vector.
+   * @param logits The logits array.
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
@@ -840,7 +830,7 @@ export abstract class NDArrayMath {
       return this.scope(() => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
-        const lse = this.logSumExp(logits, [dim], true /* keepDim */);
+        const lse = this.logSumExp(logits, [dim], true /* keepDims */);
         const logResult = this.subtract(logits, lse);
         return this.exp(logResult) as T;
       });
