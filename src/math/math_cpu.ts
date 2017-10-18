@@ -363,7 +363,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result as NDArray<SumTypes[T]>;
   }
 
-  protected argMinInternal(ndarray: NDArray): Scalar {
+  protected argMinInternal(ndarray: NDArray, axes: number[]): NDArray<'int32'> {
     let min = Number.MAX_VALUE;
     let minIndex = -1;
     const values = ndarray.getValues();
@@ -380,7 +380,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Scalar.new(minIndex);
   }
 
-  protected argMaxInternal(ndarray: NDArray): Scalar {
+  protected argMaxInternal(ndarray: NDArray, axes: number[]): NDArray<'int32'> {
     let max = Number.NEGATIVE_INFINITY;
     let maxIndex = -1;
     const values = ndarray.getValues();
@@ -398,8 +398,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
-    const argMax1 = this.argMaxInternal(x1).get();
-    const argMax2 = this.argMaxInternal(x2).get();
+    const argMax1 = this.argMax(x1).get();
+    const argMax2 = this.argMax(x2).get();
     if (isNaN(argMax1) || isNaN(argMax2)) {
       return Scalar.new(NaN);
     }

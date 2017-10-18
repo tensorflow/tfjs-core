@@ -241,13 +241,13 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a], output);
   }
 
-  protected argMinInternal(a: NDArray): Scalar {
-    const program = new ArgMinMaxProgram(a.size, 'min');
+  protected argMinInternal(a: NDArray, axes: number[]): NDArray<'int32'> {
+    const program = new ArgMinMaxProgram(a.shape, axes, 'min');
     return this.compileAndRun(program, [a]);
   }
 
-  protected argMaxInternal(a: NDArray): Scalar {
-    const program = new ArgMinMaxProgram(a.size, 'max');
+  protected argMaxInternal(a: NDArray, axes: number[]): NDArray<'int32'> {
+    const program = new ArgMinMaxProgram(a.shape, axes, 'max');
     return this.compileAndRun(program, [a]);
   }
 
