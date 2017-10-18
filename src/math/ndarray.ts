@@ -308,35 +308,30 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   getValuesAsync(): Promise<DataTypes[T]> {
     return new Promise<DataTypes[T]>((resolve, reject) => {
-      this.ready.then(() => resolve(this.getValues()));
-    });
-  }
-
-  get ready(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      if (this.ndarrayData.values != null) {
-        resolve();
+      if (this.data.values != null) {
+        resolve(this.data.values);
         return;
       }
 
       if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-        this.getValues();
-        resolve();
+        resolve(this.getValues());
         return;
       }
 
       // Construct an empty query. We're just interested in getting a callback
       // when the GPU command queue has executed until this point in time.
       const queryFn = () => {};
-      GPGPU.runQuery(queryFn).then(() => resolve());
+      GPGPU.runQuery(queryFn).then(() => {
+        resolve(this.getValues());
+      });
     });
   }
 
-  get data(): Promise<DataTypes[T]> {
+  data(): Promise<DataTypes[T]> {
     return this.getValuesAsync();
   }
 
-  get dataSync(): DataTypes[T] {
+  dataSync(): DataTypes[T] {
     return this.getValues();
   }
 
