@@ -80,9 +80,6 @@ console.log(result.dataSync());
 
 ## Development
 
-Looking to contribute, and don't know where to start? Check out our help wanted
-[issues](https://github.com/PAIR-code/deeplearnjs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
-
 To build **deeplearn.js** from source, we need to clone the project and prepare
 the dev environment:
 
@@ -137,6 +134,9 @@ $ ./scripts/build-npm.sh
 To install it locally, run `npm install ./dist/deeplearn-VERSION.tgz`.
 
 > On Windows, use bash (available through git) to use the scripts above.
+
+Looking to contribute, and don't know where to start? Check out our "help wanted"
+[issues](https://github.com/PAIR-code/deeplearnjs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
 
 ## Supported environments
 
