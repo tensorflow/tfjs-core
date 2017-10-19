@@ -323,12 +323,14 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]) as T;
   }
 
-  protected eluInternal<T extends NDArray>(): T{
-    throw new Error('Not yet implemented');
+  protected eluInternal<T extends NDArray>(a: T): T{
+    const program = new UnaryOpProgram(a.shape, unary_op.ELU);
+    return this.compileAndRun(program, [a]) as T;
   }
 
-  protected leakyReluInternal<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.LEAKY_RELU);
+  protected leakyReluInternal<T extends NDArray>(a: T, alpha: Scalar): T {
+    const program = new UnaryOpProgram(a.shape,
+        unary_op.LEAKY_RELU(alpha.get()));
     return this.compileAndRun(program, [a]) as T;
   }
 

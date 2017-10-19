@@ -755,7 +755,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       expect(result.shape).toBe(a.shape);
       test_util.expectArraysClose(result.dataSync(),
-          new Float32Array([0, 1, -0.02]));
+          new Float32Array([0, 1, -0.4]));
     });
 
     it('propagates NaN', math => {
@@ -769,8 +769,37 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
   };
 
-  test_util.describeMathCPU('leaky-relu', [tests]);
-  test_util.describeMathGPU('leaky-relu', [tests], [
+  test_util.describeMathCPU('leakyRelu', [tests]);
+  test_util.describeMathGPU('leakyRelu', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// math.elu
+{
+  const tests: MathTests = it => {
+    it('calculate elu', math => {
+      const a = Array1D.new([1, -1, 0]);
+      const result = math.elu(a);
+
+      expect(result.shape).toBe(a.shape);
+      test_util.expectArraysClose(result.dataSync(),
+          new Float32Array([1, -0.6321, 0]));
+    });
+
+    it('elu propagates NaN', math => {
+      const a = Array1D.new([1, NaN]);
+      const result = math.elu(a);
+      expect(result.shape).toBe(a.shape);
+      test_util.expectArraysClose(result.dataSync(),
+          new Float32Array([1, NaN]));
+    });
+
+  };
+  test_util.describeMathCPU('elu', [tests]);
+  test_util.describeMathGPU('elu', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
