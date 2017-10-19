@@ -328,9 +328,9 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]) as T;
   }
 
-  protected leakyReluInternal<T extends NDArray>(a: T, alpha: Scalar): T {
+  protected leakyReluInternal<T extends NDArray>(a: T, alpha: number): T {
     const program = new UnaryOpProgram(a.shape,
-        unary_op.LEAKY_RELU(alpha.get()));
+        unary_op.LEAKY_RELU(alpha));
     return this.compileAndRun(program, [a]) as T;
   }
 

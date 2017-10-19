@@ -1101,15 +1101,12 @@ export abstract class NDArrayMath {
    * @param alpha scaleing factor for negative values, defaults to 0.2
    * @return {NDArray}
    */
-  leakyRelu<T extends NDArray>(ndarray: T, alpha?:Scalar): T {
-    if (alpha == null) {
-      alpha = Scalar.new(0.2);
-    }
+  leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
     return this.executeOp('leakyRelu', () =>
         this.leakyReluInternal(ndarray, alpha));
   }
   protected abstract leakyReluInternal<T extends NDArray>(
-      ndarray: T, alpha: Scalar): T;
+      ndarray: T, alpha: number): T;
 
   /**
    * Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).

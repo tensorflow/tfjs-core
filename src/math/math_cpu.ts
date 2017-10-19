@@ -560,16 +560,15 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected leakyReluInternal<T extends NDArray>(ndarray: T, alpha: Scalar) {
+  protected leakyReluInternal<T extends NDArray>(ndarray: T, alpha: number) {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.dataSync();
-    const aVal = alpha.get();
     for (let i = 0; i < values.length; i++){
       const v = values[i];
       if (v >= 0) {
         resultValues[i] = v;
       } else {
-        resultValues[i] = aVal * v;
+        resultValues[i] = alpha * v;
       }
     }
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
