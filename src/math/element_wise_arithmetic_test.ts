@@ -567,12 +567,12 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 {
   const tests: MathTests = it => {
     it('calculate elu', math => {
-      const a = Array1D.new([1, -1]);
+      const a = Array1D.new([1, -1, 0]);
       const result = math.elu(a);
 
       expect(result.shape).toBe(a.shape);
       test_util.expectArraysClose(result.dataSync(),
-          new Float32Array([1, -0.6321]));
+          new Float32Array([1, -0.6321, 0]));
     });
 
     it('elu propagates NaN', math => {

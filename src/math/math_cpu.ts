@@ -552,7 +552,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     const scaleVal = scale.get();
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
-      if (v > 0) {
+      if (v >= 0) {
         resultValues[i] = v;
       } else {
         resultValues[i] = scaleVal * (Math.exp(v) - 1);
