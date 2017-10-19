@@ -706,10 +706,25 @@ export abstract class NDArrayMath {
    */
   argMaxEquals(x1: NDArray, x2: NDArray): Scalar {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return this.executeOp(
-        'argMaxEquals', () => this.argMaxEqualsInternal(x1, x2));
+    return this.executeOp('argMaxEquals', () => this.scope(() => {
+      return this.equal(this.argMax(x1), this.argMax(x2));
+    }));
   }
-  protected abstract argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar;
+
+  /**
+   * Returns the truth value of (x == y) element-wise. Supports broadcasting.
+   * For a stricter version without broadcasting use math.equalStrict().
+   */
+  equal(x: NDArray, y: NDArray): NDArray<'bool'> {
+    return this.executeOp('equal', () => this.equalInternal(x, y));
+  }
+  protected abstract equalInternal(x: NDArray, y: NDArray): NDArray<'bool'>;
+
+  equalStrict<D extends keyof DataTypes, T extends NDArray<D>>(x: T, y: T):
+      NDArray<'bool'> {
+    util.assertShapesMatch(x.shape, y.shape, 'Error in equalStrict: ');
+    return this.equal(x, y);
+  }
 
   /**
    * Computes the top K values and flattened indices.
@@ -1789,4 +1804,9 @@ export enum MatrixOrientation {
 
 function parseTupleParam(param: number|[number, number]): [number, number] {
   return typeof param === 'number' ? [param, param] : param;
+}
+
+export interface ToBool {
+  Scalar: Scalar<'bool'>;
+  Array1D: Array1D<'bool'>;
 }

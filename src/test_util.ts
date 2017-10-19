@@ -20,7 +20,8 @@ import {Environment, Features} from './environment';
 import {NDArrayMath} from './math/math';
 import {NDArrayMathCPU} from './math/math_cpu';
 import {NDArrayMathGPU} from './math/math_gpu';
-import {TypedArray} from './util';
+import * as util from './util';
+import {DType, TypedArray} from './util';
 
 /** Accuracy for tests. */
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
@@ -230,4 +231,10 @@ export function executeTests(
 
     tests.forEach(test => test(customIt));
   });
+}
+
+export function assertIsNan(val: number, dtype: DType) {
+  if (!util.isValNaN(val, dtype)) {
+    throw new Error(`Value ${val} does not represent NaN for dtype ${dtype}`);
+  }
 }

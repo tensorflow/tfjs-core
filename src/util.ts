@@ -311,3 +311,32 @@ export function inferFromImplicitShape(
   newShape[implicitIdx] = size / shapeProd;
   return newShape;
 }
+
+export type DType = 'float32'|'int32'|'bool';
+
+export const NAN_INT32 = 1 << 31;
+export const NAN_BOOL = 255;
+
+export function getNaN(dtype: DType): number {
+  if (dtype === 'float32') {
+    return NaN;
+  } else if (dtype === 'int32') {
+    return NAN_INT32;
+  } else if (dtype === 'bool') {
+    return NAN_BOOL;
+  } else {
+    throw new Error(`Unknown dtype ${dtype}`);
+  }
+}
+
+export function isValNaN(val: number, dtype: DType): boolean {
+  if (dtype === 'float32') {
+    return isNaN(val);
+  } else if (dtype === 'int32') {
+    return val === NAN_INT32;
+  } else if (dtype === 'bool') {
+    return val === NAN_BOOL;
+  } else {
+    throw new Error(`Unknown dtype ${dtype}`);
+  }
+}

@@ -139,7 +139,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('Array1D', math => {
       const a = Array1D.new([1, 0, 3, 2]);
       const result = math.argMax(a);
-      test_util.expectNumbersClose(result.get(), 2);
+      expect(result.get()).toBe(2);
 
       a.dispose();
     });
@@ -147,14 +147,15 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('one value', math => {
       const a = Array1D.new([10]);
       const result = math.argMax(a);
-      test_util.expectNumbersClose(result.get(), 0);
+      expect(result.get()).toBe(0);
 
       a.dispose();
     });
 
     it('propagates NaNs', math => {
       const a = Array1D.new([5, 0, 3, NaN, 3]);
-      expect(math.argMax(a).get()).toEqual(NaN);
+      const res = math.argMax(a);
+      test_util.assertIsNan(res.get(), res.dtype);
       a.dispose();
     });
 
@@ -175,7 +176,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     });
   };
 
-  // test_util.describeMathCPU('argmax', [tests]);
+  test_util.describeMathCPU('argmax', [tests]);
   test_util.describeMathGPU('argmax', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
@@ -189,7 +190,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('Array1D', math => {
       const a = Array1D.new([1, 0, 3, 2]);
       const result = math.argMin(a);
-      test_util.expectNumbersClose(result.get(), 1);
+      expect(result.get()).toBe(1);
 
       a.dispose();
     });
@@ -197,17 +198,32 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('one value', math => {
       const a = Array1D.new([10]);
       const result = math.argMin(a);
-      test_util.expectNumbersClose(result.get(), 0);
+      expect(result.get()).toBe(0);
 
       a.dispose();
     });
 
     it('Arg min propagates NaNs', math => {
       const a = Array1D.new([5, 0, NaN, 7, 3]);
-
-      expect(math.argMin(a).get()).toEqual(NaN);
-
+      const res = math.argMin(a);
+      test_util.assertIsNan(res.get(), res.dtype);
       a.dispose();
+    });
+
+    it('2D, no axis specified', math => {
+      const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      expect(math.argMin(a).get()).toBe(4);
+    });
+
+    it('2D, axis=0 throws error', math => {
+      const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      expect(() => math.argMin(a, 0)).toThrowError();
+    });
+
+    it('2D, axis=1', math => {
+      const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, -8]);
+      const r = math.argMin(a, 1);
+      expect(r.getValues()).toEqual(new Int32Array([1, 2]));
     });
   };
 
@@ -252,9 +268,9 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
   test_util.describeMathCPU('argMaxEquals', [tests]);
   test_util.describeMathGPU('argMaxEquals', [tests], [
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    // {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    // {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
 

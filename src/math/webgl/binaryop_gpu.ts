@@ -23,6 +23,11 @@ export const ADD = 'return a + b;';
 export const SUB = 'return a - b;';
 export const MUL = 'return a * b;';
 export const DIV = 'return a / b;';
+export const EQUAL = `
+  if (isNaN(a)) return a;
+  if (isNaN(b)) return b;
+  return float(a == b);
+`;
 
 export class BinaryOpProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];

@@ -361,47 +361,87 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result as NDArray<SumTypes[T]>;
   }
 
-  protected argMinInternal(ndarray: NDArray, axes: number[]): NDArray<'int32'> {
-    let min = Number.MAX_VALUE;
-    let minIndex = -1;
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        return Scalar.new(NaN);
+  protected argMinInternal(input: NDArray, axes: number[]): NDArray<'int32'> {
+    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const result = NDArray.zeros(outShape, 'int32');
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let min = aVals[offset];
+      let minIndex = 0;
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        if (isNaN(value)) {
+          minIndex = util.NAN_INT32;
+          break;
+        }
+        if (value < min) {
+          min = value;
+          minIndex = j;
+        }
       }
-      if (value < min) {
-        min = value;
-        minIndex = i;
-      }
+      vals[i] = minIndex;
     }
-    return Scalar.new(minIndex);
+    return result;
   }
 
-  protected argMaxInternal(ndarray: NDArray, axes: number[]): NDArray<'int32'> {
-    let max = Number.NEGATIVE_INFINITY;
-    let maxIndex = -1;
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        return Scalar.new(NaN);
+  protected argMaxInternal(input: NDArray, axes: number[]): NDArray<'int32'> {
+    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const result = NDArray.zeros(outShape, 'int32');
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let max = aVals[offset];
+      let maxIndex = 0;
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        if (isNaN(value)) {
+          maxIndex = util.NAN_INT32;
+          break;
+        }
+        if (value > max) {
+          max = value;
+          maxIndex = j;
+        }
       }
-      if (value > max) {
-        max = value;
-        maxIndex = i;
-      }
+      vals[i] = maxIndex;
     }
-    return Scalar.new(maxIndex);
+    return result;
   }
 
-  protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
-    const argMax1 = this.argMax(x1).get();
-    const argMax2 = this.argMax(x2).get();
-    if (isNaN(argMax1) || isNaN(argMax2)) {
-      return Scalar.new(NaN);
+  protected equalInternal(a: NDArray, b: NDArray): NDArray<'bool'> {
+    const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    const result = NDArray.zeros(newShape, 'bool');
+    const newValues = result.getValues();
+    const aValues = a.getValues();
+    const bValues = b.getValues();
+    const aBroadcastedDims = util.getBroadcastedDims(a.shape, newShape);
+    const bBroadcastedDims = util.getBroadcastedDims(b.shape, newShape);
+
+    for (let i = 0; i < newValues.length; ++i) {
+      const loc = result.indexToLoc(i);
+
+      const aLoc = loc.slice(-a.rank);
+      aBroadcastedDims.forEach(d => aLoc[aLoc.length - d - 1] = 0);
+      const aIndex = a.locToIndex(aLoc);
+
+      const bLoc = loc.slice(-b.rank);
+      bBroadcastedDims.forEach(d => bLoc[bLoc.length - d - 1] = 0);
+      const bIndex = b.locToIndex(bLoc);
+
+      newValues[i] = (aValues[aIndex] === bValues[bIndex]) ? 1 : 0;
     }
-    return Scalar.new(+(argMax1 === argMax2));
+    return result;
   }
 
   protected topKInternal(ndarray: NDArray, k: number):
