@@ -55,6 +55,10 @@ export const RELU = `
   return (x < 0.0) ? 0.0 : x;
 `;
 
+export const LEAKY_RELU = `
+  return (x >= 0.0) ? x : 0.01 * x;
+`;
+
 export const STEP = `
   return (x == x) ? (x > 0.0 ? 1.0 : 0.0) : x;
 `;
