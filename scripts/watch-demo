@@ -18,7 +18,11 @@ const path = require('path');
 const spawn = require('cross-spawn');
 const opn = require('opn');
 
-const demoPath = process.argv[2];
+let demoPath = process.argv[2];
+if (!demoPath.startsWith('demos/')) {
+  demoPath = 'demos/' + demoPath;
+}
+
 const outputPath = path.join(demoPath, 'bundle.js')
 const tsPath = path.join(demoPath, path.basename(demoPath) + '.ts');
 
@@ -38,8 +42,9 @@ watchify.stderr.on('data', (data) => {
       const httpServer = spawn(httpCmd, ['-c-1'], { detached: false});
 
       httpServer.stdout.on('data', data => {
-        data = data.toString().trim();
+        data = data.toString().split('\n')[0].trim()
         if (data.startsWith('http://127.0.0.1:')) {
+          console.log('opening ' + path.join(data, demoPath));
           // Open a browser pointing to the demo.
           opn(path.join(data, demoPath));
         }

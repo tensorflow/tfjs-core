@@ -41,7 +41,8 @@
     "build": "tsc",
     "test": "karma start",
     "lint": "tslint -p . --type-check -t verbose",
-    "make-version": "./scripts/make-version"
+    "make-version": "./scripts/make-version",
+    "watch": "./scripts/watch-demo $1"
   },
   "dependencies": {
     "seedrandom": "~2.4.3"
