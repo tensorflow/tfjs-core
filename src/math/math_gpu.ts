@@ -323,6 +323,10 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]) as T;
   }
 
+  protected eluInternal<T extends NDArray>(): T{
+    throw new Error('Not yet implemented');
+  }
+
   protected clipInternal<T extends NDArray>(a: T, min: number, max: number): T {
     const program = new ClipProgram(a.shape, min, max);
     return this.compileAndRun(program, [a]) as T;

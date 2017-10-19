@@ -1087,6 +1087,19 @@ export abstract class NDArrayMath {
   protected abstract reluInternal<T extends NDArray>(ndarray: T): T;
 
   /**
+   * Computes exponential linear element wise
+   * @param {T} ndarray the input NDArray
+   * @param scale the scale factor, defaults to 1
+   */
+  elu<T extends NDArray>(ndarray: T, scale?:Scalar): T {
+    if (scale == null) {
+      scale = Scalar.ONE;
+    }
+    return this.executeOp('elu', () => this.eluInternal(ndarray, scale));
+  }
+  protected abstract eluInternal<T extends NDArray>(ndarray: T,
+                                                    scale: Scalar): T;
+  /**
    * Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).
    * @param ndarray The input NDArray.
    */
