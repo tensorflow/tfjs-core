@@ -30,12 +30,40 @@ export interface PoolBenchmarkParams {
   depth: number;
   fieldSize: number;
   stride: number;
-  type: 'max'|'avg';
+  type: 'max'|'min'|'avg';
 }
 
 export abstract class PoolBenchmark extends BenchmarkTest {
   constructor(protected params: PoolBenchmarkParams) {
     super(params);
+  }
+
+  protected getPoolingOp(option: string, math: NDArrayMathCPU):
+      (x: Array3D, filterSize: [number, number]|number,
+       strides: [number, number]|number,
+       pad: 'valid'|'same'|number) => Array3D {
+    switch (option) {
+      case 'max':
+        return (x: Array3D, filterSize: [number, number] | number,
+                strides: [number, number] | number,
+                pad: 'valid' | 'same' | number) => {
+          return math.maxPool(x, filterSize, strides, pad);
+        };
+      case 'min':
+        return (x: Array3D, filterSize: [number, number] | number,
+                strides: [number, number] | number,
+                pad: 'valid' | 'same' | number) => {
+          return math.minPool(x, filterSize, strides, pad);
+        };
+      case 'avg':
+        return (x: Array3D, filterSize: [number, number] | number,
+                strides: [number, number] | number,
+                pad: 'valid' | 'same' | number) => {
+          return math.avgPool(x, filterSize, strides, pad);
+        };
+      default:
+        throw new Error(`Not found such ops: ${option}`);
+    }
   }
 }
 
@@ -47,12 +75,13 @@ export class PoolCPUBenchmark extends PoolBenchmark {
     const fieldSize = this.params.fieldSize;
     const stride = this.params.stride;
     const zeroPad = conv_util.computeDefaultPad(xShape, fieldSize, stride);
+    const op = this.getPoolingOp(this.params.type, math);
 
     const x = Array3D.randUniform(xShape, -1, 1);
 
     const start = performance.now();
     for (let i = 0; i < CPU_OP_RUNS; i++) {
-      math.maxPool(x as Array3D, fieldSize, stride, zeroPad);
+      op(x as Array3D, fieldSize, stride, zeroPad);
     }
     const avgTime = (performance.now() - start) / CPU_OP_RUNS;
 

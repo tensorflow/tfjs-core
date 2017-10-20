@@ -86,6 +86,21 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     params: maxPoolParams
   });
 
+  const minPoolParams:
+      PoolBenchmarkParams = {depth: 8, fieldSize: 4, stride: 4, type: 'min'};
+  groups.push({
+    name: 'Min pool',
+    min: 0,
+    max: 1024,
+    stepSize: 64,
+    stepToSizeTransformation: (step: number) => Math.max(4, step),
+    benchmarkRuns: [
+      new BenchmarkRun('min_pool_gpu', new PoolGPUBenchmark(minPoolParams)),
+      new BenchmarkRun('min_pool_cpu', new PoolCPUBenchmark(minPoolParams))
+    ],
+    params: minPoolParams
+  });
+
   const avgPoolParams:
       PoolBenchmarkParams = {depth: 8, fieldSize: 4, stride: 4, type: 'avg'};
   groups.push({
