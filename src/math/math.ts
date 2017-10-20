@@ -1753,25 +1753,36 @@ export abstract class NDArrayMath {
   /**
    * Draws samples from a multinomial distribution.
    *
-   * @param probabilities 1D array with normalized outcome probabilities.
-   * @param numSamples Number of samples to draw.
+   * @param probabilities 1D array with normalized outcome probabilities, or
+   *     2D array of shape `[batchSize, numOutcomes]`.
+   * @param numSamples Number of samples to draw for each row slice.
    * @param seed Optional. The seed number.
    */
-  multinomial(probabilities: Array1D, numSamples: number, seed?: number):
-      Array1D {
+  multinomial(
+      probabilities: Array1D|Array2D, numSamples: number,
+      seed?: number): Array1D<'int32'>|Array2D<'int32'> {
     const numOutcomes = probabilities.size;
     if (numOutcomes < 2) {
       throw new Error(
           `Error in multinomial: you need at least 2 outcomes, but got ` +
           `${numOutcomes}.`);
     }
+    if (probabilities.rank > 2) {
+      throw new Error(
+          `rank of probabilities must be 1 or 2, but is ${probabilities.rank}`);
+    }
     seed = seed || Math.random();
+    if (probabilities.rank === 1) {
+      probabilities = probabilities.as2D(1, -1);
+    }
     return this.executeOp(
         'multinomial',
-        () => this.multinomialInternal(probabilities, numSamples, seed));
+        () => this.multinomialInternal(
+            probabilities as Array2D, numSamples, seed));
   }
   protected abstract multinomialInternal(
-      probabilities: Array1D, numSamples: number, seed: number): Array1D;
+      probabilities: Array2D, numSamples: number,
+      seed: number): Array2D<'int32'>;
 
   /**
    * Returns a one-hot array. The locations represented by `indices` take

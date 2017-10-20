@@ -1112,9 +1112,11 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected multinomialInternal(
-      probabilities: Array1D, numSamples: number, seed: number): Array1D {
+      probabilities: Array2D, numSamples: number,
+      seed: number): Array2D<'int32'> {
     const probVals = probabilities.getValues();
 
+    const res = Array2D.zeros([probabilities.shape[0], numSamples]);
     // The cdf won't include the last event. It will be implicit if not other
     // event happened.
     const cdf = new Float32Array(probabilities.size - 1);
@@ -1139,7 +1141,7 @@ export class NDArrayMathCPU extends NDArrayMath {
       }
     }
 
-    return Array1D.new(res);
+    return res;
   }
 
   protected oneHotInternal(
