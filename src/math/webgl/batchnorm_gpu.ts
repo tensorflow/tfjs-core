@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as util from '../../util';
+import * as broadcast_util from '../broadcast_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class BatchNormProgram implements GPGPUProgram {
@@ -30,19 +30,19 @@ export class BatchNormProgram implements GPGPUProgram {
       offsetShape: number[]|null, scaleShape: number[]|null,
       varianceEpsilon: number) {
     this.variableNames = ['x', 'mean', 'variance'];
-    util.assertAndGetBroadcastShape(xShape, meanShape);
-    util.assertAndGetBroadcastShape(xShape, varianceShape);
+    broadcast_util.assertAndGetBroadcastShape(xShape, meanShape);
+    broadcast_util.assertAndGetBroadcastShape(xShape, varianceShape);
 
     let offsetSnippet = '0.0';
     if (offsetShape != null) {
-      util.assertAndGetBroadcastShape(xShape, offsetShape);
+      broadcast_util.assertAndGetBroadcastShape(xShape, offsetShape);
       this.variableNames.push('offset');
       offsetSnippet = 'getOffsetAtOutCoords()';
     }
 
     let scaleSnippet = '1.0';
     if (scaleShape != null) {
-      util.assertAndGetBroadcastShape(xShape, scaleShape);
+      broadcast_util.assertAndGetBroadcastShape(xShape, scaleShape);
       this.variableNames.push('scale');
       scaleSnippet = 'getScaleAtOutCoords()';
     }

@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import * as util from '../../util';
-
+import * as broadcast_util from '../broadcast_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class AddScaledMatProgram implements GPGPUProgram {
@@ -27,7 +26,8 @@ export class AddScaledMatProgram implements GPGPUProgram {
   supportsBroadcasting = true;
 
   constructor(aShape: number[], bShape: number[]) {
-    this.outputShape = util.assertAndGetBroadcastShape(aShape, bShape);
+    this.outputShape =
+        broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
     this.userCode = `
       void main() {
         float a = getAAtOutCoords();

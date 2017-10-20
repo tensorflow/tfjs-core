@@ -17,7 +17,7 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-
+import * as broadcast_util from '../broadcast_util';
 import * as tex_util from './tex_util';
 import {TextureType} from './tex_util';
 
@@ -686,7 +686,7 @@ function getBroadcastOutputCoordsSampler(
   } else if (outRank === 4) {
     type = 'ivec4';
   }
-  const broadcastDims = util.getBroadcastDims(
+  const broadcastDims = broadcast_util.getBroadcastDims(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
   const rankDiff = outRank - inRank;
   let coordsSnippet: string;
@@ -726,14 +726,15 @@ function getSamplerAtOutputCoords(
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
 
-  const broadcastDims = util.getBroadcastDims(
+  const broadcastDims = broadcast_util.getBroadcastDims(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
   const inRank = inputInfo.shapeInfo.logicalShape.length;
   const outRank = outShapeInfo.logicalShape.length;
   const doBroadcast =
       supportsBroadcasting && ((outRank > inRank) || broadcastDims.length > 0);
-  const broadcastIsOuter = util.broadcastDimsAreOuter(broadcastDims);
-  if (doBroadcast && !broadcastIsOuter) {
+  const broadcastOverOuter =
+      broadcast_util.broadcastDimsAreOuter(broadcastDims);
+  if (doBroadcast && !broadcastOverOuter) {
     return getBroadcastOutputCoordsSampler(
         inputInfo, outShapeInfo, texFuncSnippet, funcName);
   }
@@ -768,7 +769,7 @@ function getSamplerAtOutputCoords(
 
   const inSize = util.sizeFromShape(inTexExpandedShape);
   let broadcastSnippet = '';
-  if (doBroadcast && broadcastIsOuter) {
+  if (doBroadcast && broadcastOverOuter) {
     broadcastSnippet = `
         int mainPart = index / ${inSize};
         index -= mainPart * ${inSize};

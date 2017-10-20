@@ -563,7 +563,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
   ]);
 }
 
-// element-wise add / sub
+// element-wise equal
 {
   const tests: MathTests = it => {
     it('propagates NaNs', math => {

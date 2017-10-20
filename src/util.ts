@@ -184,48 +184,6 @@ export function createShuffledIndices(n: number): Uint32Array {
   return shuffledIndices;
 }
 
-export function assertAndGetBroadcastShape(
-    shapeA: number[], shapeB: number[]): number[] {
-  const result: number[] = [];
-  const errMsg = `Operands could not be broadcast together with shapes ` +
-      `${shapeA} and ${shapeB}.`;
-  const l = Math.max(shapeA.length, shapeB.length);
-
-  for (let i = 0; i < l; i++) {
-    const a = shapeA[shapeA.length - i - 1] || 1;
-    const b = shapeB[shapeB.length - i - 1] || 1;
-    if (a > 1 && b > 1 && a !== b) {
-      throw Error(errMsg);
-    }
-    result.unshift(Math.max(a, b));
-  }
-  return result;
-}
-
-export function getBroadcastDims(
-    inShape: number[], outShape: number[]): number[] {
-  const inRank = inShape.length;
-  const dims: number[] = [];
-  for (let i = 0; i < inRank; i++) {
-    const dim = inRank - 1 - i;
-    const a = inShape[dim] || 1;
-    const b = outShape[outShape.length - 1 - i] || 1;
-    if (b > 1 && a === 1) {
-      dims.unshift(dim);
-    }
-  }
-  return dims;
-}
-
-export function broadcastDimsAreOuter(dims: number[]): boolean {
-  for (let i = 0; i < dims.length; i++) {
-    if (dims[i] !== i) {
-      return false;
-    }
-  }
-  return true;
-}
-
 export function rightPad(a: string, size: number): string {
   if (size <= a.length) {
     return a;

@@ -18,6 +18,7 @@
 import * as seedrandom from 'seedrandom';
 import * as util from '../util';
 import * as axis_util from './axis_util';
+import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -237,7 +238,8 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T {
-    const newShape = util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const result = NDArray.zeros(newShape);
     const newValues = result.getValues();
     const aValues = a.getValues();
@@ -245,8 +247,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     const c1Val = c1.get();
     const c2Val = c2.get();
 
-    const aBroadcastDims = util.getBroadcastDims(a.shape, newShape);
-    const bBroadcastDims = util.getBroadcastDims(b.shape, newShape);
+    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
+    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
 
     for (let i = 0; i < newValues.length; ++i) {
       const loc = result.indexToLoc(i);
@@ -315,7 +317,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected multiplyInternal<T extends NDArray>(a: T, b: T): T {
-    const newShape = util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
     const aValues = a.getValues();
@@ -327,7 +330,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected divideInternal<T extends NDArray>(a: T, b: T): T {
-    const newShape = util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
     const aValues = a.getValues();
@@ -420,13 +424,14 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected equalInternal(a: NDArray, b: NDArray): NDArray<'bool'> {
-    const newShape = util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const result = NDArray.zeros(newShape, 'bool');
     const newValues = result.getValues();
     const aValues = a.getValues();
     const bValues = b.getValues();
-    const aBroadcastDims = util.getBroadcastDims(a.shape, newShape);
-    const bBroadcastDims = util.getBroadcastDims(b.shape, newShape);
+    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
+    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
     for (let i = 0; i < newValues.length; ++i) {
       const loc = result.indexToLoc(i);
 

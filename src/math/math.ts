@@ -17,8 +17,8 @@
 
 import * as util from '../util';
 import {TypedArray} from '../util';
-
 import * as axis_util from './axis_util';
+import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -185,9 +185,10 @@ export abstract class NDArrayMath {
     return result;
   }
 
-  private checkForNaN(vals: TypedArray, name: string): void {
+  private checkForNaN(vals: TypedArray, dtype: keyof DataTypes, name: string):
+      void {
     for (let i = 0; i < vals.length; i++) {
-      if (isNaN(vals[i])) {
+      if (util.isValNaN(vals[i], dtype)) {
         throw Error(`The result of the last math.${name} has NaNs.`);
       }
     }
@@ -259,7 +260,6 @@ export abstract class NDArrayMath {
     }
     const result = f();
     if (this.debugMode) {
-      const vals = result.getValues();
       const time = util.rightPad((performance.now() - start) + 'ms', 9);
       const paddedName = util.rightPad(name, 25);
       const rank = result.rank;
@@ -268,7 +268,7 @@ export abstract class NDArrayMath {
       console.log(
           `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
           'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      this.checkForNaN(vals, name);
+      this.checkForNaN(result.getValues(), result.dtype, name);
     }
     return this.track(result);
   }
@@ -913,7 +913,7 @@ export abstract class NDArrayMath {
    * @param b The second NDArray to add element-wise.
    */
   add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
-    util.assertAndGetBroadcastShape(a.shape, b.shape);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('add', () => this.addInternal(a, b));
   }
   protected abstract addInternal<G extends keyof DataTypes>(
@@ -940,7 +940,7 @@ export abstract class NDArrayMath {
    */
   subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
       NDArray<G> {
-    util.assertAndGetBroadcastShape(a.shape, b.shape);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('subtract', () => this.subtractInternal(a, b));
   }
 
@@ -971,7 +971,7 @@ export abstract class NDArrayMath {
    * @param b The second NDArray to multiply element-wise.
    */
   multiply(a: NDArray, b: NDArray): NDArray {
-    util.assertAndGetBroadcastShape(a.shape, b.shape);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('multiply', () => this.multiplyInternal(a, b));
   }
   protected abstract multiplyInternal<T extends NDArray>(a: T, b: T): T;
@@ -1003,7 +1003,7 @@ export abstract class NDArrayMath {
    * @param b The second NDArray to divide element-wise.
    */
   divide(a: NDArray, b: NDArray): NDArray {
-    util.assertAndGetBroadcastShape(a.shape, b.shape);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('divide', () => this.divideInternal(a, b));
   }
   protected abstract divideInternal(a: NDArray, b: NDArray): NDArray;
@@ -1804,9 +1804,4 @@ export enum MatrixOrientation {
 
 function parseTupleParam(param: number|[number, number]): [number, number] {
   return typeof param === 'number' ? [param, param] : param;
-}
-
-export interface ToBool {
-  Scalar: Scalar<'bool'>;
-  Array1D: Array1D<'bool'>;
 }
