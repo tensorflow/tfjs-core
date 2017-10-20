@@ -71,14 +71,78 @@ describe('broadcast_util.getBroadcastShape', () => {
   });
 });
 
-describe(
-    'broadcast_util.getBroadcastDims',
-    () => {
-        // TODO(smilkov): Write tests.
-    });
+describe('broadcast_util.getBroadcastDims', () => {
+  it('[] => []', () => {
+    const dims = broadcast_util.getBroadcastDims([], []);
+    expect(dims.length).toBe(0);
+  });
 
-describe(
-    'broadcast_util.broadcastDimsAreOuter',
-    () => {
-        // TODO(smilkov): Write tests.
-    });
+  it('[] => [5, 4]', () => {
+    const dims = broadcast_util.getBroadcastDims([], [5, 4]);
+    expect(dims.length).toBe(0);
+  });
+
+  it('[1] => [5]', () => {
+    const dims = broadcast_util.getBroadcastDims([1], [5]);
+    expect(dims).toEqual([0]);
+  });
+
+  it('[5, 1] => [5, 3]', () => {
+    const dims = broadcast_util.getBroadcastDims([5, 1], [5, 3]);
+    expect(dims).toEqual([1]);
+  });
+
+  it('[1, 1] => [5, 3]', () => {
+    const dims = broadcast_util.getBroadcastDims([1, 1], [5, 3]);
+    expect(dims).toEqual([0, 1]);
+  });
+
+  it('[4, 1, 3] => [4, 5, 3]', () => {
+    const dims = broadcast_util.getBroadcastDims([4, 1, 3], [4, 5, 3]);
+    expect(dims).toEqual([1]);
+  });
+});
+
+describe('broadcast_util.broadcastDimsAreOuter', () => {
+  it('[] => []', () => {
+    const dims = broadcast_util.getBroadcastDims([], []);
+    const areOuter = broadcast_util.broadcastDimsAreOuter(dims);
+    expect(areOuter).toBe(true);
+  });
+
+  it('[] => [5, 4]', () => {
+    const dims = broadcast_util.getBroadcastDims([], [5, 4]);
+    const areOuter = broadcast_util.broadcastDimsAreOuter(dims);
+    expect(areOuter).toBe(true);
+  });
+
+  it('[1] => [5]', () => {
+    const dims = broadcast_util.getBroadcastDims([1], [5]);
+    const areOuter = broadcast_util.broadcastDimsAreOuter(dims);
+    expect(areOuter).toBe(true);
+  });
+
+  it('[5, 1] => [5, 3]', () => {
+    const dims = broadcast_util.getBroadcastDims([5, 1], [5, 3]);
+    const areOuter = broadcast_util.broadcastDimsAreOuter(dims);
+    expect(areOuter).toBe(false);
+  });
+
+  it('[1, 1] => [5, 3]', () => {
+    const dims = broadcast_util.getBroadcastDims([1, 1], [5, 3]);
+    const areOuter = broadcast_util.broadcastDimsAreOuter(dims);
+    expect(areOuter).toBe(true);
+  });
+
+  it('[4, 1, 3] => [4, 5, 3]', () => {
+    const dims = broadcast_util.getBroadcastDims([4, 1, 3], [4, 5, 3]);
+    const areOuter = broadcast_util.broadcastDimsAreOuter(dims);
+    expect(areOuter).toBe(false);
+  });
+
+  it('[1, 1, 3] => [4, 5, 3]', () => {
+    const dims = broadcast_util.getBroadcastDims([1, 1, 3], [4, 5, 3]);
+    const areOuter = broadcast_util.broadcastDimsAreOuter(dims);
+    expect(areOuter).toBe(true);
+  });
+});
