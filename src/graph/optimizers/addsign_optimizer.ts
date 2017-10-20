@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2017 Principal Academy Inc All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,29 +21,17 @@ import {Node} from '../graph';
 import {SessionRuntime} from '../session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
-import {SGDOptimizer} from './sgd_optimizer';
+import {MomentumOptimizer} from './momentum_optimizer';
 
-export class MomentumOptimizer extends SGDOptimizer {
+export class AddSignOptimizer extends MomentumOptimizer {
+
   constructor(
       protected learningRate: number, protected momentum: number,
-      specifiedVariableList?: Node[]) {
-    super(learningRate, specifiedVariableList);
-    this.m = Scalar.new(momentum);
-  }
-
-  beforeBatch(
-      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap,
-      gradientArrayMap: SummedTensorArrayMap) {
-    super.beforeBatch(
-        math, batchSize, runtime, activationArrayMap, gradientArrayMap);
-
-    if (this.variableVelocities.size() === 0) {
-      this.variableNodes.forEach(node => {
-        this.variableVelocities.set(
-            node.output, NDArray.zeros(node.output.shape));
-      });
-    }
+      specifiedVariableList?: Node[], signWeight?: number,
+      internalDecay?: string) {
+    super(learningRate, momentum, specifiedVariableList);
+    this.alpha = Scalar.new(1|signWeight);
+    this.decay = "none";
   }
 
   afterBatch(
@@ -57,14 +45,25 @@ export class MomentumOptimizer extends SGDOptimizer {
         const oldVelocity = this.variableVelocities.get(node.output);
         const velocity =
             math.scaledArrayAdd(this.m, oldVelocity, this.one, gradient);
+        const signProduct = math.multiply(math.sign(gradient),
+                                          math.sign(velocity));
+        let currentScale = NDArray.zeros(signProduct.shape);
+        if( this.decay === "none" ) {
+          currentScale = math.add(this.alpha, signProduct);
+        }
+        const gradientRescaled = math.multiply(currentScale, gradient);
         const variable =
-            math.scaledArrayAdd(this.c, velocity, this.one, oldVariable);
+            math.scaledArrayAdd(this.c, gradientRescaled,
+                                this.one, oldVariable);
         this.variableVelocities.set(node.output, keep(velocity));
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
 
         oldVariable.dispose();
         oldVelocity.dispose();
+        gradientRescaled.dispose();
+        currentScale.dispose();
+        signProduct.dispose();
       });
     });
 
@@ -74,14 +73,10 @@ export class MomentumOptimizer extends SGDOptimizer {
 
   dispose() {
     super.dispose();
-    this.m.dispose();
-    this.variableVelocities.dispose();
+    this.alpha.dispose();
   }
 
-  setMomentum(momentum: number) {
-    this.momentum = momentum;
-  }
+  private alpha: Scalar;
+  private decay: string;
 
-  protected variableVelocities = new TensorArrayMap();
-  protected m: Scalar;
 }
