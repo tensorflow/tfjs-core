@@ -69,6 +69,10 @@ export const STEP = `
   return (x == x) ? (x > 0.0 ? 1.0 : 0.0) : x;
 `;
 
+export const SIGN = `
+  return (x == x) ? (x == 0.0 ? 1.0 : sign(x)) : x;
+`;
+
 export const NEG = `
   return -x;
 `;

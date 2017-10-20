@@ -1241,6 +1241,16 @@ export abstract class NDArrayMath {
   protected abstract stepInternal<T extends NDArray>(ndarray: T): T;
 
   /**
+   * Computes sign of the input NDArray element-wise, y = 1 if x >= 0 | -1 if x 
+   * < 0
+   * @param ndarray The input NDArray.
+   */
+  sign<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('sign', () => this.signInternal(ndarray));
+  }
+  protected abstract signInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
    * Computes a scaled array add operation, c1 * A + c2 * B.
    * @param c1 The first scalar in the scaled array add computation.
    * @param a The first NDArray in the scaled array add computation.

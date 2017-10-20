@@ -185,6 +185,52 @@ import {Array1D, Array2D, Scalar} from './ndarray';
   ]);
 }
 
+// math.sign
+{
+  const tests: MathTests = it => {
+    it('with 1d ndarray', math => {
+      const a = Array1D.new([1, -2, -.01, 3, 0, -0.1]);
+
+      const result = math.sign(a);
+
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([1, -1, -1, 1, 1, -1]));
+
+      a.dispose();
+    });
+
+    it('with 2d ndarray', math => {
+      const a = Array2D.new([2, 3], [1, -5, 0, -3, 4, -0.0001]);
+      const result = math.sign(a);
+
+      expect(result.shape).toEqual([2, 3]);
+
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([1, -1, 1, -1, 1, -1]));
+
+      a.dispose();
+    });
+
+    it('propagates NaNs', math => {
+      const a = Array1D.new([1, -2, -.01, 0.0001, 3, NaN]);
+
+      const result = math.sign(a);
+
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([1, -1, -1, 1, 1, NaN]));
+
+      a.dispose();
+    });
+  };
+
+  test_util.describeMathCPU('sign', [tests]);
+  test_util.describeMathGPU('sign', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
 // math.neg
 {
   const tests: MathTests = it => {
