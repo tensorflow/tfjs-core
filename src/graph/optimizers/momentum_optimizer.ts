@@ -56,7 +56,8 @@ export class MomentumOptimizer extends SGDOptimizer {
         const gradient = this.variableGradients.get(node.output);
         const oldVelocity = this.variableVelocities.get(node.output);
         const velocity =
-            math.scaledArrayAdd(this.m, oldVelocity, this.one, gradient);
+            math.scaledArrayAdd(this.m, oldVelocity,
+                                math.subtract(this.one, this.m), gradient);
         const variable =
             math.scaledArrayAdd(this.c, velocity, this.one, oldVariable);
         this.variableVelocities.set(node.output, keep(velocity));

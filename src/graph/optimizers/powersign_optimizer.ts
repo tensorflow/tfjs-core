@@ -44,7 +44,8 @@ export class PowerSignOptimizer extends MomentumOptimizer {
         const gradient = this.variableGradients.get(node.output);
         const oldVelocity = this.variableVelocities.get(node.output);
         const velocity =
-            math.scaledArrayAdd(this.m, oldVelocity, this.one, gradient);
+            math.scaledArrayAdd(this.m, oldVelocity,
+                                math.subtract(this.one, this.m), gradient);
         const signProduct = math.multiply(math.sign(gradient),
                                           math.sign(velocity));
         let currentScale = NDArray.zeros(signProduct.shape);
