@@ -38,7 +38,7 @@ export class BinaryOpProgram implements GPGPUProgram {
 
   constructor(op: string, aShape: number[], bShape: number[]) {
     this.params = [op];
-    this.outputShape = util.assertAndGetBroadcastedShape(aShape, bShape);
+    this.outputShape = util.assertAndGetBroadcastShape(aShape, bShape);
     this.userCode = `
       float binaryOperation(float a, float b) {
         ${op}

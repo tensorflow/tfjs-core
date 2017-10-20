@@ -672,7 +672,7 @@ function getSamplerFlat(inputInfo: InputInfo, numBatchDims: number): string {
   `;
 }
 
-function getBroadcastedOutputCoordsSampler(
+function getBroadcastOutputCoordsSampler(
     inputInfo: InputInfo, outShapeInfo: ShapeInfo, texFuncSnippet: string,
     funcName: string): string {
   const inRank = inputInfo.shapeInfo.logicalShape.length;
@@ -686,27 +686,24 @@ function getBroadcastedOutputCoordsSampler(
   } else if (outRank === 4) {
     type = 'ivec4';
   }
-  const broadcastedDims = util.getBroadcastedDims(
+  const broadcastDims = util.getBroadcastDims(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
-  let coordsSnippet = '';
-  if (outRank < 2 && broadcastedDims.length >= 1) {
+  const rankDiff = outRank - inRank;
+  let coordsSnippet: string;
+  if (inRank === 0) {
+    coordsSnippet = '';
+  } else if (outRank < 2 && broadcastDims.length >= 1) {
     coordsSnippet = 'coords = 0;';
   } else {
-    coordsSnippet = broadcastedDims
-                        .map(d => {
-                          return `coords[${outRank - d - 1}] = 0;`;
-                        })
-                        .join('\n');
+    coordsSnippet =
+        broadcastDims.map(d => `coords[${d + rankDiff}] = 0;`).join('\n');
   }
   let unpackedCoordsSnippet = '';
   if (outRank < 2 && inRank > 0) {
     unpackedCoordsSnippet = 'coords';
   } else {
     unpackedCoordsSnippet = inputInfo.shapeInfo.logicalShape
-                                .map((s, i) => {
-                                  return `coords[${outRank - i - 1}]`;
-                                })
-                                .reverse()
+                                .map((s, i) => `coords[${i + rankDiff}]`)
                                 .join(', ');
   }
   return `
@@ -719,7 +716,8 @@ function getBroadcastedOutputCoordsSampler(
 }
 
 function getSamplerAtOutputCoords(
-    inputInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean) {
+    inputInfo: InputInfo, outShapeInfo: ShapeInfo,
+    supportsBroadcasting: boolean) {
   const inTexShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const isRGBAColorTexture =
@@ -728,8 +726,15 @@ function getSamplerAtOutputCoords(
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
 
-  if (broadcast) {
-    return getBroadcastedOutputCoordsSampler(
+  const broadcastDims = util.getBroadcastDims(
+      inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
+  const inRank = inputInfo.shapeInfo.logicalShape.length;
+  const outRank = outShapeInfo.logicalShape.length;
+  const doBroadcast =
+      supportsBroadcasting && ((outRank > inRank) || broadcastDims.length > 0);
+  const broadcastIsOuter = util.broadcastDimsAreOuter(broadcastDims);
+  if (doBroadcast && !broadcastIsOuter) {
+    return getBroadcastOutputCoordsSampler(
         inputInfo, outShapeInfo, texFuncSnippet, funcName);
   }
 
@@ -761,11 +766,20 @@ function getSamplerAtOutputCoords(
     sampleSnippet = `return sampleUVAndDepth(${texName}, uv, texD);`;
   }
 
+  const inSize = util.sizeFromShape(inTexExpandedShape);
+  let broadcastSnippet = '';
+  if (doBroadcast && broadcastIsOuter) {
+    broadcastSnippet = `
+        int mainPart = index / ${inSize};
+        index -= mainPart * ${inSize};
+      `;
+  }
   return `
     float ${funcName}() {
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${outTexShape[0]}, ${outTexShape[1]}));
       int index = resTexRC.x * ${outTexShape[1]} + resTexRC.y;
+      ${broadcastSnippet}
       int texR = index / ${inTexExpandedShape[1]};
       int texC = index - texR * ${inTexExpandedShape[1]};
 

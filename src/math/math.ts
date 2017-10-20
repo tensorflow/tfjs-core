@@ -704,7 +704,7 @@ export abstract class NDArrayMath {
    * @param x1 The first input NDArray.
    * @param x2 The second input NDArray.
    */
-  argMaxEquals(x1: NDArray, x2: NDArray): Scalar {
+  argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
     return this.executeOp('argMaxEquals', () => this.scope(() => {
       return this.equal(this.argMax(x1), this.argMax(x2));
@@ -913,7 +913,7 @@ export abstract class NDArrayMath {
    * @param b The second NDArray to add element-wise.
    */
   add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
-    util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('add', () => this.addInternal(a, b));
   }
   protected abstract addInternal<G extends keyof DataTypes>(
@@ -940,7 +940,7 @@ export abstract class NDArrayMath {
    */
   subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
       NDArray<G> {
-    util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('subtract', () => this.subtractInternal(a, b));
   }
 
@@ -971,7 +971,7 @@ export abstract class NDArrayMath {
    * @param b The second NDArray to multiply element-wise.
    */
   multiply(a: NDArray, b: NDArray): NDArray {
-    util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('multiply', () => this.multiplyInternal(a, b));
   }
   protected abstract multiplyInternal<T extends NDArray>(a: T, b: T): T;
@@ -1003,7 +1003,7 @@ export abstract class NDArrayMath {
    * @param b The second NDArray to divide element-wise.
    */
   divide(a: NDArray, b: NDArray): NDArray {
-    util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('divide', () => this.divideInternal(a, b));
   }
   protected abstract divideInternal(a: NDArray, b: NDArray): NDArray;

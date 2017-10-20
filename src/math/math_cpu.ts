@@ -237,7 +237,7 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T {
-    const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    const newShape = util.assertAndGetBroadcastShape(a.shape, b.shape);
     const result = NDArray.zeros(newShape);
     const newValues = result.getValues();
     const aValues = a.getValues();
@@ -245,18 +245,18 @@ export class NDArrayMathCPU extends NDArrayMath {
     const c1Val = c1.get();
     const c2Val = c2.get();
 
-    const aBroadcastedDims = util.getBroadcastedDims(a.shape, newShape);
-    const bBroadcastedDims = util.getBroadcastedDims(b.shape, newShape);
+    const aBroadcastDims = util.getBroadcastDims(a.shape, newShape);
+    const bBroadcastDims = util.getBroadcastDims(b.shape, newShape);
 
     for (let i = 0; i < newValues.length; ++i) {
       const loc = result.indexToLoc(i);
 
       const aLoc = loc.slice(-a.rank);
-      aBroadcastedDims.forEach(d => aLoc[aLoc.length - d - 1] = 0);
+      aBroadcastDims.forEach(d => aLoc[d] = 0);
       const aIndex = a.locToIndex(aLoc);
 
       const bLoc = loc.slice(-b.rank);
-      bBroadcastedDims.forEach(d => bLoc[bLoc.length - d - 1] = 0);
+      bBroadcastDims.forEach(d => bLoc[d] = 0);
       const bIndex = b.locToIndex(bLoc);
 
       newValues[i] = c1Val * aValues[aIndex] + c2Val * bValues[bIndex];
@@ -315,7 +315,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected multiplyInternal<T extends NDArray>(a: T, b: T): T {
-    const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    const newShape = util.assertAndGetBroadcastShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
     const aValues = a.getValues();
@@ -327,7 +327,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected divideInternal<T extends NDArray>(a: T, b: T): T {
-    const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    const newShape = util.assertAndGetBroadcastShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
     const aValues = a.getValues();
@@ -420,26 +420,31 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected equalInternal(a: NDArray, b: NDArray): NDArray<'bool'> {
-    const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    const newShape = util.assertAndGetBroadcastShape(a.shape, b.shape);
     const result = NDArray.zeros(newShape, 'bool');
     const newValues = result.getValues();
     const aValues = a.getValues();
     const bValues = b.getValues();
-    const aBroadcastedDims = util.getBroadcastedDims(a.shape, newShape);
-    const bBroadcastedDims = util.getBroadcastedDims(b.shape, newShape);
-
+    const aBroadcastDims = util.getBroadcastDims(a.shape, newShape);
+    const bBroadcastDims = util.getBroadcastDims(b.shape, newShape);
     for (let i = 0; i < newValues.length; ++i) {
       const loc = result.indexToLoc(i);
 
       const aLoc = loc.slice(-a.rank);
-      aBroadcastedDims.forEach(d => aLoc[aLoc.length - d - 1] = 0);
+      aBroadcastDims.forEach(d => aLoc[d] = 0);
       const aIndex = a.locToIndex(aLoc);
 
       const bLoc = loc.slice(-b.rank);
-      bBroadcastedDims.forEach(d => bLoc[bLoc.length - d - 1] = 0);
+      bBroadcastDims.forEach(d => bLoc[d] = 0);
       const bIndex = b.locToIndex(bLoc);
 
-      newValues[i] = (aValues[aIndex] === bValues[bIndex]) ? 1 : 0;
+      const aVal = aValues[aIndex];
+      const bVal = bValues[bIndex];
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        newValues[i] = util.getNaN(result.dtype);
+      } else {
+        newValues[i] = (aVal === bVal) ? 1 : 0;
+      }
     }
     return result;
   }

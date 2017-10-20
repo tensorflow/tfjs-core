@@ -621,8 +621,8 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('math.equal', [tests]);
-  test_util.describeMathGPU('math.equal', [tests], [
+  test_util.describeMathCPU('equal', [tests]);
+  test_util.describeMathGPU('equal', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

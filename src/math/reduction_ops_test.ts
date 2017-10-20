@@ -242,21 +242,21 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([5, 0, 3, 7, 3]);
       const b = Array1D.new([-100.3, -20.0, -10.0, -5, -100]);
       const result = math.argMaxEquals(a, b);
-      test_util.expectNumbersClose(result.get(), 1);
+      expect(result.get()).toBe(1);
     });
 
     it('not equals', math => {
       const a = Array1D.new([5, 0, 3, 1, 3]);
       const b = Array1D.new([-100.3, -20.0, -10.0, -5, 0]);
       const result = math.argMaxEquals(a, b);
-      test_util.expectNumbersClose(result.get(), 0);
+      expect(result.get()).toBe(0);
     });
 
     it('propagates NaNs', math => {
       const a = Array1D.new([0, 3, 1, 3]);
       const b = Array1D.new([NaN, -20.0, -10.0, -5]);
       const result = math.argMaxEquals(a, b);
-      expect(result.get()).toEqual(NaN);
+      test_util.assertIsNan(result.get(), result.dtype);
     });
 
     it('throws when given arrays of different shape', math => {
@@ -268,9 +268,9 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
   test_util.describeMathCPU('argMaxEquals', [tests]);
   test_util.describeMathGPU('argMaxEquals', [tests], [
-    // {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    // {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
 

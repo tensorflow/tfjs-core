@@ -90,54 +90,54 @@ describe('Util', () => {
   });
 });
 
-describe('util.getBroadcastedShape', () => {
+describe('util.getBroadcastShape', () => {
   it('two scalars', () => {
-    const res = util.assertAndGetBroadcastedShape([], []);
+    const res = util.assertAndGetBroadcastShape([], []);
     expect(res).toEqual([]);
   });
 
   it('scalar and 1d', () => {
-    const res = util.assertAndGetBroadcastedShape([6], []);
+    const res = util.assertAndGetBroadcastShape([6], []);
     expect(res).toEqual([6]);
   });
 
   it('scalar and 2d', () => {
-    const res = util.assertAndGetBroadcastedShape([2, 6], []);
+    const res = util.assertAndGetBroadcastShape([2, 6], []);
     expect(res).toEqual([2, 6]);
   });
 
   it('1d and 2d', () => {
-    const res = util.assertAndGetBroadcastedShape([6], [2, 6]);
+    const res = util.assertAndGetBroadcastShape([6], [2, 6]);
     expect(res).toEqual([2, 6]);
   });
 
   it('2d and 3d', () => {
-    const res = util.assertAndGetBroadcastedShape([2, 6], [7, 2, 6]);
+    const res = util.assertAndGetBroadcastShape([2, 6], [7, 2, 6]);
     expect(res).toEqual([7, 2, 6]);
   });
 
   it('3d and 3d', () => {
-    const res = util.assertAndGetBroadcastedShape([1, 1, 6], [7, 2, 6]);
+    const res = util.assertAndGetBroadcastShape([1, 1, 6], [7, 2, 6]);
     expect(res).toEqual([7, 2, 6]);
   });
 
   it('incompatible inner shape', () => {
-    const f = () => util.assertAndGetBroadcastedShape([7, 2, 5], [7, 2, 6]);
+    const f = () => util.assertAndGetBroadcastShape([7, 2, 5], [7, 2, 6]);
     expect(f).toThrowError();
   });
 
   it('incompatible middle shape', () => {
-    const f = () => util.assertAndGetBroadcastedShape([7, 3, 6], [7, 2, 6]);
+    const f = () => util.assertAndGetBroadcastShape([7, 3, 6], [7, 2, 6]);
     expect(f).toThrowError();
   });
 
   it('compatible with broadcasting support', () => {
-    const res = util.assertAndGetBroadcastedShape([7, 1, 1], [7, 1, 1]);
+    const res = util.assertAndGetBroadcastShape([7, 1, 1], [7, 1, 1]);
     expect(res).toEqual([7, 1, 1]);
   });
 
   it('3d and 3d, each gets broadcasted', () => {
-    const res = util.assertAndGetBroadcastedShape([4, 1, 7], [1, 3, 1]);
+    const res = util.assertAndGetBroadcastShape([4, 1, 7], [1, 3, 1]);
     expect(res).toEqual([4, 3, 7]);
   });
 });

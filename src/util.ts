@@ -184,7 +184,7 @@ export function createShuffledIndices(n: number): Uint32Array {
   return shuffledIndices;
 }
 
-export function assertAndGetBroadcastedShape(
+export function assertAndGetBroadcastShape(
     shapeA: number[], shapeB: number[]): number[] {
   const result: number[] = [];
   const errMsg = `Operands could not be broadcast together with shapes ` +
@@ -202,19 +202,28 @@ export function assertAndGetBroadcastedShape(
   return result;
 }
 
-export function getBroadcastedDims(
+export function getBroadcastDims(
     inShape: number[], outShape: number[]): number[] {
   const inRank = inShape.length;
   const dims: number[] = [];
   for (let i = 0; i < inRank; i++) {
-    const a = inShape[inRank - 1 - i] || 1;
+    const dim = inRank - 1 - i;
+    const a = inShape[dim] || 1;
     const b = outShape[outShape.length - 1 - i] || 1;
-
     if (b > 1 && a === 1) {
-      dims.push(i);
+      dims.unshift(dim);
     }
   }
   return dims;
+}
+
+export function broadcastDimsAreOuter(dims: number[]): boolean {
+  for (let i = 0; i < dims.length; i++) {
+    if (dims[i] !== i) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function rightPad(a: string, size: number): string {

@@ -30,19 +30,19 @@ export class BatchNormProgram implements GPGPUProgram {
       offsetShape: number[]|null, scaleShape: number[]|null,
       varianceEpsilon: number) {
     this.variableNames = ['x', 'mean', 'variance'];
-    util.assertAndGetBroadcastedShape(xShape, meanShape);
-    util.assertAndGetBroadcastedShape(xShape, varianceShape);
+    util.assertAndGetBroadcastShape(xShape, meanShape);
+    util.assertAndGetBroadcastShape(xShape, varianceShape);
 
     let offsetSnippet = '0.0';
     if (offsetShape != null) {
-      util.assertAndGetBroadcastedShape(xShape, offsetShape);
+      util.assertAndGetBroadcastShape(xShape, offsetShape);
       this.variableNames.push('offset');
       offsetSnippet = 'getOffsetAtOutCoords()';
     }
 
     let scaleSnippet = '1.0';
     if (scaleShape != null) {
-      util.assertAndGetBroadcastedShape(xShape, scaleShape);
+      util.assertAndGetBroadcastShape(xShape, scaleShape);
       this.variableNames.push('scale');
       scaleSnippet = 'getScaleAtOutCoords()';
     }
