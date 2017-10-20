@@ -15,17 +15,12 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
-import {NDArrayMathGPU, Scalar} from '../deeplearn';
+import {version} from './index';
 
-async function onePlusOne() {
-  const math = new NDArrayMathGPU();
-  const a = Scalar.new(1);
-  const b = Scalar.new(1);
-
-  const result = await math.add(a, b).data();
-
-  document.getElementById('output').innerText = '' + result;
-}
-
-onePlusOne();
+describe('version', () => {
+  it('version is contained', () => {
+    // tslint:disable-next-line:no-require-imports
+    const expected = require('../package.json').version;
+    expect(version).toBe(expected);
+  });
+});

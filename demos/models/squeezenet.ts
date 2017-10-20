@@ -60,7 +60,7 @@ export class SqueezeNet {
     const avgpool10 = this.math.scope((keep) => {
       // Preprocess the input.
       const preprocessedInput =
-          this.math.sub(input, this.preprocessOffset) as Array3D;
+          this.math.subtract(input, this.preprocessOffset) as Array3D;
 
       const conv1 = this.math.conv2d(
           preprocessedInput, this.variables['conv1_W:0'] as Array4D,
@@ -143,11 +143,12 @@ export class SqueezeNet {
    * @param logits Pre-softmax logits array.
    * @param topK How many top classes to return.
    */
-  getTopKClasses(logits: Array1D, topK: number): {[className: string]: number} {
+  async getTopKClasses(logits: Array1D, topK: number):
+      Promise<{[className: string]: number}> {
     const predictions = this.math.softmax(logits);
     const topk = new NDArrayMathCPU().topK(predictions, topK);
-    const topkIndices = topk.indices.getValues();
-    const topkValues = topk.values.getValues();
+    const topkIndices = await topk.indices.data();
+    const topkValues = await topk.values.data();
 
     const topClassesToProbability: {[className: string]: number} = {};
     for (let i = 0; i < topkIndices.length; i++) {

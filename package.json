@@ -1,6 +1,6 @@
 {
   "name": "deeplearn",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/src/index.js",
@@ -40,7 +40,8 @@
     "prep": "npm install && bower install && mkdirp dist",
     "build": "tsc",
     "test": "karma start",
-    "lint": "tslint -p . --type-check -t verbose"
+    "lint": "tslint -p . --type-check -t verbose",
+    "make-version": "./scripts/make-version"
   },
   "dependencies": {
     "seedrandom": "~2.4.3"
