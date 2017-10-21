@@ -28,7 +28,8 @@ import {DType, TypedArray} from './util';
 export const TEST_EPSILON = 1e-2;
 
 export function expectArraysClose(
-    actual: TypedArray, expected: TypedArray, epsilon = TEST_EPSILON) {
+    actual: TypedArray|number[], expected: TypedArray|number[],
+    epsilon = TEST_EPSILON) {
   const aType = actual.constructor.name;
   const bType = expected.constructor.name;
 

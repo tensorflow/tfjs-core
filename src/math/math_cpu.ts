@@ -587,13 +587,19 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected reluInternal<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      resultValues[i] = Math.max(0, values[i]);
+  protected reluInternal<T extends NDArray>(input: T): T {
+    const res = NDArray.zeros(input.shape, input.dtype);
+    const resVals = res.getValues();
+    const inVals = input.getValues();
+    for (let i = 0; i < inVals.length; ++i) {
+      const val = inVals[i];
+      if (util.isValNaN(val, input.dtype)) {
+        resVals[i] = util.getNaN(res.dtype);
+      } else {
+        resVals[i] = Math.max(0, inVals[i]);
+      }
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return res as T;
   }
 
   protected clipInternal<T extends NDArray>(
