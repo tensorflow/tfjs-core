@@ -96,8 +96,8 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     if (data.values != null) {
       util.assert(
           this.size === data.values.length,
-          'Constructing ndarray of shape (' + this.size + ') should match the' +
-              ' length of values (' + data.values.length + ')');
+          `Constructing ndarray of shape (${this.size}) should match the` +
+              ` length of values (${data.values.length})`);
     }
 
     this.shape = shape;
@@ -207,7 +207,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * @returns {Array1D}
    */
   flatten(): Array1D<T> {
-    if(this instanceof Array1D){
+    if (this instanceof Array1D) {
       return this;
     }
     return this.as1D();
@@ -831,7 +831,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
 }
 
 function copyTypedArray<T extends keyof DataTypes>(
-    array: DataTypes[T]|number[]|boolean[], dtype: T): DataTypes[T] {
+    array: DataTypes[T] | number[] | boolean[], dtype: T): DataTypes[T] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {

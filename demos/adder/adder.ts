@@ -27,7 +27,7 @@ export async function execute(event?: Event) {
   const a = Scalar.new(+inA.value);
   const b = Scalar.new(+inB.value);
 
-  outputElement.innerText = '' + await math.add(a, b).data();
+  outputElement.innerText = await math.add(a, b).data().toString();
 }
 
 inA.addEventListener('keyup', execute);
