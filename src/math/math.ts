@@ -1757,6 +1757,8 @@ export abstract class NDArrayMath {
    *     2D array of shape `[batchSize, numOutcomes]`.
    * @param numSamples Number of samples to draw for each row slice.
    * @param seed Optional. The seed number.
+   * @return 1D array of shape `[numSamples]`, or 2D array of shape
+   *     `[batchSize, numSamples]`, depending on the rank of the input.
    */
   multinomial(
       probabilities: Array1D|Array2D, numSamples: number,
@@ -1769,16 +1771,22 @@ export abstract class NDArrayMath {
     }
     if (probabilities.rank > 2) {
       throw new Error(
-          `rank of probabilities must be 1 or 2, but is ${probabilities.rank}`);
+          `Rank of probabilities must be 1 or 2, but is ${probabilities.rank}`);
     }
     seed = seed || Math.random();
+    const origRank = probabilities.rank;
+
     if (probabilities.rank === 1) {
       probabilities = probabilities.as2D(1, -1);
     }
-    return this.executeOp(
-        'multinomial',
-        () => this.multinomialInternal(
-            probabilities as Array2D, numSamples, seed));
+    return this.executeOp('multinomial', () => {
+      const res =
+          this.multinomialInternal(probabilities as Array2D, numSamples, seed);
+      if (origRank === 1) {
+        return res.as1D();
+      }
+      return res;
+    });
   }
   protected abstract multinomialInternal(
       probabilities: Array2D, numSamples: number,

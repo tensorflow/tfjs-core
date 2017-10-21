@@ -1114,33 +1114,38 @@ export class NDArrayMathCPU extends NDArrayMath {
   protected multinomialInternal(
       probabilities: Array2D, numSamples: number,
       seed: number): Array2D<'int32'> {
+    const batchSize = probabilities.shape[0];
+    const numEvents = probabilities.shape[1];
+    const res = Array2D.zeros([batchSize, numSamples], 'int32');
+    const resVals = res.getValues();
     const probVals = probabilities.getValues();
 
-    const res = Array2D.zeros([probabilities.shape[0], numSamples]);
-    // The cdf won't include the last event. It will be implicit if not other
-    // event happened.
-    const cdf = new Float32Array(probabilities.size - 1);
-    cdf[0] = probVals[0];
-    for (let event = 1; event < cdf.length; ++event) {
-      cdf[event] = cdf[event - 1] + probVals[event];
-    }
-    const random = seedrandom.alea(seed.toString());
-    const res = new Float32Array(numSamples);
+    for (let b = 0; b < batchSize; ++b) {
+      const offset = b * numEvents;
+      // The cdf won't include the last event. It will be implicit if no other
+      // event happened.
+      const cdf = new Float32Array(numEvents - 1);
+      cdf[0] = probVals[offset];
+      for (let event = 1; event < cdf.length; ++event) {
+        cdf[event] = cdf[event - 1] + probVals[offset + event];
+      }
 
-    for (let i = 0; i < numSamples; ++i) {
-      const r = random();
+      const random = seedrandom.alea(seed.toString());
+      const outOffset = b * numSamples;
+      for (let sampleId = 0; sampleId < numSamples; ++sampleId) {
+        const r = random();
 
-      // Assume last event happened by default.
-      res[i] = cdf.length;
+        // Assume last event happened by default.
+        resVals[outOffset + sampleId] = cdf.length;
 
-      for (let event = 0; event < cdf.length; event++) {
-        if (r < cdf[event]) {
-          res[i] = event;
-          break;
+        for (let event = 0; event < cdf.length; event++) {
+          if (r < cdf[event]) {
+            resVals[outOffset + sampleId] = event;
+            break;
+          }
         }
       }
     }
-
     return res;
   }
 

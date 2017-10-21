@@ -455,10 +455,14 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected multinomialInternal(
-      probs: Array1D, numSamples: number, seed: number): Array1D {
-    const program = new MultinomialProgram(probs.size, numSamples);
+      probs: Array2D, numSamples: number, seed: number): Array2D<'int32'> {
+    const batchSize = probs.shape[0];
+    const numOutcomes = probs.shape[1];
+    const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);
+    const output =
+        this.makeOutputArray(program.outputShape, 'int32') as Array2D<'int32'>;
     const customSetup = program.getCustomSetupFunc(seed);
-    return this.compileAndRun(program, [probs], null, customSetup);
+    return this.compileAndRun(program, [probs], output, customSetup);
   }
 
   protected oneHotInternal(
