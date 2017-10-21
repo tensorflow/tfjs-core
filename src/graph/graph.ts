@@ -465,10 +465,9 @@ export class ReshapeNode extends Node {
     const shapeSize = util.sizeFromShape(this.shape);
     util.assert(
         xSize === shapeSize,
-        'Error making reshape operation: input Tensor to reshape \'' +
-            this.name + '\' of shape (' + this.x.shape.toString() +
-            ') does not match size of requested shape ' +
-            this.shape.toString() + '.');
+        `Error making reshape operation: input to reshape '${this.name}'` +
+            ` of shape (${this.x.shape}) does not match size of ` +
+            `requested shape ${this.shape}.`);
   }
 }
 

@@ -661,10 +661,9 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private setupDatasetStats() {
     this.datasetStats = this.dataSet.getStats();
     this.statsExampleCount = this.datasetStats[IMAGE_DATA_INDEX].exampleCount;
-    this.statsInputRange = [
-      this.datasetStats[IMAGE_DATA_INDEX].inputMin,
-      this.datasetStats[IMAGE_DATA_INDEX].inputMax
-    ].toString();
+    this.statsInputRange =
+        `[${this.datasetStats[IMAGE_DATA_INDEX].inputMin}, ` +
+        `${this.datasetStats[IMAGE_DATA_INDEX].inputMax}]`;
     this.statsInputShapeDisplay = model_builder_util.getDisplayShape(
         this.datasetStats[IMAGE_DATA_INDEX].shape);
     this.statsLabelShapeDisplay = model_builder_util.getDisplayShape(
