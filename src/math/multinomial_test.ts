@@ -71,7 +71,7 @@ const tests: MathTests = it => {
   });
 
   it('Flip 2 three-sided coins, each coin is 100% biases', math => {
-    const probs = Array2D.new([3, 2], [[0, 0, 1], [0, 1, 0], [1, 0, 0]]);
+    const probs = Array2D.new([3, 3], [[0, 0, 1], [0, 1, 0], [1, 0, 0]]);
     const numSamples = 20;
     const result = math.multinomial(probs, numSamples);
     expect(result.dtype).toBe('int32');
