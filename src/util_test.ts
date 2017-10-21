@@ -187,3 +187,61 @@ describe('util.randGauss', () => {
     }
   });
 });
+
+describe('util.getNaN', () => {
+  it('float32', () => {
+    expect(isNaN(util.getNaN('float32'))).toBe(true);
+  });
+
+  it('int32', () => {
+    expect(util.getNaN('int32')).toBe(util.NAN_INT32);
+  });
+
+  it('bool', () => {
+    expect(util.getNaN('bool')).toBe(util.NAN_BOOL);
+  });
+
+  it('unknown type throws error', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => util.getNaN('hello' as any)).toThrowError();
+  });
+});
+
+describe('util.isValNaN', () => {
+  it('NaN for float32', () => {
+    expect(util.isValNaN(NaN, 'float32')).toBe(true);
+  });
+
+  it('2 for float32', () => {
+    expect(util.isValNaN(3, 'float32')).toBe(false);
+  });
+
+  it('255 for float32', () => {
+    expect(util.isValNaN(255, 'float32')).toBe(false);
+  });
+
+  it('255 for int32', () => {
+    expect(util.isValNaN(255, 'int32')).toBe(false);
+  });
+
+  it('NAN_INT32 for int32', () => {
+    expect(util.isValNaN(util.NAN_INT32, 'int32')).toBe(true);
+  });
+
+  it('NAN_INT32 for bool', () => {
+    expect(util.isValNaN(util.NAN_INT32, 'bool')).toBe(false);
+  });
+
+  it('NAN_BOOL for bool', () => {
+    expect(util.isValNaN(util.NAN_BOOL, 'bool')).toBe(true);
+  });
+
+  it('2 for bool', () => {
+    expect(util.isValNaN(2, 'bool')).toBe(false);
+  });
+
+  it('throws error for unknown dtype', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => util.isValNaN(0, 'hello' as any)).toThrowError();
+  });
+});

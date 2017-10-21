@@ -283,10 +283,11 @@ export type DType = 'float32'|'int32'|'bool';
 
 export const NAN_INT32 = 1 << 31;
 export const NAN_BOOL = 255;
+export const NAN_FLOAT32 = NaN;
 
 export function getNaN(dtype: DType): number {
   if (dtype === 'float32') {
-    return NaN;
+    return NAN_FLOAT32;
   } else if (dtype === 'int32') {
     return NAN_INT32;
   } else if (dtype === 'bool') {
