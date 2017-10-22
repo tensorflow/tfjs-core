@@ -260,6 +260,7 @@ export abstract class NDArrayMath {
     }
     const result = f();
     if (this.debugMode) {
+      const vals = result.getValues();
       const time = util.rightPad((performance.now() - start) + 'ms', 9);
       const paddedName = util.rightPad(name, 25);
       const rank = result.rank;
@@ -268,7 +269,7 @@ export abstract class NDArrayMath {
       console.log(
           `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
           'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      this.checkForNaN(result.getValues(), result.dtype, name);
+      this.checkForNaN(vals, result.dtype, name);
     }
     return this.track(result);
   }

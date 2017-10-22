@@ -238,32 +238,11 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T {
-    const newShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const result = NDArray.zeros(newShape);
-    const newValues = result.getValues();
-    const aValues = a.getValues();
-    const bValues = b.getValues();
     const c1Val = c1.get();
     const c2Val = c2.get();
-
-    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
-    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
-
-    for (let i = 0; i < newValues.length; ++i) {
-      const loc = result.indexToLoc(i);
-
-      const aLoc = loc.slice(-a.rank);
-      aBroadcastDims.forEach(d => aLoc[d] = 0);
-      const aIndex = a.locToIndex(aLoc);
-
-      const bLoc = loc.slice(-b.rank);
-      bBroadcastDims.forEach(d => bLoc[d] = 0);
-      const bIndex = b.locToIndex(bLoc);
-
-      newValues[i] = c1Val * aValues[aIndex] + c2Val * bValues[bIndex];
-    }
-    return result as T;
+    return this.broadcastedBinaryOp(a, b, 'float32', (aVal, bVal) => {
+      return c1Val * aVal + c2Val * bVal;
+    }) as T;
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
@@ -424,34 +403,13 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected equalInternal(a: NDArray, b: NDArray): NDArray<'bool'> {
-    const newShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const result = NDArray.zeros(newShape, 'bool');
-    const newValues = result.getValues();
-    const aValues = a.getValues();
-    const bValues = b.getValues();
-    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
-    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
-    for (let i = 0; i < newValues.length; ++i) {
-      const loc = result.indexToLoc(i);
-
-      const aLoc = loc.slice(-a.rank);
-      aBroadcastDims.forEach(d => aLoc[d] = 0);
-      const aIndex = a.locToIndex(aLoc);
-
-      const bLoc = loc.slice(-b.rank);
-      bBroadcastDims.forEach(d => bLoc[d] = 0);
-      const bIndex = b.locToIndex(bLoc);
-
-      const aVal = aValues[aIndex];
-      const bVal = bValues[bIndex];
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
-        newValues[i] = util.getNaN(result.dtype);
+        return util.getNaN('bool');
       } else {
-        newValues[i] = (aVal === bVal) ? 1 : 0;
+        return (aVal === bVal) ? 1 : 0;
       }
-    }
-    return result;
+    });
   }
 
   protected topKInternal(ndarray: NDArray, k: number):
@@ -1165,5 +1123,34 @@ export class NDArrayMathCPU extends NDArrayMath {
       res[event * depth + indices.get(event)] = onValue;
     }
     return Array2D.new([indices.size, depth], res);
+  }
+
+  private broadcastedBinaryOp<D extends keyof DataTypes>(
+      a: NDArray, b: NDArray, dtype: D,
+      op: (a: number, b: number) => number): NDArray<D> {
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const result = NDArray.zeros(newShape, dtype);
+    const newValues = result.getValues();
+    const aValues = a.getValues();
+    const bValues = b.getValues();
+
+    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
+    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
+
+    for (let i = 0; i < newValues.length; ++i) {
+      const loc = result.indexToLoc(i);
+
+      const aLoc = loc.slice(-a.rank);
+      aBroadcastDims.forEach(d => aLoc[d] = 0);
+      const aIndex = a.locToIndex(aLoc);
+
+      const bLoc = loc.slice(-b.rank);
+      bBroadcastDims.forEach(d => bLoc[d] = 0);
+      const bIndex = b.locToIndex(bLoc);
+
+      newValues[i] = op(aValues[aIndex], bValues[bIndex]);
+    }
+    return result;
   }
 }

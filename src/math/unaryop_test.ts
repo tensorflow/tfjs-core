@@ -70,6 +70,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const result = math.relu(a);
 
+      expect(result.dtype).toBe('float32');
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([1, 0, 0, 3, 0, NaN]));
 
@@ -81,6 +82,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const result = math.relu(a);
 
+      expect(result.dtype).toBe('int32');
       test_util.expectArraysClose(
           result.getValues(), new Int32Array([1, 0, 0, 3, 0, util.NAN_INT32]));
 
@@ -92,6 +94,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const result = math.relu(a);
 
+      expect(result.dtype).toBe('bool');
       test_util.expectArraysClose(
           result.getValues(), new Uint8Array([1, 0, 0, 1, 0, util.NAN_BOOL]));
 

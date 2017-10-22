@@ -22,7 +22,7 @@
  * The returned dimensions are 0-indexed and sorted. An example:
  * inShape = [4, 1, 3]
  * outShape = [5, 4, 3, 3]
- * result = [1]. Dimension 1 (2nd dimension of input) gets broadcasted 1 => 4.
+ * result = [1]. Dimension 1 (2nd dimension of input) gets broadcasted 1 => 3.
  */
 export function getBroadcastDims(
     inShape: number[], outShape: number[]): number[] {

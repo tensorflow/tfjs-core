@@ -139,6 +139,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('Array1D', math => {
       const a = Array1D.new([1, 0, 3, 2]);
       const result = math.argMax(a);
+      expect(result.dtype).toBe('int32');
       expect(result.get()).toBe(2);
 
       a.dispose();
@@ -147,6 +148,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('one value', math => {
       const a = Array1D.new([10]);
       const result = math.argMax(a);
+      expect(result.dtype).toBe('int32');
       expect(result.get()).toBe(0);
 
       a.dispose();
@@ -155,6 +157,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('propagates NaNs', math => {
       const a = Array1D.new([5, 0, 3, NaN, 3]);
       const res = math.argMax(a);
+      expect(res.dtype).toBe('int32');
       test_util.assertIsNan(res.get(), res.dtype);
       a.dispose();
     });
@@ -172,6 +175,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('2D, axis=1', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.argMax(a, 1);
+      expect(r.dtype).toBe('int32');
       expect(r.getValues()).toEqual(new Int32Array([2, 0]));
     });
   };

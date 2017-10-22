@@ -842,7 +842,7 @@ function copyTypedArray<T extends keyof DataTypes>(
       const val = array[i];
       if (util.isValNaN(val as number, 'bool')) {
         bool[i] = util.getNaN('bool');
-      } else if (array[i]) {
+      } else if (val) {
         bool[i] = 1;
       }
     }
