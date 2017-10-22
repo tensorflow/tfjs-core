@@ -68,14 +68,14 @@ export abstract class PoolBenchmark extends BenchmarkTest {
 }
 
 export class PoolCPUBenchmark extends PoolBenchmark {
-  run(size: number): Promise<number> {
+  run(size: number, option: string): Promise<number> {
     const math = new NDArrayMathCPU();
     const outputDepth = this.params.depth;
     const xShape: [number, number, number] = [size, size, outputDepth];
     const fieldSize = this.params.fieldSize;
     const stride = this.params.stride;
     const zeroPad = conv_util.computeDefaultPad(xShape, fieldSize, stride);
-    const op = this.getPoolingOp(this.params.type, math);
+    const op = this.getPoolingOp(option, math);
 
     const x = Array3D.randUniform(xShape, -1, 1);
 
