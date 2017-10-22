@@ -25,6 +25,11 @@ module.exports = function(config) {
     karmaTypescriptConfig: {tsconfig: 'tsconfig.json'},
     reporters: ['progress', 'karma-typescript'],
     browsers: ['Chrome', 'Firefox'],
+    plugins: ['karma-browserstack-launcher'],
+    browserStack: {
+      username: process.env.BROWSERSTACK_USERNAME,
+      accessKey: process.env.BROWSERSTACK_KEY
+    },
     client: {
       args: ['--grep', config.grep || '']
     }
