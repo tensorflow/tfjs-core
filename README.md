@@ -23,8 +23,8 @@ npm install deeplearn
 
 #### TypeScript / ES6 JavaScript
 See the [TypeScript starter project](./starter/typescript/) and the
-[ES6 starter project](./starter/es6/) to get you quickly started. They contains a short example that sums an array with a
-scalar (broadcasted):
+[ES6 starter project](./starter/es6/) to get you quickly started. They contain a
+short example that sums an array with a scalar (broadcasted):
 
 ```ts
 import {Array1D, NDArrayMathGPU, Scalar} from 'deeplearn';
