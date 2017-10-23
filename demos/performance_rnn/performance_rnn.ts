@@ -14,10 +14,10 @@ limitations under the License.
 ==============================================================================*/
 
 // tslint:disable-next-line:max-line-length
-import { Array1D, Array2D, CheckpointLoader, NDArray, NDArrayMath, NDArrayMathGPU, Scalar } from '../deeplearn';
+import {Array1D, Array2D, CheckpointLoader, NDArray, NDArrayMath, NDArrayMathGPU, Scalar} from '../deeplearn';
 import * as demo_util from '../util';
 
-import { KeyboardElement } from './keyboard_element';
+import {KeyboardElement} from './keyboard_element';
 
 // tslint:disable-next-line:no-require-imports
 const Piano = require('tone-piano').Piano;
@@ -92,19 +92,19 @@ let lastSample = Scalar.new(PRIMER_IDX);
 const container = document.querySelector('#keyboard');
 const keyboardInterface = new KeyboardElement(container);
 
-const piano = new Piano({ velocities: 4 }).toMaster();
+const piano = new Piano({velocities: 4}).toMaster();
 
 const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
-  'Piano/Salamander/';
+    'Piano/Salamander/';
 const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
-  'checkpoint_zoo/performance_rnn';
+    'checkpoint_zoo/performance_rnn';
 
 const isDeviceSupported = demo_util.isWebGLSupported() && !demo_util.isSafari();
 
 if (!isDeviceSupported) {
   document.querySelector('#status').innerHTML =
-    'We do not yet support your device. Please try on a desktop ' +
-    'computer with Chrome/Firefox, or an Android phone with WebGL support.';
+      'We do not yet support your device. Please try on a desktop ' +
+      'computer with Chrome/Firefox, or an Android phone with WebGL support.';
 } else {
   start();
 }
@@ -113,34 +113,34 @@ const math = new NDArrayMathGPU();
 
 function start() {
   piano.load(SALAMANDER_URL)
-    .then(() => {
-      const reader = new CheckpointLoader(CHECKPOINT_URL);
-      return reader.getAllVariables();
-    })
-    .then((vars: { [varName: string]: NDArray }) => {
-      document.querySelector('#status').classList.add('hidden');
-      document.querySelector('#controls').classList.remove('hidden');
-      document.querySelector('#keyboard').classList.remove('hidden');
+      .then(() => {
+        const reader = new CheckpointLoader(CHECKPOINT_URL);
+        return reader.getAllVariables();
+      })
+      .then((vars: {[varName: string]: NDArray}) => {
+        document.querySelector('#status').classList.add('hidden');
+        document.querySelector('#controls').classList.remove('hidden');
+        document.querySelector('#keyboard').classList.remove('hidden');
 
-      lstmKernel1 =
-        vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
-      lstmBias1 =
-        vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
+        lstmKernel1 =
+            vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
+        lstmBias1 =
+            vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
 
-      lstmKernel2 =
-        vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
-      lstmBias2 =
-        vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
+        lstmKernel2 =
+            vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
+        lstmBias2 =
+            vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
 
-      lstmKernel3 =
-        vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
-      lstmBias3 =
-        vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
+        lstmKernel3 =
+            vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
+        lstmBias3 =
+            vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
 
-      fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
-      fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
-      resetRnn();
-    });
+        fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
+        fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+        resetRnn();
+      });
 }
 
 function resetRnn() {
@@ -160,7 +160,7 @@ function resetRnn() {
   lastSample = Scalar.new(PRIMER_IDX);
   currentTime = piano.now();
   currentLoopId++;
-  generateStep(currentLoopId);
+  // generateStep(currentLoopId);
 }
 
 window.addEventListener('resize', resize);
@@ -172,16 +172,16 @@ function resize() {
 resize();
 
 const densityControl =
-  document.getElementById('note-density') as HTMLInputElement;
+    document.getElementById('note-density') as HTMLInputElement;
 const densityDisplay = document.getElementById('note-density-display');
 const conditioningOffElem =
-  document.getElementById('conditioning-off') as HTMLInputElement;
+    document.getElementById('conditioning-off') as HTMLInputElement;
 conditioningOffElem.onchange = updateConditioningParams;
 const conditioningOnElem =
-  document.getElementById('conditioning-on') as HTMLInputElement;
+    document.getElementById('conditioning-on') as HTMLInputElement;
 conditioningOnElem.onchange = updateConditioningParams;
 const conditioningControlsElem =
-  document.getElementById('conditioning-controls') as HTMLDivElement;
+    document.getElementById('conditioning-controls') as HTMLDivElement;
 
 const pitchHistogramElements = [
   document.getElementById('pitch-c'),
@@ -252,9 +252,9 @@ function updateConditioningParams() {
   }
 
   window.location.assign(
-    '#' + densityControl.value + '|' + pitchHistogram.join(',') + '|' +
-    preset1.join(',') + '|' + preset2.join(',') + '|' +
-    (conditioningOff ? '1' : '0'));
+      '#' + densityControl.value + '|' + pitchHistogram.join(',') + '|' +
+      preset1.join(',') + '|' + preset2.join(',') + '|' +
+      (conditioningOff ? '1' : '0'));
 
   const noteDensityIdx = parseInt(densityControl.value, 10) || 0;
   const noteDensity = DENSITY_BIN_RANGES[noteDensityIdx];
@@ -338,16 +338,16 @@ function getConditioning(math: NDArrayMath): Array1D {
   return math.scope((keep, track) => {
     if (conditioningOff) {
       const size =
-        1 + noteDensityEncoding.shape[0] + pitchHistogramEncoding.shape[0];
+          1 + noteDensityEncoding.shape[0] + pitchHistogramEncoding.shape[0];
       const conditioning = track(Array1D.zeros([size]));
       conditioning.set(1.0, 0);
       return conditioning;
     } else {
       const conditioningValues =
-        math.concat1D(noteDensityEncoding, pitchHistogramEncoding);
+          math.concat1D(noteDensityEncoding, pitchHistogramEncoding);
       return math.concat1D(
-        track(Scalar.new(0.0).as1D()),  // conditioning on.
-        conditioningValues);
+          track(Scalar.new(0.0).as1D()),  // conditioning on.
+          conditioningValues);
     }
   });
 }
@@ -359,11 +359,11 @@ async function generateStep(loopId: number) {
   }
   await math.scope(async (keep, track) => {
     const lstm1 =
-      math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
+        math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
     const lstm2 =
-      math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
+        math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
     const lstm3 =
-      math.basicLSTMCell.bind(math, forgetBias, lstmKernel3, lstmBias3);
+        math.basicLSTMCell.bind(math, forgetBias, lstmKernel3, lstmBias3);
 
     c.map(val => {
       track(val);
@@ -384,7 +384,7 @@ async function generateStep(loopId: number) {
       const conditioning = getConditioning(math);
       const input = math.concat1D(conditioning, eventInput);
       const output =
-        math.multiRNNCell([lstm1, lstm2, lstm3], input.as2D(1, -1), c, h);
+          math.multiRNNCell([lstm1, lstm2, lstm3], input.as2D(1, -1), c, h);
       c = output[0];
       h = output[1];
 
@@ -418,12 +418,12 @@ async function generateStep(loopId: number) {
 
     if (piano.now() - currentTime > MAX_GENERATION_LAG_SECONDS) {
       console.warn(
-        `Generation is ${piano.now() - currentTime} seconds behind, ` +
-        `which is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
+          `Generation is ${piano.now() - currentTime} seconds behind, ` +
+          `which is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
       currentTime = piano.now();
     }
     const delta =
-      Math.max(0, currentTime - piano.now() - GENERATION_BUFFER_SECONDS);
+        Math.max(0, currentTime - piano.now() - GENERATION_BUFFER_SECONDS);
     setTimeout(() => generateStep(loopId), delta * 1000);
   });
 }
@@ -431,24 +431,28 @@ async function generateStep(loopId: number) {
 let midi;
 let outputDevice: any;
 (async () => {
-  midi = await (window.navigator as any).requestMIDIAccess();
+  midi = await(window.navigator as any).requestMIDIAccess();
 
   console.log(midi);
   midi.outputs.forEach((output: any) => {
     console.log('out', output);
     outputDevice = output;
-    console.log("Output port [type:'" + output.type + "'] id:'" + output.id +
-      "' manufacturer:'" + output.manufacturer + "' name:'" + output.name +
-      "' version:'" + output.version + "'");
+    console.log(
+        'Output port [type:\'' + output.type + '\'] id:\'' + output.id +
+        '\' manufacturer:\'' + output.manufacturer + '\' name:\'' +
+        output.name + '\' version:\'' + output.version + '\'');
   });
-  //debugger;
+  // debugger;
 })();
 
+const gain = 0x3f;
 /**
  * Decode the output index and play it on the piano and keyboardInterface.
  */
 function playOutput(index: number) {
   let offset = 0;
+  console.log(piano.now());
+  console.log('TIME', performance.now() / 1000 - piano.now());
   for (const eventRange of EVENT_RANGES) {
     const eventType = eventRange[0] as string;
     const minValue = eventRange[1] as number;
@@ -463,15 +467,19 @@ function playOutput(index: number) {
           }, 100);
         }, (currentTime - piano.now()) * 1000);
         activeNotes.set(noteNum, currentTime);
-        outputDevice.send([0x90, noteNum, 0x7f]);
+        console.log('time: ' + currentTime);
+        outputDevice.send(
+            [0x90, noteNum, gain], Math.floor(1000 * currentTime));
         return piano.keyDown(noteNum, currentTime, currentVelocity);
       } else if (eventType === 'note_off') {
         const noteNum = index - offset;
-        console.log('note off: ' + noteNum);
-        outputDevice.send([0x80, noteNum, 0x7f]);
-        console.log(outputDevice);
-        piano.keyUp(
-          noteNum, Math.max(currentTime, activeNotes.get(noteNum) + .5));
+        const time = Math.max(currentTime, activeNotes.get(noteNum) + .5);
+        console.log('note off time: ' + time);
+        if (!isNaN(time)) {
+          outputDevice.send([0x80, noteNum, gain], Math.floor(time * 1000));
+        }
+        // console.log(outputDevice);
+        piano.keyUp(noteNum, time);
         activeNotes.delete(noteNum);
         return;
       } else if (eventType === 'time_shift') {
@@ -479,9 +487,10 @@ function playOutput(index: number) {
         activeNotes.forEach((time, noteNum) => {
           if (currentTime - time > MAX_NOTE_DURATION_SECONDS) {
             console.info(
-              `Note ${noteNum} has been active for ${currentTime - time}, ` +
-              `seconds which is over ${MAX_NOTE_DURATION_SECONDS}, will ` +
-              `release.`);
+                `Note ${noteNum} has been active for ${currentTime - time}, ` +
+                `seconds which is over ${MAX_NOTE_DURATION_SECONDS}, will ` +
+                `release.`);
+            outputDevice.send([0x80, noteNum, gain]);
             piano.keyUp(noteNum, currentTime);
             activeNotes.delete(noteNum);
           }
