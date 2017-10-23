@@ -24,12 +24,12 @@ module.exports = function(config) {
     },
     karmaTypescriptConfig: {tsconfig: 'tsconfig.json'},
     reporters: ['progress', 'karma-typescript'],
-    browsers: ['bs_chrome_mac'],
+    browsers: ['Chrome', 'Firefox'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY
     },
-    browserNoActivityTimeout: 60000,
+    browserNoActivityTimeout: 30000,
     customLaunchers: {
       bs_chrome_mac: {
         base: 'BrowserStack',
