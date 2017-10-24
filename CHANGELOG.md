@@ -11,11 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [0.3.0] - 2017-10-09
 
+Thanks @Lewuathe and @mnottheone for the implementations and @SayHelloToWorld for the bug fixes!
+
 ### API additions
 
 - 🎉 Added support for iOS 🎉 #109
 - Added optimizers (Adam, AdaGrad, AdaDelta, RMSProp). #170 #102 #183
-  Thanks @Lewuathe and @mnottheone for the implementations and @SayHelloToWorld for the bug fixes!
 - Added math.cos, math.tan, math.asin, math.acos, math.atan, math.sinh, math.cosh, math.abs #123
 - Added math.oneHot and math.multinomial #160
 - Added NDArray.getValuesAsync() which asynchronously downloads the values from the GPU #146
