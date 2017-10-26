@@ -49,7 +49,7 @@ export class ConvGPUBenchmark extends ConvBenchmark {
     const filterSize = this.params.filterSize;
     const stride = this.params.stride;
     const hasBias = true;
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConvInfo2D(
         inShape, filterSize, filterSize, outDepth, stride, stride, 'same');
     const program = new Conv2DProgram(convInfo, hasBias);
     const outputShape = program.outputShape as [number, number, number];

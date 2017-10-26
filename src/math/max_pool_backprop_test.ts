@@ -224,6 +224,10 @@ import {Array3D} from './ndarray';
       dy.dispose();
       x.dispose();
     });
+
+
+    // Tests for 1D max_pool
+
   };
 
   test_util.describeMathCPU('maxPoolBackprop', [tests]);

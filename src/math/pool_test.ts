@@ -18,9 +18,83 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array2D, Array3D} from './ndarray';
+import {Array2D, Array3D, Array4D} from './ndarray';
 
-// math.maxPool
+// math.maxPool1D
+{
+  const tests: MathTests = it => {
+    it('1x1 in, 1 filter, 1 stride: [0] => [0]', math => {
+      const a = Array2D.new([1, 1], [0]);
+
+      const result = math.maxPool1D(a, 1, 1, 'valid');
+
+      test_util.expectArraysClose(result.getValues(), new Float32Array([0]));
+    });
+
+    it('3x2 in, 2 filter, 1 stride', math => {
+      // Test valid padding.
+      const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
+
+      const result = math.maxPool1D(a, 2, 1, 'valid');
+
+      expect(result.shape).toEqual([2, 2]);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([3, 4, 5, 6]));
+    });
+    it('3x2 in, 2 filter, 1 stride', math => {
+      // Test same padding.
+      const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
+
+      const result = math.maxPool1D(a, [2], 1, 'same');
+
+      expect(result.shape).toEqual([3, 2]);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([3, 4, 5, 6, 5, 6]));
+    });
+
+    it('3x2 in, 1 stride, propagates NaNs', math => {
+      // Test NaNs.
+      const a = Array2D.new([3, 2], [1, 2, NaN, 4, 5, 6]);
+
+      const result = math.maxPool1D(a, 2, 1, 'valid');
+
+      expect(result.shape).toEqual([2, 2]);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([NaN, 4, NaN, 6]));
+    });
+
+    it('7x1 in, 2 filter, 2 stride', math => {
+      // Test Strides.
+      const a = Array2D.new([7, 1], [1, 2, 3, 4, 5, 6, 7]);
+
+      const result = math.maxPool1D(a, 2, 2, 'valid');
+
+      expect(result.shape).toEqual([3, 1]);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([2, 4, 6]));
+    });
+
+
+    it('throws when x is not rank 2', math => {
+      // tslint:disable-next-line:no-any
+      const a: any = Array3D.new([1, 3, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+      expect(() => math.maxPool1D(a, 2, 1, 'valid')).toThrowError();
+
+      a.dispose();
+    });
+  };
+
+  test_util.describeMathCPU('maxPool1D', [tests]);
+  test_util.describeMathGPU('maxPool1D', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+
+// math.maxPool2D
 {
   const tests: MathTests = it => {
     it('1x1x1 in, 1x1 filter, 1 stride: [0] => [0]', math => {
@@ -98,12 +172,91 @@ import {Array2D, Array3D} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('maxPool', [tests]);
-  test_util.describeMathGPU('maxPool', [tests], [
+  test_util.describeMathCPU('maxPool2D', [tests]);
+  test_util.describeMathGPU('maxPool2D', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
+}
+
+// math.maxPool3D
+{
+  const tests: MathTests = it => {
+    it('1x1x1x1 in, 1x1 filter, 1 stride: [0] => [0]', math => {
+      const a = Array4D.new([1, 1, 1, 1], [0]);
+
+      const result = math.maxPool3D(a, 1, 1, 'valid');
+
+      test_util.expectArraysClose(result.getValues(), new Float32Array([0]));
+    });
+
+    it('2x2x3x1 in, 1x2x2 filter, 1 stride', math => {
+      // Test valid padding.
+      const a =
+          Array4D.new([2, 2, 3, 1], [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+
+      const result = math.maxPool3D(a, [1, 2, 2], 1, 'valid');
+
+      expect(result.shape).toEqual([2, 1, 2, 1]);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([12, 11, 6, 5]));
+    });
+
+    it('2x2x2x1 in, 2x2x2 filter, 1 stride, propagates NaNs', math => {
+      // Test NaNs and same padding.
+      const a = Array4D.new([2, 2, 2, 1], [1, 2, 3, 4, 5, 6, NaN, 8]);
+
+      const result = math.maxPool3D(a, 2, 1, 'same');
+
+      expect(result.shape).toEqual([2, 2, 2, 1]);
+      test_util.expectArraysClose(
+          result.getValues(),
+          new Float32Array([NaN, 8, NaN, 8, NaN, 8, NaN, 8]));
+    });
+
+    it('1x1x3x2 in, 1x1x2 filter, 1 stride', math => {
+      // Test multiple channels.
+      const a = Array4D.new([1, 1, 3, 2], [1, 2, 3, 4, 5, 6]);
+
+      const result = math.maxPool3D(a, [1, 1, 2], 1, 'valid');
+
+      expect(result.shape).toEqual([1, 1, 2, 2]);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([3, 4, 5, 6]));
+    });
+
+    it('4x3x2x1 in, 2x2x2 filter, 2 stride', math => {
+      // Test Strides.
+      const a = Array4D.new([4, 3, 2, 1], [
+        1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
+        13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
+      ]);
+
+      const result = math.maxPool3D(a, 2, 2, 'valid');
+
+      expect(result.shape).toEqual([2, 1, 1, 1]);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([10, 22]));
+    });
+
+
+    it('throws when x is not rank 4', math => {
+      // tslint:disable-next-line:no-any
+      const a: any = Array2D.new([3, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+      expect(() => math.maxPool3D(a, 2, 1, 'valid')).toThrowError();
+
+      a.dispose();
+    });
+  };
+
+  test_util.describeMathCPU('maxPool3D', [tests]);
+  // test_util.describeMathGPU('maxPool3D', [tests], [
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  // ]);
 }
 
 // math.minPool

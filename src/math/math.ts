@@ -21,7 +21,7 @@ import {TypedArray} from '../util';
 import * as axis_util from './axis_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {ConvInfo} from './conv_util';
+import {ConvInfo2D, ConvInfoND} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
@@ -1278,8 +1278,8 @@ export abstract class NDArrayMath {
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
     const outDepth = filter.shape[3];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const [strideHeight, strideWidth] = parseTupleParam2D(strides);
+    const convInfo = conv_util.computeConvInfo2D(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
@@ -1287,7 +1287,7 @@ export abstract class NDArrayMath {
   }
   protected abstract conv2dInternal(
       x: Array3D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array3D;
+      convInfo: ConvInfo2D): Array3D;
 
   /**
    * Computes the backprop of a 2D convolution.
@@ -1350,9 +1350,9 @@ export abstract class NDArrayMath {
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
 
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
+    const [strideHeight, strideWidth] = parseTupleParam2D(strides);
 
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConvInfo2D(
         inShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
@@ -1360,7 +1360,7 @@ export abstract class NDArrayMath {
         () => this.conv2dDerInputInternal(dy, filter, convInfo));
   }
   protected abstract conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D;
+      dy: Array3D, filter: Array4D, convInfo: ConvInfo2D): Array3D;
 
   /**
    * Computes the derivative of the bias of a 2D convolution.
@@ -1411,14 +1411,14 @@ export abstract class NDArrayMath {
     const filterHeight = filterSize[0];
     const filterWidth = filterSize[1];
     const outDepth = filterSize[3];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const [strideHeight, strideWidth] = parseTupleParam2D(strides);
+    const convInfo = conv_util.computeConvInfo2D(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.track(this.conv2dDerFilterInternal(x, dy, convInfo));
   }
   protected abstract conv2dDerFilterInternal(
-      x: Array3D, dy: Array3D, convInfo: ConvInfo): Array4D;
+      x: Array3D, dy: Array3D, convInfo: ConvInfo2D): Array4D;
 
   /**
    * Computes the transposed 2D convolution of an image, also known as a
@@ -1449,7 +1449,7 @@ export abstract class NDArrayMath {
    *    - 'same' pad and stride 1: output will be of same size as input,
    *       regardless of filter size.
    *    - 'valid' pad: output will be smaller than input if filter is larger
-   *       than 1x1.
+   *       than 1x1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
@@ -1460,15 +1460,15 @@ export abstract class NDArrayMath {
         x.rank === 3,
         'Error in maxPool: x must be rank 3 but got rank ' + x.rank + '.');
 
-    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const [filterHeight, filterWidth] = parseTupleParam2D(filterSize);
     const outDepth = x.shape[2];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const [strideHeight, strideWidth] = parseTupleParam2D(strides);
+    const convInfo = conv_util.computeConvInfo2D(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp('maxPool', () => this.maxPoolInternal(x, convInfo));
   }
-  protected abstract maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
+  protected abstract maxPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D;
 
   /**
    * Computes the backprop of a max pool.
@@ -1491,17 +1491,85 @@ export abstract class NDArrayMath {
         `Error in maxPoolBackprop: x must be rank 3 but got rank ` +
             `${x.rank}.`);
 
-    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const [filterHeight, filterWidth] = parseTupleParam2D(filterSize);
     const outDepth = x.shape[2];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const [strideHeight, strideWidth] = parseTupleParam2D(strides);
+    const convInfo = conv_util.computeConvInfo2D(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
         'maxPoolBackprop', () => this.maxPoolBackpropInternal(dy, x, convInfo));
   }
   protected abstract maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D;
+      dy: Array3D, x: Array3D, convInfo: ConvInfo2D): Array3D;
+
+  /**
+   * Computes the 1D max pooling.
+   * @param x The input data, rank 2 of shape [length, channels].
+   * @param filter The filter size, a dim-1 tuple [filter-length].
+   * @param stride The strides of the pooling: [stride-length].
+   * @param pad A string from: 'same', 'valid'. The type of padding
+   algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is
+   larger than 1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   */
+  maxPool1D(
+      x: Array2D, filter: [number]|number, stride: [number]|number,
+      pad: 'valid'|'same'): Array2D {
+    util.assert(
+        x.rank === 2,
+        'Error in maxPool1D: x must be rank 2 but got rank ' + x.rank + '.');
+
+    const filterParsed = parseTupleParamND(filter, 1);
+    filterParsed.push(1)
+    const strideParsed = parseTupleParamND(stride, 1);
+    strideParsed.push(1)
+    const convInfo = conv_util.computeConvInfoND(
+        x.shape, filterParsed, strideParsed, 0, pad);
+    return this.executeOp(
+        'maxPool1D', () => this.maxPool1DInternal(x, convInfo));
+  }
+  protected abstract maxPool1DInternal(x: Array2D, convInfo: ConvInfoND):
+      Array2D;
+
+  /**
+   * Computes the 3D max pooling, e.g of a video.
+   * @param x The input image, rank 4 of shape [depth, height, width,
+   channels].
+   * @param filter The filter size, a tuple [depth, height, width].
+   * @param stride The strides of the pooling: [depth, height, width].
+   * @param pad A string from: 'same', 'valid'. The type of padding
+   algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is
+   larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   */
+  maxPool3D(
+      x: Array4D, filter: [number, number, number]|number,
+      stride: [number, number, number]|number, pad: 'valid'|'same'): Array4D {
+    util.assert(
+        x.rank === 4,
+        'Error in maxPool3D: x must be rank 4 but got rank ' + x.rank + '.');
+
+    const filterParsed = parseTupleParamND(filter, 3);
+    filterParsed.push(1)
+    const strideParsed = parseTupleParamND(stride, 3);
+    strideParsed.push(1)
+    const convInfo = conv_util.computeConvInfoND(
+        x.shape, filterParsed, strideParsed, 0, pad);
+    return this.executeOp(
+        'maxPool3D', () => this.maxPool3DInternal(x, convInfo));
+  }
+  protected abstract maxPool3DInternal(x: Array4D, convInfo: ConvInfoND):
+      Array4D;
 
   /**
    * Computes the 2D min pooling of an image.
@@ -1523,15 +1591,15 @@ export abstract class NDArrayMath {
         x.rank === 3,
         `Error in minPool: x must be rank 3 but got rank ${x.rank}.`);
 
-    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const [filterHeight, filterWidth] = parseTupleParam2D(filterSize);
     const outDepth = x.shape[2];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const [strideHeight, strideWidth] = parseTupleParam2D(strides);
+    const convInfo = conv_util.computeConvInfo2D(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp('minPool', () => this.minPoolInternal(x, convInfo));
   }
-  protected abstract minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
+  protected abstract minPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D;
 
   /**
    * Computes the 2D average pooling of an image.
@@ -1553,15 +1621,15 @@ export abstract class NDArrayMath {
         x.rank === 3,
         `Error in avgPool: x must be rank 3 but got rank ${x.rank}.`);
 
-    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+    const [filterHeight, filterWidth] = parseTupleParam2D(filterSize);
     const outDepth = x.shape[2];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const [strideHeight, strideWidth] = parseTupleParam2D(strides);
+    const convInfo = conv_util.computeConvInfo2D(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp('avgPool', () => this.avgPoolInternal(x, convInfo));
   }
-  protected abstract avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
+  protected abstract avgPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D;
 
   /*
    * Bilinear resize a 3D array per each channel to a new 2D shape.
@@ -1771,6 +1839,10 @@ export enum MatrixOrientation {
   TRANSPOSED
 }
 
-function parseTupleParam(param: number|[number, number]): [number, number] {
-  return typeof param === 'number' ? [param, param] : param;
+function parseTupleParam2D(param: number|[number, number]): [number, number] {
+  return <[number, number]>parseTupleParamND(param, 2);
+}
+
+function parseTupleParamND(param: number|number[], rank?: number): number[] {
+  return typeof param === 'number' ? Array(rank).fill(param) : param;
 }

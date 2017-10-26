@@ -21,8 +21,19 @@ import * as util from '../util';
  * Information about the forward pass of a convolution/pooling operation.
  * It includes input and output shape, strides, filter size and padding
  * information.
+ *
+ * Each of these arrays will have the same length (rank).
  */
-export type ConvInfo = {
+export type ConvInfoND = {
+  rank: number,
+  inShape: number[],
+  outShape: number[],
+  padInfo: {start: number, end: number}[],
+  stride: number[],
+  filter: number[],
+};
+
+export type ConvInfo2D = {
   inShape: [number, number, number],
   outShape: [number, number, number],
   strideHeight: number,
@@ -33,63 +44,100 @@ export type ConvInfo = {
 };
 
 /**
- * Computes the information about a forward pass of a convolution/pooling
- * operation.
+ * A backward-compatibilty wrapper around computeConvInfoND for the 2D case.
  */
-export function computeConvInfo(
+export function computeConvInfo2D(
     inShape: [number, number, number], filterHeight: number,
     filterWidth: number, outDepth: number, strideHeight: number,
-    strideWidth: number, pad: 'same'|'valid'|number): ConvInfo {
+    strideWidth: number, pad: 'same'|'valid'|number): ConvInfo2D {
+  const new_info = computeConvInfoND(
+      inShape, [filterHeight, filterWidth, 1], [strideHeight, strideWidth, 1],
+      outDepth, pad)
+  return {
+    inShape: <[number, number, number]>new_info.inShape,
+        outShape: <[number, number, number]>new_info.outShape,
+        strideHeight: new_info.stride[0], strideWidth: new_info.stride[1],
+        filterHeight: new_info.filter[0], filterWidth: new_info.filter[1],
+        padInfo: {
+          top: new_info.padInfo[0].start,
+          left: new_info.padInfo[1].start,
+          right: new_info.padInfo[1].end,
+          bottom: new_info.padInfo[0].end
+        }
+  }
+}
+
+/**
+ * Computes the information about a forward pass of a convolution/pooling
+ * operation.
+ *
+ * @param inShape The shape of the input data.
+ * @param filter The size of each patch. Must be same rank as inShape.
+ * @param stride The spacing of the patches. Must be same rank as inShape.
+ * @param outDepth Deprecated and unused.
+ * @param pad 'same' will produce output tensor of the same shape as input
+ *                by padding around the edges with zeros;
+ *            'valid' will produce smaller output tensor by only fitting patches
+ *                inside the input data.
+ */
+export function computeConvInfoND(
+    inShape: number[], filter: number[], stride: number[], outDepth: number,
+    pad: 'same'|'valid'|number): ConvInfoND {
+  const rank: number = inShape.length
+  util.assert(
+      filter.length == rank,
+      'Filter should be same rank as data (' + rank + ') but was ' +
+          filter.length + '.')
+  util.assert(
+      stride.length == rank,
+      'Filter should be same rank as data (' + rank + ') but was ' +
+          filter.length + '.')
   if (typeof pad === 'number') {
     const outShape = computeOutputShape3D(
-        inShape, filterHeight, outDepth, strideHeight, pad);
+        <[number, number, number]>inShape, filter[0], outDepth, stride[0], pad);
     return {
+      rank,
       inShape,
       outShape,
-      padInfo: {top: pad, bottom: pad, left: pad, right: pad},
-      strideHeight,
-      strideWidth,
-      filterHeight,
-      filterWidth
+      padInfo: [{start: pad, end: pad}, {start: pad, end: pad}],
+      stride,
+      filter,
     };
   }
-  const inHeight = inShape[0];
-  const inWidth = inShape[1];
-  let outShape: [number, number, number];
-  let padInfo: {left: number, top: number, bottom: number, right: number};
-  if (pad === 'same') {
-    const outHeight = Math.ceil(inHeight / strideHeight);
-    const outWidth = Math.ceil(inWidth / strideWidth);
-    outShape = [outHeight, outWidth, outDepth];
-    const padAlongHeight =
-        (outHeight - 1) * strideHeight + filterHeight - inHeight;
-    const padAlongWidth = (outWidth - 1) * strideWidth + filterWidth - inWidth;
-    const top = Math.floor(padAlongHeight / 2);
-    const bottom = padAlongHeight - top;
-    const left = Math.floor(padAlongWidth / 2);
-    const right = padAlongWidth - left;
-    padInfo = {top, bottom, left, right};
-  } else if (pad === 'valid') {
-    const outHeight = Math.ceil((inHeight - filterHeight + 1) / strideHeight);
-    const outWidth = Math.ceil((inWidth - filterWidth + 1) / strideWidth);
-    outShape = [outHeight, outWidth, outDepth];
-    padInfo = {top: 0, bottom: 0, left: 0, right: 0};
-  } else {
-    throw Error(`Unknown padding parameter: ${pad}`);
+
+  let outShape: number[] = [];
+  let padInfo: {start: number, end: number}[] = [];
+  for (let i in inShape) {
+    let outSize: number;
+    let thisPadInfo: {start: number, end: number};
+    if (pad === 'same') {
+      outSize = Math.ceil(inShape[i] / stride[i]);
+      const padSize = (outSize - 1) * stride[i] + filter[i] - inShape[i];
+      const start = Math.floor(padSize / 2);
+      const end = padSize - start;
+      thisPadInfo = {start, end};
+    } else if (pad === 'valid') {
+      outSize = Math.ceil((inShape[i] - filter[i] + 1) / stride[i]);
+      thisPadInfo = {start: 0, end: 0};
+    } else {
+      throw Error(`Unknown padding parameter: ${pad}`);
+    }
+    outShape.push(outSize);
+    padInfo.push(thisPadInfo)
   }
+
   return {
+    rank,
     inShape,
     outShape,
     padInfo,
-    strideHeight,
-    strideWidth,
-    filterHeight,
-    filterWidth
+    stride,
+    filter,
   };
 }
 
 /**
- * @deprecated Use `conv_util.computeConvInfo` instead.
+ * @deprecated Use `conv_util.computeConvInfo2D` instead.
  */
 export function computeOutputShape3D(
     inShape: [number, number, number], fieldSize: number, outDepth: number,

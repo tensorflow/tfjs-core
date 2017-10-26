@@ -51,7 +51,7 @@ export class ConvTransposedGPUBenchmark extends ConvTransposedBenchmark {
     initializeGPU(gpgpu, texManager);
     gpgpu.enableAutomaticDebugValidation(true);
 
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConvInfo2D(
         xShape, fieldSize, fieldSize, origOutputDepth, origStride, origStride,
         origPad);
     const program = new Conv2DDerInputProgram(convInfo);

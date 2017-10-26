@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ConvInfo} from '../conv_util';
+import {ConvInfo2D} from '../conv_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 
@@ -25,7 +25,7 @@ export class MaxPool2DBackpropProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(convInfo: ConvInfo) {
+  constructor(convInfo: ConvInfo2D) {
     this.outputShape = convInfo.inShape;
     const dyRows = convInfo.outShape[0];
     const dyCols = convInfo.outShape[1];
