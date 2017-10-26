@@ -521,10 +521,17 @@ function playOutput(index: number) {
             noteNum, currentPianoTimeSec, currentVelocity * globalGain / 100);
       } else if (eventType === 'note_off') {
         const noteNum = index - offset;
-        const timeSec =
-            Math.max(currentPianoTimeSec, activeNotes.get(noteNum) + .5);
 
-        if (outputDevice != null && !isNaN(timeSec)) {
+        const activeNoteDurationSec = activeNotes.get(noteNum);
+        // If the note off event is generated for a note that hasn't been
+        // pressed, just ignore it.
+        if (activeNoteDurationSec == null) {
+          return;
+        }
+        const timeSec =
+            Math.max(currentPianoTimeSec, activeNoteDurationSec + .5);
+
+        if (outputDevice != null) {
           outputDevice.send(
               [MIDI_EVENT_OFF, noteNum, currentVelocity * globalGain],
               Math.floor(timeSec * 1000) - pianoStartTimestampMs);
