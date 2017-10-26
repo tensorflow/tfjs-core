@@ -463,10 +463,12 @@ let outputDevice: any = null;
     let count = 0;
     const midiDevices: any[] = [];
     midi.outputs.forEach((output: any) => {
-      console.log(
-          'Output port [type:\'' + output.type + '\'] id:\'' + output.id +
-          '\' manufacturer:\'' + output.manufacturer + '\' name:\'' +
-          output.name + '\' version:\'' + output.version + '\'');
+      console.log(`
+          Output midi device [type: '${output.type}']
+          id: ${output.id}
+          manufacturer: ${output.manufacturer}
+          name:${output.name}
+          version: ${output.version}`);
       midiDevices.push(output);
 
       const option = document.createElement('option');
