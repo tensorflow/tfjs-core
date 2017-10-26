@@ -166,7 +166,7 @@ function resetRnn() {
   }
   lastSample = Scalar.new(PRIMER_IDX);
   currentPianoTimeSec = piano.now();
-  pianoStartTimestampMs = performance.now() - piano.now() * 1000;
+  pianoStartTimestampMs = performance.now() - currentPianoTimeSec * 1000;
   currentLoopId++;
   generateStep(currentLoopId);
 }
@@ -437,8 +437,7 @@ async function generateStep(loopId: number) {
     if (piano.now() - currentPianoTimeSec > MAX_GENERATION_LAG_SECONDS) {
       console.warn(
           `Generation is ${
-                           piano.now() - currentPianoTimeSec
-                         } seconds behind, ` +
+              piano.now() - currentPianoTimeSec} seconds behind, ` +
           `which is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
       currentPianoTimeSec = piano.now();
     }
@@ -547,9 +546,7 @@ function playOutput(index: number) {
           if (currentPianoTimeSec - timeSec > MAX_NOTE_DURATION_SECONDS) {
             console.info(
                 `Note ${noteNum} has been active for ${
-                                                       currentPianoTimeSec -
-                                                       timeSec
-                                                     }, ` +
+                    currentPianoTimeSec - timeSec}, ` +
                 `seconds which is over ${MAX_NOTE_DURATION_SECONDS}, will ` +
                 `release.`);
             if (outputDevice != null) {
