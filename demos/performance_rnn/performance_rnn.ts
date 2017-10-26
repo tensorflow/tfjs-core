@@ -456,7 +456,6 @@ let outputDevice: any = null;
     const navigator: any = window.navigator;
     midi = await navigator.requestMIDIAccess();
 
-
     const midiOutDropdown =
         document.getElementById('midi-out') as HTMLSelectElement;
 
