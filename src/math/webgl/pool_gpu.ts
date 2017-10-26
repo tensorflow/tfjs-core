@@ -20,6 +20,8 @@ import {ConvInfo2D, ConvInfoND} from '../conv_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 
+// TODO(dfarhi): Abstract PoolNDProgram into a single class since the code
+// is virtually identical. (Compare Pool1DProgram to Pool3DProgram.)
 export class Pool1DProgram implements GPGPUProgram {
   variableNames = ['x'];
   params: Array<{}>;
