@@ -522,14 +522,14 @@ function playOutput(index: number) {
       } else if (eventType === 'note_off') {
         const noteNum = index - offset;
 
-        const activeNoteDurationSec = activeNotes.get(noteNum);
+        const activeNoteEndTimeSec = activeNotes.get(noteNum);
         // If the note off event is generated for a note that hasn't been
         // pressed, just ignore it.
-        if (activeNoteDurationSec == null) {
+        if (activeNoteEndTimeSec == null) {
           return;
         }
         const timeSec =
-            Math.max(currentPianoTimeSec, activeNoteDurationSec + .5);
+            Math.max(currentPianoTimeSec, activeNoteEndTimeSec + .5);
 
         if (outputDevice != null) {
           outputDevice.send(
