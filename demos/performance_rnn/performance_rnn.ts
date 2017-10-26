@@ -369,7 +369,6 @@ function getConditioning(math: NDArrayMath): Array1D {
     }
   });
 }
-console.log(generateStep);
 
 async function generateStep(loopId: number) {
   if (loopId < currentLoopId) {
