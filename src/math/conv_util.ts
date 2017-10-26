@@ -74,7 +74,8 @@ export function computeConvInfo2D(
  * @param inShape The shape of the input data.
  * @param filter The size of each patch. Must be same rank as inShape.
  * @param stride The spacing of the patches. Must be same rank as inShape.
- * @param outDepth Deprecated and unused.
+ * @param outDepth Deprecated and unused. (But needed in signature for
+ * backward-compatibility with the deprecated pad='number' case.)
  * @param pad 'same' will produce output tensor of the same shape as input
  *                by padding around the edges with zeros;
  *            'valid' will produce smaller output tensor by only fitting patches

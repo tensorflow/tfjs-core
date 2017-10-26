@@ -936,7 +936,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return y;
   }
 
-  protected maxPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D {
+  protected maxPool2DInternal(x: Array3D, convInfo: ConvInfo2D): Array3D {
     return this.pool2D(x, convInfo, 'max');
   }
 

@@ -42,7 +42,7 @@ import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
-import {Pool1DProgram, Pool2DProgram} from './webgl/pool_gpu';
+import {Pool1DProgram, Pool2DProgram, Pool3DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
@@ -418,15 +418,14 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [x]) as Array2D;
   }
 
-  protected maxPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D {
+  protected maxPool2DInternal(x: Array3D, convInfo: ConvInfo2D): Array3D {
     const program = new Pool2DProgram(convInfo, 'max', false);
     return this.compileAndRun(program, [x]) as Array3D;
   }
 
   protected maxPool3DInternal(x: Array4D, convInfo: ConvInfoND): Array4D {
-    // const program = new Pool2DProgram(convInfo, 'max', false);
-    // return this.compileAndRun(program, [x]) as Array4D;
-    return Array4D.new([1, 1, 1, 2], [3, 4])
+    const program = new Pool3DProgram(convInfo, 'max', false);
+    return this.compileAndRun(program, [x]) as Array4D;
   }
 
   protected minPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D {

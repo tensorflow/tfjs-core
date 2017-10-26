@@ -32,16 +32,16 @@ export class Pool1DProgram implements GPGPUProgram {
     if (poolType === 'avg' && computePositions) {
       throw new Error('Cannot compute positions for average pool.');
     }
+    const rank = 1;
+    const ivecN = `int`;
+    const compareOp = poolType === 'min' ? 'min' : 'max';
 
     util.assert(
-        convInfo.rank === 2,
-        'Shape should be 2-dimensonal for Pool1D; was ' + convInfo.rank)
-    const xLength = convInfo.inShape[0];
-    const filterSize = convInfo.filter[0];
-    const stride = convInfo.stride[0];
-    const pad = convInfo.padInfo[0].start;
-    // TODO Why isn't the filter size in here?
-    this.params = [stride, pad, poolType, computePositions];
+        convInfo.rank === rank + 1,
+        `Shape should be ${rank + 1}-dimensonal for Pool${rank}D; was ${
+            convInfo.rank}`);
+    const startPads = convInfo.padInfo.map((pad) => pad.start);
+    this.params = [convInfo.stride, startPads, poolType, computePositions];
     this.outputShape = convInfo.outShape;
 
     const isAvgPool = poolType === 'avg';
@@ -55,41 +55,37 @@ export class Pool1DProgram implements GPGPUProgram {
       }
     }
 
-    // TODO remove
-    initializationValue = '-5.0';
-
     if (computePositions) {
       throw Error('computePositions Not Implemented for MaxPool1D yet.')
     }
 
-    const compareOp = poolType === 'min' ? 'min' : 'max';
 
     let returnValue: string;
     if (poolType === 'avg') {
-      returnValue = `avgValue / ${filterSize}.0`;
+      returnValue = `avgValue / ${product(convInfo.filter)}.0`;
     } else {
       returnValue = `${poolType}(${poolType}(${poolType}(` +
           'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
     }
 
-    const filterWidthNearestVec4 = Math.floor(filterSize / 4) * 4;
+    const filterWidthNearestVec4 = Math.ceil(convInfo.filter[rank - 1] / 4) * 4;
 
     this.userCode = `
       const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
-      const int xShape = ${xLength};
-      const int filter = ${filterSize};
-      const int strides = ${stride};
-      const int pads = ${pad};
+      const ${ivecN} xShape = ${ivecN}(${arrayCodeString(convInfo.inShape)});
+      const ${ivecN} filter = ${ivecN}(${arrayCodeString(convInfo.filter)});
+      const ${ivecN} strides = ${ivecN}(${arrayCodeString(convInfo.stride)});
+      const ${ivecN} pads = ${ivecN}(${arrayCodeString(startPads)});
       const float initializationValue = ${initializationValue};
 
-      float getValue(int xCorner, int offset, int d) {
+      float getValue(${ivecN} xCorner, ${ivecN} offset, int d) {
         // Return the value from x at position offset from xCorner by a certain amount.
         // If the offsets are outside the filter range (because we grab batches of
         // 4 values at a time), ignore it.
         if ((offset >= filter) || (offset < 0)) {
           return initializationValue;
         }
-        int xPos = xCorner + offset;
+        ${ivecN} xPos = xCorner + offset;
         // If the offsets put us outside the original image, ignore it.
         if ((xPos >= xShape) || (xPos < 0)) {
           return initializationValue;
@@ -98,22 +94,20 @@ export class Pool1DProgram implements GPGPUProgram {
       }
 
        void main() {
-        ivec2 coords = getOutputCoords();
-        int d = coords.y;
+        ivec${rank + 1} coords = getOutputCoords();
+        int d = coords[${rank}];
 
-        int xCorner = coords.x * strides - pads;
+        ${ivecN} xCorner = coords.x * strides - pads;
 
-        // max/min x(?, ?, d) to get y(yR, yC, d).
-        // ? = to be determined
         vec4 minMaxValue = vec4(${initializationValue});
         float avgValue = 0.0;
 
         for (int w = 0; w < ${filterWidthNearestVec4}; w += 4) {
           vec4 values = vec4(
             getValue(xCorner, w, d),
-            getValue(xCorner, w, d),
-            getValue(xCorner, w, d),
-            getValue(xCorner, w, d)
+            getValue(xCorner, w + 1, d),
+            getValue(xCorner, w + 2, d),
+            getValue(xCorner, w + 3, d)
           );
 
           if (hasNaN(values)) {
@@ -233,6 +227,8 @@ export class Pool2DProgram implements GPGPUProgram {
     }
 
     const compareOp = poolType === 'min' ? 'min' : 'max';
+    const rank = 2;
+    const ivecN = `ivec${rank}`;
 
     let returnValue: string;
     if (poolType === 'avg') {
@@ -243,20 +239,133 @@ export class Pool2DProgram implements GPGPUProgram {
     }
 
     // We read the entries in batches of 4, since WebGL can do min/max on vec4s.
-    // It's not clear this is actually gaining us anything since we have to read
+    // It's not clear this is actually gaining us much since we have to read
     // each cell one by one into the vec4 anyway.
+    // But we keep it to be consistent with other implementations regardless.
     const filterWidthNearestVec4 = Math.ceil(filterWidth / 4) * 4;
 
     this.userCode = `
-      const ivec2 xShape = ivec2(${xNumRows}, ${xNumCols});
-      const ivec2 filter = ivec2(${filterHeight}, ${filterWidth});
-      const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
-      const ivec2 pads = ivec2(${padTop}, ${padLeft});
-      const float initializationValue = ${initializationValue};
-      const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
-      const ivec2 zero = ivec2(0.0, 0.0);
+    const vec4 ones = vec4(1.0);
+    const ${ivecN} zero = ivec${rank}(0.0);
+    const ${ivecN} xShape = ${ivecN}(${arrayCodeString(convInfo.inShape)});
+    const ${ivecN} filter = ${ivecN}(${
+        arrayCodeString([filterHeight, filterWidth], false)});
+    const ${ivecN} strides = ${ivecN}(${
+        arrayCodeString([strideHeight, strideWidth], false)});
+    const ${ivecN} pads = ${ivecN}(${
+        arrayCodeString([padTop, padLeft], false)});
+    const float initializationValue = ${initializationValue};
 
-      float getValue(ivec2 xCorner, ivec2 offset, int d) {
+    float getValue(${ivecN} xCorner, ${ivecN} offset, int d) {
+      // Return the value from x at position offset from xCorner by a certain amount.
+      // If the offsets are outside the filter range (because we grab batches of
+      // 4 values at a time), ignore it.
+      if (any(greaterThanEqual(offset, filter)) ||
+          any(lessThan(offset, zero))) {
+        return initializationValue;
+      }
+      ${ivecN} xPos = xCorner + offset;
+      // If the offsets put us outside the original image, ignore it.
+      if (any(greaterThanEqual(xPos, xShape)) ||
+          any(lessThan(xPos, zero))) {
+        return initializationValue;
+      }
+      return getX(xPos.x, xPos.y, d);
+    }
+
+     void main() {
+      ivec${rank + 1} coords = getOutputCoords();
+      int d = coords[${rank}];
+
+      ${ivecN} xCorner = coords.xy * strides - pads;
+
+      vec4 minMaxValue = vec4(${initializationValue});
+      float avgValue = 0.0;
+      for (int wx = 0; wx < ${filterHeight}; wx++) {
+        for (int wy = 0; wy < ${filterWidthNearestVec4}; wy += 4) {
+          vec4 values = vec4(
+            getValue(xCorner, ${ivecN}(wx, wy), d),
+            getValue(xCorner, ${ivecN}(wx, wy + 1), d),
+            getValue(xCorner, ${ivecN}(wx, wy + 2), d),
+            getValue(xCorner, ${ivecN}(wx, wy + 3), d)
+          );
+
+          if (hasNaN(values)) {
+            setOutput(getNaN(values));
+            return;
+          }
+          if (${isAvgPool}) {
+            avgValue += dot(values, ones);
+          } else {
+            minMaxValue = ${compareOp}(values, minMaxValue);
+          }
+        }
+      }
+      setOutput(${returnValue});
+    }
+  `;
+  }
+}
+
+export class Pool3DProgram implements GPGPUProgram {
+  variableNames = ['x'];
+  params: Array<{}>;
+  outputShape: number[];
+  userCode: string;
+
+  constructor(
+      convInfo: ConvInfoND, poolType: 'max'|'min'|'avg',
+      computePositions: boolean) {
+    if (poolType === 'avg' && computePositions) {
+      throw new Error('Cannot compute positions for average pool.');
+    }
+    const rank = 3;
+    const ivecN = `ivec${rank}`;
+    const compareOp = poolType === 'min' ? 'min' : 'max';
+
+    util.assert(
+        convInfo.rank === rank + 1,
+        `Shape should be ${rank + 1}-dimensonal for Pool${rank}D; was ${
+            convInfo.rank}`);
+    const startPads = convInfo.padInfo.map((pad) => pad.start);
+    this.params = [convInfo.stride, startPads, poolType, computePositions];
+    this.outputShape = convInfo.outShape;
+
+    const isAvgPool = poolType === 'avg';
+
+    let initializationValue = '0.0';
+    if (!isAvgPool) {
+      if (poolType === 'min') {
+        initializationValue = '1.0 / 0.0';
+      } else {
+        initializationValue = '-1.0 / 0.0';
+      }
+    }
+
+    if (computePositions) {
+      throw Error('computePositions Not Implemented for MaxPool3D yet.')
+    }
+
+    let returnValue: string;
+    if (poolType === 'avg') {
+      returnValue = `avgValue / ${product(convInfo.filter)}.0`;
+    } else {
+      returnValue = `${poolType}(${poolType}(${poolType}(` +
+          'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
+    }
+
+    const filterWidthNearestVec4 = Math.ceil(convInfo.filter[rank - 1] / 4) * 4;
+
+    this.userCode = `
+      const vec4 ones = vec4(1.0);
+      const ${ivecN} zero = ivec${rank}(0.0);
+      const ${ivecN} xShape = ${ivecN}(${arrayCodeString(convInfo.inShape)});
+      const ${ivecN} filter = ${ivecN}(${arrayCodeString(convInfo.filter)});
+      const ${ivecN} strides = ${ivecN}(${arrayCodeString(convInfo.stride)});
+      const ${ivecN} pads = ${ivecN}(${arrayCodeString(startPads)});
+      const float initializationValue = ${initializationValue};
+
+      float getValue(${ivecN} xCorner, ${ivecN} offset, int d) {
         // Return the value from x at position offset from xCorner by a certain amount.
         // If the offsets are outside the filter range (because we grab batches of
         // 4 values at a time), ignore it.
@@ -264,46 +373,42 @@ export class Pool2DProgram implements GPGPUProgram {
             any(lessThan(offset, zero))) {
           return initializationValue;
         }
-        ivec2 xPos = xCorner + offset;
+        ${ivecN} xPos = xCorner + offset;
         // If the offsets put us outside the original image, ignore it.
         if (any(greaterThanEqual(xPos, xShape)) ||
             any(lessThan(xPos, zero))) {
           return initializationValue;
         }
-        return getX(xPos.x, xPos.y, d);
+        return getX(xPos.x, xPos.y, xPos.z, d);
       }
 
-      void main() {
-        ivec3 coords = getOutputCoords();
-        int d = coords.z;
+       void main() {
+        ivec${rank + 1} coords = getOutputCoords();
+        int d = coords[${rank}];
 
-        ivec2 xRCCorner = coords.xy * strides - pads;
+        ${ivecN} xCorner = coords.xyz * strides - pads;
 
-        // max/min x(?, ?, d) to get y(yR, yC, d).
-        // ? = to be determined
         vec4 minMaxValue = vec4(${initializationValue});
         float avgValue = 0.0;
+        for (int wx = 0; wx < ${convInfo.filter[0]}; wx++) {
+          for (int wy = 0; wy < ${convInfo.filter[1]}; wy++) {
+            for (int wz = 0; wz < ${filterWidthNearestVec4}; wz += 4) {
+              vec4 values = vec4(
+                getValue(xCorner, ${ivecN}(wx, wy, wz), d),
+                getValue(xCorner, ${ivecN}(wx, wy, wz + 1), d),
+                getValue(xCorner, ${ivecN}(wx, wy, wz + 2), d),
+                getValue(xCorner, ${ivecN}(wx, wy, wz + 3), d)
+              );
 
-        for (int wR = 0; wR < ${filterHeight}; wR++) {
-          for (int wC = 0; wC < ${filterWidthNearestVec4}; wC += 4) {
-            // Note that the last bunch might overshoot the actual filterWidth
-            // in which case getValue returns initializationValue to ignore that
-            // entry.
-            vec4 values = vec4(
-              getValue(xRCCorner, ivec2(wR, wC), d),
-              getValue(xRCCorner, ivec2(wR, wC + 1), d),
-              getValue(xRCCorner, ivec2(wR, wC + 2), d),
-              getValue(xRCCorner, ivec2(wR, wC + 3), d)
-            );
-
-            if (hasNaN(values)) {
-              setOutput(getNaN(values));
-              return;
-            }
-            if (${isAvgPool}) {
-              avgValue += dot(values, ones);
-            } else {
-              minMaxValue = ${compareOp}(values, minMaxValue);
+              if (hasNaN(values)) {
+                setOutput(getNaN(values));
+                return;
+              }
+              if (${isAvgPool}) {
+                avgValue += dot(values, ones);
+              } else {
+                minMaxValue = ${compareOp}(values, minMaxValue);
+              }
             }
           }
         }
@@ -311,4 +416,18 @@ export class Pool2DProgram implements GPGPUProgram {
       }
     `;
   }
+}
+
+function product(lst: number[]): number {
+  if (lst.length === 0) {
+    return 1
+  }
+  return lst[0] * product(lst.slice(1));
+}
+
+function arrayCodeString(lst: number[], ignoreLastDim = true) {
+  if (ignoreLastDim) {
+    lst = lst.slice(0, lst.length - 1)
+  }
+  return lst.join(', ');
 }

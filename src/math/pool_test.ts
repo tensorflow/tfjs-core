@@ -23,7 +23,8 @@ import {Array2D, Array3D, Array4D} from './ndarray';
 // math.maxPool1D
 {
   const tests: MathTests = it => {
-    it('1x1 in, 1 filter, 1 stride: [0] => [0]', math => {
+    it('works in simplest case', math => {
+      // 1x1 in, 1 filter, 1 stride: [0] => [0]
       const a = Array2D.new([1, 1], [0]);
 
       const result = math.maxPool1D(a, 1, 1, 'valid');
@@ -31,8 +32,8 @@ import {Array2D, Array3D, Array4D} from './ndarray';
       test_util.expectArraysClose(result.getValues(), new Float32Array([0]));
     });
 
-    it('3x2 in, 2 filter, 1 stride', math => {
-      // Test valid padding.
+    it('works with valid padding', math => {
+      // 3x2 in, 2 filter, 1 stride
       const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
 
       const result = math.maxPool1D(a, 2, 1, 'valid');
@@ -41,8 +42,8 @@ import {Array2D, Array3D, Array4D} from './ndarray';
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([3, 4, 5, 6]));
     });
-    it('3x2 in, 2 filter, 1 stride', math => {
-      // Test same padding.
+    it('works with same padding', math => {
+      // 3x2 in, 2 filter, 1 stride.
       const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
 
       const result = math.maxPool1D(a, [2], 1, 'same');
@@ -52,8 +53,8 @@ import {Array2D, Array3D, Array4D} from './ndarray';
           result.getValues(), new Float32Array([3, 4, 5, 6, 5, 6]));
     });
 
-    it('3x2 in, 1 stride, propagates NaNs', math => {
-      // Test NaNs.
+    it('propagates NaNs', math => {
+      // 3x2 in, 1 stride
       const a = Array2D.new([3, 2], [1, 2, NaN, 4, 5, 6]);
 
       const result = math.maxPool1D(a, 2, 1, 'valid');
@@ -63,8 +64,8 @@ import {Array2D, Array3D, Array4D} from './ndarray';
           result.getValues(), new Float32Array([NaN, 4, NaN, 6]));
     });
 
-    it('7x1 in, 2 filter, 2 stride', math => {
-      // Test Strides.
+    it('works with strides', math => {
+      // 7x1 in, 2 filter, 2 stride
       const a = Array2D.new([7, 1], [1, 2, 3, 4, 5, 6, 7]);
 
       const result = math.maxPool1D(a, 2, 2, 'valid');
@@ -72,6 +73,35 @@ import {Array2D, Array3D, Array4D} from './ndarray';
       expect(result.shape).toEqual([3, 1]);
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([2, 4, 6]));
+    });
+    it('rounds non-divisible strides', math => {
+      // 4x1 in, 1 filter, 2 strides
+      const a = Array2D.new([4, 1], [1, 2, 3, 4]);
+
+      const result = math.maxPool1D(a, 1, 2, 'valid');
+
+      expect(result.shape).toEqual([2, 1]);
+      test_util.expectArraysClose(result.getValues(), new Float32Array([1, 3]));
+    });
+    it('works with multiple of 4 filterwidth', math => {
+      // This case is a bit special because of the GPU optimizations.
+      // 5x1, 4 filtersize
+      const a = Array2D.new([5, 1], [1, 2, 3, 4, 5]);
+
+      const result = math.maxPool1D(a, 4, 1, 'valid');
+
+      expect(result.shape).toEqual([2, 1]);
+      test_util.expectArraysClose(result.getValues(), new Float32Array([4, 5]));
+    });
+    it('works with > 4 filterwidth', math => {
+      // This case is a bit special because of the GPU optimizations.
+      // 6x1, 5 filtersize
+      const a = Array2D.new([6, 1], [1, 2, 3, 4, 5, 6]);
+
+      const result = math.maxPool1D(a, 5, 1, 'valid');
+
+      expect(result.shape).toEqual([2, 1]);
+      test_util.expectArraysClose(result.getValues(), new Float32Array([5, 6]));
     });
 
 
@@ -183,7 +213,8 @@ import {Array2D, Array3D, Array4D} from './ndarray';
 // math.maxPool3D
 {
   const tests: MathTests = it => {
-    it('1x1x1x1 in, 1x1 filter, 1 stride: [0] => [0]', math => {
+    it('works in simplest case', math => {
+      // 1x1x1x1 in, 1x1 filter, 1 stride: [0] => [0]
       const a = Array4D.new([1, 1, 1, 1], [0]);
 
       const result = math.maxPool3D(a, 1, 1, 'valid');
@@ -191,8 +222,8 @@ import {Array2D, Array3D, Array4D} from './ndarray';
       test_util.expectArraysClose(result.getValues(), new Float32Array([0]));
     });
 
-    it('2x2x3x1 in, 1x2x2 filter, 1 stride', math => {
-      // Test valid padding.
+    it('works with valid padding', math => {
+      // 2x2x3x1 in, 1x2x2 filter, 1 stride.
       const a =
           Array4D.new([2, 2, 3, 1], [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
 
@@ -203,8 +234,8 @@ import {Array2D, Array3D, Array4D} from './ndarray';
           result.getValues(), new Float32Array([12, 11, 6, 5]));
     });
 
-    it('2x2x2x1 in, 2x2x2 filter, 1 stride, propagates NaNs', math => {
-      // Test NaNs and same padding.
+    it('propagates NaNs and works with same padding', math => {
+      // 2x2x2x1 in, 2x2x2 filter, 1 stride, propagates NaNs.
       const a = Array4D.new([2, 2, 2, 1], [1, 2, 3, 4, 5, 6, NaN, 8]);
 
       const result = math.maxPool3D(a, 2, 1, 'same');
@@ -215,8 +246,18 @@ import {Array2D, Array3D, Array4D} from './ndarray';
           new Float32Array([NaN, 8, NaN, 8, NaN, 8, NaN, 8]));
     });
 
-    it('1x1x3x2 in, 1x1x2 filter, 1 stride', math => {
-      // Test multiple channels.
+    it('works with (trivial) multiple channels', math => {
+      // 1x1x1x2 in, 1x1x1 filter, 1 stride.
+      const a = Array4D.new([1, 1, 1, 2], [6, 8]);
+
+      const result = math.maxPool3D(a, 1, 1, 'valid');
+
+      expect(result.shape).toEqual([1, 1, 1, 2]);
+      test_util.expectArraysClose(result.getValues(), new Float32Array([6, 8]));
+    });
+
+    it('works with multiple channels when shape is nontrivial', math => {
+      // 1x1x3x2 in, 1x1x2 filter, 1 stride.
       const a = Array4D.new([1, 1, 3, 2], [1, 2, 3, 4, 5, 6]);
 
       const result = math.maxPool3D(a, [1, 1, 2], 1, 'valid');
@@ -226,8 +267,18 @@ import {Array2D, Array3D, Array4D} from './ndarray';
           result.getValues(), new Float32Array([3, 4, 5, 6]));
     });
 
-    it('4x3x2x1 in, 2x2x2 filter, 2 stride', math => {
-      // Test Strides.
+    it('works with simple strides', math => {
+      // 3x1x1x1 in, 1x1x1 filter, 2 stride.
+      const a = Array4D.new([3, 1, 1, 1], [5, 7, 9]);
+
+      const result = math.maxPool3D(a, 1, 2, 'valid');
+
+      expect(result.shape).toEqual([2, 1, 1, 1]);
+      test_util.expectArraysClose(result.getValues(), new Float32Array([5, 9]));
+    });
+
+    it('works with non-divisible strides', math => {
+      // 4x3x2x1 in, 2x2x2 filter, 2 stride.
       const a = Array4D.new([4, 3, 2, 1], [
         1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
         13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
@@ -252,11 +303,11 @@ import {Array2D, Array3D, Array4D} from './ndarray';
   };
 
   test_util.describeMathCPU('maxPool3D', [tests]);
-  // test_util.describeMathGPU('maxPool3D', [tests], [
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  // ]);
+  test_util.describeMathGPU('maxPool3D', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }
 
 // math.minPool

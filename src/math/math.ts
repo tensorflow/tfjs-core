@@ -1466,9 +1466,10 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConvInfo2D(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp('maxPool', () => this.maxPoolInternal(x, convInfo));
+    return this.executeOp('maxPool', () => this.maxPool2DInternal(x, convInfo));
   }
-  protected abstract maxPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D;
+  protected abstract maxPool2DInternal(x: Array3D, convInfo: ConvInfo2D):
+      Array3D;
 
   /**
    * Computes the backprop of a max pool.
