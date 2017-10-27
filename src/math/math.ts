@@ -71,8 +71,10 @@ export abstract class NDArrayMath {
    */
   scope<T extends ScopeResult>(
       scopeFn:
-          (keep: <T1 extends NDArray>(ndarray: T1) => T1,
-           track: <T2 extends NDArray>(ndarray: T2) => T2) => T): T {
+          (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
+               ndarray: T1) => T1,
+           track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
+               ndarray: T2) => T2) => T): T {
     this.startScope();
 
     const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
@@ -667,6 +669,32 @@ export abstract class NDArrayMath {
       ndarray: NDArray<T>, axes: number[]): NDArray<SumTypes[T]>;
 
   /**
+   * Computes the mean of elements across dimensions of an array.
+   *
+   * Reduces `x` along the dimensions given in `axis`. Unless `keepDims` is
+   * true, the rank of the array is reduced by 1 for each entry in `axis`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axis` has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
+   * @param x The input array.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   */
+  mean(x: NDArray, axis: number|number[] = null, keepDims = false):
+      NDArray<'float32'> {
+    const axes = axis_util.parseAxisParam(axis, x.shape);
+    axis_util.assertAxesAreInnerMostDims('mean', axes, x.rank);
+    return this.executeOp('mean', () => {
+      return this.scope((keep, track) => {
+        const res = this.divide(x, track(Scalar.new(x.size)));
+        return this.sum(res);
+      });
+    });
+  }
+
+  /**
    * Returns the indices of the minimum values along an `axis`. The result has
    * the same shape as `input` with the dimension along `axis` removed.
    *
@@ -1003,11 +1031,11 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to divide element-wise.
    * @param b The second NDArray to divide element-wise.
    */
-  divide(a: NDArray, b: NDArray): NDArray {
+  divide(a: NDArray, b: NDArray): NDArray<'float32'> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('divide', () => this.divideInternal(a, b));
   }
-  protected abstract divideInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract divideInternal(a: NDArray, b: NDArray): NDArray<'float32'>;
 
   /**
    * Divides two NDArrays element-wise, A / B. Inputs must
@@ -1085,6 +1113,16 @@ export abstract class NDArrayMath {
   protected abstract sqrtInternal<T extends NDArray>(ndarray: T): T;
 
   /**
+   * Computes square of `x` element-wise.
+   *
+   * @param x The input array.
+   */
+  square<T extends NDArray>(x: T): T {
+    return this.executeOp('square', () => this.squareInternal(x));
+  }
+  protected abstract squareInternal<T extends NDArray>(x: T): T;
+
+  /**
    * Computes absolute value element-wise.
    * @param ndarray The input NDArray.
    */
@@ -1134,8 +1172,8 @@ export abstract class NDArrayMath {
    * @return {NDArray}
    */
   leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
-    return this.executeOp('leakyRelu', () =>
-        this.leakyReluInternal(ndarray, alpha));
+    return this.executeOp(
+        'leakyRelu', () => this.leakyReluInternal(ndarray, alpha));
   }
   protected abstract leakyReluInternal<T extends NDArray>(
       ndarray: T, alpha: number): T;
@@ -1837,6 +1875,30 @@ export abstract class NDArrayMath {
   protected abstract oneHotInternal(
       indices: Array1D, depth: number, onValue: number,
       offValue: number): Array2D;
+
+  /**
+   * Calculates the mean and variance of `x`. The mean and variance are
+   * calculated by aggregating the contents of `x` across `axes`. If `x` is 1-D
+   * and `axes = [0]` this is just the mean and variance of a vector.
+   *
+   * @param x The input array.
+   * @param axes Axes along which to compute the mean and variance.s
+   * @param keepDims If true, the moments have the same dimensionality as the
+   *     input.
+   * @return A tuple of two arrays: mean and variance.
+   */
+  moments(x: NDArray, axes: number[], keepDims = false):
+      [NDArray<'float32'>, NDArray<'float32'>] {
+    return this.scope(() => {
+      const mean = this.mean(x, axes, keepDims);
+      const keepDimsShape = axis_util.expandShapeToKeepDim(mean.shape, axes);
+      const devSquared =
+          this.square(this.subtract(x, mean.reshape(keepDimsShape)));
+      const result: [NDArray<'float32'>, NDArray<'float32'>] =
+          [mean, this.mean(devSquared, axes, keepDims)];
+      return result;
+    });
+  }
 }
 
 export enum MatrixOrientation {
