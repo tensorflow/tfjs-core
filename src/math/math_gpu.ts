@@ -42,7 +42,7 @@ import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
-import {Pool1DProgram, Pool2DProgram, Pool3DProgram} from './webgl/pool_gpu';
+import {Pool2DProgram, PoolNDProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
@@ -414,7 +414,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected maxPool1DInternal(x: Array2D, convInfo: ConvInfoND): Array2D {
-    const program = new Pool1DProgram(convInfo, 'max', false);
+    const program = new PoolNDProgram(convInfo, 'max', false);
     return this.compileAndRun(program, [x]) as Array2D;
   }
 
@@ -424,7 +424,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected maxPool3DInternal(x: Array4D, convInfo: ConvInfoND): Array4D {
-    const program = new Pool3DProgram(convInfo, 'max', false);
+    const program = new PoolNDProgram(convInfo, 'max', false);
     return this.compileAndRun(program, [x]) as Array4D;
   }
 
