@@ -17,8 +17,8 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
-import {Array1D, Array2D, Scalar} from './ndarray';
+import * as util from '../util';
+import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
 // element-wise mul / div
 {
@@ -332,7 +332,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([2, 5, 1]);
       const b = Array1D.new([4, 2, -1]);
 
-      const result = math.sub(a, b);
+      const result = math.subtract(a, b);
 
       const expected = new Float32Array([-2, 3, 2]);
       test_util.expectArraysClose(result.getValues(), expected);
@@ -345,7 +345,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([2, 5, 1]);
       const b = Array1D.new([4, NaN, -1]);
 
-      const res = math.sub(a, b).getValues();
+      const res = math.subtract(a, b).getValues();
 
       test_util.expectArraysClose(res, new Float32Array([-2, NaN, 2]));
 
@@ -357,11 +357,56 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([2, 5, 1, 5]);
       const b = Array1D.new([4, 2, -1]);
 
-      expect(() => math.sub(a, b)).toThrowError();
-      expect(() => math.sub(b, a)).toThrowError();
+      expect(() => math.subtract(a, b)).toThrowError();
+      expect(() => math.subtract(b, a)).toThrowError();
 
       a.dispose();
       b.dispose();
+    });
+
+    it('2D-scalar broadcast', math => {
+      const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+      const b = Scalar.new(2);
+      const res = math.subtract(a, b);
+      expect(res.shape).toEqual([2, 3]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([-1, 0, 1, 2, 3, 4]));
+    });
+
+    it('scalar-1D broadcast', math => {
+      const a = Scalar.new(2);
+      const b = Array1D.new([1, 2, 3, 4, 5, 6]);
+      const res = math.subtract(a, b);
+      expect(res.shape).toEqual([6]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([1, 0, -1, -2, -3, -4]));
+    });
+
+    it('2D-2D broadcast each with 1 dim', math => {
+      const a = Array2D.new([1, 3], [1, 2, 5]);
+      const b = Array2D.new([2, 1], [7, 3]);
+      const res = math.subtract(a, b);
+      expect(res.shape).toEqual([2, 3]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([-6, -5, -2, -2, -1, 2]));
+    });
+
+    it('2D-2D broadcast inner dim of b', math => {
+      const a = Array2D.new([2, 3], [1, 2, 5, 4, 5, 6]);
+      const b = Array2D.new([2, 1], [7, 3]);
+      const res = math.subtract(a, b);
+      expect(res.shape).toEqual([2, 3]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([-6, -5, -2, 1, 2, 3]));
+    });
+
+    it('3D-scalar', math => {
+      const a = Array3D.new([2, 3, 1], [1, 2, 3, 4, 5, 6]);
+      const b = Scalar.new(-1);
+      const res = math.subtract(a, b);
+      expect(res.shape).toEqual([2, 3, 1]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([2, 3, 4, 5, 6, 7]));
     });
 
     it('A + B', math => {
@@ -397,6 +442,51 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       a.dispose();
       b.dispose();
+    });
+
+    it('2D+scalar broadcast', math => {
+      const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+      const b = Scalar.new(2);
+      const res = math.add(a, b);
+      expect(res.shape).toEqual([2, 3]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([3, 4, 5, 6, 7, 8]));
+    });
+
+    it('scalar+1D broadcast', math => {
+      const a = Scalar.new(2);
+      const b = Array1D.new([1, 2, 3, 4, 5, 6]);
+      const res = math.add(a, b);
+      expect(res.shape).toEqual([6]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([3, 4, 5, 6, 7, 8]));
+    });
+
+    it('2D+2D broadcast each with 1 dim', math => {
+      const a = Array2D.new([1, 3], [1, 2, 5]);
+      const b = Array2D.new([2, 1], [7, 3]);
+      const res = math.add(a, b);
+      expect(res.shape).toEqual([2, 3]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([8, 9, 12, 4, 5, 8]));
+    });
+
+    it('2D+2D broadcast inner dim of b', math => {
+      const a = Array2D.new([2, 3], [1, 2, 5, 4, 5, 6]);
+      const b = Array2D.new([2, 1], [7, 3]);
+      const res = math.add(a, b);
+      expect(res.shape).toEqual([2, 3]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([8, 9, 12, 7, 8, 9]));
+    });
+
+    it('3D+scalar', math => {
+      const a = Array3D.new([2, 3, 1], [1, 2, 3, 4, 5, 6]);
+      const b = Scalar.new(-1);
+      const res = math.add(a, b);
+      expect(res.shape).toEqual([2, 3, 1]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([0, 1, 2, 3, 4, 5]));
     });
   };
 
@@ -467,6 +557,77 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
   test_util.describeMathCPU('scaledArrayAdd', [tests]);
   test_util.describeMathGPU('scaledArrayAdd', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// element-wise equal
+{
+  const tests: MathTests = it => {
+    it('propagates NaNs', math => {
+      const a = Array1D.new([2, 5, NaN]);
+      const b = Array1D.new([4, 5, -1]);
+
+      const res = math.equal(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.getValues()).toEqual(new Uint8Array([0, 1, util.NAN_BOOL]));
+
+      a.dispose();
+      b.dispose();
+    });
+
+    it('strict version throws when x and y are different shape', math => {
+      const a = Array1D.new([2]);
+      const b = Array1D.new([4, 2, -1]);
+
+      expect(() => math.equalStrict(a, b)).toThrowError();
+      expect(() => math.equalStrict(b, a)).toThrowError();
+
+      a.dispose();
+      b.dispose();
+    });
+
+    it('2D and scalar broadcast', math => {
+      const a = Array2D.new([2, 3], [1, 2, 3, 2, 5, 6]);
+      const b = Scalar.new(2);
+      const res = math.equal(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.shape).toEqual([2, 3]);
+      expect(res.getValues()).toEqual(new Uint8Array([0, 1, 0, 1, 0, 0]));
+    });
+
+    it('scalar and 1D broadcast', math => {
+      const a = Scalar.new(2);
+      const b = Array1D.new([1, 2, 3, 4, 5, 2]);
+      const res = math.equal(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.shape).toEqual([6]);
+      expect(res.getValues()).toEqual(new Uint8Array([0, 1, 0, 0, 0, 1]));
+    });
+
+    it('2D and 2D broadcast each with 1 dim', math => {
+      const a = Array2D.new([1, 3], [1, 2, 5]);
+      const b = Array2D.new([2, 1], [5, 1]);
+      const res = math.equal(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.shape).toEqual([2, 3]);
+      expect(res.getValues()).toEqual(new Uint8Array([0, 0, 1, 1, 0, 0]));
+    });
+
+    it('3D and scalar', math => {
+      const a = Array3D.new([2, 3, 1], [1, 2, 3, 4, 5, -1]);
+      const b = Scalar.new(-1);
+      const res = math.equal(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.shape).toEqual([2, 3, 1]);
+      expect(res.getValues()).toEqual(new Uint8Array([0, 0, 0, 0, 0, 1]));
+    });
+  };
+
+  test_util.describeMathCPU('equal', [tests]);
+  test_util.describeMathGPU('equal', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

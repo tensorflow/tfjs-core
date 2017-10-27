@@ -184,38 +184,6 @@ export function createShuffledIndices(n: number): Uint32Array {
   return shuffledIndices;
 }
 
-export function assertAndGetBroadcastedShape(
-    shapeA: number[], shapeB: number[]): number[] {
-  const result: number[] = [];
-  let nextADimMustBeOne = false;
-  let nextBDimMustBeOne = false;
-  const errMsg = `Operands could not be broadcast together with shapes ` +
-      `${shapeA} and ${shapeB}. Currently, we only support a ` +
-      `stricter version of broadcasting than numpy.`;
-  const l = Math.max(shapeA.length, shapeB.length);
-
-  shapeA = shapeA.slice().reverse();
-  shapeB = shapeB.slice().reverse();
-  for (let i = 0; i < l; i++) {
-    const a = shapeA[i] || 1;
-    const b = shapeB[i] || 1;
-    if ((b > 1 && nextBDimMustBeOne) || (a > 1 && nextADimMustBeOne)) {
-      throw Error(errMsg);
-    }
-    if (a > 1 && b === 1) {
-      nextBDimMustBeOne = true;
-    }
-    if (b > 1 && a === 1) {
-      nextADimMustBeOne = true;
-    }
-    if (a > 1 && b > 1 && a !== b) {
-      throw Error(errMsg);
-    }
-    result.push(Math.max(a, b));
-  }
-  return result.reverse();
-}
-
 export function rightPad(a: string, size: number): string {
   if (size <= a.length) {
     return a;
@@ -309,4 +277,34 @@ export function inferFromImplicitShape(
   const newShape = shape.slice();
   newShape[implicitIdx] = size / shapeProd;
   return newShape;
+}
+
+export type DType = 'float32'|'int32'|'bool';
+
+export const NAN_INT32 = 1 << 31;
+export const NAN_BOOL = 255;
+export const NAN_FLOAT32 = NaN;
+
+export function getNaN(dtype: DType): number {
+  if (dtype === 'float32') {
+    return NAN_FLOAT32;
+  } else if (dtype === 'int32') {
+    return NAN_INT32;
+  } else if (dtype === 'bool') {
+    return NAN_BOOL;
+  } else {
+    throw new Error(`Unknown dtype ${dtype}`);
+  }
+}
+
+export function isValNaN(val: number, dtype: DType): boolean {
+  if (dtype === 'float32') {
+    return isNaN(val);
+  } else if (dtype === 'int32') {
+    return val === NAN_INT32;
+  } else if (dtype === 'bool') {
+    return val === NAN_BOOL;
+  } else {
+    throw new Error(`Unknown dtype ${dtype}`);
+  }
 }

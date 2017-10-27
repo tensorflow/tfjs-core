@@ -17,6 +17,8 @@
 
 import * as seedrandom from 'seedrandom';
 import * as util from '../util';
+import * as axis_util from './axis_util';
+import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -236,17 +238,11 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T {
-    const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
-    const newValues = new Float32Array(util.sizeFromShape(newShape));
-
-    const aValues = a.getValues();
-    const bValues = b.getValues();
     const c1Val = c1.get();
     const c2Val = c2.get();
-    for (let i = 0; i < newValues.length; ++i) {
-      newValues[i] = c1Val * aValues[i % a.size] + c2Val * bValues[i % b.size];
-    }
-    return NDArray.make(newShape, {values: newValues}) as T;
+    return this.broadcastedBinaryOp(a, b, 'float32', (aVal, bVal) => {
+      return c1Val * aVal + c2Val * bVal;
+    }) as T;
   }
 
   protected negInternal<T extends NDArray>(a: T): T {
@@ -257,7 +253,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.ONE, b);
   }
 
-  protected subInternal<T extends NDArray>(a: T, b: T): T {
+  protected subtractInternal<T extends NDArray>(a: T, b: T): T {
     return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
   }
 
@@ -300,7 +296,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected multiplyInternal<T extends NDArray>(a: T, b: T): T {
-    const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
     const aValues = a.getValues();
@@ -312,7 +309,8 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected divideInternal<T extends NDArray>(a: T, b: T): T {
-    const newShape = util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
     const aValues = a.getValues();
@@ -324,57 +322,94 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  protected sumInternal<T extends keyof DataTypes>(ndarray: NDArray<T>):
-      Scalar<SumTypes[T]> {
-    let sum = 0;
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      sum += values[i];
+  protected sumInternal<T extends keyof DataTypes>(
+      input: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
+    axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const resultDtype = SumTypesMap[input.dtype] as keyof SumTypes;
+    const result = NDArray.zeros(outShape, resultDtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let sum = 0;
+      for (let j = 0; j < reduceSize; ++j) {
+        sum += aVals[offset + j];
+      }
+      vals[i] = sum;
     }
-    return Scalar.new(sum, SumTypesMap[ndarray.dtype]);
+    return result as NDArray<SumTypes[T]>;
   }
 
-  protected argMinInternal(ndarray: NDArray): Scalar {
-    let min = Number.MAX_VALUE;
-    let minIndex = -1;
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        return Scalar.new(NaN);
+  protected argMinInternal(input: NDArray, axes: number[]): NDArray<'int32'> {
+    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const result = NDArray.zeros(outShape, 'int32');
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let min = aVals[offset];
+      let minIndex = 0;
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        if (isNaN(value)) {
+          minIndex = util.NAN_INT32;
+          break;
+        }
+        if (value < min) {
+          min = value;
+          minIndex = j;
+        }
       }
-      if (value < min) {
-        min = value;
-        minIndex = i;
-      }
+      vals[i] = minIndex;
     }
-    return Scalar.new(minIndex);
+    return result;
   }
 
-  protected argMaxInternal(ndarray: NDArray): Scalar {
-    let max = Number.NEGATIVE_INFINITY;
-    let maxIndex = -1;
-    const values = ndarray.getValues();
-    for (let i = 0; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        return Scalar.new(NaN);
+  protected argMaxInternal(input: NDArray, axes: number[]): NDArray<'int32'> {
+    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const result = NDArray.zeros(outShape, 'int32');
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let max = aVals[offset];
+      let maxIndex = 0;
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        if (isNaN(value)) {
+          maxIndex = util.NAN_INT32;
+          break;
+        }
+        if (value > max) {
+          max = value;
+          maxIndex = j;
+        }
       }
-      if (value > max) {
-        max = value;
-        maxIndex = i;
-      }
+      vals[i] = maxIndex;
     }
-    return Scalar.new(maxIndex);
+    return result;
   }
 
-  protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
-    const argMax1 = this.argMaxInternal(x1).get();
-    const argMax2 = this.argMaxInternal(x2).get();
-    if (isNaN(argMax1) || isNaN(argMax2)) {
-      return Scalar.new(NaN);
-    }
-    return Scalar.new(+(argMax1 === argMax2));
+  protected equalInternal(a: NDArray, b: NDArray): NDArray<'bool'> {
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        return util.getNaN('bool');
+      } else {
+        return (aVal === bVal) ? 1 : 0;
+      }
+    });
   }
 
   protected topKInternal(ndarray: NDArray, k: number):
@@ -396,34 +431,60 @@ export class NDArrayMathCPU extends NDArrayMath {
     return {values: Array1D.new(topkValues), indices: Array1D.new(topkIndices)};
   }
 
-  protected minInternal(ndarray: NDArray): Scalar {
-    const values = ndarray.getValues();
-    let min = values[0];
-    for (let i = 1; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        return Scalar.new(NaN);
+  protected minInternal<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[]): NDArray<G> {
+    axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const result = NDArray.zeros(outShape, input.dtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let min = aVals[0];
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        if (isNaN(value)) {
+          min = Number.NaN;
+          break;
+        }
+        if (value < min) {
+          min = value;
+        }
       }
-      if (value < min) {
-        min = value;
-      }
+      vals[i] = min;
     }
-    return Scalar.new(min);
+    return result;
   }
 
-  protected maxInternal(ndarray: NDArray): Scalar {
-    const values = ndarray.getValues();
-    let max = values[0];
-    for (let i = 1; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        return Scalar.new(NaN);
+  protected maxInternal<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[]): NDArray<G> {
+    axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(input.shape, axes);
+    const result = NDArray.zeros(outShape, input.dtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.getValues();
+
+    const aVals = input.getValues();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let max = aVals[0];
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        if (isNaN(value)) {
+          max = Number.NaN;
+          break;
+        }
+        if (value > max) {
+          max = value;
+        }
       }
-      if (value > max) {
-        max = value;
-      }
+      vals[i] = max;
     }
-    return Scalar.new(max);
+    return result;
   }
 
   protected ceilInternal<T extends NDArray>(ndarray: T): T {
@@ -473,34 +534,62 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
-  protected logSumExpInternal(ndarray: NDArray): Scalar {
-    const xMax = this.max(ndarray);
-    const a = this.arrayMinusScalar(ndarray, xMax);
+  protected logSumExpInternal(input: NDArray, axes: number[]): NDArray {
+    axis_util.assertAxesAreInnerMostDims('logSumExp', axes, input.rank);
+    const xMax = this.max(input, axes, true /* keepDims */);
+    const a = this.subtract(input, xMax);
     const b = this.exp(a);
-    const c = this.sum(b);
+    const c = this.sum(b, axes);
     const d = this.log(c);
-    const result = this.add(xMax, d);
-
-    xMax.dispose();
-    a.dispose();
-    b.dispose();
-    c.dispose();
-    d.dispose();
-
+    const result = this.add(xMax.reshape(d.shape), d);
     return result;
   }
 
-  protected reluInternal<T extends NDArray>(ndarray: T): T {
+  protected reluInternal<T extends NDArray>(input: T): T {
+    const res = NDArray.zeros(input.shape, input.dtype);
+    const resVals = res.getValues();
+    const inVals = input.getValues();
+    for (let i = 0; i < inVals.length; ++i) {
+      const val = inVals[i];
+      if (util.isValNaN(val, input.dtype)) {
+        resVals[i] = util.getNaN(res.dtype);
+      } else {
+        resVals[i] = Math.max(0, inVals[i]);
+      }
+    }
+    return res as T;
+  }
+
+  protected eluInternal<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+    const values = ndarray.dataSync();
     for (let i = 0; i < values.length; ++i) {
-      resultValues[i] = Math.max(0, values[i]);
+      const v = values[i];
+      if (v >= 0) {
+        resultValues[i] = v;
+      } else {
+        resultValues[i] = (Math.exp(v) - 1);
+      }
+    }
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+  }
+
+  protected leakyReluInternal<T extends NDArray>(ndarray: T, alpha: number) {
+    const resultValues = new Float32Array(ndarray.size);
+    const values = ndarray.dataSync();
+    for (let i = 0; i < values.length; i++){
+      const v = values[i];
+      if (v >= 0) {
+        resultValues[i] = v;
+      } else {
+        resultValues[i] = alpha * v;
+      }
     }
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
   protected clipInternal<T extends NDArray>(
-    ndarray: T, min: number, max: number): T {
+      ndarray: T, min: number, max: number): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -770,21 +859,22 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array1D.new(values);
   }
 
-  protected switchDimInternal<T extends NDArray>(t: T, newDim: number[]): T {
-    const newShape: number[] = new Array(t.rank);
+  protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm: number[]): T {
+    const newShape: number[] = new Array(a.rank);
     for (let i = 0; i < newShape.length; i++) {
-      newShape[i] = t.shape[newDim[i]];
+      newShape[i] = a.shape[perm[i]];
     }
-    const resultValues = new Float32Array(t.size);
-    const values = t.getValues();
+    const resultValues = new Float32Array(a.size);
+    const values = a.getValues();
     const result = NDArray.make(newShape, {values: resultValues}) as T;
-    for (let i = 0; i < t.size; ++i) {
-      const loc = t.indexToLoc(i);
+    for (let i = 0; i < a.size; ++i) {
+      const loc = a.indexToLoc(i);
 
       // Permute location.
       const newLoc: number[] = new Array(loc.length);
       for (let i = 0; i < newLoc.length; i++) {
-        newLoc[i] = loc[newDim[i]];
+        newLoc[i] = loc[perm[i]];
       }
 
       const newIndex = result.locToIndex(newLoc);
@@ -1014,34 +1104,41 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected multinomialInternal(
-      probabilities: Array1D, numSamples: number, seed: number): Array1D {
+      probabilities: Array2D, numSamples: number,
+      seed: number): Array2D<'int32'> {
+    const batchSize = probabilities.shape[0];
+    const numEvents = probabilities.shape[1];
+    const res = Array2D.zeros([batchSize, numSamples], 'int32');
+    const resVals = res.getValues();
     const probVals = probabilities.getValues();
 
-    // The cdf won't include the last event. It will be implicit if not other
-    // event happened.
-    const cdf = new Float32Array(probabilities.size - 1);
-    cdf[0] = probVals[0];
-    for (let event = 1; event < cdf.length; ++event) {
-      cdf[event] = cdf[event - 1] + probVals[event];
-    }
-    const random = seedrandom.alea(seed.toString());
-    const res = new Float32Array(numSamples);
+    for (let b = 0; b < batchSize; ++b) {
+      const offset = b * numEvents;
+      // The cdf won't include the last event. It will be implicit if no other
+      // event happened.
+      const cdf = new Float32Array(numEvents - 1);
+      cdf[0] = probVals[offset];
+      for (let event = 1; event < cdf.length; ++event) {
+        cdf[event] = cdf[event - 1] + probVals[offset + event];
+      }
 
-    for (let i = 0; i < numSamples; ++i) {
-      const r = random();
+      const random = seedrandom.alea(seed.toString());
+      const outOffset = b * numSamples;
+      for (let sampleId = 0; sampleId < numSamples; ++sampleId) {
+        const r = random();
 
-      // Assume last event happened by default.
-      res[i] = cdf.length;
+        // Assume last event happened by default.
+        resVals[outOffset + sampleId] = cdf.length;
 
-      for (let event = 0; event < cdf.length; event++) {
-        if (r < cdf[event]) {
-          res[i] = event;
-          break;
+        for (let event = 0; event < cdf.length; event++) {
+          if (r < cdf[event]) {
+            resVals[outOffset + sampleId] = event;
+            break;
+          }
         }
       }
     }
-
-    return Array1D.new(res);
+    return res;
   }
 
   protected oneHotInternal(
@@ -1054,5 +1151,34 @@ export class NDArrayMathCPU extends NDArrayMath {
       res[event * depth + indices.get(event)] = onValue;
     }
     return Array2D.new([indices.size, depth], res);
+  }
+
+  private broadcastedBinaryOp<D extends keyof DataTypes>(
+      a: NDArray, b: NDArray, dtype: D,
+      op: (a: number, b: number) => number): NDArray<D> {
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const result = NDArray.zeros(newShape, dtype);
+    const newValues = result.getValues();
+    const aValues = a.getValues();
+    const bValues = b.getValues();
+
+    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
+    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
+
+    for (let i = 0; i < newValues.length; ++i) {
+      const loc = result.indexToLoc(i);
+
+      const aLoc = loc.slice(-a.rank);
+      aBroadcastDims.forEach(d => aLoc[d] = 0);
+      const aIndex = a.locToIndex(aLoc);
+
+      const bLoc = loc.slice(-b.rank);
+      bBroadcastDims.forEach(d => bLoc[d] = 0);
+      const bIndex = b.locToIndex(bLoc);
+
+      newValues[i] = op(aValues[aIndex], bValues[bIndex]);
+    }
+    return result;
   }
 }

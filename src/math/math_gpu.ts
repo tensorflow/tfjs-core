@@ -21,7 +21,6 @@ import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
-import {ArgMaxEqualsProgram} from './webgl/argmaxequals_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
@@ -46,8 +45,8 @@ import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceSumProgram} from './webgl/reducesum_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
-import {SwitchDimProgram} from './webgl/switch_dim_gpu';
 import {TextureManager} from './webgl/texture_manager';
+import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -227,32 +226,36 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, inputs) as Array3D;
   }
 
-  protected switchDimInternal<T extends NDArray>(a: T, newDim: number[]): T {
-    const program = new SwitchDimProgram(a.shape, newDim);
+  protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm: number[]): T {
+    const program = new TransposeProgram(a.shape, perm);
     return this.compileAndRun(program, [a]);
   }
 
-  protected sumInternal<T extends keyof DataTypes>(a: NDArray<T>):
-      Scalar<SumTypes[T]> {
-    const program = new ReduceSumProgram(a.size);
+  protected sumInternal<T extends keyof DataTypes>(
+      a: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
+    const program = new ReduceSumProgram(a.shape, axes);
     const output =
         this.makeOutputArray(program.outputShape, SumTypesMap[a.dtype]);
     return this.compileAndRun(program, [a], output);
   }
 
-  protected argMinInternal(a: NDArray): Scalar {
-    const program = new ArgMinMaxProgram(a.size, 'min');
-    return this.compileAndRun(program, [a]);
+  protected argMinInternal(a: NDArray, axes: number[]): NDArray<'int32'> {
+    const program = new ArgMinMaxProgram(a.shape, axes, 'min');
+    const output = this.makeOutputArray(program.outputShape, 'int32');
+    return this.compileAndRun(program, [a], output);
   }
 
-  protected argMaxInternal(a: NDArray): Scalar {
-    const program = new ArgMinMaxProgram(a.size, 'max');
-    return this.compileAndRun(program, [a]);
+  protected argMaxInternal(a: NDArray, axes: number[]): NDArray<'int32'> {
+    const program = new ArgMinMaxProgram(a.shape, axes, 'max');
+    const output = this.makeOutputArray(program.outputShape, 'int32');
+    return this.compileAndRun(program, [a], output);
   }
 
-  protected argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar {
-    const program = new ArgMaxEqualsProgram(x1.size, x2.size);
-    return this.compileAndRun(program, [x1, x2]);
+  protected equalInternal(x: NDArray, y: NDArray): NDArray<'bool'> {
+    const program = new BinaryOpProgram(binaryop_gpu.EQUAL, x.shape, y.shape);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [x, y], output);
   }
 
   protected topKInternal(ndarray: NDArray, k: number):
@@ -260,13 +263,15 @@ export class NDArrayMathGPU extends NDArrayMath {
     throw new Error('topK GPU not yet implemented!');
   }
 
-  protected minInternal(a: NDArray): Scalar {
-    const program = new MinMaxProgram(a.size, 'min');
+  protected minInternal<G extends keyof DataTypes>(
+      a: NDArray<G>, axes: number[]): NDArray<G> {
+    const program = new MinMaxProgram(a.shape, axes, 'min');
     return this.compileAndRun(program, [a]);
   }
 
-  protected maxInternal(a: NDArray): Scalar {
-    const program = new MinMaxProgram(a.size, 'max');
+  protected maxInternal<G extends keyof DataTypes>(
+      a: NDArray<G>, axes: number[]): NDArray<G> {
+    const program = new MinMaxProgram(a.shape, axes, 'max');
     return this.compileAndRun(program, [a]);
   }
 
@@ -280,13 +285,13 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }
 
-  protected subInternal<T extends NDArray>(a: T, b: T): T {
+  protected subtractInternal<T extends NDArray>(a: T, b: T): T {
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }
 
-  protected logSumExpInternal(a: NDArray): Scalar {
-    const program = new LogSumExpProgram(a.size);
+  protected logSumExpInternal(a: NDArray, axes: number[]): NDArray {
+    const program = new LogSumExpProgram(a.shape, axes);
     return this.compileAndRun(program, [a]);
   }
 
@@ -320,8 +325,18 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]) as T;
   }
 
-  protected clipInternal<T extends NDArray>(
-    a: T, min: number, max: number): T {
+  protected eluInternal<T extends NDArray>(a: T): T{
+    const program = new UnaryOpProgram(a.shape, unary_op.ELU);
+    return this.compileAndRun(program, [a]) as T;
+  }
+
+  protected leakyReluInternal<T extends NDArray>(a: T, alpha: number): T {
+    const program = new UnaryOpProgram(a.shape,
+        unary_op.LEAKY_RELU(alpha));
+    return this.compileAndRun(program, [a]) as T;
+  }
+
+  protected clipInternal<T extends NDArray>(a: T, min: number, max: number): T {
     const program = new ClipProgram(a.shape, min, max);
     return this.compileAndRun(program, [a]) as T;
   }
@@ -451,10 +466,14 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected multinomialInternal(
-      probs: Array1D, numSamples: number, seed: number): Array1D {
-    const program = new MultinomialProgram(probs.size, numSamples);
+      probs: Array2D, numSamples: number, seed: number): Array2D<'int32'> {
+    const batchSize = probs.shape[0];
+    const numOutcomes = probs.shape[1];
+    const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);
+    const output =
+        this.makeOutputArray(program.outputShape, 'int32') as Array2D<'int32'>;
     const customSetup = program.getCustomSetupFunc(seed);
-    return this.compileAndRun(program, [probs], null, customSetup);
+    return this.compileAndRun(program, [probs], output, customSetup);
   }
 
   protected oneHotInternal(

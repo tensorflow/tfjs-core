@@ -85,7 +85,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
         this.webcamVideoElement.style.display = 'none';
         this.staticImgElement.style.display = '';
       }
-      this.staticImgElement.src = 'images/' + event.detail.selected + '.jpg';
+      this.staticImgElement.src = `images/${event.detail.selected}.jpg`;
     });
 
     // tslint:disable-next-line:no-any
@@ -145,39 +145,40 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.selectedInputName = 'webcam';
   }
 
-  private animate() {
+  private async animate() {
     const startTime = performance.now();
 
     const isWebcam = this.selectedInputName === 'webcam';
 
-    const image = Array3D.fromPixels(
-        isWebcam ? this.webcamVideoElement : this.staticImgElement);
+    await this.math.scope(async (keep, track) => {
+      const image = track(Array3D.fromPixels(
+          isWebcam ? this.webcamVideoElement : this.staticImgElement));
 
-    this.math.scope((keep, track) => {
       const inferenceResult = this.squeezeNet.infer(image);
       const namedActivations = inferenceResult.namedActivations;
 
       this.layerNames = Object.keys(namedActivations);
 
-      const topClassesToProbability =
-          this.squeezeNet.getTopKClasses(inferenceResult.logits, TOP_K_CLASSES);
+      const topClassesToProbability = await this.squeezeNet.getTopKClasses(
+          inferenceResult.logits, TOP_K_CLASSES);
 
       let count = 0;
       for (const className in topClassesToProbability) {
         if (!(className in topClassesToProbability)) {
           continue;
         }
-        document.getElementById('class' + count).innerHTML = className;
-        document.getElementById('prob' + count).innerHTML =
-            '' + Math.floor(1000 * topClassesToProbability[className]) / 1000;
+        document.getElementById(`class${count}`).innerHTML = className;
+        document.getElementById(`prob${count}`).innerHTML =
+            (Math.floor(1000 * topClassesToProbability[className]) / 1000)
+                .toString();
         count++;
       }
 
       const endTime = performance.now();
 
+      const elapsed = Math.floor(1000 * (endTime - startTime)) / 1000;
       (this.querySelector('#totalTime') as HTMLDivElement).innerHTML =
-          'last inference time: ' +
-          Math.floor(1000 * (endTime - startTime)) / 1000 + 'ms';
+          `last inference time: ${elapsed} ms`;
 
       // Render activations.
       const activationNDArray = namedActivations[this.selectedLayerName];
@@ -203,8 +204,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
           activationNDArray.shape[0], activationNDArray.shape[2],
           this.inferenceCanvas.width, numRows);
     });
-
-    image.dispose();
 
     requestAnimationFrame(() => this.animate());
   }

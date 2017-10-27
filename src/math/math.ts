@@ -17,6 +17,8 @@
 
 import * as util from '../util';
 import {TypedArray} from '../util';
+import * as axis_util from './axis_util';
+import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import {ConvInfo} from './conv_util';
@@ -25,7 +27,8 @@ import * as copy2d_util from './copy2d_util';
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 
-export type ScopeResult = NDArray[]|NDArray|void;
+export type ScopeResultImmediate = NDArray[]|NDArray|void;
+export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -69,16 +72,20 @@ export abstract class NDArrayMath {
   scope<T extends ScopeResult>(
       scopeFn:
           (keep: <T1 extends NDArray>(ndarray: T1) => T1,
-           track: <T2 extends NDArray>(ndarray: T2) => T2) => T) {
+           track: <T2 extends NDArray>(ndarray: T2) => T2) => T): T {
     this.startScope();
 
     const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
     const trackFn = <T extends NDArray>(ndarray: T): T => this.track(ndarray);
     const result = scopeFn(keepFn, trackFn);
 
-    this.endScope(result);
-
-    return result;
+    if (result instanceof Promise) {
+      result.then(r => this.endScope(r));
+      return result;
+    } else {
+      this.endScope(result as ScopeResultImmediate);
+      return result;
+    }
   }
 
   /**
@@ -111,7 +118,7 @@ export abstract class NDArrayMath {
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  endScope(result: ScopeResult) {
+  endScope(result: ScopeResultImmediate) {
     let arraysToKeep = this.activeScopeNDArraysToKeep;
     if (result != null) {
       arraysToKeep = arraysToKeep.concat(result as NDArray | NDArray[]);
@@ -178,9 +185,10 @@ export abstract class NDArrayMath {
     return result;
   }
 
-  private checkForNaN(vals: TypedArray, name: string): void {
+  private checkForNaN(vals: TypedArray, dtype: keyof DataTypes, name: string):
+      void {
     for (let i = 0; i < vals.length; i++) {
-      if (isNaN(vals[i])) {
+      if (util.isValNaN(vals[i], dtype)) {
         throw Error(`The result of the last math.${name} has NaNs.`);
       }
     }
@@ -253,15 +261,15 @@ export abstract class NDArrayMath {
     const result = f();
     if (this.debugMode) {
       const vals = result.getValues();
-      const time = util.rightPad((performance.now() - start) + 'ms', 9);
+      const time = util.rightPad(`${performance.now() - start}ms`, 9);
       const paddedName = util.rightPad(name, 25);
       const rank = result.rank;
       const size = result.size;
-      const shape = util.rightPad(result.shape + '', 14);
+      const shape = util.rightPad(result.shape.toString(), 14);
       console.log(
           `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
           'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      this.checkForNaN(vals, name);
+      this.checkForNaN(vals, result.dtype, name);
     }
     return this.track(result);
   }
@@ -300,15 +308,15 @@ export abstract class NDArrayMath {
   matrixTimesVector(matrix: Array2D, v: Array1D): Array1D {
     util.assert(
         v.rank === 1,
-        `Error in vectorTimesMatrix: second input must rank 1, but got ` +
+        `Error in matrixTimesVector: second input must rank 1, but got ` +
             `rank ${v.rank}.`);
     util.assert(
         matrix.rank === 2,
-        `Error in vectorTimesMatrix: first input must be a rank 2, but got ` +
+        `Error in matrixTimesVector: first input must be a rank 2, but got ` +
             `rank ${matrix.rank}.`);
     util.assert(
         v.size === matrix.shape[1],
-        `Error in vectorTimesMatrix: size of first rank 1 input ${v.size} ` +
+        `Error in matrixTimesVector: size of first rank 1 input ${v.size} ` +
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
@@ -596,54 +604,128 @@ export abstract class NDArrayMath {
   ///////////////////
 
   /**
-   * Computes the the log(sum(e ^ x)) for each x in the input ndarray.
-   * @param ndarray The input NDArray to compute the logSumExp over.
+   * Computes the log(sum(exp(elements across the reduction dimensions)).
+   *
+   * Reduces the input along the dimensions given in `axis`. Unless `keepDims`
+   * is true, the rank of the array is reduced by 1 for each entry in `axis`. If
+   * `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axis` has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
+   * @param input The input NDArray.
+   * @param axis Optional. The dimension(s) to reduce. If null (the default),
+   *     reduces all dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with length
+   *     of 1. Defaults to false.
    */
-  logSumExp(ndarray: NDArray): Scalar {
-    return this.executeOp('logSumExp', () => this.logSumExpInternal(ndarray));
+  logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
+      NDArray {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
+    axis_util.assertAxesAreInnerMostDims('logSumExp', axes, input.rank);
+    return this.executeOp('logSumExp', () => {
+      const res = this.logSumExpInternal(input, axes);
+      if (keepDims) {
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        return res.reshape(newShape);
+      }
+      return res;
+    });
   }
-  protected abstract logSumExpInternal(ndarray: NDArray): Scalar;
+  protected abstract logSumExpInternal(ndarray: NDArray, axes: number[]):
+      NDArray;
 
   /**
-   * Computes the sum of all the entries in the input NDArray.
-   * @param ndarray The input NDArray to compute the sum over.
+   * Computes the sum of elements across dimensions of an array.
+   *
+   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
+   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If axes has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
+   * @param input The input array to compute the sum over.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  sum<T extends keyof DataTypes>(ndarray: NDArray<T>): Scalar<SumTypes[T]> {
-    return this.executeOp('sum', () => this.sumInternal(ndarray)) as
-        Scalar<SumTypes[T]>;
+  sum<T extends keyof DataTypes>(
+      input: NDArray<T>, axis: number|number[] = null,
+      keepDims = false): NDArray<SumTypes[T]> {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
+    axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
+
+    return this.executeOp('sum', () => {
+      const res = this.sumInternal(input, axes);
+      if (keepDims) {
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        return res.reshape(newShape);
+      }
+      return res;
+    });
   }
   protected abstract sumInternal<T extends keyof DataTypes>(
-      ndarray: NDArray<T>): Scalar<SumTypes[T]>;
+      ndarray: NDArray<T>, axes: number[]): NDArray<SumTypes[T]>;
 
   /**
-   * Computes the flattened index of the minimum element in the ndarray.
-   * @param ndarray The input NDArray.
+   * Returns the indices of the minimum values along an `axis`. The result has
+   * the same shape as `input` with the dimension along `axis` removed.
+   *
+   * @param input The input array.
+   * @param axis Optional. The dimension to reduce. By default it reduces across
+   * all axes and returns the flat index.
+   *
    */
-  argMin(ndarray: NDArray): Scalar {
-    return this.executeOp('argMin', () => this.argMinInternal(ndarray));
+  argMin(input: NDArray, axis: number = null): NDArray<'int32'> {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
+    axis_util.assertAxesAreInnerMostDims('argMin', axes, input.rank);
+    return this.executeOp('argMin', () => this.argMinInternal(input, axes));
   }
-  protected abstract argMinInternal(ndarray: NDArray): Scalar;
+  protected abstract argMinInternal(ndarray: NDArray, axes: number[]):
+      NDArray<'int32'>;
 
   /**
-   * Computes the flattened index of the maximum element in the ndarray.
-   * @param ndarray The input NDArray.
+   * Returns the indices of the maximum values along an `axis`. The result has
+   * the same shape as `input` with the dimension along `axis` removed.
+   *
+   * @param input The input array.
+   * @param axis Optional. The dimension to reduce. By default it reduces across
+   * all axes and returns the flat index.
+   *
    */
-  argMax(ndarray: NDArray): Scalar {
-    return this.executeOp('argMax', () => this.argMaxInternal(ndarray));
+  argMax(input: NDArray, axis: number = null): NDArray<'int32'> {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
+    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
+    return this.executeOp('argMax', () => this.argMaxInternal(input, axes));
   }
-  protected abstract argMaxInternal(ndarray: NDArray): Scalar;
+  protected abstract argMaxInternal(ndarray: NDArray, axes: number[]):
+      NDArray<'int32'>;
 
   /**
    * Returns a 1 if the argMax of x1 and x2 are the same, otherwise 0.
    * @param x1 The first input NDArray.
    * @param x2 The second input NDArray.
    */
-  argMaxEquals(x1: NDArray, x2: NDArray): Scalar {
+  argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return this.executeOp(
-        'argMaxEquals', () => this.argMaxEqualsInternal(x1, x2));
+    return this.executeOp('argMaxEquals', () => this.scope(() => {
+      return this.equal(this.argMax(x1), this.argMax(x2));
+    }));
   }
-  protected abstract argMaxEqualsInternal(x1: NDArray, x2: NDArray): Scalar;
+
+  /**
+   * Returns the truth value of (x == y) element-wise. Supports broadcasting.
+   * For a stricter version without broadcasting use math.equalStrict().
+   */
+  equal(x: NDArray, y: NDArray): NDArray<'bool'> {
+    return this.executeOp('equal', () => this.equalInternal(x, y));
+  }
+  protected abstract equalInternal(x: NDArray, y: NDArray): NDArray<'bool'>;
+
+  equalStrict<D extends keyof DataTypes, T extends NDArray<D>>(x: T, y: T):
+      NDArray<'bool'> {
+    util.assertShapesMatch(x.shape, y.shape, 'Error in equalStrict: ');
+    return this.equal(x, y);
+  }
 
   /**
    * Computes the top K values and flattened indices.
@@ -668,34 +750,88 @@ export abstract class NDArrayMath {
 
   /**
    * Computes the minimum value from the input.
-   * @param ndarray The input NDArray.
+   *
+   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
+   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axes` has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
+   * @param input The input NDArray.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  min(ndarray: NDArray): Scalar {
-    return this.executeOp('min', () => this.minInternal(ndarray));
+  min<G extends keyof DataTypes>(
+      input: NDArray<G>, axis: number|number[] = null,
+      keepDims = false): NDArray<G> {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
+    axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
+    return this.executeOp('min', () => {
+      const res = this.minInternal(input, axes);
+      if (keepDims) {
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        return res.reshape(newShape);
+      }
+      return res;
+    });
   }
-  protected abstract minInternal(ndarray: NDArray): Scalar;
+  protected abstract minInternal<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[]): NDArray<G>;
 
   /**
-   * Computes the maximum value from the input.
-   * @param ndarray The input NDArray.
+   * Computes the maximum of elements across dimensions of an array.
+   *
+   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
+   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axes` has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
+   * @param input The input array.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
+   *     dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  max(ndarray: NDArray): Scalar {
-    return this.executeOp('max', () => this.maxInternal(ndarray));
+  max<G extends keyof DataTypes>(
+      input: NDArray<G>, axis: number|number[] = null,
+      keepDims = false): NDArray<G> {
+    const axes = axis_util.parseAxisParam(axis, input.shape);
+    axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
+    return this.executeOp('max', () => {
+      const res = this.maxInternal(input, axes);
+      if (keepDims) {
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        return res.reshape(newShape);
+      }
+      return res;
+    });
   }
-  protected abstract maxInternal(ndarray: NDArray): Scalar;
+  protected abstract maxInternal<G extends keyof DataTypes>(
+      input: NDArray<G>, axes: number[]): NDArray<G>;
 
   /**
-   * Computes the softmax normalized vector from the input vector.
-   * @param x The input vector.
+   * Computes the softmax normalized vector given the logits.
+   * @param logits The logits array.
+   * @param dim The dimension softmax would be performed on. Defaults to -1
+   *     which indicates the last dimension.
    */
-  softmax(x: Array1D): Array1D {
+  softmax<T extends NDArray>(logits: T, dim = -1): T {
+    if (dim === -1) {
+      dim = logits.rank - 1;
+    }
+    if (dim !== logits.rank - 1) {
+      throw Error(
+          'Softmax along a non-last dimension is not yet supported. ' +
+          `Logits was rank ${logits.rank} and dim was ${dim}`);
+    }
     return this.executeOp('softmax', () => {
       return this.scope(() => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
-        const lse = this.logSumExp(x);
-        const logResult = this.arrayMinusScalar(x, lse);
-        return this.exp(logResult);
+        const lse = this.logSumExp(logits, [dim], true /* keepDims */);
+        const logResult = this.subtract(logits, lse);
+        return this.exp(logResult) as T;
       });
     });
   }
@@ -704,26 +840,37 @@ export abstract class NDArrayMath {
   // Element-wise ops //
   //////////////////////
 
-  /**
-   * Switches dimensions of the input NDArray.
-   * @param a The input NDArray.
-   * @param newDim The new indices that define which shapes values to switch.
-   */
+  /** @deprecated Use math.transpose() instead. */
   switchDim<T extends NDArray>(a: T, newDim: number[]): T {
-    util.assert(
-        a.rank === newDim.length,
-        `Error in switchDim: length of input shape ${a.shape} ` +
-            `must match size of newDim array ${newDim}.`);
-    return this.executeOp('switchDim', () => this.switchDimInternal(a, newDim));
+    return this.transpose(a, newDim);
   }
-  protected abstract switchDimInternal<T extends NDArray>(
-      a: T, newDim: number[]): T;
 
   /**
-   * Computes a scalar plus NDArray, c + A.
-   * @param c The scalar c in c + A.
-   * @param a The NDArray A in c + A.
+   * Transposes the array. Permutes the dimensions according to `perm`.
+   *
+   * The returned array's dimension `i` will correspond to the input dimension
+   * `perm[i]`. If `perm` is not given, it is set to `[n-1...0]`, where `n` is
+   * the rank of the input array. Hence by default, this operation performs a
+   * regular matrix transpose on 2-D input arrays.
+   *
+   * @param a The array to transpose.
+   * @param perm Optional. The permutation of the dimensions of a.
    */
+  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm?: number[]): T {
+    if (perm == null) {
+      perm = a.shape.map((s, i) => i).reverse();
+    }
+    util.assert(
+        a.rank === perm.length,
+        `Error in switchDim: length of input shape ${a.shape} ` +
+            `must match size of newDim array ${perm}.`);
+    return this.executeOp('transpose', () => this.transposeInternal(a, perm));
+  }
+  protected abstract transposeInternal<
+      D extends keyof DataTypes, T extends NDArray<D>>(a: T, perm: number[]): T;
+
+  /** @deprecated Use math.add(c, A) instead. */
   scalarPlusArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
@@ -732,30 +879,22 @@ export abstract class NDArrayMath {
     return this.add(c, a) as T;
   }
 
-  /**
-   * Computes a scalar minus NDArray, c - A.
-   * @param c The scalar c in c - A.
-   * @param a The NDArray A in c - A.
-   */
+  /** @deprecated Use math.sub(c, A) instead. */
   scalarMinusArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
         `Error in scalarMinusArray: first argument must be rank 0, but got ` +
             `rank ${c.rank}.`);
-    return this.sub(c, a) as T;
+    return this.subtract(c, a) as T;
   }
 
-  /**
-   * Computes A - c. A is NDArray, c is Scalar.
-   * @param a The NDArray A in A - c.
-   * @param c The Scalar c in A - c.
-   */
+  /** @deprecated Use math.sub(A, c) instead. */
   arrayMinusScalar<T extends NDArray>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
         `Error in arrayMinusScalar: second argument must be rank 0, but ` +
             `got rank ${c.rank}.`);
-    return this.sub(a, c) as T;
+    return this.subtract(a, c) as T;
   }
 
   /**
@@ -774,11 +913,12 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to add element-wise.
    * @param b The second NDArray to add element-wise.
    */
-  add(a: NDArray, b: NDArray): NDArray {
-    util.assertAndGetBroadcastedShape(a.shape, b.shape);
+  add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('add', () => this.addInternal(a, b));
   }
-  protected abstract addInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract addInternal<G extends keyof DataTypes>(
+      a: NDArray<G>, b: NDArray<G>): NDArray<G>;
 
   /**
    * Adds two NDArrays element-wise, A + B. Inputs must
@@ -787,7 +927,7 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  addStrict<T extends NDArray>(a: T, b: T): T {
+  addStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
     return this.add(a, b) as T;
   }
@@ -799,11 +939,18 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to subtract element-wise.
    * @param b The second NDArray to subtract element-wise.
    */
-  sub(a: NDArray, b: NDArray): NDArray {
-    util.assertAndGetBroadcastedShape(a.shape, b.shape);
-    return this.executeOp('sub', () => this.subInternal(a, b));
+  subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
+      NDArray<G> {
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.executeOp('subtract', () => this.subtractInternal(a, b));
   }
-  protected abstract subInternal(a: NDArray, b: NDArray): NDArray;
+
+  /** @deprecated Use math.subtract instead. */
+  sub<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
+    return this.subtract(a, b);
+  }
+  protected abstract subtractInternal<G extends keyof DataTypes>(
+      a: NDArray<G>, b: NDArray<G>): NDArray<G>;
 
   /**
    * Subtracts two NDArrays element-wise, A - B. Inputs must
@@ -812,9 +959,9 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  subStrict<T extends NDArray>(a: T, b: T): T {
+  subStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
-    return this.sub(a, b) as T;
+    return this.subtract(a, b) as T;
   }
 
   /**
@@ -825,7 +972,7 @@ export abstract class NDArrayMath {
    * @param b The second NDArray to multiply element-wise.
    */
   multiply(a: NDArray, b: NDArray): NDArray {
-    util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('multiply', () => this.multiplyInternal(a, b));
   }
   protected abstract multiplyInternal<T extends NDArray>(a: T, b: T): T;
@@ -857,7 +1004,7 @@ export abstract class NDArrayMath {
    * @param b The second NDArray to divide element-wise.
    */
   divide(a: NDArray, b: NDArray): NDArray {
-    util.assertAndGetBroadcastedShape(a.shape, b.shape);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('divide', () => this.divideInternal(a, b));
   }
   protected abstract divideInternal(a: NDArray, b: NDArray): NDArray;
@@ -874,12 +1021,7 @@ export abstract class NDArrayMath {
     return this.divide(a, b) as T;
   }
 
-  /**
-   * Computes a scalar divided by an NDArray, broadcasted over the NDArray, c /
-   * A.
-   * @param c The scalar value in c / A.
-   * @param a The NDArray value in c / A.
-   */
+  /** @deprecated Use math.divide(c, A) instead. */
   scalarDividedByArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
@@ -888,12 +1030,7 @@ export abstract class NDArrayMath {
     return this.divide(c, a) as T;
   }
 
-  /**
-   * Computes an NDArray divided by a scalar, broadcasted over the NDArray, A /
-   * c.
-   * @param a The NDArray value in A / c.
-   * @param c The scalar value in A / c.
-   */
+  /** @deprecated Use math.divide(A, c) instead. */
   arrayDividedByScalar<T extends NDArray>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
@@ -980,6 +1117,28 @@ export abstract class NDArrayMath {
     return this.executeOp('relu', () => this.reluInternal(ndarray));
   }
   protected abstract reluInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes exponential linear element-wise
+   * @param {T} ndarray the input NDArray
+   */
+  elu<T extends NDArray>(ndarray: T): T {
+    return this.executeOp('elu', () => this.eluInternal(ndarray));
+  }
+  protected abstract eluInternal<T extends NDArray>(ndarray: T): T;
+
+  /**
+   * Computes leaky rectified linear element-wise
+   * @param {T} ndarray the input NDArray
+   * @param alpha scaleing factor for negative values, defaults to 0.2
+   * @return {NDArray}
+   */
+  leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
+    return this.executeOp('leakyRelu', () =>
+        this.leakyReluInternal(ndarray, alpha));
+  }
+  protected abstract leakyReluInternal<T extends NDArray>(
+      ndarray: T, alpha: number): T;
 
   /**
    * Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).
@@ -1105,12 +1264,7 @@ export abstract class NDArrayMath {
   protected abstract scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T;
 
-  /**
-   * Computes a scalar times array operation broadcasted over the NDArray, c *
-   * A.
-   * @param c The scalar in the operation.
-   * @param A the NDArray in the operation that will be broadcasted over.
-   */
+  /** @deprecated Use math.multiply(c, A) instead. */
   scalarTimesArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
@@ -1358,7 +1512,7 @@ export abstract class NDArrayMath {
       strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
     util.assert(
         x.rank === 3,
-        'Error in maxPool: x must be rank 3 but got rank ' + x.rank + '.');
+        `Error in maxPool: x must be rank 3 but got rank ${x.rank}.`);
 
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
@@ -1622,28 +1776,47 @@ export abstract class NDArrayMath {
   /**
    * Draws samples from a multinomial distribution.
    *
-   * @param probabilities 1D array with normalized outcome probabilities.
-   * @param numSamples Number of samples to draw.
+   * @param probabilities 1D array with normalized outcome probabilities, or
+   *     2D array of shape `[batchSize, numOutcomes]`.
+   * @param numSamples Number of samples to draw for each row slice.
    * @param seed Optional. The seed number.
+   * @return 1D array of shape `[numSamples]`, or 2D array of shape
+   *     `[batchSize, numSamples]`, depending on the rank of the input.
    */
-  multinomial(probabilities: Array1D, numSamples: number, seed?: number):
-      Array1D {
+  multinomial(
+      probabilities: Array1D|Array2D, numSamples: number,
+      seed?: number): Array1D<'int32'>|Array2D<'int32'> {
     const numOutcomes = probabilities.size;
     if (numOutcomes < 2) {
       throw new Error(
           `Error in multinomial: you need at least 2 outcomes, but got ` +
           `${numOutcomes}.`);
     }
+    if (probabilities.rank > 2) {
+      throw new Error(
+          `Rank of probabilities must be 1 or 2, but is ${probabilities.rank}`);
+    }
     seed = seed || Math.random();
-    return this.executeOp(
-        'multinomial',
-        () => this.multinomialInternal(probabilities, numSamples, seed));
+    const origRank = probabilities.rank;
+
+    if (probabilities.rank === 1) {
+      probabilities = probabilities.as2D(1, -1);
+    }
+    return this.executeOp('multinomial', () => {
+      const res =
+          this.multinomialInternal(probabilities as Array2D, numSamples, seed);
+      if (origRank === 1) {
+        return res.as1D();
+      }
+      return res;
+    });
   }
   protected abstract multinomialInternal(
-      probabilities: Array1D, numSamples: number, seed: number): Array1D;
+      probabilities: Array2D, numSamples: number,
+      seed: number): Array2D<'int32'>;
 
   /**
-   * Returns a one-hot tensor. The locations represented by `indices` take
+   * Returns a one-hot array. The locations represented by `indices` take
    * value `onValue` (defaults to 1), while all other locations take value
    * `offValue` (defaults to 0).
    *

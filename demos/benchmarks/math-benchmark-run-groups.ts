@@ -20,7 +20,6 @@ import {ConvBenchmarkParams, ConvGPUBenchmark} from './conv_benchmarks';
 // tslint:disable-next-line:max-line-length
 import {ConvTransposedBenchmarkParams, ConvTransposedGPUBenchmark} from './conv_transposed_benchmarks';
 // tslint:disable-next-line:max-line-length
-import {LogSumExpCPUBenchmark, LogSumExpGPUBenchmark} from './logsumexp_benchmarks';
 import {MatmulCPUBenchmark, MatmulGPUBenchmark} from './matmul_benchmarks';
 // tslint:disable-next-line:max-line-length
 import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from './pool_benchmarks';
@@ -72,47 +71,21 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     params: convTransposedParams
   });
 
-  const maxPoolParams:
+  const poolParams:
       PoolBenchmarkParams = {depth: 8, fieldSize: 4, stride: 4, type: 'max'};
   groups.push({
-    name: 'Max pool',
+    name: 'Pool Op Benchmark: input [size, size]',
     min: 0,
     max: 1024,
     stepSize: 64,
     stepToSizeTransformation: (step: number) => Math.max(4, step),
+    options: ['max', 'min', 'avg'],
+    selectedOption: 'max',
     benchmarkRuns: [
-      new BenchmarkRun('max_pool_gpu', new PoolGPUBenchmark(maxPoolParams)),
-      new BenchmarkRun('max_pool_cpu', new PoolCPUBenchmark(maxPoolParams))
+      new BenchmarkRun('pool_gpu', new PoolGPUBenchmark(poolParams)),
+      new BenchmarkRun('pool_cpu', new PoolCPUBenchmark(poolParams))
     ],
-    params: maxPoolParams
-  });
-
-  const avgPoolParams:
-      PoolBenchmarkParams = {depth: 8, fieldSize: 4, stride: 4, type: 'avg'};
-  groups.push({
-    name: 'Avg pool',
-    min: 0,
-    max: 1024,
-    stepSize: 64,
-    stepToSizeTransformation: (step: number) => Math.max(4, step),
-    benchmarkRuns: [
-      new BenchmarkRun('avg_pool_gpu', new PoolGPUBenchmark(avgPoolParams)),
-      new BenchmarkRun('avg_pool_cpu', new PoolCPUBenchmark(avgPoolParams))
-    ],
-    params: avgPoolParams
-  });
-
-  groups.push({
-    name: 'LogSumExp: input [size, size]',
-    min: 0,
-    max: 1024,
-    stepSize: 64,
-    stepToSizeTransformation: (step: number) => Math.max(1, step),
-    benchmarkRuns: [
-      new BenchmarkRun('logsumexp_gpu', new LogSumExpGPUBenchmark()),
-      new BenchmarkRun('logsumexp_cpu', new LogSumExpCPUBenchmark())
-    ],
-    params: {}
+    params: poolParams
   });
 
   groups.push({
@@ -122,7 +95,7 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     options: [
       'log', 'exp', 'neg', 'sqrt', 'abs', 'relu', 'sigmoid', 'sin', 'cos',
-      'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'logSumExp'
+      'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh'
     ],
     selectedOption: 'log',
     stepSize: 64,
@@ -138,7 +111,7 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     min: 0,
     max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
-    options: ['max', 'min', 'sum'],
+    options: ['max', 'min', 'sum', 'logSumExp'],
     selectedOption: 'max',
     stepSize: 64,
     benchmarkRuns: [

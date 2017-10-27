@@ -17,8 +17,8 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
+import * as util from '../util';
 import {NDArrayMathGPU} from './math_gpu';
-
 import {Array1D, Array3D, Scalar} from './ndarray';
 
 // math.scope
@@ -64,7 +64,7 @@ import {Array1D, Array3D, Scalar} from './ndarray';
       math.scope(() => {
         const result = math.scope(() => {
           math.add(a, b);
-          return [math.add(a, b), math.sub(a, b)];
+          return [math.add(a, b), math.subtract(a, b)];
         });
 
         // a, b, and 2 results are new textures. All intermediates should be
@@ -103,6 +103,37 @@ import {Array1D, Array3D, Scalar} from './ndarray';
 
       // original a and b, all intermediates should be disposed.
       expect(numUsedTexturesAfter).toEqual(numUsedTexturesBefore + 2);
+    });
+
+    it('scope returns Promise<NDArray>', async (math: NDArrayMathGPU) => {
+      const a = Array1D.new([1, 2, 3]);
+      let b = Array1D.new([0, 0, 0]);
+
+      const numUsedTexturesBefore =
+          math.getTextureManager().getNumUsedTextures();
+
+      await math.scope(async () => {
+        const result = math.scope(() => {
+          b = math.add(a, b) as Array1D;
+          b = math.add(a, b) as Array1D;
+          b = math.add(a, b) as Array1D;
+          return math.add(a, b);
+        });
+
+        const data = await result.data();
+
+        // a, b, and result are new textures. All intermediates should be
+        // disposed.
+        expect(math.getTextureManager().getNumUsedTextures())
+            .toEqual(numUsedTexturesBefore + 2);
+        test_util.expectArraysClose(data, new Float32Array([4, 8, 12]));
+      });
+
+      // a, b are new textures, result should be disposed.
+      expect(math.getTextureManager().getNumUsedTextures())
+          .toEqual(numUsedTexturesBefore + 2);
+      a.dispose();
+      b.dispose();
     });
 
     it('nested scope usage', (math: NDArrayMathGPU) => {
@@ -174,9 +205,31 @@ import {Array1D, Array3D, Scalar} from './ndarray';
       a.dispose();
     });
 
-    it('debug mode errors when there are nans', math => {
+    it('debug mode errors when there are nans, float32', math => {
       math.enableDebugMode();
       const a = Array1D.new([2, NaN]);
+
+      const f = () => math.relu(a);
+
+      expect(f).toThrowError();
+
+      a.dispose();
+    });
+
+    it('debug mode errors when there are nans, int32', math => {
+      math.enableDebugMode();
+      const a = Array1D.new([2, util.NAN_INT32], 'int32');
+
+      const f = () => math.relu(a);
+
+      expect(f).toThrowError();
+
+      a.dispose();
+    });
+
+    it('debug mode errors when there are nans, bool', math => {
+      math.enableDebugMode();
+      const a = Array1D.new([1, util.NAN_BOOL], 'bool');
 
       const f = () => math.relu(a);
 
