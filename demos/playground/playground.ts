@@ -50,6 +50,8 @@ saveButtonElement.addEventListener('click', async () => {
 
 async function loadGistFromURL() {
   if (window.location.hash && window.location.hash !== '#') {
+    gistUrlElement.value = '...loading...';
+
     const gistId = window.location.hash.substr(1);
 
     const result = await fetch('https://api.github.com/gists/' + gistId);
