@@ -20,14 +20,16 @@ import {Environment, Features} from './environment';
 import {NDArrayMath} from './math/math';
 import {NDArrayMathCPU} from './math/math_cpu';
 import {NDArrayMathGPU} from './math/math_gpu';
-import {TypedArray} from './util';
+import * as util from './util';
+import {DType, TypedArray} from './util';
 
 /** Accuracy for tests. */
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
 export const TEST_EPSILON = 1e-2;
 
 export function expectArraysClose(
-    actual: TypedArray, expected: TypedArray, epsilon = TEST_EPSILON) {
+    actual: TypedArray|number[], expected: TypedArray|number[],
+    epsilon = TEST_EPSILON) {
   const aType = actual.constructor.name;
   const bType = expected.constructor.name;
 
@@ -36,16 +38,16 @@ export function expectArraysClose(
   }
   if (actual.length !== expected.length) {
     throw new Error(
-        'Matrices have different lengths (' + actual.length + ' vs ' +
-        expected.length + ').');
+        `Matrices have different lengths (${actual.length} vs ` +
+        `${expected.length}).`);
   }
   for (let i = 0; i < expected.length; ++i) {
     const a = actual[i];
     const e = expected[i];
 
     if (!areClose(a, e, epsilon)) {
-      const actualStr = 'actual[' + i + '] === ' + a;
-      const expectedStr = 'expected[' + i + '] === ' + e;
+      const actualStr = `actual[${i}] === ${a}`;
+      const expectedStr = `expected[${i}] === ${e}`;
       throw new Error('Arrays differ: ' + actualStr + ', ' + expectedStr);
     }
   }
@@ -54,7 +56,7 @@ export function expectArraysClose(
 export function expectNumbersClose(
     a: number, e: number, epsilon = TEST_EPSILON) {
   if (!areClose(a, e, epsilon)) {
-    throw new Error('Numbers differ: actual === ' + a + ', expected === ' + e);
+    throw new Error(`Numbers differ: actual === ${a}, expected === ${e}`);
   }
 }
 
@@ -84,18 +86,6 @@ export function makeIdentity(n: number): Float32Array {
     i[(j * n) + j] = 1;
   }
   return i;
-}
-
-export function setValue(
-    m: Float32Array, mNumRows: number, mNumCols: number, v: number, row: number,
-    column: number) {
-  if (row >= mNumRows) {
-    throw new Error('row (' + row + ') must be in [0 ' + mNumRows + '].');
-  }
-  if (column >= mNumCols) {
-    throw new Error('column (' + column + ') must be in [0 ' + mNumCols + '].');
-  }
-  m[(row * mNumCols) + column] = v;
 }
 
 export function cpuMultiplyMatrix(
@@ -242,4 +232,10 @@ export function executeTests(
 
     tests.forEach(test => test(customIt));
   });
+}
+
+export function assertIsNan(val: number, dtype: DType) {
+  if (!util.isValNaN(val, dtype)) {
+    throw new Error(`Value ${val} does not represent NaN for dtype ${dtype}`);
+  }
 }

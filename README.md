@@ -17,13 +17,14 @@ for everything from education, to model understanding, to art projects.
 
 ## Usage
 
-#### Typescript / ES6 JavaScript
-
 ```
 npm install deeplearn
 ```
 
-A simple example that sums an array with a scalar (broadcasted):
+#### TypeScript / ES6 JavaScript
+See the [TypeScript starter project](./starter/typescript/) and the
+[ES6 starter project](./starter/es6/) to get you quickly started. They contain a
+short example that sums an array with a scalar (broadcasted):
 
 ```ts
 import {Array1D, NDArrayMathGPU, Scalar} from 'deeplearn';
@@ -59,7 +60,7 @@ To use a specific version, add `@version` to the unpkg URL above
 (e.g. `https://unpkg.com/deeplearn@0.2.0`), which you can find in the
 [releases](https://github.com/PAIR-code/deeplearnjs/releases) page on GitHub.
 After importing the library, the API will be available as `deeplearn` in the
-global namespace:
+global namespace. We recommend declaring the `dl` alias at the top of the file:
 
 ```js
 var dl = deeplearn;
@@ -90,8 +91,7 @@ $ npm run prep # Installs node modules and bower components.
 ```
 
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
-development. Make sure to install the `clang-format` command line tool as
-well as the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting.
+development. Make sure to install [TSLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) and the `clang-format` command line tool with the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting.
 
 To interactively develop any of the demos (e.g. `demos/nn-art/`):
 
@@ -114,6 +114,15 @@ Before submitting a pull request, make sure the code passes all the tests and is
 ```bash
 $ npm run test
 $ npm run lint
+```
+
+To run a subset of tests and/or on a specific browser (note the extra `--`):
+
+```bash
+$ npm run test -- --browsers=Chrome --grep='multinomial'
+ 
+> ...
+> Chrome 62.0.3202 (Mac OS X 10.12.6): Executed 28 of 1891 (skipped 1863) SUCCESS (6.914 secs / 0.634 secs)
 ```
 
 To build a standalone ES5 library that can be imported in the browser with a
