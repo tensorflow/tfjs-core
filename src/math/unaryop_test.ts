@@ -824,7 +824,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([0, 1, -2]);
       const result = math.leakyRelu(a);
 
-      expect(result.shape).toBe(a.shape);
+      expect(result.shape).toEqual(a.shape);
       test_util.expectArraysClose(result.dataSync(),
           new Float32Array([0, 1, -0.4]));
     });
@@ -833,7 +833,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([0, 1, NaN]);
       const result = math.leakyRelu(a);
 
-      expect(result.shape).toBe(a.shape);
+      expect(result.shape).toEqual(a.shape);
       test_util.expectArraysClose(result.dataSync(),
           new Float32Array([0, 1, NaN]));
     });
@@ -855,7 +855,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([1, -1, 0]);
       const result = math.elu(a);
 
-      expect(result.shape).toBe(a.shape);
+      expect(result.shape).toEqual(a.shape);
       test_util.expectArraysClose(result.dataSync(),
           new Float32Array([1, -0.6321, 0]));
     });
@@ -863,7 +863,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('elu propagates NaN', math => {
       const a = Array1D.new([1, NaN]);
       const result = math.elu(a);
-      expect(result.shape).toBe(a.shape);
+      expect(result.shape).toEqual(a.shape);
       test_util.expectArraysClose(result.dataSync(),
           new Float32Array([1, NaN]));
     });
