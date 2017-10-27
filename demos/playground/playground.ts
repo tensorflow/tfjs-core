@@ -1,11 +1,13 @@
 import * as dl from '../deeplearn';
 
+// Add all the dl exports to the top level window.
 for (const prop in dl) {
   // tslint:disable-next-line:no-any
   (window as any)[prop] = (dl as any)[prop];
 }
 
-hljs.initHighlightingOnLoad();
+const GITHUB_JS_FILENAME = 'js';
+const GITHUB_HTML_FILENAME = 'html';
 
 const saveButtonElement = document.getElementById('save');
 const runButtonElement = document.getElementById('run');
@@ -16,16 +18,25 @@ const consoleElement = document.getElementById('console');
 const htmlconsoleElement = document.getElementById('html');
 
 saveButtonElement.addEventListener('click', async () => {
-  gistUrlElement.value = '...saving...';
+  runCode();
 
-  const content = {
-    'description': 'gist ',
+  gistUrlElement.value = '...saving...';
+  const jsCodeStr = jscontentElement.innerText.trim();
+  const htmlCodeStr = htmlcontentElement.innerText.trim();
+
+  // tslint:disable-next-line:no-any
+  const content: any = {
+    'description': 'deeplearn.js playground ' + Date.now(),
     'public': true,
-    'files': {
-      'js': {'content': jscontentElement.innerText},
-      'html': {'content': htmlcontentElement.innerText}
-    }
+    'files': {}
   };
+
+  if (jsCodeStr !== '') {
+    content['files'][GITHUB_JS_FILENAME] = {'content': jsCodeStr};
+  }
+  if (htmlCodeStr !== '') {
+    content['files'][GITHUB_HTML_FILENAME] = {'content': htmlCodeStr};
+  }
 
   const init: RequestInit = {method: 'POST', body: JSON.stringify(content)};
   const result = await fetch('https://api.github.com/gists', init);
@@ -37,89 +48,59 @@ saveButtonElement.addEventListener('click', async () => {
   window.location.hash = '#' + json['id'];
 });
 
-window.console.log = (str: string) => {
-  consoleElement.innerText += str + '\n';
-};
-
-function run() {
-  htmlconsoleElement.innerHTML = htmlcontentElement.innerText;
-  consoleElement.innerText = '';
-  eval(jscontentElement.innerText);
-}
-
-runButtonElement.addEventListener('click', run);
-
-async function checkURL() {
+async function loadGistFromURL() {
   if (window.location.hash && window.location.hash !== '#') {
     const gistId = window.location.hash.substr(1);
 
     const result = await fetch('https://api.github.com/gists/' + gistId);
     const json = await result.json();
-
-    const jsFile = json['files']['js']['raw_url'];
-    const htmlFile = json['files']['html']['raw_url'];
-
-    const jsResult = await fetch(jsFile);
-    const jsCode = await jsResult.text();
-
-    jscontentElement.innerText = jsCode;
     gistUrlElement.value = json['html_url'];
 
-    const htmlResult = await fetch(htmlFile);
-    const htmlCode = await htmlResult.text();
+    if (json['files'][GITHUB_JS_FILENAME] != null) {
+      const jsFile = json['files'][GITHUB_JS_FILENAME]['raw_url'];
 
-    htmlcontentElement.innerText = htmlCode;
+      const jsResult = await fetch(jsFile);
+      const jsCode = await jsResult.text();
 
-    hljs.highlightBlock(htmlcontentElement);
-    hljs.highlightBlock(jscontentElement);
+      jscontentElement.innerText = jsCode;
+    }
 
-    run();
+    if (json['files'][GITHUB_HTML_FILENAME] != null) {
+      const htmlFile = json['files'][GITHUB_HTML_FILENAME]['raw_url'];
+
+      const htmlResult = await fetch(htmlFile);
+      const htmlCode = await htmlResult.text();
+
+      htmlcontentElement.innerText = htmlCode;
+    }
+
+    runCode();
   } else {
-    gistUrlElement.value = 'unsaved';
+    gistUrlElement.value = 'Unsaved';
   }
 }
 
-jscontentElement.addEventListener('keydown', (e: KeyboardEvent) => {
-  if (e.keyCode === 13 && e.shiftKey) {
-    run();
-    e.preventDefault();
+// Override console.log to write to our console HTML element.
+window.console.log = (str: string) => {
+  consoleElement.innerText += str + '\n';
+};
+
+async function runCode() {
+  htmlconsoleElement.innerHTML = htmlcontentElement.innerText;
+  consoleElement.innerText = '';
+
+  try {
+    // Eval in an async() so we can directly use await.
+    eval(`(async () => {
+      ${jscontentElement.innerText}
+    })();`);
+  } catch (e) {
+    const error = new Error();
+    window.console.log(e.toString());
+    window.console.log(error.stack);
   }
-});
+}
 
-htmlcontentElement.addEventListener('keydown', (e: KeyboardEvent) => {
-  if (e.keyCode === 13 && e.shiftKey) {
-    run();
-    e.preventDefault();
-  }
-});
+runButtonElement.addEventListener('click', runCode);
 
-let lastTimeoutIdJs = 0;
-jscontentElement.addEventListener('keyup', () => {
-  lastTimeoutIdJs++;
-
-  // tslint:disable-next-line:only-arrow-functions
-  setTimeout(function(id: number) {
-    if (id < lastTimeoutIdJs) {
-      return;
-    }
-    hljs.highlightBlock(jscontentElement);
-  }.bind(null, lastTimeoutIdJs), 5000);
-});
-
-let lastTimeoutIdHtml = 0;
-
-htmlcontentElement.addEventListener('keyup', () => {
-  // const selection = window.getSelection();
-  // const offset = selection.focusOffset;
-  lastTimeoutIdHtml++;
-
-  // tslint:disable-next-line:only-arrow-functions
-  setTimeout(function(id: number) {
-    if (id < lastTimeoutIdHtml) {
-      return;
-    }
-    hljs.highlightBlock(htmlcontentElement);
-  }.bind(null, lastTimeoutIdHtml), 5000);
-});
-
-checkURL();
+loadGistFromURL();
