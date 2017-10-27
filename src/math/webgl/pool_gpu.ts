@@ -70,8 +70,6 @@ export class Pool1DProgram implements GPGPUProgram {
           'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
     }
 
-    const filterWidthNearestVec4 = Math.ceil(convInfo.filter[rank - 1] / 4) * 4;
-
     this.userCode = `
       const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
       const ${ivecN} xShape = ${ivecN}(${arrayCodeString(convInfo.inShape)});
@@ -92,19 +90,22 @@ export class Pool1DProgram implements GPGPUProgram {
         if ((xPos >= xShape) || (xPos < 0)) {
           return initializationValue;
         }
-        return getX(xPos, d);
+        return getX(ivec${rank + 1}(xPos, d));
       }
 
-       void main() {
+      void main() {
         ivec${rank + 1} coords = getOutputCoords();
         int d = coords[${rank}];
 
-        ${ivecN} xCorner = coords.x * strides - pads;
+        // coords has length (rank + 1) because it includes the depth.
+        // We can slice it by casting; casting a high-dim vector to a lower
+        // dim just reads the first few coordinates.
+        ${ivecN} xCorner = ${ivecN}(coords) * strides - pads;
 
         vec4 minMaxValue = vec4(${initializationValue});
         float avgValue = 0.0;
 
-        for (int w = 0; w < ${filterWidthNearestVec4}; w += 4) {
+        for (int w = 0; w < ${convInfo.filter[0]}; w += 4) {
           vec4 values = vec4(
             getValue(xCorner, w, d),
             getValue(xCorner, w + 1, d),
@@ -240,12 +241,6 @@ export class Pool2DProgram implements GPGPUProgram {
           'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
     }
 
-    // We read the entries in batches of 4, since WebGL can do min/max on vec4s.
-    // It's not clear this is actually gaining us much since we have to read
-    // each cell one by one into the vec4 anyway.
-    // But we keep it to be consistent with other implementations regardless.
-    const filterWidthNearestVec4 = Math.ceil(filterWidth / 4) * 4;
-
     this.userCode = `
     const vec4 ones = vec4(1.0);
     const ${ivecN} zero = ivec${rank}(0.0);
@@ -272,19 +267,22 @@ export class Pool2DProgram implements GPGPUProgram {
           any(lessThan(xPos, zero))) {
         return initializationValue;
       }
-      return getX(xPos.x, xPos.y, d);
+      return getX(ivec${rank + 1}(xPos, d));
     }
 
-     void main() {
+    void main() {
       ivec${rank + 1} coords = getOutputCoords();
       int d = coords[${rank}];
 
-      ${ivecN} xCorner = coords.xy * strides - pads;
+      // coords has length (rank + 1) because it includes the depth.
+      // We can slice it by casting; casting a high-dim vector to a lower
+      // dim just reads the first few coordinates.
+      ${ivecN} xCorner = ${ivecN}(coords) * strides - pads;
 
       vec4 minMaxValue = vec4(${initializationValue});
       float avgValue = 0.0;
       for (int wx = 0; wx < ${filterHeight}; wx++) {
-        for (int wy = 0; wy < ${filterWidthNearestVec4}; wy += 4) {
+        for (int wy = 0; wy < ${filterWidth}; wy += 4) {
           vec4 values = vec4(
             getValue(xCorner, ${ivecN}(wx, wy), d),
             getValue(xCorner, ${ivecN}(wx, wy + 1), d),
@@ -356,8 +354,6 @@ export class Pool3DProgram implements GPGPUProgram {
           'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
     }
 
-    const filterWidthNearestVec4 = Math.ceil(convInfo.filter[rank - 1] / 4) * 4;
-
     this.userCode = `
       const vec4 ones = vec4(1.0);
       const ${ivecN} zero = ivec${rank}(0.0);
@@ -381,20 +377,23 @@ export class Pool3DProgram implements GPGPUProgram {
             any(lessThan(xPos, zero))) {
           return initializationValue;
         }
-        return getX(xPos.x, xPos.y, xPos.z, d);
+        return getX(ivec${rank + 1}(xPos, d));
       }
 
-       void main() {
+      void main() {
         ivec${rank + 1} coords = getOutputCoords();
         int d = coords[${rank}];
 
-        ${ivecN} xCorner = coords.xyz * strides - pads;
+        // coords has length (rank + 1) because it includes the depth.
+        // We can slice it by casting; casting a high-dim vector to a lower
+        // dim just reads the first few coordinates.
+        ${ivecN} xCorner = ${ivecN}(coords) * strides - pads;
 
         vec4 minMaxValue = vec4(${initializationValue});
         float avgValue = 0.0;
         for (int wx = 0; wx < ${convInfo.filter[0]}; wx++) {
           for (int wy = 0; wy < ${convInfo.filter[1]}; wy++) {
-            for (int wz = 0; wz < ${filterWidthNearestVec4}; wz += 4) {
+            for (int wz = 0; wz < ${convInfo.filter[2]}; wz += 4) {
               vec4 values = vec4(
                 getValue(xCorner, ${ivecN}(wx, wy, wz), d),
                 getValue(xCorner, ${ivecN}(wx, wy, wz + 1), d),

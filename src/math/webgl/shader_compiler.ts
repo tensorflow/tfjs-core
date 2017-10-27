@@ -488,54 +488,64 @@ function getSampler2D(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const tR = texShape[0];
   const tC = texShape[1];
-  if (util.arraysEqual(shape, texShape)) {
-    return `
-    float ${funcName}(int row, int col) {
-      vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
-      return sample(${texName}, uv);
-    }
-  `;
-  }
-  if (tC === 1) {
-    if (shape[0] === 1) {
+  // Main accesor takes two coordinates getX(x, y)
+  const intVersion = function() {
+    if (util.arraysEqual(shape, texShape)) {
       return `
       float ${funcName}(int row, int col) {
-        vec2 uv = vec2(0.5, (float(col) + 0.5) / ${tR}.0);
+        vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
         return sample(${texName}, uv);
       }
     `;
     }
-    if (shape[1] === 1) {
+    if (tC === 1) {
+      if (shape[0] === 1) {
+        return `
+        float ${funcName}(int row, int col) {
+          vec2 uv = vec2(0.5, (float(col) + 0.5) / ${tR}.0);
+          return sample(${texName}, uv);
+        }
+      `;
+      }
+      if (shape[1] === 1) {
+        return `
+        float ${funcName}(int row, int col) {
+          vec2 uv = vec2(0.5, (float(row) + 0.5) / ${tR}.0);
+          return sample(${texName}, uv);
+        }
+      `;
+      }
       return `
       float ${funcName}(int row, int col) {
-        vec2 uv = vec2(0.5, (float(row) + 0.5) / ${tR}.0);
+        int index = row * ${shape[1]} + col;
+        vec2 uv = vec2(0.5, (float(index) + 0.5) / ${tR}.0);
+        return sample(${texName}, uv);
+      }
+    `;
+    }
+    if (tR === 1) {
+      return `
+      float ${funcName}(int row, int col) {
+        int index = row * ${shape[1]} + col;
+        vec2 uv = vec2((float(index) + 0.5) / ${tC}.0, 0.5);
         return sample(${texName}, uv);
       }
     `;
     }
     return `
     float ${funcName}(int row, int col) {
-      int index = row * ${shape[1]} + col;
-      vec2 uv = vec2(0.5, (float(index) + 0.5) / ${tR}.0);
+      vec2 uv = UVfrom2D(${tR}, ${tC}, ${shape[1]}, row, col);
       return sample(${texName}, uv);
     }
   `;
+  }();
+  // Alternate accesor takes ivec coordinates getX(ivec2(x, y)).
+  const vec2Version = `
+  float ${funcName}(ivec2 coords) {
+    return ${funcName}(coords.x, coords.y);
   }
-  if (tR === 1) {
-    return `
-    float ${funcName}(int row, int col) {
-      int index = row * ${shape[1]} + col;
-      vec2 uv = vec2((float(index) + 0.5) / ${tC}.0, 0.5);
-      return sample(${texName}, uv);
-    }
   `;
-  }
-  return `
-  float ${funcName}(int row, int col) {
-    vec2 uv = UVfrom2D(${tR}, ${tC}, ${shape[1]}, row, col);
-    return sample(${texName}, uv);
-  }
-`;
+  return intVersion + vec2Version
 }
 
 function getSampler3D(inputInfo: InputInfo): string {
@@ -547,21 +557,43 @@ function getSampler3D(inputInfo: InputInfo): string {
   const tC = texShape[1];
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
+  // Main accesor takes coordinates getX(x, y, z)
+  const intVersion = function() {
+    if (tC === stride0) {
+      if (inputInfo.shapeInfo.textureType === TextureType.DEFAULT) {
+        return `
+          float ${funcName}(int row, int col, int depth) {
+            int texR = row;
+            int texC = col * ${stride1} + depth;
+            vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
+            return sample(${texName}, uv);
+          }
+        `;
+      } else if (inputInfo.shapeInfo.textureType === TextureType.RGBA_COLOR) {
+        return `
+          float ${funcName}(int row, int col, int depth) {
+            vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
+            return sampleUVAndDepth(${texName}, uv, depth);
+          }
+        `;
+      } else {
+        throw new Error(
+            `Unknown TextureType ${inputInfo.shapeInfo.textureType}.`);
+      }
+    }
 
-  if (tC === stride0) {
     if (inputInfo.shapeInfo.textureType === TextureType.DEFAULT) {
       return `
         float ${funcName}(int row, int col, int depth) {
-          int texR = row;
-          int texC = col * ${stride1} + depth;
-          vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
+          vec2 uv = UVfrom3D(
+              ${tR}, ${tC}, ${stride0}, ${stride1}, row, col, depth);
           return sample(${texName}, uv);
         }
-      `;
+    `;
     } else if (inputInfo.shapeInfo.textureType === TextureType.RGBA_COLOR) {
       return `
         float ${funcName}(int row, int col, int depth) {
-          vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
+          vec2 uv = UVfrom2D(${tR}, ${tC}, ${shape[1]}, row, col);
           return sampleUVAndDepth(${texName}, uv, depth);
         }
       `;
@@ -569,26 +601,14 @@ function getSampler3D(inputInfo: InputInfo): string {
       throw new Error(
           `Unknown TextureType ${inputInfo.shapeInfo.textureType}.`);
     }
+  }();
+  // Alternate accesor takes ivec coordinates getX(ivec3(x, y, z)).
+  const vec3Version = `
+  float ${funcName}(ivec3 coords) {
+    return ${funcName}(coords.x, coords.y, coords.z);
   }
-
-  if (inputInfo.shapeInfo.textureType === TextureType.DEFAULT) {
-    return `
-      float ${funcName}(int row, int col, int depth) {
-        vec2 uv = UVfrom3D(
-            ${tR}, ${tC}, ${stride0}, ${stride1}, row, col, depth);
-        return sample(${texName}, uv);
-      }
   `;
-  } else if (inputInfo.shapeInfo.textureType === TextureType.RGBA_COLOR) {
-    return `
-      float ${funcName}(int row, int col, int depth) {
-        vec2 uv = UVfrom2D(${tR}, ${tC}, ${shape[1]}, row, col);
-        return sampleUVAndDepth(${texName}, uv, depth);
-      }
-    `;
-  } else {
-    throw new Error(`Unknown TextureType ${inputInfo.shapeInfo.textureType}.`);
-  }
+  return intVersion + vec3Version
 }
 
 function getSampler4D(inputInfo: InputInfo): string {
@@ -602,8 +622,9 @@ function getSampler4D(inputInfo: InputInfo): string {
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
+  let intVersion: string;
   if (tC === stride0) {
-    return `
+    intVersion = `
       float ${funcName}(int row, int col, int depth, int depth2) {
         int texR = row;
         int texC = col * ${stride1} + depth * ${stride2} + depth2;
@@ -611,14 +632,22 @@ function getSampler4D(inputInfo: InputInfo): string {
         return sample(${texName}, uv);
       }
     `;
+  } else {
+    intVersion = `
+      float ${funcName}(int row, int col, int depth, int depth2) {
+        vec2 uv = UVfrom4D(${tR}, ${tC}, ${stride0}, ${stride1}, ${stride2},
+            row, col, depth, depth2);
+        return sample(${texName}, uv);
+      }
+    `;
   }
-  return `
-    float ${funcName}(int row, int col, int depth, int depth2) {
-      vec2 uv = UVfrom4D(${tR}, ${tC}, ${stride0}, ${stride1}, ${stride2},
-          row, col, depth, depth2);
-      return sample(${texName}, uv);
-    }
+  // Alternate accesor takes ivec coordinates getX(ivec4(x, y, z, w)).
+  const vec4Version = `
+  float ${funcName}(ivec4 coords) {
+    return ${funcName}(coords.x, coords.y, coords.z, coords.w);
+  }
   `;
+  return intVersion + vec4Version;
 }
 
 function getSamplerFlat(inputInfo: InputInfo, numBatchDims: number): string {
