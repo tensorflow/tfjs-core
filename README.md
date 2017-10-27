@@ -96,7 +96,7 @@ well as the [Clang-Format VSCode extension](https://marketplace.visualstudio.com
 To interactively develop any of the demos (e.g. `demos/nn-art/`):
 
 ```bash
-$ npm run watch -- demos/nn-art
+$ ./scripts/watch-demo demos/nn-art
 >> Starting up http-server, serving ./
 >> Available on:
 >>   http://127.0.0.1:8080
