@@ -76,8 +76,17 @@ describe('softmax cross entropy cost', () => {
     op.backProp(math, activations, gradients);
 
     const dLogits = gradients.get(logitsTensor);
-    test_util.expectNumbersClose(dLogits.get(0), softmaxLogits.get(0) - label.get(0));
-    test_util.expectNumbersClose(dLogits.get(1), softmaxLogits.get(1) - label.get(1));
-    test_util.expectNumbersClose(dLogits.get(2), softmaxLogits.get(2) - label.get(2));
+    test_util.expectNumbersClose(
+      dLogits.get(0),
+      softmaxLogits.get(0) - label.get(0)
+    );
+    test_util.expectNumbersClose(
+      dLogits.get(1),
+      softmaxLogits.get(1) - label.get(1)
+    );
+    test_util.expectNumbersClose(
+      dLogits.get(2),
+      softmaxLogits.get(2) - label.get(2)
+    );
   });
 });

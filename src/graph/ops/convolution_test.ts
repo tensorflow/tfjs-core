@@ -274,13 +274,19 @@ describe('Convolution', () => {
     const dy = dy3d.as2D(2, 2);
 
     // Test dX.
-    test_util.expectNumbersClose(dx.get(0, 0), dy.get(0, 0) * weights.get(0, 0, 0, 0));
+    test_util.expectNumbersClose(
+      dx.get(0, 0),
+      dy.get(0, 0) * weights.get(0, 0, 0, 0)
+    );
     test_util.expectNumbersClose(
       dx.get(0, 1),
       dy.get(0, 0) * weights.get(0, 1, 0, 0) +
       dy.get(0, 1) * weights.get(0, 0, 0, 0)
     );
-    test_util.expectNumbersClose(dx.get(0, 2), dy.get(0, 1) * weights.get(0, 1, 0, 0));
+    test_util.expectNumbersClose(
+      dx.get(0, 2),
+      dy.get(0, 1) * weights.get(0, 1, 0, 0)
+    );
     test_util.expectNumbersClose(
       dx.get(1, 1),
       dy.get(0, 0) * weights.get(1, 1, 0, 0) +

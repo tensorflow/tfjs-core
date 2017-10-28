@@ -116,9 +116,15 @@ describe('Element wise activation', () => {
     op.backProp(math, activations, gradients);
 
     const dx = gradients.get(xTensor);
-    test_util.expectNumbersClose(dx.get(0), 2 * 0.9525741268 * (1 - 0.9525741268));
+    test_util.expectNumbersClose(
+      dx.get(0),
+      2 * 0.9525741268 * (1 - 0.9525741268)
+    );
     test_util.expectNumbersClose(dx.get(1), 4 * 0.5 * 0.5);
-    test_util.expectNumbersClose(dx.get(2), 3 * 0.0474258731 * (1 - 0.0474258731));
+    test_util.expectNumbersClose(
+      dx.get(2),
+      3 * 0.0474258731 * (1 - 0.0474258731)
+    );
   });
 
   it('Square', () => {

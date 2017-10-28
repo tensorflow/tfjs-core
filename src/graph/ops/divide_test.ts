@@ -118,8 +118,10 @@ describe('divide operation', () => {
     divideOp.backProp(math, activations, gradients);
 
     const dx1 = gradients.get(x1Tensor).asScalar();
-    test_util.expectNumbersClose(dx1.get(),
-        dy.get(0) / x2.get(0) + dy.get(1) / x2.get(1) + dy.get(2) / x2.get(2));
+    test_util.expectNumbersClose(
+      dx1.get(),
+      dy.get(0) / x2.get(0) + dy.get(1) / x2.get(1) + dy.get(2) / x2.get(2)
+    );
 
     const dx2 = gradients.get(x2Tensor);
     test_util.expectNumbersClose(
