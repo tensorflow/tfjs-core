@@ -17,13 +17,44 @@
 
 import * as caffe_util from './caffe_util';
 
+// import {MatrixOrientation, NDArrayMath} from '../math/math';
+// import {NDArrayMathCPU} from '../math/math_cpu';
+// import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../math/ndarray';
+
+import {Graph} from '../graph/graph';
+import {NDArrayMathGPU} from '../math/math_gpu';
+import {Array1D, Array3D, NDArray} from '../math/ndarray';
+
 export class CaffeModel {
 
-  constructor(private uri: string){}
+  private variables: {[varName: string]: NDArray};
+  private preprocessOffset: NDArray;
+  private graph: Graph;
+
+  constructor(private math: NDArrayMathGPU, private uri: string){}
 
   loadVariables(uri: string) {
     return caffe_util.fetchArrayBuffer(this.uri)
       .then(caffe_util.parseCaffeModel)
-      .then(caffe_util.covertCaffeModel);
-  }  
+      .then((model) => {
+        this.variables = caffe_util.getAllVariables(model);
+        this.graph = caffe_util.getModelDAG(model, this.math);
+        this.preprocessOffset = caffe_util.getPreprocessOffset(model);
+      });
+  }
+
+  infer(input: Array3D): 
+    {namedActivations: {[activationName: string]: Array3D}, logits: Array1D} {
+
+    // Apply ${input} to operations graph
+
+    // // Track these activations automatically so they get cleaned up in a parent
+    // // scope.
+    // const layerNames = Object.keys(namedActivations);
+    // layerNames.forEach(
+    //     layerName => this.math.track(namedActivations[layerName]));
+
+    // return {namedActivations, logits: avgpool10};
+    return null;
+  }
 }
