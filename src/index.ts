@@ -54,6 +54,7 @@ export {initializeGPU} from './math/ndarray';
 export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './math/ndarray';
 export {GPGPUContext} from './math/webgl/gpgpu_context';
 export {Model} from './model';
+export {CaffeModel} from './contrib/caffe_model'
 export {version};
 // Second level exports.
 export {
