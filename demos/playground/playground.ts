@@ -26,7 +26,7 @@ saveButtonElement.addEventListener('click', async () => {
 
   // tslint:disable-next-line:no-any
   const content: any = {
-    'description': 'deeplearn.js playground ' + Date.now(),
+    'description': 'deeplearn.js playground ' + Date.now().toString(),
     'public': true,
     'files': {}
   };
@@ -45,7 +45,7 @@ saveButtonElement.addEventListener('click', async () => {
 
   gistUrlElement.value = json['html_url'];
 
-  window.location.hash = '#' + json['id'];
+  window.location.hash = '#' + json['id'].toString();
 });
 
 async function loadGistFromURL() {
