@@ -1896,7 +1896,10 @@ export abstract class NDArrayMath {
     const axes = axis_util.parseAxisParam(axis, x.shape);
     return this.scope(() => {
       const mean = this.mean(x, axes, keepDims);
-      const keepDimsShape = axis_util.expandShapeToKeepDim(mean.shape, axes);
+      let keepDimsShape = mean.shape;
+      if (!keepDims) {
+        keepDimsShape = axis_util.expandShapeToKeepDim(mean.shape, axes);
+      }
       const devSquared =
           this.square(this.subtract(x, mean.reshape(keepDimsShape)));
       const result: [NDArray<'float32'>, NDArray<'float32'>] =

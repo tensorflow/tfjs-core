@@ -574,9 +574,11 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
     it('axis=1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const res = math.mean(a, [1]);
-      expect(res.dtype).toBe('float32');
-      expect(res.shape).toEqual([3]);
+      const [mean, vari] = math.moments(a, [1]);
+      expect(mean.dtype).toBe('float32');
+      expect(mean.shape).toEqual([3]);
+      expect(vari.dtype).toBe('float32');
+      expect(vari.shape).toEqual([3]);
       test_util.expectArraysClose(
           res.getValues(), new Float32Array([1.5, 1.5, 0.5]));
     });
