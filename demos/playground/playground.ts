@@ -75,8 +75,6 @@ async function loadGistFromURL() {
 
       htmlcontentElement.innerText = htmlCode;
     }
-
-    runCode();
   } else {
     gistUrlElement.value = 'Unsaved';
   }
