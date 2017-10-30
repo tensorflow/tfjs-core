@@ -686,10 +686,13 @@ export abstract class NDArrayMath {
       NDArray<'float32'> {
     const axes = axis_util.parseAxisParam(axis, x.shape);
     axis_util.assertAxesAreInnerMostDims('mean', axes, x.rank);
+    const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const reduceShape = shapes[1];
+    const reduceSize = util.sizeFromShape(reduceShape);
     return this.executeOp('mean', () => {
       return this.scope((keep, track) => {
-        const res = this.divide(x, track(Scalar.new(x.size)));
-        return this.sum(res);
+        const res = this.divide(x, track(Scalar.new(reduceSize)));
+        return this.sum(res, axis, keepDims);
       });
     });
   }
@@ -1882,13 +1885,15 @@ export abstract class NDArrayMath {
    * and `axes = [0]` this is just the mean and variance of a vector.
    *
    * @param x The input array.
-   * @param axes Axes along which to compute the mean and variance.s
+   * @param axis Optional. The dimension(s) along with to compute mean and
+   *     variance. By default it reduces all dimensions.
    * @param keepDims If true, the moments have the same dimensionality as the
    *     input.
    * @return A tuple of two arrays: mean and variance.
    */
-  moments(x: NDArray, axes: number[], keepDims = false):
+  moments(x: NDArray, axis: number|number[] = null, keepDims = false):
       [NDArray<'float32'>, NDArray<'float32'>] {
+    const axes = axis_util.parseAxisParam(axis, x.shape);
     return this.scope(() => {
       const mean = this.mean(x, axes, keepDims);
       const keepDimsShape = axis_util.expandShapeToKeepDim(mean.shape, axes);

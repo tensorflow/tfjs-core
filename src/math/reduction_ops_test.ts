@@ -428,3 +428,181 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
+
+// math.mean
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const r = math.mean(a);
+      expect(r.dtype).toBe('float32');
+      test_util.expectNumbersClose(r.get(), 7 / 6);
+
+      a.dispose();
+    });
+
+    it('propagates NaNs', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
+      const r = math.mean(a);
+      expect(r.dtype).toBe('float32');
+      expect(r.get()).toEqual(NaN);
+      a.dispose();
+    });
+
+    it('mean(int32) => float32', math => {
+      const a = Array1D.new([1, 5, 7, 3], 'int32');
+      const r = math.mean(a);
+      expect(r.dtype).toBe('float32');
+      test_util.expectNumbersClose(r.get(), 4);
+    });
+
+    it('mean(bool) => float32', math => {
+      const a = Array1D.new([true, false, false, true, true], 'bool');
+      const r = math.mean(a);
+      expect(r.dtype).toBe('float32');
+      test_util.expectNumbersClose(r.get(), 3 / 5);
+    });
+
+    it('2D array with keep dim', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, null, true /* keepDims */);
+      expect(res.shape).toEqual([1, 1]);
+      expect(res.dtype).toBe('float32');
+      test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
+    });
+
+    it('axis=0 in 2D array throws error', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const f = () => math.mean(a, [0]);
+      expect(f).toThrowError();
+    });
+
+    it('axis=1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, [1]);
+      expect(res.dtype).toBe('float32');
+      expect(res.shape).toEqual([3]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([1.5, 1.5, 0.5]));
+    });
+
+    it('2D, axis=1 provided as number', math => {
+      const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, 1);
+      expect(res.shape).toEqual([2]);
+      expect(res.dtype).toBe('float32');
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([2, 1 / 3]));
+    });
+
+    it('axis=0,1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, [0, 1]);
+      expect(res.shape).toEqual([]);
+      expect(res.dtype).toBe('float32');
+      test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
+    });
+  };
+
+  test_util.describeMathCPU('mean', [tests]);
+  test_util.describeMathGPU('mean', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// math.moments
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const [mean, vari] = math.moments(a);
+      expect(mean.dtype).toBe('float32');
+      expect(vari.dtype).toBe('float32');
+      test_util.expectNumbersClose(mean.get(), 7 / 6);
+      test_util.expectNumbersClose(vari.get(), 1.1388888888889);
+
+      a.dispose();
+    });
+
+    it('propagates NaNs', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
+      const [mean, vari] = math.moments(a);
+      expect(mean.dtype).toBe('float32');
+      expect(vari.dtype).toBe('float32');
+      expect(mean.get()).toEqual(NaN);
+      expect(vari.get()).toEqual(NaN);
+      a.dispose();
+    });
+
+    it('moments(int32) => float32', math => {
+      const a = Array1D.new([1, 5, 7, 3], 'int32');
+      const [mean, vari] = math.moments(a);
+      expect(mean.dtype).toBe('float32');
+      expect(vari.dtype).toBe('float32');
+      test_util.expectNumbersClose(mean.get(), 4);
+      test_util.expectNumbersClose(vari.get(), 5);
+    });
+
+    it('moments(bool) => float32', math => {
+      const a = Array1D.new([true, false, false, true, true], 'bool');
+      const [mean, vari] = math.moments(a);
+      expect(mean.dtype).toBe('float32');
+      expect(vari.dtype).toBe('float32');
+      test_util.expectNumbersClose(mean.get(), 3 / 5);
+      test_util.expectNumbersClose(vari.get(), 0.23999998);
+    });
+
+    it('2D array with keep dim', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const [mean, vari] = math.moments(a, null, true /* keepDims */);
+      expect(mean.shape).toEqual([1, 1]);
+      expect(mean.dtype).toBe('float32');
+      expect(vari.shape).toEqual([1, 1]);
+      expect(vari.dtype).toBe('float32');
+      test_util.expectArraysClose(mean.getValues(), new Float32Array([7 / 6]));
+      test_util.expectArraysClose(
+          vari.getValues(), new Float32Array([1.138889]));
+    });
+
+    it('axis=0 in 2D array throws error', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const f = () => math.mean(a, [0]);
+      expect(f).toThrowError();
+    });
+
+    it('axis=1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, [1]);
+      expect(res.dtype).toBe('float32');
+      expect(res.shape).toEqual([3]);
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([1.5, 1.5, 0.5]));
+    });
+
+    it('2D, axis=1 provided as number', math => {
+      const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, 1);
+      expect(res.shape).toEqual([2]);
+      expect(res.dtype).toBe('float32');
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([2, 1 / 3]));
+    });
+
+    it('axis=0,1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, [0, 1]);
+      expect(res.shape).toEqual([]);
+      expect(res.dtype).toBe('float32');
+      test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
+    });
+  };
+
+  test_util.describeMathCPU('moments', [tests]);
+  test_util.describeMathGPU('moments', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
