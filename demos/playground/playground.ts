@@ -45,7 +45,7 @@ saveButtonElement.addEventListener('click', async () => {
 
   gistUrlElement.value = json['html_url'];
 
-  window.location.hash = '#' + json['id'].toString();
+  window.location.hash = `#${json['id']}`;
 });
 
 async function loadGistFromURL() {
