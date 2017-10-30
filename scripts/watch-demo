@@ -18,11 +18,7 @@ const path = require('path');
 const spawn = require('cross-spawn');
 const opn = require('opn');
 
-let demoPath = process.argv[2];
-if (!demoPath.startsWith('demos/')) {
-  demoPath = 'demos/' + demoPath;
-}
-
+const demoPath = process.argv[2];
 const outputPath = path.join(demoPath, 'bundle.js')
 const tsPath = path.join(demoPath, path.basename(demoPath) + '.ts');
 
