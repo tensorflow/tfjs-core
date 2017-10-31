@@ -17,13 +17,14 @@ for everything from education, to model understanding, to art projects.
 
 ## Usage
 
-#### Typescript / ES6 JavaScript
-
 ```
 npm install deeplearn
 ```
 
-A simple example that sums an array with a scalar (broadcasted):
+#### TypeScript / ES6 JavaScript
+See the [TypeScript starter project](./starter/typescript/) and the
+[ES6 starter project](./starter/es6/) to get you quickly started. They contain a
+short example that sums an array with a scalar (broadcasted):
 
 ```ts
 import {Array1D, NDArrayMathGPU, Scalar} from 'deeplearn';
@@ -59,7 +60,7 @@ To use a specific version, add `@version` to the unpkg URL above
 (e.g. `https://unpkg.com/deeplearn@0.2.0`), which you can find in the
 [releases](https://github.com/PAIR-code/deeplearnjs/releases) page on GitHub.
 After importing the library, the API will be available as `deeplearn` in the
-global namespace:
+global namespace. We recommend declaring the `dl` alias at the top of the file:
 
 ```js
 var dl = deeplearn;
@@ -90,8 +91,7 @@ $ npm run prep # Installs node modules and bower components.
 ```
 
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
-development. Make sure to install the `clang-format` command line tool as
-well as the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting.
+development. Make sure to install [TSLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) and the `clang-format` command line tool with the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting.
 
 To interactively develop any of the demos (e.g. `demos/nn-art/`):
 
@@ -144,22 +144,25 @@ To install it locally, run `npm install ./dist/deeplearn-VERSION.tgz`.
 
 > On Windows, use bash (available through git) to use the scripts above.
 
+Looking to contribute, and don't know where to start? Check out our "help wanted"
+[issues](https://github.com/PAIR-code/deeplearnjs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+
 ## Supported environments
 
-**deeplearn.js** targets WebGL 1.0 devices with the `OES_texture_float`
-extension and also targets WebGL 2.0 devices. For platforms without WebGL,
+**deeplearn.js** targets environments with WebGL 1.0 or WebGL 2.0. For devices
+without the `OES_texture_float` extension, we fall back to fixed precision
+floats backed by a `gl.UNSIGNED_BYTE` texture. For platforms without WebGL,
 we provide CPU fallbacks.
 
-However, currently our demos do not support Mobile, Firefox, and Safari. Please
-view them on desktop Chrome for now. We are working to support more devices.
-Check back soon!
+While the library supports most devices, our demos don't currently work on
+iOS Mobile or Desktop Safari. We are working on updating them, check back soon.
 
 ## Resources
 
-* [Tutorials](http://pair-code.github.io/deeplearnjs/docs/tutorials/index.html)
-* [API Reference](http://pair-code.github.io/deeplearnjs/docs/api/globals.html)
-* [Demos](http://pair-code.github.io/deeplearnjs/index.html#demos)
-* [Roadmap](http://pair-code.github.io/deeplearnjs/docs/roadmap.html)
+* [Tutorials](https://deeplearnjs.org/docs/tutorials/index.html)
+* [API Reference](https://deeplearnjs.org/docs/api/globals.html)
+* [Demos](https://deeplearnjs.org/index.html#demos)
+* [Roadmap](https://deeplearnjs.org/docs/roadmap.html)
 
 ## Thanks
 
