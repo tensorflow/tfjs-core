@@ -749,8 +749,7 @@ export abstract class NDArrayMath {
    *
    * @param input The input array.
    * @param axis Optional. The dimension to reduce. By default it reduces
-   * across all axes and returns the flat index.
-   *
+   *     across all axes and returns the flat index
    */
   argMax(input: NDArray, axis: number = null): NDArray<'int32'> {
     let axes = axis_util.parseAxisParam(axis, input.shape);
