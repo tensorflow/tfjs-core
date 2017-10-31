@@ -541,112 +541,113 @@ import {Array1D, Array2D, Scalar} from './ndarray';
   const tests: MathTests = it => {
     it('basic', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const [mean, vari] = math.moments(a);
+      const {mean, variance} = math.moments(a);
 
       expect(mean.dtype).toBe('float32');
-      expect(vari.dtype).toBe('float32');
+      expect(variance.dtype).toBe('float32');
       test_util.expectNumbersClose(mean.get(), 7 / 6);
-      test_util.expectNumbersClose(vari.get(), 1.1389);
+      test_util.expectNumbersClose(variance.get(), 1.1389);
 
       a.dispose();
     });
 
     it('propagates NaNs', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
-      const [mean, vari] = math.moments(a);
+      const {mean, variance} = math.moments(a);
 
       expect(mean.dtype).toBe('float32');
-      expect(vari.dtype).toBe('float32');
+      expect(variance.dtype).toBe('float32');
       expect(mean.get()).toEqual(NaN);
-      expect(vari.get()).toEqual(NaN);
+      expect(variance.get()).toEqual(NaN);
       a.dispose();
     });
 
     it('moments(int32) => float32', math => {
       const a = Array1D.new([1, 5, 7, 3], 'int32');
-      const [mean, vari] = math.moments(a);
+      const {mean, variance} = math.moments(a);
 
       expect(mean.dtype).toBe('float32');
-      expect(vari.dtype).toBe('float32');
+      expect(variance.dtype).toBe('float32');
       test_util.expectNumbersClose(mean.get(), 4);
-      test_util.expectNumbersClose(vari.get(), 5);
+      test_util.expectNumbersClose(variance.get(), 5);
     });
 
     it('moments(bool) => float32', math => {
       const a = Array1D.new([true, false, false, true, true], 'bool');
-      const [mean, vari] = math.moments(a);
+      const {mean, variance} = math.moments(a);
 
       expect(mean.dtype).toBe('float32');
-      expect(vari.dtype).toBe('float32');
+      expect(variance.dtype).toBe('float32');
       test_util.expectNumbersClose(mean.get(), 3 / 5);
-      test_util.expectNumbersClose(vari.get(), 0.23999998);
+      test_util.expectNumbersClose(variance.get(), 0.23999998);
     });
 
     it('2D array with keep dim', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const [mean, vari] = math.moments(a, null, true /* keepDims */);
+      const {mean, variance} = math.moments(a, null, true /* keepDims */);
 
       expect(mean.shape).toEqual([1, 1]);
       expect(mean.dtype).toBe('float32');
-      expect(vari.shape).toEqual([1, 1]);
-      expect(vari.dtype).toBe('float32');
+      expect(variance.shape).toEqual([1, 1]);
+      expect(variance.dtype).toBe('float32');
       test_util.expectArraysClose(mean.getValues(), new Float32Array([7 / 6]));
       test_util.expectArraysClose(
-          vari.getValues(), new Float32Array([1.138889]));
+          variance.getValues(), new Float32Array([1.138889]));
     });
 
     it('axis=0 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const [mean, vari] = math.moments(a, [0]);
+      const {mean, variance} = math.moments(a, [0]);
 
       expect(mean.shape).toEqual([2]);
       expect(mean.dtype).toBe('float32');
-      expect(vari.shape).toEqual([2]);
-      expect(vari.dtype).toBe('float32');
+      expect(variance.shape).toEqual([2]);
+      expect(variance.dtype).toBe('float32');
       test_util.expectArraysClose(
           mean.getValues(), new Float32Array([4 / 3, 1]));
       test_util.expectArraysClose(
-          vari.getValues(), new Float32Array([1.556, 2 / 3]));
+          variance.getValues(), new Float32Array([1.556, 2 / 3]));
     });
 
     it('axis=1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const [mean, vari] = math.moments(a, [1]);
+      const {mean, variance} = math.moments(a, [1]);
 
       expect(mean.dtype).toBe('float32');
       expect(mean.shape).toEqual([3]);
-      expect(vari.dtype).toBe('float32');
-      expect(vari.shape).toEqual([3]);
+      expect(variance.dtype).toBe('float32');
+      expect(variance.shape).toEqual([3]);
       test_util.expectArraysClose(
           mean.getValues(), new Float32Array([1.5, 1.5, 0.5]));
       test_util.expectArraysClose(
-          vari.getValues(), new Float32Array([0.25, 2.25, 0.25]));
+          variance.getValues(), new Float32Array([0.25, 2.25, 0.25]));
     });
 
     it('2D, axis=1 provided as number', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
-      const [mean, vari] = math.moments(a, 1);
+      const {mean, variance} = math.moments(a, 1);
 
       expect(mean.shape).toEqual([2]);
       expect(mean.dtype).toBe('float32');
-      expect(vari.shape).toEqual([2]);
-      expect(vari.dtype).toBe('float32');
+      expect(variance.shape).toEqual([2]);
+      expect(variance.dtype).toBe('float32');
       test_util.expectArraysClose(
           mean.getValues(), new Float32Array([2, 1 / 3]));
       test_util.expectArraysClose(
-          vari.getValues(), new Float32Array([2 / 3, 0.222]));
+          variance.getValues(), new Float32Array([2 / 3, 0.222]));
     });
 
     it('axis=0,1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const [mean, vari] = math.moments(a, [0, 1]);
+      const {mean, variance} = math.moments(a, [0, 1]);
 
       expect(mean.shape).toEqual([]);
       expect(mean.dtype).toBe('float32');
-      expect(vari.shape).toEqual([]);
-      expect(vari.dtype).toBe('float32');
+      expect(variance.shape).toEqual([]);
+      expect(variance.dtype).toBe('float32');
       test_util.expectArraysClose(mean.getValues(), new Float32Array([7 / 6]));
-      test_util.expectArraysClose(vari.getValues(), new Float32Array([1.1389]));
+      test_util.expectArraysClose(
+          variance.getValues(), new Float32Array([1.1389]));
     });
   };
 
