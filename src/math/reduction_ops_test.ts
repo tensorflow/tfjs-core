@@ -48,9 +48,12 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectNumbersClose(math.min(a, [0, 1]).get(), -7);
     });
 
-    it('2D, axis=0 throws error', math => {
+    it('2D, axis=0', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(() => math.min(a, 0)).toThrowError();
+      const r = math.min(a, 0);
+
+      expect(r.shape).toEqual([3]);
+      test_util.expectArraysClose(r.getValues(), new Float32Array([3, -7, 0]));
     });
 
     it('2D, axis=1 provided as a number', math => {
@@ -107,9 +110,12 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectNumbersClose(math.max(a, [0, 1]).get(), 100);
     });
 
-    it('2D, axis=0 throws error', math => {
+    it('2D, axis=0', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(() => math.max(a, 0)).toThrowError();
+      const r = math.max(a, [0]);
+      expect(r.shape).toEqual([3]);
+      test_util.expectArraysClose(
+          r.getValues(), new Float32Array([100, -1, 2]));
     });
 
     it('2D, axis=1 provided as a number', math => {
@@ -167,9 +173,13 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       expect(math.argMax(a).get()).toBe(3);
     });
 
-    it('2D, axis=0 throws error', math => {
+    it('2D, axis=0', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(() => math.argMax(a, 0)).toThrowError();
+      const r = math.argMax(a, 0);
+
+      expect(r.shape).toEqual([3]);
+      expect(r.dtype).toBe('int32');
+      expect(r.getValues()).toEqual(new Int32Array([1, 0, 1]));
     });
 
     it('2D, axis=1', math => {
@@ -219,9 +229,13 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       expect(math.argMin(a).get()).toBe(4);
     });
 
-    it('2D, axis=0 throws error', math => {
+    it('2D, axis=0', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
-      expect(() => math.argMin(a, 0)).toThrowError();
+      const r = math.argMin(a, 0);
+
+      expect(r.shape).toEqual([3]);
+      expect(r.dtype).toBe('int32');
+      expect(r.getValues()).toEqual(new Int32Array([0, 1, 0]));
     });
 
     it('2D, axis=1', math => {
@@ -309,10 +323,15 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       a.dispose();
     });
 
-    it('axes=0 in 2D array throws error', math => {
+    it('axes=0 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const f = () => math.logSumExp(a, [0]);
-      expect(f).toThrowError();
+      const r = math.logSumExp(a, [0]);
+      expect(r.shape).toEqual([2]);
+      const expected = new Float32Array([
+        Math.log(Math.exp(1) + Math.exp(3) + Math.exp(0)),
+        Math.log(Math.exp(2) + Math.exp(0) + Math.exp(1))
+      ]);
+      test_util.expectArraysClose(r.getValues(), expected);
     });
 
     it('axes=1 in 2D array', math => {
@@ -393,10 +412,11 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectArraysClose(res.getValues(), new Float32Array([7]));
     });
 
-    it('sums across axis=0 in 2D array throws error', math => {
+    it('sums across axis=0 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const f = () => math.sum(a, [0]);
-      expect(f).toThrowError();
+      const res = math.sum(a, [0]);
+      expect(res.shape).toEqual([2]);
+      test_util.expectArraysClose(res.getValues(), new Float32Array([4, 3]));
     });
 
     it('sums across axis=1 in 2D array', math => {
@@ -471,10 +491,14 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
     });
 
-    it('axis=0 in 2D array throws error', math => {
+    it('axis=0 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const f = () => math.mean(a, [0]);
-      expect(f).toThrowError();
+      const res = math.mean(a, [0]);
+
+      expect(res.shape).toEqual([2]);
+      expect(res.dtype).toBe('float32');
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([4 / 3, 1]));
     });
 
     it('axis=1 in 2D array', math => {
@@ -518,10 +542,11 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('basic', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const [mean, vari] = math.moments(a);
+
       expect(mean.dtype).toBe('float32');
       expect(vari.dtype).toBe('float32');
       test_util.expectNumbersClose(mean.get(), 7 / 6);
-      test_util.expectNumbersClose(vari.get(), 1.1388888888889);
+      test_util.expectNumbersClose(vari.get(), 1.1389);
 
       a.dispose();
     });
@@ -529,6 +554,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('propagates NaNs', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
       const [mean, vari] = math.moments(a);
+
       expect(mean.dtype).toBe('float32');
       expect(vari.dtype).toBe('float32');
       expect(mean.get()).toEqual(NaN);
@@ -539,6 +565,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('moments(int32) => float32', math => {
       const a = Array1D.new([1, 5, 7, 3], 'int32');
       const [mean, vari] = math.moments(a);
+
       expect(mean.dtype).toBe('float32');
       expect(vari.dtype).toBe('float32');
       test_util.expectNumbersClose(mean.get(), 4);
@@ -548,6 +575,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('moments(bool) => float32', math => {
       const a = Array1D.new([true, false, false, true, true], 'bool');
       const [mean, vari] = math.moments(a);
+
       expect(mean.dtype).toBe('float32');
       expect(vari.dtype).toBe('float32');
       test_util.expectNumbersClose(mean.get(), 3 / 5);
@@ -557,6 +585,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('2D array with keep dim', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const [mean, vari] = math.moments(a, null, true /* keepDims */);
+
       expect(mean.shape).toEqual([1, 1]);
       expect(mean.dtype).toBe('float32');
       expect(vari.shape).toEqual([1, 1]);
@@ -566,38 +595,58 @@ import {Array1D, Array2D, Scalar} from './ndarray';
           vari.getValues(), new Float32Array([1.138889]));
     });
 
-    it('axis=0 in 2D array throws error', math => {
+    it('axis=0 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const f = () => math.mean(a, [0]);
-      expect(f).toThrowError();
+      const [mean, vari] = math.moments(a, [0]);
+
+      expect(mean.shape).toEqual([2]);
+      expect(mean.dtype).toBe('float32');
+      expect(vari.shape).toEqual([2]);
+      expect(vari.dtype).toBe('float32');
+      test_util.expectArraysClose(
+          mean.getValues(), new Float32Array([4 / 3, 1]));
+      test_util.expectArraysClose(
+          vari.getValues(), new Float32Array([1.556, 2 / 3]));
     });
 
     it('axis=1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const [mean, vari] = math.moments(a, [1]);
+
       expect(mean.dtype).toBe('float32');
       expect(mean.shape).toEqual([3]);
       expect(vari.dtype).toBe('float32');
       expect(vari.shape).toEqual([3]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([1.5, 1.5, 0.5]));
+          mean.getValues(), new Float32Array([1.5, 1.5, 0.5]));
+      test_util.expectArraysClose(
+          vari.getValues(), new Float32Array([0.25, 2.25, 0.25]));
     });
 
     it('2D, axis=1 provided as number', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
-      const res = math.mean(a, 1);
-      expect(res.shape).toEqual([2]);
-      expect(res.dtype).toBe('float32');
+      const [mean, vari] = math.moments(a, 1);
+
+      expect(mean.shape).toEqual([2]);
+      expect(mean.dtype).toBe('float32');
+      expect(vari.shape).toEqual([2]);
+      expect(vari.dtype).toBe('float32');
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([2, 1 / 3]));
+          mean.getValues(), new Float32Array([2, 1 / 3]));
+      test_util.expectArraysClose(
+          vari.getValues(), new Float32Array([2 / 3, 0.222]));
     });
 
     it('axis=0,1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const res = math.mean(a, [0, 1]);
-      expect(res.shape).toEqual([]);
-      expect(res.dtype).toBe('float32');
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
+      const [mean, vari] = math.moments(a, [0, 1]);
+
+      expect(mean.shape).toEqual([]);
+      expect(mean.dtype).toBe('float32');
+      expect(vari.shape).toEqual([]);
+      expect(vari.dtype).toBe('float32');
+      test_util.expectArraysClose(mean.getValues(), new Float32Array([7 / 6]));
+      test_util.expectArraysClose(vari.getValues(), new Float32Array([1.1389]));
     });
   };
 

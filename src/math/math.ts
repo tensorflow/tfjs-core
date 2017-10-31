@@ -622,9 +622,13 @@ export abstract class NDArrayMath {
    */
   logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
       NDArray {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('logSumExp', axes, input.rank);
+    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const perm = axis_util.getPermAxes(axes, input.rank);
     return this.executeOp('logSumExp', () => {
+      if (perm != null) {
+        input = this.transpose(input, perm);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
       const res = this.logSumExpInternal(input, axes);
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
@@ -653,10 +657,13 @@ export abstract class NDArrayMath {
   sum<T extends keyof DataTypes>(
       input: NDArray<T>, axis: number|number[] = null,
       keepDims = false): NDArray<SumTypes[T]> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
-
+    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const perm = axis_util.getPermAxes(axes, input.rank);
     return this.executeOp('sum', () => {
+      if (perm != null) {
+        input = this.transpose(input, perm);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
       const res = this.sumInternal(input, axes);
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
@@ -685,7 +692,6 @@ export abstract class NDArrayMath {
   mean(x: NDArray, axis: number|number[] = null, keepDims = false):
       NDArray<'float32'> {
     const axes = axis_util.parseAxisParam(axis, x.shape);
-    axis_util.assertAxesAreInnerMostDims('mean', axes, x.rank);
     const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
     const reduceShape = shapes[1];
     const reduceSize = util.sizeFromShape(reduceShape);
@@ -707,9 +713,15 @@ export abstract class NDArrayMath {
    *
    */
   argMin(input: NDArray, axis: number = null): NDArray<'int32'> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('argMin', axes, input.rank);
-    return this.executeOp('argMin', () => this.argMinInternal(input, axes));
+    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const perm = axis_util.getPermAxes(axes, input.rank);
+    return this.executeOp('argMin', () => {
+      if (perm != null) {
+        input = this.transpose(input, perm);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
+      return this.argMinInternal(input, axes);
+    });
   }
   protected abstract argMinInternal(ndarray: NDArray, axes: number[]):
       NDArray<'int32'>;
@@ -724,9 +736,15 @@ export abstract class NDArrayMath {
    *
    */
   argMax(input: NDArray, axis: number = null): NDArray<'int32'> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
-    return this.executeOp('argMax', () => this.argMaxInternal(input, axes));
+    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const perm = axis_util.getPermAxes(axes, input.rank);
+    return this.executeOp('argMax', () => {
+      if (perm != null) {
+        input = this.transpose(input, perm);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
+      return this.argMaxInternal(input, axes);
+    });
   }
   protected abstract argMaxInternal(ndarray: NDArray, axes: number[]):
       NDArray<'int32'>;
@@ -796,9 +814,13 @@ export abstract class NDArrayMath {
   min<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
+    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const perm = axis_util.getPermAxes(axes, input.rank);
     return this.executeOp('min', () => {
+      if (perm != null) {
+        input = this.transpose(input, perm);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
       const res = this.minInternal(input, axes);
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
@@ -827,9 +849,13 @@ export abstract class NDArrayMath {
   max<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
+    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const perm = axis_util.getPermAxes(axes, input.rank);
     return this.executeOp('max', () => {
+      if (perm != null) {
+        input = this.transpose(input, perm);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
       const res = this.maxInternal(input, axes);
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
@@ -894,8 +920,8 @@ export abstract class NDArrayMath {
     }
     util.assert(
         a.rank === perm.length,
-        `Error in switchDim: length of input shape ${a.shape} ` +
-            `must match size of newDim array ${perm}.`);
+        `Error in transpose: rank of input ${a.rank} ` +
+            `must match length of perm ${perm}.`);
     return this.executeOp('transpose', () => this.transposeInternal(a, perm));
   }
   protected abstract transposeInternal<

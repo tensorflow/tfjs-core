@@ -471,7 +471,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     const aVals = input.getValues();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
-      let max = aVals[0];
+      let max = aVals[offset];
       for (let j = 0; j < reduceSize; ++j) {
         const value = aVals[offset + j];
         if (isNaN(value)) {

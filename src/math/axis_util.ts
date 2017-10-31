@@ -67,7 +67,7 @@ export function parseAxisParam(
     axis: number|number[], shape: number[]): number[] {
   if (axis == null) {
     axis = shape.map((s, i) => i);
-  } else if (typeof (axis) === 'number') {
+  } else if (typeof(axis) === 'number') {
     axis = [axis];
   }
   return axis;
@@ -80,4 +80,31 @@ export function assertAxesAreInnerMostDims(
         `${msg} supports only inner-most axes for now. ` +
         `Got axes ${axes} and rank-${rank} input.`);
   }
+}
+
+/**
+ * Returns the axes permutation to be used with math.transpose, if such
+ * permutation is neccesary. Otherwise it returns null. This method is used by
+ * math operations that operate only on inner-most axes.
+ */
+export function getPermAxes(axes: number[], rank: number): number[] {
+  if (axesAreInnerMostDims(axes, rank)) {
+    return null;
+  }
+  const result: number[] = [];
+  for (let i = 0; i < rank; ++i) {
+    if (axes.indexOf(i) === -1) {
+      result.push(i);
+    }
+  }
+  axes.forEach(axis => result.push(axis));
+  return result;
+}
+
+export function getInnerMostAxes(numAxes: number, rank: number): number[] {
+  const res: number[] = [];
+  for (let i = rank - numAxes; i < rank; ++i) {
+    res.push(i);
+  }
+  return res;
 }
