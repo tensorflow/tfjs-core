@@ -76,8 +76,8 @@ describe('Activation functions', () => {
 
   it('Leaky ReLU output', () => {
     const x = Array1D.new([1, 3, -2]);
-    const relu = new LeakyReLUFunc(0.1);
-    const y = relu.output(math, x);
+    const leakyRelu = new LeakyReLUFunc(0.1);
+    const y = leakyRelu.output(math, x);
 
     test_util.expectNumbersClose(y.get(0), 1);
     test_util.expectNumbersClose(y.get(1), 3);
@@ -86,9 +86,9 @@ describe('Activation functions', () => {
 
   it('Leaky ReLU derivative', () => {
     const x = Array1D.new([1, 3, -2]);
-    const relu = new LeakyReLUFunc(0.1);
-    const y = relu.output(math, x);
-    const dx = relu.der(math, x, y);
+    const leakyRelu = new LeakyReLUFunc(0.1);
+    const y = leakyRelu.output(math, x);
+    const dx = leakyRelu.der(math, x, y);
 
     test_util.expectNumbersClose(dx.get(0), 1);
     test_util.expectNumbersClose(dx.get(1), 1);
