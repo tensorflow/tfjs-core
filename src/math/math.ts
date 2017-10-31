@@ -215,6 +215,7 @@ export abstract class NDArrayMath {
   /**
    * Tracks an NDArray in the current scope to be automatically cleaned up
    * when the current scope ends, and returns the value.
+   *
    * @param result The NDArray to track in the current scope.
    */
   track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
@@ -434,8 +435,7 @@ export abstract class NDArrayMath {
    * is of size `size`.
    *
    * @param input The input array to slice from.
-   * @param begin The [row, col, depth] 3d coordinates to start the slice
-   * from.
+   * @param begin The [row, col, depth] 3d coordinates to start the slice from.
    * @param size The size of the slice.
    */
   slice3D(input: Array3D, begin: [number, number, number], size: [
@@ -668,9 +668,8 @@ export abstract class NDArrayMath {
    *
    * @param input The input array to compute the sum over.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
-   * all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with
-   * size 1.
+   *     all dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   sum<T extends keyof DataTypes>(
       input: NDArray<T>, axis: number|number[] = null,
@@ -704,9 +703,8 @@ export abstract class NDArrayMath {
    *
    * @param x The input array.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
-   * all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with
-   * size 1.
+   *     all dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   mean(x: NDArray, axis: number|number[] = null, keepDims = false):
       NDArray<'float32'> {
@@ -827,9 +825,8 @@ export abstract class NDArrayMath {
    *
    * @param input The input NDArray.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
-   * all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with
-   * size 1.
+   *     all dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   min<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
@@ -863,9 +860,8 @@ export abstract class NDArrayMath {
    *
    * @param input The input array.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
-   * all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with
-   * size 1.
+   *     all dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   max<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
@@ -1319,9 +1315,8 @@ export abstract class NDArrayMath {
   protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Computes step of the input NDArray element-wise, y = 1 if x > 0 | 0 if x
-   * <=
-   * 0
+   * Computes step of the input NDArray element-wise, y=1 if x>0 | 0 if x<=0.
+   *
    * @param ndarray The input NDArray.
    */
   step<T extends NDArray>(ndarray: T): T {
@@ -1387,8 +1382,7 @@ export abstract class NDArrayMath {
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param bias Optional bias, rank 1 of shape [outDepth].
-   * @param strides The strides of the convolution: [strideHeight,
-   * strideWidth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    *    - 'same' pad and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -1439,8 +1433,7 @@ export abstract class NDArrayMath {
    * @param dy The dy image, rank 3, of shape [height, width, outDepth].
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight,
-   * strideWidth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1462,8 +1455,7 @@ export abstract class NDArrayMath {
    *     [outHeight, outWidth, outDepth].
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight,
-   * strideWidth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1526,8 +1518,7 @@ export abstract class NDArrayMath {
    * @param dy The dy image, rank 3, of shape [height, width, outDepth].
    * @param filterSize The size of the filter, length 4,
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight,
-   * strideWidth].
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1918,7 +1909,7 @@ export abstract class NDArrayMath {
    * @param onValue A number used to fill in output when the index matches the
    *     location.
    * @param offValue A number used to fill in the output when the index does
-   * not match the location.
+   *     not match the location.
    */
   oneHot(indices: Array1D, depth: number, onValue = 1, offValue = 0): Array2D {
     if (depth < 2) {
