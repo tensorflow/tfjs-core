@@ -252,6 +252,48 @@ export function uploadMatrixToPackedTexture(
   uploadDataToTexture(gl, texture, w, h, packedRGBA, numChannels);
 }
 
+export async function downloadMatrixFromOutputTextureAsync(
+    gl: WebGLRenderingContext, rows: number,
+    columns: number): Promise<Float32Array> {
+  const channelsPerTexture = 4;
+
+  const downloadTarget =
+      new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
+          rows * columns, channelsPerTexture));
+  console.log(downloadTarget.length);
+
+  const size = downloadTarget.length * 4;
+  const buffer = gl.createBuffer();
+  webgl_util.callAndCheck(
+      gl,
+      // tslint:disable-next-line:no-any
+      () => gl.bindBuffer((gl as any).PIXEL_PACK_BUFFER, buffer));
+
+  // tslint:disable-next-line:no-any
+  webgl_util.callAndCheck(
+      gl,
+      // tslint:disable-next-line:no-any
+      () => gl.bufferData((gl as any).PIXEL_PACK_BUFFER, size, gl.STATIC_DRAW));
+
+  webgl_util.callAndCheck(
+      gl,
+      // tslint:disable-next-line:no-any
+      () => (gl as any).readPixels(
+          0, 0, columns, rows, gl.RGBA, getTextureType(gl), 0));
+
+  // tslint:disable-next-line:no-any
+  await (gl as any).getBufferSubDataAsync(
+      // tslint:disable-next-line:no-any
+      (gl as any).PIXEL_PACK_BUFFER, 0, downloadTarget);
+
+  const matrix = new Float32Array(rows * columns);
+  tex_util.decodeMatrixFromUnpackedArray(
+      downloadTarget as Float32Array, matrix, channelsPerTexture);
+  console.log(matrix);
+
+  return matrix;
+}
+
 export function downloadMatrixFromOutputTexture(
     gl: WebGLRenderingContext, rows: number, columns: number): Float32Array {
   const [w, h] =

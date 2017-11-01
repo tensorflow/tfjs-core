@@ -27,6 +27,7 @@ export class GPGPUContext {
   gl: WebGLRenderingContext;
   textureFloatExtension: {};
   colorBufferFloatExtension: {};
+  getBufferSubDataAsyncExtension: {};
   loseContextExtension: WebGLLoseContextExtension;
   vertexBuffer: WebGLBuffer;
   indexBuffer: WebGLBuffer;
@@ -57,6 +58,8 @@ export class GPGPUContext {
     this.loseContextExtension =
         webgl_util.getExtensionOrThrow(this.gl, 'WEBGL_lose_context') as
         WebGLLoseContextExtension;
+    this.getBufferSubDataAsyncExtension = webgl_util.getExtensionOrThrow(
+        this.gl, 'WEBGL_get_buffer_sub_data_async');
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
     this.framebuffer = webgl_util.createFramebuffer(this.gl);
@@ -145,6 +148,15 @@ export class GPGPUContext {
         texture,
         () =>
             gpgpu_util.downloadMatrixFromOutputTexture(this.gl, rows, columns));
+  }
+
+  public async downloadMatrixFromTextureAsync(
+      texture: WebGLTexture, rows: number,
+      columns: number): Promise<Float32Array> {
+    return this.downloadMatrixDriverAsync(
+        texture,
+        () => gpgpu_util.downloadMatrixFromOutputTextureAsync(
+            this.gl, rows, columns));
   }
 
   public downloadMatrixFromRGBAColorTexture(
@@ -380,16 +392,16 @@ export class GPGPUContext {
     });
   }
 
-  private downloadMatrixDriver(
-      texture: WebGLTexture,
-      downloadAndDecode: () => Float32Array): Float32Array {
+  private downloadMatrixDriverSetup(texture: WebGLTexture) {
     this.throwIfDisposed();
     webgl_util.bindColorTextureToFramebuffer(
         this.gl, texture, this.framebuffer);
     if (this.autoDebugValidate) {
       webgl_util.validateFramebuffer(this.gl);
     }
-    const result = downloadAndDecode();
+  }
+
+  private downloadMatrixDriverTeardown() {
     if (this.outputTexture != null) {
       webgl_util.bindColorTextureToFramebuffer(
           this.gl, this.outputTexture, this.framebuffer);
@@ -399,6 +411,25 @@ export class GPGPUContext {
     } else {
       webgl_util.unbindColorTextureFromFramebuffer(this.gl, this.framebuffer);
     }
+  }
+
+  private downloadMatrixDriver(
+      texture: WebGLTexture,
+      downloadAndDecode: () => Float32Array): Float32Array {
+    this.downloadMatrixDriverSetup(texture);
+    const result = downloadAndDecode();
+    this.downloadMatrixDriverTeardown();
+
+    return result;
+  }
+
+  private async downloadMatrixDriverAsync(
+      texture: WebGLTexture,
+      downloadAndDecode: () => Promise<Float32Array>): Promise<Float32Array> {
+    this.downloadMatrixDriverSetup(texture);
+    const result = await downloadAndDecode();
+    this.downloadMatrixDriverTeardown();
+
     return result;
   }
 
