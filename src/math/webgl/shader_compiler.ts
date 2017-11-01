@@ -575,26 +575,39 @@ function getSampler4D(inputInfo: InputInfo): string {
   const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const tR = texShape[0];
-  const tC = texShape[1];
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
-  if (tC === stride0) {
+  if (texNumC === stride0) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
         int texR = row;
         int texC = col * ${stride1} + depth * ${stride2} + depth2;
-        vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
+        vec2 uv = (vec2(texC, texR) + halfCR) /
+                   vec2(${texNumC}.0, ${texNumR}.0);
         return sample(${texName}, uv);
       }
     `;
   }
+  if (texNumC === stride2) {
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2) {
+        int texR = row * ${shape[1] * shape[2]} + col * ${shape[2]} + depth;
+        int texC = depth2;
+        vec2 uv = (vec2(texC, texR) + halfCR) /
+                   vec2(${texNumC}.0, ${texNumR}.0);
+        return sample(${texName}, uv);
+      }
+    `;
+  }
+
   return `
     float ${funcName}(int row, int col, int depth, int depth2) {
-      vec2 uv = UVfrom4D(${tR}, ${tC}, ${stride0}, ${stride1}, ${stride2},
-          row, col, depth, depth2);
+      vec2 uv = UVfrom4D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
+          ${stride2}, row, col, depth, depth2);
       return sample(${texName}, uv);
     }
   `;
