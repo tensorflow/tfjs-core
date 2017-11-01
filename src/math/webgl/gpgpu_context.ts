@@ -58,8 +58,12 @@ export class GPGPUContext {
     this.loseContextExtension =
         webgl_util.getExtensionOrThrow(this.gl, 'WEBGL_lose_context') as
         WebGLLoseContextExtension;
-    this.getBufferSubDataAsyncExtension = webgl_util.getExtensionOrThrow(
-        this.gl, 'WEBGL_get_buffer_sub_data_async');
+
+    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) {
+      this.getBufferSubDataAsyncExtension =
+          this.gl.getExtension('WEBGL_get_buffer_sub_data_async');
+    }
+
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
     this.framebuffer = webgl_util.createFramebuffer(this.gl);
@@ -153,10 +157,14 @@ export class GPGPUContext {
   public async downloadMatrixFromTextureAsync(
       texture: WebGLTexture, rows: number,
       columns: number): Promise<Float32Array> {
-    return this.downloadMatrixDriverAsync(
-        texture,
-        () => gpgpu_util.downloadMatrixFromOutputTextureAsync(
-            this.gl, rows, columns));
+    if (this.getBufferSubDataAsyncExtension != null) {
+      return this.downloadMatrixDriverAsync(
+          texture,
+          () => gpgpu_util.downloadMatrixFromOutputTextureAsync(
+              this.gl, this.getBufferSubDataAsyncExtension, rows, columns));
+    } else {
+      return this.downloadMatrixFromTexture(texture, rows, columns);
+    }
   }
 
   public downloadMatrixFromRGBAColorTexture(
