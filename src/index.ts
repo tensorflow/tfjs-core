@@ -65,7 +65,6 @@ export {
 };
 
 function exportToTopLevel(alias: string): void {
-  // Export the library under the dl alias.
   setTimeout(() => {
     // tslint:disable-next-line:no-any
     const w: any = window;
