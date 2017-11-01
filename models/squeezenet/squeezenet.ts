@@ -15,33 +15,28 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, CheckpointLoader, NDArray, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
-
-import * as imagenet_classes from './imagenet_classes';
+import {Array1D, Array3D, Array4D, CheckpointLoader, NDArray, NDArrayMath} from '../../src';
+import {Model} from '../model';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
     'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
 
-export class SqueezeNet {
+export class SqueezeNet extends Model {
   private variables: {[varName: string]: NDArray};
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
 
-  constructor(private math: NDArrayMathGPU) {}
+  constructor(math: NDArrayMath) {
+      super(math);
+  }
 
   /**
-   * Loads necessary variables for SqueezeNet. Resolves the promise when the
-   * variables have all been loaded.
+   * Loads necessary variables for SqueezeNet.
    */
-  loadVariables(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const checkpointLoader =
-          new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + 'squeezenet1_1/');
-      checkpointLoader.getAllVariables().then(variables => {
-        this.variables = variables;
-        resolve();
-      });
-    });
+  async loadVariables(): Promise<void> {
+    const checkpointLoader =
+        new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + 'squeezenet1_1/');
+    this.variables = await checkpointLoader.getAllVariables();
   }
 
   /**
@@ -52,8 +47,9 @@ export class SqueezeNet {
    * @param input un-preprocessed input Array.
    * @return Named activations and the pre-softmax logits.
    */
-  infer(input: Array3D):
-      {namedActivations: {[activationName: string]: Array3D}, logits: Array1D} {
+  async predict(input: Array3D):
+      Promise<{namedActivations: {[activationName: string]: Array3D},
+      logits: Array1D}> {
     // Keep a map of named activations for rendering purposes.
     const namedActivations: {[key: string]: Array3D} = {};
 
@@ -134,28 +130,5 @@ export class SqueezeNet {
     const right2 = this.math.relu(right1);
 
     return this.math.concat3D(left2, right2, 2);
-  }
-
-  /**
-   * Get the topK classes for pre-softmax logits. Returns a map of className
-   * to softmax normalized probability.
-   *
-   * @param logits Pre-softmax logits array.
-   * @param topK How many top classes to return.
-   */
-  async getTopKClasses(logits: Array1D, topK: number):
-      Promise<{[className: string]: number}> {
-    const predictions = this.math.softmax(logits);
-    const topk = new NDArrayMathCPU().topK(predictions, topK);
-    const topkIndices = await topk.indices.data();
-    const topkValues = await topk.values.data();
-
-    const topClassesToProbability: {[className: string]: number} = {};
-    for (let i = 0; i < topkIndices.length; i++) {
-      topClassesToProbability[imagenet_classes
-                                  .IMAGENET_CLASSES[topkIndices[i]]] =
-          topkValues[i];
-    }
-    return topClassesToProbability;
   }
 }

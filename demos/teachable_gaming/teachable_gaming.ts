@@ -17,9 +17,9 @@
 
 import '../demo-header';
 import '../demo-footer';
+import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathGPU} from '../deeplearn';
 // tslint:disable-next-line:max-line-length
-import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
-import * as topk_image_classifier from '../../models/topk_image_classifier';
+import {TopKImageClassifier} from '../../models/topk_image_classifier/topk_image_classifier';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 
 declare var Dosbox:any;
@@ -38,15 +38,14 @@ export const TeachableGamingDemoPolymer: new () => PolymerHTMLElement =
  *     http://localhost:5432
  */
 
-export class TeachableGamingtDemo extends TeachableGamingDemoPolymer {
+export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
   private math: NDArrayMathGPU;
-  private mathCPU: NDArrayMathCPU;
   private gl: WebGLRenderingContext;
   private gpgpu: GPGPUContext;
   private selectedIndex = -1;
 
   private webcamVideoElement: HTMLVideoElement;
-  private classifier: topk_image_classifier.TopKImageClassifier;
+  private classifier: TopKImageClassifier;
   private toggles: Array<HTMLElement>;
   private countBoxes: Array<HTMLElement>;
   private clears: Array<HTMLElement>;
@@ -109,8 +108,8 @@ export class TeachableGamingtDemo extends TeachableGamingDemoPolymer {
     this.gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
     this.gpgpu = new GPGPUContext(this.gl);
     this.math = new NDArrayMathGPU(this.gpgpu);
-    this.mathCPU = new NDArrayMathCPU();
-    this.classifier = new topk_image_classifier.TopKImageClassifier(6, 5, this.math, this.mathCPU);
+    this.classifier = new TopKImageClassifier(6, 5, this.math);
+    this.classifier.loadVariables();
 
     this.when(() => this.isDosboxReady(), () => this.loadDosbox());
     setTimeout(() => this.animate(), 1000);
@@ -183,10 +182,13 @@ export class TeachableGamingtDemo extends TeachableGamingDemoPolymer {
 
   private async animate() {
     if (this.selectedIndex >= 0) {
+
       await this.math.scope(async (keep, track) => {
         const image = track(Array3D.fromPixels(this.webcamVideoElement));
-
-        this.classifier.addImage(image, this.selectedIndex);
+        for (let i = 0; i < this.indicators.length; i++) {
+          this.indicators[i].style.backgroundColor = 'lightgray';
+        }
+        await this.classifier.addImage(image, this.selectedIndex);
         this.countBoxes[this.selectedIndex].innerHTML = String(
           +this.countBoxes[this.selectedIndex].innerHTML + 1);
       });
@@ -194,13 +196,19 @@ export class TeachableGamingtDemo extends TeachableGamingDemoPolymer {
     else {
       await this.math.scope(async (keep, track) => {
         const image = track(Array3D.fromPixels(this.webcamVideoElement));
-        const results = this.classifier.infer(image);
-        this.$.detected.innerHTML = results.classIndex;
+        const results = await this.classifier.predict(image);
         console.log(results);
+        if (results.classIndex >= 0) {
+          for (let i = 0; i < this.indicators.length; i++) {
+            if (i === results.classIndex) {
+              this.indicators[i].style.backgroundColor = 'green';
+            } else {
+              this.indicators[i].style.backgroundColor = 'lightgray';
+            }
+          }
+        }
         if (results.classIndex === 0) {
-          //console.log(results);
           const elem = this.$.dosbox;
-          //const elem = document;
           elem.dispatchEvent(new KeyboardEvent('keypress', {bubbles: true, key:'ArrowDown'}));
           elem.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key:'ArrowDown'}));
           elem.dispatchEvent(new KeyboardEvent('keyup', {bubbles: true, key:'ArrowDown'}));
@@ -228,4 +236,4 @@ export class TeachableGamingtDemo extends TeachableGamingDemoPolymer {
   }
 }
 
-document.registerElement(TeachableGamingtDemo.prototype.is, TeachableGamingtDemo);
+document.registerElement(TeachableGamingDemo.prototype.is, TeachableGamingDemo);
