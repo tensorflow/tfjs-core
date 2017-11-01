@@ -45,7 +45,7 @@ export function getRunGroups(): BenchmarkRunGroup[] {
   });
 
   const convParams: ConvBenchmarkParams =
-      {inDepth: 16, outDepth: 32, filterSize: 7, stride: 1};
+      {inDepth: 1, outDepth: 128, filterSize: 7, stride: 1};
   groups.push({
     name: 'Convolution: image [size, size]',
     min: 0,

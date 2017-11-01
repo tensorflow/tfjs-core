@@ -411,7 +411,7 @@ export function getTextureShapeFromLogicalShape(
   } else if (
       logShape.length === 4 && logShape[0] <= maxTexSize &&
       logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {
-    return [logShape[0] * logShape[1] * logShape[2], logShape[3]];
+    return [logShape[0], logShape[1] * logShape[2] * logShape[3]];
   } else {
     return util.sizeToSquarishShape(size);
   }
