@@ -157,14 +157,16 @@ export class GPGPUContext {
   public async downloadMatrixFromTextureAsync(
       texture: WebGLTexture, rows: number,
       columns: number): Promise<Float32Array> {
-    if (this.getBufferSubDataAsyncExtension != null) {
-      return this.downloadMatrixDriverAsync(
-          texture,
-          () => gpgpu_util.downloadMatrixFromOutputTextureAsync(
-              this.gl, this.getBufferSubDataAsyncExtension, rows, columns));
-    } else {
-      return this.downloadMatrixFromTexture(texture, rows, columns);
+    if (this.getBufferSubDataAsyncExtension == null) {
+      throw new Error(
+          `Cannot download matrix from output texture asynchronously, ` +
+          `WEBGL_get_buffer_sub_data_async is not enabled.`);
     }
+
+    return this.downloadMatrixDriverAsync(
+        texture,
+        () => gpgpu_util.downloadMatrixFromOutputTextureAsync(
+            this.gl, this.getBufferSubDataAsyncExtension, rows, columns));
   }
 
   public downloadMatrixFromRGBAColorTexture(

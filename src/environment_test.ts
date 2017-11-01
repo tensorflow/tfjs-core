@@ -143,24 +143,6 @@ describe('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', () => {
   });
 
   it('WebGL 1 disabled', () => {
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string) => {
-        if (context === 'webgl2') {
-          return {
-            getExtension: (extensionName: string) => {
-              if (extensionName === 'WEBGL_get_buffer_sub_data_async') {
-                return {};
-              } else if (extensionName === 'WEBGL_lose_context') {
-                return {loseContext: () => {}};
-              }
-              return null;
-            }
-          };
-        }
-        return null;
-      }
-    });
-
     const features: Features = {'WEBGL_VERSION': 1};
 
     const env = new Environment(features);
