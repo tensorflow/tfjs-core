@@ -137,6 +137,7 @@ export class TopKImageClassifier extends Model {
       const knn = this.math.matMul(
         this.trainLogitsMatrix.as2D(numExamples, logitsSize),
         imageLogits.as2D(logitsSize, 1)).as1D();
+      await knn.data();
       const kVal = Math.min(this.k, numExamples);
       const topK = this.mathCPU.topK(knn, kVal);
       return topK.indices;
