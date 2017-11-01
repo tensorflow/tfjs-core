@@ -80,13 +80,13 @@ export class Conv2DProgram implements GPGPUProgram {
                 getX(xR, xC, d1 + 2),
                 getX(xR, xC, d1 + 3)
               );
+              // vec4 wValues = getW4D(d2, wR, wC, d1);
               vec4 wValues = vec4(
                 getW(d2, wR, wC, d1),
                 getW(d2, wR, wC, d1 + 1),
                 getW(d2, wR, wC, d1 + 2),
                 getW(d2, wR, wC, d1 + 3)
               );
-
               dotProd += dot(xValues, wValues);
             }
 

@@ -583,6 +583,21 @@ function getSampler4D(inputInfo: InputInfo): string {
 
   if (texNumC === stride0) {
     return `
+      vec4 ${funcName}4D(int row, int col, int depth, int depth2) {
+        int texR = row;
+        int texC = col * ${stride1} + depth * ${stride2} + depth2;
+        vec2 uv1 = (vec2(texC, texR) + halfCR) /
+                   vec2(${texNumC}.0, ${texNumR}.0);
+        vec2 uv2 = (vec2(texC + 1, texR) + halfCR) /
+                   vec2(${texNumC}.0, ${texNumR}.0);
+        vec2 uv3 = (vec2(texC + 2, texR) + halfCR) /
+                   vec2(${texNumC}.0, ${texNumR}.0);
+        vec2 uv4 = (vec2(texC + 3, texR) + halfCR) /
+                    vec2(${texNumC}.0, ${texNumR}.0);
+        return vec4(sample(${texName}, uv1), sample(${texName}, uv2),
+                    sample(${texName}, uv3), sample(${texName}, uv4));
+      }
+
       float ${funcName}(int row, int col, int depth, int depth2) {
         int texR = row;
         int texC = col * ${stride1} + depth * ${stride2} + depth2;
