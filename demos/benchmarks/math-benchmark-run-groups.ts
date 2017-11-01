@@ -44,12 +44,12 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     params: {}
   });
 
-  const convParams:
-      ConvBenchmarkParams = {inDepth: 8, outDepth: 3, filterSize: 7, stride: 1};
+  const convParams: ConvBenchmarkParams =
+      {inDepth: 16, outDepth: 32, filterSize: 7, stride: 1};
   groups.push({
     name: 'Convolution: image [size, size]',
     min: 0,
-    max: 1024,
+    max: 512,
     stepSize: 64,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     benchmarkRuns:

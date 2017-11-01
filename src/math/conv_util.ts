@@ -128,7 +128,7 @@ export function computeTexShapeFrom3D(
 export function computeWeightsShape4D(
     inputDepth: number, outputDepth: number, filterHeight: number,
     filterWidth: number): [number, number, number, number] {
-  return [filterHeight, filterWidth, inputDepth, outputDepth];
+  return [outputDepth, filterHeight, filterWidth, inputDepth];
 }
 
 export function computeDilatedRC(
