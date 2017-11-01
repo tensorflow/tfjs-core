@@ -530,6 +530,19 @@ function getSampler3D(inputInfo: InputInfo): string {
   if (tC === stride0) {
     if (inputInfo.shapeInfo.textureType === TextureType.DEFAULT) {
       return `
+
+        vec4 ${funcName}4D(int row, int col, int depth) {
+          int texR = row;
+          int texC = col * ${stride1} + depth;
+          vec2 uv1 = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
+          vec2 uv2 = uv1 + vec2(1.5 / ${tC}.0, 0);
+          vec2 uv3 = uv1 + vec2(2.5 / ${tC}.0, 0);
+          vec2 uv4 = uv1 + vec2(3.5 / ${tC}.0, 0);
+          return vec4(sample(${texName}, uv1), sample(${texName}, uv2),
+                      sample(${texName}, uv3), sample(${texName}, uv4));
+        }
+
+
         float ${funcName}(int row, int col, int depth) {
           int texR = row;
           int texC = col * ${stride1} + depth;
@@ -588,12 +601,9 @@ function getSampler4D(inputInfo: InputInfo): string {
         int texC = col * ${stride1} + depth * ${stride2} + depth2;
         vec2 uv1 = (vec2(texC, texR) + halfCR) /
                    vec2(${texNumC}.0, ${texNumR}.0);
-        vec2 uv2 = (vec2(texC + 1, texR) + halfCR) /
-                   vec2(${texNumC}.0, ${texNumR}.0);
-        vec2 uv3 = (vec2(texC + 2, texR) + halfCR) /
-                   vec2(${texNumC}.0, ${texNumR}.0);
-        vec2 uv4 = (vec2(texC + 3, texR) + halfCR) /
-                    vec2(${texNumC}.0, ${texNumR}.0);
+        vec2 uv2 = uv1 + vec2(1.5 / ${texNumC}.0, 0);
+        vec2 uv3 = uv1 + vec2(2.5 / ${texNumC}.0, 0);
+        vec2 uv4 = uv1 + vec2(3.5 / ${texNumC}.0, 0);
         return vec4(sample(${texName}, uv1), sample(${texName}, uv2),
                     sample(${texName}, uv3), sample(${texName}, uv4));
       }

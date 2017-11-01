@@ -74,19 +74,20 @@ export class Conv2DProgram implements GPGPUProgram {
             }
 
             for (int d1 = 0; d1 < ${inputDepthNearestVec4}; d1 += 4) {
-              vec4 xValues = vec4(
-                getX(xR, xC, d1),
-                getX(xR, xC, d1 + 1),
-                getX(xR, xC, d1 + 2),
-                getX(xR, xC, d1 + 3)
-              );
-              // vec4 wValues = getW4D(d2, wR, wC, d1);
-              vec4 wValues = vec4(
-                getW(d2, wR, wC, d1),
-                getW(d2, wR, wC, d1 + 1),
-                getW(d2, wR, wC, d1 + 2),
-                getW(d2, wR, wC, d1 + 3)
-              );
+              vec4 xValues = getX4D(xR, xC, d1);
+              // vec4 xValues = vec4(
+              //   getX(xR, xC, d1),
+              //   getX(xR, xC, d1 + 1),
+              //   getX(xR, xC, d1 + 2),
+              //   getX(xR, xC, d1 + 3)
+              // );
+              vec4 wValues = getW4D(d2, wR, wC, d1);
+              // vec4 wValues = vec4(
+              //   getW(d2, wR, wC, d1),
+              //   getW(d2, wR, wC, d1 + 1),
+              //   getW(d2, wR, wC, d1 + 2),
+              //   getW(d2, wR, wC, d1 + 3)
+              // );
               dotProd += dot(xValues, wValues);
             }
 
