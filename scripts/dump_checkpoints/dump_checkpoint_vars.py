@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+
 """
 This script is an entry point for dumping checkpoints for various deeplearning
 frameworks.
@@ -26,7 +27,7 @@ from tensorflow_checkpoint_dumper import TensorflowCheckpointDumper
 
 def get_checkpoint_dumper(model_type, checkpoint_file, output_dir, remove_variables_regex):
   """Returns Checkpoint dumper instance for a given model type.
-  
+
   Parameters
   ----------
   model_type : str
@@ -37,12 +38,12 @@ def get_checkpoint_dumper(model_type, checkpoint_file, output_dir, remove_variab
       Path to output directory
   remove_variables_regex : str
       Regex for variables to be ignored
-  
+
   Returns
   -------
   (TensorflowCheckpointDumper, PytorchCheckpointDumper)
       Checkpoint Dumper Instance for corresponding model type
-  
+
   Raises
   ------
   Error

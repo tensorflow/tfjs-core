@@ -31,7 +31,7 @@ import string
 class CheckpointDumper(object):
 
   """Base Checkpoint Dumper class.
-  
+
   Attributes
   ----------
   checkpoint_file : str
@@ -52,7 +52,7 @@ class CheckpointDumper(object):
 
   def __init__(self, checkpoint_file, output_dir, remove_variables_regex):
     """Constructs object for Checkpoint Dumper.
-    
+
     Parameters
     ----------
     checkpoint_file : str
@@ -87,12 +87,12 @@ class CheckpointDumper(object):
 
   def should_ignore(self, name):
     """Checks whether name should be ignored or not.
-    
+
     Parameters
     ----------
     name : str
         Name to be checked
-    
+
     Returns
     -------
     bool
@@ -103,7 +103,7 @@ class CheckpointDumper(object):
 
   def dump_weights(self, filename, weights):
     """Creates a file with given name and dumps byte weights in it.
-    
+
     Parameters
     ----------
     filename : str
@@ -118,7 +118,7 @@ class CheckpointDumper(object):
   def dump_manifest(self, filename='manifest.json'):
     """Creates a manifest file with given name and dumps meta information
     related to model.
-    
+
     Parameters
     ----------
     filename : str, optional

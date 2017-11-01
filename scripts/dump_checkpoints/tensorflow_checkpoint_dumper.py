@@ -35,16 +35,16 @@ from checkpoint_dumper import CheckpointDumper
 class TensorflowCheckpointDumper(CheckpointDumper):
 
   """Class for dumping Tensorflow Checkpoints.
-  
+
   Attributes
   ----------
   reader : NewCheckpointReader
       Reader for given tensorflow checkpoint
   """
-  
+
   def __init__(self, checkpoint_file, output_dir, remove_variables_regex):
     """Constructs object for Tensorflow Checkpoint Dumper.
-    
+
     Parameters
     ----------
     checkpoint_file : str
@@ -61,12 +61,12 @@ class TensorflowCheckpointDumper(CheckpointDumper):
 
   def var_name_to_filename(self, var_name):
     """Converts variable names to standard file names.
-    
+
     Parameters
     ----------
     var_name : str
         Variable name to be converted
-    
+
     Returns
     -------
     str
