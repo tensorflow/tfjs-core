@@ -20,7 +20,6 @@ import {GPGPUProgram} from './gpgpu_math';
 
 export class ConcatProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
-  params: Array<{}> = [];
   outputShape: number[] = [];
   userCode: string;
 
