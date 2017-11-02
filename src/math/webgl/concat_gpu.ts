@@ -26,7 +26,6 @@ export class ConcatProgram implements GPGPUProgram {
   constructor(aShape: number[], bShape: number[], axis: number) {
     const yAxes = ['yR', 'yC', 'yD', 'yW'];
     const concatAxis = yAxes[axis];
-    this.params = [axis];
     this.outputShape = concat_util.computeOutShape(aShape, bShape, axis);
 
     const dType = getDataType(aShape.length);
