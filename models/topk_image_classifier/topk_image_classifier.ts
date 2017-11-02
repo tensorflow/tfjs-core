@@ -100,7 +100,7 @@ export class TopKImageClassifier extends Model {
       }
       keep(this.classLogitsMatrices[classIndex]);
       this.classExampleCount[classIndex]++;
-  });
+    });
   }
 
   /**
@@ -119,7 +119,7 @@ export class TopKImageClassifier extends Model {
       console.warn('Cannot predict until vars have been loaded.');
       return {classIndex: imageClass, confidences};
     }
-    return this.math.scope(async (keep) => {
+    const topKIndices = await this.math.scope(async (keep) => {
       const predResults = await this.squeezeNet.predict(image);
       const imageLogits = predResults.logits;
       const logitsSize = imageLogits.shape[0];
@@ -149,45 +149,44 @@ export class TopKImageClassifier extends Model {
       const kVal = Math.min(this.k, numExamples);
       const topK = this.mathCPU.topK(knn, kVal);
       return topK.indices;
-    }).then((topKIndices) => {
-      if (!topKIndices) {
-        return {classIndex: imageClass, confidences};
-      }
-      const indices = topKIndices.dataSync();
-
-      const indicesForClasses = [];
-      const topKCountsForClasses = [];
-      for (let i = 0; i < this.numClasses; i++) {
-        topKCountsForClasses.push(0);
-        let num = this.classExampleCount[i];
-        if (i > 0) {
-          num += indicesForClasses[i - 1];
-        }
-        indicesForClasses.push(num);
-      }
-      for (let i = 0; i < indices.length; i++) {
-        for (let classForEntry = 0; classForEntry < indicesForClasses.length;
-              classForEntry++) {
-          if (indices[i] < indicesForClasses[classForEntry]) {
-            topKCountsForClasses[classForEntry]++;
-            break;
-          }
-        }
-      }
-
-      let topConfidence = 0;
-      const kVal = Math.min(this.k, this.getNumExamples());
-      for (let i = 0; i < this.numClasses; i++) {
-        const probability = topKCountsForClasses[i] / kVal;
-        if (probability > topConfidence) {
-          topConfidence = probability;
-          imageClass = i;
-        }
-        confidences[i] = probability;
-      }
-
-      return {classIndex: imageClass, confidences};
     });
+    if (!topKIndices) {
+      return {classIndex: imageClass, confidences};
+    }
+    const indices = topKIndices.dataSync();
+
+    const indicesForClasses = [];
+    const topKCountsForClasses = [];
+    for (let i = 0; i < this.numClasses; i++) {
+      topKCountsForClasses.push(0);
+      let num = this.classExampleCount[i];
+      if (i > 0) {
+        num += indicesForClasses[i - 1];
+      }
+      indicesForClasses.push(num);
+    }
+    for (let i = 0; i < indices.length; i++) {
+      for (let classForEntry = 0; classForEntry < indicesForClasses.length;
+            classForEntry++) {
+        if (indices[i] < indicesForClasses[classForEntry]) {
+          topKCountsForClasses[classForEntry]++;
+          break;
+        }
+      }
+    }
+
+    let topConfidence = 0;
+    const kVal = Math.min(this.k, this.getNumExamples());
+    for (let i = 0; i < this.numClasses; i++) {
+      const probability = topKCountsForClasses[i] / kVal;
+      if (probability > topConfidence) {
+        topConfidence = probability;
+        imageClass = i;
+      }
+      confidences[i] = probability;
+    }
+
+    return {classIndex: imageClass, confidences};
   }
 
   dispose() {
