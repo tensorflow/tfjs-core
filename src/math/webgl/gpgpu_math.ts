@@ -170,6 +170,7 @@ export function makeShaderKey(
   const keyUserCode = program.userCode;
   const keyBroadcast = (program.supportsBroadcasting === true).toString();
   let key = program.constructor.name;
+  // Fast string concat. See https://jsperf.com/string-concatenation/14.
   key += '_' + keyBroadcast + '_' + keyInputs + '_' + keyUserCode;
   return key;
 }
