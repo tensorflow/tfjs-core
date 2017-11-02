@@ -101,7 +101,7 @@ export class PoolGPUBenchmark extends PoolBenchmark {
     const xShape: [number, number, number] = [size, size, outputDepth];
     const fieldSize = this.params.fieldSize;
     const stride = this.params.stride;
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConvInfo2D(
         xShape, fieldSize, fieldSize, outputDepth, stride, stride, 'same');
     const program = new Pool2DProgram(convInfo, this.params.type, false);
     const res = NDArray.zeros(program.outputShape);

@@ -21,7 +21,7 @@ import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {ConvInfo} from './conv_util';
+import {ConvInfo2D, ConvInfoND} from './conv_util';
 import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 // tslint:disable-next-line:max-line-length
@@ -719,7 +719,7 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected conv2dInternal(
       x: Array3D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array3D {
+      convInfo: ConvInfo2D): Array3D {
     const [xRows, xCols, inputDepth] = x.shape;
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
@@ -758,7 +758,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D {
+      dy: Array3D, filter: Array4D, convInfo: ConvInfo2D): Array3D {
     const inDepth = filter.shape[2];
     const outDepth = filter.shape[3];
     const yRows = dy.shape[0];
@@ -805,7 +805,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dDerFilterInternal(
-      x: Array3D, dY: Array3D, convInfo: ConvInfo): Array4D {
+      x: Array3D, dY: Array3D, convInfo: ConvInfo2D): Array4D {
     const inputDepth = x.shape[2];
     const outputDepth = dY.shape[2];
     const strideHeight = convInfo.strideHeight;
@@ -893,7 +893,52 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  private pool(x: Array3D, convInfo: ConvInfo, poolType: 'max'|'min'|'avg') {
+  /**
+   * TODO(dfarhi) There's a lot of repeated code between pool*D functions.
+   * Would be nice to make a general poolND instead.
+   */
+  private pool1D(x: Array2D, convInfo: ConvInfoND, poolType: 'max'|'min'|'avg'):
+      Array2D {
+    const y = Array2D.zeros(<[number, number]>convInfo.outShape);
+    const filterSize = convInfo.filter[0];
+    for (let d = 0; d < x.shape[x.shape.length - 1]; ++d) {
+      for (let yPos = 0; yPos < y.shape[0]; ++yPos) {
+        const xStartCorner =
+            yPos * convInfo.stride[0] - convInfo.padInfo[0].start;
+        const xPosMin = Math.max(0, xStartCorner);
+        const xPosMax = Math.min(x.shape[0], convInfo.filter[0] + xStartCorner);
+
+        let minMaxValue =
+            (poolType === 'max' ? Number.NEGATIVE_INFINITY :
+                                  Number.POSITIVE_INFINITY);
+        let avgValue = 0;
+
+        for (let xPos = xPosMin; xPos < xPosMax; ++xPos) {
+          const pixel = x.get(xPos, d);
+          if (isNaN(pixel)) {
+            minMaxValue = NaN;
+            avgValue = NaN;
+            break;
+          }
+          if ((poolType === 'max' && pixel > minMaxValue) ||
+              (poolType === 'min' && pixel < minMaxValue)) {
+            minMaxValue = pixel;
+          } else if (poolType === 'avg') {
+            avgValue += pixel / filterSize;
+          }
+        }
+        y.set(poolType === 'avg' ? avgValue : minMaxValue, yPos, d);
+      }
+    }
+    return y;
+  }
+
+  protected maxPool1DInternal(x: Array2D, convInfo: ConvInfoND): Array2D {
+    return this.pool1D(x, convInfo, 'max');
+  }
+
+  private pool2D(
+      x: Array3D, convInfo: ConvInfo2D, poolType: 'max'|'min'|'avg') {
     const [xRows, xCols, depth] = x.shape;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -943,11 +988,81 @@ export class NDArrayMathCPU extends NDArrayMath {
     return y;
   }
 
-  protected maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
-    return this.pool(x, convInfo, 'max');
+  protected maxPool2DInternal(x: Array3D, convInfo: ConvInfo2D): Array3D {
+    return this.pool2D(x, convInfo, 'max');
   }
 
-  maxPoolPositions(x: Array3D, convInfo: ConvInfo) {
+  private pool3D(x: Array4D, convInfo: ConvInfoND, poolType: 'max'|'min'|'avg'):
+      Array4D {
+    const y =
+        Array4D.zeros(<[number, number, number, number]>convInfo.outShape);
+    const filterSize =
+        convInfo.filter[0] * convInfo.filter[1] * convInfo.filter[2];
+    for (let d = 0; d < x.shape[x.shape.length - 1]; ++d) {
+      for (let y0 = 0; y0 < y.shape[0]; ++y0) {
+        const x0StartCorner =
+            y0 * convInfo.stride[0] - convInfo.padInfo[0].start;
+        const x0Min = Math.max(0, x0StartCorner);
+        const x0Max = Math.min(x.shape[0], convInfo.filter[0] + x0StartCorner);
+        for (let y1 = 0; y1 < y.shape[1]; ++y1) {
+          const x1StartCorner =
+              y1 * convInfo.stride[1] - convInfo.padInfo[1].start;
+          const x1Min = Math.max(0, x1StartCorner);
+          const x1Max =
+              Math.min(x.shape[1], convInfo.filter[1] + x1StartCorner);
+          for (let y2 = 0; y2 < y.shape[2]; ++y2) {
+            const x2StartCorner =
+                y2 * convInfo.stride[2] - convInfo.padInfo[2].start;
+            const x2Min = Math.max(0, x2StartCorner);
+            const x2Max =
+                Math.min(x.shape[2], convInfo.filter[2] + x2StartCorner);
+
+            let minMaxValue =
+                (poolType === 'max' ? Number.NEGATIVE_INFINITY :
+                                      Number.POSITIVE_INFINITY);
+            let avgValue = 0;
+
+            // TODO(dfarhi): These nested for loops are disgusting. Is there a
+            // way to loop over the vector range
+            // [x0Min,x1Min,x2Min] to [x0Max, x2Max, x2Max] in one iterator?
+            // That would also allow better code sharing across poolND funcs.
+            for (let x0 = x0Min; x0 < x0Max; ++x0) {
+              for (let x1 = x1Min; x1 < x1Max; ++x1) {
+                for (let x2 = x2Min; x2 < x2Max; ++x2) {
+                  const pixel = x.get(x0, x1, x2, d);
+                  if (isNaN(pixel)) {
+                    minMaxValue = NaN;
+                    avgValue = NaN;
+                    break;
+                  }
+                  if ((poolType === 'max' && pixel > minMaxValue) ||
+                      (poolType === 'min' && pixel < minMaxValue)) {
+                    minMaxValue = pixel;
+                  } else if (poolType === 'avg') {
+                    avgValue += pixel / filterSize;
+                  }
+                }
+                if (isNaN(minMaxValue)) {
+                  break;
+                }
+              }
+              if (isNaN(minMaxValue)) {
+                break;
+              }
+            }
+            y.set(poolType === 'avg' ? avgValue : minMaxValue, y0, y1, y2, d);
+          }
+        }
+      }
+    }
+    return y;
+  }
+
+  protected maxPool3DInternal(x: Array4D, convInfo: ConvInfoND): Array4D {
+    return this.pool3D(x, convInfo, 'max');
+  }
+
+  maxPoolPositions(x: Array3D, convInfo: ConvInfo2D) {
     const [xRows, xCols, depth] = x.shape;
     const outputShape = convInfo.outShape;
     const maxPositions = Array3D.zeros(outputShape);
@@ -988,7 +1103,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D {
+      dy: Array3D, x: Array3D, convInfo: ConvInfo2D): Array3D {
     const maxPositions = this.maxPoolPositions(x, convInfo);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1036,12 +1151,12 @@ export class NDArrayMathCPU extends NDArrayMath {
     return dx;
   }
 
-  protected minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
-    return this.pool(x, convInfo, 'min');
+  protected minPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D {
+    return this.pool2D(x, convInfo, 'min');
   }
 
-  protected avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
-    return this.pool(x, convInfo, 'avg');
+  protected avgPoolInternal(x: Array3D, convInfo: ConvInfo2D): Array3D {
+    return this.pool2D(x, convInfo, 'avg');
   }
 
   protected resizeBilinear3DInternal(

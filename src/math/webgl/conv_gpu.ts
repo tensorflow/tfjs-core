@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ConvInfo} from '../conv_util';
+import {ConvInfo2D} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DProgram implements GPGPUProgram {
@@ -24,7 +24,7 @@ export class Conv2DProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(convInfo: ConvInfo, hasBias: boolean) {
+  constructor(convInfo: ConvInfo2D, hasBias: boolean) {
     if (hasBias) {
       this.variableNames.push('bias');
     }
