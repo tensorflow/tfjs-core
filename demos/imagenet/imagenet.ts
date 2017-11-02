@@ -115,7 +115,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.mathCPU = new NDArrayMathCPU();
 
     this.squeezeNet = new SqueezeNet(this.math);
-    this.squeezeNet.loadVariables().then(() => {
+    this.squeezeNet.load().then(() => {
       requestAnimationFrame(() => this.animate());
     });
 

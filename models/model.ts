@@ -14,13 +14,12 @@
  * limitations under the License.
  * =============================================================================
  */
-import {NDArray, NDArrayMath} from '../src';
+import {NDArray} from '../src';
 
 export abstract class Model {
-
-  constructor(protected math: NDArrayMath) {}
-
-  abstract async loadVariables(): Promise<void>;
+  abstract async load(): Promise<void>;
 
   abstract async predict(input: NDArray): Promise<{}>;
+
+  abstract dispose(): void;
 }

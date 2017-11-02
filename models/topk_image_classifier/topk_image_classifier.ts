@@ -1,14 +1,14 @@
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -38,8 +38,8 @@ export class TopKImageClassifier extends Model {
    * @param math A math implementation for performing the calculations.
    */
   constructor(private numClasses: number, private k: number,
-      math: NDArrayMath) {
-    super(math);
+      private math: NDArrayMath) {
+    super();
     this.mathCPU = new NDArrayMathCPU();
     for (let i = 0; i < this.numClasses; i++) {
       this.classLogitsMatrices.push(null);
@@ -51,8 +51,8 @@ export class TopKImageClassifier extends Model {
   /**
    * Loads necessary variables for SqueezeNet.
    */
-  async loadVariables(): Promise<void> {
-    await this.squeezeNet.loadVariables();
+  async load(): Promise<void> {
+    await this.squeezeNet.load();
     this.varsLoaded = true;
   }
 
@@ -60,6 +60,10 @@ export class TopKImageClassifier extends Model {
    * Clears the saved images from the specified class.
    */
   clearClass(classIndex: number) {
+    if (classIndex >= this.numClasses) {
+      console.log('Cannot clear invalid class ${classIndex}');
+      return;
+    }
     this.classLogitsMatrices[classIndex] = null;
     this.classExampleCount[classIndex] = 0;
     this.clearTrainLogitsMatrix();
@@ -68,10 +72,13 @@ export class TopKImageClassifier extends Model {
   /**
    * Adds the provided image to the specified class.
    */
-  public async addImage(image: Array3D, classIndex: number): Promise<void> {
+  async addImage(image: Array3D, classIndex: number): Promise<void> {
     if (!this.varsLoaded) {
-      console.warn("Cannot add images until vars have been loaded.");
+      console.warn('Cannot add images until vars have been loaded.');
       return;
+    }
+    if (classIndex >= this.numClasses) {
+      console.warn('Cannot add to invalid class ${classIndex}');
     }
     this.clearTrainLogitsMatrix();
 
@@ -109,7 +116,7 @@ export class TopKImageClassifier extends Model {
     let imageClass = -1;
     const confidences = new Array<number>(this.numClasses);
     if (!this.varsLoaded) {
-      console.warn("Cannot predict until vars have been loaded.");
+      console.warn('Cannot predict until vars have been loaded.');
       return {classIndex: imageClass, confidences};
     }
     return this.math.scope(async (keep) => {
@@ -129,7 +136,7 @@ export class TopKImageClassifier extends Model {
       }
 
       if (this.trainLogitsMatrix == null) {
-        //console.warn("Cannot predict without providing training images.");
+        //console.warn('Cannot predict without providing training images.');
         return null;
       }
 
@@ -143,7 +150,6 @@ export class TopKImageClassifier extends Model {
       const topK = this.mathCPU.topK(knn, kVal);
       return topK.indices;
     }).then((topKIndices) => {
-      //console.log(topKIndices);
       if (!topKIndices) {
         return {classIndex: imageClass, confidences};
       }
@@ -182,6 +188,17 @@ export class TopKImageClassifier extends Model {
 
       return {classIndex: imageClass, confidences};
     });
+  }
+
+  dispose() {
+    this.squeezeNet.dispose();
+    this.clearTrainLogitsMatrix();
+    this.classLogitsMatrices.forEach(
+      classLogitsMatrix => classLogitsMatrix.dispose());
+  }
+
+  getClassExampleCount(): number[] {
+    return this.classExampleCount;
   }
 
   /**

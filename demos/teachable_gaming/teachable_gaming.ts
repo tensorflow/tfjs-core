@@ -1,14 +1,14 @@
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -23,7 +23,7 @@ import {TopKImageClassifier} from '../../models/topk_image_classifier/topk_image
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 
 // tslint:disable-next-line:no-any
-declare var Dosbox: any;
+declare const Dosbox: any;
 
 // tslint:disable-next-line:variable-name
 export const TeachableGamingDemoPolymer: new () => PolymerHTMLElement =
@@ -53,6 +53,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
   private indicators: HTMLElement[];
   private keyEventData: Array<{code: number, key: string}>;
   private dosbox: {};
+  private static readonly knnKValue = 5;
 
   ready() {
     this.webcamVideoElement =
@@ -87,15 +88,16 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
             this.webcamVideoElement.src = window.URL.createObjectURL(stream);
           },
           (error) => {
-            console.log(error);
+            console.warn(error);
           });
     }
 
     this.gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
     this.gpgpu = new GPGPUContext(this.gl);
     this.math = new NDArrayMathGPU(this.gpgpu);
-    this.classifier = new TopKImageClassifier(6, 5, this.math);
-    this.classifier.loadVariables();
+    this.classifier = new TopKImageClassifier(
+      this.keyEventData.length, TeachableGamingDemo.knnKValue, this.math);
+    this.classifier.load();
 
     this.when(() => this.isDosboxReady(), () => this.loadDosbox());
     setTimeout(() => this.animate(), 1000);
@@ -111,7 +113,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
       }
     }
     if (index === -1) {
-      console.log("error bad toggle");
+      console.warn('error bad toggle');
       return;
     }
 
@@ -137,7 +139,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
       }
     }
     if (index === -1) {
-      console.log("error bad button");
+      console.warn('error bad button');
       return;
     }
     this.classifier.clearClass(index);
@@ -151,14 +153,14 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
 
   private loadDosbox() {
     this.dosbox = new Dosbox({
-      id: "dosbox",
+      id: 'dosbox',
       // tslint:disable-next-line:no-any
       onload: (dosbox: any) => {
-        dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip",
-          "./DOOM/DOOM.EXE");
+        dosbox.run('https://js-dos.com/cdn/upload/DOOM-@evilution.zip',
+          './DOOM/DOOM.EXE');
       },
       onrun: (dosbox: {}, app: string) => {
-        console.log("App '" + app + "' is running");
+        console.log('App ' + app + ' is running');
       }
     });
   }

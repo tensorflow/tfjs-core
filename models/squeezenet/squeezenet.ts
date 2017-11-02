@@ -26,14 +26,14 @@ export class SqueezeNet extends Model {
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
 
-  constructor(math: NDArrayMath) {
-      super(math);
+  constructor(private math: NDArrayMath) {
+      super();
   }
 
   /**
    * Loads necessary variables for SqueezeNet.
    */
-  async loadVariables(): Promise<void> {
+  async load(): Promise<void> {
     const checkpointLoader =
         new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + 'squeezenet1_1/');
     this.variables = await checkpointLoader.getAllVariables();
@@ -112,6 +112,12 @@ export class SqueezeNet extends Model {
         layerName => this.math.track(namedActivations[layerName]));
 
     return {namedActivations, logits: avgpool10};
+  }
+
+  dispose() {
+    this.preprocessOffset.dispose();
+    const varNames = Object.keys(this.variables);
+    varNames.forEach(varName => this.variables[varName].dispose());
   }
 
   private fireModule(input: Array3D, fireId: number) {
