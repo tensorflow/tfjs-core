@@ -87,9 +87,15 @@ async function loadGistFromURL() {
   }
 }
 
+const windowLog = window.console.log;
 // Override console.log to write to our console HTML element.
 window.console.log = (str: string) => {
   consoleElement.innerText += str + '\n';
+  windowLog(str);
+};
+
+window.console.clear = () => {
+  consoleElement.innerText = '';
 };
 
 function runHTML() {
