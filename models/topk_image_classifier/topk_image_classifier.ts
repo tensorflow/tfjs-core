@@ -14,9 +14,10 @@
  * limitations under the License.
  * =============================================================================
  */
-import {SqueezeNet} from '../squeezenet/squeezenet';
-import {Array2D, Array3D, NDArrayMathCPU, NDArrayMath} from '../../src';
+// tslint:disable-next-line:max-line-length
+import {Array1D, Array2D, Array3D, NDArrayMath, NDArrayMathCPU} from '../../src';
 import {Model} from '../model';
+import {SqueezeNet} from '../squeezenet/squeezenet';
 
 export class TopKImageClassifier extends Model {
   private classLogitsMatrices: Array2D[] = [];
@@ -37,7 +38,8 @@ export class TopKImageClassifier extends Model {
    * @param k The number of nearest neighbors to look at when predicting.
    * @param math A math implementation for performing the calculations.
    */
-  constructor(private numClasses: number, private k: number,
+  constructor(
+      private numClasses: number, private k: number,
       private math: NDArrayMath) {
     super();
     this.mathCPU = new NDArrayMathCPU();
@@ -86,15 +88,15 @@ export class TopKImageClassifier extends Model {
       // Add the squeezenet logits for the image to the appropriate class
       // logits matrix.
       const predResults = await this.squeezeNet.predict(image);
-      const imageLogits = predResults.logits;
+      const imageLogits = this.normalizeVector(predResults.logits);
       const logitsSize = imageLogits.shape[0];
       if (!this.classLogitsMatrices[classIndex]) {
         this.classLogitsMatrices[classIndex] = imageLogits.as2D(1, logitsSize);
       } else {
         const newTrainLogitsMatrix = this.math.concat2D(
-          this.classLogitsMatrices[classIndex].as2D(
-            this.classExampleCount[classIndex], logitsSize),
-          imageLogits.as2D(1, logitsSize), 0);
+            this.classLogitsMatrices[classIndex].as2D(
+                this.classExampleCount[classIndex], logitsSize),
+            imageLogits.as2D(1, logitsSize), 0);
         this.classLogitsMatrices[classIndex].dispose();
         this.classLogitsMatrices[classIndex] = newTrainLogitsMatrix;
       }
@@ -121,7 +123,7 @@ export class TopKImageClassifier extends Model {
     }
     const topKIndices = await this.math.scope(async (keep) => {
       const predResults = await this.squeezeNet.predict(image);
-      const imageLogits = predResults.logits;
+      const imageLogits = this.normalizeVector(predResults.logits);
       const logitsSize = imageLogits.shape[0];
 
       // Lazily create the logits matrix for all training images if necessary.
@@ -130,21 +132,23 @@ export class TopKImageClassifier extends Model {
 
         for (let i = 0; i < this.numClasses; i++) {
           newTrainLogitsMatrix = this.concatWithNulls(
-            newTrainLogitsMatrix, this.classLogitsMatrices[i]);
+              newTrainLogitsMatrix, this.classLogitsMatrices[i]);
         }
         this.trainLogitsMatrix = newTrainLogitsMatrix;
       }
 
       if (this.trainLogitsMatrix == null) {
-        //console.warn('Cannot predict without providing training images.');
+        console.warn('Cannot predict without providing training images.');
         return null;
       }
 
       keep(this.trainLogitsMatrix);
       const numExamples = this.getNumExamples();
-      const knn = this.math.matMul(
-        this.trainLogitsMatrix.as2D(numExamples, logitsSize),
-        imageLogits.as2D(logitsSize, 1)).as1D();
+      const knn = this.math
+                      .matMul(
+                          this.trainLogitsMatrix.as2D(numExamples, logitsSize),
+                          imageLogits.as2D(logitsSize, 1))
+                      .as1D();
       await knn.data();
       const kVal = Math.min(this.k, numExamples);
       const topK = this.mathCPU.topK(knn, kVal);
@@ -154,7 +158,6 @@ export class TopKImageClassifier extends Model {
       return {classIndex: imageClass, confidences};
     }
     const indices = topKIndices.dataSync();
-
     const indicesForClasses = [];
     const topKCountsForClasses = [];
     for (let i = 0; i < this.numClasses; i++) {
@@ -167,7 +170,7 @@ export class TopKImageClassifier extends Model {
     }
     for (let i = 0; i < indices.length; i++) {
       for (let classForEntry = 0; classForEntry < indicesForClasses.length;
-            classForEntry++) {
+           classForEntry++) {
         if (indices[i] < indicesForClasses[classForEntry]) {
           topKCountsForClasses[classForEntry]++;
           break;
@@ -193,7 +196,7 @@ export class TopKImageClassifier extends Model {
     this.squeezeNet.dispose();
     this.clearTrainLogitsMatrix();
     this.classLogitsMatrices.forEach(
-      classLogitsMatrix => classLogitsMatrix.dispose());
+        classLogitsMatrix => classLogitsMatrix.dispose());
   }
 
   getClassExampleCount(): number[] {
@@ -230,5 +233,15 @@ export class TopKImageClassifier extends Model {
     }
 
     return total;
+  }
+
+  /**
+   * Normalize the provided vector to unit length.
+   */
+  private normalizeVector(vec: Array1D) {
+    const squared = this.math.multiplyStrict(vec, vec);
+    const sum = this.math.sum(squared);
+    const sqrtSum = this.math.sqrt(sum);
+    return this.math.divide(vec, sqrtSum);
   }
 }

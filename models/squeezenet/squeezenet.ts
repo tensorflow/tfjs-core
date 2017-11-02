@@ -27,7 +27,7 @@ export class SqueezeNet extends Model {
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
 
   constructor(private math: NDArrayMath) {
-      super();
+    super();
   }
 
   /**
@@ -47,9 +47,10 @@ export class SqueezeNet extends Model {
    * @param input un-preprocessed input Array.
    * @return Named activations and the pre-softmax logits.
    */
-  async predict(input: Array3D):
-      Promise<{namedActivations: {[activationName: string]: Array3D},
-      logits: Array1D}> {
+  async predict(input: Array3D): Promise<{
+    namedActivations: {[activationName: string]: Array3D},
+    logits: Array1D
+  }> {
     // Keep a map of named activations for rendering purposes.
     const namedActivations: {[key: string]: Array3D} = {};
 
@@ -116,8 +117,9 @@ export class SqueezeNet extends Model {
 
   dispose() {
     this.preprocessOffset.dispose();
-    const varNames = Object.keys(this.variables);
-    varNames.forEach(varName => this.variables[varName].dispose());
+    for (const varName in this.variables) {
+      this.variables[varName].dispose();
+    }
   }
 
   private fireModule(input: Array3D, fireId: number) {
