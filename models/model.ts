@@ -20,9 +20,7 @@ export abstract class Model {
 
   constructor(protected math: NDArrayMath) {}
 
-  async loadVariables(): Promise<void> {
-    return;
-  }
+  abstract async loadVariables(): Promise<void>;
 
   abstract async predict(input: NDArray): Promise<{}>;
 }

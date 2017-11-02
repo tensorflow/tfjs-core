@@ -52,7 +52,8 @@ export class TopKImageClassifier extends Model {
    * Loads necessary variables for SqueezeNet.
    */
   async loadVariables(): Promise<void> {
-    this.squeezeNet.loadVariables().then(()=> this.varsLoaded = true);
+    await this.squeezeNet.loadVariables();
+    this.varsLoaded = true;
   }
 
   /**
@@ -128,7 +129,7 @@ export class TopKImageClassifier extends Model {
       }
 
       if (this.trainLogitsMatrix == null) {
-        console.warn("Cannot predict without providing training images.");
+        //console.warn("Cannot predict without providing training images.");
         return null;
       }
 
@@ -142,7 +143,7 @@ export class TopKImageClassifier extends Model {
       const topK = this.mathCPU.topK(knn, kVal);
       return topK.indices;
     }).then((topKIndices) => {
-      console.log(topKIndices);
+      //console.log(topKIndices);
       if (!topKIndices) {
         return {classIndex: imageClass, confidences};
       }

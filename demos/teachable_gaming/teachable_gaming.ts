@@ -22,7 +22,8 @@ import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathGPU} from '../deeplearn';
 import {TopKImageClassifier} from '../../models/topk_image_classifier/topk_image_classifier';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 
-declare var Dosbox:any;
+// tslint:disable-next-line:no-any
+declare var Dosbox: any;
 
 // tslint:disable-next-line:variable-name
 export const TeachableGamingDemoPolymer: new () => PolymerHTMLElement =
@@ -46,48 +47,33 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
 
   private webcamVideoElement: HTMLVideoElement;
   private classifier: TopKImageClassifier;
-  private toggles: Array<HTMLElement>;
-  private countBoxes: Array<HTMLElement>;
-  private clears: Array<HTMLElement>;
-  private indicators: Array<HTMLElement>;
-  private upToggle: HTMLElement;
-  private downToggle: HTMLElement;
-  private leftToggle: HTMLElement;
-  private rightToggle: HTMLElement;
-  private spaceToggle: HTMLElement;
-  private sToggle: HTMLElement;
-  private upText: HTMLElement;
-  private downText: HTMLElement;
-  private leftText: HTMLElement;
-  private rightText: HTMLElement;
-  private spaceText: HTMLElement;
-  private sText: HTMLElement;
-
+  private toggles: HTMLInputElement[];
+  private countBoxes: HTMLElement[];
+  private clears: HTMLElement[];
+  private indicators: HTMLElement[];
+  private keyEventData: Array<{code: number, key: string}>;
+  private dosbox: {};
 
   ready() {
     this.webcamVideoElement =
         this.querySelector('#webcamVideo') as HTMLVideoElement;
-    this.upToggle = this.$.upswitch;
-    this.downToggle = this.$.downswitch;
-    this.leftToggle = this.$.leftswitch;
-    this.rightToggle = this.$.rightswitch;
-    this.spaceToggle = this.$.spaceswitch;
-    this.sToggle = this.$.sswitch;
-    this.toggles = [this.upToggle, this.downToggle, this.leftToggle,
-      this.rightToggle, this.spaceToggle, this.sToggle];
-    this.upText = this.$.upcount;
-    this.downText = this.$.downcount;
-    this.leftText = this.$.leftcount;
-    this.rightText = this.$.rightcount;
-    this.spaceText = this.$.spacecount;
-    this.sText = this.$.scount;
-    this.countBoxes = [this.upText, this.downText, this.leftText, this.rightText,
-      this.spaceText, this.sText];
+    this.toggles = [this.$.upswitch, this.$.downswitch, this.$.leftswitch,
+      this.$.rightswitch, this.$.spaceswitch, this.$.sswitch];
+     this.countBoxes = [this.$.upcount, this.$.downcount, this.$.leftcount,
+      this.$.rightcount, this.$.spacecount, this.$.scount];
     this.clears = [this.$.upclear, this.$.downclear, this.$.leftclear,
       this.$.rightclear, this.$.spaceclear, this.$.sclear];
     this.indicators = [this.$.upindicator, this.$.downindicator,
       this.$.leftindicator, this.$.rightindicator, this.$.spaceindicator,
       this.$.sindicator];
+    this.keyEventData = [
+      {code: 38, key: 'ArrowUp'},
+      {code: 40, key: 'ArrowDown'},
+      {code: 37, key: 'ArrowLeft'},
+      {code: 39, key: 'ArrowRight'},
+      {code: 32, key: 'Space'},
+      {code: 83, key: 'KeyS'},
+    ];
 
     // tslint:disable-next-line:no-any
     const navigatorAny = navigator as any;
@@ -116,7 +102,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
   }
 
   toggle(event: Event) {
-    const target = event.target as HTMLButtonElement;
+    const target = event.target as HTMLInputElement;
     let index = -1;
     for (let i = 0; i < this.toggles.length; i++) {
       if (this.toggles[i] === target) {
@@ -129,17 +115,16 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
       return;
     }
 
-    if ((target as any).checked) {
+    if (target.checked) {
       this.selectedIndex = index;
       for (let i = 0; i < this.toggles.length; i++) {
         if (i !== index) {
-          (this.toggles[i] as any).checked = false;
+          this.toggles[i].checked = false;
         }
       }
     } else {
       this.selectedIndex = -1;
     }
-    console.log(this.selectedIndex);
   }
 
   clear(event: Event) {
@@ -160,24 +145,22 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
   }
 
   private isDosboxReady() {
+    // tslint:disable-next-line:no-any
     return (window as any).Dosbox && (window as any).$;
   }
 
   private loadDosbox() {
-    console.log("dosbox ready");
-    /* tslint:disable */
-    new Dosbox({
+    this.dosbox = new Dosbox({
       id: "dosbox",
+      // tslint:disable-next-line:no-any
       onload: (dosbox: any) => {
-        console.log("loading game");
-        dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip", "./DOOM/DOOM.EXE");
-        //dosbox.run("https://js-dos.com/cdn/upload/mario-colin.zip", "./mario.exr")
+        dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip",
+          "./DOOM/DOOM.EXE");
       },
       onrun: (dosbox: {}, app: string) => {
         console.log("App '" + app + "' is running");
       }
     });
-    /* tslint:enable */
   }
 
   private async animate() {
@@ -193,11 +176,10 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
           +this.countBoxes[this.selectedIndex].innerHTML + 1);
       });
     }
-    else {
+    else if (this.$.predictswitch.checked) {
       await this.math.scope(async (keep, track) => {
         const image = track(Array3D.fromPixels(this.webcamVideoElement));
         const results = await this.classifier.predict(image);
-        console.log(results);
         if (results.classIndex >= 0) {
           for (let i = 0; i < this.indicators.length; i++) {
             if (i === results.classIndex) {
@@ -206,12 +188,20 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
               this.indicators[i].style.backgroundColor = 'lightgray';
             }
           }
-        }
-        if (results.classIndex === 0) {
           const elem = this.$.dosbox;
-          elem.dispatchEvent(new KeyboardEvent('keypress', {bubbles: true, key:'ArrowDown'}));
-          elem.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key:'ArrowDown'}));
-          elem.dispatchEvent(new KeyboardEvent('keyup', {bubbles: true, key:'ArrowDown'}));
+
+          // tslint:disable-next-line:no-any
+          const event = document.createEvent('Event') as any;
+          event.initEvent('keydown', true, true);
+          event.key = this.keyEventData[results.classIndex].key;
+          event.keyCode = this.keyEventData[results.classIndex].code;
+          elem.dispatchEvent(event);
+          // tslint:disable-next-line:no-any
+          const event2 = document.createEvent('Event') as any;
+          event2.initEvent('keyup', true, true);
+          event.key = this.keyEventData[results.classIndex].key;
+          event.keyCode = this.keyEventData[results.classIndex].code;
+          elem.dispatchEvent(event2);
         }
       });
     }
@@ -219,6 +209,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     setTimeout(() => this.animate(), 100);
   }
 
+  // tslint:disable-next-line:no-any
   when(check: () => any, exec: () => void) {
     let cancelled = false;
     const attempt = () => {
