@@ -1,0 +1,25 @@
+{
+  "name": "deeplearn-squeezenet",
+  "version": "0.1.0",
+  "description": "Pretrained SqueezeNet model in deeplearn.js",
+  "main": "dist/index.js",
+  "unpkg": "dist/squeezenet.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "deeplearn": "~0.3.4"
+  },
+  "devDependencies": {
+    "mkdirp": "~0.5.1",
+    "tsify": "~3.0.3",
+    "typescript": "~2.5.3",
+    "uglifyjs": "~2.4.11",
+    "watchify": "~3.9.0"
+  },
+  "scripts": {
+    "prep": "npm install && mkdirp dist",
+    "watch": "watchify squeezenet.ts -p [tsify] -v --debug -o dist/bundle.js",
+    "build": "browserify squeezenet.ts -p [tsify] -o dist/bundle.js",
+    "deploy": "npm run build && uglifyjs dist/bundle.js -c -m -o dist/bundle.min.js"
+  },
+  "license": "Apache-2.0"
+}
