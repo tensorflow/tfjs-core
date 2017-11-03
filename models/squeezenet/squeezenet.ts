@@ -20,7 +20,7 @@ import {Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMath
 const GOOGLE_CLOUD_STORAGE_DIR =
     'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
 
-export class SqueezeNet extends Model {
+export class SqueezeNet implements Model {
   private variables: {[varName: string]: NDArray};
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
