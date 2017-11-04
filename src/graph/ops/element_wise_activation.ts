@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {ActivationFunction, ReLUFunc, SigmoidFunc, SquareFunc, TanHFunc} from '../../math/activation_functions';
+import {ActivationFunction, ReLUFunc, SigmoidFunc, SquareFunc, TanHFunc, EluFunc} from '../../math/activation_functions';
 import {NDArrayMath} from '../../math/math';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -93,3 +93,12 @@ export class Square extends ElementWiseActivation {
     super(xTensor, yTensor, new SquareFunc());
   }
 }
+
+/**
+ * @hidden
+ */
+ export class Elu extends ElementWiseActivation {
+   constructor(xTensor: Tensor, yTensor: Tensor) {
+     super(xTensor, yTensor, new EluFunc());
+   }
+ }

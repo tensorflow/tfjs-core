@@ -84,3 +84,17 @@ export class SquareFunc implements ActivationFunction {
     });
   }
 }
+
+export class EluFunc implements ActivationFunction {
+  output<T extends NDArray>(math: NDArrayMath, x: T) {
+    return math.scope(() => {
+      return math.elu(x);
+    });
+  }
+
+  der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
+    return math.scope(() => {
+      return math.eluDer(x);
+    });
+  }
+}
