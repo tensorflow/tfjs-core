@@ -63,9 +63,11 @@ export function LEAKY_RELU(alpha: number) {
   `;
 }
 
-export const STEP = `
-  return (x == x) ? (x > 0.0 ? 1.0 : 0.0) : x;
-`;
+export function STEP(alpha = 0.0) {
+  return `
+  return (x == x) ? (x > 0.0 ? 1.0 : float(${alpha})) : x;
+  `;
+}
 
 export const NEG = `
   return -x;

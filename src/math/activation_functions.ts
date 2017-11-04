@@ -54,6 +54,26 @@ export class ReLUFunc implements ActivationFunction {
   }
 }
 
+export class LeakyReluFunc implements ActivationFunction {
+  private alpha: number;
+
+  constructor(alpha: number) {
+    this.alpha = alpha;
+  }
+
+  output<T extends NDArray>(math: NDArrayMath, x: T) {
+    return math.scope(() => {
+      return math.leakyRelu(x, this.alpha);
+    });
+  }
+
+  der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
+    return math.scope(() => {
+      return math.step(x, this.alpha);
+    });
+  }
+}
+
 export class SigmoidFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
     return math.scope(() => {
