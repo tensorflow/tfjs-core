@@ -17,6 +17,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
+    "prep": "npm install"
   },
   "license": "Apache-2.0"
 }

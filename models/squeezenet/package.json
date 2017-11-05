@@ -22,8 +22,7 @@
   "scripts": {
     "prep": "npm install && mkdirp dist",
     "watch": "watchify squeezenet.ts -p [tsify] -v --debug -o dist/squeezenet.js",
-    "build": "browserify squeezenet.ts -p [tsify] -o dist/squeezenet.js",
-    "deploy": "npm run build && uglifyjs dist/squeezenet.js -c -m -o dist/squeezenet.min.js"
+    "build": "browserify --standalone squeezenet squeezenet.ts -p [tsify] -o dist/squeezenet.js"
   },
   "license": "Apache-2.0"
 }
