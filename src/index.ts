@@ -51,6 +51,7 @@ export {NDArrayMathGPU} from './math/math_gpu';
 // tslint:disable-next-line:max-line-length
 export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './math/ndarray';
 export {GPGPUContext} from './math/webgl/gpgpu_context';
+export {Model} from './model';
 export {version};
 // Second level exports.
 export {
@@ -63,3 +64,14 @@ export {
   webgl_util,
   xhr_dataset
 };
+
+function exportToTopLevel(alias: string): void {
+  setTimeout(() => {
+    // tslint:disable-next-line:no-any
+    const w: any = window;
+    if (w != null && w.deeplearn != null && w[alias] == null) {
+      w[alias] = w.deeplearn;
+    }
+  });
+}
+exportToTopLevel('dl');
