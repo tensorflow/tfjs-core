@@ -20,7 +20,6 @@
     "exclude": [
       "starter/",
       "models/",
-      "demos/",
       "node_modules/",
       "dist/"
     ]
