@@ -17,12 +17,14 @@
 
 import '../demo-header';
 import '../demo-footer';
+
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
-import * as imagenet_util from '../models/imagenet_util';
-import {IMAGENET_CLASSES} from '../models/imagenet_classes';
-import {SqueezeNet} from '../../models/squeezenet/squeezenet';
+import {Array1D, Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
+
+import {IMAGENET_CLASSES} from './imagenet_classes';
+import * as imagenet_util from './imagenet_util';
+import {SqueezeNet} from './squeezenet';
 
 // tslint:disable-next-line:variable-name
 export const ImagenetDemoPolymer: new () => PolymerHTMLElement =
@@ -114,7 +116,9 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.math = new NDArrayMathGPU(this.gpgpu);
     this.mathCPU = new NDArrayMathCPU();
 
-    this.squeezeNet = new SqueezeNet(this.math);
+    // This is so dirty. Ugh.
+    // tslint:disable-next-line:no-any
+    this.squeezeNet = new SqueezeNet(this.math as any);
     this.squeezeNet.load().then(() => {
       requestAnimationFrame(() => this.animate());
     });
@@ -160,8 +164,8 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
       this.layerNames = Object.keys(namedActivations);
 
-      const topClassesToProbability = await this.getTopKClasses(
-          inferenceResult.logits, TOP_K_CLASSES);
+      const topClassesToProbability =
+          await this.getTopKClasses(inferenceResult.logits, TOP_K_CLASSES);
 
       let count = 0;
       for (const className in topClassesToProbability) {
@@ -225,8 +229,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
     const topClassesToProbability: {[className: string]: number} = {};
     for (let i = 0; i < topkIndices.length; i++) {
-      topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] =
-          topkValues[i];
+      topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] = topkValues[i];
     }
     return topClassesToProbability;
   }

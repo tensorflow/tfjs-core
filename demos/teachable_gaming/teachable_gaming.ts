@@ -17,7 +17,7 @@
 
 import '../demo-header';
 import '../demo-footer';
-import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathGPU} from '../deeplearn';
+import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathGPU} from 'deeplearn';
 // tslint:disable-next-line:max-line-length
 import {TopKImageClassifier} from '../../models/topk_image_classifier/topk_image_classifier';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
@@ -27,11 +27,7 @@ declare const Dosbox: any;
 
 // tslint:disable-next-line:variable-name
 export const TeachableGamingDemoPolymer: new () => PolymerHTMLElement =
-    PolymerElement({
-      is: 'teachablegaming-demo',
-      properties: {
-      }
-    });
+    PolymerElement({is: 'teachablegaming-demo', properties: {}});
 
 /**
  * NOTE: To use the webcam without SSL, use the chrome flag:
@@ -58,15 +54,22 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
   ready() {
     this.webcamVideoElement =
         this.querySelector('#webcamVideo') as HTMLVideoElement;
-    this.toggles = [this.$.upswitch, this.$.downswitch, this.$.leftswitch,
-      this.$.rightswitch, this.$.spaceswitch, this.$.sswitch];
-     this.countBoxes = [this.$.upcount, this.$.downcount, this.$.leftcount,
-      this.$.rightcount, this.$.spacecount, this.$.scount];
-    this.clears = [this.$.upclear, this.$.downclear, this.$.leftclear,
-      this.$.rightclear, this.$.spaceclear, this.$.sclear];
-    this.indicators = [this.$.upindicator, this.$.downindicator,
-      this.$.leftindicator, this.$.rightindicator, this.$.spaceindicator,
-      this.$.sindicator];
+    this.toggles = [
+      this.$.upswitch, this.$.downswitch, this.$.leftswitch, this.$.rightswitch,
+      this.$.spaceswitch, this.$.sswitch
+    ];
+    this.countBoxes = [
+      this.$.upcount, this.$.downcount, this.$.leftcount, this.$.rightcount,
+      this.$.spacecount, this.$.scount
+    ];
+    this.clears = [
+      this.$.upclear, this.$.downclear, this.$.leftclear, this.$.rightclear,
+      this.$.spaceclear, this.$.sclear
+    ];
+    this.indicators = [
+      this.$.upindicator, this.$.downindicator, this.$.leftindicator,
+      this.$.rightindicator, this.$.spaceindicator, this.$.sindicator
+    ];
     this.keyEventData = [
       {code: 38, key: 'ArrowUp'},
       {code: 40, key: 'ArrowDown'},
@@ -96,7 +99,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     this.gpgpu = new GPGPUContext(this.gl);
     this.math = new NDArrayMathGPU(this.gpgpu);
     this.classifier = new TopKImageClassifier(
-      this.keyEventData.length, TeachableGamingDemo.knnKValue, this.math);
+        this.keyEventData.length, TeachableGamingDemo.knnKValue, this.math);
     this.classifier.load();
 
     this.when(() => this.isDosboxReady(), () => this.loadDosbox());
@@ -156,8 +159,9 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
       id: 'dosbox',
       // tslint:disable-next-line:no-any
       onload: (dosbox: any) => {
-        dosbox.run('https://js-dos.com/cdn/upload/DOOM-@evilution.zip',
-          './DOOM/DOOM.EXE');
+        dosbox.run(
+            'https://js-dos.com/cdn/upload/DOOM-@evilution.zip',
+            './DOOM/DOOM.EXE');
       },
       onrun: (dosbox: {}, app: string) => {
         console.log('App ' + app + ' is running');
@@ -167,18 +171,16 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
 
   private async animate() {
     if (this.selectedIndex >= 0) {
-
       await this.math.scope(async (keep, track) => {
         const image = track(Array3D.fromPixels(this.webcamVideoElement));
         for (let i = 0; i < this.indicators.length; i++) {
           this.indicators[i].style.backgroundColor = 'lightgray';
         }
         await this.classifier.addImage(image, this.selectedIndex);
-        this.countBoxes[this.selectedIndex].innerHTML = String(
-          +this.countBoxes[this.selectedIndex].innerHTML + 1);
+        this.countBoxes[this.selectedIndex].innerHTML =
+            String(+this.countBoxes[this.selectedIndex].innerHTML + 1);
       });
-    }
-    else if (this.$.predictswitch.checked) {
+    } else if (this.$.predictswitch.checked) {
       await this.math.scope(async (keep, track) => {
         const image = track(Array3D.fromPixels(this.webcamVideoElement));
         const results = await this.classifier.predict(image);

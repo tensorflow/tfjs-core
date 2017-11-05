@@ -1,4 +1,4 @@
-import * as dl from '../deeplearn';
+import * as dl from 'deeplearn';
 import {SqueezeNet} from '../../models/squeezenet/squeezenet';
 
 // tslint:disable-next-line:no-any

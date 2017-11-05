@@ -1,0 +1,22 @@
+{
+  "name": "deeplearn-demos",
+  "version": "0.1.0",
+  "description": "deeplearn.js demos - not actually published",
+  "dependencies": {
+    "deeplearn": "~0.3.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PAIR-code/deeplearnjs.git"
+  },
+  "devDependencies": {
+    "mkdirp": "~0.5.1",
+    "tsify": "~3.0.3",
+    "typescript": "~2.5.3",
+    "uglifyjs": "~2.4.11",
+    "watchify": "~3.9.0"
+  },
+  "scripts": {
+  },
+  "license": "Apache-2.0"
+}

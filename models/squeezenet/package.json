@@ -6,7 +6,11 @@
   "unpkg": "dist/squeezenet.js",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "deeplearn": "~0.3.4"
+    "deeplearn": "~0.3.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PAIR-code/deeplearnjs.git"
   },
   "devDependencies": {
     "mkdirp": "~0.5.1",
@@ -17,9 +21,9 @@
   },
   "scripts": {
     "prep": "npm install && mkdirp dist",
-    "watch": "watchify squeezenet.ts -p [tsify] -v --debug -o dist/bundle.js",
-    "build": "browserify squeezenet.ts -p [tsify] -o dist/bundle.js",
-    "deploy": "npm run build && uglifyjs dist/bundle.js -c -m -o dist/bundle.min.js"
+    "watch": "watchify squeezenet.ts -p [tsify] -v --debug -o dist/squeezenet.js",
+    "build": "browserify squeezenet.ts -p [tsify] -o dist/squeezenet.js",
+    "deploy": "npm run build && uglifyjs dist/squeezenet.js -c -m -o dist/squeezenet.min.js"
   },
   "license": "Apache-2.0"
 }
