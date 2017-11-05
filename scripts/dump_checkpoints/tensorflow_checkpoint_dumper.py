@@ -95,9 +95,7 @@ class TensorflowCheckpointDumper(CheckpointDumper):
       var_filename = self.var_name_to_filename(var_name)
       self.manifest[var_name] = {'filename': var_filename, 'shape': var_shape}
 
-      print('Writing variable ' + var_name + '...')
-
       tensor = self.reader.get_tensor(var_name)
-      self.dump_weights(var_filename, tensor)
+      self.dump_weights(var_name, var_filename, var_shape, tensor)
 
     self.dump_manifest()

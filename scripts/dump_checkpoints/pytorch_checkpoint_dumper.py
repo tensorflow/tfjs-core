@@ -97,9 +97,6 @@ class PytorchCheckpointDumper(CheckpointDumper):
       var_shape = map(int, list(var_weights.size()))
       tensor = var_weights.numpy()
 
-      self.manifest[var_name] = {'filename': var_filename, 'shape': var_shape}
-
-      print('Writing variable ' + var_name + '...')
-      self.dump_weights(var_filename, tensor)
+      self.dump_weights(var_name, var_filename, var_shape, tensor)
 
     self.dump_manifest()

@@ -101,16 +101,23 @@ class CheckpointDumper(object):
     return self.remove_variables_regex and re.match(self.remove_variables_regex_re, name)
 
 
-  def dump_weights(self, filename, weights):
+  def dump_weights(self, variable_name, filename, shape, weights):
     """Creates a file with given name and dumps byte weights in it.
 
     Parameters
     ----------
+    variable_name : str
+        Name of given variable
     filename : str
         File name for given variable
-    weights : str
+    shape : list
+        Shape of given variable
+    weights : ndarray
         Weights for given variable
     """
+    self.manifest[variable_name] = {'filename': filename, 'shape': shape}
+
+    print('Writing variable ' + variable_name + '...')
     with open(os.path.join(self.output_dir, filename), 'wb') as f:
       f.write(weights.tobytes())
 
