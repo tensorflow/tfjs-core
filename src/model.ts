@@ -14,28 +14,10 @@
  * limitations under the License.
  * =============================================================================
  */
+import {NDArray} from './math/ndarray';
 
-import {GPGPUProgram} from './gpgpu_math';
-
-export class ClipProgram implements GPGPUProgram {
-  variableNames = ['A'];
-  userCode: string;
-  outputShape: number[];
-
-  constructor(aShape: number[], min: number, max: number) {
-    this.outputShape = aShape;
-    const minFixed = min.toFixed(20);
-    const maxFixed = max.toFixed(20);
-    this.userCode = `
-      void main() {
-        float value = getAAtOutCoords();
-        if (isNaN(value)) {
-          setOutput(value);
-          return;
-        }
-
-        setOutput(clamp(value, ${minFixed}, ${maxFixed}));
-      }
-    `;
-  }
+export interface Model {
+  load(): Promise<void>;
+  predict(input: NDArray): Promise<{}>;
+  dispose(): void;
 }

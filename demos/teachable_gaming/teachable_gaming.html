@@ -1,0 +1,121 @@
+<!-- Copyright 2017 Google Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+
+<dom-module id="teachablegaming-demo">
+<style>
+  .gameholder {
+    margin-left: 10px;
+  }
+  #inputContainer {
+    margin: 10px;
+    width: 800px;
+  }
+  #activationsContainer, #webcam-message, #ssl-message {
+    text-align: center;
+  }
+  #webcam-message, #ssl-message {
+    background-color: #fbb;
+    outline: 1px solid rgb(100, 0, 0);
+    width: 904px;
+    padding: 5px 0;
+    margin: 10px auto;
+  }
+  .controller {
+    margin-top: 56px;
+  }
+  .controls {
+    display: flex;
+  }
+  .control {
+    padding: 0 10px 0;
+    border: 1px solid lightblue;
+  }
+  .indicator {
+    height: 10px;
+    width: 100%;
+    background-color: lightgray;
+  }
+  .holder {
+    display:flex;
+  }
+  #predictswitch {
+    margin-bottom: 10px;
+  }
+  ::content .dosbox-container {
+    width: 640px;
+    height: 400px;
+  }
+  .dosbox-start {
+    font-size: 35px;
+  }
+</style>
+<template>
+  <div class="holder">
+    <div class="gameholder">
+        <paper-dropdown-menu no-animations label="Game">
+          <paper-listbox attr-for-selected="value" id="game-dropdown" class="dropdown-content" selected="{{selectedGameIndex}}" slot="dropdown-content">
+            <template is="dom-repeat" items="[[games]]">
+              <paper-item value="[[index]]" label="[[item.name]]">
+                [[item.name]]
+              </paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+        <paper-toggle-button id="predictswitch">Control game through cam</paper-toggle-button>
+        <div id="dosbox"></div>
+      </div>
+    <div class="controller">
+      <div id="inputContainer">
+        <div id="imgContainer">
+          <video autoplay="true" id="webcamVideo" width="227" height="227"></video>
+        </div>
+        <div id="ssl-message" style="display: none">
+          You must be visting this page via SSL to see the webcam demo.<br>
+          To get around this temporarily, start chrome with <pre>--unsafely-treat-insecure-origin-as-secure=http://your.domain:5432/</pre>
+        </div>
+        <div id="webcam-message" style="display: none">
+          We could not find a webcam, attach one to view the full demo!
+        </div>
+      </div>
+      <div class="controls">
+        <template is="dom-repeat" items="[[keyEventData]]">
+          <div class="control">
+            [[item.key]]
+            <div class="indicator" id="[[getKeyIndicatorId(index)]]"></div>
+            <paper-toggle-button id="[[getKeyToggleId(index)]]" on-change="toggle">Train(
+                <span id="[[getKeyCountId(index)]]">0</span>
+              )
+            </paper-toggle-button>
+            <paper-button id="[[getKeyClearId(index)]]" on-click="clear">Reset</paper-button>
+          </div>
+        </template>
+        <paper-button on-click="addNewKey" disabled="[[shouldDisableAddNewKey(keyEventData)]]">Add new key</paper-button>
+      </div>
+    </div>
+  </div>
+  <paper-dialog id="addkeydialog">
+    <h2>Press key  to create webcam control for.</h2>
+  </paper-dialog>
+  <script src="https://cdn.jsdelivr.net/npm/jqlite@0.2.42/jqlite.js"></script>
+  <script type="text/javascript" src="https://js-dos.com/cdn/js-dos-api.js"></script>
+</template>
+</dom-module>
