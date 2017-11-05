@@ -1,0 +1,130 @@
+<!-- frame.html -->
+<!DOCTYPE html>
+<html>
+ <head>
+  <script src="https://unpkg.com/deeplearn"></script>
+  <style>
+    #output {
+      position: relative;
+      display: flex;
+      width: 100%;
+    }
+
+    .output-header {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .output-container {
+      transition: background-color 200ms cubic-bezier(0.250, 0.250, 0.750, 0.750);
+      background-color: white;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      width: 50%;
+    }
+
+    .output-container-active {
+      background-color: rgb(97, 216, 97);
+    }
+
+    #html-container {
+      border-left: 1px solid #ccc;
+      padding-left: 8px;
+    }
+
+    .text {
+      font-family: 'Menlo', monospace;
+      font-size: 12px;
+    }
+  </style>
+  <div id="container" class="text">
+    <div id="output">
+      <div id="console-container" class="output-container">
+        <div class="output-header">console output</div>
+        <div id="console"></div>
+      </div>
+      <div id="html-container" class="output-container">
+        <div class="output-header">html output</div>
+        <div id="html"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const htmlContainer = document.getElementById('html-container');
+    const htmlconsoleElement = document.getElementById('html');
+    const consoleElement = document.getElementById('console');
+
+    window.addEventListener('message', function (e) {
+      const mainWindow = e.source;
+      const result = '';
+
+      const data = JSON.parse(e.data);
+      if (data['js'] != null) {
+        window.console.clear();
+        windowLog(data['js']);
+
+
+        try {
+          eval(data['js']);
+        } catch (e) {
+          //'eval() threw an exception.';
+          windowLog('ERROR ', e);
+        }
+      } else if (data['html'] != null) {
+        htmlconsoleElement.innerHTML = data['html'];
+
+        flashOutput(htmlContainer);
+      }
+    });
+
+    const windowLog = window.console.log;
+    // Override console.log to write to our console HTML element.
+    window.console.log = (str) => {
+      consoleElement.innerHTML += str + '<br/>';
+      windowLog(str);
+
+      const consoleContainer = document.getElementById('console-container');
+      flashOutput(consoleContainer);
+    };
+
+    window.console.clear = () => {
+      consoleElement.innerText = '';
+    };
+
+    // Keep a map of the id to a count so only remove the class for the last ID.
+    const flashCounts = {};
+    const elements = [];
+    function flashOutput(elem) {
+      // Find the element id in the elements array.
+      let id;
+      for (let i = 0; i < elements.length; i++) {
+        if (elements[i] === elem) {
+          id = i;
+        }
+      }
+      if (id == null) {
+        id = elements.length;
+        elements.push(elem);
+      }
+
+      if (flashCounts[id] == null) {
+        flashCounts[id] = 0;
+      } else {
+        flashCounts[id]++;
+      }
+      const count = flashCounts[id];
+
+      elem.classList.add('output-container-active');
+      setTimeout(() => {
+        if (count === flashCounts[id]) {
+          elem.classList.remove('output-container-active');
+        }
+      }, 200);
+    }
+   </script>
+ </head>
+</html>

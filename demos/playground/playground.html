@@ -14,7 +14,7 @@
     display: block;
     padding: 10px;
     margin:0 auto;
-    width: 690px;
+    width: 960px;
     white-space: pre;
     border-left: solid 2px #ccc;
   }
@@ -32,23 +32,14 @@
   }
 
   #container, #highlight {
-    width: 690px;
+    width: 960px;
     margin-left: auto;
     margin-right: auto;
     text-align: left;
   }
 
-  #console {
-    white-space: pre;
-    margin-top: 20px;
-  }
-
-  #html {
-    margin-top: 12px;
-  }
-
   .text {
-    font-family: Menlo, Monaco, 'Courier New', monospace;
+    font-family: 'Menlo', monospace;
     font-size: 12px;
   }
 </style>
@@ -69,11 +60,9 @@
   </pre>
 </code>
 
-<div id="container" class="text">
-  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="button" id="run">run</button>
-  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="button" id="save">save</button>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="button" id="run">run</button>
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="button" id="save">save</button>
 
-  <div id="html"></div>
-  <div id="console"></div>
-</div>
+<iframe sandbox="allow-scripts" id="sandboxed" src="frame.html"></iframe>
+
 <script src="bundle.js"></script>

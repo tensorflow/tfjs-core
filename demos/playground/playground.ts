@@ -1,17 +1,3 @@
-import * as dl from '../deeplearn';
-import {SqueezeNet} from '../models/squeezenet';
-
-// tslint:disable-next-line:no-any
-const w: any = window;
-
-// Add all the dl exports and models to the top level window.
-for (const prop in dl) {
-  // tslint:disable-next-line:no-any
-  w[prop] = (dl as any)[prop];
-}
-w['models'] = {};
-w['models']['SqueezeNet'] = SqueezeNet;
-
 const GITHUB_JS_FILENAME = 'js';
 const GITHUB_HTML_FILENAME = 'html';
 
@@ -20,8 +6,7 @@ const runButtonElement = document.getElementById('run');
 const jscontentElement = document.getElementById('jscontent');
 const htmlcontentElement = document.getElementById('htmlcontent');
 const gistUrlElement = document.getElementById('gist-url') as HTMLInputElement;
-const consoleElement = document.getElementById('console');
-const htmlconsoleElement = document.getElementById('html');
+const iframeElement = document.getElementById('sandboxed') as HTMLIFrameElement;
 
 saveButtonElement.addEventListener('click', async () => {
   runCode();
@@ -87,30 +72,20 @@ async function loadGistFromURL() {
   }
 }
 
-const windowLog = window.console.log;
-// Override console.log to write to our console HTML element.
-window.console.log = (str: string) => {
-  consoleElement.innerText += str + '\n';
-  windowLog(str);
-};
-
-window.console.clear = () => {
-  consoleElement.innerText = '';
-};
-
 function runHTML() {
-  htmlconsoleElement.innerHTML = htmlcontentElement.innerText;
+  iframeElement.contentWindow.postMessage(
+      JSON.stringify({'html': htmlcontentElement.innerText}), '*');
 }
 
 async function runCode() {
   runHTML();
-  consoleElement.innerText = '';
 
   try {
-    // Eval in an async() so we can directly use await.
-    eval(`(async () => {
+    // In an async so we can use top level await.
+    const js = `(async () => {
       ${jscontentElement.innerText}
-    })();`);
+     })();`;
+    iframeElement.contentWindow.postMessage(JSON.stringify({'js': js}), '*');
   } catch (e) {
     const error = new Error();
     window.console.log(e.toString());
