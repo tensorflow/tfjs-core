@@ -19,12 +19,12 @@ import '../demo-header';
 import '../demo-footer';
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
+import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
+import {SqueezeNet} from 'deeplearn-squeezenet';
+
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 
-import {IMAGENET_CLASSES} from './imagenet_classes';
 import * as imagenet_util from './imagenet_util';
-import {SqueezeNet} from './squeezenet';
 
 // tslint:disable-next-line:variable-name
 export const ImagenetDemoPolymer: new () => PolymerHTMLElement =
@@ -164,8 +164,8 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
       this.layerNames = Object.keys(namedActivations);
 
-      const topClassesToProbability =
-          await this.getTopKClasses(inferenceResult.logits, TOP_K_CLASSES);
+      const topClassesToProbability = await this.squeezeNet.getTopKClasses(
+          inferenceResult.logits, TOP_K_CLASSES);
 
       let count = 0;
       for (const className in topClassesToProbability) {
@@ -211,27 +211,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     });
 
     requestAnimationFrame(() => this.animate());
-  }
-
-  /**
-   * Get the topK classes for pre-softmax logits. Returns a map of className
-   * to softmax normalized probability.
-   *
-   * @param logits Pre-softmax logits array.
-   * @param topK How many top classes to return.
-   */
-  async getTopKClasses(logits: Array1D, topK: number):
-      Promise<{[className: string]: number}> {
-    const predictions = this.math.softmax(logits);
-    const topk = new NDArrayMathCPU().topK(predictions, topK);
-    const topkIndices = await topk.indices.data();
-    const topkValues = await topk.values.data();
-
-    const topClassesToProbability: {[className: string]: number} = {};
-    for (let i = 0; i < topkIndices.length; i++) {
-      topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] = topkValues[i];
-    }
-    return topClassesToProbability;
   }
 }
 
