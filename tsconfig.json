@@ -19,7 +19,6 @@
     },
     "exclude": [
       "starter/",
-      "models/",
       "node_modules/",
       "dist/"
     ]
