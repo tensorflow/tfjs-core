@@ -116,7 +116,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.math = new NDArrayMathGPU(this.gpgpu);
     this.mathCPU = new NDArrayMathCPU();
 
-    // tslint:disable-next-line:no-any
     this.squeezeNet = new SqueezeNet(this.math);
     this.squeezeNet.load().then(() => {
       requestAnimationFrame(() => this.animate());
