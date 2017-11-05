@@ -15,7 +15,8 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMath, NDArrayMathCPU} from 'deeplearn';
+import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
+
 import {IMAGENET_CLASSES} from './imagenet_classes';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
@@ -26,7 +27,15 @@ export class SqueezeNet implements Model {
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
 
-  constructor(private math: NDArrayMath) {}
+  constructor(private math: NDArrayMath) {
+    // TODO(nsthorat): This awful hack is because we need to share the global
+    // GPGPU between deeplearn loaded from standalone as well as the internal
+    // deeplearn that gets compiled as part of this model. Remove this once we
+    // decouple NDArray from storage mechanism.
+    initializeGPU(
+        (this.math as NDArrayMathGPU).getGPGPUContext(),
+        (this.math as NDArrayMathGPU).getTextureManager());
+  }
 
   /**
    * Loads necessary variables for SqueezeNet.

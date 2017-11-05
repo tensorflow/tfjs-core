@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "A KNN Image Classifier model in deeplearn.js",
   "main": "dist/index.js",
-  "unpkg": "dist/knn_image_classifier.js",
+  "unpkg": "dist/bundle.js",
   "types": "dist/index.d.ts",
   "dependencies": {
     "deeplearn": "~0.3.6",
-    "deeplearn-squeezenet": "~0.1.0"
+    "deeplearn-squeezenet": "~0.1.2"
   },
   "repository": {
     "type": "git",
@@ -22,9 +22,8 @@
   },
   "scripts": {
     "prep": "npm install && mkdirp dist",
-    "watch": "watchify knn_image_classifier.ts -p [tsify] -v --debug -o dist/knn_image_classifier.js",
-    "build": "browserify knn_image_classifier.ts -p [tsify] -o dist/knn_image_classifier.js",
-    "deploy": "npm run build && uglifyjs dist/knn_image_classifier.js -c -m -o dist/knn_image_classifier.min.js"
+    "build": "browserify --standalone knn_image_classifier knn_image_classifier.ts -p [tsify] -o dist/bundle.js",
+    "publish-npm": "tsc && npm run build && npm publish"
   },
   "license": "Apache-2.0"
 }

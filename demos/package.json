@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "description": "deeplearn.js demos - not actually published",
   "dependencies": {
-    "deeplearn": "~0.3.5"
+    "deeplearn": "~0.3.7",
+    "deeplearn-knn-image-classifier": "0.1.0"
   },
   "repository": {
     "type": "git",
