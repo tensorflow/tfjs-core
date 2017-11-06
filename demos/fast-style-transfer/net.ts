@@ -67,8 +67,10 @@ export class TransformNet {
       const scaled = this.math.scalarTimesArray(Scalar.new(150), outTanh);
       const shifted = this.math.scalarPlusArray(Scalar.new(255./2), scaled);
       const clamped = this.math.clip(shifted, 0, 255);
+      const normalized = this.math.divide(
+          clamped, Scalar.new(255.)) as Array3D;
 
-      return clamped;
+      return normalized;
     });
 
     return img;

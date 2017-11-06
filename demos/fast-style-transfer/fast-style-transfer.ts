@@ -261,19 +261,25 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
 
       const inferenceResult = this.transformNet.infer(preprocessed);
 
-      console.log(inferenceResult.shape);
-      console.log(preprocessed.shape);
-
-      this.canvas.width = inferenceResult.shape[1];
-      this.canvas.height = inferenceResult.shape[0];
+      this.setCanvasShape(inferenceResult.shape);
       this.renderShader = render_ndarray_gpu_util.getRenderRGBShader(
         this.gpgpu, inferenceResult.shape[1]);
-      console.log(this.renderShader);
       render_ndarray_gpu_util.renderToCanvas(
-        this.gpgpu, this.renderShader, preprocessed.getTexture());
-
-      //this.drawOnCanvas(inferenceResult);
+        this.gpgpu, this.renderShader, inferenceResult.getTexture());
     });
+  }
+
+  private setCanvasShape(shape: number[]) {
+    this.canvas.width = shape[1];
+    this.canvas.height = shape[0];
+    if (shape[1] > shape[0]) {
+      this.canvas.style.width = '500px';
+      this.canvas.style.height = (shape[0]/shape[1]*500).toString() + 'px';
+    }
+    else {
+      this.canvas.style.height = '500px';
+      this.canvas.style.width = (shape[1]/shape[0]*500).toString() + 'px';
+    }
   }
 
 }
