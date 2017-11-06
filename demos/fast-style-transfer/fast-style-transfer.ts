@@ -33,7 +33,7 @@ const STYLE_MAPPINGS: {[varName: string]: string} = {
   'Rain Princess, Leonid Afremov': 'rain_princess',
   'The Wave, Katsushika Hokusai': 'wave',
   'The Wreck of the Minotaur, J.M.W. Turner': 'wreck'
-}
+};
 const STYLE_NAMES = Object.keys(STYLE_MAPPINGS);
 
 export class StyleTransferDemo extends StyleTransferDemoPolymer {
@@ -47,6 +47,7 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
   // DOM Elements
   private contentImgElement: HTMLImageElement;
   private styleImgElement: HTMLImageElement;
+  // tslint:disable-next-line:no-any
   private sizeSlider: any;
 
   private canvas: HTMLCanvasElement;
@@ -55,6 +56,7 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
 
   private startButton: HTMLButtonElement;
 
+  // tslint:disable-next-line:no-any
   private camDialog: any;
   private stream: MediaStream;
   private webcamVideoElement: HTMLVideoElement;
@@ -75,9 +77,9 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
 
   ready() {
     // Initialize DeeplearnJS stuff
-    this.gpgpu = new GPGPUContext;
+    this.gpgpu = new GPGPUContext();
     this.math = new NDArrayMathGPU(this.gpgpu);
-    this.mathCPU = new NDArrayMathCPU;
+    this.mathCPU = new NDArrayMathCPU();
 
     // Initialize polymer properties
     this.applicationState = ApplicationState.IDLE;
@@ -103,25 +105,31 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
     this.canvas = this.querySelector('#imageCanvas') as HTMLCanvasElement;
     this.canvas.width = 0;
     this.canvas.height = 0;
-    this.canvasContext = this.canvas.getContext('2d') as CanvasRenderingContext2D;
+    this.canvasContext = 
+        this.canvas.getContext('2d') as CanvasRenderingContext2D;
     this.canvas.style.display = 'none';
 
     this.initWebcamVariables();
 
+    // tslint:disable-next-line:no-any
     this.sizeSlider = this.querySelector('#sizeSlider') as any;
-    this.sizeSlider.addEventListener('immediate-value-change', (event: any) => {
+    this.sizeSlider.addEventListener('immediate-value-change', 
+    // tslint:disable-next-line:no-any
+      (event: any) => {
       this.styleImgElement.height = this.sizeSlider.immediateValue;
       this.contentImgElement.height = this.sizeSlider.immediateValue;
-    })
+    });
+    // tslint:disable-next-line:no-any
     this.sizeSlider.addEventListener('change', (event: any) => {
       this.styleImgElement.height = this.sizeSlider.immediateValue;
       this.contentImgElement.height = this.sizeSlider.immediateValue;
-    })
+    });
 
     this.fileSelect = this.querySelector('#fileSelect') as HTMLButtonElement;
+    // tslint:disable-next-line:no-any
     this.fileSelect.addEventListener('change', (event: any) => {
       const f: File = event.target.files[0];
-      const fileReader: FileReader = new FileReader;
+      const fileReader: FileReader = new FileReader();
       fileReader.onload = ((e) => {
         const target: FileReader = e.target as FileReader;
         this.contentImgElement.src = target.result;
@@ -134,22 +142,23 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
     const contentDropdown = this.querySelector('#content-dropdown');
     // tslint:disable-next-line:no-any
     contentDropdown.addEventListener('iron-activate', (event: any) => {
-      if (event.detail.selected === 'Use webcam') {
+      const selected: string = event.detail.selected as string;
+      if (selected === 'Use webcam') {
         this.openWebcamModal();
       }
-      else if (event.detail.selected === 'Upload from file') {
+      else if (selected === 'Upload from file') {
         this.fileSelect.click();
       }
       else {
-        this.contentImgElement.src = 'images/' + event.detail.selected + '.jpg';
+        this.contentImgElement.src = 'images/' + selected + '.jpg';
       }
     });
 
     const styleDropdown = this.querySelector('#style-dropdown');
     // tslint:disable-next-line:no-any
     styleDropdown.addEventListener('iron-activate', (event: any) => {
-
-      this.styleImgElement.src = 'images/' + STYLE_MAPPINGS[event.detail.selected] + '.jpg';
+      this.styleImgElement.src = 
+          'images/' + STYLE_MAPPINGS[event.detail.selected] + '.jpg';
     });
 
     // Add listener to start
@@ -157,7 +166,8 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
     this.startButton.addEventListener('click', () => {
       (this.querySelector('#load-error-message') as HTMLElement).style.display =
         'none';
-      this.startButton.textContent = 'Starting style transfer.. Downloading + running model';
+      this.startButton.textContent = 
+          'Starting style transfer.. Downloading + running model';
       this.startButton.disabled = true;
       this.transformNet = new TransformNet(this.math,
         STYLE_MAPPINGS[this.selectedStyleName]);
@@ -173,17 +183,20 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
         console.log(error);
         this.startButton.textContent = 'Start Style Transfer';
         this.startButton.disabled = false;
-        (this.querySelector('#load-error-message') as HTMLElement).textContent = error;
-        (this.querySelector('#load-error-message') as HTMLElement).style.display =
-          'block';
+        const errMessage = 
+            this.querySelector('#load-error-message') as HTMLElement;
+        errMessage.textContent = error;
+        errMessage.style.display = 'block';
       });
     });
   }
 
   private initWebcamVariables() {
     this.camDialog = this.querySelector('#webcam-dialog');
-    this.webcamVideoElement = this.querySelector('#webcamVideo') as HTMLVideoElement;
-    this.takePicButton = this.querySelector('#takePicButton') as HTMLButtonElement;
+    this.webcamVideoElement = 
+        this.querySelector('#webcamVideo') as HTMLVideoElement;
+    this.takePicButton = 
+        this.querySelector('#takePicButton') as HTMLButtonElement;
     this.closeModal = this.querySelector('#closeModal') as HTMLButtonElement;
 
     // Check if webcam is even available
@@ -203,14 +216,15 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
     });
 
     this.takePicButton.addEventListener('click', () => {
-      var hiddenCanvas: HTMLCanvasElement = 
+      const hiddenCanvas: HTMLCanvasElement = 
         this.querySelector('#hiddenCanvas') as HTMLCanvasElement;
-      var hiddenContext: CanvasRenderingContext2D = hiddenCanvas.getContext('2d');
+      const hiddenContext: CanvasRenderingContext2D = 
+        hiddenCanvas.getContext('2d');
       hiddenCanvas.width = this.webcamVideoElement.width;
       hiddenCanvas.height = this.webcamVideoElement.height;
       hiddenContext.drawImage(this.webcamVideoElement, 0, 0, 
         hiddenCanvas.width, hiddenCanvas.height);
-      var imageDataURL = hiddenCanvas.toDataURL('image/jpg');
+      const imageDataURL = hiddenCanvas.toDataURL('image/jpg');
       this.contentImgElement.src = imageDataURL;
       this.stream.getTracks()[0].stop();
     });
@@ -249,11 +263,11 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
     this.canvas.height = shape[0];
     if (shape[1] > shape[0]) {
       this.canvas.style.width = '500px';
-      this.canvas.style.height = shape[0]/shape[1]*500 + 'px';
+      this.canvas.style.height = (shape[0]/shape[1]*500).toString() + 'px';
     }
     else {
       this.canvas.style.height = '500px';
-      this.canvas.style.width = shape[1]/shape[0]*500 + 'px';
+      this.canvas.style.width = (shape[1]/shape[0]*500).toString() + 'px';
     }
   }
 

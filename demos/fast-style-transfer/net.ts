@@ -44,11 +44,11 @@ export class TransformNet {
       const resid3 = this.residualBlock(resid2, 21);
       const resid4 = this.residualBlock(resid3, 27);
       const resid5 = this.residualBlock(resid4, 33);
-      const conv_t1 = this.convTransposeLayer(resid5, 64, 2, 39);
-      const conv_t2 = this.convTransposeLayer(conv_t1, 32, 2, 42);
-      const conv_t3 = this.convLayer(conv_t2, 1, false, 45);
-      const out_tanh = this.math.tanh(conv_t3);
-      const scaled = this.math.scalarTimesArray(Scalar.new(150), out_tanh);
+      const convT1 = this.convTransposeLayer(resid5, 64, 2, 39);
+      const convT2 = this.convTransposeLayer(convT1, 32, 2, 42);
+      const convT3 = this.convLayer(convT2, 1, false, 45);
+      const outTanh = this.math.tanh(convT3);
+      const scaled = this.math.scalarTimesArray(Scalar.new(150), outTanh);
       const shifted = this.math.scalarPlusArray(Scalar.new(255./2), scaled);
 
       return shifted;
@@ -100,12 +100,12 @@ export class TransformNet {
     const [height, width, inDepth]: [number, number, number] = input.shape;
     const moments = this.math.moments(input, [0, 1]);
     const mu = moments.mean as Array3D;
-    const sigma_sq = moments.variance as Array3D;
+    const sigmaSq = moments.variance as Array3D;
     const shift = this.variables[this.varName(varId)] as Array1D;
     const scale = this.variables[this.varName(varId + 1)] as Array1D;
     const epsilon = Scalar.new(1e-3);
     const normalized = this.math.divide(this.math.sub(input, mu), 
-      this.math.sqrt(this.math.add(sigma_sq, epsilon)));
+      this.math.sqrt(this.math.add(sigmaSq, epsilon)));
     const shifted = this.math.add(this.math.multiply(scale, normalized), shift);
     return shifted.as3D(height, width, inDepth);
   }
@@ -115,7 +115,7 @@ export class TransformNet {
       return 'Variable';
     }
     else {
-      return 'Variable_' + varId;
+      return 'Variable_' + varId.toString();
     }
   }
 }
