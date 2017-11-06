@@ -1,12 +1,24 @@
+/**
+ * @license
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
 // tslint:disable-next-line:max-line-length
-import {Array3D, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
+import {Array3D, GPGPUContext, gpgpu_util, render_ndarray_gpu_util, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
 // import * as imagenet_util from '../models/imagenet_util';
 import {TransformNet} from './net';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
-
-function clamp(num: number): number {
-  return Math.min(Math.max(num, 0), 255);
-}
 
 // tslint:disable-next-line:variable-name
 export const StyleTransferDemoPolymer: new () => PolymerHTMLElement =
@@ -41,6 +53,7 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
   private math: NDArrayMathGPU;
   private mathCPU: NDArrayMathCPU;
   private gpgpu: GPGPUContext;
+  private gl: WebGLRenderingContext;
 
   private transformNet: TransformNet;
 
@@ -51,8 +64,6 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
   private sizeSlider: any;
 
   private canvas: HTMLCanvasElement;
-  private canvasContext: CanvasRenderingContext2D;
-  private imageData: ImageData;
 
   private startButton: HTMLButtonElement;
 
@@ -76,8 +87,10 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
   private applicationState: ApplicationState;
 
   ready() {
-    // Initialize DeeplearnJS stuff
-    this.gpgpu = new GPGPUContext();
+    // Initialize deeplearn.js stuff
+    this.canvas = this.querySelector('#imageCanvas') as HTMLCanvasElement;
+    this.gl = gpgpu_util.createWebGLContext(this.canvas);
+    this.gpgpu = new GPGPUContext(this.gl);
     this.math = new NDArrayMathGPU(this.gpgpu);
     this.mathCPU = new NDArrayMathCPU();
 
@@ -101,13 +114,6 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
     this.selectedStyleName = 'Udnie, Francis Picabia';
     this.styleImgElement.src = 'images/udnie.jpg';
     this.styleImgElement.height = 250;
-
-    this.canvas = this.querySelector('#imageCanvas') as HTMLCanvasElement;
-    this.canvas.width = 0;
-    this.canvas.height = 0;
-    this.canvasContext = 
-        this.canvas.getContext('2d') as CanvasRenderingContext2D;
-    this.canvas.style.display = 'none';
 
     this.initWebcamVariables();
 
@@ -254,41 +260,22 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
       const preprocessed = track(Array3D.fromPixels(this.contentImgElement));
 
       const inferenceResult = this.transformNet.infer(preprocessed);
-      this.drawOnCanvas(inferenceResult);
+
+      console.log(inferenceResult.shape);
+      console.log(preprocessed.shape);
+
+      this.canvas.width = inferenceResult.shape[1];
+      this.canvas.height = inferenceResult.shape[0];
+      this.renderShader = render_ndarray_gpu_util.getRenderRGBShader(
+        this.gpgpu, inferenceResult.shape[1]);
+      console.log(this.renderShader);
+      render_ndarray_gpu_util.renderToCanvas(
+        this.gpgpu, this.renderShader, preprocessed.getTexture());
+
+      //this.drawOnCanvas(inferenceResult);
     });
   }
 
-  private setCanvasShape(shape: number[]) {
-    this.canvas.width = shape[1];
-    this.canvas.height = shape[0];
-    if (shape[1] > shape[0]) {
-      this.canvas.style.width = '500px';
-      this.canvas.style.height = (shape[0]/shape[1]*500).toString() + 'px';
-    }
-    else {
-      this.canvas.style.height = '500px';
-      this.canvas.style.width = (shape[1]/shape[0]*500).toString() + 'px';
-    }
-  }
-
-  private drawOnCanvas(ndarray: Array3D) {
-    this.setCanvasShape(ndarray.shape);
-    this.imageData = this.canvasContext.createImageData(
-        this.canvas.width, this.canvas.height);
-
-    let pixelOffset = 0;
-    for (let i = 0; i < ndarray.shape[0]; i++) {
-      for (let j = 0; j < ndarray.shape[1]; j++) {
-        this.imageData.data[pixelOffset++] = clamp(ndarray.get(i, j, 0));
-        this.imageData.data[pixelOffset++] = clamp(ndarray.get(i, j, 1));
-        this.imageData.data[pixelOffset++] = clamp(ndarray.get(i, j, 2));
-        this.imageData.data[pixelOffset++] = 255;
-      }
-    }
-
-    this.canvas.style.display = '';
-    this.canvasContext.putImageData(this.imageData, 0, 0);
-  }
 }
 
 document.registerElement(StyleTransferDemo.prototype.is, StyleTransferDemo);
