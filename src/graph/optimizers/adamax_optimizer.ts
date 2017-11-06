@@ -28,7 +28,7 @@ export class AdamaxOptimizer extends Optimizer {
       protected learningRate: number, private beta1: number,
       private beta2: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
-    this.eps = Scalar.new(1e-8);    
+    this.eps = Scalar.new(1e-8);
     // b1, b2 keep initial value of beta* hyperparameters.
     this.b1 = Scalar.new(this.beta1);
     this.b2 = Scalar.new(this.beta2);
