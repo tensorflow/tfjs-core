@@ -8,7 +8,7 @@ const htmlcontentElement = document.getElementById('htmlcontent');
 const gistUrlElement = document.getElementById('gist-url') as HTMLInputElement;
 const iframeElement = document.getElementById('sandboxed') as HTMLIFrameElement;
 
-saveButtonElement.addEventListener('click', async () => {
+const saveButtonHandler = async () => {
   runCode();
 
   gistUrlElement.value = '...saving...';
@@ -37,7 +37,10 @@ saveButtonElement.addEventListener('click', async () => {
   gistUrlElement.value = json['html_url'];
 
   window.location.hash = `#${json['id']}`;
-});
+};
+
+// TODO(nsthorat): bring this back once we use github logins.
+// saveButtonElement.addEventListener('click', saveButtonHandler);
 
 async function loadGistFromURL() {
   if (window.location.hash && window.location.hash !== '#') {
@@ -67,6 +70,7 @@ async function loadGistFromURL() {
       htmlcontentElement.innerText = htmlCode;
       runHTML();
     }
+
   } else {
     gistUrlElement.value = 'Unsaved';
   }

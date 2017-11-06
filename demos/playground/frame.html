@@ -39,6 +39,11 @@
       font-family: 'Menlo', monospace;
       font-size: 12px;
     }
+
+    #error {
+      color: red;
+      font-size: 14px;
+    }
   </style>
   <div id="container" class="text">
     <div id="output">
@@ -51,31 +56,73 @@
         <div id="html"></div>
       </div>
     </div>
+    <div id="error-container" class="output-container">
+      <div id="error"></div>
+    </div>
   </div>
 
   <script>
     const htmlContainer = document.getElementById('html-container');
     const htmlconsoleElement = document.getElementById('html');
     const consoleElement = document.getElementById('console');
+    const errorConsoleElement = document.getElementById('error');
 
-    window.addEventListener('message', function (e) {
+    let scriptsPendingLoadCount = 0;
+    // JavaScript eval function if scripts are pending.
+    let jsEvalAwaitingScripts;
+
+    function allScriptsLoaded() {
+      if (jsEvalAwaitingScripts != null) {
+        jsEvalAwaitingScripts();
+      }
+      jsEvalAwaitingScripts = null;
+    }
+
+    window.addEventListener('message', async function (e) {
       const mainWindow = e.source;
       const result = '';
 
       const data = JSON.parse(e.data);
       if (data['js'] != null) {
-        window.console.clear();
-        windowLog(data['js']);
+        const executeJs = async () => {
+          errorConsoleElement.innerText = '';
 
+          window.console.clear();
 
-        try {
-          eval(data['js']);
-        } catch (e) {
-          //'eval() threw an exception.';
-          windowLog('ERROR ', e);
+          try {
+            await eval(data['js']);
+          } catch (e) {
+            errorConsoleElement.innerText = e;
+            throw e;
+          }
+        };
+        // Don't eval javascript until all scripts from HTML are loaded.
+        // This lets us load external JS modules and ensure that they're
+        // ready before the javascript executes.
+        if (scriptsPendingLoadCount === 0) {
+          executeJs();
+        } else {
+          jsEvalAwaitingScripts = executeJs;
         }
-      } else if (data['html'] != null) {
+
+      } else if (data['html'] != null && data['html'] != '') {
         htmlconsoleElement.innerHTML = data['html'];
+
+        // Find script tags, put them in the head.
+        const scripts = htmlconsoleElement.getElementsByTagName('script');
+        scriptsPendingLoadCount = scripts.length;
+
+        for (let i = 0; i < scripts.length; i++) {
+          const newScript = document.createElement('script');
+          newScript.onload = () => {
+            scriptsPendingLoadCount--;
+            if (scriptsPendingLoadCount === 0) {
+              allScriptsLoaded();
+            }
+          };
+          newScript.src = scripts[i].src;
+          document.head.appendChild(newScript);
+        };
 
         flashOutput(htmlContainer);
       }
@@ -98,6 +145,7 @@
     // Keep a map of the id to a count so only remove the class for the last ID.
     const flashCounts = {};
     const elements = [];
+    // Flash the background of the element green.
     function flashOutput(elem) {
       // Find the element id in the elements array.
       let id;
