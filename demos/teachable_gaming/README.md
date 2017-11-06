@@ -4,7 +4,7 @@ The Teachable Gaming demo is inspired by
 [Teachable Machine](https://teachablemachine.withgoogle.com/).
 With it, you train a
 [KNN image classifier](https://github.com/PAIR-code/deeplearnjs/blob/master/models/topk_image_classifier/topk_image_classifier.ts)
-to perform keyboard keystrokes,which in turn controls video games provided by
+to perform keyboard keystrokes, which in turn controls video games provided by
 [js-dos](https://js-dos.com).
 
 Developed by [James Wexler](https://twitter.com/bengiswex), with help from
