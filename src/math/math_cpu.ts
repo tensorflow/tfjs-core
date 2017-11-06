@@ -1128,7 +1128,7 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected batchNormalization2DInternal(
       x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
-      varianceEpsilon = .001, scale?: Array2D|Array1D,
+      varianceEpsilon: number, scale?: Array2D|Array1D,
       offset?: Array2D|Array1D): Array2D {
     const xValues = x.getValues();
     const meanValues = mean.getValues();
@@ -1149,7 +1149,7 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected batchNormalization3DInternal(
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
-      varianceEpsilon = .001, scale?: Array3D|Array1D,
+      varianceEpsilon: number, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D {
     const xValues = x.getValues();
     const meanValues = mean.getValues();
