@@ -256,7 +256,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
 
   private async animate() {
     const frameTimeStart = performance.now();
-    if (this.previousFrameTime) {
+    if (this.previousFrameTime != null) {
       this.predictFps.add(frameTimeStart - this.previousFrameTime);
       if (this.animateLoopIndex % TeachableGamingDemo.animateLoopStatsFreq ===
           0) {
@@ -328,6 +328,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
       });
       // Log the environment first time through prediction.
       if (!this.loggedEnv) {
+        console.log('Evaulated environment flags:');
         console.log(ENV);
         this.loggedEnv = true;
       }
