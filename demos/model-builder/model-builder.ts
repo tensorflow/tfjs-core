@@ -432,8 +432,8 @@ export class ModelBuilder extends ModelBuilderPolymer {
         return new AdamOptimizer(+this.learningRate, +this.beta1, +this.beta2);
       }
       case 'adamax': {
-        return new AdamaxOptimizer(+this.learningRate, +this.beta1,
-          +this.beta2);
+        return new AdamaxOptimizer(
+            +this.learningRate, +this.beta1, +this.beta2);
       }
       default: {
         throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
