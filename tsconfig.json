@@ -19,8 +19,6 @@
     },
     "exclude": [
       "starter/",
-      // Exclude models so we don't have to run npm install in every
-      // model directory when setting up.
       "models/",
       "node_modules/",
       "dist/"
