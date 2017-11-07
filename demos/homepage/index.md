@@ -117,14 +117,14 @@ limitations under the License.
   <div class="featured-demo mdl-grid">
     <div class="mdl-layout-spacer mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
     <div class="demo-card featured-demo mdl-card mdl-shadow--4dp feature-card mdl-cell mdl-cell--12-col">
-      <a href="demos/playground">
+      <a href="demos/playground/examples.html" style="overflow: hidden">
         <div class="mdl-card__title" id="playground">
-          <h1 class="mdl-card__title-text">deeplearn.js Playground</h1>
+          <h1 class="mdl-card__title-text" class="mdl-card__title-text">Interactive Playground</h1>
         </div>
       </a>
       <div class="mdl-card__supporting-text">Play with deeplearn.js code in the browser with no installs</div>
       <div class="mdl-card__actions mdl-card--border">
-        <a href="demos/playground">
+        <a href="demos/playground/examples.html">
           <button class="mdl-button mdl-button--raised mdl-button--colored mdl-js-button mdl-button--primary mdl-js-ripple-effect">
             Start playing
           </button>

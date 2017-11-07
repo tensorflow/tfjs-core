@@ -231,7 +231,7 @@ ul.index {
 
 .featured-demo div.mdl-card__title:before {
   height: 352px;
-  background: rgba(42, 101, 109, 0.36);
+  background: none;
 }
 
 .demo-card .mdl-card__title {
@@ -254,6 +254,7 @@ div.mdl-card__title h1.mdl-card__title-text {
   font-weight: 200;
   font-size: 0.6em;
   letter-spacing: 0.5px;
+  background-color: rgba(0, 0, 0, .54);
 }
 
 #teachable-machine {
@@ -261,7 +262,7 @@ div.mdl-card__title h1.mdl-card__title-text {
 }
 
 #perf-rnn {
-  background: url('https://storage.googleapis.com/learnjs-data/images/performance_rnn.gif') center / cover;
+  background: url('../demos/images/performance_rnn_preview.jpg') center / cover;
 }
 
 #model-builder {
@@ -281,7 +282,7 @@ div.mdl-card__title h1.mdl-card__title-text {
 }
 
 #playground {
-  background: url('../demos/images/playground.png') center / cover;
+  background: url('../demos/images/playground_preview.png') center / cover;
 }
 
 .demo-card .mdl-card__title-text {
