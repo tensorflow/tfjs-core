@@ -178,7 +178,7 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
       this.transformNet = new TransformNet(this.math,
         STYLE_MAPPINGS[this.selectedStyleName]);
 
-      this.transformNet.loadVariables()
+      this.transformNet.load()
       .then(() => {
         this.startButton.textContent = 'Processing image';
         this.runInference();
@@ -253,13 +253,13 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
     );
   }
 
-  runInference() {
+  async runInference() {
     
-    this.math.scope((keep, track) => {
+    await this.math.scope(async (keep, track) => {
 
       const preprocessed = track(Array3D.fromPixels(this.contentImgElement));
 
-      const inferenceResult = this.transformNet.infer(preprocessed);
+      const inferenceResult = await this.transformNet.predict(preprocessed);
 
       this.setCanvasShape(inferenceResult.shape);
       this.renderShader = render_ndarray_gpu_util.getRenderRGBShader(

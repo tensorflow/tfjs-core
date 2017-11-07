@@ -15,13 +15,13 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Scalar, Array1D, Array3D, Array4D, CheckpointLoader, NDArray, NDArrayMathGPU} from '../deeplearn';
+import {Scalar, Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMathGPU} from '../deeplearn';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
 //    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
     document.URL.substr(0,document.URL.lastIndexOf('/')) + '/ckpts/';
 
-export class TransformNet {
+export class TransformNet implements Model {
   private variables: {[varName: string]: NDArray};
 
   constructor(private math: NDArrayMathGPU, private style: string) {}
@@ -30,17 +30,10 @@ export class TransformNet {
    * Loads necessary variables for SqueezeNet. Resolves the promise when the
    * variables have all been loaded.
    */
-  loadVariables(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const checkpointLoader =
-          new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + this.style + '/');
-      checkpointLoader.getAllVariables()
-      .then(variables => {
-        this.variables = variables;
-        resolve();
-      })
-      .catch((error) => reject(error));
-    });
+  async load(): Promise<void> {
+    const checkpointLoader =
+        new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + this.style + '/');
+    this.variables = await checkpointLoader.getAllVariables();
   }
 
   /**
@@ -49,7 +42,7 @@ export class TransformNet {
    * @param preprocessedInput preprocessed input Array.
    * @return Array3D containing pixels of output img
    */
-  infer(preprocessedInput: Array3D): Array3D {
+  async predict (preprocessedInput: Array3D): Promise<Array3D> {
 
     const img = this.math.scope((keep, track) => {
       const conv1 = this.convLayer(preprocessedInput, 1, true, 0);
@@ -135,6 +128,12 @@ export class TransformNet {
     }
     else {
       return 'Variable_' + varId.toString();
+    }
+  }
+
+  dispose() {
+    for (const varName in this.variables) {
+      this.variables[varName].dispose();
     }
   }
 }
