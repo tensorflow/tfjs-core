@@ -17,13 +17,32 @@ const input = graph.placeholder('input', [2]);
 const y = graph.placeholder('y', [1]);
 
 
-const hiddenLayer = graph.layers.dense('hiddenLayer', input, 10, (x) => graph.relu(x), true);
-const output = graph.layers.dense('outputLayer', hiddenLayer, 1, (x) => graph.sigmoid(x), true);
+const hiddenLayer = graph.layers.dense(
+  'hiddenLayer', input, 10, (x) => graph.relu(x), true);
+const output = graph.layers.dense(
+  'outputLayer', hiddenLayer, 1, (x) => graph.sigmoid(x), true);
 
 const costTensor = graph.reduceSum(
   graph.add(
-    graph.multiply(graph.constant([-1]), graph.multiply(y, graph.log(graph.add(output, graph.constant([EPSILON]))))),
-    graph.multiply(graph.constant([-1]), graph.multiply(graph.subtract(graph.constant([1]), y), graph.log(graph.add(graph.subtract(graph.constant([1]), output), graph.constant([EPSILON])))))
+    graph.multiply(
+      graph.constant([-1]),
+      graph.multiply(
+        y,
+        graph.log(graph.add(output, graph.constant([EPSILON])))
+      )
+    ),
+    graph.multiply(
+      graph.constant([-1]),
+      graph.multiply(
+        graph.subtract(graph.constant([1]), y),
+        graph.log(
+          graph.add(
+            graph.subtract(graph.constant([1]), output),
+            graph.constant([EPSILON])
+          )
+        )
+      )
+    )
   )
 );
 
