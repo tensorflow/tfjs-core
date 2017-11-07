@@ -15,7 +15,7 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Scalar, Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMathGPU} from '../deeplearn';
+import {Scalar, Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMathGPU} from 'deeplearn';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
 //    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
