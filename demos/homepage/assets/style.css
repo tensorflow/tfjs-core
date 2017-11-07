@@ -224,14 +224,12 @@ ul.index {
 }
 
 .featured-demo h1.mdl-card__title-text {
-  background-color: rgba(0, 0, 0, .54);
   font-size: 36px;
   margin: 0 0 2px 2px;
   padding: 5px 12px;
 }
 
 .featured-demo div.mdl-card__title:before {
-  /*display: none;*/
   height: 352px;
   background: rgba(41, 73, 77, 0.73);
 }
