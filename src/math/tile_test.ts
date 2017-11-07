@@ -35,7 +35,7 @@ import {Array1D, Array2D} from './ndarray';
       t.dispose();
     });
 
-  it('2D (tile)', math => {
+    it('2D (tile)', math => {
       const t = Array2D.new([2, 2], [1, 11, 2, 22]);
       let t2 = math.tile(t, [1, 2]);
       expect(t2.shape).toEqual([2, 4]);
@@ -55,12 +55,24 @@ import {Array1D, Array2D} from './ndarray';
 
       t.dispose();
     });
+
+    it('propagates NaNs', math => {
+      const t = Array1D.new([1, 2, NaN]);
+
+      const t2 = math.tile(t, [2]);
+
+      expect(t2.shape).toEqual([6]);
+      test_util.expectArraysClose(t2.getValues(), 
+        new Float32Array([1, 2, NaN, 1, 2, NaN]));
+
+      t.dispose();
+    });
   };
 
   test_util.describeMathCPU('tile', [tests]);
-  //test_util.describeMathGPU('tile', [tests], [
-  //  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  //  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  //  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  //]);
+  test_util.describeMathGPU('tile', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }
