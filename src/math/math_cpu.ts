@@ -869,6 +869,30 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array1D.new(values);
   }
 
+  protected tileInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, multiples: number[]): T {
+    const newShape: number[] = new Array(a.rank);
+    for (let i = 0; i < newShape.length; i++) {
+      newShape[i] = a.shape[i] * multiples[i];
+    }
+    const resultValues = new Float32Array(util.sizeFromShape(newShape));
+    const values = a.getValues();
+    const result = NDArray.make(newShape, {values: resultValues}) as T;
+    for (let i = 0; i < result.size; ++i) {
+      const newLoc = result.indexToLoc(i);
+
+      const originalLoc: number[] = new Array(a.rank);
+      for (let i = 0; i < originalLoc.length; i++) {
+        originalLoc[i] = newLoc[i] % a.shape[i];
+      }
+
+      const originalIndex = a.locToIndex(originalLoc);
+
+      resultValues[i] = values[originalIndex];
+    }
+    return result;
+  }
+
   protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
       a: T, perm: number[]): T {
     const newShape: number[] = new Array(a.rank);

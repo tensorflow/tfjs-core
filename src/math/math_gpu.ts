@@ -226,6 +226,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, inputs) as Array3D;
   }
 
+  protected tileInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm: number[]): T {
+    throw new Error('tile GPU not yet implemented!');
+  }
+
   protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
       a: T, perm: number[]): T {
     const program = new TransposeProgram(a.shape, perm);
