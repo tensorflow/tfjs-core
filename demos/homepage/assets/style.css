@@ -231,7 +231,7 @@ ul.index {
 
 .featured-demo div.mdl-card__title:before {
   height: 352px;
-  background: rgba(41, 73, 77, 0.73);
+  background: rgba(42, 101, 109, 0.36);
 }
 
 .demo-card .mdl-card__title {
@@ -248,6 +248,13 @@ ul.index {
   bottom: 0;
   left: 0;
   background: rgba(41, 73, 77, 0.73);
+}
+
+div.mdl-card__title h1.mdl-card__title-text {
+  font-weight: 200;
+  font-size: 0.6em;
+  letter-spacing: 0.5px;
+  text-transform: capitalize;
 }
 
 #teachable-machine {
