@@ -410,6 +410,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected conv2dInternal(
       x: Array3D, filter: Array4D, bias: Array1D|null,
       convInfo: ConvInfo): Array3D {
+    filter = this.transpose(filter, [3, 0, 1, 2]);
     const program = new Conv2DProgram(convInfo, bias != null);
     const inputs = bias != null ? [x, filter, bias] : [x, filter];
     return this.compileAndRun(program, inputs) as Array3D;
