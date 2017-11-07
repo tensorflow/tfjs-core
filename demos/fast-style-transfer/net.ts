@@ -23,21 +23,36 @@ const GOOGLE_CLOUD_STORAGE_DIR =
 
 export class TransformNet implements Model {
   private variables: {[varName: string]: NDArray};
+  private variableDictionary: {[styleName: string]: 
+    {[varName: string]: NDArray}};
 
-  constructor(private math: NDArrayMathGPU, private style: string) {}
+  constructor(private math: NDArrayMathGPU, private style: string) {
+    this.variableDictionary = {};
+  }
+
+  setStyle(style: string) {
+    this.style = style;
+  }
 
   /**
    * Loads necessary variables for SqueezeNet. Resolves the promise when the
    * variables have all been loaded.
    */
   async load(): Promise<void> {
-    const checkpointLoader =
-        new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + this.style + '/');
-    this.variables = await checkpointLoader.getAllVariables();
+    if (this.variableDictionary[this.style] == null) {
+      console.log('downloading weights for first time');
+      const checkpointLoader =
+          new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + this.style + '/');
+      this.variableDictionary[this.style] = 
+          await checkpointLoader.getAllVariables();
+    }
+    this.variables = this.variableDictionary[this.style];
   }
 
   /**
    * Infer through TransformNet, assumes variables have been loaded.
+   * Original Tensorflow version of model can be found at
+   * https://github.com/lengstrom/fast-style-transfer
    *
    * @param preprocessedInput preprocessed input Array.
    * @return Array3D containing pixels of output img
@@ -132,8 +147,10 @@ export class TransformNet implements Model {
   }
 
   dispose() {
-    for (const varName in this.variables) {
-      this.variables[varName].dispose();
+    for (const styleName in this.variableDictionary) {
+      for (const varName in this.variableDictionary[styleName]) {
+        this.variableDictionary[styleName][varName].dispose();
+      }
     }
   }
 }

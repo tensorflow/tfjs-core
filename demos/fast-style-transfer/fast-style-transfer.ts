@@ -115,6 +115,9 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
     this.styleImgElement.src = 'images/udnie.jpg';
     this.styleImgElement.height = 250;
 
+    this.transformNet = new TransformNet(this.math,
+        STYLE_MAPPINGS[this.selectedStyleName]);
+
     this.initWebcamVariables();
 
     // tslint:disable-next-line:no-any
@@ -175,8 +178,7 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
       this.startButton.textContent = 
           'Starting style transfer.. Downloading + running model';
       this.startButton.disabled = true;
-      this.transformNet = new TransformNet(this.math,
-        STYLE_MAPPINGS[this.selectedStyleName]);
+      this.transformNet.setStyle(STYLE_MAPPINGS[this.selectedStyleName]);
 
       this.transformNet.load()
       .then(() => {
