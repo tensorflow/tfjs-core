@@ -11,6 +11,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
+import '../demo-header';
+import '../demo-footer';
+
 const GITHUB_JS_FILENAME = 'js';
 const GITHUB_HTML_FILENAME = 'html';
 
@@ -53,7 +56,10 @@ const saveButtonHandler = async () => {
 };
 
 // TODO(nsthorat): bring this back once we use github logins.
-// saveButtonElement.addEventListener('click', saveButtonHandler);
+if (saveButtonElement != null) {
+  saveButtonElement.addEventListener(
+      'click', saveButtonHandler == null ? saveButtonHandler : () => {});
+}
 
 async function loadGistFromURL() {
   if (window.location.hash && window.location.hash !== '#') {
@@ -110,6 +116,10 @@ async function runCode() {
   }
 }
 
-runButtonElement.addEventListener('click', runCode);
+// Our polymer logic injects the bundle in all pages, we want to turn this off
+// for the playground index.
+if (location.pathname.endsWith('playground.html')) {
+  runButtonElement.addEventListener('click', runCode);
 
-loadGistFromURL();
+  loadGistFromURL();
+}

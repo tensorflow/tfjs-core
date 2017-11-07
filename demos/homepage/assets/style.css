@@ -218,7 +218,6 @@ ul.index {
   height: 352px;
   color: white;
   z-index: 1;
-  background-color: rgba(0, 0, 0, 0.54);
   padding: 5px 12px;
   font-weight: 400;
   font-size: 48px;
@@ -232,7 +231,9 @@ ul.index {
 }
 
 .featured-demo div.mdl-card__title:before {
-  display: none;
+  /*display: none;*/
+  height: 352px;
+  background: rgba(41, 73, 77, 0.73);
 }
 
 .demo-card .mdl-card__title {
@@ -248,7 +249,7 @@ ul.index {
   right: 0;
   bottom: 0;
   left: 0;
-  background: rgba(78, 135, 143, 0.73);
+  background: rgba(41, 73, 77, 0.73);
 }
 
 #teachable-machine {
@@ -273,6 +274,10 @@ ul.index {
 
 #benchmarks {
   background: url('../demos/images/benchmark.png') center / cover;
+}
+
+#playground {
+  background: url('../demos/images/playground.png') center / cover;
 }
 
 .demo-card .mdl-card__title-text {

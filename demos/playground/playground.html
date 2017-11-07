@@ -12,79 +12,136 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================-->
-<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue_grey-orange.min.css" />
-<style>
-  .gist {
-    width: 100%;
-    font-size: 14px;
-  }
 
-  .gist-container {
-    margin-bottom: 12px;
-    text-align: left;
-    /* TODO(nsthorat): Remove this once we add github login. */
-    display: none;
-  }
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- This script is stripped during vulcanization, available only during development. It provides
+        polyfill for debugging/testing in non-Chrome browsers.
+    -->
+    <script src="../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <link rel="import" href="../bower_components/polymer/polymer.html">
+    <link rel="import" href="../demo-header.html">
+    <link rel="import" href="../demo-footer.html">
 
-  .textarea {
-    display: block;
-    padding: 10px;
-    margin:0 auto;
-    width: 960px;
-    white-space: pre;
-    border-left: solid 2px #ccc;
-  }
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue_grey-orange.min.css" />
 
-  pre {
-    margin: 0;
-  }
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dialog-polyfill/0.4.9/dialog-polyfill.min.css" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dialog-polyfill/0.4.9/dialog-polyfill.min.js"></script>
+    <script src="../homepage/assets/support.js"></script>
 
-  #save {
-    margin: auto;
-    /* TODO(nsthorat): Remove this once we add github login. */
-    display: none;
-  }
+    <title>deeplearn.js playground</title>
+    <style>
+      html {
+        width: 100%;
+        height: 100%;
+      }
 
-  #highlight {
-    margin-top: 20px;
-  }
+      body {
+        font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+      }
 
-  #container, #highlight {
-    width: 960px;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: left;
-  }
+      head {
+        height: 0;
+        width: 0;
+      }
 
-  .text {
-    font-family: 'Menlo', monospace;
-    font-size: 12px;
-  }
+      #container {
+      margin-left: 20px;
+    }
+    a {
+      color: blue;
+    }
+    .playground-item a {
+      font-size: 16px;
+      margin-left: 8px;
+    }
+    .playground-item::before {
+      content: ">>";
+    }
+    #list {
+      margin: 32px 8px;
+    }
+    .gist {
+      width: 100%;
+      font-size: 14px;
+    }
 
-  #sandboxed {
-    height: 860px;
-  }
-</style>
+    .gist-container {
+      margin-bottom: 12px;
+      text-align: left;
+      /* TODO(nsthorat): Remove this once we add github login. */
+      display: none;
+    }
 
-<div id="highlight">
-  <div class="gist-container">
-    <input type="text" id="gist-url" class="gist" onClick="this.select();" readonly></input><br>
-  </div>
+    .textarea {
+      display: block;
+      padding: 10px;
+      margin:0 auto;
+      width: 960px;
+      white-space: pre;
+      border-left: solid 2px #ccc;
+    }
 
-  js
-  <pre class="code-container">
-    <code id="jscontent" spellcheck="false" contenteditable class="javascript textarea text"></code>
-  </pre>
+    pre {
+      margin: 0;
+    }
 
-  html
-  <pre class="code-container">
-    <code id="htmlcontent" contenteditable class="html textarea text"></code>
-  </pre>
-</code>
+    #save {
+      margin: auto;
+      /* TODO(nsthorat): Remove this once we add github login. */
+      display: none;
+    }
 
-<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="button" id="run">run</button>
-<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="button" id="save">save</button>
+    #highlight {
+      margin-top: 20px;
+    }
 
-<iframe sandbox="allow-scripts" id="sandboxed" src="frame.html"></iframe>
+    #container, #highlight {
+      width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
 
-<script src="bundle.js"></script>
+    .text {
+      font-family: 'Menlo', monospace;
+      font-size: 12px;
+    }
+
+    #sandboxed {
+      height: 860px;
+    }
+    </style>
+  </head>
+
+  <body>
+    <demo-header name="playground"></demo-header>
+
+    <div id="highlight">
+      <div class="gist-container">
+        <input type="text" id="gist-url" class="gist" onClick="this.select();" readonly></input><br>
+      </div>
+
+      js
+      <pre class="code-container">
+        <code id="jscontent" spellcheck="false" contenteditable class="javascript textarea text"></code>
+      </pre>
+
+      html
+      <pre class="code-container">
+        <code id="htmlcontent" contenteditable class="html textarea text"></code>
+      </pre>
+
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="button" id="run">run</button>
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="button" id="save">save</button>
+
+      <iframe sandbox="allow-scripts" id="sandboxed" src="frame.html"></iframe>
+    </div>
+    <demo-footer></demo-footer>
+  </body>
+</html>
