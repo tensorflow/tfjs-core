@@ -418,14 +418,17 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
         util.arraysEqual(this.getValues(), t.getValues());
   }
 
-  static rand(shape: number[], randFunction: () => number): NDArray<'float32'> {
+  static rand<T extends keyof DataTypes = keyof DataTypes>(
+      shape: number[],
+      randFunction: () => number,
+      dtype?: T): NDArray<T> {
     const size = util.sizeFromShape(shape);
     const values = new Float32Array(size);
     for (let i = 0; i < size; i++) {
       values[i] = randFunction();
     }
 
-    return NDArray.make(shape, {values});
+    return NDArray.make(shape, {values}, dtype);
   }
 
   static randNormal(shape: number[], mean = 0, stdDev = 1): NDArray<'float32'> {
@@ -437,9 +440,12 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     return NDArray.rand(shape, () => util.randGauss(mean, stdDev, true));
   }
 
-  static randUniform(shape: number[], a: number, b: number):
-      NDArray<'float32'> {
-    return NDArray.rand(shape, () => util.randUniform(a, b));
+  static randUniform<T extends keyof DataTypes = keyof DataTypes>(
+    shape: number[],
+    a: number,
+    b: number,
+    dtype?: T): NDArray<T> {
+    return NDArray.rand(shape, () => util.randUniform(a, b), dtype);
   }
 }
 
@@ -561,10 +567,13 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
         Array1D<'float32'>;
   }
 
-  static randUniform(shape: [number], a: number, b: number):
-      Array1D<'float32'> {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as
-        Array1D<'float32'>;
+  static randUniform<T extends keyof DataTypes = keyof DataTypes>(
+      shape: [number],
+      a: number,
+      b: number,
+      dtype?: T): Array1D<T> {
+    return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
+        Array1D<T>;
   }
 }
 
@@ -643,10 +652,12 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
         Array2D<'float32'>;
   }
 
-  static randUniform(shape: [number, number], a: number, b: number):
-      Array2D<'float32'> {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as
-        Array2D<'float32'>;
+  static randUniform<T extends keyof DataTypes = keyof DataTypes>(
+      shape: [number, number],
+      a: number,
+      b: number,
+      dtype?: T): Array2D<T> {
+    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array2D<T>;
   }
 }
 
@@ -729,10 +740,12 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
         Array3D<'float32'>;
   }
 
-  static randUniform(shape: [number, number, number], a: number, b: number):
-      Array3D<'float32'> {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as
-        Array3D<'float32'>;
+  static randUniform<T extends keyof DataTypes = keyof DataTypes>(
+      shape: [number, number, number],
+      a: number,
+      b: number,
+      dtype?: T): Array3D<T> {
+    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array3D<T>;
   }
 }
 
@@ -825,11 +838,12 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
         Array4D<'float32'>;
   }
 
-  static randUniform(
-      shape: [number, number, number, number], a: number,
-      b: number): Array4D<'float32'> {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as
-        Array4D<'float32'>;
+  static randUniform<T extends keyof DataTypes = keyof DataTypes>(
+      shape: [number, number, number, number],
+      a: number,
+      b: number,
+      dtype?: T): Array4D<T> {
+    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array4D<T>;
   }
 }
 
