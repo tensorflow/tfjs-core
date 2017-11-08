@@ -28,6 +28,11 @@ limitations under the License.
   #inputContainer {
     margin: 10px;
   }
+  #webcamVideo {
+    transform: rotateY(180deg);
+    -webkit-transform:rotateY(180deg);
+    -moz-transform:rotateY(180deg);
+  }
   #activationsContainer, #webcam-message, #ssl-message {
     text-align: center;
   }
@@ -93,7 +98,7 @@ limitations under the License.
             </template>
           </paper-listbox>
         </paper-dropdown-menu>
-        <paper-toggle-button id="predictswitch" on-click="removeFocusFromButtons">Enable webcam-based keyboard events</paper-toggle-button>
+        <paper-toggle-button id="predictswitch" on-click="removeFocusFromButtons" checked>Enable webcam-based keyboard events</paper-toggle-button>
         <div id="dosbox" tabindex="0"></div>
         <div class="statsholder">
           <div>Rolling average of fps during gameplay:</div>
@@ -126,7 +131,7 @@ limitations under the License.
             <div>[[item.key]]</div>
             <div>[[getKeyText(item.text)]]</div>
             <div class="indicator" id="[[getKeyIndicatorId(index)]]"></div>
-            <paper-toggle-button id="[[getKeyToggleId(index)]]" on-change="toggle">Train(
+            <paper-toggle-button id="[[getKeyToggleId(index)]]" on-change="toggle" class="keytoggle">Train(
                 <span id="[[getKeyCountId(index)]]">0</span>
               )
             </paper-toggle-button>
