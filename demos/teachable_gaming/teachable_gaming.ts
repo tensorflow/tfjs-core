@@ -323,7 +323,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
         const countBox = this.$$('#' + countBoxId) as HTMLElement;
         countBox.innerHTML = String(+countBox.innerHTML + 1);
       });
-    } else if (this.$.predictswitch.checked && this.hasAnyTrainedClass) {
+    } else if (this.hasAnyTrainedClass) {
       this.predicting = true;
       await this.math.scope(async (keep, track) => {
         const image = track(Array3D.fromPixels(this.webcamVideoElement));
@@ -348,26 +348,28 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
           }
           const elem = this.$.dosbox;
 
-          if (results.classIndex !== this.predictedIndex) {
-            if (this.keyEventData[results.classIndex].code >= 0) {
-              // tslint:disable-next-line:no-any
-              const down = document.createEvent('Event') as any;
-              down.initEvent('keydown', true, true);
-              down.key = this.keyEventData[results.classIndex].key;
-              down.keyCode = this.keyEventData[results.classIndex].code;
-              elem.dispatchEvent(down);
-            }
+          if (this.$.predictswitch.checked) {
+            if (results.classIndex !== this.predictedIndex) {
+              if (this.keyEventData[results.classIndex].code >= 0) {
+                // tslint:disable-next-line:no-any
+                const down = document.createEvent('Event') as any;
+                down.initEvent('keydown', true, true);
+                down.key = this.keyEventData[results.classIndex].key;
+                down.keyCode = this.keyEventData[results.classIndex].code;
+                elem.dispatchEvent(down);
+              }
 
-            if (this.predictedIndex !== -1 &&
-                this.keyEventData[this.predictedIndex].code >= 0) {
-              // tslint:disable-next-line: no-any
-              const up = document.createEvent('Event') as any;
-              up.initEvent('keyup', true, true);
-              up.key = this.keyEventData[this.predictedIndex].key;
-              up.keyCode = this.keyEventData[this.predictedIndex].code;
-              elem.dispatchEvent(up);
+              if (this.predictedIndex !== -1 &&
+                  this.keyEventData[this.predictedIndex].code >= 0) {
+                // tslint:disable-next-line: no-any
+                const up = document.createEvent('Event') as any;
+                up.initEvent('keyup', true, true);
+                up.key = this.keyEventData[this.predictedIndex].key;
+                up.keyCode = this.keyEventData[this.predictedIndex].code;
+                elem.dispatchEvent(up);
+              }
+              this.predictedIndex = results.classIndex;
             }
-            this.predictedIndex = results.classIndex;
           }
         }
       });
