@@ -422,7 +422,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
       shape: number[],
       randFunction: () => number,
       dtype?: T): NDArray<T> {
-        const size = util.sizeFromShape(shape);
+    const size = util.sizeFromShape(shape);
     let values;
     if (dtype == null || dtype === 'float32') {
       values = new Float32Array(size);
