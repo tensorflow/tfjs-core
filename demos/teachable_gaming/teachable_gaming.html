@@ -209,13 +209,13 @@ paper-button.reset-button {
               <!-- fps info -->
               <div class="statsholder statsholder-key mdl-typography--caption mld-cell mdl-cell--6-col mdl-cell--1-offset-desktop mdl-cell--4-col-tablet mdl-cell--4-col-phone">
                 <div>Rolling Average of FPS during Gameplay:</div>
-                <div id="predfps statsholder-val"></div>
+                <div id="predfps" class="statsholder-val"></div>
               </div>
               <!-- fps info -->
               <template is="dom-if" if="[[predicting]]">
                 <div class="statsholder mdl-typography--caption mld-cell mdl-cell--6-col mdl-cell--1-offset-desktop mdl-cell--4-col-tablet mdl-cell--4-col-phone">
-                  <div>Rolling average of keystroke prediction performance:</div>
-                  <div id="predperf"></div>
+                  <div>Rolling average of keystroke prediction performance: </div>
+                  <div id="predperf" class="statsholder-val"></div>
                   <div>ms</div>
                 </div>
               </template>
@@ -225,8 +225,6 @@ paper-button.reset-button {
           <paper-dialog id="addkeydialog">
             <h2>Select a key on your keyboard to train.</h2>
           </paper-dialog>
-          <script src="https://cdn.jsdelivr.net/npm/jqlite@0.2.42/jqlite.js"></script>
-          <script type="text/javascript" src="https://js-dos.com/cdn/js-dos-api.js"></script>
           <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
         </template>
       </main>

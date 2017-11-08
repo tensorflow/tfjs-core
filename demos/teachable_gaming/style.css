@@ -35,7 +35,7 @@ head {
 .description-text {
   line-height: 1.7em;
   padding: 48px;
-   font-size:1.2em;
+ font-size: 1.2em;
 }
 
 .credits {
@@ -45,9 +45,9 @@ head {
 }
 
 #imgContainer {
-    background: #fafafa;
-    border: 1px solid #cccccc;
-    margin-bottom: 32px;
+  background: #fafafa;
+  border: 1px solid #cccccc;
+  margin-bottom: 32px;
 }
 
 a {
@@ -69,5 +69,10 @@ a:hover {
 }
 
 .game-picker {
- margin:24px;
+  margin: 24px;
+}
+
+.statsholder-val {
+  font-weight: 500;
+  padding-left: 0.3em;
 }
