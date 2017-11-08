@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D} from './ndarray';
+import {Array1D, Array2D, Array3D} from './ndarray';
 
 // math.tile
 {
@@ -52,6 +52,18 @@ import {Array1D, Array2D} from './ndarray';
       expected = new Float32Array([1, 11, 1, 11, 2, 22, 2, 22, 
           1, 11, 1, 11, 2, 22, 2, 22]);
       test_util.expectArraysClose(t2.getValues(), expected);
+
+      t.dispose();
+    });
+
+    it('3D (tile)', math => {
+      const t = Array3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
+
+      const t2 = math.tile(t, [1, 2, 1]);
+
+      expect(t2.shape).toEqual([2, 4, 2]);
+      test_util.expectArraysClose(t2.getValues(), 
+        new Float32Array([1, 2, 3, 4, 1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7 ,8]));
 
       t.dispose();
     });
