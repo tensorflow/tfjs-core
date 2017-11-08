@@ -79,14 +79,20 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
   private selectedIndex: number;
   private predictedIndex: number;
   private selectedGameIndex = 0;
+  private hasAnyTrainedClass: boolean;
 
   private webcamVideoElement: HTMLVideoElement;
   private addNewKeyDialog: HTMLElement;
   private classifier: KNNImageClassifier;
-  private keyEventData: Array<{code: number, key: string}>;
+  private keyEventData: Array<{code: number, key: string, text?: string}>;
   private dosbox: {onload: (path: string, command: string) => void};
-  private games:
-      Array<{name: string, path: string, command: string, img: string}>;
+  private games: Array<{
+    name: string,
+    path: string,
+    command: string,
+    img: string,
+    keys: Array<{code: number, key: string, text?: string}>
+  }>;
   private static readonly knnKValue = 5;
   private static readonly maxControls = 15;
 
@@ -114,37 +120,64 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
       (this.addNewKeyDialog as any).close();
     });
 
-    this.keyEventData = [
-      {code: -1, key: 'No action'},
-      {code: 38, key: 'ArrowUp'},
-      {code: 40, key: 'ArrowDown'},
-      {code: 37, key: 'ArrowLeft'},
-      {code: 39, key: 'ArrowRight'},
-    ];
+    this.keyEventData = [];
     this.games = [
       {
         name: 'Doom',
         path: 'https://js-dos.com/cdn/upload/DOOM-@evilution.zip',
         command: './DOOM/DOOM.EXE',
-        img: 'https://js-dos.com/cdn/DOOM.png'
+        img: 'https://js-dos.com/cdn/DOOM.png',
+        keys: [
+          {code: -1, key: 'No action'},
+          {code: 38, key: 'ArrowUp', text: 'Forward'},
+          {code: 40, key: 'ArrowDown', text: 'Back'},
+          {code: 37, key: 'ArrowLeft', text: 'Left'},
+          {code: 39, key: 'ArrowRight', text: 'Right'},
+          {code: 87, key: 'KeyW', text: 'Use'},
+          {code: 83, key: 'KeyS', text: 'Fire'},
+          {code: 65, key: 'KeyA', text: 'Strafe left'},
+          {code: 68, key: 'KeyD', text: 'Strafe right'},
+        ],
       },
       {
         name: 'Super Mario',
         path: 'https://js-dos.com/cdn/upload/mario-colin.zip',
         command: './Mario.exe',
-        img: 'https://js-dos.com/cdn/mario.png'
-      },
-      {
-        name: 'Donkey Kong',
-        path: 'https://js-dos.com/cdn/upload/Donkey Kong 1983-@megalanya.zip',
-        command: './dkong.exe',
-        img: 'https://js-dos.com/cdn/Donkey%20Kong%201983.png'
+        img: 'https://js-dos.com/cdn/mario.png',
+        keys: [
+          {code: -1, key: 'No action'},
+          {code: 37, key: 'ArrowLeft', text: 'Left'},
+          {code: 39, key: 'ArrowRight', text: 'Right'},
+          {code: 18, key: 'AltLeft', text: 'Jump'},
+        ],
       },
       {
         name: 'Tetris',
         path: 'https://js-dos.com/cdn/upload/Tetris-neozeed.zip',
         command: './',
-        img: 'https://js-dos.com/cdn/Tetris.png'
+        img: 'https://js-dos.com/cdn/Tetris.png',
+        keys: [
+          {code: -1, key: 'No action'},
+          {code: 55, key: 'Digit7', text: 'Left'},
+          {code: 56, key: 'Digit8', text: 'Right'},
+          {code: 57, key: 'Digit9', text: 'Rotate'},
+          {code: 32, key: 'Space', text: 'Drop'},
+        ],
+      },
+      {
+        name: 'Duke Nukem 3D',
+        path: 'https://js-dos.com/cdn/upload/Duke Nukem 3d-@digitalwalt.zip',
+        command: './DUKE3D/DUKE3D.EXE',
+        img: 'https://js-dos.com/cdn/Duke%20Nukem%203d.png',
+        keys: [
+          {code: -1, key: 'No action'},
+          {code: 38, key: 'ArrowUp', text: 'Forward'},
+          {code: 40, key: 'ArrowDown', text: 'Back'},
+          {code: 37, key: 'ArrowLeft', text: 'Left'},
+          {code: 39, key: 'ArrowRight', text: 'Right'},
+          {code: 17, key: 'ControlRight', text: 'Fire'},
+          {code: 65, key: 'KeyA', text: 'Jump'},
+        ],
       },
     ];
     this.selectedGameIndex = 0;
@@ -174,6 +207,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     this.classifier.load();
     this.predictedIndex = -1;
     this.selectedIndex = -1;
+    this.hasAnyTrainedClass = false;
 
     // Setup performance tracking vars.
     this.animateLoopIndex = 0;
@@ -201,12 +235,17 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     return keyEventData.length > TeachableGamingDemo.maxControls;
   }
 
+  removeFocusFromButtons() {
+    this.$.dosbox.focus();
+  }
+
   toggle(event: Event) {
     const target = event.target as HTMLInputElement;
     const index = this.getKeyIndexFromId(target.id);
 
-    const toggles = document.querySelectorAll('paper-toggle-button');
+    const toggles = document.querySelectorAll('.keytoggle');
     if (target.checked) {
+      this.hasAnyTrainedClass = true;
       this.selectedIndex = index;
       for (let i = 0; i < toggles.length; i++) {
         if (event.target !== toggles[i]) {
@@ -216,6 +255,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     } else {
       this.selectedIndex = -1;
     }
+    this.removeFocusFromButtons();
   }
 
   clear(event: Event) {
@@ -225,6 +265,9 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     this.classifier.clearClass(index);
     const countBox = this.$$('#count_' + String(index));
     countBox.innerHTML = '0';
+    this.removeFocusFromButtons();
+    this.hasAnyTrainedClass =
+        this.classifier.getClassExampleCount().some(count => count !== 0);
   }
 
   private isDosboxReady() {
@@ -236,6 +279,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     if (!this.isDosboxReady()) {
       return;
     }
+    this.keyEventData = this.games[this.selectedGameIndex].keys.slice();
     this.$.dosbox.innerHTML = '';
     this.dosbox = new Dosbox({
       id: 'dosbox',
@@ -279,7 +323,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
         const countBox = this.$$('#' + countBoxId) as HTMLElement;
         countBox.innerHTML = String(+countBox.innerHTML + 1);
       });
-    } else if (this.$.predictswitch.checked) {
+    } else if (this.hasAnyTrainedClass) {
       this.predicting = true;
       await this.math.scope(async (keep, track) => {
         const image = track(Array3D.fromPixels(this.webcamVideoElement));
@@ -304,26 +348,28 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
           }
           const elem = this.$.dosbox;
 
-          if (results.classIndex !== this.predictedIndex) {
-            if (this.keyEventData[results.classIndex].code >= 0) {
-              // tslint:disable-next-line:no-any
-              const down = document.createEvent('Event') as any;
-              down.initEvent('keydown', true, true);
-              down.key = this.keyEventData[results.classIndex].key;
-              down.keyCode = this.keyEventData[results.classIndex].code;
-              elem.dispatchEvent(down);
-            }
+          if (this.$.predictswitch.checked) {
+            if (results.classIndex !== this.predictedIndex) {
+              if (this.keyEventData[results.classIndex].code >= 0) {
+                // tslint:disable-next-line:no-any
+                const down = document.createEvent('Event') as any;
+                down.initEvent('keydown', true, true);
+                down.key = this.keyEventData[results.classIndex].key;
+                down.keyCode = this.keyEventData[results.classIndex].code;
+                elem.dispatchEvent(down);
+              }
 
-            if (this.predictedIndex !== -1 &&
-                this.keyEventData[this.predictedIndex].code >= 0) {
-              // tslint:disable-next-line: no-any
-              const up = document.createEvent('Event') as any;
-              up.initEvent('keyup', true, true);
-              up.key = this.keyEventData[this.predictedIndex].key;
-              up.keyCode = this.keyEventData[this.predictedIndex].code;
-              elem.dispatchEvent(up);
+              if (this.predictedIndex !== -1 &&
+                  this.keyEventData[this.predictedIndex].code >= 0) {
+                // tslint:disable-next-line: no-any
+                const up = document.createEvent('Event') as any;
+                up.initEvent('keyup', true, true);
+                up.key = this.keyEventData[this.predictedIndex].key;
+                up.keyCode = this.keyEventData[this.predictedIndex].code;
+                elem.dispatchEvent(up);
+              }
+              this.predictedIndex = results.classIndex;
             }
-            this.predictedIndex = results.classIndex;
           }
         }
       });
@@ -352,6 +398,13 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
 
   getKeyCountId(index: number) {
     return `count_${index}`;
+  }
+
+  getKeyText(text: string) {
+    if (!text) {
+      return '-';
+    }
+    return '(' + text + ')';
   }
 
   // tslint:disable-next-line:no-any

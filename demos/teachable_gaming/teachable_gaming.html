@@ -136,7 +136,6 @@ paper-button.reset-button {
           </div>
 
         </div>
-
         <!--Teachable Gaming Demo-->
         <!--TG step 1-->
         <div class="holder mdl-grid">
@@ -188,7 +187,8 @@ paper-button.reset-button {
                 <div class="controls">
                   <template is="dom-repeat" items="[[keyEventData]]">
                     <div class="control mdl-typography--body-1">
-                      [[item.key]]
+                      <div>[[item.key]]</div>
+                      <div>[[getKeyText(item.text)]]</div>
                       <div class="indicator" id="[[getKeyIndicatorId(index)]]"></div>
                       <paper-toggle-button class="mdl-typography--caption" id="[[getKeyToggleId(index)]]" on-change="toggle">Train (<span id="[[getKeyCountId(index)]]">0</span>)</paper-toggle-button>
                       <paper-button class="reset-button" id="[[getKeyClearId(index)]]" on-click="clear">Reset</paper-button>
