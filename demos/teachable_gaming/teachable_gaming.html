@@ -46,7 +46,7 @@ limitations under the License.
   padding: 32px;
   border: 1px solid #fafafa;
   margin: 4px;
-  border-radius:2px;
+  border-radius: 2px;
   background: rgba(235, 232, 239,0.5);
 }
 
@@ -56,12 +56,12 @@ limitations under the License.
 .indicator {
   height: 10px;
   width: 100%;
-  margin-bottom:8px;
-  margin-top:4px;
+  margin-bottom: 8px;
+  margin-top: 4px;
   background-color: lightgray;
 }
 .holder {
-  display:flex;
+  display: flex;
 }
 #predictswitch {
   margin-bottom: 10px;
@@ -72,22 +72,22 @@ limitations under the License.
   margin: 12px;
 }
 ::content .dosbox-start {
-  padding:12px;
-  background:rgba(255,255,255,0.9);
+  padding: 12px;
+  background: rgba(255,255,255,0.9);
   margin: auto 50px;
   border-radius: 5px;
-  color:#777777;
-  border:1px solid #cccccc;
-  font-weight:300;
-  text-decoration:none;
+  color: #777777;
+  border: 1px solid #cccccc;
+  font-weight: 300;
+  text-decoration: none;
 }
 .statsholder {
   display: flex;
   padding: 14px;
   background: #fafafa;
-  border:1px solid #cccccc;
-  border-radius:2px;
-  color:#777777;
+  border: 1px solid #cccccc;
+  border-radius: 2px;
+  color: #777777;
 }
 
 paper-button.reset-button {
@@ -113,25 +113,21 @@ paper-button.reset-button {
           </div>
           <div class="mdl-layout-spacer  mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
         </div>
-
         <!--Body-->
         <div class="mdl-grid mdl-grid--no-spacing description">
           <div class="mld-cell mdl-cell--1-offset-desktop mdl-cell--4-col mdl-cell--6-col-tablet mdl-cell--4-col-phone mdl-typography--subhead description-text">
             Teachable gaming lets you control classic DOS games through webcam gestures instead of (or in conjunction with)
             keyboard strokes. Train a local neural network in your browser to invoke any keystroke by wiggling your fingers, pointing in different directions, or using hand gestures. <br> <br> For even more fun, get your friends together and choreograph an ensemble to invoke different keystrokes!
           </div>
-
           <div class="mld-cell mdl-cell--2-col mdl-cell--8-col-tablet mdl-cell--4-col-phone mdl-typography--body-1 credits">
             Inspired by <a href="https://teachablemachine.withgoogle.com/"</a>Teachable Machine</a>.<br>
             Games provided by <a href="https://js-dos.com/"</a>js-dos</a>.<br>
             Check out <a href="https://github.com/PAIR-code/deeplearnjs/tree/master/demos/teachable_gaming">the code behind this demo</a>.
           </div>
-
         </div>
         <!--Teachable Gaming Demo-->
         <!--TG step 1-->
         <div class="holder mdl-grid">
-
             <!--Step 1-->
             <div class="mld-cell mdl-cell--8-col mdl-cell--1-offset-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone mdl-typography--headline tutorial">
               1. Pick a game to play
@@ -147,15 +143,12 @@ paper-button.reset-button {
                   </template>
                 </paper-listbox>
               </paper-dropdown-menu>
-
             </div>
             <!-- Step 2 -->
             <div class="mld-cell mdl-cell--8-col mdl-cell--1-offset-desktop mdl-cell--8-col-tablet mdl-cell--4-col-phone mdl-typography--headline tutorial">
               2. Train with your webcam
             </div>
-
             <!-- training controls -->
-            
               <div class="controller mdl-cell--1-offset-desktop">
                 <!-- webcam box -->
                 <div id="inputContainer">
@@ -176,24 +169,16 @@ paper-button.reset-button {
                   <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored" on-click="addNewKey" disabled="[[shouldDisableAddNewKey(keyEventData)]]"><i class="material-icons">add</i></button>
                 </div>
               </div>
-            
-
               <!-- Step 3 -->
               <div class="mld-cell mdl-cell--8-col mdl-cell--1-offset-desktop mdl-cell--10-col-tablet mdl-cell--4-col-phone mdl-typography--headline tutorial">
                 3. Start Playing!
               </div>
-
               <!-- Enable Webcam control -->
               <paper-toggle-button id="predictswitch" class="mdl-typography--body-2 mld-cell mdl-cell--10-col mdl-cell--1-offset-desktop mdl-cell--10-col-tablet mdl-cell--4-col-phone mdl-typography--body-1">
               Start using the webcam to control the game!
               </paper-toggle-button>
-
-
               <!-- js-dos screen -->
               <div id="dosbox" class="mld-cell mdl-cell--10-col mdl-cell--1-offset-desktop mdl-cell--10-col-tablet mdl-cell--4-col-phone mdl-typography--body-1"></div>
-              
-
-
               <!-- fps info -->
               <div class="statsholder statsholder-key mdl-typography--caption mld-cell mdl-cell--6-col mdl-cell--1-offset-desktop mdl-cell--4-col-tablet mdl-cell--4-col-phone">
                 <div>Rolling Average of FPS during Gameplay:</div>

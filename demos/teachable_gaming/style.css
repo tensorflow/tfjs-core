@@ -26,16 +26,16 @@ head {
 }
 
 .banner-subtitle {
-  padding-top:36px;
-  width:80%;
-  color:#fff1ff;
+  padding-top: 36px;
+  width: 80%;
+  color: #fff1ff;
   font-weight: 300;
 }
 
 .description-text {
   line-height: 1.7em;
   padding: 48px;
- font-size: 1.2em;
+  font-size: 1.2em;
 }
 
 .credits {
@@ -51,17 +51,17 @@ head {
 }
 
 a {
-  color:#38006b;
+  color: #38006b;
   text-decoration: none;
 }
 a:hover {
-  color:#9c4dcc;
-  text-decoration:underline;
+  color: #9c4dcc;
+  text-decoration: underline;
 }
 
 .tutorial {
-  padding:12px;
-  margin-top:24px;
+  padding: 12px;
+  margin-top: 24px;
 }
 .reset-button {
   margin-top: 24px;
