@@ -422,8 +422,15 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
       shape: number[],
       randFunction: () => number,
       dtype?: T): NDArray<T> {
-    const size = util.sizeFromShape(shape);
-    const values = new Float32Array(size);
+        const size = util.sizeFromShape(shape);
+    let values;
+    if (dtype == null || dtype === 'float32') {
+      values = new Float32Array(size);
+    } else if (dtype === 'int32') {
+      values = new Int32Array(size);
+    } else if (dtype === 'bool') {
+      values = new Uint8Array(size);
+    }
     for (let i = 0; i < size; i++) {
       values[i] = randFunction();
     }
@@ -441,10 +448,10 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   static randUniform<T extends keyof DataTypes = keyof DataTypes>(
-    shape: number[],
-    a: number,
-    b: number,
-    dtype?: T): NDArray<T> {
+      shape: number[],
+      a: number,
+      b: number,
+      dtype?: T): NDArray<T> {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype);
   }
 }
@@ -657,7 +664,8 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
       a: number,
       b: number,
       dtype?: T): Array2D<T> {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array2D<T>;
+    return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
+        Array2D<T>;
   }
 }
 
@@ -745,7 +753,8 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
       a: number,
       b: number,
       dtype?: T): Array3D<T> {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array3D<T>;
+    return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
+        Array3D<T>;
   }
 }
 
@@ -843,7 +852,8 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
       a: number,
       b: number,
       dtype?: T): Array4D<T> {
-    return NDArray.rand(shape, () => util.randUniform(a, b)) as Array4D<T>;
+    return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
+        Array4D<T>;
   }
 }
 
