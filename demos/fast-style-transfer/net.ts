@@ -18,16 +18,21 @@
 import {Scalar, Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMathGPU} from 'deeplearn';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
-//    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
-    document.URL.substr(0,document.URL.lastIndexOf('/')) + '/ckpts/';
+    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/transformnet/';
 
 export class TransformNet implements Model {
   private variables: {[varName: string]: NDArray};
   private variableDictionary: {[styleName: string]: 
     {[varName: string]: NDArray}};
+  private timesScalar: NDArray;
+  private plusScalar: NDArray;
+  private epsilonScalar: NDArray;
 
   constructor(private math: NDArrayMathGPU, private style: string) {
     this.variableDictionary = {};
+    this.timesScalar = Scalar.new(150);
+    this.plusScalar = Scalar.new(255./2);
+    this.epsilonScalar = Scalar.new(1e-3);
   }
 
   setStyle(style: string) {
@@ -40,7 +45,6 @@ export class TransformNet implements Model {
    */
   async load(): Promise<void> {
     if (this.variableDictionary[this.style] == null) {
-      console.log('downloading weights for first time');
       const checkpointLoader =
           new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + this.style + '/');
       this.variableDictionary[this.style] = 
@@ -72,8 +76,8 @@ export class TransformNet implements Model {
       const convT2 = this.convTransposeLayer(convT1, 32, 2, 42);
       const convT3 = this.convLayer(convT2, 1, false, 45);
       const outTanh = this.math.tanh(convT3);
-      const scaled = this.math.scalarTimesArray(Scalar.new(150), outTanh);
-      const shifted = this.math.scalarPlusArray(Scalar.new(255./2), scaled);
+      const scaled = this.math.scalarTimesArray(this.timesScalar, outTanh);
+      const shifted = this.math.scalarPlusArray(this.plusScalar, scaled);
       const clamped = this.math.clip(shifted, 0, 255);
       const normalized = this.math.divide(
           clamped, Scalar.new(255.)) as Array3D;
@@ -130,7 +134,7 @@ export class TransformNet implements Model {
     const sigmaSq = moments.variance as Array3D;
     const shift = this.variables[this.varName(varId)] as Array1D;
     const scale = this.variables[this.varName(varId + 1)] as Array1D;
-    const epsilon = Scalar.new(1e-3);
+    const epsilon = this.epsilonScalar;
     const normalized = this.math.divide(this.math.sub(input, mu), 
       this.math.sqrt(this.math.add(sigmaSq, epsilon)));
     const shifted = this.math.add(this.math.multiply(scale, normalized), shift);

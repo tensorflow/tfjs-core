@@ -256,7 +256,6 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
   }
 
   async runInference() {
-    
     await this.math.scope(async (keep, track) => {
 
       const preprocessed = track(Array3D.fromPixels(this.contentImgElement));
