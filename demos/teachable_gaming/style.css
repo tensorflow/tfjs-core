@@ -76,3 +76,7 @@ a:hover {
   font-weight: 500;
   padding-left: 0.3em;
 }
+
+#predictswitch {
+  padding-left: 12px;
+}
