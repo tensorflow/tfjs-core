@@ -84,7 +84,7 @@ export class AdamaxOptimizer extends Optimizer {
             this.one, oldVariable,
             math.divide(this.c, math.subtract(this.one, this.accB1)),
             math.divide(newFirstMoment, 
-              math.add(newWeightedInfNorm, this.eps)));
+              math.add(this.eps, newWeightedInfNorm)));
 
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
@@ -97,7 +97,10 @@ export class AdamaxOptimizer extends Optimizer {
         oldFirstMoment.dispose();
         oldWeightedInfNorm.dispose();
       });
+      // Make sure to dispose old values.
+      const oldAccB1 = this.accB1;
       this.accB1 = keep(math.multiply(this.accB1, this.b1));
+      oldAccB1.dispose();
     });
 
     this.variableGradients.dispose();
