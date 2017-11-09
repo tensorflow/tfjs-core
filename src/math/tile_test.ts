@@ -68,6 +68,30 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       t.dispose();
     });
 
+    it('bool (tile)', math => {
+      const t = Array1D.new([true, false, true], 'bool');
+
+      const t2 = math.tile(t, [2]);
+
+      expect(t2.shape).toEqual([6]);
+      expect(t2.dtype).toBe('bool');
+      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, 1, 1, 0, 1]));
+
+      t.dispose();
+    });
+
+    it('uint (tile)', math => {
+      const t = Array1D.new([1, 2, 5], 'int32');
+
+      const t2 = math.tile(t, [2]);
+
+      expect(t2.shape).toEqual([6]);
+      expect(t2.dtype).toBe('int32');
+      expect(t2.getValues()).toEqual(new Int32Array([1, 2, 5, 1, 2, 5]));
+
+      t.dispose();
+    });
+
     it('propagates NaNs', math => {
       const t = Array1D.new([1, 2, NaN]);
 

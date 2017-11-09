@@ -228,8 +228,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected tileInternal<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, multiples: number[]): T {
-    const program = new TileProgram(a.shape, multiples);
+      a: T, reps: number[]): T {
+    const program = new TileProgram(a.shape, reps);
     return this.compileAndRun(program, [a]);
   }
 

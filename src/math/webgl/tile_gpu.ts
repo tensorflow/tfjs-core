@@ -23,10 +23,10 @@ export class TileProgram implements GPGPUProgram {
   userCode: string;
   rank: number;
 
-  constructor(aShape: number[], multiples: number[]) {
+  constructor(aShape: number[], reps: number[]) {
     const outputShape: number[] = new Array(aShape.length);
     for (let i = 0; i < outputShape.length; i++) {
-      outputShape[i] = aShape[i] * multiples[i];
+      outputShape[i] = aShape[i] * reps[i];
     }
     this.outputShape = outputShape;
     this.rank = outputShape.length;
@@ -34,10 +34,10 @@ export class TileProgram implements GPGPUProgram {
     const sourceCoords = getSourceCoords(aShape);
 
     this.userCode = `
-    void main() {
-      ${dtype} resRC = getOutputCoords();
-      setOutput(getA(${sourceCoords}));
-    }
+      void main() {
+        ${dtype} resRC = getOutputCoords();
+        setOutput(getA(${sourceCoords}));
+      }
     `;
   }
 }
