@@ -45,9 +45,11 @@ head {
 }
 
 #imgContainer {
-  background: #fafafa;
+  background-color: #fafafa;
   border: 1px solid #cccccc;
   margin-bottom: 32px;
+  background: url("Webcam_Error.svg") center 100%;
+  
 }
 
 a {
@@ -79,4 +81,10 @@ a:hover {
 
 #predictswitch {
   padding-left: 12px;
+}
+
+.performance-note {
+  padding-left: 48px;
+  color: #888888;
+  font-weight: 300;
 }
