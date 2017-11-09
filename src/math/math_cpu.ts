@@ -895,7 +895,31 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected gatherInternal<D extends keyof DataTypes, T extends NDArray<D>>(
        a: T, indices: number[], axis: number): T {
-    
+    const newShape: number[] = a.shape.slice();
+    newShape[axis] = indices.length;
+    let dtype;
+    if (a.dtype === 'float32') {
+      dtype = Float32Array;
+    } else if (a.dtype === 'int32') {
+      dtype = Int32Array;
+    } else if (a.dtype === 'bool') {
+      dtype = Uint8Array;
+    } else {
+      throw new Error(`Dtype ${a.dtype} not supported for gather`);
+    }
+    const resultValues = new dtype(util.sizeFromShape(newShape));
+    const result = NDArray.make(newShape, {values: resultValues}, a.dtype) as T;
+    const values = a.getValues();
+    for (let i = 0; i < result.size; ++i) {
+      const newLoc = result.indexToLoc(i);
+
+      const originalLoc: number[] = newLoc.slice();
+      originalLoc[axis] = indices[newLoc[axis]];
+
+      const originalIndex = a.locToIndex(originalLoc);
+      resultValues[i] = values[originalIndex];
+    }
+    return result;
   }
 
   private pool(x: Array3D, convInfo: ConvInfo, poolType: 'max'|'min'|'avg') {
