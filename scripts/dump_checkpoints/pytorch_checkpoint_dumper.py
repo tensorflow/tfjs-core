@@ -31,11 +31,7 @@ import string
 
 import numpy as np
 
-try:
-  import torch
-except ImportError, e:
-  import logging
-  logging.warning('PyTorch is not installed')
+import torch
 
 from checkpoint_dumper import CheckpointDumper
 

@@ -28,11 +28,7 @@ import json
 import os
 import re
 
-try:
-  import tensorflow as tf
-except ImportError, e:
-  import logging
-  logging.warning('Tensorflow is not installed')
+import tensorflow as tf
 
 from checkpoint_dumper import CheckpointDumper
 
