@@ -59,6 +59,42 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       t.dispose();
     });
+
+    it('bool (gather)', math => {
+      const t = Array1D.new([true, false, true], 'bool');
+
+      const t2 = math.gather(t, [0, 2, 0, 1], 0);
+
+      expect(t2.shape).toEqual([4]);
+      expect(t2.dtype).toBe('bool');
+      expect(t2.getValues()).toEqual(new Uint8Array([1, 1, 1, 0]));
+
+      t.dispose();
+    });
+
+    it('uint (gather)', math => {
+      const t = Array1D.new([1, 2, 5], 'int32');
+
+      const t2 = math.gather(t, [0, 2, 0, 1], 0);
+
+      expect(t2.shape).toEqual([4]);
+      expect(t2.dtype).toBe('int32');
+      expect(t2.getValues()).toEqual(new Int32Array([1, 5, 1, 2]));
+
+      t.dispose();
+    });
+
+    it('propagates NaNs', math => {
+      const t = Array1D.new([1, 2, NaN]);
+
+      const t2 = math.gather(t, [0, 2, 0, 1], 0);
+
+      expect(t2.shape).toEqual([4]);
+      test_util.expectArraysClose(t2.getValues(), 
+        new Float32Array([1, NaN, 1, 2]));
+
+      t.dispose();
+    });
   };
 
   test_util.describeMathCPU('gather', [tests]);
