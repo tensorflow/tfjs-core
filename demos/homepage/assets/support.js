@@ -79,7 +79,7 @@ function inializePolymerPage() {
   document.addEventListener('WebComponentsReady', function(event) {
     if (isNotSupported()) {
       const title = `This device is not yet supported`;
-      const content = `z
+      const content = `
         We do not yet support your device, please try to load this demo on a desktop computer with Chrome.
         We are working hard to add support for other devices. Check back soon!
       `;
