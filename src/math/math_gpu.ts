@@ -47,6 +47,7 @@ import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import {TransposeProgram} from './webgl/transpose_gpu';
+import {GatherProgram} from './webgl/gather_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -234,7 +235,9 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected gatherInternal<D extends keyof DataTypes, T extends NDArray<D>>(
       a: T, indices: number[], axis: number): T {
-    throw new Error('GPU gather not yet implemented!');
+    const indicesArray = Array1D.new(indices, 'int32');
+    const program = new GatherProgram(a.shape, indices, axis);
+    return this.compileAndRun(program, [a, indicesArray]);
   }
 
   protected sumInternal<T extends keyof DataTypes>(
