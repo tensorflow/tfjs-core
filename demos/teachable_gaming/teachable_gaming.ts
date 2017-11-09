@@ -194,7 +194,11 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
       navigator.getUserMedia(
           {video: true},
           (stream) => {
-            this.webcamVideoElement.src = window.URL.createObjectURL(stream);
+            try {
+              this.webcamVideoElement.srcObject = stream;
+            } catch (error) {
+              this.webcamVideoElement.src = window.URL.createObjectURL(stream);
+            }
           },
           (error) => {
             console.warn(error);
