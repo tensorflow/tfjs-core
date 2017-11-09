@@ -1,4 +1,4 @@
-# SqueezeNet model
+# KNN image classifier model
 
 This package contains a standalone K-nearest neighbors (KNN) image classifier
 model.
