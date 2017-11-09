@@ -24,14 +24,18 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
-import torch
-
 import os
 import re
 import json
 import string
 
 import numpy as np
+
+try:
+  import torch
+except ImportError, e:
+  import logging
+  logging.warning('PyTorch is not installed')
 
 from checkpoint_dumper import CheckpointDumper
 
