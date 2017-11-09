@@ -883,7 +883,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     } else if (a.dtype === 'bool') {
       dtype = Uint8Array;
     } else {
-      throw new Error('Dtype ${a.dtype} not supported for tile');
+      throw new Error(`Dtype ${a.dtype} not supported for tile`);
     }
     const resultValues = new dtype(util.sizeFromShape(newShape));
     const result = NDArray.make(newShape, {values: resultValues}, a.dtype) as T;
