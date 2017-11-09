@@ -15,19 +15,26 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, CheckpointLoader, NDArray, NDArrayMath} from '../../src';
-import {Model} from '../model';
+import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
+
+import {IMAGENET_CLASSES} from './imagenet_classes';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
     'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
 
-export class SqueezeNet extends Model {
+export class SqueezeNet implements Model {
   private variables: {[varName: string]: NDArray};
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
 
   constructor(private math: NDArrayMath) {
-    super();
+    // TODO(nsthorat): This awful hack is because we need to share the global
+    // GPGPU between deeplearn loaded from standalone as well as the internal
+    // deeplearn that gets compiled as part of this model. Remove this once we
+    // decouple NDArray from storage mechanism.
+    initializeGPU(
+        (this.math as NDArrayMathGPU).getGPGPUContext(),
+        (this.math as NDArrayMathGPU).getTextureManager());
   }
 
   /**
@@ -115,13 +122,6 @@ export class SqueezeNet extends Model {
     return {namedActivations, logits: avgpool10};
   }
 
-  dispose() {
-    this.preprocessOffset.dispose();
-    for (const varName in this.variables) {
-      this.variables[varName].dispose();
-    }
-  }
-
   private fireModule(input: Array3D, fireId: number) {
     const y1 = this.math.conv2d(
         input, this.variables[`fire${fireId}/squeeze1x1_W:0`] as Array4D,
@@ -138,5 +138,33 @@ export class SqueezeNet extends Model {
     const right2 = this.math.relu(right1);
 
     return this.math.concat3D(left2, right2, 2);
+  }
+
+  /**
+   * Get the topK classes for pre-softmax logits. Returns a map of className
+   * to softmax normalized probability.
+   *
+   * @param logits Pre-softmax logits array.
+   * @param topK How many top classes to return.
+   */
+  async getTopKClasses(logits: Array1D, topK: number):
+      Promise<{[className: string]: number}> {
+    const predictions = this.math.softmax(logits);
+    const topk = new NDArrayMathCPU().topK(predictions, topK);
+    const topkIndices = await topk.indices.data();
+    const topkValues = await topk.values.data();
+
+    const topClassesToProbability: {[className: string]: number} = {};
+    for (let i = 0; i < topkIndices.length; i++) {
+      topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] = topkValues[i];
+    }
+    return topClassesToProbability;
+  }
+
+  dispose() {
+    this.preprocessOffset.dispose();
+    for (const varName in this.variables) {
+      this.variables[varName].dispose();
+    }
   }
 }

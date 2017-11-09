@@ -35,10 +35,10 @@ export class ReduceProgram implements GPGPUProgram {
     const inSize = reduceInfo.inSize;
     this.outputShape = [batchSize, reduceInfo.outSize];
 
-    const isSumPool = reduceType === 'sum';
+    const isReduceSum = reduceType === 'sum';
 
     let initializationValue = '0.0';
-    if (!isSumPool) {
+    if (!isReduceSum) {
       if (reduceType === 'min') {
         initializationValue = '1.0 / 0.0';
       } else {
@@ -54,95 +54,80 @@ export class ReduceProgram implements GPGPUProgram {
       returnValue = `sumValue`;
     }
 
-    const filterWidthNearestVec4 = Math.floor(filterWidth / 4) * 4;
-    const filterWidthVec4Remainder = filterWidth % 4;
+    const windowSizeNearestVec4 = Math.floor(windowSize / 4) * 4;
+    const windowSizeVec4Remainder = windowSize % 4;
 
     const updateSnippet = `
+      // TODO(dsmilkov): Move this check only for min/max and not reduceSum.
       if (hasNaN(values)) {
         setOutput(getNaN(values));
         return;
       }
-      if (${isSumPool}) {
-        avgValue += dot(values, ones);
+      if (${isReduceSum}) {
+        sumValue += dot(values, ones);
       } else {
         minMaxValue = ${compareOp}(values, minMaxValue);
       }
     `;
 
     this.userCode = `
-      const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
-      const ivec2 pads = ivec2(${padTop}, ${padLeft});
       const float initializationValue = ${initializationValue};
       const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
 
-      float getValue(int xR, int xC, int d) {
-        if (xC < 0 || xC >= ${xNumCols}) {
+      float getValue(int batch, int inIdx) {
+        // TODO(dsmilkov): Don't check if inSize is multiple of windowSize.
+        if (inIdx < 0 || inIdx >= ${inSize}) {
           return initializationValue;
         }
-        return getX(xR, xC, d);
+        return getX(batch, inSize);
       }
 
       void main() {
-        ivec3 coords = getOutputCoords();
-        int d = coords.z;
+        ivec2 coords = getOutputCoords();
+        int batch = coords[0];
+        int outIdx = coords[1];
+        int inOffset = outIdx * ${windowSize};
 
-        ivec2 xRCCorner = coords.xy * strides - pads;
-        int xRCorner = xRCCorner.x;
-        int xCCorner = xRCCorner.y;
-
-        // max/min x(?, ?, d) to get y(yR, yC, d).
-        // ? = to be determined
         vec4 minMaxValue = vec4(${initializationValue});
-        float avgValue = 0.0;
+        float sumValue = 0.0;
 
-        for (int wR = 0; wR < ${filterHeight}; wR++) {
-          int xR = xRCorner + wR;
+        for (int i = 0; i < ${windowSizeNearestVec4}; i += 4) {
+          int inIdx = inOffset + i;
+          vec4 values = vec4(
+            getValue(batch, inIdx),
+            getValue(batch, inIdx + 1),
+            getValue(batch, inIdx + 2),
+            getValue(batch, inIdx + 3)
+          );
 
-          if (xR < 0 || xR >= ${xNumRows}) {
-            continue;
-          }
+          ${updateSnippet}
+        }
 
-          for (int wC = 0; wC < ${filterWidthNearestVec4}; wC += 4) {
-            int xC = xCCorner + wC;
-
-            vec4 values = vec4(
-              getValue(xR, xC, d),
-              getValue(xR, xC + 1, d),
-              getValue(xR, xC + 2, d),
-              getValue(xR, xC + 3, d)
-            );
-
-            ${updateSnippet}
-          }
-
-          int xC = xCCorner + ${filterWidthNearestVec4};
-          if (${filterWidthVec4Remainder === 1}) {
-            vec4 values = vec4(
-              getValue(xR, xC, d),
-              initializationValue,
-              initializationValue,
-              initializationValue
-            );
-            ${updateSnippet}
-          } else if (${filterWidthVec4Remainder === 2}) {
-            vec4 values = vec4(
-              getValue(xR, xC, d),
-              getValue(xR, xC + 1, d),
-              initializationValue,
-              initializationValue
-            );
-
-            ${updateSnippet}
-          } else if (${filterWidthVec4Remainder === 3}) {
-            vec4 values = vec4(
-              getValue(xR, xC, d),
-              getValue(xR, xC + 1, d),
-              getValue(xR, xC + 2, d),
-              initializationValue
-            );
-
-            ${updateSnippet}
-          }
+        int inIdx = inOffset + ${windowSizeNearestVec4};
+        if (${windowSizeVec4Remainder === 1}) {
+          vec4 values = vec4(
+            getValue(batch, inIdx),
+            initializationValue,
+            initializationValue,
+            initializationValue
+          );
+          ${updateSnippet}
+        } else if (${windowSizeVec4Remainder === 2}) {
+          vec4 values = vec4(
+            getValue(batch, inIdx),
+            getValue(batch, inIdx + 1),
+            initializationValue,
+            initializationValue
+          );
+          ${updateSnippet}
+        } else if (${windowSizeVec4Remainder === 3}) {
+          vec4 values = vec4(
+            getValue(batch, inIdx),
+            getValue(batch, inIdx + 1),
+            getValue(batch, inIdx + 2),
+            initializationValue
+          );
+          ${updateSnippet}
         }
         setOutput(${returnValue});
       }
