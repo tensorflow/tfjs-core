@@ -943,6 +943,24 @@ export abstract class NDArrayMath {
   protected abstract transposeInternal<
       D extends keyof DataTypes, T extends NDArray<D>>(a: T, perm: number[]): T;
 
+  /**
+   * Gather slices from array `a`'s axis `axis` according to `indices`
+   *
+   * @param a The array to transpose.
+   * @param perm Optional. The permutation of the dimensions of a.
+   */
+  gather<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, indices: number[], axis?: number): T {
+    if (axis == null) {
+      axis = 0;
+    }
+    return this.executeOp('gather', () => this.gatherInternal(
+      a, indices, axis));
+  }
+  protected abstract gatherInternal<
+      D extends keyof DataTypes, T extends NDArray<D>>(a: T,
+        indices: number[], axis: number): T;
+
   /** @deprecated Use math.add(c, A) instead. */
   scalarPlusArray<T extends NDArray>(c: Scalar, a: T): T {
     util.assert(

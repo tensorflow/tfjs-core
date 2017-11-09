@@ -232,6 +232,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]);
   }
 
+  protected gatherInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, indices: number[], axis: number): T {
+    throw new Error('GPU gather not yet implemented!');
+  }
+
   protected sumInternal<T extends keyof DataTypes>(
       a: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
     const program = new ReduceSumProgram(a.shape, axes);

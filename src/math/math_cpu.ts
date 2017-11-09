@@ -893,6 +893,11 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
+  protected gatherInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+       a: T, indices: number[], axis: number): T {
+    
+  }
+
   private pool(x: Array3D, convInfo: ConvInfo, poolType: 'max'|'min'|'avg') {
     const [xRows, xCols, depth] = x.shape;
     const strideHeight = convInfo.strideHeight;
