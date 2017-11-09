@@ -18,7 +18,8 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D, Scalar} from './ndarray';
+import {NDArrayMathGPU} from './math_gpu';
+import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
 // math.min
 {
@@ -448,6 +449,32 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
+
+describe('timing', () => {
+  it('timing', async () => {
+    const math = new NDArrayMathGPU();
+    const input = Array2D.randUniform([100, 1000 * 1000], -1, 1);
+
+    let output: NDArray;
+    const benchmark = () => {
+      math.scope(() => {
+        output = math.sum(input);
+      });
+    };
+
+    // Warmup.
+    await math.getGPGPUContext().runQuery(benchmark);
+    const totalTime = await math.getGPGPUContext().runQuery(benchmark);
+
+    console.log('Summing took', totalTime.toFixed(1), 'ms');
+    input.dispose();
+    output.dispose();
+    math.dispose();
+
+    return totalTime;
+  });
+
+});
 
 // math.mean
 {

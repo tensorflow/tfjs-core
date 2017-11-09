@@ -15,11 +15,14 @@
  * =============================================================================
  */
 
+import * as util from '../util';
+import * as axis_util from './axis_util';
 import {ConvInfo} from './conv_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import * as reduce_util from './reduce_util';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -42,7 +45,7 @@ import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
-import {ReduceSumProgram} from './webgl/reducesum_gpu';
+import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {TextureManager} from './webgl/texture_manager';
@@ -234,10 +237,35 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected sumInternal<T extends keyof DataTypes>(
       a: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
-    const program = new ReduceSumProgram(a.shape, axes);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(a.shape, axes);
+    const batchSize = util.sizeFromShape(outShape);
+    const inSize = util.sizeFromShape(reduceShape);
+    const windowSize = reduce_util.computeOptimalWindowSize(inSize);
+    console.log(windowSize);
+    const reduceInfo = {windowSize, inSize, batchSize};
+    const program = new ReduceProgram(reduceInfo, 'sum');
+    a = a.reshape([-1, inSize]);
     const output =
         this.makeOutputArray(program.outputShape, SumTypesMap[a.dtype]);
-    return this.compileAndRun(program, [a], output);
+    this.compileAndRun(program, [a], output);
+
+    // No need to run another GPGPU program.
+    if (output.size === 1) {
+      return output.reshape(outShape);
+    }
+
+    // Run one more program to do the final reduction.
+    const finalReduceInfo = {
+      windowSize: output.shape[1],
+      batchSize: output.shape[0],
+      inSize: output.shape[1]
+    };
+    const finalProgram = new ReduceProgram(finalReduceInfo, 'sum');
+    const finalOutput =
+        this.makeOutputArray(finalProgram.outputShape, SumTypesMap[a.dtype]);
+    return this.compileAndRun(finalProgram, [output], finalOutput)
+        .reshape(outShape);
   }
 
   protected argMinInternal(a: NDArray, axes: number[]): NDArray<'int32'> {

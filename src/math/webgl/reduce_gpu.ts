@@ -15,14 +15,8 @@
  * =============================================================================
  */
 
+import {ReduceInfo} from '../reduce_util';
 import {GPGPUProgram} from './gpgpu_math';
-
-export interface ReduceInfo {
-  windowSize: number;
-  batchSize: number;
-  inSize: number;
-  outSize: number;
-}
 
 export class ReduceProgram implements GPGPUProgram {
   variableNames = ['x'];
@@ -33,7 +27,8 @@ export class ReduceProgram implements GPGPUProgram {
     const windowSize = reduceInfo.windowSize;
     const batchSize = reduceInfo.batchSize;
     const inSize = reduceInfo.inSize;
-    this.outputShape = [batchSize, reduceInfo.outSize];
+    const outSize = Math.ceil(inSize / windowSize);
+    this.outputShape = [batchSize, outSize];
 
     const isReduceSum = reduceType === 'sum';
 
@@ -58,28 +53,32 @@ export class ReduceProgram implements GPGPUProgram {
     const windowSizeVec4Remainder = windowSize % 4;
 
     const updateSnippet = `
-      // TODO(dsmilkov): Move this check only for min/max and not reduceSum.
-      if (hasNaN(values)) {
-        setOutput(getNaN(values));
-        return;
-      }
       if (${isReduceSum}) {
         sumValue += dot(values, ones);
       } else {
+        if (hasNaN(values)) {
+          setOutput(getNaN(values));
+          return;
+        }
         minMaxValue = ${compareOp}(values, minMaxValue);
       }
     `;
 
+    let checkOutOfBounds = '';
+    if (inSize % windowSize > 0) {
+      checkOutOfBounds = `
+        if (inIdx < 0 || inIdx >= ${inSize}) {
+          return initializationValue;
+        }
+      `;
+    }
     this.userCode = `
       const float initializationValue = ${initializationValue};
       const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
 
       float getValue(int batch, int inIdx) {
-        // TODO(dsmilkov): Don't check if inSize is multiple of windowSize.
-        if (inIdx < 0 || inIdx >= ${inSize}) {
-          return initializationValue;
-        }
-        return getX(batch, inSize);
+        ${checkOutOfBounds}
+        return getX(batch, inIdx);
       }
 
       void main() {
