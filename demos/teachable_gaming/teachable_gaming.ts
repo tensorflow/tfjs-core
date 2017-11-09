@@ -137,6 +137,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
           {code: 83, key: 'KeyS', text: 'Fire'},
           {code: 65, key: 'KeyA', text: 'Strafe left'},
           {code: 68, key: 'KeyD', text: 'Strafe right'},
+          {code: 13, key: 'Enter'},
         ],
       },
       {
@@ -162,6 +163,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
           {code: 56, key: 'Digit8', text: 'Right'},
           {code: 57, key: 'Digit9', text: 'Rotate'},
           {code: 32, key: 'Space', text: 'Drop'},
+          {code: 13, key: 'Enter'},
         ],
       },
       {
@@ -177,6 +179,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
           {code: 39, key: 'ArrowRight', text: 'Right'},
           {code: 17, key: 'ControlRight', text: 'Fire'},
           {code: 65, key: 'KeyA', text: 'Jump'},
+          {code: 13, key: 'Enter'},
         ],
       },
     ];
@@ -222,7 +225,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     setTimeout(() => this.animate(), 1000);
   }
 
-  private getKeyIndexFromId(id: string) {
+  private getIndexFromId(id: string) {
     return parseInt(id.substring(id.indexOf('_') + 1), 10);
   }
 
@@ -239,9 +242,22 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     this.$.dosbox.focus();
   }
 
+  getGameRadioId(index: number) {
+    return 'game_' + String(index);
+  }
+
+  shouldRadioInitToChecked(index: number) {
+    return index === 0;
+  }
+
+  onGameRadioClick(event: Event) {
+    this.selectedGameIndex =
+        this.getIndexFromId((event.target as HTMLElement).id);
+  }
+
   toggle(event: Event) {
     const target = event.target as HTMLInputElement;
-    const index = this.getKeyIndexFromId(target.id);
+    const index = this.getIndexFromId(target.id);
 
     const toggles = document.querySelectorAll('.keytoggle');
     if (target.checked) {
@@ -260,7 +276,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
 
   clear(event: Event) {
     const target = event.target as HTMLButtonElement;
-    const index = this.getKeyIndexFromId(target.id);
+    const index = this.getIndexFromId(target.id);
 
     this.classifier.clearClass(index);
     const countBox = this.$$('#count_' + String(index));
@@ -338,8 +354,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
         const indicators = document.querySelectorAll('.indicator');
         if (results.classIndex >= 0) {
           for (let i = 0; i < indicators.length; i++) {
-            if (this.getKeyIndexFromId(indicators[i].id) ===
-                results.classIndex) {
+            if (this.getIndexFromId(indicators[i].id) === results.classIndex) {
               (indicators[i] as HTMLElement).style.backgroundColor = 'green';
             } else {
               (indicators[i] as HTMLElement).style.backgroundColor =
