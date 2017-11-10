@@ -128,8 +128,6 @@ a:hover {
   margin-top: 24px;
   font-weight: 400;
 }
-
-
 /*step 3*/
 #predictswitch {
   padding: 12px;
@@ -140,7 +138,6 @@ a:hover {
   color: #777777;
   display: flex; /* ensures that the key values appear inline*/
 }
-
 .statsholder-val {
   font-weight: 500;
   padding-left: 0.3em;
