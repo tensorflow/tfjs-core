@@ -99,9 +99,6 @@ a:hover {
   box-shadow: 0 8px 10px 1px rgba(0, 0, 0, .14), 0 3px 14px 2px rgba(0, 0, 0, .12);
 }
 /*input controller*/
-.controller {
-  padding:12px;
-}
 /*webcam video playback*/
 #inputContainer {
   margin: 10px;
@@ -110,11 +107,11 @@ a:hover {
   background-color: #fafafa;
   margin: auto;
   background: url("Webcam_Error.svg") center/cover no-repeat;
-  width: 277px;
-  height: 277px;
-  text-align: center;
-  line-height: 1.2em;
-  color: #DB4437;
+}
+
+#webcamVideo {
+  width: 600px;
+  height: 400px;
 }
 /*training keyboard cards*/
 .indicator {
@@ -134,7 +131,7 @@ a:hover {
 }
 
 .statsholder {
-  padding: 12px;
+  padding-left: 12px;
   color: #777777;
   display: flex; /* ensures that the key values appear inline*/
 }
@@ -165,7 +162,6 @@ a:hover {
   clear: both;
   height: 0;
 }
-
 
 
 

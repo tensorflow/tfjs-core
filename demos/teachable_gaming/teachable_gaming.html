@@ -87,7 +87,7 @@ label > input:checked + div > img {
       </div>
       <div class="mdl-grid mdl-grid--no-spacing">
         <div class="mld-cell mdl-cell--1-offset-desktop mdl-cell--3-col mdl-cell--6-col-tablet mdl-cell--4-col-phone mdl-typography--body-1 performance-note">
-          JS-dos is resource heavy. For a seamless experience, use a web browser on your desktop/laptop.
+          All training occurs locally on your device and in your browser. That means, your images don't get sent anywhere. JS-dos is resource heavy. For a seamless experience, use a web browser on your desktop/laptop. 
         </div>
       </div>
       <!--Teachable Gaming Demo-->
@@ -121,8 +121,7 @@ label > input:checked + div > img {
               <!-- webcam box -->
               <div id="inputContainer">
                 <div id="imgContainer">
-                  Oops! We can't find a webcam. Please make sure a webcam is connected.
-                  <video autoplay="true" id="webcamVideo"></video>
+                  <video autoplay="true" id="webcamVideo" width="227" height ="227"></video>
                 </div>
               </div>
               <div class="controls">
@@ -165,7 +164,7 @@ label > input:checked + div > img {
               <div class="statsholder mdl-typography--caption mdl-cell mdl-cell--12-col">
                 <div>Time for Prediction: </div>
                 <div id="predperf" class="statsholder-val"></div>
-                <div>ms</div>
+                <div style="padding-left: 4px;">ms</div>
               </div>
             </template>
           </div>
