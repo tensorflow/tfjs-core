@@ -453,7 +453,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 describe('timing', () => {
   it('timing', async () => {
     const math = new NDArrayMathGPU();
-    const input = Array2D.randUniform([100, 1000 * 1000], -1, 1);
+    const input = Array2D.randUniform([1, 16384], -1, 1);
 
     let output: NDArray;
     const benchmark = () => {
@@ -466,7 +466,7 @@ describe('timing', () => {
     await math.getGPGPUContext().runQuery(benchmark);
     const totalTime = await math.getGPGPUContext().runQuery(benchmark);
 
-    console.log('Summing took', totalTime.toFixed(1), 'ms');
+    console.log('Summing took', totalTime.toFixed(3), 'ms');
     input.dispose();
     output.dispose();
     math.dispose();

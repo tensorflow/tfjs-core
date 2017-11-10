@@ -235,37 +235,33 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]);
   }
 
+  private reduceSum<D extends keyof DataTypes>(a: Array2D<D>):
+      Array2D<SumTypes[D]> {
+    const batchSize = a.shape[0];
+    console.log(a.shape);
+    const inSize = a.shape[1];
+    const windowSize = reduce_util.computeOptimalWindowSize(inSize);
+    const reduceInfo = {windowSize, inSize, batchSize};
+    const program = new ReduceProgram(reduceInfo, 'sum');
+    const [rows, cols] = program.outputShape;
+    const output =
+        this.makeOutputArray(program.outputShape, SumTypesMap[a.dtype])
+            .as2D(rows, cols);
+    this.compileAndRun(program, [a], output);
+    // No need to run another GPGPU program.
+    if (output.shape[1] === 1) {
+      return output;
+    }
+    return this.reduceSum(output);
+  }
+
   protected sumInternal<T extends keyof DataTypes>(
       a: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(a.shape, axes);
-    const batchSize = util.sizeFromShape(outShape);
     const inSize = util.sizeFromShape(reduceShape);
-    const windowSize = reduce_util.computeOptimalWindowSize(inSize);
-    console.log(windowSize);
-    const reduceInfo = {windowSize, inSize, batchSize};
-    const program = new ReduceProgram(reduceInfo, 'sum');
-    a = a.reshape([-1, inSize]);
-    const output =
-        this.makeOutputArray(program.outputShape, SumTypesMap[a.dtype]);
-    this.compileAndRun(program, [a], output);
-
-    // No need to run another GPGPU program.
-    if (output.size === 1) {
-      return output.reshape(outShape);
-    }
-
-    // Run one more program to do the final reduction.
-    const finalReduceInfo = {
-      windowSize: output.shape[1],
-      batchSize: output.shape[0],
-      inSize: output.shape[1]
-    };
-    const finalProgram = new ReduceProgram(finalReduceInfo, 'sum');
-    const finalOutput =
-        this.makeOutputArray(finalProgram.outputShape, SumTypesMap[a.dtype]);
-    return this.compileAndRun(finalProgram, [output], finalOutput)
-        .reshape(outShape);
+    const a2D = a.as2D(-1, inSize);
+    return this.reduceSum(a2D).reshape(outShape);
   }
 
   protected argMinInternal(a: NDArray, axes: number[]): NDArray<'int32'> {

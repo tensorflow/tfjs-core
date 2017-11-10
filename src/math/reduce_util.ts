@@ -25,10 +25,10 @@ export interface ReduceInfo {
  * Inputs of size above this threshold will be parallelized by calling multiple
  * shader programs.
  */
-const PARALLELIZE_THRESHOLD = 100;
+const PARALLELIZE_THRESHOLD = 30;
 
 export function computeOptimalWindowSize(inSize: number): number {
-  if (inSize < PARALLELIZE_THRESHOLD) {
+  if (inSize <= PARALLELIZE_THRESHOLD) {
     return inSize;
   }
   return nearestDivisor(inSize, Math.floor(Math.sqrt(inSize)));
