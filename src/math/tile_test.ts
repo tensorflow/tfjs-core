@@ -68,7 +68,19 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       t.dispose();
     });
 
-    it('bool (tile)', math => {
+    it('propagates NaNs', math => {
+      const t = Array1D.new([1, 2, NaN]);
+
+      const t2 = math.tile(t, [2]);
+
+      expect(t2.shape).toEqual([6]);
+      test_util.expectArraysClose(t2.getValues(), 
+        new Float32Array([1, 2, NaN, 1, 2, NaN]));
+
+      t.dispose();
+    });
+
+    it('1D bool (tile)', math => {
       const t = Array1D.new([true, false, true], 'bool');
 
       const t2 = math.tile(t, [2]);
@@ -80,7 +92,54 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       t.dispose();
     });
 
-    it('uint (tile)', math => {
+    it('2D bool (tile)', math => {
+      const t = Array2D.new([2, 2], [true, false, true, true], 'bool');
+      let t2 = math.tile(t, [1, 2]);
+      expect(t2.shape).toEqual([2, 4]);
+      expect(t2.dtype).toBe('bool');
+      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, 1, 0, 1, 1, 1, 1]));
+
+      t2 = math.tile(t, [2, 1]);
+      expect(t2.shape).toEqual([4, 2]);
+      expect(t2.dtype).toBe('bool');
+      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, 1, 1, 1, 0, 1, 1]));
+
+      t2 = math.tile(t, [2, 2]);
+      expect(t2.shape).toEqual([4, 4]);
+      expect(t2.dtype).toBe('bool');
+      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, 1, 0, 1, 1, 1, 1, 
+          1, 0, 1, 0, 1, 1, 1, 1]));
+
+      t.dispose();
+    });
+
+    it('3D bool (tile)', math => {
+      const t = Array3D.new([2, 2, 2], [true, false, true, false,
+          true, false, true, false], 'bool');
+
+      const t2 = math.tile(t, [1, 2, 1]);
+
+      expect(t2.shape).toEqual([2, 4, 2]);
+      expect(t2.dtype).toBe('bool');
+      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, 1, 0, 1, 0, 1, 0,
+          1, 0, 1, 0, 1, 0, 1, 0]));
+
+      t.dispose();
+    });
+
+    it('bool propagates NaNs', math => {
+      const t = Array1D.new([true, false, NaN] as boolean[], 'bool');
+
+      const t2 = math.tile(t, [2]);
+
+      expect(t2.shape).toEqual([6]);
+      expect(t2.dtype).toBe('bool');
+      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, NaN, 1, 0, NaN]));
+
+      t.dispose();
+    });
+
+    it('1D int32 (tile)', math => {
       const t = Array1D.new([1, 2, 5], 'int32');
 
       const t2 = math.tile(t, [2]);
@@ -92,14 +151,48 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       t.dispose();
     });
 
-    it('propagates NaNs', math => {
-      const t = Array1D.new([1, 2, NaN]);
+    it('2D int32 (tile)', math => {
+      const t = Array2D.new([2, 2], [1, 2, 3, 4], 'int32');
+      let t2 = math.tile(t, [1, 2]);
+      expect(t2.shape).toEqual([2, 4]);
+      expect(t2.dtype).toBe('int32');
+      expect(t2.getValues()).toEqual(new Int32Array([1, 2, 1, 2, 3, 4, 3, 4]));
+
+      t2 = math.tile(t, [2, 1]);
+      expect(t2.shape).toEqual([4, 2]);
+      expect(t2.dtype).toBe('int32');
+      expect(t2.getValues()).toEqual(new Int32Array([1, 2, 3, 4, 1, 2, 3, 4]));
+
+      t2 = math.tile(t, [2, 2]);
+      expect(t2.shape).toEqual([4, 4]);
+      expect(t2.dtype).toBe('int32');
+      expect(t2.getValues()).toEqual(new Int32Array([1, 2, 1, 2, 3, 4, 3, 4, 
+          1, 2, 1, 2, 3, 4, 3, 4]));
+
+      t.dispose();
+    });
+
+    it('3D int32 (tile)', math => {
+      const t = Array3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8], 'int32');
+
+      const t2 = math.tile(t, [1, 2, 1]);
+
+      expect(t2.shape).toEqual([2, 4, 2]);
+      expect(t2.dtype).toBe('int32');
+      expect(t2.getValues()).toEqual(new Int32Array([1, 2, 3, 4, 1, 2, 3, 4,
+          5, 6, 7, 8, 5, 6, 7, 8]));
+
+      t.dispose();
+    });
+
+    it('int32 propagates NaNs', math => {
+      const t = Array1D.new([1, 3, NaN], 'int32');
 
       const t2 = math.tile(t, [2]);
 
       expect(t2.shape).toEqual([6]);
-      test_util.expectArraysClose(t2.getValues(), 
-        new Float32Array([1, 2, NaN, 1, 2, NaN]));
+      expect(t2.dtype).toBe('int32');
+      expect(t2.getValues()).toEqual(new Int32Array([1, 3, NaN, 1, 3, NaN]));
 
       t.dispose();
     });
