@@ -513,32 +513,6 @@ import * as reduce_util from './reduce_util';
   ]);
 }
 
-describe('timing', () => {
-  it('timing', async () => {
-    const math = new NDArrayMathGPU();
-    const input = Array2D.randUniform([1, 16384], -1, 1);
-
-    let output: NDArray;
-    const benchmark = () => {
-      math.scope(() => {
-        output = math.sum(input);
-      });
-    };
-
-    // Warmup.
-    await math.getGPGPUContext().runQuery(benchmark);
-    const totalTime = await math.getGPGPUContext().runQuery(benchmark);
-
-    console.log('Summing took', totalTime.toFixed(3), 'ms');
-    input.dispose();
-    output.dispose();
-    math.dispose();
-
-    return totalTime;
-  });
-
-});
-
 // math.mean
 {
   const tests: MathTests = it => {
