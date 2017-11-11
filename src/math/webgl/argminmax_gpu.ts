@@ -22,7 +22,6 @@ export class ArgMinMaxProgram implements GPGPUProgram {
   variableNames = ['A'];
   outputShape: number[];
   userCode: string;
-  numBatchDims: number;
 
   constructor(reduceInfo: ReduceInfo, op: 'max'|'min', firstPass: boolean) {
     const windowSize = reduceInfo.windowSize;
