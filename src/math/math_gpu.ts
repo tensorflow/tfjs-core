@@ -38,9 +38,7 @@ import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
-import {LogSumExpProgram} from './webgl/logsumexp_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
-import {MinMaxProgram} from './webgl/minmax_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
@@ -235,33 +233,33 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]);
   }
 
-  private reduceSum<D extends keyof DataTypes>(a: Array2D<D>):
-      Array2D<SumTypes[D]> {
+  private reduce<D extends keyof DataTypes>(
+      a: Array2D, reduceType: 'max'|'min'|'sum', dtype: D): Array2D<D> {
     const batchSize = a.shape[0];
-    console.log(a.shape);
     const inSize = a.shape[1];
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
     const reduceInfo = {windowSize, inSize, batchSize};
-    const program = new ReduceProgram(reduceInfo, 'sum');
+    const program = new ReduceProgram(reduceInfo, reduceType);
     const [rows, cols] = program.outputShape;
     const output =
-        this.makeOutputArray(program.outputShape, SumTypesMap[a.dtype])
-            .as2D(rows, cols);
+        this.makeOutputArray(program.outputShape, dtype).as2D(rows, cols);
     this.compileAndRun(program, [a], output);
     // No need to run another GPGPU program.
     if (output.shape[1] === 1) {
       return output;
     }
-    return this.reduceSum(output);
+    return this.reduce(output, reduceType, dtype);
   }
 
   protected sumInternal<T extends keyof DataTypes>(
       a: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
+    axis_util.assertAxesAreInnerMostDims('sum', axes, a.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(a.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
     const a2D = a.as2D(-1, inSize);
-    return this.reduceSum(a2D).reshape(outShape);
+    const outputDType = SumTypesMap[a.dtype];
+    return this.reduce(a2D, 'sum', outputDType).reshape(outShape);
   }
 
   protected argMinInternal(a: NDArray, axes: number[]): NDArray<'int32'> {
@@ -289,14 +287,22 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected minInternal<G extends keyof DataTypes>(
       a: NDArray<G>, axes: number[]): NDArray<G> {
-    const program = new MinMaxProgram(a.shape, axes, 'min');
-    return this.compileAndRun(program, [a]);
+    axis_util.assertAxesAreInnerMostDims('min', axes, a.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(a.shape, axes);
+    const inSize = util.sizeFromShape(reduceShape);
+    const a2D = a.as2D(-1, inSize);
+    return this.reduce(a2D, 'min', a2D.dtype).reshape(outShape);
   }
 
   protected maxInternal<G extends keyof DataTypes>(
       a: NDArray<G>, axes: number[]): NDArray<G> {
-    const program = new MinMaxProgram(a.shape, axes, 'max');
-    return this.compileAndRun(program, [a]);
+    axis_util.assertAxesAreInnerMostDims('max', axes, a.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(a.shape, axes);
+    const inSize = util.sizeFromShape(reduceShape);
+    const a2D = a.as2D(-1, inSize);
+    return this.reduce(a2D, 'max', a2D.dtype).reshape(outShape);
   }
 
   protected divideInternal(a: NDArray, b: NDArray): NDArray<'float32'> {
@@ -314,11 +320,6 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected subtractInternal<T extends NDArray>(a: T, b: T): T {
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
     return this.compileAndRun<NDArray, T>(program, [a, b]);
-  }
-
-  protected logSumExpInternal(a: NDArray, axes: number[]): NDArray {
-    const program = new LogSumExpProgram(a.shape, axes);
-    return this.compileAndRun(program, [a]);
   }
 
   protected ceilInternal<T extends NDArray>(a: T): T {

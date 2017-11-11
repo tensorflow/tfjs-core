@@ -57,6 +57,14 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       test_util.expectArraysClose(r.getValues(), new Float32Array([3, -7, 0]));
     });
 
+    it('2D, axis=0, keepDims', math => {
+      const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const r = math.min(a, 0, true /* keepDims */);
+
+      expect(r.shape).toEqual([1, 3]);
+      test_util.expectArraysClose(r.getValues(), new Float32Array([3, -7, 0]));
+    });
+
     it('2D, axis=1 provided as a number', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.min(a, 1);
@@ -115,6 +123,14 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
       const r = math.max(a, [0]);
       expect(r.shape).toEqual([3]);
+      test_util.expectArraysClose(
+          r.getValues(), new Float32Array([100, -1, 2]));
+    });
+
+    it('2D, axis=0, keepDims', math => {
+      const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const r = math.max(a, [0], true /* keepDims */);
+      expect(r.shape).toEqual([1, 3]);
       test_util.expectArraysClose(
           r.getValues(), new Float32Array([100, -1, 2]));
     });
@@ -335,6 +351,17 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       test_util.expectArraysClose(r.getValues(), expected);
     });
 
+    it('axes=0 in 2D array, keepDims', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const r = math.logSumExp(a, [0], true /* keepDims */);
+      expect(r.shape).toEqual([1, 2]);
+      const expected = new Float32Array([
+        Math.log(Math.exp(1) + Math.exp(3) + Math.exp(0)),
+        Math.log(Math.exp(2) + Math.exp(0) + Math.exp(1))
+      ]);
+      test_util.expectArraysClose(r.getValues(), expected);
+    });
+
     it('axes=1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.logSumExp(a, [1]);
@@ -417,6 +444,13 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [0]);
       expect(res.shape).toEqual([2]);
+      test_util.expectArraysClose(res.getValues(), new Float32Array([4, 3]));
+    });
+
+    it('sums across axis=0 in 2D array, keepDims', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.sum(a, [0], true /* keepDims */);
+      expect(res.shape).toEqual([1, 2]);
       test_util.expectArraysClose(res.getValues(), new Float32Array([4, 3]));
     });
 
@@ -523,6 +557,16 @@ describe('timing', () => {
       const res = math.mean(a, [0]);
 
       expect(res.shape).toEqual([2]);
+      expect(res.dtype).toBe('float32');
+      test_util.expectArraysClose(
+          res.getValues(), new Float32Array([4 / 3, 1]));
+    });
+
+    it('axis=0 in 2D array, keepDims', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, [0], true /* keepDims */);
+
+      expect(res.shape).toEqual([1, 2]);
       expect(res.dtype).toBe('float32');
       test_util.expectArraysClose(
           res.getValues(), new Float32Array([4 / 3, 1]));
