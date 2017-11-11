@@ -8,6 +8,7 @@ const ATLAS_SIZE = 10000;
 
 const PLOT_SIZE_PX = 500;
 const NUM_GRID_CELLS = 25;
+const NUM_MANIFOLD_CELLS = 10;
 const GENERATED_SAMPLES_VISUALIZATION_INTERVAL = 10;
 const NUM_SAMPLES_VISUALIZED = 250;
 const NUM_TRUE_SAMPLES_VISUALIZED = 250;
@@ -40,9 +41,11 @@ class GANLab extends GANLabPolymer {
 
   private noiseProvider: InputProvider;
   private inputProvider: InputProvider;
+  private uniformNoiseProvider: InputProvider;
   private uniformInputProvider: InputProvider;
   private noiseProviderCount: number;
   private inputProviderCount: number;
+  private uniformNoiseProviderCount: number;
   private uniformInputProviderCount: number;
 
   private startButton: HTMLInputElement;
@@ -55,6 +58,10 @@ class GANLab extends GANLabPolymer {
   private numDiscriminatorNeurons: number;
   private learningRate: number;
   private kSteps: number;
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D;
+  private isDrawing: boolean;
+  private drawingPositions: Array<[number, number]>;
 
   ready() {
     const noiseSlider = this.querySelector('#noise-slider') as HTMLInputElement;
@@ -134,13 +141,18 @@ class GANLab extends GANLabPolymer {
       this.createExperiment();
     });
 
-    this.shapeNames = ['Line', 'Two Hills'];
+    this.shapeNames = ['Line', 'Two Hills', 'Drawing'];
     this.selectedShapeName = 'Line';
     this.querySelector('#shape-dropdown')!.addEventListener(
       // tslint:disable-next-line:no-any event has no type
       'iron-activate', (event: any) => {
         this.selectedShapeName = event.detail.selected;
-        this.createExperiment();
+        if (this.selectedShapeName === 'Drawing') {
+          this.onClickStopButton();
+          this.prepareDrawing();
+        } else {
+          this.createExperiment();
+        }
       });
 
     this.querySelector('#overlap-plots')!.addEventListener(
@@ -151,7 +163,13 @@ class GANLab extends GANLabPolymer {
         container.style.visibility =
           (event.target as any).active ? 'visible' : 'hidden';
       });
-
+    this.querySelector('#enable-manifold')!.addEventListener(
+      'change', (event: Event) => {
+        const container = this.querySelector('#vis-manifold') as SVGGElement;
+        // tslint:disable-next-line:no-any
+        container.style.visibility =
+          (event.target as any).active ? 'visible' : 'hidden';
+      });
     this.querySelector('#show-g-samples')!.addEventListener(
       'change', (event: Event) => {
         const container =
@@ -160,7 +178,6 @@ class GANLab extends GANLabPolymer {
         container.style.visibility =
           (event.target as any).active ? 'visible' : 'hidden';
       });
-
     this.querySelector('#show-t-samples')!.addEventListener(
       'change', (event: Event) => {
         const container =
@@ -183,6 +200,37 @@ class GANLab extends GANLabPolymer {
 
     this.iterCountElement =
       document.getElementById('iteration-count') as HTMLElement;
+
+    // Drawing-related.
+    this.drawingPositions = [];
+    this.isDrawing = false;
+    this.canvas =
+      document.getElementById('input-drawing-canvas') as HTMLCanvasElement;
+    this.context = this.canvas.getContext('2d')!;
+    this.context.strokeStyle = 'rgba(0, 136, 55, 0.25)';
+    this.context.lineJoin = 'round';
+    this.context.lineWidth = 10;
+    const drawingContainer =
+      document.getElementById('visualization-container') as HTMLDivElement;
+    const offsetLeft = drawingContainer.offsetLeft + 10;
+    const offsetTop = drawingContainer.offsetTop + 10;
+
+    this.canvas.addEventListener('mousedown', (event: MouseEvent) => {
+      this.isDrawing = true;
+      this.draw([event.pageX - offsetLeft, event.pageY - offsetTop]);
+    });
+    this.canvas.addEventListener('mousemove', (event: MouseEvent) => {
+      if (this.isDrawing) {
+        this.draw([event.pageX - offsetLeft, event.pageY - offsetTop]);
+      }
+    });
+    this.canvas.addEventListener('mouseup', (event: Event) => {
+      this.isDrawing = false;
+    });
+    this.finishDrawingButton =
+      document.getElementById('finish-drawing') as HTMLInputElement;
+    this.finishDrawingButton.addEventListener(
+      'click', () => this.onClickFinishDrawingButton());
 
     // Visualization.
     const plotMargin = 20;
@@ -282,16 +330,34 @@ class GANLab extends GANLabPolymer {
     }
     this.uniformInputAtlas = Array2D.new(
       [NUM_GRID_CELLS * NUM_GRID_CELLS, 2], uniformInputAtlasList);
+    if (this.noiseSize <= 2) {
+      const uniformNoiseAtlasList = [];
+      if (this.noiseSize === 1) {
+        for (let i = 0; i < NUM_MANIFOLD_CELLS + 1; ++i) {
+          uniformNoiseAtlasList.push(i / NUM_MANIFOLD_CELLS);
+        }
+      } else {
+        for (let i = 0; i < NUM_MANIFOLD_CELLS + 1; ++i) {
+          for (let j = 0; j < NUM_MANIFOLD_CELLS + 1; ++j) {
+            uniformNoiseAtlasList.push(i / NUM_MANIFOLD_CELLS);
+            uniformNoiseAtlasList.push(j / NUM_MANIFOLD_CELLS);
+          }
+        }
+      }
+      this.uniformNoiseAtlas = Array2D.new(
+        [Math.pow(NUM_MANIFOLD_CELLS + 1, this.noiseSize), this.noiseSize],
+        uniformNoiseAtlasList);
+    }
 
     // Providers from Atlases.
     this.noiseProviderCount = -1;
     this.inputProviderCount = -1;
+    this.uniformNoiseProviderCount = -1;
     this.uniformInputProviderCount = -1;
     const demo = this;
     this.noiseProvider = {
       getNextCopy() {
         demo.noiseProviderCount++;
-
         return demo.math.scope(() => {
           return demo.math
             .slice2D(
@@ -305,6 +371,7 @@ class GANLab extends GANLabPolymer {
         copy.dispose();
       }
     };
+
     this.inputProvider = {
       getNextCopy() {
         demo.inputProviderCount++;
@@ -320,6 +387,26 @@ class GANLab extends GANLabPolymer {
         copy.dispose();
       }
     };
+
+    this.uniformNoiseProvider = {
+      getNextCopy() {
+        demo.uniformNoiseProviderCount++;
+        return demo.math.scope(() => {
+          const begin: [number, number] = [
+            demo.uniformNoiseProviderCount %
+            Math.pow(NUM_MANIFOLD_CELLS + 1, demo.noiseSize),
+            0
+          ];
+          return demo.math
+            .slice2D(demo.uniformNoiseAtlas, begin, [1, demo.noiseSize])
+            .as1D();
+        });
+      },
+      disposeCopy(math, copy) {
+        copy.dispose();
+      }
+    };
+
     this.uniformInputProvider = {
       getNextCopy() {
         demo.uniformInputProviderCount++;
@@ -336,13 +423,18 @@ class GANLab extends GANLabPolymer {
         copy.dispose();
       }
     };
-
     this.visualizeTrueDistribution(inputAtlasList);
   }
 
   private sampleFromTrueDistribution(selectedShapeName: string) {
     const rand = Math.random();
-    if (selectedShapeName === 'Line') {
+    if (selectedShapeName === 'Drawing') {
+      const index = Math.floor(this.drawingPositions.length * rand);
+      return [
+        this.drawingPositions[index][0] + 0.02 * this.randNormal(),
+        this.drawingPositions[index][1] + 0.02 * this.randNormal()
+      ];
+    } else if (selectedShapeName === 'Line') {
       return [
         0.8 - 0.75 * rand + 0.01 * this.randNormal(),
         0.6 + 0.3 * rand + 0.01 * this.randNormal()
@@ -379,6 +471,28 @@ class GANLab extends GANLabPolymer {
       .attr('cy', (d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX)
       .append('title')
       .text((d: number[]) => `${d[0].toFixed(2)}, ${d[1].toFixed(2)}`);
+  }
+
+  private prepareDrawing() {
+    this.drawingPositions = [];
+    this.context.clearRect(
+      0, 0, this.context.canvas.width, this.context.canvas.height);
+    const drawingElement =
+      this.querySelector('#drawing-container') as HTMLElement;
+    drawingElement.style.display = 'block';
+    const drawingBackgroundElement =
+      this.querySelector('#drawing-disable-background') as HTMLDivElement;
+    drawingBackgroundElement.style.display = 'block';
+  }
+
+  private onClickFinishDrawingButton() {
+    const drawingElement =
+      this.querySelector('#drawing-container') as HTMLElement;
+    drawingElement.style.display = 'none';
+    const drawingBackgroundElement =
+      this.querySelector('#drawing-disable-background') as HTMLDivElement;
+    drawingBackgroundElement.style.display = 'none';
+    this.createExperiment();
   }
 
   private onClickStartButton() {
@@ -498,6 +612,99 @@ class GANLab extends GANLabPolymer {
         }
         gDots.attr('cx', (d: number[]) => d[0] * PLOT_SIZE_PX)
           .attr('cy', (d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX);
+
+        // Visualize manifold for 1-D or 2-D noise.
+        interface ManifoldCell {
+          points: Array<[number, number]>;
+          area?: number;
+        }
+
+        if (this.noiseSize <= 2) {
+          const manifoldData: Array<[number, number]> = [];
+          for (let i = 0; i < Math.pow(NUM_MANIFOLD_CELLS + 1, this.noiseSize);
+            ++i) {
+            const result = this.session.eval(
+              this.generatedTensor,
+              [{ tensor: this.noiseTensor, data: this.uniformNoiseProvider }]);
+            manifoldData.push([result.getValues()[0], result.getValues()[1]]);
+          }
+
+          // Create grid cells.
+          const gridData: ManifoldCell[] = [];
+          let areaSum = 0.0;
+          if (this.noiseSize === 1) {
+            gridData.push({ points: manifoldData });
+          } else if (this.noiseSize === 2) {
+            for (let i = 0; i < NUM_MANIFOLD_CELLS * NUM_MANIFOLD_CELLS; ++i) {
+              const x = i % NUM_MANIFOLD_CELLS;
+              const y = Math.floor(i / NUM_MANIFOLD_CELLS);
+              const index = x + y * (NUM_MANIFOLD_CELLS + 1);
+
+              const gridCell = [];
+              gridCell.push(manifoldData[index]);
+              gridCell.push(manifoldData[index + 1]);
+              gridCell.push(manifoldData[index + 1 + (NUM_MANIFOLD_CELLS + 1)]);
+              gridCell.push(manifoldData[index + (NUM_MANIFOLD_CELLS + 1)]);
+              gridCell.push(manifoldData[index]);
+
+              // Calculate area by using four points.
+              let area = 0.0;
+              for (let j = 0; j < 4; ++j) {
+                area += gridCell[j % 4][0] * gridCell[(j + 1) % 4][1] -
+                  gridCell[j % 4][1] * gridCell[(j + 1) % 4][0];
+              }
+              area = 0.5 * Math.abs(area);
+              areaSum += area;
+
+              gridData.push({ points: gridCell, area });
+            }
+            // Normalize area.
+            gridData.forEach(grid => {
+              if (grid.area) {
+                grid.area = grid.area / areaSum;
+              }
+            });
+          }
+
+          const manifoldCell =
+            d3.line()
+              .x((d: number[]) => d[0] * PLOT_SIZE_PX)
+              .y((d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX);
+
+          const grids = this.visManifold.selectAll('.grids').data(gridData);
+
+          if (this.iterationCount === 1) {
+            grids.enter()
+              .append('g')
+              .attr('class', 'grids gan-lab')
+              .append('path')
+              .attr('class', 'manifold-cell gan-lab');
+          }
+          grids.select('.manifold-cell')
+            .attr('d', (d: ManifoldCell) => manifoldCell(d.points))
+            .style(
+            'fill',
+            () => {
+              return this.noiseSize === 2 ? '#7b3294' : 'none';
+            })
+            .style('fill-opacity', (d: ManifoldCell) => {
+              return this.noiseSize === 2 ?
+                Math.max(0.95 - d.area! * 45.0, 0.05) :
+                'none';
+            });
+
+          const manifoldDots =
+            this.visManifold.selectAll('.uniform-generated-dot')
+              .data(manifoldData);
+          if (this.iterationCount === 1) {
+            manifoldDots.enter()
+              .append('circle')
+              .attr('class', 'uniform-generated-dot gan-lab')
+              .attr('r', 1);
+          }
+          manifoldDots.attr('cx', (d: number[]) => d[0] * PLOT_SIZE_PX)
+            .attr('cy', (d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX);
+        }
       }
     });
 
@@ -660,6 +867,15 @@ class GANLab extends GANLabPolymer {
         }
       }
     });
+  }
+  private draw(position: [number, number]) {
+    this.drawingPositions.push(
+      [position[0] / PLOT_SIZE_PX, 1.0 - position[1] / PLOT_SIZE_PX]);
+    this.context.beginPath();
+    this.context.moveTo(position[0] - 1, position[1]);
+    this.context.lineTo(position[0], position[1]);
+    this.context.closePath();
+    this.context.stroke();
   }
 }
 
