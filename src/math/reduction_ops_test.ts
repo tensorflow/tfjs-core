@@ -20,6 +20,7 @@ import {MathTests} from '../test_util';
 
 import {NDArrayMathGPU} from './math_gpu';
 import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
+import * as reduce_util from './reduce_util';
 
 // math.min
 {
@@ -177,6 +178,20 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       a.dispose();
     });
 
+    it('N > than parallelization threshold', math => {
+      const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+      const values = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        values[i] = i;
+      }
+      const a = Array1D.new(values);
+      const result = math.argMax(a);
+      expect(result.dtype).toBe('int32');
+      expect(result.get()).toBe(n - 1);
+
+      a.dispose();
+    });
+
     it('propagates NaNs', math => {
       const a = Array1D.new([5, 0, 3, NaN, 3]);
       const res = math.argMax(a);
@@ -230,6 +245,20 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       const a = Array1D.new([10]);
       const result = math.argMin(a);
       expect(result.get()).toBe(0);
+
+      a.dispose();
+    });
+
+    it('N > than parallelization threshold', math => {
+      const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+      const values = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        values[i] = n - i;
+      }
+      const a = Array1D.new(values);
+      const result = math.argMin(a);
+      expect(result.dtype).toBe('int32');
+      expect(result.get()).toBe(n - 1);
 
       a.dispose();
     });

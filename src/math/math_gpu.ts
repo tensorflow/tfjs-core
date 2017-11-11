@@ -251,6 +251,32 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.reduce(output, reduceType, dtype);
   }
 
+  private argReduce(a: Array2D, reduceType: 'max'|'min', bestA: Array2D = null):
+      Array2D<'int32'> {
+    let batchSize = a.shape[0];
+    let inSize = a.shape[1];
+    if (bestA != null) {
+      batchSize = bestA.shape[0];
+      inSize = bestA.shape[1];
+    }
+    const windowSize = reduce_util.computeOptimalWindowSize(inSize);
+    const reduceInfo = {windowSize, inSize, batchSize};
+    const program = new ArgMinMaxProgram(reduceInfo, reduceType, bestA == null);
+    const [rows, cols] = program.outputShape;
+    const output =
+        this.makeOutputArray(program.outputShape, 'int32').as2D(rows, cols);
+    const inputs = [a];
+    if (bestA != null) {
+      inputs.push(bestA);
+    }
+    this.compileAndRun(program, inputs, output);
+    // No need to run another GPGPU program.
+    if (output.shape[1] === 1) {
+      return output;
+    }
+    return this.argReduce(a, reduceType, output);
+  }
+
   protected sumInternal<T extends keyof DataTypes>(
       a: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
     axis_util.assertAxesAreInnerMostDims('sum', axes, a.rank);
@@ -263,15 +289,21 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected argMinInternal(a: NDArray, axes: number[]): NDArray<'int32'> {
-    const program = new ArgMinMaxProgram(a.shape, axes, 'min');
-    const output = this.makeOutputArray(program.outputShape, 'int32');
-    return this.compileAndRun(program, [a], output);
+    axis_util.assertAxesAreInnerMostDims('argMin', axes, a.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(a.shape, axes);
+    const inSize = util.sizeFromShape(reduceShape);
+    const a2D = a.as2D(-1, inSize);
+    return this.argReduce(a2D, 'min').reshape(outShape);
   }
 
   protected argMaxInternal(a: NDArray, axes: number[]): NDArray<'int32'> {
-    const program = new ArgMinMaxProgram(a.shape, axes, 'max');
-    const output = this.makeOutputArray(program.outputShape, 'int32');
-    return this.compileAndRun(program, [a], output);
+    axis_util.assertAxesAreInnerMostDims('argMax', axes, a.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(a.shape, axes);
+    const inSize = util.sizeFromShape(reduceShape);
+    const a2D = a.as2D(-1, inSize);
+    return this.argReduce(a2D, 'max').reshape(outShape);
   }
 
   protected equalInternal(x: NDArray, y: NDArray): NDArray<'bool'> {
