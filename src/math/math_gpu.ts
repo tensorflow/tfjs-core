@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ConvInfo} from './conv_util';
+import {ConvInfo, DepthwiseConvInfo} from './conv_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
@@ -430,6 +430,11 @@ export class NDArrayMathGPU extends NDArrayMath {
   protected conv2dDerBiasInternal(dY: Array3D): Array1D {
     const program = new Conv2DDerBiasProgram(dY.shape);
     return this.compileAndRun(program, [dY]);
+  }
+
+  protected depthwiseConv2DInternal(
+      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D {
+    throw new Error('Method not implemented.');
   }
 
   protected maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {

@@ -21,7 +21,7 @@ import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {ConvInfo} from './conv_util';
+import {ConvInfo, DepthwiseConvInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 // tslint:disable-next-line:max-line-length
@@ -867,6 +867,11 @@ export class NDArrayMathCPU extends NDArrayMath {
       values[d2] = sum;
     }
     return Array1D.new(values);
+  }
+
+  protected depthwiseConv2DInternal(
+      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D {
+    throw new Error('Method not implemented.');
   }
 
   protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
