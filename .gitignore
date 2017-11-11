@@ -10,5 +10,4 @@ npm-debug.log
 .DS_Store
 dist/
 .idea/
-package-lock.json
 

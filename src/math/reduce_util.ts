@@ -15,17 +15,17 @@
  * =============================================================================
  */
 
-export interface ReduceInfo {
-  windowSize: number;
-  batchSize: number;
-  inSize: number;
-}
-
 /**
  * Inputs of size above this threshold will be parallelized by calling multiple
  * shader programs.
  */
 export const PARALLELIZE_THRESHOLD = 30;
+
+export interface ReduceInfo {
+  windowSize: number;
+  batchSize: number;
+  inSize: number;
+}
 
 export function computeOptimalWindowSize(inSize: number): number {
   if (inSize <= PARALLELIZE_THRESHOLD) {

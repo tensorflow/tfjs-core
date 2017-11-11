@@ -251,23 +251,25 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.reduce(output, reduceType, dtype);
   }
 
-  private argReduce(a: Array2D, reduceType: 'max'|'min', bestA: Array2D = null):
-      Array2D<'int32'> {
+  private argReduce(
+      a: Array2D, reduceType: 'max'|'min',
+      bestIndicesA: Array2D = null): Array2D<'int32'> {
     let batchSize = a.shape[0];
     let inSize = a.shape[1];
-    if (bestA != null) {
-      batchSize = bestA.shape[0];
-      inSize = bestA.shape[1];
+    if (bestIndicesA != null) {
+      batchSize = bestIndicesA.shape[0];
+      inSize = bestIndicesA.shape[1];
     }
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
     const reduceInfo = {windowSize, inSize, batchSize};
-    const program = new ArgMinMaxProgram(reduceInfo, reduceType, bestA == null);
+    const program =
+        new ArgMinMaxProgram(reduceInfo, reduceType, bestIndicesA == null);
     const [rows, cols] = program.outputShape;
     const output =
         this.makeOutputArray(program.outputShape, 'int32').as2D(rows, cols);
     const inputs = [a];
-    if (bestA != null) {
-      inputs.push(bestA);
+    if (bestIndicesA != null) {
+      inputs.push(bestIndicesA);
     }
     this.compileAndRun(program, inputs, output);
     // No need to run another GPGPU program.

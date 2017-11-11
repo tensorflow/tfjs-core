@@ -29,12 +29,13 @@ export class ArgMinMaxProgram implements GPGPUProgram {
     const inSize = reduceInfo.inSize;
     const outSize = Math.ceil(inSize / windowSize);
     if (!firstPass) {
-      this.variableNames.push('BestA');
+      this.variableNames.push('bestIndicesA');
     }
     this.outputShape = [batchSize, outSize];
     const compOp = (op === 'max') ? '>' : '<';
-    const indexSnippet =
-        firstPass ? 'inOffset + i;' : 'round(getBestA(batch, inOffset + i));';
+    const indexSnippet = firstPass ?
+        'inOffset + i;' :
+        'round(getBestIndicesA(batch, inOffset + i));';
 
     this.userCode = `
       void main() {
