@@ -4,9 +4,9 @@
   "description": "deeplearn.js demos - not actually published",
   "private": true,
   "dependencies": {
-    "deeplearn": "file:../dist/deeplearn-0.3.7.tgz",
-    "deeplearn-knn-image-classifier": "~0.1.2",
-    "deeplearn-squeezenet": "~0.1.2"
+    "deeplearn": "~0.3.7",
+    "deeplearn-squeezenet": "~0.1.2",
+    "deeplearn-knn-image-classifier": "~0.1.2"
   },
   "repository": {
     "type": "git",
