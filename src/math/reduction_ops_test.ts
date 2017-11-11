@@ -17,9 +17,7 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
-import {NDArrayMathGPU} from './math_gpu';
-import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Scalar} from './ndarray';
 import * as reduce_util from './reduce_util';
 
 // math.min
