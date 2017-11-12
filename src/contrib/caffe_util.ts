@@ -16,8 +16,6 @@
  */
 
 import {caffe} from './caffe/caffe.js';
-import {Graph} from '../graph/graph';
-import {NDArrayMathGPU} from '../math/math_gpu';
 import {Array1D, NDArray} from '../math/ndarray';
 
 // Type definition for caffemodel files
@@ -25,6 +23,10 @@ export type NetParameter = caffe.NetParameter;
 
 // Type definition for binaryproto files
 export type BlobProto = caffe.BlobProto;
+
+export function fetchText(uri: string) : Promise<string> {
+  return fetch(new Request(uri)).then((res) => res.text());
+}
 
 export function fetchArrayBuffer(uri: string) : Promise<ArrayBuffer> {
   return fetch(new Request(uri)).then((res) => res.arrayBuffer());
@@ -34,10 +36,21 @@ export function parseCaffeModel(data: ArrayBuffer) {
   return caffe.NetParameter.decode(new Uint8Array(data));
 }
 
+export function parseProtoTxt(data: string) {
+  return caffe.NetParameter.create(prototxtToJson(data, 0));
+}
+
+export function getLayers(model: caffe.INetParameter, phase: number = caffe.Phase.TEST) {
+  return model.layer.filter((layer) => layer.phase === phase);
+}
+
 /**
- * Converts a BlobProto [b, d, y, x] into an NDArray [x, y, d, b]
+ * Converts a BlobProto [b, d, y, x] into an NDArray [x, y, d, b] 
+ * @param {number[]} blob data structure used by used by caffe
+ * @returns {NDArray} data structure used by deeplearn.js
  */
 function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
+  
   // blob dimension
   let dim = <number[]> blob.shape.dim.reverse();
 
@@ -47,17 +60,54 @@ function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
   return NDArray.make(dim, {values: data});
 }
 
-export function getAllVariables(model: caffe.NetParameter) : {[varName: string]: NDArray} {
+// TODO Check naming conventions from Tensorflow used in manifest.json
+/**
+ * Generates the variable name for a blob[index] of a layer
+ * @param {caffe.ILayerParameter} layer caffe layer definition
+ * @param {number} index index of the blob
+ * @returns {string} variable name
+ */
+export function getVariableName(layer: caffe.ILayerParameter, index: number) : string {
 
-  var variables: {[varName: string]: NDArray} = {};
+  let postfix = '';
+
+  switch (layer.type.toLowerCase()) {
+    case "convolution":
+      postfix = index === 0 ? '_W:0' : '_b:0';
+      break;
+
+    case "batchnorm":
+      postfix = index === 0 ? '_m:0' : index === 1 ? '_v:0' : '_b:0';
+      break;
+
+    default:
+      postfix = `_v:${index}`;
+      break;
+  }
+
+  return layer.name + postfix;
+}
+
+/**
+ * Get all variables from a caffemodel definition
+ * @param {caffe.NetParameter} model caffe model
+ * @returns {Map<string, NDArray>} Map containing variables per layer
+ */
+export function getAllVariables(model: caffe.NetParameter) : Map<string, NDArray> {
+
+  var variables: Map<string, NDArray> = new Map();
    
   model.layer
+
     // parametrized layers only
     .filter((layer) => layer.blobs.length > 0)
+    
+    // iterate layers
     .forEach((layer) => {
+      
+      // iterate blobs per layer
       layer.blobs.forEach((blob, i) => {
-        let postfix = i == 0 ? '_W:0' : '_b:0';
-        variables[layer.name + postfix] = convBlobToNDArray(blob);
+        variables.set(getVariableName(layer, i), convBlobToNDArray(blob));
       });
     });
 
@@ -65,6 +115,7 @@ export function getAllVariables(model: caffe.NetParameter) : {[varName: string]:
 }
 
 export function getPreprocessOffset(model: caffe.NetParameter) : NDArray {
+  // TODO - mean value could be of type Array3D as well
   let params =  model.layer[0].transformParam;
   return Array1D.new(params.meanValue);
 }
@@ -74,9 +125,68 @@ export function getPreprocessDim(model: caffe.NetParameter) : number {
   return params.cropSize;
 }
 
-export function getModelDAG(model: caffe.NetParameter, math: NDArrayMathGPU) : Graph {
+/**
+ * Convert an array to a Map by key
+ * @param {Array<T>} arr input array
+ * @param {string} key a key of T that can cast to string
+ * @returns {Map<string, T>}
+ */
+export function toMap<T>(arr: Array<T>, key: string) : Map<string, T> {
+  return new Map(arr.map((obj) => <[string, T]>[new String((<any> obj)[key]), obj]));
+}
 
-  // We need to construct the graph of operations here
+// dirty hack
+function prototxtToJson(raw: string, level: number) {
+  level = level || 0;
 
-  return null;
+  var json: any = {};
+  var match;
+
+  if (level == 0) {
+    var regexVal = /(?:^|\n)(\w+):\s"*([\w/.]+)"*/gi;
+    var regexObj = /(?:^|\n)(\w+)\s\{([\S\s]*?)\n\}/gi;
+  }
+  else {
+    let indent = '(?:^|\\n)\\s{' + level + '}';
+    let key = '(\\w+)';
+    var regexVal = new RegExp(indent + key + '\\s*:\\s*"*([\\w/.]+)"*', "gi");
+    var regexObj = new RegExp(indent + key + '\\s*\\{\\s*\\n([\\s\\S]*?)\\n\\s{' + level + '}\\}', "gi");
+  }
+
+  while (match = regexVal.exec(raw)) {
+    let key = match[1];
+    let value = match[2];
+    if (json[key] !== undefined) {
+      if (Array.isArray(json[key])) {
+        json[key].push(value);
+      }
+      else {
+        json[key] = [json[key]];
+        json[key].push(value);
+      }
+    }
+    else {
+      json[match[1]] = value;
+    }
+  }
+
+  while (match = regexObj.exec(raw)) {
+    let key = match[1];
+    let value = prototxtToJson(match[2], level + 2);
+
+    if (json[key] !== undefined) {
+      if (Array.isArray(json[key])) {
+        json[key].push(value);
+      }
+      else {
+        json[key] = [json[key]];
+        json[key].push(value);
+      }
+    }
+    else {
+      json[key] = value;
+    }
+  }
+
+  return json;
 }

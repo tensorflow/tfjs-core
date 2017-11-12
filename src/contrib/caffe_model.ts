@@ -14,47 +14,96 @@
  * limitations under the License.
  * =============================================================================
  */
-
+import {caffe} from './caffe/caffe.js';
 import * as caffe_util from './caffe_util';
 
-// import {MatrixOrientation, NDArrayMath} from '../math/math';
-// import {NDArrayMathCPU} from '../math/math_cpu';
-// import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../math/ndarray';
-
-import {Graph} from '../graph/graph';
 import {NDArrayMathGPU} from '../math/math_gpu';
-import {Array1D, Array3D, NDArray} from '../math/ndarray';
+import {NDArray} from '../math/ndarray';
 
 export class CaffeModel {
 
-  private variables: {[varName: string]: NDArray};
+  // TODO Map structure not compatible with object structure used in models.Squeezenet
+  /**
+   * Model weights per layer
+   * @type {Map<string, NDArray>}
+   */
+  private variables: Map<string, NDArray>;
+
+  // TODO Generalize preprocessing to support cropping
+  /**
+   * Preprocessing Offset
+   * @type {NDArray}
+   */
   private preprocessOffset: NDArray;
-  private graph: Graph;
 
-  constructor(private math: NDArrayMathGPU, private uri: string){}
+  // TODO Handle .prototxt and .caffemodel file properly
+  /*
+   * Prototxt:
+   * The .prototxt file contains the model definition and parameters for a specific phase (train, test). Mostly the
+   * train.prototxt file contains the train definitions whereas the deploy.prototxt file contains the test definition.
+   *
+   * Caffemodel:
+   * The .caffemodel file contains the model definition, parameters and weights after a specific phase (train, test).
+   * Most .caffemodel files contain all layers and parameters from the training phase. 
+   *
+   * Recommendation for inference:
+   * We should first parse the prototxt file and create a DAG of operations. Then we should parse the caffemodel file
+   * and keep only the weights for the layers defined in the prototxt file. The weights are of type Array<float> and
+   * need to be transformed to Float32Array type.
+   */
+  
+  /**
+   * Parsed .caffemodel layers as Map
+   * @type {Map<string, caffe.ILayerParameter>}
+   */
+  private layersTrain: Map<string, caffe.ILayerParameter>;
 
-  loadVariables(uri: string) {
-    return caffe_util.fetchArrayBuffer(this.uri)
-      .then(caffe_util.parseCaffeModel)
-      .then((model) => {
-        this.variables = caffe_util.getAllVariables(model);
-        this.graph = caffe_util.getModelDAG(model, this.math);
-        this.preprocessOffset = caffe_util.getPreprocessOffset(model);
+  /**
+   * Parsed .prototxt layers as Map
+   * @type {Map<string, caffe.ILayerParameter>}
+   */
+  private layersTest: Map<string, caffe.ILayerParameter>;
+
+  // private static INPUT_LAYER: string = 'data';
+
+  constructor(private caffemodelUrl: string, private prototxtUrl: string, public math: NDArrayMathGPU){}
+
+  /**
+   * Load the model definition and weights
+   * @returns {Promise}
+   */
+  load() {
+    return Promise.all([
+      this.loadVariables(),
+      this.loadModel()
+    ]);
+  }
+
+  loadModel() {
+    // Load .prototxt file, which contains model testing definition
+    return caffe_util.fetchText(this.prototxtUrl)
+      .then(caffe_util.parseProtoTxt)
+      .then((modelDef) => {
+
+        // Store layers as dict with layer name as key
+        this.layersTest = caffe_util.toMap(modelDef.layer, 'name');
       });
   }
 
-  infer(input: Array3D): 
-    {namedActivations: {[activationName: string]: Array3D}, logits: Array1D} {
+  loadVariables() {
+    // Load .caffemodel file, which contains model weights and training definition
+    return caffe_util.fetchArrayBuffer(this.caffemodelUrl)
+      .then(caffe_util.parseCaffeModel)
+      .then((model) => {
 
-    // Apply ${input} to operations graph
+        // Store layers as dict with layer name as key
+        this.layersTrain = caffe_util.toMap(model.layer, 'name');
 
-    // // Track these activations automatically so they get cleaned up in a parent
-    // // scope.
-    // const layerNames = Object.keys(namedActivations);
-    // layerNames.forEach(
-    //     layerName => this.math.track(namedActivations[layerName]));
+        // Store the model weights
+        this.variables = caffe_util.getAllVariables(model);
 
-    // return {namedActivations, logits: avgpool10};
-    return null;
+        // Store the preprocessing parameters
+        this.preprocessOffset = caffe_util.getPreprocessOffset(model);
+      });
   }
 }
