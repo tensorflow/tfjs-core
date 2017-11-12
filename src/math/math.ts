@@ -1615,8 +1615,8 @@ export abstract class NDArrayMath {
    * See https://www.tensorflow.org/api_docs/python/tf/nn/depthwise_conv2d for
    * more details.
    *
-   * @param input The input ndarray, rank 4, of shape
-   *     `[batch, height, width, inChannels]`.
+   * @param input4D The input ndarray, of rank 4 or rank 3, of shape
+   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
    * @param filter The filter ndarray, rank 4, of shape
    *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`.
    * @param strides The strides of the convolution: [strideHeight, strideWidth].
@@ -1635,21 +1635,27 @@ export abstract class NDArrayMath {
    *     `strides` must be 1.
    */
   depthwiseConv2D(
-      input: Array4D, filter: Array4D, strides: [number, number]|number,
+      input: Array3D|Array4D, filter: Array4D, strides: [number, number]|number,
       pad: 'valid'|'same'|number,
-      rates: [number, number]|number = [1, 1]): Array4D {
+      rates: [number, number]|number = [1, 1]): Array3D|Array4D {
+    let input4D = input as Array4D;
+    let reshapedTo4D = false;
+    if (input.rank === 3) {
+      reshapedTo4D = true;
+      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+    }
     util.assert(
-        input.rank === 4,
+        input4D.rank === 4,
         `Error in depthwiseConv2D: input must be rank 4, but got ` +
-            `rank ${input.rank}.`);
+            `rank ${input4D.rank}.`);
     util.assert(
         filter.rank === 4,
         `Error in depthwiseConv2D: filter must be rank 4, but got rank ` +
             `${filter.rank}.`);
     util.assert(
-        input.shape[3] === filter.shape[2],
+        input4D.shape[3] === filter.shape[2],
         `Error in depthwiseConv2D: number of input channels ` +
-            `(${input.shape[3]}) must match the inChannels dimension in ` +
+            `(${input4D.shape[3]}) must match the inChannels dimension in ` +
             `filter ${filter.shape[2]}.`);
     rates = rates || [1, 1];
     const [rateHeight, rateWidth] = parseTupleParam(rates);
@@ -1659,10 +1665,14 @@ export abstract class NDArrayMath {
             `supported. Got rates '${rates}'`);
 
     const convInfo = conv_util.computeDepthwiseConv2DInfo(
-        input.shape, filter.shape, strides, pad);
-    return this.executeOp(
-        'depthwiseConv2D',
-        () => this.depthwiseConv2DInternal(input, filter, convInfo));
+        input4D.shape, filter.shape, strides, pad);
+    return this.executeOp('depthwiseConv2D', () => {
+      const res = this.depthwiseConv2DInternal(input4D, filter, convInfo);
+      if (reshapedTo4D) {
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+      }
+      return res;
+    });
   }
   protected abstract depthwiseConv2DInternal(
       input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D;
