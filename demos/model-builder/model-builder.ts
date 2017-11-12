@@ -344,14 +344,12 @@ export class ModelBuilder extends ModelBuilderPolymer {
   }
 
   private startInference() {
-    console.log('starting inference...');
     const testData = this.getTestData();
     if (testData == null) {
       // Dataset not ready yet.
       return;
     }
     if (this.isValid && (testData != null)) {
-      console.log(testData);
       const inferenceShuffledInputProviderGenerator =
           new InCPUMemoryShuffledInputProviderBuilder(testData);
       const [inferenceInputProvider, inferenceLabelProvider] =
@@ -362,7 +360,6 @@ export class ModelBuilder extends ModelBuilderPolymer {
         {tensor: this.labelTensor, data: inferenceLabelProvider}
       ];
 
-      console.log('inferring...');
       this.graphRunner.infer(
           this.predictionTensor, inferenceFeeds, INFERENCE_EXAMPLE_INTERVAL_MS,
           INFERENCE_EXAMPLE_COUNT);
@@ -491,7 +488,6 @@ export class ModelBuilder extends ModelBuilderPolymer {
   }
 
   private createModel() {
-    console.log('creating model...');
     if (this.session != null) {
       this.session.dispose();
     }
@@ -575,9 +571,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
       this.applyNormalization(this.selectedNormalizationOption);
       this.setupDatasetStats();
       if (this.isValid) {
-        console.log('selected dataset');
         this.createModel();
-        // this.startInference();
       }
       // Get prebuilt models.
       this.populateModelDropdown();
@@ -888,9 +882,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
     this.validateModel();
 
     if (this.isValid) {
-      console.log('param changed.');
       this.createModel();
-      // this.startInference();
     }
   }
 

@@ -270,7 +270,6 @@ export class GraphRunner {
           const nextCopy =
               (feedEntry.data as InputProvider).getNextCopy(this.math);
 
-          nextCopy.bit = true;
           ndarrayFeedEntries.push(
               {tensor: feedEntry.tensor, data: track(nextCopy)});
         }

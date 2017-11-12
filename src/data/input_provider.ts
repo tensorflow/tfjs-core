@@ -139,15 +139,7 @@ export class InCPUMemoryShuffledInputProviderBuilder extends
 
     return {
       getNextCopy(math: NDArrayMath): NDArray {
-        const nextInput = shuffledInputProvider.getNextInput(inputId);
-        // tslint:disable-next-line:no-any
-        if ((nextInput as any).ndarrayData.values == null &&
-            // tslint:disable-next-line:no-any
-            (nextInput as any).ndarrayData.texture == null) {
-          // tslint:disable-next-line:no-debugger
-          debugger;
-        }
-        return NDArray.like(nextInput);
+        return NDArray.like(shuffledInputProvider.getNextInput(inputId));
       },
       disposeCopy(math: NDArrayMath, copy: NDArray) {
         copy.dispose();

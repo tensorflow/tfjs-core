@@ -50,6 +50,7 @@ export interface NDArrayData<T extends keyof DataTypes> {
   /** [rows, columns] shape of the texture. */
   textureShapeRC?: [number, number];
   textureType?: TextureType;
+  isDisposed?: boolean;
 }
 
 /** @hidden */
@@ -72,13 +73,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   size: number;
   /** The data type for the array. */
   dtype: T;
-  /* Whether this NDArray has been disposed. */
-  isDisposed: boolean;
-  /* The stack trace of disposal for debugging purposes. */
-  disposalStackTrace: string;
-
-  // REMOVE THIS.
-  bit: boolean;
 
   /**
    * Number of elements to skip in each dimension when indexing. See
@@ -113,14 +107,10 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     if (data.textureType == null) {
       data.textureType = TextureType.DEFAULT;
     }
-    if (this.bit) {
-      // tslint:disable-next-line:no-debugger
-      debugger;
-    }
+
     this.ndarrayData = data;
     this.dtype = dtype || ('float32' as T);
     const dim = this.shape.length;
-    this.isDisposed = false;
 
     if (dim < 2) {
       this.strides = [];
@@ -321,7 +311,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   getData(): NDArrayData<T> {
-    this.throwIfDisposed();
     return this.ndarrayData;
   }
 
@@ -345,10 +334,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
       return this.ndarrayData.values;
     }
 
-    if (this.bit) {
-      // tslint:disable-next-line:no-debugger
-      debugger;
-    }
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
         this.ndarrayData.textureType === TextureType.DEFAULT) {
       this.ndarrayData.values = await GPGPU.downloadMatrixFromTextureAsync(
@@ -376,11 +361,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     this.throwIfDisposed();
     if (this.ndarrayData.values == null) {
       throwIfGPUNotInitialized();
-
-      if (this.bit) {
-        // tslint:disable-next-line:no-debugger
-        debugger;
-      }
 
       let values: Float32Array;
       if (this.ndarrayData.textureType === TextureType.DEFAULT) {
@@ -418,10 +398,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
         this.ndarrayData.textureShapeRC[1],
         typedArrayToFloat32(this.ndarrayData.values, this.dtype));
 
-    if (this.bit) {
-      // tslint:disable-next-line:no-debugger
-      debugger;
-    }
     this.ndarrayData.values = null;
   }
 
@@ -442,24 +418,19 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   private throwIfDisposed() {
-    if (this.isDisposed) {
-      throw new Error(
-          `NDArray is disposed. Stack trace of disposal: ` +
-          `${this.disposalStackTrace}`);
+    if (this.ndarrayData.isDisposed) {
+      console.error(`NDArray is disposed.`);
     }
   }
 
   dispose(): void {
-    if (this.bit) {
-      // tslint:disable-next-line:no-debugger
-      debugger;
-    }
-    this.isDisposed = true;
     this.ndarrayData.values = null;
     this.shape = null;
-    // Construct an error and save the stack trace for debugging.
-    const err = new Error();
-    this.disposalStackTrace = err.stack;
+
+    // TODO(nsthorat): Construct an error and save the stack trace for debugging
+    // when in debug mode. Creating a stack trace is too expensive to do
+    // unconditionally.
+    this.ndarrayData.isDisposed = true;
 
     if (this.ndarrayData.texture != null) {
       this.disposeTexture();
@@ -467,10 +438,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   private disposeTexture() {
-    if (this.bit) {
-      // tslint:disable-next-line:no-debugger
-      debugger;
-    }
     throwIfGPUNotInitialized();
     TEXTURE_MANAGER.releaseTexture(
         this.ndarrayData.texture, this.ndarrayData.textureShapeRC);
