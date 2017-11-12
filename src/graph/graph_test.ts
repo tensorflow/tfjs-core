@@ -501,8 +501,8 @@ describe('leakyRelu validation', () => {
   });
 
   it('Does not throw', () => {
-    expect(g.leakyRelu(new Tensor([5, 4]), 0.2).shape).toEqual([5, 4])
-  })
+    expect(g.leakyRelu(new Tensor([5, 4]), 0.2).shape).toEqual([5, 4]);
+  });
 });
 
 describe('exp validation', () => {

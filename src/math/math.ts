@@ -1340,13 +1340,15 @@ export abstract class NDArrayMath {
   protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Computes step of the input NDArray element-wise, y=1 if x>0|alpha*x if x<=0.
+   * Computes step of the input NDArray element-wise, 
+   * y=1 if x>0|alpha*x if x<=0.
    *
    * @param ndarray The input NDArray.
    * @param alpha The gradient when input is negative.
    */
   step<T extends NDArray>(ndarray: T, alpha = Scalar.new(0.0)): T {
-    return this.executeOp('step', () => this.stepInternal(ndarray, alpha.get()));
+    return this.executeOp('step', 
+      () => this.stepInternal(ndarray, alpha.get()));
   }
   protected abstract stepInternal<T extends NDArray>(ndarray: T, 
     alpha: number): T;

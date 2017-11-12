@@ -40,7 +40,7 @@ export class TanHFunc implements ActivationFunction {
     });
   }
 
-  dispose() {};
+  dispose() {}
 }
 
 export class ReLUFunc implements ActivationFunction {
@@ -56,7 +56,7 @@ export class ReLUFunc implements ActivationFunction {
     });
   }
 
-  dispose() {};  
+  dispose() {}
 }
 
 export class LeakyReluFunc implements ActivationFunction {
@@ -76,7 +76,7 @@ export class LeakyReluFunc implements ActivationFunction {
 
   dispose() {
     this.alpha.dispose();
-  };  
+  }
 }
 
 export class SigmoidFunc implements ActivationFunction {
@@ -94,7 +94,7 @@ export class SigmoidFunc implements ActivationFunction {
     });
   }
 
-  dispose() {};  
+  dispose() {}
 }
 
 export class SquareFunc implements ActivationFunction {
@@ -111,5 +111,5 @@ export class SquareFunc implements ActivationFunction {
     });
   }
 
-  dispose() {};  
+  dispose() {}
 }

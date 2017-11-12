@@ -24,6 +24,7 @@ import {ArgMaxEquals} from './ops/argmaxequals';
 import {Concat3D} from './ops/concat3d';
 import {Convolution2D} from './ops/convolution';
 import {Divide} from './ops/divide';
+// tslint:disable-next-line:max-line-length
 import {ReLU, Sigmoid, Square, TanH, LeakyReLU} from './ops/element_wise_activation';
 import {MeanSquaredCost} from './ops/element_wise_cost';
 import {Exp} from './ops/exp';
@@ -69,7 +70,8 @@ function emitOpFromNode(node: Node): Operation[] {
   } else if (node instanceof ReLUNode) {
     return [new ReLU(node.inputs[ReLUNode.X], node.output)];
   } else if (node instanceof LeakyReLUNode) {
-    return [new LeakyReLU(node.inputs[LeakyReLUNode.X], node.output, node.alpha)]
+    return [new LeakyReLU(node.inputs[LeakyReLUNode.X], 
+      node.output, node.alpha)];
   } else if (node instanceof TanHNode) {
     return [new TanH(node.inputs[TanHNode.X], node.output)];
   } else if (node instanceof SigmoidNode) {
