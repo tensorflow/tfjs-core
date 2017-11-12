@@ -258,7 +258,7 @@ export abstract class NDArrayMath {
     util.assert(
         a.rank === 2 && b.rank === 2,
         `Error in matMul: inputs must be rank 2, got ranks ${a.rank}` +
-            `and ${b.rank}.`);
+            ` and ${b.rank}.`);
 
     util.assert(
         innerShapeA === innerShapeB,
@@ -639,14 +639,15 @@ export abstract class NDArrayMath {
    */
   logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
       NDArray {
-    let axes = axis_util.parseAxisParam(axis, input.shape);
-    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+    const axes = axis_util.parseAxisParam(axis, input.shape);
     return this.executeOp('logSumExp', () => {
-      if (permutedAxes != null) {
-        input = this.transpose(input, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
-      }
-      const res = this.logSumExpInternal(input, axes);
+      const xMax = this.max(input, axes, true /* keepDims */);
+      const a = this.subtract(input, xMax);
+      const b = this.exp(a);
+      const c = this.sum(b, axes);
+      const d = this.log(c);
+      const res = this.add(xMax.reshape(d.shape), d);
+
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
         return res.reshape(newShape);
@@ -654,8 +655,6 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract logSumExpInternal(ndarray: NDArray, axes: number[]):
-      NDArray;
 
   /**
    * Computes the sum of elements across dimensions of an array.
@@ -674,7 +673,8 @@ export abstract class NDArrayMath {
   sum<T extends keyof DataTypes>(
       input: NDArray<T>, axis: number|number[] = null,
       keepDims = false): NDArray<SumTypes[T]> {
-    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
     return this.executeOp('sum', () => {
       if (permutedAxes != null) {
@@ -683,7 +683,7 @@ export abstract class NDArrayMath {
       }
       const res = this.sumInternal(input, axes);
       if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
       }
       return res;
@@ -830,7 +830,8 @@ export abstract class NDArrayMath {
   min<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
-    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
     return this.executeOp('min', () => {
       if (permutedAxes != null) {
@@ -839,7 +840,7 @@ export abstract class NDArrayMath {
       }
       const res = this.minInternal(input, axes);
       if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
       }
       return res;
@@ -865,7 +866,8 @@ export abstract class NDArrayMath {
   max<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
-    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
     return this.executeOp('max', () => {
       if (permutedAxes != null) {
@@ -874,7 +876,7 @@ export abstract class NDArrayMath {
       }
       const res = this.maxInternal(input, axes);
       if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
       }
       return res;
@@ -917,6 +919,30 @@ export abstract class NDArrayMath {
   switchDim<T extends NDArray>(a: T, newDim: number[]): T {
     return this.transpose(a, newDim);
   }
+
+  /**
+   * Construct an array by repeating it the number of times given by reps.
+   *
+   * This operation creates a new array by replicating `input` `reps`
+   * times. The output tensor's i'th dimension has `input.shape[i] * 
+   * reps[i]` elements, and the values of `input` are replicated
+   * `reps[i]` times along the i'th dimension. For example, tiling
+   * `[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.
+   *
+   * @param a The array to transpose.
+   * @param reps Determines the number of replications per dimension.
+   */
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, reps: number[]): T {
+    util.assert(
+        a.rank === reps.length,
+        `Error in transpose: rank of input ${a.rank} ` +
+            `must match length of reps ${reps}.`);
+    return this.executeOp('tile', () => this.tileInternal(a, reps));
+  }
+  protected abstract tileInternal<
+      D extends keyof DataTypes, T extends NDArray<D>>(a: T, 
+        reps: number[]): T;
 
   /**
    * Transposes the array. Permutes the dimensions according to `perm`.
