@@ -345,7 +345,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected argMinInternal(input: NDArray, axes: number[]): NDArray<'int32'> {
-    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
+    axis_util.assertAxesAreInnerMostDims('argMin', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
     const result = NDArray.zeros(outShape, 'int32');
@@ -542,17 +542,6 @@ export class NDArrayMathCPU extends NDArrayMath {
       newValues[i] = value * value;
     }
     return NDArray.make(x.shape, {values: newValues}) as T;
-  }
-
-  protected logSumExpInternal(input: NDArray, axes: number[]): NDArray {
-    axis_util.assertAxesAreInnerMostDims('logSumExp', axes, input.rank);
-    const xMax = this.max(input, axes, true /* keepDims */);
-    const a = this.subtract(input, xMax);
-    const b = this.exp(a);
-    const c = this.sum(b, axes);
-    const d = this.log(c);
-    const result = this.add(xMax.reshape(d.shape), d);
-    return result;
   }
 
   protected reluInternal<T extends NDArray>(input: T): T {
@@ -867,6 +856,40 @@ export class NDArrayMathCPU extends NDArrayMath {
       values[d2] = sum;
     }
     return Array1D.new(values);
+  }
+
+  protected tileInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, reps: number[]): T {
+    const newShape: number[] = new Array(a.rank);
+    for (let i = 0; i < newShape.length; i++) {
+      newShape[i] = a.shape[i] * reps[i];
+    }
+    let dtype;
+    if (a.dtype === 'float32') {
+      dtype = Float32Array;
+    } else if (a.dtype === 'int32') {
+      dtype = Int32Array;
+    } else if (a.dtype === 'bool') {
+      dtype = Uint8Array;
+    } else {
+      throw new Error(`Dtype ${a.dtype} not supported for tile`);
+    }
+    const resultValues = new dtype(util.sizeFromShape(newShape));
+    const result = NDArray.make(newShape, {values: resultValues}, a.dtype) as T;
+    const values = a.getValues();
+    for (let i = 0; i < result.size; ++i) {
+      const newLoc = result.indexToLoc(i);
+
+      const originalLoc: number[] = new Array(a.rank);
+      for (let i = 0; i < originalLoc.length; i++) {
+        originalLoc[i] = newLoc[i] % a.shape[i];
+      }
+
+      const originalIndex = a.locToIndex(originalLoc);
+
+      resultValues[i] = values[originalIndex];
+    }
+    return result;
   }
 
   protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
