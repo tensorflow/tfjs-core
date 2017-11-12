@@ -195,22 +195,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
     this.mathCPU = new NDArrayMathCPU();
     this.math = this.mathGPU;
 
-    const eventObserver: GraphRunnerEventObserver = {
-      batchesTrainedCallback: (batchesTrained: number) =>
-          this.displayBatchesTrained(batchesTrained),
-      avgCostCallback: (avgCost: Scalar) => this.displayCost(avgCost),
-      metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
-      inferenceExamplesCallback:
-          (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) =>
-              this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
-      inferenceExamplesPerSecCallback: (examplesPerSec: number) =>
-          this.displayInferenceExamplesPerSec(examplesPerSec),
-      trainExamplesPerSecCallback: (examplesPerSec: number) =>
-          this.displayExamplesPerSec(examplesPerSec),
-      totalTimeCallback: (totalTimeSec: number) => this.totalTimeSec =
-          totalTimeSec.toFixed(1),
-    };
-    this.graphRunner = new GraphRunner(this.math, this.session, eventObserver);
+    this.createGraphRunner();
     this.optimizer = new MomentumOptimizer(this.learningRate, this.momentum);
 
     // Set up datasets.
@@ -311,6 +296,25 @@ export class ModelBuilder extends ModelBuilderPolymer {
     this.inferencesPerSec = 0;
   }
 
+  createGraphRunner() {
+    const eventObserver: GraphRunnerEventObserver = {
+      batchesTrainedCallback: (batchesTrained: number) =>
+          this.displayBatchesTrained(batchesTrained),
+      avgCostCallback: (avgCost: Scalar) => this.displayCost(avgCost),
+      metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
+      inferenceExamplesCallback:
+          (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) =>
+              this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
+      inferenceExamplesPerSecCallback: (examplesPerSec: number) =>
+          this.displayInferenceExamplesPerSec(examplesPerSec),
+      trainExamplesPerSecCallback: (examplesPerSec: number) =>
+          this.displayExamplesPerSec(examplesPerSec),
+      totalTimeCallback: (totalTimeSec: number) => this.totalTimeSec =
+          totalTimeSec.toFixed(1),
+    };
+    this.graphRunner = new GraphRunner(this.math, this.session, eventObserver);
+  }
+
   isTraining(applicationState: ApplicationState): boolean {
     return applicationState === ApplicationState.TRAINING;
   }
@@ -340,12 +344,14 @@ export class ModelBuilder extends ModelBuilderPolymer {
   }
 
   private startInference() {
+    console.log('starting inference...');
     const testData = this.getTestData();
     if (testData == null) {
       // Dataset not ready yet.
       return;
     }
     if (this.isValid && (testData != null)) {
+      console.log(testData);
       const inferenceShuffledInputProviderGenerator =
           new InCPUMemoryShuffledInputProviderBuilder(testData);
       const [inferenceInputProvider, inferenceLabelProvider] =
@@ -356,6 +362,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
         {tensor: this.labelTensor, data: inferenceLabelProvider}
       ];
 
+      console.log('inferring...');
       this.graphRunner.infer(
           this.predictionTensor, inferenceFeeds, INFERENCE_EXAMPLE_INTERVAL_MS,
           INFERENCE_EXAMPLE_COUNT);
@@ -484,6 +491,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
   }
 
   private createModel() {
+    console.log('creating model...');
     if (this.session != null) {
       this.session.dispose();
     }
@@ -567,8 +575,9 @@ export class ModelBuilder extends ModelBuilderPolymer {
       this.applyNormalization(this.selectedNormalizationOption);
       this.setupDatasetStats();
       if (this.isValid) {
+        console.log('selected dataset');
         this.createModel();
-        this.startInference();
+        // this.startInference();
       }
       // Get prebuilt models.
       this.populateModelDropdown();
@@ -879,8 +888,9 @@ export class ModelBuilder extends ModelBuilderPolymer {
     this.validateModel();
 
     if (this.isValid) {
+      console.log('param changed.');
       this.createModel();
-      this.startInference();
+      // this.startInference();
     }
   }
 
@@ -961,7 +971,6 @@ export class ModelBuilder extends ModelBuilderPolymer {
         const weightsJson: string = fileReader.result;
         this.loadWeightsFromJson(weightsJson);
         this.createModel();
-        this.startInference();
       };
       fileReader.readAsText(file);
     });
