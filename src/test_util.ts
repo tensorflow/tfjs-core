@@ -27,6 +27,36 @@ import {DType, TypedArray} from './util';
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
 export const TEST_EPSILON = 1e-2;
 
+export function standardDeviation(
+    values: TypedArray|number[], mean: number) {
+  let squareDiffSum = 0;
+  for (let i = 0; i < values.length; i++) {
+    let diff = values[i] - mean;
+    squareDiffSum += diff * diff;
+  }
+  return Math.sqrt(squareDiffSum / values.length);
+}
+
+export function expectArrayInMeanStdRange(
+    actual: util.TypedArray|number[],
+    mean: number,
+    stdDev: number,
+    epsilon = TEST_EPSILON) {
+  let actualSum = 0;
+  for (let i = 0; i < actual.length; i++) {
+    actualSum += actual[i];
+  }
+  const actualMean = actualSum / actual.length;
+  const actualStdDev = standardDeviation(actual, actualMean);
+  console.log('length: ', actual.length);
+  console.log('actualSum   : ', actualSum);
+  console.log('actualMean  : ', actualMean);
+  console.log('actualStdDev: ', actualStdDev);
+
+  expectNumbersClose(actualMean, mean, epsilon);
+  expectNumbersClose(actualStdDev, stdDev, epsilon);
+}
+
 export function expectArraysClose(
     actual: TypedArray|number[], expected: TypedArray|number[],
     epsilon = TEST_EPSILON) {
