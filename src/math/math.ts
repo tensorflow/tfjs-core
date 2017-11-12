@@ -1216,9 +1216,9 @@ export abstract class NDArrayMath {
    * @param alpha scaleing factor for negative values, defaults to 0.2
    * @return {NDArray}
    */
-  leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
+  leakyRelu<T extends NDArray>(ndarray: T, alpha = Scalar.new(0.2)): T {
     return this.executeOp(
-        'leakyRelu', () => this.leakyReluInternal(ndarray, alpha));
+        'leakyRelu', () => this.leakyReluInternal(ndarray, alpha.get()));
   }
   protected abstract leakyReluInternal<T extends NDArray>(
       ndarray: T, alpha: number): T;
@@ -1314,12 +1314,13 @@ export abstract class NDArrayMath {
   protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Computes step of the input NDArray element-wise, y=1 if x>0|alpha if x<=0.
+   * Computes step of the input NDArray element-wise, y=1 if x>0|alpha*x if x<=0.
    *
    * @param ndarray The input NDArray.
+   * @param alpha The gradient when input is negative.
    */
-  step<T extends NDArray>(ndarray: T, alpha = 0.0): T {
-    return this.executeOp('step', () => this.stepInternal(ndarray, alpha));
+  step<T extends NDArray>(ndarray: T, alpha = Scalar.new(0.0)): T {
+    return this.executeOp('step', () => this.stepInternal(ndarray, alpha.get()));
   }
   protected abstract stepInternal<T extends NDArray>(ndarray: T, 
     alpha: number): T;

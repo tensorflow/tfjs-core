@@ -22,6 +22,7 @@ import {NDArray, Scalar} from './ndarray';
 export interface ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, input: T): T;
   der<T extends NDArray>(math: NDArrayMath, input: T, output: T): T;
+  dispose(): void;
 }
 
 export class TanHFunc implements ActivationFunction {
@@ -38,6 +39,8 @@ export class TanHFunc implements ActivationFunction {
       return math.scalarMinusArray(Scalar.ONE, ySquared);
     });
   }
+
+  dispose() {};
 }
 
 export class ReLUFunc implements ActivationFunction {
@@ -52,26 +55,28 @@ export class ReLUFunc implements ActivationFunction {
       return math.step(x);
     });
   }
+
+  dispose() {};  
 }
 
 export class LeakyReluFunc implements ActivationFunction {
-  private alpha: number;
+  private alpha: Scalar;
 
   constructor(alpha: number) {
-    this.alpha = alpha;
+    this.alpha = Scalar.new(alpha);
   }
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.leakyRelu(x, this.alpha);
-    });
+    return math.leakyRelu(x, this.alpha);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.scope(() => {
-      return math.step(x, this.alpha);
-    });
+    return math.step(x, this.alpha);
   }
+
+  dispose() {
+    this.alpha.dispose();
+  };  
 }
 
 export class SigmoidFunc implements ActivationFunction {
@@ -88,6 +93,8 @@ export class SigmoidFunc implements ActivationFunction {
       return math.subStrict(y, ySquared);
     });
   }
+
+  dispose() {};  
 }
 
 export class SquareFunc implements ActivationFunction {
@@ -103,4 +110,6 @@ export class SquareFunc implements ActivationFunction {
       return math.scalarTimesArray(Scalar.TWO, x);
     });
   }
+
+  dispose() {};  
 }

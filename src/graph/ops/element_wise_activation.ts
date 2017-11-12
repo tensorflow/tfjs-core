@@ -56,6 +56,10 @@ export class ElementWiseActivation extends Operation {
       dydx.dispose();
     });
   }
+
+  dispose() {
+    this.func.dispose();
+  }
 }
 
 /**
