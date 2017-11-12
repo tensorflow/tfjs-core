@@ -31,6 +31,7 @@ import {ConcatProgram} from './webgl/concat_gpu';
 import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {Copy2DProgram} from './webgl/copy_gpu';
+import {DepthwiseConv2DProgram} from './webgl/depthwise_conv_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
@@ -434,7 +435,9 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected depthwiseConv2DInternal(
       input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D {
-    throw new Error('Method not implemented.');
+    const program = new DepthwiseConv2DProgram(convInfo);
+    const inputs = [input, filter];
+    return this.compileAndRun(program, inputs);
   }
 
   protected maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
