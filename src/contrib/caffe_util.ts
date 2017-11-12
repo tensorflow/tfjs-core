@@ -44,20 +44,49 @@ export function getLayers(model: caffe.INetParameter, phase: number = caffe.Phas
   return model.layer.filter((layer) => layer.phase === phase);
 }
 
+function getByKeys<T>(arr: T[], keys: number[]) : T[] {
+  return keys.map((i) => arr[i]);
+}
+
 /**
- * Converts a BlobProto [b, d, y, x] into an NDArray [x, y, d, b] 
+ * Converts a BlobProto into an NDArray 
  * @param {number[]} blob data structure used by used by caffe
  * @returns {NDArray} data structure used by deeplearn.js
  */
 function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
   
-  // blob dimension
-  let dim = <number[]> blob.shape.dim.reverse();
+  if (blob.shape.dim.length === 4) {
+    // we need to swap the depth axis
+    // [f, d, x, y] => [x, y, d, f]
+    const dim = getByKeys(<number[]> blob.shape.dim, [2, 3, 1, 0]);  
+    const data = blob.data;
+    const width = dim[0];
+    const height = dim[1];
+    const depth = dim[2];
+    const filters = dim[3];
+    const arr = NDArray.zeros(dim, "float32");
 
-  // blob data
-  let data = new Float32Array(blob.data.reverse());
+    for (let f = 0; f < filters; ++f) {
+      for (let d = 0; d < depth; ++d) {
+        for (let x = 0; x < width; ++x) {
+          for (let y = 0; y < height; ++y) {
+            var ix = ((f * depth + d) * width + x) * height + y;
+            arr.set(data[ix], x, y, d, f);
+          }
+        }
+      }
+    }
+    return arr;
+  }
+  else {
+    // assign the dimension
+    const dim = <number[]> blob.shape.dim;
+    
+    // assign the blob data
+    const data = new Float32Array(blob.data);
 
-  return NDArray.make(dim, {values: data});
+    return NDArray.make(dim, {values: data}, "float32");
+  }
 }
 
 // TODO Check naming conventions from Tensorflow used in manifest.json

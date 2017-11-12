@@ -21,6 +21,8 @@ import '../demo-footer';
 // tslint:disable-next-line:max-line-length
 import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
 import {SqueezeNet} from 'deeplearn-squeezenet';
+// uncomment next line to use imagenet caffemodel
+// import {SqueezeNetCaffe as SqueezeNet} from '../models/squeezenet_caffe';
 
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 

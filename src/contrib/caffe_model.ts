@@ -17,7 +17,6 @@
 import {caffe} from './caffe/caffe.js';
 import * as caffe_util from './caffe_util';
 
-import {NDArrayMathGPU} from '../math/math_gpu';
 import {NDArray} from '../math/ndarray';
 
 export class CaffeModel {
@@ -27,14 +26,14 @@ export class CaffeModel {
    * Model weights per layer
    * @type {Map<string, NDArray>}
    */
-  private variables: Map<string, NDArray>;
+  protected variables: Map<string, NDArray>;
 
   // TODO Generalize preprocessing to support cropping
   /**
    * Preprocessing Offset
    * @type {NDArray}
    */
-  private preprocessOffset: NDArray;
+  protected preprocessOffset: NDArray;
 
   // TODO Handle .prototxt and .caffemodel file properly
   /*
@@ -66,7 +65,7 @@ export class CaffeModel {
 
   // private static INPUT_LAYER: string = 'data';
 
-  constructor(private caffemodelUrl: string, private prototxtUrl: string, public math: NDArrayMathGPU){}
+  constructor(private caffemodelUrl: string, private prototxtUrl: string){}
 
   /**
    * Load the model definition and weights
