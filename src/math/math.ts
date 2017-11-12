@@ -924,7 +924,7 @@ export abstract class NDArrayMath {
    * Construct an array by repeating it the number of times given by reps.
    *
    * This operation creates a new array by replicating `input` `reps`
-   * times. The output tensor's i'th dimension has `input.shape[i] * 
+   * times. The output tensor's i'th dimension has `input.shape[i] *
    * reps[i]` elements, and the values of `input` are replicated
    * `reps[i]` times along the i'th dimension. For example, tiling
    * `[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.
@@ -932,8 +932,8 @@ export abstract class NDArrayMath {
    * @param a The array to transpose.
    * @param reps Determines the number of replications per dimension.
    */
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, reps: number[]): T {
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
+      T {
     util.assert(
         a.rank === reps.length,
         `Error in transpose: rank of input ${a.rank} ` +
@@ -941,8 +941,7 @@ export abstract class NDArrayMath {
     return this.executeOp('tile', () => this.tileInternal(a, reps));
   }
   protected abstract tileInternal<
-      D extends keyof DataTypes, T extends NDArray<D>>(a: T, 
-        reps: number[]): T;
+      D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]): T;
 
   /**
    * Transposes the array. Permutes the dimensions according to `perm`.
@@ -1662,7 +1661,8 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeDepthwiseConv2DInfo(
         input.shape, filter.shape, strides, pad);
     return this.executeOp(
-        'conv2d', () => this.depthwiseConv2DInternal(input, filter, convInfo));
+        'depthwiseConv2D',
+        () => this.depthwiseConv2DInternal(input, filter, convInfo));
   }
   protected abstract depthwiseConv2DInternal(
       input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D;

@@ -25,8 +25,8 @@ export class DepthwiseConv2DProgram implements GPGPUProgram {
 
   constructor(convInfo: DepthwiseConvInfo) {
     this.outputShape = convInfo.outShape;
-    const xNumRows = convInfo.inShape[0];
-    const xNumCols = convInfo.inShape[1];
+    const xNumRows = convInfo.inShape[1];
+    const xNumCols = convInfo.inShape[2];
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
@@ -67,9 +67,9 @@ export class DepthwiseConv2DProgram implements GPGPUProgram {
               continue;
             }
 
-            float xVal = getX(xR, xC, d1);
-            vec4 wVal = getW(wR, wC, d1, q));
-            dotProd += dot(xVal, wVal);
+            float xVal = getX(batch, xR, xC, d1);
+            float wVal = getW(wR, wC, d1, q);
+            dotProd += xVal * wVal;
           }
         }
         setOutput(dotProd);
