@@ -152,8 +152,8 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    */
   static make<T extends keyof DataTypes = keyof DataTypes>(
       shape: number[], data: NDArrayData<T>, dtype?: T): NDArray<T> {
-    if (data.values == null && data.texture == null) {
-      throw new Error(`Cannot make new NDArray from null values.`);
+    if (data.isDisposed) {
+      throw new Error(`Cannot make new NDArray from disposed NDArrayData.`);
     }
     switch (shape.length) {
       case 0:
@@ -374,9 +374,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
       }
 
       this.ndarrayData.values = float32ToTypedArray(values, this.dtype);
-      if (this.ndarrayData.values == null) {
-        throw new Error(`dataSync failure - values is null.`);
-      }
+
       this.disposeTexture();
     }
     return this.ndarrayData.values;
