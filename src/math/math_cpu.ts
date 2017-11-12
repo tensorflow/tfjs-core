@@ -860,7 +860,44 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected depthwiseConv2DInternal(
       input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D {
-    throw new Error('Method not implemented.');
+    const [numBatches, xRows, xCols, inChannels] = convInfo.inShape;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const padLeft = convInfo.padInfo.left;
+    const padTop = convInfo.padInfo.top;
+    const yRows = convInfo.outShape[1];
+    const yCols = convInfo.outShape[2];
+    const chMul = convInfo.channelMul;
+
+    const y = Array4D.zeros(convInfo.outShape);
+    for (let b = 0; b < numBatches; ++b) {
+      for (let d1 = 0; d1 < inChannels; ++d1) {
+        for (let yR = 0; yR < yRows; ++yR) {
+          const xRCorner = yR * convInfo.strideHeight - padLeft;
+          const xRMin = Math.max(0, xRCorner);
+          const xRMax = Math.min(xRows, filterHeight + xRCorner);
+          for (let yC = 0; yC < yCols; ++yC) {
+            const xCCorner = yC * convInfo.strideWidth - padTop;
+            const xCMin = Math.max(0, xCCorner);
+            const xCMax = Math.min(xCols, filterWidth + xCCorner);
+            for (let q = 0; q < chMul; ++q) {
+              let dotProd = 0;
+              for (let xR = xRMin; xR < xRMax; ++xR) {
+                const wR = xR - xRCorner;
+                for (let xC = xCMin; xC < xCMax; ++xC) {
+                  const wC = xC - xCCorner;
+                  const pixel = input.get(b, xR, xC, d1);
+                  const weight = filter.get(wR, wC, d1, q);
+                  dotProd += pixel * weight;
+                }
+              }
+              y.set(dotProd, b, yR, yC, d1 * chMul + q);
+            }
+          }
+        }
+      }
+    }
+    return y;
   }
 
   protected tileInternal<D extends keyof DataTypes, T extends NDArray<D>>(
