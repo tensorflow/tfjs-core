@@ -2,11 +2,11 @@ import * as d3 from 'd3';
 
 import { PolymerElement, PolymerHTMLElement } from '../polymer-spec';
 import { Array1D, Array2D, CostReduction, Graph, InputProvider, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Scalar, Session, SGDOptimizer, Tensor } from '../deeplearn';
+import { TypedArray } from '../../src/util';
 
 const BATCH_SIZE = 100;
 const ATLAS_SIZE = 10000;
 
-const PLOT_SIZE_PX = 500;
 const NUM_GRID_CELLS = 25;
 const NUM_MANIFOLD_CELLS = 10;
 const GENERATED_SAMPLES_VISUALIZATION_INTERVAL = 10;
@@ -16,7 +16,12 @@ const NUM_TRUE_SAMPLES_VISUALIZED = 250;
 // tslint:disable-next-line:variable-name
 const GANLabPolymer: new () => PolymerHTMLElement = PolymerElement({
   is: 'gan-lab',
-  properties: {}
+  properties: {
+    learningRate: Number,
+    learningRateOptions: Array,
+    selectedShapeName: String,
+    shapeNames: Array
+  }
 });
 
 class GANLab extends GANLabPolymer {
@@ -48,16 +53,17 @@ class GANLab extends GANLabPolymer {
   private uniformNoiseProviderCount: number;
   private uniformInputProviderCount: number;
 
-  private startButton: HTMLInputElement;
-  private stopButton: HTMLInputElement;
-
   private noiseSize: number;
   private numGeneratorLayers: number;
   private numDiscriminatorLayers: number;
   private numGeneratorNeurons: number;
   private numDiscriminatorNeurons: number;
+
   private learningRate: number;
   private kSteps: number;
+
+  private plotSizePx: number;
+
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
   private isDrawing: boolean;
@@ -130,16 +136,14 @@ class GANLab extends GANLabPolymer {
       this.createExperiment();
     });
 
-    const learningRateSlider =
-      this.querySelector('#learning-rate-slider') as HTMLInputElement;
-    const learningRateElement =
-      this.querySelector('#learning-rate') as HTMLElement;
-    this.learningRate = Math.pow(10, -1 * (+learningRateSlider.value));
-    learningRateSlider.addEventListener('value-change', (event) => {
-      learningRateElement.innerText = learningRateSlider.value;
-      this.learningRate = Math.pow(10, -1 * +learningRateSlider.value);
-      this.createExperiment();
-    });
+    this.learningRateOptions = [0.001, 0.01, 0.05, 0.1, 0.5];
+    this.learningRate = 0.05;
+    this.querySelector('#learning-rate-dropdown')!.addEventListener(
+      // tslint:disable-next-line:no-any event has no type
+      'iron-activate', (event: any) => {
+        this.learningRate = +event.detail.selected;
+        this.createExperiment();
+      });
 
     this.shapeNames = ['Line', 'Two Hills', 'Drawing'];
     this.selectedShapeName = 'Line';
@@ -148,7 +152,7 @@ class GANLab extends GANLabPolymer {
       'iron-activate', (event: any) => {
         this.selectedShapeName = event.detail.selected;
         if (this.selectedShapeName === 'Drawing') {
-          this.onClickStopButton();
+          this.pause();
           this.prepareDrawing();
         } else {
           this.createExperiment();
@@ -187,16 +191,18 @@ class GANLab extends GANLabPolymer {
           (event.target as any).active ? 'visible' : 'hidden';
       });
 
-    this.startButton =
-      document.getElementById('start-training') as HTMLInputElement;
-    this.startButton.addEventListener('click', () => this.onClickStartButton());
-    this.stopButton =
-      document.getElementById('stop-training') as HTMLInputElement;
-    this.stopButton.addEventListener('click', () => this.onClickStopButton());
-    const incrementButton =
-      document.getElementById('increment-training') as HTMLInputElement;
-    incrementButton.addEventListener(
-      'click', () => this.onClickIncrementButton());
+    const playButton =
+      document.getElementById('play-pause-button') as HTMLInputElement;
+    playButton.addEventListener(
+      'click', () => this.onClickPlayPauseButton());
+    const nextStepButton =
+      document.getElementById('next-step-button') as HTMLInputElement;
+    nextStepButton.addEventListener(
+      'click', () => this.onClickNextStepButton());
+    const resetButton =
+      document.getElementById('reset-button') as HTMLInputElement;
+    resetButton.addEventListener(
+      'click', () => this.onClickResetButton());
 
     this.iterCountElement =
       document.getElementById('iteration-count') as HTMLElement;
@@ -233,42 +239,16 @@ class GANLab extends GANLabPolymer {
       'click', () => this.onClickFinishDrawingButton());
 
     // Visualization.
-    const plotMargin = 20;
-    const plotPadding = 10;
-    const descriptionHeight = 90;
-    const plotAreaWidth = PLOT_SIZE_PX + plotPadding * 2 + plotMargin;
+    this.plotSizePx = 500;
 
-    d3.select('svg#vis-svg')
-      .attr('width', plotAreaWidth + plotPadding * 2)
-      .attr('height', PLOT_SIZE_PX + plotPadding * 2 + descriptionHeight);
+    this.visTrueSamples = d3.select('#vis-true-samples');
+    this.visGeneratedSamples = d3.select('#vis-generated-samples');
+    this.visDiscriminator = d3.select('#vis-discriminator-output');
+    this.visManifold = d3.select('#vis-manifold');
 
-    this.vis =
-      d3.select('#vis-samples')
-        .attr('transform', `translate(${plotPadding},${plotPadding})`);
-    this.vis.select('rect.plot-border')
-      .attr('width', PLOT_SIZE_PX)
-      .attr('height', PLOT_SIZE_PX);
-    this.visTrueSamples = this.vis.select('#vis-true-samples');
-    this.visGeneratedSamples = this.vis.select('#vis-generated-samples');
-
-    this.visDiscriminator =
-      d3.select('#vis-discriminator-output')
-        .attr('transform', `translate(${plotPadding},${plotPadding})`);
-    this.visDiscriminator.select('rect.plot-bg')
-      .attr('width', PLOT_SIZE_PX)
-      .attr('height', PLOT_SIZE_PX);
     this.colorScale = d3.scaleLinear<string>().domain([0.0, 0.5, 1.0]).range([
       '#af8dc3', '#f5f5f5', '#7fbf7b'
     ]);
-
-    this.visManifold =
-      d3.select('#vis-manifold')
-        .attr('transform', `translate(${plotPadding},${plotPadding})`);
-
-    d3.select('#vis-descriptions')
-      .attr(
-      'transform',
-      `translate(${plotPadding},${plotPadding * 2 + PLOT_SIZE_PX})`);
 
     this.mathGPU = new NDArrayMathGPU();
     this.mathCPU = new NDArrayMathCPU();
@@ -278,11 +258,7 @@ class GANLab extends GANLabPolymer {
   }
 
   private createExperiment() {
-    this.startButton.innerText = 'Start';
-    this.stopTraining = true;
-    this.startButton.disabled = false;
-    this.stopButton.disabled = true;
-
+    this.pause();
     this.iterationCount = 0;
     this.iterCountElement.innerText = this.iterationCount;
 
@@ -467,8 +443,8 @@ class GANLab extends GANLabPolymer {
       .append('circle')
       .attr('class', 'true-dot gan-lab')
       .attr('r', 2)
-      .attr('cx', (d: number[]) => d[0] * PLOT_SIZE_PX)
-      .attr('cy', (d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX)
+      .attr('cx', (d: number[]) => d[0] * this.plotSizePx)
+      .attr('cy', (d: number[]) => (1.0 - d[1]) * this.plotSizePx)
       .append('title')
       .text((d: number[]) => `${d[0].toFixed(2)}, ${d[1].toFixed(2)}`);
   }
@@ -495,37 +471,52 @@ class GANLab extends GANLabPolymer {
     this.createExperiment();
   }
 
-  private onClickStartButton() {
-    this.startButton.disabled = true;
-    this.stopTraining = false;
-    this.stopButton.disabled = false;
-
+  private play() {
+    this.isPlaying = true;
+    document.getElementById("play-pause-button")!.classList.add("playing");
     this.iterateTraining(true);
   }
 
-  private onClickStopButton() {
-    this.stopButton.disabled = true;
-    this.startButton.innerText = 'Resume';
-    this.startButton.disabled = false;
-    this.stopTraining = true;
-  }
-
-  private onClickIncrementButton() {
-    if (this.stopTraining) {
-      this.stopTraining = false;
-      this.iterateTraining(false);
-      this.stopTraining = true;
+  private pause() {
+    this.isPlaying = false;
+    const button = document.getElementById("play-pause-button");
+    if (button.classList.contains("playing")) {
+      button.classList.remove("playing");
     }
   }
 
+  private onClickPlayPauseButton() {
+    if (this.isPlaying) {
+      this.pause();
+    } else {
+      this.play();
+    }
+  }
+
+  private onClickNextStepButton() {
+    if (this.isPlaying) {
+      this.pause();
+    }
+    this.isPlaying = true;
+    this.iterateTraining(false);
+    this.isPlaying = false;
+  }
+
+  private onClickResetButton() {
+    if (this.isPlaying) {
+      this.pause();
+    }
+    this.createExperiment();
+  }
+
   private iterateTraining(keepIterating: boolean) {
-    if (this.stopTraining) {
+    if (!this.isPlaying) {
       return;
     }
 
     this.iterationCount++;
 
-    this.math.scope(() => {
+    this.math.scope(async () => {
       for (let j = 0; j < this.kSteps - 1; j++) {
         this.session.train(
           this.dCostTensor,
@@ -543,6 +534,7 @@ class GANLab extends GANLabPolymer {
           { tensor: this.noiseTensor, data: this.noiseProvider }
         ],
         BATCH_SIZE, this.dOptimizer, CostReduction.MEAN);
+
       const gCost = this.session.train(
         this.gCostTensor,
         [{ tensor: this.noiseTensor, data: this.noiseProvider }], BATCH_SIZE,
@@ -554,6 +546,12 @@ class GANLab extends GANLabPolymer {
         this.iterationCount % GENERATED_SAMPLES_VISUALIZATION_INTERVAL === 0) {
 
         // Update charts.
+        if (this.iterationCount === 1) {
+          const chartContainer =
+            document.getElementById('chart-container') as HTMLElement;
+          chartContainer.style.visibility = 'visible';
+        }
+
         this.dCostChartData.push({ x: this.iterationCount, y: dCost.get() });
         this.gCostChartData.push({ x: this.iterationCount, y: gCost.get() });
         this.costChart.update();
@@ -564,7 +562,7 @@ class GANLab extends GANLabPolymer {
           const result = this.session.eval(
             this.predictionTensor1,
             [{ tensor: this.inputTensor, data: this.uniformInputProvider }]);
-          dData.push(result.getValues());
+          dData.push(await result.data());
         }
 
         const gridDots =
@@ -573,17 +571,17 @@ class GANLab extends GANLabPolymer {
           gridDots.enter()
             .append('rect')
             .attr('class', 'uniform-dot gan-lab')
-            .attr('width', PLOT_SIZE_PX / NUM_GRID_CELLS)
-            .attr('height', PLOT_SIZE_PX / NUM_GRID_CELLS)
+            .attr('width', this.plotSizePx / NUM_GRID_CELLS)
+            .attr('height', this.plotSizePx / NUM_GRID_CELLS)
             .attr(
             'x',
             (d: number, i: number) =>
-              (i % NUM_GRID_CELLS) * (PLOT_SIZE_PX / NUM_GRID_CELLS))
+              (i % NUM_GRID_CELLS) * (this.plotSizePx / NUM_GRID_CELLS))
             .attr(
             'y',
-            (d: number, i: number) => PLOT_SIZE_PX -
+            (d: number, i: number) => this.plotSizePx -
               (Math.floor(i / NUM_GRID_CELLS) + 1) *
-              (PLOT_SIZE_PX / NUM_GRID_CELLS))
+              (this.plotSizePx / NUM_GRID_CELLS))
             .style('fill', (d: number) => this.colorScale(d))
             .append('title')
             .text((d: number) => Number(d).toFixed(3));
@@ -597,7 +595,7 @@ class GANLab extends GANLabPolymer {
           const result = this.session.eval(
             this.generatedTensor,
             [{ tensor: this.noiseTensor, data: this.noiseProvider }]);
-          gData.push(result.getValues());
+          gData.push(await result.data());
         }
 
         const gDots =
@@ -607,26 +605,26 @@ class GANLab extends GANLabPolymer {
             .append('circle')
             .attr('class', 'generated-dot gan-lab')
             .attr('r', 2)
-            .attr('cx', (d: number[]) => d[0] * PLOT_SIZE_PX)
-            .attr('cy', (d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX);
+            .attr('cx', (d: number[]) => d[0] * this.plotSizePx)
+            .attr('cy', (d: number[]) => (1.0 - d[1]) * this.plotSizePx);
         }
-        gDots.attr('cx', (d: number[]) => d[0] * PLOT_SIZE_PX)
-          .attr('cy', (d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX);
+        gDots.attr('cx', (d: number[]) => d[0] * this.plotSizePx)
+          .attr('cy', (d: number[]) => (1.0 - d[1]) * this.plotSizePx);
 
         // Visualize manifold for 1-D or 2-D noise.
         interface ManifoldCell {
-          points: Array<[number, number]>;
+          points: TypedArray[];
           area?: number;
         }
 
         if (this.noiseSize <= 2) {
-          const manifoldData: Array<[number, number]> = [];
+          const manifoldData = [];
           for (let i = 0; i < Math.pow(NUM_MANIFOLD_CELLS + 1, this.noiseSize);
             ++i) {
             const result = this.session.eval(
               this.generatedTensor,
               [{ tensor: this.noiseTensor, data: this.uniformNoiseProvider }]);
-            manifoldData.push([result.getValues()[0], result.getValues()[1]]);
+            manifoldData.push(await result.data());
           }
 
           // Create grid cells.
@@ -668,8 +666,8 @@ class GANLab extends GANLabPolymer {
 
           const manifoldCell =
             d3.line()
-              .x((d: number[]) => d[0] * PLOT_SIZE_PX)
-              .y((d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX);
+              .x((d: number[]) => d[0] * this.plotSizePx)
+              .y((d: number[]) => (1.0 - d[1]) * this.plotSizePx);
 
           const grids = this.visManifold.selectAll('.grids').data(gridData);
 
@@ -681,10 +679,13 @@ class GANLab extends GANLabPolymer {
               .attr('class', 'manifold-cell gan-lab');
           }
           grids.select('.manifold-cell')
-            .attr('d', (d: ManifoldCell) => manifoldCell(d.points))
-            .style(
-            'fill',
-            () => {
+            .attr('d', (d: ManifoldCell) => manifoldCell(
+              d.points.map(point => {
+                const p: [number, number] = [point[0], point[1]];
+                return p;
+              })
+            ))
+            .style('fill', () => {
               return this.noiseSize === 2 ? '#7b3294' : 'none';
             })
             .style('fill-opacity', (d: ManifoldCell) => {
@@ -702,14 +703,14 @@ class GANLab extends GANLabPolymer {
               .attr('class', 'uniform-generated-dot gan-lab')
               .attr('r', 1);
           }
-          manifoldDots.attr('cx', (d: number[]) => d[0] * PLOT_SIZE_PX)
-            .attr('cy', (d: number[]) => (1.0 - d[1]) * PLOT_SIZE_PX);
+          manifoldDots.attr('cx', (d: number[]) => d[0] * this.plotSizePx)
+            .attr('cy', (d: number[]) => (1.0 - d[1]) * this.plotSizePx);
         }
       }
     });
 
     if (this.iterationCount > 10000) {
-      this.stopTraining = false;
+      this.isPlaying = false;
     }
 
     requestAnimationFrame(() => this.iterateTraining(true));
@@ -813,6 +814,10 @@ class GANLab extends GANLabPolymer {
   }
 
   private recreateCharts() {
+    const chartContainer =
+      document.getElementById('chart-container') as HTMLElement;
+    chartContainer.style.visibility = 'hidden';
+
     this.dCostChartData = [];
     this.gCostChartData = [];
     if (this.costChart != null) {
@@ -870,7 +875,7 @@ class GANLab extends GANLabPolymer {
   }
   private draw(position: [number, number]) {
     this.drawingPositions.push(
-      [position[0] / PLOT_SIZE_PX, 1.0 - position[1] / PLOT_SIZE_PX]);
+      [position[0] / this.plotSizePx, 1.0 - position[1] / this.plotSizePx]);
     this.context.beginPath();
     this.context.moveTo(position[0] - 1, position[1]);
     this.context.lineTo(position[0], position[1]);
