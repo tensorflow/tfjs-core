@@ -246,6 +246,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     const indicesArray = Array1D.new(indices, 'int32');
     const program = new GatherProgram(a.shape, indices, axis);
     return this.compileAndRun(program, [a, indicesArray]);
+  }
 
   private reduce<D extends keyof DataTypes>(
       a: Array2D, reduceType: 'max'|'min'|'sum', dtype: D): Array2D<D> {

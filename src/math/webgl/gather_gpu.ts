@@ -16,6 +16,7 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class GatherProgram implements GPGPUProgram {
   variableNames = ['A', 'indices'];
@@ -28,7 +29,7 @@ export class GatherProgram implements GPGPUProgram {
     outputShape[axis] = indices.length;
     this.outputShape = outputShape;
     this.rank = outputShape.length;
-    const dtype = getDataType(this.rank);
+    const dtype = getCoordsDataType(this.rank);
     const sourceCoords = getSourceCoords(aShape, axis);
 
     this.userCode = `
@@ -60,18 +61,4 @@ function getSourceCoords(aShape: number[], axis: number): string {
     }
   }
   return sourceCoords.join();
-}
-
-function getDataType(rank: number): string {
-  if (rank === 1) {
-    return 'int';
-  } else if (rank === 2) {
-    return 'ivec2';
-  } else if (rank === 3) {
-    return 'ivec3';
-  } else if (rank === 4) {
-    return 'ivec4';
-  } else {
-    throw Error(`Tile for rank ${rank} is not yet supported`);
-  }
 }
