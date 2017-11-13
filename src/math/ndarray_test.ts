@@ -18,7 +18,6 @@
 import * as test_util from '../test_util';
 
 import * as ndarray from './ndarray';
-import * as util from '../util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DType, NDArray, Scalar} from './ndarray';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -1322,55 +1321,46 @@ test_util.describeCustom('NDArray CPU <--> GPU with dtype', () => {
 
 // NDArray.randNormal
 test_util.describeCustom('NDArray.randNormal', () => {
-  // W/S test works well with smaller sets.
-  const NUM_SAMPLES_NORMALITY = 10;
-  const NUM_SAMPLES_MEAN_STDV = 10000;
-  // Expect higher precentage of variance from standard deviation and mean.
-  const EPSILON = 0.5;
-  // Lower/Upper boundries for critical values in W/S test with 10 items
-  // (0.01 level of signifigance).
-  // http://webspace.ship.edu/pgmarr/Geo441/Lectures/Lec%205%20-%20Normality%20Testing.pdf
-  const LOWER_BOUNDRY = 2.51;
-  const UPPER_BOUNDRY = 3.875;
+  const NUM_SAMPLES = 10000;
 
   it('should return a float32 1D or random normal values', () => {
-    let result = NDArray.randNormal([NUM_SAMPLES_NORMALITY], 0, 1.5);
+    let result = NDArray.randNormal([NUM_SAMPLES], 0, 1.5);
     expect(result.dtype).toBe('float32');
-    expect(result.shape).toEqual([NUM_SAMPLES_NORMALITY]);
-    expectArrayInNormality(result.getValues(), LOWER_BOUNDRY, UPPER_BOUNDRY);
-
-    result = NDArray.randNormal([NUM_SAMPLES_MEAN_STDV], 1, 1.5);
-    expect(result.dtype).toBe('float32');
-    expect(result.shape).toEqual([NUM_SAMPLES_MEAN_STDV]);
-    test_util.expectArrayInMeanStdRange(result.getValues(), 1, 1.5, EPSILON);
+    expect(result.shape).toEqual([NUM_SAMPLES]);
+    test_util.jarqueBeraNormalityTest(result.getValues());
   });
 
-  function expectArrayInNormality(
-      actual: util.TypedArray|number[],
-      lowerBoundry: number,
-      upperBoundry: number) {
-    // Perform simple W/S test for normality.
-    let low = 0;
-    let high = 0;
-    let sum = 0;
-    for (let i = 0; i < actual.length; i++) {
-      let v = actual[i];
-      if (v < low) {
-        low = v;
-      } else if (v > high) {
-        high = v;
-      }
-      sum += v;
-    }
-    const mean = sum / actual.length;
-    const stdDeviation = test_util.standardDeviation(actual, mean);
-    const criticalRange = (high - low) / stdDeviation;
+  // function expectArrayInNormality(
+  //     actual: util.TypedArray|number[],
+  //     lowerBoundry: number,
+  //     upperBoundry: number) {
+  //   // Perform simple W/S test for normality.
+  //   let low = 0;
+  //   let high = 0;
+  //   let sum = 0;
+  //   for (let i = 0; i < actual.length; i++) {
+  //     let v = actual[i];
+  //     if (v < low) {
+  //       low = v;
+  //     } else if (v > high) {
+  //       high = v;
+  //     }
+  //     sum += v;
+  //   }
+  //   const mean = sum / actual.length;
+  //   const stdDeviation = test_util.standardDeviation(actual, mean);
+  //   const criticalRange = (high - low) / stdDeviation;
 
-    if (criticalRange < lowerBoundry || criticalRange > upperBoundry) {
-      throw new Error('Value out of critical boundry: ' + criticalRange +
-        ' (lower: ' + lowerBoundry + ', upper: ' + upperBoundry + ')');
-    }
-  }
+  //   // Use Jarque-Bera test?
+  //   console.log('kurtosis', test_util.kurtosis(actual));
+  //   console.log('skewness', test_util.skewness(actual));
+  //   console.log('jbTest: ', test_util.jarqueBeraNormalityTest(actual));
+
+  //   // if (criticalRange < lowerBoundry || criticalRange > upperBoundry) {
+  //   //   throw new Error('Value out of critical boundry: ' + criticalRange +
+  //   //     ' (lower: ' + lowerBoundry + ', upper: ' + upperBoundry + ')');
+  //   // }
+  // }
 });
 
 // NDArray.fromPixels

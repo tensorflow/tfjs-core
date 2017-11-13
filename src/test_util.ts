@@ -27,6 +27,14 @@ import {DType, TypedArray} from './util';
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
 export const TEST_EPSILON = 1e-2;
 
+export function mean(values: TypedArray|number[]) {
+  let sum = 0;
+  for (let i = 0; i < values.length; i++) {
+    sum += values[i];
+  }
+  return sum / values.length;
+}
+
 export function standardDeviation(
     values: TypedArray|number[], mean: number) {
   let squareDiffSum = 0;
@@ -37,24 +45,58 @@ export function standardDeviation(
   return Math.sqrt(squareDiffSum / values.length);
 }
 
-export function expectArrayInMeanStdRange(
-    actual: util.TypedArray|number[],
-    mean: number,
-    stdDev: number,
-    epsilon = TEST_EPSILON) {
-  let actualSum = 0;
-  for (let i = 0; i < actual.length; i++) {
-    actualSum += actual[i];
+export function kurtosis(values: TypedArray|number[]) {
+  // https://en.wikipedia.org/wiki/Kurtosis
+  let valuesMean = mean(values);
+  let n = values.length;
+  let sum2 = 0;
+  let sum4 = 0;
+  let i = -1;
+  while (++i < n) {
+    let v = values[i] - valuesMean;
+    sum2 += Math.pow(v, 2);
+    sum4 += Math.pow(v, 4);
   }
-  const actualMean = actualSum / actual.length;
-  const actualStdDev = standardDeviation(actual, actualMean);
-  console.log('length: ', actual.length);
-  console.log('actualSum   : ', actualSum);
-  console.log('actualMean  : ', actualMean);
-  console.log('actualStdDev: ', actualStdDev);
+  return (1 / n) * sum4 / Math.pow((1 / n) * sum2, 2) - 3;
+}
 
-  expectNumbersClose(actualMean, mean, epsilon);
-  expectNumbersClose(actualStdDev, stdDev, epsilon);
+export function skewness(values: TypedArray|number[]) {
+  // https://en.wikipedia.org/wiki/Skewness
+  let valuesMean = mean(values);
+  let n = values.length;
+  let sum2 = 0;
+  let sum3 = 0;
+  let i = -1;
+  while (++i < n) {
+    let v = values[i] - valuesMean;
+    sum2 += Math.pow(v, 2);
+    sum3 += Math.pow(v, 3);
+  }
+  return (1 / n) * sum3 / Math.pow((1 / (n - 1)) * sum2, 3 / 2);
+}
+
+export function jarqueBeraNormalityTest(
+    values: TypedArray|number[]) {
+  //https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
+
+  let n = values.length;
+  let s = skewness(values);
+  let k = kurtosis(values);
+  // return n * (Math.pow(s, 2) / Math.pow(6 + (k - 3), 2) / 24);;
+  let jb = n * ((Math.pow(s, 2) / 6) + (Math.pow(k, 2) / 24));
+
+  return jb;
+}
+
+export function expectArrayInMeanStdRange(
+    actual: TypedArray|number[],
+    expectedMean: number,
+    expectedStdDev: number,
+    epsilon = TEST_EPSILON) {
+  const actualMean = mean(actual);
+  expectNumbersClose(actualMean, expectedMean, epsilon);
+  expectNumbersClose(
+    standardDeviation(actual, actualMean), expectedStdDev, epsilon);
 }
 
 export function expectArraysClose(
