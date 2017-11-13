@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Principal Academy Inc All Rights Reserved.
+ * Copyright 2017 Google Inc All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,6 +14,10 @@
  * limitations under the License.
  * =============================================================================
  */
+
+// Contributed by Principal Academy Inc.
+//     https://github.com/principal-academy
+//     https://principal.academy
 
 import {NDArrayMath} from '../../math/math';
 import {NDArray, Scalar} from '../../math/ndarray';

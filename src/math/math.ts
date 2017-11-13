@@ -1241,8 +1241,8 @@ export abstract class NDArrayMath {
   protected abstract stepInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Computes sign of the input NDArray element-wise, y = 1 if x >= 0 | -1 if x 
-   * < 0
+   * Computes sign of the input NDArray element-wise, y = 1 if x > 0 | -1 if x 
+   * < 0 and y = x otherwise
    * @param ndarray The input NDArray.
    */
   sign<T extends NDArray>(ndarray: T): T {
