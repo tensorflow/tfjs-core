@@ -17,8 +17,8 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
-import {Array4D} from './ndarray';
+import {NDArrayMathGPU} from './math_gpu';
+import {Array3D, Array4D} from './ndarray';
 
 // math.depthwiseConv2D
 {
@@ -148,6 +148,19 @@ import {Array4D} from './ndarray';
       x.dispose();
       w.dispose();
     });
+
+    it('Array3D is allowed', math => {
+      const fSize = 2;
+      const pad = 'same';
+      const stride = 1;
+      const chMul = 3;
+      const inDepth = 2;
+
+      const x = Array3D.zeros([3, 3, inDepth]);
+      const w = Array4D.zeros([fSize, fSize, inDepth, chMul]);
+      const result = math.depthwiseConv2D(x, w, stride, pad);
+      expect(result.shape).toEqual([3, 3, inDepth * chMul]);
+    });
   };
 
   test_util.describeMathCPU('depthwiseConv2D', [tests]);
@@ -157,3 +170,25 @@ import {Array4D} from './ndarray';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
+
+describe('depthwise timing', () => {
+  it('', async () => {
+    const math = new NDArrayMathGPU();
+    const inDepth = 16;
+    const fSize = 3;
+    const chMul = 2;
+    const stride = 1;
+    const pad = 'same';
+    const x = Array3D.randUniform([299, 299, inDepth], -1, 1);
+    const W = Array4D.randUniform([fSize, fSize, inDepth, chMul], -1, 1);
+    let out: Array3D|Array4D;
+
+    const query = () => {
+      out = math.depthwiseConv2D(x, W, stride, pad);
+    };
+    const gpgpu = math.getGPGPUContext();
+    const totalTime = await gpgpu.runQuery(query);
+    console.log('X shape/texShape', x.shape, '/', x.getTextureShapeRC());
+    console.log('Took', totalTime.toFixed(2), 'ms');
+  });
+});

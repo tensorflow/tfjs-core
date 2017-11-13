@@ -49,12 +49,13 @@ export class ConvGPUBenchmark implements BenchmarkTest {
 
     let benchmark: () => void;
     if (opType === 'regular') {
+      const regParams = params as RegularConvParams;
+      const wShape = conv_util.computeWeightsShape4D(
+          inDepth, regParams.outDepth, filterSize, filterSize);
+      W = Array4D.randUniform(wShape, -1, 1);
+      b = Array1D.randUniform([regParams.outDepth], -1, 1);
+
       benchmark = () => {
-        const regParams = params as RegularConvParams;
-        const wShape = conv_util.computeWeightsShape4D(
-            inDepth, regParams.outDepth, filterSize, filterSize);
-        W = Array4D.randUniform(wShape, -1, 1);
-        b = Array1D.randUniform([regParams.outDepth], -1, 1);
         out = math.conv2d(x, W, b, stride, pad);
       };
     } else if (opType === 'transposed') {
@@ -63,15 +64,17 @@ export class ConvGPUBenchmark implements BenchmarkTest {
           inDepth, regParams.outDepth, filterSize, filterSize);
       W = Array4D.randUniform(wShape, -1, 1);
       x = Array3D.randUniform([size, size, regParams.outDepth], -1, 1);
+
       benchmark = () => {
         out = math.conv2dTranspose(x, W, [size, size, inDepth], stride, pad);
       };
     } else if (opType === 'depthwise') {
+      const depthwiseParams = params as DepthwiseConvParams;
+      const wShape = conv_util.computeWeightsShape4D(
+          inDepth, depthwiseParams.channelMul, filterSize, filterSize);
+      W = Array4D.randUniform(wShape, -1, 1);
+
       benchmark = () => {
-        const depthwiseParams = params as DepthwiseConvParams;
-        const wShape = conv_util.computeWeightsShape4D(
-            inDepth, depthwiseParams.channelMul, filterSize, filterSize);
-        W = Array4D.randUniform(wShape, -1, 1);
         out = math.depthwiseConv2D(x, W, stride, pad);
       };
     } else {

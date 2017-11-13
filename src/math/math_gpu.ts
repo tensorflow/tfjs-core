@@ -184,6 +184,9 @@ export class NDArrayMathGPU extends NDArrayMath {
     const binary = this.getAndSaveBinary(key, () => {
       return gpgpu_math.compileProgram(this.gpgpu, program, inputs, output);
     });
+    if (program instanceof DepthwiseConv2DProgram) {
+      console.log(binary.source);
+    }
     gpgpu_math.runProgram(binary, inputs, output, customSetup);
     return output;
   }
