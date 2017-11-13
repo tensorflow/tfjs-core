@@ -16,6 +16,7 @@
  */
 
 import * as test_util from '../test_util';
+import * as util from '../util';
 
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
@@ -1318,6 +1319,37 @@ test_util.describeCustom('NDArray CPU <--> GPU with dtype', () => {
     expect(a.inGPU()).toBe(false);
   });
 }, FEATURES, customBeforeEach, customAfterEach);
+
+// NDArray.rand
+test_util.describeCustom('NDArray.rand', () => {
+  it('should return a random 1D float32 array', () => {
+    const shape: [number] = [10];
+    const result = NDArray.rand(shape, () => util.randUniform(0, 2));
+    expect(result.dtype).toBe('float32');
+    test_util.expectValuesInRange(result.getValues(), 0, 2);
+  });
+
+  it('should return a random 2D float32 array', () => {
+    const shape: [number] = [3, 4];
+    const result = NDArray.rand(shape, () => util.randUniform(0, 2.5));
+    expect(result.dtype).toBe('float32');
+    test_util.expectValuesInRange(result.getValues(), 0, 2.5);
+  });
+
+  it('should return a random 3D float32 array', () => {
+    const shape: [number] = [3, 4, 5];
+    const result = NDArray.rand(shape, () => util.randUniform(0, 2.5));
+    expect(result.dtype).toBe('float32');
+    test_util.expectValuesInRange(result.getValues(), 0, 2.5);
+  });
+
+  it('should return a random 4D float32 array', () => {
+    const shape: [number] = [3, 4, 5, 6];
+    const result = NDArray.rand(shape, () => util.randUniform(0, 2.5));
+    expect(result.dtype).toBe('float32');
+    test_util.expectValuesInRange(result.getValues(), 0, 2.5);
+  });
+});
 
 // NDArray.randNormal
 test_util.describeCustom('NDArray.randNormal', () => {
