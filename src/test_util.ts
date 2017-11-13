@@ -70,7 +70,7 @@ function areClose(a: number, e: number, epsilon: number): boolean {
   return true;
 }
 
-export function expectArrayInUniform(
+export function expectValuesInRange(
     actual: TypedArray|number[],
     low: number,
     high: number) {

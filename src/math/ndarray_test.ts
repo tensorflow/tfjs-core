@@ -1326,28 +1326,28 @@ test_util.describeCustom('NDArray.rand', () => {
     const shape: [number] = [10];
     const result = NDArray.rand(shape, () => util.randUniform(0, 2));
     expect(result.dtype).toBe('float32');
-    test_util.expectArrayInUniform(result.getValues(), 0, 2);
+    test_util.expectValuesInRange(result.getValues(), 0, 2);
   });
 
   it('should return a random 2D float32 array', () => {
     const shape: [number] = [3, 4];
     const result = NDArray.rand(shape, () => util.randUniform(0, 2.5));
     expect(result.dtype).toBe('float32');
-    test_util.expectArrayInUniform(result.getValues(), 0, 2.5);
+    test_util.expectValuesInRange(result.getValues(), 0, 2.5);
   });
 
   it('should return a random 3D float32 array', () => {
     const shape: [number] = [3, 4, 5];
     const result = NDArray.rand(shape, () => util.randUniform(0, 2.5));
     expect(result.dtype).toBe('float32');
-    test_util.expectArrayInUniform(result.getValues(), 0, 2.5);
+    test_util.expectValuesInRange(result.getValues(), 0, 2.5);
   });
 
   it('should return a random 4D float32 array', () => {
     const shape: [number] = [3, 4, 5, 6];
     const result = NDArray.rand(shape, () => util.randUniform(0, 2.5));
     expect(result.dtype).toBe('float32');
-    test_util.expectArrayInUniform(result.getValues(), 0, 2.5);
+    test_util.expectValuesInRange(result.getValues(), 0, 2.5);
   });
 });
 
