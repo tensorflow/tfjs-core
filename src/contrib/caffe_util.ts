@@ -30,6 +30,7 @@ export function parseCaffeModel(data: ArrayBuffer) {
   return caffe.NetParameter.decode(new Uint8Array(data));
 }
 
+// tslint:disable-next-line:max-line-length
 export function getLayers(model: caffe.NetParameter, phase: number = caffe.Phase.TEST) {
   return model.layer.filter((layer) => layer.phase === phase);
 }
@@ -48,7 +49,7 @@ function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
   if (blob.shape.dim.length === 3) {
     // we need to swap the depth axis
     // caffe: [d, x, y] => deeplearnjs: [x, y, d]
-    const dim = getByKeys(<number[]> blob.shape.dim, [1, 2, 0]);  
+    const dim = getByKeys(blob.shape.dim as number[], [1, 2, 0]);  
     const data = blob.data;
     const width = dim[0];
     const height = dim[1];
@@ -58,7 +59,7 @@ function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
     for (let d = 0; d < depth; ++d) {
       for (let x = 0; x < width; ++x) {
         for (let y = 0; y < height; ++y) {
-          var ix = (d * width + x) * height + y;
+          const ix = (d * width + x) * height + y;
           arr.set(data[ix], x, y, d);
         }
       }
@@ -68,7 +69,7 @@ function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
   else if (blob.shape.dim.length === 4) {
     // we need to swap the filter and depth axis
     // caffe: [f, d, x, y] => deeplearnjs: [x, y, d, f]
-    const dim = getByKeys(<number[]> blob.shape.dim, [2, 3, 1, 0]);  
+    const dim = getByKeys(blob.shape.dim as number[], [2, 3, 1, 0]);  
     const data = blob.data;
     const width = dim[0];
     const height = dim[1];
@@ -80,7 +81,7 @@ function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
       for (let d = 0; d < depth; ++d) {
         for (let x = 0; x < width; ++x) {
           for (let y = 0; y < height; ++y) {
-            var ix = ((f * depth + d) * width + x) * height + y;
+            const ix = ((f * depth + d) * width + x) * height + y;
             arr.set(data[ix], x, y, d, f);
           }
         }
@@ -90,7 +91,7 @@ function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
   }
   else {
     // assign the dimension
-    const dim = <number[]> blob.shape.dim;
+    const dim = blob.shape.dim as number[];
     
     // assign the blob data
     const data = new Float32Array(blob.data);
@@ -106,6 +107,7 @@ function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
  * @param {number} index index of the blob
  * @returns {string} variable name
  */
+// tslint:disable-next-line:max-line-length
 export function getVariableName(layer: caffe.ILayerParameter, index: number) : string {
 
   let postfix = '';
@@ -132,9 +134,10 @@ export function getVariableName(layer: caffe.ILayerParameter, index: number) : s
  * @param {caffe.NetParameter} model caffe model
  * @returns {Map<string, NDArray>} Map containing variables per layer
  */
+// tslint:disable-next-line:max-line-length
 export function getAllVariables(model: caffe.NetParameter) : Map<string, NDArray> {
 
-  var variables: Map<string, NDArray> = new Map();
+  const variables: Map<string, NDArray> = new Map();
    
   model.layer
 
@@ -155,21 +158,11 @@ export function getAllVariables(model: caffe.NetParameter) : Map<string, NDArray
 
 export function getPreprocessOffset(model: caffe.NetParameter) : NDArray {
   // TODO - mean value could be of type Array3D as well
-  let params =  model.layer[0].transformParam;
+  const params =  model.layer[0].transformParam;
   return Array1D.new(params.meanValue);
 }
 
 export function getPreprocessDim(model: caffe.NetParameter) : number {
-  let params =  model.layer[0].transformParam;
+  const params =  model.layer[0].transformParam;
   return params.cropSize;
-}
-
-/**
- * Convert an array to a Map by key
- * @param {Array<T>} arr input array
- * @param {string} key a key of T that can cast to string
- * @returns {Map<string, T>}
- */
-export function toMap<T>(arr: Array<T>, key: string) : Map<string, T> {
-  return new Map(arr.map((obj) => <[string, T]>[new String((<any> obj)[key]), obj]));
 }

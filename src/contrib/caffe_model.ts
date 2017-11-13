@@ -22,7 +22,8 @@ import {Model} from '../model';
 
 export class CaffeModel implements Model {
 
-  // TODO Map structure not compatible with object structure used in models.Squeezenet
+  // TODO Map structure not compatible with object structure used in
+  // models.Squeezenet
   /**
    * Model weights per layer
    * @type {Map<string, NDArray>}
@@ -38,8 +39,8 @@ export class CaffeModel implements Model {
   
   /**
    * Parsed .caffemodel
-   * The .caffemodel file contains the model definition, parameters and weights after a specific phase (train, test).
-   * Most .caffemodel files contain all layers and parameters from the training phase. 
+   * The .caffemodel file contains the model definition, parameters and weights
+   * after a specific phase (train, test). 
    * @type {caffe.NetParameter}
    */
   private caffemodel: caffe.NetParameter;
@@ -66,7 +67,7 @@ export class CaffeModel implements Model {
   }
 
   predict(input: NDArray): Promise<{}> {
-    throw "NotImplementedError";
+    throw new Error("NotImplementedError");
   }
 
   dispose() {
