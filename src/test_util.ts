@@ -35,11 +35,10 @@ export function mean(values: TypedArray|number[]) {
   return sum / values.length;
 }
 
-export function standardDeviation(
-    values: TypedArray|number[], mean: number) {
+export function standardDeviation(values: TypedArray|number[], mean: number) {
   let squareDiffSum = 0;
   for (let i = 0; i < values.length; i++) {
-    let diff = values[i] - mean;
+    const diff = values[i] - mean;
     squareDiffSum += diff * diff;
   }
   return Math.sqrt(squareDiffSum / values.length);
@@ -47,13 +46,12 @@ export function standardDeviation(
 
 export function kurtosis(values: TypedArray|number[]) {
   // https://en.wikipedia.org/wiki/Kurtosis
-  let valuesMean = mean(values);
-  let n = values.length;
+  const valuesMean = mean(values);
+  const n = values.length;
   let sum2 = 0;
   let sum4 = 0;
-  let i = -1;
-  while (++i < n) {
-    let v = values[i] - valuesMean;
+  for (let i = 0; i < n; i++) {
+    const v = values[i] - valuesMean;
     sum2 += Math.pow(v, 2);
     sum4 += Math.pow(v, 4);
   }
@@ -62,41 +60,38 @@ export function kurtosis(values: TypedArray|number[]) {
 
 export function skewness(values: TypedArray|number[]) {
   // https://en.wikipedia.org/wiki/Skewness
-  let valuesMean = mean(values);
-  let n = values.length;
+  const valuesMean = mean(values);
+  const n = values.length;
   let sum2 = 0;
   let sum3 = 0;
   let i = -1;
   while (++i < n) {
-    let v = values[i] - valuesMean;
+    const v = values[i] - valuesMean;
     sum2 += Math.pow(v, 2);
     sum3 += Math.pow(v, 3);
   }
   return (1 / n) * sum3 / Math.pow((1 / (n - 1)) * sum2, 3 / 2);
 }
 
-export function jarqueBeraNormalityTest(
-    values: TypedArray|number[]) {
-  //https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
-
-  let n = values.length;
-  let s = skewness(values);
-  let k = kurtosis(values);
-  // return n * (Math.pow(s, 2) / Math.pow(6 + (k - 3), 2) / 24);;
-  let jb = n * ((Math.pow(s, 2) / 6) + (Math.pow(k, 2) / 24));
-
-  return jb;
+export function jarqueBeraNormalityTest(values: TypedArray|number[]) {
+  // https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
+  const s = skewness(values);
+  const k = kurtosis(values);
+  const jb = values.length * ((Math.pow(s, 2) / 6) + (Math.pow(k, 2) / 24));
+  // JB test requires 2-degress of freedom from Chi-Square @ 0.95:
+  const CHI_SQUARE_2DEG = 5.991;
+  if (jb > CHI_SQUARE_2DEG) {
+    throw new Error(`Invalid p-value for JB: ${jb}`);
+  }
 }
 
 export function expectArrayInMeanStdRange(
-    actual: TypedArray|number[],
-    expectedMean: number,
-    expectedStdDev: number,
+    actual: TypedArray|number[], expectedMean: number, expectedStdDev: number,
     epsilon = TEST_EPSILON) {
   const actualMean = mean(actual);
   expectNumbersClose(actualMean, expectedMean, epsilon);
   expectNumbersClose(
-    standardDeviation(actual, actualMean), expectedStdDev, epsilon);
+      standardDeviation(actual, actualMean), expectedStdDev, epsilon);
 }
 
 export function expectArraysClose(
@@ -143,13 +138,11 @@ function areClose(a: number, e: number, epsilon: number): boolean {
 }
 
 export function expectValuesInRange(
-    actual: TypedArray|number[],
-    low: number,
-    high: number) {
+    actual: TypedArray|number[], low: number, high: number) {
   for (let i = 0; i < actual.length; i++) {
     if (actual[i] < low || actual[i] > high) {
       throw new Error(
-        `Value out of range:${actual[i]} low: ${low}, high: ${high}`);
+          `Value out of range:${actual[i]} low: ${low}, high: ${high}`);
     }
   }
 }

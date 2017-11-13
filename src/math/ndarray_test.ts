@@ -1353,46 +1353,16 @@ test_util.describeCustom('NDArray.rand', () => {
 
 // NDArray.randNormal
 test_util.describeCustom('NDArray.randNormal', () => {
-  const NUM_SAMPLES = 10000;
+  const NUM_SAMPLES = 5000;
+  const EPSILON = 0.05;
 
   it('should return a float32 1D or random normal values', () => {
-    let result = NDArray.randNormal([NUM_SAMPLES], 0, 1.5);
+    const result = NDArray.randNormal([NUM_SAMPLES], 0, 0.5);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([NUM_SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.5, EPSILON);
   });
-
-  // function expectArrayInNormality(
-  //     actual: util.TypedArray|number[],
-  //     lowerBoundry: number,
-  //     upperBoundry: number) {
-  //   // Perform simple W/S test for normality.
-  //   let low = 0;
-  //   let high = 0;
-  //   let sum = 0;
-  //   for (let i = 0; i < actual.length; i++) {
-  //     let v = actual[i];
-  //     if (v < low) {
-  //       low = v;
-  //     } else if (v > high) {
-  //       high = v;
-  //     }
-  //     sum += v;
-  //   }
-  //   const mean = sum / actual.length;
-  //   const stdDeviation = test_util.standardDeviation(actual, mean);
-  //   const criticalRange = (high - low) / stdDeviation;
-
-  //   // Use Jarque-Bera test?
-  //   console.log('kurtosis', test_util.kurtosis(actual));
-  //   console.log('skewness', test_util.skewness(actual));
-  //   console.log('jbTest: ', test_util.jarqueBeraNormalityTest(actual));
-
-  //   // if (criticalRange < lowerBoundry || criticalRange > upperBoundry) {
-  //   //   throw new Error('Value out of critical boundry: ' + criticalRange +
-  //   //     ' (lower: ' + lowerBoundry + ', upper: ' + upperBoundry + ')');
-  //   // }
-  // }
 });
 
 // NDArray.fromPixels
