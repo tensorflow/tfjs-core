@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <!-- This script is stripped during vulcanization, available only during development. It provides
+       polyfill for debugging/testing in non-Chrome browsers.
+  -->
+  <script src="../../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <link rel="import" href="gan-lab.html">
+  <link rel="import" href="../../bower_components/iron-icons/image-icons.html">
+  <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dialog-polyfill/0.4.9/dialog-polyfill.min.css" />
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dialog-polyfill/0.4.9/dialog-polyfill.min.js"></script>
+  <script src="../homepage/assets/support.js"></script>
+
+  <title>deeplearn.js GAN Lab demo</title>
+  <style>
+    html {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    head {
+      height: 0;
+      width: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="mdl-layout__header mdl-layout--fixed-header">
+    <script>
+      if (location.protocol !== "https:" &&
+          location.hostname === 'deeplearnjs.org') {
+        location.protocol = "https:";
+      }
+    </script>
+    <div class="mdl-layout__header-row">
+      <!-- Title -->
+      <span class="mdl-layout-title">GAN Lab</span>
+      <!-- Add spacer, to align navigation to the right -->
+      <div class="mdl-layout-spacer"></div>
+    </div>
+  </header>
+
+  <gan-lab></gan-lab>
+</body>
+
+</html>

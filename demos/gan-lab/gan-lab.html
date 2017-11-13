@@ -1,0 +1,315 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue_grey-blue.min.css" />
+
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
+
+<dom-module id="gan-lab">
+  <style>
+    #gan-lab-container {
+      display: flex;
+      width: 100%;
+    }
+
+    .ink-panel {
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+    }
+
+    .side-panel {
+      background: #fafafa;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-width: 0 1px 0 0;
+      padding: 20px;
+    }
+
+    #model-menu {
+      width: 170px;
+    }
+
+    #training-menu {
+      width: 160px;
+    }
+
+    #visualization-container {
+      flex-grow: 2;
+      padding: 20px;
+      position: relative;
+    }
+
+    #right-menu {
+      border-width: 0 0 0 1px;
+      width: 240px;
+    }
+
+    .config-item {
+      margin-bottom: 20px;
+    }
+
+    .config-item label {
+      color: #737373;
+      font-size: 12px;
+    }
+
+    .separator {
+      color: #999;
+      font-size: 12px;
+      margin-top: 10px;
+      text-transform: uppercase;
+    }
+
+    .timeline-controls {
+      align-items: center;
+      display: flex;
+      margin-bottom: 10px;
+      width: 140px;
+    }
+
+    #play-pause-button .material-icons {
+      color: white;
+      font-size: 36px;
+      transform: translate(-18px,-12px);
+    }
+
+    #play-pause-button .material-icons:nth-of-type(2) {
+      display: none;
+    }
+
+    #play-pause-button.playing .material-icons:nth-of-type(1) {
+      display: none;
+    }
+
+    #play-pause-button.playing .material-icons:nth-of-type(2) {
+      display: inherit;
+    }
+
+    .two-way-toggle {
+      display: flex;
+      flex-direction: row;
+      font-size: 12px;
+    }
+
+    .two-way-toggle span {
+      padding-top: 3px;
+      padding-right: 7px;
+    }
+
+    #iteration {
+      color: #737373;
+      margin-top: 15px;
+    }
+
+    #iteration-count {
+      margin-left: 5px;
+      font-size: 32px;
+    }
+
+    #drawing-container {
+      background: #fff;
+      border-radius: 5px;
+      display: none;
+      padding: 10px;
+      position: absolute;
+    }
+
+    #drawing-disable-background {
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      height: 100%;
+      left: 0;
+      position: absolute;
+      top: 0;
+      width: 100%;
+    }
+
+    #vis-descriptions text {
+      fill: #737373;
+      font-size: 12px;
+    }
+
+    .plot-bg {
+      fill: #f3f3f3;
+    }
+
+    .plot-border {
+      fill: none;
+      stroke: #eee;
+    }
+
+    .true-dot {
+      fill: rgba(0, 136, 55, 0.75);
+    }
+
+    .generated-dot {
+      fill: rgba(123, 50, 148, 0.75);
+    }
+
+    .uniform-generated-dot {
+      fill: rgba(80, 80, 80, 0.4);
+    }
+
+    .manifold-cell {
+      stroke: rgba(160, 160, 160, 0.25);
+    }
+  </style>
+  <template>
+    <div id="gan-lab-container">
+      <div id="model-menu" class="ink-panel side-panel">
+        <div class="config-item">
+          <paper-dropdown-menu no-animations label="True Distribution">
+            <paper-listbox attr-for-selected="value" id="shape-dropdown" class="dropdown-content" selected="{{selectedShapeName}}">
+              <template is="dom-repeat" items="[[shapeNames]]">
+                <paper-item value="[[item]]" label="[[item]]">
+                  [[item]]
+                </paper-item>
+              </template>
+            </paper-listbox>
+          </paper-dropdown-menu>
+        </div>
+
+        <div class="separator">Hyperparameters:</div>
+
+        <div class="config-item">
+          <paper-dropdown-menu no-animations label="Learning Rate">
+            <paper-listbox attr-for-selected="value" id="learning-rate-dropdown" class="dropdown-content" selected="{{learningRate}}">
+              <template is="dom-repeat" items="[[learningRateOptions]]">
+                <paper-item value="[[item]]" label="[[item]]">
+                  [[item]]
+                </paper-item>
+              </template>
+            </paper-listbox>
+          </paper-dropdown-menu>
+        </div>
+
+        <div class="config-item">
+          <label>More Steps for Discriminator: <span id="k-steps">1</span></label>
+          <paper-slider pin min="1" max="5" value="1" id="k-steps-slider"></paper-slider>
+        </div>
+
+        <div class="separator">Generator:</div>
+
+        <div class="config-item">
+          <label>Noise Dimension: <span id="noise-size">2</span></label>
+          <paper-slider pin min="1" max="3" value="2" id="noise-slider"></paper-slider>
+        </div>
+
+        <div class="config-item">
+          <label># Hidden Layers: <span id="num-g-layers">1</span></label>
+          <paper-slider pin min="0" max="3" value="1" id="g-layers-slider"></paper-slider>
+        </div>
+
+        <div class="config-item">
+          <label># Neurons in Hidden Layer: <span id="num-g-neurons">10</span></label>
+          <paper-slider pin min="1" max="25" value="10" id="g-neurons-slider"></paper-slider>
+        </div>
+
+        <div class="separator">Discriminator:</div>
+
+        <div class="config-item">
+          <label># Hidden Layers: <span id="num-d-layers">1</span></label>
+          <paper-slider pin min="0" max="3" value="1" id="d-layers-slider"></paper-slider>
+        </div>
+
+        <div class="config-item">
+          <label># Neurons in Hidden Layer: <span id="num-d-neurons">10</span></label>
+          <paper-slider pin min="1" max="25" value="10" id="d-neurons-slider"></paper-slider>
+        </div>
+      </div>
+
+      <div id="training-menu" class="ink-panel side-panel">
+        <div class="timeline-controls">
+          <button class="mdl-button mdl-js-button mdl-button--icon ui-resetButton" id="reset-button" title="Reset the network">
+            <i class="material-icons">replay</i>
+          </button>
+          <button class="mdl-button mdl-js-button mdl-button--fab mdl-button--colored ui-playButton" id="play-pause-button" title="Run/Pause">
+            <i class="material-icons">play_arrow</i>
+            <i class="material-icons">pause</i>
+          </button>
+          <button class="mdl-button mdl-js-button mdl-button--icon ui-stepButton" id="next-step-button" title="Step">
+            <i class="material-icons">skip_next</i>
+          </button>
+        </div>
+
+        <div class="separator"></div>
+
+        <div id="iteration" class="config-item">
+          Epoch: <span id="iteration-count">0</span>
+        </div>
+
+        <div class="separator"></div>
+
+        <div class="separator">Visualization:</div>
+
+        <div id="t-samples-toggle" class="two-way-toggle config-item">
+          <paper-toggle-button id="show-t-samples" checked>True Samples</paper-toggle-button>
+        </div>
+
+        <div id="g-samples-toggle" class="two-way-toggle config-item">
+          <paper-toggle-button id="show-g-samples" checked>Generated Samples</paper-toggle-button>
+        </div>
+
+        <div id="manifold-toggle" class="two-way-toggle config-item">
+          <paper-toggle-button id="enable-manifold" checked>Generator's Manifold</paper-toggle-button>
+        </div>
+
+        <div id="overlap-toggle" class="two-way-toggle config-item">
+          <paper-toggle-button id="overlap-plots" checked>Discriminator's Output</paper-toggle-button>
+        </div>
+      </div>
+
+      <div id="drawing-disable-background"></div>
+
+      <div id="visualization-container" class="ink-panel">
+        <svg id="vis-svg" width="520" height="630">
+          <g id="vis-area" transform="translate(10,10)">
+            <g id="vis-discriminator-output" class="vis-panel">
+              <rect class="plot-bg" width="500" height="500" x="0" y="0"></rect>
+            </g>
+            <g id="vis-samples" class="vis-panel">
+              <g id="vis-true-samples"></g>
+              <g id="vis-generated-samples"></g>
+              <rect class="plot-border" width="500" height="500" x="0" y="0"></rect>
+            </g>
+            <g id="vis-manifold"></g>
+          </g>
+          <g id="vis-descriptions" transform="translate(10,520)">
+            <circle class="true-dot" r="2" transform="translate(5,5)"></circle>
+            <text transform="translate(15,9)">Samples from true distribution</text>
+            <circle class="generated-dot" r="2" transform="translate(5,25)"></circle>
+            <text transform="translate(15,29)">Samples generated by the generator</text>
+
+            <rect class="true-dot" width="10" height="10" transform="translate(1,50)"></rect>
+            <text transform="translate(16,59)">
+              Discriminator thinks samples in this region are from true distribution (real).
+            </text>
+            <rect class="generated-dot" width="10" height="10" transform="translate(1,70)"></rect>
+            <text transform="translate(16,79)">
+              Discriminator thinks samples in this region are from generators (fake).
+            </text>
+          </g>
+        </svg>
+
+        <div id="drawing-container">
+          <canvas id="input-drawing-canvas" width="500" height="500"></canvas>
+          <div id="drawing-instruction">Draw a distribution above, then click the apply button.</div>
+          <button id="finish-drawing" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">Apply</button>
+        </div>
+      </div>
+
+      <div id="right-menu" class="ink-panel side-panel">
+        <div class="separator">Charts:</div>
+
+        <div id="chart-container">
+          <canvas id="cost-chart" width="240" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </template>
+</dom-module>
