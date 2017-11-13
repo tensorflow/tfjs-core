@@ -12,11 +12,13 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
+    "@types/d3": "~4.10.0",
     "@types/polymer": "~1.1.31",
     "@types/jasmine": "~2.5.53",
     "@types/seedrandom": "~2.4.27",
     "browserify": "~14.4.0",
     "cross-spawn": "~5.1.0",
+    "d3": "~4.10.2",
     "http-server": "~0.10.0",
     "jasmine-core": "~2.6.4",
     "karma": "~1.7.0",
