@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 
 import { PolymerElement, PolymerHTMLElement } from '../polymer-spec';
-import { Array1D, CostReduction, Graph, InputProvider, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Scalar, Session, SGDOptimizer, Tensor } from '../deeplearn';
+import { Array1D, CostReduction, Graph, InputProvider, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Scalar, Session, SGDOptimizer, Tensor } from 'deeplearn';
 import { TypedArray } from '../../src/util';
 
 import * as gan_lab_util from './gan_lab_util';

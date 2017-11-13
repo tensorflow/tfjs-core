@@ -1,4 +1,4 @@
-import { Array2D, InputProvider, NDArray, NDArrayMath } from '../deeplearn';
+import { Array2D, InputProvider, NDArray, NDArrayMath } from 'deeplearn';
 
 export abstract class GANLabInputProviderBuilder {
   protected atlas: Array2D;
