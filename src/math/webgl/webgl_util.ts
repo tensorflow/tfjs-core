@@ -384,6 +384,8 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
 export function getTextureShapeFromLogicalShape(
     gl: WebGLRenderingContext, logShape: number[],
     preferredTexShape?: [number, number]): [number, number] {
+  const squeezeResult = util.squeezeShape(logShape);
+  logShape = squeezeResult.newShape;
   const maxTexSize = queryMaxTextureSize(gl);
   const size = util.sizeFromShape(logShape);
   if (preferredTexShape != null) {

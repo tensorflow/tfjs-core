@@ -64,32 +64,31 @@ function getSetOutputSnippet() {
       UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET;
 }
 
-function getInputSamplingSnippet(
-    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean) {
+function getSamplerFromInInfo(inInfo: InputInfo): string {
   const shape = inInfo.shapeInfo.logicalShape;
-  let res = getSamplerFlat(inInfo);
-
   switch (shape.length) {
     case 0:
-      res += getSamplerScalar(inInfo);
-      break;
+      return getSamplerScalar(inInfo);
     case 1:
-      res += getSampler1D(inInfo);
-      break;
+      return getSampler1D(inInfo);
     case 2:
-      res += getSampler2D(inInfo);
-      break;
+      return getSampler2D(inInfo);
     case 3:
-      res += getSampler3D(inInfo);
-      break;
+      return getSampler3D(inInfo);
     case 4:
-      res += getSampler4D(inInfo);
-      break;
+      return getSampler4D(inInfo);
     default:
       throw new Error(
           `${shape.length}-D input sampling` +
           ` is not yet supported`);
   }
+}
+
+function getInputSamplingSnippet(
+    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean): string {
+  let res = getSamplerFlat(inInfo);
+  res += getSamplerFromInInfo(inInfo);
+
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input texture using the
   // output coordinates.
@@ -535,6 +534,10 @@ function getSampler3D(inputInfo: InputInfo): string {
   }
 }
 
+function getParams(params: string[], keptDims: number[]): string {
+  return keptDims.map(d => params[d]).join(', ');
+}
+
 function getSampler4D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texShape = inputInfo.shapeInfo.texShape;
@@ -546,22 +549,39 @@ function getSampler4D(inputInfo: InputInfo): string {
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
-  if (tC === stride0) {
-    return `
-      float ${funcName}(int row, int col, int depth, int depth2) {
-        int texR = row;
-        int texC = col * ${stride1} + depth * ${stride2} + depth2;
-        vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
-        return sample(${texName}, uv);
-      }
+  let prefix = `float ${funcName}(int row, int col, int depth, int depth2) {`;
+  let body = '';
+  const suffix = '}';
+  const {newShape, keptDims} = util.squeezeShape(shape);
+  if (newShape.length < shape.length) {
+    const newInputInfo: InputInfo = JSON.parse(JSON.stringify(inputInfo));
+    newInputInfo.shapeInfo.logicalShape = newShape;
+    prefix = `
+      ${getSamplerFromInInfo(newInputInfo)}
+      ${prefix}
+    `;
+    const params = ['row', 'col', 'depth', 'depth2'];
+    body = `
+        return ${funcName}(${getParams(params, keptDims)});
+    `;
+  } else if (tC === stride0) {
+    body = `
+      int texR = row;
+      int texC = col * ${stride1} + depth * ${stride2} + depth2;
+      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
+      return sample(${texName}, uv);
+    `;
+  } else {
+    body = `
+      vec2 uv = UVfrom4D(${tR}, ${tC}, ${stride0}, ${stride1}, ${stride2}, row,
+          col, depth, depth2);
+      return sample(${texName}, uv);
     `;
   }
   return `
-    float ${funcName}(int row, int col, int depth, int depth2) {
-      vec2 uv = UVfrom4D(${tR}, ${tC}, ${stride0}, ${stride1}, ${stride2},
-          row, col, depth, depth2);
-      return sample(${texName}, uv);
-    }
+    ${prefix}
+    ${body}
+    ${suffix}
   `;
 }
 

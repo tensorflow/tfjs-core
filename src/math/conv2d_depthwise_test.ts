@@ -176,7 +176,7 @@ describe('depthwise timing', () => {
     const math = new NDArrayMathGPU();
     const inDepth = 16;
     const fSize = 3;
-    const chMul = 2;
+    const chMul = 10;
     const stride = 1;
     const pad = 'same';
     const x = Array3D.randUniform([299, 299, inDepth], -1, 1);
@@ -187,8 +187,14 @@ describe('depthwise timing', () => {
       out = math.depthwiseConv2D(x, W, stride, pad);
     };
     const gpgpu = math.getGPGPUContext();
+
+    // Warmup.
+    await gpgpu.runQuery(query);
+    out.dispose();
+
     const totalTime = await gpgpu.runQuery(query);
     console.log('X shape/texShape', x.shape, '/', x.getTextureShapeRC());
     console.log('Took', totalTime.toFixed(2), 'ms');
+    out.dispose();
   });
 });
