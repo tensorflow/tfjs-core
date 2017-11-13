@@ -712,7 +712,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
-      resultValues[i] = value >= 0 ? 1 : (value < 0 ? -1 : value);
+      resultValues[i] = value > 0 ? 1 : (value < 0 ? -1 : value);
     }
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }

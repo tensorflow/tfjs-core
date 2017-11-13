@@ -70,7 +70,7 @@ export const STEP = `
 `;
 
 export const SIGN = `
-  return (x == x) ? (x == 0.0 ? 1.0 : sign(x)) : x;
+  return (x == x) ? sign(x) : x;
 `;
 
 export const NEG = `

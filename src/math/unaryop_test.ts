@@ -194,7 +194,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const result = math.sign(a);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([1, -1, -1, 1, 1, -1]));
+          result.getValues(), new Float32Array([1, -1, -1, 1, 0, -1]));
 
       a.dispose();
     });
@@ -206,7 +206,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 3]);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([1, -1, 1, -1, 1, -1]));
+          result.getValues(), new Float32Array([1, -1, 0, -1, 1, -1]));
 
       a.dispose();
     });
