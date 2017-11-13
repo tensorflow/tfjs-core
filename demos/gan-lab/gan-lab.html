@@ -101,8 +101,14 @@
       padding-right: 7px;
     }
 
+    #iteration {
+      color: #737373;
+      margin-top: 15px;
+    }
+
     #iteration-count {
-      font-size: 18px;
+      margin-left: 5px;
+      font-size: 32px;
     }
 
     #drawing-container {
@@ -168,6 +174,25 @@
           </paper-dropdown-menu>
         </div>
 
+        <div class="separator">Hyperparameters:</div>
+
+        <div class="config-item">
+          <paper-dropdown-menu no-animations label="Learning Rate">
+            <paper-listbox attr-for-selected="value" id="learning-rate-dropdown" class="dropdown-content" selected="{{learningRate}}">
+              <template is="dom-repeat" items="[[learningRateOptions]]">
+                <paper-item value="[[item]]" label="[[item]]">
+                  [[item]]
+                </paper-item>
+              </template>
+            </paper-listbox>
+          </paper-dropdown-menu>
+        </div>
+
+        <div class="config-item">
+          <label>More Steps for Discriminator: <span id="k-steps">1</span></label>
+          <paper-slider pin min="1" max="5" value="1" id="k-steps-slider"></paper-slider>
+        </div>
+
         <div class="separator">Generator:</div>
 
         <div class="config-item">
@@ -195,25 +220,6 @@
         <div class="config-item">
           <label># Neurons in Hidden Layer: <span id="num-d-neurons">10</span></label>
           <paper-slider pin min="1" max="25" value="10" id="d-neurons-slider"></paper-slider>
-        </div>
-
-        <div class="separator">Hyperparameters:</div>
-
-        <div class="config-item">
-          <label>More Steps for Discriminator: <span id="k-steps">1</span></label>
-          <paper-slider pin min="1" max="5" value="1" id="k-steps-slider"></paper-slider>
-        </div>
-
-        <div class="config-item">
-          <paper-dropdown-menu no-animations label="Learning Rate">
-            <paper-listbox attr-for-selected="value" id="learning-rate-dropdown" class="dropdown-content" selected="{{learningRate}}">
-              <template is="dom-repeat" items="[[learningRateOptions]]">
-                <paper-item value="[[item]]" label="[[item]]">
-                  [[item]]
-                </paper-item>
-              </template>
-            </paper-listbox>
-          </paper-dropdown-menu>
         </div>
       </div>
 

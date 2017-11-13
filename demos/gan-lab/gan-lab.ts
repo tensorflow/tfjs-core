@@ -1,12 +1,13 @@
 import * as d3 from 'd3';
 
 import { PolymerElement, PolymerHTMLElement } from '../polymer-spec';
-import { Array1D, Array2D, CostReduction, Graph, InputProvider, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Scalar, Session, SGDOptimizer, Tensor } from '../deeplearn';
+import { Array1D, CostReduction, Graph, InputProvider, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Scalar, Session, SGDOptimizer, Tensor } from '../deeplearn';
 import { TypedArray } from '../../src/util';
+
+import * as gan_lab_util from './gan_lab_util';
 
 const BATCH_SIZE = 100;
 const ATLAS_SIZE = 10000;
-
 const NUM_GRID_CELLS = 25;
 const NUM_MANIFOLD_CELLS = 10;
 const GENERATED_SAMPLES_VISUALIZATION_INTERVAL = 10;
@@ -45,13 +46,9 @@ class GANLab extends GANLabPolymer {
   private generatedTensor: Tensor;
 
   private noiseProvider: InputProvider;
-  private inputProvider: InputProvider;
+  private trueSampleProvider: InputProvider;
   private uniformNoiseProvider: InputProvider;
   private uniformInputProvider: InputProvider;
-  private noiseProviderCount: number;
-  private inputProviderCount: number;
-  private uniformNoiseProviderCount: number;
-  private uniformInputProviderCount: number;
 
   private noiseSize: number;
   private numGeneratorLayers: number;
@@ -70,6 +67,7 @@ class GANLab extends GANLabPolymer {
   private drawingPositions: Array<[number, number]>;
 
   ready() {
+    // HTML elements.
     const noiseSlider = this.querySelector('#noise-slider') as HTMLInputElement;
     const noiseSizeElement = this.querySelector('#noise-size') as HTMLElement;
     this.noiseSize = +noiseSlider.value;
@@ -137,7 +135,7 @@ class GANLab extends GANLabPolymer {
     });
 
     this.learningRateOptions = [0.001, 0.01, 0.05, 0.1, 0.5];
-    this.learningRate = 0.05;
+    this.learningRate = 0.1;
     this.querySelector('#learning-rate-dropdown')!.addEventListener(
       // tslint:disable-next-line:no-any event has no type
       'iron-activate', (event: any) => {
@@ -145,7 +143,7 @@ class GANLab extends GANLabPolymer {
         this.createExperiment();
       });
 
-    this.shapeNames = ['Line', 'Two Hills', 'Drawing'];
+    this.shapeNames = ['Line', 'Two Gaussian Hills', 'Drawing'];
     this.selectedShapeName = 'Line';
     this.querySelector('#shape-dropdown')!.addEventListener(
       // tslint:disable-next-line:no-any event has no type
@@ -258,6 +256,7 @@ class GANLab extends GANLabPolymer {
   }
 
   private createExperiment() {
+    // Reset.
     this.pause();
     this.iterationCount = 0;
     this.iterCountElement.innerText = this.iterationCount;
@@ -277,6 +276,7 @@ class GANLab extends GANLabPolymer {
     this.visManifold.selectAll('.manifold-cells').data([]).exit().remove();
     this.visManifold.selectAll('.grids').data([]).exit().remove();
 
+    // Create a new graph.
     this.buildNetwork();
 
     if (this.session != null) {
@@ -284,151 +284,72 @@ class GANLab extends GANLabPolymer {
     }
     this.session = new Session(this.graph, this.math);
 
-    // Atlases.
-    this.noiseAtlas =
-      Array2D.randUniform([NUM_SAMPLES_VISUALIZED, this.noiseSize], 0.0, 1.0);
+    // Input providers.
+    const noiseProviderBuilder = new gan_lab_util.GANLabNoiseProviderBuilder(
+      this.math, this.noiseSize, NUM_SAMPLES_VISUALIZED);
+    noiseProviderBuilder.generateAtlas();
+    this.noiseProvider = noiseProviderBuilder.getInputProvider();
 
-    const inputAtlasList = [];
-    for (let i = 0; i < ATLAS_SIZE; ++i) {
-      const distribution =
-        this.sampleFromTrueDistribution(this.selectedShapeName);
-      inputAtlasList.push(distribution[0]);
-      inputAtlasList.push(distribution[1]);
-    }
-    this.inputAtlas = Array2D.new([ATLAS_SIZE, 2], inputAtlasList);
+    const trueSampleProviderBuilder =
+      new gan_lab_util.GANLabTrueSampleProviderBuilder(
+        this.math, ATLAS_SIZE,
+        this.selectedShapeName, this.drawingPositions,
+        this.sampleFromTrueDistribution);
+    trueSampleProviderBuilder.generateAtlas();
+    this.trueSampleProvider = trueSampleProviderBuilder.getInputProvider();
 
-    const uniformInputAtlasList = [];
-    for (let j = 0; j < NUM_GRID_CELLS; ++j) {
-      for (let i = 0; i < NUM_GRID_CELLS; ++i) {
-        uniformInputAtlasList.push((i + 0.5) / NUM_GRID_CELLS);
-        uniformInputAtlasList.push((j + 0.5) / NUM_GRID_CELLS);
-      }
-    }
-    this.uniformInputAtlas = Array2D.new(
-      [NUM_GRID_CELLS * NUM_GRID_CELLS, 2], uniformInputAtlasList);
     if (this.noiseSize <= 2) {
-      const uniformNoiseAtlasList = [];
-      if (this.noiseSize === 1) {
-        for (let i = 0; i < NUM_MANIFOLD_CELLS + 1; ++i) {
-          uniformNoiseAtlasList.push(i / NUM_MANIFOLD_CELLS);
-        }
-      } else {
-        for (let i = 0; i < NUM_MANIFOLD_CELLS + 1; ++i) {
-          for (let j = 0; j < NUM_MANIFOLD_CELLS + 1; ++j) {
-            uniformNoiseAtlasList.push(i / NUM_MANIFOLD_CELLS);
-            uniformNoiseAtlasList.push(j / NUM_MANIFOLD_CELLS);
-          }
-        }
-      }
-      this.uniformNoiseAtlas = Array2D.new(
-        [Math.pow(NUM_MANIFOLD_CELLS + 1, this.noiseSize), this.noiseSize],
-        uniformNoiseAtlasList);
+      const uniformNoiseProviderBuilder =
+        new gan_lab_util.GANLabUniformNoiseProviderBuilder(
+          this.math, this.noiseSize, NUM_MANIFOLD_CELLS);
+      uniformNoiseProviderBuilder.generateAtlas();
+      this.uniformNoiseProvider =
+        uniformNoiseProviderBuilder.getInputProvider();
     }
 
-    // Providers from Atlases.
-    this.noiseProviderCount = -1;
-    this.inputProviderCount = -1;
-    this.uniformNoiseProviderCount = -1;
-    this.uniformInputProviderCount = -1;
-    const demo = this;
-    this.noiseProvider = {
-      getNextCopy() {
-        demo.noiseProviderCount++;
-        return demo.math.scope(() => {
-          return demo.math
-            .slice2D(
-            demo.noiseAtlas,
-            [demo.noiseProviderCount % NUM_SAMPLES_VISUALIZED, 0],
-            [1, demo.noiseSize])
-            .as1D();
-        });
-      },
-      disposeCopy(math, copy) {
-        copy.dispose();
-      }
-    };
+    const uniformSampleProviderBuilder =
+      new gan_lab_util.GANLabUniformSampleProviderBuilder(
+        this.math, NUM_GRID_CELLS);
+    uniformSampleProviderBuilder.generateAtlas();
+    this.uniformInputProvider = uniformSampleProviderBuilder.getInputProvider();
 
-    this.inputProvider = {
-      getNextCopy() {
-        demo.inputProviderCount++;
-        return demo.math.scope(() => {
-          return demo.math
-            .slice2D(
-            demo.inputAtlas, [demo.inputProviderCount % ATLAS_SIZE, 0],
-            [1, 2])
-            .as1D();
-        });
-      },
-      disposeCopy(math, copy) {
-        copy.dispose();
-      }
-    };
-
-    this.uniformNoiseProvider = {
-      getNextCopy() {
-        demo.uniformNoiseProviderCount++;
-        return demo.math.scope(() => {
-          const begin: [number, number] = [
-            demo.uniformNoiseProviderCount %
-            Math.pow(NUM_MANIFOLD_CELLS + 1, demo.noiseSize),
-            0
-          ];
-          return demo.math
-            .slice2D(demo.uniformNoiseAtlas, begin, [1, demo.noiseSize])
-            .as1D();
-        });
-      },
-      disposeCopy(math, copy) {
-        copy.dispose();
-      }
-    };
-
-    this.uniformInputProvider = {
-      getNextCopy() {
-        demo.uniformInputProviderCount++;
-        return demo.math.scope(() => {
-          const begin: [number, number] = [
-            demo.uniformInputProviderCount % (NUM_GRID_CELLS * NUM_GRID_CELLS),
-            0
-          ];
-          return demo.math.slice2D(demo.uniformInputAtlas, begin, [1, 2])
-            .as1D();
-        });
-      },
-      disposeCopy(math, copy) {
-        copy.dispose();
-      }
-    };
-    this.visualizeTrueDistribution(inputAtlasList);
+    // Visualize true samples.
+    this.visualizeTrueDistribution(trueSampleProviderBuilder.getInputAtlas());
   }
 
-  private sampleFromTrueDistribution(selectedShapeName: string) {
+  private sampleFromTrueDistribution(
+    selectedShapeName: string, drawingPositions: Array<[number, number]>) {
     const rand = Math.random();
-    if (selectedShapeName === 'Drawing') {
-      const index = Math.floor(this.drawingPositions.length * rand);
-      return [
-        this.drawingPositions[index][0] + 0.02 * this.randNormal(),
-        this.drawingPositions[index][1] + 0.02 * this.randNormal()
-      ];
-    } else if (selectedShapeName === 'Line') {
-      return [
-        0.8 - 0.75 * rand + 0.01 * this.randNormal(),
-        0.6 + 0.3 * rand + 0.01 * this.randNormal()
-      ];
-    } else if (selectedShapeName === 'Two Hills') {
-      if (rand < 0.5)
-        return [0.3 + 0.1 * this.randNormal(), 0.7 + 0.1 * this.randNormal()];
-      else
-        return [0.7 + 0.05 * this.randNormal(), 0.4 + 0.2 * this.randNormal()];
-    } else {
-      throw new Error('Invalid true distribution');
+    switch (selectedShapeName) {
+      case 'Drawing': {
+        const index = Math.floor(drawingPositions.length * rand);
+        return [
+          drawingPositions[index][0] + 0.02 * gan_lab_util.randNormal(),
+          drawingPositions[index][1] + 0.02 * gan_lab_util.randNormal()
+        ];
+      }
+      case 'Line': {
+        return [
+          0.8 - 0.75 * rand + 0.01 * gan_lab_util.randNormal(),
+          0.6 + 0.3 * rand + 0.01 * gan_lab_util.randNormal()
+        ];
+      }
+      case 'Two Gaussian Hills': {
+        if (rand < 0.5)
+          return [
+            0.3 + 0.1 * gan_lab_util.randNormal(),
+            0.7 + 0.1 * gan_lab_util.randNormal()
+          ];
+        else
+          return [
+            0.7 + 0.05 * gan_lab_util.randNormal(),
+            0.4 + 0.2 * gan_lab_util.randNormal()
+          ];
+      }
+      default: {
+        throw new Error('Invalid true distribution');
+      }
     }
-  }
-
-  randNormal() {
-    const u = 1 - Math.random();
-    const v = 1 - Math.random();
-    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
   }
 
   private visualizeTrueDistribution(inputAtlasList: number[]) {
@@ -521,7 +442,7 @@ class GANLab extends GANLabPolymer {
         this.session.train(
           this.dCostTensor,
           [
-            { tensor: this.inputTensor, data: this.inputProvider },
+            { tensor: this.inputTensor, data: this.trueSampleProvider },
             { tensor: this.noiseTensor, data: this.noiseProvider }
           ],
           BATCH_SIZE, this.dOptimizer, CostReduction.MEAN);
@@ -530,7 +451,7 @@ class GANLab extends GANLabPolymer {
       const dCost = this.session.train(
         this.dCostTensor,
         [
-          { tensor: this.inputTensor, data: this.inputProvider },
+          { tensor: this.inputTensor, data: this.trueSampleProvider },
           { tensor: this.noiseTensor, data: this.noiseProvider }
         ],
         BATCH_SIZE, this.dOptimizer, CostReduction.MEAN);
@@ -873,6 +794,7 @@ class GANLab extends GANLabPolymer {
       }
     });
   }
+
   private draw(position: [number, number]) {
     this.drawingPositions.push(
       [position[0] / this.plotSizePx, 1.0 - position[1] / this.plotSizePx]);
