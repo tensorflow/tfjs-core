@@ -417,7 +417,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   private throwIfDisposed() {
     if (this.ndarrayData.isDisposed) {
-      console.error(`NDArray is disposed.`);
+      throw new Error(`NDArray is disposed.`);
     }
   }
 
