@@ -35,15 +35,11 @@ export class CaffeModel {
    */
   protected preprocessOffset: NDArray;
 
-  // TODO Handle .prototxt and .caffemodel file properly
+  // TODO Handle .prototxt
   /*
    * Prototxt:
    * The .prototxt file contains the model definition and parameters for a specific phase (train, test). Mostly the
    * train.prototxt file contains the train definitions whereas the deploy.prototxt file contains the test definition.
-   *
-   * Caffemodel:
-   * The .caffemodel file contains the model definition, parameters and weights after a specific phase (train, test).
-   * Most .caffemodel files contain all layers and parameters from the training phase. 
    *
    * Recommendation for inference:
    * We should first parse the prototxt file and create a DAG of operations. Then we should parse the caffemodel file
@@ -52,51 +48,25 @@ export class CaffeModel {
    */
   
   /**
-   * Parsed .caffemodel layers as Map
-   * @type {Map<string, caffe.ILayerParameter>}
+   * Parsed .caffemodel
+   * The .caffemodel file contains the model definition, parameters and weights after a specific phase (train, test).
+   * Most .caffemodel files contain all layers and parameters from the training phase. 
+   * @type {caffe.NetParameter}
    */
-  private layersTrain: Map<string, caffe.ILayerParameter>;
+  private caffemodel: caffe.NetParameter;
+
+  constructor(private caffemodelUrl: string){}
 
   /**
-   * Parsed .prototxt layers as Map
-   * @type {Map<string, caffe.ILayerParameter>}
+   * Load the .caffemodel file and parse it into variables
    */
-  private layersTest: Map<string, caffe.ILayerParameter>;
-
-  // private static INPUT_LAYER: string = 'data';
-
-  constructor(private caffemodelUrl: string, private prototxtUrl: string){}
-
-  /**
-   * Load the model definition and weights
-   * @returns {Promise}
-   */
-  load() {
-    return Promise.all([
-      this.loadVariables(),
-      this.loadModel()
-    ]);
-  }
-
-  loadModel() {
-    // Load .prototxt file, which contains model testing definition
-    return caffe_util.fetchText(this.prototxtUrl)
-      .then(caffe_util.parseProtoTxt)
-      .then((modelDef) => {
-
-        // Store layers as dict with layer name as key
-        this.layersTest = caffe_util.toMap(modelDef.layer, 'name');
-      });
-  }
-
   loadVariables() {
-    // Load .caffemodel file, which contains model weights and training definition
     return caffe_util.fetchArrayBuffer(this.caffemodelUrl)
       .then(caffe_util.parseCaffeModel)
       .then((model) => {
 
-        // Store layers as dict with layer name as key
-        this.layersTrain = caffe_util.toMap(model.layer, 'name');
+        // Store the caffemodel for debugging
+        this.caffemodel = model;
 
         // Store the model weights
         this.variables = caffe_util.getAllVariables(model);

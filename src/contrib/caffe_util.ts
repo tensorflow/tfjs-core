@@ -18,12 +18,6 @@
 import {caffe} from './caffe/caffe.js';
 import {Array1D, NDArray} from '../math/ndarray';
 
-// Type definition for caffemodel files
-export type NetParameter = caffe.NetParameter;
-
-// Type definition for binaryproto files
-export type BlobProto = caffe.BlobProto;
-
 export function fetchText(uri: string) : Promise<string> {
   return fetch(new Request(uri)).then((res) => res.text());
 }
@@ -36,11 +30,7 @@ export function parseCaffeModel(data: ArrayBuffer) {
   return caffe.NetParameter.decode(new Uint8Array(data));
 }
 
-export function parseProtoTxt(data: string) {
-  return caffe.NetParameter.create(prototxtToJson(data, 0));
-}
-
-export function getLayers(model: caffe.INetParameter, phase: number = caffe.Phase.TEST) {
+export function getLayers(model: caffe.NetParameter, phase: number = caffe.Phase.TEST) {
   return model.layer.filter((layer) => layer.phase === phase);
 }
 
@@ -55,9 +45,29 @@ function getByKeys<T>(arr: T[], keys: number[]) : T[] {
  */
 function convBlobToNDArray(blob: caffe.IBlobProto) : NDArray {
   
-  if (blob.shape.dim.length === 4) {
+  if (blob.shape.dim.length === 3) {
     // we need to swap the depth axis
-    // [f, d, x, y] => [x, y, d, f]
+    // caffe: [d, x, y] => deeplearnjs: [x, y, d]
+    const dim = getByKeys(<number[]> blob.shape.dim, [1, 2, 0]);  
+    const data = blob.data;
+    const width = dim[0];
+    const height = dim[1];
+    const depth = dim[2];
+    const arr = NDArray.zeros(dim, "float32");
+
+    for (let d = 0; d < depth; ++d) {
+      for (let x = 0; x < width; ++x) {
+        for (let y = 0; y < height; ++y) {
+          var ix = (d * width + x) * height + y;
+          arr.set(data[ix], x, y, d);
+        }
+      }
+    }
+    return arr;
+  }
+  else if (blob.shape.dim.length === 4) {
+    // we need to swap the filter and depth axis
+    // caffe: [f, d, x, y] => deeplearnjs: [x, y, d, f]
     const dim = getByKeys(<number[]> blob.shape.dim, [2, 3, 1, 0]);  
     const data = blob.data;
     const width = dim[0];
@@ -162,60 +172,4 @@ export function getPreprocessDim(model: caffe.NetParameter) : number {
  */
 export function toMap<T>(arr: Array<T>, key: string) : Map<string, T> {
   return new Map(arr.map((obj) => <[string, T]>[new String((<any> obj)[key]), obj]));
-}
-
-// dirty hack
-function prototxtToJson(raw: string, level: number) {
-  level = level || 0;
-
-  var json: any = {};
-  var match;
-
-  if (level == 0) {
-    var regexVal = /(?:^|\n)(\w+):\s"*([\w/.]+)"*/gi;
-    var regexObj = /(?:^|\n)(\w+)\s\{([\S\s]*?)\n\}/gi;
-  }
-  else {
-    let indent = '(?:^|\\n)\\s{' + level + '}';
-    let key = '(\\w+)';
-    var regexVal = new RegExp(indent + key + '\\s*:\\s*"*([\\w/.]+)"*', "gi");
-    var regexObj = new RegExp(indent + key + '\\s*\\{\\s*\\n([\\s\\S]*?)\\n\\s{' + level + '}\\}', "gi");
-  }
-
-  while (match = regexVal.exec(raw)) {
-    let key = match[1];
-    let value = match[2];
-    if (json[key] !== undefined) {
-      if (Array.isArray(json[key])) {
-        json[key].push(value);
-      }
-      else {
-        json[key] = [json[key]];
-        json[key].push(value);
-      }
-    }
-    else {
-      json[match[1]] = value;
-    }
-  }
-
-  while (match = regexObj.exec(raw)) {
-    let key = match[1];
-    let value = prototxtToJson(match[2], level + 2);
-
-    if (json[key] !== undefined) {
-      if (Array.isArray(json[key])) {
-        json[key].push(value);
-      }
-      else {
-        json[key] = [json[key]];
-        json[key].push(value);
-      }
-    }
-    else {
-      json[key] = value;
-    }
-  }
-
-  return json;
 }

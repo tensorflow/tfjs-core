@@ -24,7 +24,7 @@ const GITHUB_CDN = 'https://rawgit.com/DeepScale/SqueezeNet/master/SqueezeNet_v1
 export class SqueezeNetCaffe extends CaffeModel {
 
   constructor(private math: NDArrayMathGPU) {
-    super(GITHUB_CDN + 'squeezenet_v1.1.caffemodel', GITHUB_CDN + 'deploy.prototxt');
+    super(GITHUB_CDN + 'squeezenet_v1.1.caffemodel');
   }
 
   /**
