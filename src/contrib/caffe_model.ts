@@ -18,8 +18,9 @@ import {caffe} from './caffe/caffe.js';
 import * as caffe_util from './caffe_util';
 
 import {NDArray} from '../math/ndarray';
+import {Model} from '../model';
 
-export class CaffeModel {
+export class CaffeModel implements Model {
 
   // TODO Map structure not compatible with object structure used in models.Squeezenet
   /**
@@ -34,18 +35,6 @@ export class CaffeModel {
    * @type {NDArray}
    */
   protected preprocessOffset: NDArray;
-
-  // TODO Handle .prototxt
-  /*
-   * Prototxt:
-   * The .prototxt file contains the model definition and parameters for a specific phase (train, test). Mostly the
-   * train.prototxt file contains the train definitions whereas the deploy.prototxt file contains the test definition.
-   *
-   * Recommendation for inference:
-   * We should first parse the prototxt file and create a DAG of operations. Then we should parse the caffemodel file
-   * and keep only the weights for the layers defined in the prototxt file. The weights are of type Array<float> and
-   * need to be transformed to Float32Array type.
-   */
   
   /**
    * Parsed .caffemodel
@@ -60,7 +49,7 @@ export class CaffeModel {
   /**
    * Load the .caffemodel file and parse it into variables
    */
-  loadVariables() {
+  load() {
     return caffe_util.fetchArrayBuffer(this.caffemodelUrl)
       .then(caffe_util.parseCaffeModel)
       .then((model) => {
@@ -74,5 +63,16 @@ export class CaffeModel {
         // Store the preprocessing parameters
         this.preprocessOffset = caffe_util.getPreprocessOffset(model);
       });
+  }
+
+  predict(input: NDArray): Promise<{}> {
+    throw "NotImplementedError";
+  }
+
+  dispose() {
+    this.preprocessOffset.dispose();
+    for (const varName in this.variables) {
+      this.variables.get(varName).dispose();
+    }
   }
 }

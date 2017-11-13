@@ -16,3 +16,4 @@
  */
 
 export {SqueezeNet} from './squeezenet';
+export {SqueezeNetCaffe} from './squeezenet_caffe';
