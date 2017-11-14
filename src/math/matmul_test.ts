@@ -323,7 +323,7 @@ const gpuTests: MathTests = it => {
 
     const sharedDim = maxTexSize + 4;
 
-    const matrix = Array2D.zeros([1, sharedDim]);
+    const matrix = Array2D.zeros([2, sharedDim]);
     matrix.set(1, 0, sharedDim - 3);
     matrix.set(1, 0, sharedDim - 2);
 
@@ -332,7 +332,7 @@ const gpuTests: MathTests = it => {
     v.set(1, sharedDim - 2);
 
     const result = math.matrixTimesVector(matrix, v);
-    const expected = new Float32Array([2]);
+    const expected = new Float32Array([2, 0]);
     test_util.expectArraysClose(result.getValues(), expected);
 
     matrix.dispose();
