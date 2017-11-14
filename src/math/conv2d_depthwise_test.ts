@@ -17,7 +17,6 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {NDArrayMathGPU} from './math_gpu';
 import {Array3D, Array4D} from './ndarray';
 
 // math.depthwiseConv2D
