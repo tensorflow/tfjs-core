@@ -20,7 +20,15 @@ import * as util from '../util';
 
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DType, NDArray, Scalar} from './ndarray';
+import {
+  Array1D,
+  Array2D,
+  Array3D,
+  Array4D,
+  DType,
+  NDArray,
+  Scalar
+} from './ndarray';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_util from './webgl/gpgpu_util';
 import {TextureManager} from './webgl/texture_manager';
@@ -193,7 +201,7 @@ test_util.describeCustom('NDArray', () => {
     });
   });
 
-  it('NDArray.data GPU --> CPU', async () => {
+  it('NDArray.data GPU --> CPU', async() => {
     const texture = textureManager.acquireTexture([3, 2]);
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -206,7 +214,7 @@ test_util.describeCustom('NDArray', () => {
     expect(a.inGPU()).toBe(false);
   });
 
-  it('NDArray.val() GPU --> CPU', async () => {
+  it('NDArray.val() GPU --> CPU', async() => {
     const texture = textureManager.acquireTexture([3, 2]);
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -257,9 +265,7 @@ test_util.describeCustom('NDArray', () => {
     const texture = textureManager.acquireTexture([1, 3]);
     gpgpu.uploadMatrixToTexture(texture, 1, 3, new Float32Array([10, 7, 3]));
 
-    const f = () => {
-      return Array1D.make([3], {texture});
-    };
+    const f = () => { return Array1D.make([3], {texture}); };
 
     expect(f).toThrowError();
     textureManager.releaseTexture(texture, [1, 3]);
@@ -1353,13 +1359,41 @@ test_util.describeCustom('NDArray.rand', () => {
 
 // NDArray.randNormal
 test_util.describeCustom('NDArray.randNormal', () => {
-  const NUM_SAMPLES = 5000;
   const EPSILON = 0.05;
 
-  it('should return a float32 1D or random normal values', () => {
-    const result = NDArray.randNormal([NUM_SAMPLES], 0, 0.5);
+  it('should return a float32 1D of random normal values', () => {
+    const SAMPLES = 1000;
+    const result = NDArray.randNormal([SAMPLES], 0, 0.5);
     expect(result.dtype).toBe('float32');
-    expect(result.shape).toEqual([NUM_SAMPLES]);
+    expect(result.shape).toEqual([SAMPLES]);
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.5, EPSILON);
+  });
+
+  it('should return a float32 2D of random normal values', () => {
+    const SAMPLES = 100;
+    const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 0.5);
+    expect(result.dtype).toBe('float32');
+    expect(result.shape).toEqual([SAMPLES, SAMPLES]);
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.5, EPSILON);
+  });
+
+  it('should return a float32 3D of random normal values', () => {
+    const SAMPLES = 50;
+    const result = Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 0.5);
+    expect(result.dtype).toBe('float32');
+    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.5, EPSILON);
+  });
+
+  it('should return a float32 4D of random normal values', () => {
+    const SAMPLES = 25;
+    const result =
+        Array4D.randNormal([SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 0.5);
+    expect(result.dtype).toBe('float32');
+    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.5, EPSILON);
   });
