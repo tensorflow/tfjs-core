@@ -21,13 +21,13 @@ var version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
 var tag = `v${version}`;
 
 exec(`git tag ${tag}`, err =>
-err
-  ? console.log(`WARNING: Could not git tag with ${tag}: ${err.message}.`)
-  : console.log(`Successfully tagged with ${tag}.`)
+  err
+    ? console.log(`WARNING: Could not git tag with ${tag}: ${err.message}.`)
+    : console.log(`Successfully tagged with ${tag}.`)
 );
 
 exec(`git push --tags`, err =>
-err
-  ? console.log(`WARNING: Could not push git tags: ${err.message}.`)
-  : console.log(`Successfully pushed tags.`)
+  err
+    ? console.log(`WARNING: Could not push git tags: ${err.message}.`)
+    : console.log(`Successfully pushed tags.`)
 );
