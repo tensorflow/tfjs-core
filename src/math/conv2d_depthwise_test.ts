@@ -170,31 +170,3 @@ import {Array3D, Array4D} from './ndarray';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
-
-describe('depthwise timing', () => {
-  it('', async () => {
-    const math = new NDArrayMathGPU();
-    const inDepth = 16;
-    const fSize = 3;
-    const chMul = 10;
-    const stride = 1;
-    const pad = 'same';
-    const x = Array3D.randUniform([299, 299, inDepth], -1, 1);
-    const W = Array4D.randUniform([fSize, fSize, inDepth, chMul], -1, 1);
-    let out: Array3D|Array4D;
-
-    const query = () => {
-      out = math.depthwiseConv2D(x, W, stride, pad);
-    };
-    const gpgpu = math.getGPGPUContext();
-
-    // Warmup.
-    await gpgpu.runQuery(query);
-    out.dispose();
-
-    const totalTime = await gpgpu.runQuery(query);
-    console.log('X shape/texShape', x.shape, '/', x.getTextureShapeRC());
-    console.log('Took', totalTime.toFixed(2), 'ms');
-    out.dispose();
-  });
-});
