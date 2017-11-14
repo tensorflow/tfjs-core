@@ -24,6 +24,5 @@
   "scripts": {
     "prep": "npm install && bower install"
   },
-
   "license": "Apache-2.0"
 }
