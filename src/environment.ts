@@ -135,20 +135,13 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
   const frameBufferComplete =
       (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE);
 
-  let readPixelsError = false;
+  gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, new Float32Array(4));
 
-  try {
-    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, new Float32Array(4));
-  } catch (e) {
-    readPixelsError = true;
-  }
-  if (gl.getError() !== gl.NO_ERROR) {
-    readPixelsError = true;
-  }
+  const readPixelsNoError = gl.getError() === gl.NO_ERROR;
 
   loseContext(gl);
 
-  return frameBufferComplete && !readPixelsError;
+  return frameBufferComplete && readPixelsNoError;
 }
 
 function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
