@@ -20,15 +20,7 @@ import * as util from '../util';
 
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
-import {
-  Array1D,
-  Array2D,
-  Array3D,
-  Array4D,
-  DType,
-  NDArray,
-  Scalar
-} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DType, NDArray, Scalar} from './ndarray';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_util from './webgl/gpgpu_util';
 import {TextureManager} from './webgl/texture_manager';
@@ -201,7 +193,7 @@ test_util.describeCustom('NDArray', () => {
     });
   });
 
-  it('NDArray.data GPU --> CPU', async() => {
+  it('NDArray.data GPU --> CPU', async () => {
     const texture = textureManager.acquireTexture([3, 2]);
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -214,7 +206,7 @@ test_util.describeCustom('NDArray', () => {
     expect(a.inGPU()).toBe(false);
   });
 
-  it('NDArray.val() GPU --> CPU', async() => {
+  it('NDArray.val() GPU --> CPU', async () => {
     const texture = textureManager.acquireTexture([3, 2]);
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -265,7 +257,9 @@ test_util.describeCustom('NDArray', () => {
     const texture = textureManager.acquireTexture([1, 3]);
     gpgpu.uploadMatrixToTexture(texture, 1, 3, new Float32Array([10, 7, 3]));
 
-    const f = () => { return Array1D.make([3], {texture}); };
+    const f = () => {
+      return Array1D.make([3], {texture});
+    };
 
     expect(f).toThrowError();
     textureManager.releaseTexture(texture, [1, 3]);
