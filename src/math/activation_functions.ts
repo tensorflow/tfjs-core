@@ -60,10 +60,10 @@ export class ReLUFunc implements ActivationFunction {
 }
 
 export class LeakyReluFunc implements ActivationFunction {
-  private alpha: Scalar;
+  private alpha: number;
 
   constructor(alpha: number) {
-    this.alpha = Scalar.new(alpha);
+    this.alpha = alpha;
   }
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
@@ -74,9 +74,7 @@ export class LeakyReluFunc implements ActivationFunction {
     return math.step(x, this.alpha);
   }
 
-  dispose() {
-    this.alpha.dispose();
-  }
+  dispose() {}
 }
 
 export class SigmoidFunc implements ActivationFunction {
