@@ -16,50 +16,51 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, conv_util, ENV, NDArray, NDArrayMathGPU} from 'deeplearn';
+import {Array3D, Array4D, conv_util, ENV, NDArray, NDArrayMathGPU} from 'deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 
-export interface ConvBenchmarkParams {
+export interface ConvTransposedBenchmarkParams {
   inDepth: number;
   outDepth: number;
   filterSize: number;
   stride: number;
 }
 
-export abstract class ConvBenchmark extends BenchmarkTest {
-  constructor(protected params: ConvBenchmarkParams) {
+export abstract class ConvTransposedBenchmark extends BenchmarkTest {
+  constructor(protected params: ConvTransposedBenchmarkParams) {
     super(params);
   }
 }
 
-export class ConvGPUBenchmark extends ConvBenchmark {
+export class ConvTransposedGPUBenchmark extends ConvTransposedBenchmark {
   async run(size: number): Promise<number> {
     const math = new NDArrayMathGPU();
     const gpgpu = math.getGPGPUContext();
 
-    const inDepth = this.params.inDepth;
-    const inShape: [number, number, number] = [size, size, inDepth];
-    const outDepth = this.params.outDepth;
-    const filterSize = this.params.filterSize;
-    const stride = this.params.stride;
+    const origInputDepth = 1;
+    const origOutputDepth = 1;
+    const xShape: [number, number, number] = [size, size, origOutputDepth];
+    const fieldSize = 11;
+    const origStride = 1;
+    const origPad = 1;
 
-    const x = Array3D.randUniform(inShape, -1, 1);
+    const x = Array3D.randUniform(xShape, -1, 1);
     const wShape = conv_util.computeWeightsShape4D(
-        inDepth, outDepth, filterSize, filterSize);
+        origInputDepth, origOutputDepth, fieldSize, fieldSize);
     const W = Array4D.randUniform(wShape, -1, 1);
-    const b = Array1D.randUniform([outDepth], -1, 1);
 
     let out: NDArray;
     const benchmark = () => {
-      out = math.conv2d(x, W, b, stride, 'same');
+      out = math.conv2dTranspose(
+          x, W, [size, size, origInputDepth], origStride, origPad);
     };
 
     const cleanup = () => {
+      out.dispose();
       x.dispose();
       W.dispose();
-      b.dispose();
-      out.dispose();
+      gpgpu.dispose();
     };
 
     // Warmup.
@@ -67,7 +68,6 @@ export class ConvGPUBenchmark extends ConvBenchmark {
     out.dispose();
 
     let totalTime: number;
-
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE')) {
       totalTime = await gpgpu.runQuery(benchmark);
     } else {
