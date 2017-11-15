@@ -86,3 +86,47 @@ describe('conv_util computeConvInfo', () => {
     expect(convInfo.outShape).toEqual([3, 2, 1]);
   });
 });
+
+describe('conv_util computeDepthwiseConv2DInfo', () => {
+  it('1x1 filter over 1x1 array with same pad', () => {
+    const inChannels = 1;
+    const inShape: [number, number, number, number] = [1, 1, 1, inChannels];
+    const fSize = 1;
+    const chMul = 1;
+    const stride = 1;
+    const pad = 'same';
+    const convInfo = conv_util.computeDepthwiseConv2DInfo(
+        inShape, [fSize, fSize, inChannels, chMul], stride, pad);
+    expect(convInfo.outShape).toEqual([1, 1, 1, 1]);
+  });
+
+  it('2x2 filter over 3x3 array with same pad, chMul=3, depth=2', () => {
+    const inChannels = 2;
+    const batchSize = 1;
+    const inSize = 3;
+    const inShape: [number, number, number, number] =
+        [batchSize, inSize, inSize, inChannels];
+    const fSize = 2;
+    const chMul = 3;
+    const stride = 1;
+    const pad = 'same';
+    const convInfo = conv_util.computeDepthwiseConv2DInfo(
+        inShape, [fSize, fSize, inChannels, chMul], stride, pad);
+    expect(convInfo.outShape).toEqual([1, 3, 3, 6]);
+  });
+
+  it('2x2 filter over 3x3 array with valid pad, chMul=3, depth=2', () => {
+    const inChannels = 2;
+    const batchSize = 1;
+    const inSize = 3;
+    const inShape: [number, number, number, number] =
+        [batchSize, inSize, inSize, inChannels];
+    const fSize = 2;
+    const chMul = 3;
+    const stride = 1;
+    const pad = 'valid';
+    const convInfo = conv_util.computeDepthwiseConv2DInfo(
+        inShape, [fSize, fSize, inChannels, chMul], stride, pad);
+    expect(convInfo.outShape).toEqual([1, 2, 2, 6]);
+  });
+});

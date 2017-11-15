@@ -570,8 +570,7 @@ function getSampler4D(inputInfo: InputInfo): string {
   const stride0 = shape[1] * stride1;
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
-    const newInputInfo: InputInfo = JSON.parse(JSON.stringify(inputInfo));
-    newInputInfo.shapeInfo.logicalShape = newShape;
+    const newInputInfo = squeezeInputInfo(inputInfo, newShape);
     const params = ['row', 'col', 'depth', 'depth2'];
     return `
       ${getSamplerFromInInfo(newInputInfo)}
