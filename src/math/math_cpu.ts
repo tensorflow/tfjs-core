@@ -21,7 +21,7 @@ import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {ConvInfo} from './conv_util';
+import {ConvInfo, DepthwiseConvInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 // tslint:disable-next-line:max-line-length
@@ -696,12 +696,12 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected stepInternal<T extends NDArray>(ndarray: T): T {
+  protected stepInternal<T extends NDArray>(ndarray: T, alpha = 0): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
-      resultValues[i] = value > 0 ? 1 : (value < 0 ? 0 : value);
+      resultValues[i] = value > 0 ? 1 : (value < 0 ? alpha : value);
     }
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
@@ -856,6 +856,48 @@ export class NDArrayMathCPU extends NDArrayMath {
       values[d2] = sum;
     }
     return Array1D.new(values);
+  }
+
+  protected depthwiseConv2DInternal(
+      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D {
+    const [numBatches, xRows, xCols, inChannels] = convInfo.inShape;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const padLeft = convInfo.padInfo.left;
+    const padTop = convInfo.padInfo.top;
+    const yRows = convInfo.outShape[1];
+    const yCols = convInfo.outShape[2];
+    const chMul = convInfo.channelMul;
+
+    const y = Array4D.zeros(convInfo.outShape);
+    for (let b = 0; b < numBatches; ++b) {
+      for (let d1 = 0; d1 < inChannels; ++d1) {
+        for (let yR = 0; yR < yRows; ++yR) {
+          const xRCorner = yR * convInfo.strideHeight - padLeft;
+          const xRMin = Math.max(0, xRCorner);
+          const xRMax = Math.min(xRows, filterHeight + xRCorner);
+          for (let yC = 0; yC < yCols; ++yC) {
+            const xCCorner = yC * convInfo.strideWidth - padTop;
+            const xCMin = Math.max(0, xCCorner);
+            const xCMax = Math.min(xCols, filterWidth + xCCorner);
+            for (let q = 0; q < chMul; ++q) {
+              let dotProd = 0;
+              for (let xR = xRMin; xR < xRMax; ++xR) {
+                const wR = xR - xRCorner;
+                for (let xC = xCMin; xC < xCMax; ++xC) {
+                  const wC = xC - xCCorner;
+                  const pixel = input.get(b, xR, xC, d1);
+                  const weight = filter.get(wR, wC, d1, q);
+                  dotProd += pixel * weight;
+                }
+              }
+              y.set(dotProd, b, yR, yC, d1 * chMul + q);
+            }
+          }
+        }
+      }
+    }
+    return y;
   }
 
   protected tileInternal<D extends keyof DataTypes, T extends NDArray<D>>(
@@ -1115,9 +1157,30 @@ export class NDArrayMathCPU extends NDArrayMath {
     return output;
   }
 
+  protected batchNormalization2DInternal(
+      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
+      varianceEpsilon: number, scale?: Array2D|Array1D,
+      offset?: Array2D|Array1D): Array2D {
+    const xValues = x.getValues();
+    const meanValues = mean.getValues();
+    const varianceValues = variance.getValues();
+    const scaleValues = scale ? scale.getValues() : new Float32Array([1]);
+    const offsetValues = offset ? offset.getValues() : new Float32Array([0]);
+    const outValues = new Float32Array(xValues.length);
+
+    for (let i = 0; i < xValues.length; i++) {
+      outValues[i] = offsetValues[i % offsetValues.length] +
+          (xValues[i] - meanValues[i % meanValues.length]) *
+              scaleValues[i % scaleValues.length] /
+              Math.sqrt(
+                  varianceValues[i % varianceValues.length] + varianceEpsilon);
+    }
+    return Array2D.new(x.shape, outValues);
+  }
+
   protected batchNormalization3DInternal(
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
-      varianceEpsilon = .001, scale?: Array3D|Array1D,
+      varianceEpsilon: number, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D {
     const xValues = x.getValues();
     const meanValues = mean.getValues();
