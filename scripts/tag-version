@@ -15,7 +15,7 @@
 // =============================================================================
 
 var fs = require('fs');
-var exec = require( 'child_process' ).exec;
+var exec = require('child_process').exec;
 
 var version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
 var tag = `v${version}`;
