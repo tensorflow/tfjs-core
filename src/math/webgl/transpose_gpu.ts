@@ -16,6 +16,7 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class TransposeProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -30,7 +31,7 @@ export class TransposeProgram implements GPGPUProgram {
     }
     this.outputShape = outputShape;
     this.rank = outputShape.length;
-    const dtype = getDataType(this.rank);
+    const dtype = getCoordsDataType(this.rank);
     const switched = getSwitchedCoords(newDim);
 
     this.userCode = `
@@ -53,18 +54,4 @@ function getSwitchedCoords(newDim: number[]): string {
     switchedCoords[newDim[i]] = originalOrder[i];
   }
   return switchedCoords.join();
-}
-
-function getDataType(rank: number): string {
-  if (rank === 1) {
-    return 'int';
-  } else if (rank === 2) {
-    return 'ivec2';
-  } else if (rank === 3) {
-    return 'ivec3';
-  } else if (rank === 4) {
-    return 'ivec4';
-  } else {
-    throw Error(`Transpose for rank ${rank} is not yet supported`);
-  }
 }

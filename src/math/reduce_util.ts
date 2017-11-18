@@ -15,6 +15,30 @@
  * =============================================================================
  */
 
-// This file is just an alias that points to the current deeplearnjs version
-// at this branch, so demos can import the library as '../deeplearnjs'.
-export * from '../src/index';
+/**
+ * Inputs of size above this threshold will be parallelized by calling multiple
+ * shader programs.
+ */
+export const PARALLELIZE_THRESHOLD = 30;
+
+export interface ReduceInfo {
+  windowSize: number;
+  batchSize: number;
+  inSize: number;
+}
+
+export function computeOptimalWindowSize(inSize: number): number {
+  if (inSize <= PARALLELIZE_THRESHOLD) {
+    return inSize;
+  }
+  return nearestDivisor(inSize, Math.floor(Math.sqrt(inSize)));
+}
+
+function nearestDivisor(size: number, start: number): number {
+  for (let i = start; i < size; ++i) {
+    if (size % i === 0) {
+      return i;
+    }
+  }
+  return size;
+}

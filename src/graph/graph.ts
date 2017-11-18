@@ -267,6 +267,24 @@ export class Graph {
   }
 
   /**
+   * Computes LeakyReLU of x element-wise.
+   * @param x The input tensor to the LeakyReLU.
+   * @return The tensor representing the LeakyReLU operation.
+   */
+  leakyRelu(x: Tensor, alpha: number): Tensor {
+    return this.addNodeAndReturnOutput(new LeakyReLUNode(this, x, alpha));
+  }
+
+  /**
+   * Computes Elu of x element-wise.
+   * @param x the input tensor to the Elu.
+   * @return The tensor representing the Elu operation.
+   */
+  elu(x: Tensor): Tensor {
+    return this.addNodeAndReturnOutput(new EluNode(this, x));
+  }
+
+  /**
    * Computes TanH of x element-wise.
    * @param x The input tensor to the TanH.
    * @return The tensor representing the TanH operation.
@@ -745,6 +763,28 @@ export class ReLUNode extends Node {
   static readonly X = 'x';
   constructor(graph: Graph, x: Tensor) {
     super(graph, 'ReLU', {x}, new Tensor(x.shape));
+  }
+  validate() {}
+}
+
+/**
+ * LeakyReLUNode represents a LeakyReLU operation in the graph.
+ * @hidden
+ */
+export class LeakyReLUNode extends Node {
+  static readonly X = 'x';
+  public alpha: number;
+  constructor(graph: Graph, x: Tensor, alpha: number) {
+    super(graph, 'LeakyReLU', {x}, new Tensor(x.shape));
+    this.alpha = alpha;
+  }
+  validate() {}
+}
+
+export class EluNode extends Node {
+  static readonly X = 'x';
+  constructor(graph: Graph, x: Tensor) {
+    super(graph, 'Elu', {x}, new Tensor(x.shape));
   }
   validate() {}
 }

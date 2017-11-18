@@ -1,11 +1,13 @@
 node_modules/
 demos/**/*.js
 demos/**/*.js.map
+!demos/playground/frame.js
 coverage/
 bower_components/
-index.ts
 
+package-lock.json
 npm-debug.log
 .DS_Store
 dist/
 .idea/
+

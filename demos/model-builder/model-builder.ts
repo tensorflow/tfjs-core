@@ -22,7 +22,7 @@ import '../demo-header';
 import '../demo-footer';
 
 // tslint:disable-next-line:max-line-length
-import {AdadeltaOptimizer, AdagradOptimizer, AdamOptimizer, Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, RMSPropOptimizer, Scalar, Session, SGDOptimizer, Tensor, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from '../deeplearn';
+import {AdadeltaOptimizer, AdagradOptimizer, AdamaxOptimizer, AdamOptimizer, Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, RMSPropOptimizer, Scalar, Session, SGDOptimizer, Tensor, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from 'deeplearn';
 import {NDArrayImageVisualizer} from '../ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from '../ndarray-logits-visualizer';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
@@ -195,22 +195,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
     this.mathCPU = new NDArrayMathCPU();
     this.math = this.mathGPU;
 
-    const eventObserver: GraphRunnerEventObserver = {
-      batchesTrainedCallback: (batchesTrained: number) =>
-          this.displayBatchesTrained(batchesTrained),
-      avgCostCallback: (avgCost: Scalar) => this.displayCost(avgCost),
-      metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
-      inferenceExamplesCallback:
-          (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) =>
-              this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
-      inferenceExamplesPerSecCallback: (examplesPerSec: number) =>
-          this.displayInferenceExamplesPerSec(examplesPerSec),
-      trainExamplesPerSecCallback: (examplesPerSec: number) =>
-          this.displayExamplesPerSec(examplesPerSec),
-      totalTimeCallback: (totalTimeSec: number) => this.totalTimeSec =
-          totalTimeSec.toFixed(1),
-    };
-    this.graphRunner = new GraphRunner(this.math, this.session, eventObserver);
+    this.createGraphRunner();
     this.optimizer = new MomentumOptimizer(this.learningRate, this.momentum);
 
     // Set up datasets.
@@ -265,7 +250,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
     // Default optimizer is momentum
     this.selectedOptimizerName = 'momentum';
     this.optimizerNames =
-        ['sgd', 'momentum', 'rmsprop', 'adagrad', 'adadelta', 'adam'];
+        ['sgd', 'momentum', 'rmsprop', 'adagrad', 'adadelta', 'adam', 'adamax'];
 
     this.applicationState = ApplicationState.IDLE;
     this.loadedWeights = null;
@@ -309,6 +294,25 @@ export class ModelBuilder extends ModelBuilderPolymer {
     this.hiddenLayers = [];
     this.examplesPerSec = 0;
     this.inferencesPerSec = 0;
+  }
+
+  createGraphRunner() {
+    const eventObserver: GraphRunnerEventObserver = {
+      batchesTrainedCallback: (batchesTrained: number) =>
+          this.displayBatchesTrained(batchesTrained),
+      avgCostCallback: (avgCost: Scalar) => this.displayCost(avgCost),
+      metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
+      inferenceExamplesCallback:
+          (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) =>
+              this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
+      inferenceExamplesPerSecCallback: (examplesPerSec: number) =>
+          this.displayInferenceExamplesPerSec(examplesPerSec),
+      trainExamplesPerSecCallback: (examplesPerSec: number) =>
+          this.displayExamplesPerSec(examplesPerSec),
+      totalTimeCallback: (totalTimeSec: number) => this.totalTimeSec =
+          totalTimeSec.toFixed(1),
+    };
+    this.graphRunner = new GraphRunner(this.math, this.session, eventObserver);
   }
 
   isTraining(applicationState: ApplicationState): boolean {
@@ -400,6 +404,11 @@ export class ModelBuilder extends ModelBuilderPolymer {
         this.needBeta2 = true;
         break;
       }
+      case 'adamax': {
+        this.needBeta1 = true;
+        this.needBeta2 = true;
+        break;
+      }
       default: {
         throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
       }
@@ -425,6 +434,10 @@ export class ModelBuilder extends ModelBuilderPolymer {
       }
       case 'adam': {
         return new AdamOptimizer(+this.learningRate, +this.beta1, +this.beta2);
+      }
+      case 'adamax': {
+        return new AdamaxOptimizer(
+            +this.learningRate, +this.beta1, +this.beta2);
       }
       default: {
         throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
@@ -559,7 +572,6 @@ export class ModelBuilder extends ModelBuilderPolymer {
       this.setupDatasetStats();
       if (this.isValid) {
         this.createModel();
-        this.startInference();
       }
       // Get prebuilt models.
       this.populateModelDropdown();
@@ -871,7 +883,6 @@ export class ModelBuilder extends ModelBuilderPolymer {
 
     if (this.isValid) {
       this.createModel();
-      this.startInference();
     }
   }
 
@@ -952,7 +963,6 @@ export class ModelBuilder extends ModelBuilderPolymer {
         const weightsJson: string = fileReader.result;
         this.loadWeightsFromJson(weightsJson);
         this.createModel();
-        this.startInference();
       };
       fileReader.readAsText(file);
     });
