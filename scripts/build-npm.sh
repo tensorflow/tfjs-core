@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-npm run prep
+yarn prep
 rm -rf dist/
 scripts/build-standalone.sh
-node_modules/.bin/tsc
+node_modules/.bin/tsc -t es6 -m es6
 cd dist/
-npm pack ../
+yarn pack ../
 cd ..
 echo 'Stored npm package at dist/deeplearn-{version}.tgz'

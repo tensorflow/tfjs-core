@@ -20,9 +20,9 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "prep": "npm install && mkdirp dist",
+    "prep": "yarn && mkdirp dist",
     "build": "browserify --standalone squeezenet squeezenet.ts -p [tsify] -o dist/bundle.js",
-    "publish-npm": "tsc && npm run build && npm publish"
+    "publish-npm": "tsc && yarn build && yarn publish"
   },
   "license": "Apache-2.0"
 }

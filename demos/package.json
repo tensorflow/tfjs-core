@@ -13,6 +13,8 @@
     "url": "https://github.com/PAIR-code/deeplearnjs.git"
   },
   "devDependencies": {
+    "@types/polymer": "~1.1.31",
+    "tone-piano": "0.0.5",
     "bower": "~1.8.0",
     "mkdirp": "~0.5.1",
     "polymer-bundler": "~3.0.1",
@@ -22,7 +24,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "prep": "npm install && bower install"
+    "prep": "yarn && bower install"
   },
   "license": "Apache-2.0"
 }
