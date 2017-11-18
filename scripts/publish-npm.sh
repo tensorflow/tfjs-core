@@ -17,6 +17,6 @@ rm -rf dist/ && \
 yarn prep && \
 ./scripts/build-standalone.sh && \
 node_modules/.bin/tsc && \
-yarn publish && \
+npm publish && \
 ./scripts/tag-version
 echo 'Yay! Published a new package to npm.'

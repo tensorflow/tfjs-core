@@ -17,7 +17,4 @@ yarn prep
 rm -rf dist/
 scripts/build-standalone.sh
 node_modules/.bin/tsc -t es6 -m es6
-cd dist/
-yarn pack ../
-cd ..
-echo 'Stored npm package at dist/deeplearn-{version}.tgz'
+npm pack

@@ -3,9 +3,9 @@
   "version": "0.3.11",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
   "unpkg": "dist/deeplearn.js",
-  "types": "dist/src/index.d.ts",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/PAIR-code/deeplearnjs.git"
