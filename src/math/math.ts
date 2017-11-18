@@ -21,13 +21,14 @@ import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {ConvInfo} from './conv_util';
+import {ConvInfo, DepthwiseConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 
-export type ScopeResultImmediate = NDArray[]|NDArray|void;
+export type ScopeResultImmediate =
+    void|NDArray|NDArray[]|{[key: string]: NDArray};
 export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
 
 export interface LSTMCell {
@@ -71,8 +72,10 @@ export abstract class NDArrayMath {
    */
   scope<T extends ScopeResult>(
       scopeFn:
-          (keep: <T1 extends NDArray>(ndarray: T1) => T1,
-           track: <T2 extends NDArray>(ndarray: T2) => T2) => T): T {
+          (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
+               ndarray: T1) => T1,
+           track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
+               ndarray: T2) => T2) => T): T {
     this.startScope();
 
     const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
@@ -114,15 +117,36 @@ export abstract class NDArrayMath {
     this.activeScopeNDArraysToKeep = newNDArraysToKeep;
   }
 
+  private extractNDArraysFromScopeResult(result: ScopeResultImmediate):
+      NDArray[] {
+    if (result == null) {
+      return [];
+    }
+    if (result instanceof NDArray) {
+      return [result];
+    }
+
+    const list: NDArray[] = [];
+    const resultObj = result as {[key: string]: NDArray};
+    // Iteration over keys works also for arrays.
+    for (const k in resultObj) {
+      const val = resultObj[k];
+      if (val instanceof NDArray) {
+        list.push(val);
+      }
+    }
+    return list;
+  }
+
   /**
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
   endScope(result: ScopeResultImmediate) {
     let arraysToKeep = this.activeScopeNDArraysToKeep;
-    if (result != null) {
-      arraysToKeep = arraysToKeep.concat(result as NDArray | NDArray[]);
-    }
+    const resultArrays = this.extractNDArraysFromScopeResult(result);
+    arraysToKeep = arraysToKeep.concat(resultArrays);
+
     // Dispose the current scope.
     for (let i = 0; i < this.activeScope.length; i++) {
       const ndarray = this.activeScope[i];
@@ -139,17 +163,11 @@ export abstract class NDArrayMath {
         this.ndarrayScopes[this.ndarrayScopes.length - 1];
 
     // Track the current result in the parent scope.
-    if (result instanceof NDArray &&
-        !this.isNDArrayDataInList(result, this.activeScopeNDArraysToKeep)) {
-      this.track(result);
-    } else if (Array.isArray(result)) {
-      result.forEach(r => {
-        if (r instanceof NDArray &&
-            !this.isNDArrayDataInList(r, this.activeScopeNDArraysToKeep)) {
-          this.track(r);
-        }
-      });
-    }
+    resultArrays.forEach(val => {
+      if (!this.isNDArrayDataInList(val, this.activeScopeNDArraysToKeep)) {
+        this.track(val);
+      }
+    });
 
     this.ndarraysToKeep.pop();
     this.activeScopeNDArraysToKeep = this.ndarraysToKeep.length === 0 ?
@@ -195,8 +213,9 @@ export abstract class NDArrayMath {
   }
 
   /**
-   * Tracks an NDArray in the current scope to be automatically cleaned up when
-   * the current scope ends, and returns the value.
+   * Tracks an NDArray in the current scope to be automatically cleaned up
+   * when the current scope ends, and returns the value.
+   *
    * @param result The NDArray to track in the current scope.
    */
   track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
@@ -239,7 +258,7 @@ export abstract class NDArrayMath {
     util.assert(
         a.rank === 2 && b.rank === 2,
         `Error in matMul: inputs must be rank 2, got ranks ${a.rank}` +
-            `and ${b.rank}.`);
+            ` and ${b.rank}.`);
 
     util.assert(
         innerShapeA === innerShapeB,
@@ -379,8 +398,8 @@ export abstract class NDArrayMath {
   }
 
   /**
-   * Extracts a 1D slice from 1D array starting at coordinates `begin` and is of
-   * length `size`.
+   * Extracts a 1D slice from 1D array starting at coordinates `begin` and is
+   * of length `size`.
    *
    * @param input The input array to slice from.
    * @param begin The offset to start the slice from.
@@ -395,8 +414,8 @@ export abstract class NDArrayMath {
       input: Array1D, begin: number, size: number): Array1D;
 
   /**
-   * Extracts a 2D slice from a 2D array starting at coordinates `begin` and is
-   * of size `size`.
+   * Extracts a 2D slice from a 2D array starting at coordinates `begin` and
+   * is of size `size`.
    *
    * @param input The input array to slice from.
    * @param begin The [row, col] 2d coordinates to start the slice from.
@@ -412,8 +431,8 @@ export abstract class NDArrayMath {
       input: Array2D, begin: [number, number], size: [number, number]): Array2D;
 
   /**
-   * Extracts a 3D slice from a 3D array starting at coordinates `begin` and is
-   * of size `size`.
+   * Extracts a 3D slice from a 3D array starting at coordinates `begin` and
+   * is of size `size`.
    *
    * @param input The input array to slice from.
    * @param begin The [row, col, depth] 3d coordinates to start the slice from.
@@ -431,8 +450,8 @@ export abstract class NDArrayMath {
       size: [number, number, number]): Array3D;
 
   /**
-   * Extracts a 4D slice from a 4D array starting at coordinates `begin` and is
-   * of size `size`.
+   * Extracts a 4D slice from a 4D array starting at coordinates `begin` and
+   * is of size `size`.
    *
    * @param input The input array to slice from.
    * @param begin The [row, col, depth, depth2] 4d coordinates to start the
@@ -607,8 +626,8 @@ export abstract class NDArrayMath {
    * Computes the log(sum(exp(elements across the reduction dimensions)).
    *
    * Reduces the input along the dimensions given in `axis`. Unless `keepDims`
-   * is true, the rank of the array is reduced by 1 for each entry in `axis`. If
-   * `keepDims` is true, the reduced dimensions are retained with length 1.
+   * is true, the rank of the array is reduced by 1 for each entry in `axis`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
    * If `axis` has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
    *
@@ -621,9 +640,14 @@ export abstract class NDArrayMath {
   logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
       NDArray {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('logSumExp', axes, input.rank);
     return this.executeOp('logSumExp', () => {
-      const res = this.logSumExpInternal(input, axes);
+      const xMax = this.max(input, axes, true /* keepDims */);
+      const a = this.subtract(input, xMax);
+      const b = this.exp(a);
+      const c = this.sum(b, axes);
+      const d = this.log(c);
+      const res = this.add(xMax.reshape(d.shape), d);
+
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
         return res.reshape(newShape);
@@ -631,8 +655,6 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract logSumExpInternal(ndarray: NDArray, axes: number[]):
-      NDArray;
 
   /**
    * Computes the sum of elements across dimensions of an array.
@@ -644,20 +666,24 @@ export abstract class NDArrayMath {
    * single element is returned.
    *
    * @param input The input array to compute the sum over.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
-   *     dimensions.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces
+   *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   sum<T extends keyof DataTypes>(
       input: NDArray<T>, axis: number|number[] = null,
       keepDims = false): NDArray<SumTypes[T]> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
-
+    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    let axes = origAxes;
+    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
     return this.executeOp('sum', () => {
+      if (permutedAxes != null) {
+        input = this.transpose(input, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
       const res = this.sumInternal(input, axes);
       if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
       }
       return res;
@@ -667,18 +693,52 @@ export abstract class NDArrayMath {
       ndarray: NDArray<T>, axes: number[]): NDArray<SumTypes[T]>;
 
   /**
+   * Computes the mean of elements across dimensions of an array.
+   *
+   * Reduces `x` along the dimensions given in `axis`. Unless `keepDims` is
+   * true, the rank of the array is reduced by 1 for each entry in `axis`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axis` has no entries, all dimensions are reduced, and an array with a
+   * single element is returned.
+   *
+   * @param x The input array.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces
+   *     all dimensions.
+   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   */
+  mean(x: NDArray, axis: number|number[] = null, keepDims = false):
+      NDArray<'float32'> {
+    const axes = axis_util.parseAxisParam(axis, x.shape);
+    const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const reduceShape = shapes[1];
+    const reduceSize = util.sizeFromShape(reduceShape);
+    return this.executeOp('mean', () => {
+      return this.scope((keep, track) => {
+        const res = this.divide(x, track(Scalar.new(reduceSize)));
+        return this.sum(res, axis, keepDims);
+      });
+    });
+  }
+
+  /**
    * Returns the indices of the minimum values along an `axis`. The result has
    * the same shape as `input` with the dimension along `axis` removed.
    *
    * @param input The input array.
-   * @param axis Optional. The dimension to reduce. By default it reduces across
-   * all axes and returns the flat index.
+   * @param axis Optional. The dimension to reduce. By default it reduces
+   * across all axes and returns the flat index.
    *
    */
   argMin(input: NDArray, axis: number = null): NDArray<'int32'> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('argMin', axes, input.rank);
-    return this.executeOp('argMin', () => this.argMinInternal(input, axes));
+    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+    return this.executeOp('argMin', () => {
+      if (permutedAxes != null) {
+        input = this.transpose(input, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
+      return this.argMinInternal(input, axes);
+    });
   }
   protected abstract argMinInternal(ndarray: NDArray, axes: number[]):
       NDArray<'int32'>;
@@ -688,14 +748,19 @@ export abstract class NDArrayMath {
    * the same shape as `input` with the dimension along `axis` removed.
    *
    * @param input The input array.
-   * @param axis Optional. The dimension to reduce. By default it reduces across
-   * all axes and returns the flat index.
-   *
+   * @param axis Optional. The dimension to reduce. By default it reduces
+   *     across all axes and returns the flat index
    */
   argMax(input: NDArray, axis: number = null): NDArray<'int32'> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
-    return this.executeOp('argMax', () => this.argMaxInternal(input, axes));
+    let axes = axis_util.parseAxisParam(axis, input.shape);
+    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+    return this.executeOp('argMax', () => {
+      if (permutedAxes != null) {
+        input = this.transpose(input, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
+      return this.argMaxInternal(input, axes);
+    });
   }
   protected abstract argMaxInternal(ndarray: NDArray, axes: number[]):
       NDArray<'int32'>;
@@ -758,19 +823,24 @@ export abstract class NDArrayMath {
    * single element is returned.
    *
    * @param input The input NDArray.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
-   *     dimensions.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces
+   *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   min<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
+    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    let axes = origAxes;
+    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
     return this.executeOp('min', () => {
+      if (permutedAxes != null) {
+        input = this.transpose(input, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
       const res = this.minInternal(input, axes);
       if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
       }
       return res;
@@ -789,19 +859,24 @@ export abstract class NDArrayMath {
    * single element is returned.
    *
    * @param input The input array.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces all
-   *     dimensions.
+   * @param axis Optional. The dimension(s) to reduce. By default it reduces
+   *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   max<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
+    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    let axes = origAxes;
+    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
     return this.executeOp('max', () => {
+      if (permutedAxes != null) {
+        input = this.transpose(input, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+      }
       const res = this.maxInternal(input, axes);
       if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
+        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
       }
       return res;
@@ -846,6 +921,29 @@ export abstract class NDArrayMath {
   }
 
   /**
+   * Construct an array by repeating it the number of times given by reps.
+   *
+   * This operation creates a new array by replicating `input` `reps`
+   * times. The output tensor's i'th dimension has `input.shape[i] *
+   * reps[i]` elements, and the values of `input` are replicated
+   * `reps[i]` times along the i'th dimension. For example, tiling
+   * `[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.
+   *
+   * @param a The array to transpose.
+   * @param reps Determines the number of replications per dimension.
+   */
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
+      T {
+    util.assert(
+        a.rank === reps.length,
+        `Error in transpose: rank of input ${a.rank} ` +
+            `must match length of reps ${reps}.`);
+    return this.executeOp('tile', () => this.tileInternal(a, reps));
+  }
+  protected abstract tileInternal<
+      D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]): T;
+
+  /**
    * Transposes the array. Permutes the dimensions according to `perm`.
    *
    * The returned array's dimension `i` will correspond to the input dimension
@@ -863,8 +961,8 @@ export abstract class NDArrayMath {
     }
     util.assert(
         a.rank === perm.length,
-        `Error in switchDim: length of input shape ${a.shape} ` +
-            `must match size of newDim array ${perm}.`);
+        `Error in transpose: rank of input ${a.rank} ` +
+            `must match length of perm ${perm}.`);
     return this.executeOp('transpose', () => this.transposeInternal(a, perm));
   }
   protected abstract transposeInternal<
@@ -1003,11 +1101,11 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to divide element-wise.
    * @param b The second NDArray to divide element-wise.
    */
-  divide(a: NDArray, b: NDArray): NDArray {
+  divide(a: NDArray, b: NDArray): NDArray<'float32'> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('divide', () => this.divideInternal(a, b));
   }
-  protected abstract divideInternal(a: NDArray, b: NDArray): NDArray;
+  protected abstract divideInternal(a: NDArray, b: NDArray): NDArray<'float32'>;
 
   /**
    * Divides two NDArrays element-wise, A / B. Inputs must
@@ -1085,6 +1183,16 @@ export abstract class NDArrayMath {
   protected abstract sqrtInternal<T extends NDArray>(ndarray: T): T;
 
   /**
+   * Computes square of `x` element-wise.
+   *
+   * @param x The input array.
+   */
+  square<T extends NDArray>(x: T): T {
+    return this.executeOp('square', () => this.squareInternal(x));
+  }
+  protected abstract squareInternal<T extends NDArray>(x: T): T;
+
+  /**
    * Computes absolute value element-wise.
    * @param ndarray The input NDArray.
    */
@@ -1134,8 +1242,8 @@ export abstract class NDArrayMath {
    * @return {NDArray}
    */
   leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
-    return this.executeOp('leakyRelu', () =>
-        this.leakyReluInternal(ndarray, alpha));
+    return this.executeOp(
+        'leakyRelu', () => this.leakyReluInternal(ndarray, alpha));
   }
   protected abstract leakyReluInternal<T extends NDArray>(
       ndarray: T, alpha: number): T;
@@ -1231,14 +1339,18 @@ export abstract class NDArrayMath {
   protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Computes step of the input NDArray element-wise, y = 1 if x > 0 | 0 if x <=
-   * 0
+   * Computes step of the input NDArray element-wise, 
+   * y=1 if x>0|alpha*x if x<=0.
+   *
    * @param ndarray The input NDArray.
+   * @param alpha The gradient when input is negative.
    */
-  step<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('step', () => this.stepInternal(ndarray));
+  step<T extends NDArray>(ndarray: T, alpha = 0.0): T {
+    return this.executeOp('step', 
+      () => this.stepInternal(ndarray, alpha));
   }
-  protected abstract stepInternal<T extends NDArray>(ndarray: T): T;
+  protected abstract stepInternal<T extends NDArray>(ndarray: T, 
+    alpha: number): T;
 
   /**
    * Computes sign of the input NDArray element-wise, y = 1 if x > 0 | -1 if x 
@@ -1343,7 +1455,7 @@ export abstract class NDArrayMath {
     const filterWidth = filter.shape[1];
     const outDepth = filter.shape[3];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
@@ -1416,7 +1528,7 @@ export abstract class NDArrayMath {
 
     const [strideHeight, strideWidth] = parseTupleParam(strides);
 
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConv2DInfo(
         inShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
@@ -1476,7 +1588,7 @@ export abstract class NDArrayMath {
     const filterWidth = filterSize[1];
     const outDepth = filterSize[3];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.track(this.conv2dDerFilterInternal(x, dy, convInfo));
@@ -1505,6 +1617,81 @@ export abstract class NDArrayMath {
   }
 
   /**
+   * Depthwise 2D convolution.
+   *
+   * Given a 4D `input` array and a `filter` array of shape
+   * `[filterHeight, filterWidth, inChannels, channelMultiplier]` containing
+   * `inChannels` convolutional filters of depth 1, this op applies a different
+   * filter to each input channel (expanding from 1 channel to
+   * `channelMultiplier` channels for each), then concatenates the results
+   * together. The output has `inChannels * channelMultiplier` channels.
+   *
+   * See https://www.tensorflow.org/api_docs/python/tf/nn/depthwise_conv2d for
+   * more details.
+   *
+   * @param input4D The input ndarray, of rank 4 or rank 3, of shape
+   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+   * @param filter The filter ndarray, rank 4, of shape
+   *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`.
+   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   *     If strides is a single number, then `strideHeight == strideWidth`.
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *   - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *   - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param rates The dilation rates: `[rateHeight, rateWidth]` in which we
+   *     sample input values across the height and width dimensions in atrous
+   *     convolution. Defaults to `[1, 1]`. If `rate` is a single number, then
+   *     `rateHeight == rateWidth`. If it is greater than 1, then all values of
+   *     `strides` must be 1.
+   */
+  depthwiseConv2D(
+      input: Array3D|Array4D, filter: Array4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number,
+      rates: [number, number]|number = [1, 1]): Array3D|Array4D {
+    let input4D = input as Array4D;
+    let reshapedTo4D = false;
+    if (input.rank === 3) {
+      reshapedTo4D = true;
+      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+    }
+    util.assert(
+        input4D.rank === 4,
+        `Error in depthwiseConv2D: input must be rank 4, but got ` +
+            `rank ${input4D.rank}.`);
+    util.assert(
+        filter.rank === 4,
+        `Error in depthwiseConv2D: filter must be rank 4, but got rank ` +
+            `${filter.rank}.`);
+    util.assert(
+        input4D.shape[3] === filter.shape[2],
+        `Error in depthwiseConv2D: number of input channels ` +
+            `(${input4D.shape[3]}) must match the inChannels dimension in ` +
+            `filter ${filter.shape[2]}.`);
+    rates = rates || [1, 1];
+    const [rateHeight, rateWidth] = parseTupleParam(rates);
+    util.assert(
+        rateHeight === 1 && rateWidth === 1,
+        'Error in depthwiseConv2D: rates greater than 1 are not yet ' +
+            `supported. Got rates '${rates}'`);
+
+    const convInfo = conv_util.computeDepthwiseConv2DInfo(
+        input4D.shape, filter.shape, strides, pad);
+    return this.executeOp('depthwiseConv2D', () => {
+      const res = this.depthwiseConv2DInternal(input4D, filter, convInfo);
+      if (reshapedTo4D) {
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+      }
+      return res;
+    });
+  }
+  protected abstract depthwiseConv2DInternal(
+      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D;
+
+  /**
    * Computes the 2D max pooling of an image.
    * @param x The input image, rank 3 of shape [height, width, inDepth].
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
@@ -1527,7 +1714,7 @@ export abstract class NDArrayMath {
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp('maxPool', () => this.maxPoolInternal(x, convInfo));
@@ -1558,7 +1745,7 @@ export abstract class NDArrayMath {
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
@@ -1590,7 +1777,7 @@ export abstract class NDArrayMath {
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp('minPool', () => this.minPoolInternal(x, convInfo));
@@ -1620,7 +1807,7 @@ export abstract class NDArrayMath {
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
     const outDepth = x.shape[2];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConvInfo(
+    const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp('avgPool', () => this.avgPoolInternal(x, convInfo));
@@ -1654,10 +1841,61 @@ export abstract class NDArrayMath {
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
 
   /**
+   * Batch normalization 2D. Mean, variance, scale, and offset can be of two
+   * shapes: 1) The same shape as the input: an Array2D. 2) In the common
+   * case, the depth dimension is the last dimension of x, so the values would
+   * be an Array1D of shape [depth].
+   * @param x The input NDArray.
+   * @param mean A mean NDArray.
+   * @param variance A variance NDArray.
+   * @param varianceEpsilon A small float number to avoid dividing by 0.
+   * @param scale A scale NDArray.
+   * @param offset An offset NDArray.
+   */
+  batchNormalization2D(
+      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
+      varianceEpsilon = .001, scale?: Array2D|Array1D,
+      offset?: Array2D|Array1D): Array2D {
+    util.assert(
+        x.rank === 2,
+        `Error in batchNormalization3D: x must be rank 3 but got rank ` +
+            `${x.rank}.`);
+    util.assert(
+        mean.rank === 2 || mean.rank === 1,
+        `Error in batchNormalization2D: mean must be rank 2 or rank 1 but ` +
+            `got rank ${mean.rank}.`);
+    util.assert(
+        variance.rank === 2 || variance.rank === 1,
+        `Error in batchNormalization2D: variance must be rank 2 or rank 1 ` +
+            `but got rank ${variance.rank}.`);
+    if (scale != null) {
+      util.assert(
+          scale.rank === 2 || scale.rank === 1,
+          `Error in batchNormalization2D: scale must be rank 2 or rank 1 ` +
+              `but got rank ${scale.rank}.`);
+    }
+    if (offset != null) {
+      util.assert(
+          offset.rank === 2 || offset.rank === 1,
+          `Error in batchNormalization2D: offset must be rank 2 or rank 1 ` +
+              `but got rank ${offset.rank}.`);
+    }
+
+    return this.executeOp(
+        'batchNorm2D',
+        () => this.batchNormalization2DInternal(
+            x, mean, variance, varianceEpsilon, scale, offset));
+  }
+  protected abstract batchNormalization2DInternal(
+      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
+      varianceEpsilon: number, scale?: Array2D|Array1D,
+      offset?: Array2D|Array1D): Array2D;
+
+  /**
    * Batch normalization 3D. Mean, variance, scale, and offset can be of two
-   * shapes: 1) The same shape as the input: an Array3D. 2) In the common case,
-   * the depth dimension is the last dimension of x, so the values would be an
-   * Array1D of shape [depth].
+   * shapes: 1) The same shape as the input: an Array3D. 2) In the common
+   * case, the depth dimension is the last dimension of x, so the values would
+   * be an Array1D of shape [depth].
    * @param x The input NDArray.
    * @param mean A mean NDArray.
    * @param variance A variance NDArray.
@@ -1834,8 +2072,8 @@ export abstract class NDArrayMath {
    * @param depth The depth of the one hot dimension.
    * @param onValue A number used to fill in output when the index matches the
    *     location.
-   * @param offValue A number used to fill in the output when the index does not
-   *     match the location.
+   * @param offValue A number used to fill in the output when the index does
+   *     not match the location.
    */
   oneHot(indices: Array1D, depth: number, onValue = 1, offValue = 0): Array2D {
     if (depth < 2) {
@@ -1847,6 +2085,35 @@ export abstract class NDArrayMath {
   protected abstract oneHotInternal(
       indices: Array1D, depth: number, onValue: number,
       offValue: number): Array2D;
+
+  /**
+   * Calculates the mean and variance of `x`. The mean and variance are
+   * calculated by aggregating the contents of `x` across `axes`. If `x` is
+   * 1-D and `axes = [0]` this is just the mean and variance of a vector.
+   *
+   * @param x The input array.
+   * @param axis Optional. The dimension(s) along with to compute mean and
+   *     variance. By default it reduces all dimensions.
+   * @param keepDims If true, the moments have the same dimensionality as the
+   *     input.
+   * @return An object with two keys: `mean` and `variance`.
+   */
+  moments(x: NDArray, axis: number|number[] = null, keepDims = false):
+      {mean: NDArray<'float32'>, variance: NDArray<'float32'>} {
+    const axes = axis_util.parseAxisParam(axis, x.shape);
+    const result = this.scope(() => {
+      const mean = this.mean(x, axes, keepDims);
+      let keepDimsShape = mean.shape;
+      if (!keepDims) {
+        keepDimsShape = axis_util.expandShapeToKeepDim(mean.shape, axes);
+      }
+      const devSquared =
+          this.square(this.subtract(x, mean.reshape(keepDimsShape)));
+      const variance = this.mean(devSquared, axes, keepDims);
+      return {mean, variance};
+    });
+    return result;
+  }
 }
 
 export enum MatrixOrientation {

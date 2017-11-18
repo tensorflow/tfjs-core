@@ -17,11 +17,14 @@
 
 import '../demo-header';
 import '../demo-footer';
+
 // tslint:disable-next-line:max-line-length
-import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
-import * as imagenet_util from '../models/imagenet_util';
-import {SqueezeNet} from '../models/squeezenet';
+import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
+import {SqueezeNet} from 'deeplearn-squeezenet';
+
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
+
+import * as imagenet_util from './imagenet_util';
 
 // tslint:disable-next-line:variable-name
 export const ImagenetDemoPolymer: new () => PolymerHTMLElement =
@@ -114,7 +117,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.mathCPU = new NDArrayMathCPU();
 
     this.squeezeNet = new SqueezeNet(this.math);
-    this.squeezeNet.loadVariables().then(() => {
+    this.squeezeNet.load().then(() => {
       requestAnimationFrame(() => this.animate());
     });
 
@@ -154,7 +157,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
       const image = track(Array3D.fromPixels(
           isWebcam ? this.webcamVideoElement : this.staticImgElement));
 
-      const inferenceResult = this.squeezeNet.infer(image);
+      const inferenceResult = await this.squeezeNet.predict(image);
       const namedActivations = inferenceResult.namedActivations;
 
       this.layerNames = Object.keys(namedActivations);

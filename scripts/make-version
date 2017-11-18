@@ -17,6 +17,7 @@
 var fs = require('fs');
 
 var version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+var tag = `v${version}`;
 
 const versionCode =
 `/** @license See the LICENSE file. */

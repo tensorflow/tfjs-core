@@ -32,43 +32,22 @@ export type InputInfo = {
   shapeInfo: ShapeInfo
 };
 
-function updateBatchedShapeInfo(info: ShapeInfo, numBatchDims: number) {
-  info.logicalShape = info.logicalShape.slice(numBatchDims);
-}
-
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
-    broadcast: boolean, numBatchDims: number): string {
-  let batchSnippet = '';
-  if (numBatchDims) {
-    if (inputsInfo.length !== 1) {
-      throw new Error(
-          `Batching for 2 or more inputs is not yet supported. ` +
-          `Got ${inputsInfo.length} inputs.`);
-    }
-    updateBatchedShapeInfo(inputsInfo[0].shapeInfo, numBatchDims);
-    updateBatchedShapeInfo(outputShape, numBatchDims);
-    const inputSize = util.sizeFromShape(inputsInfo[0].shapeInfo.logicalShape);
-    const outputSize = util.sizeFromShape(outputShape.logicalShape);
-    batchSnippet = getBatchSnippet(inputSize, outputSize, outputShape.texShape);
-  }
-
+    broadcast: boolean): string {
   const sampleSnippet = getSampleSnippet();
   const setOutputSnippet = getSetOutputSnippet();
   const inputPrefixSnippet =
       inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
-      inputsInfo
-          .map(
-              x => getInputSamplingSnippet(
-                  x, outputShape, broadcast, numBatchDims))
+      inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
           .join('\n');
   const outTexShape = outputShape.texShape;
   const outputSamplingSnippet =
       getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   const source = [
-    SHADER_PREFIX, batchSnippet, sampleSnippet, setOutputSnippet,
-    inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
+    SHADER_PREFIX, sampleSnippet, setOutputSnippet, inputPrefixSnippet,
+    outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
   return source;
 }
@@ -85,33 +64,31 @@ function getSetOutputSnippet() {
       UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET;
 }
 
-function getInputSamplingSnippet(
-    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean,
-    numBatchDims: number) {
+function getSamplerFromInInfo(inInfo: InputInfo): string {
   const shape = inInfo.shapeInfo.logicalShape;
-  let res = getSamplerFlat(inInfo, numBatchDims);
-
   switch (shape.length) {
     case 0:
-      res += getSamplerScalar(inInfo);
-      break;
+      return getSamplerScalar(inInfo);
     case 1:
-      res += getSampler1D(inInfo);
-      break;
+      return getSampler1D(inInfo);
     case 2:
-      res += getSampler2D(inInfo);
-      break;
+      return getSampler2D(inInfo);
     case 3:
-      res += getSampler3D(inInfo);
-      break;
+      return getSampler3D(inInfo);
     case 4:
-      res += getSampler4D(inInfo);
-      break;
+      return getSampler4D(inInfo);
     default:
       throw new Error(
           `${shape.length}-D input sampling` +
           ` is not yet supported`);
   }
+}
+
+function getInputSamplingSnippet(
+    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean): string {
+  let res = getSamplerFlat(inInfo);
+  res += getSamplerFromInInfo(inInfo);
+
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input texture using the
   // output coordinates.
@@ -121,19 +98,6 @@ function getInputSamplingSnippet(
     res += getSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
   }
   return res;
-}
-
-function getBatchSnippet(
-    inputSize: number, outputSize: number, texShape: [number, number]) {
-  return `
-    int getBatchOffset() {
-      ivec2 resTexRC = ivec2(resultUV.yx *
-          vec2(${texShape[0]}, ${texShape[1]}));
-      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
-      int b = index / ${outputSize};
-      return b * ${inputSize};
-    }
-  `;
 }
 
 function getOutputSamplingSnippet(
@@ -465,53 +429,49 @@ function getSampler2D(inputInfo: InputInfo): string {
   const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const tR = texShape[0];
-  const tC = texShape[1];
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   if (util.arraysEqual(shape, texShape)) {
     return `
     float ${funcName}(int row, int col) {
-      vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
+      vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
       return sample(${texName}, uv);
     }
   `;
   }
-  if (tC === 1) {
-    if (shape[0] === 1) {
-      return `
+  const {newShape, keptDims} = util.squeezeShape(shape);
+  const squeezedShape = newShape;
+  if (squeezedShape.length < shape.length) {
+    const newInputInfo = squeezeInputInfo(inputInfo, squeezedShape);
+    const params = ['row', 'col'];
+    return `
+      ${getSamplerFromInInfo(newInputInfo)}
       float ${funcName}(int row, int col) {
-        vec2 uv = vec2(0.5, (float(col) + 0.5) / ${tR}.0);
-        return sample(${texName}, uv);
+        return ${funcName}(${getSqueezedParams(params, keptDims)});
       }
     `;
-    }
-    if (shape[1] === 1) {
-      return `
-      float ${funcName}(int row, int col) {
-        vec2 uv = vec2(0.5, (float(row) + 0.5) / ${tR}.0);
-        return sample(${texName}, uv);
-      }
-    `;
-    }
+  }
+  if (texNumC === 1) {
     return `
     float ${funcName}(int row, int col) {
       int index = row * ${shape[1]} + col;
-      vec2 uv = vec2(0.5, (float(index) + 0.5) / ${tR}.0);
+      vec2 uv = vec2(0.5, (float(index) + 0.5) / ${texNumR}.0);
       return sample(${texName}, uv);
     }
   `;
   }
-  if (tR === 1) {
+  if (texNumR === 1) {
     return `
     float ${funcName}(int row, int col) {
       int index = row * ${shape[1]} + col;
-      vec2 uv = vec2((float(index) + 0.5) / ${tC}.0, 0.5);
+      vec2 uv = vec2((float(index) + 0.5) / ${texNumC}.0, 0.5);
       return sample(${texName}, uv);
     }
   `;
   }
   return `
   float ${funcName}(int row, int col) {
-    vec2 uv = UVfrom2D(${tR}, ${tC}, ${shape[1]}, row, col);
+    vec2 uv = UVfrom2D(${texNumR}, ${texNumC}, ${shape[1]}, row, col);
     return sample(${texName}, uv);
   }
 `;
@@ -522,51 +482,79 @@ function getSampler3D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const tR = texShape[0];
-  const tC = texShape[1];
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
+  const texType = inputInfo.shapeInfo.textureType;
 
-  if (tC === stride0) {
-    if (inputInfo.shapeInfo.textureType === TextureType.DEFAULT) {
+  if (texType === TextureType.DEFAULT) {
+    const {newShape, keptDims} = util.squeezeShape(shape);
+    const squeezedShape = newShape;
+    if (squeezedShape.length < shape.length) {
+      const newInputInfo = squeezeInputInfo(inputInfo, squeezedShape);
+      const params = ['row', 'col', 'depth'];
+      return `
+        ${getSamplerFromInInfo(newInputInfo)}
+        float ${funcName}(int row, int col, int depth) {
+          return ${funcName}(${getSqueezedParams(params, keptDims)});
+        }
+      `;
+    }
+  }
+
+  if (texNumC === stride0) {
+    if (texType === TextureType.DEFAULT) {
       return `
         float ${funcName}(int row, int col, int depth) {
           int texR = row;
           int texC = col * ${stride1} + depth;
-          vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
+          vec2 uv = (vec2(texC, texR) + halfCR) /
+                     vec2(${texNumC}.0, ${texNumR}.0);
           return sample(${texName}, uv);
         }
       `;
-    } else if (inputInfo.shapeInfo.textureType === TextureType.RGBA_COLOR) {
+    } else if (texType === TextureType.RGBA_COLOR) {
       return `
         float ${funcName}(int row, int col, int depth) {
-          vec2 uv = (vec2(col, row) + halfCR) / vec2(${tC}.0, ${tR}.0);
+          vec2 uv = (vec2(col, row) + halfCR) /
+                     vec2(${texNumC}.0, ${texNumR}.0);
           return sampleUVAndDepth(${texName}, uv, depth);
         }
       `;
     } else {
-      throw new Error(
-          `Unknown TextureType ${inputInfo.shapeInfo.textureType}.`);
+      throw new Error(`Unknown TextureType ${texType}.`);
     }
   }
 
-  if (inputInfo.shapeInfo.textureType === TextureType.DEFAULT) {
+  if (texNumC === stride1 && texType === TextureType.DEFAULT) {
+    return `
+    float ${funcName}(int row, int col, int depth) {
+      int texR = row * ${shape[1]} + col;
+      int texC = depth;
+      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
+      return sample(${texName}, uv);
+    }
+  `;
+  }
+
+  if (texType === TextureType.DEFAULT) {
     return `
       float ${funcName}(int row, int col, int depth) {
         vec2 uv = UVfrom3D(
-            ${tR}, ${tC}, ${stride0}, ${stride1}, row, col, depth);
+            ${texNumR}, ${texNumC}, ${stride0}, ${stride1}, row, col, depth);
         return sample(${texName}, uv);
       }
   `;
-  } else if (inputInfo.shapeInfo.textureType === TextureType.RGBA_COLOR) {
+  } else if (texType === TextureType.RGBA_COLOR) {
     return `
       float ${funcName}(int row, int col, int depth) {
-        vec2 uv = UVfrom2D(${tR}, ${tC}, ${shape[1]}, row, col);
+        vec2 uv = UVfrom2D(${texNumR}, ${texNumC}, ${shape[1]}, row, col);
         return sampleUVAndDepth(${texName}, uv, depth);
       }
     `;
   } else {
-    throw new Error(`Unknown TextureType ${inputInfo.shapeInfo.textureType}.`);
+    throw new Error(`Unknown TextureType ${texType}.`);
   }
 }
 
@@ -575,46 +563,63 @@ function getSampler4D(inputInfo: InputInfo): string {
   const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const tR = texShape[0];
-  const tC = texShape[1];
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
-
-  if (tC === stride0) {
+  const {newShape, keptDims} = util.squeezeShape(shape);
+  if (newShape.length < shape.length) {
+    const newInputInfo = squeezeInputInfo(inputInfo, newShape);
+    const params = ['row', 'col', 'depth', 'depth2'];
+    return `
+      ${getSamplerFromInInfo(newInputInfo)}
+      float ${funcName}(int row, int col, int depth, int depth2) {
+        return ${funcName}(${getSqueezedParams(params, keptDims)});
+      }
+    `;
+  }
+  if (texNumC === stride0) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
         int texR = row;
         int texC = col * ${stride1} + depth * ${stride2} + depth2;
-        vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${tC}.0, ${tR}.0);
+        vec2 uv = (vec2(texC, texR) + halfCR) /
+                   vec2(${texNumC}.0, ${texNumR}.0);
+        return sample(${texName}, uv);
+      }
+    `;
+  }
+  if (texNumC === stride2) {
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2) {
+        int texR = row * ${shape[1] * shape[2]} + col * ${shape[2]} + depth;
+        int texC = depth2;
+        vec2 uv = (vec2(texC, texR) + halfCR) /
+                  vec2(${texNumC}.0, ${texNumR}.0);
         return sample(${texName}, uv);
       }
     `;
   }
   return `
     float ${funcName}(int row, int col, int depth, int depth2) {
-      vec2 uv = UVfrom4D(${tR}, ${tC}, ${stride0}, ${stride1}, ${stride2},
-          row, col, depth, depth2);
+      vec2 uv = UVfrom4D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
+          ${stride2}, row, col, depth, depth2);
       return sample(${texName}, uv);
     }
   `;
 }
 
-function getSamplerFlat(inputInfo: InputInfo, numBatchDims: number): string {
+function getSamplerFlat(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const texShape = inputInfo.shapeInfo.texShape;
   const funcName =
       'get' + texName.charAt(0).toUpperCase() + texName.slice(1) + 'Flat';
   const tNumR = texShape[0];
   const tNumC = texShape[1];
-  let batchSnippet = '';
-  if (numBatchDims) {
-    batchSnippet = 'index += getBatchOffset();';
-  }
   if (tNumC === 1 && tNumR === 1) {
     return `
       float ${funcName}(int index) {
-        ${batchSnippet}
         return sample(${texName}, halfCR);
       }
     `;
@@ -622,7 +627,6 @@ function getSamplerFlat(inputInfo: InputInfo, numBatchDims: number): string {
   if (tNumC === 1) {
     return `
       float ${funcName}(int index) {
-        ${batchSnippet}
         vec2 uv = vec2(0.5, (float(index) + 0.5) / ${tNumR}.0);
         return sample(${texName}, uv);
       }
@@ -631,7 +635,6 @@ function getSamplerFlat(inputInfo: InputInfo, numBatchDims: number): string {
   if (tNumR === 1) {
     return `
       float ${funcName}(int index) {
-        ${batchSnippet}
         vec2 uv = vec2((float(index) + 0.5) / ${tNumC}.0, 0.5);
         return sample(${texName}, uv);
       }
@@ -639,7 +642,6 @@ function getSamplerFlat(inputInfo: InputInfo, numBatchDims: number): string {
   }
   return `
     float ${funcName}(int index) {
-      ${batchSnippet}
       vec2 uv = UVfrom1D(${tNumR}, ${tNumC}, index);
       return sample(${texName}, uv);
     }
@@ -766,4 +768,31 @@ function getSamplerAtOutputCoords(
       ${sampleSnippet}
     }
   `;
+}
+
+export function getCoordsDataType(rank: number): string {
+  if (rank === 1) {
+    return 'int';
+  } else if (rank === 2) {
+    return 'ivec2';
+  } else if (rank === 3) {
+    return 'ivec3';
+  } else if (rank === 4) {
+    return 'ivec4';
+  } else {
+    throw Error(`GPU for rank ${rank} is not yet supported`);
+  }
+}
+
+/** Returns a new input info (a copy) that has a squeezed logical shape. */
+function squeezeInputInfo(
+    inInfo: InputInfo, squeezedShape: number[]): InputInfo {
+  // Deep copy.
+  const newInputInfo: InputInfo = JSON.parse(JSON.stringify(inInfo));
+  newInputInfo.shapeInfo.logicalShape = squeezedShape;
+  return newInputInfo;
+}
+
+function getSqueezedParams(params: string[], keptDims: number[]): string {
+  return keptDims.map(d => params[d]).join(', ');
 }

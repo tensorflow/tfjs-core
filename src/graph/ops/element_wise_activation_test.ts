@@ -14,13 +14,14 @@
  * limitations under the License.
  * =============================================================================
  */
-
+import * as test_util from '../../test_util';
 import {NDArrayMathCPU} from '../../math/math_cpu';
 import {Array1D, Array2D} from '../../math/ndarray';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
-import {ReLU, Sigmoid, Square, TanH} from './element_wise_activation';
+// tslint:disable-next-line:max-line-length
+import {ReLU, Sigmoid, Square, TanH, LeakyReLU} from './element_wise_activation';
 
 describe('Element wise activation', () => {
   let math: NDArrayMathCPU;
@@ -66,6 +67,30 @@ describe('Element wise activation', () => {
     expect(dx.getValues()).toEqual(new Float32Array([1, 0, 0, 4, 5, 0]));
   });
 
+  it('LeakyReLU', () => {
+    const x = Array2D.new([2, 3], [3, 0, -1, 2, 9, -5]);
+
+    xTensor = new Tensor(x.shape);
+    yTensor = new Tensor(x.shape);
+    activations.set(xTensor, x);
+
+    const op = new LeakyReLU(xTensor, yTensor, 0.2);
+    op.feedForward(math, activations);
+
+    const y = activations.get(yTensor);
+    expect(y.getValues()).toEqual(new Float32Array([3, 0, -0.2, 2, 9, -1.0]));
+
+    // Backprop.
+    const dy = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    gradients.add(yTensor, dy);
+
+    op.backProp(math, activations, gradients);
+
+    const dx = gradients.get(xTensor);
+
+    expect(dx.getValues()).toEqual(new Float32Array([1, 0, 0.6, 4, 5, 1.2]));
+  });
+
   it('TanH', () => {
     const x = Array1D.new([3, 0, -3]);
 
@@ -78,9 +103,9 @@ describe('Element wise activation', () => {
 
     const y = activations.get(yTensor);
 
-    expect(y.get(0)).toBeCloseTo(0.99505475, 6);
-    expect(y.get(1)).toBeCloseTo(0, 6);
-    expect(y.get(2)).toBeCloseTo(-0.99505475, 6);
+    test_util.expectNumbersClose(y.get(0), 0.99505475);
+    test_util.expectNumbersClose(y.get(1), 0);
+    test_util.expectNumbersClose(y.get(2), -0.99505475);
 
     // Backprop.
     const dy = Array1D.new([2, 4, 3]);
@@ -89,9 +114,9 @@ describe('Element wise activation', () => {
     op.backProp(math, activations, gradients);
 
     const dx = gradients.get(xTensor);
-    expect(dx.get(0)).toBeCloseTo(2 * (1 - 0.99505475 * 0.99505475), 6);
-    expect(dx.get(1)).toBeCloseTo(4, 6);
-    expect(dx.get(2)).toBeCloseTo(3 * (1 - 0.99505475 * 0.99505475), 6);
+    test_util.expectNumbersClose(dx.get(0), 2 * (1 - 0.99505475 * 0.99505475));
+    test_util.expectNumbersClose(dx.get(1), 4);
+    test_util.expectNumbersClose(dx.get(2), 3 * (1 - 0.99505475 * 0.99505475));
   });
 
   it('Sigmoid', () => {
@@ -105,9 +130,9 @@ describe('Element wise activation', () => {
     op.feedForward(math, activations);
 
     const y = activations.get(yTensor);
-    expect(y.get(0)).toBeCloseTo(0.9525741268, 6);
-    expect(y.get(1)).toBeCloseTo(0.5, 6);
-    expect(y.get(2)).toBeCloseTo(0.0474258731, 6);
+    test_util.expectNumbersClose(y.get(0), 0.9525741268);
+    test_util.expectNumbersClose(y.get(1), 0.5);
+    test_util.expectNumbersClose(y.get(2), 0.0474258731);
 
     // Backprop.
     const dy = Array1D.new([2, 4, 3]);
@@ -116,9 +141,15 @@ describe('Element wise activation', () => {
     op.backProp(math, activations, gradients);
 
     const dx = gradients.get(xTensor);
-    expect(dx.get(0)).toBeCloseTo(2 * 0.9525741268 * (1 - 0.9525741268), 6);
-    expect(dx.get(1)).toBeCloseTo(4 * 0.5 * 0.5, 6);
-    expect(dx.get(2)).toBeCloseTo(3 * 0.0474258731 * (1 - 0.0474258731), 6);
+    test_util.expectNumbersClose(
+      dx.get(0),
+      2 * 0.9525741268 * (1 - 0.9525741268)
+    );
+    test_util.expectNumbersClose(dx.get(1), 4 * 0.5 * 0.5);
+    test_util.expectNumbersClose(
+      dx.get(2),
+      3 * 0.0474258731 * (1 - 0.0474258731)
+    );
   });
 
   it('Square', () => {

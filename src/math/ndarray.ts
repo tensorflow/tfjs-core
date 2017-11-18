@@ -50,6 +50,7 @@ export interface NDArrayData<T extends keyof DataTypes> {
   /** [rows, columns] shape of the texture. */
   textureShapeRC?: [number, number];
   textureType?: TextureType;
+  isDisposed?: boolean;
 }
 
 /** @hidden */
@@ -72,6 +73,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   size: number;
   /** The data type for the array. */
   dtype: T;
+
   /**
    * Number of elements to skip in each dimension when indexing. See
    * https://docs.scipy.org/doc/numpy/reference/generated
@@ -105,6 +107,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     if (data.textureType == null) {
       data.textureType = TextureType.DEFAULT;
     }
+
     this.ndarrayData = data;
     this.dtype = dtype || ('float32' as T);
     const dim = this.shape.length;
@@ -149,6 +152,9 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    */
   static make<T extends keyof DataTypes = keyof DataTypes>(
       shape: number[], data: NDArrayData<T>, dtype?: T): NDArray<T> {
+    if (data.isDisposed) {
+      throw new Error(`Cannot make new NDArray from disposed NDArrayData.`);
+    }
     switch (shape.length) {
       case 0:
         return new Scalar(data, dtype);
@@ -188,6 +194,8 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   /** Reshapes the current ndarray into the provided shape. */
   reshape(newShape: number[]): NDArray<T> {
+    this.throwIfDisposed();
+
     newShape = util.inferFromImplicitShape(newShape, this.size);
     if (util.arraysEqual(this.shape, newShape)) {
       // No-op.
@@ -236,6 +244,8 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   asType<G extends keyof DataTypes>(dtype: G): NDArray<G> {
+    this.throwIfDisposed();
+
     let newData: NDArrayData<T> = this.getData();
     if (newData.values != null) {
       newData = {values: toTypedArray(newData.values, dtype)};
@@ -244,10 +254,12 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   get rank(): number {
+    this.throwIfDisposed();
     return this.shape.length;
   }
 
   get(...locs: number[]) {
+    this.throwIfDisposed();
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
@@ -256,10 +268,12 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   add(value: number, ...locs: number[]) {
+    this.throwIfDisposed();
     this.set(this.get(...locs) + value, ...locs);
   }
 
   set(value: number, ...locs: number[]) {
+    this.throwIfDisposed();
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
@@ -268,6 +282,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   async val(...locs: number[]): Promise<number> {
+    this.throwIfDisposed();
     await this.data();
     return this.get(...locs);
   }
@@ -291,6 +306,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   fill(value: number) {
+    this.throwIfDisposed();
     this.getValues().fill(value);
   }
 
@@ -312,25 +328,29 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * Asynchronously downloads the values from the NDArray. Returns a promise
    * that resolves when the data is ready.
    */
-  data(): Promise<DataTypes[T]> {
-    return new Promise<DataTypes[T]>((resolve, reject) => {
-      if (this.ndarrayData.values != null) {
-        resolve(this.ndarrayData.values);
-        return;
-      }
+  async data(): Promise<DataTypes[T]> {
+    this.throwIfDisposed();
+    if (this.ndarrayData.values != null) {
+      return this.ndarrayData.values;
+    }
 
-      if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-        resolve(this.getValues());
-        return;
-      }
+    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
+        this.ndarrayData.textureType === TextureType.DEFAULT) {
+      this.ndarrayData.values = await GPGPU.downloadMatrixFromTextureAsync(
+          this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
+          this.ndarrayData.textureShapeRC[1]);
+      return this.ndarrayData.values;
+    }
 
-      // Construct an empty query. We're just interested in getting a callback
-      // when the GPU command queue has executed until this point in time.
-      const queryFn = () => {};
-      GPGPU.runQuery(queryFn).then(() => {
-        resolve(this.getValues());
-      });
-    });
+    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+      return await this.dataSync();
+    }
+
+    // Construct an empty query. We're just interested in getting a callback
+    // when the GPU command queue has executed until this point in time.
+    const queryFn = () => {};
+    await GPGPU.runQuery(queryFn);
+    return this.dataSync();
   }
 
   /**
@@ -338,6 +358,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * thread until the values are ready, which can cause performance issues.
    */
   dataSync(): DataTypes[T] {
+    this.throwIfDisposed();
     if (this.ndarrayData.values == null) {
       throwIfGPUNotInitialized();
 
@@ -351,17 +372,19 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
             this.ndarrayData.texture, this.ndarrayData.textureShapeRC[0],
             this.ndarrayData.textureShapeRC[1], this.shape[2]);
       }
+
       this.ndarrayData.values = float32ToTypedArray(values, this.dtype);
+
       this.disposeTexture();
     }
     return this.ndarrayData.values;
   }
 
-  private uploadToGPU(preferredTexShape?: [number, number]) {
+  private uploadToGPU() {
     throwIfGPUNotInitialized();
+    this.throwIfDisposed();
     this.ndarrayData.textureShapeRC =
-        webgl_util.getTextureShapeFromLogicalShape(
-            GPGPU.gl, this.shape, preferredTexShape);
+        webgl_util.getTextureShapeFromLogicalShape(GPGPU.gl, this.shape);
     this.ndarrayData.texture =
         TEXTURE_MANAGER.acquireTexture(this.ndarrayData.textureShapeRC);
     this.ndarrayData.textureType = TextureType.DEFAULT;
@@ -375,23 +398,37 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     this.ndarrayData.values = null;
   }
 
-  getTexture(preferredShapeRC?: [number, number]): WebGLTexture {
+  getTexture(): WebGLTexture {
+    this.throwIfDisposed();
     if (this.ndarrayData.texture == null) {
-      this.uploadToGPU(preferredShapeRC);
+      this.uploadToGPU();
     }
     return this.ndarrayData.texture;
   }
 
-  getTextureShapeRC(preferredShapeRC?: [number, number]): [number, number] {
+  getTextureShapeRC(): [number, number] {
+    this.throwIfDisposed();
     if (this.ndarrayData.textureShapeRC == null) {
-      this.uploadToGPU(preferredShapeRC);
+      this.uploadToGPU();
     }
     return this.ndarrayData.textureShapeRC;
+  }
+
+  private throwIfDisposed() {
+    if (this.ndarrayData.isDisposed) {
+      throw new Error(`NDArray is disposed.`);
+    }
   }
 
   dispose(): void {
     this.ndarrayData.values = null;
     this.shape = null;
+
+    // TODO(nsthorat): Construct an error and save the stack trace for debugging
+    // when in debug mode. Creating a stack trace is too expensive to do
+    // unconditionally.
+    this.ndarrayData.isDisposed = true;
+
     if (this.ndarrayData.texture != null) {
       this.disposeTexture();
     }
@@ -407,10 +444,12 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   inGPU(): boolean {
+    this.throwIfDisposed();
     return this.ndarrayData.texture != null;
   }
 
   equals(t: NDArray<T>): boolean {
+    this.throwIfDisposed();
     return this.dtype === t.dtype && util.arraysEqual(this.shape, t.shape) &&
         util.arraysEqual(this.getValues(), t.getValues());
   }

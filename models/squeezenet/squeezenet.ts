@@ -15,33 +15,35 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, CheckpointLoader, NDArray, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
+import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
 
-import * as imagenet_classes from './imagenet_classes';
+import {IMAGENET_CLASSES} from './imagenet_classes';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
     'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
 
-export class SqueezeNet {
+export class SqueezeNet implements Model {
   private variables: {[varName: string]: NDArray};
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
 
-  constructor(private math: NDArrayMathGPU) {}
+  constructor(private math: NDArrayMath) {
+    // TODO(nsthorat): This awful hack is because we need to share the global
+    // GPGPU between deeplearn loaded from standalone as well as the internal
+    // deeplearn that gets compiled as part of this model. Remove this once we
+    // decouple NDArray from storage mechanism.
+    initializeGPU(
+        (this.math as NDArrayMathGPU).getGPGPUContext(),
+        (this.math as NDArrayMathGPU).getTextureManager());
+  }
 
   /**
-   * Loads necessary variables for SqueezeNet. Resolves the promise when the
-   * variables have all been loaded.
+   * Loads necessary variables for SqueezeNet.
    */
-  loadVariables(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const checkpointLoader =
-          new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + 'squeezenet1_1/');
-      checkpointLoader.getAllVariables().then(variables => {
-        this.variables = variables;
-        resolve();
-      });
-    });
+  async load(): Promise<void> {
+    const checkpointLoader =
+        new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + 'squeezenet1_1/');
+    this.variables = await checkpointLoader.getAllVariables();
   }
 
   /**
@@ -52,8 +54,10 @@ export class SqueezeNet {
    * @param input un-preprocessed input Array.
    * @return Named activations and the pre-softmax logits.
    */
-  infer(input: Array3D):
-      {namedActivations: {[activationName: string]: Array3D}, logits: Array1D} {
+  async predict(input: Array3D): Promise<{
+    namedActivations: {[activationName: string]: Array3D},
+    logits: Array1D
+  }> {
     // Keep a map of named activations for rendering purposes.
     const namedActivations: {[key: string]: Array3D} = {};
 
@@ -152,10 +156,15 @@ export class SqueezeNet {
 
     const topClassesToProbability: {[className: string]: number} = {};
     for (let i = 0; i < topkIndices.length; i++) {
-      topClassesToProbability[imagenet_classes
-                                  .IMAGENET_CLASSES[topkIndices[i]]] =
-          topkValues[i];
+      topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] = topkValues[i];
     }
     return topClassesToProbability;
+  }
+
+  dispose() {
+    this.preprocessOffset.dispose();
+    for (const varName in this.variables) {
+      this.variables[varName].dispose();
+    }
   }
 }

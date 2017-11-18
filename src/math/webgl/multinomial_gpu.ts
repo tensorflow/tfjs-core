@@ -20,28 +20,27 @@ import {GPGPUProgram} from './gpgpu_math';
 
 export class MultinomialProgram implements GPGPUProgram {
   variableNames = ['probs'];
-  params: Array<{}>;
   outputShape: number[];
   userCode: string;
-  numBatchDims: number;
 
   // Caching uniform location for speed.
   seedLoc: WebGLUniformLocation;
 
   constructor(batchSize: number, numOutcomes: number, numSamples: number) {
     this.outputShape = [batchSize, numSamples];
-    this.numBatchDims = 1;
-    this.params = [];
 
     this.userCode = `
       uniform float seed;
 
       void main() {
+        ivec2 coords = getOutputCoords();
+        int batch = coords[0];
+
         float r = random(seed);
         float cdf = 0.0;
 
         for (int i = 0; i < ${numOutcomes - 1}; i++) {
-          cdf += getProbs(i);
+          cdf += getProbs(batch, i);
 
           if (r < cdf) {
             setOutput(float(i));
