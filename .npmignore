@@ -4,9 +4,7 @@ docs/
 scripts/
 src/
 coverage/
-bower_components/
 node_modules/
-bower.json
 karma.conf.js
 tsconfig-doc.json
 dist/demos/

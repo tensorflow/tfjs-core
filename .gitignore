@@ -3,8 +3,6 @@ demos/**/*.js
 demos/**/*.js.map
 !demos/playground/frame.js
 coverage/
-bower_components/
-
 package-lock.json
 npm-debug.log
 .DS_Store
