@@ -16,5 +16,5 @@
 yarn prep
 rm -rf dist/
 scripts/build-standalone.sh
-node_modules/.bin/tsc -t es6 -m es6
+node_modules/.bin/tsc --sourceMap false
 npm pack
