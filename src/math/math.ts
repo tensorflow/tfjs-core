@@ -245,13 +245,11 @@ export abstract class NDArrayMath {
   /** Disposes the math object and any resources used by it. */
   dispose() {}
 
-  protected abstract timeOperation<G extends keyof DataTypes,
-                                             T extends NDArray<G>>(f: () => T):
-      {result: T, timeMs: Promise<number>};
+  protected abstract startTimer(): void;
+  protected abstract endTimer(): Promise<number>;
 
   private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
       name: string, f: () => T): T {
-    console.log('---------------EXECUTING--------------');
     let result: T;
     if (!this.debugMode) {
       result = f();
@@ -259,27 +257,36 @@ export abstract class NDArrayMath {
       const opExecutionInfo: OpExecutionInfo = {name, children: []};
       this.debugModeOpExecutionInfoStack.push(opExecutionInfo);
 
-      const timingResult = this.timeOperation(f);
+      this.startTimer();
 
-      result = timingResult.result;
-      timingResult.timeMs.then(timeMs => {
-        const time = util.rightPad(`${timeMs}ms`, 9);
-        const paddedName = util.rightPad(name, 25);
-        const rank = result.rank;
-        const size = result.size;
-        const shape = util.rightPad(result.shape.toString(), 14);
-        console.log(
-            `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-            'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      });
+      result = f();
 
-      // Test.
-      const vals = result.dataSync();
-      this.checkForNaN(vals, result.dtype, name);
+      const endTimer = this.endTimer();
+
+      if (endTimer == null) {
+        // Render.
+      } else {
+        this.endTimer().then(timeMs => {
+          // Pop, merge.
+
+          const time = util.rightPad(`${timeMs}ms`, 9);
+          const paddedName = util.rightPad(name, 25);
+          const rank = result.rank;
+          const size = result.size;
+          const shape = util.rightPad(result.shape.toString(), 14);
+          console.log(
+              `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
+              'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
+        });
+
+        // Test.
+        const vals = result.dataSync();
+        this.checkForNaN(vals, result.dtype, name);
+      }
+      console.log('---------------DONE--------------');
+
+      return this.track(result);
     }
-    console.log('---------------DONE--------------');
-
-    return this.track(result);
   }
 
   /**
@@ -459,7 +466,8 @@ export abstract class NDArrayMath {
    * is of size `size`.
    *
    * @param input The input array to slice from.
-   * @param begin The [row, col, depth] 3d coordinates to start the slice from.
+   * @param begin The [row, col, depth] 3d coordinates to start the slice
+   * from.
    * @param size The size of the slice.
    */
   slice3D(input: Array3D, begin: [number, number, number], size: [
@@ -692,7 +700,8 @@ export abstract class NDArrayMath {
    * @param input The input array to compute the sum over.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
    *     all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   * @param keepDims Optional. If true, retains reduced dimensions with
+   * size 1.
    */
   sum<T extends keyof DataTypes>(
       input: NDArray<T>, axis: number|number[] = null,
@@ -728,7 +737,8 @@ export abstract class NDArrayMath {
    * @param x The input array.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
    *     all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   * @param keepDims Optional. If true, retains reduced dimensions with
+   * size 1.
    */
   mean(x: NDArray, axis: number|number[] = null, keepDims = false):
       NDArray<'float32'> {
@@ -852,7 +862,8 @@ export abstract class NDArrayMath {
    * @param input The input NDArray.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
    *     all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   * @param keepDims Optional. If true, retains reduced dimensions with
+   * size 1.
    */
   min<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
@@ -888,7 +899,8 @@ export abstract class NDArrayMath {
    * @param input The input array.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
    *     all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
+   * @param keepDims Optional. If true, retains reduced dimensions with
+   * size 1.
    */
   max<G extends keyof DataTypes>(
       input: NDArray<G>, axis: number|number[] = null,
@@ -1436,7 +1448,8 @@ export abstract class NDArrayMath {
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param bias Optional bias, rank 1 of shape [outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    *    - 'same' pad and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -1487,7 +1500,8 @@ export abstract class NDArrayMath {
    * @param dy The dy image, rank 3, of shape [height, width, outDepth].
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1509,7 +1523,8 @@ export abstract class NDArrayMath {
    *     [outHeight, outWidth, outDepth].
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1572,7 +1587,8 @@ export abstract class NDArrayMath {
    * @param dy The dy image, rank 3, of shape [height, width, outDepth].
    * @param filterSize The size of the filter, length 4,
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */

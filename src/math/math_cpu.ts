@@ -28,6 +28,8 @@ import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 
 export class NDArrayMathCPU extends NDArrayMath {
+  private activeTimerMs: number;
+
   constructor(safeMode = false) {
     super(safeMode);
   }
@@ -1236,16 +1238,18 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected timeOperation<G extends keyof DataTypes, T extends NDArray<G>>(
-      f: () => T): {result: T, timeMs: Promise<number>} {
-    const startTimeMs = performance.now();
+  protected startTimer() {
+    this.activeTimerMs = performance.now();
+  }
 
-    const result = f();
-
-    const timeMs = new Promise<number>(resolve => {
-      resolve(performance.now() - startTimeMs);
-    });
-
-    return {result, timeMs};
+  protected endTimer(): Promise<number>|null {
+    if (this.activeTimerMs == null) {
+      return null;
+    }
+    return new Promise<number>(resolve => {
+      const time = performance.now() - this.activeTimerMs;
+      this.activeTimerMs = null;
+      resolve(time);
+    })
   }
 }

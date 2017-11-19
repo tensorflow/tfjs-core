@@ -379,6 +379,16 @@ export class GPGPUContext {
   }
 
   /**
+   * Maybe ends a query. Returns null if there are no active queries.
+   */
+  public maybeEndQuery(): Promise<number>|null {
+    if (this.activeQuery == null) {
+      return null;
+    }
+    return this.endQuery();
+  }
+
+  /**
    * Ends a query.
    */
   public endQuery(): Promise<number> {

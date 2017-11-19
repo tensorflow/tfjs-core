@@ -587,14 +587,14 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.textureManager;
   }
 
-  protected timeOperation<G extends keyof DataTypes, T extends NDArray<G>>(
-      f: () => T): {result: T, timeMs: Promise<number>} {
-    let result: T;
-    const timeMs = this.gpgpu.runQuery(() => {
-      result = f();
-    });
+  protected startTimer() {
+    // Cancel any existing timers as the timing will get bubbled up.
+    this.gpgpu.maybeCancelQuery();
+    this.gpgpu.beginQuery();
+  }
 
-    return {result, timeMs};
+  protected endTimer(): Promise<number>|null {
+    return this.gpgpu.maybeEndQuery();
   }
 
   dispose() {
