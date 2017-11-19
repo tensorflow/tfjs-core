@@ -21,14 +21,12 @@ import {Model, NDArray} from 'deeplearn';
 
 export class CaffeModel implements Model {
 
-  // models.Squeezenet
   /**
    * Model weights per layer
    * @type {{[varName: string]: NDArray}}
    */
   protected variables: {[varName: string]: NDArray};
 
-  // TODO Generalize preprocessing to support cropping
   /**
    * Preprocessing Offset
    * @type {NDArray}
@@ -50,7 +48,7 @@ export class CaffeModel implements Model {
    */
   load() {
     return caffe_util.fetchArrayBuffer(this.caffemodelUrl)
-      .then(caffe_util.parseCaffeModel)
+      .then(caffe_util.parseCaffemodel)
       .then((model) => {
 
         // Store the caffemodel for debugging

@@ -26,7 +26,7 @@ export function fetchArrayBuffer(uri: string) : Promise<ArrayBuffer> {
   return fetch(new Request(uri)).then((res) => res.arrayBuffer());
 }
 
-export function parseCaffeModel(data: ArrayBuffer) {
+export function parseCaffemodel(data: ArrayBuffer) {
   return caffe.NetParameter.decode(new Uint8Array(data));
 }
 
