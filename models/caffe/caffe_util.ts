@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {caffe} from './caffe/caffe.js';
-import {Array1D, NDArray} from '../math/ndarray';
+import {caffe} from './proto/caffe.js';
+import {Array1D, NDArray} from 'deeplearn';
 
 export function fetchText(uri: string) : Promise<string> {
   return fetch(new Request(uri)).then((res) => res.text());

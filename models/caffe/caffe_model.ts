@@ -14,11 +14,10 @@
  * limitations under the License.
  * =============================================================================
  */
-import {caffe} from './caffe/caffe.js';
+import {caffe} from './proto/caffe.js';
 import * as caffe_util from './caffe_util';
 
-import {NDArray} from '../math/ndarray';
-import {Model} from '../model';
+import {Model, NDArray} from 'deeplearn';
 
 export class CaffeModel implements Model {
 

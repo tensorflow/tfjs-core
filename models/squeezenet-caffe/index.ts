@@ -15,4 +15,4 @@
  * =============================================================================
  */
 
-export {SqueezeNet} from './squeezenet';
+export {SqueezeNet} from './squeezenet_caffe';

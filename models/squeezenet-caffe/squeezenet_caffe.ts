@@ -22,7 +22,7 @@ import {IMAGENET_CLASSES} from './imagenet_classes';
 // TODO Move model to storage.googleapis.com/learnjs-data/checkpoint_zoo/
 const GITHUB_CDN = 'https://rawgit.com/DeepScale/SqueezeNet/master/SqueezeNet_v1.1/';
 
-export class SqueezeNetCaffe extends CaffeModel {
+export class SqueezeNet extends CaffeModel {
 
   constructor(private math: NDArrayMathGPU) {
     super(GITHUB_CDN + 'squeezenet_v1.1.caffemodel');

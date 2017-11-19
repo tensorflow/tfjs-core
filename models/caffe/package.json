@@ -1,13 +1,12 @@
 {
-  "name": "deeplearn-knn-image-classifier",
-  "version": "0.1.2",
-  "description": "A KNN Image Classifier model in deeplearn.js",
+  "name": "deeplearn-caffe",
+  "version": "0.1.0",
+  "description": "Caffe utility tools and model loader for deeplearn.js",
   "main": "dist/index.js",
-  "unpkg": "dist/bundle.js",
+  "unpkg": "dist/deeplearn-caffe.js",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "deeplearn": "~0.3.7",
-    "deeplearn-squeezenet": "~0.1.2"
+    "deeplearn": "~0.3.8"
   },
   "repository": {
     "type": "git",
@@ -15,14 +14,16 @@
   },
   "devDependencies": {
     "mkdirp": "~0.5.1",
+    "protobufjs": "~6.8.0",
     "tsify": "~3.0.3",
+    "tslint": "~5.6.0",
     "typescript": "~2.5.3",
-    "uglify-js": "~3.0.28",
+    "uglify-js": "~3.1.10",
     "watchify": "~3.9.0"
   },
   "scripts": {
     "prep": "npm install && mkdirp dist",
-    "build": "browserify --standalone knn_image_classifier knn_image_classifier.ts -p [tsify] -o dist/bundle.js",
+    "build": "tsc",
     "publish-npm": "tsc && npm run build && npm publish"
   },
   "license": "Apache-2.0"

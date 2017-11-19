@@ -14,5 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import * as caffe_util from './caffe_util';
 
-export {SqueezeNet} from './squeezenet';
+export {CaffeModel} from './caffe_model';
+export {caffe_util};
