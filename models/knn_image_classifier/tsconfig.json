@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "umd",
     "noImplicitAny": true,
     "sourceMap": true,
     "removeComments": true,
