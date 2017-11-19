@@ -50,7 +50,7 @@
     var boxes = await mobileNet.interpret_netout(result.netout);
 
     for (i = 0; i < boxes.length; i++) {
-      box = boxes[i]
+      box = boxes[i];
 
       const x = (box.x - box.w/2) * width;
       const y = (box.y - box.h/2) * height;
