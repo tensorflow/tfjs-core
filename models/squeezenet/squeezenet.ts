@@ -14,15 +14,15 @@
  * limitations under the License.
  * =============================================================================
  */
-// tslint:disable-next-line:max-line-length
+// tslint:disable-next-line:max-line-length  
 import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
 
-import {IMAGENET_CLASSES} from './imagenet_classes';
+import {IMAGENET_CLASSES} from './imagenet_classes'; 
 
-const GOOGLE_CLOUD_STORAGE_DIR =
+const GOOGLE_CLOUD_STORAGE_DIR = 
     'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
-
-export class SqueezeNet implements Model {
+   
+export class SqueezeNet implements Model {  
   private variables: {[varName: string]: NDArray};
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
@@ -159,7 +159,7 @@ export class SqueezeNet implements Model {
       topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] = topkValues[i];
     }
     return topClassesToProbability;
-  }
+  } 
 
   dispose() {
     this.preprocessOffset.dispose();
