@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-      "module": "umd",
+      "module": "commonjs",
       "sourceMap": true,
       "preserveConstEnums": true,
       "declaration": true,
