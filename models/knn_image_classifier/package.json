@@ -17,7 +17,7 @@
     "mkdirp": "~0.5.1",
     "tsify": "~3.0.3",
     "typescript": "~2.5.3",
-    "uglify-js": "~3.0.28",
+    "uglifyjs": "~2.4.11",
     "watchify": "~3.9.0"
   },
   "scripts": {

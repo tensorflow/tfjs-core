@@ -1,4 +1,4 @@
-# SqueezeNet model
+# SqueezeNet-Caffe model
 
 This package contains a standalone SqueezeNet model using Caffe weights. For the standard SqueezeNet model with deeplearn.js weights checkout [the standard SqueezeNet model](https://github.com/PAIR-code/deeplearnjs/blob/master/models/squeezenet).
 
