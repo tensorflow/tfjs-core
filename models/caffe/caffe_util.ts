@@ -132,12 +132,12 @@ export function getVariableName(layer: caffe.ILayerParameter, index: number) : s
 /**
  * Get all variables from a caffemodel definition
  * @param {caffe.NetParameter} model caffe model
- * @returns {Map<string, NDArray>} Map containing variables per layer
+ * @returns {{[varName: string]: NDArray}} Map containing variables per layer
  */
 // tslint:disable-next-line:max-line-length
-export function getAllVariables(model: caffe.NetParameter) : Map<string, NDArray> {
+export function getAllVariables(model: caffe.NetParameter) : {[varName: string]: NDArray} {
 
-  const variables: Map<string, NDArray> = new Map();
+  const variables: {[varName: string]: NDArray} = {};
    
   model.layer
 
@@ -149,7 +149,7 @@ export function getAllVariables(model: caffe.NetParameter) : Map<string, NDArray
       
       // iterate blobs per layer
       layer.blobs.forEach((blob, i) => {
-        variables.set(getVariableName(layer, i), convBlobToNDArray(blob));
+        variables[getVariableName(layer, i)] = convBlobToNDArray(blob);
       });
     });
 

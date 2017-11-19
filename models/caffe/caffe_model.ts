@@ -21,13 +21,12 @@ import {Model, NDArray} from 'deeplearn';
 
 export class CaffeModel implements Model {
 
-  // TODO Map structure not compatible with object structure used in
   // models.Squeezenet
   /**
    * Model weights per layer
-   * @type {Map<string, NDArray>}
+   * @type {{[varName: string]: NDArray}}
    */
-  protected variables: Map<string, NDArray>;
+  protected variables: {[varName: string]: NDArray};
 
   // TODO Generalize preprocessing to support cropping
   /**
@@ -72,7 +71,7 @@ export class CaffeModel implements Model {
   dispose() {
     this.preprocessOffset.dispose();
     for (const varName in this.variables) {
-      this.variables.get(varName).dispose();
+      this.variables[varName].dispose();
     }
   }
 }
