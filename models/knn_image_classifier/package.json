@@ -5,8 +5,10 @@
   "main": "dist/index.js",
   "unpkg": "dist/bundle.js",
   "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "deeplearn": "~0.3.11"
+  },
   "dependencies": {
-    "deeplearn": "~0.3.7",
     "deeplearn-squeezenet": "~0.1.2"
   },
   "repository": {
