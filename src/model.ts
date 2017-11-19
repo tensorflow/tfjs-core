@@ -17,7 +17,7 @@
 import {NDArray} from './math/ndarray';
 
 export interface Model {
-  load(): Promise<any>;
+  load(): Promise<void>;
   predict(input: NDArray): Promise<{}>;
   dispose(): void;
 }
