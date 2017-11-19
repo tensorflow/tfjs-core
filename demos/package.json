@@ -70,7 +70,8 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "prep": "yarn"
+    "prep": "yarn",
+    "build": "tsc"
   },
   "license": "Apache-2.0",
   "engines": {

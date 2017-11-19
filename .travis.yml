@@ -2,7 +2,17 @@ language: node_js
 node_js: "8"
 install:
   - yarn prep
+  - cd demos && yarn prep && cd ..
+  - cd models/squeezenet/ && yarn prep && cd ../..
+  - cd models/knn_image_classifier/ && yarn prep && cd ../..
+  - cd starter/typescript/ && yarn prep && cd ../..
+  - cd starter/es6/ && yarn prep && cd ../..
 script:
   - yarn build
   - yarn lint
+  - cd demos && yarn build && cd ..
+  - cd models/squeezenet/ && yarn build && cd ../..
+  - cd models/knn_image_classifier/ && yarn build && cd ../..
+  - cd starter/typescript/ && yarn build && cd ../..
+  - cd starter/es6/ && yarn build && cd ../..
   - if [ "$BROWSERSTACK_KEY" ]; then yarn test-travis; fi
