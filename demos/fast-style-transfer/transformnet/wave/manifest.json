@@ -1,0 +1,338 @@
+{
+  "Variable": {
+    "filename": "Variable", 
+    "shape": [
+      9, 
+      9, 
+      3, 
+      32
+    ]
+  }, 
+  "Variable_1": {
+    "filename": "Variable_1", 
+    "shape": [
+      32
+    ]
+  }, 
+  "Variable_10": {
+    "filename": "Variable_10", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_11": {
+    "filename": "Variable_11", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_12": {
+    "filename": "Variable_12", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_13": {
+    "filename": "Variable_13", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_14": {
+    "filename": "Variable_14", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_15": {
+    "filename": "Variable_15", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_16": {
+    "filename": "Variable_16", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_17": {
+    "filename": "Variable_17", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_18": {
+    "filename": "Variable_18", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_19": {
+    "filename": "Variable_19", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_2": {
+    "filename": "Variable_2", 
+    "shape": [
+      32
+    ]
+  }, 
+  "Variable_20": {
+    "filename": "Variable_20", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_21": {
+    "filename": "Variable_21", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_22": {
+    "filename": "Variable_22", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_23": {
+    "filename": "Variable_23", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_24": {
+    "filename": "Variable_24", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_25": {
+    "filename": "Variable_25", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_26": {
+    "filename": "Variable_26", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_27": {
+    "filename": "Variable_27", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_28": {
+    "filename": "Variable_28", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_29": {
+    "filename": "Variable_29", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_3": {
+    "filename": "Variable_3", 
+    "shape": [
+      3, 
+      3, 
+      32, 
+      64
+    ]
+  }, 
+  "Variable_30": {
+    "filename": "Variable_30", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_31": {
+    "filename": "Variable_31", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_32": {
+    "filename": "Variable_32", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_33": {
+    "filename": "Variable_33", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_34": {
+    "filename": "Variable_34", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_35": {
+    "filename": "Variable_35", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_36": {
+    "filename": "Variable_36", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }, 
+  "Variable_37": {
+    "filename": "Variable_37", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_38": {
+    "filename": "Variable_38", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_39": {
+    "filename": "Variable_39", 
+    "shape": [
+      3, 
+      3, 
+      64, 
+      128
+    ]
+  }, 
+  "Variable_4": {
+    "filename": "Variable_4", 
+    "shape": [
+      64
+    ]
+  }, 
+  "Variable_40": {
+    "filename": "Variable_40", 
+    "shape": [
+      64
+    ]
+  }, 
+  "Variable_41": {
+    "filename": "Variable_41", 
+    "shape": [
+      64
+    ]
+  }, 
+  "Variable_42": {
+    "filename": "Variable_42", 
+    "shape": [
+      3, 
+      3, 
+      32, 
+      64
+    ]
+  }, 
+  "Variable_43": {
+    "filename": "Variable_43", 
+    "shape": [
+      32
+    ]
+  }, 
+  "Variable_44": {
+    "filename": "Variable_44", 
+    "shape": [
+      32
+    ]
+  }, 
+  "Variable_45": {
+    "filename": "Variable_45", 
+    "shape": [
+      9, 
+      9, 
+      32, 
+      3
+    ]
+  }, 
+  "Variable_46": {
+    "filename": "Variable_46", 
+    "shape": [
+      3
+    ]
+  }, 
+  "Variable_47": {
+    "filename": "Variable_47", 
+    "shape": [
+      3
+    ]
+  }, 
+  "Variable_5": {
+    "filename": "Variable_5", 
+    "shape": [
+      64
+    ]
+  }, 
+  "Variable_6": {
+    "filename": "Variable_6", 
+    "shape": [
+      3, 
+      3, 
+      64, 
+      128
+    ]
+  }, 
+  "Variable_7": {
+    "filename": "Variable_7", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_8": {
+    "filename": "Variable_8", 
+    "shape": [
+      128
+    ]
+  }, 
+  "Variable_9": {
+    "filename": "Variable_9", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      128
+    ]
+  }
+}

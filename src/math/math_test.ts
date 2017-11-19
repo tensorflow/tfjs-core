@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 import {NDArrayMathGPU} from './math_gpu';
-import {Array1D, Array3D, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
 // math.scope
 {
@@ -193,6 +193,14 @@ import {Array1D, Array3D, Scalar} from './ndarray';
 // debug mode
 {
   const gpuTests: MathTests = it => {
+    it('special2 debug mode test', math => {
+      math.enableDebugMode();
+      const a = Array2D.new([2, 2], [1, 2, 3, 4]);
+      const b = math.argMax(a, 0);
+
+      console.log(b.dataSync());
+    });
+
     it('debug mode does not error when no nans', math => {
       math.enableDebugMode();
       const a = Array1D.new([2, -1, 0, 3]);
@@ -249,11 +257,11 @@ import {Array1D, Array3D, Scalar} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('debug mode', [gpuTests]);
+  // test_util.describeMathCPU('debug mode', [gpuTests]);
   test_util.describeMathGPU('debug mode', [gpuTests], [
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    //{'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2}
+    //{'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
 
@@ -286,7 +294,8 @@ import {Array1D, Array3D, Scalar} from './ndarray';
 
   test_util.describeMathGPU('fromPixels + math', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+     'WEBGL_VERSION':
+         2} {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }

@@ -1235,4 +1235,17 @@ export class NDArrayMathCPU extends NDArrayMath {
     }
     return result;
   }
+
+  protected timeOperation<G extends keyof DataTypes, T extends NDArray<G>>(
+      f: () => T): {result: T, timeMs: Promise<number>} {
+    const startTimeMs = performance.now();
+
+    const result = f();
+
+    const timeMs = new Promise<number>(resolve => {
+      resolve(performance.now() - startTimeMs);
+    });
+
+    return {result, timeMs};
+  }
 }

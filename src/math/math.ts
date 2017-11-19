@@ -47,6 +47,12 @@ export enum SumTypesMap {
   bool = 'int32'
 }
 
+interface OpExecutionInfo {
+  name: string;
+  children: OpExecutionInfo[];
+  timeMs?: number;
+}
+
 export abstract class NDArrayMath {
   private ndarrayScopes: NDArray[][] = [];
   private activeScope: NDArray[];
@@ -55,6 +61,9 @@ export abstract class NDArrayMath {
   private activeScopeNDArraysToKeep: NDArray[] = [];
 
   private debugMode = false;
+
+  // Op execution stack for debug mode for timing information.
+  private debugModeOpExecutionInfoStack: OpExecutionInfo[] = [];
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
@@ -236,6 +245,43 @@ export abstract class NDArrayMath {
   /** Disposes the math object and any resources used by it. */
   dispose() {}
 
+  protected abstract timeOperation<G extends keyof DataTypes,
+                                             T extends NDArray<G>>(f: () => T):
+      {result: T, timeMs: Promise<number>};
+
+  private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
+      name: string, f: () => T): T {
+    console.log('---------------EXECUTING--------------');
+    let result: T;
+    if (!this.debugMode) {
+      result = f();
+    } else {
+      const opExecutionInfo: OpExecutionInfo = {name, children: []};
+      this.debugModeOpExecutionInfoStack.push(opExecutionInfo);
+
+      const timingResult = this.timeOperation(f);
+
+      result = timingResult.result;
+      timingResult.timeMs.then(timeMs => {
+        const time = util.rightPad(`${timeMs}ms`, 9);
+        const paddedName = util.rightPad(name, 25);
+        const rank = result.rank;
+        const size = result.size;
+        const shape = util.rightPad(result.shape.toString(), 14);
+        console.log(
+            `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
+            'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
+      });
+
+      // Test.
+      const vals = result.dataSync();
+      this.checkForNaN(vals, result.dtype, name);
+    }
+    console.log('---------------DONE--------------');
+
+    return this.track(result);
+  }
+
   /**
    * Computes the dot product of two matrices, A * B. These must be matrices,
    * use matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct
@@ -269,28 +315,6 @@ export abstract class NDArrayMath {
 
     return this.executeOp(
         'matMul', () => this.matMulInternal(a, b, aOrientation, bOrientation));
-  }
-
-  private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
-      name: string, f: () => T): T {
-    let start: number;
-    if (this.debugMode) {
-      start = performance.now();
-    }
-    const result = f();
-    if (this.debugMode) {
-      const vals = result.getValues();
-      const time = util.rightPad(`${performance.now() - start}ms`, 9);
-      const paddedName = util.rightPad(name, 25);
-      const rank = result.rank;
-      const size = result.size;
-      const shape = util.rightPad(result.shape.toString(), 14);
-      console.log(
-          `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-          'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      this.checkForNaN(vals, result.dtype, name);
-    }
-    return this.track(result);
   }
 
   protected abstract matMulInternal(
@@ -732,6 +756,7 @@ export abstract class NDArrayMath {
   argMin(input: NDArray, axis: number = null): NDArray<'int32'> {
     let axes = axis_util.parseAxisParam(axis, input.shape);
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+
     return this.executeOp('argMin', () => {
       if (permutedAxes != null) {
         input = this.transpose(input, permutedAxes);
@@ -759,7 +784,9 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      return this.argMaxInternal(input, axes);
+      return this.executeOp('argMaxImpl', () => {
+        return this.argMaxInternal(input, axes);
+      });
     });
   }
   protected abstract argMaxInternal(ndarray: NDArray, axes: number[]):
@@ -924,7 +951,7 @@ export abstract class NDArrayMath {
    * Construct an array by repeating it the number of times given by reps.
    *
    * This operation creates a new array by replicating `input` `reps`
-   * times. The output tensor's i'th dimension has `input.shape[i] * 
+   * times. The output tensor's i'th dimension has `input.shape[i] *
    * reps[i]` elements, and the values of `input` are replicated
    * `reps[i]` times along the i'th dimension. For example, tiling
    * `[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.
@@ -932,8 +959,8 @@ export abstract class NDArrayMath {
    * @param a The array to transpose.
    * @param reps Determines the number of replications per dimension.
    */
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, reps: number[]): T {
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
+      T {
     util.assert(
         a.rank === reps.length,
         `Error in transpose: rank of input ${a.rank} ` +
@@ -941,8 +968,7 @@ export abstract class NDArrayMath {
     return this.executeOp('tile', () => this.tileInternal(a, reps));
   }
   protected abstract tileInternal<
-      D extends keyof DataTypes, T extends NDArray<D>>(a: T, 
-        reps: number[]): T;
+      D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]): T;
 
   /**
    * Transposes the array. Permutes the dimensions according to `perm`.
@@ -1340,18 +1366,17 @@ export abstract class NDArrayMath {
   protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Computes step of the input NDArray element-wise, 
+   * Computes step of the input NDArray element-wise,
    * y=1 if x>0|alpha*x if x<=0.
    *
    * @param ndarray The input NDArray.
    * @param alpha The gradient when input is negative.
    */
   step<T extends NDArray>(ndarray: T, alpha = 0.0): T {
-    return this.executeOp('step', 
-      () => this.stepInternal(ndarray, alpha));
+    return this.executeOp('step', () => this.stepInternal(ndarray, alpha));
   }
-  protected abstract stepInternal<T extends NDArray>(ndarray: T, 
-    alpha: number): T;
+  protected abstract stepInternal<T extends NDArray>(ndarray: T, alpha: number):
+      T;
 
   /**
    * Computes a scaled array add operation, c1 * A + c2 * B.

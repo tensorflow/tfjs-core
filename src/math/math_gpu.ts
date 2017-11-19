@@ -587,6 +587,16 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.textureManager;
   }
 
+  protected timeOperation<G extends keyof DataTypes, T extends NDArray<G>>(
+      f: () => T): {result: T, timeMs: Promise<number>} {
+    let result: T;
+    const timeMs = this.gpgpu.runQuery(() => {
+      result = f();
+    });
+
+    return {result, timeMs};
+  }
+
   dispose() {
     for (const key in this.binaryCache) {
       this.gpgpu.deleteProgram(this.binaryCache[key].webGLProgram);

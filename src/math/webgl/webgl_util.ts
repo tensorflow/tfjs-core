@@ -20,17 +20,22 @@ let MAX_TEXTURE_SIZE: number = null;
 import * as util from '../../util';
 import {ENV} from '../../environment';
 
-export interface WebGLContextAttributes {
-  alpha?: boolean;
-  antialias?: boolean;
-  premultipliedAlpha?: boolean;
-  preserveDrawingBuffer?: boolean;
-  depth?: boolean;
-  stencil?: boolean;
-  failIfMajorPerformanceCaveat?: boolean;
+// TODO(nsthorat): Move these to the webgl official typings.
+export interface WebGL2DisjointQueryTimerExtension {
+  TIME_ELAPSED_EXT: number;
+  GPU_DISJOINT_EXT: number;
 }
 
-export interface WebGLLoseContextExtension { loseContext(): void; }
+export interface WebGL1DisjointQueryTimerExtension {
+  TIME_ELAPSED_EXT: number;
+  QUERY_RESULT_AVAILABLE_EXT: number;
+  GPU_DISJOINT_EXT: number;
+  QUERY_RESULT_EXT: number;
+  createQueryEXT: () => {};
+  beginQueryEXT: (ext: number, query: WebGLQuery) => void;
+  endQueryEXT: (ext: number) => void;
+  getQueryObjectEXT: (query: WebGLQuery, queryResultAvailableExt: number);
+}
 
 export function createWebGLRenderingContext(attributes: WebGLContextAttributes):
     WebGLRenderingContext {
