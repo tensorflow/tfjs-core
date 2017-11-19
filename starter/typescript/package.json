@@ -8,7 +8,7 @@
   "devDependencies": {
     "mkdirp": "~0.5.1",
     "tsify": "~3.0.3",
-    "typescript": "~2.5.3",
+    "typescript": "~2.6.1",
     "uglifyjs": "~2.4.11",
     "watchify": "~3.9.0"
   },
