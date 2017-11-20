@@ -228,6 +228,15 @@ describe('Add validation', () => {
   it('Same size does not throw', () => {
     expect(g.add(new Tensor([5, 4]), new Tensor([5, 4])).shape).toEqual([5, 4]);
   });
+
+  it('Special broadcast case does not throw', () => {
+    expect(g.add(new Tensor([5, 3]), new Tensor([3])).shape).toEqual([5, 3]);
+  });
+
+  it('Another different shapes throws', () => {
+    expect(() => g.add(new Tensor([5, 3]), new Tensor([5])))
+        .toThrowError();
+  });
 });
 
 describe('Subtract validation', () => {

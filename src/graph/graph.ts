@@ -529,8 +529,11 @@ export class AddNode extends Node {
     util.assert(
         util.sizeFromShape(this.t1.shape) === 1 ||
             util.sizeFromShape(this.t2.shape) === 1 ||
-            util.arraysEqual(this.t1.shape, this.t2.shape),
-        'Error adding add operation op: one of inputs must be scalar or the ' +
+            util.arraysEqual(this.t1.shape, this.t2.shape) ||
+            this.t1.shape.length === 2 && this.t2.shape.length === 1 &&
+                this.t1.shape[1] === this.t2.shape[0],
+        'Error adding add operation op: one of inputs must be scalar, ' +
+        'it is a special broadcast case, or the ' +
             `shapes ${this.t1.shape} and ${this.t2.shape} must match.`);
   }
 }
