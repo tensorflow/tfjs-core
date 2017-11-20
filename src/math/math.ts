@@ -264,6 +264,7 @@ export abstract class NDArrayMath {
       const endTimer = this.endTimer();
 
       if (endTimer == null) {
+        // console.log('ending timer....');
         // Render.
       } else {
         this.endTimer().then(timeMs => {
@@ -284,9 +285,8 @@ export abstract class NDArrayMath {
         this.checkForNaN(vals, result.dtype, name);
       }
       console.log('---------------DONE--------------');
-
-      return this.track(result);
     }
+    return this.track(result);
   }
 
   /**
