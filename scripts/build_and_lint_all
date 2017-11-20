@@ -16,11 +16,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const shell = require('shelljs');
 
 const IGNORE_DIRS = ['node_modules', 'dist', 'coverage'];
 
-// List all files in a directory in Node.js recursively in a synchronous fashion
-function walkSync(dir, filelist) {
+/** Returns all sub-dirs that contain package.json. */
+function getPackageDirs(dir, filelist) {
   const files = fs.readdirSync(dir);
   filelist = filelist || [];
   files.forEach(file => {
@@ -29,13 +30,31 @@ function walkSync(dir, filelist) {
     }
     const childPath = path.join(dir, file);
     if (fs.statSync(childPath).isDirectory()) {
-      filelist = walkSync(childPath, filelist);
+      filelist = getPackageDirs(childPath, filelist);
     } else if (file == 'package.json') {
-      filelist.push(childPath);
+      filelist.push(dir);
     }
   });
   return filelist;
 };
 
-const files = walkSync(process.cwd());
-console.log(files);
+function run(cmd, filePath) {
+  if (shell.exec(cmd).code !== 0) {
+    shell.echo('Failed running', cmd, 'on', filePath);
+    shell.exit(1);
+  }
+}
+
+function runYarn(filePath) {
+  const cwd = process.cwd();
+  shell.cd(filePath);
+  shell.echo('=======================================================');
+  shell.echo('Building', filePath);
+  run('yarn prep', filePath);
+  run('yarn build', filePath);
+  run('yarn lint', filePath);
+  shell.cd(cwd);
+}
+
+const dirs = getPackageDirs(process.cwd());
+dirs.forEach(dir => runYarn(dir));
