@@ -177,3 +177,162 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
+
+// math.conv2d
+{
+  const tests: MathTests = it => {
+    it('conv1d input=2x2x1,d2=1,f=1,s=1,p=same', math => {
+      const inputDepth = 1;
+      const inputShape: [number, number, number] = [2, 2, inputDepth];
+      const outputDepth = 1;
+      const fSize = 1;
+      const pad = 'same';
+      const stride = 1;
+
+      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const w = Array3D.new([fSize, inputDepth, outputDepth], [3]);
+
+      const bias = Array1D.new([0]);
+
+      const result = math.conv1d(x, w, bias, stride, pad);
+
+      const expected = new Float32Array([3, 6, 9, 12]);
+
+      test_util.expectArraysClose(result.getValues(), expected);
+      x.dispose();
+      w.dispose();
+      bias.dispose();
+    });
+
+    it('conv1d input=1x4x1,d2=1,f=2x1x1,s=1,p=valid', math => {
+      const inputDepth = 1;
+      const inputShape: [number, number, number] = [1, 4, inputDepth];
+      const outputDepth = 1;
+      const fSize = 2;
+      const pad = 'valid';
+      const stride = 1;
+
+      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const w = Array3D.new([fSize, inputDepth, outputDepth], [2, 1]);
+
+      const bias = Array1D.new([0]);
+
+      const result = math.conv1d(x, w, bias, stride, pad);
+      const expected = new Float32Array([4, 7, 10]);
+
+      test_util.expectArraysClose(result.getValues(), expected);
+      x.dispose();
+      w.dispose();
+      bias.dispose();
+    });
+
+    it('conv1d input=1x4x1,d2=1,f=2x1x1,s=2,p=valid', math => {
+      const inputDepth = 1;
+      const inputShape: [number, number, number] = [1, 4, inputDepth];
+      const outputDepth = 1;
+      const fSize = 2;
+      const pad = 'valid';
+      const stride = 2;
+
+      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const w = Array3D.new([fSize, inputDepth, outputDepth], [2, 1]);
+
+      const bias = Array1D.new([0]);
+
+      const result = math.conv1d(x, w, bias, stride, pad);
+      const expected = new Float32Array([4, 10]);
+
+      test_util.expectArraysClose(result.getValues(), expected);
+      x.dispose();
+      w.dispose();
+      bias.dispose();
+    });
+
+    it('throws when x is not rank 3', math => {
+      const inputDepth = 1;
+      const outputDepth = 1;
+      const fSize = 2;
+      const pad = 0;
+      const stride = 1;
+
+      // tslint:disable-next-line:no-any
+      const x: any = Array2D.new([2, 2], [1, 2, 3, 4]);
+      const w =
+          Array3D.new([fSize, inputDepth, outputDepth], [3, 1]);
+      const bias = Array1D.new([-1]);
+
+      expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();
+
+      x.dispose();
+      w.dispose();
+      bias.dispose();
+    });
+
+    it('throws when weights is not rank 3', math => {
+      const inputDepth = 1;
+      const inputShape: [number, number, number] = [2, 2, inputDepth];
+      const pad = 0;
+      const stride = 1;
+
+      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      // tslint:disable-next-line:no-any
+      const w: any = Array4D.new([2, 2, 1, 1], [3, 1, 5, 0]);
+      const bias = Array1D.new([-1]);
+
+      expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();
+
+      x.dispose();
+      w.dispose();
+      bias.dispose();
+    });
+
+    it('throws when biases is not rank 1', math => {
+      const inputDepth = 1;
+      const inputShape: [number, number, number] = [2, 2, inputDepth];
+      const outputDepth = 1;
+      const fSize = 2;
+      const pad = 0;
+      const stride = 1;
+
+      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const w =
+          Array3D.new([fSize, inputDepth, outputDepth], [3, 1]);
+      // tslint:disable-next-line:no-any
+      const bias: any = Array2D.new([2, 2], [2, 2, 2, 2]);
+
+      expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();
+
+      x.dispose();
+      w.dispose();
+      bias.dispose();
+    });
+
+    it('throws when x depth does not match weight depth', math => {
+      const inputDepth = 1;
+      const wrongInputDepth = 5;
+      const inputShape: [number, number, number] = [2, 2, inputDepth];
+      const outputDepth = 1;
+      const fSize = 2;
+      const pad = 0;
+      const stride = 1;
+
+      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const w =
+          Array3D.randNormal([fSize, wrongInputDepth, outputDepth]);
+      const bias = Array1D.new([-1]);
+
+      expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();
+
+      x.dispose();
+      w.dispose();
+      bias.dispose();
+    });
+  };
+
+  test_util.describeMathCPU('conv1d', [tests]);
+  test_util.describeMathGPU('conv1d', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}

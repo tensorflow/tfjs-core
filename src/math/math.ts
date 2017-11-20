@@ -1337,6 +1337,70 @@ export abstract class NDArrayMath {
   /////////////////////
 
   /**
+   * Computes a 1D convolution over the input x.
+   * @param input The input ndarray, of rank 4 or rank 3, of shape
+   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+   * @param filter The filter, rank 3, of shape
+   *     [filterWidth, inDepth, outDepth].
+   * @param bias Optional bias, rank 1 of shape [outDepth].
+   * @param stride The number of entries by which the filter is moved right at
+   *     each step.
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
+   *    - 'same' pad and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - 'valid' pad: output will be smaller than input if filter is larger
+   *       than 1x1.
+   *   - For more info, see this guide:
+   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   */
+   conv1d<T extends NDArray>(
+      input: T, filter: Array3D, bias: Array1D|null,
+      stride: number, pad: 'valid'|'same'|number): T  {
+    let input4D = input as NDArray as Array4D;
+    let reshapedTo4D = false;
+    if (input.rank === 3) {
+      reshapedTo4D = true;
+      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+    }
+
+    util.assert(
+        input4D.rank === 4,
+        `Error in conv1d: input must be rank 4, but got rank ${input4D.rank}.`);
+    util.assert(
+        filter.rank === 3,
+        `Error in conv1d: filter must be rank 3, but got rank ` +
+            `${filter.rank}.`);
+    if (bias != null) {
+      util.assert(
+          bias.rank === 1,
+          `Error in conv1d: bias must be rank 1, but got rank ` +
+              `${bias.rank}.`);
+    }
+
+    util.assert(
+        input4D.shape[3] === filter.shape[1],
+        `Error in conv1d: depth of input (${input4D.shape[3]}) must match  ` +
+            `input depth for filter ${filter.shape[1]}.`);
+
+    // convert to 2d
+    const filter2D = filter.as4D(
+        1, filter.shape[0], filter.shape[1], filter.shape[2]);
+    const strides: [number, number] = [1, stride];
+
+    const convInfo =
+        conv_util.computeConv2DInfo(
+            input4D.shape, filter2D.shape, strides, pad);
+    return this.executeOp('conv2d', () => {
+      const res = this.backend.conv2d(input4D, filter2D, bias, convInfo);
+      if (reshapedTo4D) {
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
+      }
+      return res as NDArray as T;
+    });
+  }
+
+  /**
    * Computes a 2D convolution over the input x.
    *
    * @param input The input ndarray, of rank 4 or rank 3, of shape
