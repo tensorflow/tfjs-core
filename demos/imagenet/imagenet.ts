@@ -181,7 +181,8 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
         this.renderActivations(namedActivations);
       } catch (e) {
-        document.getElementById(`class0`).innerHTML = 'Error happened, please try another input.';
+        document.getElementById(`class0`)
+            .innerHTML = 'Error happened, please try another input.';
         console.log(e);
       }
 
