@@ -51,7 +51,8 @@ export function randUniform(a: number, b: number) {
 }
 
 /**
- * Samples from a gaussian distribution.
+ * Samples from a gaussian distribution using Marsaglia Polar Method:
+ * https://en.wikipedia.org/wiki/Marsaglia_polar_method
  *
  * @param mean The mean. Default is 0.
  * @param stdDev The standard deviation. Default is 1.

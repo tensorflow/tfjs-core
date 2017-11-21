@@ -1452,7 +1452,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.75, EPSILON);
   });
 
-  it('should return a int32 1D of random normal values', () => {
+  it('should return a int32 1D of random normal values KREEGER', () => {
     const SAMPLES = 1000;
     const result = NDArray.randNormal([SAMPLES], 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
