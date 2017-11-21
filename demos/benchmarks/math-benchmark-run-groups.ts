@@ -15,20 +15,37 @@
  * =============================================================================
  */
 
-import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
-import {ConvBenchmarkParams, ConvGPUBenchmark} from './conv_benchmarks';
 // tslint:disable-next-line:max-line-length
-import {ConvTransposedBenchmarkParams, ConvTransposedGPUBenchmark} from './conv_transposed_benchmarks';
+import {BatchNormalization3DCPUBenchmark, BatchNormalization3DGPUBenchmark} from './batchnormalization3d_benchmark';
+import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
+// tslint:disable-next-line:max-line-length
+import {ConvGPUBenchmark, ConvParams, DepthwiseConvParams, RegularConvParams} from './conv_benchmarks';
 // tslint:disable-next-line:max-line-length
 import {MatmulCPUBenchmark, MatmulGPUBenchmark} from './matmul_benchmarks';
 // tslint:disable-next-line:max-line-length
 import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from './pool_benchmarks';
 // tslint:disable-next-line:max-line-length
 import {ReductionOpsCPUBenchmark, ReductionOpsGPUBenchmark} from './reduction_ops_benchmark';
+// tslint:disable-next-line:max-line-length
 import {UnaryOpsCPUBenchmark, UnaryOpsGPUBenchmark} from './unary_ops_benchmark';
 
 export function getRunGroups(): BenchmarkRunGroup[] {
   const groups: BenchmarkRunGroup[] = [];
+
+  groups.push({
+    name: 'Batch Normalization 3D: input [size, size, size]',
+    min: 0,
+    max: 512,
+    stepSize: 64,
+    stepToSizeTransformation: (step: number) => Math.max(1, step),
+    benchmarkRuns: [
+      new BenchmarkRun(
+          'batchnorm3d_gpu', new BatchNormalization3DGPUBenchmark()),
+      new BenchmarkRun(
+          'batchnorm3d_cpu', new BatchNormalization3DCPUBenchmark())
+    ],
+    params: {}
+  });
 
   groups.push({
     name: 'Matrix Multiplication: ' +
@@ -45,36 +62,30 @@ export function getRunGroups(): BenchmarkRunGroup[] {
   });
 
   const convParams:
-      ConvBenchmarkParams = {inDepth: 8, outDepth: 3, filterSize: 7, stride: 1};
+      ConvParams = {inDepth: 8, filterSize: 7, stride: 1, pad: 'same'};
+  const regParams: RegularConvParams =
+      Object.assign({}, convParams, {outDepth: 3});
+  const depthwiseParams: DepthwiseConvParams =
+      Object.assign({}, convParams, {channelMul: 1});
   groups.push({
-    name: 'Convolution: image [size, size]',
+    name: 'Convolution ops [size, size, depth]',
     min: 0,
     max: 1024,
     stepSize: 64,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
-    benchmarkRuns:
-        [new BenchmarkRun('conv_gpu', new ConvGPUBenchmark(convParams))],
-    params: convParams
+    benchmarkRuns: [new BenchmarkRun('conv_gpu', new ConvGPUBenchmark())],
+    options: ['regular', 'transposed', 'depthwise'],
+    selectedOption: 'regular',
+    params: {
+      'regular': regParams,
+      'transposed': regParams,
+      'depthwise': depthwiseParams
+    }
   });
 
-  const convTransposedParams: ConvTransposedBenchmarkParams =
-      {inDepth: 8, outDepth: 3, filterSize: 7, stride: 1};
+  const poolParams: PoolBenchmarkParams = {depth: 8, fieldSize: 4, stride: 4};
   groups.push({
-    name: 'Convolution Transposed: deconv over image [size, size]',
-    min: 0,
-    max: 1024,
-    stepSize: 64,
-    stepToSizeTransformation: (step: number) => Math.max(1, step),
-    benchmarkRuns: [new BenchmarkRun(
-        'conv_transpose_gpu',
-        new ConvTransposedGPUBenchmark(convTransposedParams))],
-    params: convTransposedParams
-  });
-
-  const poolParams:
-      PoolBenchmarkParams = {depth: 8, fieldSize: 4, stride: 4, type: 'max'};
-  groups.push({
-    name: 'Pool Op Benchmark: input [size, size]',
+    name: 'Pool Ops: input [size, size]',
     min: 0,
     max: 1024,
     stepSize: 64,
@@ -82,14 +93,14 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     options: ['max', 'min', 'avg'],
     selectedOption: 'max',
     benchmarkRuns: [
-      new BenchmarkRun('pool_gpu', new PoolGPUBenchmark(poolParams)),
-      new BenchmarkRun('pool_cpu', new PoolCPUBenchmark(poolParams))
+      new BenchmarkRun('pool_gpu', new PoolGPUBenchmark()),
+      new BenchmarkRun('pool_cpu', new PoolCPUBenchmark())
     ],
-    params: poolParams
+    params: {'max': poolParams, 'min': poolParams, 'avg': poolParams}
   });
 
   groups.push({
-    name: 'Unary Op Benchmark (CPU vs GPU): input [size, size]',
+    name: 'Unary Ops: input [size, size]',
     min: 0,
     max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
@@ -107,11 +118,11 @@ export function getRunGroups(): BenchmarkRunGroup[] {
   });
 
   groups.push({
-    name: 'Reduction Op Benchmark (CPU vs GPU): input [size, size]',
+    name: 'Reduction Ops: input [size, size]',
     min: 0,
     max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
-    options: ['max', 'min', 'sum', 'logSumExp'],
+    options: ['max', 'min', 'argMax', 'argMin', 'sum', 'logSumExp'],
     selectedOption: 'max',
     stepSize: 64,
     benchmarkRuns: [

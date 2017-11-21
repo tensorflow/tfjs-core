@@ -19,7 +19,7 @@
 
 TMP_DIR="/tmp/deeplearn-website"
 
-npm run prep
+yarn prep
 rm -rf "$TMP_DIR"
 mkdir "$TMP_DIR"
 
@@ -36,6 +36,8 @@ cp -r "demos" "$TMP_DIR/"
 ./scripts/deploy-demo demos/nn-art $TMP_DIR
 ./scripts/deploy-demo demos/benchmarks $TMP_DIR
 ./scripts/deploy-demo demos/performance_rnn $TMP_DIR
+./scripts/deploy-demo demos/teachable_gaming $TMP_DIR
+./scripts/deploy-demo demos/playground $TMP_DIR
 
 ./scripts/deploy-demo demos/intro $TMP_DIR
 ./scripts/deploy-demo demos/ml_beginners $TMP_DIR

@@ -15,69 +15,84 @@
  * =============================================================================
  */
 
-import {initializeGPU} from '../../src/math/ndarray';
-import {Conv2DProgram} from '../../src/math/webgl/conv_gpu';
-import * as gpgpu_math from '../../src/math/webgl/gpgpu_math';
-import {TextureManager} from '../../src/math/webgl/texture_manager';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, conv_util, ENV, GPGPUContext} from '../deeplearn';
+import {Array1D, Array3D, Array4D, conv_util, ENV, NDArray, NDArrayMathGPU} from 'deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 
-export interface ConvBenchmarkParams {
+export interface ConvParams {
   inDepth: number;
-  outDepth: number;
   filterSize: number;
   stride: number;
+  pad: 'valid'|'same'|number;
 }
 
-export abstract class ConvBenchmark extends BenchmarkTest {
-  constructor(protected params: ConvBenchmarkParams) {
-    super(params);
-  }
-}
+export interface RegularConvParams extends ConvParams { outDepth: number; }
 
-export class ConvGPUBenchmark extends ConvBenchmark {
-  async run(size: number): Promise<number> {
-    const gpgpu = new GPGPUContext();
-    const texManager = new TextureManager(gpgpu);
-    initializeGPU(gpgpu, texManager);
+export interface DepthwiseConvParams extends ConvParams { channelMul: number; }
 
-    const inDepth = this.params.inDepth;
+export class ConvGPUBenchmark implements BenchmarkTest {
+  async run(size: number, opType: string, params: ConvParams): Promise<number> {
+    const math = new NDArrayMathGPU();
+    const gpgpu = math.getGPGPUContext();
+
+    const inDepth = params.inDepth;
     const inShape: [number, number, number] = [size, size, inDepth];
-    const outDepth = this.params.outDepth;
-    const filterSize = this.params.filterSize;
-    const stride = this.params.stride;
-    const hasBias = true;
-    const convInfo = conv_util.computeConvInfo(
-        inShape, filterSize, filterSize, outDepth, stride, stride, 'same');
-    const program = new Conv2DProgram(convInfo, hasBias);
-    const outputShape = program.outputShape as [number, number, number];
-    const out = Array3D.zeros(outputShape);
-    const x = Array3D.randUniform(inShape, -1, 1);
-    const wShape =
-        conv_util.computeWeightsShape4D(1, outDepth, filterSize, filterSize);
-    const W = Array4D.randUniform(wShape, -1, 1);
-    const b = Array1D.randUniform([outDepth], -1, 1);
-    const inputs = [x, W, b];
-    const binary = gpgpu_math.compileProgram(gpgpu, program, inputs, out);
+    const filterSize = params.filterSize;
+    const stride = params.stride;
+    const pad = params.pad;
 
-    const benchmark = () => {
-      gpgpu_math.runProgram(binary, inputs, out);
-    };
+    let x = Array3D.randUniform(inShape, -1, 1);
+    let W: Array4D;
+    let out: NDArray;
+    let b: Array1D;
+
+    let benchmark: () => void;
+    if (opType === 'regular') {
+      const regParams = params as RegularConvParams;
+      const wShape = conv_util.computeWeightsShape4D(
+          inDepth, regParams.outDepth, filterSize, filterSize);
+      W = Array4D.randUniform(wShape, -1, 1);
+      b = Array1D.randUniform([regParams.outDepth], -1, 1);
+
+      benchmark = () => {
+        out = math.conv2d(x, W, b, stride, pad);
+      };
+    } else if (opType === 'transposed') {
+      const regParams = params as RegularConvParams;
+      const wShape = conv_util.computeWeightsShape4D(
+          inDepth, regParams.outDepth, filterSize, filterSize);
+      W = Array4D.randUniform(wShape, -1, 1);
+      x = Array3D.randUniform([size, size, regParams.outDepth], -1, 1);
+
+      benchmark = () => {
+        out = math.conv2dTranspose(x, W, [size, size, inDepth], stride, pad);
+      };
+    } else if (opType === 'depthwise') {
+      const depthwiseParams = params as DepthwiseConvParams;
+      const wShape = conv_util.computeWeightsShape4D(
+          inDepth, depthwiseParams.channelMul, filterSize, filterSize);
+      W = Array4D.randUniform(wShape, -1, 1);
+
+      benchmark = () => {
+        out = math.depthwiseConv2D(x, W, stride, pad);
+      };
+    } else {
+      throw new Error(`Unknown option ${opType}`);
+    }
 
     const cleanup = () => {
       x.dispose();
       W.dispose();
-      b.dispose();
+      if (b != null) {
+        b.dispose();
+      }
       out.dispose();
-      texManager.dispose();
-      gpgpu.deleteProgram(binary.webGLProgram);
-      gpgpu.dispose();
     };
 
     // Warmup.
     await gpgpu.runQuery(benchmark);
+    out.dispose();
 
     let totalTime: number;
 

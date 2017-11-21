@@ -17,12 +17,14 @@
 
 import '../demo-header';
 import '../demo-footer';
+
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from '../deeplearn';
-import * as imagenet_util from '../models/imagenet_util';
-import {IMAGENET_CLASSES} from '../models/imagenet_classes';
-import {SqueezeNet} from '../../models/squeezenet/squeezenet';
+import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathGPU} from 'deeplearn';
+import {SqueezeNet} from 'deeplearn-squeezenet';
+
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
+
+import * as imagenet_util from './imagenet_util';
 
 // tslint:disable-next-line:variable-name
 export const ImagenetDemoPolymer: new () => PolymerHTMLElement =
@@ -46,8 +48,13 @@ const TOP_K_CLASSES = 5;
 
 const INPUT_NAMES = ['cat', 'dog1', 'dog2', 'beerbottle', 'piano', 'saxophone'];
 export class ImagenetDemo extends ImagenetDemoPolymer {
+  // Polymer properties.
+  layerNames: string[];
+  selectedLayerName: string;
+  inputNames: string[];
+  selectedInputName: string;
+
   private math: NDArrayMathGPU;
-  private mathCPU: NDArrayMathCPU;
   private gl: WebGLRenderingContext;
   private gpgpu: GPGPUContext;
   private renderGrayscaleChannelsCollageShader: WebGLShader;
@@ -56,12 +63,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
   private webcamVideoElement: HTMLVideoElement;
   private staticImgElement: HTMLImageElement;
-
-  private layerNames: string[];
-  private selectedLayerName: string;
-  private inputNames: string[];
-  private selectedInputName: string;
-
   private inferenceCanvas: HTMLCanvasElement;
 
   ready() {
@@ -112,7 +113,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
     this.gpgpu = new GPGPUContext(this.gl);
     this.math = new NDArrayMathGPU(this.gpgpu);
-    this.mathCPU = new NDArrayMathCPU();
 
     this.squeezeNet = new SqueezeNet(this.math);
     this.squeezeNet.load().then(() => {
@@ -160,7 +160,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
       this.layerNames = Object.keys(namedActivations);
 
-      const topClassesToProbability = await this.getTopKClasses(
+      const topClassesToProbability = await this.squeezeNet.getTopKClasses(
           inferenceResult.logits, TOP_K_CLASSES);
 
       let count = 0;
@@ -207,28 +207,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     });
 
     requestAnimationFrame(() => this.animate());
-  }
-
-  /**
-   * Get the topK classes for pre-softmax logits. Returns a map of className
-   * to softmax normalized probability.
-   *
-   * @param logits Pre-softmax logits array.
-   * @param topK How many top classes to return.
-   */
-  async getTopKClasses(logits: Array1D, topK: number):
-      Promise<{[className: string]: number}> {
-    const predictions = this.math.softmax(logits);
-    const topk = new NDArrayMathCPU().topK(predictions, topK);
-    const topkIndices = await topk.indices.data();
-    const topkValues = await topk.values.data();
-
-    const topClassesToProbability: {[className: string]: number} = {};
-    for (let i = 0; i < topkIndices.length; i++) {
-      topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] =
-          topkValues[i];
-    }
-    return topClassesToProbability;
   }
 }
 

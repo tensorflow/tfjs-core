@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Graph, Tensor} from '../deeplearn';
+import {Graph, Tensor} from 'deeplearn';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 
 import * as layer_builder from './layer_builder';
@@ -42,10 +42,10 @@ export class ModelLayer extends ModelLayerPolymer {
   // Polymer properties.
   inputShapeDisplay: string;
   outputShapeDisplay: string;
-  private layerNames: LayerName[];
-  private selectedLayerName: LayerName;
-  private hasError: boolean;
-  private errorMessages: string[];
+  layerNames: LayerName[];
+  selectedLayerName: LayerName;
+  hasError: boolean;
+  errorMessages: string[];
 
   private modelBuilder: ModelBuilder;
   layerBuilder: LayerBuilder;

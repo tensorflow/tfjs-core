@@ -267,6 +267,16 @@ export class Graph {
   }
 
   /**
+   * Computes LeakyReLU of x element-wise.
+   * @param x The input tensor to the LeakyReLU.
+   * @param alpha Negative slope coefficient.
+   * @return The tensor representing the LeakyReLU operation.
+   */
+  leakyRelu(x: Tensor, alpha: number): Tensor {
+    return this.addNodeAndReturnOutput(new LeakyReLUNode(this, x, alpha));
+  }
+
+  /**
    * Computes TanH of x element-wise.
    * @param x The input tensor to the TanH.
    * @return The tensor representing the TanH operation.
@@ -305,6 +315,7 @@ export class Graph {
   /**
    * Creates a softmax cross-entropy cost operation in the graph.
    * @param x The input tensor to classify.
+   * @param target The label tensor.
    * @return The tensor representing the softmax cross-entropy cost operation.
    */
   softmaxCrossEntropyCost(x: Tensor, target: Tensor): Tensor {
@@ -745,6 +756,20 @@ export class ReLUNode extends Node {
   static readonly X = 'x';
   constructor(graph: Graph, x: Tensor) {
     super(graph, 'ReLU', {x}, new Tensor(x.shape));
+  }
+  validate() {}
+}
+
+/**
+ * LeakyReLUNode represents a LeakyReLU operation in the graph.
+ * @hidden
+ */
+export class LeakyReLUNode extends Node {
+  static readonly X = 'x';
+  public alpha: number;
+  constructor(graph: Graph, x: Tensor, alpha: number) {
+    super(graph, 'LeakyReLU', {x}, new Tensor(x.shape));
+    this.alpha = alpha;
   }
   validate() {}
 }

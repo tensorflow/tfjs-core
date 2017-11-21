@@ -15,10 +15,10 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Model, NDArrayMath, NDArrayMathCPU} from '../../src';
-import {SqueezeNet} from '../squeezenet/squeezenet';
+import {Array1D, Array2D, Array3D, Model, NDArrayMath, NDArrayMathCPU, Scalar} from 'deeplearn';
+import {SqueezeNet} from 'deeplearn-squeezenet';
 
-export class TopKImageClassifier implements Model {
+export class KNNImageClassifier implements Model {
   private squeezeNet: SqueezeNet;
 
   // A concatenated matrix of all class logits matrices, lazily created and
@@ -30,6 +30,8 @@ export class TopKImageClassifier implements Model {
 
   private varsLoaded = false;
   private mathCPU: NDArrayMathCPU;
+
+  private squashLogitsDenominator = Scalar.new(300);
 
   /**
    * Contructor for the class.
@@ -155,7 +157,7 @@ export class TopKImageClassifier implements Model {
                           this.trainLogitsMatrix.as2D(numExamples, logitsSize),
                           imageLogits.as2D(logitsSize, 1))
                       .as1D();
-      // mathCPU downloads the values, so we should wait until the GPU is done
+      // mathCPU downloads the values, so we should wait until the GPU isdone
       // so we don't block the UI thread.
       await knn.data();
 
@@ -235,10 +237,16 @@ export class TopKImageClassifier implements Model {
    * Normalize the provided vector to unit length.
    */
   private normalizeVector(vec: Array1D) {
-    const squared = this.math.multiplyStrict(vec, vec);
+    // This hack is here for numerical stability on devices without floating
+    // point textures. We divide by a constant so that the sum doesn't overflow
+    // our fixed point precision. Remove this once we use floating point
+    // intermediates with proper dynamic range quantization.
+    const squashedVec = this.math.divide(vec, this.squashLogitsDenominator);
+
+    const squared = this.math.multiplyStrict(squashedVec, squashedVec);
     const sum = this.math.sum(squared);
     const sqrtSum = this.math.sqrt(sum);
-    return this.math.divide(vec, sqrtSum);
+    return this.math.divide(squashedVec, sqrtSum);
   }
 
   private getNumExamples() {
@@ -255,5 +263,6 @@ export class TopKImageClassifier implements Model {
     this.clearTrainLogitsMatrix();
     this.classLogitsMatrices.forEach(
         classLogitsMatrix => classLogitsMatrix.dispose());
+    this.squashLogitsDenominator.dispose();
   }
 }
