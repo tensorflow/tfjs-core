@@ -25,8 +25,6 @@ import {TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import * as webgl_util from './webgl/webgl_util';
 
-
-
 // These global variables need to be initialized to null so that closure knows
 // not to seal them.
 /** @hidden */

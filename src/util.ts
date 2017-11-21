@@ -57,6 +57,7 @@ export function randUniform(a: number, b: number) {
  * @param mean The mean. Default is 0.
  * @param stdDev The standard deviation. Default is 1.
  */
+// TODO(kreeger): Deprecate this method for generation in rand.ts.
 export function randGauss(mean = 0, stdDev = 1, truncated = false): number {
   let v1: number, v2: number, s: number;
   do {

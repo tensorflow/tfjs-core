@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {DataTypes} from './ndarray';
+import {RandNormalDataTypes} from './ndarray';
 export interface RandGauss { nextValue(): number; }
 
 // https://en.wikipedia.org/wiki/Marsaglia_polar_method
@@ -23,9 +23,10 @@ export class MPRandGauss implements RandGauss {
   private mean: number;
   private stdDev: number;
   private nextVal: number;
-  private dtype?: keyof DataTypes;
+  private dtype?: keyof RandNormalDataTypes;
 
-  constructor(mean: number, stdDeviation: number, dtype?: keyof DataTypes) {
+  constructor(
+      mean: number, stdDeviation: number, dtype?: keyof RandNormalDataTypes) {
     this.mean = mean;
     this.stdDev = stdDeviation;
     this.dtype = dtype;
