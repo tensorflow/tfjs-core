@@ -18,10 +18,12 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import {ArrayData, TypedArray} from '../util';
+import {MPRandGauss} from './rand';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import {TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import * as webgl_util from './webgl/webgl_util';
+
 
 // These global variables need to be initialized to null so that closure knows
 // not to seal them.
@@ -754,8 +756,8 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
 
   static randNormal(shape: [number, number, number], mean = 0, stdDev = 1):
       Array3D<'float32'> {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev)) as
-        Array3D<'float32'>;
+    const randGen = new MPRandGauss(mean, stdDev, false);
+    return NDArray.rand(shape, () => randGen.nextValue()) as Array3D<'float32'>;
   }
 
   static randTruncatedNormal(
@@ -870,7 +872,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
 }
 
 function copyTypedArray<T extends keyof DataTypes>(
-    array: DataTypes[T] | number[] | boolean[], dtype: T): DataTypes[T] {
+    array: DataTypes[T]|number[]|boolean[], dtype: T): DataTypes[T] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
