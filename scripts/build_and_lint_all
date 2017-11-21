@@ -31,7 +31,7 @@ function getPackageDirs(dir, filelist) {
     const childPath = path.join(dir, file);
     if (fs.statSync(childPath).isDirectory()) {
       filelist = getPackageDirs(childPath, filelist);
-    } else if (file == 'package.json') {
+    } else if (file === 'package.json') {
       filelist.push(dir);
     }
   });
