@@ -199,6 +199,13 @@ import {Array1D, Array3D, Scalar} from './ndarray';
 
       const c = math.softmax(a);
 
+      // (math as NDArrayMathGPU)
+      //     .getGPGPUContext()
+      //     .runQuery(() => {
+      //       console.log('yoooo', math.add(a, a).dataSync());
+      //     })
+      //     .then(time => console.log('time' + time));
+
       console.log(c);
     });
 
@@ -258,7 +265,7 @@ import {Array1D, Array3D, Scalar} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('debug mode', [gpuTests]);
+  // test_util.describeMathCPU('debug mode', [gpuTests]);
   test_util.describeMathGPU('debug mode', [gpuTests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},

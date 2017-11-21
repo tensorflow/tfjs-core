@@ -34,6 +34,7 @@ export interface WebGL1DisjointQueryTimerExtension {
   createQueryEXT: () => {};
   beginQueryEXT: (ext: number, query: WebGLQuery) => void;
   endQueryEXT: (ext: number) => void;
+  deleteQueryEXT: (query: WebGLQuery) => void;
   isQueryEXT: (query: WebGLQuery) => boolean;
   getQueryObjectEXT:
       (query: WebGLQuery, queryResultAvailableExt: number) => number;
