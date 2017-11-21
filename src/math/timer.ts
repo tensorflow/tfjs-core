@@ -20,6 +20,7 @@ export class WebGLTimer implements Timer {
   }
 
   endTimer(query: WebGLQuery) {
+    // End any existing queries. Ignore the passed query.
     return this.gpgpu.maybeEndQuery();
   }
 

@@ -341,8 +341,8 @@ export class GPGPUContext {
 
     queryFn();
 
-    // return await this.endQuery();
-    console.log(util);
+    this.endQuery();
+
     return this.getTime(query);
   }
 
@@ -356,7 +356,6 @@ export class GPGPUContext {
           `limitation). Please call endQuery before calling beginQuery` +
           `again.`);
     }
-    // console.log('-----starting query-----');
 
     if (ENV.get('WEBGL_VERSION') === 2) {
       return this.beginQueryWebGL2();
@@ -369,17 +368,15 @@ export class GPGPUContext {
     const gl2 = this.gl as WebGL2RenderingContext;
     const ext = this.getQueryTimerExtensionWebGL2();
 
-    // this.activeQuery = gl2.createQuery();
     const query = gl2.createQuery();
     this.activeQuery = query;
 
-    gl2.beginQuery(ext.TIME_ELAPSED_EXT, query);  // this.activeQuery);
+    gl2.beginQuery(ext.TIME_ELAPSED_EXT, query);
     return query;
   }
 
   private beginQueryWebGL1(): WebGLQuery {
     const ext = this.getQueryTimerExtensionWebGL1();
-    // this.activeQuery = ext.createQueryEXT();
     const query = ext.createQueryEXT();
     this.activeQuery = query;
 
@@ -397,39 +394,44 @@ export class GPGPUContext {
     return this.endQuery();
   }
 
+  /**
+   * Ends the global WebGLQuery.
+   */
   public endQuery() {
-    const gl2 = this.gl as WebGL2RenderingContext;
-    const ext = this.getQueryTimerExtensionWebGL2();
-
-    gl2.endQuery(ext.TIME_ELAPSED_EXT);
-    // console.log('-----ending query-----');
+    if (ENV.get('WEBGL_VERSION') === 2) {
+      this.endQueryWebGL2();
+    } else {
+      this.endQueryWebGL1();
+    }
 
     this.activeQuery = null;
-    // gl2.finish();
+  }
+
+  private endQueryWebGL2() {
+    const gl2 = this.gl as WebGL2RenderingContext;
+    const ext = this.getQueryTimerExtensionWebGL2();
+    gl2.endQuery(ext.TIME_ELAPSED_EXT);
+  }
+
+  private endQueryWebGL1() {
+    const ext = this.getQueryTimerExtensionWebGL1();
+    ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
   }
 
   /**
-   * Ends a query.
+   * Gets the ellapsed time for a WebGLQuery. Returns null if the query was
+   * cancelled.
    */
   public getTime(query: WebGLQuery): Promise<number>|null {
     if (!this.isQuery(query)) {
       return null;
     }
-    // console.log('-----getTime-----');
-    // if (this.activeQuery == null) {
-    //   throw new Error(
-    //       `No queries exist. Use beginQuery before calling endQuery.`);
-    // }
 
-    return this.getTimeWebGL2(query);
-    // return ENV.get('WEBGL_VERSION') === 2 ? this.endQueryWebGL2() :
-    //                                        this.endQueryWebGL1();
-  }
+    const result = ENV.get('WEBGL_VERSION') === 2 ? this.getTimeWebGL2(query) :
+                                                    this.getTimeWebGL1(query);
 
-  private isQuery(query: WebGLQuery) {
-    const gl2 = this.gl as WebGL2RenderingContext;
-
-    return gl2.isQuery(query);
+    this.activeQuery = null;
+    return result;
   }
 
   private async getTimeWebGL2(query: WebGLQuery): Promise<number> {
@@ -437,16 +439,11 @@ export class GPGPUContext {
     const ext = this.getQueryTimerExtensionWebGL2();
 
     const queryGPU = () => {
-      // if (this.activeQuery == null) {
-      //   console.log('query timer found to be null...');
-      //   return false;
-      // }
       const available =
           gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
       const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
       return available && !disjoint;
     };
-    // console.log('queryGPU : ' + queryGPU());
 
     try {
       await util.repeatedTry(queryGPU);
@@ -456,22 +453,14 @@ export class GPGPUContext {
     }
 
     const timeElapsedNanos = gl2.getQueryParameter(query, gl2.QUERY_RESULT);
-    // console.log('nulling activeQuery');
-    this.activeQuery = null;
 
     return timeElapsedNanos / 1000000;
   }
 
-  /*
-  private async endQueryWebGL1(): Promise<number> {
+  private async getTimeWebGL1(query: WebGLQuery): Promise<number> {
     const ext = this.getQueryTimerExtensionWebGL1();
 
-    ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
-
     const queryGPU = () => {
-      if (this.activeQuery == null) {
-        return false;
-      }
       const available = ext.getQueryObjectEXT(
           this.activeQuery, ext.QUERY_RESULT_AVAILABLE_EXT);
 
@@ -489,12 +478,24 @@ export class GPGPUContext {
 
     const timeElapsedNanos =
         ext.getQueryObjectEXT(this.activeQuery, ext.QUERY_RESULT_EXT);
-    console.log('nulling activeQuery');
-    this.activeQuery = null;
 
-    // Return milliseconds.
     return timeElapsedNanos / 1000000;
-  }*/
+  }
+
+  private isQuery(query: WebGLQuery) {
+    return ENV.get('WEBGL_VERSION') === 2 ? this.isQueryWebGL2(query) :
+                                            this.isQueryWebGL1(query);
+  }
+
+  private isQueryWebGL2(query: WebGLQuery) {
+    const gl2 = this.gl as WebGL2RenderingContext;
+    return gl2.isQuery(query);
+  }
+
+  private isQueryWebGL1(query: WebGLQuery) {
+    const ext = this.getQueryTimerExtensionWebGL1();
+    ext.isQueryEXT(query);
+  }
 
   public maybeCancelQuery() {
     if (this.activeQuery == null) {

@@ -1295,27 +1295,4 @@ export class NDArrayMathCPU extends NDArrayMath {
     }
     return result;
   }
-
-  protected startTimer(): {} {
-    return {};
-  }
-  protected endTimer(): void {}
-  protected async getTime(): Promise<number> {
-    return 0;
-  }
-
-  // protected startTimer() {
-  //   this.activeTimerMs = performance.now();
-  // }
-
-  // protected endTimer(): Promise<number>|null {
-  //   if (this.activeTimerMs == null) {
-  //     return null;
-  //   }
-  //   return new Promise<number>(resolve => {
-  //     const time = performance.now() - this.activeTimerMs;
-  //     this.activeTimerMs = null;
-  //     resolve(time);
-  //   })
-  // }
 }
