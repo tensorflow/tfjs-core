@@ -1278,7 +1278,8 @@ export abstract class NDArrayMath {
    * @hidden
    */
   eluDer<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('eluDer', () => this.eluDerInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'eluDer', {ndarray}, () => this.eluDerInternal(ndarray)));
   }
   protected abstract eluDerInternal<T extends NDArray>(ndarray: T): T;
 

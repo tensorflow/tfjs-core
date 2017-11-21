@@ -24,7 +24,6 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 {
   const tests: MathTests = it => {
     it('MultiRNNCell with 2 BasicLSTMCells', math => {
-      math.enableDebugMode();
       const lstmKernel1 = Array2D.new(
           [3, 4], new Float32Array([
             0.26242125034332275, -0.8787832260131836, 0.781475305557251,

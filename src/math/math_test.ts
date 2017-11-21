@@ -195,15 +195,9 @@ import {Array1D, Array3D, Scalar} from './ndarray';
   const gpuTests: MathTests = it => {
     it('special2 debug mode test', math => {
       math.enableDebugMode();
-      // const a = Array2D.new([2, 2], [1, 2, 3, 4]);
       const a = Array1D.randNormal([1500]);
-      // a.set(NaN, 100);
-      a.getTexture();
-
-      // const b = math.sqrt(math.subtract(Scalar.new(.5), a));
 
       const c = math.softmax(a);
-      // const d = math.argMax(c, 0);
 
       console.log(c);
     });
@@ -264,11 +258,11 @@ import {Array1D, Array3D, Scalar} from './ndarray';
     });
   };
 
-  // test_util.describeMathCPU('debug mode', [gpuTests]);
+  test_util.describeMathCPU('debug mode', [gpuTests]);
   test_util.describeMathGPU('debug mode', [gpuTests], [
-    //{'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2}
-    //{'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
 
