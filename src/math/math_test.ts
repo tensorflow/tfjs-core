@@ -18,6 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
+import * as axis_util from './axis_util';
 import {NDArrayMathGPU} from './math_gpu';
 import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
@@ -195,10 +196,16 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
   const gpuTests: MathTests = it => {
     it('special2 debug mode test', math => {
       math.enableDebugMode();
-      const a = Array2D.new([2, 2], [1, 2, 3, 4]);
-      const b = math.argMax(a, 0);
+      // const a = Array2D.new([2, 2], [1, 2, 3, 4]);
+      const a = Array1D.randNormal([1500]);
+      a.getTexture();
 
-      console.log(b.dataSync());
+      const b = math.sqrt(math.square(a));
+
+      const c = math.softmax(b);
+      // const d = math.argMax(c, 0);
+
+      console.log(c);
     });
 
     it('debug mode does not error when no nans', math => {
@@ -294,8 +301,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
   test_util.describeMathGPU('fromPixels + math', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true,
-     'WEBGL_VERSION':
-         2} {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }

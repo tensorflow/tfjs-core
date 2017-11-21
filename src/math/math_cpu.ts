@@ -1280,18 +1280,26 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected startTimer() {
-    this.activeTimerMs = performance.now();
+  protected startTimer(): {} {
+    return {};
+  }
+  protected endTimer(): void {}
+  protected getTime(): number {
+    return 0;
   }
 
-  protected endTimer(): Promise<number>|null {
-    if (this.activeTimerMs == null) {
-      return null;
-    }
-    return new Promise<number>(resolve => {
-      const time = performance.now() - this.activeTimerMs;
-      this.activeTimerMs = null;
-      resolve(time);
-    })
-  }
+  // protected startTimer() {
+  //   this.activeTimerMs = performance.now();
+  // }
+
+  // protected endTimer(): Promise<number>|null {
+  //   if (this.activeTimerMs == null) {
+  //     return null;
+  //   }
+  //   return new Promise<number>(resolve => {
+  //     const time = performance.now() - this.activeTimerMs;
+  //     this.activeTimerMs = null;
+  //     resolve(time);
+  //   })
+  // }
 }

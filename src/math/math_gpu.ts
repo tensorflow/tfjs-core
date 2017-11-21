@@ -594,14 +594,18 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.textureManager;
   }
 
-  protected startTimer() {
+  protected startTimer(): {} {
     // Cancel any existing timers as the timing will get bubbled up.
     this.gpgpu.maybeCancelQuery();
-    this.gpgpu.beginQuery();
+    return this.gpgpu.beginQuery();
   }
 
-  protected endTimer(): Promise<number>|null {
+  protected endTimer() {  //} Promise<number>|null {
     return this.gpgpu.maybeEndQuery();
+  }
+
+  protected getTime(query: {}): Promise<number>|null {
+    return this.gpgpu.getTime(query as WebGLQuery);
   }
 
   dispose() {

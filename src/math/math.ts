@@ -47,10 +47,94 @@ export enum SumTypesMap {
   bool = 'int32'
 }
 
-interface OpExecutionInfo {
-  name: string;
-  children: OpExecutionInfo[];
-  timeMs?: number;
+class OpExecutionInfoNode {
+  parentInfoNode?: OpExecutionInfoNode;
+  childInfoNodes: OpExecutionInfoNode[] = [];
+
+  isNodeReady = false;
+  // areChildrenReady = false;
+
+  // pendingChildTimers = 0;
+  public nodeTimeMs?: number;
+  private totalTime?: number;
+
+  outputShape: number[];
+
+  constructor(public name: string) {}
+
+  isNodeAndChildrenReady(): boolean {
+    let childrenReady = true;
+    for (let i = 0; i < this.childInfoNodes.length; i++) {
+      childrenReady =
+          childrenReady && this.childInfoNodes[i].isNodeAndChildrenReady();
+    }
+    const ready = this.isNodeReady && childrenReady;
+
+    return ready;
+  }
+
+  getTotalTimeMs() {
+    if (this.totalTime == null) {
+      this.totalTime = this.nodeTimeMs == null ? 0 : this.nodeTimeMs;
+      for (let i = 0; i < this.childInfoNodes.length; i++) {
+        this.totalTime += this.childInfoNodes[i].getTotalTimeMs();
+      }
+    }
+    return this.totalTime;
+  }
+
+  notifyNodeReady() {
+    this.isNodeReady = true;
+
+    this.bubbleReadyNotification();
+  }
+
+  bubbleReadyNotification() {
+    if (!this.isNodeReady) {
+      return;
+    }
+
+    if (this.isNodeAndChildrenReady()) {
+      if (this.parentInfoNode == null) {
+        const depth = 0;
+        recursivelyRenderOpExecutionTree(this, depth);
+      } else {
+        // Notify the parent.
+        this.parentInfoNode.bubbleReadyNotification();
+      }
+    }
+  }
+}
+
+function recursivelyRenderOpExecutionTree(
+    parentNode: OpExecutionInfoNode, depth: number) {
+  const paddedName = util.rightPad(parentNode.name, 28);
+  const totalTimeMs = parentNode.getTotalTimeMs();
+  const time = util.rightPad(`${totalTimeMs.toFixed(3)}ms`, 9);
+
+  const rank = parentNode.outputShape.length;
+  const size = util.sizeFromShape(parentNode.outputShape);
+
+  const shape = util.rightPad(parentNode.outputShape.toString(), 14);
+
+  const displayStr =
+      `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`;
+  const args = ['font-weight:bold', 'color:red', 'color:blue', 'color: orange'];
+
+  const isChildNode = parentNode.childInfoNodes.length === 0;
+  if (isChildNode) {
+    console.log(displayStr, ...args);
+  } else {
+    console.group(displayStr, ...args);
+  }
+
+  for (let i = 0; i < parentNode.childInfoNodes.length; i++) {
+    recursivelyRenderOpExecutionTree(parentNode.childInfoNodes[i], depth + 1);
+  }
+
+  if (!isChildNode) {
+    console.groupEnd();
+  }
 }
 
 export abstract class NDArrayMath {
@@ -63,7 +147,7 @@ export abstract class NDArrayMath {
   private debugMode = false;
 
   // Op execution stack for debug mode for timing information.
-  private debugModeOpExecutionInfoStack: OpExecutionInfo[] = [];
+  private debugModeOpExecutionInfoStack: OpExecutionInfoNode[] = [];
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
@@ -245,46 +329,101 @@ export abstract class NDArrayMath {
   /** Disposes the math object and any resources used by it. */
   dispose() {}
 
-  protected abstract startTimer(): void;
-  protected abstract endTimer(): Promise<number>;
+  protected abstract startTimer(): {};
+  protected abstract endTimer(): void;
+  protected abstract getTime(query: {}): Promise<number>;
 
   private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
       name: string, f: () => T): T {
+    // console.log(
+    //     '********************* START: ' + name + ' ********************');
     let result: T;
     if (!this.debugMode) {
       result = f();
     } else {
-      const opExecutionInfo: OpExecutionInfo = {name, children: []};
+      // console.log('~~~~~~~~~op execution stack---------');
+      // console.log(this.debugModeOpExecutionInfoStack);
+
+      const opExecutionInfo = new OpExecutionInfoNode(name);
+
+      if (this.debugModeOpExecutionInfoStack.length > 0) {
+        const parent = this.debugModeOpExecutionInfoStack
+                           [this.debugModeOpExecutionInfoStack.length - 1];
+        parent.childInfoNodes.push(opExecutionInfo);
+        opExecutionInfo.parentInfoNode = parent;
+        // parent.pendingChildTimers++;
+        // console.log(
+        //    parent.name + ' has ' + parent.pendingChildTimers + 'pending');
+      }
+
       this.debugModeOpExecutionInfoStack.push(opExecutionInfo);
 
-      this.startTimer();
+      const query = this.startTimer();
 
       result = f();
 
-      const endTimer = this.endTimer();
+      this.endTimer();
+
+      // console.log(name + ' => ', result.shape);
+
+      // Test.
+      const vals = result.dataSync();
+
+      // console.log('values: ' + vals);
+      this.checkForNaN(vals, result.dtype, name);
+
+      const endTimer = this.getTime(query);
+
+      opExecutionInfo.outputShape = result.shape.slice();
+
+      this.debugModeOpExecutionInfoStack.pop();
+      // console.log('popped ');
+      // console.log(info);
 
       if (endTimer == null) {
         // console.log('ending timer....');
         // Render.
+        // console.log('NULL TIMER.');
+        // Sum up children.
+        opExecutionInfo.notifyNodeReady();
+        // if (opExecutionInfo.parentInfoNode != null) {
+        //   opExecutionInfo.parentInfoNode.notifyChildReady();
+        //   opExecutionInfo.notifyReady();
+        // } else {
+        //   opExecutionInfo.notifyReady();
+        // }
+
       } else {
-        this.endTimer().then(timeMs => {
-          // Pop, merge.
-
-          const time = util.rightPad(`${timeMs}ms`, 9);
-          const paddedName = util.rightPad(name, 25);
-          const rank = result.rank;
-          const size = result.size;
-          const shape = util.rightPad(result.shape.toString(), 14);
-          console.log(
-              `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-              'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
+        endTimer.then(timeMs => {
+          // console.log(
+          //     '********************* RESOLVING: ' + name + '...' + timeMs +
+          //     ' ********************');
+          opExecutionInfo.nodeTimeMs = timeMs;
+          opExecutionInfo.notifyNodeReady();
+          // if (opExecutionInfo.parentInfoNode != null) {
+          //   opExecutionInfo.parentInfoNode.notifyChildReady();
+          //   opExecutionInfo.notifyReady();
+          // } else {
+          //   opExecutionInfo.notifyReady();
+          // }
+          // // Pop, merge.
+          // console.log(
+          //     '********************* RESOLVED: ' + name + '' + timeMs +
+          //     ' ********************');
+          // const time = util.rightPad(`${timeMs}ms`, 9);
+          // const paddedName = util.rightPad(name, 25);
+          // const rank = result.rank;
+          // const size = result.size;
+          // const shape = util.rightPad(result.shape.toString(), 14);
+          // console.log(
+          //     `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
+          //     'font-weight:bold', 'color:red', 'color:blue', 'color:
+          //     orange');
         });
-
-        // Test.
-        const vals = result.dataSync();
-        this.checkForNaN(vals, result.dtype, name);
       }
-      console.log('---------------DONE--------------');
+
+      // console.log(
+      //     '********************* END: ' + name + ' ********************');
     }
     return this.track(result);
   }
@@ -772,7 +911,9 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      return this.argMinInternal(input, axes);
+      return this.executeOp('argMinImpl', () => {
+        return this.argMinInternal(input, axes);
+      });
     });
   }
   protected abstract argMinInternal(ndarray: NDArray, axes: number[]):
@@ -876,7 +1017,11 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      const res = this.minInternal(input, axes);
+
+      const res = this.executeOp('minImpl', () => {
+        return this.minInternal(input, axes);
+      });
+
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
@@ -913,7 +1058,11 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      const res = this.maxInternal(input, axes);
+
+      const res = this.executeOp('maxImpl', () => {
+        return this.maxInternal(input, axes);
+      });
+
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);

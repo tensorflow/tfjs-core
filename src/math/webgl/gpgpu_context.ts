@@ -336,83 +336,117 @@ export class GPGPUContext {
    * @param queryFn The query function containing GL commands to execute.
    * @return a promise that resolves with the ellapsed time in milliseconds.
    */
-  public runQuery(queryFn: () => void): Promise<number> {
-    this.beginQuery();
+  public async runQuery(queryFn: () => void): Promise<number> {
+    const query = this.beginQuery();
 
     queryFn();
 
-    return this.endQuery();
+    // return await this.endQuery();
+    console.log(util);
+    return this.getTime(query);
   }
 
   /**
    * Starts a query timer.
    */
-  public beginQuery(): void {
+  public beginQuery(): WebGLQuery {
     if (this.activeQuery != null) {
       throw new Error(
           `Cannot begin a query with another active query (this is a WebGL ` +
           `limitation). Please call endQuery before calling beginQuery` +
           `again.`);
     }
+    // console.log('-----starting query-----');
 
     if (ENV.get('WEBGL_VERSION') === 2) {
-      this.beginQueryWebGL2();
+      return this.beginQueryWebGL2();
     } else {
-      this.beginQueryWebGL1();
+      return this.beginQueryWebGL1();
     }
   }
 
-  private beginQueryWebGL2(): void {
+  private beginQueryWebGL2(): WebGLQuery {
     const gl2 = this.gl as WebGL2RenderingContext;
     const ext = this.getQueryTimerExtensionWebGL2();
 
-    this.activeQuery = gl2.createQuery();
+    // this.activeQuery = gl2.createQuery();
+    const query = gl2.createQuery();
+    this.activeQuery = query;
 
-    gl2.beginQuery(ext.TIME_ELAPSED_EXT, this.activeQuery);
+    gl2.beginQuery(ext.TIME_ELAPSED_EXT, query);  // this.activeQuery);
+    return query;
   }
 
-  private beginQueryWebGL1(): void {
+  private beginQueryWebGL1(): WebGLQuery {
     const ext = this.getQueryTimerExtensionWebGL1();
-    this.activeQuery = ext.createQueryEXT();
+    // this.activeQuery = ext.createQueryEXT();
+    const query = ext.createQueryEXT();
+    this.activeQuery = query;
 
     ext.beginQueryEXT(ext.TIME_ELAPSED_EXT, this.activeQuery);
+    return query;
   }
 
   /**
-   * Maybe ends a query. Returns null if there are no active queries.
+   * Maybe ends a query.
    */
-  public maybeEndQuery(): Promise<number>|null {
+  public maybeEndQuery() {
     if (this.activeQuery == null) {
-      return null;
+      return;
     }
     return this.endQuery();
+  }
+
+  public endQuery() {
+    const gl2 = this.gl as WebGL2RenderingContext;
+    const ext = this.getQueryTimerExtensionWebGL2();
+
+    gl2.endQuery(ext.TIME_ELAPSED_EXT);
+    // console.log('-----ending query-----');
+
+    this.activeQuery = null;
+    // gl2.finish();
   }
 
   /**
    * Ends a query.
    */
-  public endQuery(): Promise<number> {
-    if (this.activeQuery == null) {
-      throw new Error(
-          `No queries exist. Use beginQuery before calling endQuery.`);
+  public getTime(query: WebGLQuery): Promise<number>|null {
+    if (!this.isQuery(query)) {
+      return null;
     }
+    // console.log('-----getTime-----');
+    // if (this.activeQuery == null) {
+    //   throw new Error(
+    //       `No queries exist. Use beginQuery before calling endQuery.`);
+    // }
 
-    return ENV.get('WEBGL_VERSION') === 2 ? this.endQueryWebGL2() :
-                                            this.endQueryWebGL1();
+    return this.getTimeWebGL2(query);
+    // return ENV.get('WEBGL_VERSION') === 2 ? this.endQueryWebGL2() :
+    //                                        this.endQueryWebGL1();
   }
 
-  private async endQueryWebGL2(): Promise<number> {
+  private isQuery(query: WebGLQuery) {
+    const gl2 = this.gl as WebGL2RenderingContext;
+
+    return gl2.isQuery(query);
+  }
+
+  private async getTimeWebGL2(query: WebGLQuery): Promise<number> {
     const gl2 = this.gl as WebGL2RenderingContext;
     const ext = this.getQueryTimerExtensionWebGL2();
 
-    gl2.endQuery(ext.TIME_ELAPSED_EXT);
-
     const queryGPU = () => {
+      // if (this.activeQuery == null) {
+      //   console.log('query timer found to be null...');
+      //   return false;
+      // }
       const available =
-          gl2.getQueryParameter(this.activeQuery, gl2.QUERY_RESULT_AVAILABLE);
+          gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
       const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
       return available && !disjoint;
     };
+    // console.log('queryGPU : ' + queryGPU());
 
     try {
       await util.repeatedTry(queryGPU);
@@ -421,17 +455,23 @@ export class GPGPUContext {
       return -1;
     }
 
-    const timeElapsedNanos =
-        gl2.getQueryParameter(this.activeQuery, gl2.QUERY_RESULT);
+    const timeElapsedNanos = gl2.getQueryParameter(query, gl2.QUERY_RESULT);
+    // console.log('nulling activeQuery');
+    this.activeQuery = null;
+
     return timeElapsedNanos / 1000000;
   }
 
+  /*
   private async endQueryWebGL1(): Promise<number> {
     const ext = this.getQueryTimerExtensionWebGL1();
 
     ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
 
     const queryGPU = () => {
+      if (this.activeQuery == null) {
+        return false;
+      }
       const available = ext.getQueryObjectEXT(
           this.activeQuery, ext.QUERY_RESULT_AVAILABLE_EXT);
 
@@ -449,23 +489,31 @@ export class GPGPUContext {
 
     const timeElapsedNanos =
         ext.getQueryObjectEXT(this.activeQuery, ext.QUERY_RESULT_EXT);
+    console.log('nulling activeQuery');
+    this.activeQuery = null;
+
     // Return milliseconds.
     return timeElapsedNanos / 1000000;
-  }
+  }*/
 
   public maybeCancelQuery() {
     if (this.activeQuery == null) {
       return;
     }
 
+    // console.log('cancelling query....');
+
     const ext = this.getQueryTimerExtensionWebGL1();
 
     if (ENV.get('WEBGL_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
-      gl2.endQuery(ext.TIME_ELAPSED_EXT);
+      // gl2.endQuery(ext.TIME_ELAPSED_EXT);
+      gl2.deleteQuery(this.activeQuery);
     } else {
       ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
     }
+    // console.log('maybe cancel active query');
+    this.activeQuery = null;
   }
 
   private downloadMatrixDriverSetup(texture: WebGLTexture) {
