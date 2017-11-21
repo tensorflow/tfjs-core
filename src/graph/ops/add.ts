@@ -39,11 +39,13 @@ export class Add extends Operation {
         util.sizeFromShape(x1Tensor.shape) === 1 ||
             util.sizeFromShape(x2Tensor.shape) === 1 ||
             util.arraysEqual(x1Tensor.shape, x2Tensor.shape) ||
-            x1Tensor.shape.length === 2 && x2Tensor.shape.length === 1 &&
-                x1Tensor.shape[1] === x2Tensor.shape[0],
+            (x1Tensor.shape.length === 2 && x2Tensor.shape.length === 1 &&
+                x1Tensor.shape[1] === x2Tensor.shape[0]) ||
+            (x1Tensor.shape.length === 1 && x2Tensor.shape.length === 2 &&
+                x1Tensor.shape[0] === x2Tensor.shape[1]),
         'One of t1 or t2 must be a scalar, or t1 and t2 must have ' +
             'the same shape, ' +
-            'or it is a special broadcast case (t1 for 2D, t2 for 1D).');
+            'or one of them can be broadcasted (2D and 1D).');
   }
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
@@ -70,7 +72,13 @@ export class Add extends Operation {
 
     math.scope(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
-        if (util.isScalarShape(this.x1Tensor.shape)) {
+        if (this.x1Tensor.shape.length === 1 &&
+            this.x2Tensor.shape.length === 2 &&
+            this.x1Tensor.shape[0] === this.x2Tensor.shape[1]) {
+          const sum = math.sum(dy as Array2D, 0);
+          const gradient = math.divide(sum, Scalar.new(this.x2Tensor.shape[0]));
+          gradientArrays.add(this.x1Tensor, gradient);
+        } else if (util.isScalarShape(this.x1Tensor.shape)) {
           const sum = math.sum(dy);
           if (this.dySizeScalar == null) {
             this.dySizeScalar = Scalar.new(dy.size);
@@ -82,20 +90,14 @@ export class Add extends Operation {
         }
       }
 
-      // Special broadcast case. Need to be generalized later.
-      if (this.x1Tensor.shape.length === 2 &&
-          this.x2Tensor.shape.length === 1 &&
-          this.x1Tensor.shape[1] === this.x2Tensor.shape[0] &&
-          graph_util.shouldBackProp(this.x2Tensor)) {
-        const oneForSum = Array2D.zeros([1, this.x1Tensor.shape[0]]);
-        oneForSum.fill(1);
-        const sum = math.matMul(oneForSum, dy as Array2D).as1D();
-        const gradient = math.divide(sum, Scalar.new(this.x1Tensor.shape[0]));
-        gradientArrays.add(this.x2Tensor, gradient);
-      }
-
-      else if (graph_util.shouldBackProp(this.x2Tensor)) {
-        if (util.isScalarShape(this.x2Tensor.shape)) {
+      if (graph_util.shouldBackProp(this.x2Tensor)) {
+        if (this.x1Tensor.shape.length === 2 &&
+            this.x2Tensor.shape.length === 1 &&
+            this.x1Tensor.shape[1] === this.x2Tensor.shape[0]) {
+          const sum = math.sum(dy as Array2D, 0);
+          const gradient = math.divide(sum, Scalar.new(this.x1Tensor.shape[0]));
+          gradientArrays.add(this.x2Tensor, gradient);
+        } else if (util.isScalarShape(this.x2Tensor.shape)) {
           const sum = math.sum(dy);
           if (this.dySizeScalar == null) {
             this.dySizeScalar = Scalar.new(dy.size);

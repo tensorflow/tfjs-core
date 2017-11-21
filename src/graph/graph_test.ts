@@ -229,11 +229,15 @@ describe('Add validation', () => {
     expect(g.add(new Tensor([5, 4]), new Tensor([5, 4])).shape).toEqual([5, 4]);
   });
 
-  it('Special broadcast case does not throw', () => {
+  it('1D broadcasted to 2D does not throw', () => {
     expect(g.add(new Tensor([5, 3]), new Tensor([3])).shape).toEqual([5, 3]);
   });
 
-  it('Another different shapes throws', () => {
+  it('Another 1D broadcasted to 2D does not throw', () => {
+    expect(g.add(new Tensor([3]), new Tensor([7, 3])).shape).toEqual([7, 3]);
+  });
+
+  it('Non-matching broadcast throws', () => {
     expect(() => g.add(new Tensor([5, 3]), new Tensor([5])))
         .toThrowError();
   });

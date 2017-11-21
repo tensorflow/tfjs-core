@@ -522,7 +522,9 @@ export class AddNode extends Node {
   constructor(graph: Graph, private t1: Tensor, private t2: Tensor) {
     super(
         graph, 'Add', {t1, t2},
-        new Tensor(util.sizeFromShape(t1.shape) === 1 ? t2.shape : t1.shape));
+        new Tensor(util.sizeFromShape(t1.shape) === 1 
+            ? t2.shape 
+            : (t1.shape.length < t2.shape.length ? t2.shape : t1.shape)));
   }
 
   validate() {
@@ -530,11 +532,13 @@ export class AddNode extends Node {
         util.sizeFromShape(this.t1.shape) === 1 ||
             util.sizeFromShape(this.t2.shape) === 1 ||
             util.arraysEqual(this.t1.shape, this.t2.shape) ||
-            this.t1.shape.length === 2 && this.t2.shape.length === 1 &&
-                this.t1.shape[1] === this.t2.shape[0],
+            (this.t1.shape.length === 2 && this.t2.shape.length === 1 &&
+                this.t1.shape[1] === this.t2.shape[0]) ||
+            (this.t1.shape.length === 1 && this.t2.shape.length === 2 &&
+                this.t1.shape[0] === this.t2.shape[1]),
         'Error adding add operation op: one of inputs must be scalar, ' +
-        'it is a special broadcast case, or the ' +
-            `shapes ${this.t1.shape} and ${this.t2.shape} must match.`);
+            `shapes ${this.t1.shape} and ${this.t2.shape} must match,` +
+            'or one of them can be broadcasted (2D and 1D).');
   }
 }
 
