@@ -18,9 +18,8 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import * as axis_util from './axis_util';
 import {NDArrayMathGPU} from './math_gpu';
-import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
+import {Array1D, Array3D, Scalar} from './ndarray';
 
 // math.scope
 {
@@ -198,11 +197,12 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       math.enableDebugMode();
       // const a = Array2D.new([2, 2], [1, 2, 3, 4]);
       const a = Array1D.randNormal([1500]);
+      // a.set(NaN, 100);
       a.getTexture();
 
-      const b = math.sqrt(math.square(a));
+      // const b = math.sqrt(math.subtract(Scalar.new(.5), a));
 
-      const c = math.softmax(b);
+      const c = math.softmax(a);
       // const d = math.argMax(c, 0);
 
       console.log(c);

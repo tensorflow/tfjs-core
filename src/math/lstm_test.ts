@@ -24,6 +24,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 {
   const tests: MathTests = it => {
     it('MultiRNNCell with 2 BasicLSTMCells', math => {
+      math.enableDebugMode();
       const lstmKernel1 = Array2D.new(
           [3, 4], new Float32Array([
             0.26242125034332275, -0.8787832260131836, 0.781475305557251,
@@ -92,8 +93,8 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
   test_util.describeMathCPU('basicLSTMCell', [tests]);
   test_util.describeMathGPU('basicLSTMCell', [tests], [
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    //{'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2}
+    //{'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }

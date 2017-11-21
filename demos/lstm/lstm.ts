@@ -23,6 +23,7 @@ reader.getAllVariables().then(async vars => {
   const primerData = 3;
   const expected = [1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4];
   const math = new NDArrayMathGPU();
+  math.enableDebugMode();
 
   const lstmKernel1 =
       vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;

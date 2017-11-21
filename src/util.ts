@@ -322,3 +322,7 @@ export function squeezeShape(shape: number[]):
   }
   return {newShape, keptDims};
 }
+
+export function getDisplayShape(shape: number[]) {
+  return '[' + shape.join(', ') + ']';
+}

@@ -16,7 +16,9 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import * as util from '../util';
+
 import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
@@ -26,12 +28,12 @@ import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Profiler} from './profiler';
+import {CPUTimer} from './timer';
 
 export class NDArrayMathCPU extends NDArrayMath {
-  private activeTimerMs: number;
-
   constructor(safeMode = false) {
-    super(safeMode);
+    super(safeMode, new Profiler(new CPUTimer()));
   }
 
   protected cloneInternal<T extends NDArray>(ndarray: T): T {
@@ -1284,7 +1286,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return {};
   }
   protected endTimer(): void {}
-  protected getTime(): number {
+  protected async getTime(): Promise<number> {
     return 0;
   }
 

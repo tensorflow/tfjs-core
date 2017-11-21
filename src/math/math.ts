@@ -16,7 +16,7 @@
  */
 
 import * as util from '../util';
-import {TypedArray} from '../util';
+
 import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
@@ -24,7 +24,8 @@ import * as conv_util from './conv_util';
 import {ConvInfo, DepthwiseConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayObject, Scalar} from './ndarray';
+import {Profiler} from './profiler';
 import * as slice_util from './slice_util';
 
 export type ScopeResultImmediate =
@@ -47,96 +48,6 @@ export enum SumTypesMap {
   bool = 'int32'
 }
 
-class OpExecutionInfoNode {
-  parentInfoNode?: OpExecutionInfoNode;
-  childInfoNodes: OpExecutionInfoNode[] = [];
-
-  isNodeReady = false;
-  // areChildrenReady = false;
-
-  // pendingChildTimers = 0;
-  public nodeTimeMs?: number;
-  private totalTime?: number;
-
-  outputShape: number[];
-
-  constructor(public name: string) {}
-
-  isNodeAndChildrenReady(): boolean {
-    let childrenReady = true;
-    for (let i = 0; i < this.childInfoNodes.length; i++) {
-      childrenReady =
-          childrenReady && this.childInfoNodes[i].isNodeAndChildrenReady();
-    }
-    const ready = this.isNodeReady && childrenReady;
-
-    return ready;
-  }
-
-  getTotalTimeMs() {
-    if (this.totalTime == null) {
-      this.totalTime = this.nodeTimeMs == null ? 0 : this.nodeTimeMs;
-      for (let i = 0; i < this.childInfoNodes.length; i++) {
-        this.totalTime += this.childInfoNodes[i].getTotalTimeMs();
-      }
-    }
-    return this.totalTime;
-  }
-
-  notifyNodeReady() {
-    this.isNodeReady = true;
-
-    this.bubbleReadyNotification();
-  }
-
-  bubbleReadyNotification() {
-    if (!this.isNodeReady) {
-      return;
-    }
-
-    if (this.isNodeAndChildrenReady()) {
-      if (this.parentInfoNode == null) {
-        const depth = 0;
-        recursivelyRenderOpExecutionTree(this, depth);
-      } else {
-        // Notify the parent.
-        this.parentInfoNode.bubbleReadyNotification();
-      }
-    }
-  }
-}
-
-function recursivelyRenderOpExecutionTree(
-    parentNode: OpExecutionInfoNode, depth: number) {
-  const paddedName = util.rightPad(parentNode.name, 28);
-  const totalTimeMs = parentNode.getTotalTimeMs();
-  const time = util.rightPad(`${totalTimeMs.toFixed(3)}ms`, 9);
-
-  const rank = parentNode.outputShape.length;
-  const size = util.sizeFromShape(parentNode.outputShape);
-
-  const shape = util.rightPad(parentNode.outputShape.toString(), 14);
-
-  const displayStr =
-      `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`;
-  const args = ['font-weight:bold', 'color:red', 'color:blue', 'color: orange'];
-
-  const isChildNode = parentNode.childInfoNodes.length === 0;
-  if (isChildNode) {
-    console.log(displayStr, ...args);
-  } else {
-    console.group(displayStr, ...args);
-  }
-
-  for (let i = 0; i < parentNode.childInfoNodes.length; i++) {
-    recursivelyRenderOpExecutionTree(parentNode.childInfoNodes[i], depth + 1);
-  }
-
-  if (!isChildNode) {
-    console.groupEnd();
-  }
-}
-
 export abstract class NDArrayMath {
   private ndarrayScopes: NDArray[][] = [];
   private activeScope: NDArray[];
@@ -144,16 +55,12 @@ export abstract class NDArrayMath {
   private ndarraysToKeep: NDArray[][] = [];
   private activeScopeNDArraysToKeep: NDArray[] = [];
 
-  private debugMode = false;
-
-  // Op execution stack for debug mode for timing information.
-  private debugModeOpExecutionInfoStack: OpExecutionInfoNode[] = [];
-
   /**
    * @param safeMode In safe mode, you must use math operations inside
-   *     a math.scope() which will automatically clean up intermediate NDArrays.
+   *     a math.scope() which will automatically clean up intermediate
+   * NDArrays.
    */
-  constructor(private safeMode: boolean) {}
+  constructor(private safeMode: boolean, protected profiler: Profiler) {}
 
   /**
    * Create a new math scope. Put chained math operations inside a scope
@@ -185,11 +92,11 @@ export abstract class NDArrayMath {
   }
 
   /**
-   * In debug mode, the output of every math call will be downloaded to the CPU
-   * and checked for NaNs. This significantly impacts performance.
+   * In debug mode, the output of every math call will be downloaded to the
+   * CPU and checked for NaNs. This significantly impacts performance.
    */
   enableDebugMode() {
-    this.debugMode = true;
+    this.profiler.enableDebugMode();
     console.warn(
         'Debugging mode is ON. The output of every math call will ' +
         'be downloaded to CPU and checked for NaNs. ' +
@@ -296,22 +203,13 @@ export abstract class NDArrayMath {
     return result;
   }
 
-  private checkForNaN(vals: TypedArray, dtype: keyof DataTypes, name: string):
-      void {
-    for (let i = 0; i < vals.length; i++) {
-      if (util.isValNaN(vals[i], dtype)) {
-        throw Error(`The result of the last math.${name} has NaNs.`);
-      }
-    }
-  }
-
   /**
    * Tracks an NDArray in the current scope to be automatically cleaned up
    * when the current scope ends, and returns the value.
    *
    * @param result The NDArray to track in the current scope.
    */
-  track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
+  track<G extends keyof DataTypes, T extends NDArrayObject<G>>(result: T): T {
     if (this.activeScope == null) {
       if (this.safeMode) {
         throw new Error(
@@ -322,111 +220,33 @@ export abstract class NDArrayMath {
       }
       return result;
     }
-    this.activeScope.push(result);
+
+    const results: NDArray[] = [];
+    // Track the results by unpacking the result object.
+    if (result instanceof NDArray) {
+      results.push(result);
+    } else if (result instanceof Array) {
+      for (let i = 0; i < result.length; i++) {
+        if (result[i] instanceof Array) {
+          (result[i] as NDArray[]).forEach(r => results.push(r));
+        } else {
+          results.push(result[i]);
+        }
+      }
+    } else if (result instanceof Object) {
+      const map = result as {[key: string]: NDArray<G>};
+      const keys = Object.keys(map);
+      for (let i = 0; i < keys.length; i++) {
+        results.push(map[keys[i]]);
+      }
+    }
+
+    results.forEach(result => this.activeScope.push(result));
     return result;
   }
 
   /** Disposes the math object and any resources used by it. */
   dispose() {}
-
-  protected abstract startTimer(): {};
-  protected abstract endTimer(): void;
-  protected abstract getTime(query: {}): Promise<number>;
-
-  private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
-      name: string, f: () => T): T {
-    // console.log(
-    //     '********************* START: ' + name + ' ********************');
-    let result: T;
-    if (!this.debugMode) {
-      result = f();
-    } else {
-      // console.log('~~~~~~~~~op execution stack---------');
-      // console.log(this.debugModeOpExecutionInfoStack);
-
-      const opExecutionInfo = new OpExecutionInfoNode(name);
-
-      if (this.debugModeOpExecutionInfoStack.length > 0) {
-        const parent = this.debugModeOpExecutionInfoStack
-                           [this.debugModeOpExecutionInfoStack.length - 1];
-        parent.childInfoNodes.push(opExecutionInfo);
-        opExecutionInfo.parentInfoNode = parent;
-        // parent.pendingChildTimers++;
-        // console.log(
-        //    parent.name + ' has ' + parent.pendingChildTimers + 'pending');
-      }
-
-      this.debugModeOpExecutionInfoStack.push(opExecutionInfo);
-
-      const query = this.startTimer();
-
-      result = f();
-
-      this.endTimer();
-
-      // console.log(name + ' => ', result.shape);
-
-      // Test.
-      const vals = result.dataSync();
-
-      // console.log('values: ' + vals);
-      this.checkForNaN(vals, result.dtype, name);
-
-      const endTimer = this.getTime(query);
-
-      opExecutionInfo.outputShape = result.shape.slice();
-
-      this.debugModeOpExecutionInfoStack.pop();
-      // console.log('popped ');
-      // console.log(info);
-
-      if (endTimer == null) {
-        // console.log('ending timer....');
-        // Render.
-        // console.log('NULL TIMER.');
-        // Sum up children.
-        opExecutionInfo.notifyNodeReady();
-        // if (opExecutionInfo.parentInfoNode != null) {
-        //   opExecutionInfo.parentInfoNode.notifyChildReady();
-        //   opExecutionInfo.notifyReady();
-        // } else {
-        //   opExecutionInfo.notifyReady();
-        // }
-
-      } else {
-        endTimer.then(timeMs => {
-          // console.log(
-          //     '********************* RESOLVING: ' + name + '...' + timeMs +
-          //     ' ********************');
-          opExecutionInfo.nodeTimeMs = timeMs;
-          opExecutionInfo.notifyNodeReady();
-          // if (opExecutionInfo.parentInfoNode != null) {
-          //   opExecutionInfo.parentInfoNode.notifyChildReady();
-          //   opExecutionInfo.notifyReady();
-          // } else {
-          //   opExecutionInfo.notifyReady();
-          // }
-          // // Pop, merge.
-          // console.log(
-          //     '********************* RESOLVED: ' + name + '' + timeMs +
-          //     ' ********************');
-          // const time = util.rightPad(`${timeMs}ms`, 9);
-          // const paddedName = util.rightPad(name, 25);
-          // const rank = result.rank;
-          // const size = result.size;
-          // const shape = util.rightPad(result.shape.toString(), 14);
-          // console.log(
-          //     `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-          //     'font-weight:bold', 'color:red', 'color:blue', 'color:
-          //     orange');
-        });
-      }
-
-      // console.log(
-      //     '********************* END: ' + name + ' ********************');
-    }
-    return this.track(result);
-  }
 
   /**
    * Computes the dot product of two matrices, A * B. These must be matrices,
@@ -459,8 +279,9 @@ export abstract class NDArrayMath {
             `${b.shape} and orientations ${MatrixOrientation[aOrientation]}` +
             ` and ${MatrixOrientation[bOrientation]} must match.`);
 
-    return this.executeOp(
-        'matMul', () => this.matMulInternal(a, b, aOrientation, bOrientation));
+    return this.track(this.profiler.profile(
+        'matMul', {a, b},
+        () => this.matMulInternal(a, b, aOrientation, bOrientation)));
   }
 
   protected abstract matMulInternal(
@@ -552,7 +373,8 @@ export abstract class NDArrayMath {
    * @param ndarray The NDArray to clone.
    */
   clone<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('clone', () => this.cloneInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'clone', {ndarray}, () => this.cloneInternal(ndarray)));
   }
   protected abstract cloneInternal<T extends NDArray>(ndarray: T): T;
 
@@ -577,8 +399,8 @@ export abstract class NDArrayMath {
    */
   slice1D(input: Array1D, begin: number, size: number): Array1D {
     slice_util.assertParamsValid(input, [begin], [size]);
-    return this.executeOp(
-        'slice1D', () => this.slice1DInternal(input, begin, size));
+    return this.track(this.profiler.profile(
+        'slice1D', {input}, () => this.slice1DInternal(input, begin, size)));
   }
   protected abstract slice1DInternal(
       input: Array1D, begin: number, size: number): Array1D;
@@ -594,8 +416,9 @@ export abstract class NDArrayMath {
   slice2D(input: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
     slice_util.assertParamsValid(input, begin, size);
-    return this.executeOp(
-        'slice2D', () => this.slice2DInternal(input, begin, size));
+
+    return this.track(this.profiler.profile(
+        'slice2D', {input}, () => this.slice2DInternal(input, begin, size)));
   }
   protected abstract slice2DInternal(
       input: Array2D, begin: [number, number], size: [number, number]): Array2D;
@@ -613,8 +436,9 @@ export abstract class NDArrayMath {
     number, number, number
   ]): Array3D {
     slice_util.assertParamsValid(input, begin, size);
-    return this.executeOp(
-        'slice3D', () => this.slice3DInternal(input, begin, size));
+
+    return this.track(this.profiler.profile(
+        'slice3D', {input}, () => this.slice3DInternal(input, begin, size)));
   }
   protected abstract slice3DInternal(
       input: Array3D, begin: [number, number, number],
@@ -633,8 +457,9 @@ export abstract class NDArrayMath {
     number, number, number, number
   ]): Array4D {
     slice_util.assertParamsValid(input, begin, size);
-    return this.executeOp(
-        'slice4D', () => this.slice4DInternal(input, begin, size));
+
+    return this.track(this.profiler.profile(
+        'slice4D', {input}, () => this.slice4DInternal(input, begin, size)));
   }
   protected abstract slice4DInternal(
       input: Array4D, begin: [number, number, number, number],
@@ -669,11 +494,11 @@ export abstract class NDArrayMath {
             `shape ${dest.shape}.`);
     copy2d_util.validateShapes(sourceSize, destSize);
 
-    this.executeOp('copy2D', () => {
+    this.track(this.profiler.profile('copy2D', {source}, () => {
       this.copy2DInternal(
           source, sourceBegin, sourceSize, dest, destBegin, destSize);
       return dest;
-    });
+    }));
   }
   protected abstract copy2DInternal(
       source: Array2D, sourceBegin: [number, number],
@@ -694,7 +519,9 @@ export abstract class NDArrayMath {
    */
   concat1D(a: Array1D, b: Array1D): Array1D {
     concat_util.assertParams(a.shape, b.shape, 0);
-    return this.executeOp('concat1D', () => this.concat1DInternal(a, b));
+
+    return this.track(this.profiler.profile(
+        'concat1D', {a, b}, () => this.concat1DInternal(a, b)));
   }
   protected abstract concat1DInternal(a: Array1D, b: Array1D): Array1D;
 
@@ -728,7 +555,9 @@ export abstract class NDArrayMath {
    */
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
     concat_util.assertParams(a.shape, b.shape, axis);
-    return this.executeOp('concat2D', () => this.concat2DInternal(a, b, axis));
+
+    return this.track(this.profiler.profile(
+        'concat2D', {a, b}, () => this.concat2DInternal(a, b, axis)));
   }
   protected abstract concat2DInternal(a: Array2D, b: Array2D, axis: number):
       Array2D;
@@ -766,8 +595,9 @@ export abstract class NDArrayMath {
    */
   concat3D(ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D {
     concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
-    return this.executeOp(
-        'concat3D', () => this.concat3DInternal(ndarray1, ndarray2, axis));
+    return this.track(this.profiler.profile(
+        'concat3D', {ndarray1, ndarray2},
+        () => this.concat3DInternal(ndarray1, ndarray2, axis)));
   }
   protected abstract concat3DInternal(
       ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D;
@@ -783,8 +613,9 @@ export abstract class NDArrayMath {
    */
   concat4D(ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D {
     concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
-    return this.executeOp(
-        'concat4D', () => this.concat4DInternal(ndarray1, ndarray2, axis));
+    return this.track(this.profiler.profile(
+        'concat4D', {ndarray1, ndarray2},
+        () => this.concat4DInternal(ndarray1, ndarray2, axis)));
   }
   protected abstract concat4DInternal(
       ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D;
@@ -811,7 +642,7 @@ export abstract class NDArrayMath {
   logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
       NDArray {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    return this.executeOp('logSumExp', () => {
+    return this.track(this.profiler.profile('logSumExp', {input}, () => {
       const xMax = this.max(input, axes, true /* keepDims */);
       const a = this.subtract(input, xMax);
       const b = this.exp(a);
@@ -824,7 +655,7 @@ export abstract class NDArrayMath {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }));
   }
 
   /**
@@ -848,7 +679,8 @@ export abstract class NDArrayMath {
     const origAxes = axis_util.parseAxisParam(axis, input.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
-    return this.executeOp('sum', () => {
+
+    return this.track(this.profiler.profile('sum', {input}, () => {
       if (permutedAxes != null) {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
@@ -859,7 +691,7 @@ export abstract class NDArrayMath {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }));
   }
   protected abstract sumInternal<T extends keyof DataTypes>(
       ndarray: NDArray<T>, axes: number[]): NDArray<SumTypes[T]>;
@@ -885,12 +717,12 @@ export abstract class NDArrayMath {
     const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
     const reduceShape = shapes[1];
     const reduceSize = util.sizeFromShape(reduceShape);
-    return this.executeOp('mean', () => {
+    return this.track(this.profiler.profile('mean', {x}, () => {
       return this.scope((keep, track) => {
         const res = this.divide(x, track(Scalar.new(reduceSize)));
         return this.sum(res, axis, keepDims);
       });
-    });
+    }));
   }
 
   /**
@@ -906,15 +738,15 @@ export abstract class NDArrayMath {
     let axes = axis_util.parseAxisParam(axis, input.shape);
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
 
-    return this.executeOp('argMin', () => {
+    return this.track(this.profiler.profile('argMin', {input}, () => {
       if (permutedAxes != null) {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      return this.executeOp('argMinImpl', () => {
+      return this.profiler.profile('argMinImpl', {input}, () => {
         return this.argMinInternal(input, axes);
       });
-    });
+    }));
   }
   protected abstract argMinInternal(ndarray: NDArray, axes: number[]):
       NDArray<'int32'>;
@@ -930,15 +762,15 @@ export abstract class NDArrayMath {
   argMax(input: NDArray, axis: number = null): NDArray<'int32'> {
     let axes = axis_util.parseAxisParam(axis, input.shape);
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
-    return this.executeOp('argMax', () => {
+    return this.track(this.profiler.profile('argMax', {input}, () => {
       if (permutedAxes != null) {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      return this.executeOp('argMaxImpl', () => {
+      return this.profiler.profile('argMaxImpl', {input}, () => {
         return this.argMaxInternal(input, axes);
       });
-    });
+    }));
   }
   protected abstract argMaxInternal(ndarray: NDArray, axes: number[]):
       NDArray<'int32'>;
@@ -950,9 +782,10 @@ export abstract class NDArrayMath {
    */
   argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return this.executeOp('argMaxEquals', () => this.scope(() => {
-      return this.equal(this.argMax(x1), this.argMax(x2));
-    }));
+    return this.track(
+        this.profiler.profile('argMaxEquals', {x1, x2}, () => this.scope(() => {
+          return this.equal(this.argMax(x1), this.argMax(x2));
+        })));
   }
 
   /**
@@ -960,7 +793,8 @@ export abstract class NDArrayMath {
    * For a stricter version without broadcasting use math.equalStrict().
    */
   equal(x: NDArray, y: NDArray): NDArray<'bool'> {
-    return this.executeOp('equal', () => this.equalInternal(x, y));
+    return this.track(
+        this.profiler.profile('equal', {x, y}, () => this.equalInternal(x, y)));
   }
   protected abstract equalInternal(x: NDArray, y: NDArray): NDArray<'bool'>;
 
@@ -980,13 +814,10 @@ export abstract class NDArrayMath {
         k <= ndarray.size,
         `Error in topK: k value (${k}) must be less than size of input ` +
             `ndarray, got shape ${ndarray.shape}.`);
-    let result: {values: Array1D, indices: Array1D};
-    this.executeOp('topK', () => {
-      result = this.topKInternal(ndarray, k);
-      return result.values;
-    });
-    this.track(result.indices);
-    return result;
+
+    return this.track(this.profiler.profile('topK', {ndarray}, () => {
+      return this.topKInternal(ndarray, k);
+    }));
   }
   protected abstract topKInternal(ndarray: NDArray, k: number):
       {values: Array1D, indices: Array1D};
@@ -1012,13 +843,14 @@ export abstract class NDArrayMath {
     const origAxes = axis_util.parseAxisParam(axis, input.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
-    return this.executeOp('min', () => {
+
+    return this.track(this.profiler.profile('min', {input}, () => {
       if (permutedAxes != null) {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
 
-      const res = this.executeOp('minImpl', () => {
+      const res = this.profiler.profile('minImpl', {input}, () => {
         return this.minInternal(input, axes);
       });
 
@@ -1027,7 +859,7 @@ export abstract class NDArrayMath {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }));
   }
   protected abstract minInternal<G extends keyof DataTypes>(
       input: NDArray<G>, axes: number[]): NDArray<G>;
@@ -1053,13 +885,14 @@ export abstract class NDArrayMath {
     const origAxes = axis_util.parseAxisParam(axis, input.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
-    return this.executeOp('max', () => {
+
+    return this.track(this.profiler.profile('max', {input}, () => {
       if (permutedAxes != null) {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
 
-      const res = this.executeOp('maxImpl', () => {
+      const res = this.profiler.profile('maxImpl', {input}, () => {
         return this.maxInternal(input, axes);
       });
 
@@ -1068,7 +901,7 @@ export abstract class NDArrayMath {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }));
   }
   protected abstract maxInternal<G extends keyof DataTypes>(
       input: NDArray<G>, axes: number[]): NDArray<G>;
@@ -1088,7 +921,7 @@ export abstract class NDArrayMath {
           'Softmax along a non-last dimension is not yet supported. ' +
           `Logits was rank ${logits.rank} and dim was ${dim}`);
     }
-    return this.executeOp('softmax', () => {
+    return this.track(this.profiler.profile('softmax', {logits}, () => {
       return this.scope(() => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
@@ -1096,7 +929,7 @@ export abstract class NDArrayMath {
         const logResult = this.subtract(logits, lse);
         return this.exp(logResult) as T;
       });
-    });
+    }));
   }
 
   //////////////////////
@@ -1126,7 +959,8 @@ export abstract class NDArrayMath {
         a.rank === reps.length,
         `Error in transpose: rank of input ${a.rank} ` +
             `must match length of reps ${reps}.`);
-    return this.executeOp('tile', () => this.tileInternal(a, reps));
+    return this.track(
+        this.profiler.profile('tile', {a}, () => this.tileInternal(a, reps)));
   }
   protected abstract tileInternal<
       D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]): T;
@@ -1151,7 +985,8 @@ export abstract class NDArrayMath {
         a.rank === perm.length,
         `Error in transpose: rank of input ${a.rank} ` +
             `must match length of perm ${perm}.`);
-    return this.executeOp('transpose', () => this.transposeInternal(a, perm));
+    return this.track(this.profiler.profile(
+        'transpose', {a}, () => this.transposeInternal(a, perm)));
   }
   protected abstract transposeInternal<
       D extends keyof DataTypes, T extends NDArray<D>>(a: T, perm: number[]): T;
@@ -1188,7 +1023,8 @@ export abstract class NDArrayMath {
    * @param a The input array.
    */
   neg<T extends NDArray>(a: T): T {
-    return this.executeOp('neg', () => this.negInternal(a));
+    return this.track(
+        this.profiler.profile('neg', {a}, () => this.negInternal(a)));
   }
   protected abstract negInternal<T extends NDArray>(a: T): T;
 
@@ -1201,7 +1037,8 @@ export abstract class NDArrayMath {
    */
   add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('add', () => this.addInternal(a, b));
+    return this.track(
+        this.profiler.profile('add', {a, b}, () => this.addInternal(a, b)));
   }
   protected abstract addInternal<G extends keyof DataTypes>(
       a: NDArray<G>, b: NDArray<G>): NDArray<G>;
@@ -1228,7 +1065,8 @@ export abstract class NDArrayMath {
   subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
       NDArray<G> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('subtract', () => this.subtractInternal(a, b));
+    return this.track(this.profiler.profile(
+        'subtract', {a, b}, () => this.subtractInternal(a, b)));
   }
 
   /** @deprecated Use math.subtract instead. */
@@ -1259,7 +1097,8 @@ export abstract class NDArrayMath {
    */
   multiply(a: NDArray, b: NDArray): NDArray {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('multiply', () => this.multiplyInternal(a, b));
+    return this.track(this.profiler.profile(
+        'multiply', {a, b}, () => this.multiplyInternal(a, b)));
   }
   protected abstract multiplyInternal<T extends NDArray>(a: T, b: T): T;
 
@@ -1291,7 +1130,8 @@ export abstract class NDArrayMath {
    */
   divide(a: NDArray, b: NDArray): NDArray<'float32'> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('divide', () => this.divideInternal(a, b));
+    return this.track(this.profiler.profile(
+        'divide', {a, b}, () => this.divideInternal(a, b)));
   }
   protected abstract divideInternal(a: NDArray, b: NDArray): NDArray<'float32'>;
 
@@ -1330,7 +1170,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   ceil<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('ceil', () => this.ceilInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'ceil', {ndarray}, () => this.ceilInternal(ndarray)));
   }
   protected abstract ceilInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1339,7 +1180,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   floor<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('floor', () => this.floorInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'floor', {ndarray}, () => this.floorInternal(ndarray)));
   }
   protected abstract floorInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1348,7 +1190,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   exp<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('exp', () => this.expInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'exp', {ndarray}, () => this.expInternal(ndarray)));
   }
   protected abstract expInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1357,7 +1200,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   log<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('log', () => this.logInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'log', {ndarray}, () => this.logInternal(ndarray)));
   }
   protected abstract logInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1366,7 +1210,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   sqrt<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sqrt', () => this.sqrtInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'sqrt', {ndarray}, () => this.sqrtInternal(ndarray)));
   }
   protected abstract sqrtInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1376,7 +1221,8 @@ export abstract class NDArrayMath {
    * @param x The input array.
    */
   square<T extends NDArray>(x: T): T {
-    return this.executeOp('square', () => this.squareInternal(x));
+    return this.track(
+        this.profiler.profile('square', {x}, () => this.squareInternal(x)));
   }
   protected abstract squareInternal<T extends NDArray>(x: T): T;
 
@@ -1385,7 +1231,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   abs<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('abs', () => this.absInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'abs', {ndarray}, () => this.absInternal(ndarray)));
   }
   protected abstract absInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1400,7 +1247,8 @@ export abstract class NDArrayMath {
         (min <= max),
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
-    return this.executeOp('clip', () => this.clipInternal(ndarray, min, max));
+    return this.track(this.profiler.profile(
+        'clip', {ndarray}, () => this.clipInternal(ndarray, min, max)));
   }
   protected abstract clipInternal<T extends NDArray>(
       ndarray: T, min: number, max: number): T;
@@ -1410,7 +1258,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   relu<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('relu', () => this.reluInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'relu', {ndarray}, () => this.reluInternal(ndarray)));
   }
   protected abstract reluInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1419,7 +1268,8 @@ export abstract class NDArrayMath {
    * @param {T} ndarray the input NDArray
    */
   elu<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('elu', () => this.eluInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'elu', {ndarray}, () => this.eluInternal(ndarray)));
   }
   protected abstract eluInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1430,8 +1280,8 @@ export abstract class NDArrayMath {
    * @return {NDArray}
    */
   leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
-    return this.executeOp(
-        'leakyRelu', () => this.leakyReluInternal(ndarray, alpha));
+    return this.track(this.profiler.profile(
+        'leakyRelu', {ndarray}, () => this.leakyReluInternal(ndarray, alpha)));
   }
   protected abstract leakyReluInternal<T extends NDArray>(
       ndarray: T, alpha: number): T;
@@ -1441,7 +1291,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   sigmoid<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sigmoid', () => this.sigmoidInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'sigmoid', {ndarray}, () => this.sigmoidInternal(ndarray)));
   }
   protected abstract sigmoidInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1450,7 +1301,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   sin<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sin', () => this.sinInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'sin', {ndarray}, () => this.sinInternal(ndarray)));
   }
   protected abstract sinInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1459,7 +1311,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   cos<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('cos', () => this.cosInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'cos', {ndarray}, () => this.cosInternal(ndarray)));
   }
   protected abstract cosInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1468,7 +1321,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   tan<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('tan', () => this.tanInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'tan', {ndarray}, () => this.tanInternal(ndarray)));
   }
   protected abstract tanInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1477,7 +1331,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   asin<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('asin', () => this.asinInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'asin', {ndarray}, () => this.asinInternal(ndarray)));
   }
   protected abstract asinInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1486,7 +1341,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   acos<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('acos', () => this.acosInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'acos', {ndarray}, () => this.acosInternal(ndarray)));
   }
   protected abstract acosInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1495,7 +1351,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   atan<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('atan', () => this.atanInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'atan', {ndarray}, () => this.atanInternal(ndarray)));
   }
   protected abstract atanInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1504,7 +1361,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   sinh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sinh', () => this.sinhInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'sinh', {ndarray}, () => this.sinhInternal(ndarray)));
   }
   protected abstract sinhInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1513,7 +1371,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   cosh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('cosh', () => this.coshInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'cosh', {ndarray}, () => this.coshInternal(ndarray)));
   }
   protected abstract coshInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1522,7 +1381,8 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   tanh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('tanh', () => this.tanhInternal(ndarray));
+    return this.track(this.profiler.profile(
+        'tanh', {ndarray}, () => this.tanhInternal(ndarray)));
   }
   protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
@@ -1534,7 +1394,8 @@ export abstract class NDArrayMath {
    * @param alpha The gradient when input is negative.
    */
   step<T extends NDArray>(ndarray: T, alpha = 0.0): T {
-    return this.executeOp('step', () => this.stepInternal(ndarray, alpha));
+    return this.track(this.profiler.profile(
+        'step', {ndarray}, () => this.stepInternal(ndarray, alpha)));
   }
   protected abstract stepInternal<T extends NDArray>(ndarray: T, alpha: number):
       T;
@@ -1557,8 +1418,9 @@ export abstract class NDArrayMath {
             `NDArray of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
-    return this.executeOp(
-        'scaledArrayAdd', () => this.scaledArrayAddInternal(c1, a, c2, b));
+    return this.track(this.profiler.profile(
+        'scaledArrayAdd', {c1, a, c2, b},
+        () => this.scaledArrayAddInternal(c1, a, c2, b)));
   }
   protected abstract scaledArrayAddInternal<T extends NDArray>(
       c1: Scalar, a: T, c2: Scalar, b: T): T;
@@ -1636,8 +1498,9 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp(
-        'conv2d', () => this.conv2dInternal(x, filter, bias, convInfo));
+    return this.track(this.profiler.profile(
+        'conv2d', {x, filter, bias},
+        () => this.conv2dInternal(x, filter, bias, convInfo)));
   }
   protected abstract conv2dInternal(
       x: Array3D, filter: Array4D, bias: Array1D|null,
@@ -1711,9 +1574,9 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         inShape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp(
-        'conv2dDerInput',
-        () => this.conv2dDerInputInternal(dy, filter, convInfo));
+    return this.track(this.profiler.profile(
+        'conv2dDerInput', {dy, filter},
+        () => this.conv2dDerInputInternal(dy, filter, convInfo)));
   }
   protected abstract conv2dDerInputInternal(
       dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D;
@@ -1802,8 +1665,8 @@ export abstract class NDArrayMath {
    *
    * Given a 4D `input` array and a `filter` array of shape
    * `[filterHeight, filterWidth, inChannels, channelMultiplier]` containing
-   * `inChannels` convolutional filters of depth 1, this op applies a different
-   * filter to each input channel (expanding from 1 channel to
+   * `inChannels` convolutional filters of depth 1, this op applies a
+   * different filter to each input channel (expanding from 1 channel to
    * `channelMultiplier` channels for each), then concatenates the results
    * together. The output has `inChannels * channelMultiplier` channels.
    *
@@ -1811,11 +1674,13 @@ export abstract class NDArrayMath {
    * more details.
    *
    * @param input4D The input ndarray, of rank 4 or rank 3, of shape
-   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
+   * assumed.
    * @param filter The filter ndarray, rank 4, of shape
    *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`.
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
-   *     If strides is a single number, then `strideHeight == strideWidth`.
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth]. If strides is a single number, then `strideHeight ==
+   * strideWidth`.
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    *   - 'same' pad and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -1826,8 +1691,8 @@ export abstract class NDArrayMath {
    * @param rates The dilation rates: `[rateHeight, rateWidth]` in which we
    *     sample input values across the height and width dimensions in atrous
    *     convolution. Defaults to `[1, 1]`. If `rate` is a single number, then
-   *     `rateHeight == rateWidth`. If it is greater than 1, then all values of
-   *     `strides` must be 1.
+   *     `rateHeight == rateWidth`. If it is greater than 1, then all values
+   * of `strides` must be 1.
    */
   depthwiseConv2D(
       input: Array3D|Array4D, filter: Array4D, strides: [number, number]|number,
@@ -1861,13 +1726,14 @@ export abstract class NDArrayMath {
 
     const convInfo = conv_util.computeDepthwiseConv2DInfo(
         input4D.shape, filter.shape, strides, pad);
-    return this.executeOp('depthwiseConv2D', () => {
-      const res = this.depthwiseConv2DInternal(input4D, filter, convInfo);
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
-      }
-      return res;
-    });
+    return this.track(
+        this.profiler.profile('depthwiseConv2D', {input, filter}, () => {
+          const res = this.depthwiseConv2DInternal(input4D, filter, convInfo);
+          if (reshapedTo4D) {
+            return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+          }
+          return res;
+        }));
   }
   protected abstract depthwiseConv2DInternal(
       input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D;
@@ -1898,7 +1764,8 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp('maxPool', () => this.maxPoolInternal(x, convInfo));
+    return this.track(this.profiler.profile(
+        'maxPool', {x}, () => this.maxPoolInternal(x, convInfo)));
   }
   protected abstract maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
@@ -1929,8 +1796,9 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp(
-        'maxPoolBackprop', () => this.maxPoolBackpropInternal(dy, x, convInfo));
+    return this.track(this.profiler.profile(
+        'maxPoolBackprop', {dy, x},
+        () => this.maxPoolBackpropInternal(dy, x, convInfo)));
   }
   protected abstract maxPoolBackpropInternal(
       dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D;
@@ -1961,8 +1829,11 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp('minPool', () => this.minPoolInternal(x, convInfo));
+
+    return this.track(this.profiler.profile(
+        'minPool', {x}, () => this.minPoolInternal(x, convInfo)));
   }
+
   protected abstract minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
@@ -1991,7 +1862,8 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp('avgPool', () => this.avgPoolInternal(x, convInfo));
+    return this.track(this.profiler.profile(
+        'avgPool', {x}, () => this.avgPoolInternal(x, convInfo)));
   }
   protected abstract avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
@@ -2014,9 +1886,9 @@ export abstract class NDArrayMath {
         newShape2D.length === 2,
         `Error in resizeBilinear3D: new shape must 2D, but got shape ` +
             `${newShape2D}.`);
-    return this.executeOp(
-        'resizeBilinear3D',
-        () => this.resizeBilinear3DInternal(x, newShape2D, alignCorners));
+    return this.track(this.profiler.profile(
+        'resizeBilinear3D', {x},
+        () => this.resizeBilinear3DInternal(x, newShape2D, alignCorners)));
   }
   protected abstract resizeBilinear3DInternal(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
@@ -2062,10 +1934,10 @@ export abstract class NDArrayMath {
               `but got rank ${offset.rank}.`);
     }
 
-    return this.executeOp(
-        'batchNorm2D',
+    return this.track(this.profiler.profile(
+        'batchNorm2D', {x, mean, variance, scale, offset},
         () => this.batchNormalization2DInternal(
-            x, mean, variance, varianceEpsilon, scale, offset));
+            x, mean, variance, varianceEpsilon, scale, offset)));
   }
   protected abstract batchNormalization2DInternal(
       x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
@@ -2113,10 +1985,10 @@ export abstract class NDArrayMath {
               `but got rank ${offset.rank}.`);
     }
 
-    return this.executeOp(
-        'batchNorm3D',
+    return this.track(this.profiler.profile(
+        'batchNorm3D', {x, mean, variance, scale, offset},
         () => this.batchNormalization3DInternal(
-            x, mean, variance, varianceEpsilon, scale, offset));
+            x, mean, variance, varianceEpsilon, scale, offset)));
   }
   protected abstract batchNormalization3DInternal(
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
@@ -2141,25 +2013,35 @@ export abstract class NDArrayMath {
   multiRNNCell(
       lstmCells: LSTMCell[], data: Array2D, c: Array2D[],
       h: Array2D[]): [Array2D[], Array2D[]] {
-    const res = this.scope(() => {
-      let input = data;
-      const newStates = [];
-      for (let i = 0; i < lstmCells.length; i++) {
-        const output = lstmCells[i](input, c[i], h[i]);
-        newStates.push(output[0]);
-        newStates.push(output[1]);
-        input = output[1];
-      }
-
-      return newStates;
-    });
-    const newC: Array2D[] = [];
-    const newH: Array2D[] = [];
-    for (let i = 0; i < res.length; i += 2) {
-      newC.push(res[i]);
-      newH.push(res[i + 1]);
+    const args: {[key: string]: NDArray} = {data};
+    for (let i = 0; i < c.length; i++) {
+      args['c' + i] = c[i];
     }
-    return [newC, newH];
+    for (let i = 0; i < h.length; i++) {
+      args['h' + i] = h[i];
+    }
+
+    return this.track(this.profiler.profile('multiRNNCell', args, () => {
+      const res = this.scope(() => {
+        let input = data;
+        const newStates = [];
+        for (let i = 0; i < lstmCells.length; i++) {
+          const output = lstmCells[i](input, c[i], h[i]);
+          newStates.push(output[0]);
+          newStates.push(output[1]);
+          input = output[1];
+        }
+
+        return newStates;
+      });
+      const newC: Array2D[] = [];
+      const newH: Array2D[] = [];
+      for (let i = 0; i < res.length; i += 2) {
+        newC.push(res[i]);
+        newH.push(res[i + 1]);
+      }
+      return [newC, newH];
+    }) as [Array2D[], Array2D[]]);
   }
 
   /**
@@ -2177,29 +2059,33 @@ export abstract class NDArrayMath {
   basicLSTMCell(
       forgetBias: Scalar, lstmKernel: Array2D, lstmBias: Array1D, data: Array2D,
       c: Array2D, h: Array2D): [Array2D, Array2D] {
-    const res = this.scope(() => {
-      const combined = this.concat2D(data, h, 1);
-      const weighted = this.matMul(combined, lstmKernel);
-      const res = this.add(weighted, lstmBias) as Array2D;
+    const args = {forgetBias, lstmKernel, lstmBias, data, c, h};
+    return this.track(this.profiler.profile('basicLSTMCell', args, () => {
+      const res = this.scope(() => {
+        const combined = this.concat2D(data, h, 1);
+        const weighted = this.matMul(combined, lstmKernel);
+        const res = this.add(weighted, lstmBias) as Array2D;
 
-      // i = input_gate, j = new_input, f = forget_gate, o = output_gate
-      const batchSize = res.shape[0];
-      const sliceCols = res.shape[1] / 4;
-      const sliceSize: [number, number] = [batchSize, sliceCols];
-      const i = this.slice2D(res, [0, 0], sliceSize);
-      const j = this.slice2D(res, [0, sliceCols], sliceSize);
-      const f = this.slice2D(res, [0, sliceCols * 2], sliceSize);
-      const o = this.slice2D(res, [0, sliceCols * 3], sliceSize);
+        // i = input_gate, j = new_input, f = forget_gate, o =
+        // output_gate
+        const batchSize = res.shape[0];
+        const sliceCols = res.shape[1] / 4;
+        const sliceSize: [number, number] = [batchSize, sliceCols];
+        const i = this.slice2D(res, [0, 0], sliceSize);
+        const j = this.slice2D(res, [0, sliceCols], sliceSize);
+        const f = this.slice2D(res, [0, sliceCols * 2], sliceSize);
+        const o = this.slice2D(res, [0, sliceCols * 3], sliceSize);
 
-      const newC = this.addStrict(
-          this.multiplyStrict(
-              c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
-          this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
-      const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
+        const newC = this.addStrict(
+            this.multiplyStrict(
+                c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+            this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
+        const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
 
-      return [newC, newH];
-    });
-    return [res[0], res[1]];
+        return [newC, newH];
+      });
+      return [res[0], res[1]];
+    }) as [Array2D, Array2D]);
   }
 
   /**
@@ -2231,14 +2117,15 @@ export abstract class NDArrayMath {
     if (probabilities.rank === 1) {
       probabilities = probabilities.as2D(1, -1);
     }
-    return this.executeOp('multinomial', () => {
-      const res =
-          this.multinomialInternal(probabilities as Array2D, numSamples, seed);
-      if (origRank === 1) {
-        return res.as1D();
-      }
-      return res;
-    });
+    return this.track(
+        this.profiler.profile('multinomial', {probabilities}, () => {
+          const res = this.multinomialInternal(
+              probabilities as Array2D, numSamples, seed);
+          if (origRank === 1) {
+            return res.as1D();
+          }
+          return res;
+        }));
   }
   protected abstract multinomialInternal(
       probabilities: Array2D, numSamples: number,
@@ -2260,8 +2147,9 @@ export abstract class NDArrayMath {
     if (depth < 2) {
       throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
     }
-    return this.executeOp(
-        'oneHot', () => this.oneHotInternal(indices, depth, onValue, offValue));
+    return this.track(this.profiler.profile(
+        'oneHot', {indices},
+        () => this.oneHotInternal(indices, depth, onValue, offValue)));
   }
   protected abstract oneHotInternal(
       indices: Array1D, depth: number, onValue: number,
@@ -2293,7 +2181,7 @@ export abstract class NDArrayMath {
       const variance = this.mean(devSquared, axes, keepDims);
       return {mean, variance};
     });
-    return result;
+    return this.track(result);
   }
 }
 

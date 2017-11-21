@@ -856,9 +856,9 @@ deeplearn-squeezenet@~0.1.2:
   dependencies:
     deeplearn "~0.3.7"
 
-deeplearn@~0.3.11, deeplearn@~0.3.7:
+"deeplearn@file:../deeplearn-0.3.11.tgz", deeplearn@~0.3.7:
   version "0.3.11"
-  resolved "https://registry.yarnpkg.com/deeplearn/-/deeplearn-0.3.11.tgz#b851281158da16d6745f490dc6ae8c9db851bc03"
+  resolved "file:../deeplearn-0.3.11.tgz#07da05e2cc60c50e92934449ee599c506b64ba4c"
   dependencies:
     seedrandom "~2.4.3"
 

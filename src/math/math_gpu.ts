@@ -16,13 +16,16 @@
  */
 
 import * as util from '../util';
+
 import * as axis_util from './axis_util';
 import {ConvInfo, DepthwiseConvInfo} from './conv_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Profiler} from './profiler';
 import * as reduce_util from './reduce_util';
+import {WebGLTimer} from './timer';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -61,7 +64,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   private gpgpuCreatedLocally: boolean;
 
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
-    super(safeMode);
+    super(safeMode, new Profiler(new WebGLTimer()));
+
     if (gpgpu == null) {
       const gl = gpgpu_util.createWebGLContext();
       this.gpgpu = new GPGPUContext(gl);
@@ -70,6 +74,10 @@ export class NDArrayMathGPU extends NDArrayMath {
       this.gpgpu = gpgpu;
       this.gpgpuCreatedLocally = false;
     }
+
+    // TODO(nsthorat): Move all of this to a default timer when we have a
+    // default GPU math object.
+    (this.profiler.getTimer() as WebGLTimer).setGPGPUContext(this.gpgpu);
 
     this.textureManager = new TextureManager(this.gpgpu);
 
@@ -592,20 +600,6 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   getTextureManager(): TextureManager {
     return this.textureManager;
-  }
-
-  protected startTimer(): {} {
-    // Cancel any existing timers as the timing will get bubbled up.
-    this.gpgpu.maybeCancelQuery();
-    return this.gpgpu.beginQuery();
-  }
-
-  protected endTimer() {  //} Promise<number>|null {
-    return this.gpgpu.maybeEndQuery();
-  }
-
-  protected getTime(query: {}): Promise<number>|null {
-    return this.gpgpu.getTime(query as WebGLQuery);
   }
 
   dispose() {

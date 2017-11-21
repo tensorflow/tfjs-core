@@ -53,6 +53,9 @@ export interface NDArrayData<T extends keyof DataTypes> {
   isDisposed?: boolean;
 }
 
+export type NDArrayObject<G extends keyof DataTypes> = NDArray<G>|
+    Array<NDArray<G>>|Array<Array<NDArray<G>>>|{[key: string]: NDArray<G>};
+
 /** @hidden */
 export function initializeGPU(
     gpgpu: GPGPUContext, textureManager: TextureManager) {
@@ -870,7 +873,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
 }
 
 function copyTypedArray<T extends keyof DataTypes>(
-    array: DataTypes[T] | number[] | boolean[], dtype: T): DataTypes[T] {
+    array: DataTypes[T]|number[]|boolean[], dtype: T): DataTypes[T] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
