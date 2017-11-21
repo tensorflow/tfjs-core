@@ -1455,7 +1455,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 0.75, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 1D of random normal values KREEGER', () => {
+  it('should return a int32 1D of random normal values', () => {
     const SAMPLES = 1000;
     const result = NDArray.randNormal([SAMPLES], 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
@@ -1463,16 +1463,6 @@ test_util.describeCustom('NDArray.randNormal', () => {
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(
         result.getValues(), 0, 2, EPSILON_NONFLOAT);
-  });
-
-  it('should return a bool 1D of random normal values', () => {
-    const SAMPLES = 1000;
-    const result = NDArray.randNormal([SAMPLES], 0, 1, 'bool');
-    expect(result.dtype).toBe('bool');
-    expect(result.shape).toEqual([SAMPLES]);
-    test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1, EPSILON_NONFLOAT);
   });
 
   it('should return a float32 2D of random normal values', () => {
@@ -1494,7 +1484,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 2D of random normal values', () => {
+  it('should return a int32 2D of random normal values KREEGER', () => {
     const SAMPLES = 100;
     const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
@@ -1502,16 +1492,6 @@ test_util.describeCustom('NDArray.randNormal', () => {
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(
         result.getValues(), 0, 2, EPSILON_NONFLOAT);
-  });
-
-  it('should return a bool 2D of random normal values', () => {
-    const SAMPLES = 100;
-    const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 1, 'bool');
-    expect(result.dtype).toBe('bool');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES]);
-    test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1, EPSILON_NONFLOAT);
   });
 
   it('should return a float32 3D of random normal values', () => {
@@ -1533,7 +1513,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 3D of random normal values', () => {
+  it('should return a int32 3D of random normal values KREEGER', () => {
     const SAMPLES = 50;
     const result =
         Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32');
@@ -1542,17 +1522,6 @@ test_util.describeCustom('NDArray.randNormal', () => {
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(
         result.getValues(), 0, 2, EPSILON_NONFLOAT);
-  });
-
-  it('should return a bool 3D of random normal values', () => {
-    const SAMPLES = 50;
-    const result =
-        Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 1, 'bool');
-    expect(result.dtype).toBe('bool');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
-    test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1, EPSILON_NONFLOAT);
   });
 
   it('should return a float32 4D of random normal values', () => {
@@ -1575,7 +1544,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 4D of random normal values', () => {
+  it('should return a int32 4D of random normal values KREEGER', () => {
     const SAMPLES = 25;
 
     const result =
@@ -1585,18 +1554,6 @@ test_util.describeCustom('NDArray.randNormal', () => {
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(
         result.getValues(), 0, 2, EPSILON_NONFLOAT);
-  });
-
-  it('should return a bool 4D of random normal values', () => {
-    const SAMPLES = 25;
-
-    const result =
-        Array4D.randNormal([SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 1, 'bool');
-    expect(result.dtype).toBe('bool');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
-    test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1, EPSILON_NONFLOAT);
   });
 });
 

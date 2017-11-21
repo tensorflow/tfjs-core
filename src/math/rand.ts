@@ -24,23 +24,19 @@ export class MPRandGauss implements RandGauss {
   private stdDev: number;
   private nextVal: number;
   private dtype?: keyof DataTypes;
-  private truncated?: boolean;
 
-  constructor(
-      mean: number, stdDeviation: number, dtype?: keyof DataTypes,
-      truncated?: false) {
+  constructor(mean: number, stdDeviation: number, dtype?: keyof DataTypes) {
     this.mean = mean;
     this.stdDev = stdDeviation;
     this.dtype = dtype;
-    this.truncated = truncated;
-    this.nextVal = -1;
+    this.nextVal = NaN;
   }
 
   /** Returns next sample from a gaussian distribution. */
   public nextValue(): number {
-    if (this.nextVal !== -1) {
+    if (!isNaN(this.nextVal)) {
       const value = this.nextVal;
-      this.nextVal = -1;
+      this.nextVal = NaN;
       return value;
     }
 
@@ -54,10 +50,7 @@ export class MPRandGauss implements RandGauss {
     const resultX = Math.sqrt(-2 * Math.log(s) / s) * v1;
     const resultY = Math.sqrt(-2 * Math.log(s) / s) * v2;
 
-    // TODO(kreeger): Figure this part out?
-    if (this.truncated && Math.abs(resultX) > 2) {
-      // return randGauss(mean, stdDev, true);
-    }
+    // TODO(kreeger): Handle truncated random generation.
     this.nextVal = this.convertValue(this.mean + this.stdDev * resultY);
     return this.convertValue(this.mean + this.stdDev * resultX);
   }
