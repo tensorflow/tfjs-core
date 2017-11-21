@@ -27,17 +27,13 @@ export interface ActivationFunction {
 
 export class TanHFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.tanh(x);
-    });
+    return math.tanh(x);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.scope(() => {
-      const ySquared = math.elementWiseMul(y, y);
-      // 1 - y^2.
-      return math.scalarMinusArray(Scalar.ONE, ySquared);
-    });
+    const ySquared = math.elementWiseMul(y, y);
+    // 1 - y^2.
+    return math.scalarMinusArray(Scalar.ONE, ySquared);
   }
 
   dispose() {}
@@ -45,15 +41,11 @@ export class TanHFunc implements ActivationFunction {
 
 export class ReLUFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.relu(x);
-    });
+    return math.relu(x);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.scope(() => {
-      return math.step(x);
-    });
+    return math.step(x);
   }
 
   dispose() {}
@@ -79,17 +71,13 @@ export class LeakyReluFunc implements ActivationFunction {
 
 export class SigmoidFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.sigmoid(x);
-    });
+    return math.sigmoid(x);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T): T {
-    return math.scope(() => {
-      // y * (1 - y) = y - y^2
-      const ySquared = math.elementWiseMul(y, y);
-      return math.subStrict(y, ySquared);
-    });
+    // y * (1 - y) = y - y^2
+    const ySquared = math.elementWiseMul(y, y);
+    return math.subStrict(y, ySquared);
   }
 
   dispose() {}
@@ -97,16 +85,12 @@ export class SigmoidFunc implements ActivationFunction {
 
 export class SquareFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.elementWiseMul(x, x);
-    });
+    return math.elementWiseMul(x, x);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.scope(() => {
-      // dy/dx = 2*x.
-      return math.scalarTimesArray(Scalar.TWO, x);
-    });
+    // dy/dx = 2*x.
+    return math.scalarTimesArray(Scalar.TWO, x);
   }
 
   dispose() {}
