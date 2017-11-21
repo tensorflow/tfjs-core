@@ -1434,7 +1434,7 @@ test_util.describeCustom('NDArray.rand', () => {
 // NDArray.randNormal
 test_util.describeCustom('NDArray.randNormal', () => {
   const EPSILON_FLOAT32 = 0.05;
-  const EPSILON_NONFLOAT = 0.25;
+  const EPSILON_NONFLOAT = 0.10;
 
   it('should return a float32 1D of random normal values', () => {
     const SAMPLES = 1000;
@@ -1457,12 +1457,12 @@ test_util.describeCustom('NDArray.randNormal', () => {
 
   it('should return a int32 1D of random normal values', () => {
     const SAMPLES = 1000;
-    const result = NDArray.randNormal([SAMPLES], 0, 2, 'int32');
+    const result = NDArray.randNormal([SAMPLES], 0, 1, 'int32');
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 2, EPSILON_NONFLOAT);
+        result.getValues(), 0, 1, EPSILON_NONFLOAT);
   });
 
   it('should return a float32 2D of random normal values', () => {
