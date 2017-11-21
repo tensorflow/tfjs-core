@@ -18,10 +18,12 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import {ArrayData, TypedArray} from '../util';
+import {MPRandGauss} from './rand';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import {TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import * as webgl_util from './webgl/webgl_util';
+
 
 // These global variables need to be initialized to null so that closure knows
 // not to seal them.
@@ -477,7 +479,8 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   static randNormal<T extends keyof DataTypes>(
       shape: number[], mean = 0, stdDev = 1, dtype?: T): NDArray<T> {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev), dtype);
+    const randGauss = new MPRandGauss(mean, stdDev, dtype);
+    return NDArray.rand(shape, () => randGauss.nextValue(), dtype);
   }
 
   // TODO(kreeger): Write tests and convert type here.
@@ -601,7 +604,8 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
 
   static randNormal<T extends keyof DataTypes>(
       shape: [number], mean = 0, stdDev = 1, dtype?: T): Array1D<T> {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev), dtype) as
+    const randGauss = new MPRandGauss(mean, stdDev, dtype);
+    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
         Array1D<T>;
   }
 
@@ -684,7 +688,8 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
 
   static randNormal<T extends keyof DataTypes>(
       shape: [number, number], mean = 0, stdDev = 1, dtype?: T): Array2D<T> {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev), dtype) as
+    const randGauss = new MPRandGauss(mean, stdDev, dtype);
+    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
         Array2D<T>;
   }
 
@@ -771,7 +776,8 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
   static randNormal<T extends keyof DataTypes>(
       shape: [number, number, number], mean = 0, stdDev = 1,
       dtype?: T): Array3D<T> {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev), dtype) as
+    const randGauss = new MPRandGauss(mean, stdDev, dtype);
+    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
         Array3D<T>;
   }
 
@@ -869,7 +875,8 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
   static randNormal<T extends keyof DataTypes>(
       shape: [number, number, number, number], mean = 0, stdDev = 1,
       dtype?: T): Array4D<T> {
-    return NDArray.rand(shape, () => util.randGauss(mean, stdDev), dtype) as
+    const randGauss = new MPRandGauss(mean, stdDev, dtype);
+    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
         Array4D<T>;
   }
 
