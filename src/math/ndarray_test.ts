@@ -1496,12 +1496,12 @@ test_util.describeCustom('NDArray.randNormal', () => {
 
   it('should return a int32 2D of random normal values', () => {
     const SAMPLES = 100;
-    const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 0.5, 'int32');
+    const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 0.5, EPSILON_NONFLOAT);
+        result.getValues(), 0, 2, EPSILON_NONFLOAT);
   });
 
   it('should return a bool 2D of random normal values', () => {
@@ -1632,82 +1632,82 @@ test_util.describeCustom('NDArray.randUniform', () => {
   });
 
   it('should return a random 2D float32 array', () => {
-    const shape: [number] = [3, 4];
+    const shape: [number, number] = [3, 4];
 
     // Enusre defaults to float32 w/o type:
-    let result = NDArray.randUniform(shape, 0, 2.5);
+    let result = Array2D.randUniform(shape, 0, 2.5);
     expect(result.dtype).toBe('float32');
     test_util.expectValuesInRange(result.getValues(), 0, 2.5);
 
-    result = NDArray.randUniform(shape, 0, 1.5, 'float32');
+    result = Array2D.randUniform(shape, 0, 1.5, 'float32');
     expect(result.dtype).toBe('float32');
     test_util.expectValuesInRange(result.getValues(), 0, 1.5);
   });
 
   it('should return a random 2D int32 array', () => {
-    const shape: [number] = [3, 4];
-    let result = NDArray.randUniform(shape, 0, 2, 'int32');
+    const shape: [number, number] = [3, 4];
+    let result = Array2D.randUniform(shape, 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
     test_util.expectValuesInRange(result.getValues(), 0, 2);
   });
 
   it('should return a random 2D bool array', () => {
-    const shape: [number] = [3, 4];
-    let result = NDArray.randUniform(shape, 0, 1, 'bool');
+    const shape: [number, number] = [3, 4];
+    let result = Array2D.randUniform(shape, 0, 1, 'bool');
     expect(result.dtype).toBe('bool');
     test_util.expectValuesInRange(result.getValues(), 0, 1);
   });
 
   it('should return a random 3D float32 array', () => {
-    const shape: [number] = [3, 4, 5];
+    const shape: [number, number, number] = [3, 4, 5];
 
     // Enusre defaults to float32 w/o type:
-    let result = NDArray.randUniform(shape, 0, 2.5);
+    let result = Array3D.randUniform(shape, 0, 2.5);
     expect(result.dtype).toBe('float32');
     test_util.expectValuesInRange(result.getValues(), 0, 2.5);
 
-    result = NDArray.randUniform(shape, 0, 1.5, 'float32');
+    result = Array3D.randUniform(shape, 0, 1.5, 'float32');
     expect(result.dtype).toBe('float32');
     test_util.expectValuesInRange(result.getValues(), 0, 1.5);
   });
 
   it('should return a random 3D int32 array', () => {
-    const shape: [number] = [3, 4, 5];
-    const result = NDArray.randUniform(shape, 0, 2, 'int32');
+    const shape: [number, number, number] = [3, 4, 5];
+    const result = Array3D.randUniform(shape, 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
     test_util.expectValuesInRange(result.getValues(), 0, 2);
   });
 
   it('should return a random 3D bool array', () => {
-    const shape: [number] = [3, 4, 5];
-    const result = NDArray.randUniform(shape, 0, 1, 'bool');
+    const shape: [number, number, number] = [3, 4, 5];
+    const result = Array3D.randUniform(shape, 0, 1, 'bool');
     expect(result.dtype).toBe('bool');
     test_util.expectValuesInRange(result.getValues(), 0, 1);
   });
 
   it('should return a random 4D float32 array', () => {
-    const shape: [number] = [3, 4, 5, 6];
+    const shape: [number, number, number, number] = [3, 4, 5, 6];
 
     // Enusre defaults to float32 w/o type:
-    let result = NDArray.randUniform(shape, 0, 2.5);
+    let result = Array4D.randUniform(shape, 0, 2.5);
     expect(result.dtype).toBe('float32');
     test_util.expectValuesInRange(result.getValues(), 0, 2.5);
 
-    result = NDArray.randUniform(shape, 0, 1.5, 'float32');
+    result = Array4D.randUniform(shape, 0, 1.5, 'float32');
     expect(result.dtype).toBe('float32');
     test_util.expectValuesInRange(result.getValues(), 0, 1.5);
   });
 
   it('should return a random 4D int32 array', () => {
-    const shape: [number] = [3, 4, 5, 6];
-    const result = NDArray.randUniform(shape, 0, 2, 'int32');
+    const shape: [number, number, number, number] = [3, 4, 5, 6];
+    const result = Array4D.randUniform(shape, 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
     test_util.expectValuesInRange(result.getValues(), 0, 2);
   });
 
   it('should return a random 4D bool array', () => {
-    const shape: [number] = [3, 4, 5, 6];
-    const result = NDArray.randUniform(shape, 0, 1, 'bool');
+    const shape: [number, number, number, number] = [3, 4, 5, 6];
+    const result = Array4D.randUniform(shape, 0, 1, 'bool');
     expect(result.dtype).toBe('bool');
     test_util.expectValuesInRange(result.getValues(), 0, 1);
   });
