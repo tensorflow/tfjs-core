@@ -23,8 +23,6 @@ import {BoundingBox} from './mobilenet_utils';
 export class MobileNet implements Model {  
   private variables: {[varName: string]: NDArray};
 
-  private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
-
   // yolo variables
   private HALF_TWO_FIVE_FIVE  = Scalar.new(255.0/2);
   private ONE = Scalar.ONE;
@@ -96,7 +94,7 @@ export class MobileNet implements Model {
     });
 
     return netout;
-    } 
+  } 
 
   private convBlock(inputs: Array3D, strides: [number, number]) { 
 
@@ -132,7 +130,7 @@ export class MobileNet implements Model {
                                               this.variables['conv_dw_' + blockID + '_bn/gamma'] as Array1D,
                                               this.variables['conv_dw_' + blockID + '_bn/beta'] as Array1D);
 
-    const x3 = this.math.clip(x2, 0, 6)
+    const x3 = this.math.clip(x2, 0, 6);
 
     const x4 = this.math.conv2d(x3,
                                 this.variables['conv_pw_' + blockID + '/kernel'] as Array4D,
@@ -147,7 +145,7 @@ export class MobileNet implements Model {
                                               this.variables['conv_pw_' + blockID + '_bn/gamma'] as Array1D,
                                               this.variables['conv_pw_' + blockID + '_bn/beta'] as Array1D);
 
-    return this.math.clip(x5, 0, 6)
+    return this.math.clip(x5, 0, 6);
   }
 
   async interpretNetout(netout: Array4D): Promise<BoundingBox[]> { 
@@ -156,10 +154,11 @@ export class MobileNet implements Model {
     const boxes: BoundingBox[] = [];
 
     CLASS = CLASS - 5;
+    // adjust confidence predictions
+    var confidence = this.math.sigmoid(this.math.slice4D(netout, [0, 0, 0, 4], [GRID_H, GRID_W, BOX, 1]));
 
-    var confidence = this.math.sigmoid(this.math.slice4D(netout, [0, 0, 0, 4], [GRID_H, GRID_W, BOX, 1]))
-    var classes = this.math.softmax(this.math.slice4D(netout, [0, 0, 0, 5], [GRID_H, GRID_W, BOX, CLASS]))
-
+    // adjust class prediction
+    var classes = this.math.softmax(this.math.slice4D(netout, [0, 0, 0, 5], [GRID_H, GRID_W, BOX, CLASS]));
     classes = this.math.multiply(classes, confidence) as Array4D;
     const mask = this.math.step(this.math.relu(this.math.subtract(classes, this.THRESHOLD_SCALAR)));
     classes = this.math.multiply(classes, mask) as Array4D;
@@ -171,16 +170,14 @@ export class MobileNet implements Model {
       if (objectLikelihoodValues[i] > 0) {
         var [row, col, box] = objectLikelihood.indexToLoc(i);
 
-        const conf = confidence.get(row, col, box, 0)
+        const conf = confidence.get(row, col, box, 0);
         const probs = this.math.slice4D(classes, [row, col, box, 0], [1, 1, 1, CLASS]).getValues() as Float32Array;
-
         var xywh = this.math.slice4D(netout, [row, col, box, 0], [1, 1, 1, 4]).getValues();
 
         var x = xywh[0];
         var y = xywh[1];
         var w = xywh[2];
         var h = xywh[3];
-        
         x = (col + this.sigmoid(x)) / GRID_W;
         y = (row + this.sigmoid(y)) / GRID_H;
         w = this.ANCHORS[2 * box + 0] * Math.exp(w) / GRID_W;
@@ -190,51 +187,22 @@ export class MobileNet implements Model {
       }
     }
 
-    /*for (var row = 0; row < GRID_H; row++) {
-      for (var col = 0; col < GRID_W; col++) {
-        for (var box = 0; box < BOX; box++) {
-          const l_bound = netout.locToIndex([row, col, box, 0]);
-          // get and adjust the confidence of the box
-          var confidence = this.math.sigmoid(this.math.slice4D(netout, [row, col, box, 4], [1, 1, 1, 1])).flatten();
-
-          // get and adjust class likelihoods
-          var classes = this.math.slice4D(netout, [row, col, box, 5], [1, 1, 1, CLASS]).flatten();
-          classes = this.math.multiply(this.math.softmax(classes), confidence).flatten();
-          const mask = this.math.step(this.math.relu(this.math.subtract(classes, this.THRESHOLD_SCALAR)));
-          classes = this.math.multiply(classes, mask).flatten();
-
-          const objectLikelihood = this.math.sum(classes).getValues()[0];
-
-          if (objectLikelihood > 0) {
-            var x = values[l_bound];
-            var y = values[l_bound+1];
-            var w = values[l_bound+2];
-            var h = values[l_bound+3];
-            
-            x = (col + this.sigmoid(x)) / GRID_W;
-            y = (row + this.sigmoid(y)) / GRID_H;
-            w = this.ANCHORS[2 * box + 0] * Math.exp(w) / GRID_W;
-            h = this.ANCHORS[2 * box + 1] * Math.exp(h) / GRID_H;
-
-            boxes.push(new BoundingBox(x, y, w, h, confidence.getValues()[0], classes.getValues() as Float32Array));
-          }
-        }
-      }
-    }*/
-
     // suppress nonmaximal boxes
     for (var cls = 0; cls < CLASS; cls++) {
-      const all_probs = boxes.map((box) => box.probs[cls])
+      const all_probs = boxes.map((box) => box.probs[cls]);
       var indices = new Array(all_probs.length);
 
-      for (var i = 0; i < all_probs.length; ++i) indices[i] = i;
-      indices.sort((a,b) => {return all_probs[a] > all_probs[b] ? 1 : 0});
+      for (var i = 0; i < all_probs.length; ++i) {
+        indices[i] = i;
+      }
+
+      indices.sort((a,b) => all_probs[a] > all_probs[b] ? 1 : 0);
 
       for (var i = 0; i < all_probs.length; i++) {
         const index_i = indices[i];
 
-        if (boxes[index_i].probs[cls] == 0) {
-          continue
+        if (boxes[index_i].probs[cls] === 0) {
+          continue;
         } else {
           for (var j = i+1; j < all_probs.length; j++){
             const index_j = indices[j];
@@ -249,7 +217,7 @@ export class MobileNet implements Model {
     }  
 
     // obtain the most likely boxes
-    var likelyBoxes = []
+    var likelyBoxes = [];
 
     for (let box of boxes) {
       if (box.getMaxProb() > this.THRESHOLD) { 
@@ -257,7 +225,7 @@ export class MobileNet implements Model {
       }
     }
 
-    return likelyBoxes
+    return likelyBoxes;
   }
 
   private sigmoid(x: number): number {
@@ -265,7 +233,6 @@ export class MobileNet implements Model {
   }    
 
   dispose() {
-    this.preprocessOffset.dispose();
     for (const varName in this.variables) {
       this.variables[varName].dispose();
     }
