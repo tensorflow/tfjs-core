@@ -17,12 +17,13 @@
 
 import * as util from '../util';
 import {TypedArray} from '../util';
+
 import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {ConvInfo, DepthwiseConvInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
+import {NDArrayMathBackend} from './math_backend';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
@@ -60,7 +61,7 @@ export abstract class NDArrayMath {
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(private safeMode: boolean) {}
+  constructor(private backend: NDArrayMathBackend, private safeMode: boolean) {}
 
   /**
    * Create a new math scope. Put chained math operations inside a scope
@@ -268,7 +269,7 @@ export abstract class NDArrayMath {
             ` and ${MatrixOrientation[bOrientation]} must match.`);
 
     return this.executeOp(
-        'matMul', () => this.matMulInternal(a, b, aOrientation, bOrientation));
+        'matMul', () => this.backend.matMul(a, b, aOrientation, bOrientation));
   }
 
   private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
@@ -293,10 +294,6 @@ export abstract class NDArrayMath {
     return this.track(result);
   }
 
-  protected abstract matMulInternal(
-      a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
-      bOrientation: MatrixOrientation): Array2D;
-
   /**
    * Computes the dot product of a vector and a matrix, v * B.
    * @param v The vector in dot product operation.
@@ -316,7 +313,7 @@ export abstract class NDArrayMath {
         `Error in vectorTimesMatrix: size of vector (${v.size}) ` +
             `must match first dimension of matrix (${matrix.shape[0]})`);
 
-    return this.matMul(v.as2D(1, -1), matrix).as1D();
+    return this.backend.matMul(v.as2D(1, -1), matrix).as1D();
   }
 
   /**
@@ -339,7 +336,7 @@ export abstract class NDArrayMath {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
+    return this.backend.matMul(matrix, v.as2D(-1, 1)).as1D();
   }
 
   /**
@@ -356,7 +353,7 @@ export abstract class NDArrayMath {
         v1.size === v2.size,
         `Error in dotProduct: size of inputs (${v1.size}) and (` +
             `${v2.size}) must match.`);
-    return this.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
+    return this.backend.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
   }
 
   /**
@@ -370,7 +367,7 @@ export abstract class NDArrayMath {
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +
             `${v1.rank} and ${v2.rank}.`);
 
-    return this.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
+    return this.backend.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
   }
 
   ///////////////
@@ -382,9 +379,8 @@ export abstract class NDArrayMath {
    * @param ndarray The NDArray to clone.
    */
   clone<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('clone', () => this.cloneInternal(ndarray));
+    return this.executeOp('clone', () => this.backend.clone(ndarray));
   }
-  protected abstract cloneInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * @deprecated Please call reshape() directly on the ndarray object.
@@ -408,10 +404,8 @@ export abstract class NDArrayMath {
   slice1D(input: Array1D, begin: number, size: number): Array1D {
     slice_util.assertParamsValid(input, [begin], [size]);
     return this.executeOp(
-        'slice1D', () => this.slice1DInternal(input, begin, size));
+        'slice1D', () => this.backend.slice1D(input, begin, size));
   }
-  protected abstract slice1DInternal(
-      input: Array1D, begin: number, size: number): Array1D;
 
   /**
    * Extracts a 2D slice from a 2D array starting at coordinates `begin` and
@@ -425,10 +419,8 @@ export abstract class NDArrayMath {
       Array2D {
     slice_util.assertParamsValid(input, begin, size);
     return this.executeOp(
-        'slice2D', () => this.slice2DInternal(input, begin, size));
+        'slice2D', () => this.backend.slice2D(input, begin, size));
   }
-  protected abstract slice2DInternal(
-      input: Array2D, begin: [number, number], size: [number, number]): Array2D;
 
   /**
    * Extracts a 3D slice from a 3D array starting at coordinates `begin` and
@@ -443,11 +435,8 @@ export abstract class NDArrayMath {
   ]): Array3D {
     slice_util.assertParamsValid(input, begin, size);
     return this.executeOp(
-        'slice3D', () => this.slice3DInternal(input, begin, size));
+        'slice3D', () => this.backend.slice3D(input, begin, size));
   }
-  protected abstract slice3DInternal(
-      input: Array3D, begin: [number, number, number],
-      size: [number, number, number]): Array3D;
 
   /**
    * Extracts a 4D slice from a 4D array starting at coordinates `begin` and
@@ -463,11 +452,8 @@ export abstract class NDArrayMath {
   ]): Array4D {
     slice_util.assertParamsValid(input, begin, size);
     return this.executeOp(
-        'slice4D', () => this.slice4DInternal(input, begin, size));
+        'slice4D', () => this.backend.slice4D(input, begin, size));
   }
-  protected abstract slice4DInternal(
-      input: Array4D, begin: [number, number, number, number],
-      size: [number, number, number, number]): Array4D;
 
   /**
    * Copies a window from the `source` matrix starting at `sourceBegin` and is
@@ -499,15 +485,11 @@ export abstract class NDArrayMath {
     copy2d_util.validateShapes(sourceSize, destSize);
 
     this.executeOp('copy2D', () => {
-      this.copy2DInternal(
+      this.backend.copy2D(
           source, sourceBegin, sourceSize, dest, destBegin, destSize);
       return dest;
     });
   }
-  protected abstract copy2DInternal(
-      source: Array2D, sourceBegin: [number, number],
-      sourceSize: [number, number], dest: Array2D, destBegin: [number, number],
-      destSize: [number, number]): void;
 
   /**
    * Concatenates two 1D arrays.
@@ -523,9 +505,8 @@ export abstract class NDArrayMath {
    */
   concat1D(a: Array1D, b: Array1D): Array1D {
     concat_util.assertParams(a.shape, b.shape, 0);
-    return this.executeOp('concat1D', () => this.concat1DInternal(a, b));
+    return this.executeOp('concat1D', () => this.backend.concat1D(a, b));
   }
-  protected abstract concat1DInternal(a: Array1D, b: Array1D): Array1D;
 
   /**
    * Concatenates two 2D arrays along a given axis.
@@ -557,10 +538,8 @@ export abstract class NDArrayMath {
    */
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
     concat_util.assertParams(a.shape, b.shape, axis);
-    return this.executeOp('concat2D', () => this.concat2DInternal(a, b, axis));
+    return this.executeOp('concat2D', () => this.backend.concat2D(a, b, axis));
   }
-  protected abstract concat2DInternal(a: Array2D, b: Array2D, axis: number):
-      Array2D;
 
   /**
    * Concatenates two 3D ndarrays along a given axis.
@@ -596,10 +575,8 @@ export abstract class NDArrayMath {
   concat3D(ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D {
     concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
     return this.executeOp(
-        'concat3D', () => this.concat3DInternal(ndarray1, ndarray2, axis));
+        'concat3D', () => this.backend.concat3D(ndarray1, ndarray2, axis));
   }
-  protected abstract concat3DInternal(
-      ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D;
 
   /**
    * Concatenates two 4D ndarrays along a given axis. See math.concat2D() for
@@ -613,10 +590,8 @@ export abstract class NDArrayMath {
   concat4D(ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D {
     concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
     return this.executeOp(
-        'concat4D', () => this.concat4DInternal(ndarray1, ndarray2, axis));
+        'concat4D', () => this.backend.concat4D(ndarray1, ndarray2, axis));
   }
-  protected abstract concat4DInternal(
-      ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D;
 
   ///////////////////
   // Reduction ops //
@@ -681,7 +656,7 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      const res = this.sumInternal(input, axes);
+      const res = this.backend.sum(input, axes);
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
@@ -689,8 +664,6 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract sumInternal<T extends keyof DataTypes>(
-      ndarray: NDArray<T>, axes: number[]): NDArray<SumTypes[T]>;
 
   /**
    * Computes the mean of elements across dimensions of an array.
@@ -737,11 +710,9 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      return this.argMinInternal(input, axes);
+      return this.backend.argMin(input, axes);
     });
   }
-  protected abstract argMinInternal(ndarray: NDArray, axes: number[]):
-      NDArray<'int32'>;
 
   /**
    * Returns the indices of the maximum values along an `axis`. The result has
@@ -759,11 +730,9 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      return this.argMaxInternal(input, axes);
+      return this.backend.argMax(input, axes);
     });
   }
-  protected abstract argMaxInternal(ndarray: NDArray, axes: number[]):
-      NDArray<'int32'>;
 
   /**
    * Returns a 1 if the argMax of x1 and x2 are the same, otherwise 0.
@@ -782,9 +751,8 @@ export abstract class NDArrayMath {
    * For a stricter version without broadcasting use math.equalStrict().
    */
   equal(x: NDArray, y: NDArray): NDArray<'bool'> {
-    return this.executeOp('equal', () => this.equalInternal(x, y));
+    return this.executeOp('equal', () => this.backend.equal(x, y));
   }
-  protected abstract equalInternal(x: NDArray, y: NDArray): NDArray<'bool'>;
 
   equalStrict<D extends keyof DataTypes, T extends NDArray<D>>(x: T, y: T):
       NDArray<'bool'> {
@@ -804,14 +772,12 @@ export abstract class NDArrayMath {
             `ndarray, got shape ${ndarray.shape}.`);
     let result: {values: Array1D, indices: Array1D};
     this.executeOp('topK', () => {
-      result = this.topKInternal(ndarray, k);
+      result = this.backend.topK(ndarray, k);
       return result.values;
     });
     this.track(result.indices);
     return result;
   }
-  protected abstract topKInternal(ndarray: NDArray, k: number):
-      {values: Array1D, indices: Array1D};
 
   /**
    * Computes the minimum value from the input.
@@ -838,7 +804,7 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      const res = this.minInternal(input, axes);
+      const res = this.backend.min(input, axes);
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
@@ -846,8 +812,6 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract minInternal<G extends keyof DataTypes>(
-      input: NDArray<G>, axes: number[]): NDArray<G>;
 
   /**
    * Computes the maximum of elements across dimensions of an array.
@@ -874,7 +838,7 @@ export abstract class NDArrayMath {
         input = this.transpose(input, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, input.rank);
       }
-      const res = this.maxInternal(input, axes);
+      const res = this.backend.max(input, axes);
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
@@ -882,8 +846,6 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract maxInternal<G extends keyof DataTypes>(
-      input: NDArray<G>, axes: number[]): NDArray<G>;
 
   /**
    * Computes the softmax normalized vector given the logits.
@@ -938,10 +900,8 @@ export abstract class NDArrayMath {
         a.rank === reps.length,
         `Error in transpose: rank of input ${a.rank} ` +
             `must match length of reps ${reps}.`);
-    return this.executeOp('tile', () => this.tileInternal(a, reps));
+    return this.executeOp('tile', () => this.backend.tile(a, reps));
   }
-  protected abstract tileInternal<
-      D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]): T;
 
   /**
    * Transposes the array. Permutes the dimensions according to `perm`.
@@ -963,10 +923,8 @@ export abstract class NDArrayMath {
         a.rank === perm.length,
         `Error in transpose: rank of input ${a.rank} ` +
             `must match length of perm ${perm}.`);
-    return this.executeOp('transpose', () => this.transposeInternal(a, perm));
+    return this.executeOp('transpose', () => this.backend.transpose(a, perm));
   }
-  protected abstract transposeInternal<
-      D extends keyof DataTypes, T extends NDArray<D>>(a: T, perm: number[]): T;
 
   /** @deprecated Use math.add(c, A) instead. */
   scalarPlusArray<T extends NDArray>(c: Scalar, a: T): T {
@@ -1000,9 +958,8 @@ export abstract class NDArrayMath {
    * @param a The input array.
    */
   neg<T extends NDArray>(a: T): T {
-    return this.executeOp('neg', () => this.negInternal(a));
+    return this.executeOp('neg', () => this.backend.neg(a));
   }
-  protected abstract negInternal<T extends NDArray>(a: T): T;
 
   /**
    * Adds two NDArrays element-wise, A + B. Supports broadcasting.
@@ -1013,10 +970,8 @@ export abstract class NDArrayMath {
    */
   add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('add', () => this.addInternal(a, b));
+    return this.executeOp('add', () => this.backend.add(a, b));
   }
-  protected abstract addInternal<G extends keyof DataTypes>(
-      a: NDArray<G>, b: NDArray<G>): NDArray<G>;
 
   /**
    * Adds two NDArrays element-wise, A + B. Inputs must
@@ -1040,15 +995,13 @@ export abstract class NDArrayMath {
   subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
       NDArray<G> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('subtract', () => this.subtractInternal(a, b));
+    return this.executeOp('subtract', () => this.backend.subtract(a, b));
   }
 
   /** @deprecated Use math.subtract instead. */
   sub<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     return this.subtract(a, b);
   }
-  protected abstract subtractInternal<G extends keyof DataTypes>(
-      a: NDArray<G>, b: NDArray<G>): NDArray<G>;
 
   /**
    * Subtracts two NDArrays element-wise, A - B. Inputs must
@@ -1071,9 +1024,8 @@ export abstract class NDArrayMath {
    */
   multiply(a: NDArray, b: NDArray): NDArray {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('multiply', () => this.multiplyInternal(a, b));
+    return this.executeOp('multiply', () => this.backend.multiply(a, b));
   }
-  protected abstract multiplyInternal<T extends NDArray>(a: T, b: T): T;
 
   /**
    * @deprecated Use math.multiplyStrict() instead.
@@ -1103,9 +1055,8 @@ export abstract class NDArrayMath {
    */
   divide(a: NDArray, b: NDArray): NDArray<'float32'> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('divide', () => this.divideInternal(a, b));
+    return this.executeOp('divide', () => this.backend.divide(a, b));
   }
-  protected abstract divideInternal(a: NDArray, b: NDArray): NDArray<'float32'>;
 
   /**
    * Divides two NDArrays element-wise, A / B. Inputs must
@@ -1142,45 +1093,40 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   ceil<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('ceil', () => this.ceilInternal(ndarray));
+    return this.executeOp('ceil', () => this.backend.ceil(ndarray));
   }
-  protected abstract ceilInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes floor of input NDArray element-wise. y = floor(x)
    * @param ndarray The input NDArray.
    */
   floor<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('floor', () => this.floorInternal(ndarray));
+    return this.executeOp('floor', () => this.backend.floor(ndarray));
   }
-  protected abstract floorInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes exponential of the input NDArray element-wise. y = e ^ x
    * @param ndarray The input NDArray.
    */
   exp<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('exp', () => this.expInternal(ndarray));
+    return this.executeOp('exp', () => this.backend.exp(ndarray));
   }
-  protected abstract expInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes natural logarithm of the input NDArray element-wise. y = ln(x)
    * @param ndarray The input NDArray.
    */
   log<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('log', () => this.logInternal(ndarray));
+    return this.executeOp('log', () => this.backend.log(ndarray));
   }
-  protected abstract logInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes square root of the input NDArray element-wise. y = sqrt(x)
    * @param ndarray The input NDArray.
    */
   sqrt<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sqrt', () => this.sqrtInternal(ndarray));
+    return this.executeOp('sqrt', () => this.backend.sqrt(ndarray));
   }
-  protected abstract sqrtInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes square of `x` element-wise.
@@ -1188,18 +1134,16 @@ export abstract class NDArrayMath {
    * @param x The input array.
    */
   square<T extends NDArray>(x: T): T {
-    return this.executeOp('square', () => this.squareInternal(x));
+    return this.executeOp('square', () => this.backend.square(x));
   }
-  protected abstract squareInternal<T extends NDArray>(x: T): T;
 
   /**
    * Computes absolute value element-wise.
    * @param ndarray The input NDArray.
    */
   abs<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('abs', () => this.absInternal(ndarray));
+    return this.executeOp('abs', () => this.backend.abs(ndarray));
   }
-  protected abstract absInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Clips values element-wise.
@@ -1212,37 +1156,32 @@ export abstract class NDArrayMath {
         (min <= max),
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
-    return this.executeOp('clip', () => this.clipInternal(ndarray, min, max));
+    return this.executeOp('clip', () => this.backend.clip(ndarray, min, max));
   }
-  protected abstract clipInternal<T extends NDArray>(
-      ndarray: T, min: number, max: number): T;
 
   /**
    * Computes rectified linear element-wise, max(x, 0).
    * @param ndarray The input NDArray.
    */
   relu<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('relu', () => this.reluInternal(ndarray));
+    return this.executeOp('relu', () => this.backend.relu(ndarray));
   }
-  protected abstract reluInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes exponential linear element-wise
    * @param {T} ndarray the input NDArray
    */
   elu<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('elu', () => this.eluInternal(ndarray));
+    return this.executeOp('elu', () => this.backend.elu(ndarray));
   }
-  protected abstract eluInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Computes the derivatice of elu which is used internally
+   * Computes the derivatice of elu which is used ly
    * @hidden
    */
   eluDer<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('eluDer', () => this.eluDerInternal(ndarray));
+    return this.executeOp('eluDer', () => this.backend.eluDer(ndarray));
   }
-  protected abstract eluDerInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes leaky rectified linear element-wise
@@ -1252,114 +1191,99 @@ export abstract class NDArrayMath {
    */
   leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
     return this.executeOp(
-        'leakyRelu', () => this.leakyReluInternal(ndarray, alpha));
+        'leakyRelu', () => this.backend.leakyRelu(ndarray, alpha));
   }
-  protected abstract leakyReluInternal<T extends NDArray>(
-      ndarray: T, alpha: number): T;
 
   /**
    * Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).
    * @param ndarray The input NDArray.
    */
   sigmoid<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sigmoid', () => this.sigmoidInternal(ndarray));
+    return this.executeOp('sigmoid', () => this.backend.sigmoid(ndarray));
   }
-  protected abstract sigmoidInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes sin of the input NDArray element-wise, y = sin(x).
    * @param ndarray The input NDArray.
    */
   sin<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sin', () => this.sinInternal(ndarray));
+    return this.executeOp('sin', () => this.backend.sin(ndarray));
   }
-  protected abstract sinInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes cos of the input NDArray element-wise, y = cos(x).
    * @param ndarray The input NDArray.
    */
   cos<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('cos', () => this.cosInternal(ndarray));
+    return this.executeOp('cos', () => this.backend.cos(ndarray));
   }
-  protected abstract cosInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes tan of the input NDArray element-wise, y = tan(x).
    * @param ndarray The input NDArray.
    */
   tan<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('tan', () => this.tanInternal(ndarray));
+    return this.executeOp('tan', () => this.backend.tan(ndarray));
   }
-  protected abstract tanInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes asin of the input NDArray element-wise, y = asin(x).
    * @param ndarray The input NDArray.
    */
   asin<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('asin', () => this.asinInternal(ndarray));
+    return this.executeOp('asin', () => this.backend.asin(ndarray));
   }
-  protected abstract asinInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes acos of the input NDArray element-wise, y = acos(x).
    * @param ndarray The input NDArray.
    */
   acos<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('acos', () => this.acosInternal(ndarray));
+    return this.executeOp('acos', () => this.backend.acos(ndarray));
   }
-  protected abstract acosInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes atan of the input NDArray element-wise, y = atan(x).
    * @param ndarray The input NDArray.
    */
   atan<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('atan', () => this.atanInternal(ndarray));
+    return this.executeOp('atan', () => this.backend.atan(ndarray));
   }
-  protected abstract atanInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes hyperbolic sin of the input NDArray element-wise, y = sinh(x).
    * @param ndarray The input NDArray.
    */
   sinh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sinh', () => this.sinhInternal(ndarray));
+    return this.executeOp('sinh', () => this.backend.sinh(ndarray));
   }
-  protected abstract sinhInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes hyperbolic cos of the input NDArray element-wise, y = cosh(x).
    * @param ndarray The input NDArray.
    */
   cosh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('cosh', () => this.coshInternal(ndarray));
+    return this.executeOp('cosh', () => this.backend.cosh(ndarray));
   }
-  protected abstract coshInternal<T extends NDArray>(ndarray: T): T;
 
   /**
    * Computes hyperbolic tangent of the input NDArray element-wise.
    * @param ndarray The input NDArray.
    */
   tanh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('tanh', () => this.tanhInternal(ndarray));
+    return this.executeOp('tanh', () => this.backend.tanh(ndarray));
   }
-  protected abstract tanhInternal<T extends NDArray>(ndarray: T): T;
 
   /**
-   * Computes step of the input NDArray element-wise, 
+   * Computes step of the input NDArray element-wise,
    * y=1 if x>0|alpha*x if x<=0.
    *
    * @param ndarray The input NDArray.
    * @param alpha The gradient when input is negative.
    */
   step<T extends NDArray>(ndarray: T, alpha = 0.0): T {
-    return this.executeOp('step', 
-      () => this.stepInternal(ndarray, alpha));
+    return this.executeOp('step', () => this.backend.step(ndarray, alpha));
   }
-  protected abstract stepInternal<T extends NDArray>(ndarray: T, 
-    alpha: number): T;
 
   /**
    * Computes a scaled array add operation, c1 * A + c2 * B.
@@ -1380,10 +1304,8 @@ export abstract class NDArrayMath {
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
     return this.executeOp(
-        'scaledArrayAdd', () => this.scaledArrayAddInternal(c1, a, c2, b));
+        'scaledArrayAdd', () => this.backend.scaledArrayAdd(c1, a, c2, b));
   }
-  protected abstract scaledArrayAddInternal<T extends NDArray>(
-      c1: Scalar, a: T, c2: Scalar, b: T): T;
 
   /** @deprecated Use math.multiply(c, A) instead. */
   scalarTimesArray<T extends NDArray>(c: Scalar, a: T): T {
@@ -1458,11 +1380,8 @@ export abstract class NDArrayMath {
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
-        'conv2d', () => this.conv2dInternal(x, filter, bias, convInfo));
+        'conv2d', () => this.backend.conv2d(x, filter, bias, convInfo));
   }
-  protected abstract conv2dInternal(
-      x: Array3D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the backprop of a 2D convolution.
@@ -1532,10 +1451,8 @@ export abstract class NDArrayMath {
         pad);
     return this.executeOp(
         'conv2dDerInput',
-        () => this.conv2dDerInputInternal(dy, filter, convInfo));
+        () => this.backend.conv2dDerInput(dy, filter, convInfo));
   }
-  protected abstract conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the derivative of the bias of a 2D convolution.
@@ -1544,9 +1461,9 @@ export abstract class NDArrayMath {
    *     [height, width, outDepth].
    */
   conv2dDerBias(dy: Array3D): Array1D {
-    return this.track(this.conv2dDerBiasInternal(dy));
+    return this.executeOp(
+        'conv2dDerBias', () => this.backend.conv2dDerBias(dy));
   }
-  protected abstract conv2dDerBiasInternal(dY: Array3D): Array1D;
 
   /**
    * Computes the derivative of the filter of a 2D convolution.
@@ -1590,10 +1507,9 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.track(this.conv2dDerFilterInternal(x, dy, convInfo));
+    return this.executeOp(
+        'conv2dDerFilter', () => this.backend.conv2dDerFilter(x, dy, convInfo));
   }
-  protected abstract conv2dDerFilterInternal(
-      x: Array3D, dy: Array3D, convInfo: ConvInfo): Array4D;
 
   /**
    * Computes the transposed 2D convolution of an image, also known as a
@@ -1680,15 +1596,13 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeDepthwiseConv2DInfo(
         input4D.shape, filter.shape, strides, pad);
     return this.executeOp('depthwiseConv2D', () => {
-      const res = this.depthwiseConv2DInternal(input4D, filter, convInfo);
+      const res = this.backend.depthwiseConv2D(input4D, filter, convInfo);
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
       }
       return res;
     });
   }
-  protected abstract depthwiseConv2DInternal(
-      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D;
 
   /**
    * Computes the 2D max pooling of an image.
@@ -1716,9 +1630,8 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp('maxPool', () => this.maxPoolInternal(x, convInfo));
+    return this.executeOp('maxPool', () => this.backend.maxPool(x, convInfo));
   }
-  protected abstract maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the backprop of a max pool.
@@ -1748,10 +1661,8 @@ export abstract class NDArrayMath {
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
     return this.executeOp(
-        'maxPoolBackprop', () => this.maxPoolBackpropInternal(dy, x, convInfo));
+        'maxPoolBackprop', () => this.backend.maxPoolBackprop(dy, x, convInfo));
   }
-  protected abstract maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the 2D min pooling of an image.
@@ -1779,9 +1690,8 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp('minPool', () => this.minPoolInternal(x, convInfo));
+    return this.executeOp('minPool', () => this.backend.minPool(x, convInfo));
   }
-  protected abstract minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /**
    * Computes the 2D average pooling of an image.
@@ -1809,9 +1719,8 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
         pad);
-    return this.executeOp('avgPool', () => this.avgPoolInternal(x, convInfo));
+    return this.executeOp('avgPool', () => this.backend.avgPool(x, convInfo));
   }
-  protected abstract avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D;
 
   /*
    * Bilinear resize a 3D array per each channel to a new 2D shape.
@@ -1834,10 +1743,8 @@ export abstract class NDArrayMath {
             `${newShape2D}.`);
     return this.executeOp(
         'resizeBilinear3D',
-        () => this.resizeBilinear3DInternal(x, newShape2D, alignCorners));
+        () => this.backend.resizeBilinear3D(x, newShape2D, alignCorners));
   }
-  protected abstract resizeBilinear3DInternal(
-      x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
 
   /**
    * Batch normalization 2D. Mean, variance, scale, and offset can be of two
@@ -1882,13 +1789,9 @@ export abstract class NDArrayMath {
 
     return this.executeOp(
         'batchNorm2D',
-        () => this.batchNormalization2DInternal(
+        () => this.backend.batchNormalization2D(
             x, mean, variance, varianceEpsilon, scale, offset));
   }
-  protected abstract batchNormalization2DInternal(
-      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
-      varianceEpsilon: number, scale?: Array2D|Array1D,
-      offset?: Array2D|Array1D): Array2D;
 
   /**
    * Batch normalization 3D. Mean, variance, scale, and offset can be of two
@@ -1933,13 +1836,9 @@ export abstract class NDArrayMath {
 
     return this.executeOp(
         'batchNorm3D',
-        () => this.batchNormalization3DInternal(
+        () => this.backend.batchNormalization3D(
             x, mean, variance, varianceEpsilon, scale, offset));
   }
-  protected abstract batchNormalization3DInternal(
-      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
-      varianceEpsilon: number, scale?: Array3D|Array1D,
-      offset?: Array3D|Array1D): Array3D;
 
   //////////////
   // LSTM ops //
@@ -2051,16 +1950,13 @@ export abstract class NDArrayMath {
     }
     return this.executeOp('multinomial', () => {
       const res =
-          this.multinomialInternal(probabilities as Array2D, numSamples, seed);
+          this.backend.multinomial(probabilities as Array2D, numSamples, seed);
       if (origRank === 1) {
         return res.as1D();
       }
       return res;
     });
   }
-  protected abstract multinomialInternal(
-      probabilities: Array2D, numSamples: number,
-      seed: number): Array2D<'int32'>;
 
   /**
    * Returns a one-hot array. The locations represented by `indices` take
@@ -2079,11 +1975,8 @@ export abstract class NDArrayMath {
       throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
     }
     return this.executeOp(
-        'oneHot', () => this.oneHotInternal(indices, depth, onValue, offValue));
+        'oneHot', () => this.backend.oneHot(indices, depth, onValue, offValue));
   }
-  protected abstract oneHotInternal(
-      indices: Array1D, depth: number, onValue: number,
-      offValue: number): Array2D;
 
   /**
    * Calculates the mean and variance of `x`. The mean and variance are
