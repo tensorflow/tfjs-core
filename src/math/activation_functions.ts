@@ -31,9 +31,11 @@ export class TanHFunc implements ActivationFunction {
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    const ySquared = math.elementWiseMul(y, y);
-    // 1 - y^2.
-    return math.scalarMinusArray(Scalar.ONE, ySquared);
+    return math.scope(() => {
+      const ySquared = math.elementWiseMul(y, y);
+      // 1 - y^2.
+      return math.scalarMinusArray(Scalar.ONE, ySquared);
+    });
   }
 
   dispose() {}
@@ -75,9 +77,11 @@ export class SigmoidFunc implements ActivationFunction {
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T): T {
-    // y * (1 - y) = y - y^2
-    const ySquared = math.elementWiseMul(y, y);
-    return math.subStrict(y, ySquared);
+    return math.scope(() => {
+      // y * (1 - y) = y - y^2
+      const ySquared = math.elementWiseMul(y, y);
+      return math.subStrict(y, ySquared);
+    });
   }
 
   dispose() {}
