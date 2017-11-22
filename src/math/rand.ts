@@ -15,8 +15,12 @@
  * =============================================================================
  */
 
-import {RandNormalDataTypes} from './ndarray';
 export interface RandGauss { nextValue(): number; }
+
+export interface RandNormalDataTypes {
+  float32: Float32Array;
+  int32: Int32Array;
+}
 
 // https://en.wikipedia.org/wiki/Marsaglia_polar_method
 export class MPRandGauss implements RandGauss {
@@ -58,7 +62,7 @@ export class MPRandGauss implements RandGauss {
 
   /** Handles proper rounding for non floating point numbers. */
   private convertValue(value: number): number {
-    if (this.dtype == null || this.dtype == 'float32') {
+    if (this.dtype == null || this.dtype === 'float32') {
       return value;
     }
     return Math.round(value);

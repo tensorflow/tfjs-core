@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {RandNormalDataTypes} from './rand';
 import {ENV} from '../environment';
 import * as util from '../util';
 import {ArrayData, TypedArray} from '../util';
@@ -43,12 +44,6 @@ export interface DataTypes {
   float32: Float32Array;
   int32: Int32Array;
   bool: Uint8Array;
-}
-
-/** @hidden */
-export interface RandNormalDataTypes {
-  float32: Float32Array;
-  int32: Int32Array;
 }
 
 /** @hidden */
@@ -485,7 +480,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   static randNormal<T extends keyof RandNormalDataTypes>(
       shape: number[], mean = 0, stdDev = 1, dtype?: T): NDArray<T> {
-    if (dtype != null && dtype == 'bool') {
+    if (dtype != null && dtype === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
     const randGauss = new MPRandGauss(mean, stdDev, dtype);
@@ -613,7 +608,7 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
 
   static randNormal<T extends keyof RandNormalDataTypes>(
       shape: [number], mean = 0, stdDev = 1, dtype?: T): Array1D<T> {
-    if (dtype != null && dtype == 'bool') {
+    if (dtype != null && dtype === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
     const randGauss = new MPRandGauss(mean, stdDev, dtype);
@@ -700,7 +695,7 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
 
   static randNormal<T extends keyof RandNormalDataTypes>(
       shape: [number, number], mean = 0, stdDev = 1, dtype?: T): Array2D<T> {
-    if (dtype != null && dtype == 'bool') {
+    if (dtype != null && dtype === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
     const randGauss = new MPRandGauss(mean, stdDev, dtype);
@@ -791,7 +786,7 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
   static randNormal<T extends keyof RandNormalDataTypes>(
       shape: [number, number, number], mean = 0, stdDev = 1,
       dtype?: T): Array3D<T> {
-    if (dtype != null && dtype == 'bool') {
+    if (dtype != null && dtype === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
     const randGauss = new MPRandGauss(mean, stdDev, dtype);
@@ -893,7 +888,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
   static randNormal<T extends keyof RandNormalDataTypes>(
       shape: [number, number, number, number], mean = 0, stdDev = 1,
       dtype?: T): Array4D<T> {
-    if (dtype != null && dtype == 'bool') {
+    if (dtype != null && dtype === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
     const randGauss = new MPRandGauss(mean, stdDev, dtype);

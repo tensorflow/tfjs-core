@@ -57,4 +57,4 @@ test_util.describeCustom('MPRandGauss', () => {
     test_util.expectArrayInMeanStdRange(values, 0, 1, EPSILON_NONFLOAT);
     test_util.jarqueBeraNormalityTest(values);
   });
-})
+});

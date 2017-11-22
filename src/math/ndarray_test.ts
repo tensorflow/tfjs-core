@@ -1364,14 +1364,14 @@ test_util.describeCustom('NDArray.rand', () => {
 
   it('should return a random 2D int32 array', () => {
     const shape: [number] = [3, 4];
-    let result = NDArray.rand(shape, () => util.randUniform(0, 2), 'int32');
+    const result = NDArray.rand(shape, () => util.randUniform(0, 2), 'int32');
     expect(result.dtype).toBe('int32');
     test_util.expectValuesInRange(result.getValues(), 0, 2);
   });
 
   it('should return a random 2D bool array', () => {
     const shape: [number] = [3, 4];
-    let result = NDArray.rand(shape, () => util.randUniform(0, 1), 'bool');
+    const result = NDArray.rand(shape, () => util.randUniform(0, 1), 'bool');
     expect(result.dtype).toBe('bool');
     test_util.expectValuesInRange(result.getValues(), 0, 1);
   });
@@ -1603,14 +1603,14 @@ test_util.describeCustom('NDArray.randUniform', () => {
 
   it('should return a random 2D int32 array', () => {
     const shape: [number, number] = [3, 4];
-    let result = Array2D.randUniform(shape, 0, 2, 'int32');
+    const result = Array2D.randUniform(shape, 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
     test_util.expectValuesInRange(result.getValues(), 0, 2);
   });
 
   it('should return a random 2D bool array', () => {
     const shape: [number, number] = [3, 4];
-    let result = Array2D.randUniform(shape, 0, 1, 'bool');
+    const result = Array2D.randUniform(shape, 0, 1, 'bool');
     expect(result.dtype).toBe('bool');
     test_util.expectValuesInRange(result.getValues(), 0, 1);
   });
