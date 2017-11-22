@@ -1,8 +1,5 @@
 language: node_js
 node_js: "8"
-install:
-  - npm run prep
 script:
-  - npm run build --silent
-  - npm run lint --silent
-  - if [ "$BROWSERSTACK_KEY" ]; then npm run test-travis --silent; fi
+  - ./scripts/build_and_lint_all
+  - if [ "$BROWSERSTACK_KEY" ]; then yarn test-travis; fi
