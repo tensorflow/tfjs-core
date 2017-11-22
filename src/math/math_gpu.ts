@@ -50,6 +50,7 @@ import {SliceProgram} from './webgl/slice_gpu';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
+import {GatherProgram} from './webgl/gather_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -259,6 +260,13 @@ export class NDArrayMathGPU extends NDArrayMath {
       a: T, perm: number[]): T {
     const program = new TransposeProgram(a.shape, perm);
     return this.compileAndRun(program, [a]);
+  }
+
+  protected gatherInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, indices: number[], axis: number): T {
+    const indicesArray = Array1D.new(indices, 'int32');
+    const program = new GatherProgram(a.shape, indices, axis);
+    return this.compileAndRun(program, [a, indicesArray]);
   }
 
   private reduce<D extends keyof DataTypes>(
