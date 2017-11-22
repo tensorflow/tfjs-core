@@ -1436,8 +1436,8 @@ test_util.describeCustom('NDArray.randNormal', () => {
   const EPSILON_FLOAT32 = 0.05;
   const EPSILON_NONFLOAT = 0.10;
 
-  it('should return a float32 1D of random normal values', () => {
-    const SAMPLES = 1000;
+  it('should return a float32 1D of random normal values KREEGER', () => {
+    const SAMPLES = 10000;
 
     // Ensure defaults to float32.
     let result = NDArray.randNormal([SAMPLES], 0, 0.5);

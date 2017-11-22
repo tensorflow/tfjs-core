@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
-import {RandNormalDataTypes} from './rand';
 import {ENV} from '../environment';
 import * as util from '../util';
 import {ArrayData, TypedArray} from '../util';
 
+import {RandNormalDataTypes} from './rand';
 import {MPRandGauss} from './rand';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import {TextureType} from './webgl/tex_util';
