@@ -1447,12 +1447,12 @@ test_util.describeCustom('NDArray.randNormal', () => {
     test_util.expectArrayInMeanStdRange(
         result.getValues(), 0, 0.5, EPSILON_FLOAT32);
 
-    result = NDArray.randNormal([SAMPLES], 0, 0.75, 'float32');
+    result = NDArray.randNormal([SAMPLES], 0, 1.5, 'float32');
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 0.75, EPSILON_FLOAT32);
+        result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
   it('should return a int32 1D of random normal values', () => {
