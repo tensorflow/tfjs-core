@@ -707,39 +707,41 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dInternal(
-      x: Array3D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array3D {
-    const [xRows, xCols, inputDepth] = x.shape;
+      x: Array4D, filter: Array4D, bias: Array1D|null,
+      convInfo: ConvInfo): Array4D {
+    const [batchSize, xRows, xCols, inputDepth] = x.shape;
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
     const outDepth = filter.shape[3];
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
+    const y = Array4D.zeros(convInfo.outShape);
 
-    const y = Array3D.zeros(convInfo.outShape);
-    for (let d2 = 0; d2 < outDepth; ++d2) {
-      for (let yR = 0; yR < y.shape[0]; ++yR) {
-        const xRCorner = yR * convInfo.strideHeight - padLeft;
-        const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, filterHeight + xRCorner);
-        for (let yC = 0; yC < y.shape[1]; ++yC) {
-          const xCCorner = yC * convInfo.strideWidth - padTop;
-          const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, filterWidth + xCCorner);
-          let dotProd = 0;
-          for (let xR = xRMin; xR < xRMax; ++xR) {
-            const wR = xR - xRCorner;
-            for (let xC = xCMin; xC < xCMax; ++xC) {
-              const wC = xC - xCCorner;
-              for (let d1 = 0; d1 < inputDepth; ++d1) {
-                const pixel = x.get(xR, xC, d1);
-                const weight = filter.get(wR, wC, d1, d2);
-                dotProd += pixel * weight;
+    for (let b = 0; b < batchSize; ++b) {
+      for (let d2 = 0; d2 < outDepth; ++d2) {
+        for (let yR = 0; yR < y.shape[1]; ++yR) {
+          const xRCorner = yR * convInfo.strideHeight - padLeft;
+          const xRMin = Math.max(0, xRCorner);
+          const xRMax = Math.min(xRows, filterHeight + xRCorner);
+          for (let yC = 0; yC < y.shape[2]; ++yC) {
+            const xCCorner = yC * convInfo.strideWidth - padTop;
+            const xCMin = Math.max(0, xCCorner);
+            const xCMax = Math.min(xCols, filterWidth + xCCorner);
+            let dotProd = 0;
+            for (let xR = xRMin; xR < xRMax; ++xR) {
+              const wR = xR - xRCorner;
+              for (let xC = xCMin; xC < xCMax; ++xC) {
+                const wC = xC - xCCorner;
+                for (let d1 = 0; d1 < inputDepth; ++d1) {
+                  const pixel = x.get(b, xR, xC, d1);
+                  const weight = filter.get(wR, wC, d1, d2);
+                  dotProd += pixel * weight;
+                }
               }
             }
+            const biasVal = (bias != null) ? bias.get(d2) : 0;
+            y.set(dotProd + biasVal, b, yR, yC, d2);
           }
-          const biasVal = (bias != null) ? bias.get(d2) : 0;
-          y.set(dotProd + biasVal, yR, yC, d2);
         }
       }
     }
@@ -958,21 +960,21 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  private pool(x: Array3D, convInfo: ConvInfo, poolType: 'max'|'min'|'avg') {
-    const [xRows, xCols, depth] = x.shape;
+  private pool(x: Array4D, convInfo: ConvInfo, poolType: 'max'|'min'|'avg') {
+    const [batchSize, xRows, xCols, depth] = x.shape;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const y = Array3D.zeros(convInfo.outShape);
+    const y = Array4D.zeros(convInfo.outShape);
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
     for (let d = 0; d < depth; ++d) {
-      for (let yR = 0; yR < y.shape[0]; ++yR) {
+      for (let yR = 0; yR < y.shape[1]; ++yR) {
         const xRCorner = yR * strideHeight - padTop;
         const xRMin = Math.max(0, xRCorner);
         const xRMax = Math.min(xRows, filterHeight + xRCorner);
-        for (let yC = 0; yC < y.shape[1]; ++yC) {
+        for (let yC = 0; yC < y.shape[2]; ++yC) {
           const xCCorner = yC * strideWidth - padLeft;
           const xCMin = Math.max(0, xCCorner);
           const xCMax = Math.min(xCols, filterWidth + xCCorner);
@@ -981,34 +983,35 @@ export class NDArrayMathCPU extends NDArrayMath {
               (poolType === 'max' ? Number.NEGATIVE_INFINITY :
                                     Number.POSITIVE_INFINITY);
           let avgValue = 0;
-
-          for (let xR = xRMin; xR < xRMax; ++xR) {
-            for (let xC = xCMin; xC < xCMax; ++xC) {
-              const pixel = x.get(xR, xC, d);
-              if (isNaN(pixel)) {
-                minMaxValue = NaN;
-                avgValue = NaN;
+          for (let b = 0; b < batchSize; ++b) {
+            for (let xR = xRMin; xR < xRMax; ++xR) {
+              for (let xC = xCMin; xC < xCMax; ++xC) {
+                const pixel = x.get(b, xR, xC, d);
+                if (isNaN(pixel)) {
+                  minMaxValue = NaN;
+                  avgValue = NaN;
+                  break;
+                }
+                if ((poolType === 'max' && pixel > minMaxValue) ||
+                    (poolType === 'min' && pixel < minMaxValue)) {
+                  minMaxValue = pixel;
+                } else if (poolType === 'avg') {
+                  avgValue += pixel / (filterHeight * filterWidth);
+                }
+              }
+              if (isNaN(minMaxValue)) {
                 break;
               }
-              if ((poolType === 'max' && pixel > minMaxValue) ||
-                  (poolType === 'min' && pixel < minMaxValue)) {
-                minMaxValue = pixel;
-              } else if (poolType === 'avg') {
-                avgValue += pixel / (filterHeight * filterWidth);
-              }
             }
-            if (isNaN(minMaxValue)) {
-              break;
-            }
+            y.set(poolType === 'avg' ? avgValue : minMaxValue, b, yR, yC, d);
           }
-          y.set(poolType === 'avg' ? avgValue : minMaxValue, yR, yC, d);
         }
       }
     }
     return y;
   }
 
-  protected maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  protected maxPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
     return this.pool(x, convInfo, 'max');
   }
 
@@ -1101,11 +1104,11 @@ export class NDArrayMathCPU extends NDArrayMath {
     return dx;
   }
 
-  protected minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  protected minPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
     return this.pool(x, convInfo, 'min');
   }
 
-  protected avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  protected avgPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
     return this.pool(x, convInfo, 'avg');
   }
 

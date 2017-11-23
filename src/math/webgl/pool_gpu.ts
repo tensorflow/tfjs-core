@@ -35,8 +35,12 @@ export class Pool2DProgram implements GPGPUProgram {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
 
-    const xNumRows = convInfo.inShape[0];
-    const xNumCols = convInfo.inShape[1];
+    let xNumRows = convInfo.inShape[1];
+    let xNumCols = convInfo.inShape[2];
+    if (computePositions) {
+      xNumRows = convInfo.inShape[0];
+      xNumCols = convInfo.inShape[1];
+    }
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
     this.outputShape = convInfo.outShape;
@@ -141,18 +145,19 @@ export class Pool2DProgram implements GPGPUProgram {
       const float initializationValue = ${initializationValue};
       const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
 
-      float getValue(int xR, int xC, int d) {
+      float getValue(int batch, int xR, int xC, int d) {
         if (xC < 0 || xC >= ${xNumCols}) {
           return initializationValue;
         }
-        return getX(xR, xC, d);
+        return getX(batch, xR, xC, d);
       }
 
       void main() {
-        ivec3 coords = getOutputCoords();
-        int d = coords.z;
+        ivec4 coords = getOutputCoords();
+        int batch = coords[0];
+        int d = coords[3];
 
-        ivec2 xRCCorner = coords.xy * strides - pads;
+        ivec2 xRCCorner = coords.yz * strides - pads;
         int xRCorner = xRCCorner.x;
         int xCCorner = xRCCorner.y;
 
@@ -172,10 +177,10 @@ export class Pool2DProgram implements GPGPUProgram {
             int xC = xCCorner + wC;
 
             vec4 values = vec4(
-              getValue(xR, xC, d),
-              getValue(xR, xC + 1, d),
-              getValue(xR, xC + 2, d),
-              getValue(xR, xC + 3, d)
+              getValue(batch, xR, xC, d),
+              getValue(batch, xR, xC + 1, d),
+              getValue(batch, xR, xC + 2, d),
+              getValue(batch, xR, xC + 3, d)
             );
 
             ${updateSnippet}
@@ -184,7 +189,7 @@ export class Pool2DProgram implements GPGPUProgram {
           int xC = xCCorner + ${filterWidthNearestVec4};
           if (${filterWidthVec4Remainder === 1}) {
             vec4 values = vec4(
-              getValue(xR, xC, d),
+              getValue(batch, xR, xC, d),
               initializationValue,
               initializationValue,
               initializationValue
@@ -192,8 +197,8 @@ export class Pool2DProgram implements GPGPUProgram {
             ${updateSnippet}
           } else if (${filterWidthVec4Remainder === 2}) {
             vec4 values = vec4(
-              getValue(xR, xC, d),
-              getValue(xR, xC + 1, d),
+              getValue(batch, xR, xC, d),
+              getValue(batch, xR, xC + 1, d),
               initializationValue,
               initializationValue
             );
@@ -201,9 +206,9 @@ export class Pool2DProgram implements GPGPUProgram {
             ${updateSnippet}
           } else if (${filterWidthVec4Remainder === 3}) {
             vec4 values = vec4(
-              getValue(xR, xC, d),
-              getValue(xR, xC + 1, d),
-              getValue(xR, xC + 2, d),
+              getValue(batch, xR, xC, d),
+              getValue(batch, xR, xC + 1, d),
+              getValue(batch, xR, xC + 2, d),
               initializationValue
             );
 

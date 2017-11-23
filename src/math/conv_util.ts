@@ -30,8 +30,8 @@ export type PadInfo = {
  * information.
  */
 export type ConvInfo = {
-  inShape: [number, number, number],
-  outShape: [number, number, number],
+  inShape: [number, number, number, number],
+  outShape: [number, number, number, number],
   strideHeight: number,
   strideWidth: number,
   filterHeight: number,
@@ -87,15 +87,17 @@ export function computeDepthwiseConv2DInfo(
  * operation.
  */
 export function computeConv2DInfo(
-    inShape: [number, number, number], filterHeight: number,
+    inShape: [number, number, number, number], filterHeight: number,
     filterWidth: number, outDepth: number, strideHeight: number,
     strideWidth: number, pad: 'same'|'valid'|number): ConvInfo {
-  const inHeight = inShape[0];
-  const inWidth = inShape[1];
+  const batch = inShape[0];
+  const inHeight = inShape[1];
+  const inWidth = inShape[2];
   const {padInfo, outHeight, outWidth} = getPadAndOutInfo(
       pad, inHeight, inWidth, strideHeight, strideWidth, filterHeight,
       filterWidth);
-  const outShape: [number, number, number] = [outHeight, outWidth, outDepth];
+  const outShape: [number, number, number, number] =
+      [batch, outHeight, outWidth, outDepth];
   return {
     inShape,
     outShape,

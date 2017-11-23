@@ -104,7 +104,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   ]): Array2D {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup) as Array2D;
+    return this.compileAndRun(program, [input], null, customSetup);
   }
 
   protected slice3DInternal(
@@ -112,7 +112,7 @@ export class NDArrayMathGPU extends NDArrayMath {
       size: [number, number, number]): Array3D {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup) as Array3D;
+    return this.compileAndRun(program, [input], null, customSetup);
   }
 
   protected slice4DInternal(
@@ -120,7 +120,7 @@ export class NDArrayMathGPU extends NDArrayMath {
       size: [number, number, number, number]): Array4D {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup) as Array4D;
+    return this.compileAndRun(program, [input], null, customSetup);
   }
 
   protected copy2DInternal(
@@ -136,22 +136,22 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected concat1DInternal(a: Array1D, b: Array1D): Array1D {
     const program = new ConcatProgram(a.shape, b.shape, 0);
-    return this.compileAndRun(program, [a, b]) as Array1D;
+    return this.compileAndRun(program, [a, b]);
   }
 
   protected concat2DInternal(a: Array2D, b: Array2D, axis: number): Array2D {
     const program = new ConcatProgram(a.shape, b.shape, axis);
-    return this.compileAndRun(program, [a, b]) as Array2D;
+    return this.compileAndRun(program, [a, b]);
   }
 
   protected concat3DInternal(x1: Array3D, x2: Array3D, axis: number): Array3D {
     const program = new ConcatProgram(x1.shape, x2.shape, axis);
-    return this.compileAndRun(program, [x1, x2]) as Array3D;
+    return this.compileAndRun(program, [x1, x2]);
   }
 
   protected concat4DInternal(x1: Array4D, x2: Array4D, axis: number): Array4D {
     const program = new ConcatProgram(x1.shape, x2.shape, axis);
-    return this.compileAndRun(program, [x1, x2]) as Array4D;
+    return this.compileAndRun(program, [x1, x2]);
   }
 
   protected scaledArrayAddInternal<T extends NDArray>(
@@ -193,7 +193,7 @@ export class NDArrayMathGPU extends NDArrayMath {
       bOrientation: MatrixOrientation): Array2D {
     const program =
         new MatMulProgram(a.shape, b.shape, aOrientation, bOrientation);
-    return this.compileAndRun<Array2D, Array2D>(program, [a, b]) as Array2D;
+    return this.compileAndRun<Array2D, Array2D>(program, [a, b]);
   }
 
   protected multiplyInternal<T extends NDArray>(a: T, b: T): T {
@@ -222,7 +222,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     const program = new BatchNormProgram(
         x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
         varianceEpsilon);
-    return this.compileAndRun(program, inputs) as Array2D;
+    return this.compileAndRun(program, inputs);
   }
 
   protected batchNormalization3DInternal(
@@ -246,7 +246,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     const program = new BatchNormProgram(
         x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
         varianceEpsilon);
-    return this.compileAndRun(program, inputs) as Array3D;
+    return this.compileAndRun(program, inputs);
   }
 
   protected tileInternal<D extends keyof DataTypes, T extends NDArray<D>>(
@@ -495,23 +495,23 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected conv2dInternal(
-      x: Array3D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array3D {
+      x: Array4D, filter: Array4D, bias: Array1D|null,
+      convInfo: ConvInfo): Array4D {
     const program = new Conv2DProgram(convInfo, bias != null);
     const inputs = bias != null ? [x, filter, bias] : [x, filter];
-    return this.compileAndRun(program, inputs) as Array3D;
+    return this.compileAndRun(program, inputs);
   }
 
   protected conv2dDerInputInternal(
       dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D {
     const program = new Conv2DDerInputProgram(convInfo);
-    return this.compileAndRun(program, [dy, filter]) as Array3D;
+    return this.compileAndRun(program, [dy, filter]);
   }
 
   protected conv2dDerFilterInternal(
       x: Array3D, dY: Array3D, convInfo: ConvInfo): Array4D {
     const program = new Conv2DDerWeightsProgram(convInfo);
-    return this.compileAndRun(program, [x, dY]) as Array4D;
+    return this.compileAndRun(program, [x, dY]);
   }
 
   protected conv2dDerBiasInternal(dY: Array3D): Array1D {
@@ -525,19 +525,19 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [input, filter]);
   }
 
-  protected maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  protected maxPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
-    return this.compileAndRun(program, [x]) as Array3D;
+    return this.compileAndRun(program, [x]);
   }
 
-  protected minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  protected minPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'min', false);
-    return this.compileAndRun(program, [x]) as Array3D;
+    return this.compileAndRun(program, [x]);
   }
 
-  protected avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  protected avgPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'avg', false);
-    return this.compileAndRun(program, [x]) as Array3D;
+    return this.compileAndRun(program, [x]);
   }
 
   protected maxPoolBackpropInternal(
@@ -546,7 +546,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     const maxPoolPositionsProgram =
         new Pool2DProgram(convInfo, 'max', getPositions);
     const maxPoolPositions: Array3D =
-        this.compileAndRun(maxPoolPositionsProgram, [x]) as Array3D;
+        this.compileAndRun(maxPoolPositionsProgram, [x]);
 
     const maxPoolBackPropProgram = new MaxPool2DBackpropProgram(convInfo);
 
@@ -561,7 +561,7 @@ export class NDArrayMathGPU extends NDArrayMath {
       alignCorners: boolean): Array3D {
     const program =
         new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
-    return this.compileAndRun(program, [x]) as Array3D;
+    return this.compileAndRun(program, [x]);
   }
 
   protected multinomialInternal(
