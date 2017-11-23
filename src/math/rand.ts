@@ -28,13 +28,16 @@ export class MPRandGauss implements RandGauss {
   private stdDev: number;
   private nextVal: number;
   private dtype?: keyof RandNormalDataTypes;
+  private truncated?: boolean;
 
   constructor(
-      mean: number, stdDeviation: number, dtype?: keyof RandNormalDataTypes) {
+      mean: number, stdDeviation: number, dtype?: keyof RandNormalDataTypes,
+      truncated?: boolean) {
     this.mean = mean;
     this.stdDev = stdDeviation;
     this.dtype = dtype;
     this.nextVal = NaN;
+    this.truncated = truncated;
   }
 
   /** Returns next sample from a gaussian distribution. */
@@ -45,17 +48,32 @@ export class MPRandGauss implements RandGauss {
       return value;
     }
 
-    let v1: number, v2: number, s: number;
-    do {
-      v1 = 2 * Math.random() - 1;
-      v2 = 2 * Math.random() - 1;
-      s = v1 * v1 + v2 * v2;
-    } while (s > 1);
+    let resultX: number, resultY: number;
+    let isValidPair = false;
+    while (!isValidPair) {
+      let v1: number, v2: number, s: number;
+      do {
+        v1 = 2 * Math.random() - 1;
+        v2 = 2 * Math.random() - 1;
+        s = v1 * v1 + v2 * v2;
+      } while (s > 1);
 
-    const resultX = Math.sqrt(-2 * Math.log(s) / s) * v1;
-    const resultY = Math.sqrt(-2 * Math.log(s) / s) * v2;
+      resultX = Math.sqrt(-2 * Math.log(s) / s) * v1;
+      resultY = Math.sqrt(-2 * Math.log(s) / s) * v2;
 
-    // TODO(kreeger): Handle truncated random generation.
+      if (this.truncated) {
+        // If more than 2 standard deviations from the mean, drop and repeat.
+        // z = (X - m) / stdv.
+        const resultXZ = Math.abs((resultX - this.mean) / this.stdDev);
+        const resultXY = Math.abs((resultY - this.mean) / this.stdDev);
+        if (resultXZ < 2.0 && resultXY < 2.0) {
+          isValidPair = true;
+        }
+      } else {
+        isValidPair = true;
+      }
+    }
+
     this.nextVal = this.convertValue(this.mean + this.stdDev * resultY);
     return this.convertValue(this.mean + this.stdDev * resultX);
   }

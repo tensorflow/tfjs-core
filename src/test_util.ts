@@ -72,15 +72,18 @@ export function skewness(values: TypedArray|number[]) {
   return (1 / n) * sum3 / Math.pow((1 / (n - 1)) * sum2, 3 / 2);
 }
 
-export function jarqueBeraNormalityTest(values: TypedArray|number[]) {
+export function jarqueBeraNormalityTest(
+    values: TypedArray|number[], trueNormality = false) {
   // https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
   const n = values.length;
   const s = skewness(values);
   const k = kurtosis(values);
   const jb = n / 6 * (Math.pow(s, 2) + 0.25 * Math.pow(k - 3, 2));
-  // JB test requires 2-degress of freedom from Chi-Square @ 0.999:
+  // JB test requires 2-degress of freedom from Chi-Square:
+  //   @ 0.999 = 13.816
+  //   @ 0.95 = 5.991 (true normality)
   // http://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm
-  const CHI_SQUARE_2DEG = 13.816;
+  const CHI_SQUARE_2DEG = trueNormality ? 5.991 : 13.816;
   if (jb > CHI_SQUARE_2DEG) {
     throw new Error(`Invalid p-value for JB: ${jb}`);
   }
@@ -90,9 +93,9 @@ export function expectArrayInMeanStdRange(
     actual: TypedArray|number[], expectedMean: number, expectedStdDev: number,
     epsilon = TEST_EPSILON) {
   const actualMean = mean(actual);
+  const actualStdDev = standardDeviation(actual, actualMean);
   expectNumbersClose(actualMean, expectedMean, epsilon);
-  expectNumbersClose(
-      standardDeviation(actual, actualMean), expectedStdDev, epsilon);
+  expectNumbersClose(actualStdDev, expectedStdDev, epsilon);
 }
 
 export function expectArraysClose(
