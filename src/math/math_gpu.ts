@@ -508,18 +508,18 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D {
+      dy: Array4D, filter: Array4D, convInfo: ConvInfo): Array4D {
     const program = new Conv2DDerInputProgram(convInfo);
     return this.compileAndRun(program, [dy, filter]);
   }
 
   protected conv2dDerFilterInternal(
-      x: Array3D, dY: Array3D, convInfo: ConvInfo): Array4D {
+      x: Array4D, dY: Array4D, convInfo: ConvInfo): Array4D {
     const program = new Conv2DDerWeightsProgram(convInfo);
     return this.compileAndRun(program, [x, dY]);
   }
 
-  protected conv2dDerBiasInternal(dY: Array3D): Array1D {
+  protected conv2dDerBiasInternal(dY: Array4D): Array1D {
     const program = new Conv2DDerBiasProgram(dY.shape);
     return this.compileAndRun(program, [dY]);
   }

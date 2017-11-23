@@ -763,11 +763,9 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D {
+      dy: Array4D, filter: Array4D, convInfo: ConvInfo): Array4D {
     const inDepth = filter.shape[2];
-    const outDepth = filter.shape[3];
-    const yRows = dy.shape[0];
-    const yCols = dy.shape[1];
+    const [batchSize, yRows, yCols, outDepth] = dy.shape;
     const filterHeight = filter.shape[0];
     const filterWidth = filter.shape[1];
     const topPad = filterHeight - 1 - convInfo.padInfo.top;
@@ -775,34 +773,38 @@ export class NDArrayMathCPU extends NDArrayMath {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
 
-    const dx = Array3D.zeros(convInfo.inShape);
-    for (let d1 = 0; d1 < inDepth; ++d1) {
-      for (let xR = 0; xR < dx.shape[0]; ++xR) {
-        const xRCorner = xR - leftPad;
-        const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
-        const yRMax = Math.min(yRows, (filterHeight + xRCorner) / strideHeight);
+    const dx = Array4D.zeros(convInfo.inShape);
+    for (let b = 0; b < batchSize; ++b) {
+      for (let d1 = 0; d1 < inDepth; ++d1) {
+        for (let xR = 0; xR < dx.shape[1]; ++xR) {
+          const xRCorner = xR - leftPad;
+          const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
+          const yRMax =
+              Math.min(yRows, (filterHeight + xRCorner) / strideHeight);
 
-        for (let xC = 0; xC < dx.shape[1]; ++xC) {
-          const xCCorner = xC - topPad;
-          const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
-          const yCMax = Math.min(yCols, (filterWidth + xCCorner) / strideWidth);
+          for (let xC = 0; xC < dx.shape[2]; ++xC) {
+            const xCCorner = xC - topPad;
+            const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
+            const yCMax =
+                Math.min(yCols, (filterWidth + xCCorner) / strideWidth);
 
-          let dotProd = 0;
-          for (let yR = xRMin; yR < yRMax; ++yR) {
-            const wR = yR * strideHeight - xRCorner;
+            let dotProd = 0;
+            for (let yR = xRMin; yR < yRMax; ++yR) {
+              const wR = yR * strideHeight - xRCorner;
 
-            for (let yC = xCMin; yC < yCMax; ++yC) {
-              const wC = yC * strideWidth - xCCorner;
+              for (let yC = xCMin; yC < yCMax; ++yC) {
+                const wC = yC * strideWidth - xCCorner;
 
-              for (let d2 = 0; d2 < outDepth; ++d2) {
-                const pixel = dy.get(yR, yC, d2);
-                const weight = filter.get(
-                    filterHeight - 1 - wR, filterWidth - 1 - wC, d1, d2);
-                dotProd += pixel * weight;
+                for (let d2 = 0; d2 < outDepth; ++d2) {
+                  const pixel = dy.get(b, yR, yC, d2);
+                  const weight = filter.get(
+                      filterHeight - 1 - wR, filterWidth - 1 - wC, d1, d2);
+                  dotProd += pixel * weight;
+                }
               }
             }
+            dx.set(dotProd, b, xR, xC, d1);
           }
-          dx.set(dotProd, xR, xC, d1);
         }
       }
     }
@@ -810,21 +812,16 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dDerFilterInternal(
-      x: Array3D, dY: Array3D, convInfo: ConvInfo): Array4D {
-    const inputDepth = x.shape[2];
-    const outputDepth = dY.shape[2];
+      x: Array4D, dY: Array4D, convInfo: ConvInfo): Array4D {
+    const [batchSize, xNumRows, xNumCols, inDepth] = x.shape;
+    const [, yNumRows, yNumCols, outDepth] = dY.shape;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const weightsShape = conv_util.computeWeightsShape4D(
-        inputDepth, outputDepth, filterHeight, filterWidth);
+        inDepth, outDepth, filterHeight, filterWidth);
     const dW = Array4D.zeros(weightsShape);
-
-    const yNumRows = dY.shape[0];
-    const yNumCols = dY.shape[1];
-    const xNumRows = x.shape[0];
-    const xNumCols = x.shape[1];
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
@@ -838,15 +835,17 @@ export class NDArrayMathCPU extends NDArrayMath {
         const yCMax =
             Math.min(yNumCols, (xNumCols + leftPad - wC) / strideWidth);
 
-        for (let d1 = 0; d1 < inputDepth; ++d1) {
-          for (let d2 = 0; d2 < outputDepth; ++d2) {
+        for (let d1 = 0; d1 < inDepth; ++d1) {
+          for (let d2 = 0; d2 < outDepth; ++d2) {
             // Need to convolve.
             let dotProd = 0;
-            for (let yR = yRMin; yR < yRMax; ++yR) {
-              const xR = wR + yR * strideHeight - topPad;
-              for (let yC = yCMin; yC < yCMax; ++yC) {
-                const xC = wC + yC * strideWidth - leftPad;
-                dotProd += x.get(xR, xC, d1) * dY.get(yR, yC, d2);
+            for (let b = 0; b < batchSize; ++b) {
+              for (let yR = yRMin; yR < yRMax; ++yR) {
+                const xR = wR + yR * strideHeight - topPad;
+                for (let yC = yCMin; yC < yCMax; ++yC) {
+                  const xC = wC + yC * strideWidth - leftPad;
+                  dotProd += x.get(b, xR, xC, d1) * dY.get(b, yR, yC, d2);
+                }
               }
             }
             dW.set(dotProd, wR, wC, d1, d2);
@@ -857,16 +856,16 @@ export class NDArrayMathCPU extends NDArrayMath {
     return dW;
   }
 
-  protected conv2dDerBiasInternal(dY: Array3D): Array1D {
-    const outputDepth = dY.shape[2];
-    const numRows = dY.shape[0];
-    const numCols = dY.shape[1];
-    const values = new Float32Array(outputDepth);
-    for (let d2 = 0; d2 < outputDepth; ++d2) {
+  protected conv2dDerBiasInternal(dY: Array4D): Array1D {
+    const [batchSize, numRows, numCols, outDepth] = dY.shape;
+    const values = new Float32Array(outDepth);
+    for (let d2 = 0; d2 < outDepth; ++d2) {
       let sum = 0;
-      for (let r = 0; r < numRows; ++r) {
-        for (let c = 0; c < numCols; ++c) {
-          sum += dY.get(r, c, d2);
+      for (let b = 0; b < batchSize; ++b) {
+        for (let r = 0; r < numRows; ++r) {
+          for (let c = 0; c < numCols; ++c) {
+            sum += dY.get(b, r, c, d2);
+          }
         }
       }
       values[d2] = sum;

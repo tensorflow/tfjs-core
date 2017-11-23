@@ -25,8 +25,8 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(convInfo: ConvInfo) {
-    const [yNumRows, yNumCols, outDepth] = convInfo.outShape;
-    const [xNumRows, xNumCols, inDepth] = convInfo.inShape;
+    const [batchSize, xNumRows, xNumCols, inDepth] = convInfo.inShape;
+    const [, yNumRows, yNumCols, outDepth] = convInfo.outShape;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     this.outputShape = conv_util.computeWeightsShape4D(
@@ -45,23 +45,26 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
         // Convolve x(?, ?, d1) with dy(:, :, d2) to get dw(wR, wC, d1, d2).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        for (int yR = 0; yR < ${yNumRows}; yR++) {
-          int xR = wR + yR * ${strideHeight} - ${padTop};
 
-          if (xR < 0 || xR >= ${xNumRows}) {
-            continue;
-          }
+        for (int b = 0; b < ${batchSize}; b++) {
+          for (int yR = 0; yR < ${yNumRows}; yR++) {
+            int xR = wR + yR * ${strideHeight} - ${padTop};
 
-          for (int yC = 0; yC < ${yNumCols}; yC++) {
-            int xC = wC + yC * ${strideWidth} - ${padLeft};
-
-            if (xC < 0 || xC >= ${xNumCols}) {
+            if (xR < 0 || xR >= ${xNumRows}) {
               continue;
             }
 
-            float dyValue = getDy(yR, yC, d2);
-            float xValue = getX(xR, xC, d1);
-            dotProd += (xValue * dyValue);
+            for (int yC = 0; yC < ${yNumCols}; yC++) {
+              int xC = wC + yC * ${strideWidth} - ${padLeft};
+
+              if (xC < 0 || xC >= ${xNumCols}) {
+                continue;
+              }
+
+              float dyValue = getDy(b, yR, yC, d2);
+              float xValue = getX(b, xR, xC, d1);
+              dotProd += (xValue * dyValue);
+            }
           }
         }
         setOutput(dotProd);
@@ -76,7 +79,7 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(convInfo: ConvInfo) {
-    const [yRows, yCols, outDepth] = convInfo.outShape;
+    const [, yRows, yCols, outDepth] = convInfo.outShape;
 
     this.outputShape = convInfo.inShape;
     const filterHeight = convInfo.filterHeight;
@@ -91,10 +94,11 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
       const ivec2 pads = ivec2(${padTop}, ${padLeft});
 
       void main() {
-        ivec3 coords = getOutputCoords();
-        int d1 = coords.z;
+        ivec4 coords = getOutputCoords();
+        int batch = coords[0];
+        int d1 = coords[3];
 
-        ivec2 dyCorner = coords.xy - pads;
+        ivec2 dyCorner = coords.yz - pads;
         int dyRCorner = dyCorner.x;
         int dyCCorner = dyCorner.y;
 
@@ -122,7 +126,7 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
             int wCPerm = ${filterWidth} - 1 - wC;
 
             for (int d2 = 0; d2 < ${outDepth}; d2++) {
-              float xValue = getDy(idyR, idyC, d2);
+              float xValue = getDy(batch, idyR, idyC, d2);
               float wValue = getW(wRPerm, wCPerm, d1, d2);
               dotProd += xValue * wValue;
             }
@@ -139,17 +143,19 @@ export class Conv2DDerBiasProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(yShape: [number, number, number]) {
-    const [yNumRows, yNumCols, outputDepth] = yShape;
+  constructor(yShape: [number, number, number, number]) {
+    const [batchSize, yNumRows, yNumCols, outputDepth] = yShape;
     this.outputShape = [outputDepth];
     this.userCode = `
       void main() {
         int d2 = getOutputCoords();
 
         float derBias = 0.0;
-        for (int yR = 0; yR < ${yNumRows}; yR++) {
-          for (int yC = 0; yC < ${yNumCols}; yC++) {
-            derBias += getDy(yR, yC, d2);
+        for (int b = 0; b < ${batchSize}; b++) {
+          for (int yR = 0; yR < ${yNumRows}; yR++) {
+            for (int yC = 0; yC < ${yNumCols}; yC++) {
+              derBias += getDy(b, yR, yC, d2);
+            }
           }
         }
         setOutput(derBias);
