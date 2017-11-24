@@ -19,10 +19,11 @@ import * as util from '../util';
 import {TypedArray} from '../util';
 
 import * as axis_util from './axis_util';
-import {NDArrayMathBackend} from './backends/math_backend';
+import {MatrixOrientation, NDArrayMathBackend} from './backends/math_backend';
 import {NDArrayMathBackendCPU} from './backends/math_backend_cpu';
 import {NDArrayMathBackendWebGL} from './backends/math_backend_webgl';
 import {GPGPUContext} from './backends/webgl/gpgpu_context';
+import {TextureManager} from './backends/webgl/texture_manager';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
@@ -306,7 +307,7 @@ export abstract class NDArrayMath {
         `Error in vectorTimesMatrix: size of vector (${v.size}) ` +
             `must match first dimension of matrix (${matrix.shape[0]})`);
 
-    return this.backend.matMul(v.as2D(1, -1), matrix).as1D();
+    return this.matMul(v.as2D(1, -1), matrix).as1D();
   }
 
   /**
@@ -329,7 +330,7 @@ export abstract class NDArrayMath {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return this.backend.matMul(matrix, v.as2D(-1, 1)).as1D();
+    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
   }
 
   /**
@@ -346,7 +347,7 @@ export abstract class NDArrayMath {
         v1.size === v2.size,
         `Error in dotProduct: size of inputs (${v1.size}) and (` +
             `${v2.size}) must match.`);
-    return this.backend.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
+    return this.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
   }
 
   /**
@@ -360,7 +361,7 @@ export abstract class NDArrayMath {
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +
             `${v1.rank} and ${v2.rank}.`);
 
-    return this.backend.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
+    return this.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
   }
 
   ///////////////
@@ -2013,7 +2014,11 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   getGPGPUContext(): GPGPUContext {
-    return this.backend.getGPGPUContext();
+    return (this.backend as NDArrayMathBackendWebGL).getGPGPUContext();
+  }
+
+  getTextureManager(): TextureManager {
+    return (this.backend as NDArrayMathBackendWebGL).getTextureManager();
   }
 }
 

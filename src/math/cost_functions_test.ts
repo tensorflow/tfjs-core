@@ -17,7 +17,7 @@
 
 import * as test_util from '../test_util';
 import {SquareCostFunc} from './cost_functions';
-import {NDArrayMathCPU} from './math_cpu';
+import {NDArrayMathCPU} from './math';
 import {Array1D} from './ndarray';
 
 describe('Cost functions', () => {
