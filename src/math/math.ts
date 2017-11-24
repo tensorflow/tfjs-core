@@ -19,14 +19,18 @@ import * as util from '../util';
 import {TypedArray} from '../util';
 
 import * as axis_util from './axis_util';
+import {NDArrayMathBackend} from './backends/math_backend';
+import {NDArrayMathBackendCPU} from './backends/math_backend_cpu';
+import {NDArrayMathBackendWebGL} from './backends/math_backend_webgl';
+import {GPGPUContext} from './backends/webgl/gpgpu_context';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import * as copy2d_util from './copy2d_util';
-import {NDArrayMathBackend} from './math_backend';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
+import {SumTypes} from './types';
 
 export type ScopeResultImmediate =
     void|NDArray|NDArray[]|{[key: string]: NDArray};
@@ -34,18 +38,6 @@ export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
-}
-
-export interface SumTypes {
-  float32: 'float32';
-  int32: 'int32';
-  bool: 'int32';
-}
-
-export enum SumTypesMap {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'int32'
 }
 
 export abstract class NDArrayMath {
@@ -2008,9 +2000,16 @@ export abstract class NDArrayMath {
   }
 }
 
-export enum MatrixOrientation {
-  REGULAR,
-  TRANSPOSED
+export class NDArrayMathCPU extends NDArrayMath {
+  constructor(safeMode = false) {
+    super(new NDArrayMathBackendCPU(), safeMode);
+  }
+}
+
+export class NDArrayMathGPU extends NDArrayMath {
+  constructor(gpgpu?: GPGPUContext, safeMode = false) {
+    super(new NDArrayMathBackendWebGL(gpgpu), safeMode);
+  }
 }
 
 function parseTupleParam(param: number|[number, number]): [number, number] {

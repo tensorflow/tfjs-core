@@ -15,10 +15,15 @@
  * limitations under the License.
  * =============================================================================
  */
-import {ConvInfo, DepthwiseConvInfo} from './conv_util';
-import {MatrixOrientation, SumTypes} from './math';
+import {ConvInfo, DepthwiseConvInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
+import {SumTypes} from '../types';
+
+export enum MatrixOrientation {
+  REGULAR,
+  TRANSPOSED
+}
 
 /**
  * The interface that defines the kernels that should be implemented when adding
@@ -26,7 +31,7 @@ import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './
  * this can be done gradually (throw an error for unimplemented methods).
  */
 export interface NDArrayMathBackend {
-  clone<T extends NDArray>(ndarray: T);
+  clone<T extends NDArray>(ndarray: T): T;
 
   slice1D(input: Array1D, begin: number, size: number): Array1D;
 

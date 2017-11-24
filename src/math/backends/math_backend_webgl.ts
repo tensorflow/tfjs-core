@@ -15,16 +15,18 @@
  * =============================================================================
  */
 
-import * as util from '../util';
-
-import * as axis_util from './axis_util';
-import {ConvInfo, DepthwiseConvInfo} from './conv_util';
-import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
-import {NDArrayMathBackend} from './math_backend';
-import * as ndarray from './ndarray';
+import * as util from '../../util';
+import * as axis_util from '../axis_util';
+import {ConvInfo, DepthwiseConvInfo} from '../conv_util';
+import * as ndarray from '../ndarray';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
-import * as reduce_util from './reduce_util';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
+import * as reduce_util from '../reduce_util';
+import {SumTypes, SumTypesMap} from '../types';
+// tslint:disable-next-line:max-line-length
+import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from '../webgl/conv_backprop_gpu';
+
+import {MatrixOrientation, NDArrayMathBackend} from './math_backend';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -32,8 +34,6 @@ import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
-// tslint:disable-next-line:max-line-length
-import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {Copy2DProgram} from './webgl/copy_gpu';

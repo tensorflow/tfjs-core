@@ -17,18 +17,18 @@
 
 import * as seedrandom from 'seedrandom';
 
-import * as util from '../util';
-
-import * as axis_util from './axis_util';
-import * as broadcast_util from './broadcast_util';
-import * as concat_util from './concat_util';
-import * as conv_util from './conv_util';
-import {ConvInfo, DepthwiseConvInfo} from './conv_util';
-import * as copy2D_util from './copy2d_util';
-import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
-import {NDArrayMathBackend} from './math_backend';
+import * as util from '../../util';
+import * as axis_util from '../axis_util';
+import * as broadcast_util from '../broadcast_util';
+import * as concat_util from '../concat_util';
+import * as conv_util from '../conv_util';
+import {ConvInfo, DepthwiseConvInfo} from '../conv_util';
+import * as copy2D_util from '../copy2d_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
+import {SumTypes, SumTypesMap} from '../types';
+
+import {MatrixOrientation, NDArrayMathBackend} from './math_backend';
 
 export class NDArrayMathBackendCPU implements NDArrayMathBackend {
   clone<T extends NDArray>(ndarray: T): T {
