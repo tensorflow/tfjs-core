@@ -969,21 +969,21 @@ export class NDArrayMathCPU extends NDArrayMath {
     const y = Array4D.zeros(convInfo.outShape);
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
-    for (let d = 0; d < convInfo.inChannels; ++d) {
-      for (let yR = 0; yR < convInfo.outHeight; ++yR) {
-        const xRCorner = yR * strideHeight - padTop;
-        const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
-        for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-          const xCCorner = yC * strideWidth - padLeft;
-          const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+          const xRCorner = yR * strideHeight - padTop;
+          const xRMin = Math.max(0, xRCorner);
+          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+            const xCCorner = yC * strideWidth - padLeft;
+            const xCMin = Math.max(0, xCCorner);
+            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
 
-          let minMaxValue =
-              (poolType === 'max' ? Number.NEGATIVE_INFINITY :
-                                    Number.POSITIVE_INFINITY);
-          let avgValue = 0;
-          for (let b = 0; b < convInfo.batchSize; ++b) {
+            let minMaxValue =
+                (poolType === 'max' ? Number.NEGATIVE_INFINITY :
+                                      Number.POSITIVE_INFINITY);
+            let avgValue = 0;
             for (let xR = xRMin; xR < xRMax; ++xR) {
               for (let xC = xCMin; xC < xCMax; ++xC) {
                 const pixel = x.get(b, xR, xC, d);

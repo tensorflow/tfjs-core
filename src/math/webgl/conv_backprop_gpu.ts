@@ -18,7 +18,7 @@
 import {Conv2DInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
-export class Conv2DDerWeightsProgram implements GPGPUProgram {
+export class Conv2DDerFilterProgram implements GPGPUProgram {
   variableNames = ['x', 'dy'];
   outputShape: number[];
   userCode: string;

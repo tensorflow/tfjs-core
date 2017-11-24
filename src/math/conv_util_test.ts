@@ -175,3 +175,45 @@ describe('conv_util computeConv2DInfo with depthwise=true', () => {
     expect(convInfo.outChannels).toEqual(6);
   });
 });
+
+describe('conv_util computeConvInfo channelsFirst', () => {
+  it('2x2 conv over 3x3 array with same pad', () => {
+    const inDepth = 2;
+    const outDepth = 4;
+    const inShape: [number, number, number, number] = [1, inDepth, 3, 3];
+    const stride = 1;
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape, [2, 2, inDepth, outDepth], stride, 'same', false,
+        'channelsFirst');
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(3);
+    expect(convInfo.outWidth).toEqual(3);
+    expect(convInfo.outChannels).toEqual(4);
+    expect(convInfo.outShape).toEqual([1, 4, 3, 3]);
+    // Should produce non-even padding with extra pixel at the right/bottom.
+    expect(convInfo.padInfo.left).toBe(0);
+    expect(convInfo.padInfo.right).toBe(1);
+    expect(convInfo.padInfo.top).toBe(0);
+    expect(convInfo.padInfo.bottom).toBe(1);
+  });
+
+  it('2x2 conv over 3x3 array with valid pad', () => {
+    const inDepth = 6;
+    const outDepth = 16;
+    const inShape: [number, number, number, number] = [1, inDepth, 3, 3];
+    const stride = 1;
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape, [2, 2, inDepth, outDepth], stride, 'valid', false,
+        'channelsFirst');
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(2);
+    expect(convInfo.outWidth).toEqual(2);
+    expect(convInfo.outChannels).toEqual(16);
+    expect(convInfo.outShape).toEqual([1, 16, 2, 2]);
+    // Should produce no padding.
+    expect(convInfo.padInfo.left).toBe(0);
+    expect(convInfo.padInfo.right).toBe(0);
+    expect(convInfo.padInfo.top).toBe(0);
+    expect(convInfo.padInfo.bottom).toBe(0);
+  });
+});

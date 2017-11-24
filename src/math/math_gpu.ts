@@ -16,6 +16,7 @@
  */
 
 import * as util from '../util';
+
 import * as axis_util from './axis_util';
 import {Conv2DInfo} from './conv_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
@@ -31,7 +32,7 @@ import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
-import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from './webgl/conv_backprop_gpu';
+import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {Copy2DProgram} from './webgl/copy_gpu';
@@ -515,7 +516,7 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected conv2dDerFilterInternal(
       x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D {
-    const program = new Conv2DDerWeightsProgram(convInfo);
+    const program = new Conv2DDerFilterProgram(convInfo);
     return this.compileAndRun(program, [x, dY]);
   }
 
