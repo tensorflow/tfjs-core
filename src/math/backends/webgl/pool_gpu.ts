@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ConvInfo} from '../conv_util';
+import {ConvInfo} from '../../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Pool2DProgram implements GPGPUProgram {

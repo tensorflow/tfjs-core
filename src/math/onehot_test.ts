@@ -17,8 +17,7 @@
 
 import * as test_util from '../test_util';
 import {NDArrayMath} from './math';
-import {NDArrayMathCPU} from './math_cpu';
-import {NDArrayMathGPU} from './math_gpu';
+import {NDArrayMathCPU, NDArrayMathGPU} from './math';
 import {Array1D} from './ndarray';
 
 function executeTests(mathFactory: () => NDArrayMath) {

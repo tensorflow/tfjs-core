@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {DepthwiseConvInfo} from '../conv_util';
+import {DepthwiseConvInfo} from '../../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class DepthwiseConv2DProgram implements GPGPUProgram {

@@ -53,7 +53,8 @@ export abstract class NDArrayMath {
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(private backend: NDArrayMathBackend, private safeMode: boolean) {}
+  constructor(
+      protected backend: NDArrayMathBackend, private safeMode: boolean) {}
 
   /**
    * Create a new math scope. Put chained math operations inside a scope
@@ -2009,6 +2010,10 @@ export class NDArrayMathCPU extends NDArrayMath {
 export class NDArrayMathGPU extends NDArrayMath {
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
     super(new NDArrayMathBackendWebGL(gpgpu), safeMode);
+  }
+
+  getGPGPUContext(): GPGPUContext {
+    return this.backend.getGPGPUContext();
   }
 }
 

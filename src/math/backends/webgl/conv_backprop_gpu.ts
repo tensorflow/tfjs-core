@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import * as conv_util from '../conv_util';
-import {ConvInfo} from '../conv_util';
+import * as conv_util from '../../conv_util';
+import {ConvInfo} from '../../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DDerWeightsProgram implements GPGPUProgram {

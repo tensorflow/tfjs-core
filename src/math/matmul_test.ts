@@ -18,10 +18,10 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {MatrixOrientation} from './math';
-import {NDArrayMathGPU} from './math_gpu';
+import {MatrixOrientation} from './backends/math_backend';
+import * as webgl_util from './backends/webgl/webgl_util';
+import {NDArrayMathGPU} from './math';
 import {Array1D, Array2D, Array3D} from './ndarray';
-import * as webgl_util from './webgl/webgl_util';
 
 const commonTests: MathTests = it => {
   it('A x B', math => {

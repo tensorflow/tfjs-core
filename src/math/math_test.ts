@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import {NDArrayMathGPU} from './math_gpu';
+import {NDArrayMathGPU} from './math';
 import {Array1D, Array3D, Scalar} from './ndarray';
 
 // math.scope
