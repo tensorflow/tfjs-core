@@ -1559,11 +1559,11 @@ test_util.describeCustom('NDArray.randNormal', () => {
 
 test_util.describeCustom('NDArray.randTruncatedNormal', () => {
   // Expect higher variances for truncated values.
-  const EPSILON_FLOAT32 = 0.25;
-  const EPSILON_NONFLOAT = 0.30;
+  const EPSILON_FLOAT32 = 0.30;
+  const EPSILON_NONFLOAT = 0.35;
 
   it('should return a random 1D float32 array', () => {
-    const shape: [number] = [1000];
+    const shape: [number] = [2000];
 
     // Ensure defaults to float32 w/o type:
     let result = NDArray.randTruncatedNormal(shape, 0, 3.5);
