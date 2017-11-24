@@ -20,10 +20,8 @@ import {Environment, Features} from './environment';
 import {NDArrayMath} from './math/math';
 import {NDArrayMathCPU} from './math/math_cpu';
 import {NDArrayMathGPU} from './math/math_gpu';
-import {validateFramebuffer} from './math/webgl/webgl_util';
 import * as util from './util';
 import {DType, TypedArray} from './util';
-
 
 /** Accuracy for tests. */
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
@@ -80,24 +78,7 @@ export function jarqueBeraNormalityTest(values: TypedArray|number[]) {
   const s = skewness(values);
   const k = kurtosis(values);
   const jb = n / 6 * (Math.pow(s, 2) + 0.25 * Math.pow(k - 3, 2));
-  // console.log('n', n);
-  // console.log('s', s);
-  // console.log('k', k);
-  // console.log('jb', jb);
-  // console.log('mean', mean(values));
-  // console.log('stdv', standardDeviation(values, mean(values)));
-  // let high = 0, low = 0;
-  // for (let i = 0; i < values.length; i++) {
-  //   if (values[i] > high) {
-  //     high = values[i];
-  //   } else if (values[i] < low) {
-  //     low = values[i];
-  //   }
-  // }
-  // console.log('high', high);
-  // console.log('low', low);
-  // JB test requires 2-degress of freedom from Chi-Square:
-  //   @ 0.999 = 13.816
+  // JB test requires 2-degress of freedom from Chi-Square @ 0.999:
   // http://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm
   const CHI_SQUARE_2DEG = 13.816;
   if (jb > CHI_SQUARE_2DEG) {
@@ -109,9 +90,9 @@ export function expectArrayInMeanStdRange(
     actual: TypedArray|number[], expectedMean: number, expectedStdDev: number,
     epsilon = TEST_EPSILON) {
   const actualMean = mean(actual);
-  const actualStdDev = standardDeviation(actual, actualMean);
   expectNumbersClose(actualMean, expectedMean, epsilon);
-  expectNumbersClose(actualStdDev, expectedStdDev, epsilon);
+  expectNumbersClose(
+      standardDeviation(actual, actualMean), expectedStdDev, epsilon);
 }
 
 export function expectArraysClose(
