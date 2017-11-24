@@ -62,7 +62,7 @@ export class MPRandGauss implements RandGauss {
         v1 = 2 * Math.random() - 1;
         v2 = 2 * Math.random() - 1;
         s = v1 * v1 + v2 * v2;
-      } while (s >= 1 || s == 0);
+      } while (s >= 1 || s === 0);
 
       const mul = Math.sqrt(-2.0 * Math.log(s) / s);
       resultX = this.mean + this.stdDev * v1 * mul;
