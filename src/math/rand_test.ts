@@ -61,7 +61,7 @@ test_util.describeCustom('MPRandGauss', () => {
   it('Should not have a more than 2x std-d from mean for truncated values',
      () => {
        const rand = new MPRandGauss(0, 1.5, 'float32', true /* truncated */);
-       for (let i = 0; i < 10; i++) {
+       for (let i = 0; i < 1000; i++) {
          expect(Math.abs((rand.nextValue() - 0) / 1.5)).toBeLessThan(2.0);
        }
      });
