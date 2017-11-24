@@ -30,8 +30,14 @@ export type PadInfo = {
  * information.
  */
 export type ConvInfo = {
-  inShape: [number, number, number, number],
-  outShape: [number, number, number, number],
+  batchSize: number,
+  inHeight: number,
+  inWidth: number,
+  inChannels: number,
+  outHeight: number,
+  outWidth: number,
+  outChannels: number,
+  dataFormat: 'channelsFirst'|'channelsLast',
   strideHeight: number,
   strideWidth: number,
   filterHeight: number,
@@ -82,25 +88,63 @@ export function computeDepthwiseConv2DInfo(
   };
 }
 
+export type Conv2DShapes = {
+  inShape: [number, number, number, number],
+  outShape: [number, number, number, number],
+  filterShape: [number, number, number, number]
+};
+
+export function getConv2DShapes(convInfo: ConvInfo): Conv2DShapes {
+  let inShape: [number, number, number, number];
+  let outShape: [number, number, number, number];
+  if (convInfo.dataFormat === 'channelsFirst') {
+    inShape = [
+      convInfo.batchSize, convInfo.inChannels, convInfo.inHeight,
+      convInfo.inWidth
+    ];
+    outShape = [
+      convInfo.batchSize, convInfo.outChannels, convInfo.outHeight,
+      convInfo.outWidth
+    ];
+  } else if (convInfo.dataFormat === 'channelsLast') {
+    inShape = [
+      convInfo.batchSize, convInfo.inHeight, convInfo.inWidth,
+      convInfo.inChannels
+    ];
+    outShape = [
+      convInfo.batchSize, convInfo.outHeight, convInfo.outWidth,
+      convInfo.outChannels
+    ];
+  }
+  const filterShape: [number, number, number, number] = [
+    convInfo.filterHeight, convInfo.filterWidth, convInfo.inChannels,
+    convInfo.outChannels
+  ];
+  return {inShape, outShape, filterShape};
+}
+
 /**
  * Computes the information for a forward pass of a convolution/pooling
  * operation.
  */
 export function computeConv2DInfo(
     inShape: [number, number, number, number], filterHeight: number,
-    filterWidth: number, outDepth: number, strideHeight: number,
+    filterWidth: number, outChannels: number, strideHeight: number,
     strideWidth: number, pad: 'same'|'valid'|number): ConvInfo {
-  const batch = inShape[0];
-  const inHeight = inShape[1];
-  const inWidth = inShape[2];
+  const [batchSize, inHeight, inWidth, inChannels] = inShape;
   const {padInfo, outHeight, outWidth} = getPadAndOutInfo(
       pad, inHeight, inWidth, strideHeight, strideWidth, filterHeight,
       filterWidth);
-  const outShape: [number, number, number, number] =
-      [batch, outHeight, outWidth, outDepth];
   return {
-    inShape,
-    outShape,
+    batchSize,
+    // TODO(dsmilkov): Add support for `channelsFirst`.
+    dataFormat: 'channelsLast',
+    inHeight,
+    inWidth,
+    inChannels,
+    outHeight,
+    outWidth,
+    outChannels,
     padInfo,
     strideHeight,
     strideWidth,
@@ -141,6 +185,7 @@ export function computeDefaultPad(
   return Math.floor((inputShape[0] * (stride - 1) - stride + fieldSize) / 2);
 }
 
+/** @deprecated Use conv_util.getShapes(convInfo) instead. */
 export function computeWeightsShape4D(
     inputDepth: number, outputDepth: number, filterHeight: number,
     filterWidth: number): [number, number, number, number] {

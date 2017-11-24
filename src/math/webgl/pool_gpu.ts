@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as conv_util from '../conv_util';
 import {ConvInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
@@ -34,16 +35,10 @@ export class Pool2DProgram implements GPGPUProgram {
     const filterWidth = convInfo.filterWidth;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-
-    let xNumRows = convInfo.inShape[1];
-    let xNumCols = convInfo.inShape[2];
-    if (computePositions) {
-      xNumRows = convInfo.inShape[0];
-      xNumCols = convInfo.inShape[1];
-    }
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
-    this.outputShape = convInfo.outShape;
+    const shapes = conv_util.getConv2DShapes(convInfo);
+    this.outputShape = shapes.outShape;
 
     const isAvgPool = poolType === 'avg';
 
@@ -64,10 +59,11 @@ export class Pool2DProgram implements GPGPUProgram {
         const ivec2 pads = ivec2(${padTop}, ${padLeft});
 
         void main() {
-          ivec3 coords = getOutputCoords();
-          int d = coords.z;
+          ivec4 coords = getOutputCoords();
+          int batch = coords[0];
+          int d = coords[3];
 
-          ivec2 xRCCorner = coords.xy * strides - pads;
+          ivec2 xRCCorner = coords.yz * strides - pads;
           int xRCorner = xRCCorner.x;
           int xCCorner = xRCCorner.y;
 
@@ -81,18 +77,18 @@ export class Pool2DProgram implements GPGPUProgram {
           for (int wR = 0; wR < ${filterHeight}; wR++) {
             int xR = xRCorner + wR;
 
-            if (xR < 0 || xR >= ${xNumRows}) {
+            if (xR < 0 || xR >= ${convInfo.inHeight}) {
               continue;
             }
 
             for (int wC = 0; wC < ${filterWidth}; wC++) {
               int xC = xCCorner + wC;
 
-              if (xC < 0 || xC >= ${xNumCols}) {
+              if (xC < 0 || xC >= ${convInfo.inWidth}) {
                 continue;
               }
 
-              float value = getX(xR, xC, d);
+              float value = getX(batch, xR, xC, d);
 
               if (isNaN(value)) {
                 setOutput(value);
@@ -146,7 +142,7 @@ export class Pool2DProgram implements GPGPUProgram {
       const vec4 ones = vec4(1.0, 1.0, 1.0, 1.0);
 
       float getValue(int batch, int xR, int xC, int d) {
-        if (xC < 0 || xC >= ${xNumCols}) {
+        if (xC < 0 || xC >= ${convInfo.inWidth}) {
           return initializationValue;
         }
         return getX(batch, xR, xC, d);
@@ -169,7 +165,7 @@ export class Pool2DProgram implements GPGPUProgram {
         for (int wR = 0; wR < ${filterHeight}; wR++) {
           int xR = xRCorner + wR;
 
-          if (xR < 0 || xR >= ${xNumRows}) {
+          if (xR < 0 || xR >= ${convInfo.inHeight}) {
             continue;
           }
 

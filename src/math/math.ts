@@ -1498,16 +1498,16 @@ export abstract class NDArrayMath {
         inShape.length === dy.rank,
         `Length of inShape ` +
             `(${inShape.length}) and rank of dy (${dy.rank}) must match`);
+
     let inShape4D = inShape as [number, number, number, number];
-    if (inShape.length === 3) {
-      inShape4D = [1, inShape[0], inShape[1], inShape[2]];
-    }
     let dy4D = dy as Array4D;
     let reshapedTo4D = false;
     if (dy.rank === 3) {
       reshapedTo4D = true;
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+      inShape4D = [1, inShape[0], inShape[1], inShape[2]];
     }
+
     const inDepth = inShape4D[3];
     const outDepth = dy4D.shape[3];
     util.assert(
@@ -1770,37 +1770,58 @@ export abstract class NDArrayMath {
 
   /**
    * Computes the backprop of a max pool.
-   * @param dy The dy error.
-   * @param x The input image, rank 3 of shape [height, width, inDepth].
+   *
+   * @param dy The dy error, of rank 4 or rank 3 of shape
+   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is assumed.
+   * @param input The input image, of rank 4 or rank 3 of shape
+   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
   maxPoolBackprop(
-      dy: Array3D, x: Array3D, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D {
+      dy: Array3D|Array4D, input: Array3D|Array4D,
+      filterSize: [number, number]|number, strides: [number, number]|number,
+      pad: 'valid'|'same'|number): Array3D|Array4D {
     util.assert(
-        dy.rank === 3,
-        `Error in maxPoolBackprop: dy must be rank 3 but got rank ` +
-            `${dy.rank}.`);
+        input.rank === dy.rank,
+        `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
+
+    let input4D = input as Array4D;
+    let dy4D = dy as Array4D;
+    let reshapedTo4D = false;
+    if (input.rank === 3) {
+      reshapedTo4D = true;
+      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+    }
+
     util.assert(
-        x.rank === 3,
-        `Error in maxPoolBackprop: x must be rank 3 but got rank ` +
-            `${x.rank}.`);
+        dy4D.rank === 4,
+        `Error in maxPoolBackprop: dy must be rank 4 but got rank ` +
+            `${dy4D.rank}.`);
+    util.assert(
+        input4D.rank === 4,
+        `Error in maxPoolBackprop: input must be rank 4 but got rank ` +
+            `${input4D.rank}.`);
 
     const [filterHeight, filterWidth] = parseTupleParam(filterSize);
-    const outDepth = x.shape[2];
+    const channels = input4D.shape[3];
     const [strideHeight, strideWidth] = parseTupleParam(strides);
-    // TODO(dsmilkov): Add batching.
-    const convInfo = getNonBatchedConvInfo(
-        x.shape, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
-        pad);
-    return this.executeOp(
-        'maxPoolBackprop', () => this.maxPoolBackpropInternal(dy, x, convInfo));
+    const convInfo = conv_util.computeConv2DInfo(
+        input4D.shape, filterHeight, filterWidth, channels, strideHeight,
+        strideWidth, pad);
+    return this.executeOp('maxPoolBackprop', () => {
+      const res = this.maxPoolBackpropInternal(dy4D, input4D, convInfo);
+      if (reshapedTo4D) {
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+      }
+      return res;
+    });
   }
   protected abstract maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D;
+      dy: Array4D, x: Array4D, convInfo: ConvInfo): Array4D;
 
   /**
    * Computes the 2D min pooling of an image.
@@ -2202,20 +2223,4 @@ export enum MatrixOrientation {
 
 function parseTupleParam(param: number|[number, number]): [number, number] {
   return typeof param === 'number' ? [param, param] : param;
-}
-
-// TODO(dsmilkov): Remove when all conv/pool ops have full batching support.
-function getNonBatchedConvInfo(
-    inShape: [number, number, number], filterHeight: number,
-    filterWidth: number, outDepth: number, strideHeight: number,
-    strideWidth: number, pad: number|'same'|'valid'): ConvInfo {
-  const inShape4D: [number, number, number, number] =
-      [1, inShape[0], inShape[1], inShape[2]];
-  const convInfo = conv_util.computeConv2DInfo(
-      inShape4D, filterHeight, filterWidth, outDepth, strideHeight, strideWidth,
-      pad);
-  convInfo.inShape = inShape as [number, number, number, number];
-  convInfo.outShape =
-      convInfo.outShape.slice(1) as [number, number, number, number];
-  return convInfo;
 }

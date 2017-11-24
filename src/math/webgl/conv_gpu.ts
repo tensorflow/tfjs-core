@@ -15,7 +15,9 @@
  * =============================================================================
  */
 
+import * as conv_util from '../conv_util';
 import {ConvInfo} from '../conv_util';
+
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DProgram implements GPGPUProgram {
@@ -28,9 +30,10 @@ export class Conv2DProgram implements GPGPUProgram {
       this.variableNames.push('bias');
     }
 
-    this.outputShape = convInfo.outShape;
+    const shapes = conv_util.getConv2DShapes(convInfo);
+    this.outputShape = shapes.outShape;
+
     const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
-    const [, xNumRows, xNumCols, inputDepth] = convInfo.inShape;
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
@@ -38,8 +41,8 @@ export class Conv2DProgram implements GPGPUProgram {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
 
-    const inputDepthNearestVec4 = Math.floor(inputDepth / 4) * 4;
-    const inputDepthVec4Remainder = inputDepth % 4;
+    const inputDepthNearestVec4 = Math.floor(convInfo.inChannels / 4) * 4;
+    const inputDepthVec4Remainder = convInfo.inChannels % 4;
 
     this.userCode = `
       const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
@@ -60,14 +63,14 @@ export class Conv2DProgram implements GPGPUProgram {
         for (int wR = 0; wR < ${filterHeight}; wR++) {
           int xR = xRCorner + wR;
 
-          if (xR < 0 || xR >= ${xNumRows}) {
+          if (xR < 0 || xR >= ${convInfo.inHeight}) {
             continue;
           }
 
           for (int wC = 0; wC < ${filterWidth}; wC++) {
             int xC = xCCorner + wC;
 
-            if (xC < 0 || xC >= ${xNumCols}) {
+            if (xC < 0 || xC >= ${convInfo.inWidth}) {
               continue;
             }
 

@@ -723,30 +723,29 @@ export class NDArrayMathCPU extends NDArrayMath {
   protected conv2dInternal(
       x: Array4D, filter: Array4D, bias: Array1D|null,
       convInfo: ConvInfo): Array4D {
-    const [batchSize, xRows, xCols, inputDepth] = x.shape;
-    const filterHeight = filter.shape[0];
-    const filterWidth = filter.shape[1];
-    const outDepth = filter.shape[3];
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const y = Array4D.zeros(convInfo.outShape);
+    const shapes = conv_util.getConv2DShapes(convInfo);
+    const y = Array4D.zeros(shapes.outShape);
 
-    for (let b = 0; b < batchSize; ++b) {
-      for (let d2 = 0; d2 < outDepth; ++d2) {
-        for (let yR = 0; yR < y.shape[1]; ++yR) {
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
           const xRCorner = yR * convInfo.strideHeight - padLeft;
           const xRMin = Math.max(0, xRCorner);
-          const xRMax = Math.min(xRows, filterHeight + xRCorner);
-          for (let yC = 0; yC < y.shape[2]; ++yC) {
+          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
             const xCCorner = yC * convInfo.strideWidth - padTop;
             const xCMin = Math.max(0, xCCorner);
-            const xCMax = Math.min(xCols, filterWidth + xCCorner);
+            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
             let dotProd = 0;
             for (let xR = xRMin; xR < xRMax; ++xR) {
               const wR = xR - xRCorner;
               for (let xC = xCMin; xC < xCMax; ++xC) {
                 const wC = xC - xCCorner;
-                for (let d1 = 0; d1 < inputDepth; ++d1) {
+                for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
                   const pixel = x.get(b, xR, xC, d1);
                   const weight = filter.get(wR, wC, d1, d2);
                   dotProd += pixel * weight;
@@ -764,29 +763,27 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected conv2dDerInputInternal(
       dy: Array4D, filter: Array4D, convInfo: ConvInfo): Array4D {
-    const inDepth = filter.shape[2];
-    const [batchSize, yRows, yCols, outDepth] = dy.shape;
-    const filterHeight = filter.shape[0];
-    const filterWidth = filter.shape[1];
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
     const topPad = filterHeight - 1 - convInfo.padInfo.top;
     const leftPad = filterWidth - 1 - convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-
-    const dx = Array4D.zeros(convInfo.inShape);
-    for (let b = 0; b < batchSize; ++b) {
-      for (let d1 = 0; d1 < inDepth; ++d1) {
-        for (let xR = 0; xR < dx.shape[1]; ++xR) {
+    const shapes = conv_util.getConv2DShapes(convInfo);
+    const dx = Array4D.zeros(shapes.inShape);
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+        for (let xR = 0; xR < convInfo.inHeight; ++xR) {
           const xRCorner = xR - leftPad;
           const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
-          const yRMax =
-              Math.min(yRows, (filterHeight + xRCorner) / strideHeight);
+          const yRMax = Math.min(
+              convInfo.outHeight, (filterHeight + xRCorner) / strideHeight);
 
-          for (let xC = 0; xC < dx.shape[2]; ++xC) {
+          for (let xC = 0; xC < convInfo.inWidth; ++xC) {
             const xCCorner = xC - topPad;
             const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
-            const yCMax =
-                Math.min(yCols, (filterWidth + xCCorner) / strideWidth);
+            const yCMax = Math.min(
+                convInfo.outWidth, (filterWidth + xCCorner) / strideWidth);
 
             let dotProd = 0;
             for (let yR = xRMin; yR < yRMax; ++yR) {
@@ -795,7 +792,7 @@ export class NDArrayMathCPU extends NDArrayMath {
               for (let yC = xCMin; yC < yCMax; ++yC) {
                 const wC = yC * strideWidth - xCCorner;
 
-                for (let d2 = 0; d2 < outDepth; ++d2) {
+                for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
                   const pixel = dy.get(b, yR, yC, d2);
                   const weight = filter.get(
                       filterHeight - 1 - wR, filterWidth - 1 - wC, d1, d2);
@@ -813,33 +810,31 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected conv2dDerFilterInternal(
       x: Array4D, dY: Array4D, convInfo: ConvInfo): Array4D {
-    const [batchSize, xNumRows, xNumCols, inDepth] = x.shape;
-    const [, yNumRows, yNumCols, outDepth] = dY.shape;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const weightsShape = conv_util.computeWeightsShape4D(
-        inDepth, outDepth, filterHeight, filterWidth);
-    const dW = Array4D.zeros(weightsShape);
+    const shapes = conv_util.getConv2DShapes(convInfo);
+    const dW = Array4D.zeros(shapes.filterShape);
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
 
     for (let wR = 0; wR < filterHeight; ++wR) {
       const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
-      const yRMax = Math.min(yNumRows, (xNumRows + topPad - wR) / strideHeight);
+      const yRMax = Math.min(
+          convInfo.outHeight, (convInfo.inHeight + topPad - wR) / strideHeight);
 
       for (let wC = 0; wC < filterWidth; ++wC) {
         const yCMin = Math.max(0, Math.ceil((leftPad - wC) / strideWidth));
-        const yCMax =
-            Math.min(yNumCols, (xNumCols + leftPad - wC) / strideWidth);
+        const yCMax = Math.min(
+            convInfo.outWidth, (convInfo.inWidth + leftPad - wC) / strideWidth);
 
-        for (let d1 = 0; d1 < inDepth; ++d1) {
-          for (let d2 = 0; d2 < outDepth; ++d2) {
+        for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+          for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
             // Need to convolve.
             let dotProd = 0;
-            for (let b = 0; b < batchSize; ++b) {
+            for (let b = 0; b < convInfo.batchSize; ++b) {
               for (let yR = yRMin; yR < yRMax; ++yR) {
                 const xR = wR + yR * strideHeight - topPad;
                 for (let yC = yCMin; yC < yCMax; ++yC) {
@@ -974,29 +969,29 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   private pool(x: Array4D, convInfo: ConvInfo, poolType: 'max'|'min'|'avg') {
-    const [batchSize, xRows, xCols, depth] = x.shape;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const y = Array4D.zeros(convInfo.outShape);
+    const shapes = conv_util.getConv2DShapes(convInfo);
+    const y = Array4D.zeros(shapes.outShape);
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
-    for (let d = 0; d < depth; ++d) {
-      for (let yR = 0; yR < y.shape[1]; ++yR) {
+    for (let d = 0; d < convInfo.inChannels; ++d) {
+      for (let yR = 0; yR < convInfo.outHeight; ++yR) {
         const xRCorner = yR * strideHeight - padTop;
         const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, filterHeight + xRCorner);
-        for (let yC = 0; yC < y.shape[2]; ++yC) {
+        const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+        for (let yC = 0; yC < convInfo.outWidth; ++yC) {
           const xCCorner = yC * strideWidth - padLeft;
           const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, filterWidth + xCCorner);
+          const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
 
           let minMaxValue =
               (poolType === 'max' ? Number.NEGATIVE_INFINITY :
                                     Number.POSITIVE_INFINITY);
           let avgValue = 0;
-          for (let b = 0; b < batchSize; ++b) {
+          for (let b = 0; b < convInfo.batchSize; ++b) {
             for (let xR = xRMin; xR < xRMax; ++xR) {
               for (let xC = xCMin; xC < xCMax; ++xC) {
                 const pixel = x.get(b, xR, xC, d);
@@ -1028,10 +1023,9 @@ export class NDArrayMathCPU extends NDArrayMath {
     return this.pool(x, convInfo, 'max');
   }
 
-  maxPoolPositions(x: Array3D, convInfo: ConvInfo) {
-    const [xRows, xCols, depth] = x.shape;
-    const outputShape = convInfo.outShape;
-    const maxPositions = Array3D.zeros(outputShape);
+  maxPoolPositions(x: Array4D, convInfo: ConvInfo) {
+    const shapes = conv_util.getConv2DShapes(convInfo);
+    const maxPositions = Array4D.zeros(shapes.outShape);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -1039,29 +1033,31 @@ export class NDArrayMathCPU extends NDArrayMath {
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
 
-    for (let d = 0; d < depth; ++d) {
-      for (let yR = 0; yR < outputShape[0]; ++yR) {
-        const xRCorner = yR * strideHeight - padTop;
-        const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, filterHeight + xRCorner);
-        for (let yC = 0; yC < outputShape[1]; ++yC) {
-          const xCCorner = yC * strideWidth - padLeft;
-          const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, filterWidth + xCCorner);
-          let maxValue = Number.NEGATIVE_INFINITY;
-          let maxPosition = -1;
-          for (let xR = xRMin; xR < xRMax; ++xR) {
-            const wR = xR - xRCorner;
-            for (let xC = xCMin; xC < xCMax; ++xC) {
-              const wC = xC - xCCorner;
-              const pixel = x.get(xR, xC, d);
-              if (pixel > maxValue) {
-                maxValue = pixel;
-                maxPosition = wR * filterWidth + wC;
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+          const xRCorner = yR * strideHeight - padTop;
+          const xRMin = Math.max(0, xRCorner);
+          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+            const xCCorner = yC * strideWidth - padLeft;
+            const xCMin = Math.max(0, xCCorner);
+            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
+            let maxValue = Number.NEGATIVE_INFINITY;
+            let maxPosition = -1;
+            for (let xR = xRMin; xR < xRMax; ++xR) {
+              const wR = xR - xRCorner;
+              for (let xC = xCMin; xC < xCMax; ++xC) {
+                const wC = xC - xCCorner;
+                const pixel = x.get(b, xR, xC, d);
+                if (pixel > maxValue) {
+                  maxValue = pixel;
+                  maxPosition = wR * filterWidth + wC;
+                }
               }
             }
+            maxPositions.set(maxPosition, b, yR, yC, d);
           }
-          maxPositions.set(maxPosition, yR, yC, d);
         }
       }
     }
@@ -1069,7 +1065,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D {
+      dy: Array4D, x: Array4D, convInfo: ConvInfo): Array4D {
     const maxPositions = this.maxPoolPositions(x, convInfo);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1077,40 +1073,43 @@ export class NDArrayMathCPU extends NDArrayMath {
     const filterWidth = convInfo.filterWidth;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
-    const [dyRows, dyCols, depth] = dy.shape;
-    const dx = Array3D.zeros(x.shape);
+    const dx = Array4D.zeros(x.shape);
 
-    for (let d = 0; d < depth; ++d) {
-      for (let dxR = 0; dxR < dx.shape[0]; ++dxR) {
-        for (let dxC = 0; dxC < dx.shape[1]; ++dxC) {
-          // Shader code begins.
-          const dyRCorner = dxR - padTop;
-          const dyCCorner = dxC - padLeft;
-          let dotProd = 0;
-          for (let wR = 0; wR < filterHeight; ++wR) {
-            const dyR = (dyRCorner + wR) / strideHeight;
-            if (dyR < 0 || dyR >= dyRows || Math.floor(dyR) !== dyR) {
-              continue;
-            }
-            for (let wC = 0; wC < filterWidth; ++wC) {
-              const dyC = (dyCCorner + wC) / strideWidth;
-              if (dyC < 0 || dyC >= dyCols || Math.floor(dyC) !== dyC) {
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let dxR = 0; dxR < convInfo.inHeight; ++dxR) {
+          for (let dxC = 0; dxC < convInfo.inWidth; ++dxC) {
+            // Shader code begins.
+            const dyRCorner = dxR - padTop;
+            const dyCCorner = dxC - padLeft;
+            let dotProd = 0;
+            for (let wR = 0; wR < filterHeight; ++wR) {
+              const dyR = (dyRCorner + wR) / strideHeight;
+              if (dyR < 0 || dyR >= convInfo.outHeight ||
+                  Math.floor(dyR) !== dyR) {
                 continue;
               }
-              const maxPos = filterHeight * filterWidth - 1 -
-                  maxPositions.get(dyR, dyC, d);
-              const curPos = wR * filterWidth + wC;
+              for (let wC = 0; wC < filterWidth; ++wC) {
+                const dyC = (dyCCorner + wC) / strideWidth;
+                if (dyC < 0 || dyC >= convInfo.outWidth ||
+                    Math.floor(dyC) !== dyC) {
+                  continue;
+                }
+                const maxPos = filterHeight * filterWidth - 1 -
+                    maxPositions.get(b, dyR, dyC, d);
+                const curPos = wR * filterWidth + wC;
 
-              const mask = maxPos === curPos ? 1 : 0;
-              if (mask === 0) {
-                continue;
+                const mask = maxPos === curPos ? 1 : 0;
+                if (mask === 0) {
+                  continue;
+                }
+
+                const pixel = dy.get(b, dyR, dyC, d);
+                dotProd += pixel * mask;
               }
-
-              const pixel = dy.get(dyR, dyC, d);
-              dotProd += pixel * mask;
             }
+            dx.set(dotProd, b, dxR, dxC, d);
           }
-          dx.set(dotProd, dxR, dxC, d);
         }
       }
     }

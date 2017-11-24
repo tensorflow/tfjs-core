@@ -546,11 +546,11 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D {
+      dy: Array4D, x: Array4D, convInfo: ConvInfo): Array4D {
     const getPositions = true;
     const maxPoolPositionsProgram =
         new Pool2DProgram(convInfo, 'max', getPositions);
-    const maxPoolPositions: Array3D =
+    const maxPoolPositions: Array4D =
         this.compileAndRun(maxPoolPositionsProgram, [x]);
 
     const maxPoolBackPropProgram = new MaxPool2DBackpropProgram(convInfo);
@@ -558,7 +558,7 @@ export class NDArrayMathGPU extends NDArrayMath {
     const result =
         this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
     maxPoolPositions.dispose();
-    return result as Array3D;
+    return result as Array4D;
   }
 
   protected resizeBilinear3DInternal(

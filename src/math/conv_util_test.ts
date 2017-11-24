@@ -22,14 +22,20 @@ describe('conv_util computeConvInfo', () => {
     const inShape: [number, number, number, number] = [1, 1, 1, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 1, 1, 1, 1, 1, 'same');
-    expect(convInfo.outShape).toEqual([1, 1, 1, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(1);
+    expect(convInfo.outWidth).toEqual(1);
+    expect(convInfo.outChannels).toEqual(1);
   });
 
   it('2x2 conv over 3x3 array with same pad', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 2, 2, 1, 1, 1, 'same');
-    expect(convInfo.outShape).toEqual([1, 3, 3, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(3);
+    expect(convInfo.outWidth).toEqual(3);
+    expect(convInfo.outChannels).toEqual(1);
     // Should produce non-even padding with extra pixel at the right/bottom.
     expect(convInfo.padInfo.left).toBe(0);
     expect(convInfo.padInfo.right).toBe(1);
@@ -41,56 +47,80 @@ describe('conv_util computeConvInfo', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 2, 2, 1, 1, 1, 'same');
-    expect(convInfo.outShape).toEqual([1, 3, 3, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(3);
+    expect(convInfo.outWidth).toEqual(3);
+    expect(convInfo.outChannels).toEqual(1);
   });
 
   it('2x2 conv over 3x3 array with valid pad', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 2, 2, 1, 1, 1, 'valid');
-    expect(convInfo.outShape).toEqual([1, 2, 2, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(2);
+    expect(convInfo.outWidth).toEqual(2);
+    expect(convInfo.outChannels).toEqual(1);
   });
 
   it('2x2 conv over 3x3 array with valid pad with stride 2', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 2, 2, 1, 2, 2, 'valid');
-    expect(convInfo.outShape).toEqual([1, 1, 1, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(1);
+    expect(convInfo.outWidth).toEqual(1);
+    expect(convInfo.outChannels).toEqual(1);
   });
 
   it('2x2 conv over 3x3 array with valid pad with stride 2', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 2, 2, 1, 2, 2, 'valid');
-    expect(convInfo.outShape).toEqual([1, 1, 1, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(1);
+    expect(convInfo.outWidth).toEqual(1);
+    expect(convInfo.outChannels).toEqual(1);
   });
 
   it('2x1 conv over 3x3 array with valid pad with stride 1', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 2, 1, 1, 1, 1, 'valid');
-    expect(convInfo.outShape).toEqual([1, 2, 3, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(2);
+    expect(convInfo.outWidth).toEqual(3);
+    expect(convInfo.outChannels).toEqual(1);
   });
 
   it('2x1 conv over 3x3 array with valid pad with strides h=2, w=1', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 2, 1, 1, 2, 1, 'valid');
-    expect(convInfo.outShape).toEqual([1, 1, 3, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(1);
+    expect(convInfo.outWidth).toEqual(3);
+    expect(convInfo.outChannels).toEqual(1);
   });
 
   it('1x2 conv over 3x3 array with valid pad with stride 1', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 1, 2, 1, 1, 1, 'valid');
-    expect(convInfo.outShape).toEqual([1, 3, 2, 1]);
+    expect(convInfo.batchSize).toEqual(1);
+    expect(convInfo.outHeight).toEqual(3);
+    expect(convInfo.outWidth).toEqual(2);
+    expect(convInfo.outChannels).toEqual(1);
   });
 
   it('1x2 conv over 3x3 array with valid pad with stride 1, batch=5', () => {
     const inShape: [number, number, number, number] = [5, 3, 3, 1];
     const convInfo =
         conv_util.computeConv2DInfo(inShape, 1, 2, 1, 1, 1, 'valid');
-    expect(convInfo.outShape).toEqual([5, 3, 2, 1]);
+    expect(convInfo.batchSize).toEqual(5);
+    expect(convInfo.outHeight).toEqual(3);
+    expect(convInfo.outWidth).toEqual(2);
+    expect(convInfo.outChannels).toEqual(1);
   });
 });
 
