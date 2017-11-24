@@ -21,7 +21,7 @@ import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {ConvInfo, DepthwiseConvInfo} from './conv_util';
+import {Conv2DInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 // tslint:disable-next-line:max-line-length
@@ -722,7 +722,7 @@ export class NDArrayMathCPU extends NDArrayMath {
 
   protected conv2dInternal(
       x: Array4D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array4D {
+      convInfo: Conv2DInfo): Array4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
@@ -762,7 +762,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dDerInputInternal(
-      dy: Array4D, filter: Array4D, convInfo: ConvInfo): Array4D {
+      dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const topPad = filterHeight - 1 - convInfo.padInfo.top;
@@ -809,7 +809,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected conv2dDerFilterInternal(
-      x: Array4D, dY: Array4D, convInfo: ConvInfo): Array4D {
+      x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -869,27 +869,25 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected depthwiseConv2DInternal(
-      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D {
-    const [numBatches, xRows, xCols, inChannels] = convInfo.inShape;
+      input: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const yRows = convInfo.outShape[1];
-    const yCols = convInfo.outShape[2];
-    const chMul = convInfo.channelMul;
+    const chMul = convInfo.outChannels / convInfo.inChannels;
 
-    const y = Array4D.zeros(convInfo.outShape);
-    for (let b = 0; b < numBatches; ++b) {
-      for (let d1 = 0; d1 < inChannels; ++d1) {
-        for (let yR = 0; yR < yRows; ++yR) {
+    const shapes = conv_util.getConv2DShapes(convInfo);
+    const y = Array4D.zeros(shapes.outShape);
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
           const xRCorner = yR * convInfo.strideHeight - padLeft;
           const xRMin = Math.max(0, xRCorner);
-          const xRMax = Math.min(xRows, filterHeight + xRCorner);
-          for (let yC = 0; yC < yCols; ++yC) {
+          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
             const xCCorner = yC * convInfo.strideWidth - padTop;
             const xCMin = Math.max(0, xCCorner);
-            const xCMax = Math.min(xCols, filterWidth + xCCorner);
+            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
             for (let q = 0; q < chMul; ++q) {
               let dotProd = 0;
               for (let xR = xRMin; xR < xRMax; ++xR) {
@@ -968,7 +966,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  private pool(x: Array4D, convInfo: ConvInfo, poolType: 'max'|'min'|'avg') {
+  private pool(x: Array4D, convInfo: Conv2DInfo, poolType: 'max'|'min'|'avg') {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -1019,11 +1017,11 @@ export class NDArrayMathCPU extends NDArrayMath {
     return y;
   }
 
-  protected maxPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
+  protected maxPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D {
     return this.pool(x, convInfo, 'max');
   }
 
-  maxPoolPositions(x: Array4D, convInfo: ConvInfo) {
+  maxPoolPositions(x: Array4D, convInfo: Conv2DInfo) {
     const shapes = conv_util.getConv2DShapes(convInfo);
     const maxPositions = Array4D.zeros(shapes.outShape);
     const strideHeight = convInfo.strideHeight;
@@ -1065,7 +1063,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   protected maxPoolBackpropInternal(
-      dy: Array4D, x: Array4D, convInfo: ConvInfo): Array4D {
+      dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
     const maxPositions = this.maxPoolPositions(x, convInfo);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1116,11 +1114,11 @@ export class NDArrayMathCPU extends NDArrayMath {
     return dx;
   }
 
-  protected minPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
+  protected minPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D {
     return this.pool(x, convInfo, 'min');
   }
 
-  protected avgPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
+  protected avgPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D {
     return this.pool(x, convInfo, 'avg');
   }
 

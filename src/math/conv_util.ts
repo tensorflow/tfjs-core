@@ -29,7 +29,7 @@ export type PadInfo = {
  * It includes input and output shape, strides, filter size and padding
  * information.
  */
-export type ConvInfo = {
+export type Conv2DInfo = {
   batchSize: number,
   inHeight: number,
   inWidth: number,
@@ -45,56 +45,13 @@ export type ConvInfo = {
   padInfo: PadInfo
 };
 
-export type DepthwiseConvInfo = {
-  inShape: [number, number, number, number],
-  outShape: [number, number, number, number],
-  channelMul: number,
-  strideHeight: number,
-  strideWidth: number,
-  filterHeight: number,
-  filterWidth: number,
-  padInfo: PadInfo
-};
-
-/**
- * Computes the information for a forward pass of a depthwise convolution.
- */
-export function computeDepthwiseConv2DInfo(
-    inShape: [number, number, number, number],
-    filterShape: [number, number, number, number],
-    strides: number|[number, number],
-    pad: 'same'|'valid'|number): DepthwiseConvInfo {
-  const [filterHeight, filterWidth, inChannels, channelMul] = filterShape;
-  const [strideHeight, strideWidth] = parseTupleParam(strides);
-  const inHeight = inShape[1];
-  const inWidth = inShape[2];
-  const batchSize = inShape[0];
-  const {padInfo, outHeight, outWidth} = getPadAndOutInfo(
-      pad, inHeight, inWidth, strideHeight, strideWidth, filterHeight,
-      filterWidth);
-  const outChannels = inChannels * channelMul;
-  const outShape: [number, number, number, number] =
-      [batchSize, outHeight, outWidth, outChannels];
-
-  return {
-    inShape,
-    outShape,
-    channelMul,
-    strideHeight,
-    strideWidth,
-    filterHeight,
-    filterWidth,
-    padInfo
-  };
-}
-
 export type Conv2DShapes = {
   inShape: [number, number, number, number],
   outShape: [number, number, number, number],
   filterShape: [number, number, number, number]
 };
 
-export function getConv2DShapes(convInfo: ConvInfo): Conv2DShapes {
+export function getConv2DShapes(convInfo: Conv2DInfo): Conv2DShapes {
   let inShape: [number, number, number, number];
   let outShape: [number, number, number, number];
   if (convInfo.dataFormat === 'channelsFirst') {
@@ -123,22 +80,54 @@ export function getConv2DShapes(convInfo: ConvInfo): Conv2DShapes {
   return {inShape, outShape, filterShape};
 }
 
+export function computePool2DInfo(
+    inShape: [number, number, number, number],
+    filterSize: [number, number]|number, strides: number|[number, number],
+    pad: 'same'|'valid'|number,
+    dataFormat: 'channelsFirst'|'channelsLast' = 'channelsLast'): Conv2DInfo {
+  const [filterHeight, filterWidth] = parseTupleParam(filterSize);
+
+  let filterShape: [number, number, number, number];
+  if (dataFormat === 'channelsLast') {
+    filterShape = [filterHeight, filterWidth, inShape[3], inShape[3]];
+  } else if (dataFormat === 'channelsFirst') {
+    filterShape = [filterHeight, filterWidth, inShape[1], inShape[1]];
+  } else {
+    throw new Error(`Unknown dataFormat ${dataFormat}`);
+  }
+  return computeConv2DInfo(
+      inShape, filterShape, strides, pad, false, dataFormat);
+}
+
 /**
  * Computes the information for a forward pass of a convolution/pooling
  * operation.
  */
 export function computeConv2DInfo(
-    inShape: [number, number, number, number], filterHeight: number,
-    filterWidth: number, outChannels: number, strideHeight: number,
-    strideWidth: number, pad: 'same'|'valid'|number): ConvInfo {
-  const [batchSize, inHeight, inWidth, inChannels] = inShape;
+    inShape: [number, number, number, number],
+    filterShape: [number, number, number, number],
+    strides: number|[number, number], pad: 'same'|'valid'|number,
+    depthwise = false,
+    dataFormat: 'channelsFirst' | 'channelsLast' = 'channelsLast'): Conv2DInfo {
+  let [batchSize, inHeight, inWidth, inChannels] = [-1, -1, -1, -1];
+  if (dataFormat === 'channelsLast') {
+    [batchSize, inHeight, inWidth, inChannels] = inShape;
+  } else if (dataFormat === 'channelsFirst') {
+    [batchSize, inChannels, inHeight, inWidth] = inShape;
+  } else {
+    throw new Error(`Unknown dataFormat ${dataFormat}`);
+  }
+
+  const [filterHeight, filterWidth, , filterChannels] = filterShape;
+  const [strideHeight, strideWidth] = parseTupleParam(strides);
   const {padInfo, outHeight, outWidth} = getPadAndOutInfo(
       pad, inHeight, inWidth, strideHeight, strideWidth, filterHeight,
       filterWidth);
+  const outChannels = depthwise ? filterChannels * inChannels : filterChannels;
+
   return {
     batchSize,
-    // TODO(dsmilkov): Add support for `channelsFirst`.
-    dataFormat: 'channelsLast',
+    dataFormat,
     inHeight,
     inWidth,
     inChannels,

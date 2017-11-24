@@ -16,7 +16,7 @@
  */
 
 import * as conv_util from '../conv_util';
-import {ConvInfo} from '../conv_util';
+import {Conv2DInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Conv2DDerWeightsProgram implements GPGPUProgram {
@@ -24,7 +24,7 @@ export class Conv2DDerWeightsProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(convInfo: ConvInfo) {
+  constructor(convInfo: Conv2DInfo) {
     const shapes = conv_util.getConv2DShapes(convInfo);
     this.outputShape = shapes.filterShape;
 
@@ -77,7 +77,7 @@ export class Conv2DDerInputProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(convInfo: ConvInfo) {
+  constructor(convInfo: Conv2DInfo) {
     const shapes = conv_util.getConv2DShapes(convInfo);
     this.outputShape = shapes.inShape;
 

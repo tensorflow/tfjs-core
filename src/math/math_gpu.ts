@@ -17,7 +17,7 @@
 
 import * as util from '../util';
 import * as axis_util from './axis_util';
-import {ConvInfo, DepthwiseConvInfo} from './conv_util';
+import {Conv2DInfo} from './conv_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
@@ -501,20 +501,20 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   protected conv2dInternal(
       x: Array4D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array4D {
+      convInfo: Conv2DInfo): Array4D {
     const program = new Conv2DProgram(convInfo, bias != null);
     const inputs = bias != null ? [x, filter, bias] : [x, filter];
     return this.compileAndRun(program, inputs);
   }
 
   protected conv2dDerInputInternal(
-      dy: Array4D, filter: Array4D, convInfo: ConvInfo): Array4D {
+      dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Conv2DDerInputProgram(convInfo);
     return this.compileAndRun(program, [dy, filter]);
   }
 
   protected conv2dDerFilterInternal(
-      x: Array4D, dY: Array4D, convInfo: ConvInfo): Array4D {
+      x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Conv2DDerWeightsProgram(convInfo);
     return this.compileAndRun(program, [x, dY]);
   }
@@ -525,28 +525,28 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   protected depthwiseConv2DInternal(
-      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D {
+      input: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new DepthwiseConv2DProgram(convInfo);
     return this.compileAndRun(program, [input, filter]);
   }
 
-  protected maxPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
+  protected maxPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
     return this.compileAndRun(program, [x]);
   }
 
-  protected minPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
+  protected minPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'min', false);
     return this.compileAndRun(program, [x]);
   }
 
-  protected avgPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D {
+  protected avgPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'avg', false);
     return this.compileAndRun(program, [x]);
   }
 
   protected maxPoolBackpropInternal(
-      dy: Array4D, x: Array4D, convInfo: ConvInfo): Array4D {
+      dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
     const getPositions = true;
     const maxPoolPositionsProgram =
         new Pool2DProgram(convInfo, 'max', getPositions);

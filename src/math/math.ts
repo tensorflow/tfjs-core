@@ -21,7 +21,7 @@ import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {ConvInfo, DepthwiseConvInfo} from './conv_util';
+import {Conv2DInfo} from './conv_util';
 import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
@@ -1458,13 +1458,8 @@ export abstract class NDArrayMath {
         `Error in conv2d: depth of input (${input4D.shape[3]}) must match  ` +
             `input depth for filter ${filter.shape[2]}.`);
 
-    const filterHeight = filter.shape[0];
-    const filterWidth = filter.shape[1];
-    const outDepth = filter.shape[3];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filterHeight, filterWidth, outDepth, strideHeight,
-        strideWidth, pad);
+    const convInfo =
+        conv_util.computeConv2DInfo(input4D.shape, filter.shape, strides, pad);
     return this.executeOp('conv2d', () => {
       const res = this.conv2dInternal(input4D, filter, bias, convInfo);
       if (reshapedTo4D) {
@@ -1475,7 +1470,7 @@ export abstract class NDArrayMath {
   }
   protected abstract conv2dInternal(
       x: Array4D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array4D;
+      convInfo: Conv2DInfo): Array4D;
 
   /**
    * Computes the derivative of the input of a 2D convolution.
@@ -1531,14 +1526,8 @@ export abstract class NDArrayMath {
         `Error in conv2dDerInput: depth of output (${outDepth}) must` +
             `match output depth for filter ${filter.shape[3]}.`);
 
-    const filterHeight = filter.shape[0];
-    const filterWidth = filter.shape[1];
-
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-
-    const convInfo = conv_util.computeConv2DInfo(
-        inShape4D, filterHeight, filterWidth, outDepth, strideHeight,
-        strideWidth, pad);
+    const convInfo =
+        conv_util.computeConv2DInfo(inShape4D, filter.shape, strides, pad);
     return this.executeOp('conv2dDerInput', () => {
       const res = this.conv2dDerInputInternal(dy4D, filter, convInfo);
       if (reshapedTo4D) {
@@ -1548,7 +1537,7 @@ export abstract class NDArrayMath {
     });
   }
   protected abstract conv2dDerInputInternal(
-      dy: Array4D, filter: Array4D, convInfo: ConvInfo): Array4D;
+      dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D;
 
   /**
    * Computes the derivative of the bias of a 2D convolution.
@@ -1572,7 +1561,7 @@ export abstract class NDArrayMath {
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param dy The dy image, of rank 4 or rank 3, of shape
    *     [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
-   * @param filterSize The size of the filter, length 4,
+   * @param filterShape The shape of the filter, length 4,
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param strides The strides of the convolution: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
@@ -1580,7 +1569,7 @@ export abstract class NDArrayMath {
    */
   conv2dDerFilter(
       input: Array3D|Array4D, dy: Array3D|Array4D,
-      filterSize: [number, number, number, number],
+      filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number): Array4D {
     let input4D = input as Array4D;
     if (input.rank === 3) {
@@ -1599,30 +1588,24 @@ export abstract class NDArrayMath {
         `Error in conv2dDerFilter: dy must be rank 4, but got shape ` +
             `${dy4D.shape}.`);
     util.assert(
-        filterSize.length === 4,
-        `Error in conv2dDerFilter: filterSize must be length 4, but got ` +
-            `${filterSize}.`);
+        filterShape.length === 4,
+        `Error in conv2dDerFilter: filterShape must be length 4, but got ` +
+            `${filterShape}.`);
     util.assert(
-        input4D.shape[3] === filterSize[2],
+        input4D.shape[3] === filterShape[2],
         `Error in conv2dDerFilter: depth of input ${input4D.shape[3]}) must ` +
-            `match input depth in filter (${filterSize[2]}.`);
+            `match input depth in filter (${filterShape[2]}.`);
     util.assert(
-        dy4D.shape[3] === filterSize[3],
+        dy4D.shape[3] === filterShape[3],
         `Error in conv2dDerFilter: depth of dy (${dy4D.shape[3]}) must ` +
-            `match output depth for filter (${filterSize[3]}).`);
+            `match output depth for filter (${filterShape[3]}).`);
 
-    const filterHeight = filterSize[0];
-    const filterWidth = filterSize[1];
-    const outDepth = filterSize[3];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-
-    const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filterHeight, filterWidth, outDepth, strideHeight,
-        strideWidth, pad);
+    const convInfo =
+        conv_util.computeConv2DInfo(input4D.shape, filterShape, strides, pad);
     return this.track(this.conv2dDerFilterInternal(input4D, dy4D, convInfo));
   }
   protected abstract conv2dDerFilterInternal(
-      x: Array4D, dy: Array4D, convInfo: ConvInfo): Array4D;
+      x: Array4D, dy: Array4D, convInfo: Conv2DInfo): Array4D;
 
   /**
    * Computes the transposed 2D convolution of an image, also known as a
@@ -1710,8 +1693,8 @@ export abstract class NDArrayMath {
         'Error in depthwiseConv2D: rates greater than 1 are not yet ' +
             `supported. Got rates '${rates}'`);
 
-    const convInfo = conv_util.computeDepthwiseConv2DInfo(
-        input4D.shape, filter.shape, strides, pad);
+    const convInfo = conv_util.computeConv2DInfo(
+        input4D.shape, filter.shape, strides, pad, true);
     return this.executeOp('depthwiseConv2D', () => {
       const res = this.depthwiseConv2DInternal(input4D, filter, convInfo);
       if (reshapedTo4D) {
@@ -1721,7 +1704,7 @@ export abstract class NDArrayMath {
     });
   }
   protected abstract depthwiseConv2DInternal(
-      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D;
+      input: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D;
 
   /**
    * Computes the 2D max pooling of an image.
@@ -1752,12 +1735,8 @@ export abstract class NDArrayMath {
         input4D.rank === 4,
         `Error in maxPool: input must be rank 4 but got rank ${input4D.rank}.`);
 
-    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
-    const outDepth = input4D.shape[3];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filterHeight, filterWidth, outDepth, strideHeight,
-        strideWidth, pad);
+    const convInfo =
+        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('maxPool', () => {
       const res = this.maxPoolInternal(input4D, convInfo);
       if (reshapedTo4D) {
@@ -1766,7 +1745,7 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract maxPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D;
+  protected abstract maxPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   /**
    * Computes the backprop of a max pool.
@@ -1806,12 +1785,8 @@ export abstract class NDArrayMath {
         `Error in maxPoolBackprop: input must be rank 4 but got rank ` +
             `${input4D.rank}.`);
 
-    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
-    const channels = input4D.shape[3];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filterHeight, filterWidth, channels, strideHeight,
-        strideWidth, pad);
+    const convInfo =
+        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('maxPoolBackprop', () => {
       const res = this.maxPoolBackpropInternal(dy4D, input4D, convInfo);
       if (reshapedTo4D) {
@@ -1821,7 +1796,7 @@ export abstract class NDArrayMath {
     });
   }
   protected abstract maxPoolBackpropInternal(
-      dy: Array4D, x: Array4D, convInfo: ConvInfo): Array4D;
+      dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   /**
    * Computes the 2D min pooling of an image.
@@ -1852,12 +1827,8 @@ export abstract class NDArrayMath {
         input4D.rank === 4,
         `Error in minPool: x must be rank 4 but got rank ${input4D.rank}.`);
 
-    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
-    const outDepth = input4D.shape[3];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-    const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filterHeight, filterWidth, outDepth, strideHeight,
-        strideWidth, pad);
+    const convInfo =
+        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('minPool', () => {
       const res = this.minPoolInternal(input4D, convInfo);
       if (reshapedTo4D) {
@@ -1866,7 +1837,7 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract minPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D;
+  protected abstract minPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   /**
    * Computes the 2D average pooling of an image.
@@ -1897,13 +1868,8 @@ export abstract class NDArrayMath {
         input4D.rank === 4,
         `Error in avgPool: x must be rank 4 but got rank ${input4D.rank}.`);
 
-    const [filterHeight, filterWidth] = parseTupleParam(filterSize);
-    const outDepth = input4D.shape[3];
-    const [strideHeight, strideWidth] = parseTupleParam(strides);
-
-    const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filterHeight, filterWidth, outDepth, strideHeight,
-        strideWidth, pad);
+    const convInfo =
+        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('avgPool', () => {
       const res = this.avgPoolInternal(input4D, convInfo);
       if (reshapedTo4D) {
@@ -1912,7 +1878,7 @@ export abstract class NDArrayMath {
       return res;
     });
   }
-  protected abstract avgPoolInternal(x: Array4D, convInfo: ConvInfo): Array4D;
+  protected abstract avgPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   /*
    * Bilinear resize a 3D array per each channel to a new 2D shape.

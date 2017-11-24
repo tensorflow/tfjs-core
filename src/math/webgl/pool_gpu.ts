@@ -16,7 +16,7 @@
  */
 
 import * as conv_util from '../conv_util';
-import {ConvInfo} from '../conv_util';
+import {Conv2DInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Pool2DProgram implements GPGPUProgram {
@@ -25,7 +25,7 @@ export class Pool2DProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      convInfo: ConvInfo, poolType: 'max'|'min'|'avg',
+      convInfo: Conv2DInfo, poolType: 'max'|'min'|'avg',
       computePositions: boolean) {
     if (poolType === 'avg' && computePositions) {
       throw new Error('Cannot compute positions for average pool.');
