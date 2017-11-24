@@ -920,8 +920,9 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
     }
     const randGauss =
         new MPRandGauss(mean, stdDev, dtype, true /* truncated */);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array4D<T>;
+    const v =
+        NDArray.rand(shape, () => randGauss.nextValue(), dtype) as Array4D<T>;
+    return v;
   }
 
   static randUniform<T extends keyof DataTypes>(

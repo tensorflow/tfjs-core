@@ -20,8 +20,10 @@ import {Environment, Features} from './environment';
 import {NDArrayMath} from './math/math';
 import {NDArrayMathCPU} from './math/math_cpu';
 import {NDArrayMathGPU} from './math/math_gpu';
+import {validateFramebuffer} from './math/webgl/webgl_util';
 import * as util from './util';
 import {DType, TypedArray} from './util';
+
 
 /** Accuracy for tests. */
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
@@ -72,18 +74,32 @@ export function skewness(values: TypedArray|number[]) {
   return (1 / n) * sum3 / Math.pow((1 / (n - 1)) * sum2, 3 / 2);
 }
 
-export function jarqueBeraNormalityTest(
-    values: TypedArray|number[], trueNormality = false) {
+export function jarqueBeraNormalityTest(values: TypedArray|number[]) {
   // https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
   const n = values.length;
   const s = skewness(values);
   const k = kurtosis(values);
   const jb = n / 6 * (Math.pow(s, 2) + 0.25 * Math.pow(k - 3, 2));
+  // console.log('n', n);
+  // console.log('s', s);
+  // console.log('k', k);
+  // console.log('jb', jb);
+  // console.log('mean', mean(values));
+  // console.log('stdv', standardDeviation(values, mean(values)));
+  // let high = 0, low = 0;
+  // for (let i = 0; i < values.length; i++) {
+  //   if (values[i] > high) {
+  //     high = values[i];
+  //   } else if (values[i] < low) {
+  //     low = values[i];
+  //   }
+  // }
+  // console.log('high', high);
+  // console.log('low', low);
   // JB test requires 2-degress of freedom from Chi-Square:
   //   @ 0.999 = 13.816
-  //   @ 0.95 = 5.991 (true normality)
   // http://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm
-  const CHI_SQUARE_2DEG = trueNormality ? 5.991 : 13.816;
+  const CHI_SQUARE_2DEG = 13.816;
   if (jb > CHI_SQUARE_2DEG) {
     throw new Error(`Invalid p-value for JB: ${jb}`);
   }
