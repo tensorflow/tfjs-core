@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import * as conv_util from '../conv_util';
 import {Conv2DInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
@@ -25,8 +24,7 @@ export class DepthwiseConv2DProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(convInfo: Conv2DInfo) {
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    this.outputShape = shapes.outShape;
+    this.outputShape = convInfo.outShape;
 
     const xNumRows = convInfo.inHeight;
     const xNumCols = convInfo.inWidth;

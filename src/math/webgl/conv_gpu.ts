@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import * as conv_util from '../conv_util';
 import {Conv2DInfo} from '../conv_util';
 
 import {GPGPUProgram} from './gpgpu_math';
@@ -30,8 +29,7 @@ export class Conv2DProgram implements GPGPUProgram {
       this.variableNames.push('bias');
     }
 
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    this.outputShape = shapes.outShape;
+    this.outputShape = convInfo.outShape;
 
     const biasSnippet = hasBias ? 'dotProd += getBias(d2);' : '';
     const padTop = convInfo.padInfo.top;

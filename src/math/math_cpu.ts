@@ -20,7 +20,6 @@ import * as util from '../util';
 import * as axis_util from './axis_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
-import * as conv_util from './conv_util';
 import {Conv2DInfo} from './conv_util';
 import * as copy2D_util from './copy2d_util';
 import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
@@ -727,8 +726,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    const y = Array4D.zeros(shapes.outShape);
+    const y = Array4D.zeros(convInfo.outShape);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
@@ -769,8 +767,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     const leftPad = filterWidth - 1 - convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    const dx = Array4D.zeros(shapes.inShape);
+    const dx = Array4D.zeros(convInfo.inShape);
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
         for (let xR = 0; xR < convInfo.inHeight; ++xR) {
@@ -814,8 +811,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    const dW = Array4D.zeros(shapes.filterShape);
+    const dW = Array4D.zeros(convInfo.filterShape);
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
@@ -875,9 +871,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
+    const y = Array4D.zeros(convInfo.outShape);
 
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    const y = Array4D.zeros(shapes.outShape);
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
         for (let yR = 0; yR < convInfo.outHeight; ++yR) {
@@ -971,8 +966,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    const y = Array4D.zeros(shapes.outShape);
+    const y = Array4D.zeros(convInfo.outShape);
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
     for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -1022,8 +1016,7 @@ export class NDArrayMathCPU extends NDArrayMath {
   }
 
   maxPoolPositions(x: Array4D, convInfo: Conv2DInfo) {
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    const maxPositions = Array4D.zeros(shapes.outShape);
+    const maxPositions = Array4D.zeros(convInfo.outShape);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;

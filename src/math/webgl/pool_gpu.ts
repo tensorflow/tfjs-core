@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import * as conv_util from '../conv_util';
 import {Conv2DInfo} from '../conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
@@ -37,8 +36,7 @@ export class Pool2DProgram implements GPGPUProgram {
     const strideWidth = convInfo.strideWidth;
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
-    const shapes = conv_util.getConv2DShapes(convInfo);
-    this.outputShape = shapes.outShape;
+    this.outputShape = convInfo.outShape;
 
     const isAvgPool = poolType === 'avg';
 

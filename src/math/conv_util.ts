@@ -42,43 +42,11 @@ export type Conv2DInfo = {
   strideWidth: number,
   filterHeight: number,
   filterWidth: number,
-  padInfo: PadInfo
-};
-
-export type Conv2DShapes = {
+  padInfo: PadInfo,
   inShape: [number, number, number, number],
   outShape: [number, number, number, number],
   filterShape: [number, number, number, number]
 };
-
-export function getConv2DShapes(convInfo: Conv2DInfo): Conv2DShapes {
-  let inShape: [number, number, number, number];
-  let outShape: [number, number, number, number];
-  if (convInfo.dataFormat === 'channelsFirst') {
-    inShape = [
-      convInfo.batchSize, convInfo.inChannels, convInfo.inHeight,
-      convInfo.inWidth
-    ];
-    outShape = [
-      convInfo.batchSize, convInfo.outChannels, convInfo.outHeight,
-      convInfo.outWidth
-    ];
-  } else if (convInfo.dataFormat === 'channelsLast') {
-    inShape = [
-      convInfo.batchSize, convInfo.inHeight, convInfo.inWidth,
-      convInfo.inChannels
-    ];
-    outShape = [
-      convInfo.batchSize, convInfo.outHeight, convInfo.outWidth,
-      convInfo.outChannels
-    ];
-  }
-  const filterShape: [number, number, number, number] = [
-    convInfo.filterHeight, convInfo.filterWidth, convInfo.inChannels,
-    convInfo.outChannels
-  ];
-  return {inShape, outShape, filterShape};
-}
 
 export function computePool2DInfo(
     inShape: [number, number, number, number],
@@ -125,6 +93,13 @@ export function computeConv2DInfo(
       filterWidth);
   const outChannels = depthwise ? filterChannels * inChannels : filterChannels;
 
+  let outShape: [number, number, number, number];
+  if (dataFormat === 'channelsFirst') {
+    outShape = [batchSize, outChannels, outHeight, outWidth];
+  } else if (dataFormat === 'channelsLast') {
+    outShape = [batchSize, outHeight, outWidth, outChannels];
+  }
+
   return {
     batchSize,
     dataFormat,
@@ -138,7 +113,10 @@ export function computeConv2DInfo(
     strideHeight,
     strideWidth,
     filterHeight,
-    filterWidth
+    filterWidth,
+    inShape,
+    outShape,
+    filterShape
   };
 }
 
@@ -181,6 +159,7 @@ export function computeWeightsShape4D(
   return [filterHeight, filterWidth, inputDepth, outputDepth];
 }
 
+/** @deprecated Use conv_util.computeConv2DInfo() instead. */
 export function computeDilatedRC(
     rc: [number, number], origStride: number): [number, number] {
   const rowsDilated = (rc[0] - 1) * origStride + 1;
