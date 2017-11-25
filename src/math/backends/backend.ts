@@ -30,7 +30,7 @@ export enum MatrixOrientation {
  * a new backend. New backends don't need to implement every one of the methods,
  * this can be done gradually (throw an error for unimplemented methods).
  */
-export interface NDArrayMathBackend {
+export interface MathBackend {
   matMul(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D;

@@ -16,7 +16,7 @@
  */
 
 import * as test_util from '../../../test_util';
-import {MatrixOrientation} from '../math_backend';
+import {MatrixOrientation} from '../backend';
 
 import {GPGPUContext} from './gpgpu_context';
 import * as mulmat_packed_gpu from './mulmat_packed_gpu';

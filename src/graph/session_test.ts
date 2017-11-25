@@ -16,7 +16,8 @@
  */
 
 import {InputProvider} from '../data/input_provider';
-import {NDArrayMathCPU, NDArrayMathGPU} from '../math/math';
+import {NDArrayMathCPU} from '../math/backends/backend_cpu';
+import {NDArrayMathGPU} from '../math/backends/backend_webgl';
 import {Array1D, NDArray, Scalar} from '../math/ndarray';
 import * as test_util from '../test_util';
 

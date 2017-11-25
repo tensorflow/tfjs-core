@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
+import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
 import * as conv_util from '../../math/conv_util';
-import {NDArrayMathCPU} from '../../math/math';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../../math/ndarray';
 import * as test_util from '../../test_util';
 import {Tensor} from '../graph';

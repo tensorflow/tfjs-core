@@ -21,7 +21,8 @@ import {SGDOptimizer} from './graph/optimizers/sgd_optimizer';
 import {CostReduction, FeedEntry, Session} from './graph/session';
 // tslint:disable-next-line:max-line-length
 import {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph_runner';
-import {NDArrayMath, NDArrayMathCPU} from './math/math';
+import {NDArrayMathCPU} from './math/backends/backend_cpu';
+import {NDArrayMath} from './math/math';
 import {Array1D, NDArray, Scalar} from './math/ndarray';
 
 const FAKE_LEARNING_RATE = 1.0;

@@ -14,12 +14,12 @@
  * limitations under the License.
  * =============================================================================
  */
+import {NDArrayMathCPU} from '../math/backends/backend_cpu';
 import * as test_util from '../test_util';
 import * as util from '../util';
 
 // tslint:disable-next-line:max-line-length
 import {EluFunc, LeakyReluFunc, ReLUFunc, SigmoidFunc, TanHFunc} from './activation_functions';
-import {NDArrayMathCPU} from './math';
 import {Array1D} from './ndarray';
 
 describe('Activation functions', () => {

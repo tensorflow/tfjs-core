@@ -19,11 +19,7 @@ import * as util from '../util';
 import {TypedArray} from '../util';
 
 import * as axis_util from './axis_util';
-import {MatrixOrientation, NDArrayMathBackend} from './backends/math_backend';
-import {NDArrayMathBackendCPU} from './backends/math_backend_cpu';
-import {NDArrayMathBackendWebGL} from './backends/math_backend_webgl';
-import {GPGPUContext} from './backends/webgl/gpgpu_context';
-import {TextureManager} from './backends/webgl/texture_manager';
+import {MathBackend, MatrixOrientation} from './backends/backend';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
@@ -54,8 +50,7 @@ export abstract class NDArrayMath {
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(
-      protected backend: NDArrayMathBackend, private safeMode: boolean) {}
+  constructor(protected backend: MathBackend, private safeMode: boolean) {}
 
   /**
    * Create a new math scope. Put chained math operations inside a scope
@@ -2076,26 +2071,6 @@ export abstract class NDArrayMath {
       return {mean, variance};
     });
     return result;
-  }
-}
-
-export class NDArrayMathCPU extends NDArrayMath {
-  constructor(safeMode = false) {
-    super(new NDArrayMathBackendCPU(), safeMode);
-  }
-}
-
-export class NDArrayMathGPU extends NDArrayMath {
-  constructor(gpgpu?: GPGPUContext, safeMode = false) {
-    super(new NDArrayMathBackendWebGL(gpgpu), safeMode);
-  }
-
-  getGPGPUContext(): GPGPUContext {
-    return (this.backend as NDArrayMathBackendWebGL).getGPGPUContext();
-  }
-
-  getTextureManager(): TextureManager {
-    return (this.backend as NDArrayMathBackendWebGL).getTextureManager();
   }
 }
 

@@ -18,13 +18,14 @@
 import * as util from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
+import {NDArrayMath} from '../math';
 import * as ndarray from '../ndarray';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import {SumTypes, SumTypesMap} from '../types';
 
-import {MatrixOrientation, NDArrayMathBackend} from './math_backend';
+import {MathBackend, MatrixOrientation} from './backend';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -56,7 +57,7 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
 
-export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
+export class MathBackendWebGL implements MathBackend {
   private gpgpu: GPGPUContext;
   private textureManager: TextureManager;
   private binaryCache: {[key: string]: GPGPUBinary} = {};
@@ -607,5 +608,20 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
     if (this.gpgpuCreatedLocally) {
       this.gpgpu.dispose();
     }
+  }
+}
+
+// TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
+export class NDArrayMathGPU extends NDArrayMath {
+  constructor(gpgpu?: GPGPUContext, safeMode = false) {
+    super(new MathBackendWebGL(gpgpu), safeMode);
+  }
+
+  getGPGPUContext(): GPGPUContext {
+    return (this.backend as MathBackendWebGL).getGPGPUContext();
+  }
+
+  getTextureManager(): TextureManager {
+    return (this.backend as MathBackendWebGL).getTextureManager();
   }
 }

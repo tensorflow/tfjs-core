@@ -17,7 +17,9 @@
 
 import * as environment from './environment';
 import {Environment, Features} from './environment';
-import {NDArrayMath, NDArrayMathCPU, NDArrayMathGPU} from './math/math';
+import {NDArrayMathCPU} from './math/backends/backend_cpu';
+import {NDArrayMathGPU} from './math/backends/backend_webgl';
+import {NDArrayMath} from './math/math';
 import * as util from './util';
 import {DType, TypedArray} from './util';
 

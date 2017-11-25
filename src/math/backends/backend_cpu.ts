@@ -22,15 +22,15 @@ import * as broadcast_util from '../broadcast_util';
 import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import * as copy2D_util from '../copy2d_util';
+import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
 import {SumTypes, SumTypesMap} from '../types';
 
 import * as axis_util from './../axis_util';
-import {MatrixOrientation} from './math_backend';
-import {NDArrayMathBackend} from './math_backend';
+import {MathBackend, MatrixOrientation} from './backend';
 
-export class NDArrayMathBackendCPU implements NDArrayMathBackend {
+export class MathBackendCPU implements MathBackend {
   clone<T extends NDArray>(ndarray: T): T {
     return NDArray.make(
                ndarray.shape,
@@ -1304,5 +1304,12 @@ export class NDArrayMathBackendCPU implements NDArrayMathBackend {
       newValues[i] = op(aValues[aIndex], bValues[bIndex]);
     }
     return result;
+  }
+}
+
+// TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
+export class NDArrayMathCPU extends NDArrayMath {
+  constructor(safeMode = false) {
+    super(new MathBackendCPU(), safeMode);
   }
 }
