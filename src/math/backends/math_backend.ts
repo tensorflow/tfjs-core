@@ -85,7 +85,9 @@ export interface NDArrayMathBackend {
 
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
 
-  topK(ndarray: NDArray, k: number): {values: Array1D, indices: Array1D};
+  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
+      ndarray: T, k: number): Array1D<D>;
+  topKIndices(ndarray: NDArray, k: number): Array1D<'int32'>;
 
   min<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]): NDArray<G>;
 

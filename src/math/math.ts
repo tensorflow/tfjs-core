@@ -764,11 +764,15 @@ export abstract class NDArrayMath {
         k <= ndarray.size,
         `Error in topK: k value (${k}) must be less than size of input ` +
             `ndarray, got shape ${ndarray.shape}.`);
-    let result: {values: Array1D, indices: Array1D};
+    let values: Array1D;
+    let indices: Array1D;
     this.executeOp('topK', () => {
-      result = this.backend.topK(ndarray, k);
-      return result.values;
+      values = this.backend.topKValues(ndarray, k);
+      indices = this.backend.topKIndices(ndarray, k);
+      return values;
     });
+    const result = {values, indices};
+
     this.track(result.indices);
     return result;
   }

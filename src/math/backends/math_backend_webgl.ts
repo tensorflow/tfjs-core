@@ -339,8 +339,13 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
     return this.compileAndRun(program, [x, y], output);
   }
 
-  topK(ndarray: NDArray, k: number): {values: Array1D, indices: Array1D} {
-    throw new Error('topK GPU not yet implemented!');
+  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
+      ndarray: T, k: number): Array1D<D> {
+    throw new Error('topKValues GPU not yet implemented!');
+  }
+
+  topKIndices(ndarray: NDArray, k: number): Array1D<'int32'> {
+    throw new Error('topKIndices GPU not yet implemented!');
   }
 
   min<G extends keyof DataTypes>(a: NDArray<G>, axes: number[]): NDArray<G> {

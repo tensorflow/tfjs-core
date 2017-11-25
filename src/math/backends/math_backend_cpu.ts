@@ -408,7 +408,17 @@ export class NDArrayMathBackendCPU implements NDArrayMathBackend {
     });
   }
 
-  topK(ndarray: NDArray, k: number): {values: Array1D, indices: Array1D} {
+  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
+      ndarray: T, k: number): Array1D<D> {
+    return this.topK(ndarray, k).values as Array1D<D>;
+  }
+
+  topKIndices(ndarray: NDArray, k: number): Array1D<'int32'> {
+    return this.topK(ndarray, k).indices;
+  }
+
+  private topK<D extends keyof DataTypes, T extends NDArray<D>>(
+      ndarray: T, k: number): {values: Array1D<D>, indices: Array1D<'int32'>} {
     const values = ndarray.getValues();
     const valuesAndIndices: Array<{value: number, index: number}> = [];
     for (let i = 0; i < values.length; i++) {
@@ -417,13 +427,17 @@ export class NDArrayMathBackendCPU implements NDArrayMathBackend {
     valuesAndIndices.sort((a, b) => {
       return b.value - a.value;
     });
-    const topkValues = new Float32Array(k);
-    const topkIndices = new Float32Array(k);
+
+    const topkValues = util.getTypedArrayFromDType(ndarray.dtype, k);
+    const topkIndices = new Int32Array(k);
     for (let i = 0; i < k; i++) {
       topkValues[i] = valuesAndIndices[i].value;
       topkIndices[i] = valuesAndIndices[i].index;
     }
-    return {values: Array1D.new(topkValues), indices: Array1D.new(topkIndices)};
+    return {
+      values: Array1D.new<D>(topkValues),
+      indices: Array1D.new<'int32'>(topkIndices)
+    };
   }
 
   min<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]):
