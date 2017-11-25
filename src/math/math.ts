@@ -27,10 +27,6 @@ import {TextureManager} from './backends/webgl/texture_manager';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-<<<<<<< HEAD
-=======
-import {Conv2DInfo} from './conv_util';
->>>>>>> origin
 import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
@@ -1280,15 +1276,8 @@ export abstract class NDArrayMath {
    * @param alpha The gradient when input is negative.
    */
   step<T extends NDArray>(ndarray: T, alpha = 0.0): T {
-<<<<<<< HEAD
     return this.executeOp('step', () => this.backend.step(ndarray, alpha));
   }
-=======
-    return this.executeOp('step', () => this.stepInternal(ndarray, alpha));
-  }
-  protected abstract stepInternal<T extends NDArray>(ndarray: T, alpha: number):
-      T;
->>>>>>> origin
 
   /**
    * Computes a scaled array add operation, c1 * A + c2 * B.
