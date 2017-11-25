@@ -1,0 +1,908 @@
+{
+  "conv1/kernel": {
+    "filename": "conv1_kernel", 
+    "shape": [
+      3, 
+      3, 
+      3, 
+      32
+    ]
+  }, 
+  "conv1_bn/beta": {
+    "filename": "conv1_bn_beta", 
+    "shape": [
+      32
+    ]
+  }, 
+  "conv1_bn/gamma": {
+    "filename": "conv1_bn_gamma", 
+    "shape": [
+      32
+    ]
+  }, 
+  "conv1_bn/moving_mean": {
+    "filename": "conv1_bn_moving_mean", 
+    "shape": [
+      32
+    ]
+  }, 
+  "conv1_bn/moving_variance": {
+    "filename": "conv1_bn_moving_variance", 
+    "shape": [
+      32
+    ]
+  }, 
+  "conv_23/bias": {
+    "filename": "conv_23_bias", 
+    "shape": [
+      30
+    ]
+  }, 
+  "conv_23/kernel": {
+    "filename": "conv_23_kernel", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      30
+    ]
+  }, 
+  "conv_dw_1/depthwise_kernel": {
+    "filename": "conv_dw_1_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      32, 
+      1
+    ]
+  }, 
+  "conv_dw_10/depthwise_kernel": {
+    "filename": "conv_dw_10_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "conv_dw_10_bn/beta": {
+    "filename": "conv_dw_10_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_10_bn/gamma": {
+    "filename": "conv_dw_10_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_10_bn/moving_mean": {
+    "filename": "conv_dw_10_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_10_bn/moving_variance": {
+    "filename": "conv_dw_10_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_11/depthwise_kernel": {
+    "filename": "conv_dw_11_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "conv_dw_11_bn/beta": {
+    "filename": "conv_dw_11_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_11_bn/gamma": {
+    "filename": "conv_dw_11_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_11_bn/moving_mean": {
+    "filename": "conv_dw_11_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_11_bn/moving_variance": {
+    "filename": "conv_dw_11_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_12/depthwise_kernel": {
+    "filename": "conv_dw_12_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "conv_dw_12_bn/beta": {
+    "filename": "conv_dw_12_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_12_bn/gamma": {
+    "filename": "conv_dw_12_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_12_bn/moving_mean": {
+    "filename": "conv_dw_12_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_12_bn/moving_variance": {
+    "filename": "conv_dw_12_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_13/depthwise_kernel": {
+    "filename": "conv_dw_13_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      1024, 
+      1
+    ]
+  }, 
+  "conv_dw_13_bn/beta": {
+    "filename": "conv_dw_13_bn_beta", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_dw_13_bn/gamma": {
+    "filename": "conv_dw_13_bn_gamma", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_dw_13_bn/moving_mean": {
+    "filename": "conv_dw_13_bn_moving_mean", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_dw_13_bn/moving_variance": {
+    "filename": "conv_dw_13_bn_moving_variance", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_dw_1_bn/beta": {
+    "filename": "conv_dw_1_bn_beta", 
+    "shape": [
+      32
+    ]
+  }, 
+  "conv_dw_1_bn/gamma": {
+    "filename": "conv_dw_1_bn_gamma", 
+    "shape": [
+      32
+    ]
+  }, 
+  "conv_dw_1_bn/moving_mean": {
+    "filename": "conv_dw_1_bn_moving_mean", 
+    "shape": [
+      32
+    ]
+  }, 
+  "conv_dw_1_bn/moving_variance": {
+    "filename": "conv_dw_1_bn_moving_variance", 
+    "shape": [
+      32
+    ]
+  }, 
+  "conv_dw_2/depthwise_kernel": {
+    "filename": "conv_dw_2_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      64, 
+      1
+    ]
+  }, 
+  "conv_dw_2_bn/beta": {
+    "filename": "conv_dw_2_bn_beta", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv_dw_2_bn/gamma": {
+    "filename": "conv_dw_2_bn_gamma", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv_dw_2_bn/moving_mean": {
+    "filename": "conv_dw_2_bn_moving_mean", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv_dw_2_bn/moving_variance": {
+    "filename": "conv_dw_2_bn_moving_variance", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv_dw_3/depthwise_kernel": {
+    "filename": "conv_dw_3_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "conv_dw_3_bn/beta": {
+    "filename": "conv_dw_3_bn_beta", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_dw_3_bn/gamma": {
+    "filename": "conv_dw_3_bn_gamma", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_dw_3_bn/moving_mean": {
+    "filename": "conv_dw_3_bn_moving_mean", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_dw_3_bn/moving_variance": {
+    "filename": "conv_dw_3_bn_moving_variance", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_dw_4/depthwise_kernel": {
+    "filename": "conv_dw_4_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "conv_dw_4_bn/beta": {
+    "filename": "conv_dw_4_bn_beta", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_dw_4_bn/gamma": {
+    "filename": "conv_dw_4_bn_gamma", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_dw_4_bn/moving_mean": {
+    "filename": "conv_dw_4_bn_moving_mean", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_dw_4_bn/moving_variance": {
+    "filename": "conv_dw_4_bn_moving_variance", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_dw_5/depthwise_kernel": {
+    "filename": "conv_dw_5_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "conv_dw_5_bn/beta": {
+    "filename": "conv_dw_5_bn_beta", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_dw_5_bn/gamma": {
+    "filename": "conv_dw_5_bn_gamma", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_dw_5_bn/moving_mean": {
+    "filename": "conv_dw_5_bn_moving_mean", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_dw_5_bn/moving_variance": {
+    "filename": "conv_dw_5_bn_moving_variance", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_dw_6/depthwise_kernel": {
+    "filename": "conv_dw_6_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "conv_dw_6_bn/beta": {
+    "filename": "conv_dw_6_bn_beta", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_dw_6_bn/gamma": {
+    "filename": "conv_dw_6_bn_gamma", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_dw_6_bn/moving_mean": {
+    "filename": "conv_dw_6_bn_moving_mean", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_dw_6_bn/moving_variance": {
+    "filename": "conv_dw_6_bn_moving_variance", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_dw_7/depthwise_kernel": {
+    "filename": "conv_dw_7_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "conv_dw_7_bn/beta": {
+    "filename": "conv_dw_7_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_7_bn/gamma": {
+    "filename": "conv_dw_7_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_7_bn/moving_mean": {
+    "filename": "conv_dw_7_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_7_bn/moving_variance": {
+    "filename": "conv_dw_7_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_8/depthwise_kernel": {
+    "filename": "conv_dw_8_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "conv_dw_8_bn/beta": {
+    "filename": "conv_dw_8_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_8_bn/gamma": {
+    "filename": "conv_dw_8_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_8_bn/moving_mean": {
+    "filename": "conv_dw_8_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_8_bn/moving_variance": {
+    "filename": "conv_dw_8_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_9/depthwise_kernel": {
+    "filename": "conv_dw_9_depthwise_kernel", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "conv_dw_9_bn/beta": {
+    "filename": "conv_dw_9_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_9_bn/gamma": {
+    "filename": "conv_dw_9_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_9_bn/moving_mean": {
+    "filename": "conv_dw_9_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_dw_9_bn/moving_variance": {
+    "filename": "conv_dw_9_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_1/kernel": {
+    "filename": "conv_pw_1_kernel", 
+    "shape": [
+      1, 
+      1, 
+      32, 
+      64
+    ]
+  }, 
+  "conv_pw_10/kernel": {
+    "filename": "conv_pw_10_kernel", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "conv_pw_10_bn/beta": {
+    "filename": "conv_pw_10_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_10_bn/gamma": {
+    "filename": "conv_pw_10_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_10_bn/moving_mean": {
+    "filename": "conv_pw_10_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_10_bn/moving_variance": {
+    "filename": "conv_pw_10_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_11/kernel": {
+    "filename": "conv_pw_11_kernel", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "conv_pw_11_bn/beta": {
+    "filename": "conv_pw_11_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_11_bn/gamma": {
+    "filename": "conv_pw_11_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_11_bn/moving_mean": {
+    "filename": "conv_pw_11_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_11_bn/moving_variance": {
+    "filename": "conv_pw_11_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_12/kernel": {
+    "filename": "conv_pw_12_kernel", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      1024
+    ]
+  }, 
+  "conv_pw_12_bn/beta": {
+    "filename": "conv_pw_12_bn_beta", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_pw_12_bn/gamma": {
+    "filename": "conv_pw_12_bn_gamma", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_pw_12_bn/moving_mean": {
+    "filename": "conv_pw_12_bn_moving_mean", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_pw_12_bn/moving_variance": {
+    "filename": "conv_pw_12_bn_moving_variance", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_pw_13/kernel": {
+    "filename": "conv_pw_13_kernel", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1024
+    ]
+  }, 
+  "conv_pw_13_bn/beta": {
+    "filename": "conv_pw_13_bn_beta", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_pw_13_bn/gamma": {
+    "filename": "conv_pw_13_bn_gamma", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_pw_13_bn/moving_mean": {
+    "filename": "conv_pw_13_bn_moving_mean", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_pw_13_bn/moving_variance": {
+    "filename": "conv_pw_13_bn_moving_variance", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "conv_pw_1_bn/beta": {
+    "filename": "conv_pw_1_bn_beta", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv_pw_1_bn/gamma": {
+    "filename": "conv_pw_1_bn_gamma", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv_pw_1_bn/moving_mean": {
+    "filename": "conv_pw_1_bn_moving_mean", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv_pw_1_bn/moving_variance": {
+    "filename": "conv_pw_1_bn_moving_variance", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv_pw_2/kernel": {
+    "filename": "conv_pw_2_kernel", 
+    "shape": [
+      1, 
+      1, 
+      64, 
+      128
+    ]
+  }, 
+  "conv_pw_2_bn/beta": {
+    "filename": "conv_pw_2_bn_beta", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_pw_2_bn/gamma": {
+    "filename": "conv_pw_2_bn_gamma", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_pw_2_bn/moving_mean": {
+    "filename": "conv_pw_2_bn_moving_mean", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_pw_2_bn/moving_variance": {
+    "filename": "conv_pw_2_bn_moving_variance", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_pw_3/kernel": {
+    "filename": "conv_pw_3_kernel", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      128
+    ]
+  }, 
+  "conv_pw_3_bn/beta": {
+    "filename": "conv_pw_3_bn_beta", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_pw_3_bn/gamma": {
+    "filename": "conv_pw_3_bn_gamma", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_pw_3_bn/moving_mean": {
+    "filename": "conv_pw_3_bn_moving_mean", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_pw_3_bn/moving_variance": {
+    "filename": "conv_pw_3_bn_moving_variance", 
+    "shape": [
+      128
+    ]
+  }, 
+  "conv_pw_4/kernel": {
+    "filename": "conv_pw_4_kernel", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      256
+    ]
+  }, 
+  "conv_pw_4_bn/beta": {
+    "filename": "conv_pw_4_bn_beta", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_pw_4_bn/gamma": {
+    "filename": "conv_pw_4_bn_gamma", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_pw_4_bn/moving_mean": {
+    "filename": "conv_pw_4_bn_moving_mean", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_pw_4_bn/moving_variance": {
+    "filename": "conv_pw_4_bn_moving_variance", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_pw_5/kernel": {
+    "filename": "conv_pw_5_kernel", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      256
+    ]
+  }, 
+  "conv_pw_5_bn/beta": {
+    "filename": "conv_pw_5_bn_beta", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_pw_5_bn/gamma": {
+    "filename": "conv_pw_5_bn_gamma", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_pw_5_bn/moving_mean": {
+    "filename": "conv_pw_5_bn_moving_mean", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_pw_5_bn/moving_variance": {
+    "filename": "conv_pw_5_bn_moving_variance", 
+    "shape": [
+      256
+    ]
+  }, 
+  "conv_pw_6/kernel": {
+    "filename": "conv_pw_6_kernel", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      512
+    ]
+  }, 
+  "conv_pw_6_bn/beta": {
+    "filename": "conv_pw_6_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_6_bn/gamma": {
+    "filename": "conv_pw_6_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_6_bn/moving_mean": {
+    "filename": "conv_pw_6_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_6_bn/moving_variance": {
+    "filename": "conv_pw_6_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_7/kernel": {
+    "filename": "conv_pw_7_kernel", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "conv_pw_7_bn/beta": {
+    "filename": "conv_pw_7_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_7_bn/gamma": {
+    "filename": "conv_pw_7_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_7_bn/moving_mean": {
+    "filename": "conv_pw_7_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_7_bn/moving_variance": {
+    "filename": "conv_pw_7_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_8/kernel": {
+    "filename": "conv_pw_8_kernel", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "conv_pw_8_bn/beta": {
+    "filename": "conv_pw_8_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_8_bn/gamma": {
+    "filename": "conv_pw_8_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_8_bn/moving_mean": {
+    "filename": "conv_pw_8_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_8_bn/moving_variance": {
+    "filename": "conv_pw_8_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_9/kernel": {
+    "filename": "conv_pw_9_kernel", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "conv_pw_9_bn/beta": {
+    "filename": "conv_pw_9_bn_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_9_bn/gamma": {
+    "filename": "conv_pw_9_bn_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_9_bn/moving_mean": {
+    "filename": "conv_pw_9_bn_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "conv_pw_9_bn/moving_variance": {
+    "filename": "conv_pw_9_bn_moving_variance", 
+    "shape": [
+      512
+    ]
+  }
+}

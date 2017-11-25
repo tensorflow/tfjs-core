@@ -1,0 +1,2986 @@
+{
+  "MobilenetV1/Conv2d_0/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_beta", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_beta_RMSProp", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_gamma", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_moving_mean", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_moving_variance", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_0_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/weights": {
+    "filename": "MobilenetV1_Conv2d_0_weights", 
+    "shape": [
+      3, 
+      3, 
+      3, 
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_0_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      3, 
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_0_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      3, 
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_0/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_0_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      3, 
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_10_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_10_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_10_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_11_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_11_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_11_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_12_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_beta", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_gamma", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_12_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_12_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_beta", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_gamma", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      1024, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      1024, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      1024, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_13_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      1024, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_beta", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_gamma", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_13_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_13_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1024
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_beta", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_gamma", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      32
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      32, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      32, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      32, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_1_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      32, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_beta", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_gamma", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      32, 
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      32, 
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      32, 
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_1_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_1_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      32, 
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_beta", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_gamma", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      64, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      64, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      64, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_2_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      64, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_beta", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_gamma", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      64, 
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      64, 
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      64, 
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_2_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_2_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      64, 
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_beta", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_gamma", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_3_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_beta", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_gamma", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_3_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_3_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_beta", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_gamma", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      128
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_4_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      128, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_beta", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_gamma", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_4_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_4_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      128, 
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_beta", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_gamma", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_5_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_beta", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_gamma", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_5_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_5_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_beta", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_gamma", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      256
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_6_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      256, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_6_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_6_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      256, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_7_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_7_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_7_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_8_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_8_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_8_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/depthwise_weights": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_depthwise_weights", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/depthwise_weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_depthwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/depthwise_weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_depthwise_weights_RMSProp", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_depthwise/depthwise_weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_9_depthwise_depthwise_weights_RMSProp_1", 
+    "shape": [
+      3, 
+      3, 
+      512, 
+      1
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/beta": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_beta", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/beta/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_beta_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/beta/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_beta_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/beta/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_beta_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/gamma": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_gamma", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/gamma/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_gamma_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/gamma/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_gamma_RMSProp", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/gamma/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_gamma_RMSProp_1", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/moving_mean": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_moving_mean", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/moving_mean/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_moving_mean_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/moving_variance": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_moving_variance", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/BatchNorm/moving_variance/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_BatchNorm_moving_variance_ExponentialMovingAverage", 
+    "shape": [
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/weights": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_weights", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/weights/RMSProp": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Conv2d_9_pointwise/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Conv2d_9_pointwise_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      512, 
+      512
+    ]
+  }, 
+  "MobilenetV1/Logits/Conv2d_1c_1x1/biases": {
+    "filename": "MobilenetV1_Logits_Conv2d_1c_1x1_biases", 
+    "shape": [
+      1001
+    ]
+  }, 
+  "MobilenetV1/Logits/Conv2d_1c_1x1/biases/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Logits_Conv2d_1c_1x1_biases_ExponentialMovingAverage", 
+    "shape": [
+      1001
+    ]
+  }, 
+  "MobilenetV1/Logits/Conv2d_1c_1x1/biases/RMSProp": {
+    "filename": "MobilenetV1_Logits_Conv2d_1c_1x1_biases_RMSProp", 
+    "shape": [
+      1001
+    ]
+  }, 
+  "MobilenetV1/Logits/Conv2d_1c_1x1/biases/RMSProp_1": {
+    "filename": "MobilenetV1_Logits_Conv2d_1c_1x1_biases_RMSProp_1", 
+    "shape": [
+      1001
+    ]
+  }, 
+  "MobilenetV1/Logits/Conv2d_1c_1x1/weights": {
+    "filename": "MobilenetV1_Logits_Conv2d_1c_1x1_weights", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1001
+    ]
+  }, 
+  "MobilenetV1/Logits/Conv2d_1c_1x1/weights/ExponentialMovingAverage": {
+    "filename": "MobilenetV1_Logits_Conv2d_1c_1x1_weights_ExponentialMovingAverage", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1001
+    ]
+  }, 
+  "MobilenetV1/Logits/Conv2d_1c_1x1/weights/RMSProp": {
+    "filename": "MobilenetV1_Logits_Conv2d_1c_1x1_weights_RMSProp", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1001
+    ]
+  }, 
+  "MobilenetV1/Logits/Conv2d_1c_1x1/weights/RMSProp_1": {
+    "filename": "MobilenetV1_Logits_Conv2d_1c_1x1_weights_RMSProp_1", 
+    "shape": [
+      1, 
+      1, 
+      1024, 
+      1001
+    ]
+  }, 
+  "softmax_cross_entropy_loss/value/ExponentialMovingAverage": {
+    "filename": "softmax_cross_entropy_loss_value_ExponentialMovingAverage", 
+    "shape": []
+  }, 
+  "total_loss/ExponentialMovingAverage": {
+    "filename": "total_loss_ExponentialMovingAverage", 
+    "shape": []
+  }
+}
