@@ -31,6 +31,10 @@ export enum MatrixOrientation {
  * this can be done gradually (throw an error for unimplemented methods).
  */
 export interface NDArrayMathBackend {
+  matMul(
+      a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
+      bOrientation: MatrixOrientation): Array2D;
+
   clone<T extends NDArray>(ndarray: T): T;
 
   slice1D(input: Array1D, begin: number, size: number): Array1D;
@@ -67,10 +71,6 @@ export interface NDArrayMathBackend {
   add<T extends NDArray>(a: T, b: T): T;
 
   subtract<T extends NDArray>(a: T, b: T): T;
-
-  matMul(
-      a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
-      bOrientation: MatrixOrientation): Array2D;
 
   multiply<T extends NDArray>(a: T, b: T): T;
 
@@ -149,12 +149,6 @@ export interface NDArrayMathBackend {
   depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
       Array4D;
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
-      T;
-
-  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, perm: number[]): T;
-
   maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
@@ -162,6 +156,12 @@ export interface NDArrayMathBackend {
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
+
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
+      T;
+
+  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm: number[]): T;
 
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
