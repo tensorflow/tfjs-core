@@ -17,18 +17,20 @@
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array3D, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
 
-import {BenchmarkTest} from './benchmark';
+import {BenchmarkTest, MAX_BENCHMARK_CPU_TIME_MS} from './benchmark';
 import * as benchmark_util from './benchmark_util';
 
 export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
+  lastRunTimeMs: number;
+
   async run(size: number): Promise<number> {
-    if (size > 256) {
+    if (this.lastRunTimeMs > MAX_BENCHMARK_CPU_TIME_MS) {
       return new Promise<number>((resolve, reject) => {
         resolve(-1);
       });
     }
     const math = new NDArrayMathCPU();
-    const x = Array3D.randUniform([size, size, size], -1, 1);
+    const x = Array3D.randUniform([size, size, 8], -1, 1);
     const mean = Array1D.new([0]);
     const variance = Array1D.new([1]);
     const varianceEpsilon = .001;
@@ -39,16 +41,15 @@ export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
 
     const end = performance.now();
 
-    return new Promise<number>((resolve, reject) => {
-      resolve(end - start);
-    });
+    this.lastRunTimeMs = end - start;
+    return this.lastRunTimeMs;
   }
 }
 
 export class BatchNormalization3DGPUBenchmark implements BenchmarkTest {
   async run(size: number) {
     const math = new NDArrayMathGPU();
-    const x = Array3D.randUniform([size, size, size], -1, 1);
+    const x = Array3D.randUniform([size, size, 8], -1, 1);
     const mean = Array1D.new([0]);
     const variance = Array1D.new([1]);
     const varianceEpsilon = .001;
@@ -56,7 +57,7 @@ export class BatchNormalization3DGPUBenchmark implements BenchmarkTest {
     const benchmark = () => math.batchNormalization3D(
         x, mean, variance, varianceEpsilon, undefined, undefined);
 
-    const time = benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
+    const time = await benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
 
     x.dispose();
     mean.dispose();

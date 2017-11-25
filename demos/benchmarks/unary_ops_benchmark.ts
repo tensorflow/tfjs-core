@@ -83,7 +83,7 @@ export class UnaryOpsGPUBenchmark implements BenchmarkTest {
 
     const benchmark = () => op(input);
 
-    const time = benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
+    const time = await benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
 
     input.dispose();
     math.dispose();

@@ -94,7 +94,7 @@ export class PoolGPUBenchmark implements BenchmarkTest {
 
     const benchmark = () => op(x, fieldSize, stride, 'same');
 
-    const time = benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
+    const time = await benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
 
     x.dispose();
     math.dispose();

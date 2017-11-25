@@ -30,5 +30,6 @@ export async function warmupAndBenchmarkGPU(
 
     totalTime = performance.now() - start;
   }
+  out.dispose();
   return totalTime;
 }
