@@ -16,13 +16,13 @@
  */
 // tslint:disable-next-line:max-line-length
 import {Array2D, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
-import {BenchmarkTest, MAX_BENCHMARK_CPU_TIME_MS} from './benchmark';
+import {BenchmarkTest, LAST_RUN_CPU_CUTOFF_MS} from './benchmark';
 import * as benchmark_util from './benchmark_util';
 
 export class MatmulCPUBenchmark implements BenchmarkTest {
   lastRunTimeMs: number;
   async run(size: number): Promise<number> {
-    if (this.lastRunTimeMs > MAX_BENCHMARK_CPU_TIME_MS) {
+    if (this.lastRunTimeMs > LAST_RUN_CPU_CUTOFF_MS) {
       return new Promise<number>((resolve, reject) => {
         resolve(-1);
       });
