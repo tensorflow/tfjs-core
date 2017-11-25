@@ -15,7 +15,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {ConvInfo, DepthwiseConvInfo} from '../conv_util';
+import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
 import {SumTypes} from '../types';
@@ -137,16 +137,16 @@ export interface NDArrayMathBackend {
 
   step<T extends NDArray>(ndarray: T, alpha: number): T;
 
-  conv2d(x: Array3D, filter: Array4D, bias: Array1D|null, convInfo: ConvInfo):
-      Array3D;
+  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
+      Array4D;
 
-  conv2dDerInput(dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D;
+  conv2dDerInput(dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D;
 
-  conv2dDerFilter(x: Array3D, dY: Array3D, convInfo: ConvInfo): Array4D;
+  conv2dDerFilter(x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D;
 
-  conv2dDerBias(dY: Array3D): Array1D;
+  conv2dDerBias(dY: Array4D): Array1D;
 
-  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo):
+  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
       Array4D;
 
   tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
@@ -155,13 +155,13 @@ export interface NDArrayMathBackend {
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
       a: T, perm: number[]): T;
 
-  maxPool(x: Array3D, convInfo: ConvInfo): Array3D;
+  maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
-  maxPoolBackprop(dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D;
+  maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
 
-  minPool(x: Array3D, convInfo: ConvInfo): Array3D;
+  minPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
-  avgPool(x: Array3D, convInfo: ConvInfo): Array3D;
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;

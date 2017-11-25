@@ -17,7 +17,7 @@
 
 import * as util from '../../util';
 import * as axis_util from '../axis_util';
-import {ConvInfo, DepthwiseConvInfo} from '../conv_util';
+import {Conv2DInfo} from '../conv_util';
 import * as ndarray from '../ndarray';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
@@ -33,7 +33,7 @@ import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
-import {Conv2DDerBiasProgram, Conv2DDerInputProgram, Conv2DDerWeightsProgram} from './webgl/conv_backprop_gpu';
+import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {Copy2DProgram} from './webgl/copy_gpu';
@@ -102,7 +102,7 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
       Array2D {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup) as Array2D;
+    return this.compileAndRun(program, [input], null, customSetup);
   }
 
   slice3D(input: Array3D, begin: [number, number, number], size: [
@@ -110,7 +110,7 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
   ]): Array3D {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup) as Array3D;
+    return this.compileAndRun(program, [input], null, customSetup);
   }
 
   slice4D(input: Array4D, begin: [number, number, number, number], size: [
@@ -118,7 +118,7 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
   ]): Array4D {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup) as Array4D;
+    return this.compileAndRun(program, [input], null, customSetup);
   }
 
   copy2D(
@@ -134,22 +134,22 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
 
   concat1D(a: Array1D, b: Array1D): Array1D {
     const program = new ConcatProgram(a.shape, b.shape, 0);
-    return this.compileAndRun(program, [a, b]) as Array1D;
+    return this.compileAndRun(program, [a, b]);
   }
 
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
     const program = new ConcatProgram(a.shape, b.shape, axis);
-    return this.compileAndRun(program, [a, b]) as Array2D;
+    return this.compileAndRun(program, [a, b]);
   }
 
   concat3D(x1: Array3D, x2: Array3D, axis: number): Array3D {
     const program = new ConcatProgram(x1.shape, x2.shape, axis);
-    return this.compileAndRun(program, [x1, x2]) as Array3D;
+    return this.compileAndRun(program, [x1, x2]);
   }
 
   concat4D(x1: Array4D, x2: Array4D, axis: number): Array4D {
     const program = new ConcatProgram(x1.shape, x2.shape, axis);
-    return this.compileAndRun(program, [x1, x2]) as Array4D;
+    return this.compileAndRun(program, [x1, x2]);
   }
 
   scaledArrayAdd<T extends NDArray>(c1: Scalar, a: T, c2: Scalar, b: T): T {
@@ -190,7 +190,7 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
       bOrientation: MatrixOrientation): Array2D {
     const program =
         new MatMulProgram(a.shape, b.shape, aOrientation, bOrientation);
-    return this.compileAndRun<Array2D, Array2D>(program, [a, b]) as Array2D;
+    return this.compileAndRun<Array2D, Array2D>(program, [a, b]);
   }
 
   multiply<T extends NDArray>(a: T, b: T): T {
@@ -219,7 +219,7 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
     const program = new BatchNormProgram(
         x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
         varianceEpsilon);
-    return this.compileAndRun(program, inputs) as Array2D;
+    return this.compileAndRun(program, inputs);
   }
 
   batchNormalization3D(
@@ -243,7 +243,7 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
     const program = new BatchNormProgram(
         x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
         varianceEpsilon);
-    return this.compileAndRun(program, inputs) as Array3D;
+    return this.compileAndRun(program, inputs);
   }
 
   tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
@@ -493,62 +493,62 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
     return this.compileAndRun(program, [a]) as T;
   }
 
-  conv2d(x: Array3D, filter: Array4D, bias: Array1D|null, convInfo: ConvInfo):
-      Array3D {
+  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
+      Array4D {
     const program = new Conv2DProgram(convInfo, bias != null);
     const inputs = bias != null ? [x, filter, bias] : [x, filter];
-    return this.compileAndRun(program, inputs) as Array3D;
+    return this.compileAndRun(program, inputs);
   }
 
-  conv2dDerInput(dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D {
+  conv2dDerInput(dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Conv2DDerInputProgram(convInfo);
-    return this.compileAndRun(program, [dy, filter]) as Array3D;
+    return this.compileAndRun(program, [dy, filter]);
   }
 
-  conv2dDerFilter(x: Array3D, dY: Array3D, convInfo: ConvInfo): Array4D {
-    const program = new Conv2DDerWeightsProgram(convInfo);
-    return this.compileAndRun(program, [x, dY]) as Array4D;
+  conv2dDerFilter(x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D {
+    const program = new Conv2DDerFilterProgram(convInfo);
+    return this.compileAndRun(program, [x, dY]);
   }
 
-  conv2dDerBias(dY: Array3D): Array1D {
+  conv2dDerBias(dY: Array4D): Array1D {
     const program = new Conv2DDerBiasProgram(dY.shape);
     return this.compileAndRun(program, [dY]);
   }
 
-  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo):
+  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
       Array4D {
     const program = new DepthwiseConv2DProgram(convInfo);
     return this.compileAndRun(program, [input, filter]);
   }
 
-  maxPool(x: Array3D, convInfo: ConvInfo): Array3D {
+  maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
-    return this.compileAndRun(program, [x]) as Array3D;
+    return this.compileAndRun(program, [x]);
   }
 
-  minPool(x: Array3D, convInfo: ConvInfo): Array3D {
+  minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'min', false);
-    return this.compileAndRun(program, [x]) as Array3D;
+    return this.compileAndRun(program, [x]);
   }
 
-  avgPool(x: Array3D, convInfo: ConvInfo): Array3D {
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'avg', false);
-    return this.compileAndRun(program, [x]) as Array3D;
+    return this.compileAndRun(program, [x]);
   }
 
-  maxPoolBackprop(dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D {
+  maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
     const getPositions = true;
     const maxPoolPositionsProgram =
         new Pool2DProgram(convInfo, 'max', getPositions);
-    const maxPoolPositions: Array3D =
-        this.compileAndRun(maxPoolPositionsProgram, [x]) as Array3D;
+    const maxPoolPositions: Array4D =
+        this.compileAndRun(maxPoolPositionsProgram, [x]);
 
     const maxPoolBackPropProgram = new MaxPool2DBackpropProgram(convInfo);
 
     const result =
         this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
     maxPoolPositions.dispose();
-    return result as Array3D;
+    return result as Array4D;
   }
 
   resizeBilinear3D(
@@ -556,7 +556,7 @@ export class NDArrayMathBackendWebGL implements NDArrayMathBackend {
       alignCorners: boolean): Array3D {
     const program =
         new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
-    return this.compileAndRun(program, [x]) as Array3D;
+    return this.compileAndRun(program, [x]);
   }
 
   multinomial(probs: Array2D, numSamples: number, seed: number):
