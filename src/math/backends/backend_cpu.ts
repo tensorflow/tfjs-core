@@ -16,37 +16,34 @@
  */
 
 import * as seedrandom from 'seedrandom';
-import * as util from '../util';
-import * as axis_util from './axis_util';
-import * as broadcast_util from './broadcast_util';
-import * as concat_util from './concat_util';
-import * as conv_util from './conv_util';
-import {ConvInfo, DepthwiseConvInfo} from './conv_util';
-import * as copy2D_util from './copy2d_util';
-import {MatrixOrientation, NDArrayMath, SumTypes, SumTypesMap} from './math';
+
+import * as util from '../../util';
+import * as broadcast_util from '../broadcast_util';
+import * as concat_util from '../concat_util';
+import {Conv2DInfo} from '../conv_util';
+import * as copy2D_util from '../copy2d_util';
+import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
+import {SumTypes, SumTypesMap} from '../types';
 
-export class NDArrayMathCPU extends NDArrayMath {
-  constructor(safeMode = false) {
-    super(safeMode);
-  }
+import * as axis_util from './../axis_util';
+import {MathBackend, MatrixOrientation} from './backend';
 
-  protected cloneInternal<T extends NDArray>(ndarray: T): T {
+export class MathBackendCPU implements MathBackend {
+  clone<T extends NDArray>(ndarray: T): T {
     return NDArray.make(
                ndarray.shape,
                {values: new Float32Array(ndarray.getValues())}) as T;
   }
 
-  protected slice1DInternal(input: Array1D, begin: number, size: number):
-      Array1D {
+  slice1D(input: Array1D, begin: number, size: number): Array1D {
     const newVals = input.getValues().slice(begin, begin + size);
     return Array1D.new(newVals);
   }
 
-  protected slice2DInternal(input: Array2D, begin: [number, number], size: [
-    number, number
-  ]): Array2D {
+  slice2D(input: Array2D, begin: [number, number], size: [number, number]):
+      Array2D {
     const result = Array2D.zeros(size);
     const [startI, startJ] = begin;
 
@@ -59,9 +56,9 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected slice3DInternal(
-      input: Array3D, begin: [number, number, number],
-      size: [number, number, number]): Array3D {
+  slice3D(input: Array3D, begin: [number, number, number], size: [
+    number, number, number
+  ]): Array3D {
     const result = Array3D.zeros(size);
     const [startI, startJ, startK] = begin;
 
@@ -75,9 +72,9 @@ export class NDArrayMathCPU extends NDArrayMath {
     }
     return result;
   }
-  protected slice4DInternal(
-      input: Array4D, begin: [number, number, number, number],
-      size: [number, number, number, number]): Array4D {
+  slice4D(input: Array4D, begin: [number, number, number, number], size: [
+    number, number, number, number
+  ]): Array4D {
     const result = Array4D.zeros(size);
     const [startI, startJ, startK, startL] = begin;
 
@@ -95,7 +92,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected copy2DInternal(
+  copy2D(
       source: Array2D, sourceBeginRowCol: [number, number],
       sourceSizeRowCol: [number, number], dest: Array2D,
       destBeginRowCol: [number, number],
@@ -115,7 +112,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     }
   }
 
-  protected concat1DInternal(a: Array1D, b: Array1D): Array1D {
+  concat1D(a: Array1D, b: Array1D): Array1D {
     const outShape = concat_util.computeOutShape(a.shape, b.shape, 0);
     const result = Array1D.zeros(outShape as [number]);
 
@@ -129,7 +126,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected concat2DInternal(a: Array2D, b: Array2D, axis: number): Array2D {
+  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
     const result = Array2D.zeros(outShape as [number, number]);
 
@@ -161,7 +158,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected concat3DInternal(a: Array3D, b: Array3D, axis: number): Array3D {
+  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
 
     const result = Array3D.zeros(outShape as [number, number, number]);
@@ -198,7 +195,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected concat4DInternal(a: Array4D, b: Array4D, axis: number): Array4D {
+  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
     const result = Array4D.zeros(outShape as [number, number, number, number]);
 
@@ -236,8 +233,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected scaledArrayAddInternal<T extends NDArray>(
-      c1: Scalar, a: T, c2: Scalar, b: T): T {
+  scaledArrayAdd<T extends NDArray>(c1: Scalar, a: T, c2: Scalar, b: T): T {
     const c1Val = c1.get();
     const c2Val = c2.get();
     return this.broadcastedBinaryOp(a, b, 'float32', (aVal, bVal) => {
@@ -245,19 +241,19 @@ export class NDArrayMathCPU extends NDArrayMath {
     }) as T;
   }
 
-  protected negInternal<T extends NDArray>(a: T): T {
-    return this.scalarTimesArray(Scalar.NEG_ONE, a);
+  neg<T extends NDArray>(a: T): T {
+    return this.multiply(Scalar.NEG_ONE, a) as T;
   }
 
-  protected addInternal<T extends NDArray>(a: T, b: T): T {
-    return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.ONE, b);
+  add<T extends NDArray>(a: T, b: T): T {
+    return this.scaledArrayAdd<T>(Scalar.ONE, a, Scalar.ONE, b);
   }
 
-  protected subtractInternal<T extends NDArray>(a: T, b: T): T {
-    return this.scaledArrayAddInternal<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
+  subtract<T extends NDArray>(a: T, b: T): T {
+    return this.scaledArrayAdd<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
   }
 
-  protected matMulInternal(
+  matMul(
       a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
       bOrientation = MatrixOrientation.REGULAR): Array2D {
     const sharedDim =
@@ -295,7 +291,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array2D.new([leftDim, rightDim], values);
   }
 
-  protected multiplyInternal<T extends NDArray>(a: T, b: T): T {
+  multiply<T extends NDArray>(a: T, b: T): T {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
@@ -308,7 +304,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  protected divideInternal(a: NDArray, b: NDArray): NDArray<'float32'> {
+  divide(a: NDArray, b: NDArray): NDArray<'float32'> {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const newValues = new Float32Array(util.sizeFromShape(newShape));
@@ -322,8 +318,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(newShape, {values: newValues}, 'float32');
   }
 
-  protected sumInternal<T extends keyof DataTypes>(
-      input: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
+  sum<T extends keyof DataTypes>(input: NDArray<T>, axes: number[]):
+      NDArray<SumTypes[T]> {
     axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
@@ -344,7 +340,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result as NDArray<SumTypes[T]>;
   }
 
-  protected argMinInternal(input: NDArray, axes: number[]): NDArray<'int32'> {
+  argMin(input: NDArray, axes: number[]): NDArray<'int32'> {
     axis_util.assertAxesAreInnerMostDims('argMin', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
@@ -373,7 +369,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected argMaxInternal(input: NDArray, axes: number[]): NDArray<'int32'> {
+  argMax(input: NDArray, axes: number[]): NDArray<'int32'> {
     axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
@@ -402,7 +398,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected equalInternal(a: NDArray, b: NDArray): NDArray<'bool'> {
+  equal(a: NDArray, b: NDArray): NDArray<'bool'> {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -412,8 +408,17 @@ export class NDArrayMathCPU extends NDArrayMath {
     });
   }
 
-  protected topKInternal(ndarray: NDArray, k: number):
-      {values: Array1D, indices: Array1D} {
+  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
+      ndarray: T, k: number): Array1D<D> {
+    return this.topK(ndarray, k).values as Array1D<D>;
+  }
+
+  topKIndices(ndarray: NDArray, k: number): Array1D<'int32'> {
+    return this.topK(ndarray, k).indices;
+  }
+
+  private topK<D extends keyof DataTypes, T extends NDArray<D>>(
+      ndarray: T, k: number): {values: Array1D<D>, indices: Array1D<'int32'>} {
     const values = ndarray.getValues();
     const valuesAndIndices: Array<{value: number, index: number}> = [];
     for (let i = 0; i < values.length; i++) {
@@ -422,17 +427,21 @@ export class NDArrayMathCPU extends NDArrayMath {
     valuesAndIndices.sort((a, b) => {
       return b.value - a.value;
     });
-    const topkValues = new Float32Array(k);
-    const topkIndices = new Float32Array(k);
+
+    const topkValues = util.getTypedArrayFromDType(ndarray.dtype, k);
+    const topkIndices = new Int32Array(k);
     for (let i = 0; i < k; i++) {
       topkValues[i] = valuesAndIndices[i].value;
       topkIndices[i] = valuesAndIndices[i].index;
     }
-    return {values: Array1D.new(topkValues), indices: Array1D.new(topkIndices)};
+    return {
+      values: Array1D.new<D>(topkValues),
+      indices: Array1D.new<'int32'>(topkIndices)
+    };
   }
 
-  protected minInternal<G extends keyof DataTypes>(
-      input: NDArray<G>, axes: number[]): NDArray<G> {
+  min<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]):
+      NDArray<G> {
     axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
@@ -459,8 +468,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected maxInternal<G extends keyof DataTypes>(
-      input: NDArray<G>, axes: number[]): NDArray<G> {
+  max<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]):
+      NDArray<G> {
     axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
@@ -487,7 +496,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected ceilInternal<T extends NDArray>(ndarray: T): T {
+  ceil<T extends NDArray>(ndarray: T): T {
     const values = ndarray.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
@@ -496,7 +505,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
-  protected floorInternal<T extends NDArray>(ndarray: T): T {
+  floor<T extends NDArray>(ndarray: T): T {
     const values = ndarray.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
@@ -505,7 +514,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
-  protected expInternal<T extends NDArray>(ndarray: T): T {
+  exp<T extends NDArray>(ndarray: T): T {
     const values = ndarray.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
@@ -514,7 +523,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
-  protected logInternal<T extends NDArray>(ndarray: T): T {
+  log<T extends NDArray>(ndarray: T): T {
     const values = ndarray.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
@@ -524,7 +533,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
-  protected sqrtInternal<T extends NDArray>(ndarray: T): T {
+  sqrt<T extends NDArray>(ndarray: T): T {
     const values = ndarray.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
@@ -534,7 +543,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: newValues}) as T;
   }
 
-  protected squareInternal<T extends NDArray>(x: T): T {
+  square<T extends NDArray>(x: T): T {
     const values = x.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
@@ -544,7 +553,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(x.shape, {values: newValues}) as T;
   }
 
-  protected reluInternal<T extends NDArray>(input: T): T {
+  relu<T extends NDArray>(input: T): T {
     const res = NDArray.zeros(input.shape, input.dtype);
     const resVals = res.getValues();
     const inVals = input.getValues();
@@ -559,7 +568,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return res as T;
   }
 
-  protected eluInternal<T extends NDArray>(ndarray: T): T {
+  elu<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.dataSync();
     for (let i = 0; i < values.length; ++i) {
@@ -573,7 +582,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected eluDerInternal<T extends NDArray>(ndarray: T): T {
+  eluDer<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.dataSync();
     for (let i = 0; i < values.length; ++i) {
@@ -587,7 +596,26 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected leakyReluInternal<T extends NDArray>(ndarray: T, alpha: number) {
+  selu<T extends NDArray>(ndarray: T): T {
+    // Stable and Attracting Fixed Point (0, 1) for Normalized Weights.
+    // see: https://arxiv.org/abs/1706.02515
+    const scaleAlpha = 1.7580993408473768599402175208123;
+    const scale = 1.0507009873554804934193349852946;
+
+    const resultValues = new Float32Array(ndarray.size);
+    const values = ndarray.dataSync();
+    for (let i = 0; i < values.length; ++i) {
+      const v = values[i];
+      if (v >= 0) {
+        resultValues[i] = scale * v;
+      } else {
+        resultValues[i] = scaleAlpha * (Math.exp(v) - 1);
+      }
+    }
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+  }
+
+  leakyRelu<T extends NDArray>(ndarray: T, alpha: number) {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.dataSync();
     for (let i = 0; i < values.length; i++) {
@@ -601,8 +629,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected clipInternal<T extends NDArray>(
-      ndarray: T, min: number, max: number): T {
+  clip<T extends NDArray>(ndarray: T, min: number, max: number): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -611,7 +638,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected absInternal<T extends NDArray>(ndarray: T): T {
+  abs<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -620,7 +647,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected sigmoidInternal<T extends NDArray>(ndarray: T): T {
+  sigmoid<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -629,7 +656,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected sinInternal<T extends NDArray>(ndarray: T): T {
+  sin<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -638,7 +665,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected cosInternal<T extends NDArray>(ndarray: T): T {
+  cos<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -647,7 +674,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected tanInternal<T extends NDArray>(ndarray: T): T {
+  tan<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -656,7 +683,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected asinInternal<T extends NDArray>(ndarray: T): T {
+  asin<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -665,7 +692,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected acosInternal<T extends NDArray>(ndarray: T): T {
+  acos<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -674,7 +701,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected atanInternal<T extends NDArray>(ndarray: T): T {
+  atan<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -683,7 +710,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected sinhInternal<T extends NDArray>(ndarray: T): T {
+  sinh<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -692,7 +719,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected coshInternal<T extends NDArray>(ndarray: T): T {
+  cosh<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -701,7 +728,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected tanhInternal<T extends NDArray>(ndarray: T): T {
+  tanh<T extends NDArray>(ndarray: T): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -710,7 +737,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected stepInternal<T extends NDArray>(ndarray: T, alpha = 0): T {
+  step<T extends NDArray>(ndarray: T, alpha = 0): T {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.getValues();
     for (let i = 0; i < values.length; ++i) {
@@ -720,131 +747,121 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  protected conv2dInternal(
-      x: Array3D, filter: Array4D, bias: Array1D|null,
-      convInfo: ConvInfo): Array3D {
-    const [xRows, xCols, inputDepth] = x.shape;
-    const filterHeight = filter.shape[0];
-    const filterWidth = filter.shape[1];
-    const outDepth = filter.shape[3];
+  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
+      Array4D {
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
+    const y = Array4D.zeros(convInfo.outShape);
 
-    const y = Array3D.zeros(convInfo.outShape);
-    for (let d2 = 0; d2 < outDepth; ++d2) {
-      for (let yR = 0; yR < y.shape[0]; ++yR) {
-        const xRCorner = yR * convInfo.strideHeight - padLeft;
-        const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, filterHeight + xRCorner);
-        for (let yC = 0; yC < y.shape[1]; ++yC) {
-          const xCCorner = yC * convInfo.strideWidth - padTop;
-          const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, filterWidth + xCCorner);
-          let dotProd = 0;
-          for (let xR = xRMin; xR < xRMax; ++xR) {
-            const wR = xR - xRCorner;
-            for (let xC = xCMin; xC < xCMax; ++xC) {
-              const wC = xC - xCCorner;
-              for (let d1 = 0; d1 < inputDepth; ++d1) {
-                const pixel = x.get(xR, xC, d1);
-                const weight = filter.get(wR, wC, d1, d2);
-                dotProd += pixel * weight;
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+          const xRCorner = yR * convInfo.strideHeight - padLeft;
+          const xRMin = Math.max(0, xRCorner);
+          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+            const xCCorner = yC * convInfo.strideWidth - padTop;
+            const xCMin = Math.max(0, xCCorner);
+            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
+            let dotProd = 0;
+            for (let xR = xRMin; xR < xRMax; ++xR) {
+              const wR = xR - xRCorner;
+              for (let xC = xCMin; xC < xCMax; ++xC) {
+                const wC = xC - xCCorner;
+                for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+                  const pixel = x.get(b, xR, xC, d1);
+                  const weight = filter.get(wR, wC, d1, d2);
+                  dotProd += pixel * weight;
+                }
               }
             }
+            const biasVal = (bias != null) ? bias.get(d2) : 0;
+            y.set(dotProd + biasVal, b, yR, yC, d2);
           }
-          const biasVal = (bias != null) ? bias.get(d2) : 0;
-          y.set(dotProd + biasVal, yR, yC, d2);
         }
       }
     }
     return y;
   }
 
-  protected conv2dDerInputInternal(
-      dy: Array3D, filter: Array4D, convInfo: ConvInfo): Array3D {
-    const inDepth = filter.shape[2];
-    const outDepth = filter.shape[3];
-    const yRows = dy.shape[0];
-    const yCols = dy.shape[1];
-    const filterHeight = filter.shape[0];
-    const filterWidth = filter.shape[1];
+  conv2dDerInput(dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
     const topPad = filterHeight - 1 - convInfo.padInfo.top;
     const leftPad = filterWidth - 1 - convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
+    const dx = Array4D.zeros(convInfo.inShape);
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+        for (let xR = 0; xR < convInfo.inHeight; ++xR) {
+          const xRCorner = xR - leftPad;
+          const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
+          const yRMax = Math.min(
+              convInfo.outHeight, (filterHeight + xRCorner) / strideHeight);
 
-    const dx = Array3D.zeros(convInfo.inShape);
-    for (let d1 = 0; d1 < inDepth; ++d1) {
-      for (let xR = 0; xR < dx.shape[0]; ++xR) {
-        const xRCorner = xR - leftPad;
-        const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
-        const yRMax = Math.min(yRows, (filterHeight + xRCorner) / strideHeight);
+          for (let xC = 0; xC < convInfo.inWidth; ++xC) {
+            const xCCorner = xC - topPad;
+            const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
+            const yCMax = Math.min(
+                convInfo.outWidth, (filterWidth + xCCorner) / strideWidth);
 
-        for (let xC = 0; xC < dx.shape[1]; ++xC) {
-          const xCCorner = xC - topPad;
-          const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
-          const yCMax = Math.min(yCols, (filterWidth + xCCorner) / strideWidth);
+            let dotProd = 0;
+            for (let yR = xRMin; yR < yRMax; ++yR) {
+              const wR = yR * strideHeight - xRCorner;
 
-          let dotProd = 0;
-          for (let yR = xRMin; yR < yRMax; ++yR) {
-            const wR = yR * strideHeight - xRCorner;
+              for (let yC = xCMin; yC < yCMax; ++yC) {
+                const wC = yC * strideWidth - xCCorner;
 
-            for (let yC = xCMin; yC < yCMax; ++yC) {
-              const wC = yC * strideWidth - xCCorner;
-
-              for (let d2 = 0; d2 < outDepth; ++d2) {
-                const pixel = dy.get(yR, yC, d2);
-                const weight = filter.get(
-                    filterHeight - 1 - wR, filterWidth - 1 - wC, d1, d2);
-                dotProd += pixel * weight;
+                for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+                  const pixel = dy.get(b, yR, yC, d2);
+                  const weight = filter.get(
+                      filterHeight - 1 - wR, filterWidth - 1 - wC, d1, d2);
+                  dotProd += pixel * weight;
+                }
               }
             }
+            dx.set(dotProd, b, xR, xC, d1);
           }
-          dx.set(dotProd, xR, xC, d1);
         }
       }
     }
     return dx;
   }
 
-  protected conv2dDerFilterInternal(
-      x: Array3D, dY: Array3D, convInfo: ConvInfo): Array4D {
-    const inputDepth = x.shape[2];
-    const outputDepth = dY.shape[2];
+  conv2dDerFilter(x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const weightsShape = conv_util.computeWeightsShape4D(
-        inputDepth, outputDepth, filterHeight, filterWidth);
-    const dW = Array4D.zeros(weightsShape);
-
-    const yNumRows = dY.shape[0];
-    const yNumCols = dY.shape[1];
-    const xNumRows = x.shape[0];
-    const xNumCols = x.shape[1];
+    const dW = Array4D.zeros(convInfo.filterShape);
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
 
     for (let wR = 0; wR < filterHeight; ++wR) {
       const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
-      const yRMax = Math.min(yNumRows, (xNumRows + topPad - wR) / strideHeight);
+      const yRMax = Math.min(
+          convInfo.outHeight, (convInfo.inHeight + topPad - wR) / strideHeight);
 
       for (let wC = 0; wC < filterWidth; ++wC) {
         const yCMin = Math.max(0, Math.ceil((leftPad - wC) / strideWidth));
-        const yCMax =
-            Math.min(yNumCols, (xNumCols + leftPad - wC) / strideWidth);
+        const yCMax = Math.min(
+            convInfo.outWidth, (convInfo.inWidth + leftPad - wC) / strideWidth);
 
-        for (let d1 = 0; d1 < inputDepth; ++d1) {
-          for (let d2 = 0; d2 < outputDepth; ++d2) {
+        for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+          for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
             // Need to convolve.
             let dotProd = 0;
-            for (let yR = yRMin; yR < yRMax; ++yR) {
-              const xR = wR + yR * strideHeight - topPad;
-              for (let yC = yCMin; yC < yCMax; ++yC) {
-                const xC = wC + yC * strideWidth - leftPad;
-                dotProd += x.get(xR, xC, d1) * dY.get(yR, yC, d2);
+            for (let b = 0; b < convInfo.batchSize; ++b) {
+              for (let yR = yRMin; yR < yRMax; ++yR) {
+                const xR = wR + yR * strideHeight - topPad;
+                for (let yC = yCMin; yC < yCMax; ++yC) {
+                  const xC = wC + yC * strideWidth - leftPad;
+                  dotProd += x.get(b, xR, xC, d1) * dY.get(b, yR, yC, d2);
+                }
               }
             }
             dW.set(dotProd, wR, wC, d1, d2);
@@ -855,16 +872,16 @@ export class NDArrayMathCPU extends NDArrayMath {
     return dW;
   }
 
-  protected conv2dDerBiasInternal(dY: Array3D): Array1D {
-    const outputDepth = dY.shape[2];
-    const numRows = dY.shape[0];
-    const numCols = dY.shape[1];
-    const values = new Float32Array(outputDepth);
-    for (let d2 = 0; d2 < outputDepth; ++d2) {
+  conv2dDerBias(dY: Array4D): Array1D {
+    const [batchSize, numRows, numCols, outDepth] = dY.shape;
+    const values = new Float32Array(outDepth);
+    for (let d2 = 0; d2 < outDepth; ++d2) {
       let sum = 0;
-      for (let r = 0; r < numRows; ++r) {
-        for (let c = 0; c < numCols; ++c) {
-          sum += dY.get(r, c, d2);
+      for (let b = 0; b < batchSize; ++b) {
+        for (let r = 0; r < numRows; ++r) {
+          for (let c = 0; c < numCols; ++c) {
+            sum += dY.get(b, r, c, d2);
+          }
         }
       }
       values[d2] = sum;
@@ -872,28 +889,25 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array1D.new(values);
   }
 
-  protected depthwiseConv2DInternal(
-      input: Array4D, filter: Array4D, convInfo: DepthwiseConvInfo): Array4D {
-    const [numBatches, xRows, xCols, inChannels] = convInfo.inShape;
+  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
+      Array4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const yRows = convInfo.outShape[1];
-    const yCols = convInfo.outShape[2];
-    const chMul = convInfo.channelMul;
-
+    const chMul = convInfo.outChannels / convInfo.inChannels;
     const y = Array4D.zeros(convInfo.outShape);
-    for (let b = 0; b < numBatches; ++b) {
-      for (let d1 = 0; d1 < inChannels; ++d1) {
-        for (let yR = 0; yR < yRows; ++yR) {
+
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
           const xRCorner = yR * convInfo.strideHeight - padLeft;
           const xRMin = Math.max(0, xRCorner);
-          const xRMax = Math.min(xRows, filterHeight + xRCorner);
-          for (let yC = 0; yC < yCols; ++yC) {
+          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
             const xCCorner = yC * convInfo.strideWidth - padTop;
             const xCMin = Math.max(0, xCCorner);
-            const xCMax = Math.min(xCols, filterWidth + xCCorner);
+            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
             for (let q = 0; q < chMul; ++q) {
               let dotProd = 0;
               for (let xR = xRMin; xR < xRMax; ++xR) {
@@ -914,8 +928,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     return y;
   }
 
-  protected tileInternal<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, reps: number[]): T {
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
+      T {
     const newShape: number[] = new Array(a.rank);
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = a.shape[i] * reps[i];
@@ -948,7 +962,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  protected transposeInternal<D extends keyof DataTypes, T extends NDArray<D>>(
+  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
       a: T, perm: number[]): T {
     const newShape: number[] = new Array(a.rank);
     for (let i = 0; i < newShape.length; i++) {
@@ -972,64 +986,62 @@ export class NDArrayMathCPU extends NDArrayMath {
     return result;
   }
 
-  private pool(x: Array3D, convInfo: ConvInfo, poolType: 'max'|'min'|'avg') {
-    const [xRows, xCols, depth] = x.shape;
+  private pool(x: Array4D, convInfo: Conv2DInfo, poolType: 'max'|'min'|'avg') {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const y = Array3D.zeros(convInfo.outShape);
+    const y = Array4D.zeros(convInfo.outShape);
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
-    for (let d = 0; d < depth; ++d) {
-      for (let yR = 0; yR < y.shape[0]; ++yR) {
-        const xRCorner = yR * strideHeight - padTop;
-        const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, filterHeight + xRCorner);
-        for (let yC = 0; yC < y.shape[1]; ++yC) {
-          const xCCorner = yC * strideWidth - padLeft;
-          const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, filterWidth + xCCorner);
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+          const xRCorner = yR * strideHeight - padTop;
+          const xRMin = Math.max(0, xRCorner);
+          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+            const xCCorner = yC * strideWidth - padLeft;
+            const xCMin = Math.max(0, xCCorner);
+            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
 
-          let minMaxValue =
-              (poolType === 'max' ? Number.NEGATIVE_INFINITY :
-                                    Number.POSITIVE_INFINITY);
-          let avgValue = 0;
-
-          for (let xR = xRMin; xR < xRMax; ++xR) {
-            for (let xC = xCMin; xC < xCMax; ++xC) {
-              const pixel = x.get(xR, xC, d);
-              if (isNaN(pixel)) {
-                minMaxValue = NaN;
-                avgValue = NaN;
+            let minMaxValue =
+                (poolType === 'max' ? Number.NEGATIVE_INFINITY :
+                                      Number.POSITIVE_INFINITY);
+            let avgValue = 0;
+            for (let xR = xRMin; xR < xRMax; ++xR) {
+              for (let xC = xCMin; xC < xCMax; ++xC) {
+                const pixel = x.get(b, xR, xC, d);
+                if (isNaN(pixel)) {
+                  minMaxValue = NaN;
+                  avgValue = NaN;
+                  break;
+                }
+                if ((poolType === 'max' && pixel > minMaxValue) ||
+                    (poolType === 'min' && pixel < minMaxValue)) {
+                  minMaxValue = pixel;
+                } else if (poolType === 'avg') {
+                  avgValue += pixel / (filterHeight * filterWidth);
+                }
+              }
+              if (isNaN(minMaxValue)) {
                 break;
               }
-              if ((poolType === 'max' && pixel > minMaxValue) ||
-                  (poolType === 'min' && pixel < minMaxValue)) {
-                minMaxValue = pixel;
-              } else if (poolType === 'avg') {
-                avgValue += pixel / (filterHeight * filterWidth);
-              }
             }
-            if (isNaN(minMaxValue)) {
-              break;
-            }
+            y.set(poolType === 'avg' ? avgValue : minMaxValue, b, yR, yC, d);
           }
-          y.set(poolType === 'avg' ? avgValue : minMaxValue, yR, yC, d);
         }
       }
     }
     return y;
   }
 
-  protected maxPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     return this.pool(x, convInfo, 'max');
   }
 
-  maxPoolPositions(x: Array3D, convInfo: ConvInfo) {
-    const [xRows, xCols, depth] = x.shape;
-    const outputShape = convInfo.outShape;
-    const maxPositions = Array3D.zeros(outputShape);
+  maxPoolPositions(x: Array4D, convInfo: Conv2DInfo) {
+    const maxPositions = Array4D.zeros(convInfo.outShape);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -1037,37 +1049,38 @@ export class NDArrayMathCPU extends NDArrayMath {
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
 
-    for (let d = 0; d < depth; ++d) {
-      for (let yR = 0; yR < outputShape[0]; ++yR) {
-        const xRCorner = yR * strideHeight - padTop;
-        const xRMin = Math.max(0, xRCorner);
-        const xRMax = Math.min(xRows, filterHeight + xRCorner);
-        for (let yC = 0; yC < outputShape[1]; ++yC) {
-          const xCCorner = yC * strideWidth - padLeft;
-          const xCMin = Math.max(0, xCCorner);
-          const xCMax = Math.min(xCols, filterWidth + xCCorner);
-          let maxValue = Number.NEGATIVE_INFINITY;
-          let maxPosition = -1;
-          for (let xR = xRMin; xR < xRMax; ++xR) {
-            const wR = xR - xRCorner;
-            for (let xC = xCMin; xC < xCMax; ++xC) {
-              const wC = xC - xCCorner;
-              const pixel = x.get(xR, xC, d);
-              if (pixel > maxValue) {
-                maxValue = pixel;
-                maxPosition = wR * filterWidth + wC;
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+          const xRCorner = yR * strideHeight - padTop;
+          const xRMin = Math.max(0, xRCorner);
+          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+            const xCCorner = yC * strideWidth - padLeft;
+            const xCMin = Math.max(0, xCCorner);
+            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
+            let maxValue = Number.NEGATIVE_INFINITY;
+            let maxPosition = -1;
+            for (let xR = xRMin; xR < xRMax; ++xR) {
+              const wR = xR - xRCorner;
+              for (let xC = xCMin; xC < xCMax; ++xC) {
+                const wC = xC - xCCorner;
+                const pixel = x.get(b, xR, xC, d);
+                if (pixel > maxValue) {
+                  maxValue = pixel;
+                  maxPosition = wR * filterWidth + wC;
+                }
               }
             }
+            maxPositions.set(maxPosition, b, yR, yC, d);
           }
-          maxPositions.set(maxPosition, yR, yC, d);
         }
       }
     }
     return maxPositions;
   }
 
-  protected maxPoolBackpropInternal(
-      dy: Array3D, x: Array3D, convInfo: ConvInfo): Array3D {
+  maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
     const maxPositions = this.maxPoolPositions(x, convInfo);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1075,55 +1088,58 @@ export class NDArrayMathCPU extends NDArrayMath {
     const filterWidth = convInfo.filterWidth;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
-    const [dyRows, dyCols, depth] = dy.shape;
-    const dx = Array3D.zeros(x.shape);
+    const dx = Array4D.zeros(x.shape);
 
-    for (let d = 0; d < depth; ++d) {
-      for (let dxR = 0; dxR < dx.shape[0]; ++dxR) {
-        for (let dxC = 0; dxC < dx.shape[1]; ++dxC) {
-          // Shader code begins.
-          const dyRCorner = dxR - padTop;
-          const dyCCorner = dxC - padLeft;
-          let dotProd = 0;
-          for (let wR = 0; wR < filterHeight; ++wR) {
-            const dyR = (dyRCorner + wR) / strideHeight;
-            if (dyR < 0 || dyR >= dyRows || Math.floor(dyR) !== dyR) {
-              continue;
-            }
-            for (let wC = 0; wC < filterWidth; ++wC) {
-              const dyC = (dyCCorner + wC) / strideWidth;
-              if (dyC < 0 || dyC >= dyCols || Math.floor(dyC) !== dyC) {
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let dxR = 0; dxR < convInfo.inHeight; ++dxR) {
+          for (let dxC = 0; dxC < convInfo.inWidth; ++dxC) {
+            // Shader code begins.
+            const dyRCorner = dxR - padTop;
+            const dyCCorner = dxC - padLeft;
+            let dotProd = 0;
+            for (let wR = 0; wR < filterHeight; ++wR) {
+              const dyR = (dyRCorner + wR) / strideHeight;
+              if (dyR < 0 || dyR >= convInfo.outHeight ||
+                  Math.floor(dyR) !== dyR) {
                 continue;
               }
-              const maxPos = filterHeight * filterWidth - 1 -
-                  maxPositions.get(dyR, dyC, d);
-              const curPos = wR * filterWidth + wC;
+              for (let wC = 0; wC < filterWidth; ++wC) {
+                const dyC = (dyCCorner + wC) / strideWidth;
+                if (dyC < 0 || dyC >= convInfo.outWidth ||
+                    Math.floor(dyC) !== dyC) {
+                  continue;
+                }
+                const maxPos = filterHeight * filterWidth - 1 -
+                    maxPositions.get(b, dyR, dyC, d);
+                const curPos = wR * filterWidth + wC;
 
-              const mask = maxPos === curPos ? 1 : 0;
-              if (mask === 0) {
-                continue;
+                const mask = maxPos === curPos ? 1 : 0;
+                if (mask === 0) {
+                  continue;
+                }
+
+                const pixel = dy.get(b, dyR, dyC, d);
+                dotProd += pixel * mask;
               }
-
-              const pixel = dy.get(dyR, dyC, d);
-              dotProd += pixel * mask;
             }
+            dx.set(dotProd, b, dxR, dxC, d);
           }
-          dx.set(dotProd, dxR, dxC, d);
         }
       }
     }
     return dx;
   }
 
-  protected minPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     return this.pool(x, convInfo, 'min');
   }
 
-  protected avgPoolInternal(x: Array3D, convInfo: ConvInfo): Array3D {
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     return this.pool(x, convInfo, 'avg');
   }
 
-  protected resizeBilinear3DInternal(
+  resizeBilinear3D(
       x: Array3D, newShape2D: [number, number],
       alignCorners: boolean): Array3D {
     const output = Array3D.zeros([newShape2D[0], newShape2D[1], x.shape[2]]);
@@ -1171,7 +1187,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return output;
   }
 
-  protected batchNormalization2DInternal(
+  batchNormalization2D(
       x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
       varianceEpsilon: number, scale?: Array2D|Array1D,
       offset?: Array2D|Array1D): Array2D {
@@ -1192,7 +1208,7 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array2D.new(x.shape, outValues);
   }
 
-  protected batchNormalization3DInternal(
+  batchNormalization3D(
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
       varianceEpsilon: number, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D {
@@ -1213,9 +1229,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     return Array3D.new(x.shape, outValues);
   }
 
-  protected multinomialInternal(
-      probabilities: Array2D, numSamples: number,
-      seed: number): Array2D<'int32'> {
+  multinomial(probabilities: Array2D, numSamples: number, seed: number):
+      Array2D<'int32'> {
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
     const res = Array2D.zeros([batchSize, numSamples], 'int32');
@@ -1251,9 +1266,8 @@ export class NDArrayMathCPU extends NDArrayMath {
     return res;
   }
 
-  protected oneHotInternal(
-      indices: Array1D, depth: number, onValue: number,
-      offValue: number): Array2D {
+  oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
+      Array2D {
     const res = new Float32Array(indices.size * depth);
     res.fill(offValue);
 
@@ -1290,5 +1304,12 @@ export class NDArrayMathCPU extends NDArrayMath {
       newValues[i] = op(aValues[aIndex], bValues[bIndex]);
     }
     return result;
+  }
+}
+
+// TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
+export class NDArrayMathCPU extends NDArrayMath {
+  constructor(safeMode = false) {
+    super(new MathBackendCPU(), safeMode);
   }
 }
