@@ -15,9 +15,10 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, ENV, NDArray, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
+import {Array1D, Array3D, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
 
 import {BenchmarkTest} from './benchmark';
+import * as benchmark_util from './benchmark_util';
 
 export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
   async run(size: number): Promise<number> {
@@ -52,40 +53,16 @@ export class BatchNormalization3DGPUBenchmark implements BenchmarkTest {
     const variance = Array1D.new([1]);
     const varianceEpsilon = .001;
 
-    let output: NDArray;
-    const benchmark = () => {
-      math.scope(() => {
-        output = math.batchNormalization3D(
-            x, mean, variance, varianceEpsilon, undefined, undefined);
-      });
-    };
+    const benchmark = () => math.batchNormalization3D(
+        x, mean, variance, varianceEpsilon, undefined, undefined);
 
-    const cleanup = () => {
-      x.dispose();
-      mean.dispose();
-      variance.dispose();
-      math.dispose();
-    };
+    const time = benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
 
-    // Warmup.
-    await math.getGPGPUContext().runQuery(benchmark);
+    x.dispose();
+    mean.dispose();
+    variance.dispose();
+    math.dispose();
 
-    let totalTime: number;
-    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE')) {
-      totalTime = await math.getGPGPUContext().runQuery(benchmark);
-    } else {
-      const start = performance.now();
-
-      benchmark();
-      output.dataSync();
-
-      totalTime = performance.now() - start;
-
-      cleanup();
-    }
-
-    cleanup();
-
-    return totalTime;
+    return time;
   }
 }
