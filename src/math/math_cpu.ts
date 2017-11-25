@@ -738,6 +738,16 @@ export class NDArrayMathCPU extends NDArrayMath {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
+  protected signInternal<T extends NDArray>(ndarray: T): T {
+    const resultValues = new Float32Array(ndarray.size);
+    const values = ndarray.getValues();
+    for (let i = 0; i < values.length; ++i) {
+      const value = values[i];
+      resultValues[i] = value > 0 ? 1 : (value < 0 ? -1 : value);
+    }
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+  }
+
   protected conv2dInternal(
       x: Array4D, filter: Array4D, bias: Array1D|null,
       convInfo: Conv2DInfo): Array4D {

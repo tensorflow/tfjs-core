@@ -505,6 +505,11 @@ export class NDArrayMathGPU extends NDArrayMath {
     return this.compileAndRun(program, [a]) as T;
   }
 
+  protected signInternal<T extends NDArray>(a: T): T {
+    const program = new UnaryOpProgram(a.shape, unary_op.SIGN);
+    return this.compileAndRun(program, [a]) as T;
+  }
+
   protected conv2dInternal(
       x: Array4D, filter: Array4D, bias: Array1D|null,
       convInfo: Conv2DInfo): Array4D {

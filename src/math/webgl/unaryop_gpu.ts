@@ -81,6 +81,10 @@ export function STEP(alpha = 0.0) {
   `;
 }
 
+export const SIGN = `
+  return (x == x) ? sign(x) : x;
+`;
+
 export const NEG = `
   return -x;
 `;
