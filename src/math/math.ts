@@ -1429,11 +1429,10 @@ export abstract class NDArrayMath {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  conv2d(
-      input: Array3D|Array4D, filter: Array4D, bias: Array1D|null,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D
-      |Array4D {
-    let input4D = input as Array4D;
+  conv2d<T extends NDArray>(
+      input: T, filter: Array4D, bias: Array1D|null,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+    let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
@@ -1463,9 +1462,10 @@ export abstract class NDArrayMath {
     return this.executeOp('conv2d', () => {
       const res = this.conv2dInternal(input4D, filter, bias, convInfo);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
       }
-      return res;
+      return res as NDArray as T;
     });
   }
   protected abstract conv2dInternal(
@@ -1485,17 +1485,17 @@ export abstract class NDArrayMath {
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
-  conv2dDerInput(
-      inShape: [number, number, number, number]|[number, number, number],
-      dy: Array3D|Array4D, filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number): Array4D|Array3D {
+  conv2dDerInput<T extends NDArray>(
+      inShape: [number, number, number, number]|[number, number, number], dy: T,
+      filter: Array4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number): T {
     util.assert(
         inShape.length === dy.rank,
         `Length of inShape ` +
             `(${inShape.length}) and rank of dy (${dy.rank}) must match`);
 
     let inShape4D = inShape as [number, number, number, number];
-    let dy4D = dy as Array4D;
+    let dy4D = dy as NDArray as Array4D;
     let reshapedTo4D = false;
     if (dy.rank === 3) {
       reshapedTo4D = true;
@@ -1531,9 +1531,10 @@ export abstract class NDArrayMath {
     return this.executeOp('conv2dDerInput', () => {
       const res = this.conv2dDerInputInternal(dy4D, filter, convInfo);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
       }
-      return res;
+      return res as NDArray as T;
     });
   }
   protected abstract conv2dDerInputInternal(
@@ -1567,15 +1568,14 @@ export abstract class NDArrayMath {
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
-  conv2dDerFilter(
-      input: Array3D|Array4D, dy: Array3D|Array4D,
-      filterShape: [number, number, number, number],
+  conv2dDerFilter<T extends NDArray>(
+      input: T, dy: T, filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number): Array4D {
-    let input4D = input as Array4D;
+    let input4D = input as NDArray as Array4D;
     if (input.rank === 3) {
       input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
     }
-    let dy4D = dy as Array4D;
+    let dy4D = dy as NDArray as Array4D;
     if (dy4D.rank === 3) {
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
     }
@@ -1623,11 +1623,10 @@ export abstract class NDArrayMath {
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the non-transpose version of the op.
    */
-  conv2dTranspose(
-      x: Array3D|Array4D, filter: Array4D,
+  conv2dTranspose<T extends NDArray>(
+      x: T, filter: Array4D,
       outputShape: [number, number, number, number]|[number, number, number],
-      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D
-      |Array4D {
+      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
     return this.conv2dDerInput(outputShape, x, filter, strides, pad);
   }
 
@@ -1663,11 +1662,10 @@ export abstract class NDArrayMath {
    *     `rateHeight == rateWidth`. If it is greater than 1, then all values of
    *     `strides` must be 1.
    */
-  depthwiseConv2D(
-      input: Array3D|Array4D, filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number,
-      rates: [number, number]|number = [1, 1]): Array3D|Array4D {
-    let input4D = input as Array4D;
+  depthwiseConv2D<T extends NDArray>(
+      input: T, filter: Array4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1]): T {
+    let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
@@ -1694,13 +1692,14 @@ export abstract class NDArrayMath {
             `supported. Got rates '${rates}'`);
 
     const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filter.shape, strides, pad, true);
+        input4D.shape, filter.shape, strides, pad, true /* depthwise */);
     return this.executeOp('depthwiseConv2D', () => {
       const res = this.depthwiseConv2DInternal(input4D, filter, convInfo);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
       }
-      return res;
+      return res as NDArray as T;
     });
   }
   protected abstract depthwiseConv2DInternal(
@@ -1721,11 +1720,10 @@ export abstract class NDArrayMath {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  maxPool(
-      input: Array3D|Array4D, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D
-      |Array4D {
-    let input4D = input as Array4D;
+  maxPool<T extends NDArray>(
+      input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+    let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
@@ -1740,9 +1738,10 @@ export abstract class NDArrayMath {
     return this.executeOp('maxPool', () => {
       const res = this.maxPoolInternal(input4D, convInfo);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
       }
-      return res;
+      return res as NDArray as T;
     });
   }
   protected abstract maxPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D;
@@ -1759,16 +1758,15 @@ export abstract class NDArrayMath {
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
-  maxPoolBackprop(
-      dy: Array3D|Array4D, input: Array3D|Array4D,
-      filterSize: [number, number]|number, strides: [number, number]|number,
-      pad: 'valid'|'same'|number): Array3D|Array4D {
+  maxPoolBackprop<T extends NDArray>(
+      dy: T, input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
 
-    let input4D = input as Array4D;
-    let dy4D = dy as Array4D;
+    let input4D = input as NDArray as Array4D;
+    let dy4D = dy as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
@@ -1790,9 +1788,10 @@ export abstract class NDArrayMath {
     return this.executeOp('maxPoolBackprop', () => {
       const res = this.maxPoolBackpropInternal(dy4D, input4D, convInfo);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
       }
-      return res;
+      return res as NDArray as T;
     });
   }
   protected abstract maxPoolBackpropInternal(
@@ -1813,11 +1812,10 @@ export abstract class NDArrayMath {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  minPool(
-      input: Array3D|Array4D, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D
-      |Array4D {
-    let input4D = input as Array4D;
+  minPool<T extends NDArray>(
+      input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+    let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
@@ -1832,9 +1830,10 @@ export abstract class NDArrayMath {
     return this.executeOp('minPool', () => {
       const res = this.minPoolInternal(input4D, convInfo);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
       }
-      return res;
+      return res as NDArray as T;
     });
   }
   protected abstract minPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D;
@@ -1854,11 +1853,10 @@ export abstract class NDArrayMath {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  avgPool(
-      input: Array3D|Array4D, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): Array3D
-      |Array4D {
-    let input4D = input as Array4D;
+  avgPool<T extends NDArray>(
+      input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+    let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
@@ -1873,9 +1871,10 @@ export abstract class NDArrayMath {
     return this.executeOp('avgPool', () => {
       const res = this.avgPoolInternal(input4D, convInfo);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
       }
-      return res;
+      return res as NDArray as T;
     });
   }
   protected abstract avgPoolInternal(x: Array4D, convInfo: Conv2DInfo): Array4D;
