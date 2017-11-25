@@ -596,6 +596,25 @@ export class NDArrayMathBackendCPU implements NDArrayMathBackend {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
+  selu<T extends NDArray>(ndarray: T): T {
+    // Stable and Attracting Fixed Point (0, 1) for Normalized Weights.
+    // see: https://arxiv.org/abs/1706.02515
+    const scaleAlpha = 1.7580993408473768599402175208123;
+    const scale = 1.0507009873554804934193349852946;
+
+    const resultValues = new Float32Array(ndarray.size);
+    const values = ndarray.dataSync();
+    for (let i = 0; i < values.length; ++i) {
+      const v = values[i];
+      if (v >= 0) {
+        resultValues[i] = scale * v;
+      } else {
+        resultValues[i] = scaleAlpha * (Math.exp(v) - 1);
+      }
+    }
+    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+  }
+
   leakyRelu<T extends NDArray>(ndarray: T, alpha: number) {
     const resultValues = new Float32Array(ndarray.size);
     const values = ndarray.dataSync();

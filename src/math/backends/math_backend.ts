@@ -111,6 +111,8 @@ export interface NDArrayMathBackend {
 
   eluDer<T extends NDArray>(ndarray: T): T;
 
+  selu<T extends NDArray>(a: T): T;
+
   leakyRelu<T extends NDArray>(ndarray: T, alpha: number): T;
 
   clip<T extends NDArray>(ndarray: T, min: number, max: number): T;
