@@ -11,6 +11,7 @@ const getRandomIntegerInRange = (min: number, max: number) => {
 
 export const learnXOR = () => {
   const iterations = getRandomIntegerInRange(800, 1000);
+  const timeStart: number = performance.now();
   let loss: number;
   let cost: Scalar;
 
@@ -69,16 +70,25 @@ export const learnXOR = () => {
     loss = cost.get();
   });
 
+  const result = [];
+
   /**
    * Test the model
    */
   for (let i = 0; i < 4; i += 1) {
     const inputData = inputArray[i];
+    const expectedOutput = targetArray[i];
+
     const val = session.eval(output, [{tensor: input, data: inputData}]);
-    console.log(inputData.dataSync(), val.getValues());
+    result.push({
+      input: inputData.dataSync(),
+      expected: expectedOutput.dataSync(),
+      output: val.getValues()
+    });
   }
 
-  console.log(iterations);
+  const timeEnd: number = performance.now();
+  const time = timeEnd - timeStart;
 
-  return {iterations, loss};
+  return {iterations, loss, time, result};
 };

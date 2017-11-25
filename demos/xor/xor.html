@@ -26,25 +26,60 @@ limitations under the License.
 <dom-module id="xor-demo">
   <style>
     .container {
-      margin-left: 20px;
-      margin-top: 20px;
+      margin: 20px auto 0px auto;
+      position: relative;
+      width: 80%;
+      text-align: center;
     }
-    #random {
-      color: rgb(66,66,66);
-      background-color: rgb(255,171,64);
+    .ruled {
+      border-bottom: 1px solid #e5e5e5;
+      padding: 50px;
+    }
+
+    .container > ::content > #result .dark {
+      color: white;
+      background: #231d1d;
+      padding: 2px;
+      border-radius: 2px;
+    }
+
+    .container > ::content > #result .output {
+      margin: 3px;
+    }
+
+    paper-button.fancy {
+      background: rgb(0, 13, 128);
+      color: rgb(255, 255, 255);
+    }
+
+    paper-button.fancy:hover {
+      background: rgb(255, 153, 0);
+      transition: 0.5s ease;
+    }
+
+    .hide {
+      display: none;
+    }
+
+    .show {
+      display: block;
+    }
+
+    .container > ::content > #result .green {
+      color: #1ac346;
+    }
+
+    .container > ::content > #result .red {
+      color: #b42020;
     }
   </style>
 <template>
   <div class="container">
-    <div class="explanation">
-      <paper-button type="button" id="train">Start Training</paper-button>
+    <div class="ruled explanation">
+      <paper-button type="button" id="train" raised noink class="fancy">Start Training</paper-button>
     </div>
-    <div class="result">
-
-    </div>
-    <div class="metainfo">
-
-    </div>
+    <div class="ruled hide" id="result"></div>
+    <div class="ruled hide" id="metainfo"></div>
   </div>
 </template>
 
