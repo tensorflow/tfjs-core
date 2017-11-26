@@ -178,7 +178,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
   ]);
 }
 
-// math.conv2d
+// math.conv1d
 {
   const tests: MathTests = it => {
     it('conv1d input=2x2x1,d2=1,f=1,s=1,p=same', math => {
