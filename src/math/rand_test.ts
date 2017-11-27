@@ -24,7 +24,7 @@ function isFloat(n: number): boolean {
 
 test_util.describeCustom('MPRandGauss', () => {
   const EPSILON_FLOAT32 = 0.05;
-  const EPSILON_NONFLOAT = 0.10;
+  const EPSILON_NONFLOAT = 0.05;
 
   it('should default to float32 numbers', () => {
     const rand = new MPRandGauss(0, 1.5);
@@ -47,7 +47,7 @@ test_util.describeCustom('MPRandGauss', () => {
     expect(isFloat(rand.nextValue())).toBe(false);
   });
 
-  it('should handle create a mean/stdv of float32 numbers', () => {
+  it('should handle create a mean/stdv of int32 numbers', () => {
     const rand = new MPRandGauss(0, 1, 'int32');
     const values = [];
     const size = 1000;
