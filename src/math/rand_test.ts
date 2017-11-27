@@ -49,13 +49,13 @@ test_util.describeCustom('MPRandGauss', () => {
   });
 
   it('should handle create a mean/stdv of int32 numbers', () => {
-    const rand = new MPRandGauss(0, 1, 'int32', false /* truncated */, SEED);
+    const rand = new MPRandGauss(0, 2, 'int32', false /* truncated */, SEED);
     const values = [];
-    const size = 1000;
+    const size = 10000;
     for (let i = 0; i < size; i++) {
       values.push(rand.nextValue());
     }
-    test_util.expectArrayInMeanStdRange(values, 0, 1, EPSILON);
+    test_util.expectArrayInMeanStdRange(values, 0, 2, EPSILON);
     test_util.jarqueBeraNormalityTest(values);
   });
 
