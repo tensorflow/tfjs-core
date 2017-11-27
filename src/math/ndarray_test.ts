@@ -20,7 +20,15 @@ import * as util from '../util';
 
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DType, NDArray, Scalar} from './ndarray';
+import {
+  Array1D,
+  Array2D,
+  Array3D,
+  Array4D,
+  DType,
+  NDArray,
+  Scalar
+} from './ndarray';
 import {GPGPUContext} from './backends/webgl/gpgpu_context';
 import * as gpgpu_util from './backends/webgl/gpgpu_util';
 import {TextureManager} from './backends/webgl/texture_manager';
@@ -193,7 +201,7 @@ test_util.describeCustom('NDArray', () => {
     });
   });
 
-  it('NDArray.data GPU --> CPU', async () => {
+  it('NDArray.data GPU --> CPU', async() => {
     const texture = textureManager.acquireTexture([3, 2]);
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -206,7 +214,7 @@ test_util.describeCustom('NDArray', () => {
     expect(a.inGPU()).toBe(false);
   });
 
-  it('NDArray.val() GPU --> CPU', async () => {
+  it('NDArray.val() GPU --> CPU', async() => {
     const texture = textureManager.acquireTexture([3, 2]);
     gpgpu.uploadMatrixToTexture(
         texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -257,9 +265,7 @@ test_util.describeCustom('NDArray', () => {
     const texture = textureManager.acquireTexture([1, 3]);
     gpgpu.uploadMatrixToTexture(texture, 1, 3, new Float32Array([10, 7, 3]));
 
-    const f = () => {
-      return Array1D.make([3], {texture});
-    };
+    const f = () => Array1D.make([3], {texture});
 
     expect(f).toThrowError();
     textureManager.releaseTexture(texture, [1, 3]);
@@ -1436,7 +1442,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
   const EPSILON_FLOAT32 = 0.05;
   const EPSILON_NONFLOAT = 0.10;
 
-  it('should return a float32 1D of random normal values KREEGER', () => {
+  it('should return a float32 1D of random normal values', () => {
     const SAMPLES = 10000;
 
     // Ensure defaults to float32.
@@ -1466,7 +1472,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
   });
 
   it('should return a float32 2D of random normal values', () => {
-    const SAMPLES = 100;
+    const SAMPLES = 1000;
 
     // Ensure defaults to float32.
     let result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 0.5);
@@ -1484,7 +1490,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 2D of random normal values KREEGER', () => {
+  it('should return a int32 2D of random normal values', () => {
     const SAMPLES = 100;
     const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
@@ -1513,7 +1519,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 3D of random normal values KREEGER', () => {
+  it('should return a int32 3D of random normal values', () => {
     const SAMPLES = 50;
     const result =
         Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32');
@@ -1544,7 +1550,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 4D of random normal values KREEGER', () => {
+  it('should return a int32 4D of random normal values', () => {
     const SAMPLES = 25;
 
     const result =
@@ -1557,7 +1563,117 @@ test_util.describeCustom('NDArray.randNormal', () => {
   });
 });
 
-// TODO(kreeger): Write NDArray.randTruncatedNormal() tests.
+test_util.describeCustom('NDArray.randTruncatedNormal', () => {
+  // Expect higher variances for truncated values.
+  // TODO(kreeger): Consider a different gausiann method or seeding JS
+  // Math.rand() for precision.
+  const EPSILON_FLOAT32 = 0.50;
+  const EPSILON_NONFLOAT = 0.55;
+
+  it('should return a random 1D float32 array', () => {
+    const shape: [number] = [2000];
+
+    // Ensure defaults to float32 w/o type:
+    let result = NDArray.randTruncatedNormal(shape, 0, 3.5);
+    expect(result.dtype).toBe('float32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 3.5, EPSILON_FLOAT32);
+
+    result = NDArray.randTruncatedNormal(shape, 0, 4.5, 'float32');
+    expect(result.dtype).toBe('float32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 4.5, EPSILON_FLOAT32);
+  });
+
+  it('should return a randon 1D int32 array', () => {
+    const shape: [number] = [1000];
+    const result = NDArray.randTruncatedNormal(shape, 0, 5, 'int32');
+    expect(result.dtype).toBe('int32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 5, EPSILON_NONFLOAT);
+  });
+
+  it('should return a 2D float32 array', () => {
+    const shape: [number, number] = [50, 50];
+
+    // Ensure defaults to float32 w/o type:
+    let result = Array2D.randTruncatedNormal(shape, 0, 3.5);
+    expect(result.dtype).toBe('float32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 3.5, EPSILON_FLOAT32);
+
+    result = Array2D.randTruncatedNormal(shape, 0, 4.5, 'float32');
+    expect(result.dtype).toBe('float32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 4.5, EPSILON_FLOAT32);
+  });
+
+  it('should return a 2D int32 array', () => {
+    const shape: [number, number] = [100, 100];
+    const result = Array2D.randTruncatedNormal(shape, 0, 6, 'int32');
+    expect(result.dtype).toBe('int32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 6, EPSILON_NONFLOAT);
+  });
+
+  it('should return a 3D float32 array', () => {
+    const shape: [number, number, number] = [10, 10, 10];
+
+    // Ensure defaults to float32 w/o type:
+    let result = Array3D.randTruncatedNormal(shape, 0, 3.5);
+    expect(result.dtype).toBe('float32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 3.5, EPSILON_FLOAT32);
+
+    result = Array3D.randTruncatedNormal(shape, 0, 4.5, 'float32');
+    expect(result.dtype).toBe('float32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 4.5, EPSILON_FLOAT32);
+  });
+
+  it('should return a 3D int32 array', () => {
+    const shape: [number, number, number] = [10, 10, 10];
+    const result = Array3D.randTruncatedNormal(shape, 0, 5, 'int32');
+    expect(result.dtype).toBe('int32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 5, EPSILON_NONFLOAT);
+  });
+
+  it('should return a 4D float32 array', () => {
+    const shape: [number, number, number, number] = [10, 10, 10, 10];
+
+    // Ensure defaults to float32 w/o type:
+    let result = Array4D.randTruncatedNormal(shape, 0, 3.5);
+    expect(result.dtype).toBe('float32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 3.5, EPSILON_FLOAT32);
+
+    result = Array4D.randTruncatedNormal(shape, 0, 4.5, 'float32');
+    expect(result.dtype).toBe('float32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 4.5, EPSILON_FLOAT32);
+  });
+
+  it('should return a 4D int32 array', () => {
+    const shape: [number, number, number, number] = [10, 10, 10, 10];
+    const result = Array4D.randTruncatedNormal(shape, 0, 5, 'int32');
+    expect(result.dtype).toBe('int32');
+    test_util.jarqueBeraNormalityTest(result.getValues());
+    test_util.expectArrayInMeanStdRange(
+        result.getValues(), 0, 5, EPSILON_NONFLOAT);
+  });
+});
 
 // NDArray.randUniform()
 test_util.describeCustom('NDArray.randUniform', () => {
