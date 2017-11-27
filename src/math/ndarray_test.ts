@@ -1431,127 +1431,118 @@ test_util.describeCustom('NDArray.rand', () => {
 
 // NDArray.randNormal
 test_util.describeCustom('NDArray.randNormal', () => {
-  const EPSILON_FLOAT32 = 0.05;
-  const EPSILON_NONFLOAT = 0.10;
+  const SEED = 2002;
+  const EPSILON = 0.05;
 
   it('should return a float32 1D of random normal values', () => {
     const SAMPLES = 10000;
 
     // Ensure defaults to float32.
-    let result = NDArray.randNormal([SAMPLES], 0, 0.5);
+    let result = NDArray.randNormal([SAMPLES], 0, 0.5, null, SEED);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 0.5, EPSILON_FLOAT32);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.5, EPSILON);
 
-    result = NDArray.randNormal([SAMPLES], 0, 1.5, 'float32');
+    result = NDArray.randNormal([SAMPLES], 0, 1.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1.5, EPSILON_FLOAT32);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 1.5, EPSILON);
   });
 
   it('should return a int32 1D of random normal values', () => {
-    const SAMPLES = 1000;
-    const result = NDArray.randNormal([SAMPLES], 0, 1, 'int32');
+    const SAMPLES = 10000;
+    const result = NDArray.randNormal([SAMPLES], 0, 2, 'int32', SEED);
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1, EPSILON_NONFLOAT);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 2, EPSILON);
   });
 
   it('should return a float32 2D of random normal values', () => {
-    const SAMPLES = 1000;
+    const SAMPLES = 250;
 
     // Ensure defaults to float32.
-    let result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 0.5);
+    let result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 2.5, null, SEED);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 0.5, EPSILON_FLOAT32);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 2.5, EPSILON);
 
-    result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 1.5, 'float32');
+    result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 3.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1.5, EPSILON_FLOAT32);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 3.5, EPSILON);
   });
 
   it('should return a int32 2D of random normal values', () => {
     const SAMPLES = 100;
-    const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 2, 'int32');
+    const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 2, EPSILON_NONFLOAT);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 2, EPSILON);
   });
 
   it('should return a float32 3D of random normal values', () => {
     const SAMPLES = 50;
 
     // Ensure defaults to float32.
-    let result = Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 0.5);
+    let result =
+        Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 0.5, null, SEED);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 0.5, EPSILON_FLOAT32);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.5, EPSILON);
 
-    result = Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 1.5, 'float32');
+    result = Array3D.randNormal(
+        [SAMPLES, SAMPLES, SAMPLES], 0, 1.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1.5, EPSILON_FLOAT32);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 1.5, EPSILON);
   });
 
   it('should return a int32 3D of random normal values', () => {
     const SAMPLES = 50;
     const result =
-        Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32');
+        Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 2, EPSILON_NONFLOAT);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 2, EPSILON);
   });
 
   it('should return a float32 4D of random normal values', () => {
     const SAMPLES = 25;
 
     // Ensure defaults to float32.
-    let result =
-        Array4D.randNormal([SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 0.5);
+    let result = Array4D.randNormal(
+        [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 0.5, null, SEED);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 0.5, EPSILON_FLOAT32);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 0.5, EPSILON);
 
-    result = Array4D.randNormal([SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 1.5);
+    result = Array4D.randNormal(
+        [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 1.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 1.5, EPSILON_FLOAT32);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 1.5, EPSILON);
   });
 
   it('should return a int32 4D of random normal values', () => {
     const SAMPLES = 25;
 
-    const result =
-        Array4D.randNormal([SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32');
+    const result = Array4D.randNormal(
+        [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
     test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(
-        result.getValues(), 0, 2, EPSILON_NONFLOAT);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 2, EPSILON);
   });
 });
 
