@@ -265,7 +265,7 @@ test_util.describeCustom('NDArray', () => {
     const texture = textureManager.acquireTexture([1, 3]);
     gpgpu.uploadMatrixToTexture(texture, 1, 3, new Float32Array([10, 7, 3]));
 
-    const f = () => { return Array1D.make([3], {texture}); };
+    const f = () => Array1D.make([3], {texture});
 
     expect(f).toThrowError();
     textureManager.releaseTexture(texture, [1, 3]);
