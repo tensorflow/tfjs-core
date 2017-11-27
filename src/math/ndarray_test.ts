@@ -1442,7 +1442,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
   const EPSILON_FLOAT32 = 0.05;
   const EPSILON_NONFLOAT = 0.10;
 
-  it('should return a float32 1D of random normal values KREEGER', () => {
+  it('should return a float32 1D of random normal values', () => {
     const SAMPLES = 10000;
 
     // Ensure defaults to float32.
@@ -1490,7 +1490,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 2D of random normal values KREEGER', () => {
+  it('should return a int32 2D of random normal values', () => {
     const SAMPLES = 100;
     const result = Array2D.randNormal([SAMPLES, SAMPLES], 0, 2, 'int32');
     expect(result.dtype).toBe('int32');
@@ -1519,7 +1519,7 @@ test_util.describeCustom('NDArray.randNormal', () => {
         result.getValues(), 0, 1.5, EPSILON_FLOAT32);
   });
 
-  it('should return a int32 3D of random normal values KREEGER', () => {
+  it('should return a int32 3D of random normal values', () => {
     const SAMPLES = 50;
     const result =
         Array3D.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32');
