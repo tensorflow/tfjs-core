@@ -8,4 +8,3 @@ npm-debug.log
 .DS_Store
 dist/
 .idea/
-demos/bower_components/
