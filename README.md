@@ -121,7 +121,7 @@ $ yarn test --browsers=Chrome --grep='multinomial'
 > Chrome 62.0.3202 (Mac OS X 10.12.6): Executed 28 of 1891 (skipped 1863) SUCCESS (6.914 secs / 0.634 secs)
 ```
 
-To run a the tests once and exit the karma process (helpful on Windows):
+To run the tests once and exit the karma process (helpful on Windows):
 
 ```bash
 $ yarn test --single-run'
