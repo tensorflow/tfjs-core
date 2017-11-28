@@ -164,7 +164,7 @@ export class MobileNet implements Model {
 
     const topClassesToProbability: {[className: string]: number} = {};
     for (let i = 0; i < topkIndices.length; i++) {
-      topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]-1]] = topkValues[i];
+      topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] = topkValues[i];
     }
     return topClassesToProbability;
   }   

@@ -18,7 +18,7 @@
 import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArray, NDArrayMath, NDArrayMathGPU, Scalar} from 'deeplearn';
 import {BoundingBox} from './mobilenet_utils'; 
 
-//const GOOGLE_CLOUD_STORAGE_DIR = 'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
+const GOOGLE_CLOUD_STORAGE_DIR = 'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/yolo_mobilenet_v1_1.0_416/';
    
 export class MobileNet implements Model {  
   private variables: {[varName: string]: NDArray};
@@ -46,8 +46,7 @@ export class MobileNet implements Model {
    * Loads necessary variables for MobileNet.
    */
   async load(): Promise<void> {
-    //const checkpointLoader = new CheckpointLoader('https://raw.githubusercontent.com/experiencor/model-zoo/master/mobilenet/');
-    const checkpointLoader = new CheckpointLoader('weights/');
+    const checkpointLoader = new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR);
     this.variables = await checkpointLoader.getAllVariables();
   }
 
