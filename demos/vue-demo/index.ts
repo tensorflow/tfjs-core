@@ -11,10 +11,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import Vue from 'vue'
-import App from './App.vue'
+import Vue from 'vue';
+import App from './App.vue';
 
-new Vue({
-  el: '#app',
-  render: h => h(App)
-})
+// tslint:disable-next-line:no-unused-expression
+new Vue({el: '#app', render: h => h(App)});

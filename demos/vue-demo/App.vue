@@ -13,6 +13,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================-->
 <template>
+<div>
+  <demo-header></demo-header>
   <div id="app">Hello {{ msg }}</div>
+  <demo-footer></demo-footer>
+</div>
 </template>
+
+<style>
+#app {
+  text-align: center;
+  font-size: 40px;
+  margin: 20px;
+}
+</style>
+
 <script src="./app.ts"></script>
