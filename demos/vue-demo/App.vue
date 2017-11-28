@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================-->
 <template>
 <div>
-  <demo-header></demo-header>
+  <demo-header name="Example Vuejs demo"></demo-header>
   <div id="app">Hello {{ msg }}</div>
   <demo-footer></demo-footer>
 </div>
