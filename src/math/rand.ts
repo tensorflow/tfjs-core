@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import * as seedrandom from 'seedrandom';
+
 export interface RandGauss { nextValue(): number; }
 
 export interface RandNormalDataTypes {
@@ -28,13 +30,25 @@ export class MPRandGauss implements RandGauss {
   private stdDev: number;
   private nextVal: number;
   private dtype?: keyof RandNormalDataTypes;
+  private truncated?: boolean;
+  private upper?: number;
+  private lower?: number;
+  private random: seedrandom.prng;
 
   constructor(
-      mean: number, stdDeviation: number, dtype?: keyof RandNormalDataTypes) {
+      mean: number, stdDeviation: number, dtype?: keyof RandNormalDataTypes,
+      truncated?: boolean, seed?: number) {
     this.mean = mean;
     this.stdDev = stdDeviation;
     this.dtype = dtype;
     this.nextVal = NaN;
+    this.truncated = truncated;
+    if (this.truncated) {
+      this.upper = this.mean + Math.pow(this.stdDev, 2);
+      this.lower = this.mean - Math.pow(this.stdDev, 2);
+    }
+    const seedValue = seed ? seed : Math.random();
+    this.random = seedrandom.alea(seedValue.toString());
   }
 
   /** Returns next sample from a gaussian distribution. */
@@ -45,19 +59,29 @@ export class MPRandGauss implements RandGauss {
       return value;
     }
 
-    let v1: number, v2: number, s: number;
-    do {
-      v1 = 2 * Math.random() - 1;
-      v2 = 2 * Math.random() - 1;
-      s = v1 * v1 + v2 * v2;
-    } while (s > 1);
+    let resultX: number, resultY: number;
+    let isValid = false;
+    while (!isValid) {
+      let v1: number, v2: number, s: number;
+      do {
+        v1 = 2 * this.random() - 1;
+        v2 = 2 * this.random() - 1;
+        s = v1 * v1 + v2 * v2;
+      } while (s >= 1 || s === 0);
 
-    const resultX = Math.sqrt(-2 * Math.log(s) / s) * v1;
-    const resultY = Math.sqrt(-2 * Math.log(s) / s) * v2;
+      const mul = Math.sqrt(-2.0 * Math.log(s) / s);
+      resultX = this.mean + this.stdDev * v1 * mul;
+      resultY = this.mean + this.stdDev * v2 * mul;
 
-    // TODO(kreeger): Handle truncated random generation.
-    this.nextVal = this.convertValue(this.mean + this.stdDev * resultY);
-    return this.convertValue(this.mean + this.stdDev * resultX);
+      if (!this.truncated || this.isValidTruncated(resultX)) {
+        isValid = true;
+      }
+    }
+
+    if (!this.truncated || this.isValidTruncated(resultY)) {
+      this.nextVal = this.convertValue(resultY);
+    }
+    return this.convertValue(resultX);
   }
 
   /** Handles proper rounding for non floating point numbers. */
@@ -66,5 +90,10 @@ export class MPRandGauss implements RandGauss {
       return value;
     }
     return Math.round(value);
+  }
+
+  /** Returns true if less than 2-standard-deviations from the mean. */
+  private isValidTruncated(value: number): boolean {
+    return value <= this.upper && value >= this.lower;
   }
 }

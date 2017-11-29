@@ -17,9 +17,9 @@
 
 import * as environment from './environment';
 import {Environment, Features} from './environment';
+import {NDArrayMathCPU} from './math/backends/backend_cpu';
+import {NDArrayMathGPU} from './math/backends/backend_webgl';
 import {NDArrayMath} from './math/math';
-import {NDArrayMathCPU} from './math/math_cpu';
-import {NDArrayMathGPU} from './math/math_gpu';
 import * as util from './util';
 import {DType, TypedArray} from './util';
 
@@ -78,9 +78,9 @@ export function jarqueBeraNormalityTest(values: TypedArray|number[]) {
   const s = skewness(values);
   const k = kurtosis(values);
   const jb = n / 6 * (Math.pow(s, 2) + 0.25 * Math.pow(k - 3, 2));
-  // JB test requires 2-degress of freedom from Chi-Square @ 0.999:
+  // JB test requires 2-degress of freedom from Chi-Square @ 0.95:
   // http://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm
-  const CHI_SQUARE_2DEG = 13.816;
+  const CHI_SQUARE_2DEG = 5.991;
   if (jb > CHI_SQUARE_2DEG) {
     throw new Error(`Invalid p-value for JB: ${jb}`);
   }
@@ -201,7 +201,7 @@ export type Tests = (it: (name: string, testFn: () => void) => void) => void;
 
 export function describeMathCPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
-  const testNameBase = 'math_cpu.' + name;
+  const testNameBase = 'CPU: math.' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
       (testName, tests, features) => executeMathTests(
@@ -211,7 +211,7 @@ export function describeMathCPU(
 
 export function describeMathGPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
-  const testNameBase = 'math_gpu.' + name;
+  const testNameBase = 'WebGL: math.' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
       (testName, tests, features) => executeMathTests(
