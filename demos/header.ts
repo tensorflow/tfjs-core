@@ -14,11 +14,9 @@ limitations under the License.
 
 import Vue from 'vue';
 
-if (location.protocol !== "https:" && location.hostname === 'deeplearnjs.org') {
-  location.protocol = "https:";
+if (location.protocol !== 'https:' && location.hostname === 'deeplearnjs.org') {
+  location.protocol = 'https:';
 }
 
 // tslint:disable-next-line:no-default-export
-export default Vue.extend({
-  props: ['name']
-});
+export default Vue.extend({props: ['name']});
