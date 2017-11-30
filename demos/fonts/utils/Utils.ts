@@ -41,9 +41,7 @@ export function norm(v: NDArray) {
 }
 
 export function unit(v: NDArray) {
-  const n = Scalar.new(norm(v).get())
-  if (n.get() === 0) console.warn("Divide by zero")
+  const n = Scalar.new(norm(v).get());
+  if (n.get() === 0) console.warn("Divide by zero");
   return math.arrayDividedByScalar(v, n);
-};
-
-
+}

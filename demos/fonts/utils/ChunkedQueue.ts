@@ -12,12 +12,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export default class {
+interface QueueItem {
+  cb: () => undefined,
+  id: number,
+  priority: number
+}
+
+export class Queue {
   public interval: number;
   public elementsPerChunk: number;
   private _timeoutID: number;
   private _running: boolean;
-  private _queue: Array<any>;
+  private _queue: QueueItem[];
 
   constructor() {
     this.interval = 1000;
@@ -31,7 +37,7 @@ export default class {
     if (id === undefined) id = -1;
     if (priority === undefined) priority = -1;
     this._queue.push({ cb, id, priority });
-    this._queue.sort((a, b) => a.priority - b.priority)
+    this._queue.sort((a, b) => a.priority - b.priority);
     this._kick();
   }
 
@@ -70,4 +76,3 @@ export default class {
   }
 
 }
-

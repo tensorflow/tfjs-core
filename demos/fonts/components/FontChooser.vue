@@ -33,7 +33,7 @@ limitations under the License.
 <script>
 import Sample from './Sample.vue';
 import {
-  serif, serifBold, sans, crispSerif, dotMatrix, casual
+  serif, serifBold, serifLight, sansLight, crispSerif, dotMatrix, casual, serifBlackItalic, serifItalic, square
   } from '../utils/FontExamples.ts';
 
 export default {
@@ -44,7 +44,7 @@ export default {
     return {
       width: 20,
       letters: "ABCDEF".split(""),
-      samples: [crispSerif, serif, serifBold, sans,  dotMatrix, casual]
+      samples: [crispSerif, serifLight, serifItalic, serifBlackItalic, sansLight, casual, dotMatrix, square]
     }
   },
   props: {

@@ -12,9 +12,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import Queue from './ChunkedQueue';
+import { Queue } from './ChunkedQueue';
 
-export default class {
+export class Cache {
 
   private thisArg: any;
   private fn: (data: any) => any;
