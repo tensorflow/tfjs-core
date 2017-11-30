@@ -168,11 +168,11 @@ div.tray > * {
   width: 3px;
   border-radius: 2px;
   /*border: 1px solid black;*/
-  background-color: rgb(255, 100, 0);
+  background-color: rgb(255, 152, 0);
   z-index: 1;
 }
 .reticle .label {
-  background-color: rgb(255, 100, 0);
+  background-color: rgb(255, 152, 0);
   color: white;
   padding: 2px;
   border-radius: 4px;
