@@ -106,17 +106,17 @@ export default {
 </script>
 
 <style scoped>
-  div {
-    display: inline-block;
-    position: relative;
-  }
-  .waiting {
-    opacity: 0.2;
-  }
-  canvas {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    mix-blend-mode: multiply;
-  }
+div {
+  display: inline-block;
+  position: relative;
+}
+.waiting {
+  opacity: 0.2;
+}
+canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: multiply;
+}
 </style>

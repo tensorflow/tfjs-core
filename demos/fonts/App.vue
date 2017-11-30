@@ -17,6 +17,7 @@ limitations under the License.
 <div>
   <demo-header name="Fonts Demo"></demo-header>
   <div class="app">
+    <!-- Presets -->
     <div class="presets">
       <div class="header sticky">
         <h3>Presets</h3>
@@ -26,7 +27,7 @@ limitations under the License.
         />
       </div>
     </div>
-    <!--  -->
+    <!-- Dimensions -->
     <div class="input">
       <div class="header">
         <h3>Basis Dimensions of Latent Space</h3>
@@ -46,7 +47,7 @@ limitations under the License.
         />
       </div>
     </div>
-    <!--  -->
+    <!-- Output -->
     <div class="output">
       <div class="header sticky">
         <h3>Output</h3>
@@ -62,93 +63,95 @@ limitations under the License.
 </template>
 
 <script>
-  import Vue from 'vue';
+import Vue from 'vue';
 
-  import DemoFooter from '../footer.vue';
-  import DemoHeader from '../header.vue';
-  import BasisDimensions from './components/BasisDimensions.vue';
-  import FontChooser from './components/FontChooser.vue';
-  import Alphabet from './components/Alphabet.vue';
-  import FontModel from './utils/FontModel.js';
-  import {Array1D, NDArray, NDArrayMathCPU} from 'deeplearn';
+import DemoFooter from '../footer.vue';
+import DemoHeader from '../header.vue';
 
-  export default {
-    components: {
-      Alphabet,
-      BasisDimensions,
-      DemoFooter,
-      DemoHeader,
-      FontChooser,
-    },
-    data() {
-      return {
-        model: undefined,
-        modelData: "A",
-        numSamples: 9,
-        range: 0.4,
-        width: 400,
-        dimSliderVals: [],
-        selectedSample: undefined,
-        scrollY: 0
-      }
-    },
-    mounted: function() {
-      window.addEventListener("resize", this.onresize);
-      window.addEventListener("scroll", this.onscroll);
+import BasisDimensions from './components/BasisDimensions.vue';
+import FontChooser from './components/FontChooser.vue';
+import Alphabet from './components/Alphabet.vue';
+import FontModel from './utils/FontModel.js';
 
-      let fonts = new FontModel();
-      fonts.load(() => {
-        fonts.init();
-        this.$refs.loading.remove();
-        this.model = fonts;
-        this.range = fonts.range;
-        this.resize();
-      });
-    },
-    beforeDestroy: function() {
-      window.removeEventListener("resize", this.onresize);
-      window.removeEventListener("scroll", this.onscroll);
-    },
-    methods: {
-      resize: function() {
-        const width = this.$refs.basis.getBoundingClientRect().width;
-        this.width = width;
-      },
-      onscroll: function() {
-        const y = window.scrollY;
-        this.scrollY = Math.round(y / 20) * 20;
-      },
-      changeSelected: function(event) {
-        // If this is the initial (default) selection and a URL hash was
-        // provided then use the sample from the hash.
+import {Array1D, NDArray, NDArrayMathCPU} from 'deeplearn';
 
-        if (event.isInitialSelection && window.location.hash) {
-          this.parseUrlHash();
-        } else {
-          this.selectedSample = event.selectedSample
-          this.updateHash();
-        }
-      },
-      updateHash: function() {
-        if (this.selectedSample) {
-          const vals = this.selectedSample.getValues();
-          const hashStr = '#' + Array.from(vals).map(
-            val => parseFloat(val).toFixed(3))
-            .join(',');
-          history.replaceState(undefined, undefined, hashStr);
-        }
-      },
-      parseUrlHash: function() {
-        const hash = window.location.hash;
-        const dimVals = hash.substring(1).split(',').map(val => +val);
-        // Set the selected sample and initial dimension slider values based
-        // on the provided URL hash.
-        this.dimSliderVals = dimVals;
-        this.selectedSample = Array1D.new(dimVals);
-      }
+export default {
+  components: {
+    Alphabet,
+    BasisDimensions,
+    DemoFooter,
+    DemoHeader,
+    FontChooser,
+  },
+  data() {
+    return {
+      model: undefined,
+      modelData: "A",
+      numSamples: 9,
+      range: 0.4,
+      width: 400,
+      dimSliderVals: [],
+      selectedSample: undefined,
+      scrollY: 0
     }
+  },
+  mounted: function() {
+    window.addEventListener("resize", this.onresize);
+    window.addEventListener("scroll", this.onscroll);
 
+    let fonts = new FontModel();
+    fonts.load(() => {
+      fonts.init();
+      this.$refs.loading.remove();
+      this.model = fonts;
+      this.range = fonts.range;
+      this.resize();
+    });
+  },
+  beforeDestroy: function() {
+    window.removeEventListener("resize", this.onresize);
+    window.removeEventListener("scroll", this.onscroll);
+  },
+  methods: {
+    resize: function() {
+      const width = this.$refs.basis.getBoundingClientRect().width;
+      this.width = width;
+    },
+    onscroll: function() {
+      const y = window.scrollY;
+      this.scrollY = Math.round(y / 20) * 20;
+    },
+    changeSelected: function(event) {
+      // If this is the initial (default) selection and a URL hash was
+      // provided then use the sample from the hash.
+
+      if (event.isInitialSelection && window.location.hash) {
+        this.parseUrlHash();
+      } else {
+        this.selectedSample = event.selectedSample
+        this.updateHash();
+      }
+    },
+    updateHash: function() {
+      if (this.selectedSample) {
+        const vals = this.selectedSample.getValues();
+        const hashStr = '#' + Array.from(vals).map(
+          val => parseFloat(val).toFixed(3))
+          .join(',');
+        history.replaceState(undefined, undefined, hashStr);
+      }
+    },
+    parseUrlHash: function() {
+      const hash = window.location.hash;
+      const dimVals = hash.substring(1).split(',').map(val => +val);
+      // Set the selected sample and initial dimension slider values based
+      // on the provided URL hash.
+      this.dimSliderVals = dimVals;
+      this.selectedSample = Array1D.new(dimVals);
+    }
   }
+
+}
 </script>
 
 <style scoped>

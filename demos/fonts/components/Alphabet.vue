@@ -56,12 +56,12 @@ export default {
 </script>
 
 <style scoped>
-  .character {
-    display: inline;
-  }
-  .section:first-child {
-    border-bottom: solid 1px rgba(0, 0, 0, 0.1);
-    padding-bottom: 20px;
-    margin-bottom: 20px;
-  }
+.character {
+  display: inline;
+}
+.section:first-child {
+  border-bottom: solid 1px rgba(0, 0, 0, 0.1);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
 </style>

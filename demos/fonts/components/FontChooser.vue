@@ -66,24 +66,24 @@ export default {
 </script>
 
 <style scoped>
-  .typeface {
-    cursor: pointer;
-    opacity: 0.5;
-  }
-  .typeface.selected {
-    border-left: 3px solid hsl(24, 100%, 50%);
-    padding-left: 18px;
-    opacity: 1;
-  }
-  .character {
-    display: inline-block;
-    position: relative;
-    width: 17px;
-    height: 17px;
-    overflow: hidden;
-  }
-  .character > div {
-    position: relative;
-    left: -2px;
-  }
+.typeface {
+  cursor: pointer;
+  opacity: 0.5;
+}
+.typeface.selected {
+  border-left: 3px solid hsl(24, 100%, 50%);
+  padding-left: 18px;
+  opacity: 1;
+}
+.character {
+  display: inline-block;
+  position: relative;
+  width: 17px;
+  height: 17px;
+  overflow: hidden;
+}
+.character > div {
+  position: relative;
+  left: -2px;
+}
 </style>

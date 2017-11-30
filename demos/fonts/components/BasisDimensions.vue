@@ -79,16 +79,16 @@ export default {
 </script>
 
 <style scoped>
-  .root {
-    margin-top: 8px;
-    padding-right: 8px;
-    display: grid;
-    grid-template-columns: 40px 1fr;
-    margin-bottom: 30px;
-  }
-  h4.label {
-    margin: 10px 0 10px 0;
-    font-weight: 400;
-    font-size: 14px;
-  }
+.root {
+  margin-top: 8px;
+  padding-right: 8px;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  margin-bottom: 30px;
+}
+h4.label {
+  margin: 10px 0 10px 0;
+  font-weight: 400;
+  font-size: 14px;
+}
 </style>

@@ -36,34 +36,6 @@ export function direction(left: Array1D, right: Array1D) {
   return unit(math.sub(right, left));
 }
 
-// export function average(arr) {
-//   if (arr.length === 0) return 0;
-//   let sum = Array1D.zerosLike(arr[0]);
-//   arr.forEach(a => {
-//     sum = math.add(sum, a)
-//   });
-//   return math.arrayDividedByScalar(sum, Scalar.new(arr.length));
-// }
-
-// export function analogizeOnSphere(latentVector: Array1D, analogyVector: Array1D, theta: number) {
-//   let lunit = unit(latentVector);
-//   let lnorm = norm(latentVector);
-
-//   const dot = math.dotProduct(analogyVector, lunit);
-//   const scaled = math.scalarTimesArray(dot, lunit);
-//   const subtracted = math.sub(analogyVector, scaled);
-//   const n = unit(subtracted);
-
-//   const sin = Scalar.new(Math.sin(theta));
-//   const cos = Scalar.new(Math.cos(theta));
-
-//   const lXcos = math.scalarTimesArray(cos, latentVector)
-//   const nXsin = math.scalarTimesArray(sin, n);
-
-//   const m = math.scalarTimesArray(lnorm, math.add(lXcos, nXsin));
-//   return m;
-// }
-
 export function norm(v: NDArray) {
   return math.sqrt(math.sum(math.multiply(v, v)));
 }
