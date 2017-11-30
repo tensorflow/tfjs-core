@@ -32,7 +32,7 @@ export class Queue {
     this.clear();
   }
 
-  add(cb: any, id: number, priority: number) {
+  add(cb: () => undefined, id: number, priority: number) {
     this.remove(id);
     if (id === undefined) id = -1;
     if (priority === undefined) priority = -1;

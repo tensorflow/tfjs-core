@@ -23,7 +23,7 @@ let math: NDArrayMathGPU;
 const NUM_LAYERS = 4;
 const IMAGE_SIZE = 64;
 
-export default class Model {
+export class Model {
   public metaData = "A";
   public dimensions = 40;
   private inferCache = new Cache(this, this.infer);

@@ -17,11 +17,11 @@ import { Queue } from './ChunkedQueue';
 export class Cache {
 
   private thisArg: any;
-  private fn: (data: any) => any;
+  private fn: () => undefined;
   private queue = new Queue();
   private _paused = false;
 
-  constructor(thisArg: any, fn: (data: any) => any) {
+  constructor(thisArg: any, fn: () => undefined) {
     this.thisArg = thisArg;
     this.fn = fn;
 
@@ -29,12 +29,8 @@ export class Cache {
     this.queue.elementsPerChunk = 26;
   }
 
-  get(id: any, argsArray: any) {
+  get(id: number, argsArray: any[]) {
     //TODO actually cache/retrieve the values.
-
-    // this.queue.add(() => {
-    //   this.infer(embedding, cb, char, ctx);
-    // }, id, priority)
 
     return new Promise((resolve, reject) => {
       const value = this.fn.call(this.thisArg, argsArray);
