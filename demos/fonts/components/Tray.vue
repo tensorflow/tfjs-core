@@ -180,9 +180,9 @@ div.tray > * {
   font-size: 9px;
   line-height: 9px;
   text-align: center;
-  width: 24px;
+  width: 30px;
   position: absolute;
-  left: -13px;
+  left: -16px;
   bottom: -13px;
 }
 .hover.reticle {

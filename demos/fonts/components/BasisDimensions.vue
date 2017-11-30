@@ -25,7 +25,7 @@ limitations under the License.
       :numSamples="numSamples"
       :selectedSample="selectedSample"
       :initialValue="vals[i]"
-      :width="width - 40"
+      :width="width - 50"
       v-on:select="select"
     />
   </div>

@@ -84,7 +84,7 @@ limitations under the License.
         model: undefined,
         modelData: "A",
         numSamples: 9,
-        range: 0.8,
+        range: 0.4,
         width: 400,
         dimSliderVals: [],
         selectedSample: undefined
