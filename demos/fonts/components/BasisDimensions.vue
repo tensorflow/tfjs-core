@@ -95,17 +95,16 @@ h4.label {
 }
 
 .label span {
-  background: rgba(0, 0, 0, 0.3);
-    color: white;
-    padding: 4px;
-    border-radius: 50%;
-    font-weight: 300;
-    font-size: 11px;
-    display: block;
-    width: 12px;
-    height: 12px;
-    line-height: 1.2em;
-    text-align: center;
-    margin-top: 6px;
+  color: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  border-radius: 50%;
+  font-weight: 300;
+  font-size: 11px;
+  display: block;
+  width: 12px;
+  height: 12px;
+  line-height: 1.2em;
+  text-align: center;
 }
 </style>
