@@ -97,14 +97,18 @@ trainButton.addEventListener('click', () => {
   hideDiv(resultDiv);
   hideDiv(metainfoDiv);
 
-  const result = learnXOR();
+  learnXOR()
+      .then((result) => {
+        const resultHTML = buildResultHTML(result);
+        resultDiv.innerHTML = resultHTML;
 
-  const resultHTML = buildResultHTML(result);
-  resultDiv.innerHTML = resultHTML;
+        const metainfoHTML = buildMetaInfoHTML(result);
+        metainfoDiv.innerHTML = metainfoHTML;
 
-  const metainfoHTML = buildMetaInfoHTML(result);
-  metainfoDiv.innerHTML = metainfoHTML;
-
-  showDiv(resultDiv);
-  showDiv(metainfoDiv);
+        showDiv(resultDiv);
+        showDiv(metainfoDiv);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
 });

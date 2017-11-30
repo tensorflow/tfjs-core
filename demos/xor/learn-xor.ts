@@ -25,7 +25,7 @@ const getRandomIntegerInRange = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-export const learnXOR = () => {
+export const learnXOR = async () => {
   const iterations = getRandomIntegerInRange(800, 1000);
   const timeStart: number = performance.now();
   let loss: number;
@@ -78,12 +78,12 @@ export const learnXOR = () => {
   /**
    * Train the model
    */
-  math.scope(() => {
+  await math.scope(async () => {
     for (let i = 0; i < iterations; i += 1) {
       cost = session.train(
           costTensor, feedEntries, 4, optimizer, CostReduction.MEAN);
     }
-    loss = cost.get();
+    loss = await cost.val();
   });
 
   const result = [];
@@ -96,10 +96,11 @@ export const learnXOR = () => {
     const expectedOutput = targetArray[i];
 
     const val = session.eval(output, [{tensor: input, data: inputData}]);
+
     result.push({
-      input: inputData.dataSync(),
-      expected: expectedOutput.dataSync(),
-      output: val.getValues()
+      input: await inputData.data(),
+      expected: await expectedOutput.data(),
+      output: await val.data()
     });
   }
 
