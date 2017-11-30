@@ -14,26 +14,27 @@ limitations under the License.
 
 import { Cache } from './ModelCache';
 import {
-  CheckpointLoader, NDArrayMathGPU, Scalar, Array1D
+  CheckpointLoader, NDArrayMathGPU, Scalar, Array1D, NDArray, Array2D
 } from "deeplearn";
 
-let variables: any;
+let variables: { [varName: string]: NDArray };
 let math: NDArrayMathGPU;
 
 const NUM_LAYERS = 4;
 const IMAGE_SIZE = 64;
 
-export class Model {
+export class FontModel {
   public metaData = "A";
   public dimensions = 40;
   private inferCache = new Cache(this, this.infer);
   private numberOfValidChars = 62;
   public range = 0.4;
-  public charIdMap: any = {};
+  public charIdMap: { [id: string]: number };
   private multiplierScalar = Scalar.new(255);
 
   constructor() {
     // Set up character ID mapping.
+    this.charIdMap = {};
     for (let i = 65; i < 91; i++) {
       this.charIdMap[String.fromCharCode(i)] = i - 65;
     }
@@ -45,7 +46,7 @@ export class Model {
     }
   }
 
-  load(cb: any) {
+  load(cb: () => void) {
     const checkpointLoader = new CheckpointLoader(
       "https://storage.googleapis.com/learnjs-data/checkpoint_zoo/fonts/");
     checkpointLoader.getAllVariables().then(vars => {
@@ -54,11 +55,11 @@ export class Model {
     });
   }
 
-  get(id: number, args: any, priority: number) {
+  get(id: number, args: Array<{}>, priority: number) {
     args.push(this.metaData);
 
     return new Promise((resolve, reject) => {
-      args.push((d: any) => resolve(d));
+      args.push(() => resolve());
       this.inferCache.get(id, args);
     });
   }
@@ -71,15 +72,15 @@ export class Model {
     math = new NDArrayMathGPU();
   }
 
-  infer(args: any) {
-    const embedding = args[0];
-    const ctx = args[1];
-    const char = args[2];
-    const cb = args[3];
+  infer(args: Array<{}>) {
+    const embedding = args[0] as NDArray;
+    const ctx = args[1] as CanvasRenderingContext2D;
+    const char = args[2] as string;
+    const cb = args[3] as () => void;
 
     const charId = this.charIdMap[char.charAt(0)];
     if (charId == null) {
-      throw (new Error("Invalid character id"))
+      throw (new Error("Invalid character id"));
     }
 
     const adjusted = math.scope((keep, track) => {
@@ -91,14 +92,16 @@ export class Model {
       let lastOutput = inputData;
 
       for (let i = 0; i < NUM_LAYERS; i++) {
-        const weights = variables[`Stack/fully_connected_${i + 1}/weights`];
+        const weights =
+          variables[`Stack/fully_connected_${i + 1}/weights`] as Array2D;
         const biases = variables[`Stack/fully_connected_${i + 1}/biases`];
         lastOutput = math.relu(
-          math.add(math.vectorTimesMatrix(lastOutput, weights), biases)) as any;
+          math.add(
+            math.vectorTimesMatrix(lastOutput, weights), biases)) as Array1D;
       }
 
-      const finalWeights = variables['fully_connected/weights'];
-      const finalBiases = variables['fully_connected/biases'];
+      const finalWeights = variables['fully_connected/weights'] as Array2D;
+      const finalBiases = variables['fully_connected/biases'] as Array2D;
       const finalOutput = math.sigmoid(
         math.add(math.vectorTimesMatrix(
           lastOutput, finalWeights), finalBiases));

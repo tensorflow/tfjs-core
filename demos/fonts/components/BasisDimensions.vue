@@ -16,7 +16,9 @@ limitations under the License.
 <template>
 <div>
   <div ref="root" class="root" v-for="(basis, i) in basisDimensions">
-    <h4 class="label">#{{i + 1}}</h4>
+    <h4 class="label">
+      <span>{{i + 1}}</span>
+    </h4>
     <Tray
       :scrollY="scrollY"
       :model="model"
@@ -90,5 +92,20 @@ h4.label {
   margin: 10px 0 10px 0;
   font-weight: 400;
   font-size: 14px;
+}
+
+.label span {
+  background: rgba(0, 0, 0, 0.3);
+    color: white;
+    padding: 4px;
+    border-radius: 50%;
+    font-weight: 300;
+    font-size: 11px;
+    display: block;
+    width: 12px;
+    height: 12px;
+    line-height: 1.2em;
+    text-align: center;
+    margin-top: 6px;
 }
 </style>

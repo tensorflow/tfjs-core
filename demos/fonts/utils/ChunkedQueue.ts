@@ -13,7 +13,7 @@ limitations under the License.
 ==============================================================================*/
 
 interface QueueItem {
-  cb: () => undefined;
+  cb: () => void;
   id: number;
   priority: number;
 }
@@ -32,7 +32,7 @@ export class Queue {
     this.clear();
   }
 
-  add(cb: () => undefined, id: number, priority: number) {
+  add(cb: () => void, id: number, priority: number) {
     this.remove(id);
     if (id === undefined) id = -1;
     if (priority === undefined) priority = -1;

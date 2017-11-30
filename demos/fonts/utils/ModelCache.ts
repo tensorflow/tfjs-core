@@ -16,12 +16,12 @@ import { Queue } from './ChunkedQueue';
 
 export class Cache {
 
-  private thisArg: any;
-  private fn: () => undefined;
+  private thisArg: object;
+  private fn: (args: Array<{}>) => void;
   private queue = new Queue();
   private _paused = false;
 
-  constructor(thisArg: any, fn: () => undefined) {
+  constructor(thisArg: object, fn: (args: Array<{}>) => void) {
     this.thisArg = thisArg;
     this.fn = fn;
 
@@ -29,7 +29,7 @@ export class Cache {
     this.queue.elementsPerChunk = 26;
   }
 
-  get(id: number, argsArray: any[]) {
+  get(id: number, argsArray: Array<{}>) {
     //TODO actually cache/retrieve the values.
 
     return new Promise((resolve, reject) => {
