@@ -54,14 +54,11 @@ export default {
   },
   watch: {
     model: function(val) {
-      console.log("model", val);
       this.select(this.samples[0], true);
     }
   },
   methods: {
     select: function(sample, isInitialSelection) {
-      console.log("click select")
-      this.selectedSample = sample;
       this.$emit("select", {selectedSample: sample, isInitialSelection});
     }
   }

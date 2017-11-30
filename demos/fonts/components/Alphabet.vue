@@ -22,6 +22,7 @@ limitations under the License.
         :model="model"
         :modelData="char"
         :sample="sample"
+        :visible="visible"
         on:select="fire('select', event)"
       />
     </div>
@@ -39,6 +40,7 @@ export default {
   data() {
     return {
       width: 48,
+      visible: true,
       sections:[
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
         "abcdefghijklmnopqrstuvwxyz".split(""),

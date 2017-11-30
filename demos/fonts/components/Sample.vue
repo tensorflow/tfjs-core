@@ -23,7 +23,7 @@ limitations under the License.
     ref="canvas"
     :width="width"
     :height="height"
-    :class="{ waiting: waiting, ready: !waiting }"
+    :class="{ waiting: waiting || dirty, ready: !waiting && !dirty }"
   ></canvas>
 </div>
 </template>
@@ -36,9 +36,6 @@ export default {
       height: 64,
       waiting: false,
       dirty: false,
-      visible: true,
-      alwaysRender: false,
-      dirty: false,
       priority: 0,
       position: 0,
       id: Math.random()
@@ -49,9 +46,11 @@ export default {
     displayWidth: { type: Number, default: "64" },
     displayHeight: { type: Number, default: "64" },
     sample: { default: () => {[]}},
-    model: { }
+    model: { },
+    visible: {default: false}
   },
-  created: function() {
+  mounted: function() {
+    this.render();
   },
   watch: {
     visible: function(val) {
@@ -110,6 +109,9 @@ export default {
   div {
     display: inline-block;
     position: relative;
+  }
+  .waiting {
+    opacity: 0.2;
   }
   canvas {
     position: absolute;

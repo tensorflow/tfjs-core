@@ -15,9 +15,10 @@ limitations under the License.
 
 <template>
 <div>
-  <div class="root" v-for="(basis, i) in basisDimensions">
+  <div ref="root" class="root" v-for="(basis, i) in basisDimensions">
     <h4 class="label">#{{i + 1}}</h4>
     <Tray
+      :scrollY="scrollY"
       :model="model"
       :modelData="modelData"
       :direction="basis"
@@ -53,14 +54,15 @@ export default {
     width: { type: Number, default: 300},
     numSamples: { type: Number, default: 5 },
     range: { type: Number, default: 1 },
-    vals: { type: Array, default: function() { return []; }}
+    vals: { type: Array, default: function() { return []; }},
+    scrollY: {default: 0}
   },
   computed: {
     dimensions: function() {
       return this.model ? this.model.dimensions : 0;
     },
     basisDimensions: function() {
-      let output = range(this.dimensions).slice(0, 50).map(dim => {
+      let output = range(this.dimensions).map(dim => {
         let dir = Array1D.zeros([this.dimensions]);
         dir.set(1, dim);
         return dir;

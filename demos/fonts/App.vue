@@ -34,6 +34,7 @@ limitations under the License.
       <div ref="loading">Loading...</div>
       <div ref="basis" class="basis">
         <BasisDimensions
+          :scrollY="scrollY"
           :model="model"
           :modelData="modelData"
           :numSamples="numSamples"
@@ -87,13 +88,14 @@ limitations under the License.
         range: 0.4,
         width: 400,
         dimSliderVals: [],
-        selectedSample: undefined
+        selectedSample: undefined,
+        scrollY: 0
       }
     },
-    created: function() {
-      window.addEventListener("resize", () => {
-        this.resize();
-      });
+    mounted: function() {
+      window.addEventListener("resize", this.onresize);
+      window.addEventListener("scroll", this.onscroll);
+
       let fonts = new FontModel();
       fonts.load(() => {
         fonts.init();
@@ -103,20 +105,23 @@ limitations under the License.
         this.resize();
       });
     },
-    watch: {
-      model: function(val) {
-        console.log("model", val)
-      }
+    beforeDestroy: function() {
+      window.removeEventListener("resize", this.onresize);
+      window.removeEventListener("scroll", this.onscroll);
     },
     methods: {
       resize: function() {
         const width = this.$refs.basis.getBoundingClientRect().width;
         this.width = width;
       },
+      onscroll: function() {
+        const y = window.scrollY;
+        this.scrollY = Math.round(y / 20) * 20;
+      },
       changeSelected: function(event) {
         // If this is the initial (default) selection and a URL hash was
         // provided then use the sample from the hash.
-        console.log("changeSelected", event)
+
         if (event.isInitialSelection && window.location.hash) {
           this.parseUrlHash();
         } else {

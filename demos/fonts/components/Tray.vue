@@ -20,18 +20,17 @@ limitations under the License.
     :style="{height: height + 'px'}"
 
   >
-    <span
-      v-for="(sample, key, i) in samples"
-      :style="{position: 'absolute', left: sample.position + 'px'}"
-    >
       <Sample
+        v-for="(sample, index) in samples"
+        v-bind:key="index"
+        :style="{position: 'absolute', left: sample.position + 'px'}"
+        :visible="visible"
         :displayWidth="sampleWidth"
         :displayHeight="sampleWidth"
         :model="model"
         :character="modelData"
         :sample="sample.sample"
       />
-    </span>
     <div
       ref="selectedReticle"
       class="reticle selected"
@@ -63,7 +62,9 @@ export default {
       interpolate: scaleLinear(),
       position: scaleLinear(),
       bandScale: scaleBand(),
-      formatter: format(",.3f")
+      formatter: format(",.3f"),
+      visible: false,
+      samples: []
     }
   },
   props: {
@@ -74,9 +75,8 @@ export default {
     initialValue: { type: Number, default: 1},
     selectedSample: { default: () => {[]}},
     direction: { default: () => {[]}},
-    numSamples: { type: Number, default: 5 },
     range: { type: Number, default: 1 },
-
+    scrollY: {default: 0}
   },
   computed: {
     extent: function() { return [-this.range, this.range]; },
@@ -91,54 +91,53 @@ export default {
       let length = math.sum(math.multiply(this.direction, this.direction));
       return math.divide(this.direction, length);
     },
-    selectedScalar: function() {
-      if (this.selectedSample) {
-        return math.dotProduct(this.unitDirection, this.selectedSample);
-      } else {
-        return 0;
-      }
-    },
+    // selectedScalar: function() {
+    //   return math.dotProduct(this.unitDirection, this.selectedSample);
+    // },
     selectedValue: function() {
-      if (this.selectedScalar) {
-        return this.selectedScalar.getValues()[0]
-      } else {
-        return 0;
-      }
+      const scalar = math.dotProduct(this.unitDirection, this.selectedSample)
+      return scalar.getValues()[0]
     },
     selectedX: function() { return this.hoverScale.invert(this.selectedValue); },
-    samples: function() {
-      let samples = [];
-      if (this.selectedSample) {
-        for (var i = 0; i < this.numSamples; i++) {
-          let delta = math.sub(Scalar.new(this.pos(i)), this.selectedScalar);
-          let newSample = math.add(math.multiply(this.unitDirection, delta), this.selectedSample);
-          samples.push({
-            sample: newSample,
-            position: this.bands(samples.length)
-          });
-        }
-      }
-      return samples;
-    }
+
   },
-  created() {
-    this.resize();
-    // if (this.initialValue) {
-    //   this.selectedValue = initialValue;
-    // }
+  mounted() {
+    this.recomputeSamples();
+    this.checkVisibility();
+  },
+  watch: {
+    selectedSample: function(value) { this.recomputeSamples(); },
+    model: function() { this.recomputeSamples(); },
+    selectedValue: function() { this.recomputeSamples(); },
+    pos: function() { this.recomputeSamples(); },
+    bands: function() { this.recomputeSamples(); },
+    scrollY: function(val) { this.checkVisibility(); }
   },
   methods: {
+    recomputeSamples: function() {
+      let samples = [];
+      for (var i = 0; i < this.numSamples; i++) {
+        let delta = math.sub(Scalar.new(this.pos(i)), Scalar.new(this.selectedValue));
+        let newSample = math.add(math.multiply(this.unitDirection, delta), this.selectedSample);
+        samples.push({
+          sample: newSample,
+          position: this.bands(samples.length)
+        });
+      }
+      this.samples = samples;
+    },
+    checkVisibility: function() {
+      const buffer = 300;
+      const top = this.$refs.container.getBoundingClientRect().top;
+      const visible = (top > -buffer  && top < window.innerHeight + buffer);
+      this.visible = visible;
+    },
     format: function(val) {
       return this.formatter(val);
     },
-    resize: function() {
-      if (this.$refs.container) {
-        this.width = this.$refs.container.getBoundingClientRect().width;
-      }
-    },
     select: function(event) {
       const value = this.hoverScale(event.offsetX)
-      let delta = math.sub(Scalar.new(value), this.selectedScalar);
+      let delta = math.sub(Scalar.new(value), Scalar.new(this.selectedValue));
       let newSample = math.add(math.multiply(this.unitDirection, delta), this.selectedSample);
       this.$emit("select", {selectedSample: newSample});
     }
