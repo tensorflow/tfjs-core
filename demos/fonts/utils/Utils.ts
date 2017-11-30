@@ -16,18 +16,22 @@ import { NDArray, Array1D, Scalar, NDArrayMathCPU } from 'deeplearn';
 
 const math = new NDArrayMathCPU(false);
 
-export function interpolateLinear(embedding0: Array1D, embedding1: Array1D, ratio: Scalar) {
-  return math.add(embedding0, math.scalarTimesArray(ratio, math.sub(embedding1, embedding0)));
+export function interpolateLinear(embedding0: Array1D, embedding1: Array1D,
+  ratio: Scalar) {
+  return math.add(
+    embedding0, math.scalarTimesArray(
+      ratio, math.sub(embedding1, embedding0)));
 }
 
-export function linearCombination(startPoint: Array1D, direction: Array1D, factor: Scalar) {
-  let result = math.add(startPoint, math.scalarTimesArray(factor, direction));
-  return result;
+export function linearCombination(startPoint: Array1D, direction: Array1D,
+  factor: Scalar) {
+  return math.add(startPoint, math.scalarTimesArray(factor, direction));
 }
 
-export function linearCombinationNormalized(startPoint: Array1D, direction: Array1D, factor: Scalar) {
+export function linearCombinationNormalized(startPoint: Array1D,
+  direction: Array1D, factor: Scalar) {
   const mag = norm(startPoint);
-  let result = math.add(startPoint, math.scalarTimesArray(factor, direction));
+  const result = math.add(startPoint, math.scalarTimesArray(factor, direction));
   const normalizedResult = math.scalarTimesArray(mag, unit(result));
   return normalizedResult;
 }

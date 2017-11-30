@@ -13,9 +13,9 @@ limitations under the License.
 ==============================================================================*/
 
 interface QueueItem {
-  cb: () => undefined,
-  id: number,
-  priority: number
+  cb: () => undefined;
+  id: number;
+  priority: number;
 }
 
 export class Queue {

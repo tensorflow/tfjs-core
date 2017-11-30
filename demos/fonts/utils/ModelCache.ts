@@ -41,7 +41,7 @@ export class Cache {
       this.queue.add(() => {
         this.fn.call(this.thisArg, argsArray);
         resolve(value);
-      }, id, 0)
+      }, id, 0);
     });
   }
 
