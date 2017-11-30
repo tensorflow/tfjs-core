@@ -228,6 +228,19 @@ describe('Add validation', () => {
   it('Same size does not throw', () => {
     expect(g.add(new Tensor([5, 4]), new Tensor([5, 4])).shape).toEqual([5, 4]);
   });
+
+  it('1D broadcasted to 2D does not throw', () => {
+    expect(g.add(new Tensor([5, 3]), new Tensor([3])).shape).toEqual([5, 3]);
+  });
+
+  it('Another 1D broadcasted to 2D does not throw', () => {
+    expect(g.add(new Tensor([3]), new Tensor([7, 3])).shape).toEqual([7, 3]);
+  });
+
+  it('Non-matching broadcast throws', () => {
+    expect(() => g.add(new Tensor([5, 3]), new Tensor([5])))
+        .toThrowError();
+  });
 });
 
 describe('Subtract validation', () => {
@@ -322,12 +335,12 @@ describe('Concat3d validation', () => {
   });
 
   it('Axis=1 different shapes throws', () => {
-    expect(() => g.concat3d(new Tensor([5, 4, 1]), new Tensor([1, 2, 1]), 0))
+    expect(() => g.concat3d(new Tensor([5, 4, 1]), new Tensor([1, 2, 1]), 1))
         .toThrowError();
   });
 
   it('Axis=2 different shapes throws', () => {
-    expect(() => g.concat3d(new Tensor([5, 4, 1]), new Tensor([1, 2, 1]), 0))
+    expect(() => g.concat3d(new Tensor([5, 4, 1]), new Tensor([1, 2, 1]), 2))
         .toThrowError();
   });
 
