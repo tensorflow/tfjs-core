@@ -43,7 +43,7 @@ export default {
   data() {
     return {
       width: 20,
-      letters: "ABCDEF".split(""),
+      letters: "ABCDEFGH".split(""),
       samples: [crispSerif, serifLight, serifItalic, serifBlackItalic, sansLight, casual, dotMatrix, square]
     }
   },
