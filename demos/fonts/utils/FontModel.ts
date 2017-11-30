@@ -12,7 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Cache } from './ModelCache.ts';
+import { Cache } from './ModelCache';
 import {
   CheckpointLoader, NDArrayMathGPU, Scalar, Array1D
 } from "deeplearn";

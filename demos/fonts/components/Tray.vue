@@ -46,7 +46,7 @@ limitations under the License.
 <script>
 import Sample from './Sample.vue';
 import Axis from './XAxis.vue';
-import utils from '../utils/Utils.ts';
+import utils from '../utils/Utils';
 import {range} from 'd3-array';
 import {format} from 'd3-format';
 // import {drag} from 'd3-drag';

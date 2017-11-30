@@ -71,7 +71,7 @@ import DemoHeader from '../header.vue';
 import BasisDimensions from './components/BasisDimensions.vue';
 import FontChooser from './components/FontChooser.vue';
 import Alphabet from './components/Alphabet.vue';
-import FontModel from './utils/FontModel.ts';
+import FontModel from './utils/FontModel';
 
 import {Array1D, NDArray, NDArrayMathCPU} from 'deeplearn';
 

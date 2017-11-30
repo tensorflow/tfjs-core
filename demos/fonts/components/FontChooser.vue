@@ -34,7 +34,7 @@ limitations under the License.
 import Sample from './Sample.vue';
 import {
   serif, serifBold, serifLight, sansLight, crispSerif, dotMatrix, casual, serifBlackItalic, serifItalic, square
-  } from '../utils/FontExamples.ts';
+  } from '../utils/FontExamples';
 
 export default {
   components: {
