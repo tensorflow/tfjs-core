@@ -14,33 +14,33 @@ limitations under the License.
 ==============================================================================-->
 
 <template>
-<div ref="container" class="container">
+<div ref="container" class="container" v-on:click="select">
   <div
     class="tray"
-    style="{height: height + 'px'}"
-    v-on:mousedown="click(hoverScale(event.offsetX))"
+    :style="{height: height + 'px'}"
+
   >
     <span
       v-for="(sample, key, i) in samples"
-      style="{position: 'absolute', left: bands(i) + 'px'}"
+      :style="{position: 'absolute', left: sample.position + 'px'}"
     >
       <Sample
         :displayWidth="sampleWidth"
         :displayHeight="sampleWidth"
         :model="model"
         :character="modelData"
-        :sample="sample"
+        :sample="sample.sample"
       />
     </span>
     <div
       ref="selectedReticle"
       class="reticle selected"
-      style="{left: selectedX + 'px'}"
+      :style="{left: selectedX + 'px', height: height + 6 + 'px'}"
     >
-      <div class="label">{{selectedValue}}</div>
+      <div class="label">{{format(selectedValue)}}</div>
     </div>
   </div>
-  <!-- <Axis :min="{{extent[0]}}" :max="{{extent[1]}}" :width="{{width}}"/> -->
+  <Axis :min="extent[0]" :max="extent[1]" :width="width"/>
 </div>
 </template>
 
@@ -55,14 +55,15 @@ import {scaleLinear, scaleBand} from 'd3-scale';
 import {Scalar, Array1D, NDArrayMathCPU} from 'deeplearn';
 
 const math = new NDArrayMathCPU(false);
-const interpolate = scaleLinear();
-const position = scaleLinear();
-const bandScale = scaleBand();
 
 export default {
   components: {Sample, Axis},
   data() {
     return {
+      interpolate: scaleLinear(),
+      position: scaleLinear(),
+      bandScale: scaleBand(),
+      formatter: format(",.3f")
     }
   },
   props: {
@@ -77,16 +78,13 @@ export default {
     range: { type: Number, default: 1 },
 
   },
-  helpers: {
-    formatValue: format(",.1f")
-  },
   computed: {
     extent: function() { return [-this.range, this.range]; },
     dimensions: function() { return this.model ? this.model.dimensions : 0; },
     zero: function() { return Array1D.zeros([this.dimensions]); },
-    hoverScale: function() { interpolate.domain([0, this.width]).range(this.extent); },
-    bands: function() { return bandScale.domain(range(this.numSamples)).range([0, this.width]); },
-    pos: function() { return position.domain([0, this.numSamples - 1]).range(this.extent); },
+    hoverScale: function() { return this.interpolate.domain([0, this.width]).range(this.extent); },
+    bands: function() { return this.bandScale.domain(range(this.numSamples)).range([0, this.width]); },
+    pos: function() { return this.position.domain([0, this.numSamples - 1]).range(this.extent); },
     sampleWidth: function() { return this.bands.bandwidth(); },
     height: function() { return this.sampleWidth; },
     unitDirection: function() {
@@ -114,7 +112,10 @@ export default {
         for (var i = 0; i < this.numSamples; i++) {
           let delta = math.sub(Scalar.new(this.pos(i)), this.selectedScalar);
           let newSample = math.add(math.multiply(this.unitDirection, delta), this.selectedSample);
-          samples.push(newSample);
+          samples.push({
+            sample: newSample,
+            position: this.bands(samples.length)
+          });
         }
       }
       return samples;
@@ -127,15 +128,18 @@ export default {
     // }
   },
   methods: {
+    format: function(val) {
+      return this.formatter(val);
+    },
     resize: function() {
       if (this.$refs.container) {
         this.width = this.$refs.container.getBoundingClientRect().width;
       }
     },
-    click: function(value) {
+    select: function(event) {
+      const value = this.hoverScale(event.offsetX)
       let delta = math.sub(Scalar.new(value), this.selectedScalar);
       let newSample = math.add(math.multiply(this.unitDirection, delta), this.selectedSample);
-      this.selectedSample = newSample;
       this.$emit("select", {selectedSample: newSample});
     }
   }

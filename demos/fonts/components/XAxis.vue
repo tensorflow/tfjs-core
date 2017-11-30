@@ -15,8 +15,8 @@ limitations under the License.
 
 <template>
 <div class="domain">
-  <div v-for="tick in ticks" class="tick" style="{left: xScale(tick) + 'px'}">
-    <span class="label">{{tick}}</span>
+  <div v-for="tick in ticks" class="tick" :style="{left: tick.position + 'px'}">
+    <span class="label">{{tick.value}}</span>
   </div>
 </div>
 </template>
@@ -27,15 +27,17 @@ import {scaleLinear} from "d3-scale";
 export default {
   data() {
     return {
-      min: 0,
-      max: 1,
-      width: 1,
       scale: scaleLinear()
     }
   },
+  props: {
+    min: { default: 0 },
+    max: { default: 1 },
+    width: { default: 1 },
+  },
   computed: {
-    xScale: (scale, min, max, width) => scale.domain([min, max]).range([0, width]),
-    ticks: (xScale) => xScale.ticks()
+    xScale: function() { return this.scale.domain([this.min, this.max]).range([0, this.width]); },
+    ticks: function() { return this.xScale.ticks().map(t => { return {value: t, position: this.xScale(t)}; }); }
   }
 }
 </script>

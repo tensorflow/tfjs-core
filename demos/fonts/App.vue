@@ -17,7 +17,6 @@ limitations under the License.
 <div>
   <demo-header name="Fonts Demo"></demo-header>
   <div class="app">
-    <!--  -->
     <div class="presets">
       <div class="header sticky">
         <h3>Presets</h3>
@@ -25,31 +24,6 @@ limitations under the License.
           :model="model"
           v-on:select="changeSelected"
         />
-        <h3>Settings</h3>
-        <div>
-          <label for="rangelabel" class="sliderlabel">Slider Extent - </label>
-          <input
-            id="rangelabel"
-            type="text"
-            class="slidervalue"
-            bind:value="range"
-            size="3"
-            readonly
-          />
-        </div>
-        <input type="range" min="0.5" max="1" step="0.1" v-bind:value="range" />
-        <div>
-          <label for="sampleslabel" class="sliderlabel"># Samples - </label>
-          <input
-            id="rangelabel"
-            type="text"
-            class="slidervalue"
-            bind:value="numSamples"
-            size="3"
-            readonly
-          />
-        </div>
-        <input type="range" min="3" max="15" bind:value="numSamples" />
       </div>
     </div>
     <!--  -->
@@ -58,7 +32,7 @@ limitations under the License.
         <h3>Basis Dimensions of Latent Space</h3>
       </div>
       <div ref="loading">Loading...</div>
-      <div class="basis">
+      <div ref="basis" class="basis">
         <BasisDimensions
           :model="model"
           :modelData="modelData"
@@ -66,7 +40,8 @@ limitations under the License.
           :selectedSample="selectedSample"
           :range="range"
           :vals="dimSliderVals"
-          on:select="changeSelected(event)"
+          :width="width"
+          v-on:select="changeSelected"
         />
       </div>
     </div>
@@ -108,19 +83,24 @@ limitations under the License.
       return {
         model: undefined,
         modelData: "A",
-        numSamples: 11,
+        numSamples: 9,
         range: 0.8,
+        width: 400,
         dimSliderVals: [],
         selectedSample: undefined
       }
     },
     created: function() {
+      window.addEventListener("resize", () => {
+        this.resize();
+      });
       let fonts = new FontModel();
       fonts.load(() => {
         fonts.init();
         this.$refs.loading.remove();
         this.model = fonts;
         this.range = fonts.range;
+        this.resize();
       });
     },
     watch: {
@@ -129,6 +109,10 @@ limitations under the License.
       }
     },
     methods: {
+      resize: function() {
+        const width = this.$refs.basis.getBoundingClientRect().width;
+        this.width = width;
+      },
       changeSelected: function(event) {
         // If this is the initial (default) selection and a URL hash was
         // provided then use the sample from the hash.

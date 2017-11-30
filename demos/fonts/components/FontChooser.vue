@@ -44,7 +44,7 @@ export default {
     return {
       width: 20,
       letters: "ABCDEF".split(""),
-      samples: [serif, serifBold, sans, crispSerif, dotMatrix, casual]
+      samples: [crispSerif, serif, serifBold, sans,  dotMatrix, casual]
     }
   },
   props: {

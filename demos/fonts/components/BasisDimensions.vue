@@ -25,7 +25,8 @@ limitations under the License.
       :numSamples="numSamples"
       :selectedSample="selectedSample"
       :initialValue="vals[i]"
-      v-on:select="fire('select', event)"
+      :width="width - 40"
+      v-on:select="select"
     />
   </div>
 </div>
@@ -49,6 +50,7 @@ export default {
     modelData: { type: String, default: "A" },
     selectedSample: { default: () => {[]}},
     model: { },
+    width: { type: Number, default: 300},
     numSamples: { type: Number, default: 5 },
     range: { type: Number, default: 1 },
     vals: { type: Array, default: function() { return []; }}
@@ -65,6 +67,11 @@ export default {
       });
       return output;
     }
+  },
+  methods: {
+    select: function(event) {
+      this.$emit("select", event);
+    }
   }
 }
 </script>
@@ -75,6 +82,7 @@ export default {
     padding-right: 8px;
     display: grid;
     grid-template-columns: 40px 1fr;
+    margin-bottom: 30px;
   }
   h4.label {
     margin: 10px 0 10px 0;

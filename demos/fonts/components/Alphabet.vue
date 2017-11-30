@@ -14,15 +14,17 @@ limitations under the License.
 ==============================================================================-->
 <template>
 <div>
-  <div v-for="char in letters" :key="char" class="character">
-    <Sample
-      :displayWidth="width"
-      :displayHeight="width"
-      :model="model"
-      :modelData="char"
-      :sample="sample"
-      on:select="fire('select', event)"
-    />
+  <div v-for="section in sections" class="section">
+    <div v-for="char in section" :key="char" class="character">
+      <Sample
+        :displayWidth="width"
+        :displayHeight="width"
+        :model="model"
+        :modelData="char"
+        :sample="sample"
+        on:select="fire('select', event)"
+      />
+    </div>
   </div>
 </div>
 </template>
@@ -37,7 +39,10 @@ export default {
   data() {
     return {
       width: 48,
-      letters: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890".split(""),
+      sections:[
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+        "abcdefghijklmnopqrstuvwxyz".split(""),
+      ]
     }
   },
   props: {
@@ -51,5 +56,10 @@ export default {
 <style scoped>
   .character {
     display: inline;
+  }
+  .section:first-child {
+    border-bottom: solid 1px rgba(0, 0, 0, 0.1);
+    padding-bottom: 20px;
+    margin-bottom: 20px;
   }
 </style>
