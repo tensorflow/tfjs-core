@@ -36,8 +36,13 @@ export default {
     width: { default: 1 },
   },
   computed: {
-    xScale: function() { return this.scale.domain([this.min, this.max]).range([0, this.width]); },
-    ticks: function() { return this.xScale.ticks().map(t => { return {value: t, position: this.xScale(t)}; }); }
+    xScale: function() {
+      return this.scale.domain([this.min, this.max]).range([0, this.width]);
+    },
+    ticks: function() {
+      return this.xScale.ticks().map(
+        t => { return {value: t, position: this.xScale(t)}; });
+    }
   }
 }
 </script>

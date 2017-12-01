@@ -12,24 +12,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { NDArray, Array1D, Scalar, NDArrayMathCPU } from 'deeplearn';
+import {Array1D, NDArray, NDArrayMathCPU, Scalar} from 'deeplearn';
 
 const math = new NDArrayMathCPU();
 
-export function interpolateLinear(embedding0: Array1D, embedding1: Array1D,
-  ratio: Scalar) {
+export function interpolateLinear(
+    embedding0: Array1D, embedding1: Array1D, ratio: Scalar) {
   return math.add(
-    embedding0, math.scalarTimesArray(
-      ratio, math.sub(embedding1, embedding0)));
+      embedding0,
+      math.scalarTimesArray(ratio, math.sub(embedding1, embedding0)));
 }
 
-export function linearCombination(startPoint: Array1D, direction: Array1D,
-  factor: Scalar) {
+export function linearCombination(
+    startPoint: Array1D, direction: Array1D, factor: Scalar) {
   return math.add(startPoint, math.scalarTimesArray(factor, direction));
 }
 
-export function linearCombinationNormalized(startPoint: Array1D,
-  direction: Array1D, factor: Scalar) {
+export function linearCombinationNormalized(
+    startPoint: Array1D, direction: Array1D, factor: Scalar) {
   const mag = norm(startPoint);
   const result = math.add(startPoint, math.scalarTimesArray(factor, direction));
   const normalizedResult = math.scalarTimesArray(mag, unit(result));
@@ -46,6 +46,8 @@ export function norm(v: NDArray) {
 
 export function unit(v: NDArray) {
   const n = Scalar.new(norm(v).get());
-  if (n.get() === 0) { console.warn("Divide by zero"); }
+  if (n.get() === 0) {
+    console.warn('Divide by zero');
+  }
   return math.arrayDividedByScalar(v, n);
 }

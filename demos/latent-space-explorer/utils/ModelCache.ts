@@ -12,7 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Queue } from './ChunkedQueue';
+import {Queue} from './ChunkedQueue';
 
 export class Cache {
   private thisArg: object;
@@ -29,7 +29,7 @@ export class Cache {
   }
 
   get(id: number, argsArray: Array<{}>) {
-    //TODO(shancarter) actually cache/retrieve the values.
+    // TODO(shancarter) actually cache/retrieve the values.
 
     return new Promise((resolve, reject) => {
       const value = this.fn.call(this.thisArg, argsArray);

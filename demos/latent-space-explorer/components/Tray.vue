@@ -79,9 +79,16 @@ export default {
     extent: function() { return [-this.range, this.range]; },
     dimensions: function() { return this.model ? this.model.dimensions : 0; },
     zero: function() { return Array1D.zeros([this.dimensions]); },
-    hoverScale: function() { return this.interpolate.domain([0, this.width]).range(this.extent); },
-    bands: function() { return this.bandScale.domain(range(this.numSamples)).range([0, this.width]); },
-    pos: function() { return this.position.domain([0, this.numSamples - 1]).range(this.extent); },
+    hoverScale: function() {
+      return this.interpolate.domain([0, this.width]).range(this.extent);
+    },
+    bands: function() {
+      return this.bandScale.domain(range(this.numSamples)).range(
+        [0, this.width]);
+    },
+    pos: function() {
+      return this.position.domain([0, this.numSamples - 1]).range(this.extent);
+    },
     sampleWidth: function() { return this.bands.bandwidth(); },
     height: function() { return this.sampleWidth; },
     unitDirection: function() {
@@ -92,7 +99,9 @@ export default {
       const scalar = math.dotProduct(this.unitDirection, this.selectedSample)
       return scalar.getValues()[0]
     },
-    selectedX: function() { return this.hoverScale.invert(this.selectedValue); },
+    selectedX: function() {
+      return this.hoverScale.invert(this.selectedValue);
+    },
 
   },
   mounted() {
@@ -111,8 +120,10 @@ export default {
     recomputeSamples: function() {
       let samples = [];
       for (var i = 0; i < this.numSamples; i++) {
-        let delta = math.sub(Scalar.new(this.pos(i)), Scalar.new(this.selectedValue));
-        let newSample = math.add(math.multiply(this.unitDirection, delta), this.selectedSample);
+        let delta = math.sub(
+          Scalar.new(this.pos(i)), Scalar.new(this.selectedValue));
+        let newSample = math.add(math.multiply(
+          this.unitDirection, delta), this.selectedSample);
         samples.push({
           sample: newSample,
           position: this.bands(samples.length)
@@ -132,7 +143,8 @@ export default {
     select: function(event) {
       const value = this.hoverScale(event.offsetX)
       let delta = math.sub(Scalar.new(value), Scalar.new(this.selectedValue));
-      let newSample = math.add(math.multiply(this.unitDirection, delta), this.selectedSample);
+      let newSample = math.add(math.multiply(
+        this.unitDirection, delta), this.selectedSample);
       this.$emit("select", {selectedSample: newSample});
     }
   }

@@ -34,9 +34,13 @@ export class Queue {
 
   add(cb: () => void, id: number, priority: number) {
     this.remove(id);
-    if (id == null) { id = -1; }
-    if (priority == null) { priority = -1; }
-    this.queue.push({ cb, id, priority });
+    if (id == null) {
+      id = -1;
+    }
+    if (priority == null) {
+      priority = -1;
+    }
+    this.queue.push({cb, id, priority});
     this.queue.sort((a, b) => a.priority - b.priority);
     this.kick();
   }

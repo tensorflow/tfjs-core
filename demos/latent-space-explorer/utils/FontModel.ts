@@ -12,10 +12,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Cache } from './ModelCache';
-import {
-  CheckpointLoader, NDArrayMathGPU, Scalar, Array1D, NDArray, Array2D
-} from 'deeplearn';
+import {Array1D, Array2D, CheckpointLoader, NDArray, NDArrayMathGPU, Scalar} from 'deeplearn';
+
+import {Cache} from './ModelCache';
 
 const NUM_LAYERS = 4;
 const IMAGE_SIZE = 64;
@@ -24,8 +23,8 @@ export class FontModel {
   metaData = 'A';
   dimensions = 40;
   range = 0.4;
-  charIdMap: { [id: string]: number };
-  private variables: { [varName: string]: NDArray };
+  charIdMap: {[id: string]: number};
+  private variables: {[varName: string]: NDArray};
   private math: NDArrayMathGPU;
   private inferCache = new Cache(this, this.infer);
   private numberOfValidChars = 62;
@@ -47,7 +46,7 @@ export class FontModel {
 
   load(cb: () => void) {
     const checkpointLoader = new CheckpointLoader(
-      'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/fonts/');
+        'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/fonts/');
     checkpointLoader.getAllVariables().then(vars => {
       this.variables = vars;
       cb();
@@ -75,13 +74,13 @@ export class FontModel {
 
     const charId = this.charIdMap[char.charAt(0)];
     if (charId == null) {
-      throw (new Error('Invalid character id'));
+      throw(new Error('Invalid character id'));
     }
 
     const adjusted = this.math.scope((keep, track) => {
       const idx = track(Array1D.new([charId]));
-      const onehotVector = this.math.oneHot(
-        idx, this.numberOfValidChars).as1D();
+      const onehotVector =
+          this.math.oneHot(idx, this.numberOfValidChars).as1D();
 
       const inputData = this.math.concat1D(embedding.as1D(), onehotVector);
 
@@ -89,23 +88,22 @@ export class FontModel {
 
       for (let i = 0; i < NUM_LAYERS; i++) {
         const weights =
-          this.variables[`Stack/fully_connected_${i + 1}/weights`] as Array2D;
+            this.variables[`Stack/fully_connected_${i + 1}/weights`] as Array2D;
         const biases = this.variables[`Stack/fully_connected_${i + 1}/biases`];
-        lastOutput = this.math.relu(
-          this.math.add(
-            this.math.vectorTimesMatrix(
-              lastOutput, weights), biases)) as Array1D;
+        lastOutput =
+            this.math.relu(this.math.add(
+                this.math.vectorTimesMatrix(lastOutput, weights), biases)) as
+            Array1D;
       }
 
       const finalWeights = this.variables['fully_connected/weights'] as Array2D;
       const finalBiases = this.variables['fully_connected/biases'] as Array2D;
-      const finalOutput = this.math.sigmoid(
-        this.math.add(this.math.vectorTimesMatrix(
-          lastOutput, finalWeights), finalBiases));
+      const finalOutput = this.math.sigmoid(this.math.add(
+          this.math.vectorTimesMatrix(lastOutput, finalWeights), finalBiases));
 
       // Convert the inferred tensor to the proper scaling then draw it.
-      const scaled = this.math.scalarTimesArray(
-        this.multiplierScalar, finalOutput);
+      const scaled =
+          this.math.scalarTimesArray(this.multiplierScalar, finalOutput);
       return this.math.scalarMinusArray(this.multiplierScalar, scaled);
     });
 
