@@ -14,7 +14,7 @@ limitations under the License.
 
 import { NDArray, Array1D, Scalar, NDArrayMathCPU } from 'deeplearn';
 
-const math = new NDArrayMathCPU(false);
+const math = new NDArrayMathCPU();
 
 export function interpolateLinear(embedding0: Array1D, embedding1: Array1D,
   ratio: Scalar) {
@@ -46,6 +46,6 @@ export function norm(v: NDArray) {
 
 export function unit(v: NDArray) {
   const n = Scalar.new(norm(v).get());
-  if (n.get() === 0) console.warn("Divide by zero");
+  if (n.get() === 0) { console.warn("Divide by zero"); }
   return math.arrayDividedByScalar(v, n);
 }

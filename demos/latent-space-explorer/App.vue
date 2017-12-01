@@ -15,16 +15,19 @@ limitations under the License.
 
 <template>
 <div>
-  <demo-header name="Fonts Demo"></demo-header>
+  <demo-header name="Latent Space Explorer"></demo-header>
   <div class="app">
     <!-- Presets -->
     <div class="presets">
       <div class="header sticky">
-        <h3>Presets</h3>
+        <h3>Samples</h3>
         <FontChooser
           :model="model"
+          :selectedSample="selectedSample"
           v-on:select="changeSelected"
         />
+        <div class="description">This demo is a tool that allows you to explore
+           a 40-dimensional latent space of typefaces.</div>
       </div>
     </div>
     <!-- Dimensions -->
@@ -174,6 +177,12 @@ h3 {
 }
 .header {
   padding-top: 20px;
+}
+.description {
+  border-top: solid 1px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  padding-top: 20px;
+  font-size: 14px;
 }
 .sticky {
   position: -webkit-sticky;

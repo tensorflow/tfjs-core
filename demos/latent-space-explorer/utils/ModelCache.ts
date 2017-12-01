@@ -15,7 +15,6 @@ limitations under the License.
 import { Queue } from './ChunkedQueue';
 
 export class Cache {
-
   private thisArg: object;
   private fn: (args: Array<{}>) => void;
   private queue = new Queue();
@@ -30,7 +29,7 @@ export class Cache {
   }
 
   get(id: number, argsArray: Array<{}>) {
-    //TODO actually cache/retrieve the values.
+    //TODO(shancarter) actually cache/retrieve the values.
 
     return new Promise((resolve, reject) => {
       const value = this.fn.call(this.thisArg, argsArray);
@@ -48,5 +47,4 @@ export class Cache {
   get paused() {
     return this._paused;
   }
-
 }

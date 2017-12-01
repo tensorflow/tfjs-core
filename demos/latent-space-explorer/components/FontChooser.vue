@@ -23,10 +23,12 @@ limitations under the License.
         :model="model"
         :modelData="char"
         :sample="sample"
+        :visible="visible"
       />
     </div>
-    …
+    <span class="ellipse">…</span>
   </div>
+  <button v-on:click="save">Save current sample</button>
 </div>
 </template>
 
@@ -43,14 +45,15 @@ export default {
   data() {
     return {
       width: 20,
-      letters: "ABCDEFGH".split(""),
-      samples: [crispSerif, serifLight, serifItalic, serifBlackItalic, sansLight, casual, dotMatrix, square]
+      visible: true,
+      letters: "ABCDEFG".split("")
     }
   },
   props: {
     modelData: { type: String, default: "A" },
-    sample: { default: () => {[]}},
-    model: { }
+    selectedSample: { },
+    model: { },
+    samples: { type: Array, default: () => [crispSerif, serifItalic, serifBlackItalic, sansLight, casual, dotMatrix] }
   },
   watch: {
     model: function(val) {
@@ -60,6 +63,9 @@ export default {
   methods: {
     select: function(sample, isInitialSelection) {
       this.$emit("select", {selectedSample: sample, isInitialSelection});
+    },
+    save: function() {
+      this.samples.push(this.selectedSample);
     }
   }
 }
@@ -69,6 +75,17 @@ export default {
 .typeface {
   cursor: pointer;
   opacity: 0.5;
+  margin: 3px 0;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  line-height: 17px;
+}
+button {
+  margin-top: 20px;
+}
+.ellipse {
+  position: relative;
+  top: -3px;
 }
 .typeface.selected {
   border-left: 3px solid hsl(24, 100%, 50%);

@@ -13,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================-->
 
-<!-- <:Window on:scroll="measure()" on:resize="measure()" /> -->
-
 <template>
 <div
   :style="{width: displayWidth + 'px', height: displayHeight + 'px'}"
@@ -62,7 +60,6 @@ export default {
     },
     sample: function(newValue, oldValue) {
       if(newValue && newValue !== oldValue) {
-        if (this.model) this.model.remove(this.id);
         if (this.visible) {
           this.render();
         } else {
@@ -75,11 +72,6 @@ export default {
     }
   },
   methods: {
-    // select: function(event) {
-      // const {sample, modelData} = this.get();
-      // console.log(modelData, sample);
-      // this.fire('select', {selectedSample: sample})
-    // },
     measure: function() {
       const bb = this.$refs.canvas.getBoundingClientRect();
       const screen = window.innerHeight;

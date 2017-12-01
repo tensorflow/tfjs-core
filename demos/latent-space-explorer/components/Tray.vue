@@ -17,9 +17,7 @@ limitations under the License.
 <div ref="container" class="container" v-on:click="select">
   <div
     class="tray"
-    :style="{height: height + 'px'}"
-
-  >
+    :style="{height: height + 'px'}">
       <Sample
         v-for="(sample, index) in samples"
         v-bind:key="index"
@@ -34,8 +32,7 @@ limitations under the License.
     <div
       ref="selectedReticle"
       class="reticle selected"
-      :style="{left: selectedX + 'px', height: height + 6 + 'px'}"
-    >
+      :style="{left: selectedX + 'px', height: height + 6 + 'px'}">
       <div class="label">{{format(selectedValue)}}</div>
     </div>
   </div>
@@ -46,10 +43,10 @@ limitations under the License.
 <script>
 import Sample from './Sample.vue';
 import Axis from './XAxis.vue';
+
 import utils from '../utils/Utils';
 import {range} from 'd3-array';
 import {format} from 'd3-format';
-// import {drag} from 'd3-drag';
 import {scaleLinear, scaleBand} from 'd3-scale';
 import {Scalar, Array1D, NDArrayMathCPU} from 'deeplearn';
 
@@ -91,9 +88,6 @@ export default {
       let length = math.sum(math.multiply(this.direction, this.direction));
       return math.divide(this.direction, length);
     },
-    // selectedScalar: function() {
-    //   return math.dotProduct(this.unitDirection, this.selectedSample);
-    // },
     selectedValue: function() {
       const scalar = math.dotProduct(this.unitDirection, this.selectedSample)
       return scalar.getValues()[0]
