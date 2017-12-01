@@ -15,8 +15,8 @@ limitations under the License.
 
 <template>
 <div>
-  <div v-for="sample in samples" class="typeface" v-on:click="select(sample)">
-    <div v-for="char in letters" class="character">
+  <div v-for="(sample, index) in samples" class="typeface" >
+    <div v-for="char in letters" class="character" v-on:click="select(sample)">
       <Sample
         :displayWidth="width"
         :displayHeight="width"
@@ -26,6 +26,7 @@ limitations under the License.
         :visible="visible"
       />
     </div>
+    <button v-on:click="deleteSample(index)">✕</button>
     <span class="ellipse">…</span>
   </div>
   <button v-on:click="save">Save current sample</button>
@@ -63,6 +64,9 @@ export default {
     }
   },
   methods: {
+    deleteSample: function(index) {
+      this.samples.splice(index, 1);
+    },
     select: function(sample, isInitialSelection) {
       this.$emit("select", {selectedSample: sample, isInitialSelection});
     },
@@ -75,12 +79,38 @@ export default {
 
 <style scoped>
 .typeface {
+  position: relative;
   cursor: pointer;
   opacity: 0.5;
   margin: 3px 0;
   padding: 3px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   line-height: 17px;
+}
+.typeface button {
+  position: absolute;
+  top: -18px;
+  right: 0;
+  display: none;
+  border-radius: 50%;
+  width: 1.6em;
+  height: 1.6em;
+  background: rgba(0, 0, 0, 0.1);
+  color: white;
+  padding: 0;
+  text-align: center;
+  line-height: 1.5em;
+  cursor: pointer;
+  border: none;
+}
+.typeface:hover button {
+  display: block;
+}
+.typeface button:hover {
+  background: red;
+}
+.typeface:hover {
+  opacity: 1;
 }
 button {
   margin-top: 20px;

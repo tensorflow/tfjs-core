@@ -33,7 +33,7 @@ limitations under the License.
     <!-- Dimensions -->
     <div class="input">
       <div class="header">
-        <h3>Basis Dimensions of Latent Space</h3>
+        <h3>Basis Dimensions of the Latent Space</h3>
       </div>
       <div ref="loading">Loading...</div>
       <div ref="basis" class="basis">
