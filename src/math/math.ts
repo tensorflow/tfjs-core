@@ -19,7 +19,8 @@ import * as util from '../util';
 import {TypedArray} from '../util';
 
 import * as axis_util from './axis_util';
-import {MathBackend, MatrixOrientation} from './backends/backend';
+// tslint:disable-next-line:max-line-length
+import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backends/backend';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
@@ -37,7 +38,7 @@ export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
 }
 
-export abstract class NDArrayMath {
+export class NDArrayMath {
   private ndarrayScopes: NDArray[][] = [];
   private activeScope: NDArray[];
 
@@ -45,12 +46,15 @@ export abstract class NDArrayMath {
   private activeScopeNDArraysToKeep: NDArray[] = [];
 
   private debugMode = false;
+  protected backend: MathBackend;
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(protected backend: MathBackend, private safeMode: boolean) {}
+  constructor(backend: string, private safeMode: boolean) {
+    this.backend = BACKEND_REGISTRY[backend];
+  }
 
   /**
    * Create a new math scope. Put chained math operations inside a scope
@@ -2077,3 +2081,15 @@ export abstract class NDArrayMath {
 function parseTupleParam(param: number|[number, number]): [number, number] {
   return typeof param === 'number' ? [param, param] : param;
 }
+
+function getBestBackend(): string {
+  const backendIds = ['webgl', 'cpu'];
+  for (let i = 0; i < backendIds.length; ++i) {
+    const backendId = backendIds[i];
+    if (backendId in BACKEND_REGISTRY) {
+      return backendId;
+    }
+  }
+  throw new Error('No backend found in registry.');
+}
+export const MATH = new NDArrayMath(getBestBackend(), false);

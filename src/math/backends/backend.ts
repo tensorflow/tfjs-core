@@ -25,6 +25,8 @@ export enum MatrixOrientation {
   TRANSPOSED
 }
 
+export const BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
+
 /**
  * The interface that defines the kernels that should be implemented when adding
  * a new backend. New backends don't need to implement every one of the methods,

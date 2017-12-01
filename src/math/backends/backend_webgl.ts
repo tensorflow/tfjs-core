@@ -25,7 +25,7 @@ import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '..
 import * as reduce_util from '../reduce_util';
 import {SumTypes, SumTypesMap} from '../types';
 
-import {MathBackend, MatrixOrientation} from './backend';
+import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backend';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -611,10 +611,13 @@ export class MathBackendWebGL implements MathBackend {
   }
 }
 
+BACKEND_REGISTRY['webgl'] = new MathBackendWebGL();
+
 // TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
 export class NDArrayMathGPU extends NDArrayMath {
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
-    super(new MathBackendWebGL(gpgpu), safeMode);
+    BACKEND_REGISTRY['webgl'] = new MathBackendWebGL(gpgpu);
+    super('webgl', safeMode);
   }
 
   getGPGPUContext(): GPGPUContext {

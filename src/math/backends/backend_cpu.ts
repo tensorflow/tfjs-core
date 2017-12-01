@@ -28,7 +28,7 @@ import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '..
 import {SumTypes, SumTypesMap} from '../types';
 
 import * as axis_util from './../axis_util';
-import {MathBackend, MatrixOrientation} from './backend';
+import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backend';
 
 export class MathBackendCPU implements MathBackend {
   clone<T extends NDArray>(ndarray: T): T {
@@ -1307,9 +1307,11 @@ export class MathBackendCPU implements MathBackend {
   }
 }
 
+BACKEND_REGISTRY['cpu'] = new MathBackendCPU();
+
 // TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
-    super(new MathBackendCPU(), safeMode);
+    super('cpu', safeMode);
   }
 }
