@@ -1,3 +1,5 @@
+import {DataTypes} from './math/ndarray';
+
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -48,30 +50,6 @@ export function clamp(min: number, x: number, max: number): number {
 /** Returns a sample from a uniform [a, b] distribution. */
 export function randUniform(a: number, b: number) {
   return Math.random() * (b - a) + a;
-}
-
-/**
- * Samples from a gaussian distribution using Marsaglia Polar Method:
- * https://en.wikipedia.org/wiki/Marsaglia_polar_method
- *
- * @deprecated Use the random Gaus class in rand.ts
- * @param mean The mean. Default is 0.
- * @param stdDev The standard deviation. Default is 1.
- */
-// TODO(kreeger): Deprecate this method for generation in rand.ts.
-export function randGauss(mean = 0, stdDev = 1, truncated = false): number {
-  let v1: number, v2: number, s: number;
-  do {
-    v1 = 2 * Math.random() - 1;
-    v2 = 2 * Math.random() - 1;
-    s = v1 * v1 + v2 * v2;
-  } while (s > 1);
-
-  const result = Math.sqrt(-2 * Math.log(s) / s) * v1;
-  if (truncated && Math.abs(result) > 2) {
-    return randGauss(mean, stdDev, true);
-  }
-  return mean + stdDev * result;
 }
 
 /** Returns squared eucledian distance between two vectors. */
@@ -324,4 +302,19 @@ export function squeezeShape(shape: number[]):
     }
   }
   return {newShape, keptDims};
+}
+
+export function getTypedArrayFromDType<D extends keyof DataTypes>(
+    dtype: D, size: number): DataTypes[D] {
+  let values = null;
+  if (dtype == null || dtype === 'float32') {
+    values = new Float32Array(size);
+  } else if (dtype === 'int32') {
+    values = new Int32Array(size);
+  } else if (dtype === 'bool') {
+    values = new Uint8Array(size);
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
+  return values;
 }
