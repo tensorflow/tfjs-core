@@ -22,6 +22,7 @@
   "scripts": {
     "prep": "npm install && mkdirp dist", 
     "build": "browserify --standalone yolo_mobilenet yolo_mobilenet.ts -p [tsify] -o dist/bundle.js",
+    "lint": "tslint -p . -t verbose",
     "publish-npm": "tsc && npm run build && npm publish"
   },
   "license": "Apache-2.0"
