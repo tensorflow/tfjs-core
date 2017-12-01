@@ -12,7 +12,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+/* tslint:disable:max-line-length */
 import {Array1D, Array2D, CheckpointLoader, NDArray, NDArrayMathGPU, Scalar} from 'deeplearn';
+/* tslint:enable:max-line-length */
 
 import {Cache} from './ModelCache';
 
