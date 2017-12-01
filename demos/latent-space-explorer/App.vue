@@ -20,7 +20,7 @@ limitations under the License.
     <!-- Presets -->
     <div class="presets">
       <div class="header sticky">
-        <h3>Samples</h3>
+        <h3>Saved Samples</h3>
         <FontChooser
           :model="model"
           :selectedSample="selectedSample"
@@ -53,7 +53,7 @@ limitations under the License.
     <!-- Output -->
     <div class="output">
       <div class="header sticky">
-        <h3>Output</h3>
+        <h3>Current Sample</h3>
         <Alphabet
           :model="model"
           :sample="selectedSample"
