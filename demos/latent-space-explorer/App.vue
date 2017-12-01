@@ -26,8 +26,9 @@ limitations under the License.
           :selectedSample="selectedSample"
           v-on:select="changeSelected"
         />
-        <div class="description">This demo is a tool that allows you to explore
-           a 40-dimensional latent space of typefaces.</div>
+        <div class="description">This demo allows you to interactively explore
+           a 40-dimensional latent space of typefaces. The model used here
+           was created by James Wexler, based on work by <a href="https://erikbern.com/2016/01/21/analyzing-50k-fonts-using-deep-neural-networks.html">Erik Bernhardsson</a>.</div>
       </div>
     </div>
     <!-- Dimensions -->
@@ -119,6 +120,7 @@ export default {
     resize: function() {
       const width = this.$refs.basis.getBoundingClientRect().width;
       this.width = width;
+      this.onscroll();
     },
     onscroll: function() {
       const y = window.scrollY;

@@ -89,7 +89,7 @@ export default {
 }
 .typeface button {
   position: absolute;
-  top: -18px;
+  top: -17px;
   right: 0;
   display: none;
   border-radius: 50%;

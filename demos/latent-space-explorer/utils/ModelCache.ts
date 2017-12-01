@@ -25,7 +25,7 @@ export class Cache {
     this.fn = fn;
 
     this.queue.interval = 10;
-    this.queue.elementsPerChunk = 26;
+    this.queue.elementsPerChunk = 20;
   }
 
   get(id: number, argsArray: Array<{}>) {

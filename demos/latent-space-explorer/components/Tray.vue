@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================-->
 
 <template>
-<div ref="container" class="container" v-on:click="select">
+<div ref="container" class="container" v-on:mousedown="dragStart">
   <div
     class="tray"
     :style="{height: height + 'px'}">
@@ -61,7 +61,8 @@ export default {
       bandScale: scaleBand(),
       formatter: format(",.3f"),
       visible: false,
-      samples: []
+      samples: [],
+      offset: 0
     }
   },
   props: {
@@ -80,7 +81,8 @@ export default {
     dimensions: function() { return this.model ? this.model.dimensions : 0; },
     zero: function() { return Array1D.zeros([this.dimensions]); },
     hoverScale: function() {
-      return this.interpolate.domain([0, this.width]).range(this.extent);
+      return this.interpolate.domain([0, this.width]).range(
+        this.extent).clamp(true);
     },
     bands: function() {
       return this.bandScale.domain(range(this.numSamples)).range(
@@ -117,6 +119,20 @@ export default {
     scrollY: function(val) { this.checkVisibility(); }
   },
   methods: {
+    dragStart: function(event) {
+      document.addEventListener("mousemove", this.dragUpdate);
+      document.addEventListener("mouseup", this.dragEnd);
+      this.offset = this.$refs.container.getBoundingClientRect().left;
+    },
+    dragUpdate: function(event) {
+      event.preventDefault();
+      this.select(event.pageX - this.offset);
+    },
+    dragEnd: function(event) {
+      this.select(event.pageX - this.offset);
+      document.removeEventListener("mouseup", this.dragEnd);
+      document.removeEventListener("mousemove", this.dragUpdate);
+    },
     recomputeSamples: function() {
       let samples = [];
       for (var i = 0; i < this.numSamples; i++) {
@@ -132,7 +148,7 @@ export default {
       this.samples = samples;
     },
     checkVisibility: function() {
-      const buffer = 300;
+      const buffer = 200;
       const top = this.$refs.container.getBoundingClientRect().top;
       const visible = (top > -buffer  && top < window.innerHeight + buffer);
       this.visible = visible;
@@ -140,8 +156,8 @@ export default {
     format: function(val) {
       return this.formatter(val);
     },
-    select: function(event) {
-      const value = this.hoverScale(event.offsetX)
+    select: function(x) {
+      const value = this.hoverScale(x)
       let delta = math.sub(Scalar.new(value), Scalar.new(this.selectedValue));
       let newSample = math.add(math.multiply(
         this.unitDirection, delta), this.selectedSample);
