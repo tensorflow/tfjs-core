@@ -18,6 +18,11 @@ function convert(arr: number[]) {
   return Array1D.new(arr);
 }
 /* tslint:disable:max-line-length */
+export const zero = convert([
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]);
+
 export const serif = convert([
   0.0371049,  -0.00813934,  -0.0238383,  -0.0089827, -0.177821,  -0.0574084,
   0.0770413,  -0.000690518, 0.0769115,   0.0351161,  0.0814512,  -0.051607,

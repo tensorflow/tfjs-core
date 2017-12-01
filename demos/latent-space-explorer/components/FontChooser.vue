@@ -36,7 +36,7 @@ limitations under the License.
 <script>
 import Sample from './Sample.vue';
 import {
-  serif, serifBold, serifLight, sansLight, crispSerif, dotMatrix, casual,
+  zero, serif, serifBold, serifLight, sansLight, crispSerif, dotMatrix, casual,
   serifBlackItalic, serifItalic, square
   } from '../utils/FontExamples';
 
@@ -56,7 +56,8 @@ export default {
     selectedSample: { },
     model: { },
     samples: { type: Array, default: () => [
-      crispSerif, serifItalic, serifBlackItalic, sansLight, casual, dotMatrix] }
+      zero, crispSerif, serifItalic, serifBlackItalic, sansLight, casual,
+      dotMatrix] }
   },
   watch: {
     model: function(val) {
