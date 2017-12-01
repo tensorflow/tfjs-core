@@ -176,6 +176,10 @@ h3 {
   grid-template-columns: 1fr 3fr 2fr;
   grid-column-gap: 60px;
   position: relative;
+  padding: 0 20px;
+}
+.basis {
+  overflow: hidden;
 }
 .header {
   padding-top: 20px;

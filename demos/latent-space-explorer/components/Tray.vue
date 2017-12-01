@@ -114,6 +114,7 @@ export default {
     selectedSample: function(value) { this.recomputeSamples(); },
     model: function() { this.recomputeSamples(); },
     selectedValue: function() { this.recomputeSamples(); },
+    width: function() { this.recomputeSamples(); },
     pos: function() { this.recomputeSamples(); },
     bands: function() { this.recomputeSamples(); },
     scrollY: function(val) { this.checkVisibility(); }
