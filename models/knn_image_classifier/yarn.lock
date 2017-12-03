@@ -584,9 +584,9 @@ deep-extend@~0.4.0:
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/deep-extend/-/deep-extend-0.4.2.tgz#48b699c27e334bf89f10892be432f6e4c7d34a7f"
 
-deeplearn-squeezenet@~0.1.5:
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/deeplearn-squeezenet/-/deeplearn-squeezenet-0.1.5.tgz#db2e6ac320555a178278b238442000e3beea4683"
+deeplearn-squeezenet@~0.1.6:
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/deeplearn-squeezenet/-/deeplearn-squeezenet-0.1.6.tgz#f73c25d8627de514d72425471a3d69436c754ecf"
 
 deeplearn@~0.3.13:
   version "0.3.13"
