@@ -152,27 +152,38 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     const isWebcam = this.selectedInputName === 'webcam';
 
     await this.math.scope(async (keep, track) => {
-      const image = track(Array3D.fromPixels(
-          isWebcam ? this.webcamVideoElement : this.staticImgElement));
 
-      const inferenceResult = await this.squeezeNet.predict(image);
-      const namedActivations = inferenceResult.namedActivations;
+      this.clearOutput();
 
-      this.layerNames = Object.keys(namedActivations);
+      try {
+        const image = track(Array3D.fromPixels(
+            isWebcam ? this.webcamVideoElement : this.staticImgElement));
 
-      const topClassesToProbability = await this.squeezeNet.getTopKClasses(
-          inferenceResult.logits, TOP_K_CLASSES);
+        const inferenceResult = await this.squeezeNet.predict(image);
+        const namedActivations = inferenceResult.namedActivations;
 
-      let count = 0;
-      for (const className in topClassesToProbability) {
-        if (!(className in topClassesToProbability)) {
-          continue;
+        this.layerNames = Object.keys(namedActivations);
+
+        const topClassesToProbability = await this.squeezeNet.getTopKClasses(
+            inferenceResult.logits, TOP_K_CLASSES);
+
+        let count = 0;
+        for (const className in topClassesToProbability) {
+          if (!(className in topClassesToProbability)) {
+            continue;
+          }
+          document.getElementById(`class${count}`).innerHTML = className;
+          document.getElementById(`prob${count}`).innerHTML =
+              (Math.floor(1000 * topClassesToProbability[className]) / 1000)
+                  .toString();
+          count++;
         }
-        document.getElementById(`class${count}`).innerHTML = className;
-        document.getElementById(`prob${count}`).innerHTML =
-            (Math.floor(1000 * topClassesToProbability[className]) / 1000)
-                .toString();
-        count++;
+
+        this.renderActivations(namedActivations);
+      } catch (e) {
+        document.getElementById(`class0`)
+            .innerHTML = 'Error happened, please try another input.';
+        console.log(e);
       }
 
       const endTime = performance.now();
@@ -181,32 +192,50 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
       (this.querySelector('#totalTime') as HTMLDivElement).innerHTML =
           `last inference time: ${elapsed} ms`;
 
-      // Render activations.
-      const activationNDArray = namedActivations[this.selectedLayerName];
-
-      // Compute max and min per channel for normalization.
-      const maxValues = this.math.maxPool(
-          activationNDArray, activationNDArray.shape[1],
-          activationNDArray.shape[1], 0);
-      const minValues = this.math.minPool(
-          activationNDArray, activationNDArray.shape[1],
-          activationNDArray.shape[1], 0);
-
-      // Logically resize the rendering canvas. The displayed width is fixed.
-      const imagesPerRow = Math.ceil(Math.sqrt(activationNDArray.shape[2]));
-      const numRows = Math.ceil(activationNDArray.shape[2] / imagesPerRow);
-      this.inferenceCanvas.width = imagesPerRow * activationNDArray.shape[0];
-      this.inferenceCanvas.height = numRows * activationNDArray.shape[0];
-
-      imagenet_util.renderGrayscaleChannelsCollage(
-          this.gpgpu, this.renderGrayscaleChannelsCollageShader,
-          activationNDArray.getTexture(), minValues.getTexture(),
-          maxValues.getTexture(), activationNDArray.getTextureShapeRC(),
-          activationNDArray.shape[0], activationNDArray.shape[2],
-          this.inferenceCanvas.width, numRows);
     });
 
     requestAnimationFrame(() => this.animate());
+  }
+
+  private clearOutput() {
+    let count = 0;
+    const max = 5;
+    while(count < max) {
+
+      document.getElementById(`class${count}`).innerHTML = '';
+      document.getElementById(`prob${count}`).innerHTML = '';
+      count++;
+    }
+  }
+
+  private renderActivations(namedActivations: { [p: string]: Array3D }) {
+    if(!namedActivations) {
+      return;
+    }
+
+    // Render activations.
+    const activationNDArray = namedActivations[this.selectedLayerName];
+
+    // Compute max and min per channel for normalization.
+    const maxValues = this.math.maxPool(
+        activationNDArray, activationNDArray.shape[1],
+        activationNDArray.shape[1], 0);
+    const minValues = this.math.minPool(
+        activationNDArray, activationNDArray.shape[1],
+        activationNDArray.shape[1], 0);
+
+    // Logically resize the rendering canvas. The displayed width is fixed.
+    const imagesPerRow = Math.ceil(Math.sqrt(activationNDArray.shape[2]));
+    const numRows = Math.ceil(activationNDArray.shape[2] / imagesPerRow);
+    this.inferenceCanvas.width = imagesPerRow * activationNDArray.shape[0];
+    this.inferenceCanvas.height = numRows * activationNDArray.shape[0];
+
+    imagenet_util.renderGrayscaleChannelsCollage(
+        this.gpgpu, this.renderGrayscaleChannelsCollageShader,
+        activationNDArray.getTexture(), minValues.getTexture(),
+        maxValues.getTexture(), activationNDArray.getTextureShapeRC(),
+        activationNDArray.shape[0], activationNDArray.shape[2],
+        this.inferenceCanvas.width, numRows);
   }
 }
 
