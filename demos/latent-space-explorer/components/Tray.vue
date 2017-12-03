@@ -190,7 +190,6 @@ div.tray > * {
   position: absolute;
   width: 3px;
   border-radius: 2px;
-  /*border: 1px solid black;*/
   background-color: rgb(255, 152, 0);
   z-index: 1;
 }

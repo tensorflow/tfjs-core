@@ -80,8 +80,7 @@ export default {
     },
     render: function() {
       this.waiting = true;
-      if (this.model) this.model.metaData = this.modelData;
-      // let localPriority = (priority === 0 ? -position : priority);
+      if (this.model) {this.model.metaData = this.modelData;}
       if (this.model && this.sample && this.sample.size) {
         let canvas = this.$refs.canvas;
         let canvasContext = canvas.getContext("2d");

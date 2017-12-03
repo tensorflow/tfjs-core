@@ -76,6 +76,8 @@ export class Queue {
       item.cb();
     });
     this.running = false;
-    if (this.queue.length) this.kick();
+    if (this.queue.length) {
+      this.kick();
+    }
   }
 }
