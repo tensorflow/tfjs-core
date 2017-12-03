@@ -1,6 +1,6 @@
 {
   "name": "deeplearn-knn-image-classifier",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "A KNN Image Classifier model in deeplearn.js",
   "main": "dist/index.js",
   "unpkg": "dist/bundle.js",
@@ -9,7 +9,7 @@
     "deeplearn": "~0.3.13"
   },
   "dependencies": {
-    "deeplearn-squeezenet": "~0.1.2"
+    "deeplearn-squeezenet": "~0.1.4"
   },
   "repository": {
     "type": "git",

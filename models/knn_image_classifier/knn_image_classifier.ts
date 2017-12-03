@@ -86,7 +86,7 @@ export class KNNImageClassifier implements Model {
   /**
    * Adds the provided image to the specified class.
    */
-  addImage(image: Array3D, classIndex: number) {
+  addImage(image: Array3D, classIndex: number): void {
     if (!this.varsLoaded) {
       console.warn('Cannot add images until vars have been loaded.');
       return;
@@ -99,8 +99,8 @@ export class KNNImageClassifier implements Model {
     this.math.scope((keep, track) => {
       // Add the squeezenet logits for the image to the appropriate class
       // logits matrix.
-      const predResults = this.squeezeNet.predict(image);
-      const imageLogits = this.normalizeVector(predResults.logits);
+      const logits = this.squeezeNet.predict(image);
+      const imageLogits = this.normalizeVector(logits);
 
       const logitsSize = imageLogits.shape[0];
       if (this.classLogitsMatrices[classIndex] == null) {
@@ -119,25 +119,13 @@ export class KNNImageClassifier implements Model {
     });
   }
 
-  /**
-   * Predicts the class of the provided image using KNN from the previously-
-   * added images and their classes.
-   *
-   * @param image The image to predict the class for.
-   * @returns A dict of the top class for the image and an array of confidence
-   * values for all possible classes.
-   */
-  async predict(image: Array3D):
-      Promise<{classIndex: number, confidences: number[]}> {
-    let imageClass = -1;
-    const confidences = new Array<number>(this.numClasses);
+  predict(image: Array3D): Array1D {
     if (!this.varsLoaded) {
-      console.warn('Cannot predict until vars have been loaded.');
-      return {classIndex: imageClass, confidences};
+      throw new Error('Cannot predict until vars have been loaded.');
     }
 
-    const topKIndices = await this.math.scope(async (keep) => {
-      const predResults = await this.squeezeNet.predict(image);
+    return this.math.scope((keep) => {
+      const predResults = this.squeezeNet.predict(image);
       const imageLogits = this.normalizeVector(predResults.logits);
       const logitsSize = imageLogits.shape[0];
 
@@ -160,14 +148,37 @@ export class KNNImageClassifier implements Model {
       keep(this.trainLogitsMatrix);
 
       const numExamples = this.getNumExamples();
-      const knn = this.math
-                      .matMul(
-                          this.trainLogitsMatrix.as2D(numExamples, logitsSize),
-                          imageLogits.as2D(logitsSize, 1))
-                      .as1D();
+      return this.math
+          .matMul(
+              this.trainLogitsMatrix.as2D(numExamples, logitsSize),
+              imageLogits.as2D(logitsSize, 1))
+          .as1D();
+    });
+  }
+
+  /**
+   * Predicts the class of the provided image using KNN from the previously-
+   * added images and their classes.
+   *
+   * @param image The image to predict the class for.
+   * @returns A dict of the top class for the image and an array of confidence
+   * values for all possible classes.
+   */
+  async predictClass(image: Array3D):
+      Promise<{classIndex: number, confidences: number[]}> {
+    let imageClass = -1;
+    const confidences = new Array<number>(this.numClasses);
+    if (!this.varsLoaded) {
+      throw new Error('Cannot predict until vars have been loaded.');
+    }
+
+    const topKIndices = await this.math.scope(async (keep) => {
+      const knn = this.predict(image);
       // mathCPU downloads the values, so we should wait until the GPU isdone
       // so we don't block the UI thread.
       await knn.data();
+
+      const numExamples = this.getNumExamples();
 
       const kVal = Math.min(this.k, numExamples);
       const topK = this.mathCPU.topK(knn, kVal);
