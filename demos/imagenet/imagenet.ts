@@ -49,7 +49,10 @@ const TOP_K_CLASSES = 5;
 const INPUT_NAMES = ['cat', 'dog1', 'dog2', 'beerbottle', 'piano', 'saxophone'];
 export class ImagenetDemo extends ImagenetDemoPolymer {
   // Polymer properties.
-  layerNames: string[];
+  layerNames = [
+    'conv_1', 'maxpool_1', 'fire2', 'fire3', 'maxpool_2', 'fire4', 'fire5',
+    'maxpool_3', 'fire6', 'fire7', 'fire8', 'fire9', 'conv10'
+  ];
   selectedLayerName: string;
   inputNames: string[];
   selectedInputName: string;
@@ -155,10 +158,8 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
       const image = track(Array3D.fromPixels(
           isWebcam ? this.webcamVideoElement : this.staticImgElement));
 
-      const inferenceResult = await this.squeezeNet.predict(image);
-      const namedActivations = inferenceResult.namedActivations;
-
-      this.layerNames = Object.keys(namedActivations);
+      const inferenceResult = await this.squeezeNet.predictWithActivation(
+          image, this.selectedLayerName);
 
       const topClassesToProbability = await this.squeezeNet.getTopKClasses(
           inferenceResult.logits, TOP_K_CLASSES);
@@ -182,7 +183,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
           `last inference time: ${elapsed} ms`;
 
       // Render activations.
-      const activationNDArray = namedActivations[this.selectedLayerName];
+      const activationNDArray = inferenceResult.activation;
 
       // Compute max and min per channel for normalization.
       const maxValues = this.math.maxPool(

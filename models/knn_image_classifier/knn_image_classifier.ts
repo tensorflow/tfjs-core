@@ -15,7 +15,7 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Model, NDArrayMath, NDArrayMathCPU, Scalar} from 'deeplearn';
+import {Array1D, Array2D, Array3D, initializeGPU, Model, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Scalar} from 'deeplearn';
 import {SqueezeNet} from 'deeplearn-squeezenet';
 
 export class KNNImageClassifier implements Model {
@@ -43,6 +43,14 @@ export class KNNImageClassifier implements Model {
   constructor(
       private numClasses: number, private k: number,
       private math: NDArrayMath) {
+    // TODO(nsthorat): This awful hack is because we need to share the global
+    // GPGPU between deeplearn loaded from standalone as well as the internal
+    // deeplearn that gets compiled as part of this model. Remove this once we
+    // decouple NDArray from storage mechanism.
+    initializeGPU(
+        (this.math as NDArrayMathGPU).getGPGPUContext(),
+        (this.math as NDArrayMathGPU).getTextureManager());
+
     this.mathCPU = new NDArrayMathCPU();
 
     for (let i = 0; i < this.numClasses; i++) {
@@ -78,7 +86,7 @@ export class KNNImageClassifier implements Model {
   /**
    * Adds the provided image to the specified class.
    */
-  async addImage(image: Array3D, classIndex: number): Promise<void> {
+  addImage(image: Array3D, classIndex: number) {
     if (!this.varsLoaded) {
       console.warn('Cannot add images until vars have been loaded.');
       return;
@@ -88,10 +96,10 @@ export class KNNImageClassifier implements Model {
     }
     this.clearTrainLogitsMatrix();
 
-    await this.math.scope(async (keep, track) => {
+    this.math.scope((keep, track) => {
       // Add the squeezenet logits for the image to the appropriate class
       // logits matrix.
-      const predResults = await this.squeezeNet.predict(image);
+      const predResults = this.squeezeNet.predict(image);
       const imageLogits = this.normalizeVector(predResults.logits);
 
       const logitsSize = imageLogits.shape[0];
