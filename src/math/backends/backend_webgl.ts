@@ -15,13 +15,15 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import * as util from '../../util';
+import {TypedArray} from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 import * as ndarray from '../ndarray';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayData, Scalar} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import {SumTypes, SumTypesMap} from '../types';
 
@@ -50,6 +52,7 @@ import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
+import {TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
@@ -57,7 +60,120 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
 
+function float32ToTypedArray<T extends keyof DataTypes>(
+    a: Float32Array, dtype: T): DataTypes[T] {
+  if (dtype === 'float32') {
+    return a;
+  } else if (dtype === 'int32' || dtype === 'bool') {
+    const result = (dtype === 'int32') ? new Int32Array(a.length) :
+                                         new Uint8Array(a.length);
+    for (let i = 0; i < result.length; ++i) {
+      let val = a[i];
+      val = isNaN(val) ? util.getNaN(dtype) : Math.round(val);
+      result[i] = val;
+    }
+    return result;
+  } else {
+    throw new Error(`Unknown dtype ${dtype}`);
+  }
+}
+
+function typedArrayToFloat32(
+    a: TypedArray, dtype: keyof DataTypes): Float32Array {
+  if (a instanceof Float32Array) {
+    return a;
+  } else {
+    const res = new Float32Array(a.length);
+    for (let i = 0; i < res.length; i++) {
+      const val = a[i];
+      res[i] = util.isValNaN(val, dtype) ? NaN : val;
+    }
+    return res;
+  }
+}
+
 export class MathBackendWebGL implements MathBackend {
+  uploadPixels(
+      ndarrayData: ndarray.NDArrayData<'float32'|'int32'|'bool'>,
+      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      numChannels: number): void {
+    const shape: [number, number, number] =
+        [pixels.height, pixels.width, numChannels];
+    const textureShapeRC: [number, number] = [shape[0], shape[1]];
+    const texture = this.textureManager.acquireTexture(textureShapeRC);
+    this.gpgpu.uploadPixelDataToTexture(texture, pixels);
+    ndarrayData.texture = texture;
+    ndarrayData.textureType = TextureType.RGBA_COLOR;
+    ndarrayData.textureShapeRC = textureShapeRC;
+  }
+  upload(ndarrayData: ndarray.NDArrayData<keyof DataTypes>): void {
+    ndarrayData.textureShapeRC =
+        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, this.shape);
+    ndarrayData.texture =
+        this.textureManager.acquireTexture(ndarrayData.textureShapeRC);
+    ndarrayData.textureType = TextureType.DEFAULT;
+
+    this.gpgpu.uploadMatrixToTexture(
+        ndarrayData.texture, ndarrayData.textureShapeRC[0],
+        // TODO(smilkov): Propagate the original typed array to gpgpu.
+        ndarrayData.textureShapeRC[1],
+        typedArrayToFloat32(ndarrayData.values, this.dtype));
+
+    ndarrayData.values = null;
+  }
+  disposeArray(ndarrayData: NDArrayData<keyof DataTypes>): void {
+    if (ndarrayData.texture != null) {
+      this.textureManager.releaseTexture(
+          ndarrayData.texture, ndarrayData.textureShapeRC);
+      ndarrayData.texture = null;
+      ndarrayData.textureShapeRC = null;
+      ndarrayData.textureType = null;
+    }
+  }
+  downloadSync<T extends 'float32'|'int32'|'bool'>(ndarrayData: NDArrayData<T>):
+      DataTypes[T] {
+    if (ndarrayData.values == null) {
+      let values: Float32Array;
+      if (ndarrayData.textureType === TextureType.DEFAULT) {
+        values = this.gpgpu.downloadMatrixFromTexture(
+            ndarrayData.texture, ndarrayData.textureShapeRC[0],
+            ndarrayData.textureShapeRC[1]);
+      } else {
+        values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
+            ndarrayData.texture, ndarrayData.textureShapeRC[0],
+            ndarrayData.textureShapeRC[1], this.shape[2]);
+      }
+
+      ndarrayData.values = float32ToTypedArray(values, this.dtype);
+      this.disposeArray(ndarrayData);
+    }
+    return ndarrayData.values;
+  }
+  async download<T extends 'float32'|'int32'|'bool'>(
+      ndarrayData: NDArrayData<T>): Promise<DataTypes[T]> {
+    if (ndarrayData.values != null) {
+      return ndarrayData.values;
+    }
+
+    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
+        ndarrayData.textureType === TextureType.DEFAULT) {
+      ndarrayData.values = await this.gpgpu.downloadMatrixFromTextureAsync(
+          ndarrayData.texture, ndarrayData.textureShapeRC[0],
+          ndarrayData.textureShapeRC[1]);
+      return ndarrayData.values;
+    }
+
+    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+      return await this.downloadSync(ndarrayData);
+    }
+
+    // Construct an empty query. We're just interested in getting a callback
+    // when the GPU command queue has executed until this point in time.
+    const queryFn = () => {};
+    await this.gpgpu.runQuery(queryFn);
+    return this.downloadSync(ndarrayData);
+  }
+
   private gpgpu: GPGPUContext;
   private textureManager: TextureManager;
   private binaryCache: {[key: string]: GPGPUBinary} = {};
@@ -72,10 +188,7 @@ export class MathBackendWebGL implements MathBackend {
       this.gpgpu = gpgpu;
       this.gpgpuCreatedLocally = false;
     }
-
     this.textureManager = new TextureManager(this.gpgpu);
-
-    ndarray.initializeGPU(this.gpgpu, this.textureManager);
   }
 
   getGPGPUContext(): GPGPUContext {

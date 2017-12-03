@@ -3386,7 +3386,7 @@ tslib@^1.7.1:
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.8.0.tgz#dc604ebad64bcbf696d613da6c954aa0e7ea1eb6"
 
-tslint-no-circular-imports@~0.2.0:
+tslint-no-circular-imports@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/tslint-no-circular-imports/-/tslint-no-circular-imports-0.2.0.tgz#608f80bd7574773561e2a7ad2886f5d0652116c8"
   dependencies:

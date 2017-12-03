@@ -20,13 +20,13 @@ import {TypedArray} from '../util';
 
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
-import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backends/backend';
+import {BACKEND_REGISTRY, MathBackend, MatrixOrientation, NDArrayStorage} from './backends/backend';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayData, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
 
@@ -38,7 +38,33 @@ export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
 }
 
-export class NDArrayMath {
+export class NDArrayMath implements NDArrayStorage {
+  uploadPixels(
+      ndArrayData: NDArrayData<keyof DataTypes>,
+      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      numChannels: number): void {
+    this.backend.uploadPixels(ndArrayData, pixels, numChannels);
+  }
+  upload(ndarrayData: NDArrayData<keyof DataTypes>): void {
+    this.backend.upload(ndarrayData);
+  }
+  disposeArray(ndarrayData: NDArrayData<keyof DataTypes>): void {
+    this.backend.disposeArray(ndarrayData);
+    ndarrayData.values = null;
+    // TODO(nsthorat): Construct an error and save the stack trace for debugging
+    // when in debug mode. Creating a stack trace is too expensive to do
+    // unconditionally.
+    ndarrayData.isDisposed = true;
+  }
+  downloadSync<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
+      DataTypes[T] {
+    return this.backend.downloadSync(ndarrayData);
+  }
+  download<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
+      Promise<DataTypes[T]> {
+    return this.backend.download(ndarrayData);
+  }
+
   private ndarrayScopes: NDArray[][] = [];
   private activeScope: NDArray[];
 
@@ -2081,15 +2107,3 @@ export class NDArrayMath {
 function parseTupleParam(param: number|[number, number]): [number, number] {
   return typeof param === 'number' ? [param, param] : param;
 }
-
-function getBestBackend(): string {
-  const backendIds = ['webgl', 'cpu'];
-  for (let i = 0; i < backendIds.length; ++i) {
-    const backendId = backendIds[i];
-    if (backendId in BACKEND_REGISTRY) {
-      return backendId;
-    }
-  }
-  throw new Error('No backend found in registry.');
-}
-export const MATH = new NDArrayMath(getBestBackend(), false);

@@ -24,13 +24,34 @@ import {Conv2DInfo} from '../conv_util';
 import * as copy2D_util from '../copy2d_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayData, Scalar} from '../ndarray';
 import {SumTypes, SumTypesMap} from '../types';
 
 import * as axis_util from './../axis_util';
 import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backend';
 
 export class MathBackendCPU implements MathBackend {
+  upload(ndarrayData: NDArrayData<keyof DataTypes>): void {
+    throw new Error('Method not implemented.');
+  }
+  uploadPixels(
+      ndArrayData: NDArrayData<keyof DataTypes>,
+      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      numChannels: number): void {
+    throw new Error('Method not implemented.');
+  }
+  downloadSync<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
+      DataTypes[T] {
+    return ndarrayData.values;
+  }
+  disposeArray(ndarrayData: NDArrayData<keyof DataTypes>): void {
+    ndarrayData.values = null;
+  }
+  async download<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
+      Promise<DataTypes[T]> {
+    return ndarrayData.values;
+  }
+
   clone<T extends NDArray>(ndarray: T): T {
     return NDArray.make(
                ndarray.shape,
