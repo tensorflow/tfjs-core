@@ -584,9 +584,15 @@ deep-extend@~0.4.0:
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/deep-extend/-/deep-extend-0.4.2.tgz#48b699c27e334bf89f10892be432f6e4c7d34a7f"
 
-deeplearn-squeezenet@~0.1.4:
+deeplearn-squeezenet@~0.1.5:
   version "0.1.5"
   resolved "https://registry.yarnpkg.com/deeplearn-squeezenet/-/deeplearn-squeezenet-0.1.5.tgz#db2e6ac320555a178278b238442000e3beea4683"
+
+deeplearn@~0.3.13:
+  version "0.3.13"
+  resolved "https://registry.yarnpkg.com/deeplearn/-/deeplearn-0.3.13.tgz#12033ab21581fb277dede662250bd58d86457d44"
+  dependencies:
+    seedrandom "~2.4.3"
 
 defined@^1.0.0:
   version "1.0.0"
@@ -1571,6 +1577,10 @@ ripemd160@^2.0.0, ripemd160@^2.0.1:
 safe-buffer@^5.0.1, safe-buffer@^5.1.0, safe-buffer@^5.1.1, safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.1.tgz#893312af69b2123def71f57889001671eeb2c853"
+
+seedrandom@~2.4.3:
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/seedrandom/-/seedrandom-2.4.3.tgz#2438504dad33917314bff18ac4d794f16d6aaecc"
 
 semver@^5.1.0, semver@^5.3.0:
   version "5.4.1"

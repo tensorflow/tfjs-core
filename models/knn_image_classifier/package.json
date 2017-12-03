@@ -9,7 +9,7 @@
     "deeplearn": "~0.3.13"
   },
   "dependencies": {
-    "deeplearn-squeezenet": "~0.1.4"
+    "deeplearn-squeezenet": "~0.1.5"
   },
   "repository": {
     "type": "git",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "browserify": "~14.4.0",
+    "deeplearn": "~0.3.13",
     "mkdirp": "~0.5.1",
     "tsify": "~3.0.3",
     "tslint": "~5.8.0",

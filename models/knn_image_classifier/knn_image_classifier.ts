@@ -125,8 +125,8 @@ export class KNNImageClassifier implements Model {
     }
 
     return this.math.scope((keep) => {
-      const predResults = this.squeezeNet.predict(image);
-      const imageLogits = this.normalizeVector(predResults.logits);
+      const logits = this.squeezeNet.predict(image);
+      const imageLogits = this.normalizeVector(logits);
       const logitsSize = imageLogits.shape[0];
 
       // Lazily create the logits matrix for all training images if necessary.
