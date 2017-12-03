@@ -49,7 +49,7 @@ const TOP_K_CLASSES = 5;
 const INPUT_NAMES = ['cat', 'dog1', 'dog2', 'beerbottle', 'piano', 'saxophone'];
 export class ImagenetDemo extends ImagenetDemoPolymer {
   // Polymer properties.
-  layerNames: ActivationName[];
+  layerNames: string[];
   selectedLayerName: ActivationName;
   inputNames: string[];
   selectedInputName: string;
@@ -179,8 +179,13 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
       const element =
           isWebcam ? this.webcamVideoElement : this.staticImgElement;
       if (isWebcam &&
-          this.webcamVideoElement.readyState !=
+          this.webcamVideoElement.readyState !==
               this.webcamVideoElement.HAVE_ENOUGH_DATA) {
+        return;
+      }
+      if (!isWebcam &&
+          (!this.staticImgElement.complete ||
+           this.staticImgElement.naturalHeight === 0)) {
         return;
       }
 
