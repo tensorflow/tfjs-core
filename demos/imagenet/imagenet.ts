@@ -143,7 +143,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
         this.initWithoutWebcam();
         resolve();
       }
-    })
+    });
   }
 
   private initWithoutWebcam() {
