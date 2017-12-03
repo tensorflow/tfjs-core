@@ -65,10 +65,9 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
   private staticImgElement: HTMLImageElement;
   private inferenceCanvas: HTMLCanvasElement;
 
-  private uiInitialized = false;
-  private squeezeNetLoaded = false;
+  private isMediaLoaded = false;
 
-  ready() {
+  async ready() {
     this.inferenceCanvas =
         this.querySelector('#inference-canvas') as HTMLCanvasElement;
     this.staticImgElement =
@@ -89,60 +88,62 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
       if (selectedInputName === 'webcam') {
         this.webcamVideoElement.style.display = '';
         this.staticImgElement.style.display = 'none';
+        this.isMediaLoaded = true;
       } else {
         this.webcamVideoElement.style.display = 'none';
         this.staticImgElement.style.display = '';
-      }
-      this.staticImgElement.src = `images/${event.detail.selected}.jpg`;
-    });
 
-    // tslint:disable-next-line:no-any
-    const navigatorAny = navigator as any;
-    navigator.getUserMedia = navigator.getUserMedia ||
-        navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia ||
-        navigatorAny.msGetUserMedia;
-    if (navigator.getUserMedia) {
-      navigator.getUserMedia(
-          {video: true},
-          (stream) => {
-            this.webcamVideoElement.src = window.URL.createObjectURL(stream);
-            this.initWithWebcam();
-          },
-          (error) => {
-            console.log(error);
-            this.initWithoutWebcam();
-          });
-    } else {
-      this.initWithoutWebcam();
-    }
+        this.staticImgElement.src = `images/${event.detail.selected}.jpg`;
+        this.isMediaLoaded = false;
+        this.staticImgElement.addEventListener('load', () => {
+          this.isMediaLoaded = true;
+        });
+      }
+    });
 
     this.gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
     this.gpgpu = new GPGPUContext(this.gl);
     this.math = new NDArrayMathGPU(this.gpgpu);
 
-    this.squeezeNet = new SqueezeNet(this.math);
-    this.squeezeNet.load().then(() => {
-      if (this.uiInitialized) {
-        requestAnimationFrame(() => this.animate());
-      }
-      this.squeezeNetLoaded = true;
-    });
-
     this.renderGrayscaleChannelsCollageShader =
         imagenet_util.getRenderGrayscaleChannelsCollageShader(this.gpgpu);
-  }
 
-  private startAnimating() {
+    const cameraSetup = this.setupCameraInput();
+    this.squeezeNet = new SqueezeNet(this.math);
+
+    await Promise.all([this.squeezeNet.load(), cameraSetup]);
+
     requestAnimationFrame(() => this.animate());
   }
 
-  private setUiInitialized(): void {
-    setTimeout(() => {
-      if (this.squeezeNetLoaded) {
-        this.startAnimating();
+  private setupCameraInput(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      // tslint:disable-next-line:no-any
+      const navigatorAny = navigator as any;
+      navigator.getUserMedia = navigator.getUserMedia ||
+          navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia ||
+          navigatorAny.msGetUserMedia;
+      if (navigator.getUserMedia) {
+        navigator.getUserMedia(
+            {video: true},
+            (stream) => {
+              this.initWithWebcam();
+              this.webcamVideoElement.src = window.URL.createObjectURL(stream);
+              this.webcamVideoElement.addEventListener('loadeddata', () => {
+                this.isMediaLoaded = true;
+                resolve();
+              }, false);
+            },
+            (error) => {
+              console.log(error);
+              this.initWithoutWebcam();
+              resolve();
+            });
+      } else {
+        this.initWithoutWebcam();
+        resolve();
       }
-      this.uiInitialized = true;
-    });
+    })
   }
 
   private initWithoutWebcam() {
@@ -159,7 +160,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
     (this.querySelector('#webcam-message') as HTMLElement).style.display =
         'block';
-    this.setUiInitialized();
   }
 
   private initWithWebcam() {
@@ -167,7 +167,6 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     inputNames.unshift('webcam');
     this.inputNames = inputNames;
     this.selectedInputName = 'webcam';
-    this.setUiInitialized();
   }
 
   private async animate() {
@@ -176,19 +175,12 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     const isWebcam = this.selectedInputName === 'webcam';
 
     await this.math.scope(async (keep, track) => {
-      const element =
-          isWebcam ? this.webcamVideoElement : this.staticImgElement;
-      if (isWebcam &&
-          this.webcamVideoElement.readyState !==
-              this.webcamVideoElement.HAVE_ENOUGH_DATA) {
-        return;
-      }
-      if (!isWebcam &&
-          (!this.staticImgElement.complete ||
-           this.staticImgElement.naturalHeight === 0)) {
+      if (!this.isMediaLoaded) {
         return;
       }
 
+      const element =
+          isWebcam ? this.webcamVideoElement : this.staticImgElement;
       const image = track(Array3D.fromPixels(element));
 
       const inferenceResult = await this.squeezeNet.predictWithActivation(

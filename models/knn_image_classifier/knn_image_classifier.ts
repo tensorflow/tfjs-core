@@ -119,6 +119,21 @@ export class KNNImageClassifier implements Model {
     });
   }
 
+  /**
+   * You are probably are looking for "predictClass".
+   *
+   * This method returns the K-nearest neighbors as distances in the database.
+   *
+   * This unfortunately deviates from standard behavior for nearest neighbors
+   * classifiers, making this method relatively useless:
+   * http://scikit-learn.org/stable/modules/neighbors.html
+   *
+   * TODO(nsthorat): Return the class indices once we have GPU kernels for topK
+   * and take. This method is useless on its own, but matches our Model API.
+   *
+   * @param image The input image.
+   * @returns cosine distances for each entry in the database.
+   */
   predict(image: Array3D): Array1D {
     if (!this.varsLoaded) {
       throw new Error('Cannot predict until vars have been loaded.');
