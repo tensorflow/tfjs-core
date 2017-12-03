@@ -222,7 +222,7 @@ export class Environment {
       const bestBackend = getBestBackend();
       this.currentMath = new NDArrayMath(bestBackend, false);
     }
-    return this.math;
+    return this.currentMath;
   }
 }
 
