@@ -1338,8 +1338,8 @@ export abstract class NDArrayMath {
 
   /**
    * Computes a 1D convolution over the input x.
-   * @param input The input ndarray, of rank 4 or rank 3, of shape
-   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+   * @param input The input ndarray, of rank 3 or rank 2, of shape
+   *     `[batch, width, inChannels]`. If rank 2, batch of 1 is assumed.
    * @param filter The filter, rank 3, of shape
    *     [filterWidth, inDepth, outDepth].
    * @param bias Optional bias, rank 1 of shape [outDepth].
@@ -1356,16 +1356,16 @@ export abstract class NDArrayMath {
    conv1d<T extends NDArray>(
       input: T, filter: Array3D, bias: Array1D|null,
       stride: number, pad: 'valid'|'same'|number): T  {
-    let input4D = input as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (input.rank === 3) {
-      reshapedTo4D = true;
-      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+    let input3D = input as NDArray as Array3D;
+    let reshapedTo3D = false;
+    if (input.rank === 2) {
+      reshapedTo3D = true;
+      input3D = input.as3D(1, input.shape[0], input.shape[1]);
     }
 
     util.assert(
-        input4D.rank === 4,
-        `Error in conv1d: input must be rank 4, but got rank ${input4D.rank}.`);
+        input3D.rank === 3,
+        `Error in conv1d: input must be rank 3, but got rank ${input3D.rank}.`);
     util.assert(
         filter.rank === 3,
         `Error in conv1d: filter must be rank 3, but got rank ` +
@@ -1378,25 +1378,27 @@ export abstract class NDArrayMath {
     }
 
     util.assert(
-        input4D.shape[3] === filter.shape[1],
-        `Error in conv1d: depth of input (${input4D.shape[3]}) must match  ` +
+        input3D.shape[2] === filter.shape[1],
+        `Error in conv1d: depth of input (${input3D.shape[2]}) must match  ` +
             `input depth for filter ${filter.shape[1]}.`);
 
-    // convert to 2d
-    const filter2D = filter.as4D(
+    const filter4D = filter.as4D(
         1, filter.shape[0], filter.shape[1], filter.shape[2]);
+    const input4D = input3D.as4D(
+        input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
     const strides: [number, number] = [1, stride];
 
     const convInfo =
         conv_util.computeConv2DInfo(
-            input4D.shape, filter2D.shape, strides, pad);
+            input4D.shape, filter4D.shape, strides, pad);
     return this.executeOp('conv2d', () => {
-      const res = this.backend.conv2d(input4D, filter2D, bias, convInfo);
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+      const res = this.backend.conv2d(input4D, filter4D, bias, convInfo);
+      if (reshapedTo3D) {
+        return res.as2D(res.shape[2], res.shape[3]) as NDArray as
             T;
       }
-      return res as NDArray as T;
+      return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as
+          T;
     });
   }
 
