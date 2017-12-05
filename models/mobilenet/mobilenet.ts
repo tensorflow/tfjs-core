@@ -19,8 +19,7 @@ import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArr
 import {IMAGENET_CLASSES} from './imagenet_classes'; 
 
 const GOOGLE_CLOUD_STORAGE_DIR = 
-    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/' +
-            'mobilenet_v1_1.0_224/';
+    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
    
 export class MobileNet implements Model {  
   private variables: {[varName: string]: NDArray};
@@ -43,7 +42,8 @@ export class MobileNet implements Model {
    * Loads necessary variables for MobileNet.
    */
   async load(): Promise<void> {
-    const checkpointLoader = new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR);
+    const checkpointLoader = new CheckpointLoader(GOOGLE_CLOUD_STORAGE_DIR + 
+        'mobilenet_v1_1.0_224/');
     this.variables = await checkpointLoader.getAllVariables();
   }
 
