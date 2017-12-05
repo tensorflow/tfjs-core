@@ -6,13 +6,18 @@ export class BoundingBox {
   public c : number;
   public probs : Float32Array;
 
-  private maxProb : number = -1;
-  private maxIndx : number = -1;
+  private maxProb = -1;
+  private maxIndx = -1;
 
   public static LABELS = ['raccoon'];
   public static COLORS = ['rgb(43,206,72)'];
 
-  constructor(x: number, y: number, w: number, h: number, conf: number, probs: Float32Array) {
+  constructor(x: number, 
+              y: number, 
+              w: number, 
+              h: number, 
+              conf: number, 
+              probs: Float32Array) {
     this.x = x;
     this.y = y;
     this.w = w;
@@ -46,7 +51,6 @@ export class BoundingBox {
     return BoundingBox.COLORS[this.maxIndx];
   }
 
-
   public iou(box: BoundingBox): number {
     const intersection = this.intersect(box);
     const union = this.w*this.h + box.w*box.h - intersection;
@@ -55,13 +59,20 @@ export class BoundingBox {
   }
 
   private intersect(box: BoundingBox): number {
-    const width  = this.overlap([this.x-this.w/2, this.x+this.w/2], [box.x-box.w/2, box.x+box.w/2]);
-    const height = this.overlap([this.y-this.h/2, this.y+this.h/2], [box.y-box.h/2, box.y+box.h/2]);
+    const width  = this.overlap([this.x-this.w/2, 
+                                 this.x+this.w/2], 
+                                 [box.x-box.w/2, 
+                                 box.x+box.w/2]);
+    const height = this.overlap([this.y-this.h/2, 
+                                 this.y+this.h/2], 
+                                 [box.y-box.h/2, 
+                                 box.y+box.h/2]);
 
     return width * height;
   }
 
-  private overlap(intervalA: [number, number], intervalB: [number, number]): number {
+  private overlap(intervalA: [number, number], 
+                  intervalB: [number, number]): number {
     const [x1, x2] = intervalA;
     const [x3, x4] = intervalB;
 

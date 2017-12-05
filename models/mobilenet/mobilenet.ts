@@ -16,9 +16,11 @@
  */
 // tslint:disable-next-line:max-line-length  
 import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArray, NDArrayMathCPU, NDArrayMath, NDArrayMathGPU, Scalar} from 'deeplearn';
-
 import {IMAGENET_CLASSES} from './imagenet_classes'; 
-const GOOGLE_CLOUD_STORAGE_DIR = 'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/mobilenet_v1_1.0_224/';
+
+const GOOGLE_CLOUD_STORAGE_DIR = 
+    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/' +
+            'mobilenet_v1_1.0_224/';
    
 export class MobileNet implements Model {  
   private variables: {[varName: string]: NDArray};
@@ -45,7 +47,7 @@ export class MobileNet implements Model {
     this.variables = await checkpointLoader.getAllVariables();
   }
 
-    /**
+  /**
    * Infer through MobileNet, assumes variables have been loaded. This does
    * standard ImageNet pre-processing before inferring through the model. This
    * method returns named activations as well as pre-softmax logits.
@@ -57,7 +59,9 @@ export class MobileNet implements Model {
     // Keep a map of named activations for rendering purposes.
     const netout = this.math.scope((keep) => {
       // Preprocess the input.
-      const preprocessedInput = this.math.subtract(this.math.arrayDividedByScalar(input, this.PREPROCESS_DIVISOR), this.ONE) as Array3D;
+      const preprocessedInput = this.math.subtract(
+        this.math.arrayDividedByScalar(input, 
+          this.PREPROCESS_DIVISOR), this.ONE) as Array3D;
 
       const x1  = this.convBlock(preprocessedInput, [2, 2]);
       const x2  = this.depthwiseConvBlock(x1,  [1, 1], 1);
@@ -80,10 +84,10 @@ export class MobileNet implements Model {
 
       const x15 = this.math.avgPool(x14, x14.shape[0], 1, 0);   
       const x16 = this.math.conv2d(x15,
-                                   this.variables['MobilenetV1/Logits/Conv2d_1c_1x1/weights'] as Array4D,
-                                   this.variables['MobilenetV1/Logits/Conv2d_1c_1x1/biases'] as Array1D,
-                                   1,
-                                   'same');
+        this.variables['MobilenetV1/Logits/Conv2d_1c_1x1/weights'] as Array4D,
+        this.variables['MobilenetV1/Logits/Conv2d_1c_1x1/biases'] as Array1D,
+        1,
+        'same');
 
       return x16.as1D();
     });
@@ -92,19 +96,20 @@ export class MobileNet implements Model {
   } 
 
   private convBlock(inputs: Array3D, strides: [number, number]) { 
+    const convPadding = 'MobilenetV1/Conv2d_0';
 
     const x1 = this.math.conv2d(inputs,
-                                this.variables['MobilenetV1/Conv2d_0/weights'] as Array4D,
-                                null, // this convolutional layer does not use bias
-                                strides,
-                                'same');
+      this.variables[convPadding + '/weights'] as Array4D,
+      null, // this convolutional layer does not use bias
+      strides,
+      'same');
 
     const x2 = this.math.batchNormalization3D(x1,
-                                              this.variables['MobilenetV1/Conv2d_0/BatchNorm/moving_mean'] as Array1D,
-                                              this.variables['MobilenetV1/Conv2d_0/BatchNorm/moving_variance'] as Array1D,
-                                              .001,
-                                              this.variables['MobilenetV1/Conv2d_0/BatchNorm/gamma'] as Array1D,
-                                              this.variables['MobilenetV1/Conv2d_0/BatchNorm/beta'] as Array1D);
+      this.variables[convPadding + '/BatchNorm/moving_mean'] as Array1D,
+      this.variables[convPadding + '/BatchNorm/moving_variance'] as Array1D,
+      .001,
+      this.variables[convPadding + '/BatchNorm/gamma'] as Array1D,
+      this.variables[convPadding + '/BatchNorm/beta'] as Array1D);
 
     return this.math.clip(x2, 0, 6); // simple implementation of Relu6
   }
@@ -112,33 +117,35 @@ export class MobileNet implements Model {
   private depthwiseConvBlock(inputs: Array3D,
                              strides: [number, number],
                              blockID: number) {
+    const dwPadding = 'MobilenetV1/Conv2d_' + String(blockID) + '_depthwise';
+    const pwPadding = 'MobilenetV1/Conv2d_' + String(blockID) + '_pointwise';
 
     const x1 = this.math.depthwiseConv2D(inputs,
-                                         this.variables['MobilenetV1/Conv2d_' + blockID + '_depthwise/depthwise_weights'] as Array4D,
-                                         strides,
-                                         'same') as Array3D;
+      this.variables[dwPadding + '/depthwise_weights'] as Array4D,
+      strides,
+      'same') as Array3D;
 
     const x2 = this.math.batchNormalization3D(x1, 
-                                              this.variables['MobilenetV1/Conv2d_' + blockID + '_depthwise/BatchNorm/moving_mean'] as Array1D,
-                                              this.variables['MobilenetV1/Conv2d_' + blockID + '_depthwise/BatchNorm/moving_variance'] as Array1D,
-                                              .001,
-                                              this.variables['MobilenetV1/Conv2d_' + blockID + '_depthwise/BatchNorm/gamma'] as Array1D,
-                                              this.variables['MobilenetV1/Conv2d_' + blockID + '_depthwise/BatchNorm/beta'] as Array1D);
+      this.variables[dwPadding + '/BatchNorm/moving_mean'] as Array1D,
+      this.variables[dwPadding + '/BatchNorm/moving_variance'] as Array1D,
+      .001,
+      this.variables[dwPadding + '/BatchNorm/gamma'] as Array1D,
+      this.variables[dwPadding + '/BatchNorm/beta'] as Array1D);
 
     const x3 = this.math.clip(x2, 0, 6);
 
     const x4 = this.math.conv2d(x3,
-                                this.variables['MobilenetV1/Conv2d_' + blockID + '_pointwise/weights'] as Array4D,
-                                null, // this convolutional layer does not use bias
-                                [1, 1],
-                                'same');
+      this.variables[pwPadding + '/weights'] as Array4D,
+      null, // this convolutional layer does not use bias
+      [1, 1],
+      'same');
 
     const x5 = this.math.batchNormalization3D(x4, 
-                                              this.variables['MobilenetV1/Conv2d_' + blockID + '_pointwise/BatchNorm/moving_mean'] as Array1D,
-                                              this.variables['MobilenetV1/Conv2d_' + blockID + '_pointwise/BatchNorm/moving_variance'] as Array1D,
-                                              .001,
-                                              this.variables['MobilenetV1/Conv2d_' + blockID + '_pointwise/BatchNorm/gamma'] as Array1D,
-                                              this.variables['MobilenetV1/Conv2d_' + blockID + '_pointwise/BatchNorm/beta'] as Array1D);
+      this.variables[pwPadding + '/BatchNorm/moving_mean'] as Array1D,
+      this.variables[pwPadding + '/BatchNorm/moving_variance'] as Array1D,
+      .001,
+      this.variables[pwPadding + '/BatchNorm/gamma'] as Array1D,
+      this.variables[pwPadding + '/BatchNorm/beta'] as Array1D);
 
     return this.math.clip(x5, 0, 6);
   } 

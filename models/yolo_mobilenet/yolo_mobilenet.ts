@@ -18,9 +18,11 @@
 import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArray, NDArrayMath, NDArrayMathGPU, Scalar} from 'deeplearn';
 import {BoundingBox} from './mobilenet_utils'; 
 
-const GOOGLE_CLOUD_STORAGE_DIR = 'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/yolo_mobilenet_v1_1.0_416/';
+const GOOGLE_CLOUD_STORAGE_DIR = 
+    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/' +
+            'yolo_mobilenet_v1_1.0_416/';
    
-export class YoloMobileNetDetection implements Model {  
+export class YoloMobileNetDetection implements Model {
   private variables: {[varName: string]: NDArray};
 
   // yolo variables
@@ -28,7 +30,8 @@ export class YoloMobileNetDetection implements Model {
   private ONE = Scalar.ONE;
   private THRESHOLD = 0.3;
   private THRESHOLD_SCALAR = Scalar.new(this.THRESHOLD);
-  private ANCHORS: number[] = [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828];
+  private ANCHORS: number[] = [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 
+      5.47434, 7.88282, 3.52778, 9.77052, 9.16828];
 
   constructor(private math: NDArrayMath) {
     // TODO(nsthorat): This awful hack is because we need to share the global
@@ -48,7 +51,7 @@ export class YoloMobileNetDetection implements Model {
     this.variables = await checkpointLoader.getAllVariables();
   }
 
-    /**
+  /**
    * Infer through MobileNet, assumes variables have been loaded. This does
    * standard ImageNet pre-processing before inferring through the model. This
    * method returns named activations as well as pre-softmax logits.
@@ -60,7 +63,9 @@ export class YoloMobileNetDetection implements Model {
     // Keep a map of named activations for rendering purposes.
     const netout = this.math.scope((keep) => {
       // Preprocess the input.
-      const preprocessedInput = this.math.subtract(this.math.arrayDividedByScalar(input, this.PREPROCESS_DIVISOR), this.ONE) as Array3D;
+      const preprocessedInput = this.math.subtract(
+        this.math.arrayDividedByScalar(input, this.PREPROCESS_DIVISOR), 
+        this.ONE) as Array3D;
 
       const x1  = this.convBlock(preprocessedInput, [2, 2]);
       const x2  = this.depthwiseConvBlock(x1,  [1, 1], 1);
@@ -96,17 +101,17 @@ export class YoloMobileNetDetection implements Model {
   private convBlock(inputs: Array3D, strides: [number, number]) { 
 
     const x1 = this.math.conv2d(inputs,
-                                this.variables['conv1/kernel'] as Array4D,
-                                null, // this convolutional layer does not use bias
-                                strides,
-                                'same');
+        this.variables['conv1/kernel'] as Array4D,
+        null, // this convolutional layer does not use bias
+        strides,
+        'same');
 
     const x2 = this.math.batchNormalization3D(x1,
-                                              this.variables['conv1_bn/moving_mean'] as Array1D,
-                                              this.variables['conv1_bn/moving_variance'] as Array1D,
-                                              .001,
-                                              this.variables['conv1_bn/gamma'] as Array1D,
-                                              this.variables['conv1_bn/beta'] as Array1D);
+        this.variables['conv1_bn/moving_mean'] as Array1D,
+        this.variables['conv1_bn/moving_variance'] as Array1D,
+        .001,
+        this.variables['conv1_bn/gamma'] as Array1D,
+        this.variables['conv1_bn/beta'] as Array1D);
 
     return this.math.clip(x2, 0, 6); // simple implementation of Relu6
   }
@@ -114,67 +119,77 @@ export class YoloMobileNetDetection implements Model {
   private depthwiseConvBlock(inputs: Array3D,
                              strides: [number, number],
                              blockID: number) {
+    const dwPadding = 'conv_dw_' + String(blockID) + '';
+    const pwPadding = 'conv_pw_' + String(blockID) + '';    
 
     const x1 = this.math.depthwiseConv2D(inputs,
-                                         this.variables['conv_dw_' + blockID + '/depthwise_kernel'] as Array4D,
-                                         strides,
-                                         'same') as Array3D;
+        this.variables[dwPadding + '/depthwise_kernel'] as Array4D,
+        strides,
+        'same') as Array3D;
 
     const x2 = this.math.batchNormalization3D(x1, 
-                                              this.variables['conv_dw_' + blockID + '_bn/moving_mean'] as Array1D,
-                                              this.variables['conv_dw_' + blockID + '_bn/moving_variance'] as Array1D,
-                                              .001,
-                                              this.variables['conv_dw_' + blockID + '_bn/gamma'] as Array1D,
-                                              this.variables['conv_dw_' + blockID + '_bn/beta'] as Array1D);
+        this.variables[dwPadding + '_bn/moving_mean'] as Array1D,
+        this.variables[dwPadding + '_bn/moving_variance'] as Array1D,
+        .001,
+        this.variables[dwPadding + '_bn/gamma'] as Array1D,
+        this.variables[dwPadding + '_bn/beta'] as Array1D);
 
     const x3 = this.math.clip(x2, 0, 6);
 
     const x4 = this.math.conv2d(x3,
-                                this.variables['conv_pw_' + blockID + '/kernel'] as Array4D,
-                                null, // this convolutional layer does not use bias
-                                [1, 1],
-                                'same');
+        this.variables[pwPadding + '/kernel'] as Array4D,
+        null, // this convolutional layer does not use bias
+        [1, 1],
+        'same');
 
     const x5 = this.math.batchNormalization3D(x4, 
-                                              this.variables['conv_pw_' + blockID + '_bn/moving_mean'] as Array1D,
-                                              this.variables['conv_pw_' + blockID + '_bn/moving_variance'] as Array1D,
-                                              .001,
-                                              this.variables['conv_pw_' + blockID + '_bn/gamma'] as Array1D,
-                                              this.variables['conv_pw_' + blockID + '_bn/beta'] as Array1D);
+        this.variables[pwPadding + '_bn/moving_mean'] as Array1D,
+        this.variables[pwPadding + '_bn/moving_variance'] as Array1D,
+        .001,
+        this.variables[pwPadding + '_bn/gamma'] as Array1D,
+        this.variables[pwPadding + '_bn/beta'] as Array1D);
 
     return this.math.clip(x5, 0, 6);
   }
 
   async interpretNetout(netout: Array4D): Promise<BoundingBox[]> { 
     // interpret the output by the network
-    var [GRID_H, GRID_W, BOX, CLASS] = netout.shape;
+    const GRID_H = netout.shape[0];
+    const GRID_W = netout.shape[1];
+    const BOX = netout.shape[2];
+    const CLASS = netout.shape[3] - 5;
     const boxes: BoundingBox[] = [];
 
-    CLASS = CLASS - 5;
     // adjust confidence predictions
-    var confidence = this.math.sigmoid(this.math.slice4D(netout, [0, 0, 0, 4], [GRID_H, GRID_W, BOX, 1]));
+    const confidence = this.math.sigmoid(this.math.slice4D(netout, 
+        [0, 0, 0, 4],
+        [GRID_H, GRID_W, BOX, 1]));
 
     // adjust class prediction
-    var classes = this.math.softmax(this.math.slice4D(netout, [0, 0, 0, 5], [GRID_H, GRID_W, BOX, CLASS]));
+    let classes = this.math.softmax(this.math.slice4D(netout, [0, 0, 0, 5], 
+        [GRID_H, GRID_W, BOX, CLASS]));
     classes = this.math.multiply(classes, confidence) as Array4D;
-    const mask = this.math.step(this.math.relu(this.math.subtract(classes, this.THRESHOLD_SCALAR)));
+    const mask = this.math.step(this.math.relu(this.math.subtract(classes, 
+        this.THRESHOLD_SCALAR)));
     classes = this.math.multiply(classes, mask) as Array4D;
 
     const objectLikelihood = this.math.sum(classes, 3);
     const objectLikelihoodValues = objectLikelihood.getValues();
 
-    for (var i = 0; i < objectLikelihoodValues.length; i++) {
+    for (let i = 0; i < objectLikelihoodValues.length; i++) {
       if (objectLikelihoodValues[i] > 0) {
-        var [row, col, box] = objectLikelihood.indexToLoc(i);
+        const [row, col, box] = objectLikelihood.indexToLoc(i) as number[];
 
         const conf = confidence.get(row, col, box, 0);
-        const probs = this.math.slice4D(classes, [row, col, box, 0], [1, 1, 1, CLASS]).getValues() as Float32Array;
-        var xywh = this.math.slice4D(netout, [row, col, box, 0], [1, 1, 1, 4]).getValues();
+        const probs = this.math.slice4D(classes, 
+            [row, col, box, 0], [1, 1, 1, CLASS]).getValues() as Float32Array;
+        const xywh = this.math.slice4D(netout, 
+            [row, col, box, 0], [1, 1, 1, 4]).getValues();
 
-        var x = xywh[0];
-        var y = xywh[1];
-        var w = xywh[2];
-        var h = xywh[3];
+        let x = xywh[0];
+        let y = xywh[1];
+        let w = xywh[2];
+        let h = xywh[3];
         x = (col + this.sigmoid(x)) / GRID_W;
         y = (row + this.sigmoid(y)) / GRID_H;
         w = this.ANCHORS[2 * box + 0] * Math.exp(w) / GRID_W;
@@ -185,27 +200,27 @@ export class YoloMobileNetDetection implements Model {
     }
 
     // suppress nonmaximal boxes
-    for (var cls = 0; cls < CLASS; cls++) {
-      const all_probs = boxes.map((box) => box.probs[cls]);
-      var indices = new Array(all_probs.length);
+    for (let cls = 0; cls < CLASS; cls++) {
+      const allProbs = boxes.map((box) => box.probs[cls]);
+      const indices = new Array(allProbs.length);
 
-      for (var i = 0; i < all_probs.length; ++i) {
+      for (let i = 0; i < allProbs.length; ++i) {
         indices[i] = i;
       }
 
-      indices.sort((a,b) => all_probs[a] > all_probs[b] ? 1 : 0);
+      indices.sort((a,b) => allProbs[a] > allProbs[b] ? 1 : 0);
 
-      for (var i = 0; i < all_probs.length; i++) {
-        const index_i = indices[i];
+      for (let i = 0; i < allProbs.length; i++) {
+        const indexI = indices[i];
 
-        if (boxes[index_i].probs[cls] === 0) {
+        if (boxes[indexI].probs[cls] === 0) {
           continue;
         } else {
-          for (var j = i+1; j < all_probs.length; j++){
-            const index_j = indices[j];
+          for (let j = i+1; j < allProbs.length; j++){
+            const indexJ = indices[j];
 
-            if (boxes[index_i].iou(boxes[index_j]) > 0.4) {
-              boxes[index_j].probs[cls] = 0;
+            if (boxes[indexI].iou(boxes[indexJ]) > 0.4) {
+              boxes[indexJ].probs[cls] = 0;
             }
           }
         }
@@ -214,9 +229,9 @@ export class YoloMobileNetDetection implements Model {
     }  
 
     // obtain the most likely boxes
-    var likelyBoxes = [];
+    const likelyBoxes = [];
 
-    for (let box of boxes) {
+    for (const box of boxes) {
       if (box.getMaxProb() > this.THRESHOLD) { 
         likelyBoxes.push(box);
       }
