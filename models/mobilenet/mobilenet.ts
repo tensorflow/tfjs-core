@@ -55,7 +55,7 @@ export class MobileNet implements Model {
    * @param input un-preprocessed input Array.
    * @return Named activations and the pre-softmax logits.
    */
-  async predict(input: Array3D): Promise<Array1D> {
+  predict(input: Array3D): Array1D {
     // Keep a map of named activations for rendering purposes.
     const netout = this.math.scope((keep) => {
       // Preprocess the input.
