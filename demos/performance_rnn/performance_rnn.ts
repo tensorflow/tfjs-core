@@ -206,35 +206,12 @@ gainSliderElement.addEventListener('input', () => {
   gainDisplayElement.innerText = globalGain.toString();
 });
 
-const pitchHistogramElements = [
-  document.getElementById('pitch-c'),
-  document.getElementById('pitch-cs'),
-  document.getElementById('pitch-d'),
-  document.getElementById('pitch-ds'),
-  document.getElementById('pitch-e'),
-  document.getElementById('pitch-f'),
-  document.getElementById('pitch-fs'),
-  document.getElementById('pitch-g'),
-  document.getElementById('pitch-gs'),
-  document.getElementById('pitch-a'),
-  document.getElementById('pitch-as'),
-  document.getElementById('pitch-b'),
-] as HTMLInputElement[];
+const notes = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b'];
 
-const histogramDisplayElements = [
-  document.getElementById('hist-c'),
-  document.getElementById('hist-cs'),
-  document.getElementById('hist-d'),
-  document.getElementById('hist-ds'),
-  document.getElementById('hist-e'),
-  document.getElementById('hist-f'),
-  document.getElementById('hist-fs'),
-  document.getElementById('hist-g'),
-  document.getElementById('hist-gs'),
-  document.getElementById('hist-a'),
-  document.getElementById('hist-as'),
-  document.getElementById('hist-b'),
-] as HTMLDivElement[];
+const pitchHistogramElements = notes.map(
+    note => document.getElementById('pitch-' + note) as HTMLInputElement);
+const histogramDisplayElements = notes.map(
+    note => document.getElementById('hist-' + note) as HTMLDivElement);
 
 let preset1 = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 let preset2 = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -350,7 +327,6 @@ function updateDisplayHistogram(hist: number[]) {
   for (let i = 0; i < hist.length; i++) {
     sum += hist[i];
   }
-  console.log(hist);
 
   for (let i = 0; i < hist.length; i++) {
     histogramDisplayElements[i].style.height = 100 * (hist[i] / sum) + 'px';
@@ -590,9 +566,6 @@ let activeMidiInputDevice: any = null;
           case 144:
             midiInNoteOn(note, velocity);
             break;
-            // case 128:
-            //   midiInNoteOff(note, velocity);
-            //   break;
         }
       };
       console.log(inputDeviceCount, activeMidiInputDevice);
@@ -622,13 +595,12 @@ function midiInNoteOn(midiNote: number, velocity: number) {
   const now = performance.now();
   if (now - lastNotePressedTime > MID_IN_CHORD_RESET_THRESHOLD_MS) {
     midiInPitchHistogram = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    // resetRnn();
+    resetRnn();
   }
   lastNotePressedTime = now;
 
-  // Turn on conditioning.
+  // Turn on conditioning when a note is pressed/
   if (!conditioned) {
-    console.log('turing on conditioning...');
     enableConditioning();
   }
 
@@ -706,13 +678,13 @@ function playOutput(index: number) {
         currentPianoTimeSec += (index - offset + 1) / STEPS_PER_SECOND;
         activeNotes.forEach((timeSec, noteNum) => {
           if (currentPianoTimeSec - timeSec > MAX_NOTE_DURATION_SECONDS) {
-            // console.info(
-            //     `Note ${noteNum} has been active for ${
-            //                                            currentPianoTimeSec -
-            //                                            timeSec
-            //                                          }, ` +
-            //     `seconds which is over ${MAX_NOTE_DURATION_SECONDS}, will ` +
-            //     `release.`);
+            console.info(
+                `Note ${noteNum} has been active for ${
+                                                       currentPianoTimeSec -
+                                                       timeSec
+                                                     }, ` +
+                `seconds which is over ${MAX_NOTE_DURATION_SECONDS}, will ` +
+                `release.`);
             if (activeMidiOutputDevice != null) {
               activeMidiOutputDevice.send(
                   [MIDI_EVENT_OFF, noteNum, currentVelocity * globalGain]);
