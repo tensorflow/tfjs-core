@@ -23,15 +23,7 @@ import * as gpgpu_util from './backends/webgl/gpgpu_util';
 import {TextureManager} from './backends/webgl/texture_manager';
 import * as ndarray from './ndarray';
 // tslint:disable-next-line:max-line-length
-import {
-  Array1D,
-  Array2D,
-  Array3D,
-  Array4D,
-  DType,
-  NDArray,
-  Scalar
-} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DType, NDArray, Scalar} from './ndarray';
 
 const FEATURES = [
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
