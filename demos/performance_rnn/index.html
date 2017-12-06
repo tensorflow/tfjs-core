@@ -109,23 +109,15 @@ limitations under the License.
     }
 
     #status {
-      position: absolute;
-      left: 0px;
-      height: 20px;
-      top: 50%;
-      right: 0px;
-      bottom: 0px;
       z-index: 10;
       display: block;
       height: auto;
       margin-right: auto;
       margin-left: auto;
-      -webkit-transform: translate(0px, -50%);
-      /*-ms-transform: translate(0px, -50%);*/
-      transform: translate(0px, -50%);
       font-size: 26px;
       text-align: center;
-      line-height: normal;
+      line-height: 200px;
+      height: 200px;
     }
 
     .hidden {
@@ -134,26 +126,24 @@ limitations under the License.
     .image {
       position: absolute;
       left: 0px;
-      bottom: 0px;
-      margin-top: 40px;
-      margin-bottom: 40px;
       margin-left: 40px;
     }
 
     .text-block {
       position: absolute;
       right: 40px;
-      bottom: 40px;
       width: 450px;
+      padding: 20px 0;
       font-size: 15px;
       line-height: 25px;
     }
 
     .header {
       font-size: 50px;
+      line-height: 50px;
+      margin-top: 10px;
       width: 100%;
       text-align: center;
-      margin-top: 30px;
       font-weight: bold;
     }
 
@@ -231,9 +221,9 @@ limitations under the License.
       </div>
   </header>
 
-  <div id="status">Loading...</div>
   <div id="container">
     <div class="header">Performance RNN</div>
+    <div id="status">Loading...</div>
     <div id="controls" class="hidden">
       <div class="control" style="margin-right: 20px;">
         Conditioning<br />
