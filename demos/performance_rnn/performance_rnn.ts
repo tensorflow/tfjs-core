@@ -250,6 +250,7 @@ function parseHash() {
 }
 
 function enableConditioning() {
+  conditioned = true;
   conditioningOffElem.checked = false;
   conditioningOnElem.checked = true;
 
@@ -259,6 +260,7 @@ function enableConditioning() {
   updateConditioningParams();
 }
 function disableConditioning() {
+  conditioned = false;
   conditioningOffElem.checked = true;
   conditioningOnElem.checked = false;
 
@@ -281,7 +283,9 @@ function updateConditioningParams() {
 
   window.location.assign(
       '#' + densityControl.value + '|' + pitchHistogram.join(',') + '|' +
-      preset1.join(',') + '|' + preset2.join(',') + '|' + conditioned);
+              preset1.join(',') + '|' + preset2.join(',') + '|' + conditioned ?
+          'true' :
+          'false');
 
   const noteDensityIdx = parseInt(densityControl.value, 10) || 0;
   const noteDensity = DENSITY_BIN_RANGES[noteDensityIdx];
@@ -546,31 +550,20 @@ let activeMidiInputDevice: any = null;
     const setActiveMidiInputDevice = (device: any) => {
       if (activeMidiInputDevice != null) {
         activeMidiInputDevice.onmidimessage = () => {};
-        // clearMidiNoteDowns();
       }
-      console.log('active...', activeMidiInputDevice);
       activeMidiInputDevice = device;
       device.onmidimessage = (event: any) => {
         const data = event.data;
         const type = data[0] & 0xf0;
-        // channel agnostic message type. Thanks, Phil Burk.
         const note = data[1];
         const velocity = data[2];
-        // with pressure and tilt off
-        // note off: 128, cmd: 8
-        // note on: 144, cmd: 9
-        // pressure / tilt on
-        // pressure: 176, cmd 11:
-        // bend: 224, cmd: 14
         switch (type) {
           case 144:
             midiInNoteOn(note, velocity);
             break;
         }
       };
-      console.log(inputDeviceCount, activeMidiInputDevice);
     };
-    console.log(midiInputDevices);
     midiInDropdown.addEventListener('change', () => {
       setActiveMidiInputDevice(
           midiInputDevices[midiInDropdown.selectedIndex - 1]);
