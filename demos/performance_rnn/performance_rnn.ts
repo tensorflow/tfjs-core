@@ -283,9 +283,8 @@ function updateConditioningParams() {
 
   window.location.assign(
       '#' + densityControl.value + '|' + pitchHistogram.join(',') + '|' +
-              preset1.join(',') + '|' + preset2.join(',') + '|' + conditioned ?
-          'true' :
-          'false');
+      preset1.join(',') + '|' + preset2.join(',') + '|' +
+      (conditioned ? 'true' : 'false'));
 
   const noteDensityIdx = parseInt(densityControl.value, 10) || 0;
   const noteDensity = DENSITY_BIN_RANGES[noteDensityIdx];
@@ -333,7 +332,8 @@ function updateDisplayHistogram(hist: number[]) {
   }
 
   for (let i = 0; i < hist.length; i++) {
-    histogramDisplayElements[i].style.height = 100 * (hist[i] / sum) + 'px';
+    histogramDisplayElements[i].style.height =
+        (100 * (hist[i] / sum)).toString() + 'px';
   }
 }
 
@@ -547,20 +547,20 @@ let activeMidiInputDevice: any = null;
       inputDeviceCount++;
     });
 
+    // tslint:disable-next-line:no-any
     const setActiveMidiInputDevice = (device: any) => {
       if (activeMidiInputDevice != null) {
         activeMidiInputDevice.onmidimessage = () => {};
       }
       activeMidiInputDevice = device;
+      // tslint:disable-next-line:no-any
       device.onmidimessage = (event: any) => {
         const data = event.data;
         const type = data[0] & 0xf0;
         const note = data[1];
         const velocity = data[2];
-        switch (type) {
-          case 144:
-            midiInNoteOn(note, velocity);
-            break;
+        if (type === 144) {
+          midiInNoteOn(note, velocity);
         }
       };
     };
@@ -604,7 +604,6 @@ function midiInNoteOn(midiNote: number, velocity: number) {
     }
   }, CONDITIONING_OFF_TIME_MS);
 
-
   const note = midiNote % 12;
   midiInPitchHistogram[note]++;
 
@@ -641,6 +640,8 @@ function playOutput(index: number) {
                 [MIDI_EVENT_ON, noteNum, currentVelocity * globalGain],
                 Math.floor(1000 * currentPianoTimeSec) - pianoStartTimestampMs);
           } catch (e) {
+            console.log(
+                'Error sending midi note on event to midi output device:');
             console.log(e);
           }
         }
