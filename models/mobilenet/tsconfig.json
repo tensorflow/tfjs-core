@@ -1,14 +1,11 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./dist"
-  },
   "include": [
-    "index.ts",
-    "knn_image_classifier.ts"
+    "index.ts", "mobiletnet.ts"
   ],
   "exclude": [
     "node_modules/",
     "dist/"
   ]
 }
+

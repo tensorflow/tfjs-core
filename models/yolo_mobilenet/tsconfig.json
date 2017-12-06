@@ -1,11 +1,7 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./dist"
-  },
   "include": [
-    "index.ts",
-    "knn_image_classifier.ts"
+    "index.ts", "yolo_mobilenet.ts"
   ],
   "exclude": [
     "node_modules/",
