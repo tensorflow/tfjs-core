@@ -591,7 +591,6 @@ const CONDITIONING_OFF_TIME_MS = 30000;
 let lastNotePressedTime = performance.now();
 let midiInPitchHistogram = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 function midiInNoteOn(midiNote: number, velocity: number) {
-  console.log('midi note on');
   const now = performance.now();
   if (now - lastNotePressedTime > MID_IN_CHORD_RESET_THRESHOLD_MS) {
     midiInPitchHistogram = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
