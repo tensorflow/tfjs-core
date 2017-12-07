@@ -3,6 +3,6 @@
   "include": ["**/*"],
   "compilerOptions": {
     "declaration": false,
-    "target": "es2016"
+    "target": "es2017"
   }
 }
