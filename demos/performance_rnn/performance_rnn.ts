@@ -108,7 +108,6 @@ const piano = new Piano({velocities: 4}).toMaster();
 
 const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'Piano/Salamander/';
-
 const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'checkpoint_zoo/performance_rnn_v2';
 
@@ -720,7 +719,7 @@ function playOutput(index: number) {
 // Reset the RNN repeatedly so it doesn't trail off into incoherent musical
 // babble.
 const resettingText = document.getElementById('resettingText');
-function resetRnnRepeatedely() {
+function resetRnnRepeatedly() {
   if (modelReady) {
     resetRnn();
     resettingText.style.opacity = '100';
@@ -729,6 +728,6 @@ function resetRnnRepeatedely() {
   setTimeout(() => {
     resettingText.style.opacity = '0';
   }, 1000);
-  setTimeout(resetRnnRepeatedely, RESET_RNN_FREQUENCY_MS);
+  setTimeout(resetRnnRepeatedly, RESET_RNN_FREQUENCY_MS);
 }
-setTimeout(resetRnnRepeatedely, RESET_RNN_FREQUENCY_MS);
+setTimeout(resetRnnRepeatedly, RESET_RNN_FREQUENCY_MS);
