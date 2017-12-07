@@ -58,6 +58,13 @@ test_util.describeCustom('linalg', () => {
                 0, 0, 12.72792, 3.04604, 1.64974, 0, 9.89949, 1.62455,
                 1.84971, 1.39262]));
         test_util.expectArraysClose(chol4.dataSync(), exp4.dataSync());
+
+        t1.dispose();
+        exp1.dispose();
+        t2.dispose();
+        exp2.dispose();
+        t3.dispose();
+        exp3.dispose();
         t4.dispose();
         exp4.dispose();
     });
@@ -66,12 +73,14 @@ test_util.describeCustom('linalg', () => {
         const t = Array2D.new([2, 1], [1, 2]);
         expect(() => linalg.cholesky(t))
             .toThrowError('Cholesky error: matrix is not square');
+        t.dispose();
     });
 
     it('Cholesky throw error for non symmetric matrix', () => {
         const t = Array2D.new([3, 3], [2, 6, 0, 8, 3, -11, 1, -1, 4]);
         expect(() => linalg.cholesky(t))
             .toThrowError('Cholesky error: matrix is not symmetric');
+        t.dispose();
     });
 
     it('Cholesky throw error for not positive definite matrix', () => {
@@ -82,5 +91,7 @@ test_util.describeCustom('linalg', () => {
         const t2 = Array2D.new([3, 3], [-3, 0, 0, 0, -2, 0, 0, 0, 1]);
         expect(() => linalg.cholesky(t2))
             .toThrowError('Cholesky error: matrix is not positive definite');
+        t1.dispose();
+        t2.dispose();
     });
 });
