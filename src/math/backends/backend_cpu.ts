@@ -16,7 +16,6 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import * as util from '../../util';
 import * as broadcast_util from '../broadcast_util';
 import * as concat_util from '../concat_util';
@@ -31,25 +30,23 @@ import * as axis_util from './../axis_util';
 import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backend';
 
 export class MathBackendCPU implements MathBackend {
-  upload(ndarrayData: NDArrayData<keyof DataTypes>): void {
-    throw new Error('Method not implemented.');
-  }
+  dispose() {}
+  upload(data: NDArrayData<keyof DataTypes>): void {}
   uploadPixels(
-      ndArrayData: NDArrayData<keyof DataTypes>,
+      data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     throw new Error('Method not implemented.');
   }
-  downloadSync<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
-      DataTypes[T] {
-    return ndarrayData.values;
+  downloadSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
+    return data.values;
   }
-  disposeArray(ndarrayData: NDArrayData<keyof DataTypes>): void {
-    ndarrayData.values = null;
+  disposeArray(data: NDArrayData<keyof DataTypes>): void {
+    data.values = null;
   }
-  async download<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
+  async download<T extends keyof DataTypes>(data: NDArrayData<T>):
       Promise<DataTypes[T]> {
-    return ndarrayData.values;
+    return data.values;
   }
 
   clone<T extends NDArray>(ndarray: T): T {

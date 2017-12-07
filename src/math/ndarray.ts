@@ -38,6 +38,8 @@ export interface DataTypes {
 
 /** @hidden */
 export interface NDArrayData<T extends keyof DataTypes> {
+  shape?: number[];
+  dtype?: T;
   values?: DataTypes[T];
   texture?: WebGLTexture;
   /** [rows, columns] shape of the texture. */
@@ -102,6 +104,13 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
       for (let i = dim - 3; i >= 0; --i) {
         this.strides[i] = this.strides[i + 1] * this.shape[i + 1];
       }
+    }
+
+    data.shape = this.shape;
+    data.dtype = this.dtype;
+
+    if (data.values != null) {
+      ENV.math.upload(data);
     }
   }
 
@@ -221,7 +230,8 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   asType<G extends keyof DataTypes>(dtype: G): NDArray<G> {
     this.throwIfDisposed();
 
-    let newData: NDArrayData<T> = this.getData();
+    let newData: NDArrayData<G> =
+        (this.getData() as NDArrayData<keyof DataTypes>) as NDArrayData<G>;
     if (newData.values != null) {
       newData = {values: toTypedArray(newData.values, dtype)};
     }
@@ -319,7 +329,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   getTexture(): WebGLTexture {
     this.throwIfDisposed();
-    if (this.ndarrayData.texture == null) {
+    if (this.ndarrayData.values != null) {
       ENV.math.upload(this.ndarrayData);
     }
     return this.ndarrayData.texture;
@@ -327,7 +337,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   getTextureShapeRC(): [number, number] {
     this.throwIfDisposed();
-    if (this.ndarrayData.textureShapeRC == null) {
+    if (this.ndarrayData.values != null) {
       ENV.math.upload(this.ndarrayData);
     }
     return this.ndarrayData.textureShapeRC;
@@ -418,10 +428,18 @@ export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
     return new Scalar({values: toTypedArray(values, dtype)}, dtype);
   }
 
-  static ZERO = Scalar.new(0);
-  static ONE = Scalar.new(1);
-  static TWO = Scalar.new(2);
-  static NEG_ONE = Scalar.new(-1);
+  static get ZERO() {
+    return Scalar.new(0);
+  }
+  static get ONE() {
+    return Scalar.new(1);
+  }
+  static get TWO() {
+    return Scalar.new(2);
+  }
+  static get NEG_ONE() {
+    return Scalar.new(-1);
+  }
 
   get(): number {
     return this.getValues()[0];

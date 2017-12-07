@@ -217,6 +217,10 @@ export class Environment {
     throw new Error(`Unknown feature ${feature}.`);
   }
 
+  setGlobalMath(math: NDArrayMath) {
+    this.currentMath = math;
+  }
+
   get math(): NDArrayMath {
     if (this.currentMath == null) {
       const bestBackend = getBestBackend();

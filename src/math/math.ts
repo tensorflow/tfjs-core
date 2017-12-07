@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
+import {ENV} from '../environment';
 import * as util from '../util';
 import {TypedArray} from '../util';
-
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {BACKEND_REGISTRY, MathBackend, MatrixOrientation, NDArrayStorage} from './backends/backend';
@@ -40,29 +40,28 @@ export interface LSTMCell {
 
 export class NDArrayMath implements NDArrayStorage {
   uploadPixels(
-      ndArrayData: NDArrayData<keyof DataTypes>,
+      data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
-    this.backend.uploadPixels(ndArrayData, pixels, numChannels);
+    this.backend.uploadPixels(data, pixels, numChannels);
   }
-  upload(ndarrayData: NDArrayData<keyof DataTypes>): void {
-    this.backend.upload(ndarrayData);
+  upload(data: NDArrayData<keyof DataTypes>): void {
+    this.backend.upload(data);
   }
-  disposeArray(ndarrayData: NDArrayData<keyof DataTypes>): void {
-    this.backend.disposeArray(ndarrayData);
-    ndarrayData.values = null;
+  disposeArray(data: NDArrayData<keyof DataTypes>): void {
+    this.backend.disposeArray(data);
+    data.values = null;
     // TODO(nsthorat): Construct an error and save the stack trace for debugging
     // when in debug mode. Creating a stack trace is too expensive to do
     // unconditionally.
-    ndarrayData.isDisposed = true;
+    data.isDisposed = true;
   }
-  downloadSync<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
-      DataTypes[T] {
-    return this.backend.downloadSync(ndarrayData);
+  downloadSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
+    return this.backend.downloadSync(data);
   }
-  download<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
+  download<T extends keyof DataTypes>(data: NDArrayData<T>):
       Promise<DataTypes[T]> {
-    return this.backend.download(ndarrayData);
+    return this.backend.download(data);
   }
 
   private ndarrayScopes: NDArray[][] = [];
@@ -73,13 +72,20 @@ export class NDArrayMath implements NDArrayStorage {
 
   private debugMode = false;
   protected backend: MathBackend;
+  private customBackend = false;
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(backend: string, private safeMode: boolean) {
-    this.backend = BACKEND_REGISTRY[backend];
+  constructor(backend: string|MathBackend, private safeMode: boolean) {
+    if (typeof backend === 'string') {
+      this.backend = BACKEND_REGISTRY[backend];
+    } else {
+      this.customBackend = true;
+      this.backend = backend;
+    }
+    ENV.setGlobalMath(this);
   }
 
   /**
@@ -253,8 +259,11 @@ export class NDArrayMath implements NDArrayStorage {
     return result;
   }
 
-  /** Disposes the math object and any resources used by it. */
-  dispose() {}
+  dispose() {
+    if (this.customBackend) {
+      this.backend.dispose();
+    }
+  }
 
   /**
    * Computes the dot product of two matrices, A * B. These must be matrices,

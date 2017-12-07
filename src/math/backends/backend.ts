@@ -28,14 +28,13 @@ export enum MatrixOrientation {
 export const BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
 
 export interface NDArrayStorage {
-  download<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
+  download<T extends keyof DataTypes>(data: NDArrayData<T>):
       Promise<DataTypes[T]>;
-  downloadSync<T extends keyof DataTypes>(ndarrayData: NDArrayData<T>):
-      DataTypes[T];
-  disposeArray(ndarrayData: NDArrayData<keyof DataTypes>): void;
-  upload(ndarrayData: NDArrayData<keyof DataTypes>): void;
+  downloadSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T];
+  disposeArray(data: NDArrayData<keyof DataTypes>): void;
+  upload(data: NDArrayData<keyof DataTypes>): void;
   uploadPixels(
-      ndArrayData: NDArrayData<keyof DataTypes>,
+      data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void;
 }
@@ -201,4 +200,6 @@ export interface MathBackend extends NDArrayStorage {
 
   oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
       Array2D;
+
+  dispose(): void;
 }

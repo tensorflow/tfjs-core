@@ -21,7 +21,6 @@ import {TypedArray} from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
-import * as ndarray from '../ndarray';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayData, Scalar} from '../ndarray';
 import * as reduce_util from '../reduce_util';
@@ -94,7 +93,7 @@ function typedArrayToFloat32(
 
 export class MathBackendWebGL implements MathBackend {
   uploadPixels(
-      ndarrayData: ndarray.NDArrayData<'float32'|'int32'|'bool'>,
+      data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     const shape: [number, number, number] =
@@ -102,76 +101,71 @@ export class MathBackendWebGL implements MathBackend {
     const textureShapeRC: [number, number] = [shape[0], shape[1]];
     const texture = this.textureManager.acquireTexture(textureShapeRC);
     this.gpgpu.uploadPixelDataToTexture(texture, pixels);
-    ndarrayData.texture = texture;
-    ndarrayData.textureType = TextureType.RGBA_COLOR;
-    ndarrayData.textureShapeRC = textureShapeRC;
+    data.texture = texture;
+    data.textureType = TextureType.RGBA_COLOR;
+    data.textureShapeRC = textureShapeRC;
   }
-  upload(ndarrayData: ndarray.NDArrayData<keyof DataTypes>): void {
-    ndarrayData.textureShapeRC =
-        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, this.shape);
-    ndarrayData.texture =
-        this.textureManager.acquireTexture(ndarrayData.textureShapeRC);
-    ndarrayData.textureType = TextureType.DEFAULT;
+  upload(data: NDArrayData<keyof DataTypes>): void {
+    data.textureShapeRC =
+        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, data.shape);
+    data.texture = this.textureManager.acquireTexture(data.textureShapeRC);
+    data.textureType = TextureType.DEFAULT;
 
     this.gpgpu.uploadMatrixToTexture(
-        ndarrayData.texture, ndarrayData.textureShapeRC[0],
+        data.texture, data.textureShapeRC[0],
         // TODO(smilkov): Propagate the original typed array to gpgpu.
-        ndarrayData.textureShapeRC[1],
-        typedArrayToFloat32(ndarrayData.values, this.dtype));
+        data.textureShapeRC[1], typedArrayToFloat32(data.values, data.dtype));
 
-    ndarrayData.values = null;
+    data.values = null;
   }
-  disposeArray(ndarrayData: NDArrayData<keyof DataTypes>): void {
-    if (ndarrayData.texture != null) {
-      this.textureManager.releaseTexture(
-          ndarrayData.texture, ndarrayData.textureShapeRC);
-      ndarrayData.texture = null;
-      ndarrayData.textureShapeRC = null;
-      ndarrayData.textureType = null;
+  disposeArray(data: NDArrayData<keyof DataTypes>): void {
+    if (data.texture != null) {
+      this.textureManager.releaseTexture(data.texture, data.textureShapeRC);
+      data.texture = null;
+      data.textureShapeRC = null;
+      data.textureType = null;
     }
   }
-  downloadSync<T extends 'float32'|'int32'|'bool'>(ndarrayData: NDArrayData<T>):
+  downloadSync<T extends 'float32'|'int32'|'bool'>(data: NDArrayData<T>):
       DataTypes[T] {
-    if (ndarrayData.values == null) {
+    if (data.values == null) {
       let values: Float32Array;
-      if (ndarrayData.textureType === TextureType.DEFAULT) {
+      if (data.textureType === TextureType.DEFAULT) {
         values = this.gpgpu.downloadMatrixFromTexture(
-            ndarrayData.texture, ndarrayData.textureShapeRC[0],
-            ndarrayData.textureShapeRC[1]);
+            data.texture, data.textureShapeRC[0], data.textureShapeRC[1]);
       } else {
         values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
-            ndarrayData.texture, ndarrayData.textureShapeRC[0],
-            ndarrayData.textureShapeRC[1], this.shape[2]);
+            data.texture, data.textureShapeRC[0], data.textureShapeRC[1],
+            data.shape[2]);
       }
 
-      ndarrayData.values = float32ToTypedArray(values, this.dtype);
-      this.disposeArray(ndarrayData);
+      data.values = float32ToTypedArray(values, data.dtype);
+      this.disposeArray(data);
     }
-    return ndarrayData.values;
+    return data.values;
   }
-  async download<T extends 'float32'|'int32'|'bool'>(
-      ndarrayData: NDArrayData<T>): Promise<DataTypes[T]> {
-    if (ndarrayData.values != null) {
-      return ndarrayData.values;
+  async download<T extends 'float32'|'int32'|'bool'>(data: NDArrayData<T>):
+      Promise<DataTypes[T]> {
+    if (data.values != null) {
+      return data.values;
     }
 
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
-        ndarrayData.textureType === TextureType.DEFAULT) {
-      ndarrayData.values = await this.gpgpu.downloadMatrixFromTextureAsync(
-          ndarrayData.texture, ndarrayData.textureShapeRC[0],
-          ndarrayData.textureShapeRC[1]);
-      return ndarrayData.values;
+        data.textureType === TextureType.DEFAULT) {
+      data.values = await this.gpgpu.downloadMatrixFromTextureAsync(
+          data.texture, data.textureShapeRC[0], data.textureShapeRC[1]);
+      return data.values;
     }
 
     if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-      return await this.downloadSync(ndarrayData);
+      return await this.downloadSync(data);
     }
 
     // Construct an empty query. We're just interested in getting a callback
     // when the GPU command queue has executed until this point in time.
     const queryFn = () => {};
     await this.gpgpu.runQuery(queryFn);
-    return this.downloadSync(ndarrayData);
+    return this.downloadSync(data);
   }
 
   private gpgpu: GPGPUContext;
@@ -729,8 +723,7 @@ BACKEND_REGISTRY['webgl'] = new MathBackendWebGL();
 // TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
 export class NDArrayMathGPU extends NDArrayMath {
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
-    BACKEND_REGISTRY['webgl'] = new MathBackendWebGL(gpgpu);
-    super('webgl', safeMode);
+    super(new MathBackendWebGL(gpgpu), safeMode);
   }
 
   getGPGPUContext(): GPGPUContext {
