@@ -52,6 +52,8 @@ const NOTES_PER_OCTAVE = 12;
 const DENSITY_BIN_RANGES = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0];
 const PITCH_HISTOGRAM_SIZE = NOTES_PER_OCTAVE;
 
+const RESET_RNN_FREQUENCY_MS = 30000;
+
 let pitchHistogramEncoding: Array1D;
 let noteDensityEncoding: Array1D;
 let conditioned = false;
@@ -106,8 +108,8 @@ const piano = new Piano({velocities: 4}).toMaster();
 
 const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'Piano/Salamander/';
-const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
-    'checkpoint_zoo/performance_rnn_v2';
+
+const CHECKPOINT_URL = './performance_rnn_v2';
 
 const isDeviceSupported = demo_util.isWebGLSupported() && !demo_util.isSafari();
 
@@ -585,6 +587,7 @@ const CONDITIONING_OFF_TIME_MS = 30000;
 let lastNotePressedTime = performance.now();
 let midiInPitchHistogram = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 function midiInNoteOn(midiNote: number, velocity: number) {
+  console.log('midi note on');
   const now = performance.now();
   if (now - lastNotePressedTime > MID_IN_CHORD_RESET_THRESHOLD_MS) {
     midiInPitchHistogram = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -594,6 +597,7 @@ function midiInNoteOn(midiNote: number, velocity: number) {
 
   // Turn on conditioning when a note is pressed/
   if (!conditioned) {
+    resetRnn();
     enableConditioning();
   }
 
@@ -601,6 +605,7 @@ function midiInNoteOn(midiNote: number, velocity: number) {
   setTimeout(() => {
     if (performance.now() - lastNotePressedTime > CONDITIONING_OFF_TIME_MS) {
       disableConditioning();
+      resetRnn();
     }
   }, CONDITIONING_OFF_TIME_MS);
 
@@ -637,7 +642,10 @@ function playOutput(index: number) {
         if (activeMidiOutputDevice != null) {
           try {
             activeMidiOutputDevice.send(
-                [MIDI_EVENT_ON, noteNum, currentVelocity * globalGain],
+                [
+                  MIDI_EVENT_ON, noteNum,
+                  Math.min(Math.floor(currentVelocity * globalGain), 127)
+                ],
                 Math.floor(1000 * currentPianoTimeSec) - pianoStartTimestampMs);
           } catch (e) {
             console.log(
@@ -662,7 +670,10 @@ function playOutput(index: number) {
 
         if (activeMidiOutputDevice != null) {
           activeMidiOutputDevice.send(
-              [MIDI_EVENT_OFF, noteNum, currentVelocity * globalGain],
+              [
+                MIDI_EVENT_OFF, noteNum,
+                Math.min(Math.floor(currentVelocity * globalGain), 127)
+              ],
               Math.floor(timeSec * 1000) - pianoStartTimestampMs);
         }
         piano.keyUp(noteNum, timeSec);
@@ -680,8 +691,10 @@ function playOutput(index: number) {
                 `seconds which is over ${MAX_NOTE_DURATION_SECONDS}, will ` +
                 `release.`);
             if (activeMidiOutputDevice != null) {
-              activeMidiOutputDevice.send(
-                  [MIDI_EVENT_OFF, noteNum, currentVelocity * globalGain]);
+              activeMidiOutputDevice.send([
+                MIDI_EVENT_OFF, noteNum,
+                Math.min(Math.floor(currentVelocity * globalGain), 127)
+              ]);
             }
             piano.keyUp(noteNum, currentPianoTimeSec);
             activeNotes.delete(noteNum);
@@ -700,3 +713,17 @@ function playOutput(index: number) {
   }
   throw new Error(`Could not decode index: ${index}`);
 }
+
+// Reset the RNN repeatedly so it doesn't trail off into incoherent musical
+// babble.
+const resettingText = document.getElementById('resettingText');
+function resetRnnRepeatedely() {
+  resettingText.style.opacity = '100';
+  resetRnn();
+
+  setTimeout(() => {
+    resettingText.style.opacity = '0';
+  }, 1000);
+  setTimeout(resetRnnRepeatedely, RESET_RNN_FREQUENCY_MS);
+}
+setTimeout(resetRnnRepeatedely, RESET_RNN_FREQUENCY_MS);
