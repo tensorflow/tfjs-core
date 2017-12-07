@@ -23,6 +23,7 @@ const shell = require('shelljs');
 const VUE_DEMOS = new Set(['vue-demo', 'latent-space-explorer']);
 
 const demoPath = process.argv[2];
+
 const demoFolder = path.basename(demoPath);
 const outputPath = path.join(demoPath, 'bundle.js')
 const tsPath = path.join(demoPath, demoFolder + '.ts');

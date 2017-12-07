@@ -112,7 +112,7 @@ const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
 const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'checkpoint_zoo/performance_rnn_v2';
 
-const isDeviceSupported = demo_util.isWebGLSupported() && !demo_util.isSafari();
+const isDeviceSupported = demo_util.isWebGLSupported();
 
 if (!isDeviceSupported) {
   document.querySelector('#status').innerHTML =
@@ -123,6 +123,8 @@ if (!isDeviceSupported) {
 }
 
 const math = new NDArrayMathGPU();
+
+let modelReady = false;
 
 function start() {
   piano.load(SALAMANDER_URL)
@@ -152,6 +154,7 @@ function start() {
 
         fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
         fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+        modelReady = true;
         resetRnn();
       });
 }
@@ -719,8 +722,10 @@ function playOutput(index: number) {
 // babble.
 const resettingText = document.getElementById('resettingText');
 function resetRnnRepeatedely() {
-  resettingText.style.opacity = '100';
-  resetRnn();
+  if (modelReady) {
+    resetRnn();
+    resettingText.style.opacity = '100';
+  }
 
   setTimeout(() => {
     resettingText.style.opacity = '0';
