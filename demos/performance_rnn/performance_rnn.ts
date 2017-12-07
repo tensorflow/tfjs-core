@@ -109,7 +109,8 @@ const piano = new Piano({velocities: 4}).toMaster();
 const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'Piano/Salamander/';
 
-const CHECKPOINT_URL = './performance_rnn_v2';
+const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
+    'checkpoint_zoo/performance_rnn_v2';
 
 const isDeviceSupported = demo_util.isWebGLSupported() && !demo_util.isSafari();
 
