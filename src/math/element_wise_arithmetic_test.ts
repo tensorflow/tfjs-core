@@ -48,16 +48,16 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     });
 
     it('elementWiseMul throws when passed ndarrays of different shapes',
-        math => {
-          const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-          const b = Array2D.new([2, 2], [5, 3, 4, -7]);
+       math => {
+         const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
+         const b = Array2D.new([2, 2], [5, 3, 4, -7]);
 
-          expect(() => math.elementWiseMul(a, b)).toThrowError();
-          expect(() => math.elementWiseMul(b, a)).toThrowError();
+         expect(() => math.elementWiseMul(a, b)).toThrowError();
+         expect(() => math.elementWiseMul(b, a)).toThrowError();
 
-          a.dispose();
-          b.dispose();
-        });
+         a.dispose();
+         b.dispose();
+       });
 
     it('multiply same-shaped ndarrays', math => {
       const a = Array2D.new([2, 2], [1, 2, -3, -4]);
@@ -249,23 +249,23 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const b = Array2D.new([2, 2], [NaN, 3, NaN, 3]);
 
       const result = math.pow(a, b).getValues();
-      test_util.expectArraysClose(result, new Float32Array([NaN, 27, NaN, 0]), 0.05);
+      test_util.expectArraysClose(
+          result, new Float32Array([NaN, 27, NaN, 0]), 0.05);
 
       a.dispose();
       b.dispose();
     });
 
-    it('pow throws when passed ndarrays of different shapes',
-        math => {
-          const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-          const b = Array2D.new([2, 2], [5, 3, 4, -7]);
+    it('pow throws when passed ndarrays of different shapes', math => {
+      const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
+      const b = Array2D.new([2, 2], [5, 3, 4, -7]);
 
-          expect(() => math.pow(a, b)).toThrowError();
-          expect(() => math.pow(b, a)).toThrowError();
+      expect(() => math.pow(a, b)).toThrowError();
+      expect(() => math.pow(b, a)).toThrowError();
 
-          a.dispose();
-          b.dispose();
-        });
+      a.dispose();
+      b.dispose();
+    });
   };
 
   test_util.describeMathCPU('element-wise pow', [tests]);

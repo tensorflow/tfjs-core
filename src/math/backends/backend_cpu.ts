@@ -33,8 +33,8 @@ import {MathBackend, MatrixOrientation} from './backend';
 export class MathBackendCPU implements MathBackend {
   clone<T extends NDArray>(ndarray: T): T {
     return NDArray.make(
-        ndarray.shape,
-        {values: new Float32Array(ndarray.getValues())}) as T;
+               ndarray.shape,
+               {values: new Float32Array(ndarray.getValues())}) as T;
   }
 
   slice1D(input: Array1D, begin: number, size: number): Array1D {
@@ -42,7 +42,8 @@ export class MathBackendCPU implements MathBackend {
     return Array1D.new(newVals);
   }
 
-  slice2D(input: Array2D, begin: [number, number], size: [number, number]): Array2D {
+  slice2D(input: Array2D, begin: [number, number], size: [number, number]):
+      Array2D {
     const result = Array2D.zeros(size);
     const [startI, startJ] = begin;
 
@@ -56,8 +57,8 @@ export class MathBackendCPU implements MathBackend {
   }
 
   slice3D(input: Array3D, begin: [number, number, number], size: [
-      number, number, number
-      ]): Array3D {
+    number, number, number
+  ]): Array3D {
     const result = Array3D.zeros(size);
     const [startI, startJ, startK] = begin;
 
@@ -73,8 +74,8 @@ export class MathBackendCPU implements MathBackend {
   }
 
   slice4D(input: Array4D, begin: [number, number, number, number], size: [
-      number, number, number, number
-      ]): Array4D {
+    number, number, number, number
+  ]): Array4D {
     const result = Array4D.zeros(size);
     const [startI, startJ, startK, startL] = begin;
 
@@ -92,10 +93,11 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  copy2D(source: Array2D, sourceBeginRowCol: [number, number],
-         sourceSizeRowCol: [number, number], dest: Array2D,
-         destBeginRowCol: [number, number],
-         destSizeRowCol: [number, number]): void {
+  copy2D(
+      source: Array2D, sourceBeginRowCol: [number, number],
+      sourceSizeRowCol: [number, number], dest: Array2D,
+      destBeginRowCol: [number, number],
+      destSizeRowCol: [number, number]): void {
     copy2D_util.validateShapes(sourceSizeRowCol, destSizeRowCol);
     const srcValues = source.getValues();
     const dstValues = dest.getValues();
@@ -270,8 +272,9 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  matMul(a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
-         bOrientation = MatrixOrientation.REGULAR): Array2D {
+  matMul(
+      a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
+      bOrientation = MatrixOrientation.REGULAR): Array2D {
     const sharedDim =
         (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
 
@@ -334,7 +337,8 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(newShape, {values: newValues}, 'float32');
   }
 
-  sum<T extends keyof DataTypes>(input: NDArray<T>, axes: number[]): NDArray<SumTypes[T]> {
+  sum<T extends keyof DataTypes>(input: NDArray<T>, axes: number[]):
+      NDArray<SumTypes[T]> {
     axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
@@ -423,7 +427,8 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(ndarray: T, k: number): Array1D<D> {
+  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
+      ndarray: T, k: number): Array1D<D> {
     return this.topK(ndarray, k).values as Array1D<D>;
   }
 
@@ -431,9 +436,10 @@ export class MathBackendCPU implements MathBackend {
     return this.topK(ndarray, k).indices;
   }
 
-  private topK<D extends keyof DataTypes, T extends NDArray<D>>(ndarray: T, k: number): { values: Array1D<D>, indices: Array1D<'int32'> } {
+  private topK<D extends keyof DataTypes, T extends NDArray<D>>(
+      ndarray: T, k: number): {values: Array1D<D>, indices: Array1D<'int32'>} {
     const values = ndarray.getValues();
-    const valuesAndIndices: Array<{ value: number, index: number }> = [];
+    const valuesAndIndices: Array<{value: number, index: number}> = [];
     for (let i = 0; i < values.length; i++) {
       valuesAndIndices.push({value: values[i], index: i});
     }
@@ -453,7 +459,8 @@ export class MathBackendCPU implements MathBackend {
     };
   }
 
-  min<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]): NDArray<G> {
+  min<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]):
+      NDArray<G> {
     axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
@@ -480,7 +487,8 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  max<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]): NDArray<G> {
+  max<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]):
+      NDArray<G> {
     axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(input.shape, axes);
@@ -758,7 +766,8 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  conv2d(x: Array4D, filter: Array4D, bias: Array1D | null, convInfo: Conv2DInfo): Array4D {
+  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
+      Array4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
@@ -899,7 +908,8 @@ export class MathBackendCPU implements MathBackend {
     return Array1D.new(values);
   }
 
-  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
+  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
+      Array4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
@@ -937,7 +947,8 @@ export class MathBackendCPU implements MathBackend {
     return y;
   }
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]): T {
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
+      T {
     const newShape: number[] = new Array(a.rank);
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = a.shape[i] * reps[i];
@@ -970,7 +981,8 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  transpose<D extends keyof DataTypes, T extends NDArray<D>>(a: T, perm: number[]): T {
+  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
+      a: T, perm: number[]): T {
     const newShape: number[] = new Array(a.rank);
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = a.shape[perm[i]];
@@ -993,7 +1005,7 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  private pool(x: Array4D, convInfo: Conv2DInfo, poolType: 'max' | 'min' | 'avg') {
+  private pool(x: Array4D, convInfo: Conv2DInfo, poolType: 'max'|'min'|'avg') {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -1014,7 +1026,7 @@ export class MathBackendCPU implements MathBackend {
 
             let minMaxValue =
                 (poolType === 'max' ? Number.NEGATIVE_INFINITY :
-                    Number.POSITIVE_INFINITY);
+                                      Number.POSITIVE_INFINITY);
             let avgValue = 0;
             for (let xR = xRMin; xR < xRMax; ++xR) {
               for (let xC = xCMin; xC < xCMax; ++xC) {
@@ -1146,8 +1158,9 @@ export class MathBackendCPU implements MathBackend {
     return this.pool(x, convInfo, 'avg');
   }
 
-  resizeBilinear3D(x: Array3D, newShape2D: [number, number],
-                   alignCorners: boolean): Array3D {
+  resizeBilinear3D(
+      x: Array3D, newShape2D: [number, number],
+      alignCorners: boolean): Array3D {
     const output = Array3D.zeros([newShape2D[0], newShape2D[1], x.shape[2]]);
 
     const effectiveInputSize =
@@ -1193,9 +1206,10 @@ export class MathBackendCPU implements MathBackend {
     return output;
   }
 
-  batchNormalization2D(x: Array2D, mean: Array2D | Array1D, variance: Array2D | Array1D,
-                       varianceEpsilon: number, scale?: Array2D | Array1D,
-                       offset?: Array2D | Array1D): Array2D {
+  batchNormalization2D(
+      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
+      varianceEpsilon: number, scale?: Array2D|Array1D,
+      offset?: Array2D|Array1D): Array2D {
     const xValues = x.getValues();
     const meanValues = mean.getValues();
     const varianceValues = variance.getValues();
@@ -1206,16 +1220,17 @@ export class MathBackendCPU implements MathBackend {
     for (let i = 0; i < xValues.length; i++) {
       outValues[i] = offsetValues[i % offsetValues.length] +
           (xValues[i] - meanValues[i % meanValues.length]) *
-          scaleValues[i % scaleValues.length] /
-          Math.sqrt(
-              varianceValues[i % varianceValues.length] + varianceEpsilon);
+              scaleValues[i % scaleValues.length] /
+              Math.sqrt(
+                  varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
     return Array2D.new(x.shape, outValues);
   }
 
-  batchNormalization3D(x: Array3D, mean: Array3D | Array1D, variance: Array3D | Array1D,
-                       varianceEpsilon: number, scale?: Array3D | Array1D,
-                       offset?: Array3D | Array1D): Array3D {
+  batchNormalization3D(
+      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
+      varianceEpsilon: number, scale?: Array3D|Array1D,
+      offset?: Array3D|Array1D): Array3D {
     const xValues = x.getValues();
     const meanValues = mean.getValues();
     const varianceValues = variance.getValues();
@@ -1226,14 +1241,15 @@ export class MathBackendCPU implements MathBackend {
     for (let i = 0; i < xValues.length; i++) {
       outValues[i] = offsetValues[i % offsetValues.length] +
           (xValues[i] - meanValues[i % meanValues.length]) *
-          scaleValues[i % scaleValues.length] /
-          Math.sqrt(
-              varianceValues[i % varianceValues.length] + varianceEpsilon);
+              scaleValues[i % scaleValues.length] /
+              Math.sqrt(
+                  varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
     return Array3D.new(x.shape, outValues);
   }
 
-  multinomial(probabilities: Array2D, numSamples: number, seed: number): Array2D<'int32'> {
+  multinomial(probabilities: Array2D, numSamples: number, seed: number):
+      Array2D<'int32'> {
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
     const res = Array2D.zeros([batchSize, numSamples], 'int32');
@@ -1269,7 +1285,8 @@ export class MathBackendCPU implements MathBackend {
     return res;
   }
 
-  oneHot(indices: Array1D, depth: number, onValue: number, offValue: number): Array2D {
+  oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
+      Array2D {
     const res = new Float32Array(indices.size * depth);
     res.fill(offValue);
 
@@ -1279,8 +1296,9 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new([indices.size, depth], res);
   }
 
-  private broadcastedBinaryOp<D extends keyof DataTypes>(a: NDArray, b: NDArray, dtype: D,
-                                                         op: (a: number, b: number) => number): NDArray<D> {
+  private broadcastedBinaryOp<D extends keyof DataTypes>(
+      a: NDArray, b: NDArray, dtype: D,
+      op: (a: number, b: number) => number): NDArray<D> {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const result = NDArray.zeros(newShape, dtype);

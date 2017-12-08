@@ -24,7 +24,7 @@ export const MUL = 'return a * b;';
 export const DIV = 'return a / b;';
 // ensure the pow op return NaN for all negative base cases.
 export const POW = `
-  if (a < 0.0 ) return pow(a, 0.5);
+  if (a < 0.0 ) return pow(a, -1.5);
   return pow(a, b);
 `;
 export const EQUAL = `
