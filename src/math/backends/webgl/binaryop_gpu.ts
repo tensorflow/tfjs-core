@@ -22,6 +22,7 @@ export const ADD = 'return a + b;';
 export const SUB = 'return a - b;';
 export const MUL = 'return a * b;';
 export const DIV = 'return a / b;';
+export const POW = `return pow(a, b);`;
 export const EQUAL = `
   if (isNaN(a)) return a;
   if (isNaN(b)) return b;

@@ -991,6 +991,23 @@ export abstract class NDArrayMath {
     return this.executeOp('subtract', () => this.backend.subtract(a, b));
   }
 
+  /**
+   * Computes the power of one value to another.
+   * Given a tensor x and a tensor y, this operation computes x^y for
+   * corresponding elements in x and y. For example:
+   * x = tf.constant([[2, 2], [3, 3]])
+   * y = tf.constant([[8, 16], [2, 3]])
+   * pow(x, y)  # [[256, 65536], [9, 27]]
+   *
+   * @param a The first NDArray to pow element-wise.
+   * @param b The second NDArray to pow element-wise.
+   */
+  pow<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
+  NDArray<G> {
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.executeOp('pow', () => this.backend.pow(a, b));
+  }
+
   /** @deprecated Use math.subtract instead. */
   sub<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     return this.subtract(a, b);
