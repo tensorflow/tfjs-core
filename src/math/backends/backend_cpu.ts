@@ -31,20 +31,20 @@ import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backend';
 
 export class MathBackendCPU implements MathBackend {
   dispose() {}
-  upload(data: NDArrayData<keyof DataTypes>): void {}
-  uploadPixels(
+  write(data: NDArrayData<keyof DataTypes>): void {}
+  writePixels(
       data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     throw new Error('Method not implemented.');
   }
-  downloadSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
+  readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
     return data.values;
   }
-  disposeArray(data: NDArrayData<keyof DataTypes>): void {
+  disposeData(data: NDArrayData<keyof DataTypes>): void {
     data.values = null;
   }
-  async download<T extends keyof DataTypes>(data: NDArrayData<T>):
+  async read<T extends keyof DataTypes>(data: NDArrayData<T>):
       Promise<DataTypes[T]> {
     return data.values;
   }
@@ -260,15 +260,16 @@ export class MathBackendCPU implements MathBackend {
   }
 
   neg<T extends NDArray>(a: T): T {
-    return this.multiply(Scalar.NEG_ONE, a) as T;
+    return this.multiply(Scalar.new(-1), a) as T;
   }
 
   add<T extends NDArray>(a: T, b: T): T {
-    return this.scaledArrayAdd<T>(Scalar.ONE, a, Scalar.ONE, b);
+    const one = Scalar.new(1);
+    return this.scaledArrayAdd<T>(one, a, one, b);
   }
 
   subtract<T extends NDArray>(a: T, b: T): T {
-    return this.scaledArrayAdd<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
+    return this.scaledArrayAdd<T>(Scalar.new(1), a, Scalar.new(-1), b);
   }
 
   matMul(

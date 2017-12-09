@@ -38,30 +38,48 @@ export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
 }
 
-export class NDArrayMath implements NDArrayStorage {
-  uploadPixels(
+export interface NDArrayManager {
+  getNumArrays(): number;
+  register(a: NDArray): void;
+}
+
+export class NDArrayMath implements NDArrayStorage, NDArrayManager {
+  private numArrays = 0;
+
+  getNumArrays() {
+    return this.numArrays;
+  }
+
+  register(a: NDArray) {
+    this.track(a);
+    this.numArrays++;
+    this.backend.write(a.getData());
+  }
+
+  writePixels(
       data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
-    this.backend.uploadPixels(data, pixels, numChannels);
+    this.backend.writePixels(data, pixels, numChannels);
+    this.numArrays++;
   }
-  upload(data: NDArrayData<keyof DataTypes>): void {
-    this.backend.upload(data);
+  write(data: NDArrayData<keyof DataTypes>): void {
+    this.backend.write(data);
   }
-  disposeArray(data: NDArrayData<keyof DataTypes>): void {
-    this.backend.disposeArray(data);
+  disposeData(data: NDArrayData<keyof DataTypes>): void {
+    this.backend.disposeData(data);
     data.values = null;
     // TODO(nsthorat): Construct an error and save the stack trace for debugging
     // when in debug mode. Creating a stack trace is too expensive to do
     // unconditionally.
     data.isDisposed = true;
+    this.numArrays--;
   }
-  downloadSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
-    return this.backend.downloadSync(data);
+  readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
+    return this.backend.readSync(data);
   }
-  download<T extends keyof DataTypes>(data: NDArrayData<T>):
-      Promise<DataTypes[T]> {
-    return this.backend.download(data);
+  read<T extends keyof DataTypes>(data: NDArrayData<T>): Promise<DataTypes[T]> {
+    return this.backend.read(data);
   }
 
   private ndarrayScopes: NDArray[][] = [];
@@ -253,7 +271,7 @@ export class NDArrayMath implements NDArrayStorage {
             'math.scope(() => {math.method();...}) to avoid memory ' +
             'leaks.');
       }
-      return result;
+      this.startScope();
     }
     this.activeScope.push(result);
     return result;
@@ -319,7 +337,7 @@ export class NDArrayMath implements NDArrayStorage {
           'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
       this.checkForNaN(vals, result.dtype, name);
     }
-    return this.track(result);
+    return result;
   }
 
   /**
@@ -806,8 +824,6 @@ export class NDArrayMath implements NDArrayStorage {
       return values;
     });
     const result = {values, indices};
-
-    this.track(result.indices);
     return result;
   }
 
@@ -1509,7 +1525,7 @@ export class NDArrayMath implements NDArrayStorage {
     if (dy.rank === 3) {
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
     }
-    return this.track(this.backend.conv2dDerBias(dy4D));
+    return this.backend.conv2dDerBias(dy4D);
   }
 
   /**
@@ -1559,7 +1575,7 @@ export class NDArrayMath implements NDArrayStorage {
 
     const convInfo =
         conv_util.computeConv2DInfo(input4D.shape, filterShape, strides, pad);
-    return this.track(this.backend.conv2dDerFilter(input4D, dy4D, convInfo));
+    return this.backend.conv2dDerFilter(input4D, dy4D, convInfo);
   }
 
   /**

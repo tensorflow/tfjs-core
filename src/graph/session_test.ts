@@ -160,6 +160,10 @@ describe('Session', () => {
   });
 
   it('Backprop through a  with 2 outputs, input is scalar', () => {
+    const two = Scalar.new(2);
+    const one = Scalar.new(1);
+    const negOne = Scalar.new(-1);
+
     const x = g.placeholder('x', []);
     const y = g.square(x);
     const z = g.add(x, g.constant(3));
@@ -168,7 +172,7 @@ describe('Session', () => {
     const optimizer = new SGDOptimizer(0.1);
     const session = new Session(g, new NDArrayMathCPU());
     let idx = 0;
-    const xs: Scalar[] = [Scalar.TWO, Scalar.ONE, Scalar.NEG_ONE];
+    const xs: Scalar[] = [two, one, negOne];
     const inputProvider: InputProvider = {
       getNextCopy() {
         return xs[idx++];
@@ -260,23 +264,23 @@ describe('Session', () => {
 
   it('Safe mode math, no math scope eval throws', () => {
     const safeMode = true;
-    const x = g.placeholder('x', [2]);
-    const y = g.square(x);
     const math = new NDArrayMathCPU(safeMode);
-    const session = new Session(g, math);
 
-    expect(() => session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]))
-        .toThrowError();
+    expect(() => {
+      const x = g.placeholder('x', [2]);
+      const y = g.square(x);
+      const session = new Session(g, math);
+      session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+    }).toThrowError();
   });
 
   it('Safe mode math, math scope eval does not throw', () => {
     const safeMode = true;
-    const x = g.placeholder('x', [2]);
-    const y = g.square(x);
     const math = new NDArrayMathCPU(safeMode);
-    const session = new Session(g, math);
-
     math.scope(() => {
+      const x = g.placeholder('x', [2]);
+      const y = g.square(x);
+      const session = new Session(g, math);
       const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
       const expected = new Float32Array([25, 16]);
       test_util.expectArraysClose(yVal.getValues(), expected);
@@ -284,15 +288,9 @@ describe('Session', () => {
   });
 
   it('Safe mode math, math scope train does not throw', () => {
-    const x = g.placeholder('x', [2]);
-    const y = g.square(x);
-    const z = g.add(x, g.constant(3));
-    const w = g.reduceSum(g.add(y, z));
-
     const safeMode = true;
-    const optimizer = new SGDOptimizer(0.1);
     const math = new NDArrayMathCPU(safeMode);
-    const session = new Session(g, math);
+
     const inputProvider: InputProvider = {
       getNextCopy() {
         return Array1D.new([2, 4]);
@@ -301,8 +299,14 @@ describe('Session', () => {
     };
 
     math.scope(() => {
+      const optimizer = new SGDOptimizer(0.1);
+      const session = new Session(g, math);
+      const x = g.placeholder('x', [2]);
+      const y = g.square(x);
+      const z = g.add(x, g.constant(3));
       // w = reduce_sum(x^2 + x + 3)
       // dw/dx = [2*x_1 + 1, 2*x_2 + 1]
+      const w = g.reduceSum(g.add(y, z));
       session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dwdx = session.gradientArrayMap.get(x).getValues();
       test_util.expectArraysClose(dwdx, new Float32Array([5, 9]));
@@ -310,15 +314,9 @@ describe('Session', () => {
   });
 
   it('Safe mode math, no math scope train throws', () => {
-    const x = g.placeholder('x', [2]);
-    const y = g.square(x);
-    const z = g.add(x, g.constant(3));
-    const w = g.reduceSum(g.add(y, z));
-
     const safeMode = true;
-    const optimizer = new SGDOptimizer(0.1);
     const math = new NDArrayMathCPU(safeMode);
-    const session = new Session(g, math);
+
     const inputProvider: InputProvider = {
       getNextCopy() {
         return Array1D.new([2, 4]);
@@ -326,9 +324,14 @@ describe('Session', () => {
       disposeCopy(math, example) {}
     };
 
-    expect(
-        () =>
-            session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer))
-        .toThrowError();
+    expect(() => {
+      const session = new Session(g, math);
+      const optimizer = new SGDOptimizer(0.1);
+      const x = g.placeholder('x', [2]);
+      const y = g.square(x);
+      const z = g.add(x, g.constant(3));
+      const w = g.reduceSum(g.add(y, z));
+      session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);
+    }).toThrowError();
   });
 });

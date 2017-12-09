@@ -71,11 +71,10 @@ test_util.describeCustom('NDArray', () => {
     const t = Array1D.new([5, 3, 2]);
     expect(t.rank).toBe(1);
     expect(t.shape).toEqual([3]);
-    expect(t.get(1)).toBe(3);
+    test_util.expectNumbersClose(t.get(1), 3);
 
-    expect(() => Array3D.new([1, 2, 3, 5], [
-      1, 2
-    ])).toThrowError('Shape should be of length 3');
+    expect(() => Array3D.new([1, 2, 3, 5], [1, 2]))
+      .toThrowError('Shape should be of length 3');
 
     const t4 = Array4D.new([1, 2, 1, 2], [1, 2, 3, 4]);
     expect(t4.get(0, 0, 0, 0)).toBe(1);
@@ -115,33 +114,10 @@ test_util.describeCustom('NDArray', () => {
 
   it('NDArray getValues CPU --> GPU', () => {
     const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
-
-    expect(a.inGPU()).toBe(false);
-
     test_util.expectArraysClose(
         a.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
-
-    expect(a.inGPU()).toBe(false);
-
-    // Upload to GPU.
-    expect(a.getTexture() != null).toBe(true);
-
-    expect(a.inGPU()).toBe(true);
     a.dispose();
   });
-
-  // it('NDArray getValues GPU --> CPU', () => {
-  //   const texture = textureManager.acquireTexture([3, 2]);
-  //   gpgpu.uploadMatrixToTexture(
-  //       texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
-
-  //   const a = Array2D.make([3, 2], {texture, textureShapeRC: [3, 2]});
-  //   expect(a.inGPU()).toBe(true);
-
-  //   test_util.expectArraysClose(
-  //       a.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
-  //   expect(a.inGPU()).toBe(false);
-  // });
 
   it('NDArray getValuesAsync CPU --> GPU', (doneFn) => {
     const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
@@ -162,51 +138,6 @@ test_util.describeCustom('NDArray', () => {
     });
   });
 
-  // it('NDArray getValuesAsync GPU --> CPU', () => {
-  //   const texture = textureManager.acquireTexture([3, 2]);
-  //   gpgpu.uploadMatrixToTexture(
-  //       texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
-
-  //   const a = Array2D.make([3, 2], {texture, textureShapeRC: [3, 2]});
-  //   expect(a.inGPU()).toBe(true);
-
-  //   a.getValuesAsync().then(values => {
-  //     test_util.expectArraysClose(values, new Float32Array([1, 2, 3, 4, 5, 6]));
-  //     expect(a.inGPU()).toBe(false);
-  //   });
-  // });
-
-  // it('NDArray.data GPU --> CPU', async () => {
-  //   const texture = textureManager.acquireTexture([3, 2]);
-  //   gpgpu.uploadMatrixToTexture(
-  //       texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
-
-  //   const a = Array2D.make([3, 2], {texture, textureShapeRC: [3, 2]});
-  //   expect(a.inGPU()).toBe(true);
-
-  //   const values = await a.data();
-  //   test_util.expectArraysClose(values, new Float32Array([1, 2, 3, 4, 5, 6]));
-  //   expect(a.inGPU()).toBe(false);
-  // });
-
-  // it('NDArray.val() GPU --> CPU', async () => {
-  //   const texture = textureManager.acquireTexture([3, 2]);
-  //   gpgpu.uploadMatrixToTexture(
-  //       texture, 3, 2, new Float32Array([1, 2, 3, 4, 5, 6]));
-
-  //   const a = Array2D.make([3, 2], {texture, textureShapeRC: [3, 2]});
-  //   expect(a.inGPU()).toBe(true);
-
-  //   test_util.expectNumbersClose(1, await a.val(0));
-  //   test_util.expectNumbersClose(2, await a.val(1));
-  //   test_util.expectNumbersClose(3, await a.val(2));
-  //   test_util.expectNumbersClose(4, await a.val(3));
-  //   test_util.expectNumbersClose(5, await a.val(4));
-  //   test_util.expectNumbersClose(6, await a.val(5));
-
-  //   expect(a.inGPU()).toBe(false);
-  // });
-
   it('Scalar basic methods', () => {
     const a = Scalar.new(5);
     expect(a.get()).toBe(5);
@@ -215,72 +146,6 @@ test_util.describeCustom('NDArray', () => {
     expect(a.size).toBe(1);
     expect(a.shape).toEqual([]);
   });
-
-  // it('Scalar in GPU', () => {
-  //   const texture = textureManager.acquireTexture([1, 1]);
-  //   gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([10]));
-
-  //   const a = Scalar.make([], {texture});
-  //   expect(a.inGPU()).toBe(true);
-  //   test_util.expectArraysClose(a.getValues(), new Float32Array([10]));
-  //   expect(a.inGPU()).toBe(false);
-  // });
-
-  // it('Array1D in GPU', () => {
-  //   const texture = textureManager.acquireTexture([1, 3]);
-  //   gpgpu.uploadMatrixToTexture(texture, 1, 3, new Float32Array([10, 7, 3]));
-
-  //   const a = Array1D.make([3], {texture, textureShapeRC: [1, 3]});
-  //   expect(a.inGPU()).toBe(true);
-  //   test_util.expectArraysClose(a.getValues(), new Float32Array([10, 7, 3]));
-  //   expect(a.inGPU()).toBe(false);
-  // });
-
-  // it('Array1D in GPU, but incorrect c-tor (missing textureShape)', () => {
-  //   const texture = textureManager.acquireTexture([1, 3]);
-  //   gpgpu.uploadMatrixToTexture(texture, 1, 3, new Float32Array([10, 7, 3]));
-
-  //   const f = () => Array1D.make([3], {texture});
-
-  //   expect(f).toThrowError();
-  //   textureManager.releaseTexture(texture, [1, 3]);
-  // });
-
-  // it('NDArray.make() constructs a Scalar', () => {
-  //   const a = NDArray.make([], {values: new Float32Array([3])});
-  //   expect(a instanceof Scalar).toBe(true);
-  // });
-
-  // it('Array2D in GPU, reshaped to Array1D', () => {
-  //   const texture = textureManager.acquireTexture([2, 2]);
-  //   gpgpu.uploadMatrixToTexture(texture, 2, 2, new Float32Array([10, 7, 3, 5]));
-
-  //   const a = Array2D.make([2, 2], {texture, textureShapeRC: [2, 2]});
-  //   const a1d = a.as1D();
-
-  //   test_util.expectArraysClose(
-  //       a1d.getValues(), new Float32Array([10, 7, 3, 5]));
-  // });
-
-  // it('Array1D in GPU, reshaped to Array2D', () => {
-  //   const texture = textureManager.acquireTexture([1, 4]);
-  //   gpgpu.uploadMatrixToTexture(texture, 1, 4, new Float32Array([10, 7, 3, 5]));
-
-  //   const a = Array1D.make([4], {texture, textureShapeRC: [1, 4]});
-  //   const a2d = a.as2D(2, 2);
-
-  //   test_util.expectArraysClose(
-  //       a2d.getValues(), new Float32Array([10, 7, 3, 5]));
-  // });
-
-  // it('Array2D in GPU with custom texture shape', () => {
-  //   const texture = textureManager.acquireTexture([4, 1]);
-  //   gpgpu.uploadMatrixToTexture(texture, 4, 1, new Float32Array([10, 7, 3, 5]));
-
-  //   const a = Array2D.make([2, 2], {texture, textureShapeRC: [4, 1]});
-
-  //   test_util.expectArraysClose(a.getValues(), new Float32Array([10, 7, 3, 5]));
-  // });
 
   it('index2Loc Array1D', () => {
     const t = Array1D.zeros([3]);
@@ -1248,57 +1113,15 @@ test_util.describeCustom('NDArray.asType', () => {
 test_util.describeCustom('NDArray CPU <--> GPU with dtype', () => {
   it('bool CPU -> GPU -> CPU', () => {
     const a = Array1D.new([1, 2, 0, 0, 5], 'bool');
-    expect(a.inGPU()).toBe(false);
-    expect(a.getValues()).toEqual(new Uint8Array([1, 1, 0, 0, 1]));
-
-    // Upload to GPU.
-    expect(a.getTexture() != null).toBe(true);
-
-    expect(a.inGPU()).toBe(true);
-
     expect(a.getValues()).toEqual(new Uint8Array([1, 1, 0, 0, 1]));
     a.dispose();
   });
-
-  // it('bool GPU --> CPU', () => {
-  //   const shape: [number, number] = [1, 5];
-  //   const texture = textureManager.acquireTexture(shape);
-  //   gpgpu.uploadMatrixToTexture(
-  //       texture, shape[0], shape[1], new Float32Array([1, 1, 0, 0, 1]));
-
-  //   const a = Array1D.make(shape, {texture, textureShapeRC: shape}, 'bool');
-  //   expect(a.inGPU()).toBe(true);
-
-  //   expect(a.getValues()).toEqual(new Uint8Array([1, 1, 0, 0, 1]));
-  //   expect(a.inGPU()).toBe(false);
-  // });
 
   it('int32 CPU -> GPU -> CPU', () => {
     const a = Array1D.new([1, 2, 0, 0, 5], 'int32');
-    expect(a.inGPU()).toBe(false);
-    expect(a.getValues()).toEqual(new Int32Array([1, 2, 0, 0, 5]));
-
-    // Upload to GPU.
-    expect(a.getTexture() != null).toBe(true);
-
-    expect(a.inGPU()).toBe(true);
-
     expect(a.getValues()).toEqual(new Int32Array([1, 2, 0, 0, 5]));
     a.dispose();
   });
-
-  // it('int32 GPU --> CPU', () => {
-  //   const shape: [number, number] = [1, 5];
-  //   const texture = textureManager.acquireTexture(shape);
-  //   gpgpu.uploadMatrixToTexture(
-  //       texture, shape[0], shape[1], new Float32Array([1, 5.003, 0, 0, 1.001]));
-
-  //   const a = Array1D.make(shape, {texture, textureShapeRC: shape}, 'int32');
-  //   expect(a.inGPU()).toBe(true);
-
-  //   expect(a.getValues()).toEqual(new Int32Array([1, 5, 0, 0, 1]));
-  //   expect(a.inGPU()).toBe(false);
-  // });
 }, FEATURES, customBeforeEach, customAfterEach);
 
 // NDArray.rand
@@ -1808,10 +1631,5 @@ test_util.describeCustom('NDArray.randUniform', () => {
               new Float32Array(
                   [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]));
         });
-      },
-      [
-        {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-        {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-        {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-      ]);
+      }, FEATURES);
 }

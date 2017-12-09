@@ -26,6 +26,8 @@ export interface ActivationFunction {
 }
 
 export class TanHFunc implements ActivationFunction {
+  private one = Scalar.new(1);
+
   output<T extends NDArray>(math: NDArrayMath, x: T) {
     return math.scope(() => {
       return math.tanh(x);
@@ -36,11 +38,13 @@ export class TanHFunc implements ActivationFunction {
     return math.scope(() => {
       const ySquared = math.elementWiseMul(y, y);
       // 1 - y^2.
-      return math.scalarMinusArray(Scalar.ONE, ySquared);
+      return math.scalarMinusArray(this.one, ySquared);
     });
   }
 
-  dispose() {}
+  dispose() {
+    this.one.dispose();
+  }
 }
 
 export class ReLUFunc implements ActivationFunction {
@@ -96,6 +100,8 @@ export class SigmoidFunc implements ActivationFunction {
 }
 
 export class SquareFunc implements ActivationFunction {
+  private two = Scalar.new(2);
+
   output<T extends NDArray>(math: NDArrayMath, x: T) {
     return math.scope(() => {
       return math.elementWiseMul(x, x);
@@ -105,11 +111,13 @@ export class SquareFunc implements ActivationFunction {
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
     return math.scope(() => {
       // dy/dx = 2*x.
-      return math.scalarTimesArray(Scalar.TWO, x);
+      return math.scalarTimesArray(this.two, x);
     });
   }
 
-  dispose() {}
+  dispose() {
+    this.two.dispose();
+  }
 }
 
 export class EluFunc implements ActivationFunction {

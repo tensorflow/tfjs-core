@@ -92,7 +92,7 @@ function typedArrayToFloat32(
 }
 
 export class MathBackendWebGL implements MathBackend {
-  uploadPixels(
+  writePixels(
       data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
@@ -105,20 +105,21 @@ export class MathBackendWebGL implements MathBackend {
     data.textureType = TextureType.RGBA_COLOR;
     data.textureShapeRC = textureShapeRC;
   }
-  upload(data: NDArrayData<keyof DataTypes>): void {
+  write(data: NDArrayData<keyof DataTypes>): void {
     data.textureShapeRC =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, data.shape);
     data.texture = this.textureManager.acquireTexture(data.textureShapeRC);
     data.textureType = TextureType.DEFAULT;
 
-    this.gpgpu.uploadMatrixToTexture(
-        data.texture, data.textureShapeRC[0],
-        // TODO(smilkov): Propagate the original typed array to gpgpu.
-        data.textureShapeRC[1], typedArrayToFloat32(data.values, data.dtype));
-
-    data.values = null;
+    if (data.values != null) {
+      this.gpgpu.uploadMatrixToTexture(
+          data.texture, data.textureShapeRC[0],
+          // TODO(smilkov): Propagate the original typed array to gpgpu.
+          data.textureShapeRC[1], typedArrayToFloat32(data.values, data.dtype));
+      data.values = null;
+    }
   }
-  disposeArray(data: NDArrayData<keyof DataTypes>): void {
+  disposeData(data: NDArrayData<keyof DataTypes>): void {
     if (data.texture != null) {
       this.textureManager.releaseTexture(data.texture, data.textureShapeRC);
       data.texture = null;
@@ -126,25 +127,21 @@ export class MathBackendWebGL implements MathBackend {
       data.textureType = null;
     }
   }
-  downloadSync<T extends 'float32'|'int32'|'bool'>(data: NDArrayData<T>):
+  readSync<T extends 'float32'|'int32'|'bool'>(data: NDArrayData<T>):
       DataTypes[T] {
-    if (data.values == null) {
-      let values: Float32Array;
-      if (data.textureType === TextureType.DEFAULT) {
-        values = this.gpgpu.downloadMatrixFromTexture(
-            data.texture, data.textureShapeRC[0], data.textureShapeRC[1]);
-      } else {
-        values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
-            data.texture, data.textureShapeRC[0], data.textureShapeRC[1],
-            data.shape[2]);
-      }
-
-      data.values = float32ToTypedArray(values, data.dtype);
-      this.disposeArray(data);
+    let values: Float32Array;
+    if (data.textureType === TextureType.DEFAULT) {
+      values = this.gpgpu.downloadMatrixFromTexture(
+          data.texture, data.textureShapeRC[0], data.textureShapeRC[1]);
+    } else {
+      values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
+          data.texture, data.textureShapeRC[0], data.textureShapeRC[1],
+          data.shape[2]);
     }
+    data.values = float32ToTypedArray(values, data.dtype);
     return data.values;
   }
-  async download<T extends 'float32'|'int32'|'bool'>(data: NDArrayData<T>):
+  async read<T extends 'float32'|'int32'|'bool'>(data: NDArrayData<T>):
       Promise<DataTypes[T]> {
     if (data.values != null) {
       return data.values;
@@ -158,14 +155,14 @@ export class MathBackendWebGL implements MathBackend {
     }
 
     if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-      return await this.downloadSync(data);
+      return await this.readSync(data);
     }
 
     // Construct an empty query. We're just interested in getting a callback
     // when the GPU command queue has executed until this point in time.
     const queryFn = () => {};
     await this.gpgpu.runQuery(queryFn);
-    return this.downloadSync(data);
+    return this.readSync(data);
   }
 
   private gpgpu: GPGPUContext;
@@ -272,10 +269,7 @@ export class MathBackendWebGL implements MathBackend {
 
   private makeOutputArray<G extends keyof DataTypes, T extends NDArray<G>>(
       shape: number[], dtype: G): T {
-    const textureShapeRC =
-        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
-    const texture = this.textureManager.acquireTexture(textureShapeRC);
-    return NDArray.make(shape, {texture, textureShapeRC}, dtype) as T;
+    return NDArray.make(shape, {}, dtype) as T;
   }
 
   private compileAndRun<T extends NDArray, K extends NDArray>(

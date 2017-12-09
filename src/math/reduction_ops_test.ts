@@ -440,6 +440,7 @@ import * as reduce_util from './reduce_util';
       test_util.expectNumbersClose(result.get(), 7);
 
       a.dispose();
+      result.dispose();
     });
 
     it('propagates NaNs', math => {
