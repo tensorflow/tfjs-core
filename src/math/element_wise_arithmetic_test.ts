@@ -232,21 +232,34 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 {
   const tests: MathTests = it => {
     it('pow same-shaped ndarrays', math => {
-      const a = Array2D.new([2, 3], [1, 2, -3, 0, 7, 1]);
-      const b = Array2D.new([2, 3], [5, 3, 4, 5, 2, -3]);
-      const expected = new Float32Array([1, 8, NaN, 0, 49, 1]);
+      const a = Array2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
+      const b = Array2D.new([2, 3], [5, 3, 4, 5, 2, -3], 'int32');
+      const expected = new Float32Array([1, -8, 81, 0, 49, 1]);
       const result = math.pow(a, b);
 
       expect(result.shape).toEqual([2, 3]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.getValues(), expected, 0.01);
+
+      a.dispose();
+      b.dispose();
+    });
+
+    it('pow different-shaped ndarrays', math => {
+      const a = Array2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
+      const b = Scalar.new(2, 'int32');
+      const expected = new Float32Array([1, 4, 9, 0, 49, 1]);
+      const result = math.pow(a, b);
+
+      expect(result.shape).toEqual([2, 3]);
+      test_util.expectArraysClose(result.getValues(), expected, 0.05);
 
       a.dispose();
       b.dispose();
     });
 
     it('pow propagates NaNs', math => {
-      const a = Array2D.new([2, 2], [1, 3, 4, 0]);
-      const b = Array2D.new([2, 2], [NaN, 3, NaN, 3]);
+      const a = Array2D.new([2, 2], [NaN, 3, NaN, 0]);
+      const b = Array2D.new([2, 2], [1, 3, 2, 3], 'int32');
 
       const result = math.pow(a, b).getValues();
       test_util.expectArraysClose(
@@ -256,12 +269,11 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       b.dispose();
     });
 
-    it('pow throws when passed ndarrays of different shapes', math => {
+    it('powStrict throws when passed ndarrays of different shapes', math => {
       const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-      const b = Array2D.new([2, 2], [5, 3, 4, -7]);
+      const b = Array2D.new([2, 2], [5, 3, 4, -7], 'int32');
 
-      expect(() => math.pow(a, b)).toThrowError();
-      expect(() => math.pow(b, a)).toThrowError();
+      expect(() => math.powStrict(a, b)).toThrowError();
 
       a.dispose();
       b.dispose();

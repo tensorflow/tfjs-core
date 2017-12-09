@@ -22,10 +22,9 @@ export const ADD = 'return a + b;';
 export const SUB = 'return a - b;';
 export const MUL = 'return a * b;';
 export const DIV = 'return a / b;';
-// ensure the pow op return NaN for all negative base cases.
 export const POW = `
-  if (a < 0.0 ) return pow(a, -1.5);
-  return pow(a, b);
+  return (round(mod(b, 2.0)) == 0 || round(mod(b, 2.0)) == 2) ?
+      pow(abs(a), b) : sign(a) * pow(abs(a), b);
 `;
 export const EQUAL = `
   if (isNaN(a)) return a;

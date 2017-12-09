@@ -384,7 +384,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }
 
-  pow<T extends NDArray>(a: T, b: T): T {
+  pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T {
     const program = new BinaryOpProgram(binaryop_gpu.POW, a.shape, b.shape);
     return this.compileAndRun<NDArray, T>(program, [a, b]);
   }

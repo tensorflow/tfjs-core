@@ -1002,10 +1002,23 @@ export abstract class NDArrayMath {
    * @param a The first NDArray to pow element-wise.
    * @param b The second NDArray to pow element-wise.
    */
-  pow<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
-  NDArray<G> {
+  pow<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<'int32'>):
+      NDArray<G> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('pow', () => this.backend.pow(a, b));
+  }
+
+  /**
+   * Computes the power of one value to another. Inputs must
+   * be the same shape. For broadcasting support, use math.pow() instead.
+   *
+   * @param a The first NDArray to pow element-wise.
+   * @param b The second NDArray to pow element-wise.
+   */
+  powStrict<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<'int32'>):
+      NDArray<G> {
+    util.assertShapesMatch(a.shape, b.shape, 'Error in powStrict: ');
+    return this.pow(a, b);
   }
 
   /** @deprecated Use math.subtract instead. */
