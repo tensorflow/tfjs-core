@@ -270,24 +270,7 @@ export abstract class NDArrayMath {
 
   private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
       name: string, f: () => T): T {
-    let start: number;
-    if (this.debugMode) {
-      start = performance.now();
-    }
-    const result = f();
-    if (this.debugMode) {
-      const vals = result.getValues();
-      const time = util.rightPad(`${performance.now() - start}ms`, 9);
-      const paddedName = util.rightPad(name, 25);
-      const rank = result.rank;
-      const size = result.size;
-      const shape = util.rightPad(result.shape.toString(), 14);
-      console.log(
-          `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-          'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      this.checkForNaN(vals, result.dtype, name);
-    }
-    return this.track(result);
+    return f();
   }
 
   /**
@@ -462,7 +445,7 @@ export abstract class NDArrayMath {
    */
   concat1D(a: Array1D, b: Array1D): Array1D {
     concat_util.assertParams(a.shape, b.shape, 0);
-    return this.executeOp('concat1D', () => this.backend.concat1D(a, b));
+    return this.track(this.backend.concat1D({inputs: {a, b}}));
   }
 
   /**
@@ -495,7 +478,7 @@ export abstract class NDArrayMath {
    */
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
     concat_util.assertParams(a.shape, b.shape, axis);
-    return this.executeOp('concat2D', () => this.backend.concat2D(a, b, axis));
+    return this.track(this.backend.concat2D({inputs: {a, b}, args: {axis}}));
   }
 
   /**
@@ -524,30 +507,28 @@ export abstract class NDArrayMath {
    * C = shape(2, 1, 6) = | r1, g1, b1, r3, g3, b3 |
    *                      | r2, g2, b2, r4, g4, b4 |
    *
-   * @param ndarray1 The first array to concat.
-   * @param ndarray2 The second array to conat.
+   * @param a The first array to concat.
+   * @param b The second array to conat.
    * @param axis The axis to concate along.
    * @return The concatenated array.
    */
-  concat3D(ndarray1: Array3D, ndarray2: Array3D, axis: number): Array3D {
-    concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
-    return this.executeOp(
-        'concat3D', () => this.backend.concat3D(ndarray1, ndarray2, axis));
+  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
+    concat_util.assertParams(a.shape, b.shape, axis);
+    return this.track(this.backend.concat3D({inputs: {a, b}, args: {axis}}));
   }
 
   /**
    * Concatenates two 4D ndarrays along a given axis. See math.concat2D() for
    * documentation.
    *
-   * @param ndarray1 The first array to concat.
-   * @param ndarray2 The second array to conat.
+   * @param a The first array to concat.
+   * @param b The second array to conat.
    * @param axis The axis to concate along.
    * @return The concatenated array.
    */
-  concat4D(ndarray1: Array4D, ndarray2: Array4D, axis: number): Array4D {
-    concat_util.assertParams(ndarray1.shape, ndarray2.shape, axis);
-    return this.executeOp(
-        'concat4D', () => this.backend.concat4D(ndarray1, ndarray2, axis));
+  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
+    concat_util.assertParams(a.shape, b.shape, axis);
+    return this.track(this.backend.concat4D({inputs: {a, b}, args: {axis}}));
   }
 
   ///////////////////
@@ -597,23 +578,24 @@ export abstract class NDArrayMath {
    * If axes has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
    *
-   * @param input The input array to compute the sum over.
+   * @param x The input array to compute the sum over.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   sum<T extends keyof DataTypes>(
-      input: NDArray<T>, axis: number|number[] = null,
+      x: NDArray<T>, axis: number|number[] = null,
       keepDims = false): NDArray<SumTypes[T]> {
-    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
     return this.executeOp('sum', () => {
       if (permutedAxes != null) {
-        input = this.transpose(input, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+        x = this.transpose(x, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
-      const res = this.backend.sum(input, axes);
+      const res =
+          this.backendEngine.executeKernel('sum', {inputs: {x}, args: {axes}});
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
@@ -654,20 +636,21 @@ export abstract class NDArrayMath {
    * Returns the indices of the minimum values along an `axis`. The result has
    * the same shape as `input` with the dimension along `axis` removed.
    *
-   * @param input The input array.
+   * @param x The input array.
    * @param axis Optional. The dimension to reduce. By default it reduces
    * across all axes and returns the flat index.
    *
    */
-  argMin(input: NDArray, axis: number = null): NDArray<'int32'> {
-    let axes = axis_util.parseAxisParam(axis, input.shape);
-    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+  argMin(x: NDArray, axis: number = null): NDArray<'int32'> {
+    let axes = axis_util.parseAxisParam(axis, x.shape);
+    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
     return this.executeOp('argMin', () => {
       if (permutedAxes != null) {
-        input = this.transpose(input, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+        x = this.transpose(x, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
-      return this.backend.argMin(input, axes);
+      return this.backendEngine.executeKernel(
+          'argmin', {inputs: {x}, args: {axes}});
     });
   }
 
@@ -675,19 +658,20 @@ export abstract class NDArrayMath {
    * Returns the indices of the maximum values along an `axis`. The result has
    * the same shape as `input` with the dimension along `axis` removed.
    *
-   * @param input The input array.
+   * @param x The input array.
    * @param axis Optional. The dimension to reduce. By default it reduces
    *     across all axes and returns the flat index
    */
-  argMax(input: NDArray, axis: number = null): NDArray<'int32'> {
-    let axes = axis_util.parseAxisParam(axis, input.shape);
-    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+  argMax(x: NDArray, axis: number = null): NDArray<'int32'> {
+    let axes = axis_util.parseAxisParam(axis, x.shape);
+    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
     return this.executeOp('argMax', () => {
       if (permutedAxes != null) {
-        input = this.transpose(input, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+        x = this.transpose(x, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
-      return this.backend.argMax(input, axes);
+      return this.backendEngine.executeKernel(
+          'argmax', {inputs: {x}, args: {axes}});
     });
   }
 
@@ -704,34 +688,37 @@ export abstract class NDArrayMath {
   }
 
   /**
-   * Returns the truth value of (x == y) element-wise. Supports broadcasting.
+   * Returns the truth value of (a == b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.equalStrict().
    */
-  equal(x: NDArray, y: NDArray): NDArray<'bool'> {
-    return this.executeOp('equal', () => this.backend.equal(x, y));
+  equal(a: NDArray, b: NDArray): NDArray<'bool'> {
+    return this.track(
+        this.backendEngine.executeKernel('equal', {inputs: {a, b}}));
   }
 
-  equalStrict<D extends keyof DataTypes, T extends NDArray<D>>(x: T, y: T):
+  equalStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T):
       NDArray<'bool'> {
-    util.assertShapesMatch(x.shape, y.shape, 'Error in equalStrict: ');
-    return this.equal(x, y);
+    util.assertShapesMatch(a.shape, b.shape, 'Error in equalStrict: ');
+    return this.equal(a, b);
   }
 
   /**
    * Computes the top K values and flattened indices.
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    * @param k How many top values to compute.
    */
-  topK(ndarray: NDArray, k: number): {values: Array1D, indices: Array1D} {
+  topK(x: NDArray, k: number): {values: Array1D, indices: Array1D<'int32'>} {
     util.assert(
-        k <= ndarray.size,
+        k <= x.size,
         `Error in topK: k value (${k}) must be less than size of input ` +
-            `ndarray, got shape ${ndarray.shape}.`);
+            `ndarray, got shape ${x.shape}.`);
     let values: Array1D;
-    let indices: Array1D;
+    let indices: Array1D<'int32'>;
     this.executeOp('topK', () => {
-      values = this.backend.topKValues(ndarray, k);
-      indices = this.backend.topKIndices(ndarray, k);
+      values = this.backendEngine.executeKernel(
+          'topkvalues', {inputs: {x}, args: {k}});
+      indices = this.backendEngine.executeKernel(
+          'topkindices', {inputs: {x}, args: {k}});
       return values;
     });
     const result = {values, indices};
@@ -916,10 +903,11 @@ export abstract class NDArrayMath {
 
   /**
    * Computes -1 * A element-wise.
-   * @param a The input array.
+   * @param x The input array.
    */
-  neg<T extends NDArray>(a: T): T {
-    return this.executeOp('neg', () => this.backend.neg(a));
+  neg<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('neg', {inputs: {x}}) as T);
   }
 
   /**
@@ -931,7 +919,9 @@ export abstract class NDArrayMath {
    */
   add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('add', () => this.backend.add(a, b));
+    return this.track(
+        this.backendEngine.executeKernel('add', {inputs: {a, b}}) as
+        NDArray<G>);
   }
 
   /**
@@ -956,7 +946,9 @@ export abstract class NDArrayMath {
   subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
       NDArray<G> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('subtract', () => this.backend.subtract(a, b));
+    return this.track(
+        this.backendEngine.executeKernel('subtract', {inputs: {a, b}}) as
+        NDArray<G>);
   }
 
   /** @deprecated Use math.subtract instead. */
@@ -985,7 +977,8 @@ export abstract class NDArrayMath {
    */
   multiply(a: NDArray, b: NDArray): NDArray {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('multiply', () => this.backend.multiply(a, b));
+    return this.track(
+        this.backendEngine.executeKernel('multiply', {inputs: {a, b}}));
   }
 
   /**
@@ -1016,7 +1009,9 @@ export abstract class NDArrayMath {
    */
   divide(a: NDArray, b: NDArray): NDArray<'float32'> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.executeOp('divide', () => this.backend.divide(a, b));
+    return this.track(
+        this.backendEngine.executeKernel('divide', {inputs: {a, b}}) as
+        NDArray<'float32'>);
   }
 
   /**
@@ -1273,7 +1268,9 @@ export abstract class NDArrayMath {
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
     return this.executeOp('scaledArrayAdd', () => {
-      this.backend.scaledArrayAdd(c1, a, c2, b);
+      return this.scope(() => {
+        return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
+      });
     });
   }
 

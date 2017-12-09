@@ -17,13 +17,20 @@
  */
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray';
 import {SumTypes} from '../types';
 
+import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
 import {CloneInputConfig} from './kernels/clone';
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
+import {AddInputConfig, DivideInputConfig, MultiplyInputConfig, SubtractInputConfig} from './kernels/element_wise_arithmetic';
+import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
+import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
+import {NegInputConfig} from './kernels/neg';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
+import {SumInputConfig} from './kernels/sum';
+import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
 
 /**
  * The interface that defines the kernels that should be implemented when adding
@@ -45,53 +52,41 @@ export interface MathBackend {
   concat3D(config: Concat3DInputConfig): Array3D;
   concat4D(config: Concat4DInputConfig): Array4D;
 
-  neg<T extends NDArray>(a: T): T;
+  neg<T extends NDArray>(config: NegInputConfig<T>): T;
 
-  add<T extends NDArray>(a: T, b: T): T;
+  add(config: AddInputConfig): NDArray;
+  subtract(config: SubtractInputConfig): NDArray;
+  multiply(config: MultiplyInputConfig): NDArray;
+  divide(config: DivideInputConfig): NDArray<'float32'>;
 
-  subtract<T extends NDArray>(a: T, b: T): T;
-
-  multiply<T extends NDArray>(a: T, b: T): T;
-
-  divide(a: NDArray, b: NDArray): NDArray<'float32'>;
-
-  sum<T extends keyof DataTypes>(input: NDArray<T>, axes: number[]):
+  sum<T extends keyof DataTypes>(config: SumInputConfig<SumTypes[T]>):
       NDArray<SumTypes[T]>;
 
-  argMin(input: NDArray, axes: number[]): NDArray<'int32'>;
+  argMin(config: ArgMinInputConfig): NDArray<'int32'>;
+  argMax(config: ArgMaxInputConfig): NDArray<'int32'>;
 
-  argMax(input: NDArray, axes: number[]): NDArray<'int32'>;
-
-  equal(a: NDArray, b: NDArray): NDArray<'bool'>;
+  equal(config: EqualInputConfig): NDArray<'bool'>;
 
   topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
-      ndarray: T, k: number): Array1D<D>;
-  topKIndices(ndarray: NDArray, k: number): Array1D<'int32'>;
+      config: TopKValuesInputConfig<T>): Array1D<D>;
+  topKIndices(config: TopKIndicesInputConfig): Array1D<'int32'>;
 
-  min<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]): NDArray<G>;
-
-  max<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]): NDArray<G>;
+  min<G extends keyof DataTypes>(config: MinInputConfig<G>): NDArray<G>;
+  max<G extends keyof DataTypes>(config: MaxInputConfig<G>): NDArray<G>;
 
   ceil<T extends NDArray>(ndarray: T): T;
-
   floor<T extends NDArray>(ndarray: T): T;
 
   exp<T extends NDArray>(ndarray: T): T;
-
   log<T extends NDArray>(ndarray: T): T;
 
   sqrt<T extends NDArray>(ndarray: T): T;
-
   square<T extends NDArray>(x: T): T;
 
   relu<T extends NDArray>(input: T): T;
-
   elu<T extends NDArray>(ndarray: T): T;
-
   eluDer<T extends NDArray>(ndarray: T): T;
-
   selu<T extends NDArray>(a: T): T;
-
   leakyRelu<T extends NDArray>(ndarray: T, alpha: number): T;
 
   clip<T extends NDArray>(ndarray: T, min: number, max: number): T;

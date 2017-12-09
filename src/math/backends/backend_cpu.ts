@@ -28,9 +28,16 @@ import {SumTypes, SumTypesMap} from '../types';
 
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
+import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
 import {CloneInputConfig} from './kernels/clone';
+import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
+import {AddInputConfig, DivideInputConfig, MultiplyInputConfig, SubtractInputConfig} from './kernels/element_wise_arithmetic';
+import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig, MatrixOrientation} from './kernels/matmul';
+import {NegInputConfig} from './kernels/neg';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
+import {SumInputConfig} from './kernels/sum';
+import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
 
 export class MathBackendCPU implements MathBackend {
   clone<T extends NDArray>(config: CloneInputConfig<T>): T {
@@ -100,7 +107,8 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  concat1D(a: Array1D, b: Array1D): Array1D {
+  concat1D(config: Concat1DInputConfig): Array1D {
+    const {a, b} = config.inputs;
     const outShape = concat_util.computeOutShape(a.shape, b.shape, 0);
     const result = Array1D.zeros(outShape as [number]);
 
@@ -114,7 +122,10 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
+  concat2D(config: Concat2DInputConfig): Array2D {
+    const {a, b} = config.inputs;
+    const {axis} = config.args;
+
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
     const result = Array2D.zeros(outShape as [number, number]);
 
@@ -146,7 +157,10 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
+  concat3D(config: Concat3DInputConfig): Array3D {
+    const {a, b} = config.inputs;
+    const {axis} = config.args;
+
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
 
     const result = Array3D.zeros(outShape as [number, number, number]);
@@ -183,7 +197,10 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
+  concat4D(config: Concat4DInputConfig): Array4D {
+    const {a, b} = config.inputs;
+    const {axis} = config.args;
+
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
     const result = Array4D.zeros(outShape as [number, number, number, number]);
 
@@ -221,7 +238,8 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  scaledArrayAdd<T extends NDArray>(c1: Scalar, a: T, c2: Scalar, b: T): T {
+  private scaledArrayAdd<T extends NDArray>(c1: Scalar, a: T, c2: Scalar, b: T):
+      T {
     const c1Val = c1.get();
     const c2Val = c2.get();
     return this.broadcastedBinaryOp(a, b, 'float32', (aVal, bVal) => {
@@ -229,16 +247,50 @@ export class MathBackendCPU implements MathBackend {
     }) as T;
   }
 
-  neg<T extends NDArray>(a: T): T {
-    return this.multiply(Scalar.NEG_ONE, a) as T;
+  neg<T extends NDArray>(config: NegInputConfig<T>): T {
+    const {x} = config.inputs;
+    return this.multiply({inputs: {a: Scalar.NEG_ONE, b: x}}) as T;
   }
 
-  add<T extends NDArray>(a: T, b: T): T {
-    return this.scaledArrayAdd<T>(Scalar.ONE, a, Scalar.ONE, b);
+  add(config: AddInputConfig): NDArray {
+    const {a, b} = config.inputs;
+    return this.scaledArrayAdd(Scalar.ONE, a, Scalar.ONE, b);
   }
 
-  subtract<T extends NDArray>(a: T, b: T): T {
-    return this.scaledArrayAdd<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
+  subtract(config: SubtractInputConfig): NDArray {
+    const {a, b} = config.inputs;
+    return this.scaledArrayAdd(Scalar.ONE, a, Scalar.NEG_ONE, b);
+  }
+
+  multiply<T extends NDArray>(config: MultiplyInputConfig): T {
+    const {a, b} = config.inputs;
+
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const newValues = new Float32Array(util.sizeFromShape(newShape));
+
+    const aValues = a.getValues();
+    const bValues = b.getValues();
+    for (let i = 0; i < newValues.length; ++i) {
+      newValues[i] = aValues[i % a.size] * bValues[i % b.size];
+    }
+    return NDArray.make(newShape, {values: newValues}) as T;
+  }
+
+  divide(config: DivideInputConfig): NDArray<'float32'> {
+    const {a, b} = config.inputs;
+
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const newValues = new Float32Array(util.sizeFromShape(newShape));
+
+    const aValues = a.getValues();
+    const bValues = b.getValues();
+
+    for (let i = 0; i < newValues.length; ++i) {
+      newValues[i] = aValues[i % a.size] / bValues[i % b.size];
+    }
+    return NDArray.make(newShape, {values: newValues}, 'float32');
   }
 
   matMul(config: MatMulInputConfig): Array2D {
@@ -280,44 +332,20 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new([leftDim, rightDim], values);
   }
 
-  multiply<T extends NDArray>(a: T, b: T): T {
-    const newShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const newValues = new Float32Array(util.sizeFromShape(newShape));
-
-    const aValues = a.getValues();
-    const bValues = b.getValues();
-    for (let i = 0; i < newValues.length; ++i) {
-      newValues[i] = aValues[i % a.size] * bValues[i % b.size];
-    }
-    return NDArray.make(newShape, {values: newValues}) as T;
-  }
-
-  divide(a: NDArray, b: NDArray): NDArray<'float32'> {
-    const newShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const newValues = new Float32Array(util.sizeFromShape(newShape));
-
-    const aValues = a.getValues();
-    const bValues = b.getValues();
-
-    for (let i = 0; i < newValues.length; ++i) {
-      newValues[i] = aValues[i % a.size] / bValues[i % b.size];
-    }
-    return NDArray.make(newShape, {values: newValues}, 'float32');
-  }
-
-  sum<T extends keyof DataTypes>(input: NDArray<T>, axes: number[]):
+  sum<T extends keyof DataTypes>(config: SumInputConfig<SumTypes[T]>):
       NDArray<SumTypes[T]> {
-    axis_util.assertAxesAreInnerMostDims('sum', axes, input.rank);
+    const {x} = config.inputs;
+    const {axes} = config.args;
+
+    axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(input.shape, axes);
-    const resultDtype = SumTypesMap[input.dtype] as keyof SumTypes;
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const resultDtype = SumTypesMap[x.dtype] as keyof SumTypes;
     const result = NDArray.zeros(outShape, resultDtype);
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.getValues();
 
-    const aVals = input.getValues();
+    const aVals = x.getValues();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let sum = 0;
@@ -329,15 +357,18 @@ export class MathBackendCPU implements MathBackend {
     return result as NDArray<SumTypes[T]>;
   }
 
-  argMin(input: NDArray, axes: number[]): NDArray<'int32'> {
-    axis_util.assertAxesAreInnerMostDims('argMin', axes, input.rank);
+  argMin(config: ArgMinInputConfig): NDArray<'int32'> {
+    const {x} = config.inputs;
+    const {axes} = config.args;
+
+    axis_util.assertAxesAreInnerMostDims('argMin', axes, x.rank);
     const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(input.shape, axes);
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = NDArray.zeros(outShape, 'int32');
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.getValues();
 
-    const aVals = input.getValues();
+    const aVals = x.getValues();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let min = aVals[offset];
@@ -358,15 +389,18 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  argMax(input: NDArray, axes: number[]): NDArray<'int32'> {
-    axis_util.assertAxesAreInnerMostDims('argMax', axes, input.rank);
+  argMax(config: ArgMaxInputConfig): NDArray<'int32'> {
+    const {x} = config.inputs;
+    const {axes} = config.args;
+
+    axis_util.assertAxesAreInnerMostDims('argMax', axes, x.rank);
     const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(input.shape, axes);
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = NDArray.zeros(outShape, 'int32');
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.getValues();
 
-    const aVals = input.getValues();
+    const aVals = x.getValues();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let max = aVals[offset];
@@ -387,7 +421,9 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  equal(a: NDArray, b: NDArray): NDArray<'bool'> {
+  equal(config: EqualInputConfig): NDArray<'bool'> {
+    const {a, b} = config.inputs;
+
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -398,12 +434,18 @@ export class MathBackendCPU implements MathBackend {
   }
 
   topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
-      ndarray: T, k: number): Array1D<D> {
-    return this.topK(ndarray, k).values as Array1D<D>;
+      config: TopKValuesInputConfig<T>): Array1D<D> {
+    const {x} = config.inputs;
+    const {k} = config.args;
+
+    return this.topK(x, k).values as Array1D<D>;
   }
 
-  topKIndices(ndarray: NDArray, k: number): Array1D<'int32'> {
-    return this.topK(ndarray, k).indices;
+  topKIndices(config: TopKIndicesInputConfig): Array1D<'int32'> {
+    const {x} = config.inputs;
+    const {k} = config.args;
+
+    return this.topK(x, k).indices;
   }
 
   private topK<D extends keyof DataTypes, T extends NDArray<D>>(
