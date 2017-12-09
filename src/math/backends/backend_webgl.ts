@@ -32,10 +32,11 @@ import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DI
 import {AddInputConfig, DivideInputConfig, MultiplyInputConfig, SubtractInputConfig} from './kernels/element_wise_arithmetic';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
-import {NegInputConfig} from './kernels/neg';
+import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
+import {UnaryInputConfig} from './kernels/unary';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
@@ -171,7 +172,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a, b]);
   }
 
-  neg<T extends NDArray>(config: NegInputConfig<T>): T {
+  neg<T extends NDArray>(config: UnaryInputConfig<T>): T {
     const {x} = config.inputs;
     const program = new UnaryOpProgram(x.shape, unary_op.NEG);
     return this.compileAndRun(program, [x]) as T;
@@ -373,72 +374,88 @@ export class MathBackendWebGL implements MathBackend {
     throw new Error('topKIndices GPU not yet implemented!');
   }
 
-  min<G extends keyof DataTypes>(a: NDArray<G>, axes: number[]): NDArray<G> {
-    axis_util.assertAxesAreInnerMostDims('min', axes, a.rank);
+  min<G extends keyof DataTypes>(config: MinInputConfig<G>): NDArray<G> {
+    const {x} = config.inputs;
+    const {axes} = config.args;
+
+    axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
     const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(a.shape, axes);
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
-    const a2D = a.as2D(-1, inSize);
+    const a2D = x.as2D(-1, inSize);
     return this.reduce(a2D, 'min', a2D.dtype).reshape(outShape);
   }
 
-  max<G extends keyof DataTypes>(a: NDArray<G>, axes: number[]): NDArray<G> {
-    axis_util.assertAxesAreInnerMostDims('max', axes, a.rank);
+  max<G extends keyof DataTypes>(config: MaxInputConfig<G>): NDArray<G> {
+    const {x} = config.inputs;
+    const {axes} = config.args;
+
+    axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(a.shape, axes);
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
-    const a2D = a.as2D(-1, inSize);
+    const a2D = x.as2D(-1, inSize);
     return this.reduce(a2D, 'max', a2D.dtype).reshape(outShape);
   }
 
-  ceil<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.CEIL);
-    return this.compileAndRun(program, [a]) as T;
+  ceil<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.CEIL);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  floor<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.FLOOR);
-    return this.compileAndRun(program, [a]) as T;
+  floor<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.FLOOR);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  exp<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.EXP);
-    return this.compileAndRun(program, [a]) as T;
+  exp<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.EXP);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  log<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.LOG);
-    return this.compileAndRun(program, [a]) as T;
+  log<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.LOG);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  sqrt<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.SQRT);
-    return this.compileAndRun(program, [a]) as T;
+  sqrt<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.SQRT);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  square<T extends NDArray>(x: T): T {
+  square<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
     const program = new UnaryOpProgram(x.shape, unary_op.SQUARE);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  relu<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.RELU);
-    return this.compileAndRun(program, [a]) as T;
+  relu<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.RELU);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  elu<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.ELU);
-    return this.compileAndRun(program, [a]) as T;
+  elu<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.ELU);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  eluDer<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.ELU_DER);
-    return this.compileAndRun(program, [a]) as T;
+  eluDer<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.ELU_DER);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  selu<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.SELU);
-    return this.compileAndRun(program, [a]) as T;
+  selu<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.SELU);
+    return this.compileAndRun(program, [x]) as T;
   }
 
   leakyRelu<T extends NDArray>(a: T, alpha: number): T {
@@ -451,57 +468,67 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a]) as T;
   }
 
-  abs<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.ABS);
-    return this.compileAndRun(program, [a]) as T;
+  abs<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.ABS);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  sigmoid<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.SIGMOID);
-    return this.compileAndRun(program, [a]) as T;
+  sigmoid<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.SIGMOID);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  sin<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.SIN);
-    return this.compileAndRun(program, [a]) as T;
+  sin<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.SIN);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  cos<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.COS);
-    return this.compileAndRun(program, [a]) as T;
+  cos<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.COS);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  tan<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.TAN);
-    return this.compileAndRun(program, [a]) as T;
+  tan<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.TAN);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  asin<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.ASIN);
-    return this.compileAndRun(program, [a]) as T;
+  asin<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.ASIN);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  acos<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.ACOS);
-    return this.compileAndRun(program, [a]) as T;
+  acos<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.ACOS);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  atan<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.ATAN);
-    return this.compileAndRun(program, [a]) as T;
+  atan<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.ATAN);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  sinh<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.SINH);
-    return this.compileAndRun(program, [a]) as T;
+  sinh<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.SINH);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  cosh<T extends NDArray>(a: T): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.COSH);
-    return this.compileAndRun(program, [a]) as T;
+  cosh<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.COSH);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  tanh<T extends NDArray>(a: T): T {
+  tanh<T extends NDArray>(config: UnaryInputConfig<T>): T {
     const program = new UnaryOpProgram(a.shape, unary_op.TANH);
     return this.compileAndRun(program, [a]) as T;
   }

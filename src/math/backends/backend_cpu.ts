@@ -29,15 +29,17 @@ import {SumTypes, SumTypesMap} from '../types';
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
+import {CeilInputConfig, FloorInputConfig} from './kernels/ceil_floor';
 import {CloneInputConfig} from './kernels/clone';
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
 import {AddInputConfig, DivideInputConfig, MultiplyInputConfig, SubtractInputConfig} from './kernels/element_wise_arithmetic';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig, MatrixOrientation} from './kernels/matmul';
-import {NegInputConfig} from './kernels/neg';
+import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
+import {UnaryInputConfig} from './kernels/unary';
 
 export class MathBackendCPU implements MathBackend {
   clone<T extends NDArray>(config: CloneInputConfig<T>): T {
@@ -247,7 +249,7 @@ export class MathBackendCPU implements MathBackend {
     }) as T;
   }
 
-  neg<T extends NDArray>(config: NegInputConfig<T>): T {
+  neg<T extends NDArray>(config: UnaryInputConfig<T>): T {
     const {x} = config.inputs;
     return this.multiply({inputs: {a: Scalar.NEG_ONE, b: x}}) as T;
   }
@@ -471,16 +473,18 @@ export class MathBackendCPU implements MathBackend {
     };
   }
 
-  min<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]):
-      NDArray<G> {
-    axis_util.assertAxesAreInnerMostDims('min', axes, input.rank);
+  min<G extends keyof DataTypes>(config: MinInputConfig<G>): NDArray<G> {
+    const {x} = config.inputs;
+    const {axes} = config.args;
+
+    axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
     const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(input.shape, axes);
-    const result = NDArray.zeros(outShape, input.dtype);
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const result = NDArray.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.getValues();
 
-    const aVals = input.getValues();
+    const aVals = x.getValues();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let min = aVals[0];
@@ -499,16 +503,18 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  max<G extends keyof DataTypes>(input: NDArray<G>, axes: number[]):
-      NDArray<G> {
-    axis_util.assertAxesAreInnerMostDims('max', axes, input.rank);
+  max<G extends keyof DataTypes>(config: MaxInputConfig<G>): NDArray<G> {
+    const {x} = config.inputs;
+    const {axes} = config.args;
+
+    axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(input.shape, axes);
-    const result = NDArray.zeros(outShape, input.dtype);
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const result = NDArray.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.getValues();
 
-    const aVals = input.getValues();
+    const aVals = x.getValues();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let max = aVals[offset];
@@ -527,54 +533,60 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  ceil<T extends NDArray>(ndarray: T): T {
-    const values = ndarray.getValues();
+  ceil<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const values = x.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.ceil(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: newValues}) as T;
+    return NDArray.make(x.shape, {values: newValues}) as T;
   }
 
-  floor<T extends NDArray>(ndarray: T): T {
-    const values = ndarray.getValues();
+  floor<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const values = x.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.floor(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: newValues}) as T;
+    return NDArray.make(x.shape, {values: newValues}) as T;
   }
 
-  exp<T extends NDArray>(ndarray: T): T {
-    const values = ndarray.getValues();
+  exp<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const values = x.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.exp(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: newValues}) as T;
+    return NDArray.make(x.shape, {values: newValues}) as T;
   }
 
-  log<T extends NDArray>(ndarray: T): T {
-    const values = ndarray.getValues();
+  log<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const values = x.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
       newValues[i] = Math.log(value);
     }
-    return NDArray.make(ndarray.shape, {values: newValues}) as T;
+    return NDArray.make(x.shape, {values: newValues}) as T;
   }
 
-  sqrt<T extends NDArray>(ndarray: T): T {
-    const values = ndarray.getValues();
+  sqrt<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const values = x.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
       newValues[i] = Math.sqrt(value);
     }
-    return NDArray.make(ndarray.shape, {values: newValues}) as T;
+    return NDArray.make(x.shape, {values: newValues}) as T;
   }
 
-  square<T extends NDArray>(x: T): T {
+  square<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
     const values = x.getValues();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
@@ -584,13 +596,14 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(x.shape, {values: newValues}) as T;
   }
 
-  relu<T extends NDArray>(input: T): T {
-    const res = NDArray.zeros(input.shape, input.dtype);
+  relu<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const res = NDArray.zeros(x.shape, x.dtype);
     const resVals = res.getValues();
-    const inVals = input.getValues();
+    const inVals = x.getValues();
     for (let i = 0; i < inVals.length; ++i) {
       const val = inVals[i];
-      if (util.isValNaN(val, input.dtype)) {
+      if (util.isValNaN(val, x.dtype)) {
         resVals[i] = util.getNaN(res.dtype);
       } else {
         resVals[i] = Math.max(0, inVals[i]);
@@ -599,9 +612,10 @@ export class MathBackendCPU implements MathBackend {
     return res as T;
   }
 
-  elu<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.dataSync();
+  elu<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       if (v >= 0) {
@@ -610,12 +624,13 @@ export class MathBackendCPU implements MathBackend {
         resultValues[i] = (Math.exp(v) - 1);
       }
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  eluDer<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.dataSync();
+  eluDer<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       if (v >= 0) {
@@ -624,17 +639,18 @@ export class MathBackendCPU implements MathBackend {
         resultValues[i] = Math.exp(v);
       }
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  selu<T extends NDArray>(ndarray: T): T {
+  selu<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
     // Stable and Attracting Fixed Point (0, 1) for Normalized Weights.
     // see: https://arxiv.org/abs/1706.02515
     const scaleAlpha = 1.7580993408473768599402175208123;
     const scale = 1.0507009873554804934193349852946;
 
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.dataSync();
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       if (v >= 0) {
@@ -643,7 +659,7 @@ export class MathBackendCPU implements MathBackend {
         resultValues[i] = scaleAlpha * (Math.exp(v) - 1);
       }
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
   leakyRelu<T extends NDArray>(ndarray: T, alpha: number) {
@@ -669,103 +685,114 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(ndarray.shape, {values: resultValues}) as T;
   }
 
-  abs<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  abs<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.abs(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  sigmoid<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  sigmoid<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = 1 / (1 + Math.exp(-values[i]));
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  sin<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  sin<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.sin(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  cos<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  cos<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.cos(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  tan<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  tan<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.tan(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  asin<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  asin<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.asin(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  acos<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  acos<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.acos(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  atan<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  atan<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.atan(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  sinh<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  sinh<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.sinh(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  cosh<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  cosh<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.cosh(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  tanh<T extends NDArray>(ndarray: T): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  tanh<T extends NDArray>(config: UnaryInputConfig<T>): T {
+    const {x} = config.inputs;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = util.tanh(values[i]);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
   step<T extends NDArray>(ndarray: T, alpha = 0): T {

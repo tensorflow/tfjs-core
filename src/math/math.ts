@@ -1046,42 +1046,50 @@ export abstract class NDArrayMath {
 
   /**
    * Computes ceiling of input NDArray element-wise. y = ceil(x)
-   * @param ndarray The input NDArray.
+   * TODO(nsthorat): Make this return an int32 when we add rank as a
+   * generic.
+   * @param x The input NDArray.
    */
-  ceil<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('ceil', () => this.backend.ceil(ndarray));
+  ceil<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('ceil', {inputs: {x}}) as T);
   }
 
   /**
    * Computes floor of input NDArray element-wise. y = floor(x)
-   * @param ndarray The input NDArray.
+   * TODO(nsthorat): Make this return an int32 when we add rank as a generic.
+   * @param x The input NDArray.
    */
-  floor<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('floor', () => this.backend.floor(ndarray));
+  floor<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('floor', {inputs: {x}}) as T);
   }
 
   /**
    * Computes exponential of the input NDArray element-wise. y = e ^ x
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  exp<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('exp', () => this.backend.exp(ndarray));
+  exp<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('exp', {inputs: {x}}) as T);
   }
 
   /**
    * Computes natural logarithm of the input NDArray element-wise. y = ln(x)
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  log<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('log', () => this.backend.log(ndarray));
+  log<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('log', {inputs: {x}}) as T);
   }
 
   /**
    * Computes square root of the input NDArray element-wise. y = sqrt(x)
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  sqrt<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sqrt', () => this.backend.sqrt(ndarray));
+  sqrt<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('sqrt', {inputs: {x}}) as T);
   }
 
   /**
@@ -1090,15 +1098,17 @@ export abstract class NDArrayMath {
    * @param x The input array.
    */
   square<T extends NDArray>(x: T): T {
-    return this.executeOp('square', () => this.backend.square(x));
+    return this.track(
+        this.backendEngine.executeKernel('square', {inputs: {x}}) as T);
   }
 
   /**
    * Computes absolute value element-wise.
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  abs<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('abs', () => this.backend.abs(ndarray));
+  abs<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('abs', {inputs: {x}}) as T);
   }
 
   /**
@@ -1117,18 +1127,20 @@ export abstract class NDArrayMath {
 
   /**
    * Computes rectified linear element-wise, max(x, 0).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  relu<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('relu', () => this.backend.relu(ndarray));
+  relu<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('relu', {inputs: {x}}) as T);
   }
 
   /**
    * Computes exponential linear element-wise
-   * @param {T} ndarray the input NDArray
+   * @param {T} x the input NDArray
    */
-  elu<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('elu', () => this.backend.elu(ndarray));
+  elu<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('elu', {inputs: {x}}) as T);
   }
 
   /**
@@ -1136,7 +1148,8 @@ export abstract class NDArrayMath {
    * @hidden
    */
   eluDer<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('eluDer', () => this.backend.eluDer(ndarray));
+    return this.track(
+        this.backendEngine.executeKernel('eluDer', {inputs: {x}}) as T);
   }
 
   /**
@@ -1144,7 +1157,8 @@ export abstract class NDArrayMath {
    * @hidden
    */
   selu<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('selu', () => this.backend.selu(ndarray));
+    return this.track(
+        this.backendEngine.executeKernel('selu', {inputs: {x}}) as T);
   }
 
   /**
@@ -1154,8 +1168,9 @@ export abstract class NDArrayMath {
    * @return {NDArray}
    */
   leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
-    return this.executeOp(
-        'leakyRelu', () => this.backend.leakyRelu(ndarray, alpha));
+    return this.track(
+        this.backendEngine.executeKernel('abs', {inputs: {x}, args: {alpha}}) as
+        T);
   }
 
   /**
@@ -1163,79 +1178,89 @@ export abstract class NDArrayMath {
    * @param ndarray The input NDArray.
    */
   sigmoid<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sigmoid', () => this.backend.sigmoid(ndarray));
+    return this.track(
+        this.backendEngine.executeKernel('sigmoid', {inputs: {x}}) as T);
   }
 
   /**
    * Computes sin of the input NDArray element-wise, y = sin(x).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  sin<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sin', () => this.backend.sin(ndarray));
+  sin<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('sin', {inputs: {x}}) as T);
   }
 
   /**
    * Computes cos of the input NDArray element-wise, y = cos(x).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  cos<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('cos', () => this.backend.cos(ndarray));
+  cos<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('cos', {inputs: {x}}) as T);
   }
 
   /**
    * Computes tan of the input NDArray element-wise, y = tan(x).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  tan<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('tan', () => this.backend.tan(ndarray));
+  tan<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('tan', {inputs: {x}}) as T);
   }
 
   /**
    * Computes asin of the input NDArray element-wise, y = asin(x).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  asin<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('asin', () => this.backend.asin(ndarray));
+  asin<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('asin', {inputs: {x}}) as T);
   }
 
   /**
    * Computes acos of the input NDArray element-wise, y = acos(x).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  acos<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('acos', () => this.backend.acos(ndarray));
+  acos<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('acos', {inputs: {x}}) as T);
   }
 
   /**
    * Computes atan of the input NDArray element-wise, y = atan(x).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  atan<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('atan', () => this.backend.atan(ndarray));
+  atan<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('atan', {inputs: {x}}) as T);
   }
 
   /**
    * Computes hyperbolic sin of the input NDArray element-wise, y = sinh(x).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  sinh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('sinh', () => this.backend.sinh(ndarray));
+  sinh<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('sinh', {inputs: {x}}) as T);
   }
 
   /**
    * Computes hyperbolic cos of the input NDArray element-wise, y = cosh(x).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  cosh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('cosh', () => this.backend.cosh(ndarray));
+  cosh<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('cosh', {inputs: {x}}) as T);
   }
 
   /**
    * Computes hyperbolic tangent of the input NDArray element-wise.
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  tanh<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('tanh', () => this.backend.tanh(ndarray));
+  tanh<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('tanh', {inputs: {x}}) as T);
   }
 
   /**
@@ -1246,7 +1271,9 @@ export abstract class NDArrayMath {
    * @param alpha The gradient when input is negative.
    */
   step<T extends NDArray>(ndarray: T, alpha = 0.0): T {
-    return this.executeOp('step', () => this.backend.step(ndarray, alpha));
+    return this.track(
+        this.backendEngine.executeKernel(
+            'step', {inputs: {x}, args: {alpha}}) as T);
   }
 
   /**

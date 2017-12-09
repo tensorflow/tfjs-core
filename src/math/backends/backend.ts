@@ -27,10 +27,10 @@ import {AddInputConfig, DivideInputConfig, MultiplyInputConfig, SubtractInputCon
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
-import {NegInputConfig} from './kernels/neg';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
+import {UnaryInputConfig} from './kernels/unary';
 
 /**
  * The interface that defines the kernels that should be implemented when adding
@@ -52,7 +52,7 @@ export interface MathBackend {
   concat3D(config: Concat3DInputConfig): Array3D;
   concat4D(config: Concat4DInputConfig): Array4D;
 
-  neg<T extends NDArray>(config: NegInputConfig<T>): T;
+  neg<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
   add(config: AddInputConfig): NDArray;
   subtract(config: SubtractInputConfig): NDArray;
@@ -74,44 +74,44 @@ export interface MathBackend {
   min<G extends keyof DataTypes>(config: MinInputConfig<G>): NDArray<G>;
   max<G extends keyof DataTypes>(config: MaxInputConfig<G>): NDArray<G>;
 
-  ceil<T extends NDArray>(ndarray: T): T;
-  floor<T extends NDArray>(ndarray: T): T;
+  ceil<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  floor<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  exp<T extends NDArray>(ndarray: T): T;
-  log<T extends NDArray>(ndarray: T): T;
+  exp<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  log<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  sqrt<T extends NDArray>(ndarray: T): T;
-  square<T extends NDArray>(x: T): T;
+  sqrt<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  square<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  relu<T extends NDArray>(input: T): T;
-  elu<T extends NDArray>(ndarray: T): T;
-  eluDer<T extends NDArray>(ndarray: T): T;
-  selu<T extends NDArray>(a: T): T;
+  relu<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  elu<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  eluDer<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  selu<T extends NDArray>(config: UnaryInputConfig<T>): T;
   leakyRelu<T extends NDArray>(ndarray: T, alpha: number): T;
 
   clip<T extends NDArray>(ndarray: T, min: number, max: number): T;
 
-  abs<T extends NDArray>(ndarray: T): T;
+  abs<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  sigmoid<T extends NDArray>(ndarray: T): T;
+  sigmoid<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  sin<T extends NDArray>(ndarray: T): T;
+  sin<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  cos<T extends NDArray>(ndarray: T): T;
+  cos<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  tan<T extends NDArray>(ndarray: T): T;
+  tan<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  asin<T extends NDArray>(ndarray: T): T;
+  asin<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  acos<T extends NDArray>(ndarray: T): T;
+  acos<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  atan<T extends NDArray>(ndarray: T): T;
+  atan<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  sinh<T extends NDArray>(ndarray: T): T;
+  sinh<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  cosh<T extends NDArray>(ndarray: T): T;
+  cosh<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  tanh<T extends NDArray>(ndarray: T): T;
+  tanh<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
   step<T extends NDArray>(ndarray: T, alpha: number): T;
 

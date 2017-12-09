@@ -2,16 +2,17 @@ import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './kernels/argminmax';
+import {CeilInputConfig, CeilNode, FloorInputConfig, FloorNode} from './kernels/ceil_floor';
 import {CloneInputConfig, CloneNode} from './kernels/clone';
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './kernels/concat';
 import {AddInputConfig, AddNode, DivideInputConfig, DivideNode, MultiplyInputConfig, MultiplyNode, SubtractInputConfig, SubtractNode} from './kernels/element_wise_arithmetic';
 import {EqualInputConfig, EqualNode} from './kernels/logical';
 import {MatMulInputConfig, MatMulNode} from './kernels/matmul';
 import {MaxInputConfig, MaxNode, MinInputConfig, MinNode} from './kernels/minmax';
-import {NegInputConfig, NegNode} from './kernels/neg';
 import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './kernels/slice';
 import {SumInputConfig, SumNode} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './kernels/topk';
+import {UnaryInputConfig, UnaryNode} from './kernels/unary';
 
 export interface KernelConfigRegistry {
   'matmul': MatMulNode;
@@ -24,7 +25,7 @@ export interface KernelConfigRegistry {
   'concat2d': Concat2DNode;
   'concat3d': Concat3DNode;
   'concat4d': Concat4DNode;
-  'neg': NegNode<NDArray>;
+  'neg': UnaryNode<NDArray>;
   'add': AddNode;
   'subtract': SubtractNode;
   'multiply': MultiplyNode;
@@ -37,6 +38,8 @@ export interface KernelConfigRegistry {
   'topkindices': TopKIndicesNode;
   'min': MinNode<'float32'|'int32'|'bool'>;
   'max': MaxNode<'float32'|'int32'|'bool'>;
+  'ceil': UnaryNode<NDArray>;
+  'floor': UnaryNode<NDArray>;
 }
 
 export function executeKernel<K extends keyof KernelConfigRegistry>(
@@ -64,7 +67,7 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
         backend.concat3D(config),
     'concat4d': (backend: MathBackend, config: Concat4DInputConfig) =>
         backend.concat4D(config),
-    'neg': (backend: MathBackend, config: NegInputConfig<NDArray>) =>
+    'neg': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.neg(config),
     'add': (backend: MathBackend, config: AddInputConfig) =>
         backend.add(config),
@@ -91,9 +94,15 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
         (backend: MathBackend,
          config: MinInputConfig<'float32'|'int32'|'bool'>) =>
             backend.min(config),
-    'max': (
-        backend: MathBackend,
-        config: MaxInputConfig<'float32'|'int32'|'bool'>) => backend.max(config)
+    'max':
+        (backend: MathBackend,
+         config: MaxInputConfig<'float32'|'int32'|'bool'>) =>
+            backend.max(config),
+    'ceil': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.ceil(config),
+    'floor': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.floor(config),
+
   }[kernelName](backend, config);
   return result;
 };
