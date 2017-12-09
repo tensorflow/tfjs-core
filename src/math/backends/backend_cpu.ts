@@ -21,60 +21,69 @@ import * as util from '../../util';
 import * as broadcast_util from '../broadcast_util';
 import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
-import * as copy2D_util from '../copy2d_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
 import {SumTypes, SumTypesMap} from '../types';
 
 import * as axis_util from './../axis_util';
-import {MathBackend, MatrixOrientation} from './backend';
+import {MathBackend} from './backend';
+import {CloneInputConfig} from './kernels/clone';
+import {MatMulInputConfig, MatrixOrientation} from './kernels/matmul';
+import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 
 export class MathBackendCPU implements MathBackend {
-  clone<T extends NDArray>(ndarray: T): T {
+  clone<T extends NDArray>(config: CloneInputConfig<T>): T {
     return NDArray.make(
-               ndarray.shape,
-               {values: new Float32Array(ndarray.getValues())}) as T;
+               config.inputs.x.shape,
+               {values: new Float32Array(config.inputs.x.getValues())}) as T;
   }
 
-  slice1D(input: Array1D, begin: number, size: number): Array1D {
-    const newVals = input.getValues().slice(begin, begin + size);
+  slice1D(config: Slice1DInputConfig): Array1D {
+    const {begin, size} = config.args;
+    const {x} = config.inputs;
+
+    const newVals = x.getValues().slice(begin, begin + size);
     return Array1D.new(newVals);
   }
 
-  slice2D(input: Array2D, begin: [number, number], size: [number, number]):
-      Array2D {
+  slice2D(config: Slice2DInputConfig): Array2D {
+    const {begin, size} = config.args;
+    const {x} = config.inputs;
+
     const result = Array2D.zeros(size);
     const [startI, startJ] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
       for (let j = 0; j < size[1]; ++j) {
-        const val = input.get(i + startI, j + startJ);
+        const val = x.get(i + startI, j + startJ);
         result.set(val, i, j);
       }
     }
     return result;
   }
 
-  slice3D(input: Array3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Array3D {
+  slice3D(config: Slice3DInputConfig): Array3D {
+    const {begin, size} = config.args;
+    const {x} = config.inputs;
+
     const result = Array3D.zeros(size);
     const [startI, startJ, startK] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
       for (let j = 0; j < size[1]; ++j) {
         for (let k = 0; k < size[2]; ++k) {
-          const val = input.get(i + startI, j + startJ, k + startK);
+          const val = x.get(i + startI, j + startJ, k + startK);
           result.set(val, i, j, k);
         }
       }
     }
     return result;
   }
-  slice4D(input: Array4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Array4D {
+  slice4D(config: Slice4DInputConfig): Array4D {
+    const {begin, size} = config.args;
+    const {x} = config.inputs;
+
     const result = Array4D.zeros(size);
     const [startI, startJ, startK, startL] = begin;
 
@@ -82,34 +91,13 @@ export class MathBackendCPU implements MathBackend {
       for (let j = 0; j < size[1]; ++j) {
         for (let k = 0; k < size[2]; ++k) {
           for (let l = 0; l < size[3]; ++l) {
-            const val =
-                input.get(i + startI, j + startJ, k + startK, l + startL);
+            const val = x.get(i + startI, j + startJ, k + startK, l + startL);
             result.set(val, i, j, k, l);
           }
         }
       }
     }
     return result;
-  }
-
-  copy2D(
-      source: Array2D, sourceBeginRowCol: [number, number],
-      sourceSizeRowCol: [number, number], dest: Array2D,
-      destBeginRowCol: [number, number],
-      destSizeRowCol: [number, number]): void {
-    copy2D_util.validateShapes(sourceSizeRowCol, destSizeRowCol);
-    const srcValues = source.getValues();
-    const dstValues = dest.getValues();
-    const n = sourceSizeRowCol[0] * sourceSizeRowCol[1];
-    for (let i = 0; i < n; ++i) {
-      const srcRow = sourceBeginRowCol[0] + Math.floor(i / sourceSizeRowCol[1]);
-      const srcCol = sourceBeginRowCol[1] + (i % sourceSizeRowCol[1]);
-      const srcOff = srcRow * source.shape[1] + srcCol;
-      const dstRow = destBeginRowCol[0] + Math.floor(i / destSizeRowCol[1]);
-      const dstCol = destBeginRowCol[1] + (i % destSizeRowCol[1]);
-      const dstOff = dstRow * dest.shape[1] + dstCol;
-      dstValues[dstOff] = srcValues[srcOff];
-    }
   }
 
   concat1D(a: Array1D, b: Array1D): Array1D {
@@ -253,9 +241,10 @@ export class MathBackendCPU implements MathBackend {
     return this.scaledArrayAdd<T>(Scalar.ONE, a, Scalar.NEG_ONE, b);
   }
 
-  matMul(
-      a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
-      bOrientation = MatrixOrientation.REGULAR): Array2D {
+  matMul(config: MatMulInputConfig): Array2D {
+    const {a, b} = config.inputs;
+    const {aOrientation, bOrientation} = config.args;
+
     const sharedDim =
         (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
 

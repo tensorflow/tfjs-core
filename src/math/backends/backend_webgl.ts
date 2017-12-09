@@ -25,7 +25,11 @@ import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '..
 import * as reduce_util from '../reduce_util';
 import {SumTypes, SumTypesMap} from '../types';
 
-import {MathBackend, MatrixOrientation} from './backend';
+import {MathBackend} from './backend';
+import {CloneInputConfig} from './kernels/clone';
+import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
+import {MatMulInputConfig} from './kernels/matmul';
+import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -82,47 +86,45 @@ export class MathBackendWebGL implements MathBackend {
     return this.gpgpu;
   }
 
-  clone<G extends keyof DataTypes, T extends NDArray<G>>(a: T): T {
-    const texShape = a.getTextureShapeRC();
+  clone<G extends keyof DataTypes, T extends NDArray<G>>(
+      config: CloneInputConfig<T>): T {
+    const {x} = config.inputs;
+
+    const texShape = x.getTextureShapeRC();
     // Pretend the source was in logical shape that matches the texture shape.
-    const source = a.as2D(texShape[0], texShape[1]);
+    const source = x.as2D(texShape[0], texShape[1]);
     // Do the same for output.
-    const output = this.makeOutputArray<G, Array2D<G>>(texShape, a.dtype);
+    const output = this.makeOutputArray<G, Array2D<G>>(texShape, x.dtype as G);
     this.copy2D(source, [0, 0], texShape, output, [0, 0], texShape);
     // Get back to the original logical shape.
-    return output.reshape(a.shape) as T;
+    return output.reshape(x.shape) as T;
   }
 
-  slice1D(input: Array1D, begin: number, size: number): Array1D {
-    const program = new SliceProgram([size]);
-    const customSetup = program.getCustomSetupFunc([begin]);
-    return this.compileAndRun(program, [input], null, customSetup);
+  slice1D(config: Slice1DInputConfig): Array1D {
+    const program = new SliceProgram([config.args.size]);
+    const customSetup = program.getCustomSetupFunc([config.args.begin]);
+    return this.compileAndRun(program, [config.inputs.x], null, customSetup);
   }
 
-  slice2D(input: Array2D, begin: [number, number], size: [number, number]):
-      Array2D {
-    const program = new SliceProgram(size);
-    const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup);
+  slice2D(config: Slice2DInputConfig): Array2D {
+    const program = new SliceProgram(config.args.size);
+    const customSetup = program.getCustomSetupFunc(config.args.begin);
+    return this.compileAndRun(program, [config.inputs.x], null, customSetup);
   }
 
-  slice3D(input: Array3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Array3D {
-    const program = new SliceProgram(size);
-    const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup);
+  slice3D(config: Slice3DInputConfig): Array3D {
+    const program = new SliceProgram(config.args.size);
+    const customSetup = program.getCustomSetupFunc(config.args.begin);
+    return this.compileAndRun(program, [config.inputs.x], null, customSetup);
   }
 
-  slice4D(input: Array4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Array4D {
-    const program = new SliceProgram(size);
-    const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [input], null, customSetup);
+  slice4D(config: Slice4DInputConfig): Array4D {
+    const program = new SliceProgram(config.args.size);
+    const customSetup = program.getCustomSetupFunc(config.args.begin);
+    return this.compileAndRun(program, [config.inputs.x], null, customSetup);
   }
 
-  copy2D(
+  private copy2D(
       source: Array2D, sourceBeginRowCol: [number, number],
       sourceSizeRowCol: [number, number], dest: Array2D,
       destBeginRowCol: [number, number],
@@ -133,24 +135,35 @@ export class MathBackendWebGL implements MathBackend {
     this.compileAndRun(program, [source], dest, customSetup);
   }
 
-  concat1D(a: Array1D, b: Array1D): Array1D {
+  concat1D(config: Concat1DInputConfig): Array1D {
+    const {a, b} = config.inputs;
+
     const program = new ConcatProgram(a.shape, b.shape, 0);
     return this.compileAndRun(program, [a, b]);
   }
 
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
+  concat2D(config: Concat2DInputConfig): Array2D {
+    const {a, b} = config.inputs;
+    const {axis} = config.args;
+
     const program = new ConcatProgram(a.shape, b.shape, axis);
     return this.compileAndRun(program, [a, b]);
   }
 
-  concat3D(x1: Array3D, x2: Array3D, axis: number): Array3D {
-    const program = new ConcatProgram(x1.shape, x2.shape, axis);
-    return this.compileAndRun(program, [x1, x2]);
+  concat3D(config: Concat3DInputConfig): Array3D {
+    const {a, b} = config.inputs;
+    const {axis} = config.args;
+
+    const program = new ConcatProgram(a.shape, b.shape, axis);
+    return this.compileAndRun(program, [a, b]);
   }
 
-  concat4D(x1: Array4D, x2: Array4D, axis: number): Array4D {
-    const program = new ConcatProgram(x1.shape, x2.shape, axis);
-    return this.compileAndRun(program, [x1, x2]);
+  concat4D(config: Concat4DInputConfig): Array4D {
+    const {a, b} = config.inputs;
+    const {axis} = config.args;
+
+    const program = new ConcatProgram(a.shape, b.shape, axis);
+    return this.compileAndRun(program, [a, b]);
   }
 
   scaledArrayAdd<T extends NDArray>(c1: Scalar, a: T, c2: Scalar, b: T): T {
@@ -186,9 +199,10 @@ export class MathBackendWebGL implements MathBackend {
     return output;
   }
 
-  matMul(
-      a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
-      bOrientation: MatrixOrientation): Array2D {
+  matMul(config: MatMulInputConfig): Array2D {
+    const {a, b} = config.inputs;
+    const {aOrientation, bOrientation} = config.args;
+
     const program =
         new MatMulProgram(a.shape, b.shape, aOrientation, bOrientation);
     return this.compileAndRun<Array2D, Array2D>(program, [a, b]);

@@ -19,11 +19,12 @@ import * as util from '../util';
 import {TypedArray} from '../util';
 
 import * as axis_util from './axis_util';
-import {MathBackend, MatrixOrientation} from './backends/backend';
+import {MathBackend} from './backends/backend';
+import {BackendEngine} from './backends/backend_engine';
+import {MatrixOrientation} from './backends/kernels/matmul';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
@@ -38,6 +39,8 @@ export interface LSTMCell {
 }
 
 export abstract class NDArrayMath {
+  private backendEngine: BackendEngine;
+
   private ndarrayScopes: NDArray[][] = [];
   private activeScope: NDArray[];
 
@@ -46,11 +49,14 @@ export abstract class NDArrayMath {
 
   private debugMode = false;
 
+
   /**
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(protected backend: MathBackend, private safeMode: boolean) {}
+  constructor(protected backend: MathBackend, private safeMode: boolean) {
+    this.backendEngine = new BackendEngine(backend);
+  }
 
   /**
    * Create a new math scope. Put chained math operations inside a scope
@@ -87,6 +93,7 @@ export abstract class NDArrayMath {
    */
   enableDebugMode() {
     this.debugMode = true;
+    this.backendEngine.enableDebugMode();
     console.warn(
         'Debugging mode is ON. The output of every math call will ' +
         'be downloaded to CPU and checked for NaNs. ' +
@@ -257,8 +264,8 @@ export abstract class NDArrayMath {
             `${b.shape} and orientations ${MatrixOrientation[aOrientation]}` +
             ` and ${MatrixOrientation[bOrientation]} must match.`);
 
-    return this.executeOp(
-        'matMul', () => this.backend.matMul(a, b, aOrientation, bOrientation));
+    return this.track(this.backendEngine.executeKernel(
+        'matmul', {inputs: {a, b}, args: {aOrientation, bOrientation}}));
   }
 
   private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
@@ -367,8 +374,9 @@ export abstract class NDArrayMath {
    * Clones an NDArray of any shape.
    * @param ndarray The NDArray to clone.
    */
-  clone<T extends NDArray>(ndarray: T): T {
-    return this.executeOp('clone', () => this.backend.clone(ndarray));
+  clone<T extends NDArray>(x: T): T {
+    return this.track(
+        this.backendEngine.executeKernel('clone', {inputs: {x}}) as T);
   }
 
   /**
@@ -386,98 +394,58 @@ export abstract class NDArrayMath {
    * Extracts a 1D slice from 1D array starting at coordinates `begin` and is
    * of length `size`.
    *
-   * @param input The input array to slice from.
+   * @param x The input array to slice from.
    * @param begin The offset to start the slice from.
    * @param size The size of the slice.
    */
-  slice1D(input: Array1D, begin: number, size: number): Array1D {
-    slice_util.assertParamsValid(input, [begin], [size]);
-    return this.executeOp(
-        'slice1D', () => this.backend.slice1D(input, begin, size));
+  slice1D(x: Array1D, begin: number, size: number): Array1D {
+    slice_util.assertParamsValid(x, [begin], [size]);
+    return this.track(this.backend.slice1D({inputs: {x}, args: {begin, size}}));
   }
 
   /**
    * Extracts a 2D slice from a 2D array starting at coordinates `begin` and
    * is of size `size`.
    *
-   * @param input The input array to slice from.
+   * @param x The input array to slice from.
    * @param begin The [row, col] 2d coordinates to start the slice from.
    * @param size The size of the slice.
    */
-  slice2D(input: Array2D, begin: [number, number], size: [number, number]):
+  slice2D(x: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    slice_util.assertParamsValid(input, begin, size);
-    return this.executeOp(
-        'slice2D', () => this.backend.slice2D(input, begin, size));
+    slice_util.assertParamsValid(x, begin, size);
+    return this.track(this.backend.slice2D({inputs: {x}, args: {begin, size}}));
   }
 
   /**
    * Extracts a 3D slice from a 3D array starting at coordinates `begin` and
    * is of size `size`.
    *
-   * @param input The input array to slice from.
+   * @param x The input array to slice from.
    * @param begin The [row, col, depth] 3d coordinates to start the slice from.
    * @param size The size of the slice.
    */
-  slice3D(input: Array3D, begin: [number, number, number], size: [
+  slice3D(x: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
-    slice_util.assertParamsValid(input, begin, size);
-    return this.executeOp(
-        'slice3D', () => this.backend.slice3D(input, begin, size));
+    slice_util.assertParamsValid(x, begin, size);
+    return this.track(this.backend.slice3D({inputs: {x}, args: {begin, size}}));
   }
 
   /**
    * Extracts a 4D slice from a 4D array starting at coordinates `begin` and
    * is of size `size`.
    *
-   * @param input The input array to slice from.
+   * @param x The input array to slice from.
    * @param begin The [row, col, depth, depth2] 4d coordinates to start the
    *              slice from.
    * @param size The size of the slice.
    */
-  slice4D(input: Array4D, begin: [number, number, number, number], size: [
+  slice4D(x: Array4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Array4D {
-    slice_util.assertParamsValid(input, begin, size);
-    return this.executeOp(
-        'slice4D', () => this.backend.slice4D(input, begin, size));
-  }
-
-  /**
-   * Copies a window from the `source` matrix starting at `sourceBegin` and is
-   * of size `sourceSize` to a window in the `dest` matrix starting at
-   * `destBegin` and is of size `destSize`/
-   * @param source The source matrix to copy from.
-   * @param sourceBegin The coordinates to start the copy from.
-   * @param sourceSize The size of the copy window.
-   * @param dest The destination matrix to copy to.
-   * @param destBegin The coordinates in `dest` to copy to.
-   * @param destSize The size of the destination window.
-   */
-  copy2D(
-      source: Array2D, sourceBegin: [number, number],
-      sourceSize: [number, number], dest: Array2D, destBegin: [number, number],
-      destSize: [number, number]): void {
-    util.assert(
-        sourceBegin[0] + sourceSize[0] <= source.shape[0] &&
-            sourceBegin[1] + sourceSize[1] <= source.shape[1],
-        `Error in copy2D: requested source start position ${sourceBegin} ` +
-            `and source size ${sourceSize} would overflow source NDArray` +
-            `of shape ${source.shape}.`);
-    util.assert(
-        destBegin[0] + destSize[0] <= dest.shape[0] &&
-            destBegin[1] + destSize[1] <= dest.shape[1],
-        `Error in copy2D: requested dest start position ${destBegin} ` +
-            `and source size ${destSize} would overflow dest NDArray of` +
-            `shape ${dest.shape}.`);
-    copy2d_util.validateShapes(sourceSize, destSize);
-
-    this.executeOp('copy2D', () => {
-      this.backend.copy2D(
-          source, sourceBegin, sourceSize, dest, destBegin, destSize);
-      return dest;
-    });
+    slice_util.assertParamsValid(x, begin, size);
+    return this.track(this.backend.slice4D({inputs: {x}, args: {begin, size}}));
   }
 
   /**
@@ -1304,8 +1272,9 @@ export abstract class NDArrayMath {
             `NDArray of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
-    return this.executeOp(
-        'scaledArrayAdd', () => this.backend.scaledArrayAdd(c1, a, c2, b));
+    return this.executeOp('scaledArrayAdd', () => {
+      this.backend.scaledArrayAdd(c1, a, c2, b);
+    });
   }
 
   /** @deprecated Use math.multiply(c, A) instead. */
@@ -1353,9 +1322,9 @@ export abstract class NDArrayMath {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-   conv1d<T extends NDArray>(
-      input: T, filter: Array3D, bias: Array1D|null,
-      stride: number, pad: 'valid'|'same'|number): T  {
+  conv1d<T extends NDArray>(
+      input: T, filter: Array3D, bias: Array1D|null, stride: number,
+      pad: 'valid'|'same'|number): T {
     let input3D = input as NDArray as Array3D;
     let reshapedTo3D = false;
     if (input.rank === 2) {
@@ -1382,23 +1351,20 @@ export abstract class NDArrayMath {
         `Error in conv1d: depth of input (${input3D.shape[2]}) must match  ` +
             `input depth for filter ${filter.shape[1]}.`);
 
-    const filter4D = filter.as4D(
-        1, filter.shape[0], filter.shape[1], filter.shape[2]);
-    const input4D = input3D.as4D(
-        input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
+    const filter4D =
+        filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
+    const input4D =
+        input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
     const strides: [number, number] = [1, stride];
 
-    const convInfo =
-        conv_util.computeConv2DInfo(
-            input4D.shape, filter4D.shape, strides, pad);
+    const convInfo = conv_util.computeConv2DInfo(
+        input4D.shape, filter4D.shape, strides, pad);
     return this.executeOp('conv2d', () => {
       const res = this.backend.conv2d(input4D, filter4D, bias, convInfo);
       if (reshapedTo3D) {
-        return res.as2D(res.shape[2], res.shape[3]) as NDArray as
-            T;
+        return res.as2D(res.shape[2], res.shape[3]) as NDArray as T;
       }
-      return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as
-          T;
+      return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as T;
     });
   }
 

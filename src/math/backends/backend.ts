@@ -20,10 +20,10 @@ import {Conv2DInfo} from '../conv_util';
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
 import {SumTypes} from '../types';
 
-export enum MatrixOrientation {
-  REGULAR,
-  TRANSPOSED
-}
+import {CloneInputConfig} from './kernels/clone';
+import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
+import {MatMulInputConfig} from './kernels/matmul';
+import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 
 /**
  * The interface that defines the kernels that should be implemented when adding
@@ -31,40 +31,19 @@ export enum MatrixOrientation {
  * this can be done gradually (throw an error for unimplemented methods).
  */
 export interface MathBackend {
-  matMul(
-      a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
-      bOrientation: MatrixOrientation): Array2D;
+  matMul(config: MatMulInputConfig): Array2D;
 
-  clone<T extends NDArray>(ndarray: T): T;
+  clone<T extends NDArray>(config: CloneInputConfig<T>): T;
 
-  slice1D(input: Array1D, begin: number, size: number): Array1D;
+  slice1D(config: Slice1DInputConfig): Array1D;
+  slice2D(config: Slice2DInputConfig): Array2D;
+  slice3D(config: Slice3DInputConfig): Array3D;
+  slice4D(config: Slice4DInputConfig): Array4D;
 
-  slice2D(input: Array2D, begin: [number, number], size: [number, number]):
-      Array2D;
-
-  slice3D(input: Array3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Array3D;
-
-  slice4D(input: Array4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Array4D;
-
-  copy2D(
-      source: Array2D, sourceBeginRowCol: [number, number],
-      sourceSizeRowCol: [number, number], dest: Array2D,
-      destBeginRowCol: [number, number],
-      destSizeRowCol: [number, number]): void;
-
-  concat1D(a: Array1D, b: Array1D): Array1D;
-
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D;
-
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D;
-
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D;
-
-  scaledArrayAdd<T extends NDArray>(c1: Scalar, a: T, c2: Scalar, b: T): T;
+  concat1D(config: Concat1DInputConfig): Array1D;
+  concat2D(config: Concat2DInputConfig): Array2D;
+  concat3D(config: Concat3DInputConfig): Array3D;
+  concat4D(config: Concat4DInputConfig): Array4D;
 
   neg<T extends NDArray>(a: T): T;
 
