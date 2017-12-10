@@ -15,17 +15,11 @@
  * =============================================================================
  */
 
-import {Array2D, Graph, NDArray, NDArrayMathGPU, Session, SGDOptimizer} from 'deeplearn';
-import {InCPUMemoryShuffledInputProviderBuilder} from 'deeplearn/dist/data/input_provider';
+// tslint:disable-next-line:max-line-length
+import {Array2D, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMathGPU, Session, SGDOptimizer} from 'deeplearn';
 import {Tensor} from 'deeplearn/dist/graph/graph';
-import {AdagradOptimizer} from 'deeplearn/dist/graph/optimizers/adagrad_optimizer';
-import {AdamaxOptimizer} from 'deeplearn/dist/graph/optimizers/adamax_optimizer';
 import {CostReduction, FeedEntry} from 'deeplearn/dist/graph/session';
 import {NDArrayMath} from 'deeplearn/dist/math/math';
-import {Scalar} from 'deeplearn/dist/math/ndarray';
-import {expectArrayInMeanStdRange} from 'deeplearn/dist/test_util';
-import {Server} from 'http';
-import {setTimeout} from 'timers';
 
 /** TODO(kreeger): Doc me. */
 class GameOfLife {
@@ -52,10 +46,10 @@ class GameOfLife {
     for (let i = 0; i < numNeighbors.length; i++) {
       const value = numNeighbors[i];
       let nextVal = 0;
-      if (value == 3) {
+      if (value === 3) {
         // Cell rebirths
         nextVal = 1;
-      } else if (value == 2) {
+      } else if (value === 2) {
         // Cell survives
         nextVal = worldValues[i];
       } else {
@@ -208,9 +202,9 @@ class GameOfLifeModel {
       const mapping = [{
         tensor: this.inputTensor,
         data: world.reshape([this.size * this.size])
-      }]
+      }];
 
-          const evalOutput = this.session.eval(this.predictionTensor, mapping);
+      const evalOutput = this.session.eval(this.predictionTensor, mapping);
       values = evalOutput.getValues();
     });
     return Array2D.new([this.size, this.size], values);
@@ -249,7 +243,6 @@ class GameOfLifeModel {
   }
 }
 
-
 /* Draws Game Of Life sequences */
 class WorldDisplay {
   rootElement: Element;
@@ -262,25 +255,25 @@ class WorldDisplay {
   }
 
   displayWorld(world: NDArray, title: string): Element {
-    let worldElement = document.createElement('div');
+    const worldElement = document.createElement('div');
     worldElement.setAttribute('class', 'world');
 
-    let titleElement = document.createElement('div');
+    const titleElement = document.createElement('div');
     titleElement.setAttribute('class', 'title');
     titleElement.innerText = title;
     worldElement.appendChild(titleElement);
 
-    let boardElement = document.createElement('div');
+    const boardElement = document.createElement('div');
     boardElement.setAttribute('class', 'board');
 
     for (let i = 0; i < world.shape[0]; i++) {
-      let rowElement = document.createElement('div');
+      const rowElement = document.createElement('div');
       rowElement.setAttribute('class', 'row');
 
       for (let j = 0; j < world.shape[1]; j++) {
-        let columnElement = document.createElement('div');
+        const columnElement = document.createElement('div');
         columnElement.setAttribute('class', 'column');
-        if (world.get(i, j) == 1) {
+        if (world.get(i, j) === 1) {
           columnElement.classList.add('alive');
         } else {
           columnElement.classList.add('dead');
@@ -339,9 +332,9 @@ class TrainDisplay {
   }
 
   displayCost(cost: number) {
-    const ctx = (<HTMLCanvasElement>document.getElementById('myChart'))
+    const ctx = (document.getElementById('myChart') as HTMLCanvasElement)
                     .getContext('2d');
-    const myChart = new Chart(ctx, {
+    const chart = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
@@ -361,8 +354,9 @@ class TrainDisplay {
           borderWidth: 1
         }]
       },
-      options: {scales: {yAxes: [{ticks: {beginAtZero: true}}]}}
+      // options: {scales: {yAxes: [{ticks: {beginAtZero: true}}]}}
     });
+    chart.update();
   }
 }
 
@@ -373,10 +367,9 @@ const model = new GameOfLifeModel(game, math);
 
 // Helper classes for displaying worlds and training data:
 const trainDisplay = new TrainDisplay();
-const worldDisplay = new WorldDisplay();
 
 // List of worlds + display contexts.
-let worldContexts: Array<WorldContext> = [];
+let worldContexts: WorldContext[] = [];
 
 const boardSizeInput =
     document.getElementById('board-size-input') as HTMLTextAreaElement;
@@ -392,7 +385,7 @@ const predictButton = document.querySelector('.predict-button');
 const resetButton = document.querySelector('.reset-button');
 
 function getBoardSize() {
-  return parseInt(boardSizeInput.value);
+  return parseInt(boardSizeInput.value, 10);
 }
 
 function clearChildNodes(node: Element) {
@@ -404,7 +397,7 @@ function clearChildNodes(node: Element) {
 let step = 0;
 let trainLength = 0;
 function trainAndRender() {
-  if (step == trainLength) {
+  if (step === trainLength) {
     trainButton.removeAttribute('disabled');
     predictButton.removeAttribute('disabled');
     resetButton.removeAttribute('disabled');
@@ -418,11 +411,12 @@ function trainAndRender() {
   requestAnimationFrame(trainAndRender);
   step++;
 
-  const fetchCost = step % 10 == 0;
+  const fetchCost = step % 10 === 0;
   const cost = model.trainBatch(fetchCost);
 
   if (fetchCost) {
     trainDisplay.showStep(step, trainLength);
+    trainDisplay.displayCost(cost);
   }
 }
 
@@ -442,8 +436,8 @@ trainButton.addEventListener('click', () => {
 
   const boardSize = getBoardSize();
   const learningRate = parseFloat(learningRateInput.value);
-  const trainingSize = parseInt(trainingSizeInput.value);
-  const numLayers = parseInt(numLayersInput.value);
+  const trainingSize = parseInt(trainingSizeInput.value, 10);
+  const numLayers = parseInt(numLayersInput.value, 10);
 
   game.setSize(boardSize);
   model.setupSession(boardSize, learningRate, numLayers);
