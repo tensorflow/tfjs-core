@@ -27,6 +27,7 @@ import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInpu
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
+import {MultinomialInputConfig} from './kernels/multinomial';
 import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
 import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
@@ -134,8 +135,7 @@ export interface MathBackend {
   batchNormalization2D(config: BatchNorm2DInputConfig): Array2D;
   batchNormalization3D(config: BatchNorm3DInputConfig): Array3D;
 
-  multinomial(probabilities: Array2D, numSamples: number, seed: number):
-      Array2D<'int32'>;
+  multinomial(config: MultinomialInputConfig): Array2D<'int32'>;
 
   oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
       Array2D;

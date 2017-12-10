@@ -9,6 +9,7 @@ import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig,
 import {EqualInputConfig, EqualNode} from './kernels/logical';
 import {MatMulInputConfig, MatMulNode} from './kernels/matmul';
 import {MaxInputConfig, MaxNode, MinInputConfig, MinNode} from './kernels/minmax';
+import {MultinomialInputConfig, MultinomialNode} from './kernels/multinomial';
 import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './kernels/pool';
 import {ResizeBilinear3DInputConfig, ResizeBilinear3DNode} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './kernels/slice';
@@ -78,6 +79,7 @@ export interface KernelConfigRegistry {
   'resizebilinear3d': ResizeBilinear3DNode;
   'batchnorm3d': BatchNorm3DNode;
   'batchnorm2d': BatchNorm2DNode;
+  'multinomial': MultinomialNode;
 }
 
 export function executeKernel<K extends keyof KernelConfigRegistry>(
@@ -218,7 +220,9 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
     'batchnorm3d': (backend: MathBackend, config: BatchNorm3DInputConfig) =>
         backend.batchNormalization3D(config),
     'batchnorm2d': (backend: MathBackend, config: BatchNorm2DInputConfig) =>
-        backend.batchNormalization2D(config)
+        backend.batchNormalization2D(config),
+    'multinomial': (backend: MathBackend, config: MultinomialInputConfig) =>
+        backend.multinomial(config)
   }[kernelName](backend, config);
   return result;
 };

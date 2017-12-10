@@ -36,6 +36,7 @@ import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInpu
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig, MatrixOrientation} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
+import {MultinomialInputConfig} from './kernels/multinomial';
 import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
 import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
@@ -1325,13 +1326,15 @@ export class MathBackendCPU implements MathBackend {
     return Array3D.new(x.shape, outValues);
   }
 
-  multinomial(probabilities: Array2D, numSamples: number, seed: number):
-      Array2D<'int32'> {
-    const batchSize = probabilities.shape[0];
-    const numEvents = probabilities.shape[1];
+  multinomial(config: MultinomialInputConfig): Array2D<'int32'> {
+    const {probs} = config.inputs;
+    const {numSamples, seed} = config.args;
+
+    const batchSize = probs.shape[0];
+    const numEvents = probs.shape[1];
     const res = Array2D.zeros([batchSize, numSamples], 'int32');
     const resVals = res.getValues();
-    const probVals = probabilities.getValues();
+    const probVals = probs.getValues();
 
     for (let b = 0; b < batchSize; ++b) {
       const offset = b * numEvents;

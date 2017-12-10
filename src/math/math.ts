@@ -2070,8 +2070,10 @@ export abstract class NDArrayMath {
       probabilities = probabilities.as2D(1, -1);
     }
     return this.executeOp('multinomial', () => {
-      const res =
-          this.backend.multinomial(probabilities as Array2D, numSamples, seed);
+      const res = this.backendEngine.executeKernel('multinomial', {
+        inputs: {probs: (probabilities as Array2D)},
+        args: {numSamples, seed}
+      });
       if (origRank === 1) {
         return res.as1D();
       }

@@ -33,6 +33,7 @@ import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInpu
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
+import {MultinomialInputConfig} from './kernels/multinomial';
 import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
 import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
@@ -642,8 +643,10 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  multinomial(probs: Array2D, numSamples: number, seed: number):
-      Array2D<'int32'> {
+  multinomial(config: MultinomialInputConfig): Array2D<'int32'> {
+    const {probs} = config.inputs;
+    const {numSamples, seed} = config.args;
+
     const batchSize = probs.shape[0];
     const numOutcomes = probs.shape[1];
     const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);
