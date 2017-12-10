@@ -19,69 +19,69 @@ import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValu
 import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './kernels/unary';
 
 export interface KernelConfigRegistry {
-  'matmul': MatMulNode;
-  'clone': UnaryNode<NDArray>;
-  'slice1d': Slice1DNode;
-  'slice2d': Slice2DNode;
-  'slice3d': Slice3DNode;
-  'slice4d': Slice4DNode;
-  'concat1d': Concat1DNode;
-  'concat2d': Concat2DNode;
-  'concat3d': Concat3DNode;
-  'concat4d': Concat4DNode;
-  'neg': UnaryNode<NDArray>;
-  'add': BinaryNode;
-  'subtract': BinaryNode;
-  'multiply': BinaryNode;
-  'divide': BinaryNode;
-  'sum': SumNode<'float32'|'int32'|'bool'>;
-  'argmax': ArgMaxNode;
-  'argmin': ArgMinNode;
-  'equal': EqualNode;
-  'topkvalues': TopKValuesNode<'float32'|'int32'|'bool', NDArray>;
-  'topkindices': TopKIndicesNode;
-  'min': MinNode<'float32'|'int32'|'bool'>;
-  'max': MaxNode<'float32'|'int32'|'bool'>;
-  'ceil': UnaryNode<NDArray>;
-  'floor': UnaryNode<NDArray>;
-  'exp': UnaryNode<NDArray>;
-  'log': UnaryNode<NDArray>;
-  'sqrt': UnaryNode<NDArray>;
-  'square': UnaryNode<NDArray>;
-  'relu': UnaryNode<NDArray>;
-  'leakyrelu': LeakyReluNode<NDArray>;
-  'elu': UnaryNode<NDArray>;
-  'eluDer': UnaryNode<NDArray>;
-  'selu': UnaryNode<NDArray>;
-  'abs': UnaryNode<NDArray>;
-  'sigmoid': UnaryNode<NDArray>;
-  'step': StepNode<NDArray>;
-  'sin': UnaryNode<NDArray>;
-  'cos': UnaryNode<NDArray>;
-  'tan': UnaryNode<NDArray>;
-  'asin': UnaryNode<NDArray>;
-  'acos': UnaryNode<NDArray>;
-  'atan': UnaryNode<NDArray>;
-  'sinh': UnaryNode<NDArray>;
-  'cosh': UnaryNode<NDArray>;
-  'tanh': UnaryNode<NDArray>;
-  'clip': ClipNode<NDArray>;
-  'transpose': TransposeNode<NDArray>;
-  'tile': TileNode<NDArray>;
-  'conv2d': Conv2DNode;
-  'conv2dderinput': Conv2DDerInputNode;
-  'conv2dderfilter': Conv2DDerFilterNode;
-  'conv2dderbias': Conv2DDerBiasNode;
-  'depthwiseconv2d': Conv2DNode;
-  'maxpool': PoolNode;
-  'maxpoolbackprop': PoolBackpropNode;
-  'avgpool': PoolNode;
-  'minpool': PoolNode;
-  'resizebilinear3d': ResizeBilinear3DNode;
-  'batchnorm3d': BatchNorm3DNode;
-  'batchnorm2d': BatchNorm2DNode;
-  'multinomial': MultinomialNode;
-  'onehot': OneHotNode;
+  'MatMul': MatMulNode;
+  'Clone': UnaryNode<NDArray>;
+  'Slice1D': Slice1DNode;
+  'Slice2D': Slice2DNode;
+  'Slice3D': Slice3DNode;
+  'Slice4D': Slice4DNode;
+  'Concat1D': Concat1DNode;
+  'Concat2D': Concat2DNode;
+  'Concat3D': Concat3DNode;
+  'Concat4D': Concat4DNode;
+  'Neg': UnaryNode<NDArray>;
+  'Add': BinaryNode;
+  'Sub': BinaryNode;
+  'Mul': BinaryNode;
+  'Div': BinaryNode;
+  'Sum': SumNode<'float32'|'int32'|'bool'>;
+  'ArgMax': ArgMaxNode;
+  'ArgMin': ArgMinNode;
+  'Equal': EqualNode;
+  'TopKValues': TopKValuesNode<'float32'|'int32'|'bool', NDArray>;
+  'TopKIndices': TopKIndicesNode;
+  'Min': MinNode<'float32'|'int32'|'bool'>;
+  'Max': MaxNode<'float32'|'int32'|'bool'>;
+  'Ceil': UnaryNode<NDArray>;
+  'Floor': UnaryNode<NDArray>;
+  'Exp': UnaryNode<NDArray>;
+  'Log': UnaryNode<NDArray>;
+  'Sqrt': UnaryNode<NDArray>;
+  'Square': UnaryNode<NDArray>;
+  'Relu': UnaryNode<NDArray>;
+  'LeakyRelu': LeakyReluNode<NDArray>;
+  'Elu': UnaryNode<NDArray>;
+  'EluDer': UnaryNode<NDArray>;
+  'Selu': UnaryNode<NDArray>;
+  'Abs': UnaryNode<NDArray>;
+  'Sigmoid': UnaryNode<NDArray>;
+  'Step': StepNode<NDArray>;
+  'Sin': UnaryNode<NDArray>;
+  'Cos': UnaryNode<NDArray>;
+  'Tan': UnaryNode<NDArray>;
+  'Asin': UnaryNode<NDArray>;
+  'Acos': UnaryNode<NDArray>;
+  'Atan': UnaryNode<NDArray>;
+  'Sinh': UnaryNode<NDArray>;
+  'Cosh': UnaryNode<NDArray>;
+  'Tanh': UnaryNode<NDArray>;
+  'Clip': ClipNode<NDArray>;
+  'Transpose': TransposeNode<NDArray>;
+  'Tile': TileNode<NDArray>;
+  'Conv2D': Conv2DNode;
+  'Conv2DDerInput': Conv2DDerInputNode;
+  'Conv2DDerFilter': Conv2DDerFilterNode;
+  'Conv2DDerBias': Conv2DDerBiasNode;
+  'DepthwiseConv2D': Conv2DNode;
+  'MaxPool': PoolNode;
+  'MaxPoolBackprop': PoolBackpropNode;
+  'AvgPool': PoolNode;
+  'MinPool': PoolNode;
+  'ResizeBilinear3D': ResizeBilinear3DNode;
+  'BatchNorm3D': BatchNorm3DNode;
+  'BatchNorm2D': BatchNorm2DNode;
+  'Multinomial': MultinomialNode;
+  'OneHot': OneHotNode;
 }
 
 export function executeKernel<K extends keyof KernelConfigRegistry>(
@@ -89,143 +89,143 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
     config: KernelConfigRegistry[K]['inputAndArgs']):
     KernelConfigRegistry[K]['output'] {
   const result = {
-    'matmul': (backend: MathBackend, config: MatMulInputConfig) =>
+    'MatMul': (backend: MathBackend, config: MatMulInputConfig) =>
         backend.matMul(config),
-    'clone': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Clone': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.clone(config),
-    'slice1d': (backend: MathBackend, config: Slice1DInputConfig) =>
+    'Slice1D': (backend: MathBackend, config: Slice1DInputConfig) =>
         backend.slice1D(config),
-    'slice2d': (backend: MathBackend, config: Slice2DInputConfig) =>
+    'Slice2D': (backend: MathBackend, config: Slice2DInputConfig) =>
         backend.slice2D(config),
-    'slice3d': (backend: MathBackend, config: Slice3DInputConfig) =>
+    'Slice3D': (backend: MathBackend, config: Slice3DInputConfig) =>
         backend.slice3D(config),
-    'slice4d': (backend: MathBackend, config: Slice4DInputConfig) =>
+    'Slice4D': (backend: MathBackend, config: Slice4DInputConfig) =>
         backend.slice4D(config),
-    'concat1d': (backend: MathBackend, config: Concat1DInputConfig) =>
+    'Concat1D': (backend: MathBackend, config: Concat1DInputConfig) =>
         backend.concat1D(config),
-    'concat2d': (backend: MathBackend, config: Concat2DInputConfig) =>
+    'Concat2D': (backend: MathBackend, config: Concat2DInputConfig) =>
         backend.concat2D(config),
-    'concat3d': (backend: MathBackend, config: Concat3DInputConfig) =>
+    'Concat3D': (backend: MathBackend, config: Concat3DInputConfig) =>
         backend.concat3D(config),
-    'concat4d': (backend: MathBackend, config: Concat4DInputConfig) =>
+    'Concat4D': (backend: MathBackend, config: Concat4DInputConfig) =>
         backend.concat4D(config),
-    'neg': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Neg': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.neg(config),
-    'add': (backend: MathBackend, config: BinaryInputConfig) =>
+    'Add': (backend: MathBackend, config: BinaryInputConfig) =>
         backend.add(config),
-    'subtract': (backend: MathBackend, config: BinaryInputConfig) =>
+    'Sub': (backend: MathBackend, config: BinaryInputConfig) =>
         backend.subtract(config),
-    'multiply': (backend: MathBackend, config: BinaryInputConfig) =>
+    'Mul': (backend: MathBackend, config: BinaryInputConfig) =>
         backend.multiply(config),
-    'divide': (backend: MathBackend, config: BinaryInputConfig) =>
+    'Div': (backend: MathBackend, config: BinaryInputConfig) =>
         backend.divide(config),
-    'sum': (backend: MathBackend, config: SumInputConfig<'float32'|'int32'>) =>
+    'Sum': (backend: MathBackend, config: SumInputConfig<'float32'|'int32'>) =>
         backend.sum(config),
-    'argmax': (backend: MathBackend, config: ArgMaxInputConfig) =>
+    'ArgMax': (backend: MathBackend, config: ArgMaxInputConfig) =>
         backend.argMax(config),
-    'argmin': (backend: MathBackend, config: ArgMinInputConfig) =>
+    'ArgMin': (backend: MathBackend, config: ArgMinInputConfig) =>
         backend.argMin(config),
-    'equal': (backend: MathBackend, config: EqualInputConfig) =>
+    'Equal': (backend: MathBackend, config: EqualInputConfig) =>
         backend.equal(config),
-    'topkvalues':
+    'TopKValues':
         (backend: MathBackend, config: TopKValuesInputConfig<NDArray>) =>
             backend.topKValues(config),
-    'topkindices': (backend: MathBackend, config: TopKIndicesInputConfig) =>
+    'TopKIndices': (backend: MathBackend, config: TopKIndicesInputConfig) =>
         backend.topKIndices(config),
-    'min':
+    'Min':
         (backend: MathBackend,
          config: MinInputConfig<'float32'|'int32'|'bool'>) =>
             backend.min(config),
-    'max':
+    'Max':
         (backend: MathBackend,
          config: MaxInputConfig<'float32'|'int32'|'bool'>) =>
             backend.max(config),
-    'ceil': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Ceil': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.ceil(config),
-    'floor': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Floor': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.floor(config),
-    'exp': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Exp': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.exp(config),
-    'log': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Log': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.log(config),
-    'sqrt': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Sqrt': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.sqrt(config),
-    'square': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Square': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.square(config),
-    'relu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Relu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.relu(config),
-    'leakyrelu':
+    'LeakyRelu':
         (backend: MathBackend, config: LeakyReluInputConfig<NDArray>) =>
             backend.leakyRelu(config),
-    'elu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Elu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.elu(config),
-    'eluDer': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'EluDer': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.eluDer(config),
-    'selu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Selu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.selu(config),
-    'abs': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Abs': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.abs(config),
-    'sigmoid': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Sigmoid': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.sigmoid(config),
-    'step': (backend: MathBackend, config: StepInputConfig<NDArray>) =>
+    'Step': (backend: MathBackend, config: StepInputConfig<NDArray>) =>
         backend.step(config),
-    'sin': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Sin': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.sin(config),
-    'cos': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Cos': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.cos(config),
-    'tan': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Tan': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.tan(config),
-    'asin': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Asin': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.asin(config),
-    'acos': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Acos': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.acos(config),
-    'atan': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Atan': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.atan(config),
-    'sinh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Sinh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.sinh(config),
-    'cosh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Cosh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.cosh(config),
-    'tanh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+    'Tanh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.tanh(config),
-    'clip': (backend: MathBackend, config: ClipInputConfig<NDArray>) =>
+    'Clip': (backend: MathBackend, config: ClipInputConfig<NDArray>) =>
         backend.clip(config),
-    'transpose':
+    'Transpose':
         (backend: MathBackend, config: TransposeInputConfig<NDArray>) =>
             backend.transpose(config),
-    'tile': (backend: MathBackend, config: TileInputConfig<NDArray>) =>
+    'Tile': (backend: MathBackend, config: TileInputConfig<NDArray>) =>
         backend.tile(config),
-    'conv2d': (backend: MathBackend, config: Conv2DInputConfig) =>
+    'Conv2D': (backend: MathBackend, config: Conv2DInputConfig) =>
         backend.conv2d(config),
-    'conv2dderinput':
+    'Conv2DDerInput':
         (backend: MathBackend, config: Conv2DDerInputInputConfig) =>
             backend.conv2dDerInput(config),
-    'conv2dderfilter':
+    'Conv2DDerFilter':
         (backend: MathBackend, config: Conv2DDerFilterInputConfig) =>
             backend.conv2dDerFilter(config),
-    'conv2dderbias': (backend: MathBackend, config: Conv2DDerBiasInputConfig) =>
+    'Conv2DDerBias': (backend: MathBackend, config: Conv2DDerBiasInputConfig) =>
         backend.conv2dDerBias(config),
-    'depthwiseconv2d':
+    'DepthwiseConv2D':
         (backend: MathBackend, config: DepthwiseConv2DInputConfig) =>
             backend.depthwiseConv2D(config),
-    'maxpool': (backend: MathBackend, config: PoolInputConfig) =>
+    'MaxPool': (backend: MathBackend, config: PoolInputConfig) =>
         backend.maxPool(config),
-    'maxpoolbackprop':
+    'MaxPoolBackprop':
         (backend: MathBackend, config: PoolBackpropInputConfig) =>
             backend.maxPoolBackprop(config),
-    'avgpool': (backend: MathBackend, config: PoolInputConfig) =>
+    'AvgPool': (backend: MathBackend, config: PoolInputConfig) =>
         backend.avgPool(config),
-    'minpool': (backend: MathBackend, config: PoolInputConfig) =>
+    'MinPool': (backend: MathBackend, config: PoolInputConfig) =>
         backend.minPool(config),
-    'resizebilinear3d':
+    'ResizeBilinear3D':
         (backend: MathBackend, config: ResizeBilinear3DInputConfig) =>
             backend.resizeBilinear3D(config),
-    'batchnorm3d': (backend: MathBackend, config: BatchNorm3DInputConfig) =>
+    'BatchNorm3D': (backend: MathBackend, config: BatchNorm3DInputConfig) =>
         backend.batchNormalization3D(config),
-    'batchnorm2d': (backend: MathBackend, config: BatchNorm2DInputConfig) =>
+    'BatchNorm2D': (backend: MathBackend, config: BatchNorm2DInputConfig) =>
         backend.batchNormalization2D(config),
-    'multinomial': (backend: MathBackend, config: MultinomialInputConfig) =>
+    'Multinomial': (backend: MathBackend, config: MultinomialInputConfig) =>
         backend.multinomial(config),
-    'onehot': (backend: MathBackend, config: OneHotInputConfig) =>
+    'OneHot': (backend: MathBackend, config: OneHotInputConfig) =>
         backend.oneHot(config)
   }[kernelName](backend, config);
   return result;

@@ -49,4 +49,8 @@ export class BackendEngine {
       }
     }
   }
+
+  getBackend(): MathBackend {
+    return this.backend;
+  }
 }

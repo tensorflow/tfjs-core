@@ -719,10 +719,12 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   getGPGPUContext(): GPGPUContext {
-    return (this.backend as MathBackendWebGL).getGPGPUContext();
+    return (this.backendEngine.getBackend() as MathBackendWebGL)
+        .getGPGPUContext();
   }
 
   getTextureManager(): TextureManager {
-    return (this.backend as MathBackendWebGL).getTextureManager();
+    return (this.backendEngine.getBackend() as MathBackendWebGL)
+        .getTextureManager();
   }
 }
