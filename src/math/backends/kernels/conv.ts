@@ -11,7 +11,7 @@ export interface Conv2DNode extends KernelNode {
 
 export interface Conv2DInputConfig extends KernelInputConfig {
   inputs: Conv2DInputArrays;
-  args: {convInfo: Conv2DInfo}
+  args: {convInfo: Conv2DInfo;};
 }
 
 export interface Conv2DInputArrays extends KernelInputArrays {
@@ -28,7 +28,7 @@ export interface Conv2DDerInputNode extends KernelNode {
 
 export interface Conv2DDerInputInputConfig extends KernelInputConfig {
   inputs: Conv2DDerInputInputArrays;
-  args: {convInfo: Conv2DInfo}
+  args: {convInfo: Conv2DInfo;};
 }
 
 export interface Conv2DDerInputInputArrays extends KernelInputArrays {
@@ -44,7 +44,7 @@ export interface Conv2DDerFilterNode extends KernelNode {
 
 export interface Conv2DDerFilterInputConfig extends KernelInputConfig {
   inputs: Conv2DDerFilterInputArrays;
-  args: {convInfo: Conv2DInfo}
+  args: {convInfo: Conv2DInfo;};
 }
 
 export interface Conv2DDerFilterInputArrays extends KernelInputArrays {
@@ -74,7 +74,7 @@ export interface DepthwiseConv2DNode extends KernelNode {
 
 export interface DepthwiseConv2DInputConfig extends KernelInputConfig {
   inputs: DepthwiseConv2DInputArrays;
-  args: {convInfo: Conv2DInfo}
+  args: {convInfo: Conv2DInfo;};
 }
 
 export interface DepthwiseConv2DInputArrays extends KernelInputArrays {

@@ -9,7 +9,7 @@ export interface ArgMaxNode extends KernelNode {
 
 export interface ArgMaxInputConfig extends KernelInputConfig {
   inputs: ArgMaxInputArrays;
-  args: {axes: number[];}
+  args: {axes: number[];};
 }
 
 export interface ArgMaxInputArrays extends KernelInputArrays { x: NDArray; }
@@ -21,7 +21,7 @@ export interface ArgMinNode extends KernelNode {
 
 export interface ArgMinInputConfig extends KernelInputConfig {
   inputs: ArgMinInputArrays;
-  args: {axes: number[];}
+  args: {axes: number[];};
 }
 
 export interface ArgMinInputArrays extends KernelInputArrays { x: NDArray; }

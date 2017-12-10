@@ -24,7 +24,7 @@ export interface LeakyReluNode<T extends NDArray> extends KernelNode {
 export interface LeakyReluInputConfig<T extends NDArray> extends
     KernelInputConfig {
   inputs: LeakyReluInputArrays<T>;
-  args: {alpha: number}
+  args: {alpha: number;};
 }
 
 export interface LeakyReluInputArrays<T extends NDArray> extends
@@ -40,7 +40,7 @@ export interface StepNode<T extends NDArray> extends KernelNode {
 
 export interface StepInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: StepInputArrays<T>;
-  args: {alpha: number}
+  args: {alpha: number;};
 }
 
 export interface StepInputArrays<T extends NDArray> extends KernelInputArrays {
@@ -55,7 +55,7 @@ export interface ClipNode<T extends NDArray> extends KernelNode {
 
 export interface ClipInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: ClipInputArrays<T>;
-  args: {min: number; max: number;}
+  args: {min: number; max: number;};
 }
 
 export interface ClipInputArrays<T extends NDArray> extends KernelInputArrays {
@@ -71,7 +71,7 @@ export interface TransposeNode<T extends NDArray> extends KernelNode {
 export interface TransposeInputConfig<T extends NDArray> extends
     KernelInputConfig {
   inputs: TransposeInputArrays<T>;
-  args: {perm: number[]}
+  args: {perm: number[];};
 }
 
 export interface TransposeInputArrays<T extends NDArray> extends
@@ -87,7 +87,7 @@ export interface TileNode<T extends NDArray> extends KernelNode {
 
 export interface TileInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: TileInputArrays<T>;
-  args: {reps: number[]}
+  args: {reps: number[];};
 }
 
 export interface TileInputArrays<T extends NDArray> extends KernelInputArrays {

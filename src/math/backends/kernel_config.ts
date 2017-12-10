@@ -7,6 +7,7 @@ export interface KernelNode {
 
 export interface KernelInputConfig {
   inputs: KernelInputArrays;
+  // tslint:disable-next-line:no-any
   args?: {[argName: string]: any};
 }
 

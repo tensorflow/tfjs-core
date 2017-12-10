@@ -11,7 +11,7 @@ export interface PoolNode extends KernelNode {
 
 export interface PoolInputConfig extends KernelInputConfig {
   inputs: PoolInputArrays;
-  args: {convInfo: Conv2DInfo}
+  args: {convInfo: Conv2DInfo;};
 }
 
 export interface PoolInputArrays extends KernelInputArrays { x: Array4D; }
@@ -24,7 +24,7 @@ export interface PoolBackpropNode extends KernelNode {
 
 export interface PoolBackpropInputConfig extends KernelInputConfig {
   inputs: PoolBackpropInputArrays;
-  args: {convInfo: Conv2DInfo}
+  args: {convInfo: Conv2DInfo;};
 }
 
 export interface PoolBackpropInputArrays extends KernelInputArrays {

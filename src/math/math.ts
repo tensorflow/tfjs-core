@@ -257,7 +257,7 @@ export abstract class NDArrayMath {
   private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
       name: string, f: () => T): T {
     // TODO(nsthorat): Do operation logging and performance profiling.
-    return f();
+    return this.track(f());
   }
 
   /**

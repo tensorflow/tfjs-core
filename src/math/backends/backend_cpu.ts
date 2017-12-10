@@ -29,9 +29,12 @@ import {SumTypes, SumTypesMap} from '../types';
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
+// tslint:disable-next-line:max-line-length
 import {BatchNorm2DInputConfig, BatchNorm3DInputConfig} from './kernels/batchnorm';
 import {BinaryInputConfig} from './kernels/binary';
+// tslint:disable-next-line:max-line-length
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
+// tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig, MatrixOrientation} from './kernels/matmul';
@@ -40,9 +43,11 @@ import {MultinomialInputConfig} from './kernels/multinomial';
 import {OneHotInputConfig} from './kernels/onehot';
 import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
 import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
+// tslint:disable-next-line:max-line-length
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
+// tslint:disable-next-line:max-line-length
 import {ClipInputConfig, StepInputConfig, TileInputConfig, TransposeInputConfig, UnaryInputConfig} from './kernels/unary';
 
 export class MathBackendCPU implements MathBackend {

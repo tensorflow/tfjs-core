@@ -10,7 +10,7 @@ export interface Slice1DNode extends KernelNode {
 
 export interface Slice1DInputConfig extends KernelInputConfig {
   inputs: Slice1DInputArrays;
-  args: {begin: number; size: number;}
+  args: {begin: number; size: number;};
 }
 
 export interface Slice1DInputArrays extends KernelInputArrays { x: Array1D; }
@@ -23,7 +23,7 @@ export interface Slice2DNode extends KernelNode {
 
 export interface Slice2DInputConfig extends KernelInputConfig {
   inputs: Slice2DInputArrays;
-  args: {begin: [number, number]; size: [number, number];}
+  args: {begin: [number, number]; size: [number, number];};
 }
 
 export interface Slice2DInputArrays extends KernelInputArrays { x: Array2D; }
@@ -36,7 +36,7 @@ export interface Slice3DNode extends KernelNode {
 
 export interface Slice3DInputConfig extends KernelInputConfig {
   inputs: Slice3DInputArrays;
-  args: {begin: [number, number, number]; size: [number, number, number];}
+  args: {begin: [number, number, number]; size: [number, number, number];};
 }
 
 export interface Slice3DInputArrays extends KernelInputArrays { x: Array3D; }
@@ -52,7 +52,7 @@ export interface Slice4DInputConfig extends KernelInputConfig {
   args: {
     begin: [number, number, number, number];
     size: [number, number, number, number];
-  }
+  };
 }
 
 export interface Slice4DInputArrays extends KernelInputArrays { x: Array4D; }

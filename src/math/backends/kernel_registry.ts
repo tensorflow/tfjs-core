@@ -1,21 +1,31 @@
 import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
+// tslint:disable-next-line:max-line-length
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './kernels/argminmax';
+// tslint:disable-next-line:max-line-length
 import {BatchNorm2DInputConfig, BatchNorm2DNode, BatchNorm3DInputConfig, BatchNorm3DNode} from './kernels/batchnorm';
 import {BinaryInputConfig, BinaryNode} from './kernels/binary';
-import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './kernels/concat';
+// tslint:disable-next-line:max-line-length
+import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './kernels/concat';  // tslint:disable-next-line:max-line-length
+// tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig, EqualNode} from './kernels/logical';
 import {MatMulInputConfig, MatMulNode} from './kernels/matmul';
+// tslint:disable-next-line:max-line-length
 import {MaxInputConfig, MaxNode, MinInputConfig, MinNode} from './kernels/minmax';
 import {MultinomialInputConfig, MultinomialNode} from './kernels/multinomial';
 import {OneHotInputConfig, OneHotNode} from './kernels/onehot';
+// tslint:disable-next-line:max-line-length
 import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './kernels/pool';
+// tslint:disable-next-line:max-line-length
 import {ResizeBilinear3DInputConfig, ResizeBilinear3DNode} from './kernels/resize_bilinear';
+// tslint:disable-next-line:max-line-length
 import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './kernels/slice';
 import {SumInputConfig, SumNode} from './kernels/sum';
+// tslint:disable-next-line:max-line-length
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './kernels/topk';
+// tslint:disable-next-line:max-line-length
 import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './kernels/unary';
 
 export interface KernelConfigRegistry {
@@ -229,4 +239,4 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
         backend.oneHot(config)
   }[kernelName](backend, config);
   return result;
-};
+}
