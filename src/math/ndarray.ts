@@ -841,7 +841,16 @@ function copyTypedArray<T extends keyof DataTypes>(
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
-    return new Int32Array(array as number[]);
+    const vals = new Int32Array(array.length);
+    for (let i = 0; i < vals.length; ++i) {
+      const val = array[i] as number;
+      if (util.isValNaN(val, 'int32')) {
+        vals[i] = util.getNaN('int32');
+      } else {
+        vals[i] = val;
+      }
+    }
+    return vals;
   } else if (dtype === 'bool') {
     const bool = new Uint8Array(array.length);
     for (let i = 0; i < bool.length; ++i) {
