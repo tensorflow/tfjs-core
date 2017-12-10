@@ -186,7 +186,7 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   clone<G extends keyof DataTypes, T extends NDArray<G>>(a: T): T {
-    const {texShape} = this.texData[a.getData().id];
+    const {texShape} = this.texData[a.id];
     // Pretend the source was in logical shape that matches the texture shape.
     const source = a.as2D(texShape[0], texShape[1]);
     // Do the same for output.
@@ -279,12 +279,9 @@ export class MathBackendWebGL implements MathBackend {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
     const inputsData: Array<ArrayData<T>> = inputs.map(input => {
-      return {array: input, texData: this.texData[input.getData().id]};
+      return {array: input, texData: this.texData[input.id]};
     });
-    const outputData = {
-      array: output,
-      texData: this.texData[output.getData().id]
-    };
+    const outputData = {array: output, texData: this.texData[output.id]};
     const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
     const binary = this.getAndSaveBinary(key, () => {
       return gpgpu_math.compileProgram(

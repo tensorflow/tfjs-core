@@ -40,8 +40,7 @@ export interface LSTMCell {
 
 export interface NDArrayManager {
   getNumArrays(): number;
-  register<T extends keyof DataTypes>(a: NDArray<T>, values: DataTypes[T]):
-      void;
+  register<T extends keyof DataTypes>(a: NDArray<T>): void;
 }
 
 export class NDArrayMath implements NDArrayStorage, NDArrayManager {
@@ -51,16 +50,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.numArrays;
   }
 
-  register<T extends keyof DataTypes>(a: NDArray<T>, values: DataTypes[T]):
-      void {
+  register<T extends keyof DataTypes>(a: NDArray<T>): void {
     this.track(a);
     this.numArrays++;
-    const data = a.getData();
-    if (data.pixels != null) {
-      this.backend.writePixels(a.id, data.pixels, data.numChannels);
-    } else {
-      this.backend.write(a.id, values, a.dtype, a.shape);
-    }
   }
 
   writePixels(
@@ -226,7 +218,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
 
   private isNDArrayDataInList(ndarray: NDArray, ndarrayList: NDArray[]) {
     for (let i = 0; i < ndarrayList.length; i++) {
-      if (ndarrayList[i].getData() === ndarray.getData()) {
+      if (ndarrayList[i].id === ndarray.id) {
         return true;
       }
     }

@@ -38,17 +38,12 @@ export interface DataTypes {
 export interface NDArrayData<T extends keyof DataTypes> {
   id?: number;
   values?: DataTypes[T];
-  pixels?: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement;
-  numChannels?: number;
-  isDisposed?: boolean;
 }
 
 export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   static nextId = 0;
 
-  get id(): number {
-    return this.ndarrayData.id;
-  }
+  id: number;
   /** The shape of the ndarray. */
   shape: number[];
   /** Number of elements in the ndarray. */
@@ -63,18 +58,16 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    */
   protected strides: number[];
 
-  private ndarrayData: NDArrayData<T>;
-
-  protected constructor(shape: number[], data: NDArrayData<T>, dtype: T) {
+  protected constructor(
+      shape: number[], dtype: T, values?: DataTypes[T], id?: number) {
     this.size = util.sizeFromShape(shape);
-    if (data.values != null) {
+    if (values != null) {
       util.assert(
-          this.size === data.values.length,
+          this.size === values.length,
           `Constructing ndarray of shape (${this.size}) should match the ` +
-              `length of values (${data.values.length})`);
+              `length of values (${values.length})`);
     }
     this.shape = shape;
-    this.ndarrayData = data;
     this.dtype = dtype || ('float32' as T);
     const dim = this.shape.length;
 
@@ -89,9 +82,11 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
         this.strides[i] = this.strides[i + 1] * this.shape[i + 1];
       }
     }
-    if (data.id == null) {
-      data.id = NDArray.nextId++;
-      ENV.math.register(this, data.values);
+    this.id = id;
+    if (this.id == null) {
+      this.id = NDArray.nextId++;
+      ENV.math.register(this);
+      ENV.math.write(this.id, values, this.dtype, this.shape);
     }
   }
 
@@ -137,23 +132,23 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    */
   static make<T extends keyof DataTypes = keyof DataTypes>(
       shape: number[], data: NDArrayData<T>, dtype?: T): NDArray<T> {
-    if (data.isDisposed) {
-      throw new Error(`Cannot make new NDArray from disposed NDArrayData.`);
-    }
     switch (shape.length) {
       case 0:
-        return new Scalar(data, dtype);
+        return new Scalar(shape, dtype, data.values, data.id);
       case 1:
-        return new Array1D(data, dtype, shape[0]);
+        return new Array1D(shape, dtype, data.values, data.id);
       case 2:
-        return new Array2D(shape as [number, number], data, dtype);
+        return new Array2D(
+            shape as [number, number], dtype, data.values, data.id);
       case 3:
-        return new Array3D(shape as [number, number, number], data, dtype);
+        return new Array3D(
+            shape as [number, number, number], dtype, data.values, data.id);
       case 4:
         return new Array4D(
-            shape as [number, number, number, number], data, dtype);
+            shape as [number, number, number, number], dtype, data.values,
+            data.id);
       default:
-        return new NDArray(shape, data, dtype);
+        return new NDArray(shape, dtype, data.values, data.id);
     }
   }
 
@@ -164,27 +159,29 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
       throw new Error(
           'Cannot construct NDArray with more than 4 channels from pixels.');
     }
-    const ndarrayData: NDArrayData<'int32'> = {pixels, numChannels};
+    const ndarrayData: NDArrayData<'int32'> = {};
     const shape: [number, number, number] =
         [pixels.height, pixels.width, numChannels];
-    return NDArray.make(shape, ndarrayData, 'int32') as Array3D<'int32'>;
+    const res = NDArray.make(shape, ndarrayData, 'int32') as Array3D<'int32'>;
+    ENV.math.writePixels(res.id, pixels, numChannels);
+    return res;
   }
 
   /** Reshapes the current ndarray into the provided shape. */
   reshape(newShape: number[]): NDArray<T> {
-    this.throwIfDisposed();
-
     newShape = util.inferFromImplicitShape(newShape, this.size);
     if (util.arraysEqual(this.shape, newShape)) {
       // No-op.
       return this;
     }
 
+    const data: NDArrayData<T> = {id: this.id};
+
     util.assert(
         this.size === util.sizeFromShape(newShape),
         'new shape and old shape must have the same number of elements.');
 
-    return NDArray.make(newShape, this.ndarrayData, this.dtype);
+    return NDArray.make(newShape, data, this.dtype);
   }
 
   /**
@@ -222,19 +219,16 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   asType<G extends keyof DataTypes>(dtype: G): NDArray<G> {
-    this.throwIfDisposed();
     const vals = this.dataSync();
     const newVals = toTypedArray(vals, dtype);
     return NDArray.make<G>(this.shape, {values: newVals}, dtype);
   }
 
   get rank(): number {
-    this.throwIfDisposed();
     return this.shape.length;
   }
 
   get(...locs: number[]) {
-    this.throwIfDisposed();
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
@@ -243,12 +237,10 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   add(value: number, ...locs: number[]) {
-    this.throwIfDisposed();
     this.set(this.get(...locs) + value, ...locs);
   }
 
   set(value: number, ...locs: number[]) {
-    this.throwIfDisposed();
     let index = locs.length > 0 ? locs[locs.length - 1] : 0;
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
@@ -256,12 +248,10 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     const vals = this.getValues();
     vals[index] = value;
     ENV.math.disposeData(this.id);
-    this.ndarrayData.values = vals;
     ENV.math.write(this.id, vals, this.dtype, this.shape);
   }
 
   async val(...locs: number[]): Promise<number> {
-    this.throwIfDisposed();
     await this.data();
     return this.get(...locs);
   }
@@ -285,12 +275,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   fill(value: number) {
-    this.throwIfDisposed();
     this.getValues().fill(value);
-  }
-
-  getData(): NDArrayData<T> {
-    return this.ndarrayData;
   }
 
   /** @deprecated Use dataSync() instead. */
@@ -308,7 +293,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * that resolves when the data is ready.
    */
   async data(): Promise<DataTypes[T]> {
-    this.throwIfDisposed();
     return ENV.math.read(this.id);
   }
 
@@ -317,14 +301,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * thread until the values are ready, which can cause performance issues.
    */
   dataSync(): DataTypes[T] {
-    this.throwIfDisposed();
     return ENV.math.readSync(this.id);
-  }
-
-  private throwIfDisposed() {
-    if (this.ndarrayData.isDisposed) {
-      throw new Error(`NDArray is disposed.`);
-    }
   }
 
   dispose(): void {
@@ -332,7 +309,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   equals(t: NDArray<T>): boolean {
-    this.throwIfDisposed();
     return this.dtype === t.dtype && util.arraysEqual(this.shape, t.shape) &&
         util.arraysEqual(this.getValues(), t.getValues());
   }
@@ -388,14 +364,10 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
 export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
     NDArray<T> {
-  constructor(data: NDArrayData<T>, dtype: T) {
-    super([], data, dtype);
-  }
-
   static new<T extends keyof DataTypes = keyof DataTypes>(
       value: number|boolean, dtype?: T) {
     const values = [value] as number[] | boolean[];
-    return new Scalar({values: toTypedArray(values, dtype)}, dtype);
+    return new Scalar([], dtype, toTypedArray(values, dtype));
   }
 
   get(): number {
@@ -428,11 +400,6 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
     NDArray<T> {
   shape: [number];
 
-  constructor(data: NDArrayData<T>, dtype: T, length?: number) {
-    const shape = (data.values != null) ? [data.values.length] : [length];
-    super(shape, data, dtype);
-  }
-
   static new<T extends keyof DataTypes = keyof DataTypes>(
       values: DataTypes[T]|number[]|boolean[], dtype?: T): Array1D<T> {
     if (!instanceofTypedArray(values)) {
@@ -442,7 +409,7 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
           `Error constructing Array1D. Shape of values ${inferredShape} is ` +
               `not 1 dimensional.`);
     }
-    return new Array1D({values: toTypedArray(values, dtype)}, dtype);
+    return new Array1D([values.length], dtype, toTypedArray(values, dtype));
   }
 
   get(i: number): number {
@@ -517,9 +484,10 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
 
   private stride0: number;
 
-  constructor(shape: [number, number], data: NDArrayData<T>, dtype: T) {
+  constructor(
+      shape: [number, number], dtype: T, values?: DataTypes[T], id?: number) {
     util.assert(shape.length === 2, 'Shape should be of length 2');
-    super(shape, data, dtype);
+    super(shape, dtype, values, id);
     this.stride0 = this.strides[0];
   }
 
@@ -537,7 +505,7 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
                 `${shape}. `);
       }
     }
-    return new Array2D(shape, {values: toTypedArray(values, dtype)}, dtype);
+    return new Array2D(shape, dtype, toTypedArray(values, dtype));
   }
 
   get(i: number, j: number) {
@@ -612,9 +580,11 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
   private stride0: number;
   private stride1: number;
 
-  constructor(shape: [number, number, number], data: NDArrayData<T>, dtype: T) {
+  constructor(
+      shape: [number, number, number], dtype: T, values?: DataTypes[T],
+      id?: number) {
     util.assert(shape.length === 3, 'Shape should be of length 3');
-    super(shape, data, dtype);
+    super(shape, dtype, values, id);
     this.stride0 = this.strides[0];
     this.stride1 = this.strides[1];
   }
@@ -633,7 +603,7 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
                 `${shape}. `);
       }
     }
-    return new Array3D(shape, {values: toTypedArray(values, dtype)}, dtype);
+    return new Array3D(shape, dtype, toTypedArray(values, dtype));
   }
 
   get(i: number, j: number, k: number) {
@@ -713,9 +683,10 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
   private stride2: number;
 
   constructor(
-      shape: [number, number, number, number], data: NDArrayData<T>, dtype: T) {
+      shape: [number, number, number, number], dtype: T, values?: DataTypes[T],
+      id?: number) {
     util.assert(shape.length === 4, 'Shape should be of length 4');
-    super(shape, data, dtype);
+    super(shape, dtype, values, id);
     this.stride0 = this.strides[0];
     this.stride1 = this.strides[1];
     this.stride2 = this.strides[2];
@@ -735,7 +706,7 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
                 `${shape}. `);
       }
     }
-    return new Array4D(shape, {values: toTypedArray(values, dtype)}, dtype);
+    return new Array4D(shape, dtype, toTypedArray(values, dtype));
   }
 
   get(i: number, j: number, k: number, l: number) {
