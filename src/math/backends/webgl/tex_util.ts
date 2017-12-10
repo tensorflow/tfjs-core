@@ -21,6 +21,13 @@ export enum TextureType {
   RGBA_COLOR
 }
 
+export interface TextureData {
+  texture: WebGLTexture;
+  /** [rows, columns] shape of the texture. */
+  texShape: [number, number];
+  textureType: TextureType;
+}
+
 export function getUnpackedMatrixTextureShapeWidthHeight(
     rows: number, columns: number): [number, number] {
   return [columns, rows];

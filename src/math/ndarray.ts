@@ -18,8 +18,6 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import {ArrayData} from '../util';
-// TODO(smilkov): Remove this import. ndarray shouldn't know about backends.
-import {TextureType} from './backends/webgl/tex_util';
 import {RandNormalDataTypes} from './rand';
 import {MPRandGauss} from './rand';
 
@@ -43,10 +41,6 @@ export interface NDArrayData<T extends keyof DataTypes> {
   values?: DataTypes[T];
   pixels?: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement;
   numChannels?: number;
-  texture?: WebGLTexture;
-  /** [rows, columns] shape of the texture. */
-  textureShapeRC?: [number, number];
-  textureType?: TextureType;
   isDisposed?: boolean;
 }
 
@@ -263,6 +257,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     const vals = this.getValues();
     vals[index] = value;
     ENV.math.disposeData(this);
+    this.ndarrayData.values = vals;
     ENV.math.write(this.ndarrayData, this.shape);
   }
 
@@ -327,16 +322,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     return ENV.math.readSync(this.ndarrayData);
   }
 
-  getTexture(): WebGLTexture {
-    this.throwIfDisposed();
-    return this.ndarrayData.texture;
-  }
-
-  getTextureShapeRC(): [number, number] {
-    this.throwIfDisposed();
-    return this.ndarrayData.textureShapeRC;
-  }
-
   private throwIfDisposed() {
     if (this.ndarrayData.isDisposed) {
       throw new Error(`NDArray is disposed.`);
@@ -345,11 +330,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   dispose(): void {
     ENV.math.disposeData(this.ndarrayData);
-  }
-
-  inGPU(): boolean {
-    this.throwIfDisposed();
-    return this.ndarrayData.texture != null;
   }
 
   equals(t: NDArray<T>): boolean {
@@ -410,9 +390,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
     NDArray<T> {
   constructor(data: NDArrayData<T>, dtype: T) {
-    if (data.texture != null) {
-      data.textureShapeRC = [1, 1];
-    }
     super([], data, dtype);
   }
 
