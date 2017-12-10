@@ -1,0 +1,64 @@
+<html>
+
+<body>
+  <style type="text/css">
+    .world {
+      display: inline-block;
+    }
+
+    .world+.world {
+      margin-left: 20px;
+    }
+
+    .board {
+      background-color: #cccccc;
+      display: inline-block;
+      padding: 5px;
+    }
+
+    .column {
+      min-height: 20px;
+      min-width: 20px;
+      display: inline-block;
+      margin: 1px;
+    }
+
+    .column.alive {
+      background-color: #333333;
+    }
+
+    .column.dead {
+      background-color: #ffffff;
+    }
+  </style>
+
+  <div>
+    Board size:
+    <input type="text" id="board-size-input" value="5">
+    <br> Training size:
+    <input type="text" id="training-size-input" value="10000">
+    <br> Initial Learning Rate:
+    <input type="text" id="learning-rate-input" value="0.042">
+    <br> Number of Layers:
+    <input type="text" id="num-layers-input" value="3">
+  </div>
+  <br>
+  <div>
+    <button class="add-sequence-button">Add Sequence</button>
+    <button class="train-button">Train Model</button>
+    <button class="predict-button" disabled="disabled">Predict Sequence</button>
+    <button class="reset-button">Reset</button>
+  </div>
+
+  <hr>
+  <div class="train-display">Waiting to train.</div>
+  <div class="train-graph">
+    <canvas id="myChart" width="400" height="400"></canvas>
+  </div>
+  <hr>
+  <div class="worlds-display"></div>
+
+  <script src="dist/bundle.js"></script>
+</body>
+
+</html>
