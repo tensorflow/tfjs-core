@@ -1703,7 +1703,8 @@ export abstract class NDArrayMath {
     const convInfo =
         conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('maxPool', () => {
-      const res = this.backend.maxPool(input4D, convInfo);
+      const res = this.backendEngine.executeKernel(
+          'maxpool', {inputs: {x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;
@@ -1752,7 +1753,9 @@ export abstract class NDArrayMath {
     const convInfo =
         conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('maxPoolBackprop', () => {
-      const res = this.backend.maxPoolBackprop(dy4D, input4D, convInfo);
+      const res = this.backendEngine.executeKernel(
+          'maxpoolbackprop',
+          {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;
@@ -1792,7 +1795,8 @@ export abstract class NDArrayMath {
     const convInfo =
         conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('minPool', () => {
-      const res = this.backend.minPool(input4D, convInfo);
+      const res = this.backendEngine.executeKernel(
+          'minpool', {inputs: {x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;
@@ -1832,7 +1836,8 @@ export abstract class NDArrayMath {
     const convInfo =
         conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('avgPool', () => {
-      const res = this.backend.avgPool(input4D, convInfo);
+      const res = this.backendEngine.executeKernel(
+          'avgpool', {inputs: {x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;
@@ -1860,9 +1865,8 @@ export abstract class NDArrayMath {
         newShape2D.length === 2,
         `Error in resizeBilinear3D: new shape must 2D, but got shape ` +
             `${newShape2D}.`);
-    return this.executeOp(
-        'resizeBilinear3D',
-        () => this.backend.resizeBilinear3D(x, newShape2D, alignCorners));
+    return this.track(this.backendEngine.executeKernel(
+        'resizebilinear3d', {inputs: {x}, args: {newShape2D, alignCorners}}));
   }
 
   /**
@@ -1906,10 +1910,9 @@ export abstract class NDArrayMath {
               `but got rank ${offset.rank}.`);
     }
 
-    return this.executeOp(
-        'batchNorm2D',
-        () => this.backend.batchNormalization2D(
-            x, mean, variance, varianceEpsilon, scale, offset));
+    return this.track(this.backendEngine.executeKernel(
+        'batchnorm2d',
+        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}}));
   }
 
   /**
@@ -1953,10 +1956,9 @@ export abstract class NDArrayMath {
               `but got rank ${offset.rank}.`);
     }
 
-    return this.executeOp(
-        'batchNorm3D',
-        () => this.backend.batchNormalization3D(
-            x, mean, variance, varianceEpsilon, scale, offset));
+    return this.track(this.backendEngine.executeKernel(
+        'batchnorm3d',
+        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}}));
   }
 
   //////////////

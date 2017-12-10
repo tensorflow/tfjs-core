@@ -29,20 +29,22 @@ import {SumTypes, SumTypesMap} from '../types';
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
+import {BatchNorm2DInputConfig, BatchNorm3DInputConfig} from './kernels/batchnorm';
 import {BinaryInputConfig} from './kernels/binary';
-import {CloneInputConfig} from './kernels/clone';
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
 import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig, MatrixOrientation} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
+import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
+import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
 import {ClipInputConfig, StepInputConfig, TileInputConfig, TransposeInputConfig, UnaryInputConfig} from './kernels/unary';
 
 export class MathBackendCPU implements MathBackend {
-  clone<T extends NDArray>(config: CloneInputConfig<T>): T {
+  clone<T extends NDArray>(config: UnaryInputConfig<T>): T {
     return NDArray.make(
                config.inputs.x.shape,
                {values: new Float32Array(config.inputs.x.getValues())}) as T;
@@ -1117,11 +1119,14 @@ export class MathBackendCPU implements MathBackend {
     return y;
   }
 
-  maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  maxPool(config: PoolInputConfig): Array4D {
+    const {x} = config.inputs;
+    const {convInfo} = config.args;
+
     return this.pool(x, convInfo, 'max');
   }
 
-  maxPoolPositions(x: Array4D, convInfo: Conv2DInfo) {
+  private maxPoolPositions(x: Array4D, convInfo: Conv2DInfo) {
     const maxPositions = Array4D.zeros(convInfo.outShape);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1161,7 +1166,10 @@ export class MathBackendCPU implements MathBackend {
     return maxPositions;
   }
 
-  maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+  maxPoolBackprop(config: PoolBackpropInputConfig): Array4D {
+    const {dy, x} = config.inputs;
+    const {convInfo} = config.args;
+
     const maxPositions = this.maxPoolPositions(x, convInfo);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1212,17 +1220,24 @@ export class MathBackendCPU implements MathBackend {
     return dx;
   }
 
-  minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  minPool(config: PoolInputConfig): Array4D {
+    const {x} = config.inputs;
+    const {convInfo} = config.args;
+
     return this.pool(x, convInfo, 'min');
   }
 
-  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  avgPool(config: PoolInputConfig): Array4D {
+    const {x} = config.inputs;
+    const {convInfo} = config.args;
+
     return this.pool(x, convInfo, 'avg');
   }
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number],
-      alignCorners: boolean): Array3D {
+  resizeBilinear3D(config: ResizeBilinear3DInputConfig): Array3D {
+    const {x} = config.inputs;
+    const {newShape2D, alignCorners} = config.args;
+
     const output = Array3D.zeros([newShape2D[0], newShape2D[1], x.shape[2]]);
 
     const effectiveInputSize =
@@ -1268,10 +1283,10 @@ export class MathBackendCPU implements MathBackend {
     return output;
   }
 
-  batchNormalization2D(
-      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
-      varianceEpsilon: number, scale?: Array2D|Array1D,
-      offset?: Array2D|Array1D): Array2D {
+  batchNormalization2D(config: BatchNorm2DInputConfig): Array2D {
+    const {x, mean, variance, scale, offset} = config.inputs;
+    const {varianceEpsilon} = config.args;
+
     const xValues = x.getValues();
     const meanValues = mean.getValues();
     const varianceValues = variance.getValues();
@@ -1289,10 +1304,10 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new(x.shape, outValues);
   }
 
-  batchNormalization3D(
-      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
-      varianceEpsilon: number, scale?: Array3D|Array1D,
-      offset?: Array3D|Array1D): Array3D {
+  batchNormalization3D(config: BatchNorm3DInputConfig): Array3D {
+    const {x, mean, variance, scale, offset} = config.inputs;
+    const {varianceEpsilon} = config.args;
+
     const xValues = x.getValues();
     const meanValues = mean.getValues();
     const varianceValues = variance.getValues();

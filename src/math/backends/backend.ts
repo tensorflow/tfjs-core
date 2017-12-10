@@ -15,19 +15,20 @@
  * limitations under the License.
  * =============================================================================
  */
-import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray';
 import {SumTypes} from '../types';
 
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
+import {BatchNorm2DInputConfig, BatchNorm3DInputConfig} from './kernels/batchnorm';
 import {BinaryInputConfig} from './kernels/binary';
-import {CloneInputConfig} from './kernels/clone';
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
 import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
+import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
+import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
@@ -41,7 +42,7 @@ import {ClipInputConfig, LeakyReluInputConfig, StepInputConfig, TileInputConfig,
 export interface MathBackend {
   matMul(config: MatMulInputConfig): Array2D;
 
-  clone<T extends NDArray>(config: CloneInputConfig<T>): T;
+  clone<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
   slice1D(config: Slice1DInputConfig): Array1D;
   slice2D(config: Slice2DInputConfig): Array2D;
@@ -117,10 +118,10 @@ export interface MathBackend {
 
   depthwiseConv2D(config: DepthwiseConv2DInputConfig): Array4D;
 
-  maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
-  maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
-  minPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
-  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
+  maxPool(config: PoolInputConfig): Array4D;
+  maxPoolBackprop(config: PoolBackpropInputConfig): Array4D;
+  minPool(config: PoolInputConfig): Array4D;
+  avgPool(config: PoolInputConfig): Array4D;
 
   tile<D extends keyof DataTypes, T extends NDArray<D>>(
       config: TileInputConfig<T>): T;
@@ -128,17 +129,10 @@ export interface MathBackend {
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
       config: TransposeInputConfig<T>): T;
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
+  resizeBilinear3D(config: ResizeBilinear3DInputConfig): Array3D;
 
-  batchNormalization2D(
-      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
-      varianceEpsilon: number, scale?: Array2D|Array1D,
-      offset?: Array2D|Array1D): Array2D;
-  batchNormalization3D(
-      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
-      varianceEpsilon: number, scale?: Array3D|Array1D,
-      offset?: Array3D|Array1D): Array3D;
+  batchNormalization2D(config: BatchNorm2DInputConfig): Array2D;
+  batchNormalization3D(config: BatchNorm3DInputConfig): Array3D;
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
       Array2D<'int32'>;

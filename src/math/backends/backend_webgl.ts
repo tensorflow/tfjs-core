@@ -17,7 +17,6 @@
 
 import * as util from '../../util';
 import * as axis_util from '../axis_util';
-import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 import * as ndarray from '../ndarray';
 // tslint:disable-next-line:max-line-length
@@ -27,13 +26,15 @@ import {SumTypes, SumTypesMap} from '../types';
 
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
+import {BatchNorm2DInputConfig, BatchNorm3DInputConfig} from './kernels/batchnorm';
 import {BinaryInputConfig} from './kernels/binary';
-import {CloneInputConfig} from './kernels/clone';
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
 import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
+import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
+import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
@@ -94,7 +95,7 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   clone<G extends keyof DataTypes, T extends NDArray<G>>(
-      config: CloneInputConfig<T>): T {
+      config: UnaryInputConfig<T>): T {
     const {x} = config.inputs;
 
     const texShape = x.getTextureShapeRC();
@@ -214,10 +215,10 @@ export class MathBackendWebGL implements MathBackend {
         program, [a, b], output);
   }
 
-  batchNormalization2D(
-      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
-      varianceEpsilon: number, scale?: Array2D|Array1D,
-      offset?: Array2D|Array1D): Array2D {
+  batchNormalization2D(config: BatchNorm2DInputConfig): Array2D {
+    const {x, mean, variance, scale, offset} = config.inputs;
+    const {varianceEpsilon} = config.args;
+
     const inputs = [x, mean, variance];
 
     let offsetShape = null;
@@ -238,10 +239,10 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, inputs);
   }
 
-  batchNormalization3D(
-      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
-      varianceEpsilon: number, scale?: Array3D|Array1D,
-      offset?: Array3D|Array1D): Array3D {
+  batchNormalization3D(config: BatchNorm3DInputConfig): Array3D {
+    const {x, mean, variance, scale, offset} = config.inputs;
+    const {varianceEpsilon} = config.args;
+
     const inputs = [x, mean, variance];
 
     let offsetShape = null;
@@ -590,22 +591,34 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x, filter]);
   }
 
-  maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  maxPool(config: PoolInputConfig): Array4D {
+    const {x} = config.inputs;
+    const {convInfo} = config.args;
+
     const program = new Pool2DProgram(convInfo, 'max', false);
     return this.compileAndRun(program, [x]);
   }
 
-  minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  minPool(config: PoolInputConfig): Array4D {
+    const {x} = config.inputs;
+    const {convInfo} = config.args;
+
     const program = new Pool2DProgram(convInfo, 'min', false);
     return this.compileAndRun(program, [x]);
   }
 
-  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  avgPool(config: PoolInputConfig): Array4D {
+    const {x} = config.inputs;
+    const {convInfo} = config.args;
+
     const program = new Pool2DProgram(convInfo, 'avg', false);
     return this.compileAndRun(program, [x]);
   }
 
-  maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+  maxPoolBackprop(config: PoolBackpropInputConfig): Array4D {
+    const {dy, x} = config.inputs;
+    const {convInfo} = config.args;
+
     const getPositions = true;
     const maxPoolPositionsProgram =
         new Pool2DProgram(convInfo, 'max', getPositions);
@@ -620,9 +633,10 @@ export class MathBackendWebGL implements MathBackend {
     return result as Array4D;
   }
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number],
-      alignCorners: boolean): Array3D {
+  resizeBilinear3D(config: ResizeBilinear3DInputConfig): Array3D {
+    const {x} = config.inputs;
+    const {newShape2D, alignCorners} = config.args;
+
     const program =
         new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
     return this.compileAndRun(program, [x]);

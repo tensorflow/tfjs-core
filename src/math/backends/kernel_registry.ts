@@ -2,13 +2,15 @@ import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './kernels/argminmax';
+import {BatchNorm2DInputConfig, BatchNorm2DNode, BatchNorm3DInputConfig, BatchNorm3DNode} from './kernels/batchnorm';
 import {BinaryInputConfig, BinaryNode} from './kernels/binary';
-import {CloneInputConfig, CloneNode} from './kernels/clone';
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './kernels/concat';
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig, EqualNode} from './kernels/logical';
 import {MatMulInputConfig, MatMulNode} from './kernels/matmul';
 import {MaxInputConfig, MaxNode, MinInputConfig, MinNode} from './kernels/minmax';
+import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './kernels/pool';
+import {ResizeBilinear3DInputConfig, ResizeBilinear3DNode} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './kernels/slice';
 import {SumInputConfig, SumNode} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './kernels/topk';
@@ -16,7 +18,7 @@ import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInpu
 
 export interface KernelConfigRegistry {
   'matmul': MatMulNode;
-  'clone': CloneNode<NDArray>;
+  'clone': UnaryNode<NDArray>;
   'slice1d': Slice1DNode;
   'slice2d': Slice2DNode;
   'slice3d': Slice3DNode;
@@ -69,6 +71,13 @@ export interface KernelConfigRegistry {
   'conv2dderfilter': Conv2DDerFilterNode;
   'conv2dderbias': Conv2DDerBiasNode;
   'depthwiseconv2d': Conv2DNode;
+  'maxpool': PoolNode;
+  'maxpoolbackprop': PoolBackpropNode;
+  'avgpool': PoolNode;
+  'minpool': PoolNode;
+  'resizebilinear3d': ResizeBilinear3DNode;
+  'batchnorm3d': BatchNorm3DNode;
+  'batchnorm2d': BatchNorm2DNode;
 }
 
 export function executeKernel<K extends keyof KernelConfigRegistry>(
@@ -78,7 +87,7 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
   const result = {
     'matmul': (backend: MathBackend, config: MatMulInputConfig) =>
         backend.matMul(config),
-    'clone': (backend: MathBackend, config: CloneInputConfig<NDArray>) =>
+    'clone': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.clone(config),
     'slice1d': (backend: MathBackend, config: Slice1DInputConfig) =>
         backend.slice1D(config),
@@ -193,8 +202,23 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
         backend.conv2dDerBias(config),
     'depthwiseconv2d':
         (backend: MathBackend, config: DepthwiseConv2DInputConfig) =>
-            backend.depthwiseConv2D(config)
-
+            backend.depthwiseConv2D(config),
+    'maxpool': (backend: MathBackend, config: PoolInputConfig) =>
+        backend.maxPool(config),
+    'maxpoolbackprop':
+        (backend: MathBackend, config: PoolBackpropInputConfig) =>
+            backend.maxPoolBackprop(config),
+    'avgpool': (backend: MathBackend, config: PoolInputConfig) =>
+        backend.avgPool(config),
+    'minpool': (backend: MathBackend, config: PoolInputConfig) =>
+        backend.minPool(config),
+    'resizebilinear3d':
+        (backend: MathBackend, config: ResizeBilinear3DInputConfig) =>
+            backend.resizeBilinear3D(config),
+    'batchnorm3d': (backend: MathBackend, config: BatchNorm3DInputConfig) =>
+        backend.batchNormalization3D(config),
+    'batchnorm2d': (backend: MathBackend, config: BatchNorm2DInputConfig) =>
+        backend.batchNormalization2D(config)
   }[kernelName](backend, config);
   return result;
 };
