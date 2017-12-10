@@ -17,7 +17,7 @@
  */
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayData, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
 import {SumTypes} from '../types';
 
 export enum MatrixOrientation {
@@ -28,12 +28,13 @@ export enum MatrixOrientation {
 export const BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
 
 export interface NDArrayStorage {
-  read<T extends keyof DataTypes>(data: NDArrayData<T>): Promise<DataTypes[T]>;
-  readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T];
-  disposeData(data: NDArrayData<keyof DataTypes>): void;
-  write(data: NDArrayData<keyof DataTypes>, shape: number[]): void;
+  read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]>;
+  readSync<T extends keyof DataTypes>(id: number): DataTypes[T];
+  disposeData(id: number): void;
+  write<T extends keyof DataTypes>(
+      id: number, values: DataTypes[T], dtype: T, shape: number[]): void;
   writePixels(
-      data: NDArrayData<keyof DataTypes>,
+      id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void;
 }

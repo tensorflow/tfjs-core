@@ -1,3 +1,5 @@
+import {DataTypes} from '../../ndarray';
+
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -26,6 +28,8 @@ export interface TextureData {
   /** [rows, columns] shape of the texture. */
   texShape: [number, number];
   textureType: TextureType;
+  dtype: keyof DataTypes;
+  numChannels?: number;
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(

@@ -23,17 +23,22 @@ import {Conv2DInfo} from '../conv_util';
 import * as copy2D_util from '../copy2d_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayData, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
 import {SumTypes, SumTypesMap} from '../types';
 
 import * as axis_util from './../axis_util';
 import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backend';
 
 export class MathBackendCPU implements MathBackend {
+  private data: {[id: number]: DataTypes[keyof DataTypes]} = {};
+
   dispose() {}
-  write(data: NDArrayData<keyof DataTypes>): void {}
+  write<T extends keyof DataTypes>(
+      id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
+    this.data[id] = values;
+  }
   writePixels(
-      data: NDArrayData<keyof DataTypes>,
+      id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     let vals: Uint8ClampedArray;
@@ -57,27 +62,28 @@ export class MathBackendCPU implements MathBackend {
     } else {
       throw new Error('pixels is of unknown type ' + pixels);
     }
+    let values: Int32Array;
     if (numChannels === 4) {
-      data.values = new Int32Array(vals);
+      values = new Int32Array(vals);
     } else {
       const numPixels = pixels.width * pixels.height;
-      data.values = new Int32Array(numPixels * numChannels);
+      values = new Int32Array(numPixels * numChannels);
       for (let i = 0; i < numPixels; i++) {
         for (let channel = 0; channel < numChannels; ++channel) {
-          data.values[i * numChannels + channel] = vals[i * 4 + channel];
+          values[i * numChannels + channel] = vals[i * 4 + channel];
         }
       }
     }
+    this.data[id] = values;
   }
-  readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
-    return data.values;
+  readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
+    return this.data[id];
   }
-  disposeData(data: NDArrayData<keyof DataTypes>): void {
-    data.values = null;
+  disposeData(id: number): void {
+    delete this.data[id];
   }
-  async read<T extends keyof DataTypes>(data: NDArrayData<T>):
-      Promise<DataTypes[T]> {
-    return data.values;
+  async read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+    return this.data[id];
   }
 
   clone<T extends NDArray>(ndarray: T): T {

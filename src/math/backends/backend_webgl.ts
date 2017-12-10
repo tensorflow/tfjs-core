@@ -22,10 +22,9 @@ import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayData, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import {SumTypes, SumTypesMap} from '../types';
-
 import {BACKEND_REGISTRY, MathBackend, MatrixOrientation} from './backend';
 import {AddScaledMatProgram} from './webgl/addscaledmat_gpu';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -92,10 +91,10 @@ function typedArrayToFloat32(
 }
 
 export class MathBackendWebGL implements MathBackend {
-  private texData: {[id: string]: TextureData} = {};
+  private texData: {[id: number]: TextureData} = {};
 
   writePixels(
-      data: NDArrayData<keyof DataTypes>,
+      id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     const shape: [number, number, number] =
@@ -103,48 +102,51 @@ export class MathBackendWebGL implements MathBackend {
     const texShape: [number, number] = [shape[0], shape[1]];
     const texture = this.textureManager.acquireTexture(texShape);
     this.gpgpu.uploadPixelDataToTexture(texture, pixels);
-    this.texData[data.id] = {
+    this.texData[id] = {
       texture,
       textureType: TextureType.RGBA_COLOR,
-      texShape
+      texShape,
+      numChannels,
+      dtype: 'int32'
     };
   }
-  write(data: NDArrayData<keyof DataTypes>, shape: number[]): void {
+  write<T extends keyof DataTypes>(
+      id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     const texture = this.textureManager.acquireTexture(texShape);
     const textureType = TextureType.DEFAULT;
-    this.texData[data.id] = {texture, textureType, texShape};
+    this.texData[id] = {texture, textureType, texShape, dtype};
 
-    if (data.values != null) {
+    if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
           texture, texShape[0],
           // TODO(smilkov): Propagate the original typed array to gpgpu.
-          texShape[1], typedArrayToFloat32(data.values, data.dtype));
+          texShape[1], typedArrayToFloat32(values, dtype));
     }
   }
-  disposeData(data: NDArrayData<keyof DataTypes>): void {
-    if (data.id in this.texData) {
-      const {texture, texShape} = this.texData[data.id];
+  disposeData(id: number): void {
+    if (id in this.texData) {
+      const {texture, texShape} = this.texData[id];
       this.textureManager.releaseTexture(texture, texShape);
-      delete this.texData[data.id];
+      delete this.texData[id];
     }
   }
-  readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
+  readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
     let values: Float32Array;
-    const {texture, textureType, texShape} = this.texData[data.id];
+    const {texture, textureType, texShape, numChannels, dtype} =
+        this.texData[id];
     if (textureType === TextureType.DEFAULT) {
       values = this.gpgpu.downloadMatrixFromTexture(
           texture, texShape[0], texShape[1]);
     } else {
       values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
-          texture, texShape[0], texShape[1], data.numChannels);
+          texture, texShape[0], texShape[1], numChannels);
     }
-    return float32ToTypedArray(values, data.dtype);
+    return float32ToTypedArray(values, dtype);
   }
-  async read<T extends keyof DataTypes>(data: NDArrayData<T>):
-      Promise<DataTypes[T]> {
-    const {texture, textureType, texShape} = this.texData[data.id];
+  async read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+    const {texture, textureType, texShape} = this.texData[id];
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
         textureType === TextureType.DEFAULT) {
       return this.gpgpu.downloadMatrixFromTextureAsync(
@@ -152,14 +154,14 @@ export class MathBackendWebGL implements MathBackend {
     }
 
     if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-      return await this.readSync(data);
+      return await this.readSync(id);
     }
 
     // Construct an empty query. We're just interested in getting a callback
     // when the GPU command queue has executed until this point in time.
     const queryFn = () => {};
     await this.gpgpu.runQuery(queryFn);
-    return this.readSync(data);
+    return this.readSync(id);
   }
 
   private gpgpu: GPGPUContext;

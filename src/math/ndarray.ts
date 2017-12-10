@@ -37,7 +37,6 @@ export interface DataTypes {
 /** @hidden */
 export interface NDArrayData<T extends keyof DataTypes> {
   id?: number;
-  dtype?: T;
   values?: DataTypes[T];
   pixels?: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement;
   numChannels?: number;
@@ -47,14 +46,15 @@ export interface NDArrayData<T extends keyof DataTypes> {
 export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   static nextId = 0;
 
+  get id(): number {
+    return this.ndarrayData.id;
+  }
   /** The shape of the ndarray. */
   shape: number[];
   /** Number of elements in the ndarray. */
   size: number;
   /** The data type for the array. */
-  get dtype(): T {
-    return this.ndarrayData.dtype;
-  }
+  dtype: T;
 
   /**
    * Number of elements to skip in each dimension when indexing. See
@@ -75,7 +75,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     }
     this.shape = shape;
     this.ndarrayData = data;
-    this.ndarrayData.dtype = dtype || ('float32' as T);
+    this.dtype = dtype || ('float32' as T);
     const dim = this.shape.length;
 
     if (dim < 2) {
@@ -91,7 +91,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     }
     if (data.id == null) {
       data.id = NDArray.nextId++;
-      ENV.math.register(this);
+      ENV.math.register(this, data.values);
     }
   }
 
@@ -164,8 +164,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
       throw new Error(
           'Cannot construct NDArray with more than 4 channels from pixels.');
     }
-    const ndarrayData:
-        NDArrayData<'int32'> = {pixels, numChannels, dtype: 'int32'};
+    const ndarrayData: NDArrayData<'int32'> = {pixels, numChannels};
     const shape: [number, number, number] =
         [pixels.height, pixels.width, numChannels];
     return NDArray.make(shape, ndarrayData, 'int32') as Array3D<'int32'>;
@@ -256,9 +255,9 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     }
     const vals = this.getValues();
     vals[index] = value;
-    ENV.math.disposeData(this);
+    ENV.math.disposeData(this.id);
     this.ndarrayData.values = vals;
-    ENV.math.write(this.ndarrayData, this.shape);
+    ENV.math.write(this.id, vals, this.dtype, this.shape);
   }
 
   async val(...locs: number[]): Promise<number> {
@@ -310,7 +309,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    */
   async data(): Promise<DataTypes[T]> {
     this.throwIfDisposed();
-    return ENV.math.read(this.ndarrayData);
+    return ENV.math.read(this.id);
   }
 
   /**
@@ -319,7 +318,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    */
   dataSync(): DataTypes[T] {
     this.throwIfDisposed();
-    return ENV.math.readSync(this.ndarrayData);
+    return ENV.math.readSync(this.id);
   }
 
   private throwIfDisposed() {
@@ -329,7 +328,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   dispose(): void {
-    ENV.math.disposeData(this.ndarrayData);
+    ENV.math.disposeData(this.id);
   }
 
   equals(t: NDArray<T>): boolean {

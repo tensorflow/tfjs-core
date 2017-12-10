@@ -26,7 +26,7 @@ import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 import * as copy2d_util from './copy2d_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayData, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
 
@@ -40,7 +40,8 @@ export interface LSTMCell {
 
 export interface NDArrayManager {
   getNumArrays(): number;
-  register(a: NDArray): void;
+  register<T extends keyof DataTypes>(a: NDArray<T>, values: DataTypes[T]):
+      void;
 }
 
 export class NDArrayMath implements NDArrayStorage, NDArrayManager {
@@ -50,39 +51,40 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.numArrays;
   }
 
-  register(a: NDArray) {
+  register<T extends keyof DataTypes>(a: NDArray<T>, values: DataTypes[T]):
+      void {
     this.track(a);
     this.numArrays++;
     const data = a.getData();
     if (data.pixels != null) {
-      this.backend.writePixels(data, data.pixels, data.numChannels);
+      this.backend.writePixels(a.id, data.pixels, data.numChannels);
     } else {
-      this.backend.write(a.getData(), a.shape);
+      this.backend.write(a.id, values, a.dtype, a.shape);
     }
   }
 
   writePixels(
-      data: NDArrayData<keyof DataTypes>,
+      id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
-    throw new Error('should not be called');
+    this.backend.writePixels(id, pixels, numChannels);
   }
-  write(data: NDArrayData<keyof DataTypes>, shape: number[]): void {
-    this.backend.write(data, shape);
+  write<T extends keyof DataTypes>(
+      id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
+    this.backend.write(id, values, dtype, shape);
   }
-  disposeData(data: NDArrayData<keyof DataTypes>): void {
-    this.backend.disposeData(data);
+  disposeData(id: number): void {
+    this.backend.disposeData(id);
     // TODO(nsthorat): Construct an error and save the stack trace for debugging
     // when in debug mode. Creating a stack trace is too expensive to do
     // unconditionally.
-    data.isDisposed = true;
     this.numArrays--;
   }
-  readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
-    return this.backend.readSync(data);
+  readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
+    return this.backend.readSync(id);
   }
-  read<T extends keyof DataTypes>(data: NDArrayData<T>): Promise<DataTypes[T]> {
-    return this.backend.read(data);
+  read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+    return this.backend.read(id);
   }
 
   private ndarrayScopes: NDArray[][] = [];
@@ -1411,9 +1413,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-   conv1d<T extends NDArray>(
-      input: T, filter: Array3D, bias: Array1D|null,
-      stride: number, pad: 'valid'|'same'|number): T  {
+  conv1d<T extends NDArray>(
+      input: T, filter: Array3D, bias: Array1D|null, stride: number,
+      pad: 'valid'|'same'|number): T {
     let input3D = input as NDArray as Array3D;
     let reshapedTo3D = false;
     if (input.rank === 2) {
@@ -1440,23 +1442,20 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         `Error in conv1d: depth of input (${input3D.shape[2]}) must match  ` +
             `input depth for filter ${filter.shape[1]}.`);
 
-    const filter4D = filter.as4D(
-        1, filter.shape[0], filter.shape[1], filter.shape[2]);
-    const input4D = input3D.as4D(
-        input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
+    const filter4D =
+        filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
+    const input4D =
+        input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
     const strides: [number, number] = [1, stride];
 
-    const convInfo =
-        conv_util.computeConv2DInfo(
-            input4D.shape, filter4D.shape, strides, pad);
+    const convInfo = conv_util.computeConv2DInfo(
+        input4D.shape, filter4D.shape, strides, pad);
     return this.executeOp('conv2d', () => {
       const res = this.backend.conv2d(input4D, filter4D, bias, convInfo);
       if (reshapedTo3D) {
-        return res.as2D(res.shape[2], res.shape[3]) as NDArray as
-            T;
+        return res.as2D(res.shape[2], res.shape[3]) as NDArray as T;
       }
-      return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as
-          T;
+      return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as T;
     });
   }
 
