@@ -29,17 +29,17 @@ import {SumTypes, SumTypesMap} from '../types';
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
-import {CeilInputConfig, FloorInputConfig} from './kernels/ceil_floor';
+import {BinaryInputConfig} from './kernels/binary';
 import {CloneInputConfig} from './kernels/clone';
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
-import {AddInputConfig, DivideInputConfig, MultiplyInputConfig, SubtractInputConfig} from './kernels/element_wise_arithmetic';
+import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig, MatrixOrientation} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
-import {UnaryInputConfig} from './kernels/unary';
+import {ClipInputConfig, StepInputConfig, TileInputConfig, TransposeInputConfig, UnaryInputConfig} from './kernels/unary';
 
 export class MathBackendCPU implements MathBackend {
   clone<T extends NDArray>(config: CloneInputConfig<T>): T {
@@ -254,17 +254,17 @@ export class MathBackendCPU implements MathBackend {
     return this.multiply({inputs: {a: Scalar.NEG_ONE, b: x}}) as T;
   }
 
-  add(config: AddInputConfig): NDArray {
+  add(config: BinaryInputConfig): NDArray {
     const {a, b} = config.inputs;
     return this.scaledArrayAdd(Scalar.ONE, a, Scalar.ONE, b);
   }
 
-  subtract(config: SubtractInputConfig): NDArray {
+  subtract(config: BinaryInputConfig): NDArray {
     const {a, b} = config.inputs;
     return this.scaledArrayAdd(Scalar.ONE, a, Scalar.NEG_ONE, b);
   }
 
-  multiply<T extends NDArray>(config: MultiplyInputConfig): T {
+  multiply<T extends NDArray>(config: BinaryInputConfig): T {
     const {a, b} = config.inputs;
 
     const newShape =
@@ -279,7 +279,7 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(newShape, {values: newValues}) as T;
   }
 
-  divide(config: DivideInputConfig): NDArray<'float32'> {
+  divide(config: BinaryInputConfig): NDArray<'float32'> {
     const {a, b} = config.inputs;
 
     const newShape =
@@ -662,9 +662,12 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  leakyRelu<T extends NDArray>(ndarray: T, alpha: number) {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.dataSync();
+  leakyRelu<T extends NDArray>(config: StepInputConfig<T>) {
+    const {x} = config.inputs;
+    const {alpha} = config.args;
+
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
     for (let i = 0; i < values.length; i++) {
       const v = values[i];
       if (v >= 0) {
@@ -673,16 +676,18 @@ export class MathBackendCPU implements MathBackend {
         resultValues[i] = alpha * v;
       }
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  clip<T extends NDArray>(ndarray: T, min: number, max: number): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  clip<T extends NDArray>(config: ClipInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {min, max} = config.args;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.min(max, Math.max(min, values[i]));
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
   abs<T extends NDArray>(config: UnaryInputConfig<T>): T {
@@ -795,18 +800,22 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  step<T extends NDArray>(ndarray: T, alpha = 0): T {
-    const resultValues = new Float32Array(ndarray.size);
-    const values = ndarray.getValues();
+  step<T extends NDArray>(config: StepInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {alpha} = config.args;
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
       resultValues[i] = value > 0 ? 1 : (value < 0 ? alpha : value);
     }
-    return NDArray.make(ndarray.shape, {values: resultValues}) as T;
+    return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
-      Array4D {
+  conv2d(config: Conv2DInputConfig): Array4D {
+    const {x, filter, bias} = config.inputs;
+    const {convInfo} = config.args;
+
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
@@ -844,7 +853,10 @@ export class MathBackendCPU implements MathBackend {
     return y;
   }
 
-  conv2dDerInput(dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
+  conv2dDerInput(config: Conv2DDerInputInputConfig): Array4D {
+    const {dy, filter} = config.inputs;
+    const {convInfo} = config.args;
+
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const topPad = filterHeight - 1 - convInfo.padInfo.top;
@@ -889,7 +901,10 @@ export class MathBackendCPU implements MathBackend {
     return dx;
   }
 
-  conv2dDerFilter(x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D {
+  conv2dDerFilter(config: Conv2DDerFilterInputConfig): Array4D {
+    const {x, dy} = config.inputs;
+    const {convInfo} = config.args;
+
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -918,7 +933,7 @@ export class MathBackendCPU implements MathBackend {
                 const xR = wR + yR * strideHeight - topPad;
                 for (let yC = yCMin; yC < yCMax; ++yC) {
                   const xC = wC + yC * strideWidth - leftPad;
-                  dotProd += x.get(b, xR, xC, d1) * dY.get(b, yR, yC, d2);
+                  dotProd += x.get(b, xR, xC, d1) * dy.get(b, yR, yC, d2);
                 }
               }
             }
@@ -930,15 +945,17 @@ export class MathBackendCPU implements MathBackend {
     return dW;
   }
 
-  conv2dDerBias(dY: Array4D): Array1D {
-    const [batchSize, numRows, numCols, outDepth] = dY.shape;
+  conv2dDerBias(config: Conv2DDerBiasInputConfig): Array1D {
+    const {dy} = config.inputs;
+
+    const [batchSize, numRows, numCols, outDepth] = dy.shape;
     const values = new Float32Array(outDepth);
     for (let d2 = 0; d2 < outDepth; ++d2) {
       let sum = 0;
       for (let b = 0; b < batchSize; ++b) {
         for (let r = 0; r < numRows; ++r) {
           for (let c = 0; c < numCols; ++c) {
-            sum += dY.get(b, r, c, d2);
+            sum += dy.get(b, r, c, d2);
           }
         }
       }
@@ -947,8 +964,10 @@ export class MathBackendCPU implements MathBackend {
     return Array1D.new(values);
   }
 
-  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
-      Array4D {
+  depthwiseConv2D(config: DepthwiseConv2DInputConfig): Array4D {
+    const {x, filter} = config.inputs;
+    const {convInfo} = config.args;
+
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
@@ -972,7 +991,7 @@ export class MathBackendCPU implements MathBackend {
                 const wR = xR - xRCorner;
                 for (let xC = xCMin; xC < xCMax; ++xC) {
                   const wC = xC - xCCorner;
-                  const pixel = input.get(b, xR, xC, d1);
+                  const pixel = x.get(b, xR, xC, d1);
                   const weight = filter.get(wR, wC, d1, q);
                   dotProd += pixel * weight;
                 }
@@ -986,34 +1005,36 @@ export class MathBackendCPU implements MathBackend {
     return y;
   }
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
-      T {
-    const newShape: number[] = new Array(a.rank);
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(
+      config: TileInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {reps} = config.args;
+    const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
-      newShape[i] = a.shape[i] * reps[i];
+      newShape[i] = x.shape[i] * reps[i];
     }
     let dtype;
-    if (a.dtype === 'float32') {
+    if (x.dtype === 'float32') {
       dtype = Float32Array;
-    } else if (a.dtype === 'int32') {
+    } else if (x.dtype === 'int32') {
       dtype = Int32Array;
-    } else if (a.dtype === 'bool') {
+    } else if (x.dtype === 'bool') {
       dtype = Uint8Array;
     } else {
-      throw new Error(`Dtype ${a.dtype} not supported for tile`);
+      throw new Error(`Dtype ${x.dtype} not supported for tile`);
     }
     const resultValues = new dtype(util.sizeFromShape(newShape));
-    const result = NDArray.make(newShape, {values: resultValues}, a.dtype) as T;
-    const values = a.getValues();
+    const result = NDArray.make(newShape, {values: resultValues}, x.dtype) as T;
+    const values = x.getValues();
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
 
-      const originalLoc: number[] = new Array(a.rank);
+      const originalLoc: number[] = new Array(x.rank);
       for (let i = 0; i < originalLoc.length; i++) {
-        originalLoc[i] = newLoc[i] % a.shape[i];
+        originalLoc[i] = newLoc[i] % x.shape[i];
       }
 
-      const originalIndex = a.locToIndex(originalLoc);
+      const originalIndex = x.locToIndex(originalLoc);
 
       resultValues[i] = values[originalIndex];
     }
@@ -1021,16 +1042,18 @@ export class MathBackendCPU implements MathBackend {
   }
 
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, perm: number[]): T {
-    const newShape: number[] = new Array(a.rank);
+      config: TransposeInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {perm} = config.args;
+    const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
-      newShape[i] = a.shape[perm[i]];
+      newShape[i] = x.shape[perm[i]];
     }
-    const resultValues = new Float32Array(a.size);
-    const values = a.getValues();
+    const resultValues = new Float32Array(x.size);
+    const values = x.getValues();
     const result = NDArray.make(newShape, {values: resultValues}) as T;
-    for (let i = 0; i < a.size; ++i) {
-      const loc = a.indexToLoc(i);
+    for (let i = 0; i < x.size; ++i) {
+      const loc = x.indexToLoc(i);
 
       // Permute location.
       const newLoc: number[] = new Array(loc.length);

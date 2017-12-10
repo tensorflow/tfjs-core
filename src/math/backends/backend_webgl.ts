@@ -27,16 +27,17 @@ import {SumTypes, SumTypesMap} from '../types';
 
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
+import {BinaryInputConfig} from './kernels/binary';
 import {CloneInputConfig} from './kernels/clone';
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
-import {AddInputConfig, DivideInputConfig, MultiplyInputConfig, SubtractInputConfig} from './kernels/element_wise_arithmetic';
+import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
-import {UnaryInputConfig} from './kernels/unary';
+import {ClipInputConfig, LeakyReluInputConfig, StepInputConfig, TileInputConfig, TransposeInputConfig, UnaryInputConfig} from './kernels/unary';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
@@ -187,25 +188,25 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun<Array2D, Array2D>(program, [a, b]);
   }
 
-  add(config: AddInputConfig): NDArray {
+  add(config: BinaryInputConfig): NDArray {
     const {a, b} = config.inputs;
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
-  subtract(config: SubtractInputConfig): NDArray {
+  subtract(config: BinaryInputConfig): NDArray {
     const {a, b} = config.inputs;
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
-  multiply(config: MultiplyInputConfig): NDArray {
+  multiply(config: BinaryInputConfig): NDArray {
     const {a, b} = config.inputs;
     const program = new BinaryOpProgram(binaryop_gpu.MUL, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
-  divide(config: DivideInputConfig): NDArray<'float32'> {
+  divide(config: BinaryInputConfig): NDArray<'float32'> {
     const {a, b} = config.inputs;
     const program = new BinaryOpProgram(binaryop_gpu.DIV, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'float32');
@@ -261,16 +262,20 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, inputs);
   }
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
-      T {
-    const program = new TileProgram(a.shape, reps);
-    return this.compileAndRun(program, [a]);
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(
+      config: TileInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {reps} = config.args;
+    const program = new TileProgram(x.shape, reps);
+    return this.compileAndRun(program, [x]);
   }
 
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, perm: number[]): T {
-    const program = new TransposeProgram(a.shape, perm);
-    return this.compileAndRun(program, [a]);
+      config: TransposeInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {perm} = config.args;
+    const program = new TransposeProgram(x.shape, perm);
+    return this.compileAndRun(program, [x]);
   }
 
   private reduce<D extends keyof DataTypes>(
@@ -458,14 +463,18 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  leakyRelu<T extends NDArray>(a: T, alpha: number): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.LEAKY_RELU(alpha));
-    return this.compileAndRun(program, [a]) as T;
+  leakyRelu<T extends NDArray>(config: LeakyReluInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {alpha} = config.args;
+    const program = new UnaryOpProgram(x.shape, unary_op.LEAKY_RELU(alpha));
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  clip<T extends NDArray>(a: T, min: number, max: number): T {
-    const program = new ClipProgram(a.shape, min, max);
-    return this.compileAndRun(program, [a]) as T;
+  clip<T extends NDArray>(config: ClipInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {min, max} = config.args;
+    const program = new ClipProgram(x.shape, min, max);
+    return this.compileAndRun(program, [x]) as T;
   }
 
   abs<T extends NDArray>(config: UnaryInputConfig<T>): T {
@@ -529,41 +538,56 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   tanh<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.TANH);
-    return this.compileAndRun(program, [a]) as T;
+    const {x} = config.inputs;
+    const program = new UnaryOpProgram(x.shape, unary_op.TANH);
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  step<T extends NDArray>(a: T, alpha: number): T {
-    const program = new UnaryOpProgram(a.shape, unary_op.STEP(alpha));
-    return this.compileAndRun(program, [a]) as T;
+  step<T extends NDArray>(config: StepInputConfig<T>): T {
+    const {x} = config.inputs;
+    const {alpha} = config.args;
+    const program = new UnaryOpProgram(x.shape, unary_op.STEP(alpha));
+    return this.compileAndRun(program, [x]) as T;
   }
 
-  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
-      Array4D {
+  conv2d(config: Conv2DInputConfig): Array4D {
+    const {x, filter, bias} = config.inputs;
+    const {convInfo} = config.args;
+
     const program = new Conv2DProgram(convInfo, bias != null);
     const inputs = bias != null ? [x, filter, bias] : [x, filter];
     return this.compileAndRun(program, inputs);
   }
 
-  conv2dDerInput(dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
+  conv2dDerInput(config: Conv2DDerInputInputConfig): Array4D {
+    const {dy, filter} = config.inputs;
+    const {convInfo} = config.args;
+
     const program = new Conv2DDerInputProgram(convInfo);
     return this.compileAndRun(program, [dy, filter]);
   }
 
-  conv2dDerFilter(x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D {
+  conv2dDerFilter(config: Conv2DDerFilterInputConfig): Array4D {
+    const {x, dy} = config.inputs;
+    const {convInfo} = config.args;
+
     const program = new Conv2DDerFilterProgram(convInfo);
-    return this.compileAndRun(program, [x, dY]);
+    return this.compileAndRun(program, [x, dy]);
   }
 
-  conv2dDerBias(dY: Array4D): Array1D {
-    const program = new Conv2DDerBiasProgram(dY.shape);
-    return this.compileAndRun(program, [dY]);
+  conv2dDerBias(config: Conv2DDerBiasInputConfig): Array1D {
+    const {dy} = config.inputs;
+
+    const program = new Conv2DDerBiasProgram(dy.shape);
+    return this.compileAndRun(program, [dy]);
   }
 
-  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
-      Array4D {
+  depthwiseConv2D(config: DepthwiseConv2DInputConfig): Array4D {
+    const {x, filter} = config.inputs;
+    const {convInfo} = config.args;
+
     const program = new DepthwiseConv2DProgram(convInfo);
-    return this.compileAndRun(program, [input, filter]);
+    return this.compileAndRun(program, [x, filter]);
   }
 
   maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {

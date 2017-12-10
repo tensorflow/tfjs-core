@@ -16,7 +16,6 @@
  */
 
 import * as util from '../util';
-import {TypedArray} from '../util';
 
 import * as axis_util from './axis_util';
 import {MathBackend} from './backends/backend';
@@ -46,9 +45,6 @@ export abstract class NDArrayMath {
 
   private ndarraysToKeep: NDArray[][] = [];
   private activeScopeNDArraysToKeep: NDArray[] = [];
-
-  private debugMode = false;
-
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
@@ -92,7 +88,6 @@ export abstract class NDArrayMath {
    * and checked for NaNs. This significantly impacts performance.
    */
   enableDebugMode() {
-    this.debugMode = true;
     this.backendEngine.enableDebugMode();
     console.warn(
         'Debugging mode is ON. The output of every math call will ' +
@@ -198,15 +193,6 @@ export abstract class NDArrayMath {
     }
     this.activeScopeNDArraysToKeep.push(result);
     return result;
-  }
-
-  private checkForNaN(vals: TypedArray, dtype: keyof DataTypes, name: string):
-      void {
-    for (let i = 0; i < vals.length; i++) {
-      if (util.isValNaN(vals[i], dtype)) {
-        throw Error(`The result of the last math.${name} has NaNs.`);
-      }
-    }
   }
 
   /**
@@ -736,23 +722,24 @@ export abstract class NDArrayMath {
    * If `axes` has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
    *
-   * @param input The input NDArray.
+   * @param x The input NDArray.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   min<G extends keyof DataTypes>(
-      input: NDArray<G>, axis: number|number[] = null,
+      x: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
-    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
     return this.executeOp('min', () => {
       if (permutedAxes != null) {
-        input = this.transpose(input, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+        x = this.transpose(x, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
-      const res = this.backend.min(input, axes);
+      const res = this.backendEngine.executeKernel(
+                      'min', {inputs: {x}, args: {axes}}) as NDArray<G>;
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
@@ -770,23 +757,24 @@ export abstract class NDArrayMath {
    * If `axes` has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
    *
-   * @param input The input array.
+   * @param x The input array.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   max<G extends keyof DataTypes>(
-      input: NDArray<G>, axis: number|number[] = null,
+      x: NDArray<G>, axis: number|number[] = null,
       keepDims = false): NDArray<G> {
-    const origAxes = axis_util.parseAxisParam(axis, input.shape);
+    const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, input.rank);
+    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
     return this.executeOp('max', () => {
       if (permutedAxes != null) {
-        input = this.transpose(input, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, input.rank);
+        x = this.transpose(x, permutedAxes);
+        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
-      const res = this.backend.max(input, axes);
+      const res = this.backendEngine.executeKernel(
+                      'max', {inputs: {x}, args: {axes}}) as NDArray<G>;
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
         return res.reshape(newShape);
@@ -839,16 +827,18 @@ export abstract class NDArrayMath {
    * `reps[i]` times along the i'th dimension. For example, tiling
    * `[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.
    *
-   * @param a The array to transpose.
+   * @param x The array to transpose.
    * @param reps Determines the number of replications per dimension.
    */
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(x: T, reps: number[]):
       T {
     util.assert(
-        a.rank === reps.length,
-        `Error in transpose: rank of input ${a.rank} ` +
+        x.rank === reps.length,
+        `Error in transpose: rank of input ${x.rank} ` +
             `must match length of reps ${reps}.`);
-    return this.executeOp('tile', () => this.backend.tile(a, reps));
+    return this.track(
+        this.backendEngine.executeKernel('tile', {inputs: {x}, args: {reps}}) as
+        T);
   }
 
   /**
@@ -859,19 +849,21 @@ export abstract class NDArrayMath {
    * the rank of the input array. Hence by default, this operation performs a
    * regular matrix transpose on 2-D input arrays.
    *
-   * @param a The array to transpose.
+   * @param x The array to transpose.
    * @param perm Optional. The permutation of the dimensions of a.
    */
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, perm?: number[]): T {
+      x: T, perm?: number[]): T {
     if (perm == null) {
-      perm = a.shape.map((s, i) => i).reverse();
+      perm = x.shape.map((s, i) => i).reverse();
     }
     util.assert(
-        a.rank === perm.length,
-        `Error in transpose: rank of input ${a.rank} ` +
+        x.rank === perm.length,
+        `Error in transpose: rank of input ${x.rank} ` +
             `must match length of perm ${perm}.`);
-    return this.executeOp('transpose', () => this.backend.transpose(a, perm));
+    return this.track(
+        this.backendEngine.executeKernel(
+            'transpose', {inputs: {x}, args: {perm}}) as T);
   }
 
   /** @deprecated Use math.add(c, A) instead. */
@@ -1113,16 +1105,18 @@ export abstract class NDArrayMath {
 
   /**
    * Clips values element-wise.
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    * @param min Lower-bound of range to be clipped to.
    * @param max Upper-bound of range to be clipped to.
    */
-  clip<T extends NDArray>(ndarray: T, min: number, max: number): T {
+  clip<T extends NDArray>(x: T, min: number, max: number): T {
     util.assert(
         (min <= max),
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
-    return this.executeOp('clip', () => this.backend.clip(ndarray, min, max));
+    return this.track(
+        this.backendEngine.executeKernel(
+            'clip', {inputs: {x}, args: {min, max}}) as T);
   }
 
   /**
@@ -1147,7 +1141,7 @@ export abstract class NDArrayMath {
    * Computes the derivatice of elu which is used ly
    * @hidden
    */
-  eluDer<T extends NDArray>(ndarray: T): T {
+  eluDer<T extends NDArray>(x: T): T {
     return this.track(
         this.backendEngine.executeKernel('eluDer', {inputs: {x}}) as T);
   }
@@ -1156,28 +1150,28 @@ export abstract class NDArrayMath {
    * Computes scaled exponential linear element-wise.
    * @hidden
    */
-  selu<T extends NDArray>(ndarray: T): T {
+  selu<T extends NDArray>(x: T): T {
     return this.track(
         this.backendEngine.executeKernel('selu', {inputs: {x}}) as T);
   }
 
   /**
    * Computes leaky rectified linear element-wise
-   * @param {T} ndarray the input NDArray
+   * @param {T} x the input NDArray
    * @param alpha scaleing factor for negative values, defaults to 0.2
    * @return {NDArray}
    */
-  leakyRelu<T extends NDArray>(ndarray: T, alpha = 0.2): T {
+  leakyRelu<T extends NDArray>(x: T, alpha = 0.2): T {
     return this.track(
-        this.backendEngine.executeKernel('abs', {inputs: {x}, args: {alpha}}) as
-        T);
+        this.backendEngine.executeKernel(
+            'leakyrelu', {inputs: {x}, args: {alpha}}) as T);
   }
 
   /**
    * Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    */
-  sigmoid<T extends NDArray>(ndarray: T): T {
+  sigmoid<T extends NDArray>(x: T): T {
     return this.track(
         this.backendEngine.executeKernel('sigmoid', {inputs: {x}}) as T);
   }
@@ -1267,10 +1261,10 @@ export abstract class NDArrayMath {
    * Computes step of the input NDArray element-wise,
    * y=1 if x>0|alpha*x if x<=0.
    *
-   * @param ndarray The input NDArray.
+   * @param x The input NDArray.
    * @param alpha The gradient when input is negative.
    */
-  step<T extends NDArray>(ndarray: T, alpha = 0.0): T {
+  step<T extends NDArray>(x: T, alpha = 0.0): T {
     return this.track(
         this.backendEngine.executeKernel(
             'step', {inputs: {x}, args: {alpha}}) as T);
@@ -1381,10 +1375,8 @@ export abstract class NDArrayMath {
         input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
     const strides: [number, number] = [1, stride];
 
-    const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filter4D.shape, strides, pad);
-    return this.executeOp('conv2d', () => {
-      const res = this.backend.conv2d(input4D, filter4D, bias, convInfo);
+    return this.executeOp('conv1d', () => {
+      const res = this.conv2d(input4D, filter4D, bias, strides, pad);
       if (reshapedTo3D) {
         return res.as2D(res.shape[2], res.shape[3]) as NDArray as T;
       }
@@ -1440,7 +1432,8 @@ export abstract class NDArrayMath {
     const convInfo =
         conv_util.computeConv2DInfo(input4D.shape, filter.shape, strides, pad);
     return this.executeOp('conv2d', () => {
-      const res = this.backend.conv2d(input4D, filter, bias, convInfo);
+      const res = this.backendEngine.executeKernel(
+          'conv2d', {inputs: {x: input4D, filter, bias}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;
@@ -1506,7 +1499,8 @@ export abstract class NDArrayMath {
     const convInfo =
         conv_util.computeConv2DInfo(inShape4D, filter.shape, strides, pad);
     return this.executeOp('conv2dDerInput', () => {
-      const res = this.backend.conv2dDerInput(dy4D, filter, convInfo);
+      const res = this.backendEngine.executeKernel(
+          'conv2dderinput', {inputs: {dy: dy4D, filter}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;
@@ -1526,7 +1520,8 @@ export abstract class NDArrayMath {
     if (dy.rank === 3) {
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
     }
-    return this.track(this.backend.conv2dDerBias(dy4D));
+    return this.track(this.backendEngine.executeKernel(
+        'conv2dderbias', {inputs: {dy: dy4D}}));
   }
 
   /**
@@ -1576,7 +1571,8 @@ export abstract class NDArrayMath {
 
     const convInfo =
         conv_util.computeConv2DInfo(input4D.shape, filterShape, strides, pad);
-    return this.track(this.backend.conv2dDerFilter(input4D, dy4D, convInfo));
+    return this.track(this.backendEngine.executeKernel(
+        'conv2dderfilter', {inputs: {x: input4D, dy: dy4D}, args: {convInfo}}));
   }
 
   /**
@@ -1666,7 +1662,8 @@ export abstract class NDArrayMath {
     const convInfo = conv_util.computeConv2DInfo(
         input4D.shape, filter.shape, strides, pad, true /* depthwise */);
     return this.executeOp('depthwiseConv2D', () => {
-      const res = this.backend.depthwiseConv2D(input4D, filter, convInfo);
+      const res = this.backendEngine.executeKernel(
+          'depthwiseconv2d', {inputs: {x: input4D, filter}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;

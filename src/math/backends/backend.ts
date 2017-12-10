@@ -21,16 +21,17 @@ import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray
 import {SumTypes} from '../types';
 
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
+import {BinaryInputConfig} from './kernels/binary';
 import {CloneInputConfig} from './kernels/clone';
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
-import {AddInputConfig, DivideInputConfig, MultiplyInputConfig, SubtractInputConfig} from './kernels/element_wise_arithmetic';
+import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
-import {UnaryInputConfig} from './kernels/unary';
+import {ClipInputConfig, LeakyReluInputConfig, StepInputConfig, TileInputConfig, TransposeInputConfig, UnaryInputConfig} from './kernels/unary';
 
 /**
  * The interface that defines the kernels that should be implemented when adding
@@ -54,10 +55,10 @@ export interface MathBackend {
 
   neg<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  add(config: AddInputConfig): NDArray;
-  subtract(config: SubtractInputConfig): NDArray;
-  multiply(config: MultiplyInputConfig): NDArray;
-  divide(config: DivideInputConfig): NDArray<'float32'>;
+  add(config: BinaryInputConfig): NDArray;
+  subtract(config: BinaryInputConfig): NDArray;
+  multiply(config: BinaryInputConfig): NDArray;
+  divide(config: BinaryInputConfig): NDArray<'float32'>;
 
   sum<T extends keyof DataTypes>(config: SumInputConfig<SumTypes[T]>):
       NDArray<SumTypes[T]>;
@@ -87,59 +88,45 @@ export interface MathBackend {
   elu<T extends NDArray>(config: UnaryInputConfig<T>): T;
   eluDer<T extends NDArray>(config: UnaryInputConfig<T>): T;
   selu<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  leakyRelu<T extends NDArray>(ndarray: T, alpha: number): T;
+  leakyRelu<T extends NDArray>(config: LeakyReluInputConfig<T>): T;
 
-  clip<T extends NDArray>(ndarray: T, min: number, max: number): T;
+  clip<T extends NDArray>(config: ClipInputConfig<T>): T;
 
   abs<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
   sigmoid<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
   sin<T extends NDArray>(config: UnaryInputConfig<T>): T;
-
   cos<T extends NDArray>(config: UnaryInputConfig<T>): T;
-
   tan<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
   asin<T extends NDArray>(config: UnaryInputConfig<T>): T;
-
   acos<T extends NDArray>(config: UnaryInputConfig<T>): T;
-
   atan<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
   sinh<T extends NDArray>(config: UnaryInputConfig<T>): T;
-
   cosh<T extends NDArray>(config: UnaryInputConfig<T>): T;
-
   tanh<T extends NDArray>(config: UnaryInputConfig<T>): T;
 
-  step<T extends NDArray>(ndarray: T, alpha: number): T;
+  step<T extends NDArray>(config: StepInputConfig<T>): T;
 
-  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
-      Array4D;
+  conv2d(config: Conv2DInputConfig): Array4D;
+  conv2dDerInput(config: Conv2DDerInputInputConfig): Array4D;
+  conv2dDerFilter(config: Conv2DDerFilterInputConfig): Array4D;
+  conv2dDerBias(config: Conv2DDerBiasInputConfig): Array1D;
 
-  conv2dDerInput(dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D;
-
-  conv2dDerFilter(x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D;
-
-  conv2dDerBias(dY: Array4D): Array1D;
-
-  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
-      Array4D;
+  depthwiseConv2D(config: DepthwiseConv2DInputConfig): Array4D;
 
   maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
-
   maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
-
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
-
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(a: T, reps: number[]):
-      T;
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(
+      config: TileInputConfig<T>): T;
 
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      a: T, perm: number[]): T;
+      config: TransposeInputConfig<T>): T;
 
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
@@ -148,7 +135,6 @@ export interface MathBackend {
       x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
       varianceEpsilon: number, scale?: Array2D|Array1D,
       offset?: Array2D|Array1D): Array2D;
-
   batchNormalization3D(
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
       varianceEpsilon: number, scale?: Array3D|Array1D,

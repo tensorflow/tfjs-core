@@ -2,17 +2,17 @@ import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './kernels/argminmax';
-import {CeilInputConfig, CeilNode, FloorInputConfig, FloorNode} from './kernels/ceil_floor';
+import {BinaryInputConfig, BinaryNode} from './kernels/binary';
 import {CloneInputConfig, CloneNode} from './kernels/clone';
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './kernels/concat';
-import {AddInputConfig, AddNode, DivideInputConfig, DivideNode, MultiplyInputConfig, MultiplyNode, SubtractInputConfig, SubtractNode} from './kernels/element_wise_arithmetic';
+import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig, EqualNode} from './kernels/logical';
 import {MatMulInputConfig, MatMulNode} from './kernels/matmul';
 import {MaxInputConfig, MaxNode, MinInputConfig, MinNode} from './kernels/minmax';
 import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './kernels/slice';
 import {SumInputConfig, SumNode} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './kernels/topk';
-import {UnaryInputConfig, UnaryNode} from './kernels/unary';
+import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './kernels/unary';
 
 export interface KernelConfigRegistry {
   'matmul': MatMulNode;
@@ -26,10 +26,10 @@ export interface KernelConfigRegistry {
   'concat3d': Concat3DNode;
   'concat4d': Concat4DNode;
   'neg': UnaryNode<NDArray>;
-  'add': AddNode;
-  'subtract': SubtractNode;
-  'multiply': MultiplyNode;
-  'divide': DivideNode;
+  'add': BinaryNode;
+  'subtract': BinaryNode;
+  'multiply': BinaryNode;
+  'divide': BinaryNode;
   'sum': SumNode<'float32'|'int32'|'bool'>;
   'argmax': ArgMaxNode;
   'argmin': ArgMinNode;
@@ -40,6 +40,35 @@ export interface KernelConfigRegistry {
   'max': MaxNode<'float32'|'int32'|'bool'>;
   'ceil': UnaryNode<NDArray>;
   'floor': UnaryNode<NDArray>;
+  'exp': UnaryNode<NDArray>;
+  'log': UnaryNode<NDArray>;
+  'sqrt': UnaryNode<NDArray>;
+  'square': UnaryNode<NDArray>;
+  'relu': UnaryNode<NDArray>;
+  'leakyrelu': LeakyReluNode<NDArray>;
+  'elu': UnaryNode<NDArray>;
+  'eluDer': UnaryNode<NDArray>;
+  'selu': UnaryNode<NDArray>;
+  'abs': UnaryNode<NDArray>;
+  'sigmoid': UnaryNode<NDArray>;
+  'step': StepNode<NDArray>;
+  'sin': UnaryNode<NDArray>;
+  'cos': UnaryNode<NDArray>;
+  'tan': UnaryNode<NDArray>;
+  'asin': UnaryNode<NDArray>;
+  'acos': UnaryNode<NDArray>;
+  'atan': UnaryNode<NDArray>;
+  'sinh': UnaryNode<NDArray>;
+  'cosh': UnaryNode<NDArray>;
+  'tanh': UnaryNode<NDArray>;
+  'clip': ClipNode<NDArray>;
+  'transpose': TransposeNode<NDArray>;
+  'tile': TileNode<NDArray>;
+  'conv2d': Conv2DNode;
+  'conv2dderinput': Conv2DDerInputNode;
+  'conv2dderfilter': Conv2DDerFilterNode;
+  'conv2dderbias': Conv2DDerBiasNode;
+  'depthwiseconv2d': Conv2DNode;
 }
 
 export function executeKernel<K extends keyof KernelConfigRegistry>(
@@ -69,13 +98,13 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
         backend.concat4D(config),
     'neg': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.neg(config),
-    'add': (backend: MathBackend, config: AddInputConfig) =>
+    'add': (backend: MathBackend, config: BinaryInputConfig) =>
         backend.add(config),
-    'subtract': (backend: MathBackend, config: SubtractInputConfig) =>
+    'subtract': (backend: MathBackend, config: BinaryInputConfig) =>
         backend.subtract(config),
-    'multiply': (backend: MathBackend, config: MultiplyInputConfig) =>
+    'multiply': (backend: MathBackend, config: BinaryInputConfig) =>
         backend.multiply(config),
-    'divide': (backend: MathBackend, config: DivideInputConfig) =>
+    'divide': (backend: MathBackend, config: BinaryInputConfig) =>
         backend.divide(config),
     'sum': (backend: MathBackend, config: SumInputConfig<'float32'|'int32'>) =>
         backend.sum(config),
@@ -102,6 +131,69 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
         backend.ceil(config),
     'floor': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
         backend.floor(config),
+    'exp': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.exp(config),
+    'log': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.log(config),
+    'sqrt': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.sqrt(config),
+    'square': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.square(config),
+    'relu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.relu(config),
+    'leakyrelu':
+        (backend: MathBackend, config: LeakyReluInputConfig<NDArray>) =>
+            backend.leakyRelu(config),
+    'elu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.elu(config),
+    'eluDer': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.eluDer(config),
+    'selu': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.selu(config),
+    'abs': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.abs(config),
+    'sigmoid': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.sigmoid(config),
+    'step': (backend: MathBackend, config: StepInputConfig<NDArray>) =>
+        backend.step(config),
+    'sin': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.sin(config),
+    'cos': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.cos(config),
+    'tan': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.tan(config),
+    'asin': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.asin(config),
+    'acos': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.acos(config),
+    'atan': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.atan(config),
+    'sinh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.sinh(config),
+    'cosh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.cosh(config),
+    'tanh': (backend: MathBackend, config: UnaryInputConfig<NDArray>) =>
+        backend.tanh(config),
+    'clip': (backend: MathBackend, config: ClipInputConfig<NDArray>) =>
+        backend.clip(config),
+    'transpose':
+        (backend: MathBackend, config: TransposeInputConfig<NDArray>) =>
+            backend.transpose(config),
+    'tile': (backend: MathBackend, config: TileInputConfig<NDArray>) =>
+        backend.tile(config),
+    'conv2d': (backend: MathBackend, config: Conv2DInputConfig) =>
+        backend.conv2d(config),
+    'conv2dderinput':
+        (backend: MathBackend, config: Conv2DDerInputInputConfig) =>
+            backend.conv2dDerInput(config),
+    'conv2dderfilter':
+        (backend: MathBackend, config: Conv2DDerFilterInputConfig) =>
+            backend.conv2dDerFilter(config),
+    'conv2dderbias': (backend: MathBackend, config: Conv2DDerBiasInputConfig) =>
+        backend.conv2dDerBias(config),
+    'depthwiseconv2d':
+        (backend: MathBackend, config: DepthwiseConv2DInputConfig) =>
+            backend.depthwiseConv2D(config)
 
   }[kernelName](backend, config);
   return result;
