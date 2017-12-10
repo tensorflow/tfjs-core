@@ -72,7 +72,6 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
   disposeData(data: NDArrayData<keyof DataTypes>): void {
     this.backend.disposeData(data);
-    data.values = null;
     // TODO(nsthorat): Construct an error and save the stack trace for debugging
     // when in debug mode. Creating a stack trace is too expensive to do
     // unconditionally.

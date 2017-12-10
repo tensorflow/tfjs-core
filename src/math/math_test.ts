@@ -245,15 +245,14 @@ import {Array1D, Array3D, Scalar} from './ndarray';
       }
 
       const a = Array3D.fromPixels(pixels, 4);
-      const b = Scalar.new(20.5);
+      const b = Scalar.new(20, 'int32');
 
       const res = math.add(a, b);
 
-      test_util.expectArraysClose(
-          res.getValues(), new Float32Array([
-            120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 270.5,
-            270.5, 270.5, 270.5, 270.5, 270.5, 270.5, 270.5
-          ]));
+      expect(res.getValues()).toEqual(new Int32Array([
+        120, 120, 120, 120, 120, 120, 120, 120, 270, 270, 270, 270, 270, 270,
+        270, 270
+      ]));
 
       a.dispose();
     });

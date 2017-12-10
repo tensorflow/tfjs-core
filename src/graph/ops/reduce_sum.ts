@@ -32,6 +32,8 @@ export class ReduceSum extends Operation {
   constructor(private x: Tensor, private outTensor: Tensor) {
     super();
     util.assertShapesMatch(outTensor.shape, []);
+    this.ones = NDArray.zeros(x.shape);
+    this.ones.fill(1);
   }
 
   private ones: NDArray;
@@ -53,11 +55,6 @@ export class ReduceSum extends Operation {
 
     math.scope(() => {
       const dy = gradientArrays.get(this.outTensor);
-      if (this.ones == null) {
-        const xArray = inferenceArrays.get(this.x);
-        this.ones = NDArray.zerosLike(xArray);
-        this.ones.fill(1);
-      }
       gradientArrays.add(this.x, math.scalarTimesArray(dy, this.ones));
     });
   }

@@ -35,7 +35,40 @@ export class MathBackendCPU implements MathBackend {
   writePixels(
       data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void {}
+      numChannels: number): void {
+    let vals: Uint8ClampedArray;
+    if (pixels instanceof ImageData) {
+      vals = pixels.data;
+    } else if (pixels instanceof HTMLCanvasElement) {
+      vals = pixels.getContext('2d')
+                 .getImageData(0, 0, pixels.width, pixels.height)
+                 .data;
+    } else if (
+        pixels instanceof HTMLImageElement ||
+        pixels instanceof HTMLVideoElement) {
+      const canvas = document.createElement('canvas');
+      canvas.width = pixels.width;
+      canvas.height = pixels.height;
+      canvas.getContext('2d').drawImage(
+          pixels, 0, 0, canvas.width, canvas.height);
+      vals = canvas.getContext('2d')
+                 .getImageData(0, 0, canvas.width, canvas.height)
+                 .data;
+    } else {
+      throw new Error('pixels is of unknown type ' + pixels);
+    }
+    if (numChannels === 4) {
+      data.values = new Int32Array(vals);
+    } else {
+      const numPixels = pixels.width * pixels.height;
+      data.values = new Int32Array(numPixels * numChannels);
+      for (let i = 0; i < numPixels; i++) {
+        for (let channel = 0; channel < numChannels; ++channel) {
+          data.values[i * numChannels + channel] = vals[i * 4 + channel];
+        }
+      }
+    }
+  }
   readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
     return data.values;
   }
@@ -294,7 +327,6 @@ export class MathBackendCPU implements MathBackend {
         transposedGetter;
     const values = new Float32Array(leftDim * rightDim);
     let index = 0;
-
     for (let i = 0; i < leftDim; ++i) {
       for (let j = 0; j < rightDim; ++j) {
         let sum = 0;

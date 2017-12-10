@@ -1,3 +1,5 @@
+import {DType} from '../util';
+
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -25,4 +27,56 @@ export enum SumTypesMap {
   float32 = 'float32',
   int32 = 'int32',
   bool = 'int32'
+}
+
+export interface Int32And {
+  float32: 'float32';
+  int32: 'int32';
+  bool: 'int32';
+}
+
+export enum Int32AndMap {
+  float32 = 'float32',
+  int32 = 'int32',
+  bool = 'int32'
+}
+
+export interface BoolAnd {
+  float32: 'float32';
+  int32: 'int32';
+  bool: 'bool';
+}
+
+export enum BoolAndMap {
+  float32 = 'float32',
+  int32 = 'int32',
+  bool = 'bool'
+}
+
+export interface Float32And {
+  float32: 'float32';
+  int32: 'float32';
+  bool: 'float32';
+}
+
+export enum Float32AndMap {
+  float32 = 'float32',
+  int32 = 'float32',
+  bool = 'float32'
+}
+
+export interface UpcastType {
+  float32: Float32And;
+  int32: Int32And;
+  bool: BoolAnd;
+}
+
+const upcastTypeMap = {
+  float32: Float32AndMap,
+  int32: Int32AndMap,
+  bool: BoolAndMap
+};
+
+export function upcastType(typeA: DType, typeB: DType): DType {
+  return upcastTypeMap[typeA][typeB];
 }
