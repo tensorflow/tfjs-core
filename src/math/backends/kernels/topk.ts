@@ -1,4 +1,5 @@
 import {Array1D, DataTypes, NDArray} from '../../ndarray';
+// tslint:disable-next-line:max-line-length
 import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
 
 // Values

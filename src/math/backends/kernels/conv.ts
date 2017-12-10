@@ -1,5 +1,6 @@
 import {Conv2DInfo} from '../../conv_util';
 import {Array1D, Array4D} from '../../ndarray';
+// tslint:disable-next-line:max-line-length
 import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
 
 // Conv2D

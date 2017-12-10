@@ -20,9 +20,12 @@ import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray
 import {SumTypes} from '../types';
 
 import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
+// tslint:disable-next-line:max-line-length
 import {BatchNorm2DInputConfig, BatchNorm3DInputConfig} from './kernels/batchnorm';
 import {BinaryInputConfig} from './kernels/binary';
+// tslint:disable-next-line:max-line-length
 import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
+// tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
 import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
@@ -31,9 +34,11 @@ import {MultinomialInputConfig} from './kernels/multinomial';
 import {OneHotInputConfig} from './kernels/onehot';
 import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
 import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
+// tslint:disable-next-line:max-line-length
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
 import {SumInputConfig} from './kernels/sum';
 import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
+// tslint:disable-next-line:max-line-length
 import {ClipInputConfig, LeakyReluInputConfig, StepInputConfig, TileInputConfig, TransposeInputConfig, UnaryInputConfig} from './kernels/unary';
 
 /**

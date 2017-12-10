@@ -1,5 +1,6 @@
 
 import {Array3D} from '../../ndarray';
+// tslint:disable-next-line:max-line-length
 import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
 
 export interface ResizeBilinear3DNode extends KernelNode {

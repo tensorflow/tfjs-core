@@ -1,5 +1,6 @@
 
 import {Array1D, Array2D, Array3D} from '../../ndarray';
+// tslint:disable-next-line:max-line-length
 import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
 
 // 3D
