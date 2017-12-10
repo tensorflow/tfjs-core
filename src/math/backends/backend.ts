@@ -28,6 +28,7 @@ import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
 import {MultinomialInputConfig} from './kernels/multinomial';
+import {OneHotInputConfig} from './kernels/onehot';
 import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
 import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
@@ -137,6 +138,5 @@ export interface MathBackend {
 
   multinomial(config: MultinomialInputConfig): Array2D<'int32'>;
 
-  oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
-      Array2D;
+  oneHot(config: OneHotInputConfig): Array2D;
 }

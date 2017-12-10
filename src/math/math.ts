@@ -2097,8 +2097,8 @@ export abstract class NDArrayMath {
     if (depth < 2) {
       throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
     }
-    return this.executeOp(
-        'oneHot', () => this.backend.oneHot(indices, depth, onValue, offValue));
+    return this.backendEngine.executeKernel(
+        'onehot', {inputs: {indices}, args: {depth, onValue, offValue}});
   }
 
   /**

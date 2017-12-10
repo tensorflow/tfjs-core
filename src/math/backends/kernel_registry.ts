@@ -10,6 +10,7 @@ import {EqualInputConfig, EqualNode} from './kernels/logical';
 import {MatMulInputConfig, MatMulNode} from './kernels/matmul';
 import {MaxInputConfig, MaxNode, MinInputConfig, MinNode} from './kernels/minmax';
 import {MultinomialInputConfig, MultinomialNode} from './kernels/multinomial';
+import {OneHotInputConfig, OneHotNode} from './kernels/onehot';
 import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './kernels/pool';
 import {ResizeBilinear3DInputConfig, ResizeBilinear3DNode} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './kernels/slice';
@@ -80,6 +81,7 @@ export interface KernelConfigRegistry {
   'batchnorm3d': BatchNorm3DNode;
   'batchnorm2d': BatchNorm2DNode;
   'multinomial': MultinomialNode;
+  'onehot': OneHotNode;
 }
 
 export function executeKernel<K extends keyof KernelConfigRegistry>(
@@ -222,7 +224,9 @@ export function executeKernel<K extends keyof KernelConfigRegistry>(
     'batchnorm2d': (backend: MathBackend, config: BatchNorm2DInputConfig) =>
         backend.batchNormalization2D(config),
     'multinomial': (backend: MathBackend, config: MultinomialInputConfig) =>
-        backend.multinomial(config)
+        backend.multinomial(config),
+    'onehot': (backend: MathBackend, config: OneHotInputConfig) =>
+        backend.oneHot(config)
   }[kernelName](backend, config);
   return result;
 };

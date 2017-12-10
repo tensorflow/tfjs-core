@@ -37,6 +37,7 @@ import {EqualInputConfig} from './kernels/logical';
 import {MatMulInputConfig, MatrixOrientation} from './kernels/matmul';
 import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
 import {MultinomialInputConfig} from './kernels/multinomial';
+import {OneHotInputConfig} from './kernels/onehot';
 import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
 import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
 import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
@@ -1365,8 +1366,10 @@ export class MathBackendCPU implements MathBackend {
     return res;
   }
 
-  oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
-      Array2D {
+  oneHot(config: OneHotInputConfig): Array2D {
+    const {indices} = config.inputs;
+    const {depth, onValue, offValue} = config.args;
+
     const res = new Float32Array(indices.size * depth);
     res.fill(offValue);
 
