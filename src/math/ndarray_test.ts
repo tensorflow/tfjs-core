@@ -16,21 +16,12 @@
  */
 
 import * as test_util from '../test_util';
+import {MathTests} from '../test_util';
 import * as util from '../util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DType, NDArray, Scalar} from './ndarray';
 
-const FEATURES = [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-];
-
-const customBeforeEach = () => {};
-
-const customAfterEach = () => {};
-
-test_util.describeCustom('NDArray', () => {
+const tests: MathTests = it => {
   it('NDArrays of arbitrary size', () => {
     // [1, 2, 3]
     let t: NDArray = Array1D.new([1, 2, 3]);
@@ -73,21 +64,22 @@ test_util.describeCustom('NDArray', () => {
     expect(t.shape).toEqual([3]);
     test_util.expectNumbersClose(t.get(1), 3);
 
-    expect(() => Array3D.new([1, 2, 3, 5], [1, 2]))
-      .toThrowError('Shape should be of length 3');
+    expect(() => Array3D.new([1, 2, 3, 5], [
+      1, 2
+    ])).toThrowError('Shape should be of length 3');
 
     const t4 = Array4D.new([1, 2, 1, 2], [1, 2, 3, 4]);
-    expect(t4.get(0, 0, 0, 0)).toBe(1);
-    expect(t4.get(0, 0, 0, 1)).toBe(2);
-    expect(t4.get(0, 1, 0, 0)).toBe(3);
-    expect(t4.get(0, 1, 0, 1)).toBe(4);
+    test_util.expectNumbersClose(t4.get(0, 0, 0, 0), 1);
+    test_util.expectNumbersClose(t4.get(0, 0, 0, 1), 2);
+    test_util.expectNumbersClose(t4.get(0, 1, 0, 0), 3);
+    test_util.expectNumbersClose(t4.get(0, 1, 0, 1), 4);
 
     const t4Like = NDArray.like(t4);
     // Change t4.
     t4.set(10, 0, 0, 0, 1);
-    expect(t4.get(0, 0, 0, 1)).toBe(10);
+    test_util.expectNumbersClose(t4.get(0, 0, 0, 1), 10);
     // Make suree t4_like hasn't changed.
-    expect(t4Like.get(0, 0, 0, 1)).toBe(2);
+    test_util.expectNumbersClose(t4Like.get(0, 0, 0, 1), 2);
 
     // NDArray of zeros.
     const z = NDArray.zeros([3, 4, 2]) as Array3D;
@@ -96,7 +88,7 @@ test_util.describeCustom('NDArray', () => {
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 4; j++) {
         for (let k = 0; k < 2; k++) {
-          expect(z.get(i, j, k)).toBe(0);
+          test_util.expectNumbersClose(z.get(i, j, k), 0);
         }
       }
     }
@@ -104,12 +96,12 @@ test_util.describeCustom('NDArray', () => {
     // Reshaping ndarrays.
     const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     const b = a.reshape([3, 2, 1]);
-    expect(a.get(1, 2)).toBe(6);
+    test_util.expectNumbersClose(a.get(1, 2), 6);
 
     // Modify the reshaped ndarray.
     b.set(10, 2, 1, 0);
     // Make sure the original ndarray is also modified.
-    expect(a.get(1, 2)).toBe(10);
+    test_util.expectNumbersClose(a.get(1, 2), 10);
   });
 
   it('NDArray getValues CPU --> GPU', () => {
@@ -119,28 +111,16 @@ test_util.describeCustom('NDArray', () => {
     a.dispose();
   });
 
-  it('NDArray getValuesAsync CPU --> GPU', (doneFn) => {
+  it('NDArray.data() CPU --> GPU', async () => {
     const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
-
-    expect(a.inGPU()).toBe(false);
-
-    a.getValuesAsync().then(values => {
-      test_util.expectArraysClose(values, new Float32Array([1, 2, 3, 4, 5, 6]));
-
-      expect(a.inGPU()).toBe(false);
-
-      // Upload to GPU.
-      expect(a.getTexture() != null).toBe(true);
-
-      expect(a.inGPU()).toBe(true);
-      a.dispose();
-      doneFn();
-    });
+    test_util.expectArraysClose(
+        await a.data(), new Float32Array([1, 2, 3, 4, 5, 6]));
+    a.dispose();
   });
 
   it('Scalar basic methods', () => {
     const a = Scalar.new(5);
-    expect(a.get()).toBe(5);
+    test_util.expectNumbersClose(a.get(), 5);
     test_util.expectArraysClose(a.getValues(), new Float32Array([5]));
     expect(a.rank).toBe(0);
     expect(a.size).toBe(1);
@@ -183,34 +163,8 @@ test_util.describeCustom('NDArray', () => {
     expect(t.indexToLoc(2)).toEqual([1, 0, 0, 0, 0]);
     expect(t.indexToLoc(3)).toEqual([1, 0, 0, 0, 1]);
   });
-
-  it('preferred texture shape, Scalar', () => {
-    const t = Scalar.new(1);
-    expect(t.getTextureShapeRC()).toEqual([1, 1]);
-  });
-
-  it('preferred texture shape, Array1D column vector', () => {
-    const t = Array1D.zeros([4]);
-    expect(t.getTextureShapeRC()).toEqual([4, 1]);
-  });
-
-  it('preferred texture shape, Array2D same shape', () => {
-    const t = Array2D.zeros([5, 2]);
-    expect(t.getTextureShapeRC()).toEqual([5, 2]);
-  });
-
-  it('preferred texture shape, Array3D depth strided along columns', () => {
-    const t = Array3D.zeros([2, 2, 2]);
-    expect(t.getTextureShapeRC()).toEqual([2, 4]);
-  });
-
-  it('preferred texture shape, Array4D d1 and d2 strided along columns', () => {
-    const t = Array4D.zeros([8, 2, 4, 4]);
-    expect(t.getTextureShapeRC()).toEqual([8, 2 * 4 * 4]);
-  });
-}, FEATURES, customBeforeEach, customAfterEach);
-
-test_util.describeCustom('NDArray.new', () => {
+};
+const testsNew: MathTests = it => {
   it('Array1D.new() from number[]', () => {
     const a = Array1D.new([1, 2, 3]);
     test_util.expectArraysClose(a.getValues(), new Float32Array([1, 2, 3]));
@@ -256,21 +210,20 @@ test_util.describeCustom('NDArray.new', () => {
     };
     expect(f).toThrowError();
   });
-});
-
-test_util.describeCustom('NDArray.zeros', () => {
+};
+const testsZeros: MathTests = it => {
   it('1D default dtype', () => {
     const a = Array1D.zeros([3]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3]);
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([0, 0, 0]));
   });
 
   it('1D float32 dtype', () => {
     const a = Array1D.zeros([3], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3]);
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([0, 0, 0]));
   });
 
   it('1D int32 dtype', () => {
@@ -291,14 +244,16 @@ test_util.describeCustom('NDArray.zeros', () => {
     const a = Array2D.zeros([3, 2]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0]));
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([0, 0, 0, 0, 0, 0]));
   });
 
   it('2D float32 dtype', () => {
     const a = Array2D.zeros([3, 2], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0]));
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([0, 0, 0, 0, 0, 0]));
   });
 
   it('2D int32 dtype', () => {
@@ -319,14 +274,16 @@ test_util.describeCustom('NDArray.zeros', () => {
     const a = Array3D.zeros([2, 2, 2]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 2]);
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0, 0, 0]));
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([0, 0, 0, 0, 0, 0, 0, 0]));
   });
 
   it('3D float32 dtype', () => {
     const a = Array3D.zeros([2, 2, 2], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 2]);
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0, 0, 0]));
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([0, 0, 0, 0, 0, 0, 0, 0]));
   });
 
   it('3D int32 dtype', () => {
@@ -347,14 +304,16 @@ test_util.describeCustom('NDArray.zeros', () => {
     const a = Array4D.zeros([3, 2, 1, 1]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2, 1, 1]);
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0]));
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([0, 0, 0, 0, 0, 0]));
   });
 
   it('4D float32 dtype', () => {
     const a = Array4D.zeros([3, 2, 1, 1], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2, 1, 1]);
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 0, 0, 0, 0]));
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([0, 0, 0, 0, 0, 0]));
   });
 
   it('4D int32 dtype', () => {
@@ -370,15 +329,14 @@ test_util.describeCustom('NDArray.zeros', () => {
     expect(a.shape).toEqual([3, 2, 1, 1]);
     expect(a.getValues()).toEqual(new Uint8Array([0, 0, 0, 0, 0, 0]));
   });
-});
-
-test_util.describeCustom('NDArray.zerosLike', () => {
+};
+const testsZerosLike: MathTests = it => {
   it('1D default dtype', () => {
     const a = Array1D.new([1, 2, 3]);
     const b = NDArray.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([3]);
-    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([0, 0, 0]));
   });
 
   it('1D float32 dtype', () => {
@@ -386,7 +344,7 @@ test_util.describeCustom('NDArray.zerosLike', () => {
     const b = NDArray.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([3]);
-    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([0, 0, 0]));
   });
 
   it('1D int32 dtype', () => {
@@ -410,7 +368,7 @@ test_util.describeCustom('NDArray.zerosLike', () => {
     const b = NDArray.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2]);
-    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([0, 0, 0, 0]));
   });
 
   it('2D float32 dtype', () => {
@@ -418,7 +376,7 @@ test_util.describeCustom('NDArray.zerosLike', () => {
     const b = NDArray.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2]);
-    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([0, 0, 0, 0]));
   });
 
   it('2D int32 dtype', () => {
@@ -442,7 +400,7 @@ test_util.describeCustom('NDArray.zerosLike', () => {
     const b = NDArray.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2, 1]);
-    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([0, 0, 0, 0]));
   });
 
   it('3D float32 dtype', () => {
@@ -450,7 +408,7 @@ test_util.describeCustom('NDArray.zerosLike', () => {
     const b = NDArray.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2, 1]);
-    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([0, 0, 0, 0]));
   });
 
   it('3D int32 dtype', () => {
@@ -474,7 +432,7 @@ test_util.describeCustom('NDArray.zerosLike', () => {
     const b = NDArray.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2, 1, 1]);
-    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([0, 0, 0, 0]));
   });
 
   it('4D float32 dtype', () => {
@@ -482,7 +440,7 @@ test_util.describeCustom('NDArray.zerosLike', () => {
     const b = NDArray.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2, 1, 1]);
-    expect(b.getValues()).toEqual(new Float32Array([0, 0, 0, 0]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([0, 0, 0, 0]));
   });
 
   it('4D int32 dtype', () => {
@@ -500,15 +458,14 @@ test_util.describeCustom('NDArray.zerosLike', () => {
     expect(b.shape).toEqual([2, 2, 1, 1]);
     expect(b.getValues()).toEqual(new Uint8Array([0, 0, 0, 0]));
   });
-});
-
-test_util.describeCustom('NDArray.like', () => {
+};
+const testsLike: MathTests = it => {
   it('1D default dtype', () => {
     const a = Array1D.new([1, 2, 3]);
     const b = NDArray.like(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([3]);
-    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([1, 2, 3]));
   });
 
   it('1D float32 dtype', () => {
@@ -516,7 +473,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([3]);
-    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([1, 2, 3]));
   });
 
   it('1D int32 dtype', () => {
@@ -540,7 +497,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2]);
-    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('2D float32 dtype', () => {
@@ -548,7 +505,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2]);
-    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('2D int32 dtype', () => {
@@ -572,7 +529,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2, 1]);
-    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('3D float32 dtype', () => {
@@ -580,7 +537,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2, 1]);
-    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('3D int32 dtype', () => {
@@ -604,7 +561,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2, 1, 1]);
-    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('4D float32 dtype', () => {
@@ -612,7 +569,7 @@ test_util.describeCustom('NDArray.like', () => {
     const b = NDArray.like(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2, 1, 1]);
-    expect(b.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(b.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('4D int32 dtype', () => {
@@ -631,19 +588,18 @@ test_util.describeCustom('NDArray.like', () => {
     expect(b.getValues()).toEqual(new Uint8Array([1, 1, 1, 1]));
   });
 
-});
-
-test_util.describeCustom('Scalar.new', () => {
+};
+const testsScalarNew: MathTests = it => {
   it('default dtype', () => {
     const a = Scalar.new(3);
     expect(a.dtype).toBe('float32');
-    expect(a.getValues()).toEqual(new Float32Array([3]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([3]));
   });
 
   it('float32 dtype', () => {
     const a = Scalar.new(3, 'float32');
     expect(a.dtype).toBe('float32');
-    expect(a.getValues()).toEqual(new Float32Array([3]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([3]));
   });
 
   it('int32 dtype', () => {
@@ -700,24 +656,23 @@ test_util.describeCustom('Scalar.new', () => {
 
   it('default dtype from boolean', () => {
     const a = Scalar.new(false);
-    expect(a.get()).toBe(0);
+    test_util.expectNumbersClose(a.get(), 0);
     expect(a.dtype).toBe('float32');
   });
-});
-
-test_util.describeCustom('Array1D.new', () => {
+};
+const testsArray1DNew: MathTests = it => {
   it('default dtype', () => {
     const a = Array1D.new([1, 2, 3]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3]));
   });
 
   it('float32 dtype', () => {
     const a = Array1D.new([1, 2, 3], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3]));
   });
 
   it('int32 dtype', () => {
@@ -754,7 +709,7 @@ test_util.describeCustom('Array1D.new', () => {
   it('default dtype from boolean[]', () => {
     const a = Array1D.new([false, false, true]);
     expect(a.dtype).toBe('float32');
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 1]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([0, 0, 1]));
   });
 
   it('int32 dtype from boolean[]', () => {
@@ -768,21 +723,20 @@ test_util.describeCustom('Array1D.new', () => {
     expect(a.dtype).toBe('bool');
     expect(a.getValues()).toEqual(new Uint8Array([0, 0, 1]));
   });
-});
-
-test_util.describeCustom('Array2D.new', () => {
+};
+const testsArray2DNew: MathTests = it => {
   it('default dtype', () => {
     const a = Array2D.new([2, 2], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('float32 dtype', () => {
     const a = Array2D.new([2, 2], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('int32 dtype', () => {
@@ -819,7 +773,7 @@ test_util.describeCustom('Array2D.new', () => {
   it('default dtype from boolean[]', () => {
     const a = Array2D.new([2, 2], [[false, false], [true, false]]);
     expect(a.dtype).toBe('float32');
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 1, 0]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([0, 0, 1, 0]));
   });
 
   it('int32 dtype from boolean[]', () => {
@@ -833,21 +787,20 @@ test_util.describeCustom('Array2D.new', () => {
     expect(a.dtype).toBe('bool');
     expect(a.getValues()).toEqual(new Uint8Array([0, 0, 1, 0]));
   });
-});
-
-test_util.describeCustom('Array3D.new', () => {
+};
+const testsArray3DNew: MathTests = it => {
   it('default dtype', () => {
     const a = Array3D.new([2, 2, 1], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 1]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('float32 dtype', () => {
     const a = Array3D.new([2, 2, 1], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 1]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('int32 dtype', () => {
@@ -884,7 +837,7 @@ test_util.describeCustom('Array3D.new', () => {
   it('default dtype from boolean[]', () => {
     const a = Array3D.new([2, 2, 1], [[[false], [false]], [[true], [false]]]);
     expect(a.dtype).toBe('float32');
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 1, 0]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([0, 0, 1, 0]));
   });
 
   it('int32 dtype from boolean[]', () => {
@@ -900,21 +853,20 @@ test_util.describeCustom('Array3D.new', () => {
     expect(a.dtype).toBe('bool');
     expect(a.getValues()).toEqual(new Uint8Array([0, 0, 1, 0]));
   });
-});
-
-test_util.describeCustom('Array4D.new', () => {
+};
+const testsArray4DNew: MathTests = it => {
   it('default dtype', () => {
     const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('float32 dtype', () => {
     const a = Array4D.new([2, 2, 1, 1], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expect(a.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3, 4]));
   });
 
   it('int32 dtype', () => {
@@ -953,7 +905,7 @@ test_util.describeCustom('Array4D.new', () => {
     const a =
         Array4D.new([1, 2, 2, 1], [[[[false], [false]], [[true], [false]]]]);
     expect(a.dtype).toBe('float32');
-    expect(a.getValues()).toEqual(new Float32Array([0, 0, 1, 0]));
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([0, 0, 1, 0]));
   });
 
   it('int32 dtype from boolean[]', () => {
@@ -969,9 +921,8 @@ test_util.describeCustom('Array4D.new', () => {
     expect(a.dtype).toBe('bool');
     expect(a.getValues()).toEqual(new Uint8Array([0, 0, 1, 0]));
   });
-});
-
-test_util.describeCustom('NDArray.reshape', () => {
+};
+const testsReshape: MathTests = it => {
   it('Scalar default dtype', () => {
     const a = Scalar.new(4);
     const b = a.reshape([1, 1]);
@@ -1041,9 +992,49 @@ test_util.describeCustom('NDArray.reshape', () => {
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([3, 2]);
   });
-});
+};
+const testsAsType: MathTests = it => {
+  it('scalar bool -> int32', () => {
+    const a = Scalar.new(true, 'bool').asType('int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.get()).toBe(1);
+  });
 
-test_util.describeCustom('NDArray.asXD preserves dtype', () => {
+  it('array1d float32 -> int32', () => {
+    const a = Array1D.new([1.1, 3.9, -2.9, 0]).asType('int32');
+    expect(a.dtype).toBe('int32');
+    expect(a.getValues()).toEqual(new Int32Array([1, 3, -2, 0]));
+  });
+
+  it('array2d float32 -> bool', () => {
+    const a = Array2D.new([2, 2], [1.1, 3.9, -2.9, 0]).asType(DType.bool);
+    expect(a.dtype).toBe('bool');
+    expect(a.get(0, 0)).toBe(1);
+    expect(a.get(0, 1)).toBe(1);
+    expect(a.get(1, 0)).toBe(1);
+    expect(a.get(1, 1)).toBe(0);
+  });
+
+  it('array3d bool -> float32', () => {
+    const a = Array3D.new([2, 2, 1], [true, false, false, true], 'bool')
+                  .asType('float32');
+    expect(a.dtype).toBe('float32');
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([1, 0, 0, 1]));
+  });
+
+  it('bool CPU -> GPU -> CPU', () => {
+    const a = Array1D.new([1, 2, 0, 0, 5], 'bool');
+    expect(a.getValues()).toEqual(new Uint8Array([1, 1, 0, 0, 1]));
+    a.dispose();
+  });
+
+  it('int32 CPU -> GPU -> CPU', () => {
+    const a = Array1D.new([1, 2, 0, 0, 5], 'int32');
+    expect(a.getValues()).toEqual(new Int32Array([1, 2, 0, 0, 5]));
+    a.dispose();
+  });
+};
+const testsAsXD: MathTests = it => {
   it('scalar -> 2d', () => {
     const a = Scalar.new(4, 'int32');
     const b = a.as2D(1, 1);
@@ -1078,54 +1069,8 @@ test_util.describeCustom('NDArray.asXD preserves dtype', () => {
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([4]);
   });
-});
-
-test_util.describeCustom('NDArray.asType', () => {
-  it('scalar bool -> int32', () => {
-    const a = Scalar.new(true, 'bool').asType('int32');
-    expect(a.dtype).toBe('int32');
-    expect(a.get()).toBe(1);
-  });
-
-  it('array1d float32 -> int32', () => {
-    const a = Array1D.new([1.1, 3.9, -2.9, 0]).asType('int32');
-    expect(a.dtype).toBe('int32');
-    expect(a.getValues()).toEqual(new Int32Array([1, 3, -2, 0]));
-  });
-
-  it('array2d float32 -> bool', () => {
-    const a = Array2D.new([2, 2], [1.1, 3.9, -2.9, 0]).asType(DType.bool);
-    expect(a.dtype).toBe('bool');
-    expect(a.get(0, 0)).toBe(1);
-    expect(a.get(0, 1)).toBe(1);
-    expect(a.get(1, 0)).toBe(1);
-    expect(a.get(1, 1)).toBe(0);
-  });
-
-  it('array3d bool -> float32', () => {
-    const a = Array3D.new([2, 2, 1], [true, false, false, true], 'bool')
-                  .asType('float32');
-    expect(a.dtype).toBe('float32');
-    expect(a.getValues()).toEqual(new Float32Array([1, 0, 0, 1]));
-  });
-});
-
-test_util.describeCustom('NDArray CPU <--> GPU with dtype', () => {
-  it('bool CPU -> GPU -> CPU', () => {
-    const a = Array1D.new([1, 2, 0, 0, 5], 'bool');
-    expect(a.getValues()).toEqual(new Uint8Array([1, 1, 0, 0, 1]));
-    a.dispose();
-  });
-
-  it('int32 CPU -> GPU -> CPU', () => {
-    const a = Array1D.new([1, 2, 0, 0, 5], 'int32');
-    expect(a.getValues()).toEqual(new Int32Array([1, 2, 0, 0, 5]));
-    a.dispose();
-  });
-}, FEATURES, customBeforeEach, customAfterEach);
-
-// NDArray.rand
-test_util.describeCustom('NDArray.rand', () => {
+};
+const testsRand: MathTests = it => {
   it('should return a random 1D float32 array', () => {
     const shape: [number] = [10];
 
@@ -1233,10 +1178,8 @@ test_util.describeCustom('NDArray.rand', () => {
     expect(result.dtype).toBe('bool');
     test_util.expectValuesInRange(result.getValues(), 0, 1);
   });
-});
-
-// NDArray.randNormal
-test_util.describeCustom('NDArray.randNormal', () => {
+};
+const testsRandNormal: MathTests = it => {
   const SEED = 2002;
   const EPSILON = 0.05;
 
@@ -1350,9 +1293,8 @@ test_util.describeCustom('NDArray.randNormal', () => {
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 2, EPSILON);
   });
-});
-
-test_util.describeCustom('NDArray.randTruncatedNormal', () => {
+};
+const testsRandTruncNormal: MathTests = it => {
   // Expect slightly higher variances for truncated values.
   const EPSILON = 0.10;
   const SEED = 2002;
@@ -1449,10 +1391,8 @@ test_util.describeCustom('NDArray.randTruncatedNormal', () => {
     test_util.jarqueBeraNormalityTest(result.getValues());
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 5, EPSILON);
   });
-});
-
-// NDArray.randUniform()
-test_util.describeCustom('NDArray.randUniform', () => {
+};
+const testsRandUniform: MathTests = it => {
   it('should return a random 1D float32 array', () => {
     const shape: [number] = [10];
 
@@ -1560,76 +1500,84 @@ test_util.describeCustom('NDArray.randUniform', () => {
     expect(result.dtype).toBe('bool');
     test_util.expectValuesInRange(result.getValues(), 0, 1);
   });
-});
+};
+const testsFromPixels: MathTests = it => {
 
-// NDArray.fromPixels
-{
-  test_util.describeCustom(
-      'NDArray.fromPixels',
-      () => {
+  beforeEach(() => {});
 
-        beforeEach(() => {});
+  afterEach(() => {});
 
-        afterEach(() => {});
+  it('ImageData 1x1x3', () => {
+    const pixels = new ImageData(1, 1);
+    pixels.data[0] = 0;
+    pixels.data[1] = 80;
+    pixels.data[2] = 160;
+    pixels.data[3] = 240;
 
-        it('ImageData 1x1x3', () => {
-          const pixels = new ImageData(1, 1);
-          pixels.data[0] = 0;
-          pixels.data[1] = 80;
-          pixels.data[2] = 160;
-          pixels.data[3] = 240;
+    const array = Array3D.fromPixels(pixels, 3);
 
-          const array = Array3D.fromPixels(pixels, 3);
+    test_util.expectArraysClose(
+        array.getValues(), new Int32Array([0, 80, 160]));
+  });
 
-          test_util.expectArraysClose(
-              array.getValues(), new Float32Array([0, 80, 160]));
-        });
+  it('ImageData 1x1x4', () => {
+    const pixels = new ImageData(1, 1);
+    pixels.data[0] = 0;
+    pixels.data[1] = 80;
+    pixels.data[2] = 160;
+    pixels.data[3] = 240;
 
-        it('ImageData 1x1x4', () => {
-          const pixels = new ImageData(1, 1);
-          pixels.data[0] = 0;
-          pixels.data[1] = 80;
-          pixels.data[2] = 160;
-          pixels.data[3] = 240;
+    const array = Array3D.fromPixels(pixels, 4);
 
-          const array = Array3D.fromPixels(pixels, 4);
+    test_util.expectArraysClose(
+        array.getValues(), new Int32Array([0, 80, 160, 240]));
+  });
 
-          test_util.expectArraysClose(
-              array.getValues(), new Float32Array([0, 80, 160, 240]));
-        });
+  it('ImageData 2x2x3', () => {
+    const pixels = new ImageData(2, 2);
 
-        it('ImageData 2x2x3', () => {
-          const pixels = new ImageData(2, 2);
+    for (let i = 0; i < 8; i++) {
+      pixels.data[i] = i * 2;
+    }
+    for (let i = 8; i < 16; i++) {
+      pixels.data[i] = i * 2;
+    }
 
-          for (let i = 0; i < 8; i++) {
-            pixels.data[i] = i * 2;
-          }
-          for (let i = 8; i < 16; i++) {
-            pixels.data[i] = i * 2;
-          }
+    const array = Array3D.fromPixels(pixels, 3);
 
-          const array = Array3D.fromPixels(pixels, 3);
+    test_util.expectArraysClose(
+        array.getValues(),
+        new Int32Array([0, 2, 4, 8, 10, 12, 16, 18, 20, 24, 26, 28]));
+  });
 
-          test_util.expectArraysClose(
-              array.getValues(),
-              new Float32Array([0, 2, 4, 8, 10, 12, 16, 18, 20, 24, 26, 28]));
-        });
+  it('ImageData 2x2x4', () => {
+    const pixels = new ImageData(2, 2);
+    for (let i = 0; i < 8; i++) {
+      pixels.data[i] = i * 2;
+    }
+    for (let i = 8; i < 16; i++) {
+      pixels.data[i] = i * 2;
+    }
 
-        it('ImageData 2x2x4', () => {
-          const pixels = new ImageData(2, 2);
-          for (let i = 0; i < 8; i++) {
-            pixels.data[i] = i * 2;
-          }
-          for (let i = 8; i < 16; i++) {
-            pixels.data[i] = i * 2;
-          }
+    const array = Array3D.fromPixels(pixels, 4);
 
-          const array = Array3D.fromPixels(pixels, 4);
+    test_util.expectArraysClose(
+        array.getValues(),
+        new Int32Array(
+            [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]));
+  });
+};
 
-          test_util.expectArraysClose(
-              array.getValues(),
-              new Float32Array(
-                  [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]));
-        });
-      }, FEATURES);
-}
+const allTests = [
+  tests, testsNew, testsZeros, testsZerosLike, testsLike, testsScalarNew,
+  testsArray1DNew, testsArray2DNew, testsArray3DNew, testsArray4DNew,
+  testsReshape, testsAsType, testsAsXD, testsRand, testsRandNormal,
+  testsRandTruncNormal, testsRandUniform, testsFromPixels
+];
+
+test_util.describeMathCPU('NDArray', allTests);
+test_util.describeMathGPU('NDArray', allTests, [
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+]);

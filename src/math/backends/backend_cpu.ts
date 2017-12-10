@@ -35,9 +35,7 @@ export class MathBackendCPU implements MathBackend {
   writePixels(
       data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void {
-    throw new Error('Method not implemented.');
-  }
+      numChannels: number): void {}
   readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
     return data.values;
   }

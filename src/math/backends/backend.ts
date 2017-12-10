@@ -31,7 +31,7 @@ export interface NDArrayStorage {
   read<T extends keyof DataTypes>(data: NDArrayData<T>): Promise<DataTypes[T]>;
   readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T];
   disposeData(data: NDArrayData<keyof DataTypes>): void;
-  write(data: NDArrayData<keyof DataTypes>): void;
+  write(data: NDArrayData<keyof DataTypes>, shape: number[]): void;
   writePixels(
       data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,

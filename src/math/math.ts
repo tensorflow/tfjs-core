@@ -53,18 +53,22 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   register(a: NDArray) {
     this.track(a);
     this.numArrays++;
-    this.backend.write(a.getData());
+    const data = a.getData();
+    if (data.pixels != null) {
+      this.backend.writePixels(data, data.pixels, data.numChannels);
+    } else {
+      this.backend.write(a.getData(), a.shape);
+    }
   }
 
   writePixels(
       data: NDArrayData<keyof DataTypes>,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
-    this.backend.writePixels(data, pixels, numChannels);
-    this.numArrays++;
+    throw new Error('should not be called');
   }
-  write(data: NDArrayData<keyof DataTypes>): void {
-    this.backend.write(data);
+  write(data: NDArrayData<keyof DataTypes>, shape: number[]): void {
+    this.backend.write(data, shape);
   }
   disposeData(data: NDArrayData<keyof DataTypes>): void {
     this.backend.disposeData(data);

@@ -39,9 +39,10 @@ export interface DataTypes {
 /** @hidden */
 export interface NDArrayData<T extends keyof DataTypes> {
   id?: number;
-  shape?: number[];
   dtype?: T;
   values?: DataTypes[T];
+  pixels?: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement;
+  numChannels?: number;
   texture?: WebGLTexture;
   /** [rows, columns] shape of the texture. */
   textureShapeRC?: [number, number];
@@ -57,7 +58,9 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   /** Number of elements in the ndarray. */
   size: number;
   /** The data type for the array. */
-  dtype: T;
+  get dtype(): T {
+    return this.ndarrayData.dtype;
+  }
 
   /**
    * Number of elements to skip in each dimension when indexing. See
@@ -69,13 +72,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   private ndarrayData: NDArrayData<T>;
 
   protected constructor(shape: number[], data: NDArrayData<T>, dtype: T) {
-    // Sanity checks.
-    util.assert(
-        data.texture == null || (data.textureShapeRC != null),
-        '`textureShape` must be defined when `texture` is defined');
-
     this.size = util.sizeFromShape(shape);
-
     if (data.values != null) {
       util.assert(
           this.size === data.values.length,
@@ -83,13 +80,8 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
               `length of values (${data.values.length})`);
     }
     this.shape = shape;
-
-    if (data.textureType == null) {
-      data.textureType = TextureType.DEFAULT;
-    }
-
     this.ndarrayData = data;
-    this.dtype = dtype || ('float32' as T);
+    this.ndarrayData.dtype = dtype || ('float32' as T);
     const dim = this.shape.length;
 
     if (dim < 2) {
@@ -103,9 +95,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
         this.strides[i] = this.strides[i + 1] * this.shape[i + 1];
       }
     }
-
-    data.shape = this.shape;
-    data.dtype = this.dtype;
     if (data.id == null) {
       data.id = NDArray.nextId++;
       ENV.math.register(this);
@@ -142,12 +131,11 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     if (data.isDisposed) {
       throw new Error(`Cannot make new NDArray from disposed NDArrayData.`);
     }
-    data.shape = shape;
     switch (shape.length) {
       case 0:
         return new Scalar(data, dtype);
       case 1:
-        return new Array1D(data, dtype);
+        return new Array1D(data, dtype, shape[0]);
       case 2:
         return new Array2D(shape as [number, number], data, dtype);
       case 3:
@@ -168,11 +156,10 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
           'Cannot construct NDArray with more than 4 channels from pixels.');
     }
     const ndarrayData:
-        NDArrayData<'int32'> = {texture: null, textureType: null, values: null};
-    ENV.math.writePixels(ndarrayData, pixels, numChannels);
+        NDArrayData<'int32'> = {pixels, numChannels, dtype: 'int32'};
     const shape: [number, number, number] =
         [pixels.height, pixels.width, numChannels];
-    return Array3D.make<'int32'>(shape, ndarrayData) as Array3D<'int32'>;
+    return NDArray.make(shape, ndarrayData, 'int32') as Array3D<'int32'>;
   }
 
   /** Reshapes the current ndarray into the provided shape. */
@@ -228,13 +215,9 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   asType<G extends keyof DataTypes>(dtype: G): NDArray<G> {
     this.throwIfDisposed();
-
-    let newData: NDArrayData<G> =
-        (this.getData() as NDArrayData<keyof DataTypes>) as NDArrayData<G>;
-    if (newData.values != null) {
-      newData = {values: toTypedArray(newData.values, dtype)};
-    }
-    return NDArray.make<G>(this.shape, newData, dtype);
+    const vals = this.dataSync();
+    const newVals = toTypedArray(vals, dtype);
+    return NDArray.make<G>(this.shape, {values: newVals}, dtype);
   }
 
   get rank(): number {
@@ -258,11 +241,14 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   set(value: number, ...locs: number[]) {
     this.throwIfDisposed();
-    let index = locs[locs.length - 1];
+    let index = locs.length > 0 ? locs[locs.length - 1] : 0;
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
     }
-    this.getValues()[index] = value;
+    const vals = this.getValues();
+    vals[index] = value;
+    ENV.math.disposeData(this);
+    ENV.math.write(this.ndarrayData, this.shape);
   }
 
   async val(...locs: number[]): Promise<number> {
@@ -430,10 +416,6 @@ export class Scalar<T extends keyof DataTypes = keyof DataTypes> extends
     return this.get();
   }
 
-  set(value: number) {
-    this.getValues()[0] = value;
-  }
-
   add(value: number) {
     this.getValues()[0] += value;
   }
@@ -455,8 +437,8 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
     NDArray<T> {
   shape: [number];
 
-  constructor(data: NDArrayData<T>, dtype: T) {
-    const shape = (data.values != null) ? [data.values.length] : data.shape;
+  constructor(data: NDArrayData<T>, dtype: T, length?: number) {
+    const shape = (data.values != null) ? [data.values.length] : [length];
     super(shape, data, dtype);
   }
 
@@ -474,10 +456,6 @@ export class Array1D<T extends keyof DataTypes = keyof DataTypes> extends
 
   get(i: number): number {
     return this.getValues()[i];
-  }
-
-  set(value: number, i: number) {
-    this.getValues()[i] = value;
   }
 
   async val(i: number): Promise<number> {
@@ -570,10 +548,6 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
     return this.getValues()[this.stride0 * i + j];
   }
 
-  set(value: number, i: number, j: number) {
-    this.getValues()[this.stride0 * i + j] = value;
-  }
-
   add(value: number, i: number, j: number) {
     this.getValues()[this.stride0 * i + j] += value;
   }
@@ -663,10 +637,6 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
 
   get(i: number, j: number, k: number) {
     return this.getValues()[this.stride0 * i + this.stride1 * j + k];
-  }
-
-  set(value: number, i: number, j: number, k: number) {
-    this.getValues()[this.stride0 * i + this.stride1 * j + k] = value;
   }
 
   async val(i: number, j: number, k: number): Promise<number> {
@@ -767,12 +737,6 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
         [this.stride0 * i + this.stride1 * j + this.stride2 * k + l];
   }
 
-  /** @deprecated */
-  set(value: number, i: number, j: number, k: number, l: number) {
-    const vals = this.getValues();
-    vals[this.stride0 * i + this.stride1 * j + this.stride2 * k + l] = value;
-  }
-
   async val(i: number, j: number, k: number, l: number): Promise<number> {
     await this.data();
     return this.get(i, j, k, l);
@@ -846,10 +810,10 @@ function copyTypedArray<T extends keyof DataTypes>(
   } else if (dtype === 'bool') {
     const bool = new Uint8Array(array.length);
     for (let i = 0; i < bool.length; ++i) {
-      const val = array[i];
+      const val = array[i] as number;
       if (util.isValNaN(val as number, 'bool')) {
         bool[i] = util.getNaN('bool');
-      } else if (val) {
+      } else if (Math.round(val) !== 0) {
         bool[i] = 1;
       }
     }

@@ -105,9 +105,9 @@ export class MathBackendWebGL implements MathBackend {
     data.textureType = TextureType.RGBA_COLOR;
     data.textureShapeRC = textureShapeRC;
   }
-  write(data: NDArrayData<keyof DataTypes>): void {
+  write(data: NDArrayData<keyof DataTypes>, shape: number[]): void {
     data.textureShapeRC =
-        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, data.shape);
+        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     data.texture = this.textureManager.acquireTexture(data.textureShapeRC);
     data.textureType = TextureType.DEFAULT;
 
@@ -127,8 +127,7 @@ export class MathBackendWebGL implements MathBackend {
       data.textureType = null;
     }
   }
-  readSync<T extends 'float32'|'int32'|'bool'>(data: NDArrayData<T>):
-      DataTypes[T] {
+  readSync<T extends keyof DataTypes>(data: NDArrayData<T>): DataTypes[T] {
     let values: Float32Array;
     if (data.textureType === TextureType.DEFAULT) {
       values = this.gpgpu.downloadMatrixFromTexture(
@@ -136,12 +135,12 @@ export class MathBackendWebGL implements MathBackend {
     } else {
       values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
           data.texture, data.textureShapeRC[0], data.textureShapeRC[1],
-          data.shape[2]);
+          data.numChannels);
     }
     data.values = float32ToTypedArray(values, data.dtype);
     return data.values;
   }
-  async read<T extends 'float32'|'int32'|'bool'>(data: NDArrayData<T>):
+  async read<T extends keyof DataTypes>(data: NDArrayData<T>):
       Promise<DataTypes[T]> {
     if (data.values != null) {
       return data.values;
