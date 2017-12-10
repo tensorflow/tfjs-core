@@ -29,9 +29,7 @@ export class TanHFunc implements ActivationFunction {
   private one = Scalar.new(1);
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.tanh(x);
-    });
+    return math.tanh(x);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
@@ -49,15 +47,11 @@ export class TanHFunc implements ActivationFunction {
 
 export class ReLUFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.relu(x);
-    });
+    return math.relu(x);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.scope(() => {
-      return math.step(x);
-    });
+    return math.step(x);
   }
 
   dispose() {}
@@ -83,9 +77,7 @@ export class LeakyReluFunc implements ActivationFunction {
 
 export class SigmoidFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.sigmoid(x);
-    });
+    return math.sigmoid(x);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T): T {
@@ -103,16 +95,12 @@ export class SquareFunc implements ActivationFunction {
   private two = Scalar.new(2);
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.scope(() => {
-      return math.elementWiseMul(x, x);
-    });
+    return math.elementWiseMul(x, x);
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.scope(() => {
-      // dy/dx = 2*x.
-      return math.scalarTimesArray(this.two, x);
-    });
+    // dy/dx = 2*x.
+    return math.scalarTimesArray(this.two, x);
   }
 
   dispose() {
