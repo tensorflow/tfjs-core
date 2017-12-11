@@ -331,16 +331,19 @@ class TrainDisplay {
           fill: false,
           label: 'Model Training Cost',
           pointRadius: 0,
-          borderColor: 'rgba(75,192,192,1)',
+          borderColor: 'rgba(256,0,0,1)',
           borderWidth: 1,
           lineTension: 0,
           pointHitRadius: 8
         }]
       },
       options: {
-        // animation: {duration: 0},
+        animation: {duration: 0},
         responsive: false,
-        scales: {xAxes: [{type: 'linear', position: 'bottom'}], yAxes: [{}]}
+        scales: {
+          xAxes: [{type: 'linear', position: 'bottom'}],
+          // yAxes: [{ticks: {beginAtZero: true}}]
+        }
       }
     });
   }
@@ -355,6 +358,7 @@ class TrainDisplay {
   }
 }
 
+// TODO - roll up in UI class and drop the other display classes.
 // Setup game
 const math = new NDArrayMathGPU();
 const game = new GameOfLife(5, math);
@@ -376,7 +380,6 @@ const numLayersInput =
     document.getElementById('num-layers-input') as HTMLTextAreaElement;
 const addSequenceButton = document.querySelector('.add-sequence-button');
 const trainButton = document.querySelector('.train-button');
-const predictButton = document.querySelector('.predict-button');
 const resetButton = document.querySelector('.reset-button');
 
 function getBoardSize() {
@@ -411,6 +414,10 @@ function trainAndRender() {
   if (fetchCost) {
     trainDisplay.showStep(step, trainLength);
     trainDisplay.displayCost(cost, step);
+
+    worldContexts.forEach((worldContext) => {
+      worldContext.displayPrediction(model.predict(worldContext.world));
+    });
   }
 }
 
@@ -440,13 +447,8 @@ trainButton.addEventListener('click', () => {
   trainAndRender();
 });
 
-predictButton.addEventListener('click', () => {
-  worldContexts.forEach((worldContext) => {
-    worldContext.displayPrediction(model.predict(worldContext.world));
-  });
-});
-
 resetButton.addEventListener('click', () => {
+  // TODO - flush the model too.
   worldContexts = [];
   clearChildNodes(document.querySelector('.worlds-display'));
   clearChildNodes(document.querySelector('.train-display'));
