@@ -21,7 +21,7 @@ import {Tensor} from 'deeplearn/dist/graph/graph';
 import {CostReduction, FeedEntry} from 'deeplearn/dist/graph/session';
 import {NDArrayMath} from 'deeplearn/dist/math/math';
 
-/** TODO(kreeger): Doc me. */
+/** Generates GameOfLife sequence pairs (current sequence + next sequence) */
 class GameOfLife {
   math: NDArrayMath;
   size: number;
@@ -39,6 +39,8 @@ class GameOfLife {
     const world =
         Array2D.randUniform([this.size - 2, this.size - 2], 0, 2, 'int32');
     const worldPadded = GameOfLife.padArray(world);
+    // TODO(kreeger): This logic can be vectorized and kept on the GPU with a
+    // logical_or() and where() implementations.
     const numNeighbors =
         this.countNeighbors(this.size, worldPadded).getValues();
     const worldValues = world.getValues();
@@ -89,6 +91,7 @@ class GameOfLife {
   }
 
   /* Helper method to pad an array until the op is ready. */
+  // TODO(kreeger): Drop this when math.pad() is ready.
   private static padArray(array: NDArray): Array2D<'int32'> {
     const x1 = array.shape[0];
     const x2 = array.shape[1];
@@ -289,6 +292,7 @@ class WorldDisplay {
   }
 }
 
+/** Manages displaying a list of world sequences (current, next, prediction) */
 class WorldContext {
   worldDisplay: WorldDisplay;
   world: NDArray;
@@ -313,6 +317,7 @@ class WorldContext {
   }
 }
 
+/** Shows model training information. */
 class TrainDisplay {
   element: Element;
   canvas: CanvasRenderingContext2D;
@@ -358,102 +363,143 @@ class TrainDisplay {
   }
 }
 
-// TODO - roll up in UI class and drop the other display classes.
-// Setup game
-const math = new NDArrayMathGPU();
-const game = new GameOfLife(5, math);
-const model = new GameOfLifeModel(game, math);
+/** Main class for running the Game of Life training demo. */
+class Demo {
+  math: NDArrayMathGPU;
+  game: GameOfLife;
+  model: GameOfLifeModel;
 
-const boardSizeInput =
-    document.getElementById('board-size-input') as HTMLTextAreaElement;
-const trainingSizeInput =
-    document.getElementById('training-size-input') as HTMLTextAreaElement;
-const learningRateInput =
-    document.getElementById('learning-rate-input') as HTMLTextAreaElement;
-const numLayersInput =
-    document.getElementById('num-layers-input') as HTMLTextAreaElement;
-const addSequenceButton = document.querySelector('.add-sequence-button');
-const trainButton = document.querySelector('.train-button');
-const resetButton = document.querySelector('.reset-button');
+  worldContexts: WorldContext[];
 
-// List of worlds + display contexts.
-let worldContexts: WorldContext[] = [];
-game.setSize(getBoardSize());
-for (let i = 0; i < 3; i++) {
-  worldContexts.push(new WorldContext(game.generateGolExample()));
-}
+  trainDisplay: TrainDisplay;
+  worldDisplay: WorldDisplay;
 
-// Helper classes for displaying worlds and training data:
-const trainDisplay = new TrainDisplay();
+  boardSizeInput: HTMLTextAreaElement;
+  trainingSizeInput: HTMLTextAreaElement;
+  learningRateInput: HTMLTextAreaElement;
+  numLayersInput: HTMLTextAreaElement;
 
-function getBoardSize() {
-  return parseInt(boardSizeInput.value, 10);
-}
+  addSequenceButton: HTMLElement;
+  trainButton: HTMLElement;
+  resetButton: HTMLElement;
 
-function clearChildNodes(node: Element) {
-  while (node.hasChildNodes()) {
-    node.removeChild(node.lastChild);
+  step: number;
+  trainingSteps: number;
+
+  constructor() {
+    this.math = new NDArrayMathGPU();
+    this.game = new GameOfLife(5, this.math);
+    this.model = new GameOfLifeModel(this.game, this.math);
+
+    this.trainDisplay = new TrainDisplay();
+    this.worldDisplay = new WorldDisplay();
+
+    this.boardSizeInput =
+        document.getElementById('board-size-input') as HTMLTextAreaElement;
+    this.trainingSizeInput =
+        document.getElementById('training-size-input') as HTMLTextAreaElement;
+    this.learningRateInput =
+        document.getElementById('learning-rate-input') as HTMLTextAreaElement;
+    this.numLayersInput =
+        document.getElementById('num-layers-input') as HTMLTextAreaElement;
+
+    this.addSequenceButton = document.querySelector('.add-sequence-button');
+    this.addSequenceButton.addEventListener(
+        'click', () => this.onAddSequenceButtonClick());
+
+    this.trainButton = document.querySelector('.train-button');
+    this.trainButton.addEventListener('click', () => this.onTrainButtonClick());
+
+    this.resetButton = document.querySelector('.reset-button');
+    this.resetButton.addEventListener('click', () => this.onResetButtonClick());
+  }
+
+  showSampleSequences(): void {
+    // Always init with 3 sample world sequences:
+    this.worldContexts = [];
+    for (let i = 0; i < 3; i++) {
+      this.worldContexts.push(new WorldContext(this.game.generateGolExample()));
+    }
+  }
+
+  trainAndRender() {
+    if (this.step === this.trainingSteps) {
+      this.enableForm();
+      return;
+    }
+
+    requestAnimationFrame(() => this.trainAndRender());
+
+    this.step++;
+
+    const fetchCost = this.step % 50 === 0;
+    const cost = this.model.trainBatch(fetchCost);
+
+    if (fetchCost) {
+      this.trainDisplay.showStep(this.step, this.trainingSteps);
+      this.trainDisplay.displayCost(cost, this.step);
+
+      this.worldContexts.forEach((worldContext) => {
+        worldContext.displayPrediction(this.model.predict(worldContext.world));
+      });
+    }
+  }
+
+  private onAddSequenceButtonClick(): void {
+    this.game.setSize(this.getBoardSize());
+    this.worldContexts.push(new WorldContext(this.game.generateGolExample()));
+  }
+
+  private onTrainButtonClick(): void {
+    this.disableForm();
+
+    const boardSize = this.getBoardSize();
+    const learningRate = parseFloat(this.learningRateInput.value);
+    const trainingSize = parseInt(this.trainingSizeInput.value, 10);
+    const numLayers = parseInt(this.numLayersInput.value, 10);
+
+    this.game.setSize(boardSize);
+    this.model.setupSession(boardSize, learningRate, numLayers);
+
+    this.step = 0;
+    this.trainingSteps = trainingSize;
+    this.trainAndRender();
+  }
+
+  private onResetButtonClick(): void {
+    // TODO - flush the model too.
+    this.worldContexts = [];
+    Demo.clearChildNodes(document.querySelector('.worlds-display'));
+    Demo.clearChildNodes(document.querySelector('.train-display'));
+  }
+
+  private disableForm(): void {
+    this.trainButton.setAttribute('disabled', 'disabled');
+    this.resetButton.setAttribute('disabled', 'disabled');
+    this.boardSizeInput.setAttribute('disabled', 'disabled');
+    this.learningRateInput.setAttribute('disabled', 'disabled');
+    this.trainingSizeInput.setAttribute('disabled', 'disabled');
+    this.numLayersInput.setAttribute('disabled', 'disabled');
+  }
+
+  private enableForm(): void {
+    this.trainButton.removeAttribute('disabled');
+    this.resetButton.removeAttribute('disabled');
+    this.boardSizeInput.removeAttribute('disabled');
+    this.learningRateInput.removeAttribute('disabled');
+    this.trainingSizeInput.removeAttribute('disabled');
+    this.numLayersInput.removeAttribute('disabled');
+  }
+
+  private getBoardSize(): number {
+    return parseInt(this.boardSizeInput.value, 10);
+  }
+
+  private static clearChildNodes(node: Element) {
+    while (node.hasChildNodes()) {
+      node.removeChild(node.lastChild);
+    }
   }
 }
 
-let step = 0;
-let trainLength = 0;
-function trainAndRender() {
-  if (step === trainLength) {
-    trainButton.removeAttribute('disabled');
-    resetButton.removeAttribute('disabled');
-    boardSizeInput.removeAttribute('disabled');
-    learningRateInput.removeAttribute('disabled');
-    trainingSizeInput.removeAttribute('disabled');
-    numLayersInput.removeAttribute('disabled');
-    return;
-  }
-
-  requestAnimationFrame(trainAndRender);
-  step++;
-
-  const fetchCost = step % 50 === 0;
-  const cost = model.trainBatch(fetchCost);
-
-  if (fetchCost) {
-    trainDisplay.showStep(step, trainLength);
-    trainDisplay.displayCost(cost, step);
-
-    worldContexts.forEach((worldContext) => {
-      worldContext.displayPrediction(model.predict(worldContext.world));
-    });
-  }
-}
-
-addSequenceButton.addEventListener('click', () => {
-  game.setSize(getBoardSize());
-  worldContexts.push(new WorldContext(game.generateGolExample()));
-});
-
-trainButton.addEventListener('click', () => {
-  trainButton.setAttribute('disabled', 'disabled');
-  resetButton.setAttribute('disabled', 'disabled');
-  boardSizeInput.setAttribute('disabled', 'disabled');
-  learningRateInput.setAttribute('disabled', 'disabled');
-  trainingSizeInput.setAttribute('disabled', 'disabled');
-  numLayersInput.setAttribute('disabled', 'disabled');
-
-  const boardSize = getBoardSize();
-  const learningRate = parseFloat(learningRateInput.value);
-  const trainingSize = parseInt(trainingSizeInput.value, 10);
-  const numLayers = parseInt(numLayersInput.value, 10);
-
-  game.setSize(boardSize);
-  model.setupSession(boardSize, learningRate, numLayers);
-
-  step = 0;
-  trainLength = trainingSize;
-  trainAndRender();
-});
-
-resetButton.addEventListener('click', () => {
-  // TODO - flush the model too.
-  worldContexts = [];
-  clearChildNodes(document.querySelector('.worlds-display'));
-  clearChildNodes(document.querySelector('.train-display'));
-});
+new Demo().showSampleSequences();
