@@ -3,8 +3,6 @@ import {NDArray} from '../ndarray';
 import {MathBackend} from './backend';
 import {KernelInputConfig} from './kernel_config';
 // tslint:disable-next-line:max-line-length
-import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './types/slice';
-// tslint:disable-next-line:max-line-length
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './types/argminmax';
 // tslint:disable-next-line:max-line-length
 import {BatchNorm2DInputConfig, BatchNorm2DNode, BatchNorm3DInputConfig, BatchNorm3DNode} from './types/batchnorm';
@@ -21,8 +19,11 @@ import {MultinomialInputConfig, MultinomialNode} from './types/multinomial';
 import {OneHotInputConfig, OneHotNode} from './types/onehot';
 // tslint:disable-next-line:max-line-length
 import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './types/pool';
+import {PowInputConfig, PowNode} from './types/pow';
 // tslint:disable-next-line:max-line-length
 import {ResizeBilinear3DInputConfig, ResizeBilinear3DNode} from './types/resize_bilinear';
+// tslint:disable-next-line:max-line-length
+import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './types/slice';
 import {SumInputConfig, SumNode} from './types/sum';
 // tslint:disable-next-line:max-line-length
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './types/topk';
@@ -119,6 +120,9 @@ const KERNEL_METHODS: {
   },
   Floor: (backend: MathBackend, config: UnaryInputConfig<NDArray>) => {
     return backend.floor(config.inputs.x);
+  },
+  Pow: (backend: MathBackend, config: PowInputConfig<NDArray>) => {
+    return backend.pow(config.inputs.a, config.inputs.b);
   },
   Exp: (backend: MathBackend, config: UnaryInputConfig<NDArray>) => {
     return backend.exp(config.inputs.x);
@@ -285,6 +289,7 @@ export interface KernelConfigRegistry {
   Max: MaxNode<'float32'|'int32'|'bool'>;
   Ceil: UnaryNode<NDArray>;
   Floor: UnaryNode<NDArray>;
+  Pow: PowNode<NDArray>;
   Exp: UnaryNode<NDArray>;
   Log: UnaryNode<NDArray>;
   Sqrt: UnaryNode<NDArray>;
