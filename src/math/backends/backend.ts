@@ -75,6 +75,7 @@ export interface MathBackend {
 
   floor<T extends NDArray>(x: T): T;
 
+  pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T;
   exp<T extends NDArray>(x: T): T;
   log<T extends NDArray>(x: T): T;
   sqrt<T extends NDArray>(x: T): T;
