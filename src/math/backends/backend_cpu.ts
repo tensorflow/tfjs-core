@@ -16,6 +16,8 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
+import {BackendType} from '../../environment';
 import * as util from '../../util';
 import * as broadcast_util from '../broadcast_util';
 import * as concat_util from '../concat_util';
@@ -1367,6 +1369,6 @@ BACKEND_REGISTRY['cpu'] = new MathBackendCPU();
 // TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
-    super('cpu', safeMode);
+    super('cpu' as BackendType, safeMode);
   }
 }

@@ -49,7 +49,7 @@ function shouldUploadNaNUniform(): boolean {
   return !ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED');
 }
 
-export interface ArrayData<T> {
+export interface ArrayData<T extends NDArray> {
   array: T;
   texData: TextureData;
 }

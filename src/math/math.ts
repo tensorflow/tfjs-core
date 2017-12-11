@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {TypedArray} from '../util';
+
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {BACKEND_REGISTRY, MathBackend, MatrixOrientation, NDArrayStorage} from './backends/backend';
@@ -65,13 +66,6 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
     this.backend.write(id, values, dtype, shape);
   }
-  disposeData(id: number): void {
-    this.backend.disposeData(id);
-    // TODO(nsthorat): Construct an error and save the stack trace for debugging
-    // when in debug mode. Creating a stack trace is too expensive to do
-    // unconditionally.
-    this.numArrays--;
-  }
   readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
     return this.backend.readSync(id);
   }
@@ -93,7 +87,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(backend: string|MathBackend, private safeMode: boolean) {
+  constructor(backend: BackendType|MathBackend, private safeMode: boolean) {
     if (typeof backend === 'string') {
       this.backend = BACKEND_REGISTRY[backend];
     } else {
@@ -2186,6 +2180,14 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       return {mean, variance};
     });
     return result;
+  }
+
+  disposeData(id: number): void {
+    this.backend.disposeData(id);
+    // TODO(nsthorat): Construct an error and save the stack trace for debugging
+    // when in debug mode. Creating a stack trace is too expensive to do
+    // unconditionally.
+    this.numArrays--;
   }
 }
 

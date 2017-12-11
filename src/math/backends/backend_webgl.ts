@@ -58,38 +58,6 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
 
-function float32ToTypedArray<T extends keyof DataTypes>(
-    a: Float32Array, dtype: T): DataTypes[T] {
-  if (dtype === 'float32') {
-    return a;
-  } else if (dtype === 'int32' || dtype === 'bool') {
-    const result = (dtype === 'int32') ? new Int32Array(a.length) :
-                                         new Uint8Array(a.length);
-    for (let i = 0; i < result.length; ++i) {
-      let val = a[i];
-      val = isNaN(val) ? util.getNaN(dtype) : Math.round(val);
-      result[i] = val;
-    }
-    return result;
-  } else {
-    throw new Error(`Unknown dtype ${dtype}`);
-  }
-}
-
-function typedArrayToFloat32(
-    a: TypedArray, dtype: keyof DataTypes): Float32Array {
-  if (a instanceof Float32Array) {
-    return a;
-  } else {
-    const res = new Float32Array(a.length);
-    for (let i = 0; i < res.length; i++) {
-      const val = a[i];
-      res[i] = util.isValNaN(val, dtype) ? NaN : val;
-    }
-    return res;
-  }
-}
-
 export class MathBackendWebGL implements MathBackend {
   private texData: {[id: number]: TextureData} = {};
 
@@ -125,13 +93,6 @@ export class MathBackendWebGL implements MathBackend {
           texShape[1], typedArrayToFloat32(values, dtype));
     }
   }
-  disposeData(id: number): void {
-    if (id in this.texData) {
-      const {texture, texShape} = this.texData[id];
-      this.textureManager.releaseTexture(texture, texShape);
-      delete this.texData[id];
-    }
-  }
   readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
     let values: Float32Array;
     const {texture, textureType, texShape, numChannels, dtype} =
@@ -162,6 +123,13 @@ export class MathBackendWebGL implements MathBackend {
     const queryFn = () => {};
     await this.gpgpu.runQuery(queryFn);
     return this.readSync(id);
+  }
+  disposeData(id: number): void {
+    if (id in this.texData) {
+      const {texture, texShape} = this.texData[id];
+      this.textureManager.releaseTexture(texture, texShape);
+      delete this.texData[id];
+    }
   }
 
   private gpgpu: GPGPUContext;
@@ -730,5 +698,37 @@ export class NDArrayMathGPU extends NDArrayMath {
 
   getTextureManager(): TextureManager {
     return (this.backend as MathBackendWebGL).getTextureManager();
+  }
+}
+
+function float32ToTypedArray<T extends keyof DataTypes>(
+    a: Float32Array, dtype: T): DataTypes[T] {
+  if (dtype === 'float32') {
+    return a;
+  } else if (dtype === 'int32' || dtype === 'bool') {
+    const result = (dtype === 'int32') ? new Int32Array(a.length) :
+                                         new Uint8Array(a.length);
+    for (let i = 0; i < result.length; ++i) {
+      let val = a[i];
+      val = isNaN(val) ? util.getNaN(dtype) : Math.round(val);
+      result[i] = val;
+    }
+    return result;
+  } else {
+    throw new Error(`Unknown dtype ${dtype}`);
+  }
+}
+
+function typedArrayToFloat32(
+    a: TypedArray, dtype: keyof DataTypes): Float32Array {
+  if (a instanceof Float32Array) {
+    return a;
+  } else {
+    const res = new Float32Array(a.length);
+    for (let i = 0; i < res.length; i++) {
+      const val = a[i];
+      res[i] = util.isValNaN(val, dtype) ? NaN : val;
+    }
+    return res;
   }
 }

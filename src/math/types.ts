@@ -29,52 +29,52 @@ export enum SumTypesMap {
   bool = 'int32'
 }
 
-export interface Int32And {
+export interface UpcastInt32And {
   float32: 'float32';
   int32: 'int32';
   bool: 'int32';
 }
 
-export enum Int32AndMap {
+export enum UpcastInt32AndMap {
   float32 = 'float32',
   int32 = 'int32',
   bool = 'int32'
 }
 
-export interface BoolAnd {
+export interface UpcastBoolAnd {
   float32: 'float32';
   int32: 'int32';
   bool: 'bool';
 }
 
-export enum BoolAndMap {
+export enum UpcastBoolAndMap {
   float32 = 'float32',
   int32 = 'int32',
   bool = 'bool'
 }
 
-export interface Float32And {
+export interface UpcastFloat32And {
   float32: 'float32';
   int32: 'float32';
   bool: 'float32';
 }
 
-export enum Float32AndMap {
+export enum UpcastFloat32AndMap {
   float32 = 'float32',
   int32 = 'float32',
   bool = 'float32'
 }
 
 export interface UpcastType {
-  float32: Float32And;
-  int32: Int32And;
-  bool: BoolAnd;
+  float32: UpcastFloat32And;
+  int32: UpcastInt32And;
+  bool: UpcastBoolAnd;
 }
 
 const upcastTypeMap = {
-  float32: Float32AndMap,
-  int32: Int32AndMap,
-  bool: BoolAndMap
+  float32: UpcastFloat32AndMap,
+  int32: UpcastInt32AndMap,
+  bool: UpcastBoolAndMap
 };
 
 export function upcastType(typeA: DType, typeB: DType): DType {

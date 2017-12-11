@@ -295,7 +295,7 @@ const commonTests: MathTests = it => {
 };
 
 const gpuTests: MathTests = it => {
-  it('Matrix times vector, larger than max texture size', math => {
+  it('Matrix times vector, large matrix', math => {
     const maxTexSize = 64000;
     const sharedDim = maxTexSize + 4;
     const matrix = Array2D.zeros([2, sharedDim]);

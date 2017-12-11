@@ -157,10 +157,15 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   return isEnabled;
 }
 
-function getBestBackend(): string {
-  const backendIds = ['webgl', 'cpu'];
-  for (let i = 0; i < backendIds.length; ++i) {
-    const backendId = backendIds[i];
+export enum BackendType {
+  WEBGL = 'webgl',
+  CPU = 'cpu'
+}
+
+function getBestBackend(): BackendType {
+  const orderedBackends: BackendType[] = [BackendType.WEBGL, BackendType.CPU];
+  for (let i = 0; i < orderedBackends.length; ++i) {
+    const backendId = orderedBackends[i];
     if (backendId in BACKEND_REGISTRY) {
       return backendId;
     }
@@ -170,7 +175,7 @@ function getBestBackend(): string {
 
 export class Environment {
   private features: Features = {};
-  private currentMath: NDArrayMath = null;
+  private globalMath: NDArrayMath = null;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -218,15 +223,16 @@ export class Environment {
   }
 
   setGlobalMath(math: NDArrayMath) {
-    this.currentMath = math;
+    this.globalMath = math;
   }
 
   get math(): NDArrayMath {
-    if (this.currentMath == null) {
+    if (this.globalMath == null) {
       const bestBackend = getBestBackend();
-      this.currentMath = new NDArrayMath(bestBackend, false);
+      const safeMode = false;
+      this.globalMath = new NDArrayMath(bestBackend, safeMode);
     }
-    return this.currentMath;
+    return this.globalMath;
   }
 }
 

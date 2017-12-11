@@ -15,6 +15,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import {BackendType} from '../../environment';
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
@@ -25,7 +26,10 @@ export enum MatrixOrientation {
   TRANSPOSED
 }
 
-export const BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
+export const BACKEND_REGISTRY:
+    {[id in BackendType]: MathBackend} = {} as
+                                             // tslint:disable-next-line:no-any
+                                             any;
 
 export interface NDArrayStorage {
   read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]>;

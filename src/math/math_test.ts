@@ -24,28 +24,28 @@ import {Array1D, Array3D, Scalar} from './ndarray';
 {
   const gpuTests: MathTests = it => {
     it('scope returns NDArray', async math => {
-      const a = Array1D.new([1, 2, 3]);
-      let b = Array1D.new([0, 0, 0]);
-
-      expect(math.getNumArrays()).toBe(2);
       await math.scope(async () => {
-        const result = math.scope(() => {
-          b = math.add(a, b) as Array1D;
-          b = math.add(a, b) as Array1D;
-          b = math.add(a, b) as Array1D;
-          return math.add(a, b);
+        const a = Array1D.new([1, 2, 3]);
+        let b = Array1D.new([0, 0, 0]);
+
+        expect(math.getNumArrays()).toBe(2);
+        await math.scope(async () => {
+          const result = math.scope(() => {
+            b = math.add(a, b) as Array1D;
+            b = math.add(a, b) as Array1D;
+            b = math.add(a, b) as Array1D;
+            return math.add(a, b);
+          });
+
+          // result is new. All intermediates should be disposed.
+          expect(math.getNumArrays()).toBe(2 + 1);
+          test_util.expectArraysClose(
+              await result.data(), new Float32Array([4, 8, 12]));
         });
 
-        // result is new. All intermediates should be disposed.
-        expect(math.getNumArrays()).toBe(2 + 1);
-        test_util.expectArraysClose(
-            await result.data(), new Float32Array([4, 8, 12]));
+        // a, b are still here, result should be disposed.
+        expect(math.getNumArrays()).toBe(2);
       });
-
-      // a, b are still here, result should be disposed.
-      expect(math.getNumArrays()).toBe(2);
-      a.dispose();
-      b.dispose();
       expect(math.getNumArrays()).toBe(0);
     });
 

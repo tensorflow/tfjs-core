@@ -169,6 +169,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   /** Reshapes the current ndarray into the provided shape. */
   reshape(newShape: number[]): NDArray<T> {
+    this.throwIfDisposed();
     newShape = util.inferFromImplicitShape(newShape, this.size);
     if (util.arraysEqual(this.shape, newShape)) {
       // No-op.
@@ -190,6 +191,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * @returns {Array1D}
    */
   flatten(): Array1D<T> {
+    this.throwIfDisposed();
     if (this instanceof Array1D) {
       return this;
     }
@@ -197,28 +199,35 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   asScalar(): Scalar<T> {
+    this.throwIfDisposed();
     util.assert(this.size === 1, 'The array must have only 1 element.');
     return this.reshape([]);
   }
 
   as1D(): Array1D<T> {
+    this.throwIfDisposed();
     return this.reshape([this.size]) as Array1D<T>;
   }
 
   as2D(rows: number, columns: number): Array2D<T> {
+    this.throwIfDisposed();
     return this.reshape([rows, columns]) as Array2D<T>;
   }
 
   as3D(rows: number, columns: number, depth: number): Array3D<T> {
+    this.throwIfDisposed();
     return this.reshape([rows, columns, depth]) as Array3D<T>;
   }
 
   as4D(rows: number, columns: number, depth: number, depth2: number):
       Array4D<T> {
+    this.throwIfDisposed();
     return this.reshape([rows, columns, depth, depth2]) as Array4D<T>;
   }
 
   asType<G extends keyof DataTypes>(dtype: G): NDArray<G> {
+    this.throwIfDisposed();
+    // TODO(dsmilkov): Migrate casting to the backend.
     const vals = this.dataSync();
     const newVals = toTypedArray(vals, dtype);
     return NDArray.make<G>(this.shape, {values: newVals}, dtype);
@@ -241,6 +250,11 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   set(value: number, ...locs: number[]) {
+    this.throwIfDisposed();
+    util.assert(
+        locs.length === this.rank,
+        `The number of provided coordinates (${locs.length}) must ` +
+            `match the rank (${this.rank})`);
     let index = locs.length > 0 ? locs[locs.length - 1] : 0;
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
@@ -252,11 +266,13 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   async val(...locs: number[]): Promise<number> {
+    this.throwIfDisposed();
     await this.data();
     return this.get(...locs);
   }
 
   locToIndex(locs: number[]): number {
+    this.throwIfDisposed();
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
@@ -265,6 +281,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   indexToLoc(index: number): number[] {
+    this.throwIfDisposed();
     const locs: number[] = new Array(this.shape.length);
     for (let i = 0; i < locs.length - 1; ++i) {
       locs[i] = Math.floor(index / this.strides[i]);
@@ -275,6 +292,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   }
 
   fill(value: number) {
+    this.throwIfDisposed();
     this.getValues().fill(value);
   }
 
@@ -293,6 +311,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * that resolves when the data is ready.
    */
   async data(): Promise<DataTypes[T]> {
+    this.throwIfDisposed();
     return ENV.math.read(this.id);
   }
 
@@ -301,14 +320,17 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * thread until the values are ready, which can cause performance issues.
    */
   dataSync(): DataTypes[T] {
+    this.throwIfDisposed();
     return ENV.math.readSync(this.id);
   }
 
   dispose(): void {
+    this.isDisposed = true;
     ENV.math.disposeData(this.id);
   }
 
   equals(t: NDArray<T>): boolean {
+    this.throwIfDisposed();
     return this.dtype === t.dtype && util.arraysEqual(this.shape, t.shape) &&
         util.arraysEqual(this.getValues(), t.getValues());
   }
@@ -359,6 +381,13 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   static randUniform<T extends keyof DataTypes>(
       shape: number[], a: number, b: number, dtype?: T): NDArray<T> {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype);
+  }
+
+  private isDisposed = false;
+  private throwIfDisposed() {
+    if (this.isDisposed) {
+      throw new Error(`NDArray is disposed.`);
+    }
   }
 }
 
