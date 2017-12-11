@@ -20,7 +20,7 @@ import * as util from '../util';
 import * as axis_util from './axis_util';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
-import {MatrixOrientation} from './backends/kernels/matmul';
+import {MatrixOrientation} from './backends/types/matmul';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
@@ -1299,6 +1299,7 @@ export abstract class NDArrayMath {
 
     return this.executeOp('scaledArrayAdd', () => {
       return this.scope(() => {
+        // TODO(nsthorat): Add an SGEMM kernel and then update this.
         return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
       });
     });

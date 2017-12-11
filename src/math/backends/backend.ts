@@ -16,30 +16,11 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
+import {Conv2DInfo} from '../conv_util';
+// tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray';
 import {SumTypes} from '../types';
-
-import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
-// tslint:disable-next-line:max-line-length
-import {BatchNorm2DInputConfig, BatchNorm3DInputConfig} from './kernels/batchnorm';
-import {BinaryInputConfig} from './kernels/binary';
-// tslint:disable-next-line:max-line-length
-import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
-// tslint:disable-next-line:max-line-length
-import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
-import {EqualInputConfig} from './kernels/logical';
-import {MatMulInputConfig} from './kernels/matmul';
-import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
-import {MultinomialInputConfig} from './kernels/multinomial';
-import {OneHotInputConfig} from './kernels/onehot';
-import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
-import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
-// tslint:disable-next-line:max-line-length
-import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
-import {SumInputConfig} from './kernels/sum';
-import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
-// tslint:disable-next-line:max-line-length
-import {ClipInputConfig, LeakyReluInputConfig, StepInputConfig, TileInputConfig, TransposeInputConfig, UnaryInputConfig} from './kernels/unary';
+import {MatrixOrientation} from './types/matmul';
 
 /**
  * The interface that defines the kernels that should be implemented when adding
@@ -47,101 +28,121 @@ import {ClipInputConfig, LeakyReluInputConfig, StepInputConfig, TileInputConfig,
  * this can be done gradually (throw an error for unimplemented methods).
  */
 export interface MathBackend {
-  matMul(config: MatMulInputConfig): Array2D;
+  matMul(
+      a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
+      bOrientation: MatrixOrientation): Array2D;
 
-  clone<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  clone<T extends NDArray>(ndarray: T): T;
 
-  slice1D(config: Slice1DInputConfig): Array1D;
-  slice2D(config: Slice2DInputConfig): Array2D;
-  slice3D(config: Slice3DInputConfig): Array3D;
-  slice4D(config: Slice4DInputConfig): Array4D;
+  slice1D(x: Array1D, begin: number, size: number): Array1D;
+  slice2D(x: Array2D, begin: [number, number], size: [number, number]): Array2D;
+  slice3D(x: Array3D, begin: [number, number, number], size: [
+    number, number, number
+  ]): Array3D;
+  slice4D(x: Array4D, begin: [number, number, number, number], size: [
+    number, number, number, number
+  ]): Array4D;
 
-  concat1D(config: Concat1DInputConfig): Array1D;
-  concat2D(config: Concat2DInputConfig): Array2D;
-  concat3D(config: Concat3DInputConfig): Array3D;
-  concat4D(config: Concat4DInputConfig): Array4D;
+  concat1D(a: Array1D, b: Array1D): Array1D;
+  concat2D(a: Array2D, b: Array2D, axis: number): Array2D;
+  concat3D(a: Array3D, b: Array3D, axis: number): Array3D;
+  concat4D(a: Array4D, b: Array4D, axis: number): Array4D;
 
-  neg<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  neg<T extends NDArray>(a: T): T;
 
-  add(config: BinaryInputConfig): NDArray;
-  subtract(config: BinaryInputConfig): NDArray;
-  multiply(config: BinaryInputConfig): NDArray;
-  divide(config: BinaryInputConfig): NDArray<'float32'>;
+  add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G>;
+  subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G>;
+  multiply<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G>;
+  divide<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
+      NDArray<'float32'>;
 
-  sum<T extends keyof DataTypes>(config: SumInputConfig<SumTypes[T]>):
+  sum<T extends keyof DataTypes>(x: NDArray<T>, axes: number[]):
       NDArray<SumTypes[T]>;
 
-  argMin(config: ArgMinInputConfig): NDArray<'int32'>;
-  argMax(config: ArgMaxInputConfig): NDArray<'int32'>;
+  argMin(x: NDArray, axes: number[]): NDArray<'int32'>;
+  argMax(x: NDArray, axes: number[]): NDArray<'int32'>;
 
-  equal(config: EqualInputConfig): NDArray<'bool'>;
+  equal(a: NDArray, b: NDArray): NDArray<'bool'>;
 
-  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
-      config: TopKValuesInputConfig<T>): Array1D<D>;
-  topKIndices(config: TopKIndicesInputConfig): Array1D<'int32'>;
+  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(x: T, k: number):
+      Array1D<D>;
+  topKIndices(x: NDArray, k: number): Array1D<'int32'>;
 
-  min<G extends keyof DataTypes>(config: MinInputConfig<G>): NDArray<G>;
-  max<G extends keyof DataTypes>(config: MaxInputConfig<G>): NDArray<G>;
+  min<G extends keyof DataTypes>(x: NDArray<G>, axes: number[]): NDArray<G>;
+  max<G extends keyof DataTypes>(x: NDArray<G>, axes: number[]): NDArray<G>;
 
-  ceil<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  floor<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  ceil<T extends NDArray>(x: T): T;
 
-  exp<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  log<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  floor<T extends NDArray>(x: T): T;
 
-  sqrt<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  square<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  exp<T extends NDArray>(x: T): T;
+  log<T extends NDArray>(x: T): T;
+  sqrt<T extends NDArray>(x: T): T;
 
-  relu<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  elu<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  eluDer<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  selu<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  leakyRelu<T extends NDArray>(config: LeakyReluInputConfig<T>): T;
+  square<T extends NDArray>(x: T): T;
 
-  clip<T extends NDArray>(config: ClipInputConfig<T>): T;
+  relu<T extends NDArray>(x: T): T;
+  elu<T extends NDArray>(x: T): T;
+  eluDer<T extends NDArray>(x: T): T;
+  selu<T extends NDArray>(x: T): T;
+  leakyRelu<T extends NDArray>(x: T, alpha: number): T;
 
-  abs<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  clip<T extends NDArray>(x: T, min: number, max: number): T;
 
-  sigmoid<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  abs<T extends NDArray>(x: T): T;
 
-  sin<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  cos<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  tan<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  sigmoid<T extends NDArray>(x: T): T;
 
-  asin<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  acos<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  atan<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  sin<T extends NDArray>(x: T): T;
+  cos<T extends NDArray>(x: T): T;
+  tan<T extends NDArray>(x: T): T;
 
-  sinh<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  cosh<T extends NDArray>(config: UnaryInputConfig<T>): T;
-  tanh<T extends NDArray>(config: UnaryInputConfig<T>): T;
+  asin<T extends NDArray>(x: T): T;
+  acos<T extends NDArray>(x: T): T;
+  atan<T extends NDArray>(x: T): T;
 
-  step<T extends NDArray>(config: StepInputConfig<T>): T;
+  sinh<T extends NDArray>(x: T): T;
+  cosh<T extends NDArray>(x: T): T;
+  tanh<T extends NDArray>(x: T): T;
 
-  conv2d(config: Conv2DInputConfig): Array4D;
-  conv2dDerInput(config: Conv2DDerInputInputConfig): Array4D;
-  conv2dDerFilter(config: Conv2DDerFilterInputConfig): Array4D;
-  conv2dDerBias(config: Conv2DDerBiasInputConfig): Array1D;
+  step<T extends NDArray>(x: T, alpha: number): T;
 
-  depthwiseConv2D(config: DepthwiseConv2DInputConfig): Array4D;
+  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
+      Array4D;
+  conv2dDerInput(dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D;
+  conv2dDerFilter(x: Array4D, dY: Array4D, convInfo: Conv2DInfo): Array4D;
+  conv2dDerBias(dY: Array4D): Array1D;
 
-  maxPool(config: PoolInputConfig): Array4D;
-  maxPoolBackprop(config: PoolBackpropInputConfig): Array4D;
-  minPool(config: PoolInputConfig): Array4D;
-  avgPool(config: PoolInputConfig): Array4D;
+  depthwiseConv2D(input: Array4D, filter: Array4D, convInfo: Conv2DInfo):
+      Array4D;
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(
-      config: TileInputConfig<T>): T;
+  maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
+  maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
+
+  minPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
+
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(x: T, reps: number[]):
+      T;
 
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      config: TransposeInputConfig<T>): T;
+      x: T, perm: number[]): T;
 
-  resizeBilinear3D(config: ResizeBilinear3DInputConfig): Array3D;
+  resizeBilinear3D(
+      x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
 
-  batchNormalization2D(config: BatchNorm2DInputConfig): Array2D;
-  batchNormalization3D(config: BatchNorm3DInputConfig): Array3D;
+  batchNormalization2D(
+      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
+      varianceEpsilon: number, scale?: Array2D|Array1D,
+      offset?: Array2D|Array1D): Array2D;
+  batchNormalization3D(
+      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
+      varianceEpsilon: number, scale?: Array3D|Array1D,
+      offset?: Array3D|Array1D): Array3D;
 
-  multinomial(config: MultinomialInputConfig): Array2D<'int32'>;
+  multinomial(probabilities: Array2D, numSamples: number, seed: number):
+      Array2D<'int32'>;
 
-  oneHot(config: OneHotInputConfig): Array2D;
+  oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
+      Array2D;
 }

@@ -17,6 +17,7 @@
 
 import * as util from '../../util';
 import * as axis_util from '../axis_util';
+import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 import * as ndarray from '../ndarray';
 // tslint:disable-next-line:max-line-length
@@ -25,27 +26,7 @@ import * as reduce_util from '../reduce_util';
 import {SumTypes, SumTypesMap} from '../types';
 
 import {MathBackend} from './backend';
-import {ArgMaxInputConfig, ArgMinInputConfig} from './kernels/argminmax';
-// tslint:disable-next-line:max-line-length
-import {BatchNorm2DInputConfig, BatchNorm3DInputConfig} from './kernels/batchnorm';
-import {BinaryInputConfig} from './kernels/binary';
-// tslint:disable-next-line:max-line-length
-import {Concat1DInputConfig, Concat2DInputConfig, Concat3DInputConfig, Concat4DInputConfig} from './kernels/concat';
-// tslint:disable-next-line:max-line-length
-import {Conv2DDerBiasInputConfig, Conv2DDerFilterInputConfig, Conv2DDerInputInputConfig, Conv2DInputConfig, DepthwiseConv2DInputConfig} from './kernels/conv';
-import {EqualInputConfig} from './kernels/logical';
-import {MatMulInputConfig} from './kernels/matmul';
-import {MaxInputConfig, MinInputConfig} from './kernels/minmax';
-import {MultinomialInputConfig} from './kernels/multinomial';
-import {OneHotInputConfig} from './kernels/onehot';
-import {PoolBackpropInputConfig, PoolInputConfig} from './kernels/pool';
-import {ResizeBilinear3DInputConfig} from './kernels/resize_bilinear';
-// tslint:disable-next-line:max-line-length
-import {Slice1DInputConfig, Slice2DInputConfig, Slice3DInputConfig, Slice4DInputConfig} from './kernels/slice';
-import {SumInputConfig} from './kernels/sum';
-import {TopKIndicesInputConfig, TopKValuesInputConfig} from './kernels/topk';
-// tslint:disable-next-line:max-line-length
-import {ClipInputConfig, LeakyReluInputConfig, StepInputConfig, TileInputConfig, TransposeInputConfig, UnaryInputConfig} from './kernels/unary';
+import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
@@ -101,42 +82,44 @@ export class MathBackendWebGL implements MathBackend {
     return this.gpgpu;
   }
 
-  clone<G extends keyof DataTypes, T extends NDArray<G>>(
-      config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
-
+  clone<G extends keyof DataTypes, T extends NDArray<G>>(x: T): T {
     const texShape = x.getTextureShapeRC();
     // Pretend the source was in logical shape that matches the texture shape.
     const source = x.as2D(texShape[0], texShape[1]);
     // Do the same for output.
-    const output = this.makeOutputArray<G, Array2D<G>>(texShape, x.dtype as G);
+    const output = this.makeOutputArray<G, Array2D<G>>(texShape, x.dtype);
     this.copy2D(source, [0, 0], texShape, output, [0, 0], texShape);
     // Get back to the original logical shape.
     return output.reshape(x.shape) as T;
   }
 
-  slice1D(config: Slice1DInputConfig): Array1D {
-    const program = new SliceProgram([config.args.size]);
-    const customSetup = program.getCustomSetupFunc([config.args.begin]);
-    return this.compileAndRun(program, [config.inputs.x], null, customSetup);
+  slice1D(x: Array1D, begin: number, size: number): Array1D {
+    const program = new SliceProgram([size]);
+    const customSetup = program.getCustomSetupFunc([begin]);
+    return this.compileAndRun(program, [x], null, customSetup);
   }
 
-  slice2D(config: Slice2DInputConfig): Array2D {
-    const program = new SliceProgram(config.args.size);
-    const customSetup = program.getCustomSetupFunc(config.args.begin);
-    return this.compileAndRun(program, [config.inputs.x], null, customSetup);
+  slice2D(x: Array2D, begin: [number, number], size: [number, number]):
+      Array2D {
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [x], null, customSetup);
   }
 
-  slice3D(config: Slice3DInputConfig): Array3D {
-    const program = new SliceProgram(config.args.size);
-    const customSetup = program.getCustomSetupFunc(config.args.begin);
-    return this.compileAndRun(program, [config.inputs.x], null, customSetup);
+  slice3D(x: Array3D, begin: [number, number, number], size: [
+    number, number, number
+  ]): Array3D {
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [x], null, customSetup);
   }
 
-  slice4D(config: Slice4DInputConfig): Array4D {
-    const program = new SliceProgram(config.args.size);
-    const customSetup = program.getCustomSetupFunc(config.args.begin);
-    return this.compileAndRun(program, [config.inputs.x], null, customSetup);
+  slice4D(x: Array4D, begin: [number, number, number, number], size: [
+    number, number, number, number
+  ]): Array4D {
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [x], null, customSetup);
   }
 
   private copy2D(
@@ -150,82 +133,48 @@ export class MathBackendWebGL implements MathBackend {
     this.compileAndRun(program, [source], dest, customSetup);
   }
 
-  concat1D(config: Concat1DInputConfig): Array1D {
-    const {a, b} = config.inputs;
-
+  concat1D(a: Array1D, b: Array1D): Array1D {
     const program = new ConcatProgram(a.shape, b.shape, 0);
     return this.compileAndRun(program, [a, b]);
   }
 
-  concat2D(config: Concat2DInputConfig): Array2D {
-    const {a, b} = config.inputs;
-    const {axis} = config.args;
-
+  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
     const program = new ConcatProgram(a.shape, b.shape, axis);
     return this.compileAndRun(program, [a, b]);
   }
 
-  concat3D(config: Concat3DInputConfig): Array3D {
-    const {a, b} = config.inputs;
-    const {axis} = config.args;
-
+  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
     const program = new ConcatProgram(a.shape, b.shape, axis);
     return this.compileAndRun(program, [a, b]);
   }
 
-  concat4D(config: Concat4DInputConfig): Array4D {
-    const {a, b} = config.inputs;
-    const {axis} = config.args;
-
+  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
     const program = new ConcatProgram(a.shape, b.shape, axis);
     return this.compileAndRun(program, [a, b]);
   }
 
-  neg<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  neg<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.NEG);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  matMul(config: MatMulInputConfig): Array2D {
-    const {a, b} = config.inputs;
-    const {aOrientation, bOrientation} = config.args;
-
+  matMul(
+      a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
+      bOrientation: MatrixOrientation): Array2D {
     const program =
         new MatMulProgram(a.shape, b.shape, aOrientation, bOrientation);
     return this.compileAndRun<Array2D, Array2D>(program, [a, b]);
   }
 
-  add(config: BinaryInputConfig): NDArray {
-    const {a, b} = config.inputs;
-    const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  subtract(config: BinaryInputConfig): NDArray {
-    const {a, b} = config.inputs;
-    const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  multiply(config: BinaryInputConfig): NDArray {
-    const {a, b} = config.inputs;
+  multiply<T extends NDArray>(a: T, b: T): T {
     const program = new BinaryOpProgram(binaryop_gpu.MUL, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]);
+    return this.compileAndRun(program, [a, b]) as T;
   }
 
-  divide(config: BinaryInputConfig): NDArray<'float32'> {
-    const {a, b} = config.inputs;
-    const program = new BinaryOpProgram(binaryop_gpu.DIV, a.shape, b.shape);
-    const output = this.makeOutputArray(program.outputShape, 'float32');
-    return this.compileAndRun<NDArray, NDArray<'float32'>>(
-        program, [a, b], output);
-  }
-
-  batchNormalization2D(config: BatchNorm2DInputConfig): Array2D {
-    const {x, mean, variance, scale, offset} = config.inputs;
-    const {varianceEpsilon} = config.args;
-
+  batchNormalization2D(
+      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
+      varianceEpsilon: number, scale?: Array2D|Array1D,
+      offset?: Array2D|Array1D): Array2D {
     const inputs = [x, mean, variance];
 
     let offsetShape = null;
@@ -246,10 +195,10 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, inputs);
   }
 
-  batchNormalization3D(config: BatchNorm3DInputConfig): Array3D {
-    const {x, mean, variance, scale, offset} = config.inputs;
-    const {varianceEpsilon} = config.args;
-
+  batchNormalization3D(
+      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
+      varianceEpsilon: number, scale?: Array3D|Array1D,
+      offset?: Array3D|Array1D): Array3D {
     const inputs = [x, mean, variance];
 
     let offsetShape = null;
@@ -270,33 +219,29 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, inputs);
   }
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(
-      config: TileInputConfig<T>): T {
-    const {x} = config.inputs;
-    const {reps} = config.args;
+  tile<D extends keyof DataTypes, T extends NDArray<D>>(x: T, reps: number[]):
+      T {
     const program = new TileProgram(x.shape, reps);
     return this.compileAndRun(program, [x]);
   }
 
   transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      config: TransposeInputConfig<T>): T {
-    const {x} = config.inputs;
-    const {perm} = config.args;
+      x: T, perm: number[]): T {
     const program = new TransposeProgram(x.shape, perm);
     return this.compileAndRun(program, [x]);
   }
 
   private reduce<D extends keyof DataTypes>(
-      a: Array2D, reduceType: 'max'|'min'|'sum', dtype: D): Array2D<D> {
-    const batchSize = a.shape[0];
-    const inSize = a.shape[1];
+      x: Array2D, reduceType: 'max'|'min'|'sum', dtype: D): Array2D<D> {
+    const batchSize = x.shape[0];
+    const inSize = x.shape[1];
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
     const reduceInfo = {windowSize, inSize, batchSize};
     const program = new ReduceProgram(reduceInfo, reduceType);
     const [rows, cols] = program.outputShape;
     const output =
         this.makeOutputArray(program.outputShape, dtype).as2D(rows, cols);
-    this.compileAndRun(program, [a], output);
+    this.compileAndRun(program, [x], output);
     // No need to run another GPGPU program.
     if (output.shape[1] === 1) {
       return output;
@@ -305,10 +250,10 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   private argReduce(
-      a: Array2D, reduceType: 'max'|'min',
+      x: Array2D, reduceType: 'max'|'min',
       bestIndicesA: Array2D = null): Array2D<'int32'> {
-    let batchSize = a.shape[0];
-    let inSize = a.shape[1];
+    let batchSize = x.shape[0];
+    let inSize = x.shape[1];
     if (bestIndicesA != null) {
       batchSize = bestIndicesA.shape[0];
       inSize = bestIndicesA.shape[1];
@@ -320,7 +265,7 @@ export class MathBackendWebGL implements MathBackend {
     const [rows, cols] = program.outputShape;
     const output =
         this.makeOutputArray(program.outputShape, 'int32').as2D(rows, cols);
-    const inputs = [a];
+    const inputs = [x];
     if (bestIndicesA != null) {
       inputs.push(bestIndicesA);
     }
@@ -329,14 +274,11 @@ export class MathBackendWebGL implements MathBackend {
     if (output.shape[1] === 1) {
       return output;
     }
-    return this.argReduce(a, reduceType, output);
+    return this.argReduce(x, reduceType, output);
   }
 
-  sum<T extends keyof DataTypes>(config: SumInputConfig<SumTypes[T]>):
+  sum<T extends keyof DataTypes>(x: NDArray<T>, axes: number[]):
       NDArray<SumTypes[T]> {
-    const {x} = config.inputs;
-    const {axes} = config.args;
-
     axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -346,10 +288,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.reduce(a2D, 'sum', outputDType).reshape(outShape);
   }
 
-  argMin(config: ArgMinInputConfig): NDArray<'int32'> {
-    const {x} = config.inputs;
-    const {axes} = config.args;
-
+  argMin(x: NDArray, axes: number[]): NDArray<'int32'> {
     axis_util.assertAxesAreInnerMostDims('argMin', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -358,10 +297,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.argReduce(a2D, 'min').reshape(outShape);
   }
 
-  argMax(config: ArgMaxInputConfig): NDArray<'int32'> {
-    const {x} = config.inputs;
-    const {axes} = config.args;
-
+  argMax(x: NDArray, axes: number[]): NDArray<'int32'> {
     axis_util.assertAxesAreInnerMostDims('argMax', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -370,27 +306,22 @@ export class MathBackendWebGL implements MathBackend {
     return this.argReduce(a2D, 'max').reshape(outShape);
   }
 
-  equal(config: EqualInputConfig): NDArray<'bool'> {
-    const {a, b} = config.inputs;
-
+  equal(a: NDArray, b: NDArray): NDArray<'bool'> {
     const program = new BinaryOpProgram(binaryop_gpu.EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(
-      config: TopKValuesInputConfig<T>): Array1D<D> {
+  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(x: T, k: number):
+      Array1D<D> {
     throw new Error('topKValues GPU not yet implemented!');
   }
 
-  topKIndices(config: TopKIndicesInputConfig): Array1D<'int32'> {
+  topKIndices(x: NDArray, k: number): Array1D<'int32'> {
     throw new Error('topKIndices GPU not yet implemented!');
   }
 
-  min<G extends keyof DataTypes>(config: MinInputConfig<G>): NDArray<G> {
-    const {x} = config.inputs;
-    const {axes} = config.args;
-
+  min<G extends keyof DataTypes>(x: NDArray<G>, axes: number[]): NDArray<G> {
     axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -399,10 +330,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.reduce(a2D, 'min', a2D.dtype).reshape(outShape);
   }
 
-  max<G extends keyof DataTypes>(config: MaxInputConfig<G>): NDArray<G> {
-    const {x} = config.inputs;
-    const {axes} = config.args;
-
+  max<G extends keyof DataTypes>(x: NDArray<G>, axes: number[]): NDArray<G> {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -411,221 +339,186 @@ export class MathBackendWebGL implements MathBackend {
     return this.reduce(a2D, 'max', a2D.dtype).reshape(outShape);
   }
 
-  ceil<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  divide(a: NDArray, b: NDArray): NDArray<'float32'> {
+    const program = new BinaryOpProgram(binaryop_gpu.DIV, a.shape, b.shape);
+    const output = this.makeOutputArray(program.outputShape, 'float32');
+    return this.compileAndRun<NDArray, NDArray<'float32'>>(
+        program, [a, b], output);
+  }
+
+  add<T extends NDArray>(a: T, b: T): T {
+    const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
+    return this.compileAndRun<NDArray, T>(program, [a, b]);
+  }
+
+  subtract<T extends NDArray>(a: T, b: T): T {
+    const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
+    return this.compileAndRun<NDArray, T>(program, [a, b]);
+  }
+
+  ceil<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.CEIL);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  floor<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  floor<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.FLOOR);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  exp<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  exp<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.EXP);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  log<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  log<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.LOG);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  sqrt<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  sqrt<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SQRT);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  square<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  square<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SQUARE);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  relu<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  relu<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.RELU);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  elu<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  elu<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ELU);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  eluDer<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  eluDer<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ELU_DER);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  selu<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  selu<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SELU);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  leakyRelu<T extends NDArray>(config: LeakyReluInputConfig<T>): T {
-    const {x} = config.inputs;
-    const {alpha} = config.args;
+  leakyRelu<T extends NDArray>(x: T, alpha: number): T {
     const program = new UnaryOpProgram(x.shape, unary_op.LEAKY_RELU(alpha));
     return this.compileAndRun(program, [x]) as T;
   }
 
-  clip<T extends NDArray>(config: ClipInputConfig<T>): T {
-    const {x} = config.inputs;
-    const {min, max} = config.args;
+  clip<T extends NDArray>(x: T, min: number, max: number): T {
     const program = new ClipProgram(x.shape, min, max);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  abs<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  abs<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ABS);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  sigmoid<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  sigmoid<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SIGMOID);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  sin<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  sin<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SIN);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  cos<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  cos<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.COS);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  tan<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  tan<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.TAN);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  asin<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  asin<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ASIN);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  acos<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  acos<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ACOS);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  atan<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  atan<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ATAN);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  sinh<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  sinh<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SINH);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  cosh<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  cosh<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.COSH);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  tanh<T extends NDArray>(config: UnaryInputConfig<T>): T {
-    const {x} = config.inputs;
+  tanh<T extends NDArray>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.TANH);
     return this.compileAndRun(program, [x]) as T;
   }
 
-  step<T extends NDArray>(config: StepInputConfig<T>): T {
-    const {x} = config.inputs;
-    const {alpha} = config.args;
+  step<T extends NDArray>(x: T, alpha: number): T {
     const program = new UnaryOpProgram(x.shape, unary_op.STEP(alpha));
     return this.compileAndRun(program, [x]) as T;
   }
 
-  conv2d(config: Conv2DInputConfig): Array4D {
-    const {x, filter, bias} = config.inputs;
-    const {convInfo} = config.args;
-
+  conv2d(x: Array4D, filter: Array4D, bias: Array1D|null, convInfo: Conv2DInfo):
+      Array4D {
     const program = new Conv2DProgram(convInfo, bias != null);
     const inputs = bias != null ? [x, filter, bias] : [x, filter];
     return this.compileAndRun(program, inputs);
   }
 
-  conv2dDerInput(config: Conv2DDerInputInputConfig): Array4D {
-    const {dy, filter} = config.inputs;
-    const {convInfo} = config.args;
-
+  conv2dDerInput(dy: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Conv2DDerInputProgram(convInfo);
     return this.compileAndRun(program, [dy, filter]);
   }
 
-  conv2dDerFilter(config: Conv2DDerFilterInputConfig): Array4D {
-    const {x, dy} = config.inputs;
-    const {convInfo} = config.args;
-
+  conv2dDerFilter(x: Array4D, dy: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Conv2DDerFilterProgram(convInfo);
     return this.compileAndRun(program, [x, dy]);
   }
 
-  conv2dDerBias(config: Conv2DDerBiasInputConfig): Array1D {
-    const {dy} = config.inputs;
-
+  conv2dDerBias(dy: Array4D): Array1D {
     const program = new Conv2DDerBiasProgram(dy.shape);
     return this.compileAndRun(program, [dy]);
   }
 
-  depthwiseConv2D(config: DepthwiseConv2DInputConfig): Array4D {
-    const {x, filter} = config.inputs;
-    const {convInfo} = config.args;
-
+  depthwiseConv2D(x: Array4D, filter: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new DepthwiseConv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
   }
 
-  maxPool(config: PoolInputConfig): Array4D {
-    const {x} = config.inputs;
-    const {convInfo} = config.args;
-
+  maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
     return this.compileAndRun(program, [x]);
   }
 
-  minPool(config: PoolInputConfig): Array4D {
-    const {x} = config.inputs;
-    const {convInfo} = config.args;
-
+  minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'min', false);
     return this.compileAndRun(program, [x]);
   }
 
-  avgPool(config: PoolInputConfig): Array4D {
-    const {x} = config.inputs;
-    const {convInfo} = config.args;
-
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'avg', false);
     return this.compileAndRun(program, [x]);
   }
 
-  maxPoolBackprop(config: PoolBackpropInputConfig): Array4D {
-    const {dy, x} = config.inputs;
-    const {convInfo} = config.args;
-
+  maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
     const getPositions = true;
     const maxPoolPositionsProgram =
         new Pool2DProgram(convInfo, 'max', getPositions);
@@ -640,19 +533,16 @@ export class MathBackendWebGL implements MathBackend {
     return result as Array4D;
   }
 
-  resizeBilinear3D(config: ResizeBilinear3DInputConfig): Array3D {
-    const {x} = config.inputs;
-    const {newShape2D, alignCorners} = config.args;
-
+  resizeBilinear3D(
+      x: Array3D, newShape2D: [number, number],
+      alignCorners: boolean): Array3D {
     const program =
         new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
     return this.compileAndRun(program, [x]);
   }
 
-  multinomial(config: MultinomialInputConfig): Array2D<'int32'> {
-    const {probs} = config.inputs;
-    const {numSamples, seed} = config.args;
-
+  multinomial(probs: Array2D, numSamples: number, seed: number):
+      Array2D<'int32'> {
     const batchSize = probs.shape[0];
     const numOutcomes = probs.shape[1];
     const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);
@@ -662,10 +552,8 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [probs], output, customSetup);
   }
 
-  oneHot(config: OneHotInputConfig): Array2D {
-    const {indices} = config.inputs;
-    const {depth, onValue, offValue} = config.args;
-
+  oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
+      Array2D {
     const program = new OneHotProgram(indices.size, depth, onValue, offValue);
     return this.compileAndRun(program, [indices]);
   }
