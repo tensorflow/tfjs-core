@@ -315,48 +315,43 @@ class WorldContext {
 
 class TrainDisplay {
   element: Element;
+  canvas: CanvasRenderingContext2D;
+  chart: Chart;
+  chartData: ChartData[] = [];
 
   constructor() {
     this.element = document.querySelector('.train-display');
-  }
-
-  logCost(cost: number) {
-    const costElement = document.createElement('div');
-    costElement.setAttribute('class', 'cost');
-    costElement.innerText = '* Cost: ' + cost;
-    this.element.appendChild(costElement);
+    this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
+                      .getContext('2d');
+    this.chart = new Chart(this.canvas, {
+      type: 'line',
+      data: {
+        datasets: [{
+          data: this.chartData,
+          fill: false,
+          label: 'Model Training Cost',
+          pointRadius: 0,
+          borderColor: 'rgba(75,192,192,1)',
+          borderWidth: 1,
+          lineTension: 0,
+          pointHitRadius: 8
+        }]
+      },
+      options: {
+        // animation: {duration: 0},
+        responsive: false,
+        scales: {xAxes: [{type: 'linear', position: 'bottom'}], yAxes: [{}]}
+      }
+    });
   }
 
   showStep(step: number, steps: number) {
     this.element.innerHTML = 'Trained ' + Math.trunc(step / steps * 100) + '%';
   }
 
-  displayCost(cost: number) {
-    const ctx = (document.getElementById('myChart') as HTMLCanvasElement)
-                    .getContext('2d');
-    const chart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-        datasets: [{
-          label: '# of Votes',
-          data: [12, 19, 3, 5, 2, 3],
-          backgroundColor: [
-            'rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)',
-            'rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)',
-            'rgba(153, 102, 255, 0.2)', 'rgba(255, 159, 64, 0.2)'
-          ],
-          borderColor: [
-            'rgba(255,99,132,1)', 'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)'
-          ],
-          borderWidth: 1
-        }]
-      },
-      // options: {scales: {yAxes: [{ticks: {beginAtZero: true}}]}}
-    });
-    chart.update();
+  displayCost(cost: number, step: number) {
+    this.chartData.push({x: step, y: cost * 100});
+    this.chart.update();
   }
 }
 
@@ -399,7 +394,6 @@ let trainLength = 0;
 function trainAndRender() {
   if (step === trainLength) {
     trainButton.removeAttribute('disabled');
-    predictButton.removeAttribute('disabled');
     resetButton.removeAttribute('disabled');
     boardSizeInput.removeAttribute('disabled');
     learningRateInput.removeAttribute('disabled');
@@ -411,12 +405,12 @@ function trainAndRender() {
   requestAnimationFrame(trainAndRender);
   step++;
 
-  const fetchCost = step % 10 === 0;
+  const fetchCost = step % 50 === 0;
   const cost = model.trainBatch(fetchCost);
 
   if (fetchCost) {
     trainDisplay.showStep(step, trainLength);
-    trainDisplay.displayCost(cost);
+    trainDisplay.displayCost(cost, step);
   }
 }
 
@@ -427,7 +421,6 @@ addSequenceButton.addEventListener('click', () => {
 
 trainButton.addEventListener('click', () => {
   trainButton.setAttribute('disabled', 'disabled');
-  predictButton.setAttribute('disabled', 'disabled');
   resetButton.setAttribute('disabled', 'disabled');
   boardSizeInput.setAttribute('disabled', 'disabled');
   learningRateInput.setAttribute('disabled', 'disabled');
