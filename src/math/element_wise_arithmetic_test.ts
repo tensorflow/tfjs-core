@@ -269,6 +269,17 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       b.dispose();
     });
 
+    it('pow throws when passed non int32 exponent param', math => {
+      const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
+      const b = Array2D.new([2, 2], [5, 3, 4, -7], 'float32');
+
+      // tslint:disable-next-line
+      expect(() => math.pow(a, b as any)).toThrowError();
+
+      a.dispose();
+      b.dispose();
+    });
+
     it('powStrict same-shaped ndarrays', math => {
       const a = Array2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
       const b = Array2D.new([2, 3], [5, 3, 4, 5, 2, -3], 'int32');
@@ -287,6 +298,17 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const b = Array2D.new([2, 2], [5, 3, 4, -7], 'int32');
 
       expect(() => math.powStrict(a, b)).toThrowError();
+
+      a.dispose();
+      b.dispose();
+    });
+
+    it('powStrict throws when passed non int32 exponent param', math => {
+      const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
+      const b = Array2D.new([2, 2], [5, 3, 4, -7], 'float32');
+
+      // tslint:disable-next-line
+      expect(() => math.powStrict(a, b as any)).toThrowError();
 
       a.dispose();
       b.dispose();
