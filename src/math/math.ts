@@ -999,11 +999,14 @@ export abstract class NDArrayMath {
    * y = tf.constant([[8, 16], [2, 3]])
    * pow(x, y)  # [[256, 65536], [9, 27]]
    *
-   * @param a The first NDArray to pow element-wise.
-   * @param b The second NDArray to pow element-wise.
+   * @param a The base NDArray to pow element-wise.
+   * @param b The exponent NDArray to pow element-wise.
    */
   pow<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<'int32'>):
       NDArray<G> {
+    util.assert(
+        b.dtype === 'int32',
+        'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.executeOp('pow', () => this.backend.pow(a, b));
   }
@@ -1012,8 +1015,8 @@ export abstract class NDArrayMath {
    * Computes the power of one value to another. Inputs must
    * be the same shape. For broadcasting support, use math.pow() instead.
    *
-   * @param a The first NDArray to pow element-wise.
-   * @param b The second NDArray to pow element-wise.
+   * @param a The base NDArray to pow element-wise.
+   * @param b The exponent NDArray to pow element-wise.
    */
   powStrict<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<'int32'>):
       NDArray<G> {
@@ -1383,9 +1386,9 @@ export abstract class NDArrayMath {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-   conv1d<T extends NDArray>(
-      input: T, filter: Array3D, bias: Array1D|null,
-      stride: number, pad: 'valid'|'same'|number): T  {
+  conv1d<T extends NDArray>(
+      input: T, filter: Array3D, bias: Array1D|null, stride: number,
+      pad: 'valid'|'same'|number): T {
     let input3D = input as NDArray as Array3D;
     let reshapedTo3D = false;
     if (input.rank === 2) {
@@ -1412,23 +1415,20 @@ export abstract class NDArrayMath {
         `Error in conv1d: depth of input (${input3D.shape[2]}) must match  ` +
             `input depth for filter ${filter.shape[1]}.`);
 
-    const filter4D = filter.as4D(
-        1, filter.shape[0], filter.shape[1], filter.shape[2]);
-    const input4D = input3D.as4D(
-        input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
+    const filter4D =
+        filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
+    const input4D =
+        input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
     const strides: [number, number] = [1, stride];
 
-    const convInfo =
-        conv_util.computeConv2DInfo(
-            input4D.shape, filter4D.shape, strides, pad);
+    const convInfo = conv_util.computeConv2DInfo(
+        input4D.shape, filter4D.shape, strides, pad);
     return this.executeOp('conv2d', () => {
       const res = this.backend.conv2d(input4D, filter4D, bias, convInfo);
       if (reshapedTo3D) {
-        return res.as2D(res.shape[2], res.shape[3]) as NDArray as
-            T;
+        return res.as2D(res.shape[2], res.shape[3]) as NDArray as T;
       }
-      return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as
-          T;
+      return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as T;
     });
   }
 
