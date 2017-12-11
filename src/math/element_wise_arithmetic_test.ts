@@ -291,16 +291,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       a.dispose();
       b.dispose();
     });
-
-    it('powStrict throws when second param is not int32', math => {
-      const a = Array2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
-      const b = Array2D.new([2, 3], [5, 3, 4, 5, 2, -3], 'float32');
-
-      expect(() => math.powStrict(a, b)).toThrowError();
-
-      a.dispose();
-      b.dispose();
-    });
   };
 
   test_util.describeMathCPU('element-wise pow', [tests]);
