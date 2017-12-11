@@ -364,12 +364,6 @@ const math = new NDArrayMathGPU();
 const game = new GameOfLife(5, math);
 const model = new GameOfLifeModel(game, math);
 
-// Helper classes for displaying worlds and training data:
-const trainDisplay = new TrainDisplay();
-
-// List of worlds + display contexts.
-let worldContexts: WorldContext[] = [];
-
 const boardSizeInput =
     document.getElementById('board-size-input') as HTMLTextAreaElement;
 const trainingSizeInput =
@@ -381,6 +375,16 @@ const numLayersInput =
 const addSequenceButton = document.querySelector('.add-sequence-button');
 const trainButton = document.querySelector('.train-button');
 const resetButton = document.querySelector('.reset-button');
+
+// List of worlds + display contexts.
+let worldContexts: WorldContext[] = [];
+game.setSize(getBoardSize());
+for (let i = 0; i < 3; i++) {
+  worldContexts.push(new WorldContext(game.generateGolExample()));
+}
+
+// Helper classes for displaying worlds and training data:
+const trainDisplay = new TrainDisplay();
 
 function getBoardSize() {
   return parseInt(boardSizeInput.value, 10);
