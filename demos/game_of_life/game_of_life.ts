@@ -16,10 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array2D, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMathGPU, Session, SGDOptimizer} from 'deeplearn';
-import {Tensor} from 'deeplearn/dist/graph/graph';
-import {CostReduction, FeedEntry} from 'deeplearn/dist/graph/session';
-import {NDArrayMath} from 'deeplearn/dist/math/math';
+import {AdagradOptimizer, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMath, NDArrayMathGPU, Session, Tensor} from 'deeplearn';
 
 /** Generates GameOfLife sequence pairs (current sequence + next sequence) */
 class GameOfLife {
@@ -129,12 +126,11 @@ class GameOfLife {
 class GameOfLifeModel {
   session: Session;
   math: NDArrayMath;
-  batchSize = 1;
 
   // An optimizer with a certain initial learning rate. Used for training.
   initialLearningRate = 0.042;
-  optimizer: SGDOptimizer;
-  // optimizer: AdagradOptimizer;
+  // optimizer: SGDOptimizer;
+  optimizer: AdagradOptimizer;
 
   inputTensor: Tensor;
   targetTensor: Tensor;
@@ -142,23 +138,24 @@ class GameOfLifeModel {
   predictionTensor: Tensor;
 
   size: number;
+  batchSize: number;
   step = 0;
 
   // Maps tensors to InputProviders
   feedEntries: FeedEntry[];
 
-  game: GameOfLife;
-
-  constructor(game: GameOfLife, math: NDArrayMath) {
+  constructor(math: NDArrayMath) {
     this.math = math;
-    this.game = game;
   }
 
   setupSession(
-      boardSize: number, initialLearningRate: number, numLayers: number): void {
-    this.optimizer = new SGDOptimizer(this.initialLearningRate);
+      boardSize: number, batchSize: number, initialLearningRate: number,
+      numLayers: number): void {
+    // this.optimizer = new SGDOptimizer(this.initialLearningRate);
+    this.optimizer = new AdagradOptimizer(0.01);
 
     this.size = boardSize;
+    this.batchSize = batchSize;
     const graph = new Graph();
     const shape = this.size * this.size;
 
@@ -179,21 +176,14 @@ class GameOfLifeModel {
     this.session = new Session(graph, this.math);
   }
 
-  trainBatch(shouldFetchCost: boolean): number {
-    this.generateTrainingData();
-    // Every 42 steps, lower the learning rate by 15%.
-    const learningRate = this.initialLearningRate *
-        Math.pow(0.85, Math.floor(this.step++ / 100));
-    this.optimizer.setLearningRate(learningRate);
+  trainBatch(fetchCost: boolean, worlds: Array<[NDArray, NDArray]>): number {
+    this.setTrainingData(worlds);
+
     let costValue = -1;
     this.math.scope(() => {
       const cost = this.session.train(
           this.costTensor, this.feedEntries, this.batchSize, this.optimizer,
-          shouldFetchCost ? CostReduction.MEAN : CostReduction.NONE);
-
-      if (!shouldFetchCost) {
-        return;
-      }
+          fetchCost ? CostReduction.MEAN : CostReduction.NONE);
       costValue = cost.get();
     });
     return costValue;
@@ -213,12 +203,13 @@ class GameOfLifeModel {
     return Array2D.new([this.size, this.size], values);
   }
 
-  private generateTrainingData(): void {
+  private setTrainingData(worlds: Array<[NDArray, NDArray]>): void {
     this.math.scope(() => {
       const inputs = [];
       const outputs = [];
-      for (let i = 0; i < this.batchSize; i++) {
-        const example = this.game.generateGolExample();
+      for (let i = 0; i < worlds.length; i++) {
+        // const example = this.game.generateGolExample();
+        const example = worlds[i];
         inputs.push(example[0].reshape([this.size * this.size]));
         outputs.push(example[1].reshape([this.size * this.size]));
       }
@@ -369,6 +360,7 @@ class Demo {
   game: GameOfLife;
   model: GameOfLifeModel;
 
+  trainingData: Array<[NDArray, NDArray]>;
   worldContexts: WorldContext[];
 
   trainDisplay: TrainDisplay;
@@ -376,6 +368,7 @@ class Demo {
 
   boardSizeInput: HTMLTextAreaElement;
   trainingSizeInput: HTMLTextAreaElement;
+  trainingBatchSizeInput: HTMLTextAreaElement;
   learningRateInput: HTMLTextAreaElement;
   numLayersInput: HTMLTextAreaElement;
 
@@ -383,13 +376,16 @@ class Demo {
   trainButton: HTMLElement;
   resetButton: HTMLElement;
 
+  isBuildingTrainingData: boolean;
+
   step: number;
   trainingSteps: number;
+  trainingBatchSize: number;
 
   constructor() {
     this.math = new NDArrayMathGPU();
     this.game = new GameOfLife(5, this.math);
-    this.model = new GameOfLifeModel(this.game, this.math);
+    this.model = new GameOfLifeModel(this.math);
 
     this.trainDisplay = new TrainDisplay();
     this.worldDisplay = new WorldDisplay();
@@ -398,6 +394,9 @@ class Demo {
         document.getElementById('board-size-input') as HTMLTextAreaElement;
     this.trainingSizeInput =
         document.getElementById('training-size-input') as HTMLTextAreaElement;
+    this.trainingBatchSizeInput =
+        document.getElementById('training-batch-size-input') as
+        HTMLTextAreaElement;
     this.learningRateInput =
         document.getElementById('learning-rate-input') as HTMLTextAreaElement;
     this.numLayersInput =
@@ -430,18 +429,29 @@ class Demo {
 
     requestAnimationFrame(() => this.trainAndRender());
 
-    this.step++;
+    if (this.isBuildingTrainingData) {
+      this.trainingData.push(this.game.generateGolExample());
+      if (this.trainingData.length === this.trainingBatchSize) {
+        this.isBuildingTrainingData = false;
+      }
+    } else {
+      this.step++;
 
-    const fetchCost = this.step % 50 === 0;
-    const cost = this.model.trainBatch(fetchCost);
+      const fetchCost = this.step % 10 === 0;
+      const cost = this.model.trainBatch(fetchCost, this.trainingData);
 
-    if (fetchCost) {
-      this.trainDisplay.showStep(this.step, this.trainingSteps);
-      this.trainDisplay.displayCost(cost, this.step);
+      if (fetchCost) {
+        this.trainDisplay.showStep(this.step, this.trainingSteps);
+        this.trainDisplay.displayCost(cost, this.step);
 
-      this.worldContexts.forEach((worldContext) => {
-        worldContext.displayPrediction(this.model.predict(worldContext.world));
-      });
+        this.worldContexts.forEach((worldContext) => {
+          worldContext.displayPrediction(
+              this.model.predict(worldContext.world));
+        });
+      }
+
+      this.trainingData = [];
+      this.isBuildingTrainingData = true;
     }
   }
 
@@ -456,18 +466,22 @@ class Demo {
     const boardSize = this.getBoardSize();
     const learningRate = parseFloat(this.learningRateInput.value);
     const trainingSize = parseInt(this.trainingSizeInput.value, 10);
+    const trainingBatchSize = parseInt(this.trainingBatchSizeInput.value, 10);
     const numLayers = parseInt(this.numLayersInput.value, 10);
 
     this.game.setSize(boardSize);
-    this.model.setupSession(boardSize, learningRate, numLayers);
+    this.model.setupSession(
+        boardSize, trainingBatchSize, learningRate, numLayers);
 
     this.step = 0;
     this.trainingSteps = trainingSize;
+    this.isBuildingTrainingData = true;
+    this.trainingData = [];
+    this.trainingBatchSize = trainingBatchSize;
     this.trainAndRender();
   }
 
   private onResetButtonClick(): void {
-    // TODO - flush the model too.
     this.worldContexts = [];
     Demo.clearChildNodes(document.querySelector('.worlds-display'));
     Demo.clearChildNodes(document.querySelector('.train-display'));
@@ -479,6 +493,7 @@ class Demo {
     this.boardSizeInput.setAttribute('disabled', 'disabled');
     this.learningRateInput.setAttribute('disabled', 'disabled');
     this.trainingSizeInput.setAttribute('disabled', 'disabled');
+    this.trainingBatchSizeInput.setAttribute('disabled', 'disabled');
     this.numLayersInput.setAttribute('disabled', 'disabled');
   }
 
@@ -488,6 +503,7 @@ class Demo {
     this.boardSizeInput.removeAttribute('disabled');
     this.learningRateInput.removeAttribute('disabled');
     this.trainingSizeInput.removeAttribute('disabled');
+    this.trainingBatchSizeInput.removeAttribute('disabled');
     this.numLayersInput.removeAttribute('disabled');
   }
 
