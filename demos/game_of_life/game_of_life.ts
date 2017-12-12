@@ -32,7 +32,7 @@ class GameOfLife {
     this.size = size;
   }
 
-  generateGolExample(): [NDArray, NDArray] {
+  async generateGolExample(): Promise<[NDArray, NDArray]> {
     const world =
         Array2D.randUniform([this.size - 2, this.size - 2], 0, 2, 'int32');
     const worldPadded = GameOfLife.padArray(world);
@@ -40,7 +40,8 @@ class GameOfLife {
     // logical_or() and where() implementations.
     const numNeighbors =
         this.countNeighbors(this.size, worldPadded).getValues();
-    const worldValues = world.getValues();
+    const worldValues = await world.data();
+    // const worldValues = world.getValues();
     const nextWorldValues = [];
     for (let i = 0; i < numNeighbors.length; i++) {
       const value = numNeighbors[i];
@@ -129,7 +130,6 @@ class GameOfLifeModel {
 
   // An optimizer with a certain initial learning rate. Used for training.
   initialLearningRate = 0.042;
-  // optimizer: SGDOptimizer;
   optimizer: AdagradOptimizer;
 
   inputTensor: Tensor;
@@ -151,8 +151,7 @@ class GameOfLifeModel {
   setupSession(
       boardSize: number, batchSize: number, initialLearningRate: number,
       numLayers: number): void {
-    // this.optimizer = new SGDOptimizer(this.initialLearningRate);
-    this.optimizer = new AdagradOptimizer(0.01);
+    this.optimizer = new AdagradOptimizer(1.0);
 
     this.size = boardSize;
     this.batchSize = batchSize;
@@ -165,12 +164,14 @@ class GameOfLifeModel {
     let hiddenLayer = GameOfLifeModel.createFullyConnectedLayer(
         graph, this.inputTensor, 0, shape);
     for (let i = 1; i < numLayers; i++) {
+      // Last layer will use a sigmoid:
       hiddenLayer = GameOfLifeModel.createFullyConnectedLayer(
-          graph, hiddenLayer, i, shape);
+          graph, hiddenLayer, i, shape, i < numLayers - 1);
     }
 
     this.predictionTensor = hiddenLayer;
 
+    // Log-cost for more accuracy?
     this.costTensor =
         graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
     this.session = new Session(graph, this.math);
@@ -233,7 +234,8 @@ class GameOfLifeModel {
       sizeOfThisLayer: number, includeRelu = true, includeBias = true): Tensor {
     return graph.layers.dense(
         'fully_connected_' + layerIndex, inputLayer, sizeOfThisLayer,
-        includeRelu ? (x) => graph.relu(x) : undefined, includeBias);
+        includeRelu ? (x) => graph.relu(x) : (x) => graph.sigmoid(x),
+        includeBias);
   }
 }
 
@@ -413,15 +415,16 @@ class Demo {
     this.resetButton.addEventListener('click', () => this.onResetButtonClick());
   }
 
-  showSampleSequences(): void {
+  async showSampleSequences(): Promise<void> {
     // Always init with 3 sample world sequences:
     this.worldContexts = [];
     for (let i = 0; i < 3; i++) {
-      this.worldContexts.push(new WorldContext(this.game.generateGolExample()));
+      this.worldContexts.push(
+          new WorldContext(await this.game.generateGolExample()));
     }
   }
 
-  trainAndRender() {
+  async trainAndRender() {
     if (this.step === this.trainingSteps) {
       this.enableForm();
       return;
@@ -430,14 +433,14 @@ class Demo {
     requestAnimationFrame(() => this.trainAndRender());
 
     if (this.isBuildingTrainingData) {
-      this.trainingData.push(this.game.generateGolExample());
+      this.trainingData.push(await this.game.generateGolExample());
       if (this.trainingData.length === this.trainingBatchSize) {
         this.isBuildingTrainingData = false;
       }
     } else {
       this.step++;
 
-      const fetchCost = this.step % 10 === 0;
+      const fetchCost = this.step % 1 === 0;
       const cost = this.model.trainBatch(fetchCost, this.trainingData);
 
       if (fetchCost) {
@@ -455,9 +458,10 @@ class Demo {
     }
   }
 
-  private onAddSequenceButtonClick(): void {
+  private async onAddSequenceButtonClick(): Promise<void> {
     this.game.setSize(this.getBoardSize());
-    this.worldContexts.push(new WorldContext(this.game.generateGolExample()));
+    this.worldContexts.push(
+        new WorldContext(await this.game.generateGolExample()));
   }
 
   private onTrainButtonClick(): void {
