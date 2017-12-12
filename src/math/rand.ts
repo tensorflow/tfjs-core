@@ -17,7 +17,9 @@
 
 import * as seedrandom from 'seedrandom';
 
-export interface RandGauss { nextValue(): number; }
+export interface RandGauss {
+  nextValue(): number;
+}
 
 export interface RandNormalDataTypes {
   float32: Float32Array;
