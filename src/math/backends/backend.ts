@@ -16,17 +16,15 @@
  * =============================================================================
  */
 
-import {BackendType} from '../../environment';
+import {Backends} from '../../environment';
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray';
 import {SumTypes} from '../types';
 import {MatrixOrientation} from './types/matmul';
 
-export const BACKEND_REGISTRY:
-    {[id in BackendType]: MathBackend} = {} as
-                                             // tslint:disable-next-line:no-any
-                                             any;
+// tslint:disable-next-line:no-any
+export const BACKEND_REGISTRY: {[id in Backends]: MathBackend} = {} as any;
 
 export interface NDArrayStorage {
   read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]>;

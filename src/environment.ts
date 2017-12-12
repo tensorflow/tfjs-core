@@ -157,13 +157,10 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   return isEnabled;
 }
 
-export enum BackendType {
-  WEBGL = 'webgl',
-  CPU = 'cpu'
-}
+export type Backends = 'webgl'|'cpu';
 
-function getBestBackend(): BackendType {
-  const orderedBackends: BackendType[] = [BackendType.WEBGL, BackendType.CPU];
+function getBestBackend(): Backends {
+  const orderedBackends: Backends[] = ['webgl', 'cpu'];
   for (let i = 0; i < orderedBackends.length; ++i) {
     const backendId = orderedBackends[i];
     if (backendId in BACKEND_REGISTRY) {

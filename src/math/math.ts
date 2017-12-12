@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {BackendType, ENV} from '../environment';
+import {Backends, ENV} from '../environment';
 import * as util from '../util';
 
 import * as axis_util from './axis_util';
@@ -87,7 +87,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(backend: BackendType|MathBackend, private safeMode: boolean) {
+  constructor(backend: Backends|MathBackend, private safeMode: boolean) {
     if (typeof backend === 'string') {
       this.backend = BACKEND_REGISTRY[backend];
     } else {
