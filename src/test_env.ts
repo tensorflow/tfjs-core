@@ -15,26 +15,5 @@
  * =============================================================================
  */
 
-import * as broadcast_util from '../../broadcast_util';
-import {GPGPUProgram} from './gpgpu_math';
-
-export class AddScaledMatProgram implements GPGPUProgram {
-  variableNames = ['A', 'B', 'c1', 'c2'];
-  outputShape: number[];
-  userCode: string;
-  supportsBroadcasting = true;
-
-  constructor(aShape: number[], bShape: number[]) {
-    this.outputShape =
-        broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
-    this.userCode = `
-      void main() {
-        float a = getAAtOutCoords();
-        float b = getBAtOutCoords();
-        float c1 = getC1();
-        float c2 = getC2();
-        setOutput(dot(vec2(c1, c2), vec2(a, b)));
-      }
-    `;
-  }
-}
+import './math/backends/backend_cpu';
+import './math/backends/backend_webgl';
