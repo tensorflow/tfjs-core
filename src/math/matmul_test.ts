@@ -17,7 +17,7 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {MatrixOrientation} from './backends/backend';
+import {MatrixOrientation} from './backends/types/matmul';
 import {Array1D, Array2D, Array3D} from './ndarray';
 
 const commonTests: MathTests = it => {
