@@ -254,7 +254,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
             'math.scope(() => {math.method();...}) to avoid memory ' +
             'leaks.');
       }
-      this.startScope();
+      return result;
     }
     this.activeScope.push(result);
     return result;
