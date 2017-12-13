@@ -380,6 +380,7 @@ class Demo {
   trainingSizeInput: HTMLTextAreaElement;
   trainingBatchSizeInput: HTMLTextAreaElement;
   learningRateInput: HTMLTextAreaElement;
+  updateIntervalInput: HTMLTextAreaElement;
   numLayersInput: HTMLTextAreaElement;
 
   addSequenceButton: HTMLElement;
@@ -409,6 +410,8 @@ class Demo {
         HTMLTextAreaElement;
     this.learningRateInput =
         document.getElementById('learning-rate-input') as HTMLTextAreaElement;
+    this.updateIntervalInput =
+        document.getElementById('update-interval-input') as HTMLTextAreaElement;
     this.numLayersInput =
         document.getElementById('num-layers-input') as HTMLTextAreaElement;
 
@@ -424,9 +427,9 @@ class Demo {
   }
 
   async showSampleSequences(): Promise<void> {
-    // Always init with 3 sample world sequences:
+    // Always init with 5 sample world sequences:
     this.worldContexts = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       this.worldContexts.push(
           new WorldContext(await this.game.generateGolExample()));
     }
@@ -444,8 +447,8 @@ class Demo {
       this.math.scope(async () => {
         this.trainingData.push(await this.game.generateGolExample());
       });
-      this.trainDisplay.displayTrainingData(
-          this.trainingData.length, this.trainingBatchSize);
+      // this.trainDisplay.displayTrainingData(
+      //     this.trainingData.length, this.trainingBatchSize);
       if (this.trainingData.length === this.trainingBatchSize) {
         this.isBuildingTrainingData = false;
       }
@@ -454,7 +457,8 @@ class Demo {
     if (!this.isBuildingTrainingData) {
       this.step++;
 
-      const fetchCost = this.step % 1 === 0;
+      const fetchCost =
+          this.step % parseInt(this.updateIntervalInput.value, 10) === 0;
       const cost = this.model.trainBatch(fetchCost, this.trainingData);
 
       if (fetchCost) {
@@ -510,6 +514,7 @@ class Demo {
     this.resetButton.setAttribute('disabled', 'disabled');
     this.boardSizeInput.setAttribute('disabled', 'disabled');
     this.learningRateInput.setAttribute('disabled', 'disabled');
+    this.updateIntervalInput.setAttribute('disabled', 'disabled');
     this.trainingSizeInput.setAttribute('disabled', 'disabled');
     this.trainingBatchSizeInput.setAttribute('disabled', 'disabled');
     this.numLayersInput.setAttribute('disabled', 'disabled');
