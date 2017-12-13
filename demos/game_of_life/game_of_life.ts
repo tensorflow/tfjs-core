@@ -433,7 +433,9 @@ class Demo {
     requestAnimationFrame(() => this.trainAndRender());
 
     if (this.isBuildingTrainingData) {
-      this.trainingData.push(await this.game.generateGolExample());
+      this.math.scope(async () => {
+        this.trainingData.push(await this.game.generateGolExample());
+      });
       if (this.trainingData.length === this.trainingBatchSize) {
         this.isBuildingTrainingData = false;
       }
