@@ -18,7 +18,7 @@
 
 import {Array2D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../tape_config';
 
 export interface MultinomialNode extends KernelNode {
   inputAndArgs: MultinomialInputConfig;

@@ -18,7 +18,7 @@
 import {NDArray, Scalar} from '../ndarray';
 
 import {MathBackend} from './backend';
-import {KernelNode, TapeNode} from './kernel_config';
+import {KernelNode, TapeNode} from './tape_config';
 import * as tape_util from './tape_util';
 
 export class Tape {

@@ -18,7 +18,7 @@
 import {DataTypes, NDArray} from '../../ndarray';
 import {SumTypes} from '../../types';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../tape_config';
 
 export interface SumNode<T extends keyof DataTypes> extends KernelNode {
   inputAndArgs: SumInputConfig<T>;

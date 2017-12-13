@@ -17,7 +17,7 @@
 
 import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../tape_config';
 
 export interface ArgMaxNode extends KernelNode {
   inputAndArgs: ArgMaxInputConfig;

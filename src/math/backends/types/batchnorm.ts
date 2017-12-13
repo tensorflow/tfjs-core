@@ -18,7 +18,7 @@
 
 import {Array1D, Array2D, Array3D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../tape_config';
 
 // 3D
 export interface BatchNorm3DNode extends KernelNode {

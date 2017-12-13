@@ -20,10 +20,10 @@ import {TypedArray} from '../../util';
 import {DataTypes, NDArray, Scalar} from '../ndarray';
 
 import {MathBackend} from './backend';
-import {KernelNode} from './kernel_config';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
 import {Tape} from './tape';
+import {KernelNode} from './tape_config';
 
 export class BackendEngine {
   private masterTape: Tape;
@@ -64,7 +64,7 @@ export class BackendEngine {
     }
 
     const evaluatedNode: KernelNode = {
-      name: 'kernel: ' + kernelName,
+      name: `kernel: ${kernelName}`,
       kernel: kernelName,
       inputAndArgs: config,
       output: result,

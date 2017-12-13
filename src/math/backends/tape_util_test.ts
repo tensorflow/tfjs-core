@@ -19,7 +19,7 @@
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 import {Scalar} from '../ndarray';
-import {TapeNode} from './kernel_config';
+import {TapeNode} from './tape_config';
 import * as tape_util from './tape_util';
 
 const tests: MathTests = it => {

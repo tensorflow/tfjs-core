@@ -40,7 +40,6 @@ export interface NDArrayData<T extends keyof DataTypes> {
   values?: DataTypes[T];
 }
 
-
 export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
   static nextId = 0;
 

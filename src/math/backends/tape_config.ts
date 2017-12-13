@@ -18,7 +18,6 @@
 import {NDArray} from '../ndarray';
 import {KernelConfigRegistry} from './kernel_registry';
 
-// Generic nodes in the Tape
 export interface TapeNode {
   name?: string;
   inputAndArgs: TapeNodeInputConfig;
