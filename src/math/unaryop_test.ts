@@ -110,28 +110,46 @@ import {Array1D, Array2D, Scalar} from './ndarray';
   ]);
 }
 
-// Relu backprop
+// Relu gradient
 {
   const tests: MathTests = it => {
-    it('Nikhil', math => {
+    it('Relu gradient positive scalar', math => {
       const a = Scalar.new(3);
-      console.log('a id: ' + a.id);
 
       const result = math.relu(a);
       const grad = math.gradientWrt(result, a);
 
-      console.log(grad.dataSync());
+      test_util.expectArraysClose(grad.dataSync(), new Float32Array([1]));
+    });
 
-      a.dispose();
+    it('Relu gradient negative scalar', math => {
+      const a = Scalar.new(-3);
+
+      const result = math.relu(a);
+      const grad = math.gradientWrt(result, a);
+
+      test_util.expectArraysClose(grad.dataSync(), new Float32Array([0]));
+    });
+
+    it('Relu gradient array', math => {
+      const a = Array2D.new([2, 2], [1, -1, 2, .1]);
+
+      // gradientWrt only takes a scalar, so we manually sum here.
+      const result = math.sum(math.relu(a));
+      const grad = math.gradientWrt(result, a);
+
+      expect(grad.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          grad.dataSync(), new Float32Array([1, 0, 1, 1]));
     });
   };
 
-  test_util.describeMathCPU('relu', [tests]);
-  // test_util.describeMathGPU('relu', [tests], [
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  // ]);
+  test_util.describeMathCPU('relu backprop', [tests]);
+  test_util.describeMathGPU('relu backprop', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }
 
 // math.abs

@@ -315,7 +315,37 @@ const gpuTests: MathTests = it => {
   });
 };
 
-test_util.describeMathCPU('matMul', [commonTests]);
+const gradientTests: MathTests = it => {
+  it('MatMul gradient', math => {
+    const a = Array2D.new([2, 3], [1, 2, 3, 10, 20, 30]);
+    const b = Array2D.new([3, 2], [2, 3, 4, 1, 2, 3]);
+    const dy = 1;
+
+    const cost = math.sum(math.matMul(a, b));
+
+    const grads = math.gradientWrt(cost, {a, b});
+
+    // da = dy * bT
+    expect(grads.a.shape).toEqual(a.shape);
+    expect(grads.a.get(0, 0)).toEqual(dy * b.get(0, 0) + dy * b.get(0, 1));
+    expect(grads.a.get(0, 1)).toEqual(dy * b.get(1, 0) + dy * b.get(1, 1));
+    expect(grads.a.get(0, 2)).toEqual(dy * b.get(2, 0) + dy * b.get(2, 1));
+    expect(grads.a.get(1, 0)).toEqual(dy * b.get(0, 0) + dy * b.get(0, 1));
+    expect(grads.a.get(1, 1)).toEqual(dy * b.get(1, 0) + dy * b.get(1, 1));
+    expect(grads.a.get(1, 2)).toEqual(dy * b.get(2, 0) + dy * b.get(2, 1));
+
+    // db = aT * dy
+    expect(grads.b.shape).toEqual(b.shape);
+    expect(grads.b.get(0, 0)).toEqual(a.get(0, 0) * dy + a.get(1, 0) * dy);
+    expect(grads.b.get(0, 1)).toEqual(a.get(0, 0) * dy + a.get(1, 0) * dy);
+    expect(grads.b.get(1, 0)).toEqual(a.get(0, 1) * dy + a.get(1, 1) * dy);
+    expect(grads.b.get(1, 1)).toEqual(a.get(0, 1) * dy + a.get(1, 1) * dy);
+    expect(grads.b.get(2, 0)).toEqual(a.get(0, 2) * dy + a.get(1, 2) * dy);
+    expect(grads.b.get(2, 1)).toEqual(a.get(0, 2) * dy + a.get(1, 2) * dy);
+  });
+};
+
+test_util.describeMathCPU('matMul', [commonTests, gradientTests]);
 test_util.describeMathGPU('matMul', [commonTests, gpuTests], [
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},

@@ -47,6 +47,7 @@ export class BackendEngine {
     }
 
     const evaluatedNode: KernelNode = {
+      name: 'kernel: ' + kernelName,
       kernel: kernelName,
       inputAndArgs: config,
       output: result,
@@ -57,8 +58,8 @@ export class BackendEngine {
     return result;
   }
 
-  gradientWrt<T extends NDArray>(y: Scalar, x: T): T {
-    return this.masterTape.gradientWrt(y, x);
+  gradientWrt(y: Scalar, xs: NDArray[]): NDArray[] {
+    return this.masterTape.gradientWrt(this.backend, y, xs);
   }
 
   private checkForNaN(vals: TypedArray, dtype: keyof DataTypes, name: string):
