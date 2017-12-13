@@ -645,7 +645,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       const res = this.backendEngine.executeKernel(
           'Sum', {inputs: {x}, args: {axes}},
           (dy: NDArray<SumTypes[T]>, y: NDArray<SumTypes[T]>) => {
-            // TODO(nsthorat): fix this for reductions.
+            // TODO(nsthorat): fix this for axis reductions.
             return {x: this.multiply(dy, NDArray.onesLike(x))};
           });
       if (keepDims) {
