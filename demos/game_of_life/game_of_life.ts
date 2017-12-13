@@ -313,12 +313,14 @@ class WorldContext {
 /** Shows model training information. */
 class TrainDisplay {
   element: Element;
+  trainingDataElement: Element;
   canvas: CanvasRenderingContext2D;
   chart: Chart;
   chartData: ChartData[] = [];
 
   constructor() {
     this.element = document.querySelector('.train-display');
+    this.trainingDataElement = document.querySelector('.data-display');
     this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
                       .getContext('2d');
     this.chart = new Chart(this.canvas, {
@@ -353,6 +355,11 @@ class TrainDisplay {
   displayCost(cost: number, step: number) {
     this.chartData.push({x: step, y: cost * 100});
     this.chart.update();
+  }
+
+  displayTrainingData(length: number, size: number) {
+    this.trainingDataElement.innerHTML =
+        'Building training data - ' + length + ' of ' + size;
   }
 }
 
@@ -436,10 +443,14 @@ class Demo {
       this.math.scope(async () => {
         this.trainingData.push(await this.game.generateGolExample());
       });
+      this.trainDisplay.displayTrainingData(
+          this.trainingData.length, this.trainingBatchSize);
       if (this.trainingData.length === this.trainingBatchSize) {
         this.isBuildingTrainingData = false;
       }
-    } else {
+    }
+
+    if (!this.isBuildingTrainingData) {
       this.step++;
 
       const fetchCost = this.step % 1 === 0;
