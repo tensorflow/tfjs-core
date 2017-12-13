@@ -1,5 +1,5 @@
 
-import {Array1D, Array2D, Array3D} from '../../ndarray';
+import {Array1D, Array2D, Array3D, NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
 
@@ -7,6 +7,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface BatchNorm3DNode extends KernelNode {
   inputAndArgs: BatchNorm3DInputConfig;
   output: Array3D;
+  gradient: (dy: Array3D, y: Array3D) => BatchNorm3DInputArrays;
 }
 
 export interface BatchNorm3DInputConfig extends KernelInputConfig {
@@ -26,6 +27,7 @@ export interface BatchNorm3DInputArrays extends KernelInputArrays {
 export interface BatchNorm2DNode extends KernelNode {
   inputAndArgs: BatchNorm2DInputConfig;
   output: Array2D;
+  gradient: (dy: Array2D, y: Array2D) => BatchNorm2DInputArrays;
 }
 
 export interface BatchNorm2DInputConfig extends KernelInputConfig {

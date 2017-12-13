@@ -6,6 +6,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface MinNode<G extends keyof DataTypes> extends KernelNode {
   inputAndArgs: MinInputConfig<G>;
   output: NDArray<G>;
+  gradient: (dy: NDArray<G>, y: NDArray<G>) => MinInputArrays<G>;
 }
 
 export interface MinInputConfig<G extends keyof DataTypes> extends
@@ -22,6 +23,7 @@ export interface MinInputArrays<G extends keyof DataTypes> extends
 export interface MaxNode<G extends keyof DataTypes> extends KernelNode {
   inputAndArgs: MaxInputConfig<G>;
   output: NDArray<G>;
+  gradient: (dy: NDArray<G>, y: NDArray<G>) => MinInputArrays<G>;
 }
 
 export interface MaxInputConfig<G extends keyof DataTypes> extends

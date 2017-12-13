@@ -5,6 +5,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface MatMulNode extends KernelNode {
   inputAndArgs: MatMulInputConfig;
   output: Array2D;
+  gradient: (dy: Array2D, y: Array2D) => MatMulInputArrays;
 }
 
 export interface MatMulInputConfig extends KernelInputConfig {

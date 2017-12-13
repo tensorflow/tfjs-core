@@ -6,6 +6,8 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface SumNode<T extends keyof DataTypes> extends KernelNode {
   inputAndArgs: SumInputConfig<T>;
   output: NDArray<SumTypes[T]>;
+  gradient:
+      (dy: NDArray<SumTypes[T]>, y: NDArray<SumTypes[T]>) => SumInputArrays<T>;
 }
 
 export interface SumInputConfig<T extends keyof DataTypes> extends

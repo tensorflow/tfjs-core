@@ -258,7 +258,7 @@ const KERNEL_METHODS: {
 };
 export function executeKernel<K extends keyof KernelConfigRegistry, R extends
                                   KernelConfigRegistry[K]['output']>(
-    kernelName: K, backend: MathBackend,
+    backend: MathBackend, kernelName: K,
     config: KernelConfigRegistry[K]['inputAndArgs']): R {
   return KERNEL_METHODS[kernelName](backend, config) as R;
 }

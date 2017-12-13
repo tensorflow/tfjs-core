@@ -110,6 +110,29 @@ import {Array1D, Array2D, Scalar} from './ndarray';
   ]);
 }
 
+// Relu backprop
+{
+  const tests: MathTests = it => {
+    it('Nikhil', math => {
+      const a = Scalar.new(-1);
+
+      const result = math.relu(a);
+      const grad = math.gradientWrt(result, a);
+
+      console.log(grad.dataSync());
+
+      a.dispose();
+    });
+  };
+
+  test_util.describeMathCPU('relu', [tests]);
+  // test_util.describeMathGPU('relu', [tests], [
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  // ]);
+}
+
 // math.abs
 {
   const tests: MathTests = it => {
@@ -829,7 +852,6 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           result.dataSync(), new Float32Array([0, 1, NaN]));
     });
-
   };
 
   test_util.describeMathCPU('leakyRelu', [tests]);
@@ -859,7 +881,6 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           result.dataSync(), new Float32Array([1, NaN]));
     });
-
   };
   test_util.describeMathCPU('elu', [tests]);
   test_util.describeMathGPU('elu', [tests], [
@@ -888,7 +909,6 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           result.dataSync(), new Float32Array([1.0507, NaN]));
     });
-
   };
   test_util.describeMathCPU('selu', [tests]);
   test_util.describeMathGPU('selu', [tests], [

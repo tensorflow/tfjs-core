@@ -5,6 +5,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface ArgMaxNode extends KernelNode {
   inputAndArgs: ArgMaxInputConfig;
   output: NDArray<'int32'>;
+  gradient: (dy: NDArray<'int32'>, y: NDArray<'int32'>) => ArgMaxInputArrays;
 }
 
 export interface ArgMaxInputConfig extends KernelInputConfig {
@@ -12,11 +13,14 @@ export interface ArgMaxInputConfig extends KernelInputConfig {
   args: {axes: number[];};
 }
 
-export interface ArgMaxInputArrays extends KernelInputArrays { x: NDArray; }
+export interface ArgMaxInputArrays extends KernelInputArrays {
+  x: NDArray;
+}
 
 export interface ArgMinNode extends KernelNode {
   inputAndArgs: ArgMinInputConfig;
   output: NDArray<'int32'>;
+  gradient: (dy: NDArray<'int32'>, y: NDArray<'int32'>) => ArgMinInputArrays;
 }
 
 export interface ArgMinInputConfig extends KernelInputConfig {
@@ -24,4 +28,6 @@ export interface ArgMinInputConfig extends KernelInputConfig {
   args: {axes: number[];};
 }
 
-export interface ArgMinInputArrays extends KernelInputArrays { x: NDArray; }
+export interface ArgMinInputArrays extends KernelInputArrays {
+  x: NDArray;
+}

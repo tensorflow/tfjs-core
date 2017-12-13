@@ -7,6 +7,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface Conv2DNode extends KernelNode {
   inputAndArgs: Conv2DInputConfig;
   output: Array4D;
+  gradient: (dy: Array4D, y: Array4D) => Conv2DInputArrays;
 }
 
 export interface Conv2DInputConfig extends KernelInputConfig {
@@ -24,6 +25,7 @@ export interface Conv2DInputArrays extends KernelInputArrays {
 export interface Conv2DDerInputNode extends KernelNode {
   inputAndArgs: Conv2DDerInputInputConfig;
   output: Array4D;
+  gradient: (dy: Array4D, y: Array4D) => Conv2DDerInputInputArrays;
 }
 
 export interface Conv2DDerInputInputConfig extends KernelInputConfig {
@@ -40,6 +42,7 @@ export interface Conv2DDerInputInputArrays extends KernelInputArrays {
 export interface Conv2DDerFilterNode extends KernelNode {
   inputAndArgs: Conv2DDerFilterInputConfig;
   output: Array4D;
+  gradient: (dy: Array4D, y: Array4D) => Conv2DDerFilterInputArrays;
 }
 
 export interface Conv2DDerFilterInputConfig extends KernelInputConfig {
@@ -56,6 +59,7 @@ export interface Conv2DDerFilterInputArrays extends KernelInputArrays {
 export interface Conv2DDerBiasNode extends KernelNode {
   inputAndArgs: Conv2DDerBiasInputConfig;
   output: Array1D;
+  gradient: (dy: Array1D, y: Array1D) => Conv2DDerBiasInputArrays;
 }
 
 export interface Conv2DDerBiasInputConfig extends KernelInputConfig {
@@ -70,6 +74,7 @@ export interface Conv2DDerBiasInputArrays extends KernelInputArrays {
 export interface DepthwiseConv2DNode extends KernelNode {
   inputAndArgs: DepthwiseConv2DInputConfig;
   output: Array4D;
+  gradient: (dy: Array4D, y: Array4D) => DepthwiseConv2DInputArrays;
 }
 
 export interface DepthwiseConv2DInputConfig extends KernelInputConfig {

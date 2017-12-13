@@ -7,6 +7,7 @@ export interface TopKValuesNode<D extends keyof DataTypes, T extends NDArray<D>>
     extends KernelNode {
   inputAndArgs: TopKValuesInputConfig<T>;
   output: Array1D<D>;
+  gradient: (dy: Array1D<D>, y: Array1D<D>) => TopKValuesInputArrays<T>;
 }
 
 export interface TopKValuesInputConfig<T extends NDArray> extends
@@ -24,6 +25,8 @@ export interface TopKValuesInputArrays<T extends NDArray> extends
 export interface TopKIndicesNode extends KernelNode {
   inputAndArgs: TopKIndicesInputConfig;
   output: Array1D<'int32'>;
+  gradient:
+      (dy: Array1D<'int32'>, y: Array1D<'int32'>) => TopKIndicesInputArrays;
 }
 
 export interface TopKIndicesInputConfig extends KernelInputConfig {

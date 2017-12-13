@@ -7,6 +7,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface PoolNode extends KernelNode {
   inputAndArgs: PoolInputConfig;
   output: Array4D;
+  gradient: (dy: Array4D, y: Array4D) => PoolInputArrays;
 }
 
 export interface PoolInputConfig extends KernelInputConfig {
@@ -14,12 +15,15 @@ export interface PoolInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface PoolInputArrays extends KernelInputArrays { x: Array4D; }
+export interface PoolInputArrays extends KernelInputArrays {
+  x: Array4D;
+}
 
 // PoolBackprop
 export interface PoolBackpropNode extends KernelNode {
   inputAndArgs: PoolInputConfig;
   output: Array4D;
+  gradient: (dy: Array4D, y: Array4D) => PoolBackpropInputArrays;
 }
 
 export interface PoolBackpropInputConfig extends KernelInputConfig {

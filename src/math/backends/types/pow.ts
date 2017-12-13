@@ -5,6 +5,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface PowNode<T extends NDArray> extends KernelNode {
   inputAndArgs: PowInputConfig<T>;
   output: T;
+  gradient: (dy: T, y: T) => PowInputArrays<T>;
 }
 
 export interface PowInputConfig<T extends NDArray> extends KernelInputConfig {

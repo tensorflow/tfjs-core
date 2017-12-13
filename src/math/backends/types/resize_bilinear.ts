@@ -6,6 +6,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface ResizeBilinear3DNode extends KernelNode {
   inputAndArgs: ResizeBilinear3DInputConfig;
   output: Array3D;
+  gradient: (dy: Array3D, y: Array3D) => ResizeBilinear3DInputArrays;
 }
 
 export interface ResizeBilinear3DInputConfig extends KernelInputConfig {

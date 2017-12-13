@@ -5,6 +5,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface UnaryNode<T extends NDArray> extends KernelNode {
   inputAndArgs: UnaryInputConfig<T>;
   output: T;
+  gradient: (dy: T, y: T) => UnaryInputArrays<T>;
 }
 
 export interface UnaryInputConfig<T extends NDArray> extends KernelInputConfig {
@@ -19,6 +20,7 @@ export interface UnaryInputArrays<T extends NDArray> extends KernelInputArrays {
 export interface LeakyReluNode<T extends NDArray> extends KernelNode {
   inputAndArgs: LeakyReluInputConfig<T>;
   output: T;
+  gradient: (dy: T, y: T) => LeakyReluInputArrays<T>;
 }
 
 export interface LeakyReluInputConfig<T extends NDArray> extends
@@ -36,6 +38,7 @@ export interface LeakyReluInputArrays<T extends NDArray> extends
 export interface StepNode<T extends NDArray> extends KernelNode {
   inputAndArgs: StepInputConfig<T>;
   output: T;
+  gradient: (dy: T, y: T) => StepInputArrays<T>;
 }
 
 export interface StepInputConfig<T extends NDArray> extends KernelInputConfig {
@@ -51,6 +54,7 @@ export interface StepInputArrays<T extends NDArray> extends KernelInputArrays {
 export interface ClipNode<T extends NDArray> extends KernelNode {
   inputAndArgs: ClipInputConfig<T>;
   output: T;
+  gradient: (dy: T, y: T) => ClipInputArrays<T>;
 }
 
 export interface ClipInputConfig<T extends NDArray> extends KernelInputConfig {
@@ -66,6 +70,7 @@ export interface ClipInputArrays<T extends NDArray> extends KernelInputArrays {
 export interface TransposeNode<T extends NDArray> extends KernelNode {
   inputAndArgs: TransposeInputConfig<T>;
   output: T;
+  gradient: (dy: T, y: T) => TransposeInputArrays<T>;
 }
 
 export interface TransposeInputConfig<T extends NDArray> extends
@@ -83,6 +88,7 @@ export interface TransposeInputArrays<T extends NDArray> extends
 export interface TileNode<T extends NDArray> extends KernelNode {
   inputAndArgs: TileInputConfig<T>;
   output: T;
+  gradient: (dy: T, y: T) => TileInputArrays<T>;
 }
 
 export interface TileInputConfig<T extends NDArray> extends KernelInputConfig {

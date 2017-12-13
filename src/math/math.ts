@@ -1194,7 +1194,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param x The input NDArray.
    */
   relu<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Relu', {inputs: {x}}) as T;
+    const grad = (dy: T, y: T) => {
+      return {x: this.step(x)};
+    };
+
+    return this.backendEngine.executeKernel('Relu', {inputs: {x}}, grad) as T;
   }
 
   /**
@@ -2183,6 +2187,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       return {mean, variance};
     });
     return result;
+  }
+
+  gradientWrt<T extends NDArray>(y: Scalar, x: T): T {
+    return this.backendEngine.gradientWrt(y, x);
   }
 
   disposeData(id: number): void {

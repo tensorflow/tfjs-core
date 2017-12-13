@@ -5,6 +5,7 @@ import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config
 export interface OneHotNode extends KernelNode {
   inputAndArgs: OneHotInputConfig;
   output: Array2D;
+  gradient: (dy: Array2D, y: Array2D) => OneHotInputArrays;
 }
 
 export interface OneHotInputConfig extends KernelInputConfig {
