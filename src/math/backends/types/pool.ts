@@ -1,7 +1,7 @@
 import {Conv2DInfo} from '../../conv_util';
 import {Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
 
 // Pool
 export interface PoolNode extends KernelNode {
@@ -15,9 +15,7 @@ export interface PoolInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface PoolInputArrays extends KernelInputArrays {
-  x: Array4D;
-}
+export interface PoolInputArrays extends TapeNodeInputArrays { x: Array4D; }
 
 // PoolBackprop
 export interface PoolBackpropNode extends KernelNode {
@@ -31,7 +29,7 @@ export interface PoolBackpropInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface PoolBackpropInputArrays extends KernelInputArrays {
+export interface PoolBackpropInputArrays extends TapeNodeInputArrays {
   dy: Array4D;
   x: Array4D;
 }

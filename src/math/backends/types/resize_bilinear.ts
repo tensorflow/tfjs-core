@@ -1,7 +1,7 @@
 
 import {Array3D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
 
 export interface ResizeBilinear3DNode extends KernelNode {
   inputAndArgs: ResizeBilinear3DInputConfig;
@@ -14,6 +14,6 @@ export interface ResizeBilinear3DInputConfig extends KernelInputConfig {
   args: {newShape2D: [number, number]; alignCorners: boolean};
 }
 
-export interface ResizeBilinear3DInputArrays extends KernelInputArrays {
+export interface ResizeBilinear3DInputArrays extends TapeNodeInputArrays {
   x: Array3D;
 }

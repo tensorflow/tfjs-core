@@ -1,6 +1,6 @@
 import {Array1D, DataTypes, NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
 
 // Values
 export interface TopKValuesNode<D extends keyof DataTypes, T extends NDArray<D>>
@@ -17,7 +17,7 @@ export interface TopKValuesInputConfig<T extends NDArray> extends
 }
 
 export interface TopKValuesInputArrays<T extends NDArray> extends
-    KernelInputArrays {
+    TapeNodeInputArrays {
   x: T;
 }
 
@@ -34,6 +34,6 @@ export interface TopKIndicesInputConfig extends KernelInputConfig {
   args: {k: number};
 }
 
-export interface TopKIndicesInputArrays extends KernelInputArrays {
+export interface TopKIndicesInputArrays extends TapeNodeInputArrays {
   x: NDArray;
 }

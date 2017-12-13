@@ -1,6 +1,6 @@
 import {Array1D, Array2D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
 
 export interface OneHotNode extends KernelNode {
   inputAndArgs: OneHotInputConfig;
@@ -13,6 +13,6 @@ export interface OneHotInputConfig extends KernelInputConfig {
   args: {depth: number; onValue: number; offValue: number};
 }
 
-export interface OneHotInputArrays extends KernelInputArrays {
+export interface OneHotInputArrays extends TapeNodeInputArrays {
   indices: Array1D;
 }

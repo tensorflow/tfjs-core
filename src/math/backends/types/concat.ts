@@ -1,6 +1,6 @@
 import {Array1D, Array2D, Array3D, Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
 
 // 1D
 export interface Concat1DNode extends KernelNode {
@@ -13,7 +13,7 @@ export interface Concat1DInputConfig extends KernelInputConfig {
   inputs: Concat1DInputArrays;
 }
 
-export interface Concat1DInputArrays extends KernelInputArrays {
+export interface Concat1DInputArrays extends TapeNodeInputArrays {
   a: Array1D;
   b: Array1D;
 }
@@ -30,7 +30,7 @@ export interface Concat2DInputConfig extends KernelInputConfig {
   args: {axis: number};
 }
 
-export interface Concat2DInputArrays extends KernelInputArrays {
+export interface Concat2DInputArrays extends TapeNodeInputArrays {
   a: Array2D;
   b: Array2D;
 }
@@ -47,7 +47,7 @@ export interface Concat3DInputConfig extends KernelInputConfig {
   args: {axis: number};
 }
 
-export interface Concat3DInputArrays extends KernelInputArrays {
+export interface Concat3DInputArrays extends TapeNodeInputArrays {
   a: Array3D;
   b: Array3D;
 }
@@ -64,7 +64,7 @@ export interface Concat4DInputConfig extends KernelInputConfig {
   args: {axis: number};
 }
 
-export interface Concat4DInputArrays extends KernelInputArrays {
+export interface Concat4DInputArrays extends TapeNodeInputArrays {
   a: Array4D;
   b: Array4D;
 }

@@ -1,6 +1,6 @@
 import {DataTypes, NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
 
 // Min
 export interface MinNode<G extends keyof DataTypes> extends KernelNode {
@@ -15,7 +15,7 @@ export interface MinInputConfig<G extends keyof DataTypes> extends
 }
 
 export interface MinInputArrays<G extends keyof DataTypes> extends
-    KernelInputArrays {
+    TapeNodeInputArrays {
   x: NDArray<G>;
 }
 
@@ -32,6 +32,6 @@ export interface MaxInputConfig<G extends keyof DataTypes> extends
 }
 
 export interface MaxInputArrays<G extends keyof DataTypes> extends
-    KernelInputArrays {
+    TapeNodeInputArrays {
   x: NDArray<G>;
 }

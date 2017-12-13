@@ -1,6 +1,6 @@
 import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
 
 export interface UnaryNode<T extends NDArray> extends KernelNode {
   inputAndArgs: UnaryInputConfig<T>;
@@ -12,7 +12,8 @@ export interface UnaryInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: UnaryInputArrays<T>;
 }
 
-export interface UnaryInputArrays<T extends NDArray> extends KernelInputArrays {
+export interface UnaryInputArrays<T extends NDArray> extends
+    TapeNodeInputArrays {
   x: T;
 }
 
@@ -30,7 +31,7 @@ export interface LeakyReluInputConfig<T extends NDArray> extends
 }
 
 export interface LeakyReluInputArrays<T extends NDArray> extends
-    KernelInputArrays {
+    TapeNodeInputArrays {
   x: T;
 }
 
@@ -46,7 +47,8 @@ export interface StepInputConfig<T extends NDArray> extends KernelInputConfig {
   args: {alpha: number;};
 }
 
-export interface StepInputArrays<T extends NDArray> extends KernelInputArrays {
+export interface StepInputArrays<T extends NDArray> extends
+    TapeNodeInputArrays {
   x: T;
 }
 
@@ -62,7 +64,8 @@ export interface ClipInputConfig<T extends NDArray> extends KernelInputConfig {
   args: {min: number; max: number;};
 }
 
-export interface ClipInputArrays<T extends NDArray> extends KernelInputArrays {
+export interface ClipInputArrays<T extends NDArray> extends
+    TapeNodeInputArrays {
   x: T;
 }
 
@@ -80,7 +83,7 @@ export interface TransposeInputConfig<T extends NDArray> extends
 }
 
 export interface TransposeInputArrays<T extends NDArray> extends
-    KernelInputArrays {
+    TapeNodeInputArrays {
   x: T;
 }
 
@@ -96,6 +99,7 @@ export interface TileInputConfig<T extends NDArray> extends KernelInputConfig {
   args: {reps: number[];};
 }
 
-export interface TileInputArrays<T extends NDArray> extends KernelInputArrays {
+export interface TileInputArrays<T extends NDArray> extends
+    TapeNodeInputArrays {
   x: T;
 }

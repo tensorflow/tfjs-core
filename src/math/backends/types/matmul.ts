@@ -1,6 +1,6 @@
 import {Array2D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputArrays, KernelInputConfig, KernelNode} from '../kernel_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../kernel_config';
 
 export interface MatMulNode extends KernelNode {
   inputAndArgs: MatMulInputConfig;
@@ -13,7 +13,7 @@ export interface MatMulInputConfig extends KernelInputConfig {
   args: {aOrientation: MatrixOrientation; bOrientation: MatrixOrientation};
 }
 
-export interface MatMulInputArrays extends KernelInputArrays {
+export interface MatMulInputArrays extends TapeNodeInputArrays {
   a: Array2D;
   b: Array2D;
 }

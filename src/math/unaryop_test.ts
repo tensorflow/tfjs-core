@@ -114,7 +114,8 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 {
   const tests: MathTests = it => {
     it('Nikhil', math => {
-      const a = Scalar.new(-1);
+      const a = Scalar.new(3);
+      console.log('a id: ' + a.id);
 
       const result = math.relu(a);
       const grad = math.gradientWrt(result, a);
