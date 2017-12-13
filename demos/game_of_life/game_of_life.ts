@@ -16,9 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMath, NDArrayMathGPU, Session, Tensor} from 'deeplearn';
-// tslint:disable-next-line:max-line-length
-import {AdadeltaOptimizer} from 'deeplearn/dist/graph/optimizers/adadelta_optimizer';
+import {AdagradOptimizer, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMath, NDArrayMathGPU, Session, Tensor} from 'deeplearn';
 
 /** Generates GameOfLife sequence pairs (current sequence + next sequence) */
 class GameOfLife {
@@ -132,8 +130,7 @@ class GameOfLifeModel {
 
   // An optimizer with a certain initial learning rate. Used for training.
   initialLearningRate = 0.042;
-  optimizer: AdadeltaOptimizer;
-  // optimizer: AdagradOptimizer;
+  optimizer: AdagradOptimizer;
 
   inputTensor: Tensor;
   targetTensor: Tensor;
@@ -154,7 +151,8 @@ class GameOfLifeModel {
   setupSession(
       boardSize: number, batchSize: number, initialLearningRate: number,
       numLayers: number): void {
-    this.optimizer = new AdadeltaOptimizer(1.0, 0.8);
+    console.log('setting up with initial learning rate: ', initialLearningRate);
+    this.optimizer = new AdagradOptimizer(initialLearningRate);
 
     this.size = boardSize;
     this.batchSize = batchSize;
@@ -362,7 +360,7 @@ class TrainDisplay {
 
   displayTrainingData(length: number, size: number) {
     this.trainingDataElement.innerHTML =
-        'Building training data - ' + length + ' of ' + size;
+        ' - (Building training data - ' + length + ' of ' + size + ')';
   }
 }
 
