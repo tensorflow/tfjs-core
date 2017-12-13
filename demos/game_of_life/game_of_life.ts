@@ -514,7 +514,6 @@ class Demo {
     this.resetButton.setAttribute('disabled', 'disabled');
     this.boardSizeInput.setAttribute('disabled', 'disabled');
     this.learningRateInput.setAttribute('disabled', 'disabled');
-    this.updateIntervalInput.setAttribute('disabled', 'disabled');
     this.trainingSizeInput.setAttribute('disabled', 'disabled');
     this.trainingBatchSizeInput.setAttribute('disabled', 'disabled');
     this.numLayersInput.setAttribute('disabled', 'disabled');
