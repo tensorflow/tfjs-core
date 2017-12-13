@@ -1206,11 +1206,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param x The input NDArray.
    */
   relu<T extends NDArray>(x: T): T {
-    const grad = (dy: T, y: T) => {
-      return {x: this.step(x)};
-    };
-
-    return this.backendEngine.executeKernel('Relu', {inputs: {x}}, grad) as T;
+    return this.backendEngine.executeKernel(
+               'Relu', {inputs: {x}}, (dy: T, y: T) => {
+                 return {x: this.step(x)};
+               }) as T;
   }
 
   /**
