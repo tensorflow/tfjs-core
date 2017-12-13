@@ -14,5 +14,13 @@
  * limitations under the License.
  * =============================================================================
  */
+import * as util from './util';
+import * as blob from './blob';
+import * as layer from './layer';
 
-export {SqueezeNet} from './squeezenet_caffe';
+export {CaffeModel} from './model';
+export {
+  util,
+  blob,
+  layer
+};

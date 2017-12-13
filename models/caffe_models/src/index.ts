@@ -14,7 +14,8 @@
  * limitations under the License.
  * =============================================================================
  */
-import * as caffe_util from './caffe_util';
+import * as util from './util';
+import * as dl from 'deeplearn';
 
-export {CaffeModel} from './caffe_model';
-export {caffe_util};
+export {SqueezeNet, GoogLeNet, GoogLeNetBN, VGG16, NiN, AgeNet, GenderNet} from './models';
+export {util, dl};

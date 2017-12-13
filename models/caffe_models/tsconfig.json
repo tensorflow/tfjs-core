@@ -17,9 +17,6 @@
         "noFallthroughCasesInSwitch": true,
         "allowUnreachableCode": false
     },
-    "include": [
-      "index.ts", "squeezenet.ts"
-    ],
     "exclude": [
       "node_modules/",
       "dist/"

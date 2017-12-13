@@ -1932,6 +1932,27 @@ export abstract class NDArrayMath {
       varianceEpsilon: number, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D;
 
+  localResponseNormalization3D(
+    x: Array3D, k: number = 1, n: number = 5,
+    alpha: number = 1, beta: number = 0.75): Array3D {
+
+    util.assert(
+        x.rank === 3,
+        `Error in localResponseNormalization3D: x must be rank 3 but got rank ` +
+            `${x.rank}.`);
+    util.assert(
+        n % 2 !== 0,
+        `n should be odd for localResponseNormalization3D but got n ` +
+            `${n}.`);
+
+    return this.executeOp(
+        'localResponseNormalization3D',
+        () => this.localResponseNormalization3DInternal(
+            x, k, n, alpha, beta));
+  }
+  protected abstract localResponseNormalization3DInternal(
+    x: Array3D, k: number, n: number, alpha: number, beta: number): Array3D;
+
   //////////////
   // LSTM ops //
   //////////////
