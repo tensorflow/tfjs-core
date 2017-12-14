@@ -174,7 +174,9 @@ class GameOfLifeModel {
 
     // Log-cost for more accuracy?
     this.costTensor =
-        graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
+        this.logLoss(graph, this.targetTensor, this.predictionTensor);
+    // this.costTensor =
+    //     graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
     this.session = new Session(graph, this.math);
   }
 
@@ -237,6 +239,25 @@ class GameOfLifeModel {
         'fully_connected_' + layerIndex, inputLayer, sizeOfThisLayer,
         includeRelu ? (x) => graph.relu(x) : (x) => graph.sigmoid(x),
         includeBias);
+  }
+
+  /* Helper method for calculating loss. */
+  private logLoss(graph: Graph, labelTensor: Tensor, predictionTensor: Tensor):
+      Tensor {
+    const epsilon = graph.constant(1e-7);
+    const one = graph.constant(1);
+    const predictionEpsilon = graph.add(predictionTensor, epsilon);
+
+    // Need to '-' this
+    return graph.subtract(
+        graph.multiply(labelTensor, graph.log(predictionEpsilon)),
+        graph.multiply(
+            graph.subtract(one, labelTensor),
+            graph.log(graph.subtract(one, predictionEpsilon))));
+
+    // weighted loss?
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/python/ops/losses/losses_impl.py#L435
   }
 }
 
