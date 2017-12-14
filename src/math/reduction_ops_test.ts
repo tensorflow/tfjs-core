@@ -519,10 +519,21 @@ import * as reduce_util from './reduce_util';
       test_util.expectArraysClose(
           grad.dataSync(), new Float32Array([1, 1, 1, 1, 1, 1]));
     });
+
+    it('sums all values in 2D array with keep dim', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.sum(a, null, true /* keepDims */);
+      const grad = math.gradientWrt(res, a);
+
+      expect(res.shape).toEqual([1, 1]);
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([7]));
+      test_util.expectArraysClose(
+          grad.getValues(), new Float32Array([1, 1, 1, 1, 1, 1]));
+    });
   };
 
   test_util.describeMathCPU('gradientWrt sum', [tests]);
-  test_util.describeMathGPU('gradietnWrt', [tests], [
+  test_util.describeMathGPU('gradientWrt sum', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
