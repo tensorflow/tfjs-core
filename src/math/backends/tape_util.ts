@@ -115,7 +115,7 @@ export function backpropagateGradients(
 
     if (node.gradient == null) {
       throw new Error(`Cannot compute gradient: gradient function not found for
-              ${node}.`);
+              ${node.name}.`);
     }
 
     // Backprop dy through this node and accumulate gradients over the inputs.
