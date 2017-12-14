@@ -206,7 +206,9 @@ export function describeMathCPU(
       testNameBase, tests as Tests[],
       (testName, tests, features) => executeMathTests(testName, tests, () => {
         const safeMode = true;
-        return new NDArrayMath(new MathBackendCPU(), safeMode);
+        const math = new NDArrayMath(new MathBackendCPU(), safeMode);
+        ENV.setGlobalMath(math);
+        return math;
       }, features), featuresList);
 }
 
@@ -217,7 +219,9 @@ export function describeMathGPU(
       testNameBase, tests as Tests[],
       (testName, tests, features) => executeMathTests(testName, tests, () => {
         const safeMode = true;
-        return new NDArrayMath(new MathBackendWebGL(), safeMode);
+        const math = new NDArrayMath(new MathBackendWebGL(), safeMode);
+        ENV.setGlobalMath(math);
+        return math;
       }, features), featuresList);
 }
 

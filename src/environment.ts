@@ -16,7 +16,7 @@
  */
 
 import * as device_util from './device_util';
-import {BACKEND_REGISTRY} from './math/backends/backend';
+import {MathBackend} from './math/backends/backend';
 import {NDArrayMath} from './math/math';
 import * as util from './util';
 
@@ -159,17 +159,6 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
 
 export type Backends = 'webgl'|'cpu';
 
-function getBestBackend(): Backends {
-  const orderedBackends: Backends[] = ['webgl', 'cpu'];
-  for (let i = 0; i < orderedBackends.length; ++i) {
-    const backendId = orderedBackends[i];
-    if (backendId in BACKEND_REGISTRY) {
-      return backendId;
-    }
-  }
-  throw new Error('No backend found in registry.');
-}
-
 export class Environment {
   private features: Features = {};
   private globalMath: NDArrayMath = null;
@@ -188,6 +177,17 @@ export class Environment {
     this.features[feature] = this.evaluateFeature(feature);
 
     return this.features[feature];
+  }
+
+  getBestBackend(): MathBackend {
+    const orderedBackends: Backends[] = ['webgl', 'cpu'];
+    for (let i = 0; i < orderedBackends.length; ++i) {
+      const backendId = orderedBackends[i];
+      if (backendId in this.backendRegistry) {
+        return this.backendRegistry[backendId];
+      }
+    }
+    throw new Error('No backend found in registry.');
   }
 
   private evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
@@ -223,14 +223,43 @@ export class Environment {
     this.globalMath = math;
   }
 
+  getBackend(name: Backends): MathBackend {
+    return this.backendRegistry[name];
+  }
+
+  /**
+   * Registers the backend to the global environment.
+   *
+   * @param factory: The backend factory function. When called, it should return
+   *     an instance of the backend.
+   * @return False if the creation/registration failed. True otherwise.
+   */
+  registerBackend(name: Backends, factory: () => MathBackend): boolean {
+    if (name in this.backendRegistry) {
+      throw new Error(`${name} backend was already registered`);
+    }
+    try {
+      const backend = factory();
+      this.backendRegistry[name] = backend;
+      return true;
+    } catch (err) {
+      console.warn(`${name} backend registration failed`);
+      console.warn(err.message);
+      return false;
+    }
+  }
+
   get math(): NDArrayMath {
     if (this.globalMath == null) {
-      const bestBackend = getBestBackend();
+      const bestBackend = this.getBestBackend();
       const safeMode = false;
       this.globalMath = new NDArrayMath(bestBackend, safeMode);
     }
     return this.globalMath;
   }
+
+  // tslint:disable-next-line:no-any
+  private backendRegistry: {[id in Backends]: MathBackend} = {} as any;
 }
 
 // Expects flags from URL in the format ?dljsflags=FLAG1:1,FLAG2:true.
