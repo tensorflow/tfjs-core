@@ -89,7 +89,6 @@ export interface TransposeInputConfig<T extends NDArray> extends
   args: {perm: number[];};
 }
 
-
 // Tile
 export interface TileNode<T extends NDArray> extends KernelNode {
   inputAndArgs: TileInputConfig<T>;
