@@ -17,7 +17,7 @@
 
 import {Array1D, DataTypes, NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
 
 // Values
 export interface TopKValuesNode<D extends keyof DataTypes, T extends NDArray<D>>

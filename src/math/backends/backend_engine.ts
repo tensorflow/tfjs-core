@@ -23,7 +23,7 @@ import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
 import {Tape} from './tape';
-import {KernelNode} from './tape_config';
+import {KernelNode} from './tape_types';
 
 export class BackendEngine {
   private masterTape: Tape;
@@ -31,7 +31,7 @@ export class BackendEngine {
   private debugMode = false;
 
   constructor(private backend: MathBackend) {
-    this.masterTape = new Tape();
+    this.masterTape = new Tape(backend);
   }
 
   enableDebugMode() {
@@ -70,13 +70,13 @@ export class BackendEngine {
       output: result,
       gradient: grad
     };
-    this.masterTape.addEvaluatedNode(evaluatedNode);
+    this.masterTape.addEvaluatedKernelNode(evaluatedNode);
 
     return result;
   }
 
   gradientWrt(y: Scalar, xs: NDArray[]): NDArray[] {
-    return this.masterTape.gradientWrt(this.backend, y, xs);
+    return this.masterTape.gradientWrt(y, xs);
   }
 
   private checkForNaN(vals: TypedArray, dtype: keyof DataTypes, name: string):

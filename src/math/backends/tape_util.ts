@@ -18,7 +18,7 @@
 import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
-import {TapeNode} from './tape_config';
+import {TapeNode} from './tape_types';
 
 /**
  * Computes a list of TapeNodes that connect x to y, filtering everything else

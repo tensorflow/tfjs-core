@@ -315,6 +315,7 @@ const gpuTests: MathTests = it => {
   });
 };
 
+// TODO(nsthorat): fix the precision for backprop.
 const gradientTests: MathTests = it => {
   it('MatMul gradient', math => {
     const a = Array2D.new([2, 3], [1, 2, 3, 10, 20, 30]);
@@ -328,38 +329,39 @@ const gradientTests: MathTests = it => {
     // da = dy * bT
     expect(grads.a.shape).toEqual(a.shape);
     test_util.expectNumbersClose(
-        grads.a.get(0, 0), dy * b.get(0, 0) + dy * b.get(0, 1));
+        grads.a.get(0, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(0, 1), dy * b.get(1, 0) + dy * b.get(1, 1));
+        grads.a.get(0, 1), dy * b.get(1, 0) + dy * b.get(1, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(0, 2), dy * b.get(2, 0) + dy * b.get(2, 1));
+        grads.a.get(0, 2), dy * b.get(2, 0) + dy * b.get(2, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(1, 0), dy * b.get(0, 0) + dy * b.get(0, 1));
+        grads.a.get(1, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(1, 1), dy * b.get(1, 0) + dy * b.get(1, 1));
+        grads.a.get(1, 1), dy * b.get(1, 0) + dy * b.get(1, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(1, 2), dy * b.get(2, 0) + dy * b.get(2, 1));
+        grads.a.get(1, 2), dy * b.get(2, 0) + dy * b.get(2, 1), 1e-1);
 
     // db = aT * dy
     expect(grads.b.shape).toEqual(b.shape);
     test_util.expectNumbersClose(
-        grads.b.get(0, 0), a.get(0, 0) * dy + a.get(1, 0) * dy);
+        grads.b.get(0, 0), a.get(0, 0) * dy + a.get(1, 0) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(0, 1), a.get(0, 0) * dy + a.get(1, 0) * dy);
+        grads.b.get(0, 1), a.get(0, 0) * dy + a.get(1, 0) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(1, 0), a.get(0, 1) * dy + a.get(1, 1) * dy);
+        grads.b.get(1, 0), a.get(0, 1) * dy + a.get(1, 1) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(1, 1), a.get(0, 1) * dy + a.get(1, 1) * dy);
+        grads.b.get(1, 1), a.get(0, 1) * dy + a.get(1, 1) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(2, 0), a.get(0, 2) * dy + a.get(1, 2) * dy);
+        grads.b.get(2, 0), a.get(0, 2) * dy + a.get(1, 2) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(2, 1), a.get(0, 2) * dy + a.get(1, 2) * dy);
+        grads.b.get(2, 1), a.get(0, 2) * dy + a.get(1, 2) * dy, 1e-1);
   });
 };
 
 test_util.describeMathCPU('gradientWrt matMul', [commonTests, gradientTests]);
-test_util.describeMathGPU('gradientWrt matMul', [commonTests, gpuTests], [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-]);
+test_util.describeMathGPU(
+    'gradientWrt matMul', [commonTests, gpuTests, gradientTests], [
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    ]);

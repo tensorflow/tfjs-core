@@ -17,7 +17,7 @@
 
 import {Array1D, Array2D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
 
 export interface OneHotNode extends KernelNode {
   inputAndArgs: OneHotInputConfig;

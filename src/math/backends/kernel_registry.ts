@@ -1,7 +1,7 @@
 import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
-import {KernelInputConfig} from './tape_config';
+import {KernelInputConfig} from './tape_types';
 // tslint:disable-next-line:max-line-length
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './types/argminmax';
 // tslint:disable-next-line:max-line-length

@@ -18,7 +18,7 @@
 import {Conv2DInfo} from '../../conv_util';
 import {Array1D, Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
 
 // Conv2D
 export interface Conv2DNode extends KernelNode {

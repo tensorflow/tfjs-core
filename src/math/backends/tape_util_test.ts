@@ -21,7 +21,7 @@ import {MathTests} from '../../test_util';
 import {NDArray, Scalar} from '../ndarray';
 
 import {MathBackendCPU} from './backend_cpu';
-import {TapeNode} from './tape_config';
+import {TapeNode} from './tape_types';
 import * as tape_util from './tape_util';
 
 // getFilteredNodesXToY

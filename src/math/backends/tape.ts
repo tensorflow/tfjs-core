@@ -18,7 +18,7 @@
 import {NDArray, Scalar} from '../ndarray';
 
 import {MathBackend} from './backend';
-import {KernelNode, TapeNode} from './tape_config';
+import {KernelNode, TapeNode} from './tape_types';
 import * as tape_util from './tape_util';
 
 export class Tape {
@@ -26,12 +26,14 @@ export class Tape {
 
   private outputNodeMap: {[id: number]: TapeNode} = {};
 
-  addEvaluatedNode(node: KernelNode) {
+  constructor(private backend: MathBackend) {}
+
+  addEvaluatedKernelNode(node: KernelNode) {
     this.outputNodeMap[node.output.id] = node;
     this.evaluatedTapeNodes.push(node);
   }
 
-  gradientWrt(backend: MathBackend, y: Scalar, xs: NDArray[]): NDArray[] {
+  gradientWrt(y: Scalar, xs: NDArray[]): NDArray[] {
     if (this.outputNodeMap[y.id] == null) {
       throw new Error(`Cannot compute gradient: y is not part of this tape.`);
     }
@@ -46,7 +48,7 @@ export class Tape {
 
     // Backprop gradients through the filtered nodes.
     tape_util.backpropagateGradients(
-        backend, arrayAccumulatedGradientMap, filteredNodes);
+        this.backend, arrayAccumulatedGradientMap, filteredNodes);
 
     const gradients: NDArray[] = [];
     for (let i = 0; i < xs.length; i++) {

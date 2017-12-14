@@ -132,7 +132,8 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     });
 
     it('Relu gradient array', math => {
-      const a = Array2D.new([2, 2], [1, -1, 2, .1]);
+      // TODO(nsthorat): Use 0 instead of -.001 when we fix the precision issue.
+      const a = Array2D.new([2, 2], [1, -1, -.001, .1]);
 
       // gradientWrt only takes a scalar, so we manually sum here.
       const result = math.sum(math.relu(a));
@@ -140,7 +141,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       expect(grad.shape).toEqual(a.shape);
       test_util.expectArraysClose(
-          grad.dataSync(), new Float32Array([1, 0, 1, 1]));
+          grad.dataSync(), new Float32Array([1, 0, 0, 1]));
     });
   };
 

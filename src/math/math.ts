@@ -645,7 +645,18 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       const res = this.backendEngine.executeKernel(
           'Sum', {inputs: {x}, args: {axes}},
           (dy: NDArray<SumTypes[T]>, y: NDArray<SumTypes[T]>) => {
-            return {x: () => this.multiply(dy, NDArray.onesLike(x))};
+            return {
+              x: () => {
+                // TODO(nsthorat): Fix gradients for sum when using axis
+                // reduction.
+                if (axis != null) {
+                  throw new Error(
+                      `Gradients for sum with axis reduction not yet ` +
+                      `supported.`);
+                }
+                return this.multiply(dy, NDArray.onesLike(x));
+              }
+            };
           });
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
