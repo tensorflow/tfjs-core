@@ -144,8 +144,8 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('relu backprop', [tests]);
-  test_util.describeMathGPU('relu backprop', [tests], [
+  test_util.describeMathCPU('gradientWrt relu', [tests]);
+  test_util.describeMathGPU('gradientWrt relu', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

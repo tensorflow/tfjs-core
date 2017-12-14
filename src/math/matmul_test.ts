@@ -345,8 +345,8 @@ const gradientTests: MathTests = it => {
   });
 };
 
-test_util.describeMathCPU('matMul', [commonTests, gradientTests]);
-test_util.describeMathGPU('matMul', [commonTests, gpuTests], [
+test_util.describeMathCPU('gradientWrt matMul', [commonTests, gradientTests]);
+test_util.describeMathGPU('gradientWrt matMul', [commonTests, gpuTests], [
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
