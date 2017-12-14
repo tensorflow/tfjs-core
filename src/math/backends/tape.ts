@@ -40,41 +40,13 @@ export class Tape {
     const filteredNodes =
         tape_util.getFilteredNodesXToY(this.evaluatedTapeNodes, xs, y);
 
+    // Seed the gradient of dy to be 1.
     const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
     arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
 
-    // Walk the tape backwards and keep a map of NDArray to its gradient.
-    for (let i = filteredNodes.length - 1; i >= 0; i--) {
-      const node = filteredNodes[i];
-      const dy = arrayAccumulatedGradientMap[node.output.id];
-
-      if (node.gradient == null) {
-        throw new Error(
-            `Cannot compute gradient: gradient function not found for
-            ${node}.`);
-      }
-
-      // Backprop dy through this node and accumulate gradients over the inputs.
-      const inputGradients = node.gradient(dy, node.output);
-
-      for (const inputName in node.inputAndArgs.inputs) {
-        // Call the gradient function.
-        const grad = inputGradients[inputName]();
-
-        const activation = node.inputAndArgs.inputs[inputName];
-
-        if (arrayAccumulatedGradientMap[activation.id] == null) {
-          arrayAccumulatedGradientMap[activation.id] = grad;
-        } else {
-          const curGradient = arrayAccumulatedGradientMap[grad.id];
-          // Call the backend directly so we don't add the "add" node to our
-          // tape.
-          arrayAccumulatedGradientMap[grad.id] =
-              backend.add(arrayAccumulatedGradientMap[grad.id], grad);
-          curGradient.dispose();
-        }
-      }
-    }
+    // Backprop gradients through the filtered nodes.
+    tape_util.backpropagateGradients(
+        backend, arrayAccumulatedGradientMap, filteredNodes);
 
     const gradients: NDArray[] = [];
     for (let i = 0; i < xs.length; i++) {

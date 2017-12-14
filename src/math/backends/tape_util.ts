@@ -17,6 +17,7 @@
 
 import {NDArray} from '../ndarray';
 
+import {MathBackend} from './backend';
 import {TapeNode} from './tape_config';
 
 /**
@@ -95,4 +96,55 @@ export function getFilteredNodesXToY(
   }
 
   return filteredTapeNodes;
+}
+
+/**
+ * Backpropagate gradients through the filtered TapeNodes.
+ * @param backend The math backend, used for accumulation.
+ * @param arrayAccumulatedGradientMap A map of NDArray to its gradient. This map
+ * is mutated by this method.
+ * @param filteredNodes The filtered TapeNodes to backprop through.
+ */
+export function backpropagateGradients(
+    backend: MathBackend,
+    arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray},
+    filteredNodes: TapeNode[]) {
+  // Walk the tape backwards and keep a map of NDArray to its gradient.
+  for (let i = filteredNodes.length - 1; i >= 0; i--) {
+    const node = filteredNodes[i];
+    const dy = arrayAccumulatedGradientMap[node.output.id];
+
+    if (node.gradient == null) {
+      throw new Error(`Cannot compute gradient: gradient function not found for
+              ${node}.`);
+    }
+
+    // Backprop dy through this node and accumulate gradients over the inputs.
+    const inputGradients = node.gradient(dy, node.output);
+
+    for (const inputName in node.inputAndArgs.inputs) {
+      if (!(inputName in inputGradients)) {
+        throw new Error(
+            `Cannot backprop through ${inputName} in input gradient ` +
+            `function, no gradient found for ${node}. ` +
+            `Gradients found: ${Object.keys(inputGradients)}.`);
+      }
+
+      // Call the gradient function.
+      const grad = inputGradients[inputName]();
+
+      const activation = node.inputAndArgs.inputs[inputName];
+
+      if (arrayAccumulatedGradientMap[activation.id] == null) {
+        arrayAccumulatedGradientMap[activation.id] = grad;
+      } else {
+        const curGradient = arrayAccumulatedGradientMap[activation.id];
+        // Call the backend directly so we don't add the "add" node to our
+        // tape.
+        arrayAccumulatedGradientMap[activation.id] =
+            backend.add(curGradient, grad);
+        curGradient.dispose();
+      }
+    }
+  }
 }
