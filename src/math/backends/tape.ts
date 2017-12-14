@@ -51,25 +51,26 @@ export class Tape {
       if (node.gradient == null) {
         throw new Error(
             `Cannot compute gradient: gradient function not found for
-            ${node.name}.`);
+            ${node}.`);
       }
 
       // Backprop dy through this node and accumulate gradients over the inputs.
       const inputGradients = node.gradient(dy, node.output);
 
-      for (const inputName in inputGradients) {
-        const grad = inputGradients[inputName];
+      for (const inputName in node.inputAndArgs.inputs) {
+        // Call the gradient function.
+        const grad = inputGradients[inputName]();
+
         const activation = node.inputAndArgs.inputs[inputName];
 
         if (arrayAccumulatedGradientMap[activation.id] == null) {
-          arrayAccumulatedGradientMap[activation.id] =
-              inputGradients[inputName];
+          arrayAccumulatedGradientMap[activation.id] = grad;
         } else {
           const curGradient = arrayAccumulatedGradientMap[grad.id];
           // Call the backend directly so we don't add the "add" node to our
           // tape.
-          arrayAccumulatedGradientMap[grad.id] = backend.add(
-              arrayAccumulatedGradientMap[grad.id], inputGradients[inputName]);
+          arrayAccumulatedGradientMap[grad.id] =
+              backend.add(arrayAccumulatedGradientMap[grad.id], grad);
           curGradient.dispose();
         }
       }

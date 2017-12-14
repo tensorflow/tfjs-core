@@ -18,13 +18,13 @@
 
 import {Array1D, Array2D, Array3D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../tape_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_config';
 
 // 3D
 export interface BatchNorm3DNode extends KernelNode {
   inputAndArgs: BatchNorm3DInputConfig;
   output: Array3D;
-  gradient: (dy: Array3D, y: Array3D) => BatchNorm3DInputArrays;
+  gradient: (dy: Array3D, y: Array3D) => BatchNorm3DGradientInputArrays;
 }
 
 export interface BatchNorm3DInputConfig extends KernelInputConfig {
@@ -40,11 +40,20 @@ export interface BatchNorm3DInputArrays extends TapeNodeInputArrays {
   offset?: Array3D|Array1D;
 }
 
+export interface BatchNorm3DGradientInputArrays extends
+    TapeNodeInputGradientArrays {
+  x: () => Array3D;
+  mean: () => Array3D | Array1D;
+  variance: () => Array3D | Array1D;
+  scale?: () => Array3D | Array1D;
+  offset?: () => Array3D | Array1D;
+}
+
 // 2D
 export interface BatchNorm2DNode extends KernelNode {
   inputAndArgs: BatchNorm2DInputConfig;
   output: Array2D;
-  gradient: (dy: Array2D, y: Array2D) => BatchNorm2DInputArrays;
+  gradient: (dy: Array2D, y: Array2D) => BatchNorm2DGradientInputArrays;
 }
 
 export interface BatchNorm2DInputConfig extends KernelInputConfig {
@@ -58,4 +67,13 @@ export interface BatchNorm2DInputArrays extends TapeNodeInputArrays {
   variance: Array2D|Array1D;
   scale?: Array2D|Array1D;
   offset?: Array2D|Array1D;
+}
+
+export interface BatchNorm2DGradientInputArrays extends
+    TapeNodeInputGradientArrays {
+  x: () => Array2D;
+  mean: () => Array2D | Array1D;
+  variance: () => Array2D | Array1D;
+  scale?: () => Array2D | Array1D;
+  offset?: () => Array2D | Array1D;
 }

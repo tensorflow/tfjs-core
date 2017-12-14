@@ -17,12 +17,12 @@
 
 import {Array2D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../tape_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_config';
 
 export interface MatMulNode extends KernelNode {
   inputAndArgs: MatMulInputConfig;
   output: Array2D;
-  gradient: (dy: Array2D, y: Array2D) => MatMulInputArrays;
+  gradient: (dy: Array2D, y: Array2D) => MatMulGradientInputArrays;
 }
 
 export interface MatMulInputConfig extends KernelInputConfig {
@@ -33,6 +33,11 @@ export interface MatMulInputConfig extends KernelInputConfig {
 export interface MatMulInputArrays extends TapeNodeInputArrays {
   a: Array2D;
   b: Array2D;
+}
+
+export interface MatMulGradientInputArrays extends TapeNodeInputGradientArrays {
+  a: () => Array2D;
+  b: () => Array2D;
 }
 
 export enum MatrixOrientation {

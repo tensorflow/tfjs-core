@@ -19,10 +19,9 @@ import {NDArray} from '../ndarray';
 import {KernelConfigRegistry} from './kernel_registry';
 
 export interface TapeNode {
-  name?: string;
   inputAndArgs: TapeNodeInputConfig;
   output: NDArray;
-  gradient: (dy: NDArray, y: NDArray) => TapeNodeInputArrays;
+  gradient: (dy: NDArray, y: NDArray) => TapeNodeInputGradientArrays;
 }
 export interface TapeNodeInputConfig {
   inputs: TapeNodeInputArrays;
@@ -30,6 +29,10 @@ export interface TapeNodeInputConfig {
 
 export type TapeNodeInputArrays = {
   [inputName: string]: NDArray;
+};
+
+export type TapeNodeInputGradientArrays = {
+  [inputName: string]: () => NDArray;
 };
 
 // Kernel nodes

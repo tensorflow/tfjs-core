@@ -17,12 +17,12 @@
 
 import {Array3D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../tape_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_config';
 
 export interface ResizeBilinear3DNode extends KernelNode {
   inputAndArgs: ResizeBilinear3DInputConfig;
   output: Array3D;
-  gradient: (dy: Array3D, y: Array3D) => ResizeBilinear3DInputArrays;
+  gradient: (dy: Array3D, y: Array3D) => ResizeBilinear3DGradientInputArrays;
 }
 
 export interface ResizeBilinear3DInputConfig extends KernelInputConfig {
@@ -32,4 +32,9 @@ export interface ResizeBilinear3DInputConfig extends KernelInputConfig {
 
 export interface ResizeBilinear3DInputArrays extends TapeNodeInputArrays {
   x: Array3D;
+}
+
+export interface ResizeBilinear3DGradientInputArrays extends
+    TapeNodeInputGradientArrays {
+  x: () => Array3D;
 }

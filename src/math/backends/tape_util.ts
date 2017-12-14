@@ -32,6 +32,10 @@ export function getFilteredNodesXToY(
   // x. Note that because we assume that all Nodes have a single output NDArray,
   // we can use these interchangably.
   const arraysFromX: {[ndarrayId: number]: boolean} = {};
+  for (let i = 0; i < xs.length; i++) {
+    arraysFromX[xs[i].id] = true;
+  }
+
   for (let i = 0; i < tapeNodes.length; i++) {
     const node = tapeNodes[i];
     const nodeInputs = node.inputAndArgs.inputs;
@@ -40,7 +44,7 @@ export function getFilteredNodesXToY(
       const input = nodeInputs[inputName];
 
       for (let j = 0; j < xs.length; j++) {
-        if (input.id === xs[j].id || arraysFromX[input.id] === true) {
+        if (arraysFromX[input.id]) {
           arraysFromX[node.output.id] = true;
           break;
         }
@@ -72,7 +76,21 @@ export function getFilteredNodesXToY(
   for (let i = 0; i < tapeNodes.length; i++) {
     const node = tapeNodes[i];
     if (arraysFromX[node.output.id] && arraysLeadToY[node.output.id]) {
-      filteredTapeNodes.push(node);
+      // Prune the inputs from the node that aren't a function of x.
+      const prunedInputs: {[inputName: string]: NDArray} = {};
+      for (const inputName in node.inputAndArgs.inputs) {
+        const nodeInput = node.inputAndArgs.inputs[inputName];
+        if (arraysFromX[nodeInput.id]) {
+          prunedInputs[inputName] = nodeInput;
+        }
+      }
+
+      const prunedNode: TapeNode = {
+        output: node.output,
+        inputAndArgs: {inputs: prunedInputs},
+        gradient: node.gradient
+      };
+      filteredTapeNodes.push(prunedNode);
     }
   }
 

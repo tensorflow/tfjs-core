@@ -301,9 +301,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
         (dy: Array2D, y: Array2D) => {
           return {
-            a: this.matMul(
+            a: () => this.matMul(
                 dy, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
-            b: this.matMul(
+            b: () => this.matMul(
                 a, dy, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR)
           };
         });
@@ -646,7 +646,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
           'Sum', {inputs: {x}, args: {axes}},
           (dy: NDArray<SumTypes[T]>, y: NDArray<SumTypes[T]>) => {
             // TODO(nsthorat): fix this for axis reductions.
-            return {x: this.multiply(dy, NDArray.onesLike(x))};
+            return {x: () => this.multiply(dy, NDArray.onesLike(x))};
           });
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
@@ -1208,7 +1208,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   relu<T extends NDArray>(x: T): T {
     return this.backendEngine.executeKernel(
                'Relu', {inputs: {x}}, (dy: T, y: T) => {
-                 return {x: this.step(x)};
+                 return {x: () => this.step(x)};
                }) as T;
   }
 

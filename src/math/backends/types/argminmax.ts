@@ -17,12 +17,13 @@
 
 import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays} from '../tape_config';
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_config';
 
 export interface ArgMaxNode extends KernelNode {
   inputAndArgs: ArgMaxInputConfig;
   output: NDArray<'int32'>;
-  gradient: (dy: NDArray<'int32'>, y: NDArray<'int32'>) => ArgMaxInputArrays;
+  gradient:
+      (dy: NDArray<'int32'>, y: NDArray<'int32'>) => ArgMaxGradientInputArrays;
 }
 
 export interface ArgMaxInputConfig extends KernelInputConfig {
@@ -34,10 +35,15 @@ export interface ArgMaxInputArrays extends TapeNodeInputArrays {
   x: NDArray;
 }
 
+export interface ArgMaxGradientInputArrays extends TapeNodeInputGradientArrays {
+  x: () => NDArray;
+}
+
 export interface ArgMinNode extends KernelNode {
   inputAndArgs: ArgMinInputConfig;
   output: NDArray<'int32'>;
-  gradient: (dy: NDArray<'int32'>, y: NDArray<'int32'>) => ArgMinInputArrays;
+  gradient:
+      (dy: NDArray<'int32'>, y: NDArray<'int32'>) => ArgMinGradientInputArrays;
 }
 
 export interface ArgMinInputConfig extends KernelInputConfig {
@@ -47,4 +53,8 @@ export interface ArgMinInputConfig extends KernelInputConfig {
 
 export interface ArgMinInputArrays extends TapeNodeInputArrays {
   x: NDArray;
+}
+
+export interface ArgMinGradientInputArrays extends TapeNodeInputGradientArrays {
+  x: () => NDArray;
 }

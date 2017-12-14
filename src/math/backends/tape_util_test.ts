@@ -110,7 +110,14 @@ const tests: MathTests = it => {
            tape_util.getFilteredNodesXToY(tapeNodes, [x0], y);
 
        expect(filteredTapeNodes.length).toBe(1);
-       expect(filteredTapeNodes).toEqual(tapeNodes);
+       // x1 input should be pruned, we don't ask for the gradient of x1.
+       expect(filteredTapeNodes[0]).toEqual({
+         inputAndArgs: {
+           inputs: {x0},
+         },
+         output: y,
+         gradient: null
+       });
      });
 
   it('getFilteredNodesXToY two operations x => intermediate => y', math => {
@@ -218,8 +225,14 @@ const tests: MathTests = it => {
     const filteredTapeNodes = tape_util.getFilteredNodesXToY(tapeNodes, [x], y);
 
     expect(filteredTapeNodes.length).toBe(1);
-    // The orphan should be removed.
-    expect(filteredTapeNodes[0]).toEqual(tapeNodes[0]);
+    // The orphan should be pruned from the node's input.
+    expect(filteredTapeNodes[0]).toEqual({
+      inputAndArgs: {
+        inputs: {x},
+      },
+      output: y,
+      gradient: null
+    });
   });
 
   it('getFilteredNodesXToY x0 => orphan0, ' +
@@ -273,8 +286,15 @@ const tests: MathTests = it => {
        expect(filteredTapeNodes.length).toBe(3);
        expect(filteredTapeNodes[0]).toEqual(tapeNodes[0]);
        expect(filteredTapeNodes[1]).toEqual(tapeNodes[1]);
-       // The orphans should be removed.
-       expect(filteredTapeNodes[2]).toEqual(tapeNodes[3]);
+       // The orphans should be removed and the orphan1 should be pruned from
+       // inputs.
+       expect(filteredTapeNodes[2]).toEqual({
+         inputAndArgs: {
+           inputs: {intermediate0, intermediate1, x1},
+         },
+         output: y,
+         gradient: null
+       });
      });
 };
 
