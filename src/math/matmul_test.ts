@@ -327,21 +327,33 @@ const gradientTests: MathTests = it => {
 
     // da = dy * bT
     expect(grads.a.shape).toEqual(a.shape);
-    expect(grads.a.get(0, 0)).toEqual(dy * b.get(0, 0) + dy * b.get(0, 1));
-    expect(grads.a.get(0, 1)).toEqual(dy * b.get(1, 0) + dy * b.get(1, 1));
-    expect(grads.a.get(0, 2)).toEqual(dy * b.get(2, 0) + dy * b.get(2, 1));
-    expect(grads.a.get(1, 0)).toEqual(dy * b.get(0, 0) + dy * b.get(0, 1));
-    expect(grads.a.get(1, 1)).toEqual(dy * b.get(1, 0) + dy * b.get(1, 1));
-    expect(grads.a.get(1, 2)).toEqual(dy * b.get(2, 0) + dy * b.get(2, 1));
+    test_util.expectNumbersClose(
+        grads.a.get(0, 0), dy * b.get(0, 0) + dy * b.get(0, 1));
+    test_util.expectNumbersClose(
+        grads.a.get(0, 1), dy * b.get(1, 0) + dy * b.get(1, 1));
+    test_util.expectNumbersClose(
+        grads.a.get(0, 2), dy * b.get(2, 0) + dy * b.get(2, 1));
+    test_util.expectNumbersClose(
+        grads.a.get(1, 0), dy * b.get(0, 0) + dy * b.get(0, 1));
+    test_util.expectNumbersClose(
+        grads.a.get(1, 1), dy * b.get(1, 0) + dy * b.get(1, 1));
+    test_util.expectNumbersClose(
+        grads.a.get(1, 2), dy * b.get(2, 0) + dy * b.get(2, 1));
 
     // db = aT * dy
     expect(grads.b.shape).toEqual(b.shape);
-    expect(grads.b.get(0, 0)).toEqual(a.get(0, 0) * dy + a.get(1, 0) * dy);
-    expect(grads.b.get(0, 1)).toEqual(a.get(0, 0) * dy + a.get(1, 0) * dy);
-    expect(grads.b.get(1, 0)).toEqual(a.get(0, 1) * dy + a.get(1, 1) * dy);
-    expect(grads.b.get(1, 1)).toEqual(a.get(0, 1) * dy + a.get(1, 1) * dy);
-    expect(grads.b.get(2, 0)).toEqual(a.get(0, 2) * dy + a.get(1, 2) * dy);
-    expect(grads.b.get(2, 1)).toEqual(a.get(0, 2) * dy + a.get(1, 2) * dy);
+    test_util.expectNumbersClose(
+        grads.b.get(0, 0), a.get(0, 0) * dy + a.get(1, 0) * dy);
+    test_util.expectNumbersClose(
+        grads.b.get(0, 1), a.get(0, 0) * dy + a.get(1, 0) * dy);
+    test_util.expectNumbersClose(
+        grads.b.get(1, 0), a.get(0, 1) * dy + a.get(1, 1) * dy);
+    test_util.expectNumbersClose(
+        grads.b.get(1, 1), a.get(0, 1) * dy + a.get(1, 1) * dy);
+    test_util.expectNumbersClose(
+        grads.b.get(2, 0), a.get(0, 2) * dy + a.get(1, 2) * dy);
+    test_util.expectNumbersClose(
+        grads.b.get(2, 1), a.get(0, 2) * dy + a.get(1, 2) * dy);
   });
 };
 
