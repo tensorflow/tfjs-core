@@ -40,7 +40,6 @@ import * as reduce_util from './reduce_util';
     it('2D', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
       test_util.expectNumbersClose(math.min(a).get(), -7);
-
     });
 
     it('2D axis=[0,1]', math => {
@@ -721,10 +720,201 @@ import * as reduce_util from './reduce_util';
     });
   };
 
-  test_util.describeMathCPU('moments', [tests]);
-  test_util.describeMathGPU('moments', [tests], [
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  ]);
-}
+  // math.norm
+  {
+    const tests: MathTests = it => {
+      it('scalar norm', math => {
+        const a = Scalar.new(-22.0);
+        const norm = math.norm(a);
+
+        expect(norm.dtype).toBe('float32');
+        test_util.expectNumbersClose(norm.get(), 22);
+      });
+
+      it('vector inf norm', math => {
+        const a = Array1D.new([1, -2, 3, -4]);
+        const norm = math.norm(a, 'inf');
+
+        expect(norm.dtype).toBe('float32');
+        test_util.expectNumbersClose(norm.get(), 4);
+
+        a.dispose();
+      });
+
+      it('vector euclidean norm', math => {
+        const a = Array1D.new([1, -2, 3, -4]);
+        const norm = math.norm(a, 'euclidean');
+
+        expect(norm.dtype).toBe('float32');
+        test_util.expectNumbersClose(norm.get(), 5.4772);
+
+        a.dispose();
+      });
+
+      it('vector 2-norm', math => {
+        const a = Array1D.new([1, -2, 3, -4]);
+        const norm = math.norm(a, 'euclidean');
+
+        expect(norm.dtype).toBe('float32');
+        test_util.expectNumbersClose(norm.get(), 5.4772);
+
+        a.dispose();
+      });
+
+      it('vector x-norm to throw error', math => {
+        const a = Array1D.new([1, -2, 3, -4]);
+
+        expect(() => math.norm(a, 3)).toThrowError();
+        expect(() => math.norm(a, 'unknown')).toThrowError();
+
+        a.dispose();
+      });
+
+      it('matrix inf norm', math => {
+        const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+        const norm = math.norm(a, 'inf');
+
+        expect(norm.dtype).toBe('float32');
+        test_util.expectArraysClose(norm.getValues(), [2, 3, 1]);
+
+        a.dispose();
+      });
+
+      it('vector euclidean norm', math => {
+        const a = Array1D.new([1, -2, 3, -4]);
+        const norm = math.norm(a, 'euclidean');
+
+        expect(norm.dtype).toBe('float32');
+        test_util.expectNumbersClose(norm.get(), 5.4772);
+
+        a.dispose();
+      });
+
+      it('vector 2-norm', math => {
+        const a = Array1D.new([1, -2, 3, -4]);
+        const norm = math.norm(a, 'euclidean');
+
+        expect(norm.dtype).toBe('float32');
+        test_util.expectNumbersClose(norm.get(), 5.4772);
+
+        a.dispose();
+      });
+
+      it('vector x-norm to throw error', math => {
+        const a = Array1D.new([1, -2, 3, -4]);
+
+        expect(() => math.norm(a, 3)).toThrowError();
+        expect(() => math.norm(a, 'unknown')).toThrowError();
+
+        a.dispose();
+      });
+
+      it('propagates NaNs', math => {
+        const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
+        const {mean, variance} = math.moments(a);
+
+        expect(mean.dtype).toBe('float32');
+        expect(variance.dtype).toBe('float32');
+        expect(mean.get()).toEqual(NaN);
+        expect(variance.get()).toEqual(NaN);
+        a.dispose();
+      });
+
+      it('moments(int32) => float32', math => {
+        const a = Array1D.new([1, 5, 7, 3], 'int32');
+        const {mean, variance} = math.moments(a);
+
+        expect(mean.dtype).toBe('float32');
+        expect(variance.dtype).toBe('float32');
+        test_util.expectNumbersClose(mean.get(), 4);
+        test_util.expectNumbersClose(variance.get(), 5);
+      });
+
+      it('moments(bool) => float32', math => {
+        const a = Array1D.new([true, false, false, true, true], 'bool');
+        const {mean, variance} = math.moments(a);
+
+        expect(mean.dtype).toBe('float32');
+        expect(variance.dtype).toBe('float32');
+        test_util.expectNumbersClose(mean.get(), 3 / 5);
+        test_util.expectNumbersClose(variance.get(), 0.23999998);
+      });
+
+      it('2D array with keep dim', math => {
+        const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+        const {mean, variance} = math.moments(a, null, true /* keepDims */);
+
+        expect(mean.shape).toEqual([1, 1]);
+        expect(mean.dtype).toBe('float32');
+        expect(variance.shape).toEqual([1, 1]);
+        expect(variance.dtype).toBe('float32');
+        test_util.expectArraysClose(
+            mean.getValues(), new Float32Array([7 / 6]));
+        test_util.expectArraysClose(
+            variance.getValues(), new Float32Array([1.138889]));
+      });
+
+      it('axis=0 in 2D array', math => {
+        const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+        const {mean, variance} = math.moments(a, [0]);
+
+        expect(mean.shape).toEqual([2]);
+        expect(mean.dtype).toBe('float32');
+        expect(variance.shape).toEqual([2]);
+        expect(variance.dtype).toBe('float32');
+        test_util.expectArraysClose(
+            mean.getValues(), new Float32Array([4 / 3, 1]));
+        test_util.expectArraysClose(
+            variance.getValues(), new Float32Array([1.556, 2 / 3]));
+      });
+
+      it('axis=1 in 2D array', math => {
+        const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+        const {mean, variance} = math.moments(a, [1]);
+
+        expect(mean.dtype).toBe('float32');
+        expect(mean.shape).toEqual([3]);
+        expect(variance.dtype).toBe('float32');
+        expect(variance.shape).toEqual([3]);
+        test_util.expectArraysClose(
+            mean.getValues(), new Float32Array([1.5, 1.5, 0.5]));
+        test_util.expectArraysClose(
+            variance.getValues(), new Float32Array([0.25, 2.25, 0.25]));
+      });
+
+      it('2D, axis=1 provided as number', math => {
+        const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+        const {mean, variance} = math.moments(a, 1);
+
+        expect(mean.shape).toEqual([2]);
+        expect(mean.dtype).toBe('float32');
+        expect(variance.shape).toEqual([2]);
+        expect(variance.dtype).toBe('float32');
+        test_util.expectArraysClose(
+            mean.getValues(), new Float32Array([2, 1 / 3]));
+        test_util.expectArraysClose(
+            variance.getValues(), new Float32Array([2 / 3, 0.222]));
+      });
+
+      it('axis=0,1 in 2D array', math => {
+        const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+        const {mean, variance} = math.moments(a, [0, 1]);
+
+        expect(mean.shape).toEqual([]);
+        expect(mean.dtype).toBe('float32');
+        expect(variance.shape).toEqual([]);
+        expect(variance.dtype).toBe('float32');
+        test_util.expectArraysClose(
+            mean.getValues(), new Float32Array([7 / 6]));
+        test_util.expectArraysClose(
+            variance.getValues(), new Float32Array([1.1389]));
+      });
+    };
+
+    test_util.describeMathCPU('moments', [tests]);
+    test_util.describeMathGPU('moments', [tests], [
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    ]);
+  }
