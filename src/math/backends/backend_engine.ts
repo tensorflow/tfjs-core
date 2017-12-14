@@ -64,6 +64,7 @@ export class BackendEngine {
     }
 
     const evaluatedNode: KernelNode = {
+      name: `kernel: ${kernelName}`,
       kernel: kernelName,
       inputAndArgs: config,
       output: result,

@@ -86,11 +86,10 @@ export function getFilteredNodesXToY(
         }
       }
 
-      const prunedNode: TapeNode = {
-        output: node.output,
-        inputAndArgs: {inputs: prunedInputs},
-        gradient: node.gradient
-      };
+      // Copy the node and overwrite inputsAndArgs to the pruned version.
+      const prunedNode = Object.assign({}, node) as TapeNode;
+      prunedNode.inputAndArgs = {inputs: prunedInputs};
+
       filteredTapeNodes.push(prunedNode);
     }
   }
@@ -125,9 +124,9 @@ export function backpropagateGradients(
     for (const inputName in node.inputAndArgs.inputs) {
       if (!(inputName in inputGradients)) {
         throw new Error(
-            `Cannot backprop through ${inputName} in input gradient ` +
-            `function, no gradient found for ${node}. ` +
-            `Gradients found: ${Object.keys(inputGradients)}.`);
+            `Cannot backprop through input ` +
+            `${node.name}.${inputName}. Gradients found: ` +
+            `${Object.keys(inputGradients)}.`);
       }
 
       // Call the gradient function.
