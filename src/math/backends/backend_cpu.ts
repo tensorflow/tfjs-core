@@ -1274,8 +1274,7 @@ export class MathBackendCPU implements MathBackend {
     return Array3D.new(x.shape, outValues);
   }
 
-<<<<<<< HEAD:src/math/math_cpu.ts
-  protected localResponseNormalization3DInternal(
+  localResponseNormalization3D(
     x: Array3D, k: number, n: number, alpha: number, beta: number): Array3D {
 
     const output = Array3D.zeros(x.shape);
@@ -1302,10 +1301,8 @@ export class MathBackendCPU implements MathBackend {
     return output;
   }
 
-  protected multinomialInternal(
-      probabilities: Array2D, numSamples: number,
-      seed: number): Array2D<'int32'> {
-
+  multinomial(probabilities: Array2D, numSamples: number, seed: number):
+      Array2D<'int32'> {
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
     const res = Array2D.zeros([batchSize, numSamples], 'int32');

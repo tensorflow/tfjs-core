@@ -154,6 +154,9 @@ export interface MathBackend extends NDArrayStorage {
       varianceEpsilon: number, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D;
 
+  localResponseNormalization3D(
+    x: Array3D, k: number, n: number, alpha: number, beta: number): Array3D;
+
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
       Array2D<'int32'>;
 
