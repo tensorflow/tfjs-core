@@ -380,7 +380,7 @@ class TrainDisplay {
 
   displayCost(cost: number, step: number) {
     console.log('cost', cost);
-    this.chartData.push({x: step, y: cost * 100});
+    this.chartData.push({x: step, y: cost});
     this.chart.update();
   }
 
