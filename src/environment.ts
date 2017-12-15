@@ -157,7 +157,7 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   return isEnabled;
 }
 
-export type Backends = 'webgl'|'cpu';
+export type BackendType = 'webgl'|'cpu';
 
 export class Environment {
   private features: Features = {};
@@ -180,7 +180,7 @@ export class Environment {
   }
 
   getBestBackend(): MathBackend {
-    const orderedBackends: Backends[] = ['webgl', 'cpu'];
+    const orderedBackends: BackendType[] = ['webgl', 'cpu'];
     for (let i = 0; i < orderedBackends.length; ++i) {
       const backendId = orderedBackends[i];
       if (backendId in this.backendRegistry) {
@@ -223,7 +223,7 @@ export class Environment {
     this.globalMath = math;
   }
 
-  getBackend(name: Backends): MathBackend {
+  getBackend(name: BackendType): MathBackend {
     return this.backendRegistry[name];
   }
 
@@ -234,7 +234,7 @@ export class Environment {
    *     an instance of the backend.
    * @return False if the creation/registration failed. True otherwise.
    */
-  registerBackend(name: Backends, factory: () => MathBackend): boolean {
+  registerBackend(name: BackendType, factory: () => MathBackend): boolean {
     if (name in this.backendRegistry) {
       throw new Error(`${name} backend was already registered`);
     }
@@ -257,7 +257,7 @@ export class Environment {
   }
 
   // tslint:disable-next-line:no-any
-  private backendRegistry: {[id in Backends]: MathBackend} = {} as any;
+  private backendRegistry: {[id in BackendType]: MathBackend} = {} as any;
 }
 
 // Expects flags from URL in the format ?dljsflags=FLAG1:1,FLAG2:true.
