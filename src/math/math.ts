@@ -22,7 +22,7 @@ import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {NDArrayStorage} from './backends/backend';
 import {MathBackend} from './backends/backend';
-import {BackendEngine} from './backends/backend_engine';
+import {BackendEngine, ScopeResult, ScopeResultImmediate} from './backends/backend_engine';
 import {MatrixOrientation} from './backends/types/matmul';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
@@ -31,10 +31,6 @@ import * as conv_util from './conv_util';
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
-
-export type ScopeResultImmediate =
-    void|NDArray|NDArray[]|{[key: string]: NDArray};
-export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -56,7 +52,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   register<T extends keyof DataTypes>(a: NDArray<T>): void {
-    this.track(a);
+    this.backendEngine.track(a);
     this.numArrays++;
   }
 
@@ -77,24 +73,30 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.backend.read(id);
   }
 
-  private ndarrayScopes: NDArray[][] = [];
-  private activeScope: NDArray[];
-
-  private ndarraysToKeep: NDArray[][] = [];
-  private activeScopeNDArraysToKeep: NDArray[] = [];
-
   /**
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(backend: BackendType|MathBackend, private safeMode: boolean) {
+  constructor(backend: BackendType|MathBackend, safeMode: boolean) {
     if (typeof backend === 'string') {
       this.backend = ENV.getBackend(backend);
     } else {
       this.customBackend = true;
       this.backend = backend;
     }
-    this.backendEngine = new BackendEngine(this.backend);
+    this.backendEngine = new BackendEngine(this.backend, safeMode);
+  }
+
+  /**
+   * In debug mode, the output of every math call will be downloaded to the CPU
+   * and checked for NaNs. This significantly impacts performance.
+   */
+  enableDebugMode() {
+    this.backendEngine.enableDebugMode();
+    console.warn(
+        'Debugging mode is ON. The output of every math call will ' +
+        'be downloaded to CPU and checked for NaNs. ' +
+        'This significantly impacts performance.');
   }
 
   /**
@@ -111,31 +113,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                ndarray: T1) => T1,
            track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
                ndarray: T2) => T2) => T): T {
-    this.startScope();
-
-    const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
-    const trackFn = <T extends NDArray>(ndarray: T): T => this.track(ndarray);
-    const result = scopeFn(keepFn, trackFn);
-
-    if (result instanceof Promise) {
-      result.then(r => this.endScope(r));
-      return result;
-    } else {
-      this.endScope(result as ScopeResultImmediate);
-      return result;
-    }
-  }
-
-  /**
-   * In debug mode, the output of every math call will be downloaded to the CPU
-   * and checked for NaNs. This significantly impacts performance.
-   */
-  enableDebugMode() {
-    this.backendEngine.enableDebugMode();
-    console.warn(
-        'Debugging mode is ON. The output of every math call will ' +
-        'be downloaded to CPU and checked for NaNs. ' +
-        'This significantly impacts performance.');
+    return this.backendEngine.scope('scope', scopeFn);
   }
 
   /**
@@ -143,34 +121,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * as scope() without the need for a function closure.
    */
   startScope() {
-    const newScope: NDArray[] = [];
-    this.ndarrayScopes.push(newScope);
-    this.activeScope = newScope;
-
-    const newNDArraysToKeep: NDArray[] = [];
-    this.ndarraysToKeep.push(newNDArraysToKeep);
-    this.activeScopeNDArraysToKeep = newNDArraysToKeep;
-  }
-
-  private extractNDArraysFromScopeResult(result: ScopeResultImmediate):
-      NDArray[] {
-    if (result == null) {
-      return [];
-    }
-    if (result instanceof NDArray) {
-      return [result];
-    }
-
-    const list: NDArray[] = [];
-    const resultObj = result as {[key: string]: NDArray};
-    // Iteration over keys works also for arrays.
-    for (const k in resultObj) {
-      const val = resultObj[k];
-      if (val instanceof NDArray) {
-        list.push(val);
-      }
-    }
-    return list;
+    this.backendEngine.startScope();
   }
 
   /**
@@ -178,45 +129,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * as scope() without the need for a function closure.
    */
   endScope(result: ScopeResultImmediate) {
-    let arraysToKeep = this.activeScopeNDArraysToKeep;
-    const resultArrays = this.extractNDArraysFromScopeResult(result);
-    arraysToKeep = arraysToKeep.concat(resultArrays);
-
-    // Dispose the current scope.
-    for (let i = 0; i < this.activeScope.length; i++) {
-      const ndarray = this.activeScope[i];
-      if (this.isNDArrayDataInList(ndarray, arraysToKeep)) {
-        continue;
-      }
-      ndarray.dispose();
-    }
-
-    // Pop the current scope.
-    this.ndarrayScopes.pop();
-    this.activeScope = this.ndarrayScopes.length === 0 ?
-        null :
-        this.ndarrayScopes[this.ndarrayScopes.length - 1];
-
-    // Track the current result in the parent scope.
-    resultArrays.forEach(val => {
-      if (!this.isNDArrayDataInList(val, this.activeScopeNDArraysToKeep)) {
-        this.track(val);
-      }
-    });
-
-    this.ndarraysToKeep.pop();
-    this.activeScopeNDArraysToKeep = this.ndarraysToKeep.length === 0 ?
-        null :
-        this.ndarraysToKeep[this.ndarraysToKeep.length - 1];
-  }
-
-  private isNDArrayDataInList(ndarray: NDArray, ndarrayList: NDArray[]) {
-    for (let i = 0; i < ndarrayList.length; i++) {
-      if (ndarrayList[i].id === ndarray.id) {
-        return true;
-      }
-    }
-    return false;
+    this.backendEngine.endScope(result);
   }
 
   /**
@@ -224,18 +137,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param result The NDArray to keep from being disposed.
    */
   keep<T extends NDArray>(result: T): T {
-    if (this.activeScope == null) {
-      if (this.safeMode) {
-        throw new Error(
-            'You are using math in safe mode. Enclose all ' +
-            'math.method() calls inside a scope: ' +
-            'math.scope(() => {math.method();...}) to avoid memory ' +
-            'leaks.');
-      }
-      return result;
-    }
-    this.activeScopeNDArraysToKeep.push(result);
-    return result;
+    return this.backendEngine.keep(result);
   }
 
   /**
@@ -245,24 +147,14 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param result The NDArray to track in the current scope.
    */
   track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
-    if (this.activeScope == null) {
-      if (this.safeMode) {
-        throw new Error(
-            'You are using math in safe mode. Enclose all ' +
-            'math.method() calls inside a scope: ' +
-            'math.scope(() => {math.method();...}) to avoid memory ' +
-            'leaks.');
-      }
-      return result;
-    }
-    this.activeScope.push(result);
-    return result;
+    return this.backendEngine.track(result);
   }
 
   dispose() {
     if (this.customBackend) {
       this.backend.dispose();
     }
+    this.backendEngine.dispose();
   }
 
   /**
@@ -1184,7 +1076,12 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param x The input array.
    */
   square<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Square', {inputs: {x}}) as T;
+    return this.backendEngine.executeKernel(
+               'Square', {inputs: {x}}, (dy: T, y: T) => {
+                 return {
+                   x: () => this.multiply(dy, this.multiply(x, Scalar.new(2)))
+                 };
+               }) as T;
   }
 
   /**

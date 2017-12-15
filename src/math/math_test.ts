@@ -314,3 +314,20 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
+
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      math.enableDebugMode();
+      const a = Scalar.new(1);
+      const b = math.square(a);
+
+      const grad = math.gradientWrt(b, a);
+
+      // console.log(b.dataSync());
+      console.log(grad.dataSync());
+    });
+  };
+
+  test_util.describeMathCPU('nikhil', [tests]);
+}

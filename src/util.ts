@@ -1,4 +1,4 @@
-import {DataTypes} from './math/ndarray';
+import {DataTypes, NDArray} from './math/ndarray';
 
 /**
  * @license
@@ -320,4 +320,14 @@ export function getTypedArrayFromDType<D extends keyof DataTypes>(
     throw new Error(`Unknown data type ${dtype}`);
   }
   return values;
+}
+
+export function isNDArrayInList(
+    ndarray: NDArray, ndarrayList: NDArray[]): boolean {
+  for (let i = 0; i < ndarrayList.length; i++) {
+    if (ndarrayList[i].id === ndarray.id) {
+      return true;
+    }
+  }
+  return false;
 }
