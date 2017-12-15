@@ -154,7 +154,6 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     if (this.customBackend) {
       this.backend.dispose();
     }
-    this.backendEngine.dispose();
   }
 
   /**

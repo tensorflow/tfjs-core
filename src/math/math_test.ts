@@ -48,6 +48,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
         // a, b are still here, result should be disposed.
         expect(math.getNumArrays()).toBe(2);
       });
+
       expect(math.getNumArrays()).toBe(0);
     });
 

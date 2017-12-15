@@ -207,7 +207,7 @@ export class BackendEngine {
 
     // Track the current result in the parent scope.
     resultArrays.forEach(val => {
-      if (!util.isNDArrayInList(val, arraysToKeep)) {
+      if (!util.isNDArrayInList(val, this.activeScopeArrays.keep)) {
         this.track(val);
       }
     });
@@ -258,12 +258,6 @@ export class BackendEngine {
         throw Error(`The result of the last math.${name} has NaNs.`);
       }
     }
-  }
-
-  dispose() {
-    console.log(
-        'disposing backend with ', this.scopeArraysStack.length,
-        'scope stacks and ', this.activeScopeArrays);
   }
 
   getBackend(): MathBackend {
