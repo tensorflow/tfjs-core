@@ -117,6 +117,21 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
+   * Create a new named math scope. Similar to math.scope except we will attach
+   * a name for logging purposes.
+   * @param scopeFn The function to execute with chained math operations.
+   */
+  namedScope<T extends ScopeResult>(
+      scopeName: string,
+      scopeFn:
+          (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
+               ndarray: T1) => T1,
+           track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
+               ndarray: T2) => T2) => T): T {
+    return this.backendEngine.scope(scopeName, scopeFn);
+  }
+
+  /**
    * Start a scope. Use this with endScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
