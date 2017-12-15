@@ -2186,13 +2186,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
-   * Computes the norm of vectors, matrices, and tensors.
+   * Computes the norm of scalar, vectors, and matrices.
    * This function can compute several different vector norms (the 1-norm, the
    * Euclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0) and
    * matrix norms (Frobenius, 1-norm, and inf-norm).
-   *
-   * @param x The input array.
-   * @param ord Optional. Order of the norm. Supported values are following:
+   * Supported norm types are following:
    *     ord	       norm for matrices	        norm for vectors
    *     'euclidean' Frobenius norm             2-norm
    *     ‘fro’	     Frobenius norm	            –
@@ -2201,25 +2199,27 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     1	         max(sum(abs(x), axis=0))	  sum(abs(x))
    *     2	         -	                        sum(abs(x)^2)^1/2
    *
-   * @param axis Optional. If axis is None (the default), the input is
+   * @param x The input array.
+   * @param ord Optional. Order of the norm.
+   * @param axis Optional. If axis is null (the default), the input is
    * considered a vector and a single vector norm is computed over the entire
-   * set of values in the NDArray, i.e. norm(NDArray, ord=ord) is equivalent
-   * to norm(reshape(NDArray, [-1]), ord=ord). If axis is a integer, the input
+   * set of values in the NDArray, i.e. norm(x, ord) is equivalent
+   * to norm(x.reshape([-1]), ord). If axis is a integer, the input
    * is considered a batch of vectors, and axis determines the axis in x
    * over which to compute vector norms. If axis is a 2-tuple of integer it is
    * considered a batch of matrices and axis determines the axes in NDArray over
    * which to compute a matrix norm.
-   * @param keepDims If true, the norm have the same dimensionality as the
-   *     input.
+   * @param keepDims Optional. If true, the norm have the same dimensionality as
+   * the input.
    */
   norm<G extends keyof DataTypes>(
       x: NDArray<G>, ord: number|string = 'euclidean',
       axis: number|number[] = null, keepDims = false): NDArray<G|SumTypes[G]> {
-    const axes = axis_util.parseAxisParam(axis, x.shape);
     return this.scope(() => {
-      const norm = this.normInternal(x, ord, axis, keepDims);
+      const norm = this.normInternal(x, ord, axis);
       let keepDimsShape = norm.shape;
       if (keepDims) {
+        const axes = axis_util.parseAxisParam(axis, x.shape);
         keepDimsShape = axis_util.expandShapeToKeepDim(norm.shape, axes);
       }
       return norm.reshape(keepDimsShape);
@@ -2228,63 +2228,59 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
 
   /**
    * Calculate the norm for different NDAarray.
-   *
-   * @param {NDArray} x
-   * @param {number | string} p
-   * @param axis Optional. The dimension(s) along with to compute norm. By
-   *     default it reduces all dimensions.
-   * @param keepDims If true, the norm have the same dimensionality as the
-   *     input.
-   * @returns {number} Returns the norm
    */
   private normInternal<G extends keyof DataTypes>(
-      x: NDArray<G>, p: number|string, axis: number|number[] = null,
-      keepDims = false): NDArray<G|SumTypes[G]> {
+      x: NDArray<G>, p: number|string,
+      axis: number|number[] = null): NDArray<G|SumTypes[G]> {
     // scalar
     if (x.rank === 0) {
       return this.abs(x);
+    }
+
+    // consider vector when no axis is specified
+    if (x.rank !== 1 && axis === null) {
+      return this.normInternal(x.reshape([-1]), p, axis);
     }
 
     // vector
     if (x.rank === 1 || typeof axis === 'number' ||
         axis instanceof Array && axis.length === 1) {
       if (p === 'inf') {
-        return this.max(this.abs(x), axis, keepDims);
+        return this.max(this.abs(x), axis);
       }
       if (p === '-inf') {
-        return this.min(this.abs(x), axis, keepDims);
+        return this.min(this.abs(x), axis);
       }
       if (p === 'euclidean' || p === 2) {
         // norm(x, 2) = sum(abs(xi) ^ 2) ^ 1/2
-        return this.sqrt(this.sum(
-            this.pow(this.abs(x), Scalar.new(2, 'int32')), axis, keepDims));
+        return this.sqrt(
+            this.sum(this.pow(this.abs(x), Scalar.new(2, 'int32')), axis));
       }
 
       throw new Error(`Error in norm: invalid ord value: ${p}`);
     }
 
     // matrix
-    if (x.rank === 2 || axis instanceof Array && axis.length === 2) {
+    if (axis instanceof Array && axis.length === 2) {
       if (p === 1) {
-        return this.max(this.sum(this.abs(x), axis ? axis[0] : 0, keepDims));
+        return this.max(this.sum(this.abs(x), axis ? axis[0] : 0));
       }
       if (p === 'inf') {
-        return this.max(this.sum(this.abs(x), axis ? axis[1] : 1, keepDims));
+        return this.max(this.sum(this.abs(x), axis ? axis[1] : 1));
       }
       if (p === '-inf') {
-        return this.min(this.sum(this.abs(x), axis ? axis[1] : 1, keepDims));
+        return this.min(this.sum(this.abs(x), axis ? axis[1] : 1));
       }
       if (p === 'fro' || p === 'euclidean') {
         // norm(x) = sqrt(sum(pow(x, 2)))
-        return this.sqrt(
-            this.sum(this.pow(x, Scalar.new(2, 'int32')), axis, keepDims));
+        return this.sqrt(this.sum(this.pow(x, Scalar.new(2, 'int32')), axis));
       }
 
       throw new Error(`Error in norm: invalid ord value: ${p}`);
     }
 
-    throw new Error(
-        `Error in norm: rank of the NDArray is too high: ${x.rank}`);
+    throw new Error(`Error in norm: invalid combination of NDArray rand: ${
+        x.rank} and axis: ${axis}`);
   }
 
   disposeData(id: number): void {
