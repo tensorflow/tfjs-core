@@ -246,18 +246,23 @@ class GameOfLifeModel {
       Tensor {
     const epsilon = graph.constant(1e-7);
     const one = graph.constant(1);
+    const negOne = graph.constant(-1);
     const predictionEpsilon = graph.add(predictionTensor, epsilon);
 
-    // Need to '-' this
-    return graph.subtract(
-        graph.multiply(labelTensor, graph.log(predictionEpsilon)),
-        graph.multiply(
-            graph.subtract(one, labelTensor),
-            graph.log(graph.subtract(one, predictionEpsilon))));
+    const losses = graph.multiply(
+        negOne,
+        graph.subtract(
+            graph.multiply(labelTensor, graph.log(predictionEpsilon)),
+            graph.multiply(
+                graph.subtract(one, labelTensor),
+                graph.log(graph.subtract(one, predictionEpsilon)))));
 
-    // weighted loss?
-    // tslint:disable-next-line:max-line-length
-    // https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/python/ops/losses/losses_impl.py#L435
+    // Calculate weighted loss
+    // const weightedLoss = graph.multiply(losses, one);
+    // const loss = graph.reduceSum(weightedLoss);
+
+    // return loss;
+    return graph.reduceSum(losses);
   }
 }
 
@@ -375,6 +380,7 @@ class TrainDisplay {
   }
 
   displayCost(cost: number, step: number) {
+    console.log('cost', cost);
     this.chartData.push({x: step, y: cost * 100});
     this.chart.update();
   }
