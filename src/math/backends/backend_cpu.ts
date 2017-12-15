@@ -1358,6 +1358,6 @@ ENV.registerBackend('cpu', () => new MathBackendCPU());
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
     super('cpu', safeMode);
-    ENV.setGlobalMath(this);
+    ENV.setMath(this);
   }
 }

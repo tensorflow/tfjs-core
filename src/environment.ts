@@ -219,7 +219,7 @@ export class Environment {
     throw new Error(`Unknown feature ${feature}.`);
   }
 
-  setGlobalMath(math: NDArrayMath) {
+  setMath(math: NDArrayMath) {
     this.globalMath = math;
   }
 
@@ -243,8 +243,6 @@ export class Environment {
       this.backendRegistry[name] = backend;
       return true;
     } catch (err) {
-      console.warn(`${name} backend registration failed`);
-      console.warn(err.message);
       return false;
     }
   }
@@ -302,6 +300,6 @@ function getFeaturesFromURL(): Features {
 
 export let ENV = new Environment(getFeaturesFromURL());
 
-export function setEnvironment(environment: Environment) {
+export function setGlobal(environment: Environment) {
   ENV = environment;
 }

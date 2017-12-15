@@ -692,7 +692,7 @@ ENV.registerBackend('webgl', () => new MathBackendWebGL());
 export class NDArrayMathGPU extends NDArrayMath {
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
     super(new MathBackendWebGL(gpgpu), safeMode);
-    ENV.setGlobalMath(this);
+    ENV.setMath(this);
   }
 
   getGPGPUContext(): GPGPUContext {

@@ -207,7 +207,7 @@ export function describeMathCPU(
       (testName, tests, features) => executeMathTests(testName, tests, () => {
         const safeMode = true;
         const math = new NDArrayMath(new MathBackendCPU(), safeMode);
-        ENV.setGlobalMath(math);
+        ENV.setMath(math);
         return math;
       }, features), featuresList);
 }
@@ -220,7 +220,7 @@ export function describeMathGPU(
       (testName, tests, features) => executeMathTests(testName, tests, () => {
         const safeMode = true;
         const math = new NDArrayMath(new MathBackendWebGL(), safeMode);
-        ENV.setGlobalMath(math);
+        ENV.setMath(math);
         return math;
       }, features), featuresList);
 }
@@ -280,7 +280,7 @@ export function executeMathTests(
   const customAfterEach = () => {
     math.endScope(null);
     math.dispose();
-    ENV.setGlobalMath(oldMath);
+    ENV.setMath(oldMath);
   };
   const customIt =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
@@ -298,9 +298,15 @@ export function executeTests(
     customIt: (expectation: string, testFunc: () => void|Promise<void>) =>
         void = PROMISE_IT) {
   describe(testName, () => {
+    let prevEnv: Environment;
+
     beforeEach(() => {
       if (features != null) {
-        environment.setEnvironment(new Environment(features));
+        prevEnv = environment.ENV;
+        const env = new Environment(features);
+        env.registerBackend('webgl', () => new MathBackendWebGL());
+        env.registerBackend('cpu', () => new MathBackendCPU());
+        environment.setGlobal(env);
       }
 
       if (customBeforeEach != null) {
@@ -314,7 +320,7 @@ export function executeTests(
       }
 
       if (features != null) {
-        environment.setEnvironment(new Environment());
+        environment.setGlobal(prevEnv);
       }
     });
 
