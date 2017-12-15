@@ -14,7 +14,6 @@
  * limitations under the License.
  * =============================================================================
  */
-
 import '../demo-header';
 import '../demo-footer';
 
@@ -29,8 +28,8 @@ export let MathBenchmarkPolymer: new () => PolymerHTMLElement =
 
 export class MathBenchmark extends MathBenchmarkPolymer {
   // Polymer properties.
-  private benchmarks: BenchmarkRunGroup[];
-  private stopMessages: boolean[];
+  benchmarks: BenchmarkRunGroup[];
+  stopMessages: boolean[];
 
   ready() {
     const groups = getRunGroups();
@@ -87,8 +86,8 @@ export class MathBenchmark extends MathBenchmarkPolymer {
     const canvas = this.querySelectorAll('.run-plot')[benchmarkRunGroupIndex] as
         HTMLCanvasElement;
     // Avoid to growing size of rendered chart.
-    canvas.width = 400;
-    canvas.height = 300;
+    canvas.width = 360;
+    canvas.height = 270;
     const context = canvas.getContext('2d') as CanvasRenderingContext2D;
 
     const datasets: ChartDataSets[] = [];

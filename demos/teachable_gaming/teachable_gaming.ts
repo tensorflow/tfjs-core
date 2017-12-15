@@ -63,6 +63,7 @@ export const TeachableGamingDemoPolymer: new () => PolymerHTMLElement =
       is: 'teachablegaming-demo',
       properties: {
         selectedGameIndex: {type: Number, observer: 'loadDosbox'},
+        predicting: {type: Boolean}
       }
     });
 
@@ -73,19 +74,21 @@ export const TeachableGamingDemoPolymer: new () => PolymerHTMLElement =
  */
 
 export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
+  // Polymer properties.
+  dosbox: {onload: (path: string, command: string) => void};
+  predicting: boolean;
+  selectedGameIndex = 0;
+
   private math: NDArrayMathGPU;
   private gl: WebGLRenderingContext;
   private gpgpu: GPGPUContext;
   private selectedIndex: number;
   private predictedIndex: number;
-  private selectedGameIndex = 0;
   private hasAnyTrainedClass: boolean;
-
   private webcamVideoElement: HTMLVideoElement;
   private addNewKeyDialog: HTMLElement;
   private classifier: KNNImageClassifier;
   private keyEventData: Array<{code: number, key: string, text?: string}>;
-  private dosbox: {onload: (path: string, command: string) => void};
   private games: Array<{
     name: string,
     path: string,
@@ -101,7 +104,6 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
   private predictTimes: CircularBuffer;
   private animateLoopIndex: number;
   private static readonly animateLoopStatsFreq = 20;
-  private predicting: boolean;
   private previousFrameTime: number;
   private predictFps: CircularBuffer;
   private loggedEnv: boolean;
@@ -338,7 +340,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
         for (let i = 0; i < indicators.length; i++) {
           (indicators[i] as HTMLElement).style.backgroundColor = 'lightgray';
         }
-        await this.classifier.addImage(image, this.selectedIndex);
+        this.classifier.addImage(image, this.selectedIndex);
         const countBoxId = 'count_' + String(this.selectedIndex);
         const countBox = this.$$('#' + countBoxId) as HTMLElement;
         countBox.innerHTML = String(+countBox.innerHTML + 1);
@@ -348,7 +350,7 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
       await this.math.scope(async (keep, track) => {
         const image = track(Array3D.fromPixels(this.webcamVideoElement));
         const timeStart = performance.now();
-        const results = await this.classifier.predict(image);
+        const results = await this.classifier.predictClass(image);
         this.predictTimes.add(performance.now() - timeStart);
         if (this.animateLoopIndex % TeachableGamingDemo.animateLoopStatsFreq ===
             0) {

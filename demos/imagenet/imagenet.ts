@@ -19,8 +19,8 @@ import '../demo-header';
 import '../demo-footer';
 
 // tslint:disable-next-line:max-line-length
-import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
-import {SqueezeNet} from 'deeplearn-squeezenet';
+import {Array3D, gpgpu_util, GPGPUContext, NDArrayMathGPU} from 'deeplearn';
+import {ActivationName, SqueezeNet} from 'deeplearn-squeezenet';
 
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
 
@@ -48,8 +48,13 @@ const TOP_K_CLASSES = 5;
 
 const INPUT_NAMES = ['cat', 'dog1', 'dog2', 'beerbottle', 'piano', 'saxophone'];
 export class ImagenetDemo extends ImagenetDemoPolymer {
+  // Polymer properties.
+  layerNames: string[];
+  selectedLayerName: ActivationName;
+  inputNames: string[];
+  selectedInputName: string;
+
   private math: NDArrayMathGPU;
-  private mathCPU: NDArrayMathCPU;
   private gl: WebGLRenderingContext;
   private gpgpu: GPGPUContext;
   private renderGrayscaleChannelsCollageShader: WebGLShader;
@@ -58,15 +63,11 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
   private webcamVideoElement: HTMLVideoElement;
   private staticImgElement: HTMLImageElement;
-
-  private layerNames: string[];
-  private selectedLayerName: string;
-  private inputNames: string[];
-  private selectedInputName: string;
-
   private inferenceCanvas: HTMLCanvasElement;
 
-  ready() {
+  private isMediaLoaded = false;
+
+  async ready() {
     this.inferenceCanvas =
         this.querySelector('#inference-canvas') as HTMLCanvasElement;
     this.staticImgElement =
@@ -74,7 +75,10 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     this.webcamVideoElement =
         this.querySelector('#webcamVideo') as HTMLVideoElement;
 
-    this.layerNames = [];
+    this.layerNames = [
+      'conv_1', 'maxpool_1', 'fire2', 'fire3', 'maxpool_2', 'fire4', 'fire5',
+      'maxpool_3', 'fire6', 'fire7', 'fire8', 'fire9', 'conv10'
+    ];
     this.selectedLayerName = 'conv_1';
 
     const inputDropdown = this.querySelector('#input-dropdown');
@@ -84,45 +88,62 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
       if (selectedInputName === 'webcam') {
         this.webcamVideoElement.style.display = '';
         this.staticImgElement.style.display = 'none';
+        this.isMediaLoaded = true;
       } else {
         this.webcamVideoElement.style.display = 'none';
         this.staticImgElement.style.display = '';
-      }
-      this.staticImgElement.src = `images/${event.detail.selected}.jpg`;
-    });
 
-    // tslint:disable-next-line:no-any
-    const navigatorAny = navigator as any;
-    navigator.getUserMedia = navigator.getUserMedia ||
-        navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia ||
-        navigatorAny.msGetUserMedia;
-    if (navigator.getUserMedia) {
-      navigator.getUserMedia(
-          {video: true},
-          (stream) => {
-            this.webcamVideoElement.src = window.URL.createObjectURL(stream);
-            this.initWithWebcam();
-          },
-          (error) => {
-            console.log(error);
-            this.initWithoutWebcam();
-          });
-    } else {
-      this.initWithoutWebcam();
-    }
+        this.staticImgElement.src = `images/${event.detail.selected}.jpg`;
+        this.isMediaLoaded = false;
+        this.staticImgElement.addEventListener('load', () => {
+          this.isMediaLoaded = true;
+        });
+      }
+    });
 
     this.gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
     this.gpgpu = new GPGPUContext(this.gl);
     this.math = new NDArrayMathGPU(this.gpgpu);
-    this.mathCPU = new NDArrayMathCPU();
-
-    this.squeezeNet = new SqueezeNet(this.math);
-    this.squeezeNet.load().then(() => {
-      requestAnimationFrame(() => this.animate());
-    });
 
     this.renderGrayscaleChannelsCollageShader =
         imagenet_util.getRenderGrayscaleChannelsCollageShader(this.gpgpu);
+
+    const cameraSetup = this.setupCameraInput();
+    this.squeezeNet = new SqueezeNet(this.math);
+
+    await Promise.all([this.squeezeNet.load(), cameraSetup]);
+
+    requestAnimationFrame(() => this.animate());
+  }
+
+  private setupCameraInput(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      // tslint:disable-next-line:no-any
+      const navigatorAny = navigator as any;
+      navigator.getUserMedia = navigator.getUserMedia ||
+          navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia ||
+          navigatorAny.msGetUserMedia;
+      if (navigator.getUserMedia) {
+        navigator.getUserMedia(
+            {video: true},
+            (stream) => {
+              this.initWithWebcam();
+              this.webcamVideoElement.src = window.URL.createObjectURL(stream);
+              this.webcamVideoElement.addEventListener('loadeddata', () => {
+                this.isMediaLoaded = true;
+                resolve();
+              }, false);
+            },
+            (error) => {
+              console.log(error);
+              this.initWithoutWebcam();
+              resolve();
+            });
+      } else {
+        this.initWithoutWebcam();
+        resolve();
+      }
+    });
   }
 
   private initWithoutWebcam() {
@@ -154,13 +175,16 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     const isWebcam = this.selectedInputName === 'webcam';
 
     await this.math.scope(async (keep, track) => {
-      const image = track(Array3D.fromPixels(
-          isWebcam ? this.webcamVideoElement : this.staticImgElement));
+      if (!this.isMediaLoaded) {
+        return;
+      }
 
-      const inferenceResult = await this.squeezeNet.predict(image);
-      const namedActivations = inferenceResult.namedActivations;
+      const element =
+          isWebcam ? this.webcamVideoElement : this.staticImgElement;
+      const image = track(Array3D.fromPixels(element));
 
-      this.layerNames = Object.keys(namedActivations);
+      const inferenceResult = await this.squeezeNet.predictWithActivation(
+          image, this.selectedLayerName);
 
       const topClassesToProbability = await this.squeezeNet.getTopKClasses(
           inferenceResult.logits, TOP_K_CLASSES);
@@ -184,7 +208,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
           `last inference time: ${elapsed} ms`;
 
       // Render activations.
-      const activationNDArray = namedActivations[this.selectedLayerName];
+      const activationNDArray = inferenceResult.activation;
 
       // Compute max and min per channel for normalization.
       const maxValues = this.math.maxPool(

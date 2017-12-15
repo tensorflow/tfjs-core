@@ -50,7 +50,7 @@ One last thing before we start coding - we need to run a static HTTP server from
 the `$BASE` directory:
 
 ```bash
-npm run prep
+yarn prep
 ./node_modules/.bin/http-server
 >> Starting up http-server, serving ./
 >> Available on:
@@ -80,6 +80,11 @@ import {CheckpointLoader} from 'deeplearn';
 const varLoader = new CheckpointLoader('.');
 varLoader.getAllVariables().then(async vars => {
   const math = new NDArrayMathGPU();
+
+  // Get NDArray of variables casted with expected dimension.
+  const hidden1W = vars['hidden1/weights'] as Array2D;
+  const hidden1B = vars['hidden1/biases'] as Array1D;
+  // ...
 
   // Write your model here.
   const hidden1 =

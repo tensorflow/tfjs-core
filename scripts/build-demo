@@ -16,10 +16,25 @@
 
 const path = require('path');
 const spawn = require('cross-spawn');
+const shell = require('shelljs');
+
+/** List of vue demos. */
+const VUE_DEMOS = new Set(['vue-demo', 'latent-space-explorer']);
 
 const demoPath = process.argv[2];
-const tsPath = path.join(demoPath, path.basename(demoPath) + '.ts');
+const demoFolder = path.basename(demoPath);
+const tsPath = path.join(demoPath, demoFolder + '.ts');
 const outDir = process.argv[3];
+
+if (VUE_DEMOS.has(demoFolder)) {
+  shell.cd('demos');
+  const cmd = `./node_modules/.bin/poi build ${demoFolder}`;
+  if (shell.exec(cmd).code !== 0) {
+    shell.echo(`Failed building ${demoFolder}`);
+    shell.exit(1);
+  }
+  return;
+}
 
 let outputPath;
 if (outDir != null) {
@@ -30,7 +45,8 @@ if (outDir != null) {
 
 
 const cmd = path.join('node_modules', '.bin', 'browserify');
-const child = spawn(cmd, [tsPath, '-p', '[tsify]', '-o' , outputPath],
+const child = spawn(cmd,
+    [tsPath, '-p', '[tsify', '-p', 'demos/]', '-o' , outputPath],
     {detached: false});
 child.stdout.pipe(process.stdout);
 child.stderr.pipe(process.stderr);

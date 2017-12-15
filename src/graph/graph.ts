@@ -269,10 +269,20 @@ export class Graph {
   /**
    * Computes LeakyReLU of x element-wise.
    * @param x The input tensor to the LeakyReLU.
+   * @param alpha Negative slope coefficient.
    * @return The tensor representing the LeakyReLU operation.
    */
   leakyRelu(x: Tensor, alpha: number): Tensor {
     return this.addNodeAndReturnOutput(new LeakyReLUNode(this, x, alpha));
+  }
+
+  /**
+   * Computes Elu of x element-wise.
+   * @param x the input tensor to the Elu.
+   * @return The tensor representing the Elu operation.
+   */
+  elu(x: Tensor): Tensor {
+    return this.addNodeAndReturnOutput(new EluNode(this, x));
   }
 
   /**
@@ -314,6 +324,7 @@ export class Graph {
   /**
    * Creates a softmax cross-entropy cost operation in the graph.
    * @param x The input tensor to classify.
+   * @param target The label tensor.
    * @return The tensor representing the softmax cross-entropy cost operation.
    */
   softmaxCrossEntropyCost(x: Tensor, target: Tensor): Tensor {
@@ -520,16 +531,23 @@ export class AddNode extends Node {
   constructor(graph: Graph, private t1: Tensor, private t2: Tensor) {
     super(
         graph, 'Add', {t1, t2},
-        new Tensor(util.sizeFromShape(t1.shape) === 1 ? t2.shape : t1.shape));
+        new Tensor(util.sizeFromShape(t1.shape) === 1 
+            ? t2.shape 
+            : (t1.shape.length < t2.shape.length ? t2.shape : t1.shape)));
   }
 
   validate() {
     util.assert(
         util.sizeFromShape(this.t1.shape) === 1 ||
             util.sizeFromShape(this.t2.shape) === 1 ||
-            util.arraysEqual(this.t1.shape, this.t2.shape),
-        'Error adding add operation op: one of inputs must be scalar or the ' +
-            `shapes ${this.t1.shape} and ${this.t2.shape} must match.`);
+            util.arraysEqual(this.t1.shape, this.t2.shape) ||
+            (this.t1.shape.length === 2 && this.t2.shape.length === 1 &&
+                this.t1.shape[1] === this.t2.shape[0]) ||
+            (this.t1.shape.length === 1 && this.t2.shape.length === 2 &&
+                this.t1.shape[0] === this.t2.shape[1]),
+        'Error adding add operation op: one of inputs must be scalar, ' +
+            `shapes ${this.t1.shape} and ${this.t2.shape} must match,` +
+            'or one of them can be broadcasted (2D and 1D).');
   }
 }
 
@@ -768,6 +786,14 @@ export class LeakyReLUNode extends Node {
   constructor(graph: Graph, x: Tensor, alpha: number) {
     super(graph, 'LeakyReLU', {x}, new Tensor(x.shape));
     this.alpha = alpha;
+  }
+  validate() {}
+}
+
+export class EluNode extends Node {
+  static readonly X = 'x';
+  constructor(graph: Graph, x: Tensor) {
+    super(graph, 'Elu', {x}, new Tensor(x.shape));
   }
   validate() {}
 }

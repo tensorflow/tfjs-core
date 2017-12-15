@@ -17,9 +17,7 @@ for everything from education, to model understanding, to art projects.
 
 ## Usage
 
-```
-npm install deeplearn
-```
+`yarn add deeplearn` or `npm install deeplearn`
 
 #### TypeScript / ES6 JavaScript
 See the [TypeScript starter project](https://github.com/PAIR-code/deeplearnjs/tree/master/starter/typescript/) and the
@@ -50,9 +48,11 @@ console.log(result.dataSync());
 #### ES3/ES5 JavaScript
 
 You can also use **deeplearn.js** with plain JavaScript. Load the latest version
-of the library from [unpkg](https://unpkg.com):
+of the library from [jsDelivr](https://www.jsdelivr.com/) or [unpkg](https://unpkg.com):
 
 ```html
+<script src="https://cdn.jsdelivr.net/npm/deeplearn"></script>
+<!-- or -->
 <script src="https://unpkg.com/deeplearn"></script>
 ```
 
@@ -85,11 +85,12 @@ the dev environment:
 ```bash
 $ git clone https://github.com/PAIR-code/deeplearnjs.git
 $ cd deeplearnjs
-$ npm run prep # Installs node modules and bower components.
+$ yarn prep # Installs dependencies.
 ```
 
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
-development. Make sure to install [TSLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) and the `clang-format` command line tool with the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting.
+development. Make sure to install [TSLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) and the `clang-format` command line tool with the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting (Be sure to use the [NPM/Yarn clang-format binary](https://github.com/angular/clang-format)).
+
 
 To interactively develop any of the demos (e.g. `demos/nn-art/`):
 
@@ -110,17 +111,23 @@ cycle when developing apps.
 Before submitting a pull request, make sure the code passes all the tests and is clean of lint errors:
 
 ```bash
-$ npm run test
-$ npm run lint
+$ yarn test
+$ yarn lint
 ```
 
-To run a subset of tests and/or on a specific browser (note the extra `--`):
+To run a subset of tests and/or on a specific browser:
 
 ```bash
-$ npm run test -- --browsers=Chrome --grep='multinomial'
+$ yarn test --browsers=Chrome --grep='multinomial'
  
 > ...
 > Chrome 62.0.3202 (Mac OS X 10.12.6): Executed 28 of 1891 (skipped 1863) SUCCESS (6.914 secs / 0.634 secs)
+```
+
+To run the tests once and exit the karma process (helpful on Windows):
+
+```bash
+$ yarn test --single-run
 ```
 
 To build a standalone ES5 library that can be imported in the browser with a
@@ -135,10 +142,12 @@ To do a dry run and test building an npm package:
 
 ```bash
 $ ./scripts/build-npm.sh
->> Stored npm package at dist/deeplearn-VERSION.tgz
+...
+Stored standalone library at dist/deeplearn(.min).js
+deeplearn-VERSION.tgz
 ```
 
-To install it locally, run `npm install ./dist/deeplearn-VERSION.tgz`.
+To install it locally, run `npm install ./deeplearn-VERSION.tgz`.
 
 > On Windows, use bash (available through git) to use the scripts above.
 

@@ -16,10 +16,10 @@
  */
 
 import * as environment from './environment';
-import {Environment, Features} from './environment';
+import {ENV, Environment, Features} from './environment';
+import {MathBackendCPU} from './math/backends/backend_cpu';
+import {MathBackendWebGL} from './math/backends/backend_webgl';
 import {NDArrayMath} from './math/math';
-import {NDArrayMathCPU} from './math/math_cpu';
-import {NDArrayMathGPU} from './math/math_gpu';
 import * as util from './util';
 import {DType, TypedArray} from './util';
 
@@ -55,7 +55,7 @@ export function kurtosis(values: TypedArray|number[]) {
     sum2 += Math.pow(v, 2);
     sum4 += Math.pow(v, 4);
   }
-  return (1 / n) * sum4 / Math.pow((1 / n) * sum2, 2) - 3;
+  return (1 / n) * sum4 / Math.pow((1 / n) * sum2, 2);
 }
 
 export function skewness(values: TypedArray|number[]) {
@@ -64,8 +64,7 @@ export function skewness(values: TypedArray|number[]) {
   const n = values.length;
   let sum2 = 0;
   let sum3 = 0;
-  let i = -1;
-  while (++i < n) {
+  for (let i = 0; i < n; i++) {
     const v = values[i] - valuesMean;
     sum2 += Math.pow(v, 2);
     sum3 += Math.pow(v, 3);
@@ -75,12 +74,13 @@ export function skewness(values: TypedArray|number[]) {
 
 export function jarqueBeraNormalityTest(values: TypedArray|number[]) {
   // https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
+  const n = values.length;
   const s = skewness(values);
   const k = kurtosis(values);
-  const jb = values.length * ((Math.pow(s, 2) / 6) + (Math.pow(k, 2) / 24));
-  // JB test requires 2-degress of freedom from Chi-Square @ 0.999:
+  const jb = n / 6 * (Math.pow(s, 2) + 0.25 * Math.pow(k - 3, 2));
+  // JB test requires 2-degress of freedom from Chi-Square @ 0.95:
   // http://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm
-  const CHI_SQUARE_2DEG = 13.816;
+  const CHI_SQUARE_2DEG = 5.991;
   if (jb > CHI_SQUARE_2DEG) {
     throw new Error(`Invalid p-value for JB: ${jb}`);
   }
@@ -201,22 +201,28 @@ export type Tests = (it: (name: string, testFn: () => void) => void) => void;
 
 export function describeMathCPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
-  const testNameBase = 'math_cpu.' + name;
+  const testNameBase = 'CPU: math.' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
-      (testName, tests, features) => executeMathTests(
-          testName, tests, () => new NDArrayMathCPU(), features),
-      featuresList);
+      (testName, tests, features) => executeMathTests(testName, tests, () => {
+        const safeMode = true;
+        const math = new NDArrayMath(new MathBackendCPU(), safeMode);
+        ENV.setMath(math);
+        return math;
+      }, features), featuresList);
 }
 
 export function describeMathGPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
-  const testNameBase = 'math_gpu.' + name;
+  const testNameBase = 'WebGL: math.' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
-      (testName, tests, features) => executeMathTests(
-          testName, tests, () => new NDArrayMathGPU(), features),
-      featuresList);
+      (testName, tests, features) => executeMathTests(testName, tests, () => {
+        const safeMode = true;
+        const math = new NDArrayMath(new MathBackendWebGL(), safeMode);
+        ENV.setMath(math);
+        return math;
+      }, features), featuresList);
 }
 
 export function describeCustom(
@@ -264,13 +270,17 @@ export function executeMathTests(
     testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
     features?: Features) {
   let math: NDArrayMath;
+  let oldMath: NDArrayMath;
+
   const customBeforeEach = () => {
+    oldMath = ENV.math;
     math = mathFactory();
     math.startScope();
   };
   const customAfterEach = () => {
     math.endScope(null);
     math.dispose();
+    ENV.setMath(oldMath);
   };
   const customIt =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
@@ -288,9 +298,15 @@ export function executeTests(
     customIt: (expectation: string, testFunc: () => void|Promise<void>) =>
         void = PROMISE_IT) {
   describe(testName, () => {
+    let prevEnv: Environment;
+
     beforeEach(() => {
       if (features != null) {
-        environment.setEnvironment(new Environment(features));
+        prevEnv = environment.ENV;
+        const env = new Environment(features);
+        env.registerBackend('webgl', () => new MathBackendWebGL());
+        env.registerBackend('cpu', () => new MathBackendCPU());
+        environment.setGlobal(env);
       }
 
       if (customBeforeEach != null) {
@@ -304,7 +320,7 @@ export function executeTests(
       }
 
       if (features != null) {
-        environment.setEnvironment(new Environment());
+        environment.setGlobal(prevEnv);
       }
     });
 

@@ -17,14 +17,41 @@
 const path = require('path');
 const spawn = require('cross-spawn');
 const opn = require('opn');
+const shell = require('shelljs');
+var argv = require('minimist')(process.argv.slice(2));
 
-const demoPath = process.argv[2];
+/** List of vue demos. */
+const VUE_DEMOS = new Set(['vue-demo', 'latent-space-explorer']);
+
+const demoPath = argv._[0];
+
+const demoFolder = path.basename(demoPath);
 const outputPath = path.join(demoPath, 'bundle.js')
-const tsPath = path.join(demoPath, path.basename(demoPath) + '.ts');
+const tsPath = path.join(demoPath, demoFolder + '.ts');
+
+if (VUE_DEMOS.has(demoFolder)) {
+  shell.cd('demos');
+  const cmd = `./node_modules/.bin/poi ${demoFolder} -o`;
+  if (shell.exec(cmd).code !== 0) {
+    shell.echo(`Failed building ${demoFolder}`);
+    shell.exit(1);
+  }
+  return;
+}
 
 const cmd = path.join('demos', 'node_modules', '.bin', 'watchify');
-const watchify = spawn(cmd, [tsPath, '-p', '[tsify]', '-v', '--debug',
-    '-o' , outputPath], {detached: false});
+
+const tsifyCmd = ['tsify', '-p', 'demos/'];
+if (argv['target'] != null) {
+  tsifyCmd.push('--target', argv['target']);
+}
+// tsifyCmd is passed to the watchify command, so the arguments should be
+// wrapped in [].
+tsifyCmd[0] = '[' + tsifyCmd[0];
+tsifyCmd[tsifyCmd.length - 1] += ']';
+
+const watchify = spawn(cmd, [tsPath, '-p', ...tsifyCmd, '-v',
+    '--debug', '-o' , outputPath], {detached: false});
 watchify.stdout.pipe(process.stdout);
 watchify.stderr.pipe(process.stderr);
 

@@ -26,13 +26,14 @@ import {MatmulCPUBenchmark, MatmulGPUBenchmark} from './matmul_benchmarks';
 import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from './pool_benchmarks';
 // tslint:disable-next-line:max-line-length
 import {ReductionOpsCPUBenchmark, ReductionOpsGPUBenchmark} from './reduction_ops_benchmark';
+// tslint:disable-next-line:max-line-length
 import {UnaryOpsCPUBenchmark, UnaryOpsGPUBenchmark} from './unary_ops_benchmark';
 
 export function getRunGroups(): BenchmarkRunGroup[] {
   const groups: BenchmarkRunGroup[] = [];
 
   groups.push({
-    name: 'Batch Normalization 3D: input [size, size, size]',
+    name: 'Batch Normalization 3D: input [size, size, 8]',
     min: 0,
     max: 512,
     stepSize: 64,

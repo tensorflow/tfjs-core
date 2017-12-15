@@ -18,78 +18,71 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import {NDArrayMathGPU} from './math_gpu';
-import {Array1D, Array3D, Scalar} from './ndarray';
+
+import {MatrixOrientation} from './backends/types/matmul';
+import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
 // math.scope
 {
   const gpuTests: MathTests = it => {
-    it('scope returns NDArray', (math: NDArrayMathGPU) => {
-      const a = Array1D.new([1, 2, 3]);
-      let b = Array1D.new([0, 0, 0]);
+    it('scope returns NDArray', async math => {
+      await math.scope(async () => {
+        const a = Array1D.new([1, 2, 3]);
+        let b = Array1D.new([0, 0, 0]);
 
-      const numUsedTexturesBefore =
-          math.getTextureManager().getNumUsedTextures();
+        expect(math.getNumArrays()).toBe(2);
+        await math.scope(async () => {
+          const result = math.scope(() => {
+            b = math.add(a, b) as Array1D;
+            b = math.add(a, b) as Array1D;
+            b = math.add(a, b) as Array1D;
+            return math.add(a, b);
+          });
 
-      math.scope(() => {
-        const result = math.scope(() => {
-          b = math.add(a, b) as Array1D;
-          b = math.add(a, b) as Array1D;
-          b = math.add(a, b) as Array1D;
-          return math.add(a, b);
+          // result is new. All intermediates should be disposed.
+          expect(math.getNumArrays()).toBe(2 + 1);
+          test_util.expectArraysClose(
+              await result.data(), new Float32Array([4, 8, 12]));
         });
 
-        // a, b, and result are new textures. All intermediates should be
-        // disposed.
-        expect(math.getTextureManager().getNumUsedTextures())
-            .toEqual(numUsedTexturesBefore + 3);
-        test_util.expectArraysClose(
-            result.getValues(), new Float32Array([4, 8, 12]));
+        // a, b are still here, result should be disposed.
+        expect(math.getNumArrays()).toBe(2);
       });
-
-      // a, b are new textures, result should be disposed.
-      expect(math.getTextureManager().getNumUsedTextures())
-          .toEqual(numUsedTexturesBefore + 2);
-      a.dispose();
-      b.dispose();
+      expect(math.getNumArrays()).toBe(0);
     });
 
-    it('scope returns NDArray[]', (math: NDArrayMathGPU) => {
+    it('scope returns NDArray[]', async math => {
       const a = Array1D.new([1, 2, 3]);
       const b = Array1D.new([0, -1, 1]);
+      expect(math.getNumArrays()).toBe(2);
 
-      const numUsedTexturesBefore =
-          math.getTextureManager().getNumUsedTextures();
-
-      math.scope(() => {
+      await math.scope(async () => {
         const result = math.scope(() => {
           math.add(a, b);
           return [math.add(a, b), math.subtract(a, b)];
         });
 
-        // a, b, and 2 results are new textures. All intermediates should be
-        // disposed.
-        expect(math.getTextureManager().getNumUsedTextures())
-            .toEqual(numUsedTexturesBefore + 4);
+        // the 2 results are new. All intermediates should be disposed.
+        expect(math.getNumArrays()).toBe(4);
         test_util.expectArraysClose(
-            result[0].getValues(), new Float32Array([1, 1, 4]));
+            await result[0].data(), new Float32Array([1, 1, 4]));
         test_util.expectArraysClose(
-            result[1].getValues(), new Float32Array([1, 3, 2]));
+            await result[1].data(), new Float32Array([1, 3, 2]));
+        expect(math.getNumArrays()).toBe(4);
       });
 
-      // a, b are new textures, result should be disposed.
-      expect(math.getTextureManager().getNumUsedTextures())
-          .toEqual(numUsedTexturesBefore + 2);
+      // the 2 results should be disposed.
+      expect(math.getNumArrays()).toBe(2);
       a.dispose();
       b.dispose();
+      expect(math.getNumArrays()).toBe(0);
     });
 
-    it('basic scope usage without return', (math: NDArrayMathGPU) => {
+    it('basic scope usage without return', math => {
       const a = Array1D.new([1, 2, 3]);
       let b = Array1D.new([0, 0, 0]);
 
-      const numUsedTexturesBefore =
-          math.getTextureManager().getNumUsedTextures();
+      expect(math.getNumArrays()).toBe(2);
 
       math.scope(() => {
         b = math.add(a, b) as Array1D;
@@ -98,19 +91,15 @@ import {Array1D, Array3D, Scalar} from './ndarray';
         math.add(a, b);
       });
 
-      const numUsedTexturesAfter =
-          math.getTextureManager().getNumUsedTextures();
-
-      // original a and b, all intermediates should be disposed.
-      expect(numUsedTexturesAfter).toEqual(numUsedTexturesBefore + 2);
+      // all intermediates should be disposed.
+      expect(math.getNumArrays()).toBe(2);
     });
 
-    it('scope returns Promise<NDArray>', async (math: NDArrayMathGPU) => {
+    it('scope returns Promise<NDArray>', async math => {
       const a = Array1D.new([1, 2, 3]);
       let b = Array1D.new([0, 0, 0]);
 
-      const numUsedTexturesBefore =
-          math.getTextureManager().getNumUsedTextures();
+      expect(math.getNumArrays()).toBe(2);
 
       await math.scope(async () => {
         const result = math.scope(() => {
@@ -122,64 +111,52 @@ import {Array1D, Array3D, Scalar} from './ndarray';
 
         const data = await result.data();
 
-        // a, b, and result are new textures. All intermediates should be
-        // disposed.
-        expect(math.getTextureManager().getNumUsedTextures())
-            .toEqual(numUsedTexturesBefore + 2);
+        // result is new. All intermediates should be disposed.
+        expect(math.getNumArrays()).toBe(3);
         test_util.expectArraysClose(data, new Float32Array([4, 8, 12]));
       });
 
-      // a, b are new textures, result should be disposed.
-      expect(math.getTextureManager().getNumUsedTextures())
-          .toEqual(numUsedTexturesBefore + 2);
+      // result should be disposed. a and b are still allocated.
+      expect(math.getNumArrays()).toBe(2);
       a.dispose();
       b.dispose();
+      expect(math.getNumArrays()).toBe(0);
     });
 
-    it('nested scope usage', (math: NDArrayMathGPU) => {
+    it('nested scope usage', async math => {
       const a = Array1D.new([1, 2, 3]);
       let b = Array1D.new([0, 0, 0]);
 
-      const numUsedTexturesBefore =
-          math.getTextureManager().getNumUsedTextures();
+      expect(math.getNumArrays()).toBe(2);
 
-      math.scope(() => {
+      await math.scope(async () => {
         const result = math.scope(() => {
           b = math.add(a, b) as Array1D;
           b = math.scope(() => {
             b = math.scope(() => {
               return math.add(a, b) as Array1D;
             });
-            // a, original b, and two intermediate textures should be the only
-            // textures.
-            expect(math.getTextureManager().getNumUsedTextures())
-                .toEqual(numUsedTexturesBefore + 4);
+            // original a, b, and two intermediates.
+            expect(math.getNumArrays()).toBe(4);
 
             math.scope(() => {
               math.add(a, b);
             });
             // All the intermediates should be cleaned up.
-            expect(math.getTextureManager().getNumUsedTextures())
-                .toEqual(numUsedTexturesBefore + 4);
+            expect(math.getNumArrays()).toBe(4);
 
             return math.add(a, b) as Array1D;
           });
-          expect(math.getTextureManager().getNumUsedTextures())
-              .toEqual(numUsedTexturesBefore + 4);
+          expect(math.getNumArrays()).toBe(4);
 
           return math.add(a, b) as Array1D;
         });
 
-        // a, b, and result are new textures. All intermediates should be
-        // disposed.
-        expect(math.getTextureManager().getNumUsedTextures())
-            .toEqual(numUsedTexturesBefore + 3);
+        expect(math.getNumArrays()).toBe(3);
         test_util.expectArraysClose(
-            result.getValues(), new Float32Array([4, 8, 12]));
+            await result.data(), new Float32Array([4, 8, 12]));
       });
-      // a, b, are new textures, result should be disposed.
-      expect(math.getTextureManager().getNumUsedTextures())
-          .toEqual(numUsedTexturesBefore + 2);
+      expect(math.getNumArrays()).toBe(2);
     });
   };
 
@@ -270,21 +247,68 @@ import {Array1D, Array3D, Scalar} from './ndarray';
       }
 
       const a = Array3D.fromPixels(pixels, 4);
-      const b = Scalar.new(20.5);
+      const b = Scalar.new(20, 'int32');
 
       const res = math.add(a, b);
 
-      test_util.expectArraysClose(
-          res.getValues(), new Float32Array([
-            120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 120.5, 270.5,
-            270.5, 270.5, 270.5, 270.5, 270.5, 270.5, 270.5
-          ]));
+      expect(res.getValues()).toEqual(new Int32Array([
+        120, 120, 120, 120, 120, 120, 120, 120, 270, 270, 270, 270, 270, 270,
+        270, 270
+      ]));
 
       a.dispose();
     });
   };
 
   test_util.describeMathGPU('fromPixels + math', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// gradientWrt integration tests
+{
+  const tests: MathTests = it => {
+    it('matmul + relu', math => {
+      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
+      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+
+      // m = dot(a, b)
+      // y = relu(m)
+      // e = sum(y)
+      const m = math.matMul(a, b);
+      const y = math.relu(m);
+      const e = math.sum(y);
+
+      const grads = math.gradientWrt(e, {a, b});
+
+      // de/dy = 1
+      // dy/dm = step(m)
+      // de/dm = de/dy * dy/dm = step(m)
+      const dedm = math.step(m);
+
+      // de/da = dot(de/dy, bT)
+      expect(grads.a.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          grads.a.dataSync(),
+          math.matMul(
+                  dedm, b, MatrixOrientation.REGULAR,
+                  MatrixOrientation.TRANSPOSED)
+              .dataSync());
+
+      // de/db = dot(aT, de/dy)
+      expect(grads.b.shape).toEqual(b.shape);
+      test_util.expectArraysClose(
+          grads.b.dataSync(),
+          math.matMul(
+                  a, dedm, MatrixOrientation.TRANSPOSED,
+                  MatrixOrientation.REGULAR)
+              .dataSync());
+    });
+  };
+  test_util.describeMathCPU('gradientWrt', [tests]);
+  test_util.describeMathGPU('gradientWrt', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
