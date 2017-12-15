@@ -150,7 +150,7 @@ class GameOfLifeModel {
 
   setupSession(
       boardSize: number, batchSize: number, initialLearningRate: number,
-      numLayers: number): void {
+      numLayers: number, useLogCost: boolean): void {
     console.log('setting up with initial learning rate: ', initialLearningRate);
     this.optimizer = new AdagradOptimizer(initialLearningRate);
 
@@ -172,11 +172,13 @@ class GameOfLifeModel {
 
     this.predictionTensor = hiddenLayer;
 
-    // Log-cost for more accuracy?
-    this.costTensor =
-        this.logLoss(graph, this.targetTensor, this.predictionTensor);
-    // this.costTensor =
-    //     graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
+    if (useLogCost) {
+      this.costTensor =
+          this.logLoss(graph, this.targetTensor, this.predictionTensor);
+    } else {
+      this.costTensor =
+          graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
+    }
     this.session = new Session(graph, this.math);
   }
 
@@ -388,6 +390,10 @@ class TrainDisplay {
     this.trainingDataElement.innerHTML =
         ' - (Building training data - ' + length + ' of ' + size + ')';
   }
+
+  clearTrainingData(): void {
+    this.trainingDataElement.innerHTML = '';
+  }
 }
 
 /** Main class for running the Game of Life training demo. */
@@ -408,6 +414,7 @@ class Demo {
   learningRateInput: HTMLTextAreaElement;
   updateIntervalInput: HTMLTextAreaElement;
   numLayersInput: HTMLTextAreaElement;
+  useLoggedCostInput: HTMLInputElement;
 
   addSequenceButton: HTMLElement;
   trainButton: HTMLElement;
@@ -440,6 +447,8 @@ class Demo {
         document.getElementById('update-interval-input') as HTMLTextAreaElement;
     this.numLayersInput =
         document.getElementById('num-layers-input') as HTMLTextAreaElement;
+    this.useLoggedCostInput =
+        document.getElementById('use-log-cost-input') as HTMLInputElement;
 
     this.addSequenceButton = document.querySelector('.add-sequence-button');
     this.addSequenceButton.addEventListener(
@@ -471,12 +480,20 @@ class Demo {
 
     if (this.isBuildingTrainingData) {
       this.math.scope(async () => {
+        // Do 2 examples each pass:
         this.trainingData.push(await this.game.generateGolExample());
+        if (this.trainingData.length < this.trainingBatchSize) {
+          this.trainingData.push(await this.game.generateGolExample());
+        }
       });
-      // this.trainDisplay.displayTrainingData(
-      //     this.trainingData.length, this.trainingBatchSize);
+
+      if (this.trainingBatchSize >= 10) {
+        this.trainDisplay.displayTrainingData(
+            this.trainingData.length + 1, this.trainingBatchSize);
+      }
       if (this.trainingData.length === this.trainingBatchSize) {
         this.isBuildingTrainingData = false;
+        this.trainDisplay.clearTrainingData();
       }
     }
 
@@ -519,7 +536,8 @@ class Demo {
 
     this.game.setSize(boardSize);
     this.model.setupSession(
-        boardSize, trainingBatchSize, learningRate, numLayers);
+        boardSize, trainingBatchSize, learningRate, numLayers,
+        this.useLoggedCostInput.checked);
 
     this.step = 0;
     this.trainingSteps = trainingSize;
@@ -543,6 +561,7 @@ class Demo {
     this.trainingSizeInput.setAttribute('disabled', 'disabled');
     this.trainingBatchSizeInput.setAttribute('disabled', 'disabled');
     this.numLayersInput.setAttribute('disabled', 'disabled');
+    this.useLoggedCostInput.setAttribute('disabled', 'disabled');
   }
 
   private enableForm(): void {
@@ -553,6 +572,7 @@ class Demo {
     this.trainingSizeInput.removeAttribute('disabled');
     this.trainingBatchSizeInput.removeAttribute('disabled');
     this.numLayersInput.removeAttribute('disabled');
+    this.useLoggedCostInput.removeAttribute('disabled');
   }
 
   private getBoardSize(): number {
