@@ -249,20 +249,19 @@ class GameOfLifeModel {
     const negOne = graph.constant(-1);
     const predictionEpsilon = graph.add(predictionTensor, epsilon);
 
-    const losses = graph.multiply(
-        negOne,
-        graph.subtract(
-            graph.multiply(labelTensor, graph.log(predictionEpsilon)),
+    const losses = graph.subtract(
+        graph.multiply(
+            negOne,
             graph.multiply(
-                graph.subtract(one, labelTensor),
-                graph.log(graph.subtract(one, predictionEpsilon)))));
+                labelTensor,
+                graph.log(graph.subtract(one, predictionEpsilon)))),
+        graph.multiply(
+            graph.subtract(one, labelTensor),
+            graph.log(graph.subtract(one, predictionEpsilon))));
 
-    // Calculate weighted loss
-    // const weightedLoss = graph.multiply(losses, one);
-    // const loss = graph.reduceSum(weightedLoss);
-
-    // return loss;
-    return graph.reduceSum(losses);
+    const totalLosses = graph.reduceSum(losses);
+    return graph.reshape(
+        graph.divide(totalLosses, graph.constant(labelTensor.shape)), []);
   }
 }
 
