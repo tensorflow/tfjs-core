@@ -2053,14 +2053,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         `n should be odd for localResponseNormalization3D but got n ` +
             `${n}.`);
 
-    return this.executeOp(
-        'localResponseNormalization3D',
-        () => this.localResponseNormalization3DInternal(
-            x, k, n, alpha, beta));
+    return this.backendEngine.executeKernel(
+        'LRN3D',
+        {inputs: {x}, args: {k, n, alpha, beta}});
   }
-  protected abstract localResponseNormalization3DInternal(
-    x: Array3D, k: number, n: number, alpha: number, beta: number): Array3D;
-
+  
   //////////////
   // LSTM ops //
   //////////////

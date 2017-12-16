@@ -1,3 +1,4 @@
+
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -14,24 +15,28 @@
  * limitations under the License.
  * =============================================================================
  */
-import {Array1D, NDArrayMathCPU} from 'deeplearn';
 
-export interface ITopK {
-  indices: Int32Array;
-  values: Float32Array;
+import {Array3D} from '../../ndarray';
+// tslint:disable-next-line:max-line-length
+import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
+
+// 3D
+export interface LRN3DNode extends KernelNode {
+  inputAndArgs: LRN3DInputConfig;
+  output: Array3D;
+  gradient: (dy: Array3D, y: Array3D) => LRN3DGradientInputArrays;
 }
 
-/**
- * Get the topK classes for pre-softmax logits. Returns a map of className
- * to softmax normalized probability.
- *
- * @param logits Pre-softmax logits array.
- * @param topK How many top classes to return.
- */
-export async function getTopK(prob: Array1D, topK: number): Promise<ITopK> {
-  const topk = new NDArrayMathCPU().topK(prob, topK);
-  const topkIndices = await topk.indices.data() as Int32Array;
-  const topkValues = await topk.values.data() as Float32Array;
+export interface LRN3DInputConfig extends KernelInputConfig {
+  inputs: LRN3DInputArrays;
+  args: {k: number, n: number, alpha: number, beta: number};
+}
 
-  return {indices: topkIndices, values: topkValues};
+export interface LRN3DInputArrays extends TapeNodeInputArrays {
+  x: Array3D;
+}
+
+export interface LRN3DGradientInputArrays extends
+    TapeNodeInputGradientArrays {
+  x: () => Array3D;
 }

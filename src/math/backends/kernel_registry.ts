@@ -6,6 +6,7 @@ import {KernelInputConfig} from './tape_types';
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './types/argminmax';
 // tslint:disable-next-line:max-line-length
 import {BatchNorm2DInputConfig, BatchNorm2DNode, BatchNorm3DInputConfig, BatchNorm3DNode} from './types/batchnorm';
+import {LRN3DInputConfig, LRN3DNode} from './types/lrn';
 import {BinaryInputConfig, BinaryNode} from './types/binary';
 // tslint:disable-next-line:max-line-length
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './types/concat';
@@ -246,6 +247,11 @@ const KERNEL_METHODS: {
         config.inputs.x, config.inputs.mean, config.inputs.variance,
         config.args.varianceEpsilon, config.inputs.scale, config.inputs.offset);
   },
+  LRN3D: (backend: MathBackend, config: LRN3DInputConfig) => {
+    return backend.localResponseNormalization3D(
+        config.inputs.x, config.args.k, config.args.n,
+        config.args.alpha, config.args.beta);
+  },
   Multinomial: (backend: MathBackend, config: MultinomialInputConfig) => {
     return backend.multinomial(
         config.inputs.probs, config.args.numSamples, config.args.seed);
@@ -326,6 +332,7 @@ export interface KernelConfigRegistry {
   ResizeBilinear3D: ResizeBilinear3DNode;
   BatchNorm3D: BatchNorm3DNode;
   BatchNorm2D: BatchNorm2DNode;
+  LRN3D: LRN3DNode;
   Multinomial: MultinomialNode;
   OneHot: OneHotNode;
 }

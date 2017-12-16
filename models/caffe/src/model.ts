@@ -21,7 +21,7 @@ import {performMathOp} from './layer';
 
 import {caffe} from 'caffe-proto';
 import * as dag from 'dag-iterator';
-import {Model, Array1D, Array3D, NDArray, NDArrayMathGPU, initializeGPU} from 'deeplearn';
+import {Model, Array1D, Array3D, NDArray, NDArrayMathGPU} from 'deeplearn';
 
 export class CaffeModel implements Model {
 
@@ -54,13 +54,6 @@ export class CaffeModel implements Model {
    */
   constructor(protected math: NDArrayMathGPU,
     private caffemodelUrl: string, private prototxtUrl: string, private meanBinaryprotoUrl?: string){
-    // TODO(nsthorat): This awful hack is because we need to share the global
-    // GPGPU between deeplearn loaded from standalone as well as the internal
-    // deeplearn that gets compiled as part of this model. Remove this once we
-    // decouple NDArray from storage mechanism.
-    initializeGPU(
-        (this.math as NDArrayMathGPU).getGPGPUContext(),
-        (this.math as NDArrayMathGPU).getTextureManager());
   }
 
   /**
