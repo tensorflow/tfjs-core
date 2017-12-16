@@ -2279,8 +2279,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       throw new Error(`Error in norm: invalid ord value: ${p}`);
     }
 
-    throw new Error(`Error in norm: invalid combination of NDArray rand: ${
-        x.rank} and axis: ${axis}`);
+    throw new Error(`Error in norm: invalid axis: ${axis}`);
   }
 
   disposeData(id: number): void {
