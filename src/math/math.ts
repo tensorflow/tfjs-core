@@ -2194,8 +2194,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     ord	       norm for matrices	        norm for vectors
    *     'euclidean' Frobenius norm             2-norm
    *     ‘fro’	     Frobenius norm	            –
-   *     inf	       max(sum(abs(x), axis=1))	  max(abs(x))
-   *     -inf	       min(sum(abs(x), axis=1))	  min(abs(x))
+   *     Infinity	   max(sum(abs(x), axis=1))	  max(abs(x))
+   *     -Infinity   min(sum(abs(x), axis=1))	  min(abs(x))
    *     1	         max(sum(abs(x), axis=0))	  sum(abs(x))
    *     2	         -	                        sum(abs(x)^2)^1/2
    *
@@ -2213,7 +2213,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * the input.
    */
   norm<G extends keyof DataTypes>(
-      x: NDArray<G>, ord: number|string = 'euclidean',
+      x: NDArray<G>, ord: number|'euclidean'|'fro' = 'euclidean',
       axis: number|number[] = null, keepDims = false): NDArray<G|SumTypes[G]> {
     return this.scope(() => {
       const norm = this.normInternal(x, ord, axis);
@@ -2245,10 +2245,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     // vector
     if (x.rank === 1 || typeof axis === 'number' ||
         axis instanceof Array && axis.length === 1) {
-      if (p === 'inf') {
+      if (p === Infinity) {
         return this.max(this.abs(x), axis);
       }
-      if (p === '-inf') {
+      if (p === -Infinity) {
         return this.min(this.abs(x), axis);
       }
       if (p === 'euclidean' || p === 2) {
@@ -2260,16 +2260,16 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       throw new Error(`Error in norm: invalid ord value: ${p}`);
     }
 
-    // matrix
+    // matrix (assumption axis[0] < axis[1])
     if (axis instanceof Array && axis.length === 2) {
       if (p === 1) {
-        return this.max(this.sum(this.abs(x), axis ? axis[0] : 0));
+        return this.max(this.sum(this.abs(x), axis[0]), axis[1] - 1);
       }
-      if (p === 'inf') {
-        return this.max(this.sum(this.abs(x), axis ? axis[1] : 1));
+      if (p === Infinity) {
+        return this.max(this.sum(this.abs(x), axis[1]), axis[0]);
       }
-      if (p === '-inf') {
-        return this.min(this.sum(this.abs(x), axis ? axis[1] : 1));
+      if (p === -Infinity) {
+        return this.min(this.sum(this.abs(x), axis[1]), axis[0]);
       }
       if (p === 'fro' || p === 'euclidean') {
         // norm(x) = sqrt(sum(pow(x, 2)))

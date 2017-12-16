@@ -744,7 +744,7 @@ import * as reduce_util from './reduce_util';
 
     it('vector inf norm', math => {
       const a = Array1D.new([1, -2, 3, -4]);
-      const norm = math.norm(a, 'inf');
+      const norm = math.norm(a, Infinity);
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 4);
@@ -754,7 +754,7 @@ import * as reduce_util from './reduce_util';
 
     it('vector -inf norm', math => {
       const a = Array1D.new([1, -2, 3, -4]);
-      const norm = math.norm(a, '-inf');
+      const norm = math.norm(a, -Infinity);
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 1);
@@ -793,7 +793,7 @@ import * as reduce_util from './reduce_util';
 
     it('matrix inf norm', math => {
       const a = Array2D.new([3, 2], [1, 2, -3, 1, 0, 1]);
-      const norm = math.norm(a, 'inf', [0, 1]);
+      const norm = math.norm(a, Infinity, [0, 1]);
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 4);
@@ -803,7 +803,7 @@ import * as reduce_util from './reduce_util';
 
     it('matrix -inf norm', math => {
       const a = Array2D.new([3, 2], [1, 2, -3, 1, 0, 1]);
-      const norm = math.norm(a, '-inf', [0, 1]);
+      const norm = math.norm(a, -Infinity, [0, 1]);
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 1);
@@ -852,7 +852,7 @@ import * as reduce_util from './reduce_util';
 
     it('propagates NaNs for norm', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
-      const norm = math.norm(a, 'inf', [0, 1]);
+      const norm = math.norm(a, Infinity, [0, 1]);
 
       expect(norm.dtype).toBe('float32');
       expect(norm.get()).toEqual(NaN);
@@ -861,7 +861,7 @@ import * as reduce_util from './reduce_util';
 
     it('axis=null in 2D array norm', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf');
+      const norm = math.norm(a, Infinity);
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
@@ -872,7 +872,7 @@ import * as reduce_util from './reduce_util';
 
     it('2D array norm with keep dim', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf', null, true /* keepDims */);
+      const norm = math.norm(a, Infinity, null, true /* keepDims */);
 
       expect(norm.shape).toEqual([1, 1]);
       expect(norm.dtype).toBe('float32');
@@ -883,7 +883,7 @@ import * as reduce_util from './reduce_util';
 
     it('axis=0 in 2D array norm', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf', [0]);
+      const norm = math.norm(a, Infinity, [0]);
 
       expect(norm.shape).toEqual([2]);
       expect(norm.dtype).toBe('float32');
@@ -894,7 +894,7 @@ import * as reduce_util from './reduce_util';
 
     it('axis=1 in 2D array norm', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf', [1]);
+      const norm = math.norm(a, Infinity, [1]);
 
       expect(norm.dtype).toBe('float32');
       expect(norm.shape).toEqual([3]);
@@ -906,7 +906,7 @@ import * as reduce_util from './reduce_util';
 
     it('axis=1 keepDims in 2D array norm', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf', [1], true);
+      const norm = math.norm(a, Infinity, [1], true);
 
       expect(norm.dtype).toBe('float32');
       expect(norm.shape).toEqual([3, 1]);
@@ -918,7 +918,7 @@ import * as reduce_util from './reduce_util';
 
     it('2D norm with axis=1 provided as number', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf', 1);
+      const norm = math.norm(a, Infinity, 1);
 
       expect(norm.shape).toEqual([2]);
       expect(norm.dtype).toBe('float32');
@@ -929,7 +929,7 @@ import * as reduce_util from './reduce_util';
 
     it('axis=0,1 in 2D array norm', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf', [0, 1]);
+      const norm = math.norm(a, Infinity, [0, 1]);
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
@@ -940,7 +940,7 @@ import * as reduce_util from './reduce_util';
 
     it('axis=0,1 keepDims in 2D array norm', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf', [0, 1], true);
+      const norm = math.norm(a, Infinity, [0, 1], true);
 
       expect(norm.shape).toEqual([1, 1]);
       expect(norm.dtype).toBe('float32');
@@ -951,28 +951,40 @@ import * as reduce_util from './reduce_util';
 
     it('3D norm axis=0,1, matrix inf norm', math => {
       const a = Array3D.new([3, 2, 1], [1, 2, -3, 1, 0, 1]);
-      const norm = math.norm(a, 'inf', [0, 1]);
+      const norm = math.norm(a, Infinity, [0, 1]);
 
+      expect(norm.shape).toEqual([1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectNumbersClose(norm.get(), 4);
+      test_util.expectArraysClose(norm.getValues(), new Float32Array([4]));
 
       a.dispose();
     });
 
-    it('axis=0,1 keepDims in 3D array norm piyu', math => {
+    it('axis=0,1 keepDims in 3D array norm', math => {
       const a = Array3D.new([3, 2, 1], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf', [0, 1], true);
+      const norm = math.norm(a, Infinity, [0, 1], true);
 
-      expect(norm.shape).toEqual([1, 1]);
+      expect(norm.shape).toEqual([1, 1, 1]);
       expect(norm.dtype).toBe('float32');
       test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
 
       a.dispose();
     });
 
+    it('axis=0,1 keepDims in 3D array norm', math => {
+      const a = Array3D.new([3, 2, 2], [1, 2, 3, 0, 0, 1, 1, 2, 3, 0, 0, 1]);
+      const norm = math.norm(a, Infinity, [0, 1], true);
+
+      expect(norm.shape).toEqual([1, 1, 2]);
+      expect(norm.dtype).toBe('float32');
+      test_util.expectArraysClose(norm.getValues(), new Float32Array([4, 3]));
+
+      a.dispose();
+    });
+
     it('axis=null in 3D array norm', math => {
       const a = Array3D.new([3, 2, 1], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf');
+      const norm = math.norm(a, Infinity);
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
@@ -983,11 +995,41 @@ import * as reduce_util from './reduce_util';
 
     it('axis=null in 4D array norm', math => {
       const a = Array4D.new([3, 2, 1, 1], [1, 2, 3, 0, 0, 1]);
-      const norm = math.norm(a, 'inf');
+      const norm = math.norm(a, Infinity);
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
       test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
+
+      a.dispose();
+    });
+
+    it('axis=0,1 in 4D array norm', math => {
+      const a = Array4D.new([3, 2, 2, 2], [
+        1, 2, 3, 0, 0, 1, 1, 2, 3, 0, 0, 1,
+        1, 2, 3, 0, 0, 1, 1, 2, 3, 0, 0, 1
+      ]);
+      const norm = math.norm(a, Infinity, [0, 1]);
+
+      expect(norm.shape).toEqual([2, 2]);
+      expect(norm.dtype).toBe('float32');
+      test_util.expectArraysClose(
+          norm.getValues(), new Float32Array([4, 3, 4, 3]));
+
+      a.dispose();
+    });
+
+    it('axis=0,1 in 4D array norm', math => {
+      const a = Array4D.new([3, 2, 2, 2], [
+        1, 2, 3, 0, 0, 1, 1, 2, 3, 0, 0, 1,
+        1, 2, 3, 0, 0, 1, 1, 2, 3, 0, 0, 1
+      ]);
+      const norm = math.norm(a, Infinity, [0, 1], true);
+
+      expect(norm.shape).toEqual([1, 1, 2, 2]);
+      expect(norm.dtype).toBe('float32');
+      test_util.expectArraysClose(
+          norm.getValues(), new Float32Array([4, 3, 4, 3]));
 
       a.dispose();
     });
