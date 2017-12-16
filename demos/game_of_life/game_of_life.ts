@@ -41,7 +41,6 @@ class GameOfLife {
     const numNeighbors =
         this.countNeighbors(this.size, worldPadded).getValues();
     const worldValues = await world.data();
-    // const worldValues = world.getValues();
     const nextWorldValues = [];
     for (let i = 0; i < numNeighbors.length; i++) {
       const value = numNeighbors[i];
