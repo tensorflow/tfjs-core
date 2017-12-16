@@ -1259,7 +1259,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Computes leaky rectified linear element-wise with parametric alphas
    * @param {T} x the input NDArray
-   * @param {T} alpha scaling factor for negative values
+   * @param {T} alpha scaling factor NDArray for negative values
    * @return {NDArray}
    */
   pRelu<T extends NDArray>(x: T, alpha: T): T {
@@ -1270,7 +1270,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Computes the derivative of PReLU
    * @param {T} x the input NDArray
-   * @param {T} alpha scaling factor for negative values
+   * @param {T} alpha scaling factor NDArray for negative values
    * @return {NDArray}
    */
   pReluDer<T extends NDArray>(x: T, alpha: T): T {

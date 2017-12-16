@@ -26,41 +26,6 @@ import {Operation} from './op';
 /**
  * @hidden
  */
-export class PReLU extends Operation {
-  constructor(
-      private xTensor: Tensor, private alphaTensor: Tensor,
-      private yTensor: Tensor) {
-    super();
-  }
-
-  feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
-    const x = inferenceArrays.get(this.xTensor);
-    const alpha = inferenceArrays.get(this.alphaTensor);
-
-    math.scope((keep) => {
-      inferenceArrays.set(this.yTensor, keep(math.pRelu(x, alpha)));
-    });
-  }
-
-  backProp(
-      math: NDArrayMath, inferenceArrays: TensorArrayMap,
-      gradientArrays: SummedTensorArrayMap) {
-    const x = inferenceArrays.get(this.xTensor);
-    const alpha = inferenceArrays.get(this.alphaTensor);
-    const dy = gradientArrays.get(this.yTensor);
-
-    math.scope(() => {
-      const dydx = math.pReluDer(x, alpha);
-      gradientArrays.add(this.xTensor, math.elementWiseMul(dy, dydx));
-      dydx.dispose();
-    });
-  }
-
-}
-
-/**
- * @hidden
- */
 export class ElementWiseActivation extends Operation {
   constructor(
       protected xTensor: Tensor, protected yTensor: Tensor,
@@ -150,3 +115,38 @@ export class Square extends ElementWiseActivation {
      super(xTensor, yTensor, new EluFunc());
    }
  }
+
+/**
+ * @hidden
+ */
+export class PReLU extends Operation {
+  constructor(
+      private xTensor: Tensor, private alphaTensor: Tensor,
+      private yTensor: Tensor) {
+    super();
+  }
+
+  feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
+    const x = inferenceArrays.get(this.xTensor);
+    const alpha = inferenceArrays.get(this.alphaTensor);
+
+    math.scope((keep) => {
+      inferenceArrays.set(this.yTensor, keep(math.pRelu(x, alpha)));
+    });
+  }
+
+  backProp(
+      math: NDArrayMath, inferenceArrays: TensorArrayMap,
+      gradientArrays: SummedTensorArrayMap) {
+    const x = inferenceArrays.get(this.xTensor);
+    const alpha = inferenceArrays.get(this.alphaTensor);
+    const dy = gradientArrays.get(this.yTensor);
+
+    math.scope(() => {
+      const dydx = math.pReluDer(x, alpha);
+      gradientArrays.add(this.xTensor, math.elementWiseMul(dy, dydx));
+      dydx.dispose();
+    });
+  }
+
+}

@@ -277,7 +277,7 @@ export class Graph {
   }
 
   /**
-   * Computes PReLUN of x element-wise.
+   * Computes PReLU of x element-wise.
    * @param x The input tensor to the LeakyReLU.
    * @param alpha Negative slope coefficient tensor.
    * @return The tensor representing the PReLU operation.
@@ -808,10 +808,15 @@ export class PReLUNode extends Node {
   static readonly X = 'x';
   static readonly ALPHA = 'alpha';
 
-  constructor(graph: Graph, x: Tensor, alpha: Tensor) {
+  constructor(graph: Graph, private x: Tensor, private alpha: Tensor) {
     super(graph, 'PReLU', {x, alpha}, new Tensor(x.shape));
   }
-  validate() {}
+
+  validate() {
+    util.assert(util.arraysEqual(this.x.shape, this.alpha.shape),
+      'Error adding pRelu op: the ' +
+        `shapes x: ${this.x.shape} and alpha: ${this.alpha.shape} must match.`);
+  }
 }
 
 export class EluNode extends Node {

@@ -496,7 +496,8 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   pReluDer<T extends NDArray>(a: T, b: T): T {
-    const program = new BinaryOpProgram(binaryop_gpu.PRELU_DER, a.shape, b.shape);
+    const program = new BinaryOpProgram(binaryop_gpu.PRELU_DER,
+      a.shape, b.shape);
     return this.compileAndRun(program, [a, b]) as T;
   }
 
