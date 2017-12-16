@@ -330,5 +330,5 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('nikhil', [tests]);
+  test_util.describeMathCPU('gradientWrt 2nd order derivative', [tests]);
 }
