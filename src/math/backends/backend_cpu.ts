@@ -675,6 +675,38 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
+  pRelu<T extends NDArray>(x: T, alpha: T) {
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
+    const alphas = alpha.dataSync();
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+      if (v >= 0) {
+        resultValues[i] = v;
+      } else {
+        resultValues[i] = alphas[i] * v;
+      }
+    }
+    return NDArray.make(x.shape, {values: resultValues}) as T;
+  }
+
+  pReluDer<T extends NDArray>(x: T, alpha: T) {
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
+    const alphas = alpha.dataSync();
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+      if (v > 0) {
+        resultValues[i] = 1;
+      } else if (v < 0) {
+        resultValues[i] = alphas[i];
+      } else {
+        resultValues[i] = 0;
+      }
+    }
+    return NDArray.make(x.shape, {values: resultValues}) as T;
+  }
+
   clip<T extends NDArray>(x: T, min: number, max: number): T {
     const resultValues = new Float32Array(x.size);
     const values = x.getValues();
