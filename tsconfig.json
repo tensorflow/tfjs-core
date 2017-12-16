@@ -20,5 +20,12 @@
   },
   "include": [
     "src/"
-  ]
+  ],
+  "typedocOptions": {
+    "mode": "modules",
+    "excludeNotExported": true,
+    "excludePrivate": true,
+    "excludeExternals": true,
+    "exclude": "**/*_test.ts"
+  }
 }
