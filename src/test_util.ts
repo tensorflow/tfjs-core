@@ -16,9 +16,9 @@
  */
 
 import * as environment from './environment';
-import {Environment, Features} from './environment';
-import {NDArrayMathCPU} from './math/backends/backend_cpu';
-import {NDArrayMathGPU} from './math/backends/backend_webgl';
+import {ENV, Environment, Features} from './environment';
+import {MathBackendCPU} from './math/backends/backend_cpu';
+import {MathBackendWebGL} from './math/backends/backend_webgl';
 import {NDArrayMath} from './math/math';
 import * as util from './util';
 import {DType, TypedArray} from './util';
@@ -204,9 +204,12 @@ export function describeMathCPU(
   const testNameBase = 'CPU: math.' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
-      (testName, tests, features) => executeMathTests(
-          testName, tests, () => new NDArrayMathCPU(), features),
-      featuresList);
+      (testName, tests, features) => executeMathTests(testName, tests, () => {
+        const safeMode = true;
+        const math = new NDArrayMath(new MathBackendCPU(), safeMode);
+        ENV.setMath(math);
+        return math;
+      }, features), featuresList);
 }
 
 export function describeMathGPU(
@@ -214,9 +217,12 @@ export function describeMathGPU(
   const testNameBase = 'WebGL: math.' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
-      (testName, tests, features) => executeMathTests(
-          testName, tests, () => new NDArrayMathGPU(), features),
-      featuresList);
+      (testName, tests, features) => executeMathTests(testName, tests, () => {
+        const safeMode = true;
+        const math = new NDArrayMath(new MathBackendWebGL(), safeMode);
+        ENV.setMath(math);
+        return math;
+      }, features), featuresList);
 }
 
 export function describeCustom(
@@ -264,13 +270,17 @@ export function executeMathTests(
     testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
     features?: Features) {
   let math: NDArrayMath;
+  let oldMath: NDArrayMath;
+
   const customBeforeEach = () => {
+    oldMath = ENV.math;
     math = mathFactory();
     math.startScope();
   };
   const customAfterEach = () => {
     math.endScope(null);
     math.dispose();
+    ENV.setMath(oldMath);
   };
   const customIt =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
@@ -288,9 +298,15 @@ export function executeTests(
     customIt: (expectation: string, testFunc: () => void|Promise<void>) =>
         void = PROMISE_IT) {
   describe(testName, () => {
+    let prevEnv: Environment;
+
     beforeEach(() => {
       if (features != null) {
-        environment.setEnvironment(new Environment(features));
+        prevEnv = environment.ENV;
+        const env = new Environment(features);
+        env.registerBackend('webgl', () => new MathBackendWebGL());
+        env.registerBackend('cpu', () => new MathBackendCPU());
+        environment.setGlobal(env);
       }
 
       if (customBeforeEach != null) {
@@ -304,7 +320,7 @@ export function executeTests(
       }
 
       if (features != null) {
-        environment.setEnvironment(new Environment());
+        environment.setGlobal(prevEnv);
       }
     });
 
