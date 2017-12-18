@@ -342,6 +342,15 @@ export class MathBackendCPU implements MathBackend {
   multiply<T extends NDArray>(a: T, b: T): T {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
+    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
+    const aRankDiff = newShape.length - a.rank;
+
+    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
+    const bRankDiff = newShape.length - b.rank;
+
+    console.log('broadcastdims', aBroadcastDims, bBroadcastDims);
+
     const newValues = new Float32Array(util.sizeFromShape(newShape));
 
     const aValues = a.getValues();

@@ -31,9 +31,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       expect(result.shape).toEqual([2, 2]);
       test_util.expectArraysClose(result.getValues(), expected);
-
-      a.dispose();
-      b.dispose();
     });
 
     it('elementWiseMul propagates NaNs', math => {
@@ -42,9 +39,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       const result = math.elementWiseMul(a, b).getValues();
       test_util.expectArraysClose(result, new Float32Array([NaN, 9, NaN, 0]));
-
-      a.dispose();
-      b.dispose();
     });
 
     it('elementWiseMul throws when passed ndarrays of different shapes',
@@ -54,9 +48,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
          expect(() => math.elementWiseMul(a, b)).toThrowError();
          expect(() => math.elementWiseMul(b, a)).toThrowError();
-
-         a.dispose();
-         b.dispose();
        });
 
     it('multiply same-shaped ndarrays', math => {
@@ -67,9 +58,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       expect(result.shape).toEqual([2, 2]);
       test_util.expectArraysClose(result.getValues(), expected);
-
-      a.dispose();
-      b.dispose();
     });
 
     it('multiply broadcasting ndarrays', math => {
@@ -80,10 +68,20 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       expect(result.shape).toEqual([2, 2]);
       test_util.expectArraysClose(result.getValues(), expected);
-
-      a.dispose();
-      b.dispose();
     });
+
+    it('nikhil multiply broadcasting same rank NDArrays different shape',
+       math => {
+         const a = Array2D.new([2, 2], [1, 2, -3, -4]);
+         const b = Array2D.new([2, 1], [2, 3]);
+
+         const result = math.multiply(a, b);
+
+         expect(result.shape).toEqual([2, 2]);
+         const expected = new Float32Array([2, 4, -9, -12]);
+
+         test_util.expectArraysClose(result.getValues(), expected);
+       });
 
     it('divide', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
@@ -93,9 +91,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       test_util.expectArraysClose(
           r.getValues(), new Float32Array([1, 1, 1, 1, 2.5, 6 / 5]));
-
-      a.dispose();
-      c.dispose();
     });
 
     it('divide propagates NaNs', math => {
@@ -105,9 +100,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const r = math.divide(a, c).getValues();
 
       test_util.expectArraysClose(r, new Float32Array([1 / 3, NaN]));
-
-      a.dispose();
-      c.dispose();
     });
 
     it('div throws when passed ndarrays of different shapes', math => {
