@@ -118,21 +118,6 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
-   * Create a new named math scope. Similar to math.scope except we will attach
-   * a name for logging purposes.
-   * @param scopeFn The function to execute with chained math operations.
-   */
-  namedScope<T extends ScopeResult>(
-      scopeName: string,
-      scopeFn:
-          (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
-               ndarray: T1) => T1,
-           track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
-               ndarray: T2) => T2) => T): T {
-    return this.backendEngine.scope(scopeName, scopeFn);
-  }
-
-  /**
    * Start a scope. Use this with endScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
@@ -920,8 +905,18 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
       NDArray<G> {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Sub', {inputs: {a, b}}) as
-        NDArray<G>;
+    return this.backendEngine.executeKernel(
+               'Sub', {inputs: {a, b}}, (dy: NDArray<G>, y: NDArray<G>) => {
+                 if (!util.arraysEqual(a.shape, b.shape)) {
+                   throw new Error(
+                       `Backprop through broadcasted subtract not ` +
+                       `yet supported.`);
+                 }
+                 return {
+                   a: () => NDArray.onesLike(a),
+                   b: () => this.scope(() => this.neg(NDArray.onesLike(b)))
+                 };
+               }) as NDArray<G>;
   }
 
   /**
@@ -941,8 +936,29 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         b.dtype === 'int32',
         'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Pow', {inputs: {a, b}}) as
-        NDArray<G>;
+    return this.backendEngine.executeKernel(
+               'Pow', {inputs: {a, b}}, (dy: NDArray<G>, y: NDArray<G>) => {
+                 return {
+                   a: () => {
+                     return this.scope(() => {
+                       return this.multiply(
+                           dy,
+                           this.multiply(
+                               b,
+                               // TODO(nsthorat): Use a broadcasted 1 for memory
+                               // efficiency. We make a ones array like b for
+                               // supported subtract backprop.
+                               this.pow(
+                                   a, this.subtract(b, NDArray.onesLike(b)))));
+                     });
+                   },
+                   b: () => {
+                     throw new Error(
+                         `Backprop through exponent of math.pow not ` +
+                         `implemented yet.`);
+                   }
+                 };
+               }) as NDArray<G>;
   }
 
   /**
@@ -984,7 +1000,14 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    */
   multiply(a: NDArray, b: NDArray): NDArray {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Mul', {inputs: {a, b}});
+    return this.backendEngine.executeKernel(
+        'Mul', {inputs: {a, b}}, (dy: NDArray, y: NDArray) => {
+          if (!util.arraysEqual(a.shape, b.shape)) {
+            throw new Error(
+                `Backprop through broadcasted multiply not supported yet.`);
+          }
+          return {a: () => this.clone(b), b: () => this.clone(a)};
+        });
   }
 
   /**
@@ -2169,12 +2192,15 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       return result as T;
     }
   }
+  debug() {
+    this.backendEngine.debug();
+  }
 
   disposeData(id: number): void {
     this.backend.disposeData(id);
-    // TODO(nsthorat): Construct an error and save the stack trace for debugging
-    // when in debug mode. Creating a stack trace is too expensive to do
-    // unconditionally.
+    // TODO(nsthorat): Construct an error and save the stack trace for
+    // debugging when in debug mode. Creating a stack trace is too expensive
+    // to do unconditionally.
     this.numArrays--;
   }
 }

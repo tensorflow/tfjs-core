@@ -18,7 +18,7 @@
 import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
-import {TapeNode} from './tape_types';
+import {TapeNode, TapeNodeOutput} from './tape_types';
 
 /**
  * Computes a list of TapeNodes that connect x to y, filtering everything else
@@ -33,6 +33,7 @@ export function getFilteredNodesXToY(
   // x. Note that because we assume that all Nodes have a single output NDArray,
   // we can use these interchangably.
   const arraysFromX: {[ndarrayId: number]: boolean} = {};
+  const nodesFromX: {[nodeId: number]: boolean} = {};
   for (let i = 0; i < xs.length; i++) {
     arraysFromX[xs[i].id] = true;
   }
@@ -44,14 +45,24 @@ export function getFilteredNodesXToY(
     for (const inputName in nodeInputs) {
       const input = nodeInputs[inputName];
 
+      let anyInputFromX = false;
       for (let j = 0; j < xs.length; j++) {
         if (arraysFromX[input.id]) {
-          arraysFromX[node.output.id] = true;
+          if (node.output instanceof NDArray) {
+            arraysFromX[node.output.id] = true;
+          } else {
+            const keys = Object.keys(node.output);
+            for (const key in keys) {
+              arraysFromX[node.output[key].id] = true;
+            }
+          }
+          anyInputFromX = true;
+          nodesFromX[node.id] = true;
           break;
         }
       }
 
-      if (arraysFromX[node.output.id]) {
+      if (anyInputFromX) {
         break;
       }
     }
@@ -60,14 +71,30 @@ export function getFilteredNodesXToY(
   // Backwards pass to find all of the nodes that lead to y.
   const arraysLeadToY: {[ndarrayId: number]: boolean} = {};
   arraysLeadToY[y.id] = true;
+  const nodesToY: {[nodeId: number]: boolean} = {};
 
   for (let i = tapeNodes.length - 1; i >= 0; i--) {
     const node = tapeNodes[i];
     const nodeInputs = node.inputAndArgs.inputs;
 
-    if (arraysLeadToY[node.output.id]) {
-      for (const inputName in nodeInputs) {
-        arraysLeadToY[nodeInputs[inputName].id] = true;
+    const outputs: NDArray[] = [];
+    if (node.output instanceof NDArray) {
+      outputs.push(node.output);
+    } else {
+      const keys = Object.keys(node.output);
+      for (const key in keys) {
+        outputs.push(node.output[key]);
+      }
+    }
+
+    // If any of the outputs lead to y, mark all of the inputs as leading to y.
+    for (let j = 0; j < outputs.length; j++) {
+      if (arraysLeadToY[outputs[j].id]) {
+        for (const inputName in nodeInputs) {
+          arraysLeadToY[nodeInputs[inputName].id] = true;
+          nodesToY[node.id] = true;
+        }
+        break;
       }
     }
   }
@@ -76,7 +103,8 @@ export function getFilteredNodesXToY(
   const filteredTapeNodes: TapeNode[] = [];
   for (let i = 0; i < tapeNodes.length; i++) {
     const node = tapeNodes[i];
-    if (arraysFromX[node.output.id] && arraysLeadToY[node.output.id]) {
+
+    if (nodesFromX[node.id] && nodesToY[node.id]) {
       // Prune the inputs from the node that aren't a function of x.
       const prunedInputs: {[inputName: string]: NDArray} = {};
       for (const inputName in node.inputAndArgs.inputs) {
@@ -86,9 +114,26 @@ export function getFilteredNodesXToY(
         }
       }
 
+      let prunedOutputs: NDArray|{[outputName: string]: NDArray};
+      if (node.output instanceof NDArray) {
+        // Nothing to prune if the output is just a single NDArray since the
+        // node would have been pruned.
+        prunedOutputs = node.output;
+      } else {
+        // Prune the outputs from the node that don't lead to y.
+        prunedOutputs = {};
+        for (const outputName in node.output) {
+          const output = node.output[outputName];
+          if (arraysLeadToY[output.id]) {
+            prunedOutputs[outputName] = node.output[outputName];
+          }
+        }
+      }
+
       // Copy the node and overwrite inputsAndArgs to the pruned version.
       const prunedNode = Object.assign({}, node) as TapeNode;
       prunedNode.inputAndArgs = {inputs: prunedInputs};
+      prunedNode.output = prunedOutputs;
 
       filteredTapeNodes.push(prunedNode);
     }
@@ -107,11 +152,21 @@ export function getFilteredNodesXToY(
 export function backpropagateGradients(
     backend: MathBackend,
     arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray},
-    filteredNodes: TapeNode[]) {
+    filteredNodes: Array<TapeNode<TapeNodeOutput>>) {
   // Walk the tape backwards and keep a map of NDArray to its gradient.
   for (let i = filteredNodes.length - 1; i >= 0; i--) {
     const node = filteredNodes[i];
-    const dy = arrayAccumulatedGradientMap[node.output.id];
+
+    let dy: TapeNodeOutput;
+    if (node.output instanceof NDArray) {
+      dy = arrayAccumulatedGradientMap[node.output.id];
+    } else {
+      dy = {};
+      const keys = Object.keys(node.output);
+      for (const key in keys) {
+        dy[key] = arrayAccumulatedGradientMap[node.output[key].id];
+      }
+    }
 
     if (node.gradient == null) {
       throw new Error(`Cannot compute gradient: gradient function not found for

@@ -32,9 +32,12 @@ export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
 interface ScopeTrackAndKeepArrays {
   keep: NDArray[];
   track: NDArray[];
+  gradientsMode: boolean;
 }
 
 export class BackendEngine {
+  private tapeNodeId = 0;
+
   private activeTape: TapeNode[];
   private tapeStack: TapeNode[][];
 
@@ -48,7 +51,7 @@ export class BackendEngine {
     // Create a default outer scope.
     this.activeTape = [];
     this.tapeStack = [this.activeTape];
-    this.activeScopeArrays = {keep: [], track: []};
+    this.activeScopeArrays = {keep: [], track: [], gradientsMode: false};
     this.scopeArraysStack = [this.activeScopeArrays];
   }
 
@@ -82,6 +85,7 @@ export class BackendEngine {
     }
 
     const evaluatedNode: KernelNode = {
+      id: this.tapeNodeId++,
       name: `kernel: ${kernelName}`,
       kernel: kernelName,
       inputAndArgs: config,
@@ -94,27 +98,37 @@ export class BackendEngine {
   }
 
   gradientWrt(y: Scalar, xs: NDArray[]): NDArray[] {
-    // Filter out the nodes that don't connect x => y.
-    const filteredNodes =
-        tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
+    const gradientsMode = true;
+    return this.scope('grad', () => {
+      // Filter out the nodes that don't connect x => y.
+      const filteredNodes =
+          tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
+      console.log(this.activeTape);
+      // tslint:disable-next-line:no-debugger
+      debugger;
 
-    if (filteredNodes.length === 0) {
-      throw new Error(`Cannot compute gradient: y is not a function of xs.`);
-    }
+      if (filteredNodes.length === 0) {
+        throw new Error(`Cannot compute gradient: y is not a function of xs.`);
+      }
 
-    // Seed the gradient of dy to be 1.
-    const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-    arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
+      // Seed the gradient of dy to be 1.
+      const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
+      arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
 
-    // Backprop gradients through the filtered nodes.
-    tape_util.backpropagateGradients(
-        this.backend, arrayAccumulatedGradientMap, filteredNodes);
+      // Backprop gradients through the filtered nodes.
+      tape_util.backpropagateGradients(
+          this.backend, arrayAccumulatedGradientMap, filteredNodes);
 
-    const gradients: NDArray[] = [];
-    for (let i = 0; i < xs.length; i++) {
-      gradients.push(arrayAccumulatedGradientMap[xs[i].id]);
-    }
-    return gradients;
+      const gradients: NDArray[] = [];
+      for (let i = 0; i < xs.length; i++) {
+        gradients.push(arrayAccumulatedGradientMap[xs[i].id]);
+      }
+      return gradients;
+    }, gradientsMode);
+  }
+
+  debug() {
+    console.log(this.activeTape);
   }
 
   /**
@@ -123,7 +137,11 @@ export class BackendEngine {
    * from intermediate math operations. You must create a scope in safe mode
    * to call math operations. If a result is returned from the scope, it will
    * also be tracked, which means there must be yet another wrapping scope.
+   * @param name The name of the scope. Used for logging.
    * @param scopeFn The function to execute with chained math operations.
+   * @param gradientsMode Whether this scope is started as a gradients mode
+   * scope. This will propagate downwards and will force all children scopes not
+   * to dispose their scopes until all training scopes are popped.
    */
   scope<T extends ScopeResult>(
       name: string,
@@ -131,8 +149,9 @@ export class BackendEngine {
           (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
                ndarray: T1) => T1,
            track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
-               ndarray: T2) => T2) => T): T {
-    this.startScope();
+               ndarray: T2) => T2) => T,
+      gradientsMode = false): T {
+    this.startScope(gradientsMode);
 
     const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
     const trackFn = <T extends NDArray>(ndarray: T): T => this.track(ndarray);
@@ -151,12 +170,13 @@ export class BackendEngine {
    * Start a scope. Use this with endScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  startScope() {
+  startScope(gradientsMode = false) {
     const newTape: TapeNode[] = [];
     this.tapeStack.push(newTape);
     this.activeTape = newTape;
 
-    const newScopeArrays: ScopeTrackAndKeepArrays = {keep: [], track: []};
+    const newScopeArrays:
+        ScopeTrackAndKeepArrays = {keep: [], track: [], gradientsMode};
     this.scopeArraysStack.push(newScopeArrays);
     this.activeScopeArrays = newScopeArrays;
   }
