@@ -2142,9 +2142,9 @@ deeplearn-squeezenet@~0.1.5, deeplearn-squeezenet@~0.1.6:
   version "0.1.6"
   resolved "https://registry.yarnpkg.com/deeplearn-squeezenet/-/deeplearn-squeezenet-0.1.6.tgz#f73c25d8627de514d72425471a3d69436c754ecf"
 
-deeplearn@../deeplearn-0.3.14.tgz:
-  version "0.3.14"
-  resolved "../deeplearn-0.3.14.tgz#aa4a2c5a81d327ac90a62dfb15518bfc82306308"
+deeplearn@0.3.13:
+  version "0.3.13"
+  resolved "https://registry.yarnpkg.com/deeplearn/-/deeplearn-0.3.13.tgz#12033ab21581fb277dede662250bd58d86457d44"
   dependencies:
     seedrandom "~2.4.3"
 
