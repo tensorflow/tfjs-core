@@ -22,6 +22,7 @@ import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {NDArrayStorage} from './backends/backend';
 import {MathBackend} from './backends/backend';
+// tslint:disable-next-line:max-line-length
 import {BackendEngine, ScopeResult, ScopeResultImmediate} from './backends/backend_engine';
 import {MatrixOrientation} from './backends/types/matmul';
 import * as broadcast_util from './broadcast_util';
@@ -207,9 +208,16 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         (dy: Array2D, y: Array2D) => {
           return {
             a: () => this.matMul(
-                dy, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
+                dy, b, MatrixOrientation.REGULAR,
+                bOrientation === MatrixOrientation.REGULAR ?
+                    MatrixOrientation.TRANSPOSED :
+                    MatrixOrientation.REGULAR),
             b: () => this.matMul(
-                a, dy, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR)
+                a, dy,
+                aOrientation === MatrixOrientation.REGULAR ?
+                    MatrixOrientation.TRANSPOSED :
+                    MatrixOrientation.REGULAR,
+                MatrixOrientation.REGULAR)
           };
         });
   }
