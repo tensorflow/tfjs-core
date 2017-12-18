@@ -267,39 +267,21 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  private scaledArrayAdd<T extends NDArray>(c1: Scalar, a: T, c2: Scalar, b: T):
-      T {
-    const c1Val = c1.get();
-    const c2Val = c2.get();
-    return this.broadcastedBinaryOp(a, b, 'float32', (aVal, bVal) => {
-      return c1Val * aVal + c2Val * bVal;
-    }) as T;
-  }
-
   neg<T extends NDArray>(x: T): T {
     return this.multiply(Scalar.new(-1), x) as T;
   }
 
   add<T extends NDArray>(a: T, b: T): T {
-    const one = Scalar.new(1);
-    return this.scaledArrayAdd<T>(one, a, one, b);
+    return this.binaryBroadcast(a, b, (aValue, bValue) => aValue + bValue) as T;
   }
 
   subtract<T extends NDArray>(a: T, b: T): T {
-    return this.scaledArrayAdd<T>(Scalar.new(1), a, Scalar.new(-1), b);
+    return this.binaryBroadcast(a, b, (aValue, bValue) => aValue - bValue) as T;
   }
 
   pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T {
-    const newShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const newValues = new Float32Array(util.sizeFromShape(newShape));
-
-    const aValues = a.getValues();
-    const bValues = b.getValues();
-    for (let i = 0; i < newValues.length; ++i) {
-      newValues[i] = Math.pow(aValues[i % a.size], bValues[i % b.size]);
-    }
-    return NDArray.make(newShape, {values: newValues}) as T;
+    return this.binaryBroadcast(
+               a, b, (aValue, bValue) => Math.pow(aValue, bValue)) as T;
   }
 
   matMul(
@@ -339,56 +321,50 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new([leftDim, rightDim], values);
   }
 
-  private binarBroadcast() {}
-
-  multiply<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
-      NDArray<G> {
+  private binaryBroadcast<G extends keyof DataTypes>(
+      a: NDArray<G>, b: NDArray<G>,
+      op: (a: number, b: number) => number): NDArray<G> {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const newValues = new Float32Array(util.sizeFromShape(newShape));
+    const result = NDArray.make(newShape, {values: newValues}) as NDArray<G>;
 
     const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
-    const aRankDiff = newShape.length - a.rank;
+    const aRankDiff = result.rank - a.rank;
 
     const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
-    const bRankDiff = newShape.length - b.rank;
-
-    console.log('broadcastdims', aBroadcastDims, bBroadcastDims);
-
-    const newValues = new Float32Array(util.sizeFromShape(newShape));
-    const result = NDArray.make(newShape, {values: newValues}) as T;
+    const bRankDiff = result.rank - b.rank;
 
     for (let i = 0; i < newValues.length; ++i) {
       const loc = result.indexToLoc(i);
 
-      const aCoords = loc.slice();
+      let aCoords = loc.slice();
       for (let j = 0; j < aBroadcastDims.length; j++) {
         aCoords[aBroadcastDims[j] + aRankDiff] = 0;
       }
+      aCoords = aCoords.slice(aRankDiff);
       const aValue = a.get(...aCoords);
 
-      const bCoords = loc.slice();
+      let bCoords = loc.slice();
       for (let j = 0; j < bBroadcastDims.length; j++) {
         bCoords[bBroadcastDims[j] + bRankDiff] = 0;
       }
+      bCoords = bCoords.slice(bRankDiff);
       const bValue = b.get(...bCoords);
 
-      newValues[i] = aValue * bValue;
+      newValues[i] = op(aValue, bValue);
     }
     return result;
   }
 
+  multiply<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
+      NDArray<G> {
+    return this.binaryBroadcast(a, b, (aValue, bValue) => aValue * bValue);
+  }
+
   divide(a: NDArray, b: NDArray): NDArray<'float32'> {
-    const newShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const newValues = new Float32Array(util.sizeFromShape(newShape));
-
-    const aValues = a.getValues();
-    const bValues = b.getValues();
-
-    for (let i = 0; i < newValues.length; ++i) {
-      newValues[i] = aValues[i % a.size] / bValues[i % b.size];
-    }
-    return NDArray.make(newShape, {values: newValues}, 'float32');
+    return this.binaryBroadcast(a, b, (aValue, bValue) => aValue / bValue) as
+        NDArray<'float32'>;
   }
 
   sum<T extends keyof DataTypes>(x: NDArray<T>, axes: number[]):
