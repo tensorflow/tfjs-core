@@ -115,14 +115,22 @@ export class MathBackendWebGL implements MathBackend {
     }
 
     if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-      return await this.readSync(id);
+      return this.readSync(id);
     }
 
     // Construct an empty query. We're just interested in getting a callback
     // when the GPU command queue has executed until this point in time.
-    const queryFn = () => {};
-    await this.gpgpu.runQuery(queryFn);
+    await this.gpgpu.runQuery(() => {});
     return this.readSync(id);
+  }
+  async time(query: () => NDArray): Promise<number> {
+    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+      const start = performance.now();
+      const a = query();
+      await a.data();
+      return performance.now() - start;
+    }
+    return this.gpgpu.runQuery(query);
   }
   disposeData(id: number): void {
     if (id in this.texData) {
@@ -130,6 +138,14 @@ export class MathBackendWebGL implements MathBackend {
       this.textureManager.releaseTexture(texture, texShape);
       delete this.texData[id];
     }
+  }
+
+  getTexture(id: number): WebGLTexture {
+    return this.texData[id].texture;
+  }
+
+  getTextureData(id: number): TextureData {
+    return this.texData[id];
   }
 
   private gpgpu: GPGPUContext;

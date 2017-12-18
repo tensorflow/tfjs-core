@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array3D, conv_util, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
+import {Array3D, conv_util, ENV, NDArrayMath} from 'deeplearn';
 import {BenchmarkTest} from './benchmark';
 import * as benchmark_util from './benchmark_util';
 
@@ -28,7 +28,7 @@ export interface PoolBenchmarkParams {
   stride: number;
 }
 
-function getPoolingOp(option: string, math: NDArrayMath): (
+function getPoolingOp(math: NDArrayMath, option: string): (
     x: Array3D, filterSize: [number, number]|number,
     strides: [number, number]|number, pad: 'valid'|'same'|number) => Array3D {
   switch (option) {
@@ -58,13 +58,14 @@ function getPoolingOp(option: string, math: NDArrayMath): (
 export class PoolCPUBenchmark implements BenchmarkTest {
   run(size: number, option: string,
       params: PoolBenchmarkParams): Promise<number> {
-    const math = new NDArrayMathCPU();
+    const math = new NDArrayMath('cpu', false);
+    ENV.setMath(math);
     const outputDepth = params.depth;
     const xShape: [number, number, number] = [size, size, outputDepth];
     const fieldSize = params.fieldSize;
     const stride = params.stride;
     const zeroPad = conv_util.computeDefaultPad(xShape, fieldSize, stride);
-    const op = getPoolingOp(option, math);
+    const op = getPoolingOp(math, option);
 
     const x = Array3D.randUniform(xShape, -1, 1);
 
@@ -83,21 +84,18 @@ export class PoolCPUBenchmark implements BenchmarkTest {
 export class PoolGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string, params: PoolBenchmarkParams):
       Promise<number> {
-    const math = new NDArrayMathGPU();
-
+    const math = new NDArrayMath('webgl', false);
+    ENV.setMath(math);
     const outputDepth = params.depth;
     const xShape: [number, number, number] = [size, size, outputDepth];
     const fieldSize = params.fieldSize;
     const stride = params.stride;
     const x = Array3D.randUniform(xShape, -1, 1);
-    const op = getPoolingOp(option, math);
+    const op = getPoolingOp(math, option);
 
     const benchmark = () => op(x, fieldSize, stride, 'same');
-
     const time = await benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
-
     x.dispose();
-    math.dispose();
 
     return time;
   }

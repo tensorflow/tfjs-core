@@ -83,6 +83,12 @@ export class MathBackendCPU implements MathBackend {
   disposeData(id: number): void {
     delete this.data[id];
   }
+  async time(query: () => NDArray): Promise<number> {
+    const start = performance.now();
+    query();
+    return performance.now() - start;
+  }
+
   async read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
     return this.data[id];
   }
