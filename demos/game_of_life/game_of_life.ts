@@ -248,18 +248,15 @@ class GameOfLifeModel {
     const epsilon = graph.constant(1e-7);
     const one = graph.constant(1);
     const negOne = graph.constant(-1);
-    const predictionEpsilon = graph.add(predictionTensor, epsilon);
+    const predictionsPlusEps = graph.add(predictionTensor, epsilon);
 
-    const losses = graph.subtract(
-        graph.multiply(
-            negOne,
-            graph.multiply(
-                labelTensor,
-                graph.log(graph.subtract(one, predictionEpsilon)))),
-        graph.multiply(
-            graph.subtract(one, labelTensor),
-            graph.log(graph.subtract(one, predictionEpsilon))));
+    const left = graph.multiply(
+        negOne, graph.multiply(labelTensor, graph.log(predictionsPlusEps)));
+    const right = graph.multiply(
+        graph.subtract(one, labelTensor),
+        graph.log(graph.add(graph.subtract(one, predictionTensor), epsilon)));
 
+    const losses = graph.subtract(left, right);
     const totalLosses = graph.reduceSum(losses);
     return graph.reshape(
         graph.divide(totalLosses, graph.constant(labelTensor.shape)), []);
