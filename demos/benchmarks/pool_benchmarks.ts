@@ -28,7 +28,7 @@ export interface PoolBenchmarkParams {
   stride: number;
 }
 
-function getPoolingOp(math: NDArrayMath, option: string): (
+function getPoolingOp(option: string, math: NDArrayMath): (
     x: Array3D, filterSize: [number, number]|number,
     strides: [number, number]|number, pad: 'valid'|'same'|number) => Array3D {
   switch (option) {
@@ -65,7 +65,7 @@ export class PoolCPUBenchmark implements BenchmarkTest {
     const fieldSize = params.fieldSize;
     const stride = params.stride;
     const zeroPad = conv_util.computeDefaultPad(xShape, fieldSize, stride);
-    const op = getPoolingOp(math, option);
+    const op = getPoolingOp(option, math);
 
     const x = Array3D.randUniform(xShape, -1, 1);
 
@@ -91,7 +91,7 @@ export class PoolGPUBenchmark implements BenchmarkTest {
     const fieldSize = params.fieldSize;
     const stride = params.stride;
     const x = Array3D.randUniform(xShape, -1, 1);
-    const op = getPoolingOp(math, option);
+    const op = getPoolingOp(option, math);
 
     const benchmark = () => op(x, fieldSize, stride, 'same');
     const time = await benchmark_util.warmupAndBenchmarkGPU(math, benchmark);

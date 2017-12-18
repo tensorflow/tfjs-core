@@ -12,9 +12,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, NDArray, NDArrayMathCPU, Scalar} from 'deeplearn';
+import {Array1D, ENV, NDArray, Scalar} from 'deeplearn';
 
-const math = new NDArrayMathCPU();
+const math = ENV.math;
 
 export function interpolateLinear(
     embedding0: Array1D, embedding1: Array1D, ratio: Scalar) {

@@ -39,9 +39,9 @@ limitations under the License.
 import Sample from './Sample.vue';
 import Tray from './Tray.vue';
 import {range} from 'd3-array';
-import {Array1D, NDArrayMathCPU} from 'deeplearn';
+import {Array1D, ENV} from 'deeplearn';
 
-const math = new NDArrayMathCPU(false);
+const math = ENV.math;
 
 export default {
   components: {Sample, Tray},
