@@ -14,7 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {Array1D, NDArrayMathCPU} from 'deeplearn';
+import {Array1D, ENV} from 'deeplearn';
 
 export interface ITopK {
   indices: Int32Array;
@@ -29,7 +29,8 @@ export interface ITopK {
  * @param topK How many top classes to return.
  */
 export async function getTopK(prob: Array1D, topK: number): Promise<ITopK> {
-  const topk = new NDArrayMathCPU().topK(prob, topK);
+  const math = ENV.math;
+  const topk = math.topK(prob, topK);
   const topkIndices = await topk.indices.data() as Int32Array;
   const topkValues = await topk.values.data() as Float32Array;
 

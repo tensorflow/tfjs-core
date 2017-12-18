@@ -14,7 +14,6 @@
  * limitations under the License.
  * =============================================================================
  */
-import {NDArrayMathGPU} from 'deeplearn';
 import {CaffeModel} from 'deeplearn-caffe'; 
 import {IMAGENET_CLASSES} from './imagenet_classes';
 
@@ -35,8 +34,8 @@ export class GoogLeNet extends CaffeModel {
   // Target labels
   static labels = IMAGENET_CLASSES;
 
-  constructor(math: NDArrayMathGPU) {
-    super(math, MODEL_DIR + GoogLeNet.caffemodel, GITHUB_CDN + GoogLeNet.prototxt);
+  constructor() {
+    super(MODEL_DIR + GoogLeNet.caffemodel, GITHUB_CDN + GoogLeNet.prototxt);
   }
 }
 
@@ -51,8 +50,8 @@ export class GoogLeNetBN extends CaffeModel {
   // Target labels
   static labels = IMAGENET_CLASSES;
 
-  constructor(math: NDArrayMathGPU) {
-    super(math, MODEL_DIR + GoogLeNetBN.caffemodel, GITHUB_CDN + GoogLeNetBN.prototxt);
+  constructor() {
+    super(MODEL_DIR + GoogLeNetBN.caffemodel, GITHUB_CDN + GoogLeNetBN.prototxt);
   }
 }
 
@@ -66,8 +65,8 @@ export class SqueezeNet extends CaffeModel {
   // Target labels
   static labels = IMAGENET_CLASSES;
 
-  constructor(math: NDArrayMathGPU) {
-    super(math, GITHUB_CDN + SqueezeNet.caffemodel, GITHUB_CDN + SqueezeNet.prototxt);
+  constructor() {
+    super(GITHUB_CDN + SqueezeNet.caffemodel, GITHUB_CDN + SqueezeNet.prototxt);
   }
 }
 
@@ -82,8 +81,8 @@ export class VGG16 extends CaffeModel {
   // Target labels
   static labels = IMAGENET_CLASSES;
 
-  constructor(math: NDArrayMathGPU) {
-    super(math, MODEL_DIR + VGG16.caffemodel, GITHUB_GIST + VGG16.prototxt);
+  constructor() {
+    super(MODEL_DIR + VGG16.caffemodel, GITHUB_GIST + VGG16.prototxt);
   }
 }
 
@@ -95,8 +94,8 @@ export class NiN extends CaffeModel {
   static caffemodel = 'nin_imagenet.caffemodel'; 
   static prototxt = 'tzutalin/0e3fd793a5b13dd7f647/raw/207d710d2e089423eda4b0b76ca4b139b7a461f7/deploy.prototxt';
 
-  constructor(math: NDArrayMathGPU) {
-    super(math, MODEL_DIR + NiN.caffemodel, GITHUB_GIST + NiN.prototxt);
+  constructor() {
+    super(MODEL_DIR + NiN.caffemodel, GITHUB_GIST + NiN.prototxt);
   }
 }
 
@@ -112,8 +111,8 @@ export class AgeNet extends CaffeModel {
   // Target labels
   static labels = ['(0, 2)','(4, 6)','(8, 12)','(15, 20)','(25, 32)','(38, 43)','(48, 53)','(60, 100)'];
 
-  constructor(math: NDArrayMathGPU) {
-    super(math, MODEL_DIR + AgeNet.caffemodel, GITHUB_GIST + AgeNet.prototxt, GITHUB_CDN + AgeNet.meanfile);
+  constructor() {
+    super(MODEL_DIR + AgeNet.caffemodel, GITHUB_GIST + AgeNet.prototxt, GITHUB_CDN + AgeNet.meanfile);
   }
 }
 
@@ -129,7 +128,7 @@ export class GenderNet extends CaffeModel {
   // Target labels
   static labels = ['Male','Female'];
 
-  constructor(math: NDArrayMathGPU) {
-    super(math, MODEL_DIR + GenderNet.caffemodel, GITHUB_GIST + GenderNet.prototxt, GITHUB_CDN + GenderNet.meanfile);
+  constructor() {
+    super(MODEL_DIR + GenderNet.caffemodel, GITHUB_GIST + GenderNet.prototxt, GITHUB_CDN + GenderNet.meanfile);
   }
 }

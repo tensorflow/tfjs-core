@@ -21,7 +21,7 @@ import {performMathOp} from './layer';
 
 import {caffe} from 'caffe-proto';
 import * as dag from 'dag-iterator';
-import {Model, Array1D, Array3D, NDArray, NDArrayMathGPU} from 'deeplearn';
+import {Model, Array1D, Array3D, NDArray, ENV} from 'deeplearn';
 
 export class CaffeModel implements Model {
 
@@ -52,7 +52,7 @@ export class CaffeModel implements Model {
    * @param caffemodelUrl url to the caffemodel file
    * @param prototxtUrl url to the prototxt file 
    */
-  constructor(protected math: NDArrayMathGPU,
+  constructor(
     private caffemodelUrl: string, private prototxtUrl: string, private meanBinaryprotoUrl?: string){
   }
 
@@ -121,6 +121,8 @@ export class CaffeModel implements Model {
 
   predict(input: NDArray, untilLayer?: string): NDArray {
 
+    const math = ENV.math;
+
     // Keep a map of named activations for rendering purposes.
     const namedActivations: {[key: string]: NDArray} = {};
     let currAct: NDArray | NDArray[] = input;
@@ -129,7 +131,7 @@ export class CaffeModel implements Model {
         (layer: caffe.ILayerParameter, parents: caffe.ILayerParameter[], i: number) => {
 
       if (i === 0 && this.preprocessOffset) {
-        currAct = this.math.subtract(currAct as Array3D, this.preprocessOffset) as Array3D;
+        currAct = math.subtract(currAct as Array3D, this.preprocessOffset) as Array3D;
       }
       else if (parents.length === 1) {
         currAct = namedActivations[parents[0].name];
@@ -138,7 +140,7 @@ export class CaffeModel implements Model {
         currAct = parents.map((d) => namedActivations[d.name]);
       }
 
-      currAct = performMathOp(this.math, currAct, layer, this.variables[`${layer.name}`]);
+      currAct = performMathOp(math, currAct, layer, this.variables[`${layer.name}`]);
 
       namedActivations[layer.name] = currAct as NDArray;
 

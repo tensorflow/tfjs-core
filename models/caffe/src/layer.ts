@@ -1,5 +1,5 @@
 import {caffe} from 'caffe-proto';
-import {Array1D, Array3D, Array4D, NDArray, NDArrayMathGPU} from 'deeplearn';
+import {Array1D, Array3D, Array4D, NDArray, NDArrayMath} from 'deeplearn';
 
 // tslint:disable-next-line:max-line-length
 export function getLayersFromModel(model: caffe.NetParameter): caffe.IV0LayerParameter[] | caffe.IV1LayerParameter[] {
@@ -31,7 +31,7 @@ function getPoolType(poolType: string|number): number {
   }
 }
 
-export function performMathOp(math: NDArrayMathGPU, input: NDArray|NDArray[],
+export function performMathOp(math: NDArrayMath, input: NDArray|NDArray[],
     layer: caffe.ILayerParameter, blobs?: NDArray[]) : NDArray {
   
   switch (layer.type.toLowerCase()) {
