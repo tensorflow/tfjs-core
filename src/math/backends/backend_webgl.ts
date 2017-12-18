@@ -659,7 +659,6 @@ export class MathBackendWebGL implements MathBackend {
           this.gpgpu, program, inputsData, outputData);
     });
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
-    console.log(binary.source);
     return output;
   }
 

@@ -339,7 +339,10 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new([leftDim, rightDim], values);
   }
 
-  multiply<T extends NDArray>(a: T, b: T): T {
+  private binarBroadcast() {}
+
+  multiply<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
+      NDArray<G> {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
@@ -352,13 +355,26 @@ export class MathBackendCPU implements MathBackend {
     console.log('broadcastdims', aBroadcastDims, bBroadcastDims);
 
     const newValues = new Float32Array(util.sizeFromShape(newShape));
+    const result = NDArray.make(newShape, {values: newValues}) as T;
 
-    const aValues = a.getValues();
-    const bValues = b.getValues();
     for (let i = 0; i < newValues.length; ++i) {
-      newValues[i] = aValues[i % a.size] * bValues[i % b.size];
+      const loc = result.indexToLoc(i);
+
+      const aCoords = loc.slice();
+      for (let j = 0; j < aBroadcastDims.length; j++) {
+        aCoords[aBroadcastDims[j] + aRankDiff] = 0;
+      }
+      const aValue = a.get(...aCoords);
+
+      const bCoords = loc.slice();
+      for (let j = 0; j < bBroadcastDims.length; j++) {
+        bCoords[bBroadcastDims[j] + bRankDiff] = 0;
+      }
+      const bValue = b.get(...bCoords);
+
+      newValues[i] = aValue * bValue;
     }
-    return NDArray.make(newShape, {values: newValues}) as T;
+    return result;
   }
 
   divide(a: NDArray, b: NDArray): NDArray<'float32'> {
