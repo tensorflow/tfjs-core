@@ -483,7 +483,7 @@ class Demo {
         }
       });
 
-      if (this.trainingBatchSize >= 10) {
+      if (this.trainingBatchSize >= 20) {
         this.trainDisplay.displayTrainingData(
             this.trainingData.length + 1, this.trainingBatchSize);
       }
