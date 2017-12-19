@@ -131,7 +131,7 @@ export class PReLU extends Operation {
     const alpha = inferenceArrays.get(this.alphaTensor);
 
     math.scope((keep) => {
-      inferenceArrays.set(this.yTensor, keep(math.pRelu(x, alpha)));
+      inferenceArrays.set(this.yTensor, keep(math.prelu(x, alpha)));
     });
   }
 
@@ -143,10 +143,8 @@ export class PReLU extends Operation {
     const dy = gradientArrays.get(this.yTensor);
 
     math.scope(() => {
-      const dydx = math.pReluDer(x, alpha);
+      const dydx = math.preluDer(x, alpha);
       gradientArrays.add(this.xTensor, math.elementWiseMul(dy, dydx));
-      dydx.dispose();
     });
   }
-
 }

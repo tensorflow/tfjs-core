@@ -144,10 +144,10 @@ const KERNEL_METHODS: {
     return backend.leakyRelu(config.inputs.x, config.args.alpha);
   },
   PReLU: (backend: MathBackend, config: PReLUInputConfig<NDArray>) => {
-    return backend.pRelu(config.inputs.x, config.inputs.alpha);
+    return backend.prelu(config.inputs.x, config.inputs.alpha);
   },
   PReLUDer: (backend: MathBackend, config: PReLUInputConfig<NDArray>) => {
-    return backend.pReluDer(config.inputs.x, config.inputs.alpha);
+    return backend.preluDer(config.inputs.x, config.inputs.alpha);
   },
   Elu: (backend: MathBackend, config: UnaryInputConfig<NDArray>) => {
     return backend.elu(config.inputs.x);

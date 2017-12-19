@@ -526,12 +526,12 @@ describe('pRelu validation', () => {
   });
 
   it('Different shapes throws', () => {
-    expect(() => g.pRelu(new Tensor([5, 4]), new Tensor([1, 2, 3])))
+    expect(() => g.prelu(new Tensor([5, 4]), new Tensor([1, 2, 3])))
         .toThrowError();
   });
 
   it('Same size does not throw', () => {
-    expect(g.pRelu(new Tensor([5, 4]), new Tensor([5, 4])).shape).toEqual([
+    expect(g.prelu(new Tensor([5, 4]), new Tensor([5, 4])).shape).toEqual([
       5, 4
     ]);
   });

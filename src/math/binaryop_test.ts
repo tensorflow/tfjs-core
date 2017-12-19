@@ -20,13 +20,13 @@ import {MathTests} from '../test_util';
 
 import {Array1D} from './ndarray';
 
-// math.pRelu
+// math.prelu
 {
   const tests: MathTests = it => {
     it('basic', math => {
       const x = Array1D.new([0, 1, -2, -4]);
       const a = Array1D.new([0.15, 0.2, 0.25, 0.15]);
-      const result = math.pRelu(x, a);
+      const result = math.prelu(x, a);
 
       expect(result.shape).toEqual(x.shape);
       test_util.expectArraysClose(
@@ -36,7 +36,7 @@ import {Array1D} from './ndarray';
     it('propagates NaN', math => {
       const x = Array1D.new([0, 1, NaN]);
       const a = Array1D.new([0.15, 0.2, 0.25]);
-      const result = math.pRelu(x, a);
+      const result = math.prelu(x, a);
 
       expect(result.shape).toEqual(x.shape);
       test_util.expectArraysClose(
@@ -44,8 +44,40 @@ import {Array1D} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('pRelu', [tests]);
-  test_util.describeMathGPU('pRelu', [tests], [
+  test_util.describeMathCPU('prelu', [tests]);
+  test_util.describeMathGPU('prelu', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// math.preluDer
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      const x = Array1D.new([0.5, 3, -0.1, -4]);
+      const a = Array1D.new([0.2, 0.4, 0.25, 0.15]);
+      const result = math.preluDer(x, a);
+
+      expect(result.shape).toEqual(x.shape);
+      test_util.expectArraysClose(
+          result.dataSync(), new Float32Array([1, 1, 0.25, 0.15]));
+    });
+
+    it('propagates NaN', math => {
+      const x = Array1D.new([0.5, -0.1, NaN]);
+      const a = Array1D.new([0.2, 0.3, 0.25]);
+      const result = math.preluDer(x, a);
+
+      expect(result.shape).toEqual(x.shape);
+      test_util.expectArraysClose(
+          result.dataSync(), new Float32Array([1, 0.3, NaN]));
+    });
+  };
+
+  test_util.describeMathCPU('preluDer', [tests]);
+  test_util.describeMathGPU('preluDer', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

@@ -1262,7 +1262,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param {T} alpha scaling factor NDArray for negative values
    * @return {NDArray}
    */
-  pRelu<T extends NDArray>(x: T, alpha: T): T {
+  prelu<T extends NDArray>(x: T, alpha: T): T {
     return this.backendEngine.executeKernel(
                'PReLU', {inputs: {x, alpha}}) as T;
   }
@@ -1273,7 +1273,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param {T} alpha scaling factor NDArray for negative values
    * @return {NDArray}
    */
-  pReluDer<T extends NDArray>(x: T, alpha: T): T {
+  preluDer<T extends NDArray>(x: T, alpha: T): T {
     return this.backendEngine.executeKernel(
                'PReLUDer', {inputs: {x, alpha}}) as T;
   }

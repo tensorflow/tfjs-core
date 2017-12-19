@@ -282,7 +282,7 @@ export class Graph {
    * @param alpha Negative slope coefficient tensor.
    * @return The tensor representing the PReLU operation.
    */
-  pRelu(x: Tensor, alpha: Tensor): Tensor {
+  prelu(x: Tensor, alpha: Tensor): Tensor {
     return this.addNodeAndReturnOutput(new PReLUNode(this, x, alpha));
   }
 

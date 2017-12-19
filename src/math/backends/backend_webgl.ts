@@ -490,12 +490,12 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  pRelu<T extends NDArray>(a: T, b: T): T {
+  prelu<T extends NDArray>(a: T, b: T): T {
     const program = new BinaryOpProgram(binaryop_gpu.PRELU, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]) as T;
   }
 
-  pReluDer<T extends NDArray>(a: T, b: T): T {
+  preluDer<T extends NDArray>(a: T, b: T): T {
     const program = new BinaryOpProgram(binaryop_gpu.PRELU_DER,
       a.shape, b.shape);
     return this.compileAndRun(program, [a, b]) as T;

@@ -675,7 +675,7 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  pRelu<T extends NDArray>(x: T, alpha: T) {
+  prelu<T extends NDArray>(x: T, alpha: T) {
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
     const alphas = alpha.dataSync();
@@ -690,7 +690,7 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  pReluDer<T extends NDArray>(x: T, alpha: T) {
+  preluDer<T extends NDArray>(x: T, alpha: T) {
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
     const alphas = alpha.dataSync();
@@ -701,7 +701,7 @@ export class MathBackendCPU implements MathBackend {
       } else if (v < 0) {
         resultValues[i] = alphas[i];
       } else {
-        resultValues[i] = 0;
+        resultValues[i] = v;
       }
     }
     return NDArray.make(x.shape, {values: resultValues}) as T;
