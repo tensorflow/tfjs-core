@@ -150,7 +150,6 @@ class GameOfLifeModel {
   setupSession(
       boardSize: number, batchSize: number, initialLearningRate: number,
       numLayers: number, useLogCost: boolean): void {
-    console.log('setting up with initial learning rate: ', initialLearningRate);
     this.optimizer = new AdagradOptimizer(initialLearningRate);
 
     this.size = boardSize;
@@ -340,7 +339,10 @@ class TrainDisplay {
   trainingDataElement: Element;
   canvas: CanvasRenderingContext2D;
   chart: Chart;
-  chartData: ChartData[] = [];
+  chartData: [ChartData[]];
+  chartDataIndex = -1;
+
+  datasets: ChartDataSets[] = [];
 
   constructor() {
     this.element = document.querySelector('.train-display');
@@ -350,16 +352,7 @@ class TrainDisplay {
     this.chart = new Chart(this.canvas, {
       type: 'line',
       data: {
-        datasets: [{
-          data: this.chartData,
-          fill: false,
-          label: 'Model Training Cost',
-          pointRadius: 0,
-          borderColor: 'rgba(256,0,0,1)',
-          borderWidth: 1,
-          lineTension: 0,
-          pointHitRadius: 8
-        }]
+        datasets: this.datasets,
       },
       options: {
         animation: {duration: 0},
@@ -372,13 +365,30 @@ class TrainDisplay {
     });
   }
 
+  addDataSet(): void {
+    if (!this.chartData) {
+      this.chartData = [[]];
+    } else {
+      this.chartData.push([]);
+    }
+    this.datasets.push({
+      data: this.chartData[++this.chartDataIndex],
+      fill: false,
+      label: 'Cost ' + (this.chartDataIndex + 1),
+      pointRadius: 0,
+      borderColor: this.randomRGBA(),
+      borderWidth: 1,
+      lineTension: 0,
+      pointHitRadius: 8
+    });
+  }
+
   showStep(step: number, steps: number) {
     this.element.innerHTML = 'Trained ' + Math.trunc(step / steps * 100) + '%';
   }
 
   displayCost(cost: number, step: number) {
-    console.log('cost', cost);
-    this.chartData.push({x: step, y: cost});
+    this.chartData[this.chartDataIndex].push({x: step, y: cost});
     this.chart.update();
   }
 
@@ -389,6 +399,13 @@ class TrainDisplay {
 
   clearTrainingData(): void {
     this.trainingDataElement.innerHTML = '';
+  }
+
+  private randomRGBA(): string {
+    const s = 255;
+    return 'rgba(' + Math.round(Math.random() * s) + ',' +
+        Math.round(Math.random() * s) + ',' + Math.round(Math.random() * s) +
+        ',1)';
   }
 }
 
@@ -540,6 +557,7 @@ class Demo {
     this.isBuildingTrainingData = true;
     this.trainingData = [];
     this.trainingBatchSize = trainingBatchSize;
+    this.trainDisplay.addDataSet();
     this.trainAndRender();
   }
 
