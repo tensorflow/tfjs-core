@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
+import {NameArrayMap} from '../../../util';
 import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, NameArrayMap, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
 export interface PowNode<T extends NDArray> extends KernelNode {
   inputAndArgs: PowInputConfig<T>;

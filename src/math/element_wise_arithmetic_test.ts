@@ -593,31 +593,36 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
   ]);
 }
 
-// element-wise add / sub gradients
+// Pow second order gradient.
 {
   const tests: MathTests = it => {
     it('nikhil A - B', math => {
-      const a = Array1D.new([2, 5, 1]);
-      const b = Array1D.new([4, 2, -1]);
+      const a = Scalar.new(5);
+      const b = Scalar.new(2, 'int32');
 
-      const result = math.subtract(a, b);
+      const result = math.pow(a, b);
 
-      const expected = new Float32Array([-2, 3, 2]);
+      const expected = new Float32Array([25]);
       test_util.expectArraysClose(result.getValues(), expected);
 
+      console.log('pregrad', result.dataSync());
+      math.debug();
       const grad = math.gradientWrt(math.sum(result), a);
-      // const grad2 = math.gradientWrt(math.sum(grad), a);
-      console.log(grad.dataSync());
+      console.log('grad1', grad.dataSync());
+      math.debug();
+
+      const grad2 = math.gradientWrt(math.sum(grad), a);
+      console.log('grad2', grad2.dataSync());
       math.debug();
     });
   };
 
   test_util.describeMathCPU('element-wise add/sub gradients', [tests]);
-  test_util.describeMathGPU('element-wise add/sub gradients', [tests], [
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  ]);
+  // test_util.describeMathGPU('element-wise add/sub gradients', [tests], [
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  // ]);
 }
 
 // math.scaledArrayAdd

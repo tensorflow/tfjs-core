@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
+import {NameArrayMap} from '../../../util';
 import {DataTypes, NDArray} from '../../ndarray';
 import {SumTypes} from '../../types';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, NameArrayMap, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
 export interface SumNode<T extends keyof DataTypes> extends KernelNode {
   inputAndArgs: SumInputConfig<T>;

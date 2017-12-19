@@ -18,18 +18,17 @@
 import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
-import {TapeNode, TapeNodeOutput} from './tape_types';
+import {Tape, TapeNode, TapeNodeOutput} from './tape_types';
 
 /**
  * Computes a list of TapeNodes that connect x to y, filtering everything else
  * out and preserving the order of the original tape elements.
- * @param tapeNodes The tape elements to filter.
+ * @param tape The tape elements to filter.
  * @param xx The input NDArrays.
  * @param y The output NDArray.
  */
 export function getFilteredNodesXToY(
-    tapeNodes: Array<TapeNode<TapeNodeOutput>>, xs: NDArray[],
-    y: NDArray): Array<TapeNode<TapeNodeOutput>> {
+    tape: Tape, xs: NDArray[], y: NDArray): Tape {
   // Forward pass to compute all the nodes and NDArrays that are transitively a
   // function of x.
   const arraysFromX: {[ndarrayId: number]: boolean} = {};
@@ -38,8 +37,8 @@ export function getFilteredNodesXToY(
     arraysFromX[xs[i].id] = true;
   }
 
-  for (let i = 0; i < tapeNodes.length; i++) {
-    const node = tapeNodes[i];
+  for (let i = 0; i < tape.length; i++) {
+    const node = tape[i];
     const nodeInputs = node.inputAndArgs.inputs;
 
     for (const inputName in nodeInputs) {
@@ -73,8 +72,8 @@ export function getFilteredNodesXToY(
   arraysLeadToY[y.id] = true;
   const nodesToY: {[nodeId: number]: boolean} = {};
 
-  for (let i = tapeNodes.length - 1; i >= 0; i--) {
-    const node = tapeNodes[i];
+  for (let i = tape.length - 1; i >= 0; i--) {
+    const node = tape[i];
     const nodeInputs = node.inputAndArgs.inputs;
 
     const outputs: NDArray[] = [];
@@ -100,9 +99,9 @@ export function getFilteredNodesXToY(
   }
 
   // Return the paths that come from x and lead to y.
-  const filteredTapeNodes: Array<TapeNode<TapeNodeOutput>> = [];
-  for (let i = 0; i < tapeNodes.length; i++) {
-    const node = tapeNodes[i];
+  const filteredTape: Tape = [];
+  for (let i = 0; i < tape.length; i++) {
+    const node = tape[i];
 
     if (nodesFromX[node.id] && nodesToY[node.id]) {
       // Prune the inputs from the node that aren't a function of x.
@@ -135,11 +134,11 @@ export function getFilteredNodesXToY(
       prunedNode.inputAndArgs = {inputs: prunedInputs};
       prunedNode.output = prunedOutputs;
 
-      filteredTapeNodes.push(prunedNode);
+      filteredTape.push(prunedNode);
     }
   }
 
-  return filteredTapeNodes;
+  return filteredTape;
 }
 
 /**
@@ -147,15 +146,15 @@ export function getFilteredNodesXToY(
  * @param backend The math backend, used for accumulation.
  * @param arrayAccumulatedGradientMap A map of NDArray to its gradient. This map
  * is mutated by this method.
- * @param filteredNodes The filtered TapeNodes to backprop through.
+ * @param filteredTape The filtered TapeNodes to backprop through.
  */
 export function backpropagateGradients(
     backend: MathBackend,
     arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray},
-    filteredNodes: Array<TapeNode<TapeNodeOutput>>) {
+    filteredTape: Tape) {
   // Walk the tape backwards and keep a map of NDArray to its gradient.
-  for (let i = filteredNodes.length - 1; i >= 0; i--) {
-    const node = filteredNodes[i];
+  for (let i = filteredTape.length - 1; i >= 0; i--) {
+    const node = filteredTape[i];
 
     let dy: TapeNodeOutput;
     if (node.output instanceof NDArray) {
@@ -201,4 +200,59 @@ export function backpropagateGradients(
       }
     }
   }
+}
+
+export function computeInputs(tape: Tape): {[idx: string]: NDArray} {
+  const outputArrays: {[id: number]: boolean} = {};
+  for (let i = 0; i < tape.length; i++) {
+    const node = tape[i];
+    if (node.output instanceof NDArray) {
+      outputArrays[node.output.id] = true;
+    } else {
+      const keys = Object.keys(node.output);
+      for (const key of keys) {
+        outputArrays[node.output[key].id] = true;
+      }
+    }
+  }
+
+  const inputArrays: {[idx: string]: NDArray} = {};
+  let idx = 0;
+  for (let i = 0; i < tape.length; i++) {
+    const node = tape[i];
+    const inputs = node.inputAndArgs.inputs;
+
+    const keys = Object.keys(inputs);
+    for (const key of keys) {
+      if (!outputArrays[inputs[key].id]) {
+        inputArrays[(idx++).toString()] = inputs[key];
+      }
+    }
+  }
+  return inputArrays;
+}
+
+export type ScopeResultImmediate =
+    void|NDArray|NDArray[]|{[key: string]: NDArray};
+export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
+
+export function extractNDArraysFromScopeResult(result: ScopeResultImmediate):
+    NDArray[] {
+  if (result == null) {
+    return [];
+  }
+  if (result instanceof NDArray) {
+    return [result];
+  }
+
+  const list: NDArray[] = [];
+  const resultObj = result as {[key: string]: NDArray};
+  // Iteration over keys works also for arrays.
+  for (const k in resultObj) {
+    const val = resultObj[k];
+    if (val instanceof NDArray) {
+      list.push(val);
+    }
+  }
+  return list;
 }

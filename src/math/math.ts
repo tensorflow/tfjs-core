@@ -17,13 +17,15 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
+import {NameArrayMap} from '../util';
 
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {NDArrayStorage} from './backends/backend';
 import {MathBackend} from './backends/backend';
 // tslint:disable-next-line:max-line-length
-import {BackendEngine, ScopeResult, ScopeResultImmediate} from './backends/backend_engine';
+import {BackendEngine} from './backends/backend_engine';
+import {ScopeResult, ScopeResultImmediate} from './backends/tape_util';
 import {MatrixOrientation} from './backends/types/matmul';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
@@ -940,6 +942,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                'Pow', {inputs: {a, b}}, (dy: NDArray<G>, y: NDArray<G>) => {
                  return {
                    a: () => {
+                     console.log('a', NDArray.onesLike(b).dtype);
+                     console.log('b', b.dtype);
+                     console.log(
+                         'dtype', this.subtract(b, NDArray.onesLike(b)).dtype);
                      return this.scope(() => {
                        return this.multiply(
                            dy,
@@ -2162,38 +2168,17 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * object mapping a string to an NDArray. If using the object mode, this
    * method will return an object of the same shape.
    */
-  gradientWrt<T extends NDArray|{[xName: string]: NDArray}>(y: Scalar, x: T):
-      T {
-    const xIsArray = x instanceof NDArray;
-
-    const xs: NDArray[] = [];
-    let xKeys: string[];
-    if (xIsArray) {
-      xs.push(x as NDArray);
-    } else {
-      const xMap = x as {[xName: string]: NDArray};
-      xKeys = Object.keys(xMap);
-      // Flatten the inputs.
-      for (let i = 0; i < xKeys.length; i++) {
-        xs.push(xMap[xKeys[i]]);
-      }
-    }
+  gradientWrt<T extends NDArray|NameArrayMap>(y: Scalar, x: T): T {
+    const xs = util.flattenNameArrayMap(x);
 
     const gradients = this.backendEngine.gradientWrt(y, xs);
 
-    if (xIsArray) {
-      return gradients[0] as T;
-    } else {
-      // Convert the flat list of gradients back to the object.
-      const result: {[xName: string]: NDArray} = {};
-      for (let i = 0; i < xKeys.length; i++) {
-        result[xKeys[i]] = gradients[i];
-      }
-      return result as T;
-    }
+    return util.mapFlatArraysToNameArrayMap(x, gradients);
   }
+
   debug() {
     this.backendEngine.debug();
+    debugger;
   }
 
   disposeData(id: number): void {

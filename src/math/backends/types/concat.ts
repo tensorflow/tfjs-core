@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
+import {NameArrayMap} from '../../../util';
 import {Array1D, Array2D, Array3D, Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, NameArrayMap, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
 // 1D
 export interface Concat1DNode extends KernelNode {

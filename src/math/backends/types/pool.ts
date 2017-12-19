@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
+import {NameArrayMap} from '../../../util';
 import {Conv2DInfo} from '../../conv_util';
 import {Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, NameArrayMap, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
 // Pool
 export interface PoolNode extends KernelNode {

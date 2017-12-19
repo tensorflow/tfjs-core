@@ -18,10 +18,11 @@
 
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
+import {NameArrayMap} from '../../util';
 import {NDArray, Scalar} from '../ndarray';
 
 import {MathBackendCPU} from './backend_cpu';
-import {NameArrayMap, TapeNode, TapeNodeOutput} from './tape_types';
+import {Tape, TapeNode, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
 
 // getFilteredNodesXToY
@@ -34,9 +35,10 @@ import * as tape_util from './tape_util';
       const intermediate2 = Scalar.new(0);
       const y = Scalar.new(2);
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [
+      const tape: Tape = [
         {
           id: 0,
+          type: 'kernel',
           name: 'node0',
           inputAndArgs: {
             inputs: {x},
@@ -46,6 +48,7 @@ import * as tape_util from './tape_util';
         },
         {
           id: 1,
+          type: 'kernel',
           name: 'node1',
           inputAndArgs: {
             inputs: {intermediate2},
@@ -55,8 +58,7 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const filteredTapeNodes =
-          tape_util.getFilteredNodesXToY(tapeNodes, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
 
       expect(filteredTapeNodes.length).toBe(0);
       expect(filteredTapeNodes).toEqual([]);
@@ -66,8 +68,9 @@ import * as tape_util from './tape_util';
       const x = Scalar.new(1);
       const y = Scalar.new(2);
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [{
+      const tape: Tape = [{
         id: 0,
+        type: 'kernel',
         name: 'node0',
         inputAndArgs: {
           inputs: {x},
@@ -76,11 +79,10 @@ import * as tape_util from './tape_util';
         gradient: null
       }];
 
-      const filteredTapeNodes =
-          tape_util.getFilteredNodesXToY(tapeNodes, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
 
       expect(filteredTapeNodes.length).toBe(1);
-      expect(filteredTapeNodes).toEqual(tapeNodes);
+      expect(filteredTapeNodes).toEqual(tape);
     });
 
     it('getFilteredNodesXToY 1 operation [x0, x1] => y, all input paths',
@@ -89,8 +91,9 @@ import * as tape_util from './tape_util';
          const x1 = Scalar.new(1);
          const y = Scalar.new(2);
 
-         const tapeNodes: Array<TapeNode<NDArray>> = [{
+         const tape: Tape = [{
            id: 0,
+           type: 'kernel',
            name: 'node0',
            inputAndArgs: {
              inputs: {x0, x1},
@@ -100,10 +103,10 @@ import * as tape_util from './tape_util';
          }];
 
          const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tapeNodes, [x0, x1], y);
+             tape_util.getFilteredNodesXToY(tape, [x0, x1], y);
 
          expect(filteredTapeNodes.length).toBe(1);
-         expect(filteredTapeNodes).toEqual(tapeNodes);
+         expect(filteredTapeNodes).toEqual(tape);
        });
 
     it('getFilteredNodesXToY one operation [x0, x1] => y, one input paths',
@@ -112,8 +115,9 @@ import * as tape_util from './tape_util';
          const x1 = Scalar.new(1);
          const y = Scalar.new(2);
 
-         const tapeNodes: Array<TapeNode<NDArray>> = [{
+         const tape: Tape = [{
            id: 0,
+           type: 'kernel',
            name: 'node0',
            inputAndArgs: {
              inputs: {x0, x1},
@@ -123,12 +127,13 @@ import * as tape_util from './tape_util';
          }];
 
          const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tapeNodes, [x0], y);
+             tape_util.getFilteredNodesXToY(tape, [x0], y);
 
          expect(filteredTapeNodes.length).toBe(1);
          // x1 input should be pruned, we don't ask for the gradient of x1.
          expect(filteredTapeNodes[0]).toEqual({
            id: 0,
+           type: 'kernel',
            name: 'node0',
            inputAndArgs: {
              inputs: {x0},
@@ -143,9 +148,10 @@ import * as tape_util from './tape_util';
       const intermediate = Scalar.new(0);
       const y = Scalar.new(2);
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [
+      const tape: Tape = [
         {
           id: 0,
+          type: 'kernel',
           name: 'node0',
           inputAndArgs: {
             inputs: {x},
@@ -155,6 +161,7 @@ import * as tape_util from './tape_util';
         },
         {
           id: 1,
+          type: 'kernel',
           name: 'node1',
           inputAndArgs: {
             inputs: {intermediate},
@@ -164,11 +171,10 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const filteredTapeNodes =
-          tape_util.getFilteredNodesXToY(tapeNodes, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
 
       expect(filteredTapeNodes.length).toBe(2);
-      expect(filteredTapeNodes).toEqual(tapeNodes);
+      expect(filteredTapeNodes).toEqual(tape);
     });
 
     it('getFilteredNodesXToY two operations [x0, x1], [x2] => ' +
@@ -180,9 +186,10 @@ import * as tape_util from './tape_util';
          const intermediate = Scalar.new(4);
          const y = Scalar.new(2);
 
-         const tapeNodes: Array<TapeNode<NDArray>> = [
+         const tape: Tape = [
            {
              id: 0,
+             type: 'kernel',
              name: 'node0',
              inputAndArgs: {
                inputs: {x0, x1},
@@ -192,6 +199,7 @@ import * as tape_util from './tape_util';
            },
            {
              id: 1,
+             type: 'kernel',
              name: 'node1',
              inputAndArgs: {
                inputs: {x2, intermediate},
@@ -202,10 +210,10 @@ import * as tape_util from './tape_util';
          ];
 
          const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tapeNodes, [x0, x1, x2], y);
+             tape_util.getFilteredNodesXToY(tape, [x0, x1, x2], y);
 
          expect(filteredTapeNodes.length).toBe(2);
-         expect(filteredTapeNodes).toEqual(tapeNodes);
+         expect(filteredTapeNodes).toEqual(tape);
        });
 
     it('getFilteredNodesXToY x => y and x => orphan', math => {
@@ -213,9 +221,10 @@ import * as tape_util from './tape_util';
       const orphan = Scalar.new(0);
       const y = Scalar.new(2);
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [
+      const tape: Tape = [
         {
           id: 0,
+          type: 'kernel',
           name: 'node0',
           inputAndArgs: {
             inputs: {x},
@@ -225,6 +234,7 @@ import * as tape_util from './tape_util';
         },
         {
           id: 1,
+          type: 'kernel',
           name: 'node1',
           inputAndArgs: {
             inputs: {x},
@@ -234,12 +244,11 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const filteredTapeNodes =
-          tape_util.getFilteredNodesXToY(tapeNodes, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
 
       expect(filteredTapeNodes.length).toBe(1);
       // The orphan should be removed.
-      expect(filteredTapeNodes[0]).toEqual(tapeNodes[1]);
+      expect(filteredTapeNodes[0]).toEqual(tape[1]);
     });
 
     it('getFilteredNodesXToY x => y and orphan => y', math => {
@@ -247,8 +256,9 @@ import * as tape_util from './tape_util';
       const orphan = Scalar.new(0);
       const y = Scalar.new(2);
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [{
+      const tape: Tape = [{
         id: 0,
+        type: 'kernel',
         name: 'node0',
         inputAndArgs: {
           inputs: {x, orphan},
@@ -257,13 +267,13 @@ import * as tape_util from './tape_util';
         gradient: null
       }];
 
-      const filteredTapeNodes =
-          tape_util.getFilteredNodesXToY(tapeNodes, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
 
       expect(filteredTapeNodes.length).toBe(1);
       // The orphan should be pruned from the node's input.
       expect(filteredTapeNodes[0]).toEqual({
         id: 0,
+        type: 'kernel',
         name: 'node0',
         inputAndArgs: {
           inputs: {x},
@@ -283,9 +293,10 @@ import * as tape_util from './tape_util';
          const orphan3 = Scalar.new(3);
          const y = Scalar.new(2);
 
-         const tapeNodes: Array<TapeNode<TapeNodeOutput>> = [
+         const tape: Array<TapeNode<TapeNodeOutput>> = [
            {
              id: 0,
+             type: 'kernel',
              name: 'node0',
              inputAndArgs: {
                inputs: {x},
@@ -295,6 +306,7 @@ import * as tape_util from './tape_util';
            },
            {
              id: 1,
+             type: 'kernel',
              name: 'node1',
              inputAndArgs: {
                inputs: {intermediate, orphan2},
@@ -304,13 +316,13 @@ import * as tape_util from './tape_util';
            }
          ];
 
-         const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tapeNodes, [x], y);
+         const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
 
          expect(filteredTapeNodes.length).toBe(2);
          // The orphans should be pruned from inputs and outputs.
          expect(filteredTapeNodes[0]).toEqual({
            id: 0,
+           type: 'kernel',
            name: 'node0',
            inputAndArgs: {
              inputs: {x},
@@ -320,6 +332,7 @@ import * as tape_util from './tape_util';
          });
          expect(filteredTapeNodes[1]).toEqual({
            id: 1,
+           type: 'kernel',
            name: 'node1',
            inputAndArgs: {
              inputs: {intermediate},
@@ -344,9 +357,10 @@ import * as tape_util from './tape_util';
          const y = Scalar.new(7);
          const orphan2 = Scalar.new(8);
 
-         const tapeNodes: Array<TapeNode<TapeNodeOutput>> = [
+         const tape: Tape = [
            {
              id: 0,
+             type: 'kernel',
              name: 'node0',
              inputAndArgs: {
                inputs: {x0},
@@ -356,6 +370,7 @@ import * as tape_util from './tape_util';
            },
            {
              id: 1,
+             type: 'kernel',
              name: 'node1',
              inputAndArgs: {
                inputs: {x0},
@@ -365,6 +380,7 @@ import * as tape_util from './tape_util';
            },
            {
              id: 2,
+             type: 'kernel',
              name: 'node2',
              inputAndArgs: {
                inputs: {x0},
@@ -374,6 +390,7 @@ import * as tape_util from './tape_util';
            },
            {
              id: 3,
+             type: 'kernel',
              name: 'node3',
              inputAndArgs: {
                inputs: {intermediate0, intermediate1, x1, orphan1},
@@ -384,15 +401,16 @@ import * as tape_util from './tape_util';
          ];
 
          const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tapeNodes, [x0, x1], y);
+             tape_util.getFilteredNodesXToY(tape, [x0, x1], y);
 
          expect(filteredTapeNodes.length).toBe(3);
-         expect(filteredTapeNodes[0]).toEqual(tapeNodes[0]);
-         expect(filteredTapeNodes[1]).toEqual(tapeNodes[1]);
+         expect(filteredTapeNodes[0]).toEqual(tape[0]);
+         expect(filteredTapeNodes[1]).toEqual(tape[1]);
          // The orphans should be removed and the orphan1 should be pruned from
          // inputs.
          expect(filteredTapeNodes[2]).toEqual({
            id: 3,
+           type: 'kernel',
            name: 'node3',
            inputAndArgs: {
              inputs: {intermediate0, intermediate1, x1},
@@ -420,8 +438,9 @@ import * as tape_util from './tape_util';
       const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
       accumulatedGradientsMap[y.id] = dy;
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [{
+      const tape: Tape = [{
         id: 0,
+        type: 'kernel',
         name: 'node0',
         inputAndArgs: {
           inputs: {x},
@@ -432,7 +451,7 @@ import * as tape_util from './tape_util';
 
       expect(
           () => tape_util.backpropagateGradients(
-              backend, accumulatedGradientsMap, tapeNodes))
+              backend, accumulatedGradientsMap, tape))
           .toThrowError();
     });
 
@@ -447,8 +466,9 @@ import * as tape_util from './tape_util';
       const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
       accumulatedGradientsMap[y.id] = dy;
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [{
+      const tape: Tape = [{
         id: 0,
+        type: 'kernel',
         name: 'node0',
         inputAndArgs: {
           inputs: {x},
@@ -459,8 +479,7 @@ import * as tape_util from './tape_util';
         }
       }];
 
-      tape_util.backpropagateGradients(
-          backend, accumulatedGradientsMap, tapeNodes);
+      tape_util.backpropagateGradients(backend, accumulatedGradientsMap, tape);
 
       test_util.expectArraysClose(
           accumulatedGradientsMap[x.id].dataSync(), new Float32Array([2]));
@@ -478,9 +497,10 @@ import * as tape_util from './tape_util';
       const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
       accumulatedGradientsMap[y.id] = dy;
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [
+      const tape: Tape = [
         {
           id: 0,
+          type: 'kernel',
           name: 'node0',
           inputAndArgs: {
             inputs: {x},
@@ -492,6 +512,7 @@ import * as tape_util from './tape_util';
         },
         {
           id: 1,
+          type: 'kernel',
           name: 'node1',
           inputAndArgs: {
             inputs: {intermediate},
@@ -503,8 +524,7 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      tape_util.backpropagateGradients(
-          backend, accumulatedGradientsMap, tapeNodes);
+      tape_util.backpropagateGradients(backend, accumulatedGradientsMap, tape);
 
       // dx = dy + 1 + 1
       test_util.expectArraysClose(
@@ -524,9 +544,10 @@ import * as tape_util from './tape_util';
       const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
       accumulatedGradientsMap[y.id] = dy;
 
-      const tapeNodes: Array<TapeNode<NDArray>> = [
+      const tape: Tape = [
         {
           id: 0,
+          type: 'kernel',
           name: 'node0',
           inputAndArgs: {
             inputs: {x},
@@ -538,6 +559,7 @@ import * as tape_util from './tape_util';
         },
         {
           id: 1,
+          type: 'kernel',
           name: 'node1',
           inputAndArgs: {
             inputs: {x},
@@ -549,6 +571,7 @@ import * as tape_util from './tape_util';
         },
         {
           id: 2,
+          type: 'kernel',
           name: 'node2',
           inputAndArgs: {
             inputs: {intermediate1, intermediate2},
@@ -563,8 +586,7 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      tape_util.backpropagateGradients(
-          backend, accumulatedGradientsMap, tapeNodes);
+      tape_util.backpropagateGradients(backend, accumulatedGradientsMap, tape);
 
       // dx = dy + 1 + 1 + 1 + 1 + 1
       test_util.expectArraysClose(
@@ -586,9 +608,10 @@ import * as tape_util from './tape_util';
          const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
          accumulatedGradientsMap[y.id] = dy;
 
-         const tapeNodes: Array<TapeNode<TapeNodeOutput>> = [
+         const tape: Array<TapeNode<TapeNodeOutput>> = [
            {
              id: 0,
+             type: 'kernel',
              name: 'node0',
              inputAndArgs: {
                inputs: {x},
@@ -603,6 +626,7 @@ import * as tape_util from './tape_util';
            },
            {
              id: 1,
+             type: 'kernel',
              name: 'node1',
              inputAndArgs: {
                inputs: {intermediate1, intermediate2},
@@ -618,7 +642,7 @@ import * as tape_util from './tape_util';
          ];
 
          tape_util.backpropagateGradients(
-             backend, accumulatedGradientsMap, tapeNodes);
+             backend, accumulatedGradientsMap, tape);
 
          test_util.expectArraysClose(
              accumulatedGradientsMap[x.id].dataSync(),

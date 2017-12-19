@@ -22,6 +22,10 @@ export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
 export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
 
+export type NameArrayMap = {
+  [name: string]: NDArray
+};
+
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
@@ -330,4 +334,44 @@ export function isNDArrayInList(
     }
   }
   return false;
+}
+
+export function checkForNaN(
+    vals: TypedArray, dtype: keyof DataTypes, name: string): void {
+  for (let i = 0; i < vals.length; i++) {
+    if (isValNaN(vals[i], dtype)) {
+      throw Error(`The result of the last math.${name} has NaNs.`);
+    }
+  }
+}
+
+export function flattenNameArrayMap(nameArrayMap: NDArray|
+                                    NameArrayMap): NDArray[] {
+  const xs: NDArray[] = [];
+  let xKeys: string[];
+  if (nameArrayMap instanceof NDArray) {
+    xs.push(nameArrayMap);
+  } else {
+    const xMap = nameArrayMap as {[xName: string]: NDArray};
+    xKeys = Object.keys(xMap);
+    for (let i = 0; i < xKeys.length; i++) {
+      xs.push(xMap[xKeys[i]]);
+    }
+  }
+  return xs;
+}
+
+export function mapFlatArraysToNameArrayMap<T extends NameArrayMap|NDArray>(
+    nameArrayMap: T, flatArrays: NDArray[]): T {
+  const keys = Object.keys(nameArrayMap);
+  if (nameArrayMap instanceof NDArray) {
+    return flatArrays[0] as T;
+  } else {
+    // Convert the flat list of gradients back to the object.
+    const result: {[xName: string]: NDArray} = {};
+    for (let i = 0; i < keys.length; i++) {
+      result[keys[i]] = flatArrays[i];
+    }
+    return result as T;
+  }
 }

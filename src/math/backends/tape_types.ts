@@ -15,20 +15,26 @@
  * =============================================================================
  */
 
+import {NameArrayMap} from '../../util';
 import {NDArray} from '../ndarray';
+
 import {KernelConfigRegistry} from './kernel_registry';
 
-export type NameArrayMap = {
-  [name: string]: NDArray
-};
+export type Tape = Array<TapeNode<TapeNodeOutput>>;
+
 export type TapeNodeOutput = NDArray|NameArrayMap;
+
+export type TapeNodeType = 'kernel'|'subtape';
 
 export interface TapeNode<T extends TapeNodeOutput> {
   id: number;
+  type: TapeNodeType;
   name: string;
   inputAndArgs: TapeNodeInputConfig;
+
   output: T;
   gradient: (dy: T, y: T) => TapeNodeInputGradientArrays;
+  subtape?: Tape;
 }
 
 export interface TapeNodeInputConfig {
