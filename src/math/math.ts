@@ -2190,17 +2190,18 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * This function can compute several different vector norms (the 1-norm, the
    * Euclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0) and
    * matrix norms (Frobenius, 1-norm, and inf-norm).
-   * Supported norm types are following:
-   *     ord	       norm for matrices	        norm for vectors
-   *     'euclidean' Frobenius norm             2-norm
-   *     ‘fro’	     Frobenius norm	            –
-   *     Infinity	   max(sum(abs(x), axis=1))	  max(abs(x))
-   *     -Infinity   min(sum(abs(x), axis=1))	  min(abs(x))
-   *     1	         max(sum(abs(x), axis=0))	  sum(abs(x))
-   *     2	         -	                        sum(abs(x)^2)^1/2
    *
    * @param x The input array.
-   * @param ord Optional. Order of the norm.
+   * @param ord Optional. Order of the norm. Supported norm types are following:
+   *     ord         norm for matrices          norm for vectors
+   *     -------------------------------------------------------
+   *     'euclidean' Frobenius norm             2-norm
+   *     ‘fro’       Frobenius norm	            –
+   *     Infinity    max(sum(abs(x), axis=1))   max(abs(x))
+   *     -Infinity   min(sum(abs(x), axis=1))   min(abs(x))
+   *     1           max(sum(abs(x), axis=0))   sum(abs(x))
+   *     2           -                          sum(abs(x)^2)^1/2*
+   *
    * @param axis Optional. If axis is null (the default), the input is
    * considered a vector and a single vector norm is computed over the entire
    * set of values in the NDArray, i.e. norm(x, ord) is equivalent
