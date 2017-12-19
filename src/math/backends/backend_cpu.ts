@@ -274,10 +274,10 @@ export class MathBackendCPU implements MathBackend {
     return this.multiply(Scalar.new(-1), x) as T;
   }
 
-  add<T extends NDArray>(a: T, b: T): T {
+  add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     return this.broadcastedBinaryOp(
                a, b, types.upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue + bValue) as T;
+               (aValue, bValue) => aValue + bValue) as NDArray<G>;
   }
 
   subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
