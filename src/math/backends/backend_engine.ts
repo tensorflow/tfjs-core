@@ -22,7 +22,7 @@ import {DataTypes, NDArray, Scalar} from '../ndarray';
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
-import {KernelNode, TapeNode, TapeNodeOutput} from './tape_types';
+import {KernelNode, NameArrayMap, TapeNode, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
 
 export type ScopeResultImmediate =
@@ -103,9 +103,6 @@ export class BackendEngine {
     // Filter out the nodes that don't connect x => y.
     const filteredNodes =
         tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
-    console.log(this.activeTape);
-    // tslint:disable-next-line:no-debugger
-    debugger;
 
     if (filteredNodes.length === 0) {
       throw new Error(`Cannot compute gradient: y is not a function of xs.`);
@@ -150,7 +147,8 @@ export class BackendEngine {
                ndarray: T1) => T1,
            track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
                ndarray: T2) => T2) => T,
-      gradientsMode = false): T {
+      // TODO(NSTHORAT): FINISH THIS
+      customGradient: (dy: T, y: T) => NameArrayMap, gradientsMode = false): T {
     this.startScope(gradientsMode);
 
     const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
