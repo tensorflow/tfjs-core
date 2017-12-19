@@ -21,7 +21,7 @@ import {MathTests} from '../../test_util';
 import {NDArray, Scalar} from '../ndarray';
 
 import {MathBackendCPU} from './backend_cpu';
-import {TapeNode, TapeNodeOutput} from './tape_types';
+import {NameArrayMap, TapeNode, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
 
 // getFilteredNodesXToY
@@ -571,6 +571,59 @@ import * as tape_util from './tape_util';
           accumulatedGradientsMap[x.id].dataSync(),
           new Float32Array([dy.dataSync()[0] + 5]));
     });
+
+    it('basic backprop with a multi-output split node accumulates gradients',
+       math => {
+         const backend = new MathBackendCPU();
+
+         const x = Scalar.new(0);
+         const intermediate1 = Scalar.new(1);
+         const intermediate2 = Scalar.new(2);
+         const y = Scalar.new(3);
+
+         const dy = Scalar.new(1);
+
+         const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+         accumulatedGradientsMap[y.id] = dy;
+
+         const tapeNodes: Array<TapeNode<TapeNodeOutput>> = [
+           {
+             id: 0,
+             name: 'node0',
+             inputAndArgs: {
+               inputs: {x},
+             },
+             output: {intermediate1, intermediate2},
+             gradient: (dy: NameArrayMap, y: NameArrayMap) => {
+               return {
+                 x: () =>
+                     backend.multiply(dy['intermediate1'], dy['intermediate2'])
+               };
+             }
+           },
+           {
+             id: 1,
+             name: 'node1',
+             inputAndArgs: {
+               inputs: {intermediate1, intermediate2},
+             },
+             output: y,
+             gradient: (dy: Scalar, y: Scalar) => {
+               return {
+                 intermediate1: () => backend.add(dy, Scalar.new(2)),
+                 intermediate2: () => backend.add(dy, Scalar.new(3))
+               };
+             }
+           }
+         ];
+
+         tape_util.backpropagateGradients(
+             backend, accumulatedGradientsMap, tapeNodes);
+
+         test_util.expectArraysClose(
+             accumulatedGradientsMap[x.id].dataSync(),
+             new Float32Array([(dy.get() + 2) * (dy.get() + 3)]));
+       });
   };
 
   test_util.describeMathCPU('tape_util.backpropagateGradients', [tests]);

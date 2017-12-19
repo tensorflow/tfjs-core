@@ -126,7 +126,6 @@ export function getFilteredNodesXToY(
           const output = node.output[outputName];
           if (arraysLeadToY[output.id]) {
             prunedOutputs[outputName] = node.output[outputName];
-            prunedOutputCount++;
           }
         }
       }
