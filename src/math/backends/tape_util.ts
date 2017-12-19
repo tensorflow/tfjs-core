@@ -28,10 +28,10 @@ import {TapeNode, TapeNodeOutput} from './tape_types';
  * @param y The output NDArray.
  */
 export function getFilteredNodesXToY(
-    tapeNodes: TapeNode[], xs: NDArray[], y: NDArray): TapeNode[] {
-  // Forward pass to compute all the nodes that are transitively a function of
-  // x. Note that because we assume that all Nodes have a single output NDArray,
-  // we can use these interchangably.
+    tapeNodes: Array<TapeNode<TapeNodeOutput>>, xs: NDArray[],
+    y: NDArray): Array<TapeNode<TapeNodeOutput>> {
+  // Forward pass to compute all the nodes and NDArrays that are transitively a
+  // function of x.
   const arraysFromX: {[ndarrayId: number]: boolean} = {};
   const nodesFromX: {[nodeId: number]: boolean} = {};
   for (let i = 0; i < xs.length; i++) {
@@ -52,7 +52,7 @@ export function getFilteredNodesXToY(
             arraysFromX[node.output.id] = true;
           } else {
             const keys = Object.keys(node.output);
-            for (const key in keys) {
+            for (const key of keys) {
               arraysFromX[node.output[key].id] = true;
             }
           }
@@ -68,7 +68,7 @@ export function getFilteredNodesXToY(
     }
   }
 
-  // Backwards pass to find all of the nodes that lead to y.
+  // Backwards pass to find all of the nodes and NDArrays that lead to y.
   const arraysLeadToY: {[ndarrayId: number]: boolean} = {};
   arraysLeadToY[y.id] = true;
   const nodesToY: {[nodeId: number]: boolean} = {};
@@ -82,7 +82,7 @@ export function getFilteredNodesXToY(
       outputs.push(node.output);
     } else {
       const keys = Object.keys(node.output);
-      for (const key in keys) {
+      for (const key of keys) {
         outputs.push(node.output[key]);
       }
     }
@@ -100,7 +100,7 @@ export function getFilteredNodesXToY(
   }
 
   // Return the paths that come from x and lead to y.
-  const filteredTapeNodes: TapeNode[] = [];
+  const filteredTapeNodes: Array<TapeNode<TapeNodeOutput>> = [];
   for (let i = 0; i < tapeNodes.length; i++) {
     const node = tapeNodes[i];
 
@@ -126,12 +126,13 @@ export function getFilteredNodesXToY(
           const output = node.output[outputName];
           if (arraysLeadToY[output.id]) {
             prunedOutputs[outputName] = node.output[outputName];
+            prunedOutputCount++;
           }
         }
       }
 
       // Copy the node and overwrite inputsAndArgs to the pruned version.
-      const prunedNode = Object.assign({}, node) as TapeNode;
+      const prunedNode = Object.assign({}, node) as TapeNode<TapeNodeOutput>;
       prunedNode.inputAndArgs = {inputs: prunedInputs};
       prunedNode.output = prunedOutputs;
 
@@ -163,7 +164,7 @@ export function backpropagateGradients(
     } else {
       dy = {};
       const keys = Object.keys(node.output);
-      for (const key in keys) {
+      for (const key of keys) {
         dy[key] = arrayAccumulatedGradientMap[node.output[key].id];
       }
     }

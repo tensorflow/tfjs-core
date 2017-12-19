@@ -22,7 +22,7 @@ import {DataTypes, NDArray, Scalar} from '../ndarray';
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
-import {KernelNode, TapeNode} from './tape_types';
+import {KernelNode, TapeNode, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
 
 export type ScopeResultImmediate =
@@ -38,8 +38,8 @@ interface ScopeTrackAndKeepArrays {
 export class BackendEngine {
   private tapeNodeId = 0;
 
-  private activeTape: TapeNode[];
-  private tapeStack: TapeNode[][];
+  private activeTape: Array<TapeNode<TapeNodeOutput>>;
+  private tapeStack: Array<Array<TapeNode<TapeNodeOutput>>>;
 
   // Keep NDArrays that parallel the tapes.
   private activeScopeArrays: ScopeTrackAndKeepArrays;
@@ -98,33 +98,33 @@ export class BackendEngine {
   }
 
   gradientWrt(y: Scalar, xs: NDArray[]): NDArray[] {
-    const gradientsMode = true;
-    return this.scope('grad', () => {
-      // Filter out the nodes that don't connect x => y.
-      const filteredNodes =
-          tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
-      console.log(this.activeTape);
-      // tslint:disable-next-line:no-debugger
-      debugger;
+    // const gradientsMode = true;
+    // return this.scope('grad', () => {
+    // Filter out the nodes that don't connect x => y.
+    const filteredNodes =
+        tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
+    console.log(this.activeTape);
+    // tslint:disable-next-line:no-debugger
+    debugger;
 
-      if (filteredNodes.length === 0) {
-        throw new Error(`Cannot compute gradient: y is not a function of xs.`);
-      }
+    if (filteredNodes.length === 0) {
+      throw new Error(`Cannot compute gradient: y is not a function of xs.`);
+    }
 
-      // Seed the gradient of dy to be 1.
-      const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-      arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
+    // Seed the gradient of dy to be 1.
+    const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
+    arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
 
-      // Backprop gradients through the filtered nodes.
-      tape_util.backpropagateGradients(
-          this.backend, arrayAccumulatedGradientMap, filteredNodes);
+    // Backprop gradients through the filtered nodes.
+    tape_util.backpropagateGradients(
+        this.backend, arrayAccumulatedGradientMap, filteredNodes);
 
-      const gradients: NDArray[] = [];
-      for (let i = 0; i < xs.length; i++) {
-        gradients.push(arrayAccumulatedGradientMap[xs[i].id]);
-      }
-      return gradients;
-    }, gradientsMode);
+    const gradients: NDArray[] = [];
+    for (let i = 0; i < xs.length; i++) {
+      gradients.push(arrayAccumulatedGradientMap[xs[i].id]);
+    }
+    return gradients;
+    // }, gradientsMode);
   }
 
   debug() {
@@ -171,7 +171,7 @@ export class BackendEngine {
    * as scope() without the need for a function closure.
    */
   startScope(gradientsMode = false) {
-    const newTape: TapeNode[] = [];
+    const newTape: Array<TapeNode<TapeNodeOutput>> = [];
     this.tapeStack.push(newTape);
     this.activeTape = newTape;
 

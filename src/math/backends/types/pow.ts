@@ -17,7 +17,7 @@
 
 import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, NameArrayMap, TapeNodeInputGradientArrays} from '../tape_types';
 
 export interface PowNode<T extends NDArray> extends KernelNode {
   inputAndArgs: PowInputConfig<T>;
@@ -29,7 +29,7 @@ export interface PowInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: PowInputArrays<T>;
 }
 
-export interface PowInputArrays<T extends NDArray> extends TapeNodeInputArrays {
+export interface PowInputArrays<T extends NDArray> extends NameArrayMap {
   a: T;
   b: NDArray<'int32'>;
 }

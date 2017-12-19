@@ -18,7 +18,10 @@
 import {NDArray} from '../ndarray';
 import {KernelConfigRegistry} from './kernel_registry';
 
-export type TapeNodeOutput = NDArray|{[outputName: string]: NDArray};
+export type NameArrayMap = {
+  [name: string]: NDArray
+};
+export type TapeNodeOutput = NDArray|NameArrayMap;
 
 export interface TapeNode<T extends TapeNodeOutput> {
   id: number;
@@ -29,12 +32,8 @@ export interface TapeNode<T extends TapeNodeOutput> {
 }
 
 export interface TapeNodeInputConfig {
-  inputs: TapeNodeInputArrays;
+  inputs: NameArrayMap;
 }
-
-export type TapeNodeInputArrays = {
-  [inputName: string]: NDArray;
-};
 
 export type TapeNodeInputGradientArrays = {
   [inputName: string]: () => NDArray;
@@ -48,7 +47,7 @@ export interface KernelNode extends TapeNode<NDArray> {
 }
 
 export interface KernelInputConfig extends TapeNodeInputConfig {
-  inputs: TapeNodeInputArrays;
+  inputs: NameArrayMap;
   // tslint:disable-next-line:no-any
   args?: {[argName: string]: any};
 }

@@ -18,7 +18,7 @@
 import {Conv2DInfo} from '../../conv_util';
 import {Array1D, Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, NameArrayMap, TapeNodeInputGradientArrays} from '../tape_types';
 
 // Conv2D
 export interface Conv2DNode extends KernelNode {
@@ -32,7 +32,7 @@ export interface Conv2DInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface Conv2DInputArrays extends TapeNodeInputArrays {
+export interface Conv2DInputArrays extends NameArrayMap {
   x: Array4D;
   filter: Array4D;
   bias?: Array1D;
@@ -56,7 +56,7 @@ export interface Conv2DDerInputInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface Conv2DDerInputInputArrays extends TapeNodeInputArrays {
+export interface Conv2DDerInputInputArrays extends NameArrayMap {
   dy: Array4D;
   filter: Array4D;
 }
@@ -78,7 +78,7 @@ export interface Conv2DDerFilterInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface Conv2DDerFilterInputArrays extends TapeNodeInputArrays {
+export interface Conv2DDerFilterInputArrays extends NameArrayMap {
   x: Array4D;
   dy: Array4D;
 }
@@ -100,7 +100,7 @@ export interface Conv2DDerBiasInputConfig extends KernelInputConfig {
   inputs: Conv2DDerBiasInputArrays;
 }
 
-export interface Conv2DDerBiasInputArrays extends TapeNodeInputArrays {
+export interface Conv2DDerBiasInputArrays extends NameArrayMap {
   dy: Array4D;
 }
 
@@ -121,7 +121,7 @@ export interface DepthwiseConv2DInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface DepthwiseConv2DInputArrays extends TapeNodeInputArrays {
+export interface DepthwiseConv2DInputArrays extends NameArrayMap {
   x: Array4D;
   filter: Array4D;
 }
