@@ -613,14 +613,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const expected = new Float32Array([25]);
       test_util.expectArraysClose(result.getValues(), expected);
 
-      console.log('pregrad', result.dataSync());
+      console.log('pregrad', result.dataSync(), result.id);
       math.debug();
-      const grad = math.gradientWrt(math.sum(result), a);
-      console.log('grad1', grad.dataSync());
+      const grad = math.gradientWrt(result, a);
+      console.log('grad1', grad.dataSync(), grad.id);
       math.debug();
 
-      const grad2 = math.gradientWrt(math.sum(grad), a);
-      console.log('grad2', grad2.dataSync());
+      const grad2 = math.gradientWrt(grad, a);
+      console.log('grad2', grad2.dataSync(), grad2.id);
       math.debug();
     });
   };

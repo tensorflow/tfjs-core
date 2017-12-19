@@ -105,12 +105,17 @@ export class BackendEngine {
       y: Scalar, xs: NDArray[],
       arrayAccumulatedGradientMap?: {[ndarrayId: number]: NDArray},
       tape?: Tape): NDArray[] {
-    // return this.scope('grad', () => {
+    if (tape == null) {
+      tape = this.activeTape;
+    }
+
     // Filter out the nodes that don't connect x => y.
-    const filteredTape = tape_util.getFilteredNodesXToY(
-        tape == null ? this.activeTape : tape, xs, y);
+    const filteredTape = tape_util.getFilteredNodesXToY(tape, xs, y);
 
     if (filteredTape.length === 0) {
+      console.log('curstaptscakc', this.tapeStack);
+      console.log('bad tape', tape, y.id, xs[0].id);
+      debugger;
       throw new Error(`Cannot compute gradient: y is not a function of xs.`);
     }
 
@@ -120,6 +125,14 @@ export class BackendEngine {
       arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
     }
 
+    return this.scope('backprop', () => {
+      return this.backprop(filteredTape, xs, arrayAccumulatedGradientMap);
+    });
+  }
+
+  private backprop(
+      filteredTape: Tape, xs: NDArray[],
+      arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray}): NDArray[] {
     // Backprop gradients through the filtered nodes.
     tape_util.backpropagateGradients(
         this.backend, arrayAccumulatedGradientMap, filteredTape);
@@ -129,10 +142,10 @@ export class BackendEngine {
       gradients.push(arrayAccumulatedGradientMap[xs[i].id]);
     }
     return gradients;
-    // });
   }
 
   debug() {
+    console.log(this.tapeStack);
     console.log(this.activeTape);
   }
 
@@ -202,8 +215,6 @@ export class BackendEngine {
       ndarray.dispose();
     }
 
-    // TODO(nsthorat): Set the output of the popped tape
-
     this.scopeStack.pop();
     this.activeScope = this.scopeStack.length === 0 ?
         null :
@@ -220,7 +231,10 @@ export class BackendEngine {
     });
 
     // Add a subtape element.
-    const inputs = tape_util.computeInputs(this.activeTape);
+    const subtape = this.activeTape;
+    const inputs = tape_util.computeInputs(subtape);
+    console.log('computed inputs over', subtape);
+    console.log('whole stack', this.tapeStack);
     const evaluatedNode: TapeNode<TapeNodeOutput> = {
       id: this.tapeNodeId++,
       type: 'subtape',
@@ -232,8 +246,10 @@ export class BackendEngine {
         arrayAccumulatedGradientMap[y.id] = dy;
 
         const xs = util.flattenNameArrayMap(inputs);
-        const gradients = this.gradientWrt(
-            y, xs, arrayAccumulatedGradientMap, this.activeTape);
+        // const gradients = this.gradientWrt(
+        //     y, xs, arrayAccumulatedGradientMap, this.activeTape);
+        const gradients =
+            this.backprop(subtape, xs, arrayAccumulatedGradientMap);
 
         const gradientMap = util.mapFlatArraysToNameArrayMap(inputs, gradients);
         const keys = Object.keys(gradientMap);
@@ -246,15 +262,18 @@ export class BackendEngine {
 
         return result;
       },
-      subtape: this.activeTape
+      subtape: subtape
     };
-    this.activeTape.push(evaluatedNode);
 
-    // Attach a gradient function to the last node.
-    this.tapeStack.pop();
+    // Pop the active tape.
+
+    console.log('popping', this.tapeStack.pop());
     this.activeTape = this.tapeStack.length === 0 ?
         null :
         this.tapeStack[this.tapeStack.length - 1];
+
+    // Push the evaluated subtape node onto the tape stack.
+    this.activeTape.push(evaluatedNode);
   }
 
   /**

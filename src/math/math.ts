@@ -942,21 +942,17 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                'Pow', {inputs: {a, b}}, (dy: NDArray<G>, y: NDArray<G>) => {
                  return {
                    a: () => {
-                     console.log('a', NDArray.onesLike(b).dtype);
-                     console.log('b', b.dtype);
-                     console.log(
-                         'dtype', this.subtract(b, NDArray.onesLike(b)).dtype);
-                     return this.scope(() => {
-                       return this.multiply(
-                           dy,
-                           this.multiply(
-                               b,
-                               // TODO(nsthorat): Use a broadcasted 1 for memory
-                               // efficiency. We make a ones array like b for
-                               // supported subtract backprop.
-                               this.pow(
-                                   a, this.subtract(b, NDArray.onesLike(b)))));
-                     });
+                     // return this.scope(() => {
+                     return this.multiply(
+                         dy,
+                         this.multiply(
+                             b,
+                             // TODO(nsthorat): Use a broadcasted 1 for memory
+                             // efficiency. We make a ones array like b for
+                             // supported subtract backprop.
+                             this.pow(
+                                 a, this.subtract(b, NDArray.onesLike(b)))));
+                     //});
                    },
                    b: () => {
                      throw new Error(
