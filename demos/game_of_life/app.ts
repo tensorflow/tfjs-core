@@ -11,28 +11,63 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import {NDArrayMathGPU} from 'deeplearn';
-// import {NDArray, NDArrayMathGPU} from 'deeplearn';
+import {NDArray, NDArrayMathGPU} from 'deeplearn';
 import Vue from 'vue';
 
 import DemoFooter from '../footer.vue';
 import DemoHeader from '../header.vue';
-
-// import {GameOfLife, GameOfLifeModel} from './game_of_life';
 import {GameOfLife} from './game_of_life';
 
-const worldDisplay = new Vue({
-  el: '.world-display',
-  data: {worlds: []},
-  mounted: () => {
-    console.log('hi');
+// import {GameOfLife, GameOfLifeModel} from './game_of_life';
+
+/** Manages displaying a list of world sequences (current, next, prediction) */
+class WorldContext {
+  // worldDisplay: WorldDisplay;
+  world: NDArray;
+  worldNext: NDArray;
+  // predictionElement: Element = null;
+
+  constructor(worlds: [NDArray, NDArray]) {
+    // this.worldDisplay = new WorldDisplay();
+
+    this.world = worlds[0];
+    this.worldNext = worlds[1];
+    // this.worldDisplay.displayWorld(this.world, 'Sequence');
+    // this.worldDisplay.displayWorld(this.worldNext, 'Next Sequence');
+  }
+
+  displayPrediction(prediction: NDArray) {
+    // if (this.predictionElement) {
+    //   this.predictionElement.remove();
+    // }
+    // this.predictionElement =
+    //     this.worldDisplay.displayWorld(prediction, 'Prediction');
+  }
+}
+
+const math = new NDArrayMathGPU();
+const game = new GameOfLife(5, math);
+const worldContexts: WorldContext[] = [];
+// const model = new GameOfLifeModel(math);
+
+// tslint:disable-next-line:no-default-export
+export default Vue.extend({
+  data() {
+    return {};
   },
+  components: {DemoHeader, DemoFooter},
   methods: {
-      // displayWorld: function(world: NDArray, title: string) {
-      //   // this.data.worlds.push(world);
-      // }
+    onAddSequenceClicked: () => {
+      console.log('clicked');
+    }
+  },
+  mounted: async () => {
+    for (let i = 0; i < 5; i++) {
+      worldContexts.push(new WorldContext(await game.generateGolExample()));
+    }
   }
 });
+
 /* Draws Game Of Life sequences */
 // class WorldDisplay {
 //   rootElement: Element;
@@ -76,31 +111,6 @@ const worldDisplay = new Vue({
 //     worldElement.appendChild(boardElement);
 //     this.rootElement.appendChild(worldElement);
 //     return worldElement;
-//   }
-// }
-
-/** Manages displaying a list of world sequences (current, next, prediction) */
-// class WorldContext {
-//   worldDisplay: WorldDisplay;
-//   world: NDArray;
-//   worldNext: NDArray;
-//   predictionElement: Element = null;
-
-//   constructor(worlds: [NDArray, NDArray]) {
-//     this.worldDisplay = new WorldDisplay();
-
-//     this.world = worlds[0];
-//     this.worldNext = worlds[1];
-//     this.worldDisplay.displayWorld(this.world, 'Sequence');
-//     this.worldDisplay.displayWorld(this.worldNext, 'Next Sequence');
-//   }
-
-//   displayPrediction(prediction: NDArray) {
-//     if (this.predictionElement) {
-//       this.predictionElement.remove();
-//     }
-//     this.predictionElement =
-//         this.worldDisplay.displayWorld(prediction, 'Prediction');
 //   }
 // }
 
@@ -377,152 +387,3 @@ const worldDisplay = new Vue({
 //     }
 //   }
 // }
-
-// /* Main display class for Vue */
-// // tslint:disable-next-line:no-default-export
-// export default Vue.extend(
-//     {
-//       components: {DemoHeader, DemoFooter},
-//       mounted: () => {
-//         this.math = new NDArrayMathGPU();
-//         this.game = new GameOfLife(5, this.math);
-//         this.model = new GameOfLifeModel(this.math);
-
-//         this.trainDisplay = new TrainDisplay();
-//         this.worldDisplay = new WorldDisplay();
-
-//         this.boardSizeInput =
-//             document.getElementById('board-size-input') as
-//             HTMLTextAreaElement;
-//         this.trainingSizeInput =
-//             document.getElementById('training-size-input') as
-//             HTMLTextAreaElement;
-//         this.trainingBatchSizeInput =
-//             document.getElementById('training-batch-size-input') as
-//             HTMLTextAreaElement;
-//         this.learningRateInput =
-//             document.getElementById('learning-rate-input') as
-//             HTMLTextAreaElement;
-//         this.updateIntervalInput =
-//             document.getElementById('update-interval-input') as
-//             HTMLTextAreaElement;
-//         this.numLayersInput =
-//             document.getElementById('num-layers-input') as
-//             HTMLTextAreaElement;
-//         this.useLoggedCostInput =
-//             document.getElementById('use-log-cost-input') as
-//             HTMLInputElement;
-
-//         this.addSequenceButton =
-//         document.querySelector('.add-sequence-button');
-//         this.addSequenceButton.addEventListener(
-//             'click', () => this.onAddSequenceButtonClick());
-
-//         this.trainButton = document.querySelector('.train-button');
-//         this.trainButton.addEventListener(
-//             'click', () => this.onTrainButtonClick());
-
-//         this.resetButton = document.querySelector('.reset-button');
-//         this.resetButton.addEventListener(
-//             'click', () => this.onResetButtonClick());
-//       },
-//       methods: {
-//         async onAddSequenceButtonClick(): Promise<void> {
-//           this.game.setSize(this.getBoardSize());
-//           this.worldContexts.push(
-//               new WorldContext(await this.game.generateGolExample()));
-//         },
-
-//         onTrainButtonClick(): void {
-//           this.disableForm();
-
-//           const boardSize = this.getBoardSize();
-//           const learningRate = parseFloat(this.learningRateInput.value);
-//           const trainingSize = parseInt(this.trainingSizeInput.value, 10);
-//           const trainingBatchSize =
-//               parseInt(this.trainingBatchSizeInput.value, 10);
-//           const numLayers = parseInt(this.numLayersInput.value, 10);
-
-//           this.game.setSize(boardSize);
-//           this.model.setupSession(
-//               boardSize, trainingBatchSize, learningRate, numLayers,
-//               this.useLoggedCostInput.checked);
-
-//           this.step = 0;
-//           this.trainingSteps = trainingSize;
-//           this.isBuildingTrainingData = true;
-//           this.trainingData = [];
-//           this.trainingBatchSize = trainingBatchSize;
-//           this.trainDisplay.addDataSet();
-//           this.trainAndRender();
-//         },
-
-//         onResetButtonClick(): void {
-//           this.worldContexts = [];
-//           this.clearChildNodes(document.querySelector('.worlds-display'));
-//           this.clearChildNodes(document.querySelector('.train-display'));
-//         },
-
-//         disableForm(): void {
-//           this.trainButton.setAttribute('disabled', 'disabled');
-//           this.resetButton.setAttribute('disabled', 'disabled');
-//           this.boardSizeInput.setAttribute('disabled', 'disabled');
-//           this.learningRateInput.setAttribute('disabled', 'disabled');
-//           this.trainingSizeInput.setAttribute('disabled', 'disabled');
-//           this.trainingBatchSizeInput.setAttribute('disabled', 'disabled');
-//           this.numLayersInput.setAttribute('disabled', 'disabled');
-//           this.useLoggedCostInput.setAttribute('disabled', 'disabled');
-//         },
-
-//         enableForm(): void {
-//           this.trainButton.removeAttribute('disabled');
-//           this.resetButton.removeAttribute('disabled');
-//           this.boardSizeInput.removeAttribute('disabled');
-//           this.learningRateInput.removeAttribute('disabled');
-//           this.trainingSizeInput.removeAttribute('disabled');
-//           this.trainingBatchSizeInput.removeAttribute('disabled');
-//           this.numLayersInput.removeAttribute('disabled');
-//           this.useLoggedCostInput.removeAttribute('disabled');
-//         },
-
-//         getBoardSize(): number {
-//           return parseInt(this.boardSizeInput.value, 10);
-//         },
-
-//         clearChildNodes(node: Element) {
-//           while (node.hasChildNodes()) {
-//             node.removeChild(node.lastChild);
-//           }
-//         },
-//       }
-
-//     },
-// );
-
-// // new Demo().showSampleSequences();
-
-const math = new NDArrayMathGPU();
-// const model = new GameOfLifeModel(math);
-
-// const worldContext =
-
-// tslint:disable-next-line:no-default-export
-export default Vue.extend({
-  data() {
-    return {};
-  },
-  components: {DemoHeader, DemoFooter},
-  methods: {
-    onAddSequenceClicked: async () => {
-      const worlds = await new GameOfLife(5, math).generateGolExample();
-      console.log(worldDisplay);
-      console.log(worlds);
-      // worldDisplay.displayWorld(worlds[0], 'test');
-      // if (model) {
-      //   // worldDisplay.displayWorld(
-      //   //     new GameOfLife(5, math).generateGolExample()[0], 'test');
-      // }
-      console.log('clicked');
-    }
-  }
-});
