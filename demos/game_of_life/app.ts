@@ -20,6 +20,82 @@ import {GameOfLife} from './game_of_life';
 
 // import {GameOfLife, GameOfLifeModel} from './game_of_life';
 
+// /** Shows model training information. */
+class TrainDisplay {
+  element: Element;
+  trainingDataElement: Element;
+  canvas: CanvasRenderingContext2D;
+  chart: Chart;
+  chartData: [ChartData[]];
+  chartDataIndex = -1;
+
+  datasets: ChartDataSets[] = [];
+
+  setup(): void {
+    this.element = document.querySelector('.train-display');
+    this.trainingDataElement = document.querySelector('.data-display');
+    this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
+                      .getContext('2d');
+    this.chart = new Chart(this.canvas, {
+      type: 'line',
+      data: {
+        datasets: this.datasets,
+      },
+      options: {
+        animation: {duration: 0},
+        responsive: false,
+        scales: {
+          xAxes: [{type: 'linear', position: 'bottom'}],
+          // yAxes: [{ticks: {beginAtZero: true}}]
+        }
+      }
+    });
+  }
+
+  addDataSet(): void {
+    if (!this.chartData) {
+      this.chartData = [[]];
+    } else {
+      this.chartData.push([]);
+    }
+    this.datasets.push({
+      data: this.chartData[++this.chartDataIndex],
+      fill: false,
+      label: 'Cost ' + (this.chartDataIndex + 1),
+      pointRadius: 0,
+      borderColor: this.randomRGBA(),
+      borderWidth: 1,
+      lineTension: 0,
+      pointHitRadius: 8
+    });
+  }
+
+  showStep(step: number, steps: number) {
+    this.element.innerHTML = 'Trained ' + Math.trunc(step / steps * 100) + '%';
+  }
+
+  displayCost(cost: number, step: number) {
+    this.chartData[this.chartDataIndex].push({x: step, y: cost});
+    this.chart.update();
+  }
+
+  displayTrainingData(length: number, size: number) {
+    this.trainingDataElement.innerHTML =
+        ' - (Building training data - ' + length + ' of ' + size + ')';
+  }
+
+  clearTrainingData(): void {
+    this.trainingDataElement.innerHTML = '';
+  }
+
+  private randomRGBA(): string {
+    const s = 255;
+    return 'rgba(' + Math.round(Math.random() * s) + ',' +
+        Math.round(Math.random() * s) + ',' + Math.round(Math.random() * s) +
+        ',1)';
+  }
+}
+
 /* Draws Game Of Life sequences */
 class WorldDisplay {
   rootElement: Element;
@@ -94,6 +170,7 @@ class WorldContext {
 
 const math = new NDArrayMathGPU();
 const game = new GameOfLife(5, math);
+const trainDisplay = new TrainDisplay();
 const worldContexts: WorldContext[] = [];
 // const model = new GameOfLifeModel(math);
 
@@ -106,91 +183,17 @@ export default Vue.extend({
   methods: {
     onAddSequenceClicked: () => {
       console.log('clicked');
+      console.log('train clicked', trainDisplay);
     }
   },
   mounted: async () => {
     for (let i = 0; i < 5; i++) {
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     }
+    trainDisplay.setup();
   }
 });
 
-// /** Shows model training information. */
-// class TrainDisplay {
-//   element: Element;
-//   trainingDataElement: Element;
-//   canvas: CanvasRenderingContext2D;
-//   chart: Chart;
-//   chartData: [ChartData[]];
-//   chartDataIndex = -1;
-
-//   datasets: ChartDataSets[] = [];
-
-//   constructor() {
-//     this.element = document.querySelector('.train-display');
-//     this.trainingDataElement = document.querySelector('.data-display');
-//     this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
-//                       .getContext('2d');
-//     this.chart = new Chart(this.canvas, {
-//       type: 'line',
-//       data: {
-//         datasets: this.datasets,
-//       },
-//       options: {
-//         animation: {duration: 0},
-//         responsive: false,
-//         scales: {
-//           xAxes: [{type: 'linear', position: 'bottom'}],
-//           // yAxes: [{ticks: {beginAtZero: true}}]
-//         }
-//       }
-//     });
-//   }
-
-//   addDataSet(): void {
-//     if (!this.chartData) {
-//       this.chartData = [[]];
-//     } else {
-//       this.chartData.push([]);
-//     }
-//     this.datasets.push({
-//       data: this.chartData[++this.chartDataIndex],
-//       fill: false,
-//       label: 'Cost ' + (this.chartDataIndex + 1),
-//       pointRadius: 0,
-//       borderColor: this.randomRGBA(),
-//       borderWidth: 1,
-//       lineTension: 0,
-//       pointHitRadius: 8
-//     });
-//   }
-
-//   showStep(step: number, steps: number) {
-//     this.element.innerHTML = 'Trained ' + Math.trunc(step / steps * 100) +
-//     '%';
-//   }
-
-//   displayCost(cost: number, step: number) {
-//     this.chartData[this.chartDataIndex].push({x: step, y: cost});
-//     this.chart.update();
-//   }
-
-//   displayTrainingData(length: number, size: number) {
-//     this.trainingDataElement.innerHTML =
-//         ' - (Building training data - ' + length + ' of ' + size + ')';
-//   }
-
-//   clearTrainingData(): void {
-//     this.trainingDataElement.innerHTML = '';
-//   }
-
-//   private randomRGBA(): string {
-//     const s = 255;
-//     return 'rgba(' + Math.round(Math.random() * s) + ',' +
-//         Math.round(Math.random() * s) + ',' + Math.round(Math.random() * s) +
-//         ',1)';
-//   }
-// }
 
 // /** Main class for running the Game of Life training demo. */
 // // tslint:disable-next-line:no-unused-expression

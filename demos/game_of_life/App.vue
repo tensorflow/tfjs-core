@@ -12,6 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================-->
+<script defer="" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
 <template>
   <div>
     <demo-header name="Game-of-Life deep-learning demo"></demo-header>
@@ -88,7 +89,6 @@ limitations under the License.
   </div>
 </template>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
 <script lang="ts" src="./app.ts"></script>
 
 <style>
