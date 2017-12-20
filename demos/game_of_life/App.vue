@@ -64,7 +64,7 @@ limitations under the License.
           <tr>
             <td colspan="2" class="buttons">
               <button v-on:click="onAddSequenceClicked">Add Sequence</button>
-              <button class="train-button">Train Model</button>
+              <button v-on:click="onTrainModelClicked">Train Model</button>
               <button class="reset-button">Reset</button>
             </td>
           </tr>
@@ -98,6 +98,10 @@ limitations under the License.
 
 .world + .world {
   margin-left: 20px;
+}
+
+.world-display + .world-display {
+  margin-top: 10px;
 }
 
 .board {

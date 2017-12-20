@@ -16,9 +16,8 @@ import Vue from 'vue';
 
 import DemoFooter from '../footer.vue';
 import DemoHeader from '../header.vue';
-import {GameOfLife} from './game_of_life';
 
-// import {GameOfLife, GameOfLifeModel} from './game_of_life';
+import {GameOfLife, GameOfLifeModel} from './game_of_life';
 
 // /** Shows model training information. */
 class TrainDisplay {
@@ -34,22 +33,23 @@ class TrainDisplay {
   setup(): void {
     this.element = document.querySelector('.train-display');
     this.trainingDataElement = document.querySelector('.data-display');
-    this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
-                      .getContext('2d');
-    this.chart = new Chart(this.canvas, {
-      type: 'line',
-      data: {
-        datasets: this.datasets,
-      },
-      options: {
-        animation: {duration: 0},
-        responsive: false,
-        scales: {
-          xAxes: [{type: 'linear', position: 'bottom'}],
-          // yAxes: [{ticks: {beginAtZero: true}}]
-        }
-      }
-    });
+    // TODO(kreeger): switch to Vue-component for rendering charts?
+    // this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
+    //                   .getContext('2d');
+    // this.chart = new Chart(this.canvas, {
+    //   type: 'line',
+    //   data: {
+    //     datasets: this.datasets,
+    //   },
+    //   options: {
+    //     animation: {duration: 0},
+    //     responsive: false,
+    //     scales: {
+    //       xAxes: [{type: 'linear', position: 'bottom'}],
+    //       // yAxes: [{ticks: {beginAtZero: true}}]
+    //     }
+    //   }
+    // });
   }
 
   addDataSet(): void {
@@ -76,7 +76,7 @@ class TrainDisplay {
 
   displayCost(cost: number, step: number) {
     this.chartData[this.chartDataIndex].push({x: step, y: cost});
-    this.chart.update();
+    // this.chart.update();
   }
 
   displayTrainingData(length: number, size: number) {
@@ -105,7 +105,6 @@ class WorldDisplay {
     this.rootElement.setAttribute('class', 'world-display');
 
     document.querySelector('.worlds-display').appendChild(this.rootElement);
-    console.log('doc ', document.querySelector('.worlds-display'));
   }
 
   displayWorld(world: NDArray, title: string): Element {
@@ -170,9 +169,66 @@ class WorldContext {
 
 const math = new NDArrayMathGPU();
 const game = new GameOfLife(5, math);
-const trainDisplay = new TrainDisplay();
+const model = new GameOfLifeModel(math);
+
+let trainingData: Array<[NDArray, NDArray]> = [];
 const worldContexts: WorldContext[] = [];
-// const model = new GameOfLifeModel(math);
+
+const trainDisplay = new TrainDisplay();
+
+let step = 0;
+let trainingSteps = 100;
+let trainingBatchSize = 5;
+
+let isBuildingTrainingData = true;
+
+async function trainAndRender() {
+  if (step === trainingSteps) {
+    // TODO - enable form.
+    return;
+  }
+
+  requestAnimationFrame(() => trainAndRender());
+
+  if (isBuildingTrainingData) {
+    math.scope(async () => {
+      // Do 2 examples each pass:
+      trainingData.push(await game.generateGolExample());
+      if (trainingData.length < trainingBatchSize) {
+        trainingData.push(await game.generateGolExample());
+      }
+    });
+
+    if (trainingBatchSize >= 20) {
+      trainDisplay.displayTrainingData(
+          trainingData.length + 1, trainingBatchSize);
+    }
+    if (trainingData.length === trainingBatchSize) {
+      isBuildingTrainingData = false;
+      trainDisplay.clearTrainingData();
+    }
+  }
+
+  if (!isBuildingTrainingData) {
+    step++;
+    // const fetchCost =
+    //     step % parseInt(updateIntervalInput.value, 10) === 0;
+    const fetchCost = step % 20 === 0;
+    const cost = model.trainBatch(fetchCost, trainingData);
+
+    if (fetchCost) {
+      trainDisplay.showStep(step, trainingSteps);
+      trainDisplay.displayCost(cost, step);
+
+      worldContexts.forEach((worldContext) => {
+        worldContext.displayPrediction(model.predict(worldContext.world));
+      });
+    }
+
+    trainingData = [];
+    isBuildingTrainingData = true;
+  }
+}
 
 // tslint:disable-next-line:no-default-export
 export default Vue.extend({
@@ -181,9 +237,15 @@ export default Vue.extend({
   },
   components: {DemoHeader, DemoFooter},
   methods: {
-    onAddSequenceClicked: () => {
+    onAddSequenceClicked: async () => {
       console.log('clicked');
       console.log('train clicked', trainDisplay);
+      worldContexts.push(new WorldContext(await game.generateGolExample()));
+    },
+
+    onTrainModelClicked: async () => {
+      // TODO - init things.
+      trainAndRender();
     }
   },
   mounted: async () => {
