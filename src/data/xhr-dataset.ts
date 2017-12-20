@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {NDArrayMath} from '../math/math';
 import {NDArray} from '../math/ndarray';
 import * as util from '../util';
 
@@ -64,7 +65,8 @@ export class XhrDataset extends InMemoryDataset {
   protected xhrDatasetConfig: XhrDatasetConfig;
 
   constructor(xhrDatasetConfig: XhrDatasetConfig) {
-    super(xhrDatasetConfig.data.map(x => x.shape));
+    super(
+        xhrDatasetConfig.data.map(x => x.shape), new NDArrayMath('cpu', false));
     this.xhrDatasetConfig = xhrDatasetConfig;
   }
 
@@ -75,12 +77,13 @@ export class XhrDataset extends InMemoryDataset {
 
     const inputSize = util.sizeFromShape(info.shape);
     return dataPromise.then(data => {
-      data = data.slice(0, 10 * inputSize);
+      data = data.slice(0, 100 * inputSize);
       const ndarrays: T[] = [];
       for (let i = 0; i < data.length / inputSize; i++) {
         const values = data.subarray(i * inputSize, (i + 1) * inputSize);
-        const ndarray =
-            NDArray.make(info.shape, {values: new Float32Array(values)}) as T;
+        const ndarray = NDArray.make(
+                            info.shape, {values: new Float32Array(values)},
+                            'float32', this.math) as T;
         ndarrays.push(ndarray);
       }
       return ndarrays;

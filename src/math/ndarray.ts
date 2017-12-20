@@ -529,9 +529,10 @@ export class Array2D<T extends keyof DataTypes = keyof DataTypes> extends
   private stride0: number;
 
   constructor(
-      shape: [number, number], dtype: T, values?: DataTypes[T], id?: number) {
+      shape: [number, number], dtype: T, values?: DataTypes[T], id?: number,
+      math?: NDArrayMath) {
     util.assert(shape.length === 2, 'Shape should be of length 2');
-    super(shape, dtype, values, id);
+    super(shape, dtype, values, id, math);
     this.stride0 = this.strides[0];
   }
 
@@ -626,9 +627,9 @@ export class Array3D<T extends keyof DataTypes = keyof DataTypes> extends
 
   constructor(
       shape: [number, number, number], dtype: T, values?: DataTypes[T],
-      id?: number) {
+      id?: number, math?: NDArrayMath) {
     util.assert(shape.length === 3, 'Shape should be of length 3');
-    super(shape, dtype, values, id);
+    super(shape, dtype, values, id, math);
     this.stride0 = this.strides[0];
     this.stride1 = this.strides[1];
   }
@@ -728,9 +729,9 @@ export class Array4D<T extends keyof DataTypes = keyof DataTypes> extends
 
   constructor(
       shape: [number, number, number, number], dtype: T, values?: DataTypes[T],
-      id?: number) {
+      id?: number, math?: NDArrayMath) {
     util.assert(shape.length === 4, 'Shape should be of length 4');
-    super(shape, dtype, values, id);
+    super(shape, dtype, values, id, math);
     this.stride0 = this.strides[0];
     this.stride1 = this.strides[1];
     this.stride2 = this.strides[2];
