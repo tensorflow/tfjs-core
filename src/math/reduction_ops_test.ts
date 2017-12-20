@@ -794,6 +794,16 @@ import * as reduce_util from './reduce_util';
       a.dispose();
     });
 
+    it('vector 1 norm', math => {
+      const a = Array1D.new([1, -2, 3, -4]);
+      const norm = math.norm(a, 1);
+
+      expect(norm.dtype).toBe('float32');
+      test_util.expectNumbersClose(norm.get(), 10);
+
+      a.dispose();
+    });
+
     it('vector euclidean norm', math => {
       const a = Array1D.new([1, -2, 3, -4]);
       const norm = math.norm(a, 'euclidean');

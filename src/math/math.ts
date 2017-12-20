@@ -2270,6 +2270,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     // vector
     if (x.rank === 1 || typeof axis === 'number' ||
         axis instanceof Array && axis.length === 1) {
+      if (p === 1) {
+        return this.sum(this.abs(x), axis);
+      }
       if (p === Infinity) {
         return this.max(this.abs(x), axis);
       }
