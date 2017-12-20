@@ -293,7 +293,10 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
 
   fill(value: number) {
     this.throwIfDisposed();
-    this.getValues().fill(value);
+    const vals = this.getValues();
+    vals.fill(value);
+    ENV.math.disposeData(this.id);
+    ENV.math.write(this.id, vals, this.dtype, this.shape);
   }
 
   /** @deprecated Use dataSync() instead. */
