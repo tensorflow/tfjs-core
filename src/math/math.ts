@@ -2292,11 +2292,6 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return util.mapFlatArraysToNameArrayMap(x, gradients);
   }
 
-  debug() {
-    this.backendEngine.debug();
-    debugger;
-  }
-
   disposeData(id: number): void {
     this.backend.disposeData(id);
     // TODO(nsthorat): Construct an error and save the stack trace for

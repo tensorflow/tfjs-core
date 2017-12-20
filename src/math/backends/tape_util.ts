@@ -18,7 +18,7 @@
 import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
-import {Tape, TapeNode, TapeNodeOutput} from './tape_types';
+import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
 
 /**
  * Computes a list of TapeNodes that connect x to y, filtering everything else
@@ -257,4 +257,15 @@ export function extractNDArraysFromScopeResult(result: ScopeResultImmediate):
     }
   }
   return list;
+}
+
+export function stripUndefinedInputsFromInputConfig(
+    config: TapeNodeInputConfig): TapeNodeInputConfig {
+  const keys = Object.keys(config.inputs);
+  keys.forEach(key => {
+    if (config.inputs[key] == null) {
+      delete config.inputs[key];
+    }
+  });
+  return config;
 }
