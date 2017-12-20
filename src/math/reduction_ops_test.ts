@@ -828,7 +828,6 @@ import * as reduce_util from './reduce_util';
       const a = Array1D.new([1, -2, 3, -4]);
 
       expect(() => math.norm(a, 3)).toThrowError();
-      expect(() => math.norm(a, 'unknown')).toThrowError();
 
       a.dispose();
     });
@@ -887,7 +886,6 @@ import * as reduce_util from './reduce_util';
       const a = Array2D.new([3, 2], [1, 2, -3, 1, 1, 1]);
 
       expect(() => math.norm(a, 2, [0, 1])).toThrowError();
-      expect(() => math.norm(a, 'unknown', [0, 1])).toThrowError();
 
       a.dispose();
     });
