@@ -38,9 +38,7 @@ export interface XhrDatasetConfig {
   modelConfigs: {[modelName: string]: XhrModelConfig};
 }
 
-export interface XhrModelConfig {
-  path: string;
-}
+export interface XhrModelConfig { path: string; }
 
 export function getXhrDatasetConfig(jsonConfigPath: string):
     Promise<{[datasetName: string]: XhrDatasetConfig}> {
@@ -77,7 +75,6 @@ export class XhrDataset extends InMemoryDataset {
 
     const inputSize = util.sizeFromShape(info.shape);
     return dataPromise.then(data => {
-      data = data.slice(0, 100 * inputSize);
       const ndarrays: T[] = [];
       for (let i = 0; i < data.length / inputSize; i++) {
         const values = data.subarray(i * inputSize, (i + 1) * inputSize);
