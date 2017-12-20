@@ -1236,7 +1236,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
-   * Computes the derivatice of elu which is used ly
+   * Computes the derivative of elu which is used ly
    * @hidden
    */
   eluDer<T extends NDArray>(x: T): T {
@@ -1254,12 +1254,34 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Computes leaky rectified linear element-wise
    * @param {T} x the input NDArray
-   * @param alpha scaleing factor for negative values, defaults to 0.2
+   * @param alpha scaling factor for negative values, defaults to 0.2
    * @return {NDArray}
    */
   leakyRelu<T extends NDArray>(x: T, alpha = 0.2): T {
     return this.backendEngine.executeKernel(
                'LeakyRelu', {inputs: {x}, args: {alpha}}) as T;
+  }
+
+  /**
+   * Computes leaky rectified linear element-wise with parametric alphas
+   * @param {T} x the input NDArray
+   * @param {T} alpha scaling factor NDArray for negative values
+   * @return {NDArray}
+   */
+  prelu<T extends NDArray>(x: T, alpha: T): T {
+    return this.backendEngine.executeKernel(
+               'PReLU', {inputs: {x, alpha}}) as T;
+  }
+
+  /**
+   * Computes the derivative of PReLU
+   * @param {T} x the input NDArray
+   * @param {T} alpha scaling factor NDArray for negative values
+   * @return {NDArray}
+   */
+  preluDer<T extends NDArray>(x: T, alpha: T): T {
+    return this.backendEngine.executeKernel(
+               'PReLUDer', {inputs: {x, alpha}}) as T;
   }
 
   /**
@@ -2213,6 +2235,107 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       return {mean, variance};
     });
     return result;
+  }
+
+  /**
+   * Computes the norm of scalar, vectors, and matrices.
+   * This function can compute several different vector norms (the 1-norm, the
+   * Euclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0) and
+   * matrix norms (Frobenius, 1-norm, and inf-norm).
+   *
+   * @param x The input array.
+   * @param ord Optional. Order of the norm. Supported norm types are following:
+   *     ord         norm for matrices          norm for vectors
+   *     -------------------------------------------------------
+   *     'euclidean' Frobenius norm             2-norm
+   *     ‘fro’       Frobenius norm	            –
+   *     Infinity    max(sum(abs(x), axis=1))   max(abs(x))
+   *     -Infinity   min(sum(abs(x), axis=1))   min(abs(x))
+   *     1           max(sum(abs(x), axis=0))   sum(abs(x))
+   *     2           -                          sum(abs(x)^2)^1/2*
+   *
+   * @param axis Optional. If axis is null (the default), the input is
+   * considered a vector and a single vector norm is computed over the entire
+   * set of values in the NDArray, i.e. norm(x, ord) is equivalent
+   * to norm(x.reshape([-1]), ord). If axis is a integer, the input
+   * is considered a batch of vectors, and axis determines the axis in x
+   * over which to compute vector norms. If axis is a 2-tuple of integer it is
+   * considered a batch of matrices and axis determines the axes in NDArray over
+   * which to compute a matrix norm.
+   * @param keepDims Optional. If true, the norm have the same dimensionality as
+   * the input.
+   */
+  norm<G extends keyof DataTypes>(
+      x: NDArray<G>, ord: number|'euclidean'|'fro' = 'euclidean',
+      axis: number|number[] = null, keepDims = false): NDArray<G|SumTypes[G]> {
+    return this.scope(() => {
+      const norm = this.normInternal(x, ord, axis);
+      let keepDimsShape = norm.shape;
+      if (keepDims) {
+        const axes = axis_util.parseAxisParam(axis, x.shape);
+        keepDimsShape = axis_util.expandShapeToKeepDim(norm.shape, axes);
+      }
+      return norm.reshape(keepDimsShape);
+    });
+  }
+
+  /**
+   * Calculate the norm for different NDAarray.
+   */
+  private normInternal<G extends keyof DataTypes>(
+      x: NDArray<G>, p: number|string,
+      axis: number|number[] = null): NDArray<G|SumTypes[G]> {
+    // scalar
+    if (x.rank === 0) {
+      return this.abs(x);
+    }
+
+    // consider vector when no axis is specified
+    if (x.rank !== 1 && axis === null) {
+      return this.normInternal(x.reshape([-1]), p, axis);
+    }
+
+    // vector
+    if (x.rank === 1 || typeof axis === 'number' ||
+        axis instanceof Array && axis.length === 1) {
+      if (p === 1) {
+        return this.sum(this.abs(x), axis);
+      }
+      if (p === Infinity) {
+        return this.max(this.abs(x), axis);
+      }
+      if (p === -Infinity) {
+        return this.min(this.abs(x), axis);
+      }
+      if (p === 'euclidean' || p === 2) {
+        // norm(x, 2) = sum(abs(xi) ^ 2) ^ 1/2
+        return this.sqrt(
+            this.sum(this.pow(this.abs(x), Scalar.new(2, 'int32')), axis));
+      }
+
+      throw new Error(`Error in norm: invalid ord value: ${p}`);
+    }
+
+    // matrix (assumption axis[0] < axis[1])
+    if (axis instanceof Array && axis.length === 2) {
+      if (p === 1) {
+        return this.max(this.sum(this.abs(x), axis[0]), axis[1] - 1);
+      }
+      if (p === Infinity) {
+        return this.max(this.sum(this.abs(x), axis[1]), axis[0]);
+      }
+      if (p === -Infinity) {
+        return this.min(this.sum(this.abs(x), axis[1]), axis[0]);
+      }
+      if (p === 'fro' || p === 'euclidean') {
+        // norm(x) = sqrt(sum(pow(x, 2)))
+        return this.sqrt(this.sum(this.pow(x, Scalar.new(2, 'int32')), axis));
+      }
+
+      throw new Error(`Error in norm: invalid ord value: ${p}`);
+    }
+
+    throw new Error(`Error in norm: invalid axis: ${axis}`);
   }
 
   /**
