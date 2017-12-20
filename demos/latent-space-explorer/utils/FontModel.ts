@@ -56,7 +56,6 @@ export class FontModel {
 
   get(id: number, args: Array<{}>, priority: number) {
     args.push(this.metaData);
-
     return new Promise((resolve, reject) => {
       args.push(() => resolve());
       this.inferCache.get(id, args);
@@ -75,7 +74,7 @@ export class FontModel {
 
     const charId = this.charIdMap[char.charAt(0)];
     if (charId == null) {
-      throw(new Error('Invalid character id'));
+      throw (new Error('Invalid character id'));
     }
 
     const adjusted = this.math.scope(keep => {
