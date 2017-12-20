@@ -20,28 +20,75 @@ import {GameOfLife} from './game_of_life';
 
 // import {GameOfLife, GameOfLifeModel} from './game_of_life';
 
+/* Draws Game Of Life sequences */
+class WorldDisplay {
+  rootElement: Element;
+
+  constructor() {
+    this.rootElement = document.createElement('div');
+    this.rootElement.setAttribute('class', 'world-display');
+
+    document.querySelector('.worlds-display').appendChild(this.rootElement);
+    console.log('doc ', document.querySelector('.worlds-display'));
+  }
+
+  displayWorld(world: NDArray, title: string): Element {
+    const worldElement = document.createElement('div');
+    worldElement.setAttribute('class', 'world');
+
+    const titleElement = document.createElement('div');
+    titleElement.setAttribute('class', 'title');
+    titleElement.innerText = title;
+    worldElement.appendChild(titleElement);
+
+    const boardElement = document.createElement('div');
+    boardElement.setAttribute('class', 'board');
+
+    for (let i = 0; i < world.shape[0]; i++) {
+      const rowElement = document.createElement('div');
+      rowElement.setAttribute('class', 'row');
+
+      for (let j = 0; j < world.shape[1]; j++) {
+        const columnElement = document.createElement('div');
+        columnElement.setAttribute('class', 'column');
+        if (world.get(i, j) === 1) {
+          columnElement.classList.add('alive');
+        } else {
+          columnElement.classList.add('dead');
+        }
+        rowElement.appendChild(columnElement);
+      }
+      boardElement.appendChild(rowElement);
+    }
+
+    worldElement.appendChild(boardElement);
+    this.rootElement.appendChild(worldElement);
+    return worldElement;
+  }
+}
+
 /** Manages displaying a list of world sequences (current, next, prediction) */
 class WorldContext {
-  // worldDisplay: WorldDisplay;
   world: NDArray;
   worldNext: NDArray;
-  // predictionElement: Element = null;
+  worldDisplay: WorldDisplay;
+  predictionElement: Element = null;
 
   constructor(worlds: [NDArray, NDArray]) {
-    // this.worldDisplay = new WorldDisplay();
+    this.worldDisplay = new WorldDisplay();
 
     this.world = worlds[0];
     this.worldNext = worlds[1];
-    // this.worldDisplay.displayWorld(this.world, 'Sequence');
-    // this.worldDisplay.displayWorld(this.worldNext, 'Next Sequence');
+    this.worldDisplay.displayWorld(this.world, 'Sequence');
+    this.worldDisplay.displayWorld(this.worldNext, 'Next Sequence');
   }
 
   displayPrediction(prediction: NDArray) {
-    // if (this.predictionElement) {
-    //   this.predictionElement.remove();
-    // }
-    // this.predictionElement =
-    //     this.worldDisplay.displayWorld(prediction, 'Prediction');
+    if (this.predictionElement) {
+      this.predictionElement.remove();
+    }
+    this.predictionElement =
+        this.worldDisplay.displayWorld(prediction, 'Prediction');
   }
 }
 
@@ -67,52 +114,6 @@ export default Vue.extend({
     }
   }
 });
-
-/* Draws Game Of Life sequences */
-// class WorldDisplay {
-//   rootElement: Element;
-
-//   constructor() {
-//     this.rootElement = document.createElement('div');
-//     this.rootElement.setAttribute('class', 'world-display');
-
-//     document.querySelector('.worlds-display').appendChild(this.rootElement);
-//   }
-
-//   displayWorld(world: NDArray, title: string): Element {
-//     const worldElement = document.createElement('div');
-//     worldElement.setAttribute('class', 'world');
-
-//     const titleElement = document.createElement('div');
-//     titleElement.setAttribute('class', 'title');
-//     titleElement.innerText = title;
-//     worldElement.appendChild(titleElement);
-
-//     const boardElement = document.createElement('div');
-//     boardElement.setAttribute('class', 'board');
-
-//     for (let i = 0; i < world.shape[0]; i++) {
-//       const rowElement = document.createElement('div');
-//       rowElement.setAttribute('class', 'row');
-
-//       for (let j = 0; j < world.shape[1]; j++) {
-//         const columnElement = document.createElement('div');
-//         columnElement.setAttribute('class', 'column');
-//         if (world.get(i, j) === 1) {
-//           columnElement.classList.add('alive');
-//         } else {
-//           columnElement.classList.add('dead');
-//         }
-//         rowElement.appendChild(columnElement);
-//       }
-//       boardElement.appendChild(rowElement);
-//     }
-
-//     worldElement.appendChild(boardElement);
-//     this.rootElement.appendChild(worldElement);
-//     return worldElement;
-//   }
-// }
 
 // /** Shows model training information. */
 // class TrainDisplay {

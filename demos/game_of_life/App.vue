@@ -89,69 +89,73 @@ limitations under the License.
 </template>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
-<script src="./app.ts"></script>
+<script lang="ts" src="./app.ts"></script>
 
-<style scoped>
-  .world {
-    display: inline-block;
-  }
+<style>
+.world {
+  display: inline-block;
+}
 
-  .world+.world {
-    margin-left: 20px;
-  }
+.world + .world {
+  margin-left: 20px;
+}
 
-  .board {
-    background-color: #cccccc;
-    display: inline-block;
-    padding: 5px;
-  }
+.board {
+  background-color: #cccccc;
+  display: inline-block;
+  padding: 5px;
+}
 
-  .column {
-    min-height: 20px;
-    min-width: 20px;
-    display: inline-block;
-    margin: 1px;
-  }
+.row {
+  line-height: 10px;
+}
 
-  .column.alive {
-    background-color: #333333;
-  }
+.column {
+  min-height: 20px;
+  min-width: 20px;
+  display: inline-block;
+  margin: 1px;
+}
 
-  .column.dead {
-    background-color: #ffffff;
-  }
+.column.alive {
+  background-color: #333333;
+}
 
-  .worlds-display {
-    /* float: left; */
-    padding: 20px;
-  }
+.column.dead {
+  background-color: #ffffff;
+}
 
-  .train {
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 80%;
-    border-bottom: 1px dashed #333333;
-    padding: 20px 0;
-  }
+.worlds-display {
+  text-align: center;
+  padding-top: 10px;
+}
 
-  .train-controls {
-    float: left;
-  }
+.train {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 80%;
+  border-bottom: 1px dashed #333333;
+  padding-top: 20px;
+}
 
-  .train-console {
-    float: right;
-  }
+.train-controls {
+  float: left;
+}
 
-  .clearfix {
-    clear: both;
-  }
+.train-console {
+  float: right;
+}
 
-  .buttons {
-    padding: 15px 0;
-  }
+.clearfix {
+  clear: both;
+}
 
-  .train-display {
-    color: #333333;
-    text-decoration: underline;
-  }
+.buttons {
+  padding: 15px 0;
+}
+
+.train-display {
+  color: #333333;
+  text-decoration: underline;
+}
 </style>
