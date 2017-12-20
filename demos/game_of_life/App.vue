@@ -16,56 +16,56 @@ limitations under the License.
 <template>
   <div>
     <demo-header name="Game-of-Life deep-learning demo"></demo-header>
-    <div class="app">
+    <div id="app">
       <div class="train">
         <table class="train-controls">
           <tr>
             <td>Board size:</td>
             <td>
-              <input type="text" id="board-size-input" value="5">
+              <input type="text" v-model="boardSize" :disabled="running">
             </td>
           </tr>
           <tr>
             <td>Training size:</td>
             <td>
-              <input type="text" id="training-size-input" value="2000">
+              <input type="text" v-model="trainingSize" :disabled="running">
             </td>
           </tr>
           <tr>
             <td>Training batch size:</td>
             <td>
-              <input type="text" id="training-batch-size-input" value="5">
+              <input type="text" v-model="trainingBatchSize" :disabled="running">
             </td>
           </tr>
           <tr>
             <td>Learning rate:</td>
             <td>
-              <input type="text" id="learning-rate-input" value="1.0">
+              <input type="text" v-model="learningRate" :disabled="running">
             </td>
           </tr>
           <tr>
             <td>Number of layers:</td>
             <td>
-              <input type="text" id="num-layers-input" value="3">
+              <input type="text" v-model="numLayers" :disabled="running">
             </td>
           </tr>
           <tr>
             <td>Update Interval:</td>
             <td>
-              <input type="text" id="update-interval-input" value="25">
+              <input type="text" v-model="updateInterval">
             </td>
           </tr>
           <tr>
             <td>Use Log Cost:</td>
             <td>
-              <input type="checkbox" id="use-log-cost-input" checked="checked">
+              <input type="checkbox" v-model="useLogCost" :disabled="running">
             </td>
           </tr>
           <tr>
             <td colspan="2" class="buttons">
               <button v-on:click="onAddSequenceClicked">Add Sequence</button>
-              <button v-on:click="onTrainModelClicked">Train Model</button>
-              <button class="reset-button">Reset</button>
+              <button v-on:click="onTrainModelClicked" :disabled="running">Train Model</button>
+              <button class="reset-button" :disabled="running">Reset</button>
             </td>
           </tr>
         </table>

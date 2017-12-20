@@ -19,6 +19,17 @@ import DemoHeader from '../header.vue';
 
 import {GameOfLife, GameOfLifeModel} from './game_of_life';
 
+const data = {
+  boardSize: 5,
+  trainingSize: 2000,
+  trainingBatchSize: 5,
+  learningRate: 1.0,
+  numLayers: 3,
+  updateInterval: 25,
+  useLogCost: true,
+  running: false
+};
+
 // /** Shows model training information. */
 class TrainDisplay {
   element: Element;
@@ -184,7 +195,7 @@ let isBuildingTrainingData = true;
 
 async function trainAndRender() {
   if (step === trainingSteps) {
-    // TODO - enable form.
+    data.running = false;
     return;
   }
 
@@ -211,9 +222,7 @@ async function trainAndRender() {
 
   if (!isBuildingTrainingData) {
     step++;
-    // const fetchCost =
-    //     step % parseInt(updateIntervalInput.value, 10) === 0;
-    const fetchCost = step % 20 === 0;
+    const fetchCost = step % data.updateInterval === 0;
     const cost = model.trainBatch(fetchCost, trainingData);
 
     if (fetchCost) {
@@ -233,18 +242,31 @@ async function trainAndRender() {
 // tslint:disable-next-line:no-default-export
 export default Vue.extend({
   data() {
-    return {};
+    return data;
   },
   components: {DemoHeader, DemoFooter},
   methods: {
     onAddSequenceClicked: async () => {
       console.log('clicked');
       console.log('train clicked', trainDisplay);
+      console.log(data.boardSize);
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     },
 
     onTrainModelClicked: async () => {
-      // TODO - init things.
+      game.setSize(data.boardSize);
+      model.setupSession(
+          data.boardSize, data.trainingBatchSize, data.learningRate,
+          data.numLayers, data.useLogCost);
+
+      step = 0;
+      trainingSteps = data.trainingSize;
+      trainingBatchSize = data.trainingBatchSize;
+      trainingData = [];
+      trainDisplay.addDataSet();
+
+      data.running = true;
+
       trainAndRender();
     }
   },
@@ -255,197 +277,6 @@ export default Vue.extend({
     trainDisplay.setup();
   }
 });
-
-
-// /** Main class for running the Game of Life training demo. */
-// // tslint:disable-next-line:no-unused-expression
-// class Demo {
-//   math: NDArrayMathGPU;
-//   game: GameOfLife;
-//   model: GameOfLifeModel;
-
-//   trainingData: Array<[NDArray, NDArray]>;
-//   worldContexts: WorldContext[];
-
-//   trainDisplay: TrainDisplay;
-//   worldDisplay: WorldDisplay;
-
-//   boardSizeInput: HTMLTextAreaElement;
-//   trainingSizeInput: HTMLTextAreaElement;
-//   trainingBatchSizeInput: HTMLTextAreaElement;
-//   learningRateInput: HTMLTextAreaElement;
-//   updateIntervalInput: HTMLTextAreaElement;
-//   numLayersInput: HTMLTextAreaElement;
-//   useLoggedCostInput: HTMLInputElement;
-
-//   addSequenceButton: HTMLElement;
-//   trainButton: HTMLElement;
-//   resetButton: HTMLElement;
-
-//   isBuildingTrainingData: boolean;
-
-//   step: number;
-//   trainingSteps: number;
-//   trainingBatchSize: number;
-
-//   constructor() {
-//     this.math = new NDArrayMathGPU();
-//     this.game = new GameOfLife(5, this.math);
-//     this.model = new GameOfLifeModel(this.math);
-
-//     this.trainDisplay = new TrainDisplay();
-//     this.worldDisplay = new WorldDisplay();
-
-//     this.boardSizeInput =
-//         document.getElementById('board-size-input') as HTMLTextAreaElement;
-//     this.trainingSizeInput =
-//         document.getElementById('training-size-input') as
-//         HTMLTextAreaElement;
-//     this.trainingBatchSizeInput =
-//         document.getElementById('training-batch-size-input') as
-//         HTMLTextAreaElement;
-//     this.learningRateInput =
-//         document.getElementById('learning-rate-input') as
-//         HTMLTextAreaElement;
-//     this.updateIntervalInput =
-//         document.getElementById('update-interval-input') as
-//         HTMLTextAreaElement;
-//     this.numLayersInput =
-//         document.getElementById('num-layers-input') as HTMLTextAreaElement;
-//     this.useLoggedCostInput =
-//         document.getElementById('use-log-cost-input') as HTMLInputElement;
-
-//     this.addSequenceButton = document.querySelector('.add-sequence-button');
-//     this.addSequenceButton.addEventListener(
-//         'click', () => this.onAddSequenceButtonClick());
-
-//     this.trainButton = document.querySelector('.train-button');
-//     this.trainButton.addEventListener('click', () =>
-//     this.onTrainButtonClick());
-
-//     this.resetButton = document.querySelector('.reset-button');
-//     this.resetButton.addEventListener('click', () =>
-//     this.onResetButtonClick());
-//   }
-
-//   async showSampleSequences(): Promise<void> {
-//     // Always init with 5 sample world sequences:
-//     this.worldContexts = [];
-//     for (let i = 0; i < 5; i++) {
-//       this.worldContexts.push(
-//           new WorldContext(await this.game.generateGolExample()));
-//     }
-//   }
-
-//   async trainAndRender() {
-//     if (this.step === this.trainingSteps) {
-//       this.enableForm();
-//       return;
-//     }
-
-//     requestAnimationFrame(() => this.trainAndRender());
-
-//     if (this.isBuildingTrainingData) {
-//       this.math.scope(async () => {
-//         // Do 2 examples each pass:
-//         this.trainingData.push(await this.game.generateGolExample());
-//         if (this.trainingData.length < this.trainingBatchSize) {
-//           this.trainingData.push(await this.game.generateGolExample());
-//         }
-//       });
-
-//       if (this.trainingBatchSize >= 20) {
-//         this.trainDisplay.displayTrainingData(
-//             this.trainingData.length + 1, this.trainingBatchSize);
-//       }
-//       if (this.trainingData.length === this.trainingBatchSize) {
-//         this.isBuildingTrainingData = false;
-//         this.trainDisplay.clearTrainingData();
-//       }
-//     }
-
-//     if (!this.isBuildingTrainingData) {
-//       this.step++;
-
-//       const fetchCost =
-//           this.step % parseInt(this.updateIntervalInput.value, 10) === 0;
-//       const cost = this.model.trainBatch(fetchCost, this.trainingData);
-
-//       if (fetchCost) {
-//         this.trainDisplay.showStep(this.step, this.trainingSteps);
-//         this.trainDisplay.displayCost(cost, this.step);
-
-//         this.worldContexts.forEach((worldContext) => {
-//           worldContext.displayPrediction(
-//               this.model.predict(worldContext.world));
-//         });
-//       }
-
-//       this.trainingData = [];
-//       this.isBuildingTrainingData = true;
-//     }
-//   }
-
-//   private async onAddSequenceButtonClick(): Promise<void> {
-//     this.game.setSize(this.getBoardSize());
-//     this.worldContexts.push(
-//         new WorldContext(await this.game.generateGolExample()));
-//   }
-
-//   private onTrainButtonClick(): void {
-//     this.disableForm();
-
-//     const boardSize = this.getBoardSize();
-//     const learningRate = parseFloat(this.learningRateInput.value);
-//     const trainingSize = parseInt(this.trainingSizeInput.value, 10);
-//     const trainingBatchSize = parseInt(this.trainingBatchSizeInput.value,
-//     10); const numLayers = parseInt(this.numLayersInput.value, 10);
-
-//     this.game.setSize(boardSize);
-//     this.model.setupSession(
-//         boardSize, trainingBatchSize, learningRate, numLayers,
-//         this.useLoggedCostInput.checked);
-
-//     this.step = 0;
-//     this.trainingSteps = trainingSize;
-//     this.isBuildingTrainingData = true;
-//     this.trainingData = [];
-//     this.trainingBatchSize = trainingBatchSize;
-//     this.trainDisplay.addDataSet();
-//     this.trainAndRender();
-//   }
-
-//   private onResetButtonClick(): void {
-//     this.worldContexts = [];
-//     Demo.clearChildNodes(document.querySelector('.worlds-display'));
-//     Demo.clearChildNodes(document.querySelector('.train-display'));
-//   }
-
-//   private disableForm(): void {
-//     this.trainButton.setAttribute('disabled', 'disabled');
-//     this.resetButton.setAttribute('disabled', 'disabled');
-//     this.boardSizeInput.setAttribute('disabled', 'disabled');
-//     this.learningRateInput.setAttribute('disabled', 'disabled');
-//     this.trainingSizeInput.setAttribute('disabled', 'disabled');
-//     this.trainingBatchSizeInput.setAttribute('disabled', 'disabled');
-//     this.numLayersInput.setAttribute('disabled', 'disabled');
-//     this.useLoggedCostInput.setAttribute('disabled', 'disabled');
-//   }
-
-//   private enableForm(): void {
-//     this.trainButton.removeAttribute('disabled');
-//     this.resetButton.removeAttribute('disabled');
-//     this.boardSizeInput.removeAttribute('disabled');
-//     this.learningRateInput.removeAttribute('disabled');
-//     this.trainingSizeInput.removeAttribute('disabled');
-//     this.trainingBatchSizeInput.removeAttribute('disabled');
-//     this.numLayersInput.removeAttribute('disabled');
-//     this.useLoggedCostInput.removeAttribute('disabled');
-//   }
-
-//   private getBoardSize(): number {
-//     return parseInt(this.boardSizeInput.value, 10);
-//   }
 
 //   private static clearChildNodes(node: Element) {
 //     while (node.hasChildNodes()) {
