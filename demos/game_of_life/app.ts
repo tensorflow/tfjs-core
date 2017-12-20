@@ -11,6 +11,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
+import {NDArrayMathGPU} from 'deeplearn';
 // import {NDArray, NDArrayMathGPU} from 'deeplearn';
 import Vue from 'vue';
 
@@ -18,16 +19,21 @@ import DemoFooter from '../footer.vue';
 import DemoHeader from '../header.vue';
 
 // import {GameOfLife, GameOfLifeModel} from './game_of_life';
+import {GameOfLife} from './game_of_life';
 
-// tslint:disable-next-line:no-default-export
-export default Vue.extend({
-  data() {
-    return {};
+const worldDisplay = new Vue({
+  el: '.world-display',
+  data: {worlds: []},
+  mounted: () => {
+    console.log('hi');
   },
-  components: {DemoHeader, DemoFooter}
+  methods: {
+      // displayWorld: function(world: NDArray, title: string) {
+      //   // this.data.worlds.push(world);
+      // }
+  }
 });
-
-// /* Draws Game Of Life sequences */
+/* Draws Game Of Life sequences */
 // class WorldDisplay {
 //   rootElement: Element;
 
@@ -73,8 +79,8 @@ export default Vue.extend({
 //   }
 // }
 
-// /** Manages displaying a list of world sequences (current, next, prediction)
-// */ class WorldContext {
+/** Manages displaying a list of world sequences (current, next, prediction) */
+// class WorldContext {
 //   worldDisplay: WorldDisplay;
 //   world: NDArray;
 //   worldNext: NDArray;
@@ -494,3 +500,29 @@ export default Vue.extend({
 // );
 
 // // new Demo().showSampleSequences();
+
+const math = new NDArrayMathGPU();
+// const model = new GameOfLifeModel(math);
+
+// const worldContext =
+
+// tslint:disable-next-line:no-default-export
+export default Vue.extend({
+  data() {
+    return {};
+  },
+  components: {DemoHeader, DemoFooter},
+  methods: {
+    onAddSequenceClicked: async () => {
+      const worlds = await new GameOfLife(5, math).generateGolExample();
+      console.log(worldDisplay);
+      console.log(worlds);
+      // worldDisplay.displayWorld(worlds[0], 'test');
+      // if (model) {
+      //   // worldDisplay.displayWorld(
+      //   //     new GameOfLife(5, math).generateGolExample()[0], 'test');
+      // }
+      console.log('clicked');
+    }
+  }
+});

@@ -62,7 +62,7 @@ limitations under the License.
           </tr>
           <tr>
             <td colspan="2" class="buttons">
-              <button class="add-sequence-button">Add Sequence</button>
+              <button v-on:click="onAddSequenceClicked">Add Sequence</button>
               <button class="train-button">Train Model</button>
               <button class="reset-button">Reset</button>
             </td>
@@ -75,7 +75,7 @@ limitations under the License.
             <span class="data-display"></span>
           </div>
           <div class="train-graph">
-            <canvas id="myChart" width="500" height="300" style="background-color: #ccc;"></canvas>
+            <canvas id="myChart" width="600" height="200" style="background-color: #ccc;"></canvas>
           </div>
         </div>
 
