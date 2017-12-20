@@ -15,26 +15,29 @@
  * =============================================================================
  */
 
-import {Array3D} from '../../ndarray';
+import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
 
-export interface ResizeBilinear3DNode extends KernelNode {
-  inputAndArgs: ResizeBilinear3DInputConfig;
-  output: Array3D;
-  gradient: (dy: Array3D, y: Array3D) => ResizeBilinear3DGradientInputArrays;
+// PReLU
+export interface PReLUNode<T extends NDArray> extends KernelNode {
+  inputAndArgs: PReLUInputConfig<T>;
+  output: T;
+  gradient: (dy: T, y: T) => PReLUGradientInputArrays<T>;
 }
 
-export interface ResizeBilinear3DInputConfig extends KernelInputConfig {
-  inputs: ResizeBilinear3DInputArrays;
-  args: {newShape2D: [number, number]; alignCorners: boolean};
+export interface PReLUInputConfig<T extends NDArray> extends KernelInputConfig {
+  inputs: PReLUInputArrays<T>;
 }
 
-export interface ResizeBilinear3DInputArrays extends TapeNodeInputArrays {
-  x: Array3D;
+export interface PReLUInputArrays<T extends NDArray>
+    extends TapeNodeInputArrays {
+  x: T;
+  alpha: T;
 }
 
-export interface ResizeBilinear3DGradientInputArrays extends
-    TapeNodeInputGradientArrays {
-  x: () => Array3D;
+export interface PReLUGradientInputArrays<T extends NDArray>
+    extends TapeNodeInputGradientArrays {
+  x: () => T;
+  alpha: () => T;
 }
