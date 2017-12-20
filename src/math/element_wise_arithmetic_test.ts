@@ -326,7 +326,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
   ]);
 }
 
-// Pow gradients.
+// Pow gradients
 {
   const tests: MathTests = it => {
     it('Scalar ^ Scalar', math => {
@@ -354,7 +354,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
           grad.dataSync(), new Float32Array([-4, 1, 2]), 1e-1);
     });
 
-    it('nikhil Scalar ^ NDArray', math => {
+    it('Scalar ^ NDArray', math => {
       const a = Scalar.new(2);
       const b = Array1D.new([3, 2, -1], 'int32');
 
@@ -365,7 +365,25 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const grad = math.gradientWrt(result, a);
       test_util.expectArraysClose(
           grad.dataSync(),
-          new Float32Array([3 * 2 * 2, 2 * 2, -1 * Math.pow(2, -2)]), 1e-1);
+          new Float32Array(
+              [3 * Math.pow(2, 2), 2 * Math.pow(2, 1), -1 * Math.pow(2, -2)]),
+          1e-1);
+    });
+
+    it('NDArray ^ NDArray', math => {
+      const a = Array1D.new([-1, .5, 2]);
+      const b = Array1D.new([3, 2, -1], 'int32');
+
+      const result = math.pow(a, b);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([-1, .25, .5]));
+
+      const grad = math.gradientWrt(result, a);
+      test_util.expectArraysClose(
+          grad.dataSync(),
+          new Float32Array(
+              [3 * Math.pow(-1, 2), 2 * Math.pow(.5, 1), -1 * Math.pow(2, -2)]),
+          1e-1);
     });
   };
 
