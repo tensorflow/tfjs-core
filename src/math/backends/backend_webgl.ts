@@ -94,6 +94,7 @@ export class MathBackendWebGL implements MathBackend {
     }
   }
   readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
+    this.throwIfNoData(id);
     let values: Float32Array;
     const {texture, textureType, texShape, numChannels, dtype} =
         this.texData[id];
@@ -107,6 +108,7 @@ export class MathBackendWebGL implements MathBackend {
     return float32ToTypedArray(values, dtype);
   }
   async read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+    this.throwIfNoData(id);
     const {texture, textureType, texShape} = this.texData[id];
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
         textureType === TextureType.DEFAULT) {
@@ -141,10 +143,12 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   getTexture(id: number): WebGLTexture {
+    this.throwIfNoData(id);
     return this.texData[id].texture;
   }
 
   getTextureData(id: number): TextureData {
+    this.throwIfNoData(id);
     return this.texData[id];
   }
 
@@ -173,6 +177,7 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   clone<G extends keyof DataTypes, T extends NDArray<G>>(x: T): T {
+    this.throwIfNoData(x.id);
     const {texShape} = this.texData[x.id];
     // Pretend the source was in logical shape that matches the texture shape.
     const source = x.as2D(texShape[0], texShape[1]);
@@ -512,8 +517,8 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   preluDer<T extends NDArray>(a: T, b: T): T {
-    const program = new BinaryOpProgram(binaryop_gpu.PRELU_DER,
-      a.shape, b.shape);
+    const program =
+        new BinaryOpProgram(binaryop_gpu.PRELU_DER, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]) as T;
   }
 
@@ -677,8 +682,10 @@ export class MathBackendWebGL implements MathBackend {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
     const inputsData: Array<ArrayData<T>> = inputs.map(input => {
+      this.throwIfNoData(input.id);
       return {array: input, texData: this.texData[input.id]};
     });
+    this.throwIfNoData(output.id);
     const outputData = {array: output, texData: this.texData[output.id]};
     const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
     const binary = this.getAndSaveBinary(key, () => {
@@ -709,6 +716,12 @@ export class MathBackendWebGL implements MathBackend {
 
     if (this.gpgpuCreatedLocally) {
       this.gpgpu.dispose();
+    }
+  }
+
+  private throwIfNoData(id: number) {
+    if (!(id in this.texData)) {
+      throw new Error(`No data found for id ${id}`);
     }
   }
 }
