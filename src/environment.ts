@@ -298,8 +298,22 @@ function getFeaturesFromURL(): Features {
   return features;
 }
 
-export let ENV = new Environment(getFeaturesFromURL());
+function makeOrGetEnvironment(): Environment {
+  // tslint:disable-next-line:no-any
+  let ns: any;
+  if (typeof(window) !== 'undefined') {
+    ns = window;
+  } else if (typeof(global) !== 'undefined') {
+    ns = global;
+  } else {
+    throw new Error('Could not find a global object');
+  }
+  ns.ENV = ns.ENV || new Environment(getFeaturesFromURL());
+  return ns.ENV;
+}
 
 export function setGlobal(environment: Environment) {
   ENV = environment;
 }
+
+export let ENV = makeOrGetEnvironment();
