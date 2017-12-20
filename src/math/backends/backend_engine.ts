@@ -233,41 +233,20 @@ export class BackendEngine {
     // Add a subtape element.
     const subtape = this.activeTape;
     const inputs = tape_util.computeInputs(subtape);
-    console.log('computed inputs over', subtape);
-    console.log('whole stack', this.tapeStack);
     const evaluatedNode: TapeNode<TapeNodeOutput> = {
       id: this.tapeNodeId++,
       type: 'subtape',
-      name: `gradient subtape`,
+      name: 'gradient subtape',
       inputAndArgs: {inputs},
       output: resultArrayMap,
       gradient: (dy: NDArray, y: NDArray) => {
-        const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-        arrayAccumulatedGradientMap[y.id] = dy;
-
-        const xs = util.flattenNameArrayMap(inputs);
-        // const gradients = this.gradientWrt(
-        //     y, xs, arrayAccumulatedGradientMap, this.activeTape);
-        const gradients =
-            this.backprop(subtape, xs, arrayAccumulatedGradientMap);
-
-        const gradientMap = util.mapFlatArraysToNameArrayMap(inputs, gradients);
-        const keys = Object.keys(gradientMap);
-
-        // Wrap the gradients in a function closure to fit the API of gradient.
-        const result: {[name: string]: () => NDArray} = {};
-        for (const key of keys) {
-          result[key] = () => gradientMap[key];
-        }
-
-        return result;
+        throw new Error(`Gradient of subtape not implemented yet.`);
       },
       subtape: subtape
     };
 
     // Pop the active tape.
-
-    console.log('popping', this.tapeStack.pop());
+    this.tapeStack.pop();
     this.activeTape = this.tapeStack.length === 0 ?
         null :
         this.tapeStack[this.tapeStack.length - 1];

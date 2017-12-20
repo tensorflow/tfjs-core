@@ -41,10 +41,8 @@ export function getFilteredNodesXToY(
     const node = tape[i];
     const nodeInputs = node.inputAndArgs.inputs;
 
-    console.log('walking tape', i, nodeInputs);
     for (const inputName in nodeInputs) {
       const input = nodeInputs[inputName];
-      console.log('walking ' + inputName);
 
       let anyInputFromX = false;
       for (let j = 0; j < xs.length; j++) {
@@ -68,8 +66,6 @@ export function getFilteredNodesXToY(
       }
     }
   }
-  console.log('fromx', arraysFromX);
-  console.log('nfromx', nodesFromX);
 
   // Backwards pass to find all of the nodes and NDArrays that lead to y.
   const arraysLeadToY: {[ndarrayId: number]: boolean} = {};
@@ -101,9 +97,6 @@ export function getFilteredNodesXToY(
       }
     }
   }
-
-  console.log('toy', arraysLeadToY);
-  console.log('ntoy', nodesToY);
 
   // Return the paths that come from x and lead to y.
   const filteredTape: Tape = [];

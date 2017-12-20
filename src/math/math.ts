@@ -942,17 +942,15 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                'Pow', {inputs: {a, b}}, (dy: NDArray<G>, y: NDArray<G>) => {
                  return {
                    a: () => {
-                     // return this.scope(() => {
-                     return this.multiply(
-                         dy,
-                         this.multiply(
-                             b,
-                             // TODO(nsthorat): Use a broadcasted 1 for memory
-                             // efficiency. We make a ones array like b for
-                             // supported subtract backprop.
-                             this.pow(
-                                 a, this.subtract(b, NDArray.onesLike(b)))));
-                     //});
+                     return this.scope(() => {
+                       return this.multiply(
+                           dy,
+                           this.multiply(
+                               b,
+                               this.pow(
+                                   a,
+                                   this.subtract(b, Scalar.new(1, 'int32')))));
+                     });
                    },
                    b: () => {
                      throw new Error(
@@ -1207,8 +1205,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @return {NDArray}
    */
   prelu<T extends NDArray>(x: T, alpha: T): T {
-    return this.backendEngine.executeKernel(
-               'PReLU', {inputs: {x, alpha}}) as T;
+    return this.backendEngine.executeKernel('PReLU', {inputs: {x, alpha}}) as T;
   }
 
   /**
@@ -1218,8 +1215,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @return {NDArray}
    */
   preluDer<T extends NDArray>(x: T, alpha: T): T {
-    return this.backendEngine.executeKernel(
-               'PReLUDer', {inputs: {x, alpha}}) as T;
+    return this.backendEngine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as
+        T;
   }
 
   /**

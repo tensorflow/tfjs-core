@@ -326,6 +326,57 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
   ]);
 }
 
+// Pow gradients.
+{
+  const tests: MathTests = it => {
+    it('Scalar ^ Scalar', math => {
+      const a = Scalar.new(5);
+      const b = Scalar.new(2, 'int32');
+
+      const result = math.pow(a, b);
+      test_util.expectArraysClose(result.getValues(), new Float32Array([25]));
+
+      const grad = math.gradientWrt(result, a);
+      test_util.expectArraysClose(
+          grad.dataSync(), new Float32Array([10]), 1e-1);
+    });
+
+    it('NDArray ^ Scalar', math => {
+      const a = Array1D.new([-2, .5, 1]);
+      const b = Scalar.new(2, 'int32');
+
+      const result = math.pow(a, b);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([4, .25, 1]));
+
+      const grad = math.gradientWrt(result, a);
+      test_util.expectArraysClose(
+          grad.dataSync(), new Float32Array([-4, 1, 2]), 1e-1);
+    });
+
+    it('nikhil Scalar ^ NDArray', math => {
+      const a = Scalar.new(2);
+      const b = Array1D.new([3, 2, -1], 'int32');
+
+      const result = math.pow(a, b);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([8, 4, .5]));
+
+      const grad = math.gradientWrt(result, a);
+      test_util.expectArraysClose(
+          grad.dataSync(),
+          new Float32Array([3 * 2 * 2, 2 * 2, -1 * Math.pow(2, -2)]), 1e-1);
+    });
+  };
+
+  test_util.describeMathCPU('pow gradients', [tests]);
+  test_util.describeMathGPU('pow gradients', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
 // element-wise add / sub
 {
   const tests: MathTests = it => {
@@ -599,38 +650,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
-}
-
-// Pow second order gradient.
-{
-  const tests: MathTests = it => {
-    it('nikhil A - B', math => {
-      const a = Scalar.new(5);
-      const b = Scalar.new(2, 'int32');
-
-      const result = math.pow(a, b);
-
-      const expected = new Float32Array([25]);
-      test_util.expectArraysClose(result.getValues(), expected);
-
-      console.log('pregrad', result.dataSync(), result.id);
-      math.debug();
-      const grad = math.gradientWrt(result, a);
-      console.log('grad1', grad.dataSync(), grad.id);
-      math.debug();
-
-      const grad2 = math.gradientWrt(grad, a);
-      console.log('grad2', grad2.dataSync(), grad2.id);
-      math.debug();
-    });
-  };
-
-  test_util.describeMathCPU('element-wise add/sub gradients', [tests]);
-  // test_util.describeMathGPU('element-wise add/sub gradients', [tests], [
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  // ]);
 }
 
 // math.scaledArrayAdd
