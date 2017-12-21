@@ -938,22 +938,22 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
     const gradient = (dy: NDArray<G>, y: NDArray<G>) => {
-      return {
-        a: () => {
-          return this.scope(() => {
-            return this.multiply(
-                dy,
-                this.multiply(
-                    b, this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
-          });
-        },
-        b: () => {
-          throw new Error(
-              `Backprop through exponent of math.pow not ` +
-              `implemented yet.`);
-        }
+      const derA = () => {
+        return this.scope(() => {
+          return this.multiply(
+              dy,
+              this.multiply(
+                  b, this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
+        });
       };
+      const derB = () => {
+        throw new Error(
+            `Backprop through exponent of math.pow not ` +
+            `implemented yet.`);
+      };
+      return {a: derA, b: derB};
     };
+
     return this.backendEngine.executeKernel(
                'Pow', {inputs: {a, b}}, gradient) as NDArray<G>;
   }
