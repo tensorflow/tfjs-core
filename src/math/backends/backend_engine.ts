@@ -149,6 +149,8 @@ export class BackendEngine {
     this.startScope();
 
     const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
+    // TODO(smilkov): trackFn is a no-op since we have global tracking.
+    // Remove when we break backward compatibility.
     const trackFn = <T extends NDArray>(ndarray: T): T => this.track(ndarray);
     const result = scopeFn(keepFn, trackFn);
 

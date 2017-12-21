@@ -50,6 +50,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   private backend: MathBackend;
   private customBackend = false;
 
+  time(query: () => NDArray): Promise<number> {
+    return this.backend.time(query);
+  }
+
   getNumArrays() {
     return this.numArrays;
   }
@@ -143,12 +147,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.backendEngine.keep(result);
   }
 
-  /**
-   * Tracks an NDArray in the current scope to be automatically cleaned up
-   * when the current scope ends, and returns the value.
-   *
-   * @param result The NDArray to track in the current scope.
-   */
+  /** @deprecated This is a no-op. */
   track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
     return this.backendEngine.track(result);
   }
@@ -585,8 +584,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     const reduceShape = shapes[1];
     const reduceSize = util.sizeFromShape(reduceShape);
     return this.executeOp('mean', () => {
-      return this.scope((keep, track) => {
-        const res = this.divide(x, track(Scalar.new(reduceSize)));
+      return this.scope(keep => {
+        const res = this.divide(x, Scalar.new(reduceSize));
         return this.sum(res, axis, keepDims);
       });
     });
