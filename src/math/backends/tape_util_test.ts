@@ -764,26 +764,30 @@ import * as tape_util from './tape_util';
       'tape_util.extractNDArraysFromScopeResult', [tests]);
 }
 
-describe('util.stripUndefinedInputsFromInputConfig', () => {
-  it('pass through when all inputs are defined', () => {
-    const x1 = Scalar.new(1);
-    const x2 = Scalar.new(2);
-    const config: TapeNodeInputConfig = {
-      inputs: {x1, x2},
-    };
-    expect(tape_util.stripUndefinedInputsFromInputConfig(config)).toEqual({
-      inputs: {x1, x2}
+{
+  const tests: MathTests = it => {
+    it('pass through when all inputs are defined', () => {
+      const x1 = Scalar.new(1);
+      const x2 = Scalar.new(2);
+      const config: TapeNodeInputConfig = {
+        inputs: {x1, x2},
+      };
+      expect(tape_util.stripUndefinedInputsFromInputConfig(config)).toEqual({
+        inputs: {x1, x2}
+      });
     });
-  });
 
-  it('strips undefined inputs', () => {
-    const x1 = Scalar.new(1);
-    const x4 = Scalar.new(2);
-    const config: TapeNodeInputConfig = {
-      inputs: {x1, x2: undefined, x3: undefined, x4},
-    };
-    expect(tape_util.stripUndefinedInputsFromInputConfig(config)).toEqual({
-      inputs: {x1, x4}
+    it('strips undefined inputs', () => {
+      const x1 = Scalar.new(1);
+      const x4 = Scalar.new(2);
+      const config: TapeNodeInputConfig = {
+        inputs: {x1, x2: undefined, x3: undefined, x4},
+      };
+      expect(tape_util.stripUndefinedInputsFromInputConfig(config)).toEqual({
+        inputs: {x1, x4}
+      });
     });
-  });
-});
+    test_util.describeMathCPU(
+        'tape_util.extractNDArraysFromScopeResult', [tests]);
+  };
+}
