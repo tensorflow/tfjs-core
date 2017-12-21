@@ -82,8 +82,7 @@ import BasisDimensions from './components/BasisDimensions.vue';
 import FontChooser from './components/FontChooser.vue';
 import Alphabet from './components/Alphabet.vue';
 import {FontModel} from './utils/FontModel';
-
-import {Array1D, NDArray, NDArrayMathCPU} from 'deeplearn';
+import {Array1D} from 'deeplearn';
 
 export default {
   components: {
