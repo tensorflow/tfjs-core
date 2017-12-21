@@ -269,7 +269,8 @@ describe('Session', () => {
   });
 
   it('Safe mode math, no math scope eval throws', () => {
-    const math = new NDArrayMath('webgl', true);
+    const safeMode = true;
+    const math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
 
     expect(() => {
@@ -282,7 +283,8 @@ describe('Session', () => {
   });
 
   it('Safe mode math, math scope eval does not throw', () => {
-    const math = new NDArrayMath('webgl', true);
+    const safeMode = true;
+    const math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
 
     math.scope(() => {
@@ -297,7 +299,8 @@ describe('Session', () => {
   });
 
   it('Safe mode math, math scope train does not throw', () => {
-    const math = new NDArrayMath('webgl', true);
+    const safeMode = true;
+    const math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
 
     const inputProvider: InputProvider = {
@@ -324,7 +327,8 @@ describe('Session', () => {
   });
 
   it('Safe mode math, no math scope train throws', () => {
-    const math = new NDArrayMath('webgl', true);
+    const safeMode = true;
+    const math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
 
     const inputProvider: InputProvider = {

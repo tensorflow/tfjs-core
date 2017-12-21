@@ -24,7 +24,8 @@ describe('InCPUMemoryShuffledInputProviderBuilder', () => {
   let math: NDArrayMath;
 
   beforeEach(() => {
-    math = new NDArrayMath('cpu', false);
+    const safeMode = false;
+    math = new NDArrayMath('cpu', safeMode);
     ENV.setMath(math);
   });
 
@@ -80,7 +81,8 @@ describe('InGPUMemoryShuffledInputProviderBuilder', () => {
   let math: NDArrayMath;
 
   beforeEach(() => {
-    math = new NDArrayMath('webgl', false);
+    const safeMode = false;
+    math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
   });
 
