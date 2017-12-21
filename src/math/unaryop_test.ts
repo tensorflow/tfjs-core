@@ -395,7 +395,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const sum = math.sum(result);
       test_util.expectArraysClose(
           math.gradientWrt(sum, a).dataSync(),
-          new Float32Array([-2, 4, 6, -10]));
+          new Float32Array([-2, 4, 6, -10]), 1e-1);
     });
 
     it('Array2D', math => {
@@ -407,7 +407,8 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const sum = math.sum(result);
       test_util.expectArraysClose(
-          math.gradientWrt(sum, a).dataSync(), new Float32Array([-6, 2, 4, 6]));
+          math.gradientWrt(sum, a).dataSync(), new Float32Array([-6, 2, 4, 6]),
+          1e-1);
     });
   };
 
