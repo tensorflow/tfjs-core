@@ -417,7 +417,8 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([4, .25, 1]));
 
-      const grad = math.gradientWrt(result, a);
+      const sum = math.sum(result);
+      const grad = math.gradientWrt(sum, a);
       test_util.expectArraysClose(
           grad.dataSync(), new Float32Array([-4, 1, 2]), 1e-1);
     });
@@ -430,7 +431,8 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([8, 4, .5]));
 
-      const grad = math.gradientWrt(result, a);
+      const sum = math.sum(result);
+      const grad = math.gradientWrt(sum, a);
       test_util.expectArraysClose(
           grad.dataSync(),
           new Float32Array(
@@ -446,7 +448,8 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([-1, .25, .5]));
 
-      const grad = math.gradientWrt(result, a);
+      const sum = math.sum(result);
+      const grad = math.gradientWrt(sum, a);
       test_util.expectArraysClose(
           grad.dataSync(),
           new Float32Array(
