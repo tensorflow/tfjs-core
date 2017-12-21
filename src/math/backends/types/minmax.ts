@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {DataTypes, NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
@@ -33,7 +33,7 @@ export interface MinInputConfig<G extends keyof DataTypes> extends
 }
 
 export interface MinInputArrays<G extends keyof DataTypes> extends
-    NameArrayMap {
+    NamedArrayMap {
   x: NDArray<G>;
 }
 
@@ -55,7 +55,7 @@ export interface MaxInputConfig<G extends keyof DataTypes> extends
 }
 
 export interface MaxInputArrays<G extends keyof DataTypes> extends
-    NameArrayMap {
+    NamedArrayMap {
   x: NDArray<G>;
 }
 

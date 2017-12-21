@@ -18,7 +18,7 @@
 
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
-import {NameArrayMap} from '../../util';
+import {NamedArrayMap} from '../../util';
 import {NDArray, Scalar} from '../ndarray';
 
 import {MathBackendCPU} from './backend_cpu';
@@ -618,7 +618,7 @@ import * as tape_util from './tape_util';
                inputs: {x},
              },
              output: {intermediate1, intermediate2},
-             gradient: (dy: NameArrayMap, y: NameArrayMap) => {
+             gradient: (dy: NamedArrayMap, y: NamedArrayMap) => {
                return {
                  x: () =>
                      backend.multiply(dy['intermediate1'], dy['intermediate2'])

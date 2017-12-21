@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {DataTypes, NDArray} from '../../ndarray';
 import {SumTypes} from '../../types';
 // tslint:disable-next-line:max-line-length
@@ -36,7 +36,7 @@ export interface SumInputConfig<T extends keyof DataTypes> extends
 }
 
 export interface SumInputArrays<T extends keyof DataTypes> extends
-    NameArrayMap {
+    NamedArrayMap {
   x: NDArray<T>;
 }
 

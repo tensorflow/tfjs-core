@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {Array1D, DataTypes, NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
@@ -34,7 +34,8 @@ export interface TopKValuesInputConfig<T extends NDArray> extends
   args: {k: number};
 }
 
-export interface TopKValuesInputArrays<T extends NDArray> extends NameArrayMap {
+export interface TopKValuesInputArrays<T extends NDArray> extends
+    NamedArrayMap {
   x: T;
 }
 
@@ -57,7 +58,7 @@ export interface TopKIndicesInputConfig extends KernelInputConfig {
   args: {k: number};
 }
 
-export interface TopKIndicesInputArrays extends NameArrayMap {
+export interface TopKIndicesInputArrays extends NamedArrayMap {
   x: NDArray;
 }
 

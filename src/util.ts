@@ -22,7 +22,7 @@ export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
 export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
 
-export type NameArrayMap = {
+export type NamedArrayMap = {
   [name: string]: NDArray
 };
 
@@ -346,7 +346,7 @@ export function checkForNaN(
 }
 
 export function flattenNameArrayMap(nameArrayMap: NDArray|
-                                    NameArrayMap): NDArray[] {
+                                    NamedArrayMap): NDArray[] {
   const xs: NDArray[] = [];
   let xKeys: string[];
   if (nameArrayMap instanceof NDArray) {
@@ -362,12 +362,12 @@ export function flattenNameArrayMap(nameArrayMap: NDArray|
 }
 
 export function unflattenToNameArrayMap(
-    keys: string[], flatArrays: NDArray[]): NameArrayMap {
+    keys: string[], flatArrays: NDArray[]): NamedArrayMap {
   if (keys.length !== flatArrays.length) {
     throw new Error(
         `Cannot unflatten NDArray[], keys and arrays are not of same length.`);
   }
-  const result: NameArrayMap = {};
+  const result: NamedArrayMap = {};
   for (let i = 0; i < keys.length; i++) {
     result[keys[i]] = flatArrays[i];
   }

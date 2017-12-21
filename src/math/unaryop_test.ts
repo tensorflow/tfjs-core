@@ -381,8 +381,8 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const result = math.square(a);
       test_util.expectArraysClose(result.getValues(), new Float32Array([25]));
 
-      test_util.expectArraysClose(
-          math.gradientWrt(result, a).dataSync(), new Float32Array([10]));
+      const grad = math.gradientWrt(result, a);
+      test_util.expectArraysClose(grad.dataSync(), new Float32Array([10]));
     });
 
     it('Array1D', math => {
@@ -393,9 +393,9 @@ import {Array1D, Array2D, Scalar} from './ndarray';
           result.getValues(), new Float32Array([1, 4, 9, 25]));
 
       const sum = math.sum(result);
+      const grad = math.gradientWrt(sum, a);
       test_util.expectArraysClose(
-          math.gradientWrt(sum, a).dataSync(),
-          new Float32Array([-2, 4, 6, -10]), 1e-1);
+          grad.dataSync(), new Float32Array([-2, 4, 6, -10]), 1e-1);
     });
 
     it('Array2D', math => {
@@ -406,9 +406,9 @@ import {Array1D, Array2D, Scalar} from './ndarray';
           result.getValues(), new Float32Array([9, 1, 4, 9]));
 
       const sum = math.sum(result);
+      const grad = math.gradientWrt(sum, a);
       test_util.expectArraysClose(
-          math.gradientWrt(sum, a).dataSync(), new Float32Array([-6, 2, 4, 6]),
-          1e-1);
+          grad.dataSync(), new Float32Array([-6, 2, 4, 6]), 1e-1);
     });
   };
 

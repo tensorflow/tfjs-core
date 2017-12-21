@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {Conv2DInfo} from '../../conv_util';
 import {Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
@@ -33,7 +33,7 @@ export interface PoolInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface PoolInputArrays extends NameArrayMap {
+export interface PoolInputArrays extends NamedArrayMap {
   x: Array4D;
 }
 
@@ -53,7 +53,7 @@ export interface PoolBackpropInputConfig extends KernelInputConfig {
   args: {convInfo: Conv2DInfo;};
 }
 
-export interface PoolBackpropInputArrays extends NameArrayMap {
+export interface PoolBackpropInputArrays extends NamedArrayMap {
   dy: Array4D;
   x: Array4D;
 }

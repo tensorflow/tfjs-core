@@ -19,7 +19,7 @@ import {Array1D, NDArray, Scalar} from './math/ndarray';
 import * as test_util from './test_util';
 import {MathTests} from './test_util';
 import * as util from './util';
-import {NameArrayMap} from './util';
+import {NamedArrayMap} from './util';
 
 describe('Util', () => {
   it('Flatten arrays', () => {
@@ -329,7 +329,7 @@ describe('util.checkForNaN', () => {
       const b = Scalar.new(3);
       const c = Array1D.new([1, 2, 3]);
 
-      const map: NameArrayMap = {a, b, c};
+      const map: NamedArrayMap = {a, b, c};
       expect(util.flattenNameArrayMap(map)).toEqual([a, b, c]);
     });
   };

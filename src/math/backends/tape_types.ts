@@ -15,14 +15,14 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../util';
+import {NamedArrayMap} from '../../util';
 import {NDArray} from '../ndarray';
 
 import {KernelConfigRegistry} from './kernel_registry';
 
 export type Tape = Array<TapeNode<TapeNodeOutput>>;
 
-export type TapeNodeOutput = NDArray|NameArrayMap;
+export type TapeNodeOutput = NDArray|NamedArrayMap;
 
 export type TapeNodeType = 'kernel'|'subtape';
 
@@ -38,7 +38,7 @@ export interface TapeNode<T extends TapeNodeOutput> {
 }
 
 export interface TapeNodeInputConfig {
-  inputs: NameArrayMap;
+  inputs: NamedArrayMap;
 }
 
 export type TapeNodeInputGradientArrays = {
@@ -53,7 +53,7 @@ export interface KernelNode extends TapeNode<NDArray> {
 }
 
 export interface KernelInputConfig extends TapeNodeInputConfig {
-  inputs: NameArrayMap;
+  inputs: NamedArrayMap;
   // tslint:disable-next-line:no-any
   args?: {[argName: string]: any};
 }

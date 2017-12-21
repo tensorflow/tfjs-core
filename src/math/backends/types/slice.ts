@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {Array1D, Array2D, Array3D, Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
@@ -32,7 +32,7 @@ export interface Slice1DInputConfig extends KernelInputConfig {
   args: {begin: number; size: number;};
 }
 
-export interface Slice1DInputArrays extends NameArrayMap {
+export interface Slice1DInputArrays extends NamedArrayMap {
   x: Array1D;
 }
 
@@ -53,7 +53,7 @@ export interface Slice2DInputConfig extends KernelInputConfig {
   args: {begin: [number, number]; size: [number, number];};
 }
 
-export interface Slice2DInputArrays extends NameArrayMap {
+export interface Slice2DInputArrays extends NamedArrayMap {
   x: Array2D;
 }
 
@@ -74,7 +74,7 @@ export interface Slice3DInputConfig extends KernelInputConfig {
   args: {begin: [number, number, number]; size: [number, number, number];};
 }
 
-export interface Slice3DInputArrays extends NameArrayMap {
+export interface Slice3DInputArrays extends NamedArrayMap {
   x: Array3D;
 }
 
@@ -98,7 +98,7 @@ export interface Slice4DInputConfig extends KernelInputConfig {
   };
 }
 
-export interface Slice4DInputArrays extends NameArrayMap {
+export interface Slice4DInputArrays extends NamedArrayMap {
   x: Array4D;
 }
 

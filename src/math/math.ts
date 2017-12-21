@@ -17,7 +17,7 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
-import {NameArrayMap} from '../util';
+import {NamedArrayMap} from '../util';
 
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
@@ -936,27 +936,26 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         b.dtype === 'int32',
         'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
+    const gradient = (dy: NDArray<G>, y: NDArray<G>) => {
+      return {
+        a: () => {
+          return this.scope(() => {
+            return this.multiply(
+                dy,
+                this.multiply(
+                    b, this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
+          });
+        },
+        b: () => {
+          throw new Error(
+              `Backprop through exponent of math.pow not ` +
+              `implemented yet.`);
+        }
+      };
+    };
     return this.backendEngine.executeKernel(
-               'Pow', {inputs: {a, b}}, (dy: NDArray<G>, y: NDArray<G>) => {
-                 return {
-                   a: () => {
-                     return this.scope(() => {
-                       return this.multiply(
-                           dy,
-                           this.multiply(
-                               b,
-                               this.pow(
-                                   a,
-                                   this.subtract(b, Scalar.new(1, 'int32')))));
-                     });
-                   },
-                   b: () => {
-                     throw new Error(
-                         `Backprop through exponent of math.pow not ` +
-                         `implemented yet.`);
-                   }
-                 };
-               }) as NDArray<G>;
+               'Pow', {inputs: {a, b}}, gradient) as NDArray<G>;
   }
 
   /**
@@ -1428,11 +1427,13 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * Computes a 2D convolution over the input x.
    *
    * @param input The input ndarray, of rank 4 or rank 3, of shape
-   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
+   * assumed.
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param bias Optional bias, rank 1 of shape [outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    *    - 'same' pad and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -1485,13 +1486,15 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Computes the derivative of the input of a 2D convolution.
    *
-   * @param inShape The shape of the input: [batch, height, width, inDepth]. If
-   *     length of 3, batch of 1 is assumed.
+   * @param inShape The shape of the input: [batch, height, width, inDepth].
+   * If length of 3, batch of 1 is assumed.
    * @param dy The derivative of the output, of rank 4 or rank 3 of shape
-   *   [batch, outHeight, outWidth, outDepth]. If rank 3, batch of 1 is assumed.
+   *   [batch, outHeight, outWidth, outDepth]. If rank 3, batch of 1 is
+   * assumed.
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1553,7 +1556,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * Computes the derivative of the bias of a 2D convolution.
    *
    * @param dy The gradient for the output of this op, of rank 4 or rank 3 of
-   *   shape [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
+   *   shape [batch, height, width, outDepth]. If rank 3, batch of 1 is
+   * assumed.
    */
   conv2dDerBias(dy: Array3D|Array4D): Array1D {
     let dy4D = dy as Array4D;
@@ -1573,7 +1577,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
    * @param filterShape The shape of the filter, length 4,
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1643,8 +1648,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *
    * Given a 4D `input` array and a `filter` array of shape
    * `[filterHeight, filterWidth, inChannels, channelMultiplier]` containing
-   * `inChannels` convolutional filters of depth 1, this op applies a different
-   * filter to each input channel (expanding from 1 channel to
+   * `inChannels` convolutional filters of depth 1, this op applies a
+   * different filter to each input channel (expanding from 1 channel to
    * `channelMultiplier` channels for each), then concatenates the results
    * together. The output has `inChannels * channelMultiplier` channels.
    *
@@ -1652,11 +1657,13 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * more details.
    *
    * @param input The input ndarray, of rank 4 or rank 3, of shape
-   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
+   * assumed.
    * @param filter The filter ndarray, rank 4, of shape
    *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`.
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
-   *     If strides is a single number, then `strideHeight == strideWidth`.
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth]. If strides is a single number, then `strideHeight ==
+   * strideWidth`.
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    *   - 'same' pad and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -1667,8 +1674,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param rates The dilation rates: `[rateHeight, rateWidth]` in which we
    *     sample input values across the height and width dimensions in atrous
    *     convolution. Defaults to `[1, 1]`. If `rate` is a single number, then
-   *     `rateHeight == rateWidth`. If it is greater than 1, then all values of
-   *     `strides` must be 1.
+   *     `rateHeight == rateWidth`. If it is greater than 1, then all values
+   * of `strides` must be 1.
    */
   depthwiseConv2D<T extends NDArray>(
       input: T, filter: Array4D, strides: [number, number]|number,
@@ -1757,9 +1764,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * Computes the backprop of a max pool.
    *
    * @param dy The dy error, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is assumed.
+   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
+   * assumed.
    * @param input The input image, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is assumed.
+   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
+   * assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
@@ -2173,12 +2182,12 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Computes the norm of scalar, vectors, and matrices.
    * This function can compute several different vector norms (the 1-norm, the
-   * Euclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0) and
-   * matrix norms (Frobenius, 1-norm, and inf-norm).
+   * Euclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0)
+   * and matrix norms (Frobenius, 1-norm, and inf-norm).
    *
    * @param x The input array.
-   * @param ord Optional. Order of the norm. Supported norm types are following:
-   *     ord         norm for matrices          norm for vectors
+   * @param ord Optional. Order of the norm. Supported norm types are
+   * following: ord         norm for matrices          norm for vectors
    *     -------------------------------------------------------
    *     'euclidean' Frobenius norm             2-norm
    *     ‘fro’       Frobenius norm	            –
@@ -2193,10 +2202,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * to norm(x.reshape([-1]), ord). If axis is a integer, the input
    * is considered a batch of vectors, and axis determines the axis in x
    * over which to compute vector norms. If axis is a 2-tuple of integer it is
-   * considered a batch of matrices and axis determines the axes in NDArray over
-   * which to compute a matrix norm.
-   * @param keepDims Optional. If true, the norm have the same dimensionality as
-   * the input.
+   * considered a batch of matrices and axis determines the axes in NDArray
+   * over which to compute a matrix norm.
+   * @param keepDims Optional. If true, the norm have the same dimensionality
+   * as the input.
    */
   norm<G extends keyof DataTypes>(
       x: NDArray<G>, ord: number|'euclidean'|'fro' = 'euclidean',
@@ -2278,11 +2287,17 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *
    * @param y The output Scalar. Assumes de/dy = 1.
    *          TODO(nsthorat): Accept non-scalars.
-   * @param x The input to compute de/dx over. This can be a single value or an
-   * object mapping a string to an NDArray. If using the object mode, this
+   * @param x The input to compute de/dx over. This can be a single value or
+   * an object mapping a string to an NDArray. If using the object mode, this
    * method will return an object of the same shape.
    */
-  gradientWrt<T extends NDArray|NameArrayMap>(y: Scalar, x: T): T {
+  gradientWrt<T extends NDArray|NamedArrayMap>(y: Scalar, x: T): T {
+    if (y.rank !== 0) {
+      throw new Error(
+          `Cannot compute gradient: y must be a Scalar, ` +
+          `got rank ${y.rank}.`);
+    }
+
     const xs = util.flattenNameArrayMap(x);
 
     const gradients = this.backendEngine.gradientWrt(y, xs);

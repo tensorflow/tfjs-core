@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {Array1D, Array2D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
@@ -31,7 +31,7 @@ export interface OneHotInputConfig extends KernelInputConfig {
   args: {depth: number; onValue: number; offValue: number};
 }
 
-export interface OneHotInputArrays extends NameArrayMap {
+export interface OneHotInputArrays extends NamedArrayMap {
   indices: Array1D;
 }
 

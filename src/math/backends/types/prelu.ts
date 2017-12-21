@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
@@ -31,7 +31,7 @@ export interface PReLUInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: PReLUInputArrays<T>;
 }
 
-export interface PReLUInputArrays<T extends NDArray> extends NameArrayMap {
+export interface PReLUInputArrays<T extends NDArray> extends NamedArrayMap {
   x: T;
   alpha: T;
 }

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {Array3D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
@@ -31,7 +31,7 @@ export interface ResizeBilinear3DInputConfig extends KernelInputConfig {
   args: {newShape2D: [number, number]; alignCorners: boolean};
 }
 
-export interface ResizeBilinear3DInputArrays extends NameArrayMap {
+export interface ResizeBilinear3DInputArrays extends NamedArrayMap {
   x: Array3D;
 }
 

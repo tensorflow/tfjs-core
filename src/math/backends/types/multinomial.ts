@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {Array2D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
@@ -34,7 +34,7 @@ export interface MultinomialInputConfig extends KernelInputConfig {
   args: {numSamples: number; seed: number};
 }
 
-export interface MultinomialInputArrays extends NameArrayMap {
+export interface MultinomialInputArrays extends NamedArrayMap {
   probs: Array2D;
 }
 

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NameArrayMap} from '../../../util';
+import {NamedArrayMap} from '../../../util';
 import {Array1D, Array2D, Array3D, Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
@@ -31,7 +31,7 @@ export interface Concat1DInputConfig extends KernelInputConfig {
   inputs: Concat1DInputArrays;
 }
 
-export interface Concat1DInputArrays extends NameArrayMap {
+export interface Concat1DInputArrays extends NamedArrayMap {
   a: Array1D;
   b: Array1D;
 }
@@ -53,7 +53,7 @@ export interface Concat2DInputConfig extends KernelInputConfig {
   args: {axis: number};
 }
 
-export interface Concat2DInputArrays extends NameArrayMap {
+export interface Concat2DInputArrays extends NamedArrayMap {
   a: Array2D;
   b: Array2D;
 }
@@ -75,7 +75,7 @@ export interface Concat3DInputConfig extends KernelInputConfig {
   args: {axis: number};
 }
 
-export interface Concat3DInputArrays extends NameArrayMap {
+export interface Concat3DInputArrays extends NamedArrayMap {
   a: Array3D;
   b: Array3D;
 }
@@ -97,7 +97,7 @@ export interface Concat4DInputConfig extends KernelInputConfig {
   args: {axis: number};
 }
 
-export interface Concat4DInputArrays extends NameArrayMap {
+export interface Concat4DInputArrays extends NamedArrayMap {
   a: Array4D;
   b: Array4D;
 }

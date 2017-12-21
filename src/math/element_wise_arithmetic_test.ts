@@ -239,8 +239,9 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           result.getValues(), new Float32Array([10, 4]));
 
-      expect(() => math.gradientWrt(result, a)).toThrowError();
-      expect(() => math.gradientWrt(result, b)).toThrowError();
+      const sum = math.sum(result);
+      expect(() => math.gradientWrt(sum, a)).toThrowError();
+      expect(() => math.gradientWrt(sum, b)).toThrowError();
     });
 
     it('Scalar', math => {
