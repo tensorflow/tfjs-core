@@ -312,9 +312,9 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
       const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
 
-
       const m = math.matMul(a, b);
 
+      // tslint:disable-next-line:no-any
       expect(() => math.gradientWrt(m as any, {a, b})).toThrowError();
     });
 
@@ -324,5 +324,5 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
       {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
     ]);
-  }
+  };
 }
