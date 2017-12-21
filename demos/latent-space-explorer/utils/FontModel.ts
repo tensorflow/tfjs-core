@@ -109,24 +109,20 @@ export class FontModel {
 
     const d = adjusted.as3D(IMAGE_SIZE, IMAGE_SIZE, 1);
 
-    d.data().then(() => {
+    d.data().then(values => {
       const imageData = ctx.createImageData(IMAGE_SIZE, IMAGE_SIZE);
 
       let pixelOffset = 0;
-      for (let i = 0; i < d.shape[0]; i++) {
-        for (let j = 0; j < d.shape[1]; j++) {
-          const value = d.get(i, j, 0);
-          imageData.data[pixelOffset++] = value;
-          imageData.data[pixelOffset++] = value;
-          imageData.data[pixelOffset++] = value;
-          imageData.data[pixelOffset++] = 255;
-        }
+      for (let i = 0; i < values.length; i++) {
+        const value = values[i];
+        imageData.data[pixelOffset++] = value;
+        imageData.data[pixelOffset++] = value;
+        imageData.data[pixelOffset++] = value;
+        imageData.data[pixelOffset++] = 255;
       }
 
       ctx.putImageData(imageData, 0, 0);
-
       d.dispose();
-
       cb();
     });
   }

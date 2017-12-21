@@ -47,6 +47,15 @@ export default {
   components: {Sample, Tray},
   data() {
     return {
+      basisDimensions: []
+    };
+  },
+  watch: {
+    model: function(m) {
+      const dims = m ? m.dimensions: 0;
+      this.basisDimensions = range(dims).map(dim => {
+        return math.oneHot(Array1D.new([dim]), dims).as1D();
+      });
     }
   },
   props: {
@@ -58,19 +67,6 @@ export default {
     range: { type: Number, default: 1 },
     vals: { type: Array, default: function() { return []; }},
     scrollY: {default: 0}
-  },
-  computed: {
-    dimensions: function() {
-      return this.model ? this.model.dimensions : 0;
-    },
-    basisDimensions: function() {
-      let output = range(this.dimensions).map(dim => {
-        let dir = Array1D.zeros([this.dimensions]);
-        dir.set(1, dim);
-        return dir;
-      });
-      return output;
-    }
   },
   methods: {
     select: function(event) {
