@@ -2289,7 +2289,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
 
     const gradients = this.backendEngine.gradientWrt(y, xs);
 
-    return util.mapFlatArraysToNameArrayMap(x, gradients);
+    if (x instanceof NDArray) {
+      return gradients[0] as T;
+    } else {
+      return util.unflattenToNameArrayMap(Object.keys(x), gradients) as T;
+    }
   }
 
   disposeData(id: number): void {

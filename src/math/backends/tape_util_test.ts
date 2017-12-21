@@ -652,3 +652,83 @@ import * as tape_util from './tape_util';
 
   test_util.describeMathCPU('tape_util.backpropagateGradients', [tests]);
 }
+
+// computeInputs
+{
+  const tests: MathTests = it => {
+    it('no inputs', math => {
+      const y = Scalar.new(2);
+
+      const tape: Tape = [{
+        id: 0,
+        type: 'kernel',
+        name: 'node0',
+        inputAndArgs: {
+          inputs: {},
+        },
+        output: y,
+        gradient: null
+      }];
+
+      const inputs = tape_util.computeInputs(tape);
+
+      expect(inputs).toEqual({});
+    });
+
+    it('basic', math => {
+      const x = Scalar.new(1);
+      const y = Scalar.new(2);
+
+      const tape: Tape = [{
+        id: 0,
+        type: 'kernel',
+        name: 'node0',
+        inputAndArgs: {
+          inputs: {x},
+        },
+        output: y,
+        gradient: null
+      }];
+
+      const inputs = tape_util.computeInputs(tape);
+
+      expect(inputs).toEqual({'0': x});
+    });
+
+    it('multiple inputs from multiple ops', math => {
+      const x1 = Scalar.new(1);
+      const intermediate1 = Scalar.new(0);
+
+      const x2 = Scalar.new(0);
+      const y = Scalar.new(2);
+
+      const tape: Tape = [
+        {
+          id: 0,
+          type: 'kernel',
+          name: 'node0',
+          inputAndArgs: {
+            inputs: {x1},
+          },
+          output: intermediate1,
+          gradient: null
+        },
+        {
+          id: 1,
+          type: 'kernel',
+          name: 'node1',
+          inputAndArgs: {
+            inputs: {intermediate1, x2},
+          },
+          output: y,
+          gradient: null
+        }
+      ];
+
+      const inputs = tape_util.computeInputs(tape);
+
+      expect(inputs).toEqual({'0': x1, '1': x2});
+    });
+  };
+  test_util.describeMathCPU('tape_util.computeInputs', [tests]);
+}

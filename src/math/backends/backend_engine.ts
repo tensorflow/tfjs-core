@@ -29,13 +29,6 @@ import {ScopeResult, ScopeResultImmediate} from './tape_util';
 interface ScopeState {
   keep: NDArray[];
   track: NDArray[];
-  customGradient?: CustomGradient;
-}
-
-export interface CustomGradient {
-  gradient: (dy: NDArray, y: NDArray) => {
-    [inputName: string]: () => NDArray
-  };
 }
 
 export class BackendEngine {
@@ -145,7 +138,6 @@ export class BackendEngine {
    * also be tracked, which means there must be yet another wrapping scope.
    * @param name The name of the scope. Used for logging.
    * @param scopeFn The function to execute with chained math operations.
-   * @param customGradient A custom gradient function.
    */
   scope<T extends ScopeResult>(
       name: string,
@@ -153,9 +145,8 @@ export class BackendEngine {
           (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
                ndarray: T1) => T1,
            track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
-               ndarray: T2) => T2) => T,
-      customGradient?: CustomGradient): T {
-    this.startScope(customGradient);
+               ndarray: T2) => T2) => T): T {
+    this.startScope();
 
     const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
     const trackFn = <T extends NDArray>(ndarray: T): T => this.track(ndarray);
@@ -173,14 +164,13 @@ export class BackendEngine {
   /**
    * Start a scope. Use this with endScope() to achieve the same functionality
    * as scope() without the need for a function closure.
-   * @param customGradient A custom gradient function.
    */
-  startScope(customGradient?: CustomGradient) {
+  startScope() {
     const newTape: Tape = [];
     this.tapeStack.push(newTape);
     this.activeTape = newTape;
 
-    const newScopeArrays: ScopeState = {keep: [], track: [], customGradient};
+    const newScopeArrays: ScopeState = {keep: [], track: []};
     this.scopeStack.push(newScopeArrays);
     this.activeScope = newScopeArrays;
   }

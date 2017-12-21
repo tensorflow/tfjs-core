@@ -361,17 +361,15 @@ export function flattenNameArrayMap(nameArrayMap: NDArray|
   return xs;
 }
 
-export function mapFlatArraysToNameArrayMap<T extends NameArrayMap|NDArray>(
-    nameArrayMap: T, flatArrays: NDArray[]): T {
-  const keys = Object.keys(nameArrayMap);
-  if (nameArrayMap instanceof NDArray) {
-    return flatArrays[0] as T;
-  } else {
-    // Convert the flat list of gradients back to the object.
-    const result: {[xName: string]: NDArray} = {};
-    for (let i = 0; i < keys.length; i++) {
-      result[keys[i]] = flatArrays[i];
-    }
-    return result as T;
+export function unflattenToNameArrayMap(
+    keys: string[], flatArrays: NDArray[]): NameArrayMap {
+  if (keys.length != flatArrays.length) {
+    throw new Error(
+        `Cannot unflatten NDArray[], keys and arrays are not of same length.`);
   }
+  const result: NameArrayMap = {};
+  for (let i = 0; i < keys.length; i++) {
+    result[keys[i]] = flatArrays[i];
+  }
+  return result;
 }
