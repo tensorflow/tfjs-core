@@ -317,44 +317,30 @@ const gpuTests: MathTests = it => {
 
 // TODO(nsthorat): fix the precision for backprop.
 const gradientTests: MathTests = it => {
-  it('MatMul gradient', math => {
+  it('MatMul gradient A * B', math => {
     const a = Array2D.new([2, 3], [1, 2, 3, 10, 20, 30]);
     const b = Array2D.new([3, 2], [2, 3, 4, 1, 2, 3]);
-    const dy = 1;
 
-    const cost = math.sum(math.matMul(a, b));
+    const cost = math.sum(math.matMul(
+        a, b, MatrixOrientation.REGULAR, MatrixOrientation.REGULAR));
 
     const grads = math.gradientWrt(cost, {a, b});
 
     // da = dy * bT
     expect(grads.a.shape).toEqual(a.shape);
-    test_util.expectNumbersClose(
-        grads.a.get(0, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
-    test_util.expectNumbersClose(
-        grads.a.get(0, 1), dy * b.get(1, 0) + dy * b.get(1, 1), 1e-1);
-    test_util.expectNumbersClose(
-        grads.a.get(0, 2), dy * b.get(2, 0) + dy * b.get(2, 1), 1e-1);
-    test_util.expectNumbersClose(
-        grads.a.get(1, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
-    test_util.expectNumbersClose(
-        grads.a.get(1, 1), dy * b.get(1, 0) + dy * b.get(1, 1), 1e-1);
-    test_util.expectNumbersClose(
-        grads.a.get(1, 2), dy * b.get(2, 0) + dy * b.get(2, 1), 1e-1);
+    const expectedDa = math.matMul(
+        Array2D.ones([2, 2]), b, MatrixOrientation.REGULAR,
+        MatrixOrientation.TRANSPOSED);
+    test_util.expectArraysClose(
+        expectedDa.dataSync(), grads.a.dataSync(), 1e-1);
 
     // db = aT * dy
     expect(grads.b.shape).toEqual(b.shape);
-    test_util.expectNumbersClose(
-        grads.b.get(0, 0), a.get(0, 0) * dy + a.get(1, 0) * dy, 1e-1);
-    test_util.expectNumbersClose(
-        grads.b.get(0, 1), a.get(0, 0) * dy + a.get(1, 0) * dy, 1e-1);
-    test_util.expectNumbersClose(
-        grads.b.get(1, 0), a.get(0, 1) * dy + a.get(1, 1) * dy, 1e-1);
-    test_util.expectNumbersClose(
-        grads.b.get(1, 1), a.get(0, 1) * dy + a.get(1, 1) * dy, 1e-1);
-    test_util.expectNumbersClose(
-        grads.b.get(2, 0), a.get(0, 2) * dy + a.get(1, 2) * dy, 1e-1);
-    test_util.expectNumbersClose(
-        grads.b.get(2, 1), a.get(0, 2) * dy + a.get(1, 2) * dy, 1e-1);
+    const expectedDb = math.matMul(
+        a, Array2D.ones([2, 2]), MatrixOrientation.TRANSPOSED,
+        MatrixOrientation.REGULAR);
+    test_util.expectArraysClose(
+        expectedDb.dataSync(), grads.b.dataSync(), 1e-1);
   });
 };
 

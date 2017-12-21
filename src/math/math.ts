@@ -193,18 +193,16 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.backendEngine.executeKernel(
         'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
         (dy: Array2D, y: Array2D) => {
+          if (aOrientation === MatrixOrientation.TRANSPOSED ||
+              bOrientation === MatrixOrientation.TRANSPOSED) {
+            throw new Error(
+                `Backprop for transposed MatMul not yet implemented.`);
+          }
           return {
             a: () => this.matMul(
-                dy, b, MatrixOrientation.REGULAR,
-                bOrientation === MatrixOrientation.REGULAR ?
-                    MatrixOrientation.TRANSPOSED :
-                    MatrixOrientation.REGULAR),
+                dy, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
             b: () => this.matMul(
-                a, dy,
-                aOrientation === MatrixOrientation.REGULAR ?
-                    MatrixOrientation.TRANSPOSED :
-                    MatrixOrientation.REGULAR,
-                MatrixOrientation.REGULAR)
+                a, dy, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR)
           };
         });
   }

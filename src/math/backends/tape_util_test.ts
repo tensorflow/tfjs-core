@@ -22,7 +22,7 @@ import {NameArrayMap} from '../../util';
 import {NDArray, Scalar} from '../ndarray';
 
 import {MathBackendCPU} from './backend_cpu';
-import {Tape, TapeNode, TapeNodeOutput} from './tape_types';
+import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
 
 // getFilteredNodesXToY
@@ -732,3 +732,57 @@ import * as tape_util from './tape_util';
   };
   test_util.describeMathCPU('tape_util.computeInputs', [tests]);
 }
+
+// extractNDArraysFromScopeResult
+{
+  const tests: MathTests = it => {
+    it('null input returns empty array', math => {
+      const results = tape_util.extractNDArraysFromScopeResult(null);
+
+      expect(results).toEqual([]);
+    });
+
+    it('ndarray input returns one element array', math => {
+      const x = Scalar.new(1);
+      const results = tape_util.extractNDArraysFromScopeResult(x);
+
+      expect(results).toEqual([x]);
+    });
+
+    it('name array map returns flattened array', math => {
+      const x1 = Scalar.new(1);
+      const x2 = Scalar.new(3);
+      const x3 = Scalar.new(4);
+      const results = tape_util.extractNDArraysFromScopeResult({x1, x2, x3});
+
+      expect(results).toEqual([x1, x2, x3]);
+    });
+  };
+
+  test_util.describeMathCPU(
+      'tape_util.extractNDArraysFromScopeResult', [tests]);
+}
+
+describe('util.stripUndefinedInputsFromInputConfig', () => {
+  it('pass through when all inputs are defined', () => {
+    const x1 = Scalar.new(1);
+    const x2 = Scalar.new(2);
+    const config: TapeNodeInputConfig = {
+      inputs: {x1, x2},
+    };
+    expect(tape_util.stripUndefinedInputsFromInputConfig(config)).toEqual({
+      inputs: {x1, x2}
+    })
+  });
+
+  it('strips undefined inputs', () => {
+    const x1 = Scalar.new(1);
+    const x4 = Scalar.new(2);
+    const config: TapeNodeInputConfig = {
+      inputs: {x1, x2: undefined, x3: undefined, x4},
+    };
+    expect(tape_util.stripUndefinedInputsFromInputConfig(config)).toEqual({
+      inputs: {x1, x4}
+    })
+  });
+});

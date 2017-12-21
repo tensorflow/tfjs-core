@@ -670,6 +670,67 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
   ]);
 }
 
+// subtract gradient
+{
+  const tests: MathTests = it => {
+    it('basic 1D arrays', math => {
+      const a = Array1D.new([1, 2, 3]);
+      const b = Array1D.new([3, 2, 1]);
+
+      const result = math.subtract(a, b);
+
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([-2, 0, 2]));
+
+      const resultSum = math.sum(result);
+      const da = math.gradientWrt(resultSum, a);
+      const db = math.gradientWrt(resultSum, b);
+      test_util.expectArraysClose(da.dataSync(), new Float32Array([1, 1, 1]));
+      test_util.expectArraysClose(
+          db.dataSync(), new Float32Array([-1, -1, -1]));
+    });
+
+    it('basic 2D arrays', math => {
+      const a = Array2D.new([2, 2], [0, 1, 2, 3]);
+      const b = Array2D.new([2, 2], [3, 2, 1, 0]);
+
+      const result = math.subtract(a, b);
+
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([-3, -1, 1, 3]));
+
+      const resultSum = math.sum(result);
+      const da = math.gradientWrt(resultSum, a);
+      const db = math.gradientWrt(resultSum, b);
+      test_util.expectArraysClose(
+          da.dataSync(), new Float32Array([1, 1, 1, 1]));
+      test_util.expectArraysClose(
+          db.dataSync(), new Float32Array([-1, -1, -1, -1]));
+    });
+
+    it('throws for broadcasted subtract', math => {
+      const a = Array2D.new([2, 2], [0, 1, 2, 3]);
+      const b = Scalar.new(1);
+
+      const result = math.subtract(a, b);
+
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([-1, 0, 1, 2]));
+
+      const resultSum = math.sum(result);
+      expect(() => math.gradientWrt(resultSum, a)).toThrowError();
+      expect(() => math.gradientWrt(resultSum, b)).toThrowError();
+    });
+  };
+
+  test_util.describeMathCPU('subtract gradient', [tests]);
+  test_util.describeMathGPU('subtract gradient', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
 // math.scaledArrayAdd
 {
   const tests: MathTests = it => {
