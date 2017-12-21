@@ -721,7 +721,11 @@ export class MathBackendWebGL implements MathBackend {
 
   private throwIfNoData(id: number) {
     if (!(id in this.texData)) {
-      throw new Error(`No data found for id ${id}`);
+      throw new Error(
+          `No data found for NDArray with id ${id}. ` +
+          `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
+          `If you need to construct your own math, make sure this array is ` +
+          `allocated after the math construction`);
     }
   }
 }
@@ -731,6 +735,11 @@ ENV.registerBackend('webgl', () => new MathBackendWebGL());
 // TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
 export class NDArrayMathGPU extends NDArrayMath {
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
+    console.warn(
+        'new NDArrayMathGPU() is deprecated. Please use the global ' +
+        'dl.ENV.math. In rare cases, to construct your own NDArrayMath ' +
+        'that runs on GPU, use math = new NDArrayMath(\'webgl\', safeMode); ' +
+        'and make sure to set it as global: dl.ENV.setMath(math);');
     super(new MathBackendWebGL(gpgpu), safeMode);
     ENV.setMath(this);
   }

@@ -244,13 +244,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return result;
   }
 
-  /**
-   * Tracks an NDArray in the current scope to be automatically cleaned up
-   * when the current scope ends, and returns the value.
-   *
-   * @param result The NDArray to track in the current scope.
-   */
-  private track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
+  /** @deprecated This is a no-op. */
+  track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
     if (this.activeScope == null) {
       if (this.safeMode) {
         throw new Error(
@@ -1269,8 +1264,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @return {NDArray}
    */
   prelu<T extends NDArray>(x: T, alpha: T): T {
-    return this.backendEngine.executeKernel(
-               'PReLU', {inputs: {x, alpha}}) as T;
+    return this.backendEngine.executeKernel('PReLU', {inputs: {x, alpha}}) as T;
   }
 
   /**
@@ -1280,8 +1274,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @return {NDArray}
    */
   preluDer<T extends NDArray>(x: T, alpha: T): T {
-    return this.backendEngine.executeKernel(
-               'PReLUDer', {inputs: {x, alpha}}) as T;
+    return this.backendEngine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as
+        T;
   }
 
   /**

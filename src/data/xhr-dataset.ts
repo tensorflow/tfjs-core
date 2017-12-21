@@ -38,7 +38,9 @@ export interface XhrDatasetConfig {
   modelConfigs: {[modelName: string]: XhrModelConfig};
 }
 
-export interface XhrModelConfig { path: string; }
+export interface XhrModelConfig {
+  path: string;
+}
 
 export function getXhrDatasetConfig(jsonConfigPath: string):
     Promise<{[datasetName: string]: XhrDatasetConfig}> {
@@ -63,8 +65,10 @@ export class XhrDataset extends InMemoryDataset {
   protected xhrDatasetConfig: XhrDatasetConfig;
 
   constructor(xhrDatasetConfig: XhrDatasetConfig) {
+    const safeMode = false;
     super(
-        xhrDatasetConfig.data.map(x => x.shape), new NDArrayMath('cpu', false));
+        xhrDatasetConfig.data.map(x => x.shape),
+        new NDArrayMath('cpu', safeMode));
     this.xhrDatasetConfig = xhrDatasetConfig;
   }
 

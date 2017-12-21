@@ -23,7 +23,8 @@ import {InMemoryDataset} from './dataset';
 
 class StubDataset extends InMemoryDataset {
   constructor(data: NDArray[][]) {
-    super(data.map(value => value[0].shape), new NDArrayMath('cpu', false));
+    const safeMode = false;
+    super(data.map(value => value[0].shape), new NDArrayMath('cpu', safeMode));
     this.dataset = data;
   }
 

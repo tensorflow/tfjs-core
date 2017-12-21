@@ -162,6 +162,10 @@ export type BackendType = 'webgl'|'cpu';
 export class Environment {
   private features: Features = {};
   private globalMath: NDArrayMath = null;
+  // tslint:disable-next-line:no-any
+  private backendRegistry: {[id in BackendType]: MathBackend} = {} as any;
+  private prevBackendRegistry: {[id in BackendType]: MathBackend} =
+      this.backendRegistry;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -219,6 +223,17 @@ export class Environment {
     throw new Error(`Unknown feature ${feature}.`);
   }
 
+  setFeatures(features: Features) {
+    this.empty();
+    this.features = features;
+  }
+
+  reset() {
+    this.globalMath = null;
+    this.backendRegistry = this.prevBackendRegistry;
+    this.features = getFeaturesFromURL();
+  }
+
   setMath(math: NDArrayMath) {
     this.globalMath = math;
   }
@@ -256,8 +271,13 @@ export class Environment {
     return this.globalMath;
   }
 
-  // tslint:disable-next-line:no-any
-  private backendRegistry: {[id in BackendType]: MathBackend} = {} as any;
+  private empty() {
+    this.globalMath = null;
+    this.prevBackendRegistry = this.backendRegistry;
+    // tslint:disable-next-line:no-any
+    this.backendRegistry = {} as any;
+    this.features = null;
+  }
 }
 
 // Expects flags from URL in the format ?dljsflags=FLAG1:1,FLAG2:true.
@@ -311,15 +331,10 @@ function getGlobalNamespace(): {ENV: Environment} {
   return ns;
 }
 
-export function getOrMakeEnvironment(): Environment {
+function getOrMakeEnvironment(): Environment {
   const ns = getGlobalNamespace();
   ns.ENV = ns.ENV || new Environment(getFeaturesFromURL());
   return ns.ENV;
-}
-
-export function setGlobal(environment: Environment) {
-  const ns = getGlobalNamespace();
-  ns.ENV = environment;
 }
 
 export let ENV = getOrMakeEnvironment();
