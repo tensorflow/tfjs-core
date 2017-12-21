@@ -363,7 +363,7 @@ export function flattenNameArrayMap(nameArrayMap: NDArray|
 
 export function unflattenToNameArrayMap(
     keys: string[], flatArrays: NDArray[]): NameArrayMap {
-  if (keys.length != flatArrays.length) {
+  if (keys.length !== flatArrays.length) {
     throw new Error(
         `Cannot unflatten NDArray[], keys and arrays are not of same length.`);
   }

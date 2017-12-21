@@ -22,6 +22,7 @@ import {NameArrayMap} from '../../util';
 import {NDArray, Scalar} from '../ndarray';
 
 import {MathBackendCPU} from './backend_cpu';
+// tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
 
@@ -772,7 +773,7 @@ describe('util.stripUndefinedInputsFromInputConfig', () => {
     };
     expect(tape_util.stripUndefinedInputsFromInputConfig(config)).toEqual({
       inputs: {x1, x2}
-    })
+    });
   });
 
   it('strips undefined inputs', () => {
@@ -783,6 +784,6 @@ describe('util.stripUndefinedInputsFromInputConfig', () => {
     };
     expect(tape_util.stripUndefinedInputsFromInputConfig(config)).toEqual({
       inputs: {x1, x4}
-    })
+    });
   });
 });

@@ -18,6 +18,7 @@
 import {NDArray} from '../ndarray';
 
 import {MathBackend} from './backend';
+// tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
 
 /**

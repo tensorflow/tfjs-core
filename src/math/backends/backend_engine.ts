@@ -221,7 +221,7 @@ export class BackendEngine {
       gradient: (dy: NDArray, y: NDArray) => {
         throw new Error(`Gradient of subtape not implemented yet.`);
       },
-      subtape: subtape
+      subtape
     };
 
     // Pop the active tape.
