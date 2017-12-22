@@ -59,7 +59,7 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], [y]);
 
       expect(filteredTapeNodes.length).toBe(0);
       expect(filteredTapeNodes).toEqual([]);
@@ -80,7 +80,7 @@ import * as tape_util from './tape_util';
         gradient: null
       }];
 
-      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], [y]);
 
       expect(filteredTapeNodes.length).toBe(1);
       expect(filteredTapeNodes).toEqual(tape);
@@ -104,7 +104,7 @@ import * as tape_util from './tape_util';
          }];
 
          const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tape, [x0, x1], y);
+             tape_util.getFilteredNodesXToY(tape, [x0, x1], [y]);
 
          expect(filteredTapeNodes.length).toBe(1);
          expect(filteredTapeNodes).toEqual(tape);
@@ -128,7 +128,7 @@ import * as tape_util from './tape_util';
          }];
 
          const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tape, [x0], y);
+             tape_util.getFilteredNodesXToY(tape, [x0], [y]);
 
          expect(filteredTapeNodes.length).toBe(1);
          // x1 input should be pruned, we don't ask for the gradient of x1.
@@ -172,7 +172,7 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], [y]);
 
       expect(filteredTapeNodes.length).toBe(2);
       expect(filteredTapeNodes).toEqual(tape);
@@ -211,7 +211,7 @@ import * as tape_util from './tape_util';
          ];
 
          const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tape, [x0, x1, x2], y);
+             tape_util.getFilteredNodesXToY(tape, [x0, x1, x2], [y]);
 
          expect(filteredTapeNodes.length).toBe(2);
          expect(filteredTapeNodes).toEqual(tape);
@@ -245,7 +245,7 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], [y]);
 
       expect(filteredTapeNodes.length).toBe(1);
       // The orphan should be removed.
@@ -268,7 +268,7 @@ import * as tape_util from './tape_util';
         gradient: null
       }];
 
-      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
+      const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], [y]);
 
       expect(filteredTapeNodes.length).toBe(1);
       // The orphan should be pruned from the node's input.
@@ -317,7 +317,8 @@ import * as tape_util from './tape_util';
            }
          ];
 
-         const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
+         const filteredTapeNodes =
+             tape_util.getFilteredNodesXToY(tape, [x], [y]);
 
          expect(filteredTapeNodes.length).toBe(2);
          // The orphans should be pruned from inputs and outputs.
@@ -402,7 +403,7 @@ import * as tape_util from './tape_util';
          ];
 
          const filteredTapeNodes =
-             tape_util.getFilteredNodesXToY(tape, [x0, x1], y);
+             tape_util.getFilteredNodesXToY(tape, [x0, x1], [y]);
 
          expect(filteredTapeNodes.length).toBe(3);
          expect(filteredTapeNodes[0]).toEqual(tape[0]);

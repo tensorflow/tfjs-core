@@ -282,7 +282,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
         const m = math.matMul(a, b);
         const y = math.relu(m);
         return math.sum(y);
-      }, {a, b})
+      }, {a, b});
 
       // de/dy = 1
       // dy/dm = step(m)
@@ -318,15 +318,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
           .toThrowError();
     });
 
-    test_util.describeMathCPU('valueAndGradients', [tests]);
-    test_util.describeMathGPU('valueAndGradients', [tests], [
+    test_util.describeMathCPU('gradients', [tests]);
+    test_util.describeMathGPU('gradients', [tests], [
       {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
       {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
       {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
     ]);
   };
 }
-
 
 // valueAndGradients integration tests
 {
@@ -342,7 +341,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
         const m = math.matMul(a, b);
         const y = math.relu(m);
         return math.sum(y);
-      }, {a, b})
+      }, {a, b});
 
       // de/dy = 1
       // dy/dm = step(m)
@@ -378,11 +377,51 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
           .toThrowError();
     });
 
-    test_util.describeMathCPU('valueAndGradients', [tests]);
-    test_util.describeMathGPU('valueAndGradients', [tests], [
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-    ]);
+    it('matmul + relu + inner scope', math => {
+      console.log('-------');
+      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
+      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+
+      const valueAndGradients = math.valueAndGradients(() => {
+        // m = dot(a, b)
+        // y = relu(m)
+        // e = sum(y)
+        const m = math.matMul(a, b);
+        return math.scope(() => {
+          const y = math.relu(m);
+          return math.sum(y);
+        });
+      }, {a, b});
+
+      // de/dy = 1
+      // dy/dm = step(m)
+      // de/dm = de/dy * dy/dm = step(m)
+      const dedm = math.step(math.matMul(a, b));
+
+      // de/da = dot(de/dy, bT)
+      expect(valueAndGradients.gradients.a.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.a.dataSync(),
+          math.matMul(
+                  dedm, b, MatrixOrientation.REGULAR,
+                  MatrixOrientation.TRANSPOSED)
+              .dataSync());
+
+      // de/db = dot(aT, de/dy)
+      expect(valueAndGradients.gradients.b.shape).toEqual(b.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.b.dataSync(),
+          math.matMul(
+                  a, dedm, MatrixOrientation.TRANSPOSED,
+                  MatrixOrientation.REGULAR)
+              .dataSync());
+    });
   };
+
+  test_util.describeMathCPU('nikhil valueAndGradients', [tests]);
+  test_util.describeMathGPU('valueAndGradients', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }

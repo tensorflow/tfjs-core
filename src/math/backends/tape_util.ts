@@ -29,7 +29,7 @@ import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types'
  * @param y The output NDArray.
  */
 export function getFilteredNodesXToY(
-    tape: Tape, xs: NDArray[], y: NDArray): Tape {
+    tape: Tape, xs: NDArray[], ys: NDArray[]): Tape {
   // Forward pass to compute all the nodes and NDArrays that are transitively a
   // function of x.
   const arraysFromX: {[ndarrayId: number]: boolean} = {};
@@ -70,7 +70,9 @@ export function getFilteredNodesXToY(
 
   // Backwards pass to find all of the nodes and NDArrays that lead to y.
   const arraysLeadToY: {[ndarrayId: number]: boolean} = {};
-  arraysLeadToY[y.id] = true;
+  for (let i = 0; i < ys.length; i++) {
+    arraysLeadToY[ys[i].id] = true;
+  }
   const nodesToY: {[nodeId: number]: boolean} = {};
 
   for (let i = tape.length - 1; i >= 0; i--) {
