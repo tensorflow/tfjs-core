@@ -21,12 +21,12 @@ import DemoHeader from '../header.vue';
 import {GameOfLife, GameOfLifeModel} from './game_of_life';
 
 const data = {
-  boardSize: 5,
-  trainingSize: 2000,
-  trainingBatchSize: 5,
-  learningRate: 1.0,
-  numLayers: 3,
-  updateInterval: 25,
+  boardSize: '5',
+  trainingSize: '2000',
+  trainingBatchSize: '5',
+  learningRate: '1.0',
+  numLayers: '3',
+  updateInterval: '25',
   useLogCost: true,
   running: false
 };
@@ -186,9 +186,9 @@ const worldContexts: WorldContext[] = [];
 
 const trainDisplay = new TrainDisplay();
 
-let step = 0;
-let trainingSteps = 100;
-let trainingBatchSize = 5;
+let step: number;
+let trainingSteps: number;
+let trainingBatchSize: number;
 
 let isBuildingTrainingData = true;
 
@@ -221,7 +221,7 @@ async function trainAndRender() {
 
   if (!isBuildingTrainingData) {
     step++;
-    const fetchCost = step % data.updateInterval === 0;
+    const fetchCost = step % parseInt(data.updateInterval, 10) === 0;
     const cost = model.trainBatch(fetchCost, trainingData);
 
     if (fetchCost) {
@@ -253,19 +253,19 @@ export default Vue.extend({
     },
 
     onTrainModelClicked: async () => {
-      game.setSize(data.boardSize);
-      model.setupSession(
-          data.boardSize, data.trainingBatchSize, data.learningRate,
-          data.numLayers, data.useLogCost);
-
       step = 0;
-      trainingSteps = data.trainingSize;
-      trainingBatchSize = data.trainingBatchSize;
+      trainingSteps = parseInt(data.trainingSize, 10);
+      trainingBatchSize = parseInt(data.trainingBatchSize, 10);
       trainingData = [];
       trainDisplay.addDataSet();
 
-      data.running = true;
+      game.setSize(parseInt(data.boardSize, 10));
+      model.setupSession(
+          parseInt(data.boardSize, 10), trainingBatchSize,
+          parseInt(data.learningRate, 10), parseInt(data.numLayers, 10),
+          data.useLogCost);
 
+      data.running = true;
       trainAndRender();
     },
 
@@ -283,10 +283,3 @@ export default Vue.extend({
     trainDisplay.setup();
   }
 });
-
-//   private static clearChildNodes(node: Element) {
-//     while (node.hasChildNodes()) {
-//       node.removeChild(node.lastChild);
-//     }
-//   }
-// }
