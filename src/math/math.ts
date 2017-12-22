@@ -2286,7 +2286,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Warning: this is not fully implemented yet. Use with caution.
    *
-   * Computes a gradient of f() with respect to x.
+   * Computes and returns the gradient of f(x) with respect to x.
    *
    * @param f The function to execute. f() should return a scalar.
    *          TODO(nsthorat): Accept non-scalars.
@@ -2311,7 +2311,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Warning: this is not fully implemented yet. Use with caution.
    *
-   * Computes a gradient of f() with respect to x.
+   * Computes and returns the gradient of f(x) with respect to x. Returns both
+   * f(x) and f'(x).
    *
    * @param f The function to execute. f() should return a scalar.
    *          TODO(nsthorat): Accept non-scalars.

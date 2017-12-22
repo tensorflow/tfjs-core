@@ -97,6 +97,33 @@ export class BackendEngine {
     return result;
   }
 
+  gradients(f: () => Scalar, xs: NDArray[], returnValue: boolean): NDArray[]|
+      {value: Scalar, gradients: NDArray[]} {
+    const gradientsMode = true;
+    const result = this.scope('gradients', () => {
+      const y = f();
+      if (y.rank !== 0) {
+        throw new Error(
+            `Cannot compute gradient of non-scalar y output. ` +
+            `Got y with rank ${y.rank}`);
+      }
+      const gradients = this.gradientWrt(y, xs);
+      if (returnValue) {
+        return [y, ...gradients];
+      } else {
+        return gradients;
+      }
+    }, gradientsMode);
+
+    if (returnValue) {
+      return {
+        value: result[0], gradients: result.slice(1)
+      }
+    } else {
+      return result;
+    }
+  }
+
   private gradientWrt(
       y: Scalar, xs: NDArray[],
       arrayAccumulatedGradientMap?: {[ndarrayId: number]: NDArray},
@@ -129,31 +156,6 @@ export class BackendEngine {
       }
       return gradients;
     });
-  }
-
-  gradients(f: () => Scalar, xs: NDArray[], returnValue: boolean): NDArray[]|
-      {value: Scalar, gradients: NDArray[]} {
-    const gradientsMode = true;
-    const result = this.scope('gradients', () => {
-      const y = f();
-      if (y.rank !== 0) {
-        throw new Error(`Cannot compute gradient of non-scalar y output.`);
-      }
-      const gradients = this.gradientWrt(y, xs);
-      if (returnValue) {
-        return [y, ...gradients];
-      } else {
-        return gradients;
-      }
-    }, gradientsMode);
-
-    if (returnValue) {
-      return {
-        value: result[0], gradients: result.slice(1)
-      }
-    } else {
-      return result;
-    }
   }
 
   /**
@@ -236,19 +238,6 @@ export class BackendEngine {
         ndarraysToTrackInParent.push(ndarray);
       }
     }
-    // // Dispose the arrays tracked in this scope.
-    // for (let i = 0; i < this.activeScope.track.length; i++) {
-    //   const ndarray = this.activeScope.track[i];
-    //   if (util.isNDArrayInList(ndarray, arraysToKeep)) {
-    //     continue;
-    //   }
-
-    //   if (isOuterMostGradientsMode || !gradientsMode) {
-    //     ndarray.dispose();
-    //   } else {
-    //     arraysToTrackInParent.push(ndarray);
-    //   }
-    // }
 
     this.scopeStack.pop();
     this.activeScope = this.scopeStack.length === 0 ?
