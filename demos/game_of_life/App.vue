@@ -137,7 +137,7 @@ limitations under the License.
 .train {
   margin-left: auto;
   margin-right: auto;
-  max-width: 80%;
+  max-width: 925px;
   border-bottom: 1px dashed #333333;
   padding-top: 20px;
 }
