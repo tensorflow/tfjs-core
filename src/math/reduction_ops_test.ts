@@ -512,30 +512,50 @@ import * as reduce_util from './reduce_util';
 // math.sum gradient
 {
   const tests: MathTests = it => {
-    it('basic', math => {
+    it('valueAndGradients basic', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const y = math.sum(a);
-      const grad = math.gradientWrt(y, a);
+      const valueAndGradients = math.valueAndGradients(() => math.sum(a), a);
 
+      expect(valueAndGradients.value.shape).toEqual([]);
       test_util.expectArraysClose(
-          grad.dataSync(), new Float32Array([1, 1, 1, 1, 1, 1]));
+          valueAndGradients.value.dataSync(), new Float32Array([7]));
+
+      expect(valueAndGradients.gradients.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.dataSync(),
+          new Float32Array([1, 1, 1, 1, 1, 1]));
     });
 
-    it('sums all values in 2D array with keep dim', math => {
+    it('gradients basic', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const res = math.sum(a, null, true /* keepDims */);
-      const sum = math.sum(res);
-      const grad = math.gradientWrt(sum, a);
+      const gradients = math.gradients(() => {
+        return math.sum(a);
+      }, a);
 
-      expect(res.shape).toEqual([1, 1]);
-      test_util.expectArraysClose(res.dataSync(), new Float32Array([7]));
+      expect(gradients.shape).toEqual(a.shape);
       test_util.expectArraysClose(
-          grad.getValues(), new Float32Array([1, 1, 1, 1, 1, 1]));
+          gradients.dataSync(), new Float32Array([1, 1, 1, 1, 1, 1]));
+    });
+
+    it('valueAndGradients sums all values in 2D array with keep dim', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+
+      const valueAndGradients = math.valueAndGradients(() => {
+        const res = math.sum(a, null, true /* keepDims */);
+        return math.sum(res);
+      }, a);
+
+      expect(valueAndGradients.value.shape).toEqual([]);
+      test_util.expectArraysClose(
+          valueAndGradients.value.dataSync(), new Float32Array([7]));
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.getValues(),
+          new Float32Array([1, 1, 1, 1, 1, 1]));
     });
   };
 
-  test_util.describeMathCPU('gradientWrt sum', [tests]);
-  test_util.describeMathGPU('gradientWrt sum', [tests], [
+  test_util.describeMathCPU('gradients sum', [tests]);
+  test_util.describeMathGPU('gradients sum', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

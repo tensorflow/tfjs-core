@@ -116,37 +116,51 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('Relu gradient positive scalar', math => {
       const a = Scalar.new(3);
 
-      const result = math.relu(a);
-      const grad = math.gradientWrt(result, a);
+      const valueAndGradients = math.valueAndGradients(() => math.relu(a), a);
 
-      test_util.expectArraysClose(grad.dataSync(), new Float32Array([1]));
+      expect(valueAndGradients.value.shape).toEqual([]);
+      test_util.expectArraysClose(
+          valueAndGradients.value.dataSync(), new Float32Array([3]));
+
+      expect(valueAndGradients.gradients.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.dataSync(), new Float32Array([1]));
     });
 
     it('Relu gradient negative scalar', math => {
       const a = Scalar.new(-3);
 
-      const result = math.relu(a);
-      const grad = math.gradientWrt(result, a);
+      const valueAndGradients = math.valueAndGradients(() => math.relu(a), a);
 
-      test_util.expectArraysClose(grad.dataSync(), new Float32Array([0]));
+      expect(valueAndGradients.value.shape).toEqual([]);
+      test_util.expectArraysClose(
+          valueAndGradients.value.dataSync(), new Float32Array([0]));
+
+      expect(valueAndGradients.gradients.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.dataSync(), new Float32Array([0]));
     });
 
     it('Relu gradient array', math => {
-      // TODO(nsthorat): Use 0 instead of -.001 when we fix the precision issue.
+      // TODO(nsthorat): Use 0 instead of -.001 when we fix the precision
       const a = Array2D.new([2, 2], [1, -1, -.001, .1]);
 
-      // gradientWrt only takes a scalar, so we manually sum here.
-      const result = math.sum(math.relu(a));
-      const grad = math.gradientWrt(result, a);
+      const valueAndGradients =
+          math.valueAndGradients(() => math.sum(math.relu(a)), a);
 
-      expect(grad.shape).toEqual(a.shape);
+      expect(valueAndGradients.value.shape).toEqual([]);
       test_util.expectArraysClose(
-          grad.dataSync(), new Float32Array([1, 0, 0, 1]));
+          valueAndGradients.value.dataSync(),
+          new Float32Array([1 + 0 + 0 + .1]));
+      expect(valueAndGradients.gradients.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.dataSync(),
+          new Float32Array([1, 0, 0, 1]));
     });
   };
 
-  test_util.describeMathCPU('gradientWrt relu', [tests]);
-  test_util.describeMathGPU('gradientWrt relu', [tests], [
+  test_util.describeMathCPU('gradients relu', [tests]);
+  test_util.describeMathGPU('gradients relu', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
@@ -378,37 +392,49 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('Scalar', math => {
       const a = Scalar.new(5);
 
-      const result = math.square(a);
-      test_util.expectArraysClose(result.getValues(), new Float32Array([25]));
+      const valueAndGradients = math.valueAndGradients(() => math.square(a), a);
 
-      const grad = math.gradientWrt(result, a);
-      test_util.expectArraysClose(grad.dataSync(), new Float32Array([10]));
+      expect(valueAndGradients.value.shape).toEqual([]);
+      test_util.expectArraysClose(
+          valueAndGradients.value.dataSync(), new Float32Array([25]));
+
+      expect(valueAndGradients.gradients.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.dataSync(), new Float32Array([10]));
     });
 
     it('Array1D', math => {
       const a = Array1D.new([-1, 2, 3, -5]);
 
-      const result = math.square(a);
-      test_util.expectArraysClose(
-          result.getValues(), new Float32Array([1, 4, 9, 25]));
+      const valueAndGradients =
+          math.valueAndGradients(() => math.sum(math.square(a)), a);
 
-      const sum = math.sum(result);
-      const grad = math.gradientWrt(sum, a);
+      expect(valueAndGradients.value.shape).toEqual([]);
       test_util.expectArraysClose(
-          grad.dataSync(), new Float32Array([-2, 4, 6, -10]), 1e-1);
+          valueAndGradients.value.getValues(),
+          new Float32Array([1 + 4 + 9 + 25]));
+
+      expect(valueAndGradients.gradients.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.dataSync(),
+          new Float32Array([-2, 4, 6, -10]), 1e-1);
     });
 
     it('Array2D', math => {
       const a = Array2D.new([2, 2], [-3, 1, 2, 3]);
 
-      const result = math.square(a);
-      test_util.expectArraysClose(
-          result.getValues(), new Float32Array([9, 1, 4, 9]));
+      const valueAndGradients =
+          math.valueAndGradients(() => math.sum(math.square(a)), a);
 
-      const sum = math.sum(result);
-      const grad = math.gradientWrt(sum, a);
+      expect(valueAndGradients.value.shape).toEqual([]);
       test_util.expectArraysClose(
-          grad.dataSync(), new Float32Array([-6, 2, 4, 6]), 1e-1);
+          valueAndGradients.value.getValues(),
+          new Float32Array([9 + 1 + 4 + 9]));
+
+      expect(valueAndGradients.gradients.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          valueAndGradients.gradients.dataSync(),
+          new Float32Array([-6, 2, 4, 6]), 1e-1);
     });
   };
 

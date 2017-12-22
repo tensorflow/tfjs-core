@@ -322,11 +322,12 @@ const gradientTests: MathTests = it => {
     const b = Array2D.new([3, 2], [2, 3, 4, 1, 2, 3]);
     const dy = 1;
 
-    const cost = math.sum(math.matMul(
-        a, b, MatrixOrientation.REGULAR, MatrixOrientation.REGULAR));
+    const valueAndGradients = math.valueAndGradients(() => {
+      return math.sum(math.matMul(
+          a, b, MatrixOrientation.REGULAR, MatrixOrientation.REGULAR));
+    }, {a, b});
 
-    const grads = math.gradientWrt(cost, {a, b});
-
+    const grads = valueAndGradients.gradients;
     test_util.expectNumbersClose(
         grads.a.get(0, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
     test_util.expectNumbersClose(
@@ -357,9 +358,9 @@ const gradientTests: MathTests = it => {
   });
 };
 
-test_util.describeMathCPU('gradientWrt matMul', [commonTests, gradientTests]);
+test_util.describeMathCPU('gradients matMul', [commonTests, gradientTests]);
 test_util.describeMathGPU(
-    'gradientWrt matMul', [commonTests, gpuTests, gradientTests], [
+    'gradients matMul', [commonTests, gpuTests, gradientTests], [
       {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
       {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
       {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
