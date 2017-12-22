@@ -48,9 +48,9 @@ import utils from '../utils/Utils';
 import {range} from 'd3-array';
 import {format} from 'd3-format';
 import {scaleLinear, scaleBand} from 'd3-scale';
-import {Scalar, Array1D, NDArrayMathCPU} from 'deeplearn';
+import {Scalar, Array1D, ENV} from 'deeplearn';
 
-const math = new NDArrayMathCPU(false);
+const math = ENV.math;
 
 export default {
   components: {Sample, Axis},

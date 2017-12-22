@@ -12,9 +12,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Array1D, NDArray, NDArrayMathCPU, Scalar} from 'deeplearn';
+import {Array1D, ENV, NDArray, Scalar} from 'deeplearn';
 
-const math = new NDArrayMathCPU();
+const math = ENV.math;
 
 export function interpolateLinear(
     embedding0: Array1D, embedding1: Array1D, ratio: Scalar) {
@@ -45,9 +45,5 @@ export function norm(v: NDArray) {
 }
 
 export function unit(v: NDArray) {
-  const n = Scalar.new(norm(v).get());
-  if (n.get() === 0) {
-    console.warn('Divide by zero');
-  }
-  return math.arrayDividedByScalar(v, n);
+  return math.arrayDividedByScalar(v, norm(v));
 }

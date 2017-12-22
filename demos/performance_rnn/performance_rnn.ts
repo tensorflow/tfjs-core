@@ -14,9 +14,8 @@ limitations under the License.
 ==============================================================================*/
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, CheckpointLoader, NDArray, NDArrayMath, NDArrayMathGPU, Scalar} from 'deeplearn';
+import {Array1D, Array2D, CheckpointLoader, ENV, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 import * as demo_util from '../util';
-
 import {KeyboardElement} from './keyboard_element';
 
 // tslint:disable-next-line:no-require-imports
@@ -106,8 +105,8 @@ const keyboardInterface = new KeyboardElement(container);
 
 const piano = new Piano({velocities: 4}).toMaster();
 
-const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
-    'Piano/Salamander/';
+// const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
+//     'Piano/Salamander/';
 const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'checkpoint_zoo/performance_rnn_v2';
 
@@ -121,41 +120,37 @@ if (!isDeviceSupported) {
   start();
 }
 
-const math = new NDArrayMathGPU();
+const math = ENV.math;
 
 let modelReady = false;
 
 function start() {
-  piano.load(SALAMANDER_URL)
-      .then(() => {
-        const reader = new CheckpointLoader(CHECKPOINT_URL);
-        return reader.getAllVariables();
-      })
-      .then((vars: {[varName: string]: NDArray}) => {
-        document.querySelector('#status').classList.add('hidden');
-        document.querySelector('#controls').classList.remove('hidden');
-        document.querySelector('#keyboard').classList.remove('hidden');
+  const reader = new CheckpointLoader(CHECKPOINT_URL);
+  reader.getAllVariables().then((vars: {[varName: string]: NDArray}) => {
+    document.querySelector('#status').classList.add('hidden');
+    document.querySelector('#controls').classList.remove('hidden');
+    document.querySelector('#keyboard').classList.remove('hidden');
 
-        lstmKernel1 =
-            vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
-        lstmBias1 =
-            vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
+    lstmKernel1 =
+        vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
+    lstmBias1 =
+        vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
 
-        lstmKernel2 =
-            vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
-        lstmBias2 =
-            vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
+    lstmKernel2 =
+        vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
+    lstmBias2 =
+        vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
 
-        lstmKernel3 =
-            vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
-        lstmBias3 =
-            vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
+    lstmKernel3 =
+        vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
+    lstmBias3 =
+        vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
 
-        fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
-        fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
-        modelReady = true;
-        resetRnn();
-      });
+    fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
+    fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+    modelReady = true;
+    resetRnn();
+  });
 }
 
 function resetRnn() {
@@ -276,14 +271,14 @@ function disableConditioning() {
 }
 
 function updateConditioningParams() {
-  const pitchHistogram = pitchHistogramElements.map((e) => {
+  const pitchHistogram = pitchHistogramElements.map(e => {
     return parseInt(e.value, 10) || 0;
   });
   updateDisplayHistogram(pitchHistogram);
 
-  if (noteDensityEncoding !== undefined) {
+  if (noteDensityEncoding != null) {
     noteDensityEncoding.dispose();
-    noteDensityEncoding = undefined;
+    noteDensityEncoding = null;
   }
 
   window.location.assign(
@@ -297,9 +292,9 @@ function updateConditioningParams() {
   noteDensityEncoding = Array1D.zeros([DENSITY_BIN_RANGES.length + 1]);
   noteDensityEncoding.set(1.0, noteDensityIdx + 1);
 
-  if (pitchHistogramEncoding !== undefined) {
+  if (pitchHistogramEncoding != null) {
     pitchHistogramEncoding.dispose();
-    pitchHistogramEncoding = undefined;
+    pitchHistogramEncoding = null;
   }
   pitchHistogramEncoding = Array1D.zeros([PITCH_HISTOGRAM_SIZE]);
   const pitchHistogramTotal = pitchHistogram.reduce((prev, val) => {
@@ -311,7 +306,7 @@ function updateConditioningParams() {
 }
 
 document.getElementById('note-density').oninput = updateConditioningParams;
-pitchHistogramElements.map((e) => {
+pitchHistogramElements.forEach(e => {
   e.oninput = updateConditioningParams;
 });
 updateConditioningParams();
@@ -389,20 +384,20 @@ document.getElementById('save-2').onclick = () => {
 };
 
 function getConditioning(math: NDArrayMath): Array1D {
-  return math.scope((keep, track) => {
+  return math.scope(keep => {
     if (!conditioned) {
       // TODO(nsthorat): figure out why we have to cast these shapes to numbers.
       // The linter is complaining, though VSCode can infer the types.
       const size = 1 + (noteDensityEncoding.shape[0] as number) +
           (pitchHistogramEncoding.shape[0] as number);
-      const conditioning = track(Array1D.zeros([size]));
+      const conditioning = Array1D.zeros([size]);
       conditioning.set(1.0, 0);
       return conditioning;
     } else {
       const conditioningValues =
           math.concat1D(noteDensityEncoding, pitchHistogramEncoding);
       return math.concat1D(
-          track(Scalar.new(0.0).as1D()),  // conditioning on.
+          Scalar.new(0.0).as1D(),  // conditioning on.
           conditioningValues);
     }
   });
@@ -413,7 +408,7 @@ async function generateStep(loopId: number) {
     // Was part of an outdated generateStep() scheduled via setTimeout.
     return;
   }
-  await math.scope(async (keep, track) => {
+  await math.scope(async keep => {
     const lstm1 =
         math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
     const lstm2 =
@@ -421,12 +416,6 @@ async function generateStep(loopId: number) {
     const lstm3 =
         math.basicLSTMCell.bind(math, forgetBias, lstmKernel3, lstmBias3);
 
-    c.map(val => {
-      track(val);
-    });
-    h.map(val => {
-      track(val);
-    });
     const outputs: Scalar[] = [];
     // Generate some notes.
     for (let i = 0; i < STEPS_PER_GENERATE_CALL; i++) {
@@ -455,22 +444,14 @@ async function generateStep(loopId: number) {
       lastSample = sampledOutput;
     }
 
-    c.map(val => {
-      keep(val);
-    });
-    h.map(val => {
-      keep(val);
-    });
+    c.forEach(val => keep(val));
+    h.forEach(val => keep(val));
 
     await outputs[outputs.length - 1].data();
 
     for (let i = 0; i < outputs.length; i++) {
       playOutput(await outputs[i].val());
     }
-
-    // Pro-actively upload the last sample to the gpu again and keep it
-    // for next time.
-    lastSample.getTexture();
 
     if (piano.now() - currentPianoTimeSec > MAX_GENERATION_LAG_SECONDS) {
       console.warn(
