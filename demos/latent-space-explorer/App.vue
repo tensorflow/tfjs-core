@@ -138,18 +138,18 @@ export default {
       if (event.isInitialSelection && window.location.hash) {
         this.parseUrlHash();
       } else {
-        this.selectedSample = event.selectedSample
-        console.log('selected sample in app.vue changed to', this.selectedSample);
+        this.selectedSample = event.selectedSample;
         this.updateHash();
       }
     },
     updateHash: function() {
       if (this.selectedSample) {
-        const vals = this.selectedSample.getValues();
-        const hashStr = '#' + Array.from(vals).map(
+        this.selectedSample.data().then(vals => {
+          const hashStr = '#' + Array.from(vals).map(
           val => parseFloat(val).toFixed(3))
           .join(',');
         history.replaceState(undefined, undefined, hashStr);
+        });
       }
     },
     parseUrlHash: function() {

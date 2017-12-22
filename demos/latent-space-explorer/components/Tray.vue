@@ -18,7 +18,7 @@ limitations under the License.
   <div
     class="tray"
     :style="{height: height + 'px'}">
-      <!-- <Sample
+      <Sample
         v-for="(sample, index) in samples"
         v-bind:key="index"
         :style="{position: 'absolute', left: sample.position + 'px'}"
@@ -28,7 +28,7 @@ limitations under the License.
         :model="model"
         :character="modelData"
         :sample="sample.sample"
-      /> -->
+      />
     <div
       class="reticle selected"
       :style="{left: selectedX + 'px', height: height + 6 + 'px'}">
@@ -61,7 +61,9 @@ export default {
       formatter: format(",.3f"),
       visible: false,
       samples: [],
-      offset: 0
+      offset: 0,
+      selectedX: 0,
+      selectedValue: 0
     }
   },
   props: {
@@ -89,31 +91,34 @@ export default {
       return this.position.domain([0, this.numSamples - 1]).range(this.extent);
     },
     sampleWidth: function() { return this.bands.bandwidth(); },
-    height: function() { return this.sampleWidth; },
-    unitDirection: function() {
-      let length = math.sum(math.multiply(this.direction, this.direction));
-      return math.divide(this.direction, length);
-    },
-    selectedValue: function() {
-      const scalar = math.dotProduct(this.unitDirection, this.selectedSample);
-      return scalar.getValues()[0];
-    },
-    selectedX: function() {
-      return this.hoverScale.invert(this.selectedValue);
-    },
+    height: function() { return this.sampleWidth; }
 
   },
   mounted() {
+    this.computeDirection();
     this.recomputeSamples();
     this.checkVisibility();
   },
   watch: {
-    selectedSample: function(value) { this.recomputeSamples(); },
+    selectedSample: function() {
+      this.computeDirection();
+    },
     model: function() { this.recomputeSamples(); },
     width: function() { this.recomputeSamples(); },
-    scrollY: function(val) { this.checkVisibility(); }
+    scrollY: function(val) { this.checkVisibility(); },
+    direction: function() { this.computeDirection(); },
   },
   methods: {
+    computeDirection() {
+      let length = math.sum(math.multiply(this.direction, this.direction));
+      this.unitDirection = math.divide(this.direction, length);
+      const scalar = math.dotProduct(this.unitDirection, this.selectedSample);
+      scalar.data().then(values => {
+        this.selectedValue = values[0];
+        this.selectedX = this.hoverScale.invert(this.selectedValue);
+        this.recomputeSamples();
+      });
+    },
     dragStart: function(event) {
       document.addEventListener("mousemove", this.dragUpdate);
       document.addEventListener("mouseup", this.dragEnd);
