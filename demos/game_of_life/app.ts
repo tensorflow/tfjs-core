@@ -16,6 +16,7 @@ import Vue from 'vue';
 
 import DemoFooter from '../footer.vue';
 import DemoHeader from '../header.vue';
+import Graph from './Graph.vue';
 
 import {GameOfLife, GameOfLifeModel} from './game_of_life';
 
@@ -45,22 +46,22 @@ class TrainDisplay {
     this.element = document.querySelector('.train-display');
     this.trainingDataElement = document.querySelector('.data-display');
     // TODO(kreeger): switch to Vue-component for rendering charts?
-    // this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
-    //                   .getContext('2d');
-    // this.chart = new Chart(this.canvas, {
-    //   type: 'line',
-    //   data: {
-    //     datasets: this.datasets,
-    //   },
-    //   options: {
-    //     animation: {duration: 0},
-    //     responsive: false,
-    //     scales: {
-    //       xAxes: [{type: 'linear', position: 'bottom'}],
-    //       // yAxes: [{ticks: {beginAtZero: true}}]
-    //     }
-    //   }
-    // });
+    this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
+                      .getContext('2d');
+    this.chart = new Chart(this.canvas, {
+      type: 'line',
+      data: {
+        datasets: this.datasets,
+      },
+      options: {
+        animation: {duration: 0},
+        responsive: false,
+        scales: {
+          xAxes: [{type: 'linear', position: 'bottom'}],
+          // yAxes: [{ticks: {beginAtZero: true}}]
+        }
+      }
+    });
   }
 
   addDataSet(): void {
@@ -87,7 +88,7 @@ class TrainDisplay {
 
   displayCost(cost: number, step: number) {
     this.chartData[this.chartDataIndex].push({x: step, y: cost});
-    // this.chart.update();
+    this.chart.update();
   }
 
   displayTrainingData(length: number, size: number) {
@@ -95,9 +96,7 @@ class TrainDisplay {
         ' - (Building training data - ' + length + ' of ' + size + ')';
   }
 
-  clearTrainingData(): void {
-    this.trainingDataElement.innerHTML = '';
-  }
+  clearTrainingData(): void { this.trainingDataElement.innerHTML = ''; }
 
   private randomRGBA(): string {
     const s = 255;
@@ -202,7 +201,7 @@ async function trainAndRender() {
   requestAnimationFrame(() => trainAndRender());
 
   if (isBuildingTrainingData) {
-    math.scope(async () => {
+    math.scope(async() => {
       // Do 2 examples each pass:
       trainingData.push(await game.generateGolExample());
       if (trainingData.length < trainingBatchSize) {
@@ -241,19 +240,17 @@ async function trainAndRender() {
 
 // tslint:disable-next-line:no-default-export
 export default Vue.extend({
-  data() {
-    return data;
-  },
-  components: {DemoHeader, DemoFooter},
+  data() { return data; },
+  components: {DemoHeader, DemoFooter, Graph},
   methods: {
-    onAddSequenceClicked: async () => {
+    onAddSequenceClicked: async() => {
       console.log('clicked');
       console.log('train clicked', trainDisplay);
       console.log(data.boardSize);
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     },
 
-    onTrainModelClicked: async () => {
+    onTrainModelClicked: async() => {
       game.setSize(data.boardSize);
       model.setupSession(
           data.boardSize, data.trainingBatchSize, data.learningRate,
@@ -270,7 +267,7 @@ export default Vue.extend({
       trainAndRender();
     }
   },
-  mounted: async () => {
+  mounted: async() => {
     for (let i = 0; i < 5; i++) {
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     }
