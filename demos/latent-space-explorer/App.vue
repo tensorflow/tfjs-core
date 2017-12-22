@@ -139,6 +139,7 @@ export default {
         this.parseUrlHash();
       } else {
         this.selectedSample = event.selectedSample
+        console.log('selected sample in app.vue changed to', this.selectedSample);
         this.updateHash();
       }
     },

@@ -18,7 +18,7 @@ limitations under the License.
   <div
     class="tray"
     :style="{height: height + 'px'}">
-      <Sample
+      <!-- <Sample
         v-for="(sample, index) in samples"
         v-bind:key="index"
         :style="{position: 'absolute', left: sample.position + 'px'}"
@@ -28,9 +28,8 @@ limitations under the License.
         :model="model"
         :character="modelData"
         :sample="sample.sample"
-      />
+      /> -->
     <div
-      ref="selectedReticle"
       class="reticle selected"
       :style="{left: selectedX + 'px', height: height + 6 + 'px'}">
       <div class="label">{{format(selectedValue)}}</div>
@@ -48,7 +47,7 @@ import utils from '../utils/Utils';
 import {range} from 'd3-array';
 import {format} from 'd3-format';
 import {scaleLinear, scaleBand} from 'd3-scale';
-import {Scalar, Array1D, ENV} from 'deeplearn';
+import {Scalar, ENV} from 'deeplearn';
 
 const math = ENV.math;
 
@@ -71,15 +70,13 @@ export default {
     numSamples: { type: Number, default: 9 },
     width: { type: Number, default: 200 },
     initialValue: { type: Number, default: 1},
-    selectedSample: { default: () => {[]}},
-    direction: { default: () => {[]}},
+    selectedSample: null,
+    direction: null,
     range: { type: Number, default: 1 },
     scrollY: {default: 0}
   },
   computed: {
     extent: function() { return [-this.range, this.range]; },
-    dimensions: function() { return this.model ? this.model.dimensions : 0; },
-    zero: function() { return Array1D.zeros([this.dimensions]); },
     hoverScale: function() {
       return this.interpolate.domain([0, this.width]).range(
         this.extent).clamp(true);
@@ -98,8 +95,8 @@ export default {
       return math.divide(this.direction, length);
     },
     selectedValue: function() {
-      const scalar = math.dotProduct(this.unitDirection, this.selectedSample)
-      return scalar.getValues()[0]
+      const scalar = math.dotProduct(this.unitDirection, this.selectedSample);
+      return scalar.getValues()[0];
     },
     selectedX: function() {
       return this.hoverScale.invert(this.selectedValue);
@@ -113,10 +110,7 @@ export default {
   watch: {
     selectedSample: function(value) { this.recomputeSamples(); },
     model: function() { this.recomputeSamples(); },
-    selectedValue: function() { this.recomputeSamples(); },
     width: function() { this.recomputeSamples(); },
-    pos: function() { this.recomputeSamples(); },
-    bands: function() { this.recomputeSamples(); },
     scrollY: function(val) { this.checkVisibility(); }
   },
   methods: {
