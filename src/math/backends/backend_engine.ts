@@ -271,11 +271,18 @@ export class BackendEngine {
           const xs = util.flattenNameArrayMap(inputs);
           const ys = util.flattenNameArrayMap(y);
 
+          console.log(dy);
           const ykeys = Object.keys(dy);
           const arrayAccumulatedGradientMap:
               {[ndarrayId: number]: NDArray} = {};
           ykeys.forEach(ykey => {
-            arrayAccumulatedGradientMap[y[ykey].id] = dy[ykey];
+            if (dy[ykey] == null) {
+              return;
+            }
+            arrayAccumulatedGradientMap[y[ykey].id] =
+                Scalar.new(-2);  // dy[ykey];
+            console.log(ykey, 'grad', dy[ykey].dataSync());
+            console.log('y val', y[ykey].dataSync());
           });
 
           const gradients = this.backpropagateGradients(
