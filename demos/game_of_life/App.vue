@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================-->
 <template>
   <div>
-    <graph></graph>
+    <graph-source/>
     <demo-header name="Game-of-Life deep-learning demo"></demo-header>
     <div id="app">
       <div class="train">

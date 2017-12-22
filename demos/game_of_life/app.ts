@@ -15,8 +15,8 @@ import {NDArray, NDArrayMathGPU} from 'deeplearn';
 import Vue from 'vue';
 
 import DemoFooter from '../footer.vue';
+import GraphSource from '../GraphSource.vue';
 import DemoHeader from '../header.vue';
-import Graph from './Graph.vue';
 
 import {GameOfLife, GameOfLifeModel} from './game_of_life';
 
@@ -96,7 +96,9 @@ class TrainDisplay {
         ' - (Building training data - ' + length + ' of ' + size + ')';
   }
 
-  clearTrainingData(): void { this.trainingDataElement.innerHTML = ''; }
+  clearTrainingData(): void {
+    this.trainingDataElement.innerHTML = '';
+  }
 
   private randomRGBA(): string {
     const s = 255;
@@ -201,7 +203,7 @@ async function trainAndRender() {
   requestAnimationFrame(() => trainAndRender());
 
   if (isBuildingTrainingData) {
-    math.scope(async() => {
+    math.scope(async () => {
       // Do 2 examples each pass:
       trainingData.push(await game.generateGolExample());
       if (trainingData.length < trainingBatchSize) {
@@ -240,17 +242,19 @@ async function trainAndRender() {
 
 // tslint:disable-next-line:no-default-export
 export default Vue.extend({
-  data() { return data; },
-  components: {DemoHeader, DemoFooter, Graph},
+  data() {
+    return data;
+  },
+  components: {DemoHeader, DemoFooter, GraphSource},
   methods: {
-    onAddSequenceClicked: async() => {
+    onAddSequenceClicked: async () => {
       console.log('clicked');
       console.log('train clicked', trainDisplay);
       console.log(data.boardSize);
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     },
 
-    onTrainModelClicked: async() => {
+    onTrainModelClicked: async () => {
       game.setSize(data.boardSize);
       model.setupSession(
           data.boardSize, data.trainingBatchSize, data.learningRate,
@@ -267,7 +271,7 @@ export default Vue.extend({
       trainAndRender();
     }
   },
-  mounted: async() => {
+  mounted: async () => {
     for (let i = 0; i < 5; i++) {
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     }
