@@ -65,7 +65,7 @@ limitations under the License.
             <td colspan="2" class="buttons">
               <button v-on:click="onAddSequenceClicked">Add Sequence</button>
               <button v-on:click="onTrainModelClicked" :disabled="running">Train Model</button>
-              <button class="reset-button" :disabled="running">Reset</button>
+              <button v-on:click="onResetButtonClicked" :disabled="running">Reset</button>
             </td>
           </tr>
         </table>

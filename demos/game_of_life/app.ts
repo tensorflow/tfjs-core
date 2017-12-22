@@ -45,7 +45,6 @@ class TrainDisplay {
   setup(): void {
     this.element = document.querySelector('.train-display');
     this.trainingDataElement = document.querySelector('.data-display');
-    // TODO(kreeger): switch to Vue-component for rendering charts?
     this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
                       .getContext('2d');
     this.chart = new Chart(this.canvas, {
@@ -58,7 +57,6 @@ class TrainDisplay {
         responsive: false,
         scales: {
           xAxes: [{type: 'linear', position: 'bottom'}],
-          // yAxes: [{ticks: {beginAtZero: true}}]
         }
       }
     });
@@ -269,6 +267,13 @@ export default Vue.extend({
       data.running = true;
 
       trainAndRender();
+    },
+
+    onResetButtonClicked: () => {
+      const element = document.querySelector('.worlds-display');
+      while (element.hasChildNodes()) {
+        element.removeChild(element.lastChild);
+      }
     }
   },
   mounted: async () => {
