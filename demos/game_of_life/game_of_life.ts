@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+// tslint:disable:restrict-plus-operands
 // tslint:disable-next-line:max-line-length
 import {AdagradOptimizer, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMath, Session, Tensor} from 'deeplearn';
 

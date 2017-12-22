@@ -71,7 +71,7 @@ class TrainDisplay {
     this.datasets.push({
       data: this.chartData[++this.chartDataIndex],
       fill: false,
-      label: 'Cost ' + (this.chartDataIndex + 1),
+      label: `Cost ${this.chartDataIndex + 1}`,
       pointRadius: 0,
       borderColor: this.randomRGBA(),
       borderWidth: 1,
@@ -81,7 +81,7 @@ class TrainDisplay {
   }
 
   showStep(step: number, steps: number) {
-    this.element.innerHTML = 'Trained ' + Math.trunc(step / steps * 100) + '%';
+    this.element.innerHTML = `Trained ${Math.trunc(step / steps * 100)}%`;
   }
 
   displayCost(cost: number, step: number) {
@@ -91,7 +91,7 @@ class TrainDisplay {
 
   displayTrainingData(length: number, size: number) {
     this.trainingDataElement.innerHTML =
-        ' - (Building training data - ' + length + ' of ' + size + ')';
+        ` - (Building training data - ${length} of ${size})`;
   }
 
   clearTrainingData(): void {
@@ -100,9 +100,8 @@ class TrainDisplay {
 
   private randomRGBA(): string {
     const s = 255;
-    return 'rgba(' + Math.round(Math.random() * s) + ',' +
-        Math.round(Math.random() * s) + ',' + Math.round(Math.random() * s) +
-        ',1)';
+    return `rgba(${Math.round(Math.random() * s)},${
+        Math.round(Math.random() * s)},${Math.round(Math.random() * s)},1)`;
   }
 }
 
