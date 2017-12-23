@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import * as environment from './environment';
-import {ENV, Environment, Features} from './environment';
+import {ENV, Features} from './environment';
 import {MathBackendCPU} from './math/backends/backend_cpu';
 import {MathBackendWebGL} from './math/backends/backend_webgl';
 import {NDArrayMath} from './math/math';
@@ -266,17 +265,15 @@ export function executeMathTests(
     testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
     features?: Features) {
   let math: NDArrayMath;
-  let oldMath: NDArrayMath;
 
   const customBeforeEach = () => {
-    oldMath = ENV.math;
     math = mathFactory();
+    ENV.setMath(math);
     math.startScope();
   };
   const customAfterEach = () => {
     math.endScope(null);
     math.dispose();
-    ENV.setGlobalMath(oldMath);
   };
   const customIt =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
@@ -296,7 +293,9 @@ export function executeTests(
   describe(testName, () => {
     beforeEach(() => {
       if (features != null) {
-        environment.setEnvironment(new Environment(features));
+        ENV.setFeatures(features);
+        ENV.registerBackend('webgl', () => new MathBackendWebGL());
+        ENV.registerBackend('cpu', () => new MathBackendCPU());
       }
 
       if (customBeforeEach != null) {
@@ -308,9 +307,8 @@ export function executeTests(
       if (customAfterEach != null) {
         customAfterEach();
       }
-
       if (features != null) {
-        environment.setEnvironment(new Environment());
+        ENV.reset();
       }
     });
 

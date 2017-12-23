@@ -719,6 +719,48 @@ const testsOnesLike: MathTests = it => {
     expect(b.getValues()).toEqual(new Uint8Array([1, 1, 1, 1]));
   });
 };
+
+const testsFill: MathTests = it => {
+  it('1D fill', () => {
+    const a = Array1D.zeros([3]);
+    a.fill(2);
+
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3]);
+    test_util.expectArraysClose(a.dataSync(), new Float32Array([2, 2, 2]));
+  });
+
+  it('2D fill', () => {
+    const a = Array2D.zeros([3, 2]);
+    a.fill(2);
+
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3, 2]);
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([2, 2, 2, 2, 2, 2]));
+  });
+
+  it('3D fill', () => {
+    const a = Array2D.zeros([3, 2, 1]);
+    a.fill(2);
+
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3, 2, 1]);
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([2, 2, 2, 2, 2, 2]));
+  });
+
+  it('4D fill', () => {
+    const a = Array2D.zeros([3, 2, 1, 2]);
+    a.fill(2);
+
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3, 2, 1, 2]);
+    test_util.expectArraysClose(
+        a.dataSync(), new Float32Array([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]));
+  });
+};
+
 const testsLike: MathTests = it => {
   it('1D default dtype', () => {
     const a = Array1D.new([1, 2, 3]);
@@ -847,7 +889,6 @@ const testsLike: MathTests = it => {
     expect(b.shape).toEqual([2, 2, 1, 1]);
     expect(b.getValues()).toEqual(new Uint8Array([1, 1, 1, 1]));
   });
-
 };
 const testsScalarNew: MathTests = it => {
   it('default dtype', () => {
@@ -1556,21 +1597,29 @@ const testsRandNormal: MathTests = it => {
 };
 const testsRandTruncNormal: MathTests = it => {
   // Expect slightly higher variances for truncated values.
-  const EPSILON = 0.10;
+  const EPSILON = 0.60;
   const SEED = 2002;
 
+  function assertTruncatedValues(array: NDArray, mean: number, stdv: number) {
+    const bounds = mean + stdv * 2;
+    const values = array.dataSync();
+    for (let i = 0; i < values.length; i++) {
+      expect(Math.abs(values[i])).toBeLessThanOrEqual(bounds);
+    }
+  }
+
   it('should return a random 1D float32 array', () => {
-    const shape: [number] = [2000];
+    const shape: [number] = [1000];
 
     // Ensure defaults to float32 w/o type:
     let result = NDArray.randTruncatedNormal(shape, 0, 3.5, null, SEED);
     expect(result.dtype).toBe('float32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 3.5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 3.5, EPSILON);
 
     result = NDArray.randTruncatedNormal(shape, 0, 4.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 4.5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 4.5, EPSILON);
   });
 
@@ -1578,7 +1627,7 @@ const testsRandTruncNormal: MathTests = it => {
     const shape: [number] = [1000];
     const result = NDArray.randTruncatedNormal(shape, 0, 5, 'int32', SEED);
     expect(result.dtype).toBe('int32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 5, EPSILON);
   });
 
@@ -1588,21 +1637,21 @@ const testsRandTruncNormal: MathTests = it => {
     // Ensure defaults to float32 w/o type:
     let result = Array2D.randTruncatedNormal(shape, 0, 3.5, null, SEED);
     expect(result.dtype).toBe('float32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 3.5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 3.5, EPSILON);
 
     result = Array2D.randTruncatedNormal(shape, 0, 4.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 4.5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 4.5, EPSILON);
   });
 
-  it('should return a 2D int32 array', () => {
-    const shape: [number, number] = [100, 100];
-    const result = Array2D.randTruncatedNormal(shape, 0, 6, 'int32', SEED);
+  it('should return a 2D int32 array KREEGER', () => {
+    const shape: [number, number] = [50, 50];
+    const result = Array2D.randTruncatedNormal(shape, 0, 5, 'int32', SEED);
     expect(result.dtype).toBe('int32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
-    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 6, EPSILON);
+    assertTruncatedValues(result, 0, 5);
+    test_util.expectArrayInMeanStdRange(result.getValues(), 0, 5, EPSILON);
   });
 
   it('should return a 3D float32 array', () => {
@@ -1611,12 +1660,12 @@ const testsRandTruncNormal: MathTests = it => {
     // Ensure defaults to float32 w/o type:
     let result = Array3D.randTruncatedNormal(shape, 0, 3.5, null, SEED);
     expect(result.dtype).toBe('float32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 3.5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 3.5, EPSILON);
 
     result = Array3D.randTruncatedNormal(shape, 0, 4.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 4.5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 4.5, EPSILON);
   });
 
@@ -1624,7 +1673,7 @@ const testsRandTruncNormal: MathTests = it => {
     const shape: [number, number, number] = [10, 10, 10];
     const result = Array3D.randTruncatedNormal(shape, 0, 5, 'int32', SEED);
     expect(result.dtype).toBe('int32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 5, EPSILON);
   });
 
@@ -1634,12 +1683,12 @@ const testsRandTruncNormal: MathTests = it => {
     // Ensure defaults to float32 w/o type:
     let result = Array4D.randTruncatedNormal(shape, 0, 3.5, null, SEED);
     expect(result.dtype).toBe('float32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 3.5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 3.5, EPSILON);
 
     result = Array4D.randTruncatedNormal(shape, 0, 4.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 4.5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 4.5, EPSILON);
   });
 
@@ -1647,7 +1696,7 @@ const testsRandTruncNormal: MathTests = it => {
     const shape: [number, number, number, number] = [5, 5, 5, 5];
     const result = Array4D.randTruncatedNormal(shape, 0, 5, 'int32', SEED);
     expect(result.dtype).toBe('int32');
-    test_util.jarqueBeraNormalityTest(result.getValues());
+    assertTruncatedValues(result, 0, 5);
     test_util.expectArrayInMeanStdRange(result.getValues(), 0, 5, EPSILON);
   });
 };
@@ -1761,7 +1810,6 @@ const testsRandUniform: MathTests = it => {
   });
 };
 const testsFromPixels: MathTests = it => {
-
   beforeEach(() => {});
 
   afterEach(() => {});
@@ -1834,6 +1882,7 @@ const allTests = [
   testsOnes,
   testsZerosLike,
   testsOnesLike,
+  testsFill,
   testsLike,
   testsScalarNew,
   testsArray1DNew,

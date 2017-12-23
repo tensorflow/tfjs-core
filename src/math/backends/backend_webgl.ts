@@ -24,9 +24,10 @@ import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray';
 import * as reduce_util from '../reduce_util';
+import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
 
-import {BACKEND_REGISTRY, MathBackend} from './backend';
+import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -95,6 +96,7 @@ export class MathBackendWebGL implements MathBackend {
     }
   }
   readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
+    this.throwIfNoData(id);
     let values: Float32Array;
     const {texture, textureType, texShape, numChannels, dtype} =
         this.texData[id];
@@ -108,6 +110,7 @@ export class MathBackendWebGL implements MathBackend {
     return float32ToTypedArray(values, dtype);
   }
   async read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+    this.throwIfNoData(id);
     const {texture, textureType, texShape} = this.texData[id];
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
         textureType === TextureType.DEFAULT) {
@@ -116,14 +119,22 @@ export class MathBackendWebGL implements MathBackend {
     }
 
     if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-      return await this.readSync(id);
+      return this.readSync(id);
     }
 
     // Construct an empty query. We're just interested in getting a callback
     // when the GPU command queue has executed until this point in time.
-    const queryFn = () => {};
-    await this.gpgpu.runQuery(queryFn);
+    await this.gpgpu.runQuery(() => {});
     return this.readSync(id);
+  }
+  async time(query: () => NDArray): Promise<number> {
+    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+      const start = performance.now();
+      const a = query();
+      await a.data();
+      return performance.now() - start;
+    }
+    return this.gpgpu.runQuery(query);
   }
   disposeData(id: number): void {
     if (id in this.texData) {
@@ -133,12 +144,25 @@ export class MathBackendWebGL implements MathBackend {
     }
   }
 
+  getTexture(id: number): WebGLTexture {
+    this.throwIfNoData(id);
+    return this.texData[id].texture;
+  }
+
+  getTextureData(id: number): TextureData {
+    this.throwIfNoData(id);
+    return this.texData[id];
+  }
+
   private gpgpu: GPGPUContext;
   private textureManager: TextureManager;
   private binaryCache: {[key: string]: GPGPUBinary} = {};
   private gpgpuCreatedLocally: boolean;
 
   constructor(gpgpu?: GPGPUContext) {
+    if (ENV.get('WEBGL_VERSION') < 1) {
+      throw new Error('WebGL is not supported on this device');
+    }
     if (gpgpu == null) {
       const gl = gpgpu_util.createWebGLContext();
       this.gpgpu = new GPGPUContext(gl);
@@ -155,6 +179,7 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   clone<G extends keyof DataTypes, T extends NDArray<G>>(x: T): T {
+    this.throwIfNoData(x.id);
     const {texShape} = this.texData[x.id];
     // Pretend the source was in logical shape that matches the texture shape.
     const source = x.as2D(texShape[0], texShape[1]);
@@ -238,9 +263,13 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun<Array2D, Array2D>(program, [a, b]);
   }
 
-  multiply<T extends NDArray>(a: T, b: T): T {
+  multiply<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
+      NDArray<G> {
     const program = new BinaryOpProgram(binaryop_gpu.MUL, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]) as T;
+    const output = this.makeOutputArray(
+                       program.outputShape,
+                       types.upcastType(a.dtype, b.dtype)) as NDArray<G>;
+    return this.compileAndRun(program, [a, b], output) as NDArray<G>;
   }
 
   batchNormalization2D(
@@ -418,14 +447,21 @@ export class MathBackendWebGL implements MathBackend {
         program, [a, b], output);
   }
 
-  add<T extends NDArray>(a: T, b: T): T {
+  add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
-    return this.compileAndRun<NDArray, T>(program, [a, b]);
+    const output = this.makeOutputArray(
+                       program.outputShape,
+                       types.upcastType(a.dtype, b.dtype)) as NDArray<G>;
+    return this.compileAndRun<NDArray, NDArray<G>>(program, [a, b], output);
   }
 
-  subtract<T extends NDArray>(a: T, b: T): T {
+  subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
+      NDArray<G> {
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
-    return this.compileAndRun<NDArray, T>(program, [a, b]);
+    const output = this.makeOutputArray(
+                       program.outputShape,
+                       types.upcastType(a.dtype, b.dtype)) as NDArray<G>;
+    return this.compileAndRun<NDArray, NDArray<G>>(program, [a, b], output);
   }
 
   pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T {
@@ -486,6 +522,17 @@ export class MathBackendWebGL implements MathBackend {
   leakyRelu<T extends NDArray>(x: T, alpha: number): T {
     const program = new UnaryOpProgram(x.shape, unary_op.LEAKY_RELU(alpha));
     return this.compileAndRun(program, [x]) as T;
+  }
+
+  prelu<T extends NDArray>(a: T, b: T): T {
+    const program = new BinaryOpProgram(binaryop_gpu.PRELU, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]) as T;
+  }
+
+  preluDer<T extends NDArray>(a: T, b: T): T {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.PRELU_DER, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]) as T;
   }
 
   clip<T extends NDArray>(x: T, min: number, max: number): T {
@@ -648,8 +695,10 @@ export class MathBackendWebGL implements MathBackend {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
     const inputsData: Array<ArrayData<T>> = inputs.map(input => {
+      this.throwIfNoData(input.id);
       return {array: input, texData: this.texData[input.id]};
     });
+    this.throwIfNoData(output.id);
     const outputData = {array: output, texData: this.texData[output.id]};
     const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
     const binary = this.getAndSaveBinary(key, () => {
@@ -682,14 +731,30 @@ export class MathBackendWebGL implements MathBackend {
       this.gpgpu.dispose();
     }
   }
+
+  private throwIfNoData(id: number) {
+    if (!(id in this.texData)) {
+      throw new Error(
+          `No data found for NDArray with id ${id}. ` +
+          `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
+          `If you need to construct your own math, make sure this array is ` +
+          `allocated after the math construction`);
+    }
+  }
 }
 
-BACKEND_REGISTRY['webgl'] = new MathBackendWebGL();
+ENV.registerBackend('webgl', () => new MathBackendWebGL());
 
 // TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
 export class NDArrayMathGPU extends NDArrayMath {
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
+    console.warn(
+        'new NDArrayMathGPU() is deprecated. Please use the global ' +
+        'dl.ENV.math. In rare cases, to construct your own NDArrayMath ' +
+        'that runs on GPU, use math = new NDArrayMath(\'webgl\', safeMode); ' +
+        'and make sure to set it as global: dl.ENV.setMath(math);');
     super(new MathBackendWebGL(gpgpu), safeMode);
+    ENV.setMath(this);
   }
 
   getGPGPUContext(): GPGPUContext {
