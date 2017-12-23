@@ -120,7 +120,24 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                ndarray: T1) => T1,
            track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
                ndarray: T2) => T2) => T): T {
-    return this.backendEngine.scope('scope', scopeFn);
+    const gradientsMode = false;
+    return this.backendEngine.scope('scope', scopeFn, gradientsMode);
+  }
+
+  /**
+   * Create a new gradients scope. Similar to scope, but forces all inner scopes
+   * to not clean up so that gradient operations can be used inside of this
+   * scope.
+   * @param scopeFn The function to execute with chained math operations.
+   */
+  gradientsScope<T extends ScopeResult>(
+      scopeFn:
+          (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
+               ndarray: T1) => T1,
+           track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
+               ndarray: T2) => T2) => T): T {
+    const gradientsMode = true;
+    return this.backendEngine.scope('gradientsScope', scopeFn, gradientsMode);
   }
 
   /**
@@ -128,7 +145,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * as scope() without the need for a function closure.
    */
   startScope() {
-    this.backendEngine.startScope();
+    const gradientsMode = false;
+    this.backendEngine.startScope(gradientsMode);
   }
 
   /**
@@ -136,7 +154,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * as scope() without the need for a function closure.
    */
   endScope(result: ScopeResultImmediate) {
-    this.backendEngine.endScope(result);
+    const gradientsMode = false;
+    this.backendEngine.endScope(result, gradientsMode);
   }
 
   /**

@@ -132,8 +132,7 @@ export class BackendEngine {
     arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
 
     // Backprop gradients through the filtered nodes.
-    tape_util.backpropagateGradients(
-        this.backend, arrayAccumulatedGradientMap, filteredTape);
+    tape_util.backpropagateGradients(arrayAccumulatedGradientMap, filteredTape);
 
     const gradients: NDArray[] = [];
     for (let i = 0; i < xs.length; i++) {
@@ -158,7 +157,7 @@ export class BackendEngine {
                ndarray: T1) => T1,
            track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
                ndarray: T2) => T2) => T,
-      gradientsMode = false): T {
+      gradientsMode: boolean): T {
     this.startScope(gradientsMode);
 
     const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
@@ -168,10 +167,10 @@ export class BackendEngine {
     const result = scopeFn(keepFn, trackFn);
 
     if (result instanceof Promise) {
-      result.then(r => this.endScope(r));
+      result.then(r => this.endScope(r, gradientsMode));
       return result;
     } else {
-      this.endScope(result as ScopeResultImmediate);
+      this.endScope(result as ScopeResultImmediate, gradientsMode);
       return result;
     }
   }
@@ -180,7 +179,7 @@ export class BackendEngine {
    * Start a scope. Use this with endScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  startScope(gradientsMode = false) {
+  startScope(gradientsMode: boolean) {
     if (gradientsMode && this.gradientScopeCount === 0) {
       this.activeTape = [];
     }
@@ -197,10 +196,11 @@ export class BackendEngine {
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  endScope(result: ScopeResultImmediate, gradientsMode = false) {
+  endScope(result: ScopeResultImmediate, gradientsMode: boolean) {
     let arraysToKeep = this.activeScope.keep;
-    const resultArrays = tape_util.extractNDArraysFromScopeResult(result);
-    arraysToKeep = arraysToKeep.concat(resultArrays);
+    const arraysToTrackInParent =
+        tape_util.extractNDArraysFromScopeResult(result);
+    arraysToKeep = arraysToKeep.concat(arraysToTrackInParent);
 
     // Dispose the arrays tracked in this scope.
     for (let i = 0; i < this.activeScope.track.length; i++) {
@@ -208,7 +208,12 @@ export class BackendEngine {
       if (util.isNDArrayInList(ndarray, arraysToKeep)) {
         continue;
       }
-      ndarray.dispose();
+
+      if (this.activeTape != null) {
+        arraysToTrackInParent.push(ndarray);
+      } else {
+        ndarray.dispose();
+      }
     }
 
     this.scopeStack.pop();
@@ -217,13 +222,10 @@ export class BackendEngine {
         this.scopeStack[this.scopeStack.length - 1];
 
     // Track the current result in the parent scope.
-    const resultArrayMap: {[idx: string]: NDArray} = {};
-    let idx = 0;
-    resultArrays.forEach(ndarray => {
+    arraysToTrackInParent.forEach(ndarray => {
       if (!util.isNDArrayInList(ndarray, this.activeScope.keep)) {
         this.track(ndarray);
       }
-      resultArrayMap[(idx++).toString()] = ndarray;
     });
 
     if (gradientsMode) {
