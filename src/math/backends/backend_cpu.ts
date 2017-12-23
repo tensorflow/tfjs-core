@@ -80,14 +80,30 @@ export class MathBackendCPU implements MathBackend {
     }
     this.data[id] = values;
   }
+  async read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+    this.throwIfNoData(id);
+    return this.data[id];
+  }
   readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
+    this.throwIfNoData(id);
     return this.data[id];
   }
   disposeData(id: number): void {
     delete this.data[id];
   }
-  async read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
-    return this.data[id];
+  async time(query: () => NDArray): Promise<number> {
+    const start = performance.now();
+    query();
+    return performance.now() - start;
+  }
+  private throwIfNoData(id: number) {
+    if (!(id in this.data)) {
+      throw new Error(
+          `No data found for NDArray with id ${id}. ` +
+          `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
+          `If you need to construct your own math, make sure this array is ` +
+          `allocated after the math construction`);
+    }
   }
 
   clone<T extends NDArray>(x: T): T {
@@ -333,8 +349,8 @@ export class MathBackendCPU implements MathBackend {
   multiply<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
       NDArray<G> {
     return this.broadcastedBinaryOp(
-               a, b, a.dtype, (aValue, bValue) => aValue * bValue) as
-        NDArray<G>;
+               a, b, types.upcastType(a.dtype, b.dtype),
+               (aValue, bValue) => aValue * bValue) as NDArray<G>;
   }
 
   divide(a: NDArray, b: NDArray): NDArray<'float32'> {
@@ -797,7 +813,11 @@ export class MathBackendCPU implements MathBackend {
     const values = x.getValues();
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
-      resultValues[i] = value > 0 ? 1 : (value < 0 ? alpha : value);
+      if (util.isValNaN(value, x.dtype)) {
+        resultValues[i] = util.getNaN(x.dtype);
+      } else {
+        resultValues[i] = value > 0 ? 1 : alpha;
+      }
     }
     return NDArray.make(x.shape, {values: resultValues}) as T;
   }
@@ -1366,6 +1386,11 @@ ENV.registerBackend('cpu', () => new MathBackendCPU());
 // TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
 export class NDArrayMathCPU extends NDArrayMath {
   constructor(safeMode = false) {
+    console.warn(
+        'new NDArrayMathCPU() is deprecated. Please use the global ' +
+        'dl.ENV.math. In rare cases, to construct your own NDArrayMath ' +
+        'that runs on CPU, use math = new NDArrayMath(\'cpu\', safeMode); ' +
+        'and make sure to set it as global: dl.ENV.setMath(math);');
     super('cpu', safeMode);
     ENV.setMath(this);
   }

@@ -372,6 +372,54 @@ import {Array1D, Array2D, Scalar} from './ndarray';
   ]);
 }
 
+// Multiply gradients
+{
+  const tests: MathTests = it => {
+    it('Scalar', math => {
+      const a = Scalar.new(5);
+
+      const result = math.square(a);
+      test_util.expectArraysClose(result.getValues(), new Float32Array([25]));
+
+      const grad = math.gradientWrt(result, a);
+      test_util.expectArraysClose(grad.dataSync(), new Float32Array([10]));
+    });
+
+    it('Array1D', math => {
+      const a = Array1D.new([-1, 2, 3, -5]);
+
+      const result = math.square(a);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([1, 4, 9, 25]));
+
+      const sum = math.sum(result);
+      const grad = math.gradientWrt(sum, a);
+      test_util.expectArraysClose(
+          grad.dataSync(), new Float32Array([-2, 4, 6, -10]), 1e-1);
+    });
+
+    it('Array2D', math => {
+      const a = Array2D.new([2, 2], [-3, 1, 2, 3]);
+
+      const result = math.square(a);
+      test_util.expectArraysClose(
+          result.getValues(), new Float32Array([9, 1, 4, 9]));
+
+      const sum = math.sum(result);
+      const grad = math.gradientWrt(sum, a);
+      test_util.expectArraysClose(
+          grad.dataSync(), new Float32Array([-6, 2, 4, 6]), 1e-1);
+    });
+  };
+
+  test_util.describeMathCPU('gradientWrt square', [tests]);
+  test_util.describeMathGPU('gradientWrt square', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
 // math.log
 {
   const tests: MathTests = it => {
