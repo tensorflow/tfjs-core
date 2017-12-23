@@ -6,7 +6,7 @@
   "unpkg": "dist/bundle.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
-    "deeplearn": "~0.3.13"
+    "deeplearn": "0.3.15"
   },
   "repository": {
     "type": "git",
@@ -14,7 +14,8 @@
   },
   "devDependencies": {
     "browserify": "~14.4.0",
-    "deeplearn": "0.3.13",
+    "browserify-shim": "~3.8.14",
+    "deeplearn": "0.3.15",
     "mkdirp": "~0.5.1",
     "tsify": "~3.0.3",
     "tslint": "~5.8.0",
@@ -24,9 +25,15 @@
   },
   "scripts": {
     "prep": "yarn && mkdirp dist",
-    "build": "tsc --sourceMap false && browserify --standalone squeezenet squeezenet.ts -p [tsify] -o dist/bundle.js",
+    "build": "tsc --sourceMap false && browserify --standalone squeezenet index.ts -p [tsify] -o dist/bundle.js",
     "lint": "tslint -p . -t verbose",
     "publish-npm": "yarn build && yarn publish"
+  },
+  "browserify-shim": {
+    "deeplearn": "global:dl"
+  },
+  "browserify": {
+      "transform": ["browserify-shim"]
   },
   "license": "Apache-2.0"
 }
