@@ -105,8 +105,8 @@ const keyboardInterface = new KeyboardElement(container);
 
 const piano = new Piano({velocities: 4}).toMaster();
 
-// const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
-//     'Piano/Salamander/';
+const SALAMANDER_URL = 'https://storage.googleapis.com/learnjs-data/' +
+    'Piano/Salamander/';
 const CHECKPOINT_URL = 'https://storage.googleapis.com/learnjs-data/' +
     'checkpoint_zoo/performance_rnn_v2';
 
@@ -125,32 +125,36 @@ const math = ENV.math;
 let modelReady = false;
 
 function start() {
-  const reader = new CheckpointLoader(CHECKPOINT_URL);
-  reader.getAllVariables().then((vars: {[varName: string]: NDArray}) => {
-    document.querySelector('#status').classList.add('hidden');
-    document.querySelector('#controls').classList.remove('hidden');
-    document.querySelector('#keyboard').classList.remove('hidden');
+  piano.load(SALAMANDER_URL)
+      .then(() => {
+        const reader = new CheckpointLoader(CHECKPOINT_URL);
+        return reader.getAllVariables();
+      })
+      .then((vars: {[varName: string]: NDArray}) => {
+        document.querySelector('#status').classList.add('hidden');
+        document.querySelector('#controls').classList.remove('hidden');
+        document.querySelector('#keyboard').classList.remove('hidden');
 
-    lstmKernel1 =
-        vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
-    lstmBias1 =
-        vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
+        lstmKernel1 =
+            vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as Array2D;
+        lstmBias1 =
+            vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as Array1D;
 
-    lstmKernel2 =
-        vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
-    lstmBias2 =
-        vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
+        lstmKernel2 =
+            vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as Array2D;
+        lstmBias2 =
+            vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as Array1D;
 
-    lstmKernel3 =
-        vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
-    lstmBias3 =
-        vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
+        lstmKernel3 =
+            vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as Array2D;
+        lstmBias3 =
+            vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as Array1D;
 
-    fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
-    fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
-    modelReady = true;
-    resetRnn();
-  });
+        fullyConnectedBiases = vars['fully_connected/biases'] as Array1D;
+        fullyConnectedWeights = vars['fully_connected/weights'] as Array2D;
+        modelReady = true;
+        resetRnn();
+      });
 }
 
 function resetRnn() {

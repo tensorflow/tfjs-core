@@ -21,7 +21,7 @@ import {Array1D, Array2D, CostReduction, ENV, FeedEntry, Graph, InCPUMemoryShuff
 // This file parallels (some of) the code in the introduction tutorial.
 
 /**
- * 'NDArrayMathGPU' section of tutorial
+ * 'NDArrayMath with WebGL backend' section of tutorial
  */
 async function intro() {
   const math = ENV.math;
