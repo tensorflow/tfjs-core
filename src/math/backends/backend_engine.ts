@@ -16,28 +16,25 @@
  */
 
 import * as util from '../../util';
-import {NamedArrayMap} from '../../util';
 import {DataTypes, NDArray, Scalar} from '../ndarray';
 
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
-// tslint:disable-next-line:max-line-length
-import {KernelNode, Tape, TapeNode, TapeNodeOutput} from './tape_types';
+import {KernelNode, Tape} from './tape_types';
 import * as tape_util from './tape_util';
 import {ScopeResult, ScopeResultImmediate} from './tape_util';
 
 interface ScopeState {
   keep: NDArray[];
   track: NDArray[];
-  gradientsMode: boolean;
 }
 
 export class BackendEngine {
   private nextTapeNodeId = 0;
 
   private activeTape: Tape;
-  private tapeStack: Tape[];
+  private gradientScopeCount = 0;
 
   // Keep NDArrays that parallel the tapes.
   private activeScope: ScopeState;
@@ -47,9 +44,7 @@ export class BackendEngine {
 
   constructor(private backend: MathBackend, private safeMode: boolean) {
     // Create a default outer scope.
-    this.activeTape = [];
-    this.tapeStack = [this.activeTape];
-    this.activeScope = {keep: [], track: [], gradientsMode: false};
+    this.activeScope = {keep: [], track: []};
     this.scopeStack = [this.activeScope];
   }
 
@@ -84,16 +79,18 @@ export class BackendEngine {
 
     config = tape_util.stripUndefinedInputsFromInputConfig(config) as C;
 
-    const evaluatedNode: KernelNode = {
-      id: this.nextTapeNodeId++,
-      type: 'kernel',
-      name: `kernel: ${kernelName}`,
-      kernel: kernelName,
-      inputAndArgs: config,
-      output: result,
-      gradient: grad
-    };
-    this.activeTape.push(evaluatedNode);
+    if (this.activeTape != null) {
+      const evaluatedNode: KernelNode = {
+        id: this.nextTapeNodeId++,
+        type: 'kernel',
+        name: `kernel: ${kernelName}`,
+        kernel: kernelName,
+        inputAndArgs: config,
+        output: result,
+        gradient: grad
+      };
+      this.activeTape.push(evaluatedNode);
+    }
 
     return result;
   }
@@ -126,26 +123,19 @@ export class BackendEngine {
   }
 
   private gradientWrt(y: Scalar, xs: NDArray[]): NDArray[] {
-    // Seed the gradient of dy to be 1.
-    const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-    arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
-
-    return this.backpropagateGradients(
-        [y], xs, arrayAccumulatedGradientMap, this.activeTape);
-  }
-
-  private backpropagateGradients(
-      ys: NDArray[], xs: NDArray[],
-      arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray}, tape: Tape) {
     // Filter out the nodes that don't connect x => y.
-    const filteredTape = tape_util.getFilteredNodesXToY(tape, xs, ys);
+    const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {
       throw new Error(`Cannot compute gradient: y is not a function of xs.`);
     }
 
+    // Seed the gradient of dy to be 1.
+    const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
+    arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
+
     // Backprop gradients through the filtered nodes.
     tape_util.backpropagateGradients(
-        this.backend, arrayAccumulatedGradientMap, tape);
+        this.backend, arrayAccumulatedGradientMap, filteredTape);
 
     const gradients: NDArray[] = [];
     for (let i = 0; i < xs.length; i++) {
@@ -193,15 +183,14 @@ export class BackendEngine {
    * as scope() without the need for a function closure.
    */
   startScope(gradientsMode = false) {
-    gradientsMode = gradientsMode || this.activeScope.gradientsMode;
-
+    if (gradientsMode && this.gradientScopeCount === 0) {
+      this.activeTape = [];
+    }
     if (gradientsMode) {
-      const newTape: Tape = [];
-      this.tapeStack.push(newTape);
-      this.activeTape = newTape;
+      this.gradientScopeCount++;
     }
 
-    const newScopeArrays: ScopeState = {keep: [], track: [], gradientsMode};
+    const newScopeArrays: ScopeState = {keep: [], track: []};
     this.scopeStack.push(newScopeArrays);
     this.activeScope = newScopeArrays;
   }
@@ -210,31 +199,18 @@ export class BackendEngine {
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  endScope(result: ScopeResultImmediate) {
+  endScope(result: ScopeResultImmediate, gradientsMode = false) {
     let arraysToKeep = this.activeScope.keep;
     const resultArrays = tape_util.extractNDArraysFromScopeResult(result);
+    arraysToKeep = arraysToKeep.concat(resultArrays);
 
-    const gradientsMode = this.activeScope.gradientsMode;
-    const isOuterMostGradientsMode = gradientsMode &&
-        (this.scopeStack.length <= 1 ||
-         !this.scopeStack[this.scopeStack.length - 2].gradientsMode);
-
-    const ndarraysToTrackInParent: NDArray[] = [];
+    // Dispose the arrays tracked in this scope.
     for (let i = 0; i < this.activeScope.track.length; i++) {
       const ndarray = this.activeScope.track[i];
       if (util.isNDArrayInList(ndarray, arraysToKeep)) {
         continue;
       }
-
-      if (!gradientsMode || isOuterMostGradientsMode) {
-        if (util.isNDArrayInList(ndarray, resultArrays)) {
-          ndarraysToTrackInParent.push(ndarray);
-        } else {
-          ndarray.dispose();
-        }
-      } else {
-        ndarraysToTrackInParent.push(ndarray);
-      }
+      ndarray.dispose();
     }
 
     this.scopeStack.pop();
@@ -245,72 +221,18 @@ export class BackendEngine {
     // Track the current result in the parent scope.
     const resultArrayMap: {[idx: string]: NDArray} = {};
     let idx = 0;
-    ndarraysToTrackInParent.forEach(ndarray => {
+    resultArrays.forEach(ndarray => {
       if (!util.isNDArrayInList(ndarray, this.activeScope.keep)) {
         this.track(ndarray);
       }
       resultArrayMap[(idx++).toString()] = ndarray;
     });
 
-    if (gradientsMode && !isOuterMostGradientsMode) {
-      console.log('adding subtape..');
-
-      console.log('active tape', this.activeTape);
-      console.log(this.tapeStack);
-      // Add a subtape element.
-      const subtape = this.activeTape;
-      const inputs = tape_util.computeInputs(subtape);
-      const evaluatedNode: TapeNode<TapeNodeOutput> = {
-        id: this.nextTapeNodeId++,
-        type: 'subtape',
-        // TODO(nsthorat): Name this something more descriptive.
-        name: 'subtape',
-        inputAndArgs: {inputs},
-        output: resultArrayMap,
-        gradient: (dy: NamedArrayMap, y: NamedArrayMap) => {
-          const xs = util.flattenNameArrayMap(inputs);
-          const ys = util.flattenNameArrayMap(y);
-
-          console.log(dy);
-          const ykeys = Object.keys(dy);
-          const arrayAccumulatedGradientMap:
-              {[ndarrayId: number]: NDArray} = {};
-          ykeys.forEach(ykey => {
-            if (dy[ykey] == null) {
-              return;
-            }
-            arrayAccumulatedGradientMap[y[ykey].id] =
-                Scalar.new(-2);  // dy[ykey];
-            console.log(ykey, 'grad', dy[ykey].dataSync());
-            console.log('y val', y[ykey].dataSync());
-          });
-
-          const gradients = this.backpropagateGradients(
-              ys, xs, arrayAccumulatedGradientMap, subtape);
-
-          const keys = Object.keys(inputs);
-          const gradientMap = util.unflattenToNameArrayMap(keys, gradients);
-
-          // Wrap the gradients in a function closure to fit the API of
-          // gradient.
-          const result: {[name: string]: () => NDArray} = {};
-          for (const key of keys) {
-            result[key] = () => gradientMap[key];
-            console.log(key, gradientMap[key].dataSync());
-          }
-          return result;
-        },
-        subtape
-      };
-
-      // Pop the active tape.
-      this.tapeStack.pop();
-      this.activeTape = this.tapeStack.length === 0 ?
-          null :
-          this.tapeStack[this.tapeStack.length - 1];
-
-      // Push the evaluated subtape node onto the tape stack.
-      this.activeTape.push(evaluatedNode);
+    if (gradientsMode) {
+      this.gradientScopeCount--;
+      if (this.gradientScopeCount === 0) {
+        this.activeTape = null;
+      }
     }
   }
 

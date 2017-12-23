@@ -404,6 +404,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           valueAndGradients.value.getValues(), new Float32Array([25]));
 
+
       expect(valueAndGradients.gradients.shape).toEqual(a.shape);
       test_util.expectArraysClose(
           valueAndGradients.gradients.dataSync(), new Float32Array([10]), 1e-1);
