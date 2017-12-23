@@ -528,9 +528,7 @@ import * as reduce_util from './reduce_util';
 
     it('gradients basic', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const gradients = math.gradients(() => {
-        return math.sum(a);
-      }, a);
+      const gradients = math.gradients(() => math.sum(a), a);
 
       expect(gradients.shape).toEqual(a.shape);
       test_util.expectArraysClose(
