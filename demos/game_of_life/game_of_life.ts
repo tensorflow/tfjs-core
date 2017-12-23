@@ -33,15 +33,14 @@ export class GameOfLife {
     this.size = size;
   }
 
-  async generateGolExample(): Promise<[NDArray, NDArray]> {
+  generateGolExample(): [NDArray, NDArray] {
     const world =
         Array2D.randUniform([this.size - 2, this.size - 2], 0, 2, 'int32');
     const worldPadded = GameOfLife.padArray(world);
     // TODO(kreeger): This logic can be vectorized and kept on the GPU with a
     // logical_or() and where() implementations.
-    const numNeighbors =
-        this.countNeighbors(this.size, worldPadded).getValues();
-    const worldValues = await world.data();
+    const numNeighbors = this.countNeighbors(this.size, worldPadded).dataSync();
+    const worldValues = world.dataSync();
     const nextWorldValues = [];
     for (let i = 0; i < numNeighbors.length; i++) {
       const value = numNeighbors[i];
@@ -95,7 +94,7 @@ export class GameOfLife {
     const x2 = array.shape[1];
     const pad = 1;
 
-    const oldValues = array.getValues();
+    const oldValues = array.dataSync();
     const shape = [x1 + pad * 2, x2 + pad * 2];
     const values = [];
 
@@ -203,32 +202,30 @@ export class GameOfLifeModel {
       }];
 
       const evalOutput = this.session.eval(this.predictionTensor, mapping);
-      values = evalOutput.getValues();
+      values = evalOutput.dataSync();
     });
     return Array2D.new([this.size, this.size], values);
   }
 
   private setTrainingData(worlds: Array<[NDArray, NDArray]>): void {
-    this.math.scope(() => {
-      const inputs = [];
-      const outputs = [];
-      for (let i = 0; i < worlds.length; i++) {
-        const example = worlds[i];
-        inputs.push(example[0].reshape([this.size * this.size]));
-        outputs.push(example[1].reshape([this.size * this.size]));
-      }
+    const inputs = [];
+    const outputs = [];
+    for (let i = 0; i < worlds.length; i++) {
+      const example = worlds[i];
+      inputs.push(example[0].reshape([this.size * this.size]));
+      outputs.push(example[1].reshape([this.size * this.size]));
+    }
 
-      // TODO(kreeger): Don't really need to shuffle these.
-      const inputProviderBuilder =
-          new InCPUMemoryShuffledInputProviderBuilder([inputs, outputs]);
-      const [inputProvider, targetProvider] =
-          inputProviderBuilder.getInputProviders();
+    // TODO(kreeger): Don't really need to shuffle these.
+    const inputProviderBuilder =
+        new InCPUMemoryShuffledInputProviderBuilder([inputs, outputs]);
+    const [inputProvider, targetProvider] =
+        inputProviderBuilder.getInputProviders();
 
-      this.feedEntries = [
-        {tensor: this.inputTensor, data: inputProvider},
-        {tensor: this.targetTensor, data: targetProvider}
-      ];
-    });
+    this.feedEntries = [
+      {tensor: this.inputTensor, data: inputProvider},
+      {tensor: this.targetTensor, data: targetProvider}
+    ];
   }
 
   /* Helper method for creating a fully connected layer. */

@@ -11,7 +11,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import {NDArray, NDArrayMathGPU} from 'deeplearn';
+import {ENV, NDArray} from 'deeplearn';
 import Vue from 'vue';
 
 import DemoFooter from '../footer.vue';
@@ -100,8 +100,11 @@ class TrainDisplay {
 
   private randomRGBA(): string {
     const s = 255;
-    return `rgba(${Math.round(Math.random() * s)},${
-        Math.round(Math.random() * s)},${Math.round(Math.random() * s)},1)`;
+    return `rgba(${
+                   Math.round(Math.random() * s)
+                 },${
+                     Math.round(Math.random() * s)
+                   },${Math.round(Math.random() * s)},1)`;
   }
 }
 
@@ -176,7 +179,7 @@ class WorldContext {
   }
 }
 
-const math = new NDArrayMathGPU();
+const math = ENV.math;
 const game = new GameOfLife(5, math);
 const model = new GameOfLifeModel(math);
 
@@ -200,13 +203,11 @@ async function trainAndRender() {
   requestAnimationFrame(() => trainAndRender());
 
   if (isBuildingTrainingData) {
-    math.scope(async () => {
-      // Do 2 examples each pass:
-      trainingData.push(await game.generateGolExample());
-      if (trainingData.length < trainingBatchSize) {
-        trainingData.push(await game.generateGolExample());
-      }
-    });
+    // Do 2 examples each pass:
+    trainingData.push(game.generateGolExample());
+    if (trainingData.length < trainingBatchSize) {
+      trainingData.push(game.generateGolExample());
+    }
 
     if (trainingBatchSize >= 20) {
       trainDisplay.displayTrainingData(
