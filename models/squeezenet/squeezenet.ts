@@ -196,7 +196,7 @@ export class SqueezeNet implements Model {
     valuesAndIndices.sort((a, b) => {
       return b.value - a.value;
     });
- 
+
     const topkValues = new Float32Array(k);
     const topkIndices = new Int32Array(k);
     for (let i = 0; i < k; i++) {

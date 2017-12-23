@@ -25,15 +25,12 @@
   },
   "scripts": {
     "prep": "yarn && mkdirp dist",
-    "build": "tsc --sourceMap false && browserify --standalone squeezenet index.ts -p [tsify] -o dist/bundle.js",
+    "build": "tsc --sourceMap false && browserify -g browserify-shim --standalone squeezenet index.ts -p [tsify] -o dist/bundle.js",
     "lint": "tslint -p . -t verbose",
     "publish-npm": "yarn build && yarn publish"
   },
   "browserify-shim": {
     "deeplearn": "global:dl"
-  },
-  "browserify": {
-      "transform": ["browserify-shim"]
   },
   "license": "Apache-2.0"
 }
