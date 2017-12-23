@@ -16,15 +16,11 @@
  * =============================================================================
  */
 
-import {Backends} from '../../environment';
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray';
 import {SumTypes} from '../types';
 import {MatrixOrientation} from './types/matmul';
-
-// tslint:disable-next-line:no-any
-export const BACKEND_REGISTRY: {[id in Backends]: MathBackend} = {} as any;
 
 export interface NDArrayStorage {
   read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]>;
@@ -36,6 +32,7 @@ export interface NDArrayStorage {
       id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void;
+  time(query: () => NDArray): Promise<number>;
 }
 
 /**
@@ -104,6 +101,8 @@ export interface MathBackend extends NDArrayStorage {
   eluDer<T extends NDArray>(x: T): T;
   selu<T extends NDArray>(x: T): T;
   leakyRelu<T extends NDArray>(x: T, alpha: number): T;
+  prelu<T extends NDArray>(x: T, alpha: T): T;
+  preluDer<T extends NDArray>(x: T, alpha: T): T;
 
   clip<T extends NDArray>(x: T, min: number, max: number): T;
 

@@ -15,11 +15,12 @@
  * =============================================================================
  */
 
+// tslint:disable:restrict-plus-operands
 // tslint:disable-next-line:max-line-length
-import {AdagradOptimizer, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMath, NDArrayMathGPU, Session, Tensor} from 'deeplearn';
+import {AdagradOptimizer, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMath, Session, Tensor} from 'deeplearn';
 
 /** Generates GameOfLife sequence pairs (current sequence + next sequence) */
-class GameOfLife {
+export class GameOfLife {
   math: NDArrayMath;
   size: number;
 
@@ -41,7 +42,6 @@ class GameOfLife {
     const numNeighbors =
         this.countNeighbors(this.size, worldPadded).getValues();
     const worldValues = await world.data();
-    // const worldValues = world.getValues();
     const nextWorldValues = [];
     for (let i = 0; i < numNeighbors.length; i++) {
       const value = numNeighbors[i];
@@ -124,7 +124,7 @@ class GameOfLife {
  * Main class for running a deep-neural network of training for Game-of-life
  * next sequence.
  */
-class GameOfLifeModel {
+export class GameOfLifeModel {
   session: Session;
   math: NDArrayMath;
 
@@ -150,8 +150,8 @@ class GameOfLifeModel {
 
   setupSession(
       boardSize: number, batchSize: number, initialLearningRate: number,
-      numLayers: number): void {
-    this.optimizer = new AdagradOptimizer(1.0);
+      numLayers: number, useLogCost: boolean): void {
+    this.optimizer = new AdagradOptimizer(initialLearningRate);
 
     this.size = boardSize;
     this.batchSize = batchSize;
@@ -171,9 +171,13 @@ class GameOfLifeModel {
 
     this.predictionTensor = hiddenLayer;
 
-    // Log-cost for more accuracy?
-    this.costTensor =
-        graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
+    if (useLogCost) {
+      this.costTensor =
+          this.logLoss(graph, this.targetTensor, this.predictionTensor);
+    } else {
+      this.costTensor =
+          graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
+    }
     this.session = new Session(graph, this.math);
   }
 
@@ -209,7 +213,6 @@ class GameOfLifeModel {
       const inputs = [];
       const outputs = [];
       for (let i = 0; i < worlds.length; i++) {
-        // const example = this.game.generateGolExample();
         const example = worlds[i];
         inputs.push(example[0].reshape([this.size * this.size]));
         outputs.push(example[1].reshape([this.size * this.size]));
@@ -237,289 +240,24 @@ class GameOfLifeModel {
         includeRelu ? (x) => graph.relu(x) : (x) => graph.sigmoid(x),
         includeBias);
   }
-}
 
-/* Draws Game Of Life sequences */
-class WorldDisplay {
-  rootElement: Element;
+  /* Helper method for calculating loss. */
+  private logLoss(graph: Graph, labelTensor: Tensor, predictionTensor: Tensor):
+      Tensor {
+    const epsilon = graph.constant(1e-7);
+    const one = graph.constant(1);
+    const negOne = graph.constant(-1);
+    const predictionsPlusEps = graph.add(predictionTensor, epsilon);
 
-  constructor() {
-    this.rootElement = document.createElement('div');
-    this.rootElement.setAttribute('class', 'world-display');
+    const left = graph.multiply(
+        negOne, graph.multiply(labelTensor, graph.log(predictionsPlusEps)));
+    const right = graph.multiply(
+        graph.subtract(one, labelTensor),
+        graph.log(graph.add(graph.subtract(one, predictionTensor), epsilon)));
 
-    document.querySelector('.worlds-display').appendChild(this.rootElement);
-  }
-
-  displayWorld(world: NDArray, title: string): Element {
-    const worldElement = document.createElement('div');
-    worldElement.setAttribute('class', 'world');
-
-    const titleElement = document.createElement('div');
-    titleElement.setAttribute('class', 'title');
-    titleElement.innerText = title;
-    worldElement.appendChild(titleElement);
-
-    const boardElement = document.createElement('div');
-    boardElement.setAttribute('class', 'board');
-
-    for (let i = 0; i < world.shape[0]; i++) {
-      const rowElement = document.createElement('div');
-      rowElement.setAttribute('class', 'row');
-
-      for (let j = 0; j < world.shape[1]; j++) {
-        const columnElement = document.createElement('div');
-        columnElement.setAttribute('class', 'column');
-        if (world.get(i, j) === 1) {
-          columnElement.classList.add('alive');
-        } else {
-          columnElement.classList.add('dead');
-        }
-        rowElement.appendChild(columnElement);
-      }
-      boardElement.appendChild(rowElement);
-    }
-
-    worldElement.appendChild(boardElement);
-    this.rootElement.appendChild(worldElement);
-    return worldElement;
+    const losses = graph.subtract(left, right);
+    const totalLosses = graph.reduceSum(losses);
+    return graph.reshape(
+        graph.divide(totalLosses, graph.constant(labelTensor.shape)), []);
   }
 }
-
-/** Manages displaying a list of world sequences (current, next, prediction) */
-class WorldContext {
-  worldDisplay: WorldDisplay;
-  world: NDArray;
-  worldNext: NDArray;
-  predictionElement: Element = null;
-
-  constructor(worlds: [NDArray, NDArray]) {
-    this.worldDisplay = new WorldDisplay();
-
-    this.world = worlds[0];
-    this.worldNext = worlds[1];
-    this.worldDisplay.displayWorld(this.world, 'Sequence');
-    this.worldDisplay.displayWorld(this.worldNext, 'Next Sequence');
-  }
-
-  displayPrediction(prediction: NDArray) {
-    if (this.predictionElement) {
-      this.predictionElement.remove();
-    }
-    this.predictionElement =
-        this.worldDisplay.displayWorld(prediction, 'Prediction');
-  }
-}
-
-/** Shows model training information. */
-class TrainDisplay {
-  element: Element;
-  canvas: CanvasRenderingContext2D;
-  chart: Chart;
-  chartData: ChartData[] = [];
-
-  constructor() {
-    this.element = document.querySelector('.train-display');
-    this.canvas = (document.getElementById('myChart') as HTMLCanvasElement)
-                      .getContext('2d');
-    this.chart = new Chart(this.canvas, {
-      type: 'line',
-      data: {
-        datasets: [{
-          data: this.chartData,
-          fill: false,
-          label: 'Model Training Cost',
-          pointRadius: 0,
-          borderColor: 'rgba(256,0,0,1)',
-          borderWidth: 1,
-          lineTension: 0,
-          pointHitRadius: 8
-        }]
-      },
-      options: {
-        animation: {duration: 0},
-        responsive: false,
-        scales: {
-          xAxes: [{type: 'linear', position: 'bottom'}],
-          // yAxes: [{ticks: {beginAtZero: true}}]
-        }
-      }
-    });
-  }
-
-  showStep(step: number, steps: number) {
-    this.element.innerHTML = 'Trained ' + Math.trunc(step / steps * 100) + '%';
-  }
-
-  displayCost(cost: number, step: number) {
-    this.chartData.push({x: step, y: cost * 100});
-    this.chart.update();
-  }
-}
-
-/** Main class for running the Game of Life training demo. */
-class Demo {
-  math: NDArrayMathGPU;
-  game: GameOfLife;
-  model: GameOfLifeModel;
-
-  trainingData: Array<[NDArray, NDArray]>;
-  worldContexts: WorldContext[];
-
-  trainDisplay: TrainDisplay;
-  worldDisplay: WorldDisplay;
-
-  boardSizeInput: HTMLTextAreaElement;
-  trainingSizeInput: HTMLTextAreaElement;
-  trainingBatchSizeInput: HTMLTextAreaElement;
-  learningRateInput: HTMLTextAreaElement;
-  numLayersInput: HTMLTextAreaElement;
-
-  addSequenceButton: HTMLElement;
-  trainButton: HTMLElement;
-  resetButton: HTMLElement;
-
-  isBuildingTrainingData: boolean;
-
-  step: number;
-  trainingSteps: number;
-  trainingBatchSize: number;
-
-  constructor() {
-    this.math = new NDArrayMathGPU();
-    this.game = new GameOfLife(5, this.math);
-    this.model = new GameOfLifeModel(this.math);
-
-    this.trainDisplay = new TrainDisplay();
-    this.worldDisplay = new WorldDisplay();
-
-    this.boardSizeInput =
-        document.getElementById('board-size-input') as HTMLTextAreaElement;
-    this.trainingSizeInput =
-        document.getElementById('training-size-input') as HTMLTextAreaElement;
-    this.trainingBatchSizeInput =
-        document.getElementById('training-batch-size-input') as
-        HTMLTextAreaElement;
-    this.learningRateInput =
-        document.getElementById('learning-rate-input') as HTMLTextAreaElement;
-    this.numLayersInput =
-        document.getElementById('num-layers-input') as HTMLTextAreaElement;
-
-    this.addSequenceButton = document.querySelector('.add-sequence-button');
-    this.addSequenceButton.addEventListener(
-        'click', () => this.onAddSequenceButtonClick());
-
-    this.trainButton = document.querySelector('.train-button');
-    this.trainButton.addEventListener('click', () => this.onTrainButtonClick());
-
-    this.resetButton = document.querySelector('.reset-button');
-    this.resetButton.addEventListener('click', () => this.onResetButtonClick());
-  }
-
-  async showSampleSequences(): Promise<void> {
-    // Always init with 3 sample world sequences:
-    this.worldContexts = [];
-    for (let i = 0; i < 3; i++) {
-      this.worldContexts.push(
-          new WorldContext(await this.game.generateGolExample()));
-    }
-  }
-
-  async trainAndRender() {
-    if (this.step === this.trainingSteps) {
-      this.enableForm();
-      return;
-    }
-
-    requestAnimationFrame(() => this.trainAndRender());
-
-    if (this.isBuildingTrainingData) {
-      this.trainingData.push(await this.game.generateGolExample());
-      if (this.trainingData.length === this.trainingBatchSize) {
-        this.isBuildingTrainingData = false;
-      }
-    } else {
-      this.step++;
-
-      const fetchCost = this.step % 1 === 0;
-      const cost = this.model.trainBatch(fetchCost, this.trainingData);
-
-      if (fetchCost) {
-        this.trainDisplay.showStep(this.step, this.trainingSteps);
-        this.trainDisplay.displayCost(cost, this.step);
-
-        this.worldContexts.forEach((worldContext) => {
-          worldContext.displayPrediction(
-              this.model.predict(worldContext.world));
-        });
-      }
-
-      this.trainingData = [];
-      this.isBuildingTrainingData = true;
-    }
-  }
-
-  private async onAddSequenceButtonClick(): Promise<void> {
-    this.game.setSize(this.getBoardSize());
-    this.worldContexts.push(
-        new WorldContext(await this.game.generateGolExample()));
-  }
-
-  private onTrainButtonClick(): void {
-    this.disableForm();
-
-    const boardSize = this.getBoardSize();
-    const learningRate = parseFloat(this.learningRateInput.value);
-    const trainingSize = parseInt(this.trainingSizeInput.value, 10);
-    const trainingBatchSize = parseInt(this.trainingBatchSizeInput.value, 10);
-    const numLayers = parseInt(this.numLayersInput.value, 10);
-
-    this.game.setSize(boardSize);
-    this.model.setupSession(
-        boardSize, trainingBatchSize, learningRate, numLayers);
-
-    this.step = 0;
-    this.trainingSteps = trainingSize;
-    this.isBuildingTrainingData = true;
-    this.trainingData = [];
-    this.trainingBatchSize = trainingBatchSize;
-    this.trainAndRender();
-  }
-
-  private onResetButtonClick(): void {
-    this.worldContexts = [];
-    Demo.clearChildNodes(document.querySelector('.worlds-display'));
-    Demo.clearChildNodes(document.querySelector('.train-display'));
-  }
-
-  private disableForm(): void {
-    this.trainButton.setAttribute('disabled', 'disabled');
-    this.resetButton.setAttribute('disabled', 'disabled');
-    this.boardSizeInput.setAttribute('disabled', 'disabled');
-    this.learningRateInput.setAttribute('disabled', 'disabled');
-    this.trainingSizeInput.setAttribute('disabled', 'disabled');
-    this.trainingBatchSizeInput.setAttribute('disabled', 'disabled');
-    this.numLayersInput.setAttribute('disabled', 'disabled');
-  }
-
-  private enableForm(): void {
-    this.trainButton.removeAttribute('disabled');
-    this.resetButton.removeAttribute('disabled');
-    this.boardSizeInput.removeAttribute('disabled');
-    this.learningRateInput.removeAttribute('disabled');
-    this.trainingSizeInput.removeAttribute('disabled');
-    this.trainingBatchSizeInput.removeAttribute('disabled');
-    this.numLayersInput.removeAttribute('disabled');
-  }
-
-  private getBoardSize(): number {
-    return parseInt(this.boardSizeInput.value, 10);
-  }
-
-  private static clearChildNodes(node: Element) {
-    while (node.hasChildNodes()) {
-      node.removeChild(node.lastChild);
-    }
-  }
-}
-
-new Demo().showSampleSequences();

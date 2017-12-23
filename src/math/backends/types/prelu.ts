@@ -20,23 +20,24 @@ import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
-export interface EqualNode extends KernelNode {
-  inputAndArgs: EqualInputConfig;
-  output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => EqualGradientInputArrays;
+// PReLU
+export interface PReLUNode<T extends NDArray> extends KernelNode {
+  inputAndArgs: PReLUInputConfig<T>;
+  output: T;
+  gradient: (dy: T, y: T) => PReLUGradientInputArrays<T>;
 }
 
-export interface EqualInputConfig extends KernelInputConfig {
-  inputs: EqualInputArrays;
+export interface PReLUInputConfig<T extends NDArray> extends KernelInputConfig {
+  inputs: PReLUInputArrays<T>;
 }
 
-export interface EqualInputArrays extends NamedArrayMap {
-  a: NDArray;
-  b: NDArray;
+export interface PReLUInputArrays<T extends NDArray> extends NamedArrayMap {
+  x: T;
+  alpha: T;
 }
 
-export interface EqualGradientInputArrays extends TapeNodeInputGradientArrays {
-  a: () => NDArray;
-  b: () => NDArray;
+export interface PReLUGradientInputArrays<T extends NDArray> extends
+    TapeNodeInputGradientArrays {
+  x: () => T;
+  alpha: () => T;
 }
