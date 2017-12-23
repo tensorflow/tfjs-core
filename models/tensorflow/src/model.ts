@@ -17,7 +17,7 @@
 import * as dag from 'dag-iterator';
 import {Array1D, Array3D, ENV, Model, NDArray} from 'deeplearn';
 import * as prototxtParser from 'prototxt-parser';
-import {TextEncoder} from 'text-encoding';
+import * as utils from './util';
 
 export interface Node {
   name: string;
@@ -89,10 +89,15 @@ export class TensorflowModel implements Model {
     const getEdgeId = (a: string|string[], b: string|string[]) => `${a}:#:${b}`;
 
     nodes.forEach((d) => {
-      if (d.op === 'Const') {
-        const str = d.attr[1]['value']['tensor']['tensor_content'];
-        const arrayBuffer = new TextEncoder().encode(str);
-        const values = new Float32Array(arrayBuffer);
+      if (d.op === 'Const' && d.attr[1]['value']['tensor']['tensor_content']) {
+        const str =
+            utils.unescape(d.attr[1]['value']['tensor']['tensor_content']);
+        const uint = new Uint8Array(str.length);
+        for (var i = 0, j = str.length; i < j; ++i) {
+          uint[i] = str.charCodeAt(i);
+        }
+        console.log('length = ' + uint.length);
+        const values = new Float32Array(uint.buffer);
         console.log('length = ' + values.length);
         console.log(values[0]);
         console.log(values[1]);

@@ -15,5 +15,16 @@
  * =============================================================================
  */
 
-export * from './model';
-export * from './util';
+import {unescape} from './index';
+
+describe('util.unescape', () => {
+  it('should unescape correctly', (done) => {
+    expect(unescape('\\001\\002\\t').length).toBe(3);
+    expect(unescape('\\001\\377\\n\\"\\\\\\r\\\'').length).toBe(7);
+    expect(
+        unescape(
+            '\\001\\000\\000\\000\\r\\000\\000\\000\\r\\000\\000\\000\\000\\002\\000\\000')
+            .length)
+        .toBe(16);
+  });
+});
