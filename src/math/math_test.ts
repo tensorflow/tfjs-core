@@ -378,7 +378,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     });
 
     it('matmul + relu + inner scope', math => {
-      console.log('-------');
       const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
       const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
 
@@ -418,7 +417,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('nikhil valueAndGradients', [tests]);
+  test_util.describeMathCPU('valueAndGradients', [tests]);
   test_util.describeMathGPU('valueAndGradients', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
