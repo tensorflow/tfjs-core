@@ -245,9 +245,6 @@ export default Vue.extend({
   components: {DemoHeader, DemoFooter, GraphSource},
   methods: {
     onAddSequenceClicked: async () => {
-      console.log('clicked');
-      console.log('train clicked', trainDisplay);
-      console.log(data.boardSize);
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     },
 

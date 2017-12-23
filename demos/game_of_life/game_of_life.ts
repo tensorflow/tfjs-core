@@ -213,7 +213,6 @@ export class GameOfLifeModel {
       const inputs = [];
       const outputs = [];
       for (let i = 0; i < worlds.length; i++) {
-        // const example = this.game.generateGolExample();
         const example = worlds[i];
         inputs.push(example[0].reshape([this.size * this.size]));
         outputs.push(example[1].reshape([this.size * this.size]));
