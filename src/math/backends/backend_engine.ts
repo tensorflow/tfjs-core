@@ -114,9 +114,7 @@ export class BackendEngine {
     }, gradientsMode);
 
     if (returnValue) {
-      return {
-        value: result[0], gradients: result.slice(1)
-      }
+      return {value: result[0], gradients: result.slice(1)};
     } else {
       return result;
     }

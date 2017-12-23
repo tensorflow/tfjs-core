@@ -251,7 +251,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const a = Array1D.new([1, 2, 3]);
       const b = Array1D.new([3, 4, 5]);
 
-
       const valueAndGradients =
           math.valueAndGradients(() => math.sum(math.multiply(a, b)), {a, b});
 
@@ -403,7 +402,6 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(valueAndGradients.value.shape).toEqual([]);
       test_util.expectArraysClose(
           valueAndGradients.value.getValues(), new Float32Array([25]));
-
 
       expect(valueAndGradients.gradients.shape).toEqual(a.shape);
       test_util.expectArraysClose(
