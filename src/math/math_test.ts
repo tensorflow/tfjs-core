@@ -447,9 +447,9 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
   };
 
   test_util.describeMathCPU('valueAndGradients', [tests]);
-  // test_util.describeMathGPU('valueAndGradients', [tests], [
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  //   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  // ]);
+  test_util.describeMathGPU('valueAndGradients', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }
