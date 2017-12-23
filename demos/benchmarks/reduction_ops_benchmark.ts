@@ -42,7 +42,8 @@ function getReductionOp(option: string, math: NDArrayMath): (input: NDArray) =>
 
 export class ReductionOpsCPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string): Promise<number> {
-    const math = new NDArrayMath('cpu', false);
+    const safeMode = false;
+    const math = new NDArrayMath('cpu', safeMode);
     ENV.setMath(math);
     const input = Array2D.randUniform([size, size], -1, 1);
     const op = getReductionOp(option, math);
@@ -59,7 +60,8 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
 
 export class ReductionOpsGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string) {
-    const math = new NDArrayMath('webgl', false);
+    const safeMode = false;
+    const math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
     const input = Array2D.randUniform([size, size], -1, 1);
     const op = getReductionOp(option, math);

@@ -145,9 +145,9 @@ export default {
     updateHash: function() {
       if (this.selectedSample) {
         this.selectedSample.data().then(vals => {
-          const hashStr = '#' + Array.from(vals).map(
-          val => parseFloat(val).toFixed(3))
-          .join(',');
+          const hashStr = '#' + Array.from(vals)
+            .map(val => parseFloat(val).toFixed(3))
+            .join(',');
         history.replaceState(undefined, undefined, hashStr);
         });
       }

@@ -62,7 +62,8 @@ function getUnaryOp(option: string, math: NDArrayMath) {
 
 export class UnaryOpsCPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string): Promise<number> {
-    const math = new NDArrayMath('cpu', false);
+    const safeMode = false;
+    const math = new NDArrayMath('cpu', safeMode);
     ENV.setMath(math);
     const input = Array2D.randUniform([size, size], -1, 1);
     const op = getUnaryOp(option, math);
@@ -79,7 +80,8 @@ export class UnaryOpsCPUBenchmark implements BenchmarkTest {
 
 export class UnaryOpsGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string) {
-    const math = new NDArrayMath('webgl', false);
+    const safeMode = false;
+    const math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
     const input = Array2D.randUniform([size, size], -1, 1);
     const op = getUnaryOp(option, math);

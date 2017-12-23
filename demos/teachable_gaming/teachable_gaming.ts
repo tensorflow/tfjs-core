@@ -207,7 +207,8 @@ export class TeachableGamingDemo extends TeachableGamingDemoPolymer {
     const gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
     const gpgpu = new GPGPUContext(gl);
     const backend = new MathBackendWebGL(gpgpu);
-    this.math = new NDArrayMath(backend, false);
+    const safeMode = false;
+    this.math = new NDArrayMath(backend, safeMode);
     this.classifier = new KNNImageClassifier(
         TeachableGamingDemo.maxControls, TeachableGamingDemo.knnKValue,
         this.math);

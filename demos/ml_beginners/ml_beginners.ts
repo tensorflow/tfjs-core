@@ -65,8 +65,7 @@ async function mlBeginners() {
       // NOTE: "a", "b", and "c" are randomly initialized, so this will give us
       // something random.
       let result: NDArray = session.eval(y, [{tensor: x, data: Scalar.new(4)}]);
-      console.log(result.shape);
-      console.log(result.getValues());
+      console.log(result.dataSync());
 
       /**
        * Training

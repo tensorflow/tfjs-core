@@ -28,7 +28,8 @@ export class MatmulCPUBenchmark implements BenchmarkTest {
         resolve(-1);
       });
     }
-    const math = new NDArrayMath('cpu', false);
+    const safeMode = false;
+    const math = new NDArrayMath('cpu', safeMode);
     ENV.setMath(math);
     const a = Array2D.randUniform([size, size], -1, 1);
     const b = Array2D.randUniform([size, size], -1, 1);
@@ -43,7 +44,8 @@ export class MatmulCPUBenchmark implements BenchmarkTest {
 
 export class MatmulGPUBenchmark implements BenchmarkTest {
   async run(size: number): Promise<number> {
-    const math = new NDArrayMath('webgl', false);
+    const safeMode = false;
+    const math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
     const a = Array2D.randNormal([size, size]);
     const b = Array2D.randNormal([size, size]);

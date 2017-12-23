@@ -16,6 +16,7 @@
  */
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMath, Scalar} from 'deeplearn';
+import * as model_util from '../util';
 import {IMAGENET_CLASSES} from './imagenet_classes';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
@@ -147,7 +148,7 @@ export class MobileNet implements Model {
   async getTopKClasses(logits: Array1D, topK: number):
       Promise<{[className: string]: number}> {
     const predictions = this.math.softmax(logits).asType('float32');
-    const topk = this.topK(await predictions.data(), topK);
+    const topk = model_util.topK(await predictions.data(), topK);
     const topkIndices = topk.indices;
     const topkValues = topk.values;
 
@@ -156,25 +157,6 @@ export class MobileNet implements Model {
       topClassesToProbability[IMAGENET_CLASSES[topkIndices[i]]] = topkValues[i];
     }
     return topClassesToProbability;
-  }
-
-  private topK(values: Float32Array, k: number):
-      {values: Float32Array, indices: Int32Array} {
-    const valuesAndIndices: Array<{value: number, index: number}> = [];
-    for (let i = 0; i < values.length; i++) {
-      valuesAndIndices.push({value: values[i], index: i});
-    }
-    valuesAndIndices.sort((a, b) => {
-      return b.value - a.value;
-    });
-
-    const topkValues = new Float32Array(k);
-    const topkIndices = new Int32Array(k);
-    for (let i = 0; i < k; i++) {
-      topkValues[i] = valuesAndIndices[i].value;
-      topkIndices[i] = valuesAndIndices[i].index;
-    }
-    return {values: topkValues, indices: topkIndices};
   }
 
   dispose() {

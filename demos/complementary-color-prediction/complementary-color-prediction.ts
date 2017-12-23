@@ -157,7 +157,8 @@ class ComplementaryColorModel {
   private generateTrainingData(exampleCount: number) {
     const rawInputs = new Array(exampleCount);
     const oldMath = ENV.math;
-    const math = new NDArrayMath('cpu', false);
+    const safeMode = false;
+    const math = new NDArrayMath('cpu', safeMode);
     ENV.setMath(math);
 
     for (let i = 0; i < exampleCount; i++) {

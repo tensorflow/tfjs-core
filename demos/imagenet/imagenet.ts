@@ -104,7 +104,8 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
     const gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
     this.gpgpu = new GPGPUContext(gl);
     this.backend = new MathBackendWebGL(this.gpgpu);
-    this.math = new NDArrayMath(this.backend, false);
+    const safeMode = false;
+    this.math = new NDArrayMath(this.backend, safeMode);
     ENV.setMath(this.math);
 
     this.renderGrayscaleChannelsCollageShader =

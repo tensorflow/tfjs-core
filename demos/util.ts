@@ -18,7 +18,7 @@
 import {ENV} from 'deeplearn';
 
 export function isWebGLSupported(): boolean {
-  return ENV.getBackend('webgl') != null;
+  return ENV.get('WEBGL_VERSION') >= 1;
 }
 
 export function isSafari(): boolean {

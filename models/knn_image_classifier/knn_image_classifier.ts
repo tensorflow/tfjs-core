@@ -17,6 +17,7 @@
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Model, NDArrayMath, Scalar} from 'deeplearn';
 import {SqueezeNet} from 'deeplearn-squeezenet';
+import * as model_util from '../util';
 
 export class KNNImageClassifier implements Model {
   private squeezeNet: SqueezeNet;
@@ -178,7 +179,7 @@ export class KNNImageClassifier implements Model {
     const knn = this.predict(image).asType('float32');
     const numExamples = this.getNumExamples();
     const kVal = Math.min(this.k, numExamples);
-    const topK = this.topK(await knn.data(), kVal);
+    const topK = model_util.topK(await knn.data(), kVal);
     knn.dispose();
     const topKIndices = topK.indices;
 
@@ -270,24 +271,6 @@ export class KNNImageClassifier implements Model {
     }
 
     return total;
-  }
-
-  private topK(values: Float32Array, k: number):
-      {values: Float32Array, indices: Int32Array} {
-    const valuesAndIndices: Array<{value: number, index: number}> = [];
-    for (let i = 0; i < values.length; i++) {
-      valuesAndIndices.push({value: values[i], index: i});
-    }
-    valuesAndIndices.sort((a, b) => {
-      return b.value - a.value;
-    });
-    const topkValues = new Float32Array(k);
-    const topkIndices = new Int32Array(k);
-    for (let i = 0; i < k; i++) {
-      topkValues[i] = valuesAndIndices[i].value;
-      topkIndices[i] = valuesAndIndices[i].index;
-    }
-    return {values: topkValues, indices: topkIndices};
   }
 
   dispose() {

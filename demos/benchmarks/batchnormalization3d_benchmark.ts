@@ -29,7 +29,8 @@ export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
         resolve(-1);
       });
     }
-    const math = new NDArrayMath('cpu', false);
+    const safeMode = false;
+    const math = new NDArrayMath('cpu', safeMode);
     ENV.setMath(math);
     const x = Array3D.randUniform([size, size, 8], -1, 1);
     const mean = Array1D.new([0]);
@@ -49,7 +50,8 @@ export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
 
 export class BatchNormalization3DGPUBenchmark implements BenchmarkTest {
   async run(size: number) {
-    const math = new NDArrayMath('webgl', false);
+    const safeMode = false;
+    const math = new NDArrayMath('webgl', safeMode);
     ENV.setMath(math);
     const x = Array3D.randUniform([size, size, 8], -1, 1);
     const mean = Array1D.new([0]);
