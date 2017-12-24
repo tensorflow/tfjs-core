@@ -29,36 +29,41 @@ export class GameOfLife {
     this.size = size;
   }
 
-  setSize(size: number) {
-    this.size = size;
-  }
+  setSize(size: number) { this.size = size; }
 
   generateGolExample(): [NDArray, NDArray] {
-    const world =
-        Array2D.randUniform([this.size - 2, this.size - 2], 0, 2, 'int32');
-    const worldPadded = GameOfLife.padArray(world);
-    // TODO(kreeger): This logic can be vectorized and kept on the GPU with a
-    // logical_or() and where() implementations.
-    const numNeighbors = this.countNeighbors(this.size, worldPadded).dataSync();
-    const worldValues = world.dataSync();
-    const nextWorldValues = [];
-    for (let i = 0; i < numNeighbors.length; i++) {
-      const value = numNeighbors[i];
-      let nextVal = 0;
-      if (value === 3) {
-        // Cell rebirths
-        nextVal = 1;
-      } else if (value === 2) {
-        // Cell survives
-        nextVal = worldValues[i];
-      } else {
-        // Cell dies
-        nextVal = 0;
+    let world: NDArray;
+    let worldNext: NDArray;
+    this.math.scope(keep => {
+      const randWorld =
+          Array2D.randUniform([this.size - 2, this.size - 2], 0, 2, 'int32');
+      const worldPadded = GameOfLife.padArray(randWorld);
+      // TODO(kreeger): This logic can be vectorized and kept on the GPU with a
+      // logical_or() and where() implementations.
+      const numNeighbors =
+          this.countNeighbors(this.size, worldPadded).dataSync();
+      const worldValues = randWorld.dataSync();
+      const nextWorldValues = [];
+      for (let i = 0; i < numNeighbors.length; i++) {
+        const value = numNeighbors[i];
+        let nextVal = 0;
+        if (value === 3) {
+          // Cell rebirths
+          nextVal = 1;
+        } else if (value === 2) {
+          // Cell survives
+          nextVal = worldValues[i];
+        } else {
+          // Cell dies
+          nextVal = 0;
+        }
+        nextWorldValues.push(nextVal);
       }
-      nextWorldValues.push(nextVal);
-    }
-    const worldNext = Array2D.new(world.shape, nextWorldValues, 'int32');
-    return [worldPadded, GameOfLife.padArray(worldNext)];
+      world = keep(worldPadded);
+      worldNext = keep(GameOfLife.padArray(
+          Array2D.new(randWorld.shape, nextWorldValues, 'int32')));
+    });
+    return [world, worldNext];
   }
 
   /** Counts total sum of neighbors for a given world. */
@@ -115,7 +120,7 @@ export class GameOfLife {
         }
       }
     }
-    return Array2D.new(shape as [number, number], values, 'int32');
+    return Array2D.new(shape as[number, number], values, 'int32');
   }
 }
 
@@ -143,9 +148,7 @@ export class GameOfLifeModel {
   // Maps tensors to InputProviders
   feedEntries: FeedEntry[];
 
-  constructor(math: NDArrayMath) {
-    this.math = math;
-  }
+  constructor(math: NDArrayMath) { this.math = math; }
 
   setupSession(
       boardSize: number, batchSize: number, initialLearningRate: number,
@@ -208,6 +211,7 @@ export class GameOfLifeModel {
   }
 
   private setTrainingData(worlds: Array<[NDArray, NDArray]>): void {
+    // TODO - this should be math.scoped()
     const inputs = [];
     const outputs = [];
     for (let i = 0; i < worlds.length; i++) {

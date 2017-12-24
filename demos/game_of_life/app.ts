@@ -94,9 +94,7 @@ class TrainDisplay {
         ` - (Building training data - ${length} of ${size})`;
   }
 
-  clearTrainingData(): void {
-    this.trainingDataElement.innerHTML = '';
-  }
+  clearTrainingData(): void { this.trainingDataElement.innerHTML = ''; }
 
   private randomRGBA(): string {
     const s = 255;
@@ -233,6 +231,11 @@ async function trainAndRender() {
       });
     }
 
+    // Cleanup kept training data.
+    trainingData.forEach(data => {
+      data[0].dispose();
+      data[1].dispose();
+    });
     trainingData = [];
     isBuildingTrainingData = true;
   }
@@ -240,16 +243,14 @@ async function trainAndRender() {
 
 // tslint:disable-next-line:no-default-export
 export default Vue.extend({
-  data() {
-    return data;
-  },
+  data() { return data; },
   components: {DemoHeader, DemoFooter, GraphSource},
   methods: {
-    onAddSequenceClicked: async () => {
+    onAddSequenceClicked: async() => {
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     },
 
-    onTrainModelClicked: async () => {
+    onTrainModelClicked: async() => {
       step = 0;
       trainingSteps = parseInt(data.trainingSize, 10);
       trainingBatchSize = parseInt(data.trainingBatchSize, 10);
@@ -273,7 +274,7 @@ export default Vue.extend({
       }
     }
   },
-  mounted: async () => {
+  mounted: async() => {
     for (let i = 0; i < 5; i++) {
       worldContexts.push(new WorldContext(await game.generateGolExample()));
     }
