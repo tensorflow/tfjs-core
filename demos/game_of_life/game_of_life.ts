@@ -17,7 +17,7 @@
 
 // tslint:disable:restrict-plus-operands
 // tslint:disable-next-line:max-line-length
-import {AdagradOptimizer, Array2D, CostReduction, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMath, Session, Tensor} from 'deeplearn';
+import {AdagradOptimizer, Array2D, CostReduction, FeedEntry, Graph, InGPUMemoryShuffledInputProviderBuilder, NDArray, NDArrayMath, Session, Tensor} from 'deeplearn';
 
 /** Generates GameOfLife sequence pairs (current sequence + next sequence) */
 export class GameOfLife {
@@ -93,7 +93,7 @@ export class GameOfLife {
   }
 
   /* Helper method to pad an array until the op is ready. */
-  // TODO(kreeger): Drop this when math.pad() is ready.
+  // TODO(kreeger, #409): Drop this when math.pad() is ready.
   private static padArray(array: NDArray): Array2D<'int32'> {
     const x1 = array.shape[0];
     const x2 = array.shape[1];
@@ -198,7 +198,7 @@ export class GameOfLifeModel {
 
   predict(world: NDArray): Array2D {
     let values = null;
-    this.math.scope((keep, track) => {
+    this.math.scope(() => {
       const mapping = [{
         tensor: this.inputTensor,
         data: world.reshape([this.size * this.size])
@@ -211,7 +211,6 @@ export class GameOfLifeModel {
   }
 
   private setTrainingData(worlds: Array<[NDArray, NDArray]>): void {
-    // TODO - this should be math.scoped()
     const inputs = [];
     const outputs = [];
     for (let i = 0; i < worlds.length; i++) {
@@ -222,7 +221,7 @@ export class GameOfLifeModel {
 
     // TODO(kreeger): Don't really need to shuffle these.
     const inputProviderBuilder =
-        new InCPUMemoryShuffledInputProviderBuilder([inputs, outputs]);
+        new InGPUMemoryShuffledInputProviderBuilder([inputs, outputs]);
     const [inputProvider, targetProvider] =
         inputProviderBuilder.getInputProviders();
 

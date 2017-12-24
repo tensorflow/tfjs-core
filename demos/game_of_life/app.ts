@@ -22,7 +22,7 @@ import {GameOfLife, GameOfLifeModel} from './game_of_life';
 
 const data = {
   boardSize: '5',
-  trainingSize: '2000',
+  trainingSteps: '2000',
   trainingBatchSize: '5',
   learningRate: '1.0',
   numLayers: '3',
@@ -247,12 +247,12 @@ export default Vue.extend({
   components: {DemoHeader, DemoFooter, GraphSource},
   methods: {
     onAddSequenceClicked: async() => {
-      worldContexts.push(new WorldContext(await game.generateGolExample()));
+      worldContexts.push(new WorldContext(game.generateGolExample()));
     },
 
     onTrainModelClicked: async() => {
       step = 0;
-      trainingSteps = parseInt(data.trainingSize, 10);
+      trainingSteps = parseInt(data.trainingSteps, 10);
       trainingBatchSize = parseInt(data.trainingBatchSize, 10);
       trainingData = [];
       trainDisplay.addDataSet();
@@ -276,7 +276,7 @@ export default Vue.extend({
   },
   mounted: async() => {
     for (let i = 0; i < 5; i++) {
-      worldContexts.push(new WorldContext(await game.generateGolExample()));
+      worldContexts.push(new WorldContext(game.generateGolExample()));
     }
     trainDisplay.setup();
   }

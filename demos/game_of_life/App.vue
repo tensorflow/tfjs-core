@@ -26,9 +26,9 @@ limitations under the License.
             </td>
           </tr>
           <tr>
-            <td>Training size:</td>
+            <td>Training steps:</td>
             <td>
-              <input type="text" v-model="trainingSize" :disabled="running">
+              <input type="text" v-model="trainingSteps" :disabled="running">
             </td>
           </tr>
           <tr>

@@ -15,7 +15,6 @@ limitations under the License.
 <template>
   <!-- Placeholder to include Chart.js in Vue applications.
        Include this file in Vue applications that need Chart. -->
-  <graph-source></graph-source>
 </template>
 
 <<script>
