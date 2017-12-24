@@ -67,11 +67,17 @@ export class MathBackendWebGL implements MathBackend {
       id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
-    const shape: [number, number, number] =
-        [pixels.height, pixels.width, numChannels];
-    const texShape: [number, number] = [shape[0], shape[1]];
-    const texture = this.textureManager.acquireTexture(texShape);
-    this.gpgpu.uploadPixelDataToTexture(texture, pixels);
+    let texture: WebGLTexture;
+    const texShape: [number, number] = [pixels.height, pixels.width];
+    if (id in this.texData &&
+        util.arraysEqual(this.texData[id].texShape, texShape)) {
+      texture = this.texData[id].texture;
+    } else {
+      if (id in this.texData) {
+        this.disposeData(id);
+      }
+      texture = this.textureManager.acquireTexture(texShape);
+    }
     this.texData[id] = {
       texture,
       textureType: TextureType.RGBA_COLOR,
@@ -79,15 +85,25 @@ export class MathBackendWebGL implements MathBackend {
       numChannels,
       dtype: 'int32'
     };
+    this.gpgpu.uploadPixelDataToTexture(texture, pixels);
   }
   write<T extends keyof DataTypes>(
       id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
-    const texShape =
-        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
-    const texture = this.textureManager.acquireTexture(texShape);
-    const textureType = TextureType.DEFAULT;
-    this.texData[id] = {texture, textureType, texShape, dtype};
-
+    let texture: WebGLTexture;
+    let textureType: TextureType;
+    let texShape: [number, number];
+    if (id in this.texData) {
+      const texData = this.texData[id];
+      texture = texData.texture;
+      textureType = texData.textureType;
+      texShape = texData.texShape;
+    } else {
+      texShape =
+          webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
+      texture = this.textureManager.acquireTexture(texShape);
+      textureType = TextureType.DEFAULT;
+      this.texData[id] = {texture, textureType, texShape, dtype};
+    }
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
           texture, texShape[0],
