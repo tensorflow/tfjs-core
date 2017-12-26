@@ -514,16 +514,15 @@ import * as reduce_util from './reduce_util';
   const tests: MathTests = it => {
     it('valueAndGradients basic', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const valueAndGradients = math.valueAndGradients(() => math.sum(a), a);
+      const {value, gradients} = math.valueAndGradients(() => math.sum(a), a);
 
-      expect(valueAndGradients.value.shape).toEqual([]);
-      test_util.expectArraysClose(
-          valueAndGradients.value.dataSync(), new Float32Array([7]));
+      expect(value.shape).toEqual([]);
+      expect(value.dtype).toEqual('float32');
+      test_util.expectArraysClose(value, [7]);
 
-      expect(valueAndGradients.gradients.shape).toEqual(a.shape);
-      test_util.expectArraysClose(
-          valueAndGradients.gradients.dataSync(),
-          new Float32Array([1, 1, 1, 1, 1, 1]));
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [1, 1, 1, 1, 1, 1]);
     });
 
     it('gradients basic', math => {
@@ -531,24 +530,25 @@ import * as reduce_util from './reduce_util';
       const gradients = math.gradients(() => math.sum(a), a);
 
       expect(gradients.shape).toEqual(a.shape);
-      test_util.expectArraysClose(
-          gradients.dataSync(), new Float32Array([1, 1, 1, 1, 1, 1]));
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [1, 1, 1, 1, 1, 1]);
     });
 
     it('valueAndGradients sums all values in 2D array with keep dim', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
 
-      const valueAndGradients = math.valueAndGradients(() => {
+      const {value, gradients} = math.valueAndGradients(() => {
         const res = math.sum(a, null, true /* keepDims */);
         return math.sum(res);
       }, a);
 
-      expect(valueAndGradients.value.shape).toEqual([]);
-      test_util.expectArraysClose(
-          valueAndGradients.value.dataSync(), new Float32Array([7]));
-      test_util.expectArraysClose(
-          valueAndGradients.gradients.getValues(),
-          new Float32Array([1, 1, 1, 1, 1, 1]));
+      expect(value.shape).toEqual([]);
+      expect(value.dtype).toEqual('float32');
+      test_util.expectArraysClose(value, [7]);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [1, 1, 1, 1, 1, 1]);
     });
   };
 

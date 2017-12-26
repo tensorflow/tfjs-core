@@ -292,23 +292,21 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       // de/da = dot(de/dy, bT)
       expect(gradients.a.shape).toEqual(a.shape);
       test_util.expectArraysClose(
-          gradients.a.dataSync(),
+          gradients.a,
           math.matMul(
-                  dedm, b, MatrixOrientation.REGULAR,
-                  MatrixOrientation.TRANSPOSED)
-              .dataSync());
+              dedm, b, MatrixOrientation.REGULAR,
+              MatrixOrientation.TRANSPOSED));
 
       // de/db = dot(aT, de/dy)
       expect(gradients.b.shape).toEqual(b.shape);
       test_util.expectArraysClose(
-          gradients.b.dataSync(),
+          gradients.b,
           math.matMul(
-                  a, dedm, MatrixOrientation.TRANSPOSED,
-                  MatrixOrientation.REGULAR)
-              .dataSync());
+              a, dedm, MatrixOrientation.TRANSPOSED,
+              MatrixOrientation.REGULAR));
     });
 
-    it('Throws is y is not a scalar', math => {
+    it('Throws if y is not a scalar', math => {
       const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
       const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
 
@@ -334,7 +332,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
       const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
 
-      const valueAndGradients = math.valueAndGradients(() => {
+      const {value, gradients} = math.valueAndGradients(() => {
         // m = dot(a, b)
         // y = relu(m)
         // e = sum(y)
@@ -343,28 +341,26 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
         return math.sum(y);
       }, {a, b});
 
+      test_util.expectNumbersClose(value.get(), 10, 1e-1);
+
       // de/dy = 1
       // dy/dm = step(m)
       // de/dm = de/dy * dy/dm = step(m)
       const dedm = math.step(math.matMul(a, b));
 
       // de/da = dot(de/dy, bT)
-      expect(valueAndGradients.gradients.a.shape).toEqual(a.shape);
       test_util.expectArraysClose(
-          valueAndGradients.gradients.a.dataSync(),
+          gradients.a,
           math.matMul(
-                  dedm, b, MatrixOrientation.REGULAR,
-                  MatrixOrientation.TRANSPOSED)
-              .dataSync());
+              dedm, b, MatrixOrientation.REGULAR,
+              MatrixOrientation.TRANSPOSED));
 
       // de/db = dot(aT, de/dy)
-      expect(valueAndGradients.gradients.b.shape).toEqual(b.shape);
       test_util.expectArraysClose(
-          valueAndGradients.gradients.b.dataSync(),
+          gradients.b,
           math.matMul(
-                  a, dedm, MatrixOrientation.TRANSPOSED,
-                  MatrixOrientation.REGULAR)
-              .dataSync());
+              a, dedm, MatrixOrientation.TRANSPOSED,
+              MatrixOrientation.REGULAR));
     });
 
     it('Throws is y is not a scalar', math => {
@@ -381,7 +377,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
       const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
 
-      const valueAndGradients = math.valueAndGradients(() => {
+      const {value, gradients} = math.valueAndGradients(() => {
         // m = dot(a, b)
         // y = relu(m)
         // e = sum(y)
@@ -392,28 +388,27 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
         });
       }, {a, b});
 
+      test_util.expectNumbersClose(value.get(), 10, 1e-1);
+
       // de/dy = 1
       // dy/dm = step(m)
       // de/dm = de/dy * dy/dm = step(m)
       const dedm = math.step(math.matMul(a, b));
 
       // de/da = dot(de/dy, bT)
-      expect(valueAndGradients.gradients.a.shape).toEqual(a.shape);
       test_util.expectArraysClose(
-          valueAndGradients.gradients.a.dataSync(),
+          gradients.a,
           math.matMul(
                   dedm, b, MatrixOrientation.REGULAR,
                   MatrixOrientation.TRANSPOSED)
               .dataSync());
 
       // de/db = dot(aT, de/dy)
-      expect(valueAndGradients.gradients.b.shape).toEqual(b.shape);
       test_util.expectArraysClose(
-          valueAndGradients.gradients.b.dataSync(),
+          gradients.b,
           math.matMul(
-                  a, dedm, MatrixOrientation.TRANSPOSED,
-                  MatrixOrientation.REGULAR)
-              .dataSync());
+              a, dedm, MatrixOrientation.TRANSPOSED,
+              MatrixOrientation.REGULAR));
     });
 
     it('second order nested gradient', math => {
@@ -425,8 +420,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       }, a);
 
       expect(gradients.shape).toEqual(a.shape);
-      test_util.expectArraysClose(
-          gradients.dataSync(), new Float32Array([6 * 2]));
+      test_util.expectNumbersClose(gradients.get(), 6 * a.get());
     });
 
     it('second order with gradientsScope', math => {
@@ -437,12 +431,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
           return math.pow(a, Scalar.new(3, 'int32'));
         }, a);
 
+        // TODO(nsthorat|smilkov): Test that the intermittent gradient arrays
+        // have not been cleaned up.
+
         return math.gradients(() => der, a);
       });
 
       expect(gradients.shape).toEqual(a.shape);
-      test_util.expectArraysClose(
-          gradients.dataSync(), new Float32Array([6 * 2]));
+      test_util.expectNumbersClose(gradients.get(), 6 * a.get());
     });
   };
 

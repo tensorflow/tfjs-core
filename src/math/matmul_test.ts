@@ -317,44 +317,45 @@ const gpuTests: MathTests = it => {
 
 // TODO(nsthorat): fix the precision for backprop.
 const gradientTests: MathTests = it => {
-  it('MatMul gradient A * B', math => {
+  it('nikhil MatMul gradient A * B', math => {
     const a = Array2D.new([2, 3], [1, 2, 3, 10, 20, 30]);
     const b = Array2D.new([3, 2], [2, 3, 4, 1, 2, 3]);
     const dy = 1;
 
-    const valueAndGradients = math.valueAndGradients(() => {
+    const {value, gradients} = math.valueAndGradients(() => {
       return math.sum(math.matMul(
           a, b, MatrixOrientation.REGULAR, MatrixOrientation.REGULAR));
     }, {a, b});
 
-    const grads = valueAndGradients.gradients;
+    test_util.expectNumbersClose(value.get(), 330, 1e-1);
+
     test_util.expectNumbersClose(
-        grads.a.get(0, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
+        gradients.a.get(0, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(0, 1), dy * b.get(1, 0) + dy * b.get(1, 1), 1e-1);
+        gradients.a.get(0, 1), dy * b.get(1, 0) + dy * b.get(1, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(0, 2), dy * b.get(2, 0) + dy * b.get(2, 1), 1e-1);
+        gradients.a.get(0, 2), dy * b.get(2, 0) + dy * b.get(2, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(1, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
+        gradients.a.get(1, 0), dy * b.get(0, 0) + dy * b.get(0, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(1, 1), dy * b.get(1, 0) + dy * b.get(1, 1), 1e-1);
+        gradients.a.get(1, 1), dy * b.get(1, 0) + dy * b.get(1, 1), 1e-1);
     test_util.expectNumbersClose(
-        grads.a.get(1, 2), dy * b.get(2, 0) + dy * b.get(2, 1), 1e-1);
+        gradients.a.get(1, 2), dy * b.get(2, 0) + dy * b.get(2, 1), 1e-1);
 
     // db = aT * dy
-    expect(grads.b.shape).toEqual(b.shape);
+    expect(gradients.b.shape).toEqual(b.shape);
     test_util.expectNumbersClose(
-        grads.b.get(0, 0), a.get(0, 0) * dy + a.get(1, 0) * dy, 1e-1);
+        gradients.b.get(0, 0), a.get(0, 0) * dy + a.get(1, 0) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(0, 1), a.get(0, 0) * dy + a.get(1, 0) * dy, 1e-1);
+        gradients.b.get(0, 1), a.get(0, 0) * dy + a.get(1, 0) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(1, 0), a.get(0, 1) * dy + a.get(1, 1) * dy, 1e-1);
+        gradients.b.get(1, 0), a.get(0, 1) * dy + a.get(1, 1) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(1, 1), a.get(0, 1) * dy + a.get(1, 1) * dy, 1e-1);
+        gradients.b.get(1, 1), a.get(0, 1) * dy + a.get(1, 1) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(2, 0), a.get(0, 2) * dy + a.get(1, 2) * dy, 1e-1);
+        gradients.b.get(2, 0), a.get(0, 2) * dy + a.get(1, 2) * dy, 1e-1);
     test_util.expectNumbersClose(
-        grads.b.get(2, 1), a.get(0, 2) * dy + a.get(1, 2) * dy, 1e-1);
+        gradients.b.get(2, 1), a.get(0, 2) * dy + a.get(1, 2) * dy, 1e-1);
   });
 };
 

@@ -2314,7 +2314,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * method will return an object of the same shape.
    */
   gradients<T extends NDArray|NamedArrayMap>(f: () => Scalar, x: T): T {
-    const xs = util.flattenNameArrayMap(x);
+    const keys = x instanceof NDArray ? null : Object.keys(x);
+    const xs = util.flattenNameArrayMap(x, keys);
 
     const returnValue = false;
     const gradients =
@@ -2323,7 +2324,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     if (x instanceof NDArray) {
       return gradients[0] as T;
     } else {
-      return util.unflattenToNameArrayMap(Object.keys(x), gradients) as T;
+      return util.unflattenToNameArrayMap(keys, gradients) as T;
     }
   }
 
@@ -2341,7 +2342,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    */
   valueAndGradients<T extends NDArray|NamedArrayMap>(f: () => Scalar, x: T):
       {value: Scalar, gradients: T} {
-    const xs = util.flattenNameArrayMap(x);
+    const keys = x instanceof NDArray ? null : Object.keys(x);
+    const xs = util.flattenNameArrayMap(x, keys);
 
     const returnValue = true;
     const valueAndGradients =
@@ -2352,8 +2354,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     if (x instanceof NDArray) {
       gradients = valueAndGradients.gradients[0] as T;
     } else {
-      gradients = util.unflattenToNameArrayMap(
-                      Object.keys(x), valueAndGradients.gradients) as T;
+      gradients =
+          util.unflattenToNameArrayMap(keys, valueAndGradients.gradients) as T;
     }
     return {value: valueAndGradients.value, gradients};
   }

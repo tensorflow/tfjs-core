@@ -191,8 +191,6 @@ export function backpropagateGradients(
         arrayAccumulatedGradientMap[activation.id] = grad;
       } else {
         const curGradient = arrayAccumulatedGradientMap[activation.id];
-        // Call the backend directly so we don't add the "add" node to our
-        // tape.
         arrayAccumulatedGradientMap[activation.id] =
             ENV.math.add(curGradient, grad);
         curGradient.dispose();
