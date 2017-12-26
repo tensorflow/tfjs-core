@@ -23,6 +23,7 @@ export class TextureManager {
   private freeTextures: {[shape: string]: WebGLTexture[]} = {};
   private logEnabled = false;
   private allocatedTextures: WebGLTexture[] = [];
+  private usedTextureCount: {[shape: string]: number} = {};
 
   constructor(private gpgpu: GPGPUContext) {}
 
@@ -31,6 +32,10 @@ export class TextureManager {
     if (!(shapeKey in this.freeTextures)) {
       this.freeTextures[shapeKey] = [];
     }
+    if (!(shapeKey in this.usedTextureCount)) {
+      this.usedTextureCount[shapeKey] = 0;
+    }
+    this.usedTextureCount[shapeKey]++;
 
     if (this.freeTextures[shapeKey].length > 0) {
       this.numFreeTextures--;
@@ -54,6 +59,7 @@ export class TextureManager {
     this.freeTextures[shapeKey].push(texture);
     this.numFreeTextures++;
     this.numUsedTextures--;
+    this.usedTextureCount[shapeKey]--;
     this.log();
   }
 
@@ -81,6 +87,7 @@ export class TextureManager {
     });
     this.freeTextures = null;
     this.allocatedTextures = null;
+    this.usedTextureCount = null;
     this.numUsedTextures = 0;
     this.numFreeTextures = 0;
   }

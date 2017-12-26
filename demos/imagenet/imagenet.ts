@@ -235,6 +235,8 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
           this.backend.getTextureData(activationNDArray.id).texShape,
           activationNDArray.shape[0], activationNDArray.shape[2],
           this.inferenceCanvas.width, numRows);
+      // Unclear why, but unless we wait for the gpu to fully end, we get a
+      // flicker effect.
       await maxValues.data();
       await minValues.data();
     });
