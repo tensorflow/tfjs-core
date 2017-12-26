@@ -67,17 +67,10 @@ export class MathBackendWebGL implements MathBackend {
       id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
-    let texture: WebGLTexture;
     const texShape: [number, number] = [pixels.height, pixels.width];
-    if (id in this.texData &&
-        util.arraysEqual(this.texData[id].texShape, texShape)) {
-      texture = this.texData[id].texture;
-    } else {
-      if (id in this.texData) {
-        this.disposeData(id);
-      }
-      texture = this.textureManager.acquireTexture(texShape);
-    }
+    const texture = id in this.texData ?
+        this.texData[id].texture :
+        this.textureManager.acquireTexture(texShape);
     this.texData[id] = {
       values: null,
       texture,
