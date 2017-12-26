@@ -91,25 +91,32 @@ export class MathBackendWebGL implements MathBackend {
   }
   write<T extends keyof DataTypes>(
       id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
+    if (values == null) {
+      throw new Error('MathBackendWebGL.write(): values can not be null');
+    }
+    const {texture, texShape} = this.getOrMakeTexData(id, shape, dtype);
+    if (texture != null) {
+      // Release the old texture.
+      this.textureManager.releaseTexture(texture, texShape);
+      this.texData[id].texture = null;
+    }
+    // Point to the new values.
+    this.texData[id].values = values;
+    if (!this.delayedStorage) {
+      this.uploadToGPU(id);
+    }
+  }
+
+  private getOrMakeTexData(id: number, shape: number[], dtype: keyof DataTypes):
+      TextureData {
     if (!(id in this.texData)) {
       const texShape =
           webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
       const textureType = TextureType.DEFAULT;
-      this.texData[id] = {texture: null, values, textureType, texShape, dtype};
+      this.texData[id] =
+          {texture: null, values: null, textureType, texShape, dtype};
     }
-    if (values != null) {
-      const {texture, texShape} = this.texData[id];
-      if (texture != null) {
-        // Release the old texture.
-        this.textureManager.releaseTexture(texture, texShape);
-        this.texData[id].texture = null;
-      }
-      // Point to the new values.
-      this.texData[id].values = values;
-    }
-    if (!this.delayedStorage) {
-      this.uploadToGPU(id);
-    }
+    return this.texData[id];
   }
 
   readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
@@ -117,6 +124,7 @@ export class MathBackendWebGL implements MathBackend {
     const {texture, values, textureType, texShape, numChannels} =
         this.texData[id];
     if (values != null) {
+      this.cacheOnCPU(id);
       return values;
     }
     let float32Values: Float32Array;
@@ -134,6 +142,7 @@ export class MathBackendWebGL implements MathBackend {
     this.throwIfNoData(id);
     const {texture, values, textureType, texShape} = this.texData[id];
     if (values != null) {
+      this.cacheOnCPU(id);
       return values;
     }
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
@@ -173,13 +182,11 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   getTexture(id: number): WebGLTexture {
-    this.throwIfNoData(id);
     this.uploadToGPU(id);
     return this.texData[id].texture;
   }
 
   getTextureData(id: number): TextureData {
-    this.throwIfNoData(id);
     this.uploadToGPU(id);
     return this.texData[id];
   }
@@ -723,11 +730,10 @@ export class MathBackendWebGL implements MathBackend {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
     const inputsData: Array<ArrayData<T>> = inputs.map(input => {
-      this.throwIfNoData(input.id);
       this.uploadToGPU(input.id);
       return {array: input, texData: this.texData[input.id]};
     });
-    this.throwIfNoData(output.id);
+    this.getOrMakeTexData(output.id, output.shape, output.dtype);
     this.uploadToGPU(output.id);
     const outputData = {array: output, texData: this.texData[output.id]};
     const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
@@ -773,14 +779,14 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   private uploadToGPU(id: number): void {
-    const {texShape, values, dtype, texture} = this.texData[id];
+    this.throwIfNoData(id);
+    const {texShape, values, texture, dtype} = this.texData[id];
     if (texture != null) {
       // Array is already on GPU. No-op.
       return;
     }
     const newTexture = this.textureManager.acquireTexture(texShape);
     this.texData[id].texture = newTexture;
-    this.texData[id].values = null;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
           newTexture, texShape[0],
@@ -789,17 +795,19 @@ export class MathBackendWebGL implements MathBackend {
     }
   }
 
-  private cacheOnCPU(id: number, float32Values: Float32Array) {
+  private cacheOnCPU(id: number, float32Values?: Float32Array) {
     // In delayed storage mode, when the user reads data, we don't keep a copy
     // on the gpu, to minimize likelihood of memory leak. We re-upload to gpu
     // the next time a gpgpu program needs the texture.
     const dontKeepCopyOnGPU = this.delayedStorage;
     const {texture, texShape, dtype} = this.texData[id];
-    if (dontKeepCopyOnGPU) {
-      this.texData[id].texture = null;
+    if (dontKeepCopyOnGPU && texture != null) {
       this.textureManager.releaseTexture(texture, texShape);
+      this.texData[id].texture = null;
     }
-    this.texData[id].values = float32ToTypedArray(float32Values, dtype);
+    if (float32Values != null) {
+      this.texData[id].values = float32ToTypedArray(float32Values, dtype);
+    }
   }
 }
 

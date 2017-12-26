@@ -91,6 +91,8 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     if (this.id == null) {
       this.id = NDArray.nextId++;
       this.math.register(this);
+    }
+    if (values != null) {
       this.math.write(this.id, values, this.dtype, this.shape);
     }
   }
