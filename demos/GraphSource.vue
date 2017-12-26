@@ -13,19 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================-->
 <template>
-<div>
-  <demo-header name="Example Vuejs demo"></demo-header>
-  <div id="app">Hello {{ msg }}</div>
-  <demo-footer></demo-footer>
-</div>
+  <!-- Placeholder to include Chart.js in Vue applications.
+       Include this file in Vue applications that need Chart. -->
 </template>
 
-<style>
-#app {
-  text-align: center;
-  font-size: 40px;
-  margin: 20px;
-}
-</style>
-
-<script lang="ts" src="./app.ts"></script>
+<<script>
+const Chart = require('chart.js');
+</script>
