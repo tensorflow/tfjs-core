@@ -241,11 +241,11 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(value.dtype).toEqual('float32');
       test_util.expectArraysClose(value, [10]);
 
-      expect(gradients.a.shape).toEqual([]);
+      expect(gradients.a.shape).toEqual(a.shape);
       expect(gradients.a.dtype).toEqual('float32');
       test_util.expectArraysClose(gradients.a, [2]);
 
-      expect(gradients.b.shape).toEqual([]);
+      expect(gradients.b.shape).toEqual(b.shape);
       expect(gradients.b.dtype).toEqual('float32');
       test_util.expectArraysClose(gradients.b, [5]);
     });
@@ -260,11 +260,11 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(value.dtype).toEqual('float32');
       test_util.expectArraysClose(value.getValues(), new Float32Array([26]));
 
-      expect(gradients.a.shape).toEqual([]);
+      expect(gradients.a.shape).toEqual(a.shape);
       expect(gradients.b.dtype).toEqual('float32');
       test_util.expectArraysClose(gradients.a, [3, 4, 5]);
 
-      expect(gradients.b.shape).toEqual([]);
+      expect(gradients.b.shape).toEqual(b.shape);
       expect(gradients.b.dtype).toEqual('float32');
       test_util.expectArraysClose(gradients.b, [1, 2, 3]);
     });
@@ -279,11 +279,11 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(value.dtype).toEqual('float32');
       test_util.expectArraysClose(value, [29], 1e-1);
 
-      expect(gradients.a.shape).toEqual([]);
+      expect(gradients.a.shape).toEqual(a.shape);
       expect(gradients.a.dtype).toEqual('float32');
       test_util.expectArraysClose(gradients.a, [1, 3, 4, 5]);
 
-      expect(gradients.b.shape).toEqual([]);
+      expect(gradients.b.shape).toEqual(b.shape);
       expect(gradients.b.dtype).toEqual('float32');
       test_util.expectArraysClose(gradients.b, [3, 1, 2, 3]);
     });
@@ -748,7 +748,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
           math.valueAndGradients(() => math.sum(math.subtract(a, b)), {a, b});
 
       expect(value.shape).toEqual([]);
-      test_util.expectArraysClose(value.dataSync(), [-3 + -1 + 1 + 3]);
+      test_util.expectArraysClose(value, [-3 + -1 + 1 + 3]);
 
       expect(gradients.a.shape).toEqual(a.shape);
       expect(gradients.a.dtype).toEqual('float32');
