@@ -790,10 +790,12 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   private cacheOnCPU(id: number, float32Values: Float32Array) {
-    // When we don't need immediate upload
-    const deleteFromGPU = this.delayedStorage;
+    // In delayed storage mode, when the user reads data, we don't keep a copy
+    // on the gpu, to minimize likelihood of memory leak. We re-upload to gpu
+    // the next time a gpgpu program needs the texture.
+    const dontKeepCopyOnGPU = this.delayedStorage;
     const {texture, texShape, dtype} = this.texData[id];
-    if (deleteFromGPU) {
+    if (dontKeepCopyOnGPU) {
       this.texData[id].texture = null;
       this.textureManager.releaseTexture(texture, texShape);
     }
