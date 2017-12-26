@@ -276,7 +276,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     }
     const vals = this.getValues();
     vals[index] = value;
-    this.math.disposeData(this.id);
     this.math.write(this.id, vals, this.dtype, this.shape);
   }
 
@@ -310,7 +309,6 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
     this.throwIfDisposed();
     const vals = this.getValues();
     vals.fill(value);
-    this.math.disposeData(this.id);
     this.math.write(this.id, vals, this.dtype, this.shape);
   }
 
