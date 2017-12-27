@@ -15,97 +15,31 @@
  * =============================================================================
  */
 
+import {ENV} from '../environment';
+import * as util from '../util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, NDArrayBase, Scalar} from './ndarray';
+import {DataTypes, NDArray, Rank} from './ndarray';
 
-export function variable<T extends keyof DataTypes>(a: NDArray<T>):
-    Variable<T> {
-  return new Variable(a);
-}
-
-export class Variable<T extends keyof DataTypes> implements NDArrayBase<T> {
-  constructor(private ndarray: NDArray<T>) {}
-
-  get id() {
-    return this.ndarray.id;
-  }
-  get shape() {
-    return this.ndarray.shape;
-  }
-  get size() {
-    return this.ndarray.size;
-  }
-  get dtype() {
-    return this.ndarray.dtype;
-  }
-  get rank() {
-    return this.ndarray.rank;
+export class Variable<D extends keyof DataTypes, R extends keyof Rank> extends
+    NDArray<D, R> {
+  constructor(initialValue: NDArray<D, R>, public trainable = true, dtype?: D) {
+    super(initialValue.shape, initialValue.dtype, null, initialValue.id);
+    ENV.math.keep(initialValue);
   }
 
-  reshape(newShape: number[]): NDArray<T> {
-    throw new Error('Method not implemented.');
-  }
-  flatten(): Array1D<T> {
-    throw new Error('Method not implemented.');
-  }
-  asScalar(): Scalar<T> {
-    throw new Error('Method not implemented.');
-  }
-  as1D(): Array1D<T> {
-    throw new Error('Method not implemented.');
-  }
-  as2D(rows: number, columns: number): Array2D<T> {
-    throw new Error('Method not implemented.');
-  }
-  as3D(rows: number, columns: number, depth: number): Array3D<T> {
-    throw new Error('Method not implemented.');
-  }
-  as4D(rows: number, columns: number, depth: number, depth2: number):
-      Array4D<T> {
-    throw new Error('Method not implemented.');
-  }
-  asType<G extends T>(dtype: G): NDArray<G> {
-    throw new Error('Method not implemented.');
-  }
-  get(...locs: number[]): number {
-    throw new Error('Method not implemented.');
-  }
-  add(value: number, ...locs: number[]): void {
-    this.ndarray.add(value, ...locs);
-  }
-  set(value: number, ...locs: number[]): void {
-    this.ndarray.set(value, ...locs);
-  }
-  val(...locs: number[]): Promise<number> {
-    return this.ndarray.val(...locs);
-  }
-  locToIndex(locs: number[]): number {
-    return this.ndarray.locToIndex(locs);
-  }
-  indexToLoc(index: number): number[] {
-    return this.ndarray.indexToLoc(index);
-  }
-  fill(value: number): void {
-    this.ndarray.fill(value);
-  }
-  /** @deprecated Use dataSync() instead. */
-  getValues(): DataTypes[T] {
-    return this.dataSync();
-  }
-  /** @deprecated Use data() instead. */
-  getValuesAsync(): Promise<DataTypes[T]> {
-    return this.data();
-  }
-  data(): Promise<DataTypes[T]> {
-    return this.ndarray.data();
-  }
-  dataSync(): DataTypes[T] {
-    return this.ndarray.dataSync();
-  }
-  dispose(): void {
-    this.ndarray.dispose();
-  }
-  equals(t: NDArray<T>): boolean {
-    return this.ndarray.equals(t);
+  assign(newValue: NDArray<D, R>): void {
+    if (newValue.dtype !== this.dtype) {
+      throw new Error(
+          `dtype of the new value (${newValue.dtype}) and ` +
+          `previous value (${this.dtype}) must match`);
+    }
+    if (!util.arraysEqual(newValue.shape, this.shape)) {
+      throw new Error(
+          `shape of the new value (${newValue.shape}) and ` +
+          `previous value (${this.shape}) must match`);
+    }
+    this.math.disposeData(this.id);
+    this.id = newValue.id;
+    ENV.math.keep(this);
   }
 }
