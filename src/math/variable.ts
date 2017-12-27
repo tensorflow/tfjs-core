@@ -17,17 +17,48 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-// tslint:disable-next-line:max-line-length
 import {DataTypes, NDArray, Rank} from './ndarray';
 
-export class Variable<D extends keyof DataTypes, R extends keyof Rank> extends
-    NDArray<D, R> {
-  constructor(initialValue: NDArray<D, R>, public trainable = true) {
+export class Variable<D extends keyof DataTypes = keyof DataTypes, R extends
+                          keyof Rank = keyof Rank> extends NDArray<D, R> {
+  private static nextVarId = 0;
+  name: string;
+
+  /**
+   * Private constructor since we can not add logic before calling super().
+   * Instead, we expose static `Variable.variable` method below, which will be
+   * added to global namespace.
+   */
+  private constructor(
+      initialValue: NDArray<D, R>, public trainable = true, name?: string) {
     super(initialValue.shape, initialValue.dtype, null, initialValue.id);
-    ENV.math.keep(initialValue);
+    this.name = name;
+    if (this.name == null) {
+      this.name = Variable.nextVarId.toString();
+      Variable.nextVarId++;
+    }
+    ENV.math.registerVariable(this);
+    ENV.math.keep(this);
   }
 
-  /** Assign new values to this variable. The old array will be disposed. */
+  /**
+   * Creates a new variable with the provided initial value.
+   *
+   * @param initialValue An ndarray.
+   * @param trainable If true, optimizers are allowed to update it.
+   * @param name Name of the variable. Defaults to a unique id.
+   * @param dtype If set, initialValue will be converted to the given type.
+   */
+  static variable<D extends keyof DataTypes, R extends keyof Rank>(
+      initialValue: NDArray<D, R>, trainable = true, name?: string,
+      dtype?: D): Variable<D, R> {
+    if (dtype != null && dtype !== initialValue.dtype) {
+      initialValue = initialValue.asType(dtype);
+    }
+    return new Variable(initialValue, trainable, name);
+  }
+
+  /** Assign a new array to this variable. The old array will be disposed. */
   assign(newValue: NDArray<D, R>): void {
     if (newValue.dtype !== this.dtype) {
       throw new Error(
@@ -44,3 +75,6 @@ export class Variable<D extends keyof DataTypes, R extends keyof Rank> extends
     ENV.math.keep(this);
   }
 }
+
+const variable = Variable.variable;
+export {variable};

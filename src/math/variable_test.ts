@@ -15,16 +15,43 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {Array1D, Array2D} from './ndarray';
-import {Variable} from './variable';
+import {variable, Variable} from './variable';
 
 const tests: MathTests = it => {
+  it('simple update', math => {
+    const v = variable(Array1D.new([1, 2, 3]));
+    test_util.expectArraysClose(v, [1, 2, 3]);
+
+    v.assign(Array1D.new([4, 5, 6]));
+    test_util.expectArraysClose(v, [4, 5, 6]);
+  });
+
+  it('default names are unique', math => {
+    const v = variable(Array1D.new([1, 2, 3]));
+    expect(v.name).not.toBeNull();
+
+    const v2 = variable(Array1D.new([1, 2, 3]));
+    expect(v2.name).not.toBeNull();
+    expect(v.name).not.toBe(v2.name);
+  });
+
+  it('user provided name', math => {
+    const v = variable(Array1D.new([1, 2, 3]), true, 'myName');
+    expect(v.name).toBe('myName');
+  });
+
+  it('if name already used, throw error', math => {
+    variable(Array1D.new([1, 2, 3]), true, 'myName');
+    expect(() => variable(Array1D.new([1, 2, 3]), true, 'myName'))
+        .toThrowError();
+  });
+
   it('math ops can take variables', math => {
     const value = Array1D.new([1, 2, 3]);
-    const v = new Variable(value);
+    const v = variable(value);
     const res = math.sum(v);
     test_util.expectArraysClose(res, [6]);
   });
@@ -37,7 +64,7 @@ const tests: MathTests = it => {
       const value = Array1D.new([1, 2, 3], 'float32');
       expect(math.getNumArrays()).toBe(1);
 
-      v = new Variable(value);
+      v = variable(value);
       expect(math.getNumArrays()).toBe(1);
     });
 
@@ -52,7 +79,7 @@ const tests: MathTests = it => {
     let v: Variable<'float32', '1'>;
     const firstValue = Array1D.new([1, 2, 3]);
 
-    v = new Variable(firstValue);
+    v = variable(firstValue);
     expect(math.getNumArrays()).toBe(1);
 
     const secondValue = Array1D.new([4, 5, 6]);
@@ -70,14 +97,14 @@ const tests: MathTests = it => {
   });
 
   it('shape must match', math => {
-    const v = new Variable(Array1D.new([1, 2, 3]));
+    const v = variable(Array1D.new([1, 2, 3]));
     expect(() => v.assign(Array1D.new([1, 2]))).toThrowError();
     // tslint:disable-next-line:no-any
     expect(() => v.assign(Array2D.new([1, 2], [3, 4]) as any)).toThrowError();
   });
 
   it('dtype must match', math => {
-    const v = new Variable(Array1D.new([1, 2, 3]));
+    const v = variable(Array1D.new([1, 2, 3]));
     // tslint:disable-next-line:no-any
     expect(() => v.assign(Array1D.new([1, 1, 1], 'int32') as any))
         .toThrowError();

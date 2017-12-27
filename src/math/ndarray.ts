@@ -61,7 +61,7 @@ export interface Rank {
 
 export class NDArray<D extends keyof DataTypes = keyof DataTypes,
                                R extends keyof Rank = keyof Rank> {
-  static nextId = 0;
+  private static nextId = 0;
 
   id: number;
   /** The shape of the ndarray. */
@@ -108,7 +108,7 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
       }
     }
     this.id = id;
-    this.rankType = (this.rank < 5 ? this.rank + '' : 'higher') as R;
+    this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     if (this.id == null) {
       this.id = NDArray.nextId++;
       this.math.register(this);

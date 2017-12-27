@@ -34,6 +34,7 @@ import * as conv_util from './conv_util';
 import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
+import {Variable} from './variable';
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -42,6 +43,7 @@ export interface LSTMCell {
 export interface NDArrayManager {
   getNumArrays(): number;
   register(a: NDArray): void;
+  registerVariable(v: Variable): void;
 }
 
 export class NDArrayMath implements NDArrayStorage, NDArrayManager {
@@ -49,6 +51,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   private registeredArrays = new Set();
   private backend: MathBackend;
   private customBackend = false;
+
+  // Public since optimizers will use it.
+  registeredVariables = new Map<string, Variable>();
 
   time(query: () => NDArray): Promise<number> {
     return this.backend.time(query);
@@ -64,6 +69,13 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     }
     this.registeredArrays.add(a.id);
     this.backendEngine.track(a);
+  }
+
+  registerVariable(v: Variable) {
+    if (this.registeredVariables.has(v.name)) {
+      throw new Error(`Variable with name ${v.name} was already registered`);
+    }
+    this.registeredVariables.set(v.name, v);
   }
 
   writePixels(
