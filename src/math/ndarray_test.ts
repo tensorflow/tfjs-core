@@ -116,7 +116,7 @@ const tests: MathTests = it => {
     test_util.expectNumbersClose(a.get(1, 2), 10);
   });
 
-  it('NDArray getValues CPU --> GPU', () => {
+  it('NDArray dataSync CPU --> GPU', () => {
     const a = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
     test_util.expectArraysClose(
         a.dataSync(), new Float32Array([1, 2, 3, 4, 5, 6]));
