@@ -48,12 +48,8 @@ const tests: MathTests = it => {
 
   it('Propagates NaNs', math => {
     const a = Array1D.new([2, 1, NaN]);
-
     const y = math.softmax(a);
-
     test_util.expectArraysClose(y, [NaN, NaN, NaN]);
-
-    a.dispose();
   });
 
   it('2D, dim=1', math => {
