@@ -38,7 +38,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const result = math.conv2d(x, w, bias, stride, pad);
       const expected = new Float32Array([1, 3, 5, 7]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
       x.dispose();
       w.dispose();
       bias.dispose();
@@ -60,7 +60,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       expect(result.shape).toEqual([2, 2, 2, 1]);
       const expected = new Float32Array([1, 3, 5, 7, 9, 11, 13, 15]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
       x.dispose();
       w.dispose();
       bias.dispose();
@@ -82,7 +82,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const result = math.conv2d(x, w, bias, stride, pad);
       const expected = new Float32Array([19]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       x.dispose();
       w.dispose();

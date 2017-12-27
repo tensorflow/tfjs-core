@@ -40,7 +40,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const result = math.slice1D(a, 3, 2);
 
       expect(result.shape).toEqual([2]);
-      test_util.expectArraysClose(result.getValues(), new Float32Array([4, 5]));
+      test_util.expectArraysClose(result.dataSync(), new Float32Array([4, 5]));
 
       a.dispose();
     });
@@ -52,7 +52,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
       expect(result.shape).toEqual([3]);
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([2, 3, 4]));
+          result.dataSync(), new Float32Array([2, 3, 4]));
 
       a.dispose();
     });
@@ -94,11 +94,11 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
       const b = math.slice2D(a, [0, 0], [2, 2]);
 
-      const aValues = a.getValues();
+      const aValues = a.dataSync();
 
       const expected =
           new Float32Array([aValues[0], aValues[1], aValues[10], aValues[11]]);
-      test_util.expectArraysClose(b.getValues(), expected);
+      test_util.expectArraysClose(b.dataSync(), expected);
 
       a.dispose();
     });
@@ -109,7 +109,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const b = math.slice2D(a, [1, 1], [3, 2]);
 
       const expected = new Float32Array([5, 6, 8, 9, 11, 12]);
-      test_util.expectArraysClose(b.getValues(), expected);
+      test_util.expectArraysClose(b.dataSync(), expected);
 
       a.dispose();
     });
@@ -152,7 +152,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
       expect(result.shape).toEqual([1, 2, 2]);
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([5, 6, 7, 8]));
+          result.dataSync(), new Float32Array([5, 6, 7, 8]));
 
       a.dispose();
     });
@@ -163,7 +163,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const result = math.slice3D(a, [0, 1, 1], [2, 1, 1]);
 
       expect(result.shape).toEqual([2, 1, 1]);
-      test_util.expectArraysClose(result.getValues(), new Float32Array([4, 8]));
+      test_util.expectArraysClose(result.dataSync(), new Float32Array([4, 8]));
 
       a.dispose();
     });
@@ -200,7 +200,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
       expect(result.shape).toEqual([1, 2, 2, 2]);
       test_util.expectArraysClose(
-          result.getValues(),
+          result.dataSync(),
           new Float32Array([11, 22, 33, 44, 55, 66, 77, 88]));
 
       a.dispose();
@@ -214,8 +214,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const result = math.slice4D(a, [0, 1, 1, 1], [2, 1, 1, 1]);
 
       expect(result.shape).toEqual([2, 1, 1, 1]);
-      test_util.expectArraysClose(
-          result.getValues(), new Float32Array([8, 88]));
+      test_util.expectArraysClose(result.dataSync(), new Float32Array([8, 88]));
 
       a.dispose();
     });

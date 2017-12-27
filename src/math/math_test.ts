@@ -190,7 +190,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.relu(a);
 
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([2, 0, 0, 3]));
+          res.dataSync(), new Float32Array([2, 0, 0, 3]));
 
       a.dispose();
     });
@@ -233,7 +233,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       const res = math.relu(a);
 
-      test_util.expectArraysClose(res.getValues(), new Float32Array([2, NaN]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([2, NaN]));
 
       a.dispose();
     });
@@ -264,7 +264,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       const res = math.add(a, b);
 
-      expect(res.getValues()).toEqual(new Int32Array([
+      expect(res.dataSync()).toEqual(new Int32Array([
         120, 120, 120, 120, 120, 120, 120, 120, 270, 270, 270, 270, 270, 270,
         270, 270
       ]));

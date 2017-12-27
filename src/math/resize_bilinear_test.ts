@@ -29,7 +29,7 @@ import {Array3D} from './ndarray';
       const output = math.resizeBilinear3D(input, [3, 3], false);
 
       test_util.expectArraysClose(
-          output.getValues(),
+          output.dataSync(),
           new Float32Array([2, 2, 2, 10 / 3, 10 / 3, 10 / 3, 4, 4, 4]));
       input.dispose();
     });
@@ -40,7 +40,7 @@ import {Array3D} from './ndarray';
       const output = math.resizeBilinear3D(input, [3, 3], true);
 
       test_util.expectArraysClose(
-          output.getValues(), new Float32Array([2, 2, 2, 3, 3, 3, 4, 4, 4]));
+          output.dataSync(), new Float32Array([2, 2, 2, 3, 3, 3, 4, 4, 4]));
 
       input.dispose();
     });
@@ -54,7 +54,7 @@ import {Array3D} from './ndarray';
       const output = math.resizeBilinear3D(input, [4, 5], false);
 
       test_util.expectArraysClose(
-          output.getValues(), new Float32Array([
+          output.dataSync(), new Float32Array([
             1.19074047,  0.91373104, 1.68596613, 0.05186744, 1.69034398,
             -0.15654698, 0.7130264,  0.94193673, 0.38725394, 1.30809784,
             0.9045459,   2.20486879, 1.59434628, 0.89455694, 1.68591988,
@@ -77,7 +77,7 @@ import {Array3D} from './ndarray';
       const output = math.resizeBilinear3D(input, [4, 5], true);
 
       test_util.expectArraysClose(
-          output.getValues(), new Float32Array([
+          output.dataSync(), new Float32Array([
             1.5632453,  2.13817763, 1.50361478, 1.60725224, 1.44398427,
             1.07632685, 1.01852608, 0.35330909, 0.59306782, -0.36970866,
             1.58366978, 2.03769612, 1.46307099, 1.71427906, 1.3424722,

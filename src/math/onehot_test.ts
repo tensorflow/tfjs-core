@@ -30,7 +30,7 @@ const tests: MathTests = it => {
     const res = math.oneHot(indices, 2);
     const expected = new Float32Array([1, 0, 0, 1]);
     expect(res.shape).toEqual([2, 2]);
-    test_util.expectArraysClose(res.getValues(), expected);
+    test_util.expectArraysClose(res.dataSync(), expected);
   });
 
   it('Depth 2, transposed diagonal', math => {
@@ -38,7 +38,7 @@ const tests: MathTests = it => {
     const res = math.oneHot(indices, 2);
     const expected = new Float32Array([0, 1, 1, 0]);
     expect(res.shape).toEqual([2, 2]);
-    test_util.expectArraysClose(res.getValues(), expected);
+    test_util.expectArraysClose(res.dataSync(), expected);
   });
 
   it('Depth 3, 4 events', math => {
@@ -46,7 +46,7 @@ const tests: MathTests = it => {
     const res = math.oneHot(indices, 3);
     const expected = new Float32Array([0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0]);
     expect(res.shape).toEqual([4, 3]);
-    test_util.expectArraysClose(res.getValues(), expected);
+    test_util.expectArraysClose(res.dataSync(), expected);
   });
 
   it('Depth 2 onValue=3, offValue=-2', math => {
@@ -54,7 +54,7 @@ const tests: MathTests = it => {
     const res = math.oneHot(indices, 2, 3, -2);
     const expected = new Float32Array([3, -2, -2, 3]);
     expect(res.shape).toEqual([2, 2]);
-    test_util.expectArraysClose(res.getValues(), expected);
+    test_util.expectArraysClose(res.dataSync(), expected);
   });
 };
 

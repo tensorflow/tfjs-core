@@ -53,7 +53,7 @@ import * as reduce_util from './reduce_util';
       const r = math.min(a, 0);
 
       expect(r.shape).toEqual([3]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([3, -7, 0]));
+      test_util.expectArraysClose(r.dataSync(), new Float32Array([3, -7, 0]));
     });
 
     it('2D, axis=0, keepDims', math => {
@@ -61,19 +61,19 @@ import * as reduce_util from './reduce_util';
       const r = math.min(a, 0, true /* keepDims */);
 
       expect(r.shape).toEqual([1, 3]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([3, -7, 0]));
+      test_util.expectArraysClose(r.dataSync(), new Float32Array([3, -7, 0]));
     });
 
     it('2D, axis=1 provided as a number', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.min(a, 1);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([2, -7]));
+      test_util.expectArraysClose(r.dataSync(), new Float32Array([2, -7]));
     });
 
     it('2D, axis=[1]', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.min(a, [1]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([2, -7]));
+      test_util.expectArraysClose(r.dataSync(), new Float32Array([2, -7]));
     });
   };
 
@@ -123,7 +123,7 @@ import * as reduce_util from './reduce_util';
       const r = math.max(a, [0]);
       expect(r.shape).toEqual([3]);
       test_util.expectArraysClose(
-          r.getValues(), new Float32Array([100, -1, 2]));
+          r.dataSync(), new Float32Array([100, -1, 2]));
     });
 
     it('2D, axis=0, keepDims', math => {
@@ -131,19 +131,19 @@ import * as reduce_util from './reduce_util';
       const r = math.max(a, [0], true /* keepDims */);
       expect(r.shape).toEqual([1, 3]);
       test_util.expectArraysClose(
-          r.getValues(), new Float32Array([100, -1, 2]));
+          r.dataSync(), new Float32Array([100, -1, 2]));
     });
 
     it('2D, axis=1 provided as a number', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.max(a, 1);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([5, 100]));
+      test_util.expectArraysClose(r.dataSync(), new Float32Array([5, 100]));
     });
 
     it('2D, axis=[1]', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.max(a, [1]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([5, 100]));
+      test_util.expectArraysClose(r.dataSync(), new Float32Array([5, 100]));
     });
   };
 
@@ -209,14 +209,14 @@ import * as reduce_util from './reduce_util';
 
       expect(r.shape).toEqual([3]);
       expect(r.dtype).toBe('int32');
-      expect(r.getValues()).toEqual(new Int32Array([1, 0, 1]));
+      expect(r.dataSync()).toEqual(new Int32Array([1, 0, 1]));
     });
 
     it('2D, axis=1', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.argMax(a, 1);
       expect(r.dtype).toBe('int32');
-      expect(r.getValues()).toEqual(new Int32Array([2, 0]));
+      expect(r.dataSync()).toEqual(new Int32Array([2, 0]));
     });
   };
 
@@ -279,13 +279,13 @@ import * as reduce_util from './reduce_util';
 
       expect(r.shape).toEqual([3]);
       expect(r.dtype).toBe('int32');
-      expect(r.getValues()).toEqual(new Int32Array([0, 1, 0]));
+      expect(r.dataSync()).toEqual(new Int32Array([0, 1, 0]));
     });
 
     it('2D, axis=1', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, -8]);
       const r = math.argMin(a, 1);
-      expect(r.getValues()).toEqual(new Int32Array([1, 2]));
+      expect(r.dataSync()).toEqual(new Int32Array([1, 2]));
     });
   };
 
@@ -375,7 +375,7 @@ import * as reduce_util from './reduce_util';
         Math.log(Math.exp(1) + Math.exp(3) + Math.exp(0)),
         Math.log(Math.exp(2) + Math.exp(0) + Math.exp(1))
       ]);
-      test_util.expectArraysClose(r.getValues(), expected);
+      test_util.expectArraysClose(r.dataSync(), expected);
     });
 
     it('axes=0 in 2D array, keepDims', math => {
@@ -386,7 +386,7 @@ import * as reduce_util from './reduce_util';
         Math.log(Math.exp(1) + Math.exp(3) + Math.exp(0)),
         Math.log(Math.exp(2) + Math.exp(0) + Math.exp(1))
       ]);
-      test_util.expectArraysClose(r.getValues(), expected);
+      test_util.expectArraysClose(r.dataSync(), expected);
     });
 
     it('axes=1 in 2D array', math => {
@@ -398,7 +398,7 @@ import * as reduce_util from './reduce_util';
         Math.log(Math.exp(3) + Math.exp(0)),
         Math.log(Math.exp(0) + Math.exp(1)),
       ]);
-      test_util.expectArraysClose(res.getValues(), expected);
+      test_util.expectArraysClose(res.dataSync(), expected);
     });
 
     it('2D, axes=1 provided as a single digit', math => {
@@ -409,7 +409,7 @@ import * as reduce_util from './reduce_util';
         Math.log(Math.exp(1) + Math.exp(2) + Math.exp(3)),
         Math.log(Math.exp(0) + Math.exp(0) + Math.exp(1))
       ]);
-      test_util.expectArraysClose(res.getValues(), expected);
+      test_util.expectArraysClose(res.dataSync(), expected);
     });
 
     it('axes=0,1 in 2D array', math => {
@@ -419,7 +419,7 @@ import * as reduce_util from './reduce_util';
       const expected = new Float32Array([Math.log(
           Math.exp(1) + Math.exp(2) + Math.exp(3) + Math.exp(0) + Math.exp(0) +
           Math.exp(1))]);
-      test_util.expectArraysClose(res.getValues(), expected);
+      test_util.expectArraysClose(res.dataSync(), expected);
     });
   };
 
@@ -462,42 +462,42 @@ import * as reduce_util from './reduce_util';
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, null, true /* keepDims */);
       expect(res.shape).toEqual([1, 1]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([7]));
     });
 
     it('sums across axis=0 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [0]);
       expect(res.shape).toEqual([2]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([4, 3]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([4, 3]));
     });
 
     it('sums across axis=0 in 2D array, keepDims', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [0], true /* keepDims */);
       expect(res.shape).toEqual([1, 2]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([4, 3]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([4, 3]));
     });
 
     it('sums across axis=1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [1]);
       expect(res.shape).toEqual([3]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([3, 3, 1]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([3, 3, 1]));
     });
 
     it('2D, axis=1 provided as number', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, 1);
       expect(res.shape).toEqual([2]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([6, 1]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([6, 1]));
     });
 
     it('sums across axis=0,1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [0, 1]);
       expect(res.shape).toEqual([]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([7]));
     });
   };
 
@@ -599,7 +599,7 @@ import * as reduce_util from './reduce_util';
       const res = math.mean(a, null, true /* keepDims */);
       expect(res.shape).toEqual([1, 1]);
       expect(res.dtype).toBe('float32');
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([7 / 6]));
     });
 
     it('axis=0 in 2D array', math => {
@@ -609,7 +609,7 @@ import * as reduce_util from './reduce_util';
       expect(res.shape).toEqual([2]);
       expect(res.dtype).toBe('float32');
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([4 / 3, 1]));
+          res.dataSync(), new Float32Array([4 / 3, 1]));
     });
 
     it('axis=0 in 2D array, keepDims', math => {
@@ -619,7 +619,7 @@ import * as reduce_util from './reduce_util';
       expect(res.shape).toEqual([1, 2]);
       expect(res.dtype).toBe('float32');
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([4 / 3, 1]));
+          res.dataSync(), new Float32Array([4 / 3, 1]));
     });
 
     it('axis=1 in 2D array', math => {
@@ -628,7 +628,7 @@ import * as reduce_util from './reduce_util';
       expect(res.dtype).toBe('float32');
       expect(res.shape).toEqual([3]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([1.5, 1.5, 0.5]));
+          res.dataSync(), new Float32Array([1.5, 1.5, 0.5]));
     });
 
     it('2D, axis=1 provided as number', math => {
@@ -637,7 +637,7 @@ import * as reduce_util from './reduce_util';
       expect(res.shape).toEqual([2]);
       expect(res.dtype).toBe('float32');
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([2, 1 / 3]));
+          res.dataSync(), new Float32Array([2, 1 / 3]));
     });
 
     it('axis=0,1 in 2D array', math => {
@@ -645,7 +645,7 @@ import * as reduce_util from './reduce_util';
       const res = math.mean(a, [0, 1]);
       expect(res.shape).toEqual([]);
       expect(res.dtype).toBe('float32');
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
+      test_util.expectArraysClose(res.dataSync(), new Float32Array([7 / 6]));
     });
   };
 
@@ -711,9 +711,9 @@ import * as reduce_util from './reduce_util';
       expect(mean.dtype).toBe('float32');
       expect(variance.shape).toEqual([1, 1]);
       expect(variance.dtype).toBe('float32');
-      test_util.expectArraysClose(mean.getValues(), new Float32Array([7 / 6]));
+      test_util.expectArraysClose(mean.dataSync(), new Float32Array([7 / 6]));
       test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([1.138889]));
+          variance.dataSync(), new Float32Array([1.138889]));
     });
 
     it('axis=0 in 2D array', math => {
@@ -725,9 +725,9 @@ import * as reduce_util from './reduce_util';
       expect(variance.shape).toEqual([2]);
       expect(variance.dtype).toBe('float32');
       test_util.expectArraysClose(
-          mean.getValues(), new Float32Array([4 / 3, 1]));
+          mean.dataSync(), new Float32Array([4 / 3, 1]));
       test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([1.556, 2 / 3]));
+          variance.dataSync(), new Float32Array([1.556, 2 / 3]));
     });
 
     it('axis=1 in 2D array', math => {
@@ -739,9 +739,9 @@ import * as reduce_util from './reduce_util';
       expect(variance.dtype).toBe('float32');
       expect(variance.shape).toEqual([3]);
       test_util.expectArraysClose(
-          mean.getValues(), new Float32Array([1.5, 1.5, 0.5]));
+          mean.dataSync(), new Float32Array([1.5, 1.5, 0.5]));
       test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([0.25, 2.25, 0.25]));
+          variance.dataSync(), new Float32Array([0.25, 2.25, 0.25]));
     });
 
     it('2D, axis=1 provided as number', math => {
@@ -753,9 +753,9 @@ import * as reduce_util from './reduce_util';
       expect(variance.shape).toEqual([2]);
       expect(variance.dtype).toBe('float32');
       test_util.expectArraysClose(
-          mean.getValues(), new Float32Array([2, 1 / 3]));
+          mean.dataSync(), new Float32Array([2, 1 / 3]));
       test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([2 / 3, 0.222]));
+          variance.dataSync(), new Float32Array([2 / 3, 0.222]));
     });
 
     it('axis=0,1 in 2D array', math => {
@@ -766,9 +766,9 @@ import * as reduce_util from './reduce_util';
       expect(mean.dtype).toBe('float32');
       expect(variance.shape).toEqual([]);
       expect(variance.dtype).toBe('float32');
-      test_util.expectArraysClose(mean.getValues(), new Float32Array([7 / 6]));
+      test_util.expectArraysClose(mean.dataSync(), new Float32Array([7 / 6]));
       test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([1.1389]));
+          variance.dataSync(), new Float32Array([1.1389]));
     });
   };
 
@@ -924,7 +924,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3]));
 
       a.dispose();
     });
@@ -935,7 +935,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3]));
 
       a.dispose();
     });
@@ -946,7 +946,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([2]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3, 2]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3, 2]));
 
       a.dispose();
     });
@@ -958,7 +958,7 @@ import * as reduce_util from './reduce_util';
       expect(norm.dtype).toBe('float32');
       expect(norm.shape).toEqual([3]);
       test_util.expectArraysClose(
-          norm.getValues(), new Float32Array([2, 3, 1]));
+          norm.dataSync(), new Float32Array([2, 3, 1]));
 
       a.dispose();
     });
@@ -970,7 +970,7 @@ import * as reduce_util from './reduce_util';
       expect(norm.dtype).toBe('float32');
       expect(norm.shape).toEqual([3, 1]);
       test_util.expectArraysClose(
-          norm.getValues(), new Float32Array([2, 3, 1]));
+          norm.dataSync(), new Float32Array([2, 3, 1]));
 
       a.dispose();
     });
@@ -981,7 +981,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([2]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3, 1]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3, 1]));
 
       a.dispose();
     });
@@ -992,7 +992,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3]));
 
       a.dispose();
     });
@@ -1003,7 +1003,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3]));
 
       a.dispose();
     });
@@ -1014,7 +1014,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([4]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([4]));
 
       a.dispose();
     });
@@ -1025,7 +1025,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1, 1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3]));
 
       a.dispose();
     });
@@ -1036,7 +1036,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1, 2]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([4, 3]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([4, 3]));
 
       a.dispose();
     });
@@ -1047,7 +1047,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3]));
 
       a.dispose();
     });
@@ -1058,7 +1058,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
+      test_util.expectArraysClose(norm.dataSync(), new Float32Array([3]));
 
       a.dispose();
     });
@@ -1073,7 +1073,7 @@ import * as reduce_util from './reduce_util';
       expect(norm.shape).toEqual([2, 2]);
       expect(norm.dtype).toBe('float32');
       test_util.expectArraysClose(
-          norm.getValues(), new Float32Array([4, 3, 4, 3]));
+          norm.dataSync(), new Float32Array([4, 3, 4, 3]));
 
       a.dispose();
     });
@@ -1088,7 +1088,7 @@ import * as reduce_util from './reduce_util';
       expect(norm.shape).toEqual([1, 1, 2, 2]);
       expect(norm.dtype).toBe('float32');
       test_util.expectArraysClose(
-          norm.getValues(), new Float32Array([4, 3, 4, 3]));
+          norm.dataSync(), new Float32Array([4, 3, 4, 3]));
 
       a.dispose();
     });

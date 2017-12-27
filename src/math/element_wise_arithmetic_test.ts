@@ -30,14 +30,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.elementWiseMul(a, b);
 
       expect(result.shape).toEqual([2, 2]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('elementWiseMul propagates NaNs', math => {
       const a = Array2D.new([2, 2], [1, 3, 4, 0]);
       const b = Array2D.new([2, 2], [NaN, 3, NaN, 3]);
 
-      const result = math.elementWiseMul(a, b).getValues();
+      const result = math.elementWiseMul(a, b).dataSync();
       test_util.expectArraysClose(result, new Float32Array([NaN, 9, NaN, 0]));
     });
 
@@ -57,7 +57,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.multiply(a, b);
 
       expect(result.shape).toEqual([2, 2]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('multiply broadcasting ndarrays', math => {
@@ -67,7 +67,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.multiply(a, b);
 
       expect(result.shape).toEqual([2, 2]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('multiply broadcasting same rank NDArrays different shape', math => {
@@ -79,7 +79,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([2, 4, -9, -12]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('multiply broadcast 2D + 1D', math => {
@@ -91,7 +91,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([1, 4, -3, -8]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('divide', math => {
@@ -101,14 +101,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const r = math.divide(a, c);
 
       test_util.expectArraysClose(
-          r.getValues(), new Float32Array([1, 1, 1, 1, 2.5, 6 / 5]));
+          r.dataSync(), new Float32Array([1, 1, 1, 1, 2.5, 6 / 5]));
     });
 
     it('divide propagates NaNs', math => {
       const a = Array2D.new([2, 1], [1, 2]);
       const c = Array2D.new([2, 1], [3, NaN]);
 
-      const r = math.divide(a, c).getValues();
+      const r = math.divide(a, c).dataSync();
 
       test_util.expectArraysClose(r, new Float32Array([1 / 3, NaN]));
     });
@@ -122,7 +122,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([1 / 2, 1, -1, -4 / 3]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('divide broadcast 2D + 1D', math => {
@@ -134,7 +134,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([1, 1, -3, -2]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('div throws when passed ndarrays of different shapes', math => {
@@ -152,7 +152,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const r = math.scalarDividedByArray(c, a);
 
       test_util.expectArraysClose(
-          r.getValues(),
+          r.dataSync(),
           new Float32Array([2 / 1, 2 / 2, 2 / 3, 2 / 4, 2 / 5, 2 / 6]));
     });
 
@@ -160,7 +160,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const c = Scalar.new(NaN);
       const a = Array2D.new([1, 3], [1, 2, 3]);
 
-      const r = math.scalarDividedByArray(c, a).getValues();
+      const r = math.scalarDividedByArray(c, a).dataSync();
 
       expect(r).toEqual(new Float32Array([NaN, NaN, NaN]));
     });
@@ -180,7 +180,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const r = math.arrayDividedByScalar(a, c);
 
       test_util.expectArraysClose(
-          r.getValues(),
+          r.dataSync(),
           new Float32Array([1 / 2, 2 / 2, 3 / 2, 4 / 2, 5 / 2, 6 / 2]));
     });
 
@@ -188,7 +188,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const a = Array2D.new([1, 3], [1, 2, NaN]);
       const c = Scalar.new(2);
 
-      const r = math.arrayDividedByScalar(a, c).getValues();
+      const r = math.arrayDividedByScalar(a, c).dataSync();
       test_util.expectArraysClose(r, new Float32Array([1 / 2, 2 / 2, NaN]));
     });
 
@@ -208,7 +208,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.scalarTimesArray(c, a);
 
       expect(result.shape).toEqual([3, 2]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('scalar times ndarray throws when passed non-scalar', math => {
@@ -258,7 +258,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
           math.valueAndGradients(() => math.sum(math.multiply(a, b)), {a, b});
 
       expect(value.dtype).toEqual('float32');
-      test_util.expectArraysClose(value.getValues(), new Float32Array([26]));
+      test_util.expectArraysClose(value.dataSync(), new Float32Array([26]));
 
       expect(gradients.a.shape).toEqual(a.shape);
       expect(gradients.b.dtype).toEqual('float32');
@@ -307,7 +307,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.pow(a, b);
 
       expect(result.shape).toEqual([2, 3]);
-      test_util.expectArraysClose(result.getValues(), expected, 0.01);
+      test_util.expectArraysClose(result.dataSync(), expected, 0.01);
     });
 
     it('different-shaped ndarrays', math => {
@@ -317,14 +317,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.pow(a, b);
 
       expect(result.shape).toEqual([2, 3]);
-      test_util.expectArraysClose(result.getValues(), expected, 0.05);
+      test_util.expectArraysClose(result.dataSync(), expected, 0.05);
     });
 
     it('propagates NaNs', math => {
       const a = Array2D.new([2, 2], [NaN, 3, NaN, 0]);
       const b = Array2D.new([2, 2], [1, 3, 2, 3], 'int32');
 
-      const result = math.pow(a, b).getValues();
+      const result = math.pow(a, b).dataSync();
       test_util.expectArraysClose(
           result, new Float32Array([NaN, 27, NaN, 0]), 0.05);
     });
@@ -346,7 +346,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([1, 4, -3, -4]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('broadcast 2D + 1D', math => {
@@ -358,7 +358,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([1, 4, -3, 16]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('powStrict same-shaped ndarrays', math => {
@@ -368,7 +368,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.powStrict(a, b);
 
       expect(result.shape).toEqual([2, 3]);
-      test_util.expectArraysClose(result.getValues(), expected, 0.01);
+      test_util.expectArraysClose(result.dataSync(), expected, 0.01);
     });
 
     it('powStrict throws when passed ndarrays of different shapes', math => {
@@ -452,14 +452,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.scalarPlusArray(c, a);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([6, 7, 8]));
+          result.dataSync(), new Float32Array([6, 7, 8]));
     });
 
     it('c + A propagates NaNs', math => {
       const c = Scalar.new(NaN);
       const a = Array1D.new([1, 2, 3]);
 
-      const res = math.scalarPlusArray(c, a).getValues();
+      const res = math.scalarPlusArray(c, a).dataSync();
 
       expect(res).toEqual(new Float32Array([NaN, NaN, NaN]));
     });
@@ -481,7 +481,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([3, 4, 0, -1]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('A + B broadcast 2D + 1D', math => {
@@ -493,7 +493,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([2, 4, -2, -2]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('c - A', math => {
@@ -503,7 +503,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.scalarMinusArray(c, a);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([-2, 3, 2]));
+          result.dataSync(), new Float32Array([-2, 3, 2]));
     });
 
     it('c - A throws when passed non scalar', math => {
@@ -521,14 +521,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.arrayMinusScalar(a, c);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([-4, -3, -8]));
+          result.dataSync(), new Float32Array([-4, -3, -8]));
     });
 
     it('A - c propagates NaNs', math => {
       const a = Array1D.new([1, NaN, 3]);
       const c = Scalar.new(5);
 
-      const res = math.arrayMinusScalar(a, c).getValues();
+      const res = math.arrayMinusScalar(a, c).dataSync();
 
       test_util.expectArraysClose(res, new Float32Array([-4, NaN, -2]));
     });
@@ -548,14 +548,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.subtract(a, b);
 
       const expected = new Float32Array([-2, 3, 2]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('A - B propagates NaNs', math => {
       const a = Array1D.new([2, 5, 1]);
       const b = Array1D.new([4, NaN, -1]);
 
-      const res = math.subtract(a, b).getValues();
+      const res = math.subtract(a, b).dataSync();
 
       test_util.expectArraysClose(res, new Float32Array([-2, NaN, 2]));
     });
@@ -577,7 +577,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([-1, 0, -6, -7]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('A - B broadcast 2D + 1D', math => {
@@ -589,7 +589,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(result.shape).toEqual([2, 2]);
       const expected = new Float32Array([0, 0, -4, -6]);
 
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('2D-scalar broadcast', math => {
@@ -598,7 +598,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.subtract(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([-1, 0, 1, 2, 3, 4]));
+          res.dataSync(), new Float32Array([-1, 0, 1, 2, 3, 4]));
     });
 
     it('scalar-1D broadcast', math => {
@@ -607,7 +607,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.subtract(a, b);
       expect(res.shape).toEqual([6]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([1, 0, -1, -2, -3, -4]));
+          res.dataSync(), new Float32Array([1, 0, -1, -2, -3, -4]));
     });
 
     it('2D-2D broadcast each with 1 dim', math => {
@@ -616,7 +616,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.subtract(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([-6, -5, -2, -2, -1, 2]));
+          res.dataSync(), new Float32Array([-6, -5, -2, -2, -1, 2]));
     });
 
     it('2D-2D broadcast inner dim of b', math => {
@@ -625,7 +625,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.subtract(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([-6, -5, -2, 1, 2, 3]));
+          res.dataSync(), new Float32Array([-6, -5, -2, 1, 2, 3]));
     });
 
     it('3D-scalar', math => {
@@ -634,7 +634,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.subtract(a, b);
       expect(res.shape).toEqual([2, 3, 1]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([2, 3, 4, 5, 6, 7]));
+          res.dataSync(), new Float32Array([2, 3, 4, 5, 6, 7]));
     });
 
     it('A + B', math => {
@@ -644,14 +644,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.add(a, b);
 
       const expected = new Float32Array([6, 7, 0]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
     });
 
     it('A + B propagates NaNs', math => {
       const a = Array1D.new([2, 5, NaN]);
       const b = Array1D.new([4, 2, -1]);
 
-      const res = math.add(a, b).getValues();
+      const res = math.add(a, b).dataSync();
       test_util.expectArraysClose(res, new Float32Array([6, 7, NaN]));
     });
 
@@ -669,7 +669,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.add(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([3, 4, 5, 6, 7, 8]));
+          res.dataSync(), new Float32Array([3, 4, 5, 6, 7, 8]));
     });
 
     it('scalar+1D broadcast', math => {
@@ -678,7 +678,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.add(a, b);
       expect(res.shape).toEqual([6]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([3, 4, 5, 6, 7, 8]));
+          res.dataSync(), new Float32Array([3, 4, 5, 6, 7, 8]));
     });
 
     it('2D+2D broadcast each with 1 dim', math => {
@@ -687,7 +687,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.add(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([8, 9, 12, 4, 5, 8]));
+          res.dataSync(), new Float32Array([8, 9, 12, 4, 5, 8]));
     });
 
     it('2D+2D broadcast inner dim of b', math => {
@@ -696,7 +696,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.add(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([8, 9, 12, 7, 8, 9]));
+          res.dataSync(), new Float32Array([8, 9, 12, 7, 8, 9]));
     });
 
     it('3D+scalar', math => {
@@ -705,7 +705,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.add(a, b);
       expect(res.shape).toEqual([2, 3, 1]);
       test_util.expectArraysClose(
-          res.getValues(), new Float32Array([0, 1, 2, 3, 4, 5]));
+          res.dataSync(), new Float32Array([0, 1, 2, 3, 4, 5]));
     });
   };
 
@@ -729,7 +729,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       expect(value.shape).toEqual([]);
       test_util.expectArraysClose(
-          value.getValues(), new Float32Array([-2 + 0 + 2]));
+          value.dataSync(), new Float32Array([-2 + 0 + 2]));
 
       expect(gradients.a.shape).toEqual(a.shape);
       expect(gradients.a.dtype).toEqual('float32');
@@ -781,7 +781,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       expect(result.shape).toEqual([2, 3]);
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([8, 16, 24, 32, 40, 48]));
+          result.dataSync(), new Float32Array([8, 16, 24, 32, 40, 48]));
 
       // Different sizes throws an error.
       const wrongSizeMat = Array2D.new([2, 2], [1, 2, 3, 4]);
@@ -827,7 +827,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       const res = math.equal(a, b);
       expect(res.dtype).toBe('bool');
-      expect(res.getValues()).toEqual(new Uint8Array([0, 1, util.NAN_BOOL]));
+      expect(res.dataSync()).toEqual(new Uint8Array([0, 1, util.NAN_BOOL]));
     });
 
     it('strict version throws when x and y are different shape', math => {
@@ -844,7 +844,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.equal(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3]);
-      expect(res.getValues()).toEqual(new Uint8Array([0, 1, 0, 1, 0, 0]));
+      expect(res.dataSync()).toEqual(new Uint8Array([0, 1, 0, 1, 0, 0]));
     });
 
     it('scalar and 1D broadcast', math => {
@@ -853,7 +853,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.equal(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([6]);
-      expect(res.getValues()).toEqual(new Uint8Array([0, 1, 0, 0, 0, 1]));
+      expect(res.dataSync()).toEqual(new Uint8Array([0, 1, 0, 0, 0, 1]));
     });
 
     it('2D and 2D broadcast each with 1 dim', math => {
@@ -862,7 +862,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.equal(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3]);
-      expect(res.getValues()).toEqual(new Uint8Array([0, 0, 1, 1, 0, 0]));
+      expect(res.dataSync()).toEqual(new Uint8Array([0, 0, 1, 1, 0, 0]));
     });
 
     it('3D and scalar', math => {
@@ -871,7 +871,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const res = math.equal(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3, 1]);
-      expect(res.getValues()).toEqual(new Uint8Array([0, 0, 0, 0, 0, 1]));
+      expect(res.dataSync()).toEqual(new Uint8Array([0, 0, 0, 0, 0, 1]));
     });
   };
 

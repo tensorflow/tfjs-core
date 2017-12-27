@@ -40,7 +40,7 @@ import {Array3D, Array4D} from './ndarray';
       expect(result.shape).toEqual([1, 2, 2, 1]);
 
       const expected = new Float32Array([1.07022, 1.03167, 0.67041, 0.778863]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
       x.dispose();
       w.dispose();
     });
@@ -69,7 +69,7 @@ import {Array3D, Array4D} from './ndarray';
         1.10771, 0.430373, 1.23126, 0.290885, 0.372855, 0.3962, 0.379995,
         0.0490466, 0.410569, 0.10902, 0.0514242
       ]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
       x.dispose();
       w.dispose();
     });
@@ -102,7 +102,7 @@ import {Array3D, Array4D} from './ndarray';
         0.0746509, 0.0633184, 0.74101,  0.41159,  0.403195, 0.176938,
         0.602415,  0.345499,  0.226819, 0.252651, 0.144682, 0.213927
       ]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
       x.dispose();
       w.dispose();
     });
@@ -143,7 +143,7 @@ import {Array3D, Array4D} from './ndarray';
         0.403335, 0.419286, 0.587321, 0.600655, 0.884853,  0.190907, 0.719914,
         0.346842, 0.598472
       ]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
       x.dispose();
       w.dispose();
     });

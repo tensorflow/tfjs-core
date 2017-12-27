@@ -39,7 +39,7 @@ import {Array2D, Array3D, Array4D} from './ndarray';
       const expected = new Float32Array([6, 2, 10, 0]);
 
       expect(result.shape).toEqual([2, 2, 1]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       x.dispose();
       w.dispose();
@@ -63,7 +63,7 @@ import {Array2D, Array3D, Array4D} from './ndarray';
       const expected = new Float32Array([6, 2, 10, 0, 9, 3, 15, 0]);
 
       expect(result.shape).toEqual([2, 2, 2, 1]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       x.dispose();
       w.dispose();

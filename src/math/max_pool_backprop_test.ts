@@ -30,7 +30,7 @@ import {Array3D, Array4D} from './ndarray';
       const dx = math.maxPoolBackprop(dy, x, 2, 1, 0);
 
       const expected = new Float32Array([0, 0, 0, 0, 1, 2, 0, 3, 4]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -43,7 +43,7 @@ import {Array3D, Array4D} from './ndarray';
       const dx = math.maxPoolBackprop(dy, x, 2, 1, 0);
 
       const expected = new Float32Array([1, 0, 0, 0, 2, 0, 3, 0, 4]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -56,7 +56,7 @@ import {Array3D, Array4D} from './ndarray';
       const dx = math.maxPoolBackprop(dy, x, 2, 1, 0);
 
       const expected = new Float32Array([0, 0, 0, 0, 10, 0, 0, 0, 0]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -69,7 +69,7 @@ import {Array3D, Array4D} from './ndarray';
       const dx = math.maxPoolBackprop(dy, x, 2, 1, 0);
 
       const expected = new Float32Array([0, 3, 0, 0, 3, 0, 0, 0, 4]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -84,7 +84,7 @@ import {Array3D, Array4D} from './ndarray';
 
       const expected = new Float32Array(
           [0, 0, 0, 0, 1, 2, 0, 3, 4, 0, 0, 0, 0, 5, 6, 0, 15, 0]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -99,7 +99,7 @@ import {Array3D, Array4D} from './ndarray';
 
       const expected =
           new Float32Array([0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 3, 0, 4]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -112,7 +112,7 @@ import {Array3D, Array4D} from './ndarray';
       const expected =
           new Float32Array([0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 0]);
       const dx = math.maxPoolBackprop(dy, x, 2, 2, 0);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -131,7 +131,7 @@ import {Array3D, Array4D} from './ndarray';
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
         0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 0, 4
       ]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -150,7 +150,7 @@ import {Array3D, Array4D} from './ndarray';
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
       ]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -170,7 +170,7 @@ import {Array3D, Array4D} from './ndarray';
 
       const expected = new Float32Array(
           [0, 44, 0, 0, 0, 0, 0, 0, 1, 33, 2, 0, 0, 22, 3, 0, 4, 11]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -188,7 +188,7 @@ import {Array3D, Array4D} from './ndarray';
 
       const expected = new Float32Array(
           [0, 0, 0, 77, 0, 0, 0, 0, 10, 22, 0, 0, 0, 0, 0, 0, 0, 11]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -210,7 +210,7 @@ import {Array3D, Array4D} from './ndarray';
         0, 0, 0, 11, 0, 22, 0, 0, 0, 0, 1, 0,  0, 0,  2, 0,
         0, 0, 0, 0,  0, 0,  0, 0, 0, 0, 3, 33, 0, 44, 4, 0
       ]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();
@@ -234,7 +234,7 @@ import {Array3D, Array4D} from './ndarray';
         0, 0, 0, 0, 0, 0, 0, 1, 110, 0, 0, 2, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 3, 0, 0, 0, 4, 0
       ]);
-      test_util.expectArraysClose(dx.getValues(), expected);
+      test_util.expectArraysClose(dx.dataSync(), expected);
 
       dy.dispose();
       x.dispose();

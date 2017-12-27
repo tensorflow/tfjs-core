@@ -29,7 +29,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       const result = math.concat1D(a, b);
       const expected = new Float32Array([3, 5]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       a.dispose();
       b.dispose();
@@ -41,7 +41,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       const result = math.concat1D(a, b);
       const expected = new Float32Array([3, 5, 7]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       a.dispose();
       b.dispose();
@@ -53,7 +53,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       const result = math.concat1D(a, b);
       const expected = new Float32Array([3, 5, 7]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       a.dispose();
       b.dispose();
@@ -80,7 +80,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const expected = new Float32Array([3, 5]);
 
       expect(result.shape).toEqual([2, 1]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       a.dispose();
       b.dispose();
@@ -95,7 +95,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const expected = new Float32Array([3, 5]);
 
       expect(result.shape).toEqual([1, 2]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       a.dispose();
       b.dispose();
@@ -110,7 +110,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const expected = new Float32Array([1, 2, 3, 4, 5, 6]);
 
       expect(result.shape).toEqual([3, 2]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       a.dispose();
       b.dispose();
@@ -136,7 +136,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const expected = new Float32Array([1, 2, 5, 6, 3, 4, 7, 8]);
 
       expect(result.shape).toEqual([2, 4]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       a.dispose();
       b.dispose();
@@ -160,7 +160,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const values = math.concat3D(ndarray1, ndarray2, 0);
       expect(values.shape).toEqual([2, 1, 3]);
       test_util.expectArraysClose(
-          values.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
+          values.dataSync(), new Float32Array([1, 2, 3, 4, 5, 6]));
     });
 
     it('concat axis=0', math => {
@@ -169,7 +169,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
       const values = math.concat3D(ndarray1, ndarray2, 0);
       expect(values.shape).toEqual([3, 2, 3]);
-      test_util.expectArraysClose(values.getValues(), new Float32Array([
+      test_util.expectArraysClose(values.dataSync(), new Float32Array([
                                     1, 11, 111, 2, 22, 222, 5, 55, 555, 6, 66,
                                     666, 7, 77, 777, 8, 88, 888
                                   ]));
@@ -181,7 +181,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const values = math.concat3D(ndarray1, ndarray2, 1);
       expect(values.shape).toEqual([1, 2, 3]);
       test_util.expectArraysClose(
-          values.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
+          values.dataSync(), new Float32Array([1, 2, 3, 4, 5, 6]));
     });
 
     it('concat axis=1', math => {
@@ -190,7 +190,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
       const values = math.concat3D(ndarray1, ndarray2, 1);
       expect(values.shape).toEqual([2, 3, 3]);
-      test_util.expectArraysClose(values.getValues(), new Float32Array([
+      test_util.expectArraysClose(values.dataSync(), new Float32Array([
                                     1, 11, 111, 5, 55, 555, 6, 66, 666, 3, 33,
                                     333, 7, 77, 777, 8, 88, 888
                                   ]));
@@ -202,7 +202,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const values = math.concat3D(ndarray1, ndarray2, 2);
       expect(values.shape).toEqual([1, 1, 6]);
       test_util.expectArraysClose(
-          values.getValues(), new Float32Array([1, 2, 3, 4, 5, 6]));
+          values.dataSync(), new Float32Array([1, 2, 3, 4, 5, 6]));
     });
 
     it('concat axis=2', math => {
@@ -211,7 +211,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
       const values = math.concat3D(ndarray1, ndarray2, 2);
       expect(values.shape).toEqual([2, 2, 5]);
-      test_util.expectArraysClose(values.getValues(), new Float32Array([
+      test_util.expectArraysClose(values.dataSync(), new Float32Array([
                                     1, 11, 5, 55, 555, 2, 22, 6, 66, 666,
                                     3, 33, 7, 77, 777, 4, 44, 8, 88, 888
                                   ]));

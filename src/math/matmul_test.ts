@@ -28,8 +28,7 @@ const commonTests: MathTests = it => {
     const c = math.matMul(a, b);
 
     expect(c.shape).toEqual([2, 2]);
-    test_util.expectArraysClose(
-        c.getValues(), new Float32Array([0, 8, -3, 20]));
+    test_util.expectArraysClose(c.dataSync(), new Float32Array([0, 8, -3, 20]));
 
     a.dispose();
     b.dispose();
@@ -43,7 +42,7 @@ const commonTests: MathTests = it => {
         a, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED);
 
     const expected = new Float32Array([7, 10, 16, 31]);
-    test_util.expectArraysClose(c.getValues(), expected);
+    test_util.expectArraysClose(c.dataSync(), expected);
 
     a.dispose();
     b.dispose();
@@ -57,7 +56,7 @@ const commonTests: MathTests = it => {
         a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR);
 
     const expected = new Float32Array([17, 12, 2, 22, 15, 4, 27, 18, 6]);
-    test_util.expectArraysClose(c.getValues(), expected);
+    test_util.expectArraysClose(c.dataSync(), expected);
 
     a.dispose();
     b.dispose();
@@ -71,7 +70,7 @@ const commonTests: MathTests = it => {
         a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.TRANSPOSED);
 
     const expected = new Float32Array([11, 13, 14, 20]);
-    test_util.expectArraysClose(c.getValues(), expected);
+    test_util.expectArraysClose(c.dataSync(), expected);
 
     a.dispose();
     b.dispose();
@@ -148,7 +147,7 @@ const commonTests: MathTests = it => {
     const result = math.vectorTimesMatrix(v, matrix);
 
     const expected = new Float32Array([11, 16]);
-    test_util.expectArraysClose(result.getValues(), expected);
+    test_util.expectArraysClose(result.dataSync(), expected);
 
     v.dispose();
     matrix.dispose();
@@ -162,7 +161,7 @@ const commonTests: MathTests = it => {
     const result = math.vectorTimesMatrix(v, matrix);
 
     const expected = new Float32Array([11, 16]);
-    test_util.expectArraysClose(result.getValues(), expected);
+    test_util.expectArraysClose(result.dataSync(), expected);
 
     v.dispose();
     matrix.dispose();
@@ -196,7 +195,7 @@ const commonTests: MathTests = it => {
     const result = math.matrixTimesVector(matrix, v);
 
     const expected = new Float32Array([8, 18]);
-    test_util.expectArraysClose(result.getValues(), expected);
+    test_util.expectArraysClose(result.dataSync(), expected);
 
     matrix.dispose();
     v.dispose();
@@ -208,7 +207,7 @@ const commonTests: MathTests = it => {
     const result = math.matrixTimesVector(matrix, v);
 
     const expected = new Float32Array([NaN, NaN]);
-    test_util.expectArraysClose(result.getValues(), expected);
+    test_util.expectArraysClose(result.dataSync(), expected);
 
     matrix.dispose();
     v.dispose();
@@ -288,7 +287,7 @@ const commonTests: MathTests = it => {
 
     const expected = new Float32Array([4, 2, 6, 3]);
     expect(result.shape).toEqual([2, 2]);
-    test_util.expectArraysClose(result.getValues(), expected);
+    test_util.expectArraysClose(result.dataSync(), expected);
     v1.dispose();
     v2.dispose();
   });
@@ -308,7 +307,7 @@ const gpuTests: MathTests = it => {
 
     const result = math.matrixTimesVector(matrix, v);
     const expected = new Float32Array([2, 0]);
-    test_util.expectArraysClose(result.getValues(), expected);
+    test_util.expectArraysClose(result.dataSync(), expected);
 
     matrix.dispose();
     v.dispose();

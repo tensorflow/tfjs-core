@@ -40,7 +40,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const expected = new Float32Array([3, 6, 9, 12]);
 
       expect(result.shape).toEqual([2, 2, 1]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       x.dispose();
       w.dispose();
@@ -64,7 +64,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const expected = new Float32Array([4, 7, 10]);
 
       expect(result.shape).toEqual([3, 1]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
 
       x.dispose();
       w.dispose();
@@ -80,8 +80,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
       // tslint:disable-next-line:no-any
       const x: any = Array2D.new([2, 2], [1, 2, 3, 4]);
-      const w =
-          Array3D.new([fSize, inputDepth, outputDepth], [3, 1]);
+      const w = Array3D.new([fSize, inputDepth, outputDepth], [3, 1]);
       const bias = Array1D.new([-1]);
 
       expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();
@@ -118,8 +117,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const stride = 1;
 
       const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w =
-          Array3D.new([fSize, inputDepth, outputDepth], [3, 1]);
+      const w = Array3D.new([fSize, inputDepth, outputDepth], [3, 1]);
       // tslint:disable-next-line:no-any
       const bias: any = Array2D.new([2, 2], [2, 2, 2, 2]);
 
@@ -140,8 +138,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const stride = 1;
 
       const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w =
-          Array3D.randNormal([fSize, wrongInputDepth, outputDepth]);
+      const w = Array3D.randNormal([fSize, wrongInputDepth, outputDepth]);
       const bias = Array1D.new([-1]);
 
       expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();

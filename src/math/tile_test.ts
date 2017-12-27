@@ -31,7 +31,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       expect(t2.shape).toEqual([6]);
       test_util.expectArraysClose(
-          t2.getValues(), new Float32Array([1, 2, 3, 1, 2, 3]));
+          t2.dataSync(), new Float32Array([1, 2, 3, 1, 2, 3]));
 
       t.dispose();
     });
@@ -41,18 +41,18 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       let t2 = math.tile(t, [1, 2]);
       expect(t2.shape).toEqual([2, 4]);
       let expected = new Float32Array([1, 11, 1, 11, 2, 22, 2, 22]);
-      test_util.expectArraysClose(t2.getValues(), expected);
+      test_util.expectArraysClose(t2.dataSync(), expected);
 
       t2 = math.tile(t, [2, 1]);
       expect(t2.shape).toEqual([4, 2]);
       expected = new Float32Array([1, 11, 2, 22, 1, 11, 2, 22]);
-      test_util.expectArraysClose(t2.getValues(), expected);
+      test_util.expectArraysClose(t2.dataSync(), expected);
 
       t2 = math.tile(t, [2, 2]);
       expect(t2.shape).toEqual([4, 4]);
       expected = new Float32Array(
           [1, 11, 1, 11, 2, 22, 2, 22, 1, 11, 1, 11, 2, 22, 2, 22]);
-      test_util.expectArraysClose(t2.getValues(), expected);
+      test_util.expectArraysClose(t2.dataSync(), expected);
 
       t.dispose();
     });
@@ -64,7 +64,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       expect(t2.shape).toEqual([2, 4, 2]);
       test_util.expectArraysClose(
-          t2.getValues(),
+          t2.dataSync(),
           new Float32Array([1, 2, 3, 4, 1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8]));
 
       t.dispose();
@@ -77,7 +77,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       expect(t2.shape).toEqual([6]);
       test_util.expectArraysClose(
-          t2.getValues(), new Float32Array([1, 2, NaN, 1, 2, NaN]));
+          t2.dataSync(), new Float32Array([1, 2, NaN, 1, 2, NaN]));
 
       t.dispose();
     });
@@ -89,7 +89,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       expect(t2.shape).toEqual([6]);
       expect(t2.dtype).toBe('bool');
-      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, 1, 1, 0, 1]));
+      expect(t2.dataSync()).toEqual(new Uint8Array([1, 0, 1, 1, 0, 1]));
 
       t.dispose();
     });
@@ -99,17 +99,17 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       let t2 = math.tile(t, [1, 2]);
       expect(t2.shape).toEqual([2, 4]);
       expect(t2.dtype).toBe('bool');
-      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, 1, 0, 1, 1, 1, 1]));
+      expect(t2.dataSync()).toEqual(new Uint8Array([1, 0, 1, 0, 1, 1, 1, 1]));
 
       t2 = math.tile(t, [2, 1]);
       expect(t2.shape).toEqual([4, 2]);
       expect(t2.dtype).toBe('bool');
-      expect(t2.getValues()).toEqual(new Uint8Array([1, 0, 1, 1, 1, 0, 1, 1]));
+      expect(t2.dataSync()).toEqual(new Uint8Array([1, 0, 1, 1, 1, 0, 1, 1]));
 
       t2 = math.tile(t, [2, 2]);
       expect(t2.shape).toEqual([4, 4]);
       expect(t2.dtype).toBe('bool');
-      expect(t2.getValues()).toEqual(new Uint8Array([
+      expect(t2.dataSync()).toEqual(new Uint8Array([
         1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1
       ]));
 
@@ -125,7 +125,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       expect(t2.shape).toEqual([2, 4, 2]);
       expect(t2.dtype).toBe('bool');
-      expect(t2.getValues()).toEqual(new Uint8Array([
+      expect(t2.dataSync()).toEqual(new Uint8Array([
         1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0
       ]));
 
@@ -137,7 +137,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const t2 = math.tile(t, [2]);
       expect(t2.shape).toEqual([6]);
       expect(t2.dtype).toBe('bool');
-      expect(t2.getValues()).toEqual(new Uint8Array([
+      expect(t2.dataSync()).toEqual(new Uint8Array([
         1, 0, util.getNaN('bool'), 1, 0, util.getNaN('bool')
       ]));
       t.dispose();
@@ -150,7 +150,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       expect(t2.shape).toEqual([6]);
       expect(t2.dtype).toBe('int32');
-      expect(t2.getValues()).toEqual(new Int32Array([1, 2, 5, 1, 2, 5]));
+      expect(t2.dataSync()).toEqual(new Int32Array([1, 2, 5, 1, 2, 5]));
 
       t.dispose();
     });
@@ -160,17 +160,17 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       let t2 = math.tile(t, [1, 2]);
       expect(t2.shape).toEqual([2, 4]);
       expect(t2.dtype).toBe('int32');
-      expect(t2.getValues()).toEqual(new Int32Array([1, 2, 1, 2, 3, 4, 3, 4]));
+      expect(t2.dataSync()).toEqual(new Int32Array([1, 2, 1, 2, 3, 4, 3, 4]));
 
       t2 = math.tile(t, [2, 1]);
       expect(t2.shape).toEqual([4, 2]);
       expect(t2.dtype).toBe('int32');
-      expect(t2.getValues()).toEqual(new Int32Array([1, 2, 3, 4, 1, 2, 3, 4]));
+      expect(t2.dataSync()).toEqual(new Int32Array([1, 2, 3, 4, 1, 2, 3, 4]));
 
       t2 = math.tile(t, [2, 2]);
       expect(t2.shape).toEqual([4, 4]);
       expect(t2.dtype).toBe('int32');
-      expect(t2.getValues()).toEqual(new Int32Array([
+      expect(t2.dataSync()).toEqual(new Int32Array([
         1, 2, 1, 2, 3, 4, 3, 4, 1, 2, 1, 2, 3, 4, 3, 4
       ]));
 
@@ -184,7 +184,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       expect(t2.shape).toEqual([2, 4, 2]);
       expect(t2.dtype).toBe('int32');
-      expect(t2.getValues()).toEqual(new Int32Array([
+      expect(t2.dataSync()).toEqual(new Int32Array([
         1, 2, 3, 4, 1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8
       ]));
 
@@ -197,7 +197,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 
       expect(t2.shape).toEqual([6]);
       expect(t2.dtype).toBe('int32');
-      expect(t2.getValues()).toEqual(new Int32Array([
+      expect(t2.dataSync()).toEqual(new Int32Array([
         1, 3, util.getNaN('int32'), 1, 3, util.getNaN('int32')
       ]));
 

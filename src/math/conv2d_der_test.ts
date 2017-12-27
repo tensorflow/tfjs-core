@@ -42,7 +42,7 @@ import {Array3D, Array4D} from './ndarray';
 
       expect(result.shape).toEqual(weightsShape);
       // TODO(nsthorat): Fix the precision for byte textures.
-      test_util.expectArraysClose(result.getValues(), expected, 1e-1);
+      test_util.expectArraysClose(result.dataSync(), expected, 1e-1);
 
       x.dispose();
       dy.dispose();
@@ -69,7 +69,7 @@ import {Array3D, Array4D} from './ndarray';
 
       expect(result.shape).toEqual(weightsShape);
       // TODO(nsthorat): Fix the precision for byte textures.
-      test_util.expectArraysClose(result.getValues(), expected, 1e-1);
+      test_util.expectArraysClose(result.dataSync(), expected, 1e-1);
 
       x.dispose();
       dy.dispose();
@@ -96,7 +96,7 @@ import {Array3D, Array4D} from './ndarray';
       const expected = new Float32Array([16, 20]);
 
       expect(result.shape).toEqual([outputDepth]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
       dy.dispose();
     });
 
@@ -110,7 +110,7 @@ import {Array3D, Array4D} from './ndarray';
       const expected = new Float32Array([31, 32]);
 
       expect(result.shape).toEqual([outputDepth]);
-      test_util.expectArraysClose(result.getValues(), expected);
+      test_util.expectArraysClose(result.dataSync(), expected);
       dy.dispose();
     });
   };

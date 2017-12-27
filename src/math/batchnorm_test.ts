@@ -35,7 +35,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, undefined, undefined);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             (x.get(0, 0, 0) - mean.get(0)) * 1 /
                 Math.sqrt(variance.get(0) + varianceEpsilon),
             (x.get(0, 0, 1) - mean.get(1)) * 1 /
@@ -59,7 +59,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, scale, undefined);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             (x.get(0, 0, 0) - mean.get(0)) * scale.get(0) /
                 Math.sqrt(variance.get(0) + varianceEpsilon),
             (x.get(0, 0, 1) - mean.get(1)) * scale.get(1) /
@@ -84,7 +84,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, undefined, offset);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             offset.get(0) +
                 (x.get(0, 0, 0) - mean.get(0)) * 1 /
                     Math.sqrt(variance.get(0) + varianceEpsilon),
@@ -114,7 +114,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             offset.get(0) +
                 (x.get(0, 0, 0) - mean.get(0)) * scale.get(0) /
                     Math.sqrt(variance.get(0) + varianceEpsilon),
@@ -149,7 +149,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             0.59352049, -0.66135202, 0.5610874, -0.92077015, -1.45341019,
             1.52106473, -0.07704776, 0.26144429, 1.28010017, -1.14422404,
             -1.15776136, 1.15425493, 1.82644104, -0.52249442, 1.04803919,
@@ -181,7 +181,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, undefined, undefined);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             (x.get(0, 0) - mean.get(0)) * 1 /
                 Math.sqrt(variance.get(0) + varianceEpsilon),
             (x.get(0, 1) - mean.get(1)) * 1 /
@@ -204,7 +204,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, scale, undefined);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             (x.get(0, 0) - mean.get(0)) * scale.get(0) /
                 Math.sqrt(variance.get(0) + varianceEpsilon),
             (x.get(0, 1) - mean.get(1)) * scale.get(1) /
@@ -229,7 +229,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, undefined, offset);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             offset.get(0) +
                 (x.get(0, 0) - mean.get(0)) * 1 /
                     Math.sqrt(variance.get(0) + varianceEpsilon),
@@ -259,7 +259,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             offset.get(0) +
                 (x.get(0, 0) - mean.get(0)) * scale.get(0) /
                     Math.sqrt(variance.get(0) + varianceEpsilon),
@@ -292,7 +292,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([
+          result.dataSync(), new Float32Array([
             0.58433646, 0.96846228, 0.51936529, 0.24315402, 0.69732157,
             0.61608542, 0.35007446, 1.01304821, 0.60119441
           ]));

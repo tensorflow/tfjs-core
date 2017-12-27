@@ -30,7 +30,7 @@ import {Array1D} from './ndarray';
       const result = math.clip(a, min, max);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([3, -1, 0, 50, -1, 2]));
+          result.dataSync(), new Float32Array([3, -1, 0, 50, -1, 2]));
 
       a.dispose();
     });
@@ -43,7 +43,7 @@ import {Array1D} from './ndarray';
       const result = math.clip(a, min, max);
 
       test_util.expectArraysClose(
-          result.getValues(), new Float32Array([3, -1, 0, 50, -1, 2, NaN]));
+          result.dataSync(), new Float32Array([3, -1, 0, 50, -1, 2, NaN]));
 
       a.dispose();
     });

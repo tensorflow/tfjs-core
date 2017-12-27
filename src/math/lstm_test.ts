@@ -63,13 +63,13 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const output = math.multiRNNCell([lstm1, lstm2], onehot, c, h);
 
       test_util.expectArraysClose(
-          output[0][0].getValues(), new Float32Array([-0.7440074682235718]));
+          output[0][0].dataSync(), new Float32Array([-0.7440074682235718]));
       test_util.expectArraysClose(
-          output[0][1].getValues(), new Float32Array([0.7460772395133972]));
+          output[0][1].dataSync(), new Float32Array([0.7460772395133972]));
       test_util.expectArraysClose(
-          output[1][0].getValues(), new Float32Array([-0.5802832245826721]));
+          output[1][0].dataSync(), new Float32Array([-0.5802832245826721]));
       test_util.expectArraysClose(
-          output[1][1].getValues(), new Float32Array([0.5745711922645569]));
+          output[1][1].dataSync(), new Float32Array([0.5745711922645569]));
     });
 
     it('basicLSTMCell with batch=2', math => {
