@@ -41,7 +41,42 @@ export interface NDArrayData<T extends keyof DataTypes> {
   values?: DataTypes[T];
 }
 
-export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
+export interface NDArrayBase<T extends keyof DataTypes> {
+  id: number;
+  shape: number[];
+  size: number;
+  dtype: T;
+  rank: number;
+
+  reshape(newShape: number[]): NDArray<T>;
+  flatten(): Array1D<T>;
+  asScalar(): Scalar<T>;
+  as1D(): Array1D<T>;
+  as2D(rows: number, columns: number): Array2D<T>;
+  as3D(rows: number, columns: number, depth: number): Array3D<T>;
+  as4D(rows: number, columns: number, depth: number, depth2: number):
+      Array4D<T>;
+  asType<G extends T>(dtype: G): NDArray<G>;
+  get(...locs: number[]): number;
+  add(value: number, ...locs: number[]): void;
+  set(value: number, ...locs: number[]): void;
+  val(...locs: number[]): Promise<number>;
+  locToIndex(locs: number[]): number;
+  indexToLoc(index: number): number[];
+  fill(value: number): void;
+
+  /** @deprecated Use dataSync() instead. */
+  getValues(): DataTypes[T];
+  /** @deprecated Use data() instead. */
+  getValuesAsync(): Promise<DataTypes[T]>;
+  data(): Promise<DataTypes[T]>;
+  dataSync(): DataTypes[T];
+  dispose(): void;
+  equals(t: NDArray<T>): boolean;
+}
+
+export class NDArray<T extends keyof DataTypes = keyof DataTypes> implements
+    NDArrayBase<T> {
   static nextId = 0;
 
   id: number;
@@ -57,7 +92,7 @@ export class NDArray<T extends keyof DataTypes = keyof DataTypes> {
    * https://docs.scipy.org/doc/numpy/reference/generated
    *     /numpy.ndarray.strides.html
    */
-  strides: number[];
+  protected strides: number[];
 
   private math: NDArrayMath;
 

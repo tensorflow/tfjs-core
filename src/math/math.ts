@@ -171,7 +171,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
 
   /** @deprecated This is a no-op. */
   track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
-    return this.backendEngine.track(result);
+    return result;
   }
 
   dispose() {
