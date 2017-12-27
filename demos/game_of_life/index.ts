@@ -1,5 +1,4 @@
-<!-- Copyright 2017 Google Inc. All Rights Reserved.
-
+/* Copyright 2017 Google Inc. All Rights Reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -11,21 +10,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-==============================================================================-->
-<template>
-<div>
-  <demo-header name="Example Vuejs demo"></demo-header>
-  <div id="app">Hello {{ msg }}</div>
-  <demo-footer></demo-footer>
-</div>
-</template>
+==============================================================================*/
+import Vue from 'vue';
+import App from './App.vue';
 
-<style>
-#app {
-  text-align: center;
-  font-size: 40px;
-  margin: 20px;
-}
-</style>
-
-<script lang="ts" src="./app.ts"></script>
+// tslint:disable-next-line:no-unused-expression
+new Vue({el: '#app', render: h => h(App)});
