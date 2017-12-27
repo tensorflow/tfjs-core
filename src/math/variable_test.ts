@@ -18,7 +18,7 @@
 // tslint:disable-next-line:max-line-length
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D} from './ndarray';
+import {Array1D, Array2D} from './ndarray';
 import {Variable} from './variable';
 
 const tests: MathTests = it => {
@@ -67,6 +67,23 @@ const tests: MathTests = it => {
     expect(math.getNumArrays()).toBe(0);
     // The second value was disposed.
     expect(() => secondValue.dataSync()).toThrowError();
+  });
+
+  it('shape must match', math => {
+    const v = new Variable(Array1D.new([1, 2, 3]));
+    expect(() => v.assign(Array1D.new([1, 2]))).toThrowError();
+    // tslint:disable-next-line:no-any
+    expect(() => v.assign(Array2D.new([1, 2], [3, 4]) as any)).toThrowError();
+  });
+
+  it('dtype must match', math => {
+    const v = new Variable(Array1D.new([1, 2, 3]));
+    // tslint:disable-next-line:no-any
+    expect(() => v.assign(Array1D.new([1, 1, 1], 'int32') as any))
+        .toThrowError();
+    // tslint:disable-next-line:no-any
+    expect(() => v.assign(Array1D.new([true, false, true], 'bool') as any))
+        .toThrowError();
   });
 };
 

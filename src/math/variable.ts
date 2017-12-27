@@ -22,11 +22,12 @@ import {DataTypes, NDArray, Rank} from './ndarray';
 
 export class Variable<D extends keyof DataTypes, R extends keyof Rank> extends
     NDArray<D, R> {
-  constructor(initialValue: NDArray<D, R>, public trainable = true, dtype?: D) {
+  constructor(initialValue: NDArray<D, R>, public trainable = true) {
     super(initialValue.shape, initialValue.dtype, null, initialValue.id);
     ENV.math.keep(initialValue);
   }
 
+  /** Assign new values to this variable. The old array will be disposed. */
   assign(newValue: NDArray<D, R>): void {
     if (newValue.dtype !== this.dtype) {
       throw new Error(
