@@ -1267,8 +1267,8 @@ export class MathBackendCPU implements MathBackend {
     const xValues = x.dataSync();
     const meanValues = mean.dataSync();
     const varianceValues = variance.dataSync();
-    const scaleValues = scale ? scale.dataSync() : new Float32Array([1]);
-    const offsetValues = offset ? offset.dataSync() : new Float32Array([0]);
+    const scaleValues = scale ? scale.dataSync() : [1];
+    const offsetValues = offset ? offset.dataSync() : [0];
     const outValues = new Float32Array(xValues.length);
 
     for (let i = 0; i < xValues.length; i++) {
@@ -1288,8 +1288,8 @@ export class MathBackendCPU implements MathBackend {
     const xValues = x.dataSync();
     const meanValues = mean.dataSync();
     const varianceValues = variance.dataSync();
-    const scaleValues = scale ? scale.dataSync() : new Float32Array([1]);
-    const offsetValues = offset ? offset.dataSync() : new Float32Array([0]);
+    const scaleValues = scale ? scale.dataSync() : [1];
+    const offsetValues = offset ? offset.dataSync() : [0];
     const outValues = new Float32Array(xValues.length);
 
     for (let i = 0; i < xValues.length; i++) {
