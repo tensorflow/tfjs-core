@@ -9,7 +9,7 @@
     "deeplearn": "0.3.16"
   },
   "dependencies": {
-    "deeplearn-squeezenet": "~0.1.7"
+    "deeplearn-squeezenet": "~0.1.8"
   },
   "repository": {
     "type": "git",
