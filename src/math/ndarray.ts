@@ -70,6 +70,7 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
   size: number;
   /** The data type for the array. */
   dtype: D;
+  /** The rank type for the array ('0','1','2','3','4','higher'). */
   rankType: R;
 
   /**
