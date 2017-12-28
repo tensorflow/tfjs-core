@@ -19,8 +19,8 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import {DataTypes, NDArray, Rank} from './ndarray';
 
-export class Variable<D extends keyof DataTypes = keyof DataTypes, R extends
-                          keyof Rank = keyof Rank> extends NDArray<D, R> {
+export class Variable<D extends keyof DataTypes = keyof DataTypes,
+                                R extends Rank = Rank> extends NDArray<D, R> {
   private static nextVarId = 0;
   name: string;
 
@@ -31,7 +31,9 @@ export class Variable<D extends keyof DataTypes = keyof DataTypes, R extends
    */
   private constructor(
       initialValue: NDArray<D, R>, public trainable = true, name?: string) {
-    super(initialValue.shape, initialValue.dtype, null, initialValue.id);
+    super(
+        initialValue.shape, initialValue.dtype, null /* values */,
+        initialValue.id);
     this.name = name;
     if (this.name == null) {
       this.name = Variable.nextVarId.toString();
@@ -49,7 +51,7 @@ export class Variable<D extends keyof DataTypes = keyof DataTypes, R extends
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.
    */
-  static variable<D extends keyof DataTypes, R extends keyof Rank>(
+  static variable<D extends keyof DataTypes, R extends Rank>(
       initialValue: NDArray<D, R>, trainable = true, name?: string,
       dtype?: D): Variable<D, R> {
     if (dtype != null && dtype !== initialValue.dtype) {

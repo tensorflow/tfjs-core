@@ -50,17 +50,10 @@ export interface NDArrayData<D extends keyof DataTypes> {
   values?: DataTypes[D];
 }
 
-export interface Rank {
-  0: number;
-  1: number;
-  2: number;
-  3: number;
-  4: number;
-  higher: number;
-}
+export type Rank = '0'|'1'|'2'|'3'|'4'|'higher';
 
 export class NDArray<D extends keyof DataTypes = keyof DataTypes,
-                               R extends keyof Rank = keyof Rank> {
+                               R extends Rank = Rank> {
   private static nextId = 0;
 
   id: number;
@@ -121,16 +114,16 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
 
   /** Creates a ndarray of ones with the specified shape. */
   static ones<D extends keyof DataTypes = keyof DataTypes,
-                        R extends keyof Rank = keyof Rank>(
-      shape: number[], dtype?: D): RankMap<D>[R] {
+                        R extends Rank = Rank>(shape: number[], dtype?: D):
+      RankMap<D>[R] {
     const values = makeOnesTypedArray(util.sizeFromShape(shape), dtype);
     return NDArray.make(shape, {values}, dtype);
   }
 
   /** Creates a ndarray of zeros with the specified shape. */
   static zeros<D extends keyof DataTypes = keyof DataTypes,
-                         R extends keyof Rank = keyof Rank>(
-      shape: number[], dtype?: D): RankMap<D>[R] {
+                         R extends Rank = Rank>(shape: number[], dtype?: D):
+      RankMap<D>[R] {
     const values = makeZerosTypedArray(util.sizeFromShape(shape), dtype);
     return NDArray.make(shape, {values}, dtype);
   }
@@ -161,8 +154,7 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
    * Makes a new ndarray with the provided shape and values. Values should be in
    * a flat array.
    */
-  static make<D extends keyof DataTypes = 'float32',
-                        R extends keyof Rank = keyof Rank>(
+  static make<D extends keyof DataTypes = 'float32', R extends Rank = Rank>(
       shape: number[], data: NDArrayData<D>, dtype?: D,
       math?: NDArrayMath): RankMap<D>[R] {
     switch (shape.length) {
@@ -205,7 +197,7 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
   }
 
   /** Reshapes the current ndarray into the provided shape. */
-  reshape<R2 extends keyof Rank>(newShape: number[]): RankMap<D>[R2] {
+  reshape<R2 extends Rank>(newShape: number[]): RankMap<D>[R2] {
     this.throwIfDisposed();
     newShape = util.inferFromImplicitShape(newShape, this.size);
     if (util.arraysEqual(this.shape, newShape)) {
@@ -375,7 +367,7 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
         util.arraysEqual(this.getValues(), t.getValues());
   }
 
-  static rand<D extends keyof DataTypes, R extends keyof Rank>(
+  static rand<D extends keyof DataTypes, R extends Rank>(
       shape: number[], randFunction: () => number, dtype?: D): RankMap<D>[R] {
     const size = util.sizeFromShape(shape);
 
@@ -396,7 +388,7 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
     return NDArray.make(shape, {values}, dtype);
   }
 
-  static randNormal<D extends keyof RandNormalDataTypes, R extends keyof Rank>(
+  static randNormal<D extends keyof RandNormalDataTypes, R extends Rank>(
       shape: number[], mean = 0, stdDev = 1, dtype?: D,
       seed?: number): RankMap<D>[R] {
     if (dtype != null && dtype === 'bool') {
@@ -408,7 +400,7 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
   }
 
   static randTruncatedNormal<D extends keyof RandNormalDataTypes,
-                                       R extends keyof Rank>(
+                                       R extends Rank>(
       shape: number[], mean = 0, stdDev = 1, dtype?: D,
       seed?: number): RankMap<D>[R] {
     if (dtype != null && dtype === 'bool') {
@@ -419,7 +411,7 @@ export class NDArray<D extends keyof DataTypes = keyof DataTypes,
     return NDArray.rand(shape, () => randGauss.nextValue(), dtype);
   }
 
-  static randUniform<D extends keyof DataTypes, R extends keyof Rank>(
+  static randUniform<D extends keyof DataTypes, R extends Rank>(
       shape: number[], a: number, b: number, dtype?: D): RankMap<D>[R] {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype);
   }
