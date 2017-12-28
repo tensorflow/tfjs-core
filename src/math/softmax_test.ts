@@ -80,14 +80,15 @@ const tests: MathTests = it => {
   it('gradient', math => {
     const x = Array1D.new([10, 0, -1]);
     const y = math.softmax(x);
-    const dy = Array1D.new([1, 10, 100]);
+    const dy = Array1D.new([1, 10, 20]);
     const vjp = math.vjp(() => math.softmax(x), {x}, dy);
 
-    const sum = 10 * 1 + 10 * 0 + -1 * 100;
+    const totalSum = math.sum(math.elementWiseMul(dy, y));
 
     test_util.expectArraysClose(vjp.x, [
-      (dy.get(0) - sum) * y.get(0), (dy.get(1) - sum) * y.get(1),
-      (dy.get(2) - sum) * y.get(2)
+      (dy.get(0) - totalSum.get()) * y.get(0),
+      (dy.get(1) - totalSum.get()) * y.get(1),
+      (dy.get(2) - totalSum.get()) * y.get(2)
     ]);
   });
 };

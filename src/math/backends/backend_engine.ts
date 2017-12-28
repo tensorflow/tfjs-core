@@ -109,6 +109,8 @@ export class BackendEngine {
       return f();
     }, gradientsMode);
 
+    this.customGradientDepth--;
+
     if (this.activeTape != null && this.customGradientDepth === 0) {
       const inputAndArgs =
           tape_util.stripUndefinedInputsFromInputConfig({inputs});
@@ -121,10 +123,10 @@ export class BackendEngine {
         output: result,
         gradient
       };
+
       this.activeTape.push(evaluatedNode);
     }
 
-    this.customGradientDepth--;
     return result;
   }
 

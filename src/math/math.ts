@@ -797,8 +797,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
 
     const gradient = (dy: T, y: T) => {
       return {
-        logits: () => this.elementWiseMul(
-            this.subtract(dy, this.sum(this.elementWiseMul(dy, y))), y)
+        logits: () => {
+          const dyTimesY = this.multiply(dy, y);
+          return this.subtract(dyTimesY, this.multiply(this.sum(dyTimesY), y));
+        }
       };
     };
 
