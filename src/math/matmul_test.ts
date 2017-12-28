@@ -229,7 +229,7 @@ const commonTests: MathTests = it => {
   it('gradients: A * B', math => {
     const a = Array2D.new([2, 3], [1, 2, 3, 10, 20, 30]);
     const b = Array2D.new([3, 2], [2, 3, 4, 1, 2, 3]);
-    const dy = Array2D.new([2, 2], [1, 10, 100, 1000]);
+    const dy = Array2D.new([2, 2], [1, 10, 20, 30]);
 
     const gradients = math.vjp(
         () => math.matMul(
