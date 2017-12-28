@@ -180,7 +180,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /** @deprecated This is a no-op. */
-  track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
+  track<T extends NDArray>(result: T): T {
     return result;
   }
 
@@ -526,8 +526,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param keepDims Optional. If true, retains reduced dimensions with length
    *     of 1. Defaults to false.
    */
-  logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
-      NDArray {
+  logSumExp<T extends NDArray>(
+      input: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, input.shape);
     return this.executeOp('logSumExp', () => {
       const xMax = this.max(input, axes, true /* keepDims */);
@@ -542,7 +542,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }) as T;
   }
 
   /**
@@ -629,7 +629,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * across all axes and returns the flat index.
    *
    */
-  argMin(x: NDArray, axis: number = null): NDArray<'int32'> {
+  argMin<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
     return this.executeOp('argMin', () => {
@@ -639,7 +639,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       }
       return this.backendEngine.executeKernel(
           'ArgMin', {inputs: {x}, args: {axes}});
-    });
+    }) as T;
   }
 
   /**
@@ -726,9 +726,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  min<G extends keyof DataTypes>(
-      x: NDArray<G>, axis: number|number[] = null,
-      keepDims = false): NDArray<G> {
+  min<G extends keyof DataTypes, T extends NDArray<G>>(
+      x: NDArray<G>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
@@ -744,7 +743,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }) as T;
   }
 
   /**
@@ -761,9 +760,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  max<G extends keyof DataTypes>(
-      x: NDArray<G>, axis: number|number[] = null,
-      keepDims = false): NDArray<G> {
+  max<G extends keyof DataTypes, T extends NDArray<G>>(
+      x: NDArray<G>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
@@ -779,7 +777,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }) as T;
   }
 
   /**
@@ -850,8 +848,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param x The array to transpose.
    * @param perm Optional. The permutation of the dimensions of a.
    */
-  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      x: T, perm?: number[]): T {
+  transpose<T extends NDArray>(x: T, perm?: number[]): T {
     if (perm == null) {
       perm = x.shape.map((s, i) => i).reverse();
     }
