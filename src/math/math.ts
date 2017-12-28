@@ -46,7 +46,7 @@ export interface NDArrayManager {
 
 export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   protected backendEngine: BackendEngine;
-  private numArrays = 0;
+  private registeredArrays = new Set();
   private backend: MathBackend;
   private customBackend = false;
 
@@ -55,12 +55,15 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   getNumArrays() {
-    return this.numArrays;
+    return this.registeredArrays.size;
   }
 
   register<T extends keyof DataTypes>(a: NDArray<T>): void {
+    if (this.registeredArrays.has(a.id)) {
+      throw new Error(`NDArray with id ${a.id} was already registered`);
+    }
+    this.registeredArrays.add(a.id);
     this.backendEngine.track(a);
-    this.numArrays++;
   }
 
   writePixels(
@@ -120,7 +123,24 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                ndarray: T1) => T1,
            track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
                ndarray: T2) => T2) => T): T {
-    return this.backendEngine.scope('scope', scopeFn);
+    const gradientsMode = false;
+    return this.backendEngine.scope('scope', scopeFn, gradientsMode);
+  }
+
+  /**
+   * Create a new gradients scope. Similar to scope, but forces all inner scopes
+   * to not clean up so that gradient operations can be used inside of this
+   * scope.
+   * @param scopeFn The function to execute with chained math operations.
+   */
+  gradientsScope<T extends ScopeResult>(
+      scopeFn:
+          (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
+               ndarray: T1) => T1,
+           track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
+               ndarray: T2) => T2) => T): T {
+    const gradientsMode = true;
+    return this.backendEngine.scope('gradientsScope', scopeFn, gradientsMode);
   }
 
   /**
@@ -128,7 +148,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * as scope() without the need for a function closure.
    */
   startScope() {
-    this.backendEngine.startScope();
+    const gradientsMode = false;
+    this.backendEngine.startScope(gradientsMode);
   }
 
   /**
@@ -136,7 +157,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * as scope() without the need for a function closure.
    */
   endScope(result: ScopeResultImmediate) {
-    this.backendEngine.endScope(result);
+    const gradientsMode = false;
+    this.backendEngine.endScope(result, gradientsMode);
   }
 
   /**
@@ -937,6 +959,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
     const gradient = (dy: NDArray<G>, y: NDArray<G>) => {
+      if (!util.arraysEqual(a.shape, b.shape)) {
+        throw new Error(
+            `Gradient of pow not yet supported for broadcasted shapes.`);
+      }
       const derA = () => {
         return this.scope(() => {
           return this.multiply(
@@ -2009,6 +2035,52 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
   }
 
+  /**
+   * Batch normalization 4D. Mean, variance, scale, and offset can be of two
+   * shapes: 1) The same shape as the input: an Array4D. 2) In the common
+   * case, the depth dimension is the last dimension of x, so the values would
+   * be an Array1D of shape [depth].
+   * @param x The input NDArray.
+   * @param mean A mean NDArray.
+   * @param variance A variance NDArray.
+   * @param varianceEpsilon A small float number to avoid dividing by 0.
+   * @param scale A scale NDArray.
+   * @param offset An offset NDArray.
+   */
+  batchNormalization4D(
+    x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
+    varianceEpsilon = .001, scale?: Array4D|Array1D,
+    offset?: Array4D|Array1D): Array4D {
+  util.assert(
+      x.rank === 4,
+      `Error in batchNormalization4D: x must be rank 4 but got rank ` +
+          `${x.rank}.`);
+  util.assert(
+      mean.rank === 4 || mean.rank === 1,
+      `Error in batchNormalization4D: mean must be rank 4 or rank 1 but ` +
+          `got rank ${mean.rank}.`);
+  util.assert(
+      variance.rank === 4 || variance.rank === 1,
+      `Error in batchNormalization4D: variance must be rank 4 or rank 1 ` +
+          `but got rank ${variance.rank}.`);
+  if (scale != null) {
+    util.assert(
+        scale.rank === 4 || scale.rank === 1,
+        `Error in batchNormalization4D: scale must be rank 4 or rank 1 ` +
+            `but got rank ${scale.rank}.`);
+  }
+  if (offset != null) {
+    util.assert(
+        offset.rank === 4 || offset.rank === 1,
+        `Error in batchNormalization4D: offset must be rank 4 or rank 1 ` +
+            `but got rank ${offset.rank}.`);
+  }
+
+  return this.backendEngine.executeKernel(
+      'BatchNorm4D',
+      {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+}
+
   //////////////
   // LSTM ops //
   //////////////
@@ -2282,38 +2354,69 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Warning: this is not fully implemented yet. Use with caution.
    *
-   * Computes a gradient of y with respect to x.
+   * Computes and returns the gradient of f(x) with respect to x.
    *
-   * @param y The output Scalar. Assumes de/dy = 1.
+   * @param f The function to execute. f() should return a scalar.
    *          TODO(nsthorat): Accept non-scalars.
    * @param x The input to compute de/dx over. This can be a single value or
    * an object mapping a string to an NDArray. If using the object mode, this
    * method will return an object of the same shape.
    */
-  gradientWrt<T extends NDArray|NamedArrayMap>(y: Scalar, x: T): T {
-    if (y.rank !== 0) {
-      throw new Error(
-          `Cannot compute gradient: y must be a Scalar, ` +
-          `got rank ${y.rank}.`);
-    }
+  gradients<T extends NDArray|NamedArrayMap>(f: () => Scalar, x: T): T {
+    const keys = x instanceof NDArray ? null : Object.keys(x);
+    const xs = util.flattenNameArrayMap(x, keys);
 
-    const xs = util.flattenNameArrayMap(x);
-
-    const gradients = this.backendEngine.gradientWrt(y, xs);
+    const returnValue = false;
+    const gradients =
+        this.backendEngine.gradients(f, xs, returnValue) as NDArray[];
 
     if (x instanceof NDArray) {
       return gradients[0] as T;
     } else {
-      return util.unflattenToNameArrayMap(Object.keys(x), gradients) as T;
+      return util.unflattenToNameArrayMap(keys, gradients) as T;
     }
   }
 
+  /**
+   * Warning: this is not fully implemented yet. Use with caution.
+   *
+   * Computes and returns the gradient of f(x) with respect to x. Returns both
+   * f(x) and f'(x).
+   *
+   * @param f The function to execute. f() should return a scalar.
+   *          TODO(nsthorat): Accept non-scalars.
+   * @param x The input to compute de/dx over. This can be a single value or
+   * an object mapping a string to an NDArray. If using the object mode, this
+   * method will return an object of the same shape.
+   */
+  valueAndGradients<T extends NDArray|NamedArrayMap>(f: () => Scalar, x: T):
+      {value: Scalar, gradients: T} {
+    const keys = x instanceof NDArray ? null : Object.keys(x);
+    const xs = util.flattenNameArrayMap(x, keys);
+
+    const returnValue = true;
+    const valueAndGradients =
+        this.backendEngine.gradients(f, xs, returnValue) as
+        {value: Scalar, gradients: NDArray[]};
+
+    let gradients: T;
+    if (x instanceof NDArray) {
+      gradients = valueAndGradients.gradients[0] as T;
+    } else {
+      gradients =
+          util.unflattenToNameArrayMap(keys, valueAndGradients.gradients) as T;
+    }
+    return {value: valueAndGradients.value, gradients};
+  }
+
   disposeData(id: number): void {
-    this.backend.disposeData(id);
-    // TODO(nsthorat): Construct an error and save the stack trace for
-    // debugging when in debug mode. Creating a stack trace is too expensive
-    // to do unconditionally.
-    this.numArrays--;
+    if (this.registeredArrays.has(id)) {
+      this.registeredArrays.delete(id);
+      this.backend.disposeData(id);
+      // TODO(nsthorat): Construct an error and save the stack trace for
+      // debugging when in debug mode. Creating a stack trace is too expensive
+      // to do unconditionally.
+    }
   }
 }
 

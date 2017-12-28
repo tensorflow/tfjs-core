@@ -15,8 +15,8 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, CheckpointLoader, initializeGPU, Model, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU} from 'deeplearn';
-
+import {Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMath} from 'deeplearn';
+import * as model_util from '../util';
 import {IMAGENET_CLASSES} from './imagenet_classes';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
@@ -30,15 +30,7 @@ export class SqueezeNet implements Model {
 
   private preprocessOffset = Array1D.new([103.939, 116.779, 123.68]);
 
-  constructor(private math: NDArrayMath) {
-    // TODO(nsthorat): This awful hack is because we need to share the global
-    // GPGPU between deeplearn loaded from standalone as well as the internal
-    // deeplearn that gets compiled as part of this model. Remove this once we
-    // decouple NDArray from storage mechanism.
-    initializeGPU(
-        (this.math as NDArrayMathGPU).getGPGPUContext(),
-        (this.math as NDArrayMathGPU).getTextureManager());
-  }
+  constructor(private math: NDArrayMath) {}
 
   /**
    * Loads necessary variables for SqueezeNet.
@@ -71,13 +63,11 @@ export class SqueezeNet implements Model {
    */
   predictWithActivation(input: Array3D, activationName?: ActivationName):
       {logits: Array1D, activation: Array3D} {
-    let activation: Array3D;
-
-    const logits = this.math.scope((keep) => {
+    const [logits, activation] = this.math.scope(() => {
+      let activation: Array3D;
       // Preprocess the input.
       const preprocessedInput =
           this.math.subtract(input, this.preprocessOffset) as Array3D;
-
       const conv1 = this.math.conv2d(
           preprocessedInput, this.variables['conv1_W:0'] as Array4D,
           this.variables['conv1_b:0'] as Array1D, 2, 0);
@@ -111,7 +101,7 @@ export class SqueezeNet implements Model {
         activation = fire4;
       }
 
-      const fire5 = keep(this.fireModule(fire4, 5));
+      const fire5 = this.fireModule(fire4, 5);
       if (activationName === 'fire5') {
         activation = fire5;
       }
@@ -141,20 +131,17 @@ export class SqueezeNet implements Model {
         activation = fire9;
       }
 
-      const conv10 = keep(this.math.conv2d(
+      const conv10 = this.math.conv2d(
           fire9, this.variables['conv10_W:0'] as Array4D,
-          this.variables['conv10_b:0'] as Array1D, 1, 0));
+          this.variables['conv10_b:0'] as Array1D, 1, 0);
       if (activationName === 'conv10') {
         activation = conv10;
       }
-
-      if (activation != null) {
-        keep(activation);
-      }
-      return this.math.avgPool(conv10, conv10.shape[0], 1, 0).as1D();
+      return [
+        this.math.avgPool(conv10, conv10.shape[0], 1, 0).as1D(), activation
+      ];
     });
-
-    return {activation, logits};
+    return {activation: activation as Array3D, logits: logits as Array1D};
   }
 
   private fireModule(input: Array3D, fireId: number) {
@@ -184,10 +171,13 @@ export class SqueezeNet implements Model {
    */
   async getTopKClasses(logits: Array1D, topK: number):
       Promise<{[className: string]: number}> {
-    const predictions = this.math.softmax(logits);
-    const topk = new NDArrayMathCPU().topK(predictions, topK);
-    const topkIndices = await topk.indices.data();
-    const topkValues = await topk.values.data();
+    const predictions = this.math.scope(() => {
+      return this.math.softmax(logits).asType('float32');
+    });
+    const topk = model_util.topK(await predictions.data(), topK);
+    predictions.dispose();
+    const topkIndices = topk.indices;
+    const topkValues = topk.values;
 
     const topClassesToProbability: {[className: string]: number} = {};
     for (let i = 0; i < topkIndices.length; i++) {
