@@ -37,6 +37,12 @@ export const PRELU = `
 export const PRELU_DER = `
   return (a > 0.0) ? 1.0 : ((a < 0.0) ? b : a);
 `;
+export const MAX = `
+  return max(a, b);
+`;
+export const MIN = `
+  return min(a, b);
+`;
 
 export class BinaryOpProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
