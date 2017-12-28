@@ -69,17 +69,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectArraysClose(result, [1, 0, 0, 1, 0, util.NAN_BOOL]);
     });
 
-    it('gradients: positive scalar, dy = 1', math => {
-      const a = Scalar.new(3);
-
-      const gradients = math.gradients(() => math.relu(a), a);
-
-      expect(gradients.shape).toEqual(a.shape);
-      expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [1]);
-    });
-
-    it('gradients: positive scalar, dy != 1', math => {
+    it('gradients: positive scalar', math => {
       const a = Scalar.new(3);
       const dy = Scalar.new(5);
 
@@ -90,17 +80,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectArraysClose(gradients, [5]);
     });
 
-    it('gradients: negative scalar, dy = 1', math => {
-      const a = Scalar.new(-3);
-
-      const gradients = math.gradients(() => math.relu(a), a);
-
-      expect(gradients.shape).toEqual(a.shape);
-      expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [0]);
-    });
-
-    it('gradients: negative scalar, dy != 1', math => {
+    it('gradients: negative scalar', math => {
       const a = Scalar.new(-3);
       const dy = Scalar.new(5);
 
@@ -111,18 +91,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       test_util.expectArraysClose(gradients, [0]);
     });
 
-    it('gradients: array, dy = 1', math => {
-      // TODO(nsthorat): Use 0 instead of -.001 when we fix the precision
-      const a = Array2D.new([2, 2], [1, -1, -.001, .1]);
-
-      const gradients = math.gradients(() => math.sum(math.relu(a)), a);
-
-      expect(gradients.shape).toEqual(a.shape);
-      expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [1, 0, 0, 1]);
-    });
-
-    it('gradients: array, dy != 1', math => {
+    it('gradients: array', math => {
       // TODO(nsthorat): Use 0 instead of -.001 when we fix the precision
       const a = Array2D.new([2, 2], [1, -1, -.001, .1]);
       const dy = Array2D.new([2, 2], [1, 10, 100, 1000]);
@@ -135,7 +104,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('nikhil relu', [tests]);
+  test_util.describeMathCPU('relu', [tests]);
   test_util.describeMathGPU('relu', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
