@@ -16,11 +16,14 @@
  */
 
 import * as util from '../../util';
+import {NamedArrayMap} from '../../util';
 import {DataType, NDArray, Scalar} from '../ndarray';
+
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
-import {KernelNode, Tape} from './tape_types';
+// tslint:disable-next-line:max-line-length
+import {KernelNode, Tape, TapeNode, TapeNodeInputGradientArrays} from './tape_types';
 import * as tape_util from './tape_util';
 import {ScopeResult, ScopeResultImmediate} from './tape_util';
 
@@ -34,6 +37,8 @@ export class BackendEngine {
 
   private activeTape: Tape;
   private gradientScopeCount = 0;
+
+  private customGradientDepth = 0;
 
   // Keep NDArrays that parallel the tapes.
   private activeScope: ScopeState;
@@ -76,7 +81,7 @@ export class BackendEngine {
       util.checkForNaN(vals, result.dtype, name);
     }
 
-    if (this.activeTape != null) {
+    if (this.activeTape != null && this.customGradientDepth === 0) {
       config = tape_util.stripUndefinedInputsFromInputConfig(config) as C;
 
       const evaluatedNode: KernelNode = {
@@ -91,6 +96,35 @@ export class BackendEngine {
       this.activeTape.push(evaluatedNode);
     }
 
+    return result;
+  }
+
+  customGradient<T extends NDArray>(
+      name: string, f: () => T, inputs: NamedArrayMap,
+      gradient: (dy: T, y: T) => TapeNodeInputGradientArrays): T {
+    this.customGradientDepth++;
+
+    const gradientsMode = false;
+    const result = this.scope('customGradient', () => {
+      return f();
+    }, gradientsMode);
+
+    if (this.activeTape != null && this.customGradientDepth === 0) {
+      const inputAndArgs =
+          tape_util.stripUndefinedInputsFromInputConfig({inputs});
+
+      const evaluatedNode: TapeNode<T> = {
+        id: this.nextTapeNodeId++,
+        type: 'customGradient',
+        name,
+        inputAndArgs,
+        output: result,
+        gradient
+      };
+      this.activeTape.push(evaluatedNode);
+    }
+
+    this.customGradientDepth--;
     return result;
   }
 
@@ -119,16 +153,34 @@ export class BackendEngine {
     }
   }
 
-  private gradientWrt(y: Scalar, xs: NDArray[]): NDArray[] {
+  vjp<T extends NDArray>(f: () => T, xs: NDArray[], dy: T): NDArray[] {
+    const gradientsMode = true;
+    return this.scope('vjp', () => {
+      const y = f();
+      if (!util.arraysEqual(y.shape, dy.shape)) {
+        throw new Error(
+            `Cannot compute vector jacobian product, ` +
+            `y shape (${y.shape}) does not match dy shape (${dy.shape}).`);
+      }
+      if (y.dtype !== dy.dtype) {
+        throw new Error(
+            `Cannot compute vector jacobian product, ` +
+            `y dtype (${y.dtype}) does not match dy dtype (${dy.dtype}).`);
+      }
+      return this.gradientWrt(y, xs, dy);
+    }, gradientsMode);
+  }
+
+  private gradientWrt<T extends NDArray>(y: T, xs: NDArray[], dy?: T):
+      NDArray[] {
     // Filter out the nodes that don't connect x => y.
     const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {
       throw new Error(`Cannot compute gradient: y is not a function of xs.`);
     }
 
-    // Seed the gradient of dy to be 1.
     const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-    arrayAccumulatedGradientMap[y.id] = Scalar.new(1);
+    arrayAccumulatedGradientMap[y.id] = dy == null ? Scalar.new(1) : dy;
 
     // Backprop gradients through the filtered nodes.
     tape_util.backpropagateGradients(arrayAccumulatedGradientMap, filteredTape);
@@ -208,7 +260,7 @@ export class BackendEngine {
         continue;
       }
 
-      if (this.activeTape != null) {
+      if (this.activeTape != null && this.customGradientDepth === 0) {
         arraysToTrackInParent.push(ndarray);
       } else {
         ndarray.dispose();

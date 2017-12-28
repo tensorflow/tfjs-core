@@ -76,6 +76,20 @@ const tests: MathTests = it => {
     };
     expect(f).toThrowError();
   });
+
+  it('gradient', math => {
+    const x = Array1D.new([10, 0, -1]);
+    const y = math.softmax(x);
+    const dy = Array1D.new([1, 10, 100]);
+    const vjp = math.vjp(() => math.softmax(x), {x}, dy);
+
+    const sum = 10 * 1 + 10 * 0 + -1 * 100;
+
+    test_util.expectArraysClose(vjp.x, [
+      (dy.get(0) - sum) * y.get(0), (dy.get(1) - sum) * y.get(1),
+      (dy.get(2) - sum) * y.get(2)
+    ]);
+  });
 };
 
 test_util.describeMathCPU('softmax', [tests]);

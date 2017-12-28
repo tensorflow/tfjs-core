@@ -794,14 +794,22 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
           'Softmax along a non-last dimension is not yet supported. ' +
           `Logits was rank ${logits.rank} and dim was ${dim}`);
     }
+
+    const gradient = (dy: T, y: T) => {
+      return {
+        logits: () => this.elementWiseMul(
+            this.subtract(dy, this.sum(this.elementWiseMul(dy, y))), y)
+      };
+    };
+
     return this.executeOp('softmax', () => {
-      return this.scope(() => {
+      return this.backendEngine.customGradient('softmax', () => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
         const lse = this.logSumExp(logits, [dim], true /* keepDims */);
         const logResult = this.subtract(logits, lse);
         return this.exp(logResult) as T;
-      });
+      }, {logits}, gradient);
     });
   }
 
@@ -936,8 +944,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                        `yet supported.`);
                  }
                  return {
-                   a: () => NDArray.onesLike(a),
-                   b: () => this.scope(() => this.neg(NDArray.onesLike(b)))
+                   a: () => this.multiply(dy, NDArray.onesLike(a)),
+                   b: () => this.scope(
+                       () => this.multiply(dy, this.neg(NDArray.onesLike(b))))
                  };
                }) as T;
   }
@@ -1031,7 +1040,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                        `Backprop through broadcasted multiply not ` +
                        `supported yet.`);
                  }
-                 return {a: () => this.clone(b), b: () => this.clone(a)};
+                 return {
+                   a: () => this.multiply(dy, b),
+                   b: () => this.multiply(dy, a)
+                 };
                }) as T;
   }
 
@@ -1183,7 +1195,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   relu<T extends NDArray>(x: T): T {
     return this.backendEngine.executeKernel(
                'Relu', {inputs: {x}}, (dy: T, y: T) => {
-                 return {x: () => this.step(x)};
+                 return {x: () => this.multiply(dy, this.step(x))};
                }) as T;
   }
 
@@ -2351,6 +2363,32 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     }
 
     throw new Error(`Error in norm: invalid axis: ${axis}`);
+  }
+
+  /**
+   * Warning: this is not fully implemented yet. Use with caution.
+   *
+   * Computes and returns the vector jacobian product of f(x) with respect to x.
+   * This method allows you to provide a non-scalar dy to backprop from.
+   *
+   * @param f The function to execute. f() should return an NDArray of the same
+   * shape and dtype as dy.
+   * @param x The input to compute dy/dx over. This can be a single value or
+   * an object mapping a string to an NDArray. If using the object mode, this
+   * method will return an object of the same shape.
+   */
+  vjp<T extends NDArray|NamedArrayMap, R extends NDArray>(
+      f: () => R, x: T, dy: R): T {
+    const keys = x instanceof NDArray ? null : Object.keys(x);
+    const xs = util.flattenNameArrayMap(x, keys);
+
+    const vjp = this.backendEngine.vjp(f, xs, dy) as NDArray[];
+
+    if (x instanceof NDArray) {
+      return vjp[0] as T;
+    } else {
+      return util.unflattenToNameArrayMap(keys, vjp) as T;
+    }
   }
 
   /**
