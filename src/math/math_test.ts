@@ -251,6 +251,51 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
   ]);
 }
 
+// vjp integration tests
+{
+  const tests: MathTests = it => {
+    it('matmul + relu', math => {
+      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
+      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+      const dy = Array2D.new([2, 2], [1, 10, 100, 1000]);
+
+      const gradients = math.vjp(() => {
+        // m = dot(a, b)
+        // y = relu(m)
+        const m = math.matMul(a, b);
+        return math.relu(m);
+      }, {a, b}, dy);
+
+      // dy/dm = step(m)
+      // de/dm = de/dy * dy/dm = de/dy * step(m)
+      const dedm = math.multiplyStrict(dy, math.step(math.matMul(a, b)));
+
+      // de/da = dot(de/dy, bT)
+      expect(gradients.a.shape).toEqual(a.shape);
+      test_util.expectArraysClose(
+          gradients.a,
+          math.matMul(
+              dedm, b, MatrixOrientation.REGULAR,
+              MatrixOrientation.TRANSPOSED));
+
+      // de/db = dot(aT, de/dy)
+      expect(gradients.b.shape).toEqual(b.shape);
+      test_util.expectArraysClose(
+          gradients.b,
+          math.matMul(
+              a, dedm, MatrixOrientation.TRANSPOSED,
+              MatrixOrientation.REGULAR));
+    });
+
+    test_util.describeMathCPU('vjp', [tests]);
+    test_util.describeMathGPU('vjp', [tests], [
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+      {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    ]);
+  };
+}
+
 // gradients integration tests
 {
   const tests: MathTests = it => {

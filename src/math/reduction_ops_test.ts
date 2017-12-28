@@ -533,6 +533,17 @@ import * as reduce_util from './reduce_util';
       expect(res.shape).toEqual([]);
       test_util.expectArraysClose(res, [7]);
     });
+
+    it('gradients: basic', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const dy = Scalar.new(10);
+
+      const gradients = math.vjp(() => math.sum(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [10, 10, 10, 10, 10, 10]);
+    });
   };
 
   test_util.describeMathCPU('sum', [tests]);
@@ -541,27 +552,6 @@ import * as reduce_util from './reduce_util';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
-}
-
-it('gradients: basic', math => {
-  const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-  const dy = Scalar.new(10);
-
-  const gradients = math.vjp(() => math.sum(a), a, dy);
-
-  expect(gradients.shape).toEqual(a.shape);
-  expect(gradients.dtype).toEqual('float32');
-  test_util.expectArraysClose(gradients, [10, 10, 10, 10, 10, 10]);
-});
-}
-;
-
-test_util.describeMathCPU('sum', [tests]);
-test_util.describeMathGPU('sum', [tests], [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-]);
 }
 
 // math.mean
