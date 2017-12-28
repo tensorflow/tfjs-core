@@ -685,11 +685,11 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       expect(gradients.a.shape).toEqual(a.shape);
       expect(gradients.a.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients.a, [1, 10, 20]);
+      test_util.expectArraysClose(gradients.a, [1, 10, 20], 1e-1);
 
       expect(gradients.b.shape).toEqual(b.shape);
       expect(gradients.b.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients.b, [-1, -10, -20]);
+      test_util.expectArraysClose(gradients.b, [-1, -10, -20], 1e-1);
     });
 
     it('gradients: basic 2D arrays', math => {
@@ -701,11 +701,11 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       expect(gradients.a.shape).toEqual(a.shape);
       expect(gradients.a.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients.a, [1, 10, 15, 20]);
+      test_util.expectArraysClose(gradients.a, [1, 10, 15, 20], 1e-1);
 
       expect(gradients.b.shape).toEqual(b.shape);
       expect(gradients.b.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients.b, [-1, -10, -15, -20]);
+      test_util.expectArraysClose(gradients.b, [-1, -10, -15, -20], 1e-1);
     });
   };
 

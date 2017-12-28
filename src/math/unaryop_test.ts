@@ -94,13 +94,13 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('gradients: array', math => {
       // TODO(nsthorat): Use 0 instead of -.001 when we fix the precision
       const a = Array2D.new([2, 2], [1, -1, -.001, .1]);
-      const dy = Array2D.new([2, 2], [1, 10, 100, 1000]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
 
       const gradients = math.vjp(() => math.relu(a), a, dy);
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [1, 0, 0, 1000]);
+      test_util.expectArraysClose(gradients, [1, 0, 0, 4]);
     });
   };
 
@@ -278,30 +278,30 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [2 * 5 * 8]);
+      test_util.expectArraysClose(gradients, [2 * 5 * 8], 1e-1);
     });
 
     it('gradients: Array1D', math => {
       const a = Array1D.new([-1, 2, 3, -5]);
-      const dy = Array1D.new([1, 10, 100, 1000]);
+      const dy = Array1D.new([1, 2, 3, 4]);
 
       const gradients = math.vjp(() => math.square(a), a, dy);
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [-2, 4, 6, -10], 1e-1);
+      test_util.expectArraysClose(gradients, [-2, 4 * 2, 6 * 3, -10 * 4], 1e-1);
     });
 
     it('gradients: Array2D', math => {
       const a = Array2D.new([2, 2], [-3, 1, 2, 3]);
-      const dy = Array2D.new([2, 2], [1, 10, 100, 1000]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
 
       const gradients = math.vjp(() => math.square(a), a, dy);
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
       test_util.expectArraysClose(
-          gradients, [-6 * 1, 2 * 10, 4 * 100, 6 * 1000], 1e-1);
+          gradients, [-6 * 1, 2 * 2, 4 * 3, 6 * 4], 1e-1);
     });
   };
 

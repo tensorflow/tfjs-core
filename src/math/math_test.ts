@@ -340,7 +340,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
       expect(
           // tslint:disable-next-line:no-any
-          () => math.valueAndGradients(() => math.matMul(a, b) as any, {a, b}))
+          () => math.gradients(() => math.matMul(a, b) as any, {a, b}))
           .toThrowError();
     });
 
@@ -380,15 +380,15 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           gradients.a,
           math.matMul(
-              dedm, b, MatrixOrientation.REGULAR,
-              MatrixOrientation.TRANSPOSED));
+              dedm, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
+          1e-1);
 
       // de/db = dot(aT, de/dy)
       test_util.expectArraysClose(
           gradients.b,
           math.matMul(
-              a, dedm, MatrixOrientation.TRANSPOSED,
-              MatrixOrientation.REGULAR));
+              a, dedm, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR),
+          1e-1);
     });
 
     it('Throws is y is not a scalar', math => {
@@ -427,15 +427,15 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           gradients.a,
           math.matMul(
-              dedm, b, MatrixOrientation.REGULAR,
-              MatrixOrientation.TRANSPOSED));
+              dedm, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
+          1e-1);
 
       // de/db = dot(aT, de/dy)
       test_util.expectArraysClose(
           gradients.b,
           math.matMul(
-              a, dedm, MatrixOrientation.TRANSPOSED,
-              MatrixOrientation.REGULAR));
+              a, dedm, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR),
+          1e-1);
     });
 
     it('second order nested gradient', math => {
@@ -447,7 +447,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       }, a);
 
       expect(gradients.shape).toEqual(a.shape);
-      test_util.expectNumbersClose(gradients.get(), 6 * a.get());
+      test_util.expectNumbersClose(gradients.get(), 6 * a.get(), 1e-1);
     });
 
     it('second order with gradientsScope', math => {
@@ -465,7 +465,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       });
 
       expect(gradients.shape).toEqual(a.shape);
-      test_util.expectNumbersClose(gradients.get(), 6 * a.get());
+      test_util.expectNumbersClose(gradients.get(), 6 * a.get(), 1e-1);
     });
   };
 
