@@ -17,10 +17,10 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-import {DataTypes, NDArray, Rank} from './ndarray';
+import {DataType, NDArray, Rank} from './ndarray';
 
-export class Variable<D extends keyof DataTypes = keyof DataTypes,
-                                R extends Rank = Rank> extends NDArray<D, R> {
+export class Variable<D extends DataType = DataType, R extends Rank = Rank>
+    extends NDArray<D, R> {
   private static nextVarId = 0;
   name: string;
 
@@ -51,7 +51,7 @@ export class Variable<D extends keyof DataTypes = keyof DataTypes,
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.
    */
-  static variable<D extends keyof DataTypes, R extends Rank>(
+  static variable<D extends DataType, R extends Rank>(
       initialValue: NDArray<D, R>, trainable = true, name?: string,
       dtype?: D): Variable<D, R> {
     if (dtype != null && dtype !== initialValue.dtype) {

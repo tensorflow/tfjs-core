@@ -18,7 +18,6 @@
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap} from '../util';
-
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {NDArrayStorage} from './backends/backend';
@@ -31,7 +30,7 @@ import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
 import {Variable} from './variable';
@@ -84,14 +83,14 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       numChannels: number): void {
     this.backend.writePixels(id, pixels, numChannels);
   }
-  write<T extends keyof DataTypes>(
-      id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
+  write<T extends DataType>(
+      id: number, values: DataTypeMap[T], dtype: T, shape: number[]): void {
     this.backend.write(id, values, dtype, shape);
   }
-  readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
+  readSync<T extends DataType>(id: number): DataTypeMap[T] {
     return this.backend.readSync(id);
   }
-  read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+  read<T extends DataType>(id: number): Promise<DataTypeMap[T]> {
     return this.backend.read(id);
   }
 
@@ -145,10 +144,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    */
   gradientsScope<T extends ScopeResult>(
       scopeFn:
-          (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
-               ndarray: T1) => T1,
-           track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
-               ndarray: T2) => T2) => T): T {
+          (keep:
+               <D1 extends DataType, T1 extends NDArray<D1>>(ndarray: T1) => T1,
+           track: <D2 extends DataType, T2 extends NDArray<D2>>(ndarray: T2) =>
+               T2) => T): T {
     const gradientsMode = true;
     return this.backendEngine.scope('gradientsScope', scopeFn, gradientsMode);
   }
@@ -559,7 +558,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  sum<D extends keyof DataTypes, T extends NDArray<SumTypes[D]>>(
+  sum<D extends DataType, T extends NDArray<SumTypes[D]>>(
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
@@ -683,7 +682,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.backendEngine.executeKernel('Equal', {inputs: {a, b}}) as T;
   }
 
-  equalStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T):
+  equalStrict<D extends DataType, T extends NDArray<D>>(a: T, b: T):
       NDArray<'bool'> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in equalStrict: ');
     return this.equal(a, b);
@@ -726,7 +725,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  min<G extends keyof DataTypes, T extends NDArray<G>>(
+  min<G extends DataType, T extends NDArray<G>>(
       x: NDArray<G>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
@@ -760,7 +759,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  max<G extends keyof DataTypes, T extends NDArray<G>>(
+  max<G extends DataType, T extends NDArray<G>>(
       x: NDArray<G>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
@@ -827,8 +826,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param x The array to transpose.
    * @param reps Determines the number of replications per dimension.
    */
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(x: T, reps: number[]):
-      T {
+  tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T {
     util.assert(
         x.rank === reps.length,
         `Error in transpose: rank of input ${x.rank} ` +
@@ -902,8 +900,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first NDArray to add element-wise.
    * @param b The second NDArray to add element-wise.
    */
-  add<G extends keyof DataTypes, T extends NDArray<G>>(
-      a: NDArray<G>, b: NDArray<G>): T {
+  add<G extends DataType, T extends NDArray<G>>(a: NDArray<G>, b: NDArray<G>):
+      T {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel('Add', {inputs: {a, b}}) as T;
   }
@@ -927,7 +925,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first NDArray to subtract element-wise.
    * @param b The second NDArray to subtract element-wise.
    */
-  subtract<G extends keyof DataTypes, T extends NDArray<G>>(
+  subtract<G extends DataType, T extends NDArray<G>>(
       a: NDArray<G>, b: NDArray<G>): T {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel(
@@ -955,7 +953,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The base NDArray to pow element-wise.
    * @param b The exponent NDArray to pow element-wise.
    */
-  pow<G extends keyof DataTypes, T extends NDArray<G>>(
+  pow<G extends DataType, T extends NDArray<G>>(
       a: NDArray<G>, b: NDArray<'int32'>): T {
     util.assert(
         b.dtype === 'int32',
@@ -994,14 +992,14 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The base NDArray to pow element-wise.
    * @param b The exponent NDArray to pow element-wise.
    */
-  powStrict<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<'int32'>):
+  powStrict<G extends DataType>(a: NDArray<G>, b: NDArray<'int32'>):
       NDArray<G> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in powStrict: ');
     return this.pow(a, b);
   }
 
   /** @deprecated Use math.subtract instead. */
-  sub<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
+  sub<G extends DataType>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     return this.subtract(a, b);
   }
 
@@ -2052,38 +2050,38 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param offset An offset NDArray.
    */
   batchNormalization4D(
-    x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
-    varianceEpsilon = .001, scale?: Array4D|Array1D,
-    offset?: Array4D|Array1D): Array4D {
-  util.assert(
-      x.rank === 4,
-      `Error in batchNormalization4D: x must be rank 4 but got rank ` +
-          `${x.rank}.`);
-  util.assert(
-      mean.rank === 4 || mean.rank === 1,
-      `Error in batchNormalization4D: mean must be rank 4 or rank 1 but ` +
-          `got rank ${mean.rank}.`);
-  util.assert(
-      variance.rank === 4 || variance.rank === 1,
-      `Error in batchNormalization4D: variance must be rank 4 or rank 1 ` +
-          `but got rank ${variance.rank}.`);
-  if (scale != null) {
+      x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
+      varianceEpsilon = .001, scale?: Array4D|Array1D,
+      offset?: Array4D|Array1D): Array4D {
     util.assert(
-        scale.rank === 4 || scale.rank === 1,
-        `Error in batchNormalization4D: scale must be rank 4 or rank 1 ` +
-            `but got rank ${scale.rank}.`);
-  }
-  if (offset != null) {
+        x.rank === 4,
+        `Error in batchNormalization4D: x must be rank 4 but got rank ` +
+            `${x.rank}.`);
     util.assert(
-        offset.rank === 4 || offset.rank === 1,
-        `Error in batchNormalization4D: offset must be rank 4 or rank 1 ` +
-            `but got rank ${offset.rank}.`);
-  }
+        mean.rank === 4 || mean.rank === 1,
+        `Error in batchNormalization4D: mean must be rank 4 or rank 1 but ` +
+            `got rank ${mean.rank}.`);
+    util.assert(
+        variance.rank === 4 || variance.rank === 1,
+        `Error in batchNormalization4D: variance must be rank 4 or rank 1 ` +
+            `but got rank ${variance.rank}.`);
+    if (scale != null) {
+      util.assert(
+          scale.rank === 4 || scale.rank === 1,
+          `Error in batchNormalization4D: scale must be rank 4 or rank 1 ` +
+              `but got rank ${scale.rank}.`);
+    }
+    if (offset != null) {
+      util.assert(
+          offset.rank === 4 || offset.rank === 1,
+          `Error in batchNormalization4D: offset must be rank 4 or rank 1 ` +
+              `but got rank ${offset.rank}.`);
+    }
 
-  return this.backendEngine.executeKernel(
-      'BatchNorm4D',
-      {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
-}
+    return this.backendEngine.executeKernel(
+        'BatchNorm4D',
+        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+  }
 
   //////////////
   // LSTM ops //
@@ -2282,7 +2280,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param keepDims Optional. If true, the norm have the same dimensionality
    * as the input.
    */
-  norm<G extends keyof DataTypes>(
+  norm<G extends DataType>(
       x: NDArray<G>, ord: number|'euclidean'|'fro' = 'euclidean',
       axis: number|number[] = null, keepDims = false): NDArray<G|SumTypes[G]> {
     return this.scope(() => {
@@ -2299,7 +2297,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Calculate the norm for different NDAarray.
    */
-  private normInternal<G extends keyof DataTypes>(
+  private normInternal<G extends DataType>(
       x: NDArray<G>, p: number|string,
       axis: number|number[] = null): NDArray<G|SumTypes[G]> {
     // scalar
@@ -2366,7 +2364,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * an object mapping a string to an NDArray. If using the object mode, this
    * method will return an object of the same shape.
    */
-  gradients<T extends NDArray|NamedArrayMap, D extends keyof DataTypes>(
+  gradients<T extends NDArray|NamedArrayMap, D extends DataType>(
       f: () => Scalar<D>, x: T): T {
     const keys = x instanceof NDArray ? null : Object.keys(x);
     const xs = util.flattenNameArrayMap(x, keys);
@@ -2394,7 +2392,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * an object mapping a string to an NDArray. If using the object mode, this
    * method will return an object of the same shape.
    */
-  valueAndGradients<T extends NDArray|NamedArrayMap, D extends keyof DataTypes>(
+  valueAndGradients<T extends NDArray|NamedArrayMap, D extends DataType>(
       f: () => Scalar<D>, x: T): {value: Scalar, gradients: T} {
     const keys = x instanceof NDArray ? null : Object.keys(x);
     const xs = util.flattenNameArrayMap(x, keys);
