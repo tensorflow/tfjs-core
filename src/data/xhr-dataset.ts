@@ -47,8 +47,9 @@ export function getXhrDatasetConfig(jsonConfigPath: string):
         xhr.open('GET', jsonConfigPath);
 
         xhr.onload = () => {
-          resolve(JSON.parse(
-              xhr.responseText) as {[datasetName: string]: XhrDatasetConfig});
+          resolve(
+              JSON.parse(xhr.responseText) as
+              {[datasetName: string]: XhrDatasetConfig});
         };
         xhr.onerror = (error) => {
           reject(error);
@@ -70,13 +71,14 @@ export class XhrDataset extends InMemoryDataset {
         parseTypedArrayFromPng(info, info.shape as [number, number, number]) :
         parseTypedArrayFromBinary(info);
 
+    const inputSize = util.sizeFromShape(info.shape);
     return dataPromise.then(data => {
-      const inputSize = util.sizeFromShape(info.shape);
       const ndarrays: T[] = [];
       for (let i = 0; i < data.length / inputSize; i++) {
         const values = data.subarray(i * inputSize, (i + 1) * inputSize);
         const ndarray =
-            NDArray.make(info.shape, {values: new Float32Array(values)}) as T;
+            NDArray.make(
+                info.shape, {values: new Float32Array(values)}, 'float32') as T;
         ndarrays.push(ndarray);
       }
       return ndarrays;

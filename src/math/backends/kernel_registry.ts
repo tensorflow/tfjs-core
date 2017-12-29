@@ -5,7 +5,7 @@ import {KernelInputConfig} from './tape_types';
 // tslint:disable-next-line:max-line-length
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './types/argminmax';
 // tslint:disable-next-line:max-line-length
-import {BatchNorm2DInputConfig, BatchNorm2DNode, BatchNorm3DInputConfig, BatchNorm3DNode} from './types/batchnorm';
+import {BatchNorm2DInputConfig, BatchNorm2DNode, BatchNorm3DInputConfig, BatchNorm3DNode, BatchNorm4DInputConfig, BatchNorm4DNode} from './types/batchnorm';
 import {LRN3DInputConfig, LRN3DNode} from './types/lrn';
 import {BinaryInputConfig, BinaryNode} from './types/binary';
 // tslint:disable-next-line:max-line-length
@@ -30,6 +30,7 @@ import {SumInputConfig, SumNode} from './types/sum';
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './types/topk';
 // tslint:disable-next-line:max-line-length
 import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
+import {PReLUNode, PReLUInputConfig} from './types/prelu';
 
 const KERNEL_METHODS: {
   [kernel in keyof KernelConfigRegistry]: (
@@ -143,6 +144,12 @@ const KERNEL_METHODS: {
   LeakyRelu: (backend: MathBackend, config: LeakyReluInputConfig<NDArray>) => {
     return backend.leakyRelu(config.inputs.x, config.args.alpha);
   },
+  PReLU: (backend: MathBackend, config: PReLUInputConfig<NDArray>) => {
+    return backend.prelu(config.inputs.x, config.inputs.alpha);
+  },
+  PReLUDer: (backend: MathBackend, config: PReLUInputConfig<NDArray>) => {
+    return backend.preluDer(config.inputs.x, config.inputs.alpha);
+  },
   Elu: (backend: MathBackend, config: UnaryInputConfig<NDArray>) => {
     return backend.elu(config.inputs.x);
   },
@@ -237,6 +244,11 @@ const KERNEL_METHODS: {
         return backend.resizeBilinear3D(
             config.inputs.x, config.args.newShape2D, config.args.alignCorners);
       },
+  BatchNorm4D: (backend: MathBackend, config: BatchNorm4DInputConfig) => {
+    return backend.batchNormalization4D(
+        config.inputs.x, config.inputs.mean, config.inputs.variance,
+        config.args.varianceEpsilon, config.inputs.scale, config.inputs.offset);
+  },
   BatchNorm3D: (backend: MathBackend, config: BatchNorm3DInputConfig) => {
     return backend.batchNormalization3D(
         config.inputs.x, config.inputs.mean, config.inputs.variance,
@@ -302,6 +314,8 @@ export interface KernelConfigRegistry {
   Square: UnaryNode<NDArray>;
   Relu: UnaryNode<NDArray>;
   LeakyRelu: LeakyReluNode<NDArray>;
+  PReLU: PReLUNode<NDArray>;
+  PReLUDer: PReLUNode<NDArray>;
   Elu: UnaryNode<NDArray>;
   EluDer: UnaryNode<NDArray>;
   Selu: UnaryNode<NDArray>;
@@ -330,6 +344,7 @@ export interface KernelConfigRegistry {
   AvgPool: PoolNode;
   MinPool: PoolNode;
   ResizeBilinear3D: ResizeBilinear3DNode;
+  BatchNorm4D: BatchNorm4DNode;
   BatchNorm3D: BatchNorm3DNode;
   BatchNorm2D: BatchNorm2DNode;
   LRN3D: LRN3DNode;

@@ -17,24 +17,23 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
-
+import {NamedArrayMap} from '../util';
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {NDArrayStorage} from './backends/backend';
 import {MathBackend} from './backends/backend';
+// tslint:disable-next-line:max-line-length
 import {BackendEngine} from './backends/backend_engine';
+import {ScopeResult, ScopeResultImmediate} from './backends/tape_util';
 import {MatrixOrientation} from './backends/types/matmul';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
-
-export type ScopeResultImmediate =
-    void|NDArray|NDArray[]|{[key: string]: NDArray};
-export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
+import {Variable} from './variable';
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -42,22 +41,40 @@ export interface LSTMCell {
 
 export interface NDArrayManager {
   getNumArrays(): number;
-  register<T extends keyof DataTypes>(a: NDArray<T>): void;
+  register(a: NDArray): void;
+  registerVariable(v: Variable): void;
 }
 
 export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   protected backendEngine: BackendEngine;
-  private numArrays = 0;
+  private registeredArrays = new Set();
   private backend: MathBackend;
   private customBackend = false;
 
-  getNumArrays() {
-    return this.numArrays;
+  // Public since optimizers will use it.
+  registeredVariables = new Map<string, Variable>();
+
+  time(query: () => NDArray): Promise<number> {
+    return this.backend.time(query);
   }
 
-  register<T extends keyof DataTypes>(a: NDArray<T>): void {
-    this.track(a);
-    this.numArrays++;
+  getNumArrays() {
+    return this.registeredArrays.size;
+  }
+
+  register(a: NDArray): void {
+    if (this.registeredArrays.has(a.id)) {
+      throw new Error(`NDArray with id ${a.id} was already registered`);
+    }
+    this.registeredArrays.add(a.id);
+    this.backendEngine.track(a);
+  }
+
+  registerVariable(v: Variable) {
+    if (this.registeredVariables.has(v.name)) {
+      throw new Error(`Variable with name ${v.name} was already registered`);
+    }
+    this.registeredVariables.set(v.name, v);
   }
 
   writePixels(
@@ -66,64 +83,29 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       numChannels: number): void {
     this.backend.writePixels(id, pixels, numChannels);
   }
-  write<T extends keyof DataTypes>(
-      id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
+  write<T extends DataType>(
+      id: number, values: DataTypeMap[T], dtype: T, shape: number[]): void {
     this.backend.write(id, values, dtype, shape);
   }
-  readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
+  readSync<T extends DataType>(id: number): DataTypeMap[T] {
     return this.backend.readSync(id);
   }
-  read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+  read<T extends DataType>(id: number): Promise<DataTypeMap[T]> {
     return this.backend.read(id);
   }
-
-  private ndarrayScopes: NDArray[][] = [];
-  private activeScope: NDArray[];
-
-  private ndarraysToKeep: NDArray[][] = [];
-  private activeScopeNDArraysToKeep: NDArray[] = [];
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
    */
-  constructor(backend: BackendType|MathBackend, private safeMode: boolean) {
+  constructor(backend: BackendType|MathBackend, safeMode: boolean) {
     if (typeof backend === 'string') {
       this.backend = ENV.getBackend(backend);
     } else {
       this.customBackend = true;
       this.backend = backend;
     }
-    this.backendEngine = new BackendEngine(this.backend);
-  }
-
-  /**
-   * Create a new math scope. Put chained math operations inside a scope
-   * function closure so that the library automatically cleans up NDArrays
-   * from intermediate math operations. You must create a scope in safe mode
-   * to call math operations. If a result is returned from the scope, it will
-   * also be tracked, which means there must be yet another wrapping scope.
-   * @param scopeFn The function to execute with chained math operations.
-   */
-  scope<T extends ScopeResult>(
-      scopeFn:
-          (keep: <D1 extends keyof DataTypes, T1 extends NDArray<D1>>(
-               ndarray: T1) => T1,
-           track: <D2 extends keyof DataTypes, T2 extends NDArray<D2>>(
-               ndarray: T2) => T2) => T): T {
-    this.startScope();
-
-    const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
-    const trackFn = <T extends NDArray>(ndarray: T): T => this.track(ndarray);
-    const result = scopeFn(keepFn, trackFn);
-
-    if (result instanceof Promise) {
-      result.then(r => this.endScope(r));
-      return result;
-    } else {
-      this.endScope(result as ScopeResultImmediate);
-      return result;
-    }
+    this.backendEngine = new BackendEngine(this.backend, safeMode);
   }
 
   /**
@@ -139,38 +121,44 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
+   * Create a new math scope. Put chained math operations inside a scope
+   * function closure so that the library automatically cleans up NDArrays
+   * from intermediate math operations. You must create a scope in safe mode
+   * to call math operations. If a result is returned from the scope, it will
+   * also be tracked, which means there must be yet another wrapping scope.
+   * @param scopeFn The function to execute with chained math operations.
+   */
+  scope<T extends ScopeResult>(
+      scopeFn:
+          (keep: <T1 extends NDArray>(ndarray: T1) => T1,
+           track: <T2 extends NDArray>(ndarray: T2) => T2) => T): T {
+    const gradientsMode = false;
+    return this.backendEngine.scope('scope', scopeFn, gradientsMode);
+  }
+
+  /**
+   * Create a new gradients scope. Similar to scope, but forces all inner scopes
+   * to not clean up so that gradient operations can be used inside of this
+   * scope.
+   * @param scopeFn The function to execute with chained math operations.
+   */
+  gradientsScope<T extends ScopeResult>(
+      scopeFn:
+          (keep:
+               <D1 extends DataType, T1 extends NDArray<D1>>(ndarray: T1) => T1,
+           track: <D2 extends DataType, T2 extends NDArray<D2>>(ndarray: T2) =>
+               T2) => T): T {
+    const gradientsMode = true;
+    return this.backendEngine.scope('gradientsScope', scopeFn, gradientsMode);
+  }
+
+  /**
    * Start a scope. Use this with endScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
   startScope() {
-    const newScope: NDArray[] = [];
-    this.ndarrayScopes.push(newScope);
-    this.activeScope = newScope;
-
-    const newNDArraysToKeep: NDArray[] = [];
-    this.ndarraysToKeep.push(newNDArraysToKeep);
-    this.activeScopeNDArraysToKeep = newNDArraysToKeep;
-  }
-
-  private extractNDArraysFromScopeResult(result: ScopeResultImmediate):
-      NDArray[] {
-    if (result == null) {
-      return [];
-    }
-    if (result instanceof NDArray) {
-      return [result];
-    }
-
-    const list: NDArray[] = [];
-    const resultObj = result as {[key: string]: NDArray};
-    // Iteration over keys works also for arrays.
-    for (const k in resultObj) {
-      const val = resultObj[k];
-      if (val instanceof NDArray) {
-        list.push(val);
-      }
-    }
-    return list;
+    const gradientsMode = false;
+    this.backendEngine.startScope(gradientsMode);
   }
 
   /**
@@ -178,45 +166,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * as scope() without the need for a function closure.
    */
   endScope(result: ScopeResultImmediate) {
-    let arraysToKeep = this.activeScopeNDArraysToKeep;
-    const resultArrays = this.extractNDArraysFromScopeResult(result);
-    arraysToKeep = arraysToKeep.concat(resultArrays);
-
-    // Dispose the current scope.
-    for (let i = 0; i < this.activeScope.length; i++) {
-      const ndarray = this.activeScope[i];
-      if (this.isNDArrayDataInList(ndarray, arraysToKeep)) {
-        continue;
-      }
-      ndarray.dispose();
-    }
-
-    // Pop the current scope.
-    this.ndarrayScopes.pop();
-    this.activeScope = this.ndarrayScopes.length === 0 ?
-        null :
-        this.ndarrayScopes[this.ndarrayScopes.length - 1];
-
-    // Track the current result in the parent scope.
-    resultArrays.forEach(val => {
-      if (!this.isNDArrayDataInList(val, this.activeScopeNDArraysToKeep)) {
-        this.track(val);
-      }
-    });
-
-    this.ndarraysToKeep.pop();
-    this.activeScopeNDArraysToKeep = this.ndarraysToKeep.length === 0 ?
-        null :
-        this.ndarraysToKeep[this.ndarraysToKeep.length - 1];
-  }
-
-  private isNDArrayDataInList(ndarray: NDArray, ndarrayList: NDArray[]) {
-    for (let i = 0; i < ndarrayList.length; i++) {
-      if (ndarrayList[i].id === ndarray.id) {
-        return true;
-      }
-    }
-    return false;
+    const gradientsMode = false;
+    this.backendEngine.endScope(result, gradientsMode);
   }
 
   /**
@@ -224,38 +175,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param result The NDArray to keep from being disposed.
    */
   keep<T extends NDArray>(result: T): T {
-    if (this.activeScope == null) {
-      if (this.safeMode) {
-        throw new Error(
-            'You are using math in safe mode. Enclose all ' +
-            'math.method() calls inside a scope: ' +
-            'math.scope(() => {math.method();...}) to avoid memory ' +
-            'leaks.');
-      }
-      return result;
-    }
-    this.activeScopeNDArraysToKeep.push(result);
-    return result;
+    return this.backendEngine.keep(result);
   }
 
-  /**
-   * Tracks an NDArray in the current scope to be automatically cleaned up
-   * when the current scope ends, and returns the value.
-   *
-   * @param result The NDArray to track in the current scope.
-   */
-  track<G extends keyof DataTypes, T extends NDArray<G>>(result: T): T {
-    if (this.activeScope == null) {
-      if (this.safeMode) {
-        throw new Error(
-            'You are using math in safe mode. Enclose all ' +
-            'math.method() calls inside a scope: ' +
-            'math.scope(() => {math.method();...}) to avoid memory ' +
-            'leaks.');
-      }
-      return result;
-    }
-    this.activeScope.push(result);
+  /** @deprecated This is a no-op. */
+  track<T extends NDArray>(result: T): T {
     return result;
   }
 
@@ -299,6 +223,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.backendEngine.executeKernel(
         'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
         (dy: Array2D, y: Array2D) => {
+          if (aOrientation === MatrixOrientation.TRANSPOSED ||
+              bOrientation === MatrixOrientation.TRANSPOSED) {
+            throw new Error(
+                `Backprop for transposed MatMul not yet implemented.`);
+          }
           return {
             a: () => this.matMul(
                 dy, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
@@ -308,8 +237,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         });
   }
 
-  private executeOp<G extends keyof DataTypes, T extends NDArray<G>>(
-      name: string, f: () => T): T {
+  private executeOp<T extends NDArray>(name: string, f: () => T): T {
     // TODO(nsthorat): Do operation logging and performance profiling.
     return f();
   }
@@ -597,8 +525,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param keepDims Optional. If true, retains reduced dimensions with length
    *     of 1. Defaults to false.
    */
-  logSumExp(input: NDArray, axis: number|number[] = null, keepDims = false):
-      NDArray {
+  logSumExp<T extends NDArray>(
+      input: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, input.shape);
     return this.executeOp('logSumExp', () => {
       const xMax = this.max(input, axes, true /* keepDims */);
@@ -613,7 +541,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }) as T;
   }
 
   /**
@@ -630,9 +558,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  sum<T extends keyof DataTypes>(
-      x: NDArray<T>, axis: number|number[] = null,
-      keepDims = false): NDArray<SumTypes[T]> {
+  sum<D extends DataType, T extends NDArray<SumTypes[D]>>(
+      x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
@@ -642,8 +569,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
       const res = this.backendEngine.executeKernel(
-          'Sum', {inputs: {x}, args: {axes}},
-          (dy: NDArray<SumTypes[T]>, y: NDArray<SumTypes[T]>) => {
+          'Sum', {inputs: {x}, args: {axes}}, (dy: T, y: T) => {
             return {
               x: () => {
                 // TODO(nsthorat): Fix gradients for sum when using axis
@@ -662,7 +588,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }) as T;
   }
 
   /**
@@ -686,8 +612,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     const reduceShape = shapes[1];
     const reduceSize = util.sizeFromShape(reduceShape);
     return this.executeOp('mean', () => {
-      return this.scope((keep, track) => {
-        const res = this.divide(x, track(Scalar.new(reduceSize)));
+      return this.scope(keep => {
+        const res = this.divide(x, Scalar.new(reduceSize));
         return this.sum(res, axis, keepDims);
       });
     });
@@ -702,7 +628,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * across all axes and returns the flat index.
    *
    */
-  argMin(x: NDArray, axis: number = null): NDArray<'int32'> {
+  argMin<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
     return this.executeOp('argMin', () => {
@@ -712,7 +638,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       }
       return this.backendEngine.executeKernel(
           'ArgMin', {inputs: {x}, args: {axes}});
-    });
+    }) as T;
   }
 
   /**
@@ -723,7 +649,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param axis Optional. The dimension to reduce. By default it reduces
    *     across all axes and returns the flat index
    */
-  argMax(x: NDArray, axis: number = null): NDArray<'int32'> {
+  argMax<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
     return this.executeOp('argMax', () => {
@@ -733,7 +659,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       }
       return this.backendEngine.executeKernel(
           'ArgMax', {inputs: {x}, args: {axes}});
-    });
+    }) as T;
   }
 
   /**
@@ -752,11 +678,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * Returns the truth value of (a == b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.equalStrict().
    */
-  equal(a: NDArray, b: NDArray): NDArray<'bool'> {
-    return this.backendEngine.executeKernel('Equal', {inputs: {a, b}});
+  equal<T extends NDArray<'bool'>>(a: NDArray, b: NDArray): T {
+    return this.backendEngine.executeKernel('Equal', {inputs: {a, b}}) as T;
   }
 
-  equalStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T):
+  equalStrict<D extends DataType, T extends NDArray<D>>(a: T, b: T):
       NDArray<'bool'> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in equalStrict: ');
     return this.equal(a, b);
@@ -799,9 +725,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  min<G extends keyof DataTypes>(
-      x: NDArray<G>, axis: number|number[] = null,
-      keepDims = false): NDArray<G> {
+  min<G extends DataType, T extends NDArray<G>>(
+      x: NDArray<G>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
@@ -817,7 +742,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }) as T;
   }
 
   /**
@@ -834,9 +759,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  max<G extends keyof DataTypes>(
-      x: NDArray<G>, axis: number|number[] = null,
-      keepDims = false): NDArray<G> {
+  max<G extends DataType, T extends NDArray<G>>(
+      x: NDArray<G>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
@@ -852,7 +776,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         return res.reshape(newShape);
       }
       return res;
-    });
+    }) as T;
   }
 
   /**
@@ -902,8 +826,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param x The array to transpose.
    * @param reps Determines the number of replications per dimension.
    */
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(x: T, reps: number[]):
-      T {
+  tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T {
     util.assert(
         x.rank === reps.length,
         `Error in transpose: rank of input ${x.rank} ` +
@@ -923,8 +846,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param x The array to transpose.
    * @param perm Optional. The permutation of the dimensions of a.
    */
-  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      x: T, perm?: number[]): T {
+  transpose<T extends NDArray>(x: T, perm?: number[]): T {
     if (perm == null) {
       perm = x.shape.map((s, i) => i).reverse();
     }
@@ -978,10 +900,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first NDArray to add element-wise.
    * @param b The second NDArray to add element-wise.
    */
-  add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
+  add<G extends DataType, T extends NDArray<G>>(a: NDArray<G>, b: NDArray<G>):
+      T {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Add', {inputs: {a, b}}) as
-        NDArray<G>;
+    return this.backendEngine.executeKernel('Add', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -991,7 +913,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  addStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T): T {
+  addStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
     return this.add(a, b) as T;
   }
@@ -1003,11 +925,21 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first NDArray to subtract element-wise.
    * @param b The second NDArray to subtract element-wise.
    */
-  subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
-      NDArray<G> {
+  subtract<G extends DataType, T extends NDArray<G>>(
+      a: NDArray<G>, b: NDArray<G>): T {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Sub', {inputs: {a, b}}) as
-        NDArray<G>;
+    return this.backendEngine.executeKernel(
+               'Sub', {inputs: {a, b}}, (dy: NDArray<G>, y: NDArray<G>) => {
+                 if (!util.arraysEqual(a.shape, b.shape)) {
+                   throw new Error(
+                       `Backprop through broadcasted subtract not ` +
+                       `yet supported.`);
+                 }
+                 return {
+                   a: () => NDArray.onesLike(a),
+                   b: () => this.scope(() => this.neg(NDArray.onesLike(b)))
+                 };
+               }) as T;
   }
 
   /**
@@ -1021,14 +953,36 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The base NDArray to pow element-wise.
    * @param b The exponent NDArray to pow element-wise.
    */
-  pow<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<'int32'>):
-      NDArray<G> {
+  pow<G extends DataType, T extends NDArray<G>>(
+      a: NDArray<G>, b: NDArray<'int32'>): T {
     util.assert(
         b.dtype === 'int32',
         'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Pow', {inputs: {a, b}}) as
-        NDArray<G>;
+
+    const gradient = (dy: NDArray<G>, y: NDArray<G>) => {
+      if (!util.arraysEqual(a.shape, b.shape)) {
+        throw new Error(
+            `Gradient of pow not yet supported for broadcasted shapes.`);
+      }
+      const derA = () => {
+        return this.scope(() => {
+          return this.multiply(
+              dy,
+              this.multiply(
+                  b, this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
+        });
+      };
+      const derB = () => {
+        throw new Error(
+            `Backprop through exponent of math.pow not ` +
+            `implemented yet.`);
+      };
+      return {a: derA, b: derB};
+    };
+
+    return this.backendEngine.executeKernel(
+               'Pow', {inputs: {a, b}}, gradient) as T;
   }
 
   /**
@@ -1038,14 +992,14 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The base NDArray to pow element-wise.
    * @param b The exponent NDArray to pow element-wise.
    */
-  powStrict<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<'int32'>):
+  powStrict<G extends DataType>(a: NDArray<G>, b: NDArray<'int32'>):
       NDArray<G> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in powStrict: ');
     return this.pow(a, b);
   }
 
   /** @deprecated Use math.subtract instead. */
-  sub<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
+  sub<G extends DataType>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
     return this.subtract(a, b);
   }
 
@@ -1056,9 +1010,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  subStrict<D extends keyof DataTypes, T extends NDArray<D>>(a: T, b: T): T {
+  subStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
-    return this.subtract(a, b) as T;
+    return this.subtract(a, b);
   }
 
   /**
@@ -1068,9 +1022,17 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  multiply(a: NDArray, b: NDArray): NDArray {
+  multiply<T extends NDArray>(a: NDArray, b: NDArray): T {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Mul', {inputs: {a, b}});
+    return this.backendEngine.executeKernel(
+               'Mul', {inputs: {a, b}}, (dy: NDArray, y: NDArray) => {
+                 if (!util.arraysEqual(a.shape, b.shape)) {
+                   throw new Error(
+                       `Backprop through broadcasted multiply not ` +
+                       `supported yet.`);
+                 }
+                 return {a: () => this.clone(b), b: () => this.clone(a)};
+               }) as T;
   }
 
   /**
@@ -1099,10 +1061,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first NDArray to divide element-wise.
    * @param b The second NDArray to divide element-wise.
    */
-  divide(a: NDArray, b: NDArray): NDArray<'float32'> {
+  divide<T extends NDArray<'float32'>>(a: NDArray, b: NDArray): T {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Div', {inputs: {a, b}}) as
-        NDArray<'float32'>;
+    return this.backendEngine.executeKernel('Div', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -1184,7 +1145,12 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param x The input array.
    */
   square<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Square', {inputs: {x}}) as T;
+    return this.backendEngine.executeKernel(
+               'Square', {inputs: {x}}, (dy: T, y: T) => {
+                 return {
+                   x: () => this.multiply(dy, this.multiply(x, Scalar.new(2)))
+                 };
+               }) as T;
   }
 
   /**
@@ -1230,7 +1196,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
-   * Computes the derivatice of elu which is used ly
+   * Computes the derivative of elu which is used ly
    * @hidden
    */
   eluDer<T extends NDArray>(x: T): T {
@@ -1248,12 +1214,33 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Computes leaky rectified linear element-wise
    * @param {T} x the input NDArray
-   * @param alpha scaleing factor for negative values, defaults to 0.2
+   * @param alpha scaling factor for negative values, defaults to 0.2
    * @return {NDArray}
    */
   leakyRelu<T extends NDArray>(x: T, alpha = 0.2): T {
     return this.backendEngine.executeKernel(
                'LeakyRelu', {inputs: {x}, args: {alpha}}) as T;
+  }
+
+  /**
+   * Computes leaky rectified linear element-wise with parametric alphas
+   * @param {T} x the input NDArray
+   * @param {T} alpha scaling factor NDArray for negative values
+   * @return {NDArray}
+   */
+  prelu<T extends NDArray>(x: T, alpha: T): T {
+    return this.backendEngine.executeKernel('PReLU', {inputs: {x, alpha}}) as T;
+  }
+
+  /**
+   * Computes the derivative of PReLU
+   * @param {T} x the input NDArray
+   * @param {T} alpha scaling factor NDArray for negative values
+   * @return {NDArray}
+   */
+  preluDer<T extends NDArray>(x: T, alpha: T): T {
+    return this.backendEngine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as
+        T;
   }
 
   /**
@@ -1467,11 +1454,13 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * Computes a 2D convolution over the input x.
    *
    * @param input The input ndarray, of rank 4 or rank 3, of shape
-   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
+   * assumed.
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
    * @param bias Optional bias, rank 1 of shape [outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    *    - 'same' pad and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -1524,13 +1513,15 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Computes the derivative of the input of a 2D convolution.
    *
-   * @param inShape The shape of the input: [batch, height, width, inDepth]. If
-   *     length of 3, batch of 1 is assumed.
+   * @param inShape The shape of the input: [batch, height, width, inDepth].
+   * If length of 3, batch of 1 is assumed.
    * @param dy The derivative of the output, of rank 4 or rank 3 of shape
-   *   [batch, outHeight, outWidth, outDepth]. If rank 3, batch of 1 is assumed.
+   *   [batch, outHeight, outWidth, outDepth]. If rank 3, batch of 1 is
+   * assumed.
    * @param filter The filter, rank 4, of shape
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1592,7 +1583,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * Computes the derivative of the bias of a 2D convolution.
    *
    * @param dy The gradient for the output of this op, of rank 4 or rank 3 of
-   *   shape [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
+   *   shape [batch, height, width, outDepth]. If rank 3, batch of 1 is
+   * assumed.
    */
   conv2dDerBias(dy: Array3D|Array4D): Array1D {
     let dy4D = dy as Array4D;
@@ -1612,7 +1604,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *     [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
    * @param filterShape The shape of the filter, length 4,
    *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
@@ -1682,8 +1675,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *
    * Given a 4D `input` array and a `filter` array of shape
    * `[filterHeight, filterWidth, inChannels, channelMultiplier]` containing
-   * `inChannels` convolutional filters of depth 1, this op applies a different
-   * filter to each input channel (expanding from 1 channel to
+   * `inChannels` convolutional filters of depth 1, this op applies a
+   * different filter to each input channel (expanding from 1 channel to
    * `channelMultiplier` channels for each), then concatenates the results
    * together. The output has `inChannels * channelMultiplier` channels.
    *
@@ -1691,11 +1684,13 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * more details.
    *
    * @param input The input ndarray, of rank 4 or rank 3, of shape
-   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
+   * assumed.
    * @param filter The filter ndarray, rank 4, of shape
    *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`.
-   * @param strides The strides of the convolution: [strideHeight, strideWidth].
-   *     If strides is a single number, then `strideHeight == strideWidth`.
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth]. If strides is a single number, then `strideHeight ==
+   * strideWidth`.
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
    *   - 'same' pad and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -1706,8 +1701,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param rates The dilation rates: `[rateHeight, rateWidth]` in which we
    *     sample input values across the height and width dimensions in atrous
    *     convolution. Defaults to `[1, 1]`. If `rate` is a single number, then
-   *     `rateHeight == rateWidth`. If it is greater than 1, then all values of
-   *     `strides` must be 1.
+   *     `rateHeight == rateWidth`. If it is greater than 1, then all values
+   * of `strides` must be 1.
    */
   depthwiseConv2D<T extends NDArray>(
       input: T, filter: Array4D, strides: [number, number]|number,
@@ -1796,9 +1791,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * Computes the backprop of a max pool.
    *
    * @param dy The dy error, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is assumed.
+   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
+   * assumed.
    * @param input The input image, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is assumed.
+   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
+   * assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
@@ -2039,6 +2036,52 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         'BatchNorm3D',
         {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
   }
+  
+  /**
+   * Batch normalization 4D. Mean, variance, scale, and offset can be of two
+   * shapes: 1) The same shape as the input: an Array4D. 2) In the common
+   * case, the depth dimension is the last dimension of x, so the values would
+   * be an Array1D of shape [depth].
+   * @param x The input NDArray.
+   * @param mean A mean NDArray.
+   * @param variance A variance NDArray.
+   * @param varianceEpsilon A small float number to avoid dividing by 0.
+   * @param scale A scale NDArray.
+   * @param offset An offset NDArray.
+   */
+  batchNormalization4D(
+      x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
+      varianceEpsilon = .001, scale?: Array4D|Array1D,
+      offset?: Array4D|Array1D): Array4D {
+    util.assert(
+        x.rank === 4,
+        `Error in batchNormalization4D: x must be rank 4 but got rank ` +
+            `${x.rank}.`);
+    util.assert(
+        mean.rank === 4 || mean.rank === 1,
+        `Error in batchNormalization4D: mean must be rank 4 or rank 1 but ` +
+            `got rank ${mean.rank}.`);
+    util.assert(
+        variance.rank === 4 || variance.rank === 1,
+        `Error in batchNormalization4D: variance must be rank 4 or rank 1 ` +
+            `but got rank ${variance.rank}.`);
+    if (scale != null) {
+      util.assert(
+          scale.rank === 4 || scale.rank === 1,
+          `Error in batchNormalization4D: scale must be rank 4 or rank 1 ` +
+              `but got rank ${scale.rank}.`);
+    }
+    if (offset != null) {
+      util.assert(
+          offset.rank === 4 || offset.rank === 1,
+          `Error in batchNormalization4D: offset must be rank 4 or rank 1 ` +
+              `but got rank ${offset.rank}.`);
+    }
+
+    return this.backendEngine.executeKernel(
+        'BatchNorm4D',
+        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+  }
 
   localResponseNormalization3D(
     x: Array3D, k: number = 1, n: number = 5,
@@ -2057,7 +2100,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         'LRN3D',
         {inputs: {x}, args: {k, n, alpha, beta}});
   }
-  
+
   //////////////
   // LSTM ops //
   //////////////
@@ -2228,53 +2271,173 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
-   * Warning: this is not fully implemented yet. Use with caution.
+   * Computes the norm of scalar, vectors, and matrices.
+   * This function can compute several different vector norms (the 1-norm, the
+   * Euclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0)
+   * and matrix norms (Frobenius, 1-norm, and inf-norm).
    *
-   * Computes a gradient of y with respect to x.
+   * @param x The input array.
+   * @param ord Optional. Order of the norm. Supported norm types are
+   * following: ord         norm for matrices          norm for vectors
+   *     -------------------------------------------------------
+   *     'euclidean' Frobenius norm             2-norm
+   *     ‘fro’       Frobenius norm	            –
+   *     Infinity    max(sum(abs(x), axis=1))   max(abs(x))
+   *     -Infinity   min(sum(abs(x), axis=1))   min(abs(x))
+   *     1           max(sum(abs(x), axis=0))   sum(abs(x))
+   *     2           -                          sum(abs(x)^2)^1/2*
    *
-   * @param y The output Scalar. Assumes de/dy = 1.
-   *          TODO(nsthorat): Accept non-scalars.
-   * @param x The input to compute de/dx over. This can be a single value or an
-   * object mapping a string to an NDArray. If using the object mode, this
-   * method will return an object of the same shape.
+   * @param axis Optional. If axis is null (the default), the input is
+   * considered a vector and a single vector norm is computed over the entire
+   * set of values in the NDArray, i.e. norm(x, ord) is equivalent
+   * to norm(x.reshape([-1]), ord). If axis is a integer, the input
+   * is considered a batch of vectors, and axis determines the axis in x
+   * over which to compute vector norms. If axis is a 2-tuple of integer it is
+   * considered a batch of matrices and axis determines the axes in NDArray
+   * over which to compute a matrix norm.
+   * @param keepDims Optional. If true, the norm have the same dimensionality
+   * as the input.
    */
-  gradientWrt<T extends NDArray|{[xName: string]: NDArray}>(y: Scalar, x: T):
-      T {
-    const xIsArray = x instanceof NDArray;
-
-    const xs: NDArray[] = [];
-    let xKeys: string[];
-    if (xIsArray) {
-      xs.push(x as NDArray);
-    } else {
-      const xMap = x as {[xName: string]: NDArray};
-      xKeys = Object.keys(xMap);
-      // Flatten the inputs.
-      for (let i = 0; i < xKeys.length; i++) {
-        xs.push(xMap[xKeys[i]]);
+  norm<G extends DataType>(
+      x: NDArray<G>, ord: number|'euclidean'|'fro' = 'euclidean',
+      axis: number|number[] = null, keepDims = false): NDArray<G|SumTypes[G]> {
+    return this.scope(() => {
+      const norm = this.normInternal(x, ord, axis);
+      let keepDimsShape = norm.shape;
+      if (keepDims) {
+        const axes = axis_util.parseAxisParam(axis, x.shape);
+        keepDimsShape = axis_util.expandShapeToKeepDim(norm.shape, axes);
       }
+      return norm.reshape(keepDimsShape);
+    });
+  }
+
+  /**
+   * Calculate the norm for different NDAarray.
+   */
+  private normInternal<G extends DataType>(
+      x: NDArray<G>, p: number|string,
+      axis: number|number[] = null): NDArray<G|SumTypes[G]> {
+    // scalar
+    if (x.rank === 0) {
+      return this.abs(x);
     }
 
-    const gradients = this.backendEngine.gradientWrt(y, xs);
+    // consider vector when no axis is specified
+    if (x.rank !== 1 && axis === null) {
+      return this.normInternal(x.reshape([-1]), p, axis);
+    }
 
-    if (xIsArray) {
+    // vector
+    if (x.rank === 1 || typeof axis === 'number' ||
+        axis instanceof Array && axis.length === 1) {
+      if (p === 1) {
+        return this.sum(this.abs(x), axis);
+      }
+      if (p === Infinity) {
+        return this.max(this.abs(x), axis);
+      }
+      if (p === -Infinity) {
+        return this.min(this.abs(x), axis);
+      }
+      if (p === 'euclidean' || p === 2) {
+        // norm(x, 2) = sum(abs(xi) ^ 2) ^ 1/2
+        return this.sqrt(
+            this.sum(this.pow(this.abs(x), Scalar.new(2, 'int32')), axis));
+      }
+
+      throw new Error(`Error in norm: invalid ord value: ${p}`);
+    }
+
+    // matrix (assumption axis[0] < axis[1])
+    if (axis instanceof Array && axis.length === 2) {
+      if (p === 1) {
+        return this.max(this.sum(this.abs(x), axis[0]), axis[1] - 1);
+      }
+      if (p === Infinity) {
+        return this.max(this.sum(this.abs(x), axis[1]), axis[0]);
+      }
+      if (p === -Infinity) {
+        return this.min(this.sum(this.abs(x), axis[1]), axis[0]);
+      }
+      if (p === 'fro' || p === 'euclidean') {
+        // norm(x) = sqrt(sum(pow(x, 2)))
+        return this.sqrt(this.sum(this.pow(x, Scalar.new(2, 'int32')), axis));
+      }
+
+      throw new Error(`Error in norm: invalid ord value: ${p}`);
+    }
+
+    throw new Error(`Error in norm: invalid axis: ${axis}`);
+  }
+
+  /**
+   * Warning: this is not fully implemented yet. Use with caution.
+   *
+   * Computes and returns the gradient of f(x) with respect to x.
+   *
+   * @param f The function to execute. f() should return a scalar.
+   *          TODO(nsthorat): Accept non-scalars.
+   * @param x The input to compute de/dx over. This can be a single value or
+   * an object mapping a string to an NDArray. If using the object mode, this
+   * method will return an object of the same shape.
+   */
+  gradients<T extends NDArray|NamedArrayMap, D extends DataType>(
+      f: () => Scalar<D>, x: T): T {
+    const keys = x instanceof NDArray ? null : Object.keys(x);
+    const xs = util.flattenNameArrayMap(x, keys);
+
+    const returnValue = false;
+    const gradients =
+        this.backendEngine.gradients(f, xs, returnValue) as NDArray[];
+
+    if (x instanceof NDArray) {
       return gradients[0] as T;
     } else {
-      // Convert the flat list of gradients back to the object.
-      const result: {[xName: string]: NDArray} = {};
-      for (let i = 0; i < xKeys.length; i++) {
-        result[xKeys[i]] = gradients[i];
-      }
-      return result as T;
+      return util.unflattenToNameArrayMap(keys, gradients) as T;
     }
   }
 
+  /**
+   * Warning: this is not fully implemented yet. Use with caution.
+   *
+   * Computes and returns the gradient of f(x) with respect to x. Returns both
+   * f(x) and f'(x).
+   *
+   * @param f The function to execute. f() should return a scalar.
+   *          TODO(nsthorat): Accept non-scalars.
+   * @param x The input to compute de/dx over. This can be a single value or
+   * an object mapping a string to an NDArray. If using the object mode, this
+   * method will return an object of the same shape.
+   */
+  valueAndGradients<T extends NDArray|NamedArrayMap, D extends DataType>(
+      f: () => Scalar<D>, x: T): {value: Scalar, gradients: T} {
+    const keys = x instanceof NDArray ? null : Object.keys(x);
+    const xs = util.flattenNameArrayMap(x, keys);
+
+    const returnValue = true;
+    const valueAndGradients =
+        this.backendEngine.gradients(f, xs, returnValue) as
+        {value: Scalar, gradients: NDArray[]};
+
+    let gradients: T;
+    if (x instanceof NDArray) {
+      gradients = valueAndGradients.gradients[0] as T;
+    } else {
+      gradients =
+          util.unflattenToNameArrayMap(keys, valueAndGradients.gradients) as T;
+    }
+    return {value: valueAndGradients.value, gradients};
+  }
+
   disposeData(id: number): void {
-    this.backend.disposeData(id);
-    // TODO(nsthorat): Construct an error and save the stack trace for debugging
-    // when in debug mode. Creating a stack trace is too expensive to do
-    // unconditionally.
-    this.numArrays--;
+    if (this.registeredArrays.has(id)) {
+      this.registeredArrays.delete(id);
+      this.backend.disposeData(id);
+      // TODO(nsthorat): Construct an error and save the stack trace for
+      // debugging when in debug mode. Creating a stack trace is too expensive
+      // to do unconditionally.
+    }
   }
 }
 

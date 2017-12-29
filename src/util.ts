@@ -1,4 +1,4 @@
-import {DataTypes} from './math/ndarray';
+import {DataType, DataTypeMap, NDArray} from './math/ndarray';
 
 /**
  * @license
@@ -21,6 +21,10 @@ export type TypedArray = Float32Array|Int32Array|Uint8Array;
 export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
 export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
+
+export type NamedArrayMap = {
+  [name: string]: NDArray
+};
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -307,8 +311,8 @@ export function squeezeShape(shape: number[]):
   return {newShape, keptDims};
 }
 
-export function getTypedArrayFromDType<D extends keyof DataTypes>(
-    dtype: D, size: number): DataTypes[D] {
+export function getTypedArrayFromDType<D extends DataType>(
+    dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
     values = new Float32Array(size);
@@ -320,4 +324,50 @@ export function getTypedArrayFromDType<D extends keyof DataTypes>(
     throw new Error(`Unknown data type ${dtype}`);
   }
   return values;
+}
+
+export function isNDArrayInList(
+    ndarray: NDArray, ndarrayList: NDArray[]): boolean {
+  for (let i = 0; i < ndarrayList.length; i++) {
+    if (ndarrayList[i].id === ndarray.id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function checkForNaN(
+    vals: TypedArray, dtype: DataType, name: string): void {
+  for (let i = 0; i < vals.length; i++) {
+    if (isValNaN(vals[i], dtype)) {
+      throw Error(`The result of the last math.${name} has NaNs.`);
+    }
+  }
+}
+
+export function flattenNameArrayMap(
+    nameArrayMap: NDArray|NamedArrayMap, keys?: string[]): NDArray[] {
+  const xs: NDArray[] = [];
+  if (nameArrayMap instanceof NDArray) {
+    xs.push(nameArrayMap);
+  } else {
+    const xMap = nameArrayMap as {[xName: string]: NDArray};
+    for (let i = 0; i < keys.length; i++) {
+      xs.push(xMap[keys[i]]);
+    }
+  }
+  return xs;
+}
+
+export function unflattenToNameArrayMap(
+    keys: string[], flatArrays: NDArray[]): NamedArrayMap {
+  if (keys.length !== flatArrays.length) {
+    throw new Error(
+        `Cannot unflatten NDArray[], keys and arrays are not of same length.`);
+  }
+  const result: NamedArrayMap = {};
+  for (let i = 0; i < keys.length; i++) {
+    result[keys[i]] = flatArrays[i];
+  }
+  return result;
 }

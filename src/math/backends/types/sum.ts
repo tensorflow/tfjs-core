@@ -15,12 +15,13 @@
  * =============================================================================
  */
 
-import {DataTypes, NDArray} from '../../ndarray';
+import {NamedArrayMap} from '../../../util';
+import {DataType, NDArray} from '../../ndarray';
 import {SumTypes} from '../../types';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
-export interface SumNode<T extends keyof DataTypes> extends KernelNode {
+export interface SumNode<T extends DataType> extends KernelNode {
   inputAndArgs: SumInputConfig<T>;
   output: NDArray<SumTypes[T]>;
   gradient:
@@ -28,18 +29,16 @@ export interface SumNode<T extends keyof DataTypes> extends KernelNode {
        y: NDArray<SumTypes[T]>) => SumGradientInputArrays<T>;
 }
 
-export interface SumInputConfig<T extends keyof DataTypes> extends
-    KernelInputConfig {
+export interface SumInputConfig<T extends DataType> extends KernelInputConfig {
   inputs: SumInputArrays<T>;
   args: {axes: number[];};
 }
 
-export interface SumInputArrays<T extends keyof DataTypes> extends
-    TapeNodeInputArrays {
+export interface SumInputArrays<T extends DataType> extends NamedArrayMap {
   x: NDArray<T>;
 }
 
-export interface SumGradientInputArrays<T extends keyof DataTypes> extends
+export interface SumGradientInputArrays<T extends DataType> extends
     TapeNodeInputGradientArrays {
   x: () => NDArray<T>;
 }

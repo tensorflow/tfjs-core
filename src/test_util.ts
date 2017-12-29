@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
-import * as environment from './environment';
-import {ENV, Environment, Features} from './environment';
+import {ENV, Features} from './environment';
 import {MathBackendCPU} from './math/backends/backend_cpu';
 import {MathBackendWebGL} from './math/backends/backend_webgl';
 import {NDArrayMath} from './math/math';
+import {NDArray} from './math/ndarray';
 import * as util from './util';
 import {DType, TypedArray} from './util';
 
@@ -72,7 +72,13 @@ export function skewness(values: TypedArray|number[]) {
   return (1 / n) * sum3 / Math.pow((1 / (n - 1)) * sum2, 3 / 2);
 }
 
-export function jarqueBeraNormalityTest(values: TypedArray|number[]) {
+export function jarqueBeraNormalityTest(a: NDArray|TypedArray|number[]) {
+  let values: TypedArray|number[];
+  if (a instanceof NDArray) {
+    values = a.dataSync();
+  } else {
+    values = a;
+  }
   // https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
   const n = values.length;
   const s = skewness(values);
@@ -87,31 +93,66 @@ export function jarqueBeraNormalityTest(values: TypedArray|number[]) {
 }
 
 export function expectArrayInMeanStdRange(
-    actual: TypedArray|number[], expectedMean: number, expectedStdDev: number,
-    epsilon = TEST_EPSILON) {
-  const actualMean = mean(actual);
+    actual: NDArray|TypedArray|number[], expectedMean: number,
+    expectedStdDev: number, epsilon = TEST_EPSILON) {
+  let actualValues: TypedArray|number[];
+  if (actual instanceof NDArray) {
+    actualValues = actual.dataSync();
+  } else {
+    actualValues = actual;
+  }
+  const actualMean = mean(actualValues);
   expectNumbersClose(actualMean, expectedMean, epsilon);
   expectNumbersClose(
-      standardDeviation(actual, actualMean), expectedStdDev, epsilon);
+      standardDeviation(actualValues, actualMean), expectedStdDev, epsilon);
 }
 
 export function expectArraysClose(
-    actual: TypedArray|number[], expected: TypedArray|number[],
+    actual: NDArray|TypedArray|number[], expected: NDArray|TypedArray|number[],
     epsilon = TEST_EPSILON) {
-  const aType = actual.constructor.name;
-  const bType = expected.constructor.name;
+  if (!(actual instanceof NDArray) && !(expected instanceof NDArray)) {
+    const aType = actual.constructor.name;
+    const bType = expected.constructor.name;
 
-  if (aType !== bType) {
-    throw new Error(`Arrays are of different type ${aType} vs ${bType}`);
+    if (aType !== bType) {
+      throw new Error(
+          `Arrays are of different type actual: ${aType} ` +
+          `vs expected: ${bType}`);
+    }
+  } else if (actual instanceof NDArray && expected instanceof NDArray) {
+    if (actual.dtype !== expected.dtype) {
+      throw new Error(
+          `Arrays are of different type actual: ${actual.dtype} ` +
+          `vs expected: ${expected.dtype}.`);
+    }
+    if (!util.arraysEqual(actual.shape, expected.shape)) {
+      throw new Error(
+          `Arrays are of different shape actual: ${actual.shape} ` +
+          `vs expected: ${expected.shape}.`);
+    }
   }
-  if (actual.length !== expected.length) {
+
+  let actualValues: TypedArray|number[];
+  let expectedValues: TypedArray|number[];
+  if (actual instanceof NDArray) {
+    actualValues = actual.dataSync();
+  } else {
+    actualValues = actual;
+  }
+  if (expected instanceof NDArray) {
+    expectedValues = expected.dataSync();
+  } else {
+    expectedValues = expected;
+  }
+
+  if (actualValues.length !== expectedValues.length) {
     throw new Error(
-        `Matrices have different lengths (${actual.length} vs ` +
-        `${expected.length}).`);
+        `Arrays have different lengths actual: ${actualValues.length} vs ` +
+        `expected: ${expectedValues.length}.`);
   }
-  for (let i = 0; i < expected.length; ++i) {
-    const a = actual[i];
-    const e = expected[i];
+  for (let i = 0; i < expectedValues.length; ++i) {
+    const a = actualValues[i];
+    const e = expectedValues[i];
 
     if (!areClose(a, e, epsilon)) {
       const actualStr = `actual[${i}] === ${a}`;
@@ -119,6 +160,12 @@ export function expectArraysClose(
       throw new Error('Arrays differ: ' + actualStr + ', ' + expectedStr);
     }
   }
+}
+
+export function expectArraysEqual(
+    actual: NDArray|TypedArray|number[],
+    expected: NDArray|TypedArray|number[]) {
+  return expectArraysClose(actual, expected, 0);
 }
 
 export function expectNumbersClose(
@@ -139,11 +186,17 @@ function areClose(a: number, e: number, epsilon: number): boolean {
 }
 
 export function expectValuesInRange(
-    actual: TypedArray|number[], low: number, high: number) {
-  for (let i = 0; i < actual.length; i++) {
-    if (actual[i] < low || actual[i] > high) {
+    actual: NDArray|TypedArray|number[], low: number, high: number) {
+  let actualVals: TypedArray|number[];
+  if (actual instanceof NDArray) {
+    actualVals = actual.dataSync();
+  } else {
+    actualVals = actual;
+  }
+  for (let i = 0; i < actualVals.length; i++) {
+    if (actualVals[i] < low || actualVals[i] > high) {
       throw new Error(
-          `Value out of range:${actual[i]} low: ${low}, high: ${high}`);
+          `Value out of range:${actualVals[i]} low: ${low}, high: ${high}`);
     }
   }
 }
@@ -206,9 +259,7 @@ export function describeMathCPU(
       testNameBase, tests as Tests[],
       (testName, tests, features) => executeMathTests(testName, tests, () => {
         const safeMode = true;
-        const math = new NDArrayMath(new MathBackendCPU(), safeMode);
-        ENV.setMath(math);
-        return math;
+        return new NDArrayMath(new MathBackendCPU(), safeMode);
       }, features), featuresList);
 }
 
@@ -219,9 +270,7 @@ export function describeMathGPU(
       testNameBase, tests as Tests[],
       (testName, tests, features) => executeMathTests(testName, tests, () => {
         const safeMode = true;
-        const math = new NDArrayMath(new MathBackendWebGL(), safeMode);
-        ENV.setMath(math);
-        return math;
+        return new NDArrayMath(new MathBackendWebGL(), safeMode);
       }, features), featuresList);
 }
 
@@ -270,17 +319,15 @@ export function executeMathTests(
     testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
     features?: Features) {
   let math: NDArrayMath;
-  let oldMath: NDArrayMath;
 
   const customBeforeEach = () => {
-    oldMath = ENV.math;
     math = mathFactory();
+    ENV.setMath(math);
     math.startScope();
   };
   const customAfterEach = () => {
     math.endScope(null);
     math.dispose();
-    ENV.setMath(oldMath);
   };
   const customIt =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
@@ -298,15 +345,11 @@ export function executeTests(
     customIt: (expectation: string, testFunc: () => void|Promise<void>) =>
         void = PROMISE_IT) {
   describe(testName, () => {
-    let prevEnv: Environment;
-
     beforeEach(() => {
       if (features != null) {
-        prevEnv = environment.ENV;
-        const env = new Environment(features);
-        env.registerBackend('webgl', () => new MathBackendWebGL());
-        env.registerBackend('cpu', () => new MathBackendCPU());
-        environment.setGlobal(env);
+        ENV.setFeatures(features);
+        ENV.registerBackend('webgl', () => new MathBackendWebGL());
+        ENV.registerBackend('cpu', () => new MathBackendCPU());
       }
 
       if (customBeforeEach != null) {
@@ -318,9 +361,8 @@ export function executeTests(
       if (customAfterEach != null) {
         customAfterEach();
       }
-
       if (features != null) {
-        environment.setGlobal(prevEnv);
+        ENV.reset();
       }
     });
 
