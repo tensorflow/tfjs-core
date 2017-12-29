@@ -813,9 +813,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         const keepDims = true;
         const lse = this.logSumExp(logits, [dim], keepDims);
         const logResult = this.subtract(logits, lse);
-        return {
-          value: this.exp(logResult) as T, gradients
-        }
+        const value = this.exp(logResult) as T;
+        return {value, gradients};
       }, {logits});
     });
   }
@@ -852,8 +851,9 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     }
     if (dim !== logits.rank - 1) {
       throw Error(
-          'Softmax cross entropy along a non-last dimension is not yet supported. ' +
-          `Labels / logits was rank ${logits.rank} and dim was ${dim}`);
+          `Softmax cross entropy along a non-last dimension is not yet ` +
+          `supported. Labels / logits was rank ${logits.rank} ` +
+          `and dim was ${dim}`);
     }
 
     // Use a custom gradient for numerical stability.

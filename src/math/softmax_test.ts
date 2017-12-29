@@ -177,7 +177,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       ]);
     });
 
-    it('2D, dim=0', math => {
+    it('2D, dim=0 throws error', math => {
       const logits = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
       const label = Array2D.new([2, 3], [0.3, 0.6, 0.1, 0.2, 0.3, 0.5]);
       const dim = 0;
