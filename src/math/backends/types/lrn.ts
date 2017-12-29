@@ -16,9 +16,10 @@
  * =============================================================================
  */
 
+import {NamedArrayMap} from '../../../util';
 import {Array3D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
 // 3D
 export interface LRN3DNode extends KernelNode {
@@ -32,7 +33,7 @@ export interface LRN3DInputConfig extends KernelInputConfig {
   args: {k: number, n: number, alpha: number, beta: number};
 }
 
-export interface LRN3DInputArrays extends TapeNodeInputArrays {
+export interface LRN3DInputArrays extends NamedArrayMap {
   x: Array3D;
 }
 

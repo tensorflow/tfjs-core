@@ -16,7 +16,7 @@
  */
 import * as util from './util';
 import {layersToDagEdges, layersToDagNodes} from './dag';
-import {getAllVariables, getPreprocessOffset, convBlobToNDArray} from './blob';
+import {getAllVariables, getPreprocessOffset, getPreprocessDim, convBlobToNDArray} from './blob';
 import {performMathOp} from './layer';
 
 import {caffe} from 'caffe-proto';
@@ -35,7 +35,10 @@ export class CaffeModel implements Model {
    */
   protected preprocessOffset: Array1D|Array3D;
   
-  // protected preprocessDim: number;
+  /**
+   * Preprocessing Dimensions
+   */
+  protected preprocessDim: number;
 
   /**
    * Model DAG Nodes
@@ -54,6 +57,22 @@ export class CaffeModel implements Model {
    */
   constructor(
     private caffemodelUrl: string, private prototxtUrl: string, private meanBinaryprotoUrl?: string){
+  }
+
+  /**
+   * Manually set the preprocessing offset
+   * @param offset training mean
+   */
+  setPreprocessOffset(offset: Array1D|Array3D) {
+    this.preprocessOffset = offset;
+  }
+
+  /**
+   * Manually set the preprocessing dimensions
+   * @param dim height/width of the input dimension
+   */
+  setPreprocessDim(dim: number) {
+    this.preprocessDim = dim;
   }
 
   /**
@@ -85,6 +104,12 @@ export class CaffeModel implements Model {
       .then(util.parseCaffemodel)
       .then((model) => {
         this.variables = getAllVariables(model);
+
+        // read the cropping dimensions
+        const dim = getPreprocessDim(model);
+        if (dim) {
+          this.preprocessDim = dim;
+        }
 
         // read the training mean
         const offset = getPreprocessOffset(model);
@@ -130,8 +155,13 @@ export class CaffeModel implements Model {
     dag.iterate<caffe.ILayerParameter>(this.nodes, this.edges,
         (layer: caffe.ILayerParameter, parents: caffe.ILayerParameter[], i: number) => {
 
-      if (i === 0 && this.preprocessOffset) {
-        currAct = math.subtract(currAct as Array3D, this.preprocessOffset) as Array3D;
+      if (i === 0) {
+        if (this.preprocessDim) {
+          currAct = math.resizeBilinear3D(currAct as Array3D, [this.preprocessDim, this.preprocessDim]);
+        }
+        if (this.preprocessOffset) {
+          currAct = math.subtract(currAct as Array3D, this.preprocessOffset) as Array3D;
+        }
       }
       else if (parents.length === 1) {
         currAct = namedActivations[parents[0].name];

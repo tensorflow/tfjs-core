@@ -17,9 +17,13 @@
     }
     
     // Use WebGL
-    const math = new dl.NDArrayMath('webgl', false);
-    dl.ENV.setMath(math);
+    // const math = new dl.NDArrayMath('webgl', false);
+    // dl.ENV.setMath(math);
 
+    // Use CPU
+    const math = new dl.NDArrayMath('cpu', false);
+    dl.ENV.setMath(math);
+    
     // Create and load model
     const model = new CAFFE_MODEL();
     await model.load();
@@ -40,5 +44,5 @@
       resultElement.innerText += `${topK.values[i].toFixed(5)}: ${CAFFE_MODEL.labels[idx]}\n`;
     };
   };
-  img.src = 'cat.jpg';
+  img.src = 'img/cat.jpg';
 </script>

@@ -17,12 +17,20 @@
     }
     
     // Use WebGL
-    const math = new dl.NDArrayMath('webgl', false);
+    // const math = new dl.NDArrayMath('webgl', false);
+    // dl.ENV.setMath(math);
+
+    // Use CPU
+    const math = new dl.NDArrayMath('cpu', false);
     dl.ENV.setMath(math);
 
     // Create and load model
     const model = new CAFFE_MODEL();
     await model.load();
+
+    // We need to manually set the dimension as the original
+    // model contains the wrong preprocessing dimensions
+    model.setPreprocessDim(256);
 
     resultElement.innerText = 'Predicting...';
 
@@ -40,5 +48,5 @@
       resultElement.innerText += `${topK.values[i].toFixed(5)}: ${CAFFE_MODEL.labels[idx]}\n`;
     };
   };
-  img.src = 'person.jpg';
+  img.src = 'img/person.jpg';
 </script>
