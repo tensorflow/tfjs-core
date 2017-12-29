@@ -795,11 +795,13 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
           `Logits was rank ${logits.rank} and dim was ${dim}`);
     }
 
-    const gradient = (dy: T, y: T) => {
+    const gradients = (dy: T, y: T) => {
       return {
         logits: () => {
           const dyTimesY = this.multiply(dy, y);
-          return this.subtract(dyTimesY, this.multiply(this.sum(dyTimesY), y));
+          const keepDims = true;
+          return this.subtract(
+              dyTimesY, this.multiply(this.sum(dyTimesY, [dim], keepDims), y));
         }
       };
     };
@@ -808,11 +810,75 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       return this.backendEngine.customGradient('softmax', () => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
-        const lse = this.logSumExp(logits, [dim], true /* keepDims */);
+        const keepDims = true;
+        const lse = this.logSumExp(logits, [dim], keepDims);
         const logResult = this.subtract(logits, lse);
-        return this.exp(logResult) as T;
-      }, {logits}, gradient);
+        return {
+          value: this.exp(logResult) as T, gradients
+        }
+      }, {logits});
     });
+  }
+
+  /**
+   * Computes softmax cross entropy between logits and labels.
+   *
+   * Measures the probability error in discrete classification tasks in which
+   * the classes are mutually exclusive (each entry is in exactly one class).
+   * For example, each CIFAR-10 image is labeled with one and only one label: an
+   * image can be a dog or a truck, but not both.
+   *
+   * NOTE: While the classes are mutually exclusive, their probabilities need
+   * not be. All that is required is that each row of labels is a valid
+   * probability distribution. If they are not, the computation of the gradient
+   * will be incorrect.
+   *
+   * WARNING: This op expects unscaled logits, since it performs a softmax on
+   * logits internally for efficiency. Do not call this op with the output of
+   * softmax, as it will produce incorrect results.
+   *
+   * logits and labels must have the same shape, e.g. [batch_size, num_classes]
+   * and the same dtype.
+   * @param logits The logits array.
+   * @param dim The dimension softmax would be performed on. Defaults to -1
+   *     which indicates the last dimension.
+   */
+  softmaxCrossEntropyWithLogits<I extends NDArray, O extends NDArray>(
+      labels: I, logits: I, dim = -1): O {
+    util.assertShapesMatch(
+        labels.shape, logits.shape, 'Error in softmaxCrossEntropyWithLogits: ');
+    if (dim === -1) {
+      dim = logits.rank - 1;
+    }
+    if (dim !== logits.rank - 1) {
+      throw Error(
+          'Softmax cross entropy along a non-last dimension is not yet supported. ' +
+          `Labels / logits was rank ${logits.rank} and dim was ${dim}`);
+    }
+
+    // Use a custom gradient for numerical stability.
+    return this.backendEngine.customGradient(
+        'softmaxCrossEntropyWithLogits', () => {
+          const softmaxLogits = this.softmax(logits, dim);
+          const yPlusEps = this.add(Scalar.new(1e-5), softmaxLogits);
+          const logOutput = this.log(yPlusEps);
+          const tarLogOutput = this.multiply(labels, logOutput);
+          const costVector = this.neg(tarLogOutput);
+          const value = this.sum(costVector, [dim]) as O;
+
+          const gradients = (dy: O, y: O) => {
+            const dyShape = axis_util.expandShapeToKeepDim(dy.shape, [dim]);
+
+            return {
+              logits: () => this.multiply(
+                  dy.reshape(dyShape), this.subtract(softmaxLogits, labels)),
+              labels: () => this.multiply(
+                  dy.reshape(dyShape), this.subtract(labels, softmaxLogits))
+            };
+          };
+
+          return {value, gradients};
+        }, {labels, logits});
   }
 
   //////////////////////

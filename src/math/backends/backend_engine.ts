@@ -99,14 +99,20 @@ export class BackendEngine {
     return result;
   }
 
-  customGradient<T extends NDArray>(
-      name: string, f: () => T, inputs: NamedArrayMap,
-      gradient: (dy: T, y: T) => TapeNodeInputGradientArrays): T {
+  customGradient<G extends DataType, T extends NDArray<G>>(
+      name: string, f: () => {
+        value: T,
+        gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
+      },
+      inputs: NamedArrayMap): T {
     this.customGradientDepth++;
 
-    const gradientsMode = false;
+    let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
+    const gradientsMode = true;
     const result = this.scope('customGradient', () => {
-      return f();
+      const {value, gradients} = f();
+      gradientsFunc = gradients;
+      return value;
     }, gradientsMode);
 
     this.customGradientDepth--;
@@ -121,7 +127,7 @@ export class BackendEngine {
         name,
         inputAndArgs,
         output: result,
-        gradient
+        gradient: gradientsFunc
       };
 
       this.activeTape.push(evaluatedNode);
@@ -250,6 +256,13 @@ export class BackendEngine {
    * as scope() without the need for a function closure.
    */
   endScope(result: ScopeResultImmediate, gradientsMode: boolean) {
+    if (gradientsMode) {
+      this.gradientScopeCount--;
+      if (this.gradientScopeCount === 0) {
+        this.activeTape = null;
+      }
+    }
+
     let arraysToKeep = this.activeScope.keep;
     const arraysToTrackInParent =
         tape_util.extractNDArraysFromScopeResult(result);
@@ -262,7 +275,7 @@ export class BackendEngine {
         continue;
       }
 
-      if (this.activeTape != null && this.customGradientDepth === 0) {
+      if (this.activeTape != null) {
         arraysToTrackInParent.push(ndarray);
       } else {
         ndarray.dispose();
@@ -280,13 +293,6 @@ export class BackendEngine {
         this.track(ndarray);
       }
     });
-
-    if (gradientsMode) {
-      this.gradientScopeCount--;
-      if (this.gradientScopeCount === 0) {
-        this.activeTape = null;
-      }
-    }
   }
 
   /**
