@@ -480,7 +480,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
         const result = math.gradients(() => der, a);
 
         // New gradients shouldn't be disposed.
-        expect(math.getNumArrays()).toBeGreaterThan(numArrays);
+        expect(math.getNumArrays()).toBeGreaterThan(numArrays + 1);
         return result;
       });
 

@@ -283,7 +283,7 @@ const gpuTests: MathTests = it => {
   });
 };
 
-test_util.describeMathCPU('nikhil matMul', [commonTests]);
+test_util.describeMathCPU('matMul', [commonTests]);
 test_util.describeMathGPU('matMul', [commonTests, gpuTests], [
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
