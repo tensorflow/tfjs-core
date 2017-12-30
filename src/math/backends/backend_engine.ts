@@ -259,7 +259,7 @@ export class BackendEngine {
    *
    * @param result The NDArray to track in the current scope.
    */
-  track<G extends DataType, T extends NDArray<G>>(result: T): T {
+  track<D extends DataType, T extends NDArray<D>>(result: T): T {
     if (this.scopeStack.length === 1) {
       if (this.safeMode) {
         throw new Error(
