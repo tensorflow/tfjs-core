@@ -287,7 +287,7 @@ import {Array1D, Array2D, Array3D, NDArray, Scalar} from './ndarray';
               MatrixOrientation.REGULAR));
     });
 
-    it('nikhil second order nested gradient vjp & gradients', math => {
+    it('second order nested gradient vjp & gradients', math => {
       const a = Scalar.new(2);
       const b = Scalar.new(3, 'int32');
 
