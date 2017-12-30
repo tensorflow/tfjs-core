@@ -18,7 +18,6 @@
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap} from '../util';
-
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {NDArrayStorage} from './backends/backend';
@@ -874,7 +873,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
 
           return {
             logits: () => this.multiply(
-                  dy.reshape(dyShape), this.subtract(softmaxLogits, labels)),
+                dy.reshape(dyShape), this.subtract(softmaxLogits, labels)),
             labels: () => this.multiply(
                 dy.reshape(dyShape), this.subtract(labels, softmaxLogits))
           };
