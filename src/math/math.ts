@@ -579,7 +579,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                       `Gradients for sum with axis reduction not yet ` +
                       `supported.`);
                 }
-                return this.multiply(dy, NDArray.onesLike(x));
+                return this.multiply(dy, NDArray.ones(x.shape, dy.dtype));
               }
             };
           });
@@ -677,9 +677,13 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   /**
    * Returns the truth value of (a == b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.equalStrict().
+   *
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`. Must have the same dtype as `a`.
    */
   equal<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel('Equal', {inputs: {a, b}}) as T;
   }
@@ -753,12 +757,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first ndarray.
    * @param b The second ndarray. Must have the same type as `a`.
    */
-  minimum<D1 extends DataType, D2 extends D1>(a: NDArray<D1>, b: NDArray<D2>):
-      NDArray<D1> {
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+  minimum<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
+      a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
-    return this.backendEngine.executeKernel('Minimum', {inputs: {a, b}}) as
-        NDArray<D1>;
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('Minimum', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -802,12 +805,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param a The first ndarray.
    * @param b The second ndarray. Must have the same type as `a`.
    */
-  maximum<D1 extends DataType, D2 extends D1>(a: NDArray<D1>, b: NDArray<D2>):
-      NDArray<D1> {
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+  maximum<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
+      a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
-    return this.backendEngine.executeKernel('Maximum', {inputs: {a, b}}) as
-        NDArray<D1>;
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('Maximum', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -933,6 +935,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    */
   add<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel('Add', {inputs: {a, b}}) as T;
   }
@@ -958,6 +961,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    */
   subtract<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel(
                'Sub', {inputs: {a, b}}, (dy: NDArray<D1>, y: NDArray<D1>) => {
@@ -1001,7 +1005,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
           return this.multiply(
               dy,
               this.multiply(
-                  b, this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
+                  b.asType('float32'),
+                  this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
         });
       };
       const derB = () => {
@@ -1051,10 +1056,12 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * Multiplies two NDArrays element-wise, A * B. Supports broadcasting.
    * For a stricter version without broadcasting use math.multiplyStrict().
    *
-   * @param a The first NDArray to multiply element-wise.
-   * @param b The second NDArray to multiply element-wise.
+   * @param a The first `NDArray`.
+   * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
-  multiply<T extends NDArray>(a: NDArray, b: NDArray): T {
+  multiply<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
+      a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel(
                'Mul', {inputs: {a, b}}, (dy: NDArray, y: NDArray) => {
@@ -2276,8 +2283,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       if (!keepDims) {
         keepDimsShape = axis_util.expandShapeToKeepDim(mean.shape, axes);
       }
-      const devSquared =
-          this.square(this.subtract(x, mean.reshape(keepDimsShape)));
+      const devSquared = this.square(
+          this.subtract(x.asType('float32'), mean.reshape(keepDimsShape)));
       const variance = this.mean(devSquared, axes, keepDims);
       return {mean, variance};
     });
