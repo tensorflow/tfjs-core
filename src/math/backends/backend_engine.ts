@@ -100,11 +100,11 @@ export class BackendEngine {
   }
 
   customGradient<G extends DataType, T extends NDArray<G>>(
-      name: string, f: () => {
+      f: () => {
         value: T,
         gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap): T {
+      inputs: NamedArrayMap, name: string): T {
     this.customGradientDepth++;
 
     let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
@@ -118,14 +118,11 @@ export class BackendEngine {
     this.customGradientDepth--;
 
     if (this.activeTape != null && this.customGradientDepth === 0) {
-      const inputAndArgs =
-          tape_util.stripUndefinedInputsFromInputConfig({inputs});
-
       const evaluatedNode: TapeNode<T> = {
         id: this.nextTapeNodeId++,
         type: 'customGradient',
         name,
-        inputAndArgs,
+        inputAndArgs: {inputs},
         output: result,
         gradient: gradientsFunc
       };

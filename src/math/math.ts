@@ -18,12 +18,14 @@
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap} from '../util';
+
 import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {NDArrayStorage} from './backends/backend';
 import {MathBackend} from './backends/backend';
 // tslint:disable-next-line:max-line-length
 import {BackendEngine} from './backends/backend_engine';
+import {TapeNodeInputGradientArrays} from './backends/tape_types';
 import {ScopeResult, ScopeResultImmediate} from './backends/tape_util';
 import {MatrixOrientation} from './backends/types/matmul';
 import * as broadcast_util from './broadcast_util';
@@ -807,7 +809,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     };
 
     return this.executeOp('softmax', () => {
-      return this.backendEngine.customGradient('softmax', () => {
+      return this.customGradient(() => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
         const keepDims = true;
@@ -815,7 +817,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         const logResult = this.subtract(logits, lse);
         const value = this.exp(logResult) as T;
         return {value, gradients};
-      }, {logits});
+      }, {logits}, 'softmax');
     });
   }
 
@@ -838,6 +840,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    *
    * logits and labels must have the same shape, e.g. [batch_size, num_classes]
    * and the same dtype.
+   * @param labels The labels array.
    * @param logits The logits array.
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
@@ -856,29 +859,30 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
           `and dim was ${dim}`);
     }
 
-    // Use a custom gradient for numerical stability.
-    return this.backendEngine.customGradient(
-        'softmaxCrossEntropyWithLogits', () => {
-          const softmaxLogits = this.softmax(logits, dim);
-          const yPlusEps = this.add(Scalar.new(1e-5), softmaxLogits);
-          const logOutput = this.log(yPlusEps);
-          const tarLogOutput = this.multiply(labels, logOutput);
-          const costVector = this.neg(tarLogOutput);
-          const value = this.sum(costVector, [dim]) as O;
+    return this.executeOp('softmaxCrossEntropyWithLogits', () => {
+      // Use a custom gradient for numerical stability.
+      return this.customGradient(() => {
+        const softmaxLogits = this.softmax(logits, dim);
+        const yPlusEps = this.add(Scalar.new(1e-5), softmaxLogits);
+        const logOutput = this.log(yPlusEps);
+        const tarLogOutput = this.multiply(labels, logOutput);
+        const costVector = this.neg(tarLogOutput);
+        const value = this.sum(costVector, [dim]) as O;
 
-          const gradients = (dy: O, y: O) => {
-            const dyShape = axis_util.expandShapeToKeepDim(dy.shape, [dim]);
+        const gradients = (dy: O, y: O) => {
+          const dyShape = axis_util.expandShapeToKeepDim(dy.shape, [dim]);
 
-            return {
-              logits: () => this.multiply(
+          return {
+            logits: () => this.multiply(
                   dy.reshape(dyShape), this.subtract(softmaxLogits, labels)),
-              labels: () => this.multiply(
-                  dy.reshape(dyShape), this.subtract(labels, softmaxLogits))
-            };
+            labels: () => this.multiply(
+                dy.reshape(dyShape), this.subtract(labels, softmaxLogits))
           };
+        };
 
-          return {value, gradients};
-        }, {labels, logits});
+        return {value, gradients};
+      }, {labels, logits}, 'softmaxCrossEntropyWithLogits');
+    });
   }
 
   //////////////////////
@@ -2516,6 +2520,26 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
           util.unflattenToNameArrayMap(keys, valueAndGradients.gradients) as T;
     }
     return {value: valueAndGradients.value, gradients};
+  }
+
+  /**
+   * Evaluates a function f() with a custom gradient function f'() to use during
+   * backpropagation.
+   * @param f The function to evaluate in forward mode. Returns a value NDArray
+   * and a gradient function closure.
+   * @param inputs The inputs to compute the gradient with respect to. These
+   * NDArrays should be used in f().
+   * @param name An optional name for the customGradient method. Used for
+   * debugging.
+   */
+  customGradient<G extends DataType, T extends NDArray<G>>(
+      f: () => {
+        value: T,
+        gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
+      },
+      inputs: NamedArrayMap, name?: string): T {
+    return this.backendEngine.customGradient(
+        f, inputs, name == null ? '' : name);
   }
 
   disposeData(id: number): void {

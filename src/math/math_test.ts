@@ -20,7 +20,7 @@ import {MathTests} from '../test_util';
 import * as util from '../util';
 
 import {MatrixOrientation} from './backends/types/matmul';
-import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, NDArray, Scalar} from './ndarray';
 
 // math.scope
 {
@@ -287,13 +287,49 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
               MatrixOrientation.REGULAR));
     });
 
-    test_util.describeMathCPU('vjp', [tests]);
-    test_util.describeMathGPU('vjp', [tests], [
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-    ]);
+    it('nikhil second order nested gradient vjp & gradients', math => {
+      const a = Scalar.new(2);
+      const b = Scalar.new(3, 'int32');
+
+      const dy = Scalar.new(4);
+
+      const gradients = math.vjp(() => {
+        return math.gradients(() => math.pow(a, b), a);
+      }, a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      test_util.expectNumbersClose(
+          gradients.get(),
+          dy.get() * b.get() * (b.get() - 1) * Math.pow(a.get(), b.get() - 2),
+          1e-1);
+    });
+
+    it('second order nested gradient', math => {
+      const a = Scalar.new(2);
+      const b = Scalar.new(3, 'int32');
+
+      const dy1 = Scalar.new(3);
+      const dy2 = Scalar.new(4);
+
+      const gradients = math.vjp(() => {
+        return math.vjp(() => math.pow(a, b), a, dy1);
+      }, a, dy2);
+
+      expect(gradients.shape).toEqual(a.shape);
+      test_util.expectNumbersClose(
+          gradients.get(),
+          dy2.get() * dy1.get() * b.get() * (b.get() - 1) *
+              Math.pow(a.get(), b.get() - 2),
+          1e-1);
+    });
   };
+
+  test_util.describeMathCPU('vjp', [tests]);
+  test_util.describeMathGPU('vjp', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }
 
 // gradients integration tests
@@ -322,16 +358,16 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(
           gradients.a,
           math.matMul(
-              dedm, b, MatrixOrientation.REGULAR,
-              MatrixOrientation.TRANSPOSED));
+              dedm, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
+          1e-1);
 
       // de/db = dot(aT, de/dy)
       expect(gradients.b.shape).toEqual(b.shape);
       test_util.expectArraysClose(
           gradients.b,
           math.matMul(
-              a, dedm, MatrixOrientation.TRANSPOSED,
-              MatrixOrientation.REGULAR));
+              a, dedm, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR),
+          1e-1);
     });
 
     it('second order nested gradient', math => {
@@ -355,14 +391,14 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
           () => math.gradients(() => math.matMul(a, b) as any, {a, b}))
           .toThrowError();
     });
-
-    test_util.describeMathCPU('gradients', [tests]);
-    test_util.describeMathGPU('gradients', [tests], [
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-      {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-    ]);
   };
+
+  test_util.describeMathCPU('gradients', [tests]);
+  test_util.describeMathGPU('gradients', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }
 
 // valueAndGradients integration tests
@@ -494,6 +530,66 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 
   test_util.describeMathCPU('gradientsScope', [tests]);
   test_util.describeMathGPU('gradientsScope', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// customGradients
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      const a = Scalar.new(3);
+      const b = Scalar.new(2, 'int32');
+      const dy = Scalar.new(4);
+
+      const vjp = math.vjp(() => {
+        return math.customGradient(() => {
+          const value = math.pow(a, b);
+
+          const gradients = (dy: NDArray, y: NDArray) => {
+            return {a: () => math.multiply(dy, Scalar.new(3))};
+          };
+
+          return {value, gradients};
+        }, {a});
+      }, a, dy);
+
+      expect(vjp.shape).toEqual(a.shape);
+      test_util.expectArraysClose(vjp, [dy.get() * 3]);
+    });
+
+    it('second order derivative through customGradient', math => {
+      const a = Scalar.new(3);
+      const b = Scalar.new(2, 'int32');
+
+      const dy1 = Scalar.new(5);
+      const dy2 = Scalar.new(4);
+
+      const vjp = math.vjp(() => {
+        return math.vjp(() => {
+          return math.customGradient(() => {
+            const value = math.pow(a, b);
+            const gradients = (dy: NDArray, y: NDArray) => {
+              return {a: () => math.multiply(dy, a)};
+            };
+
+            return {value, gradients};
+          }, {a});
+        }, a, dy1);
+      }, a, dy2);
+
+      expect(vjp.shape).toEqual(a.shape);
+
+      // First order: dy1 * a
+      // Second order: dy2 * dy1
+      test_util.expectArraysClose(vjp, [dy1.get() * dy2.get()]);
+    });
+  };
+
+  test_util.describeMathCPU('customGradient', [tests]);
+  test_util.describeMathGPU('customGradient', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
