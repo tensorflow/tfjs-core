@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D} from './ndarray';
+import {Array1D, Array2D, Scalar} from './ndarray';
 
 // math.prelu
 {
@@ -74,6 +74,138 @@ import {Array1D} from './ndarray';
 
   test_util.describeMathCPU('preluDer', [tests]);
   test_util.describeMathGPU('preluDer', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// math.maximum
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      const a = Array1D.new([0.5, 3, -0.1, -4]);
+      const b = Array1D.new([0.2, 0.4, 0.25, 0.15]);
+      const result = math.maximum(a, b);
+
+      expect(result.shape).toEqual(a.shape);
+      test_util.expectArraysClose(result, [0.5, 3, 0.25, 0.15]);
+    });
+
+    it('propagates NaN', math => {
+      const a = Array1D.new([0.5, -0.1, NaN]);
+      const b = Array1D.new([0.2, 0.3, 0.25]);
+      const result = math.maximum(a, b);
+
+      expect(result.shape).toEqual(a.shape);
+      test_util.expectArraysClose(result, [0.5, 0.3, NaN]);
+    });
+
+    it('broadcasts array1d and scalar', math => {
+      const a = Array1D.new([0.5, 3, -0.1, -4]);
+      const b = Scalar.new(0.6);
+      const result = math.maximum(a, b);
+
+      expect(result.shape).toEqual(a.shape);
+      test_util.expectArraysClose(result, [0.6, 3, 0.6, 0.6]);
+    });
+
+    it('broadcasts scalar and array1d', math => {
+      const a = Scalar.new(0.6);
+      const b = Array1D.new([0.5, 3, -0.1, -4]);
+      const result = math.maximum(a, b);
+
+      expect(result.shape).toEqual(b.shape);
+      test_util.expectArraysClose(result, [0.6, 3, 0.6, 0.6]);
+    });
+
+    it('broadcasts array1d and array2d', math => {
+      const a = Array1D.new([0.5, 0.3]);
+      const b = Array2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
+      const result = math.maximum(a, b);
+
+      expect(result.shape).toEqual(b.shape);
+      test_util.expectArraysClose(result, [0.5, 0.4, 0.6, 0.3]);
+    });
+
+    it('broadcasts 2x1 array2d and 2x2 array2d', math => {
+      const a = Array2D.new([2, 1], [0.5, 0.3]);
+      const b = Array2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
+      const result = math.maximum(a, b);
+
+      expect(result.shape).toEqual(b.shape);
+      test_util.expectArraysClose(result, [0.5, 0.5, 0.6, 0.3]);
+    });
+  };
+
+  test_util.describeMathCPU('maximum', [tests]);
+  test_util.describeMathGPU('maximum', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// math.minimum
+{
+  const tests: MathTests = it => {
+    it('basic', math => {
+      const a = Array1D.new([0.5, 3, -0.1, -4]);
+      const b = Array1D.new([0.2, 0.4, 0.25, 0.15]);
+      const result = math.minimum(a, b);
+
+      expect(result.shape).toEqual(a.shape);
+      test_util.expectArraysClose(result, [0.2, 0.4, -0.1, -4]);
+    });
+
+    it('propagates NaN', math => {
+      const a = Array1D.new([0.5, -0.1, NaN]);
+      const b = Array1D.new([0.2, 0.3, 0.25]);
+      const result = math.minimum(a, b);
+
+      expect(result.shape).toEqual(a.shape);
+      test_util.expectArraysClose(result, [0.2, -0.1, NaN]);
+    });
+
+    it('broadcasts array1d and scalar', math => {
+      const a = Array1D.new([0.5, 3, -0.1, -4]);
+      const b = Scalar.new(0.6);
+      const result = math.minimum(a, b);
+
+      expect(result.shape).toEqual(a.shape);
+      test_util.expectArraysClose(result, [0.5, 0.6, -0.1, -4]);
+    });
+
+    it('broadcasts scalar and array1d', math => {
+      const a = Scalar.new(0.6);
+      const b = Array1D.new([0.5, 3, -0.1, -4]);
+      const result = math.minimum(a, b);
+
+      expect(result.shape).toEqual(b.shape);
+      test_util.expectArraysClose(result, [0.5, 0.6, -0.1, -4]);
+    });
+
+    it('broadcasts array1d and array2d', math => {
+      const a = Array1D.new([0.5, 0.3]);
+      const b = Array2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
+      const result = math.minimum(a, b);
+
+      expect(result.shape).toEqual(b.shape);
+      test_util.expectArraysClose(result, [0.2, 0.3, 0.5, 0.15]);
+    });
+
+    it('broadcasts 2x1 array2d and 2x2 array2d', math => {
+      const a = Array2D.new([2, 1], [0.5, 0.3]);
+      const b = Array2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
+      const result = math.minimum(a, b);
+
+      expect(result.shape).toEqual(b.shape);
+      test_util.expectArraysClose(result, [0.2, 0.4, 0.3, 0.15]);
+    });
+  };
+
+  test_util.describeMathCPU('minimum', [tests]);
+  test_util.describeMathGPU('minimum', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

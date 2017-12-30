@@ -38,9 +38,13 @@ export const PRELU_DER = `
   return (a > 0.0) ? 1.0 : ((a < 0.0) ? b : a);
 `;
 export const MAX = `
+  if (isNaN(a)) return a;
+  if (isNaN(b)) return b;
   return max(a, b);
 `;
 export const MIN = `
+  if (isNaN(a)) return a;
+  if (isNaN(b)) return b;
   return min(a, b);
 `;
 
