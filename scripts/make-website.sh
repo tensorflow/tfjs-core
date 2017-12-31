@@ -27,13 +27,13 @@ cp -r "docs" "$TMP_DIR/"
 
 # Make the documentation.
 ./node_modules/.bin/typedoc --out "$TMP_DIR/docs/api/" --excludeExternals \
-  --excludeNotExported --excludePrivate --mode file --tsconfig tsconfig-doc.json;
+  --excludeNotExported --excludePrivate --mode file --tsconfig tsconfig-doc.json
 
 # Make demo directory (if not existing)
-mkdir -p "$TMP_DIR/demos";
+mkdir -p "$TMP_DIR/demos"
 
 # Copy files to demos folder
-find demos -maxdepth 1 -type f | xargs -I {} cp {} "$TMP_DIR/demos";
+find demos -maxdepth 1 -type f | xargs -I {} cp {} "$TMP_DIR/demos"
 
 # Build polymer demos (deploy-demo vulcanizes polymer apps).
 
@@ -48,13 +48,13 @@ polymerdemos=(
   "playground"
   "intro"
   "ml_beginners"
-);
+)
 
 # Loop over each demo, copy and build it
 for demo in ${polymerdemos[@]}
 do
-  cp -r "demos/$demo" "$TMP_DIR/demos";
-  ./scripts/deploy-demo "demos/$demo" $TMP_DIR;
+  cp -r "demos/$demo" "$TMP_DIR/demos"
+  ./scripts/deploy-demo "demos/$demo" $TMP_DIR
 done
 
 # Build vuejs demos.
