@@ -53,7 +53,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   private customBackend = false;
 
   // Public since optimizers will use it.
-  registeredVariables = new Map<string, Variable>();
+  registeredVariables: {[varName: string]: Variable} = {};
 
   time(query: () => NDArray): Promise<number> {
     return this.backend.time(query);
@@ -72,10 +72,10 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   registerVariable(v: Variable) {
-    if (this.registeredVariables.has(v.name)) {
+    if (this.registeredVariables[v.name] != null) {
       throw new Error(`Variable with name ${v.name} was already registered`);
     }
-    this.registeredVariables.set(v.name, v);
+    this.registeredVariables[v.name] = v;
   }
 
   writePixels(
@@ -2525,16 +2525,23 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
+   * Computes and returns the gradient of f(x) with respect to every variable.
+   */
+  variableGradients<D extends DataType>(f: () => Scalar<D>) {
+    return this.gradients(f, this.registeredVariables);
+  }
+
+  /**
    * Warning: this is not fully implemented yet. Use with caution.
    *
-   * Computes and returns the gradient of f(x) with respect to x. Returns both
-   * f(x) and f'(x).
+   * Computes and returns the gradient of f(x) with respect to x. Returns
+   * both f(x) and f'(x).
    *
    * @param f The function to execute. f() should return a scalar.
    *          TODO(nsthorat): Accept non-scalars.
    * @param x The input to compute de/dx over. This can be a single value or
-   * an object mapping a string to an NDArray. If using the object mode, this
-   * method will return an object of the same shape.
+   * an object mapping a string to an NDArray. If using the object mode,
+   * this method will return an object of the same shape.
    */
   valueAndGradients<T extends NDArray|NamedArrayMap, D extends DataType>(
       f: () => Scalar<D>, x: T): {value: Scalar, gradients: T} {
