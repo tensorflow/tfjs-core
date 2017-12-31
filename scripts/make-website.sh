@@ -29,11 +29,15 @@ cp -r "docs" "$TMP_DIR/"
 ./node_modules/.bin/typedoc --out "$TMP_DIR/docs/api/" --excludeExternals \
   --excludeNotExported --excludePrivate --mode file --tsconfig tsconfig-doc.json;
 
+# Make demo directory (if not existing)
 mkdir -p "$TMP_DIR/demos";
+
+# Copy files to demos folder
 find demos -maxdepth 1 -type f | xargs -I {} cp {} "$TMP_DIR/demos";
 
 # Build polymer demos (deploy-demo vulcanizes polymer apps).
 
+# Only these demo folder get copied and are built
 polymerdemos=(
   "model-builder"
   "imagenet"
@@ -46,6 +50,7 @@ polymerdemos=(
   "ml_beginners"
 );
 
+# Loop over each demo, copy and build it
 for demo in ${polymerdemos[@]}
 do
   cp -r "demos/$demo" "$TMP_DIR/demos";
