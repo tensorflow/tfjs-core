@@ -99,7 +99,7 @@ export class BackendEngine {
     return result;
   }
 
-  customGradient<G extends DataType, T extends NDArray<G>>(
+  customGradient<D extends DataType, T extends NDArray<D>>(
       f: () => {
         value: T,
         gradients: (dy: T, y: T) => TapeNodeInputGradientArrays

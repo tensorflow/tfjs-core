@@ -877,7 +877,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
-  softmaxCrossEntropyWithLogits<I extends NDArray, O extends NDArray>(
+  softmaxCrossEntropyWithLogits<I extends NDArray<'float32'>,
+                                          O extends NDArray<'float32'>>(
       labels: I, logits: I, dim = -1): O {
     util.assertShapesMatch(
         labels.shape, logits.shape, 'Error in softmaxCrossEntropyWithLogits: ');
@@ -2570,7 +2571,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
    * @param name An optional name for the customGradient method. Used for
    * debugging.
    */
-  customGradient<G extends DataType, T extends NDArray<G>>(
+  customGradient<D extends DataType, T extends NDArray<D>>(
       f: () => {
         value: T,
         gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
