@@ -27,15 +27,11 @@ import * as reduce_util from './reduce_util';
     it('Array1D', math => {
       const a = Array1D.new([3, -1, 0, 100, -7, 2]);
       test_util.expectNumbersClose(math.min(a).get(), -7);
-      a.dispose();
     });
 
     it('propagates NaNs', math => {
       const a = Array1D.new([3, NaN, 2]);
-
       expect(math.min(a).get()).toEqual(NaN);
-
-      a.dispose();
     });
 
     it('2D', math => {
@@ -53,7 +49,7 @@ import * as reduce_util from './reduce_util';
       const r = math.min(a, 0);
 
       expect(r.shape).toEqual([3]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([3, -7, 0]));
+      test_util.expectArraysClose(r, [3, -7, 0]);
     });
 
     it('2D, axis=0, keepDims', math => {
@@ -61,19 +57,25 @@ import * as reduce_util from './reduce_util';
       const r = math.min(a, 0, true /* keepDims */);
 
       expect(r.shape).toEqual([1, 3]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([3, -7, 0]));
+      test_util.expectArraysClose(r, [3, -7, 0]);
     });
 
     it('2D, axis=1 provided as a number', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.min(a, 1);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([2, -7]));
+      test_util.expectArraysClose(r, [2, -7]);
+    });
+
+    it('2D, axis = -1 provided as a number', math => {
+      const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const r = math.min(a, -1);
+      test_util.expectArraysClose(r, [2, -7]);
     });
 
     it('2D, axis=[1]', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.min(a, [1]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([2, -7]));
+      test_util.expectArraysClose(r, [2, -7]);
     });
   };
 
@@ -92,16 +94,12 @@ import * as reduce_util from './reduce_util';
       const a = Array1D.new([3, -1, 0, 100, -7, 2]);
       const r = math.max(a);
       test_util.expectNumbersClose(r.get(), 100);
-
-      a.dispose();
     });
 
     it('with all elements being the same', math => {
       const a = Array1D.new([3, 3, 3]);
       const r = math.max(a);
       test_util.expectNumbersClose(r.get(), 3);
-
-      a.dispose();
     });
 
     it('propagates NaNs', math => {
@@ -121,29 +119,35 @@ import * as reduce_util from './reduce_util';
     it('2D, axis=0', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
       const r = math.max(a, [0]);
+
       expect(r.shape).toEqual([3]);
-      test_util.expectArraysClose(
-          r.getValues(), new Float32Array([100, -1, 2]));
+      test_util.expectArraysClose(r, [100, -1, 2]);
     });
 
     it('2D, axis=0, keepDims', math => {
       const a = Array2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
       const r = math.max(a, [0], true /* keepDims */);
+
       expect(r.shape).toEqual([1, 3]);
-      test_util.expectArraysClose(
-          r.getValues(), new Float32Array([100, -1, 2]));
+      test_util.expectArraysClose(r, [100, -1, 2]);
     });
 
     it('2D, axis=1 provided as a number', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.max(a, 1);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([5, 100]));
+      test_util.expectArraysClose(r, [5, 100]);
+    });
+
+    it('2D, axis = -1 provided as a number', math => {
+      const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const r = math.max(a, -1);
+      test_util.expectArraysClose(r, [5, 100]);
     });
 
     it('2D, axis=[1]', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.max(a, [1]);
-      test_util.expectArraysClose(r.getValues(), new Float32Array([5, 100]));
+      test_util.expectArraysClose(r, [5, 100]);
     });
   };
 
@@ -163,8 +167,6 @@ import * as reduce_util from './reduce_util';
       const result = math.argMax(a);
       expect(result.dtype).toBe('int32');
       expect(result.get()).toBe(2);
-
-      a.dispose();
     });
 
     it('one value', math => {
@@ -172,8 +174,6 @@ import * as reduce_util from './reduce_util';
       const result = math.argMax(a);
       expect(result.dtype).toBe('int32');
       expect(result.get()).toBe(0);
-
-      a.dispose();
     });
 
     it('N > than parallelization threshold', math => {
@@ -186,8 +186,6 @@ import * as reduce_util from './reduce_util';
       const result = math.argMax(a);
       expect(result.dtype).toBe('int32');
       expect(result.get()).toBe(n - 1);
-
-      a.dispose();
     });
 
     it('propagates NaNs', math => {
@@ -195,7 +193,6 @@ import * as reduce_util from './reduce_util';
       const res = math.argMax(a);
       expect(res.dtype).toBe('int32');
       test_util.assertIsNan(res.get(), res.dtype);
-      a.dispose();
     });
 
     it('2D, no axis specified', math => {
@@ -209,14 +206,21 @@ import * as reduce_util from './reduce_util';
 
       expect(r.shape).toEqual([3]);
       expect(r.dtype).toBe('int32');
-      expect(r.getValues()).toEqual(new Int32Array([1, 0, 1]));
+      test_util.expectArraysEqual(r, [1, 0, 1]);
     });
 
     it('2D, axis=1', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
       const r = math.argMax(a, 1);
       expect(r.dtype).toBe('int32');
-      expect(r.getValues()).toEqual(new Int32Array([2, 0]));
+      test_util.expectArraysEqual(r, [2, 0]);
+    });
+
+    it('2D, axis = -1', math => {
+      const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const r = math.argMax(a, -1);
+      expect(r.dtype).toBe('int32');
+      test_util.expectArraysEqual(r, [2, 0]);
     });
   };
 
@@ -235,16 +239,12 @@ import * as reduce_util from './reduce_util';
       const a = Array1D.new([1, 0, 3, 2]);
       const result = math.argMin(a);
       expect(result.get()).toBe(1);
-
-      a.dispose();
     });
 
     it('one value', math => {
       const a = Array1D.new([10]);
       const result = math.argMin(a);
       expect(result.get()).toBe(0);
-
-      a.dispose();
     });
 
     it('N > than parallelization threshold', math => {
@@ -257,15 +257,12 @@ import * as reduce_util from './reduce_util';
       const result = math.argMin(a);
       expect(result.dtype).toBe('int32');
       expect(result.get()).toBe(n - 1);
-
-      a.dispose();
     });
 
     it('Arg min propagates NaNs', math => {
       const a = Array1D.new([5, 0, NaN, 7, 3]);
       const res = math.argMin(a);
       test_util.assertIsNan(res.get(), res.dtype);
-      a.dispose();
     });
 
     it('2D, no axis specified', math => {
@@ -279,13 +276,19 @@ import * as reduce_util from './reduce_util';
 
       expect(r.shape).toEqual([3]);
       expect(r.dtype).toBe('int32');
-      expect(r.getValues()).toEqual(new Int32Array([0, 1, 0]));
+      test_util.expectArraysEqual(r, [0, 1, 0]);
     });
 
     it('2D, axis=1', math => {
       const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, -8]);
       const r = math.argMin(a, 1);
-      expect(r.getValues()).toEqual(new Int32Array([1, 2]));
+      test_util.expectArraysEqual(r, [1, 2]);
+    });
+
+    it('2D, axis = -1', math => {
+      const a = Array2D.new([2, 3], [3, 2, 5, 100, -7, -8]);
+      const r = math.argMin(a, -1);
+      test_util.expectArraysEqual(r, [1, 2]);
     });
   };
 
@@ -342,11 +345,7 @@ import * as reduce_util from './reduce_util';
     it('0', math => {
       const a = Scalar.new(0);
       const result = math.logSumExp(a);
-
       test_util.expectNumbersClose(result.get(), 0);
-
-      a.dispose();
-      result.dispose();
     });
 
     it('basic', math => {
@@ -355,71 +354,85 @@ import * as reduce_util from './reduce_util';
 
       test_util.expectNumbersClose(
           result.get(), Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
-
-      a.dispose();
-      result.dispose();
     });
 
     it('propagates NaNs', math => {
       const a = Array1D.new([1, 2, NaN]);
       const result = math.logSumExp(a);
       expect(result.get()).toEqual(NaN);
-      a.dispose();
     });
 
     it('axes=0 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const r = math.logSumExp(a, [0]);
+
       expect(r.shape).toEqual([2]);
-      const expected = new Float32Array([
+      const expected = [
         Math.log(Math.exp(1) + Math.exp(3) + Math.exp(0)),
         Math.log(Math.exp(2) + Math.exp(0) + Math.exp(1))
-      ]);
-      test_util.expectArraysClose(r.getValues(), expected);
+      ];
+      test_util.expectArraysClose(r, expected);
     });
 
     it('axes=0 in 2D array, keepDims', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const r = math.logSumExp(a, [0], true /* keepDims */);
+
       expect(r.shape).toEqual([1, 2]);
-      const expected = new Float32Array([
+      const expected = [
         Math.log(Math.exp(1) + Math.exp(3) + Math.exp(0)),
         Math.log(Math.exp(2) + Math.exp(0) + Math.exp(1))
-      ]);
-      test_util.expectArraysClose(r.getValues(), expected);
+      ];
+      test_util.expectArraysClose(r, expected);
     });
 
     it('axes=1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.logSumExp(a, [1]);
+
       expect(res.shape).toEqual([3]);
-      const expected = new Float32Array([
+      const expected = [
         Math.log(Math.exp(1) + Math.exp(2)),
         Math.log(Math.exp(3) + Math.exp(0)),
         Math.log(Math.exp(0) + Math.exp(1)),
-      ]);
-      test_util.expectArraysClose(res.getValues(), expected);
+      ];
+      test_util.expectArraysClose(res, expected);
+    });
+
+    it('axes = -1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.logSumExp(a, -1);
+
+      expect(res.shape).toEqual([3]);
+      const expected = [
+        Math.log(Math.exp(1) + Math.exp(2)),
+        Math.log(Math.exp(3) + Math.exp(0)),
+        Math.log(Math.exp(0) + Math.exp(1)),
+      ];
+      test_util.expectArraysClose(res, expected);
     });
 
     it('2D, axes=1 provided as a single digit', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
       const res = math.logSumExp(a, 1);
+
       expect(res.shape).toEqual([2]);
-      const expected = new Float32Array([
+      const expected = [
         Math.log(Math.exp(1) + Math.exp(2) + Math.exp(3)),
         Math.log(Math.exp(0) + Math.exp(0) + Math.exp(1))
-      ]);
-      test_util.expectArraysClose(res.getValues(), expected);
+      ];
+      test_util.expectArraysClose(res, expected);
     });
 
     it('axes=0,1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.logSumExp(a, [0, 1]);
+
       expect(res.shape).toEqual([]);
-      const expected = new Float32Array([Math.log(
+      const expected = [Math.log(
           Math.exp(1) + Math.exp(2) + Math.exp(3) + Math.exp(0) + Math.exp(0) +
-          Math.exp(1))]);
-      test_util.expectArraysClose(res.getValues(), expected);
+          Math.exp(1))];
+      test_util.expectArraysClose(res, expected);
     });
   };
 
@@ -443,7 +456,6 @@ import * as reduce_util from './reduce_util';
     it('propagates NaNs', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
       expect(math.sum(a).get()).toEqual(NaN);
-      a.dispose();
     });
 
     it('sum over dtype int32', math => {
@@ -461,81 +473,81 @@ import * as reduce_util from './reduce_util';
     it('sums all values in 2D array with keep dim', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, null, true /* keepDims */);
+
       expect(res.shape).toEqual([1, 1]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7]));
+      test_util.expectArraysClose(res, [7]);
     });
 
     it('sums across axis=0 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [0]);
+
       expect(res.shape).toEqual([2]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([4, 3]));
+      test_util.expectArraysClose(res, [4, 3]);
     });
 
     it('sums across axis=0 in 2D array, keepDims', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [0], true /* keepDims */);
+
       expect(res.shape).toEqual([1, 2]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([4, 3]));
+      test_util.expectArraysClose(res, [4, 3]);
     });
 
     it('sums across axis=1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [1]);
+
       expect(res.shape).toEqual([3]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([3, 3, 1]));
+      test_util.expectArraysClose(res, [3, 3, 1]);
     });
 
     it('2D, axis=1 provided as number', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, 1);
+
       expect(res.shape).toEqual([2]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([6, 1]));
+      test_util.expectArraysClose(res, [6, 1]);
+    });
+
+    it('2D, axis = -1 provided as number', math => {
+      const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const res = math.sum(a, -1);
+
+      expect(res.shape).toEqual([2]);
+      test_util.expectArraysClose(res, [6, 1]);
     });
 
     it('sums across axis=0,1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.sum(a, [0, 1]);
+
       expect(res.shape).toEqual([]);
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7]));
+      test_util.expectArraysClose(res, [7]);
+    });
+
+    it('2D, axis=[-1,-2] in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.sum(a, [-1, -2]);
+
+      expect(res.shape).toEqual([]);
+      test_util.expectArraysClose(res, [7]);
+    });
+
+    it('gradients: basic', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const dy = Scalar.new(10);
+
+      const gradients = math.vjp(() => math.sum(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [10, 10, 10, 10, 10, 10]);
     });
   };
 
   test_util.describeMathCPU('sum', [tests]);
   test_util.describeMathGPU('sum', [tests], [
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  ]);
-}
-
-// math.sum gradient
-{
-  const tests: MathTests = it => {
-    it('basic', math => {
-      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const y = math.sum(a);
-      const grad = math.gradientWrt(y, a);
-
-      test_util.expectArraysClose(
-          grad.dataSync(), new Float32Array([1, 1, 1, 1, 1, 1]));
-    });
-
-    it('sums all values in 2D array with keep dim', math => {
-      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const res = math.sum(a, null, true /* keepDims */);
-      const sum = math.sum(res);
-      const grad = math.gradientWrt(sum, a);
-
-      expect(res.shape).toEqual([1, 1]);
-      test_util.expectArraysClose(res.dataSync(), new Float32Array([7]));
-      test_util.expectArraysClose(
-          grad.getValues(), new Float32Array([1, 1, 1, 1, 1, 1]));
-    });
-  };
-
-  test_util.describeMathCPU('gradientWrt sum', [tests]);
-  test_util.describeMathGPU('gradientWrt sum', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
@@ -548,23 +560,23 @@ import * as reduce_util from './reduce_util';
     it('basic', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const r = math.mean(a);
+
       expect(r.dtype).toBe('float32');
       test_util.expectNumbersClose(r.get(), 7 / 6);
-
-      a.dispose();
     });
 
     it('propagates NaNs', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
       const r = math.mean(a);
+
       expect(r.dtype).toBe('float32');
       expect(r.get()).toEqual(NaN);
-      a.dispose();
     });
 
     it('mean(int32) => float32', math => {
       const a = Array1D.new([1, 5, 7, 3], 'int32');
       const r = math.mean(a);
+
       expect(r.dtype).toBe('float32');
       test_util.expectNumbersClose(r.get(), 4);
     });
@@ -572,6 +584,7 @@ import * as reduce_util from './reduce_util';
     it('mean(bool) => float32', math => {
       const a = Array1D.new([true, false, false, true, true], 'bool');
       const r = math.mean(a);
+
       expect(r.dtype).toBe('float32');
       test_util.expectNumbersClose(r.get(), 3 / 5);
     });
@@ -579,9 +592,10 @@ import * as reduce_util from './reduce_util';
     it('2D array with keep dim', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.mean(a, null, true /* keepDims */);
+
       expect(res.shape).toEqual([1, 1]);
       expect(res.dtype).toBe('float32');
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
+      test_util.expectArraysClose(res, [7 / 6]);
     });
 
     it('axis=0 in 2D array', math => {
@@ -590,8 +604,7 @@ import * as reduce_util from './reduce_util';
 
       expect(res.shape).toEqual([2]);
       expect(res.dtype).toBe('float32');
-      test_util.expectArraysClose(
-          res.getValues(), new Float32Array([4 / 3, 1]));
+      test_util.expectArraysClose(res, [4 / 3, 1]);
     });
 
     it('axis=0 in 2D array, keepDims', math => {
@@ -600,34 +613,43 @@ import * as reduce_util from './reduce_util';
 
       expect(res.shape).toEqual([1, 2]);
       expect(res.dtype).toBe('float32');
-      test_util.expectArraysClose(
-          res.getValues(), new Float32Array([4 / 3, 1]));
+      test_util.expectArraysClose(res, [4 / 3, 1]);
     });
 
     it('axis=1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.mean(a, [1]);
+
       expect(res.dtype).toBe('float32');
       expect(res.shape).toEqual([3]);
-      test_util.expectArraysClose(
-          res.getValues(), new Float32Array([1.5, 1.5, 0.5]));
+      test_util.expectArraysClose(res, [1.5, 1.5, 0.5]);
+    });
+
+    it('axis = -1 in 2D array', math => {
+      const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const res = math.mean(a, [-1]);
+
+      expect(res.dtype).toBe('float32');
+      expect(res.shape).toEqual([3]);
+      test_util.expectArraysClose(res, [1.5, 1.5, 0.5]);
     });
 
     it('2D, axis=1 provided as number', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
       const res = math.mean(a, 1);
+
       expect(res.shape).toEqual([2]);
       expect(res.dtype).toBe('float32');
-      test_util.expectArraysClose(
-          res.getValues(), new Float32Array([2, 1 / 3]));
+      test_util.expectArraysClose(res, [2, 1 / 3]);
     });
 
     it('axis=0,1 in 2D array', math => {
       const a = Array2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
       const res = math.mean(a, [0, 1]);
+
       expect(res.shape).toEqual([]);
       expect(res.dtype).toBe('float32');
-      test_util.expectArraysClose(res.getValues(), new Float32Array([7 / 6]));
+      test_util.expectArraysClose(res, [7 / 6]);
     });
   };
 
@@ -650,8 +672,6 @@ import * as reduce_util from './reduce_util';
       expect(variance.dtype).toBe('float32');
       test_util.expectNumbersClose(mean.get(), 7 / 6);
       test_util.expectNumbersClose(variance.get(), 1.1389);
-
-      a.dispose();
     });
 
     it('propagates NaNs', math => {
@@ -662,7 +682,6 @@ import * as reduce_util from './reduce_util';
       expect(variance.dtype).toBe('float32');
       expect(mean.get()).toEqual(NaN);
       expect(variance.get()).toEqual(NaN);
-      a.dispose();
     });
 
     it('moments(int32) => float32', math => {
@@ -693,9 +712,8 @@ import * as reduce_util from './reduce_util';
       expect(mean.dtype).toBe('float32');
       expect(variance.shape).toEqual([1, 1]);
       expect(variance.dtype).toBe('float32');
-      test_util.expectArraysClose(mean.getValues(), new Float32Array([7 / 6]));
-      test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([1.138889]));
+      test_util.expectArraysClose(mean, [7 / 6]);
+      test_util.expectArraysClose(variance, [1.138889]);
     });
 
     it('axis=0 in 2D array', math => {
@@ -706,10 +724,8 @@ import * as reduce_util from './reduce_util';
       expect(mean.dtype).toBe('float32');
       expect(variance.shape).toEqual([2]);
       expect(variance.dtype).toBe('float32');
-      test_util.expectArraysClose(
-          mean.getValues(), new Float32Array([4 / 3, 1]));
-      test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([1.556, 2 / 3]));
+      test_util.expectArraysClose(mean, [4 / 3, 1]);
+      test_util.expectArraysClose(variance, [1.556, 2 / 3]);
     });
 
     it('axis=1 in 2D array', math => {
@@ -720,10 +736,8 @@ import * as reduce_util from './reduce_util';
       expect(mean.shape).toEqual([3]);
       expect(variance.dtype).toBe('float32');
       expect(variance.shape).toEqual([3]);
-      test_util.expectArraysClose(
-          mean.getValues(), new Float32Array([1.5, 1.5, 0.5]));
-      test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([0.25, 2.25, 0.25]));
+      test_util.expectArraysClose(mean, [1.5, 1.5, 0.5]);
+      test_util.expectArraysClose(variance, [0.25, 2.25, 0.25]);
     });
 
     it('2D, axis=1 provided as number', math => {
@@ -734,10 +748,20 @@ import * as reduce_util from './reduce_util';
       expect(mean.dtype).toBe('float32');
       expect(variance.shape).toEqual([2]);
       expect(variance.dtype).toBe('float32');
-      test_util.expectArraysClose(
-          mean.getValues(), new Float32Array([2, 1 / 3]));
-      test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([2 / 3, 0.222]));
+      test_util.expectArraysClose(mean, [2, 1 / 3]);
+      test_util.expectArraysClose(variance, [2 / 3, 0.222]);
+    });
+
+    it('2D, axis=-1 provided as number', math => {
+      const a = Array2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const {mean, variance} = math.moments(a, -1);
+
+      expect(mean.shape).toEqual([2]);
+      expect(mean.dtype).toBe('float32');
+      expect(variance.shape).toEqual([2]);
+      expect(variance.dtype).toBe('float32');
+      test_util.expectArraysClose(mean, [2, 1 / 3]);
+      test_util.expectArraysClose(variance, [2 / 3, 0.222]);
     });
 
     it('axis=0,1 in 2D array', math => {
@@ -748,9 +772,8 @@ import * as reduce_util from './reduce_util';
       expect(mean.dtype).toBe('float32');
       expect(variance.shape).toEqual([]);
       expect(variance.dtype).toBe('float32');
-      test_util.expectArraysClose(mean.getValues(), new Float32Array([7 / 6]));
-      test_util.expectArraysClose(
-          variance.getValues(), new Float32Array([1.1389]));
+      test_util.expectArraysClose(mean, [7 / 6]);
+      test_util.expectArraysClose(variance, [1.1389]);
     });
   };
 
@@ -771,8 +794,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 22);
-
-      a.dispose();
     });
 
     it('vector inf norm', math => {
@@ -781,8 +802,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 4);
-
-      a.dispose();
     });
 
     it('vector -inf norm', math => {
@@ -791,8 +810,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 1);
-
-      a.dispose();
     });
 
     it('vector 1 norm', math => {
@@ -801,8 +818,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 10);
-
-      a.dispose();
     });
 
     it('vector euclidean norm', math => {
@@ -811,8 +826,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 5.4772);
-
-      a.dispose();
     });
 
     it('vector 2-norm', math => {
@@ -821,16 +834,11 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 5.4772);
-
-      a.dispose();
     });
 
     it('vector >2-norm to throw error', math => {
       const a = Array1D.new([1, -2, 3, -4]);
-
       expect(() => math.norm(a, 3)).toThrowError();
-
-      a.dispose();
     });
 
     it('matrix inf norm', math => {
@@ -839,8 +847,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 4);
-
-      a.dispose();
     });
 
     it('matrix -inf norm', math => {
@@ -849,8 +855,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 1);
-
-      a.dispose();
     });
 
     it('matrix 1 norm', math => {
@@ -859,8 +863,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 5);
-
-      a.dispose();
     });
 
     it('matrix euclidean norm', math => {
@@ -869,8 +871,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 4.123);
-
-      a.dispose();
     });
 
     it('matrix fro norm', math => {
@@ -879,16 +879,11 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       test_util.expectNumbersClose(norm.get(), 4.123);
-
-      a.dispose();
     });
 
     it('matrix other norm to throw error', math => {
       const a = Array2D.new([3, 2], [1, 2, -3, 1, 1, 1]);
-
       expect(() => math.norm(a, 2, [0, 1])).toThrowError();
-
-      a.dispose();
     });
 
     it('propagates NaNs for norm', math => {
@@ -897,7 +892,6 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       expect(norm.get()).toEqual(NaN);
-      a.dispose();
     });
 
     it('axis=null in 2D array norm', math => {
@@ -906,9 +900,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3]);
     });
 
     it('2D array norm with keep dim', math => {
@@ -917,9 +909,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3]);
     });
 
     it('axis=0 in 2D array norm', math => {
@@ -928,9 +918,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([2]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3, 2]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3, 2]);
     });
 
     it('axis=1 in 2D array norm', math => {
@@ -939,10 +927,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       expect(norm.shape).toEqual([3]);
-      test_util.expectArraysClose(
-          norm.getValues(), new Float32Array([2, 3, 1]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [2, 3, 1]);
     });
 
     it('axis=1 keepDims in 2D array norm', math => {
@@ -951,10 +936,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.dtype).toBe('float32');
       expect(norm.shape).toEqual([3, 1]);
-      test_util.expectArraysClose(
-          norm.getValues(), new Float32Array([2, 3, 1]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [2, 3, 1]);
     });
 
     it('2D norm with axis=1 provided as number', math => {
@@ -963,9 +945,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([2]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3, 1]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3, 1]);
     });
 
     it('axis=0,1 in 2D array norm', math => {
@@ -974,9 +954,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3]);
     });
 
     it('axis=0,1 keepDims in 2D array norm', math => {
@@ -985,9 +963,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3]);
     });
 
     it('3D norm axis=0,1, matrix inf norm', math => {
@@ -996,9 +972,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([4]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [4]);
     });
 
     it('axis=0,1 keepDims in 3D array norm', math => {
@@ -1007,9 +981,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1, 1]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3]);
     });
 
     it('axis=0,1 keepDims in 3D array norm', math => {
@@ -1018,9 +990,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1, 2]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([4, 3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [4, 3]);
     });
 
     it('axis=null in 3D array norm', math => {
@@ -1029,9 +999,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3]);
     });
 
     it('axis=null in 4D array norm', math => {
@@ -1040,9 +1008,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(norm.getValues(), new Float32Array([3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [3]);
     });
 
     it('axis=0,1 in 4D array norm', math => {
@@ -1054,10 +1020,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([2, 2]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(
-          norm.getValues(), new Float32Array([4, 3, 4, 3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [4, 3, 4, 3]);
     });
 
     it('axis=0,1 in 4D array norm', math => {
@@ -1069,10 +1032,7 @@ import * as reduce_util from './reduce_util';
 
       expect(norm.shape).toEqual([1, 1, 2, 2]);
       expect(norm.dtype).toBe('float32');
-      test_util.expectArraysClose(
-          norm.getValues(), new Float32Array([4, 3, 4, 3]));
-
-      a.dispose();
+      test_util.expectArraysClose(norm, [4, 3, 4, 3]);
     });
   };
 
