@@ -24,7 +24,7 @@ import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Scalar} from '../ndarray';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
 
@@ -33,11 +33,11 @@ import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
-  private data: {[id: number]: DataTypes[keyof DataTypes]} = {};
+  private data: {[id: number]: DataTypeMap[DataType]} = {};
 
   dispose() {}
-  write<T extends keyof DataTypes>(
-      id: number, values: DataTypes[T], dtype: T, shape: number[]): void {
+  write<D extends DataType>(
+      id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
     this.data[id] = values;
   }
   writePixels(
@@ -80,11 +80,11 @@ export class MathBackendCPU implements MathBackend {
     }
     this.data[id] = values;
   }
-  async read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]> {
+  async read<D extends DataType>(id: number): Promise<DataTypeMap[D]> {
     this.throwIfNoData(id);
     return this.data[id];
   }
-  readSync<T extends keyof DataTypes>(id: number): DataTypes[T] {
+  readSync<D extends DataType>(id: number): DataTypeMap[D] {
     this.throwIfNoData(id);
     return this.data[id];
   }
@@ -107,12 +107,11 @@ export class MathBackendCPU implements MathBackend {
   }
 
   clone<T extends NDArray>(x: T): T {
-    return NDArray.make(x.shape, {values: new Float32Array(x.getValues())}) as
-        T;
+    return NDArray.make(x.shape, {values: new Float32Array(x.dataSync())}) as T;
   }
 
   slice1D(x: Array1D, begin: number, size: number): Array1D {
-    const newVals = x.getValues().slice(begin, begin + size);
+    const newVals = x.dataSync().slice(begin, begin + size);
     return Array1D.new(newVals);
   }
 
@@ -170,9 +169,9 @@ export class MathBackendCPU implements MathBackend {
     const result = Array1D.zeros(outShape as [number]);
 
     // Use built-in TypedArray.set() method for speed.
-    const aVals = a.getValues();
-    const bVals = b.getValues();
-    const vals = result.getValues();
+    const aVals = a.dataSync();
+    const bVals = b.dataSync();
+    const vals = result.dataSync();
     vals.set(aVals, 0);
     vals.set(bVals, a.size);
 
@@ -185,9 +184,9 @@ export class MathBackendCPU implements MathBackend {
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
-      const aVals = a.getValues();
-      const bVals = b.getValues();
-      const vals = result.getValues();
+      const aVals = a.dataSync();
+      const bVals = b.dataSync();
+      const vals = result.dataSync();
       vals.set(aVals, 0);
       vals.set(bVals, a.size);
       return result;
@@ -218,9 +217,9 @@ export class MathBackendCPU implements MathBackend {
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
-      const aVals = a.getValues();
-      const bVals = b.getValues();
-      const vals = result.getValues();
+      const aVals = a.dataSync();
+      const bVals = b.dataSync();
+      const vals = result.dataSync();
       vals.set(aVals, 0);
       vals.set(bVals, a.size);
       return result;
@@ -254,9 +253,9 @@ export class MathBackendCPU implements MathBackend {
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
-      const aVals = a.getValues();
-      const bVals = b.getValues();
-      const vals = result.getValues();
+      const aVals = a.dataSync();
+      const bVals = b.dataSync();
+      const vals = result.dataSync();
       vals.set(aVals, 0);
       vals.set(bVals, a.size);
       return result;
@@ -290,17 +289,16 @@ export class MathBackendCPU implements MathBackend {
     return this.multiply(Scalar.new(-1), x) as T;
   }
 
-  add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G> {
+  add<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
     return this.broadcastedBinaryOp(
                a, b, types.upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue + bValue) as NDArray<G>;
+               (aValue, bValue) => aValue + bValue) as NDArray<D>;
   }
 
-  subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
-      NDArray<G> {
+  subtract<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
     return this.broadcastedBinaryOp(
                a, b, types.upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue - bValue) as NDArray<G>;
+               (aValue, bValue) => aValue - bValue) as NDArray<D>;
   }
 
   pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T {
@@ -346,11 +344,10 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new([leftDim, rightDim], values);
   }
 
-  multiply<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
-      NDArray<G> {
+  multiply<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
     return this.broadcastedBinaryOp(
                a, b, types.upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue * bValue) as NDArray<G>;
+               (aValue, bValue) => aValue * bValue) as NDArray<D>;
   }
 
   divide(a: NDArray, b: NDArray): NDArray<'float32'> {
@@ -359,17 +356,16 @@ export class MathBackendCPU implements MathBackend {
         NDArray<'float32'>;
   }
 
-  sum<T extends keyof DataTypes>(x: NDArray<T>, axes: number[]):
-      NDArray<SumTypes[T]> {
+  sum<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<SumTypes[D]> {
     axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const resultDtype = SumTypesMap[x.dtype] as keyof SumTypes;
     const result = NDArray.zeros(outShape, resultDtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.getValues();
+    const vals = result.dataSync();
 
-    const aVals = x.getValues();
+    const aVals = x.dataSync();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let sum = 0;
@@ -378,7 +374,7 @@ export class MathBackendCPU implements MathBackend {
       }
       vals[i] = sum;
     }
-    return result as NDArray<SumTypes[T]>;
+    return result as NDArray<SumTypes[D]>;
   }
 
   argMin(x: NDArray, axes: number[]): NDArray<'int32'> {
@@ -387,9 +383,9 @@ export class MathBackendCPU implements MathBackend {
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = NDArray.zeros(outShape, 'int32');
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.getValues();
+    const vals = result.dataSync();
 
-    const aVals = x.getValues();
+    const aVals = x.dataSync();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let min = aVals[offset];
@@ -416,9 +412,9 @@ export class MathBackendCPU implements MathBackend {
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = NDArray.zeros(outShape, 'int32');
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.getValues();
+    const vals = result.dataSync();
 
-    const aVals = x.getValues();
+    const aVals = x.dataSync();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let max = aVals[offset];
@@ -449,7 +445,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(x: T, k: number):
+  topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D> {
     return this.topK(x, k).values as Array1D<D>;
   }
@@ -458,9 +454,9 @@ export class MathBackendCPU implements MathBackend {
     return this.topK(x, k).indices;
   }
 
-  private topK<D extends keyof DataTypes, T extends NDArray<D>>(
-      x: T, k: number): {values: Array1D<D>, indices: Array1D<'int32'>} {
-    const values = x.getValues();
+  private topK<D extends DataType, T extends NDArray<D>>(x: T, k: number):
+      {values: Array1D<D>, indices: Array1D<'int32'>} {
+    const values = x.dataSync();
     const valuesAndIndices: Array<{value: number, index: number}> = [];
     for (let i = 0; i < values.length; i++) {
       valuesAndIndices.push({value: values[i], index: i});
@@ -481,15 +477,15 @@ export class MathBackendCPU implements MathBackend {
     };
   }
 
-  min<G extends keyof DataTypes>(x: NDArray<G>, axes: number[]): NDArray<G> {
+  min<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D> {
     axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = NDArray.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.getValues();
+    const vals = result.dataSync();
 
-    const aVals = x.getValues();
+    const aVals = x.dataSync();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let min = aVals[0];
@@ -508,15 +504,20 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  max<G extends keyof DataTypes>(x: NDArray<G>, axes: number[]): NDArray<G> {
+  minimum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+    return this.broadcastedBinaryOp(
+        a, b, a.dtype, (aVal, bVal) => Math.min(aVal, bVal));
+  }
+
+  max<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D> {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = NDArray.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.getValues();
+    const vals = result.dataSync();
 
-    const aVals = x.getValues();
+    const aVals = x.dataSync();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let max = aVals[offset];
@@ -535,8 +536,13 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
+  maximum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+    return this.broadcastedBinaryOp(
+        a, b, a.dtype, (aVal, bVal) => Math.max(aVal, bVal));
+  }
+
   ceil<T extends NDArray>(x: T): T {
-    const values = x.getValues();
+    const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.ceil(values[i]);
@@ -545,7 +551,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   floor<T extends NDArray>(x: T): T {
-    const values = x.getValues();
+    const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.floor(values[i]);
@@ -554,7 +560,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   exp<T extends NDArray>(x: T): T {
-    const values = x.getValues();
+    const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.exp(values[i]);
@@ -563,7 +569,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   log<T extends NDArray>(x: T): T {
-    const values = x.getValues();
+    const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
@@ -573,7 +579,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   sqrt<T extends NDArray>(x: T): T {
-    const values = x.getValues();
+    const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
@@ -583,7 +589,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   square<T extends NDArray>(x: T): T {
-    const values = x.getValues();
+    const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
@@ -594,8 +600,8 @@ export class MathBackendCPU implements MathBackend {
 
   relu<T extends NDArray>(x: T): T {
     const res = NDArray.zeros(x.shape, x.dtype);
-    const resVals = res.getValues();
-    const inVals = x.getValues();
+    const resVals = res.dataSync();
+    const inVals = x.dataSync();
     for (let i = 0; i < inVals.length; ++i) {
       const val = inVals[i];
       if (util.isValNaN(val, x.dtype)) {
@@ -702,7 +708,7 @@ export class MathBackendCPU implements MathBackend {
 
   clip<T extends NDArray>(x: T, min: number, max: number): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.min(max, Math.max(min, values[i]));
     }
@@ -711,7 +717,7 @@ export class MathBackendCPU implements MathBackend {
 
   abs<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.abs(values[i]);
     }
@@ -720,7 +726,7 @@ export class MathBackendCPU implements MathBackend {
 
   sigmoid<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = 1 / (1 + Math.exp(-values[i]));
     }
@@ -729,7 +735,7 @@ export class MathBackendCPU implements MathBackend {
 
   sin<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.sin(values[i]);
     }
@@ -738,7 +744,7 @@ export class MathBackendCPU implements MathBackend {
 
   cos<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.cos(values[i]);
     }
@@ -747,7 +753,7 @@ export class MathBackendCPU implements MathBackend {
 
   tan<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.tan(values[i]);
     }
@@ -756,7 +762,7 @@ export class MathBackendCPU implements MathBackend {
 
   asin<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.asin(values[i]);
     }
@@ -765,7 +771,7 @@ export class MathBackendCPU implements MathBackend {
 
   acos<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.acos(values[i]);
     }
@@ -774,7 +780,7 @@ export class MathBackendCPU implements MathBackend {
 
   atan<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.atan(values[i]);
     }
@@ -783,7 +789,7 @@ export class MathBackendCPU implements MathBackend {
 
   sinh<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.sinh(values[i]);
     }
@@ -792,7 +798,7 @@ export class MathBackendCPU implements MathBackend {
 
   cosh<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.cosh(values[i]);
     }
@@ -801,7 +807,7 @@ export class MathBackendCPU implements MathBackend {
 
   tanh<T extends NDArray>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = util.tanh(values[i]);
     }
@@ -810,7 +816,7 @@ export class MathBackendCPU implements MathBackend {
 
   step<T extends NDArray>(x: T, alpha = 0): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
       if (util.isValNaN(value, x.dtype)) {
@@ -1002,8 +1008,7 @@ export class MathBackendCPU implements MathBackend {
     return y;
   }
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(x: T, reps: number[]):
-      T {
+  tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T {
     const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = x.shape[i] * reps[i];
@@ -1020,7 +1025,7 @@ export class MathBackendCPU implements MathBackend {
     }
     const resultValues = new dtype(util.sizeFromShape(newShape));
     const result = NDArray.make(newShape, {values: resultValues}, x.dtype) as T;
-    const values = x.getValues();
+    const values = x.dataSync();
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
 
@@ -1036,14 +1041,13 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      x: T, perm: number[]): T {
+  transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T {
     const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = x.shape[perm[i]];
     }
     const resultValues = new Float32Array(x.size);
-    const values = x.getValues();
+    const values = x.dataSync();
     const result = NDArray.make(newShape, {values: resultValues}) as T;
     for (let i = 0; i < x.size; ++i) {
       const loc = x.indexToLoc(i);
@@ -1265,11 +1269,11 @@ export class MathBackendCPU implements MathBackend {
       x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
       varianceEpsilon: number, scale?: Array2D|Array1D,
       offset?: Array2D|Array1D): Array2D {
-    const xValues = x.getValues();
-    const meanValues = mean.getValues();
-    const varianceValues = variance.getValues();
-    const scaleValues = scale ? scale.getValues() : new Float32Array([1]);
-    const offsetValues = offset ? offset.getValues() : new Float32Array([0]);
+    const xValues = x.dataSync();
+    const meanValues = mean.dataSync();
+    const varianceValues = variance.dataSync();
+    const scaleValues = scale ? scale.dataSync() : [1];
+    const offsetValues = offset ? offset.dataSync() : [0];
     const outValues = new Float32Array(xValues.length);
 
     for (let i = 0; i < xValues.length; i++) {
@@ -1286,6 +1290,27 @@ export class MathBackendCPU implements MathBackend {
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
       varianceEpsilon: number, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D {
+    const xValues = x.dataSync();
+    const meanValues = mean.dataSync();
+    const varianceValues = variance.dataSync();
+    const scaleValues = scale ? scale.dataSync() : [1];
+    const offsetValues = offset ? offset.dataSync() : [0];
+    const outValues = new Float32Array(xValues.length);
+
+    for (let i = 0; i < xValues.length; i++) {
+      outValues[i] = offsetValues[i % offsetValues.length] +
+          (xValues[i] - meanValues[i % meanValues.length]) *
+              scaleValues[i % scaleValues.length] /
+              Math.sqrt(
+                  varianceValues[i % varianceValues.length] + varianceEpsilon);
+    }
+    return Array3D.new(x.shape, outValues);
+  }
+
+  batchNormalization4D(
+      x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
+      varianceEpsilon: number, scale?: Array4D|Array1D,
+      offset?: Array4D|Array1D): Array4D {
     const xValues = x.getValues();
     const meanValues = mean.getValues();
     const varianceValues = variance.getValues();
@@ -1300,7 +1325,7 @@ export class MathBackendCPU implements MathBackend {
               Math.sqrt(
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
-    return Array3D.new(x.shape, outValues);
+    return Array4D.new(x.shape, outValues);
   }
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
@@ -1308,8 +1333,8 @@ export class MathBackendCPU implements MathBackend {
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
     const res = Array2D.zeros([batchSize, numSamples], 'int32');
-    const resVals = res.getValues();
-    const probVals = probabilities.getValues();
+    const resVals = res.dataSync();
+    const probVals = probabilities.dataSync();
 
     for (let b = 0; b < batchSize; ++b) {
       const offset = b * numEvents;
@@ -1351,15 +1376,15 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new([indices.size, depth], res);
   }
 
-  private broadcastedBinaryOp<D extends keyof DataTypes>(
+  private broadcastedBinaryOp<D extends DataType>(
       a: NDArray, b: NDArray, dtype: D,
       op: (a: number, b: number) => number): NDArray<D> {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const result = NDArray.zeros(newShape, dtype);
-    const newValues = result.getValues();
-    const aValues = a.getValues();
-    const bValues = b.getValues();
+    const newValues = result.dataSync();
+    const aValues = a.dataSync();
+    const bValues = b.dataSync();
 
     const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
     const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
