@@ -394,17 +394,30 @@ import {Array1D, Array2D, Array3D, NDArray, Scalar} from './ndarray';
 
     it('works with reshape', math => {
       const a = Array2D.new([2, 2], [1, 2, 3, 4]);
-      const b = a.flatten();
       const exponent = Array1D.new([2, 2, 2, 2], 'int32');
 
       const gradients = math.gradients(() => {
+        const b = a.flatten();
         const m = math.pow(b, exponent);
         return math.sum(m);
-      }, {a, b});
+      }, {a});
 
       expect(gradients.a.shape).toEqual([2, 2]);
-      expect(gradients.b.shape).toEqual([4]);
-      test_util.expectArraysEqual(gradients.a, gradients.b);
+      test_util.expectArraysClose(gradients.a, [2, 4, 6, 8]);
+    });
+
+    it('reshape outside the gradients throws error', math => {
+      const a = Array2D.new([2, 2], [1, 2, 3, 4]);
+      const b = a.flatten();
+      const exponent = Array1D.new([2, 2, 2, 2], 'int32');
+
+      const f = () => {
+        return math.gradients(() => {
+          const m = math.pow(b, exponent);
+          return math.sum(m);
+        }, {a, b});
+      };
+      expect(f).toThrowError();
     });
   };
 

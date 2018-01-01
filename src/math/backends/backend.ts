@@ -23,13 +23,13 @@ import {SumTypes} from '../types';
 import {MatrixOrientation} from './types/matmul';
 
 export interface NDArrayStorage {
-  read<D extends DataType>(id: number): Promise<DataTypeMap[D]>;
-  readSync<D extends DataType>(id: number): DataTypeMap[D];
-  disposeData(id: number): void;
+  read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]>;
+  readSync<D extends DataType>(dataId: number): DataTypeMap[D];
+  disposeData(dataId: number): void;
   write<D extends DataType>(
-      id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void;
+      dataId: number, values: DataTypeMap[D], dtype: D, shape: number[]): void;
   writePixels(
-      id: number,
+      dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void;
   time(query: () => NDArray): Promise<number>;

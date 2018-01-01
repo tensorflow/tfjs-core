@@ -19,10 +19,8 @@ import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap} from '../util';
 import * as axis_util from './axis_util';
-// tslint:disable-next-line:max-line-length
 import {NDArrayStorage} from './backends/backend';
 import {MathBackend} from './backends/backend';
-// tslint:disable-next-line:max-line-length
 import {BackendEngine} from './backends/backend_engine';
 import {TapeNodeInputGradientArrays} from './backends/tape_types';
 import {ScopeResult, ScopeResultImmediate} from './backends/tape_util';
@@ -31,7 +29,7 @@ import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, RankMap, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
 import {Variable} from './variable';
@@ -48,7 +46,7 @@ export interface NDArrayManager {
 
 export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   protected backendEngine: BackendEngine;
-  private registeredArrays = new Set();
+  private registeredArrays = new Map<number, number>();
   private backend: MathBackend;
   private customBackend = false;
 
@@ -63,12 +61,14 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.registeredArrays.size;
   }
 
-  register(a: NDArray): void {
-    if (this.registeredArrays.has(a.id)) {
-      throw new Error(`NDArray with id ${a.id} was already registered`);
+  register(a: NDArray|Variable): void {
+    const refCount = this.registeredArrays.has(a.dataId) ?
+        this.registeredArrays.get(a.dataId) :
+        0;
+    this.registeredArrays.set(a.dataId, refCount + 1);
+    if (!(a instanceof Variable)) {
+      this.backendEngine.track(a);
     }
-    this.registeredArrays.add(a.id);
-    this.backendEngine.track(a);
   }
 
   registerVariable(v: Variable) {
@@ -79,20 +79,20 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   writePixels(
-      id: number,
+      dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
-    this.backend.writePixels(id, pixels, numChannels);
+    this.backend.writePixels(dataId, pixels, numChannels);
   }
   write<D extends DataType>(
-      id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
-    this.backend.write(id, values, dtype, shape);
+      dataId: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
+    this.backend.write(dataId, values, dtype, shape);
   }
-  readSync<D extends DataType>(id: number): DataTypeMap[D] {
-    return this.backend.readSync(id);
+  readSync<D extends DataType>(dataId: number): DataTypeMap[D] {
+    return this.backend.readSync(dataId);
   }
-  read<D extends DataType>(id: number): Promise<DataTypeMap[D]> {
-    return this.backend.read(id);
+  read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]> {
+    return this.backend.read(dataId);
   }
 
   /**
@@ -331,15 +331,23 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     return this.backendEngine.executeKernel('Clone', {inputs: {x}}) as T;
   }
 
-  /**
-   * @deprecated Please call reshape() directly on the ndarray object.
-   */
-  reshape<T1 extends NDArray, T2 extends NDArray>(
-      ndarray: T1, newShape: number[]): T2 {
-    console.warn(
-        'math.reshape() is deprecated. Please call reshape() ' +
-        'directly on the ndarray object');
-    return ndarray.reshape(newShape) as T2;
+  /** Reshapes the array. */
+  reshape<D extends DataType, R extends Rank, T extends RankMap<D>[R]>(
+      x: NDArray<D>, newShape: number[]): T {
+    newShape = util.inferFromImplicitShape(newShape, x.size);
+    if (util.arraysEqual(x.shape, newShape)) {
+      // No-op.
+      return x as T;
+    }
+    util.assert(
+        x.size === util.sizeFromShape(newShape),
+        'new shape and old shape must have the same number of elements.');
+
+    const grad = (dy: NDArray, y: NDArray) => {
+      return {x: () => dy.reshape(x.shape)};
+    };
+    return this.backendEngine.executeKernel(
+               'Reshape', {inputs: {x}, args: {newShape}}, grad) as T;
   }
 
   /**
@@ -2581,14 +2589,20 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
         f, inputs, name == null ? '' : name);
   }
 
-  disposeData(id: number): void {
-    if (this.registeredArrays.has(id)) {
-      this.registeredArrays.delete(id);
-      this.backend.disposeData(id);
-      // TODO(nsthorat): Construct an error and save the stack trace for
-      // debugging when in debug mode. Creating a stack trace is too expensive
-      // to do unconditionally.
+  disposeData(dataId: number): void {
+    if (!this.registeredArrays.has(dataId)) {
+      return;
     }
+    const refCount = this.registeredArrays.get(dataId);
+    if (refCount <= 1) {
+      this.registeredArrays.delete(dataId);
+      this.backend.disposeData(dataId);
+    } else {
+      this.registeredArrays.set(dataId, refCount - 1);
+    }
+    // TODO(nsthorat): Construct an error and save the stack trace for
+    // debugging when in debug mode. Creating a stack trace is too expensive
+    // to do unconditionally.
   }
 }
 

@@ -33,15 +33,15 @@ import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
-  private data: {[id: number]: DataTypeMap[DataType]} = {};
+  private data: {[dataId: number]: DataTypeMap[DataType]} = {};
 
   dispose() {}
   write<D extends DataType>(
-      id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
-    this.data[id] = values;
+      dataId: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
+    this.data[dataId] = values;
   }
   writePixels(
-      id: number,
+      dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     let vals: Uint8ClampedArray;
@@ -78,28 +78,28 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    this.data[id] = values;
+    this.data[dataId] = values;
   }
-  async read<D extends DataType>(id: number): Promise<DataTypeMap[D]> {
-    this.throwIfNoData(id);
-    return this.data[id];
+  async read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]> {
+    this.throwIfNoData(dataId);
+    return this.data[dataId];
   }
-  readSync<D extends DataType>(id: number): DataTypeMap[D] {
-    this.throwIfNoData(id);
-    return this.data[id];
+  readSync<D extends DataType>(dataId: number): DataTypeMap[D] {
+    this.throwIfNoData(dataId);
+    return this.data[dataId];
   }
-  disposeData(id: number): void {
-    delete this.data[id];
+  disposeData(dataId: number): void {
+    delete this.data[dataId];
   }
   async time(query: () => NDArray): Promise<number> {
     const start = performance.now();
     query();
     return performance.now() - start;
   }
-  private throwIfNoData(id: number) {
-    if (!(id in this.data)) {
+  private throwIfNoData(dataId: number) {
+    if (!(dataId in this.data)) {
       throw new Error(
-          `No data found for NDArray with id ${id}. ` +
+          `No data found for NDArray with data id ${dataId}. ` +
           `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
           `If you need to construct your own math, make sure this array is ` +
           `allocated after the math construction`);

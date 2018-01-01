@@ -1,4 +1,4 @@
-import {DataType, NDArray} from '../ndarray';
+import {DataType, NDArray, NDArrayData} from '../ndarray';
 
 import {MathBackend} from './backend';
 import {KernelInputConfig} from './tape_types';
@@ -21,6 +21,7 @@ import {OneHotInputConfig, OneHotNode} from './types/onehot';
 import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './types/pool';
 import {PowInputConfig, PowNode} from './types/pow';
 import {PReLUInputConfig, PReLUNode} from './types/prelu';
+import {ReshapeNode} from './types/reshape';
 // tslint:disable-next-line:max-line-length
 import {ResizeBilinear3DInputConfig, ResizeBilinear3DNode} from './types/resize_bilinear';
 // tslint:disable-next-line:max-line-length
@@ -141,6 +142,12 @@ const KERNEL_METHODS: {
   },
   Relu: (backend: MathBackend, config: UnaryInputConfig<NDArray>) => {
     return backend.relu(config.inputs.x);
+  },
+  Reshape: (backend: MathBackend, config: UnaryInputConfig<NDArray>) => {
+    const x = config.inputs.x;
+    const newShape = config.args.newShape;
+    const data: NDArrayData<DataType> = {dataId: x.dataId};
+    return NDArray.make(newShape, data, x.dtype);
   },
   LeakyRelu: (backend: MathBackend, config: LeakyReluInputConfig<NDArray>) => {
     return backend.leakyRelu(config.inputs.x, config.args.alpha);
@@ -314,6 +321,7 @@ export interface KernelConfigRegistry {
   LeakyRelu: LeakyReluNode<NDArray>;
   PReLU: PReLUNode<NDArray>;
   PReLUDer: PReLUNode<NDArray>;
+  Reshape: ReshapeNode;
   Elu: UnaryNode<NDArray>;
   EluDer: UnaryNode<NDArray>;
   Selu: UnaryNode<NDArray>;

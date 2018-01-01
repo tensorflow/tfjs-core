@@ -21,7 +21,7 @@ import {Array1D, Array2D} from './ndarray';
 import {variable, Variable} from './variable';
 
 const tests: MathTests = it => {
-  it('simple update', math => {
+  it('simple assign', math => {
     const v = variable(Array1D.new([1, 2, 3]));
     test_util.expectArraysClose(v, [1, 2, 3]);
 
@@ -75,25 +75,30 @@ const tests: MathTests = it => {
     expect(math.getNumArrays()).toBe(0);
   });
 
-  it('update will dispose old data', math => {
+  it('assign will dispose old data', math => {
     let v: Variable<'float32', '1'>;
-    const firstValue = Array1D.new([1, 2, 3]);
+    math.scope(() => {
+      math.scope(() => {
+        const firstArray = Array1D.new([1, 2, 3]);
+        v = variable(firstArray);
+      });
+      expect(math.getNumArrays()).toBe(1);
+      test_util.expectArraysClose(v, [1, 2, 3]);
 
-    v = variable(firstValue);
-    expect(math.getNumArrays()).toBe(1);
+      const secondArray = Array1D.new([4, 5, 6]);
+      expect(math.getNumArrays()).toBe(2);
 
-    const secondValue = Array1D.new([4, 5, 6]);
-    expect(math.getNumArrays()).toBe(2);
+      v.assign(secondArray);
+      test_util.expectArraysClose(v, [4, 5, 6]);
+      // The first array was disposed since there is no reference to it.
+      expect(math.getNumArrays()).toBe(1);
 
-    v.assign(secondValue);
-    expect(math.getNumArrays()).toBe(1);
-    // The first value was disposed.
-    expect(() => firstValue.dataSync()).toThrowError();
-
-    v.dispose();
+      v.dispose();
+      // The second array is not disposed since there is one reference to it.
+      expect(math.getNumArrays()).toBe(1);
+    });
+    // The outer scope ended, second array has 0 references and is disposed.
     expect(math.getNumArrays()).toBe(0);
-    // The second value was disposed.
-    expect(() => secondValue.dataSync()).toThrowError();
   });
 
   it('shape must match', math => {
