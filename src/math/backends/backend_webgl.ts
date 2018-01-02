@@ -530,7 +530,10 @@ export class MathBackendWebGL implements MathBackend {
 
   pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T {
     const program = new BinaryOpProgram(binaryop_gpu.POW, a.shape, b.shape);
-    return this.compileAndRun<NDArray, T>(program, [a, b]);
+    const output =
+        this.makeOutputArray(
+            program.outputShape, types.upcastType(a.dtype, b.dtype)) as T;
+    return this.compileAndRun<NDArray, T>(program, [a, b], output);
   }
 
   ceil<T extends NDArray>(x: T): T {
@@ -601,7 +604,7 @@ export class MathBackendWebGL implements MathBackend {
 
   int<R extends Rank>(x: NDArray<DataType, R>): NDArray<'int32', R> {
     const program = new UnaryOpProgram(x.shape, unary_op.TO_INT);
-    const output = this.makeOutputArray(x.shape, 'int32');
+    const output = this.makeOutputArray(program.outputShape, 'int32');
     return this.compileAndRun(program, [x], output) as NDArray<'int32', R>;
   }
 

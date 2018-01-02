@@ -297,6 +297,17 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       test_util.expectArraysClose(result, expected, 0.01);
     });
 
+    it('int32^int32 returns int32', math => {
+      const a = Array1D.new([1, 2, 3], 'int32');
+      const exp = Scalar.new(2, 'int32');
+
+      const result = math.pow(a, exp);
+
+      expect(result.shape).toEqual([3]);
+      expect(result.dtype).toBe('int32');
+      test_util.expectArraysEqual(result, [1, 4, 9]);
+    });
+
     it('different-shaped ndarrays', math => {
       const a = Array2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
       const b = Scalar.new(2, 'int32');

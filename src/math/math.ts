@@ -360,8 +360,11 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
       // No-op.
       return x as NDArray as RankMap<D>[R];
     }
+    const grad = (dy: NDArray, y: NDArray) => {
+      return {x: () => dy};
+    };
     return this.backendEngine.executeKernel(
-               'Cast', {inputs: {x}, args: {newDType}}) as RankMap<D>[R];
+               'Cast', {inputs: {x}, args: {newDType}}, grad) as RankMap<D>[R];
   }
 
   /**
@@ -1128,7 +1131,7 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
           return this.multiply(
               dy,
               this.multiply(
-                  b.asType('float32'),
+                  b.asType(a.dtype),
                   this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
         });
       };
