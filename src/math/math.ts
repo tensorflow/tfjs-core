@@ -350,23 +350,18 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                'Reshape', {inputs: {x}, args: {newShape}}, grad) as T;
   }
 
-  asType<D extends DataType, R extends Rank>(x: NDArray<DataType, R>, dtype: D):
-      RankMap<D>[R] {
-    if (x.dtype === dtype) {
+  /**
+   * Casts a tensor to a new type. If the new type matches the old type,
+   * this is a no-op.
+   */
+  cast<D extends DataType, R extends Rank>(
+      x: NDArray<DataType, R>, newDType: D): RankMap<D>[R] {
+    if (x.dtype === newDType) {
       // No-op.
       return x as NDArray as RankMap<D>[R];
     }
-    if (isUpCast(x.dtype, dtype)) {
-      return this.backendEngine.executeKernel(
-          'Cast', {inputs: {x}, args: {dtype}});
-    }
-    if (dtype === 'int32') {
-      return this.floor(x, dtype);
-    } else if (dtype === 'bool') {
-      return this.equal(x, Scalar.new(0, x.dtype)) as RankMap<D>[R];
-    } else {
-      throw new Error('should not happen');
-    }
+    return this.backendEngine.executeKernel(
+               'Cast', {inputs: {x}, args: {newDType}}) as RankMap<D>[R];
   }
 
   /**
@@ -719,6 +714,26 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   equalStrict<T extends NDArray>(a: T, b: T): NDArray<'bool'> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in equalStrict: ');
     return this.equal(a, b);
+  }
+
+  /**
+   * Returns the truth value of (a != b) element-wise. Supports broadcasting.
+   * For a stricter version without broadcasting use math.notEqualStrict().
+   *
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   */
+  notEqual<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
+      a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('NotEqual', {inputs: {a, b}}) as T;
+  }
+
+  notEqualStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
+      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
+    util.assertShapesMatch(a.shape, b.shape, 'Error in notEqualStrict: ');
+    return this.notEqual(a, b);
   }
 
   /**

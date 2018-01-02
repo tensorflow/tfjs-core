@@ -830,3 +830,68 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
+
+// element-wise not equal
+{
+  const tests: MathTests = it => {
+    it('propagates NaNs', math => {
+      const a = Array1D.new([2, 5, NaN]);
+      const b = Array1D.new([4, 5, -1]);
+
+      const res = math.notEqual(a, b);
+      expect(res.dtype).toBe('bool');
+      test_util.expectArraysEqual(res, [1, 0, util.NAN_BOOL]);
+    });
+
+    it('strict version throws when x and y are different shape', math => {
+      const a = Array1D.new([2]);
+      const b = Array1D.new([4, 2, -1]);
+
+      expect(() => math.notEqualStrict(a, b)).toThrowError();
+      expect(() => math.notEqualStrict(b, a)).toThrowError();
+    });
+
+    it('2D and scalar broadcast', math => {
+      const a = Array2D.new([2, 3], [1, 2, 3, 2, 5, 6]);
+      const b = Scalar.new(2);
+      const res = math.notEqual(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.shape).toEqual([2, 3]);
+      test_util.expectArraysEqual(res, [1, 0, 1, 0, 1, 1]);
+    });
+
+    it('scalar and 1D broadcast', math => {
+      const a = Scalar.new(2);
+      const b = Array1D.new([1, 2, 3, 4, 5, 2]);
+      const res = math.notEqual(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.shape).toEqual([6]);
+      test_util.expectArraysEqual(res, [1, 0, 1, 1, 1, 0]);
+    });
+
+    it('2D and 2D broadcast each with 1 dim', math => {
+      const a = Array2D.new([1, 3], [1, 2, 5]);
+      const b = Array2D.new([2, 1], [5, 1]);
+      const res = math.notEqual(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.shape).toEqual([2, 3]);
+      test_util.expectArraysEqual(res, [1, 1, 0, 0, 1, 1]);
+    });
+
+    it('3D and scalar', math => {
+      const a = Array3D.new([2, 3, 1], [1, 2, 3, 4, 5, -1]);
+      const b = Scalar.new(-1);
+      const res = math.notEqual(a, b);
+      expect(res.dtype).toBe('bool');
+      expect(res.shape).toEqual([2, 3, 1]);
+      test_util.expectArraysEqual(res, [1, 1, 1, 1, 1, 0]);
+    });
+  };
+
+  test_util.describeMathCPU('notEqual', [tests]);
+  test_util.describeMathGPU('notEqual', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}

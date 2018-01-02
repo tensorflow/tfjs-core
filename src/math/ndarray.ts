@@ -252,7 +252,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
 
   asType<D2 extends DataType>(dtype: D2): NDArray<D2, R> {
     this.throwIfDisposed();
-    return this.math.asType(this, dtype) as NDArray<D2, R>;
+    return this.math.cast(this, dtype) as NDArray<D2, R>;
   }
 
   get rank(): number {
