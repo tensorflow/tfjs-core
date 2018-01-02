@@ -53,6 +53,15 @@ export interface NDArrayData<D extends DataType> {
   values?: DataTypeMap[D];
 }
 
+export interface ShapeMap {
+  0: number[];
+  1: [number];
+  2: [number, number];
+  3: [number, number, number];
+  4: [number, number, number, number];
+  higher: number[];
+}
+
 export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   private static nextId = 0;
   private static nextDataId = 0;
@@ -65,7 +74,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
    */
   dataId: number;
   /** The shape of the ndarray. */
-  shape: number[];
+  shape: ShapeMap[R];
   /** Number of elements in the ndarray. */
   size: number;
   /** The data type for the array. */
@@ -292,7 +301,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return this.get(...locs);
   }
 
-  locToIndex(locs: number[]): number {
+  locToIndex(locs: ShapeMap[R]): number {
     this.throwIfDisposed();
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
@@ -301,7 +310,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return index;
   }
 
-  indexToLoc(index: number): number[] {
+  indexToLoc(index: number): ShapeMap[R] {
     this.throwIfDisposed();
     const locs: number[] = new Array(this.shape.length);
     for (let i = 0; i < locs.length - 1; ++i) {
@@ -452,8 +461,6 @@ export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {
 }
 
 export class Array1D<D extends DataType = DataType> extends NDArray<D, '1'> {
-  shape: [number];
-
   static new<D extends DataType = 'float32'>(
       values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Array1D<D> {
     if (!instanceofTypedArray(values)) {
@@ -533,16 +540,11 @@ export class Array1D<D extends DataType = DataType> extends NDArray<D, '1'> {
 }
 
 export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
-  shape: [number, number];
-
-  private stride0: number;
-
   constructor(
       shape: [number, number], dtype: D, values?: DataTypeMap[D],
       dataId?: number, math?: NDArrayMath) {
     util.assert(shape.length === 2, 'Shape should be of length 2');
     super(shape, dtype, values, dataId, math);
-    this.stride0 = this.strides[0];
   }
 
   static new<D extends DataType = 'float32'>(
@@ -563,11 +565,11 @@ export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
   }
 
   get(i: number, j: number) {
-    return this.dataSync()[this.stride0 * i + j];
+    return this.dataSync()[this.strides[0] * i + j];
   }
 
   add(value: number, i: number, j: number) {
-    this.dataSync()[this.stride0 * i + j] += value;
+    this.dataSync()[this.strides[0] * i + j] += value;
   }
 
   async val(i: number, j: number): Promise<number> {
@@ -576,11 +578,11 @@ export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
   }
 
   locToIndex(locs: [number, number]): number {
-    return this.stride0 * locs[0] + locs[1];
+    return this.strides[0] * locs[0] + locs[1];
   }
 
   indexToLoc(index: number): [number, number] {
-    return [Math.floor(index / this.stride0), index % this.stride0];
+    return [Math.floor(index / this.strides[0]), index % this.strides[0]];
   }
 
   asType<D2 extends DataType>(dtype: D2): Array2D<D2> {
@@ -629,17 +631,11 @@ export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
 }
 
 export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
-  shape: [number, number, number];
-  private stride0: number;
-  private stride1: number;
-
   constructor(
       shape: [number, number, number], dtype: D, values?: DataTypeMap[D],
       dataId?: number, math?: NDArrayMath) {
     util.assert(shape.length === 3, 'Shape should be of length 3');
     super(shape, dtype, values, dataId, math);
-    this.stride0 = this.strides[0];
-    this.stride1 = this.strides[1];
   }
 
   static new<D extends DataType = 'float32'>(
@@ -660,7 +656,7 @@ export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
   }
 
   get(i: number, j: number, k: number) {
-    return this.dataSync()[this.stride0 * i + this.stride1 * j + k];
+    return this.dataSync()[this.strides[0] * i + this.strides[1] * j + k];
   }
 
   async val(i: number, j: number, k: number): Promise<number> {
@@ -669,17 +665,17 @@ export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
   }
 
   add(value: number, i: number, j: number, k: number) {
-    this.dataSync()[this.stride0 * i + this.stride1 * j + k] += value;
+    this.dataSync()[this.strides[0] * i + this.strides[1] * j + k] += value;
   }
 
   locToIndex(locs: [number, number, number]): number {
-    return this.stride0 * locs[0] + this.stride1 * locs[1] + locs[2];
+    return this.strides[0] * locs[0] + this.strides[1] * locs[1] + locs[2];
   }
 
   indexToLoc(index: number): [number, number, number] {
-    const i = Math.floor(index / this.stride0);
-    index -= i * this.stride0;
-    return [i, Math.floor(index / this.stride1), index % this.stride1];
+    const i = Math.floor(index / this.strides[0]);
+    index -= i * this.strides[0];
+    return [i, Math.floor(index / this.strides[1]), index % this.strides[1]];
   }
   static ones<D extends DataType = DataType>(
       shape: [number, number, number], dtype?: D): Array3D<D> {
@@ -728,19 +724,11 @@ export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
 }
 
 export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
-  shape: [number, number, number, number];
-  private stride0: number;
-  private stride1: number;
-  private stride2: number;
-
   constructor(
       shape: [number, number, number, number], dtype: D,
       values?: DataTypeMap[D], dataId?: number, math?: NDArrayMath) {
     util.assert(shape.length === 4, 'Shape should be of length 4');
     super(shape, dtype, values, dataId, math);
-    this.stride0 = this.strides[0];
-    this.stride1 = this.strides[1];
-    this.stride2 = this.strides[2];
   }
 
   static new<D extends DataType = 'float32'>(
@@ -761,8 +749,8 @@ export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
   }
 
   get(i: number, j: number, k: number, l: number) {
-    return this
-        .dataSync()[this.stride0 * i + this.stride1 * j + this.stride2 * k + l];
+    return this.dataSync()
+        [this.strides[0] * i + this.strides[1] * j + this.strides[2] * k + l];
   }
 
   async val(i: number, j: number, k: number, l: number): Promise<number> {
@@ -772,20 +760,21 @@ export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
 
   add(value: number, i: number, j: number, k: number, l: number) {
     this.dataSync()
-        [this.stride0 * i + this.stride1 * j + this.stride2 * k + l] += value;
+        [this.strides[0] * i + this.strides[1] * j + this.strides[2] * k + l] +=
+        value;
   }
 
   locToIndex(locs: [number, number, number, number]): number {
-    return this.stride0 * locs[0] + this.stride1 * locs[1] +
-        this.stride2 * locs[2] + locs[3];
+    return this.strides[0] * locs[0] + this.strides[1] * locs[1] +
+        this.strides[2] * locs[2] + locs[3];
   }
 
   indexToLoc(index: number): [number, number, number, number] {
-    const i = Math.floor(index / this.stride0);
-    index -= i * this.stride0;
-    const j = Math.floor(index / this.stride1);
-    index -= j * this.stride1;
-    return [i, j, Math.floor(index / this.stride2), index % this.stride2];
+    const i = Math.floor(index / this.strides[0]);
+    index -= i * this.strides[0];
+    const j = Math.floor(index / this.strides[1]);
+    index -= j * this.strides[1];
+    return [i, j, Math.floor(index / this.strides[2]), index % this.strides[2]];
   }
 
   asType<D2 extends DataType>(dtype: D2): Array4D<D2> {
