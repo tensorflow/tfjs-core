@@ -53,12 +53,21 @@ export interface NDArrayData<D extends DataType> {
   values?: DataTypeMap[D];
 }
 
+export interface ShapeMap {
+  0: number[];
+  1: [number];
+  2: [number, number];
+  3: [number, number, number];
+  4: [number, number, number, number];
+  higher: number[];
+}
+
 export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   private static nextId = 0;
 
   id: number;
   /** The shape of the ndarray. */
-  shape: number[];
+  shape: ShapeMap[R];
   /** Number of elements in the ndarray. */
   size: number;
   /** The data type for the array. */
@@ -299,7 +308,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return this.get(...locs);
   }
 
-  locToIndex(locs: number[]): number {
+  locToIndex(locs: ShapeMap[R]): number {
     this.throwIfDisposed();
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
@@ -308,7 +317,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return index;
   }
 
-  indexToLoc(index: number): number[] {
+  indexToLoc(index: number): ShapeMap[R] {
     this.throwIfDisposed();
     const locs: number[] = new Array(this.shape.length);
     for (let i = 0; i < locs.length - 1; ++i) {
@@ -485,7 +494,7 @@ export class Array1D<D extends DataType = DataType> extends NDArray<D, '1'> {
     return loc[0];
   }
 
-  indexToLoc(index: number): number[] {
+  indexToLoc(index: number): [number] {
     return [index];
   }
 
@@ -576,7 +585,7 @@ export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
     return this.strides[0] * locs[0] + locs[1];
   }
 
-  indexToLoc(index: number): number[] {
+  indexToLoc(index: number): [number, number] {
     return [Math.floor(index / this.strides[0]), index % this.strides[0]];
   }
 
@@ -667,7 +676,7 @@ export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
     return this.strides[0] * locs[0] + this.strides[1] * locs[1] + locs[2];
   }
 
-  indexToLoc(index: number): number[] {
+  indexToLoc(index: number): [number, number, number] {
     const i = Math.floor(index / this.strides[0]);
     index -= i * this.strides[0];
     return [i, Math.floor(index / this.strides[1]), index % this.strides[1]];
@@ -764,7 +773,7 @@ export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
         this.strides[2] * locs[2] + locs[3];
   }
 
-  indexToLoc(index: number): number[] {
+  indexToLoc(index: number): [number, number, number, number] {
     const i = Math.floor(index / this.strides[0]);
     index -= i * this.strides[0];
     const j = Math.floor(index / this.strides[1]);
