@@ -18,13 +18,16 @@
 import {unescape} from './index';
 
 describe('util.unescape', () => {
-  it('should unescape correctly', (done) => {
-    expect(unescape('\\001\\002\\t').length).toBe(3);
+  it('should unescape octal correctly', () => {
+    expect(unescape('\\001\\002\\343').length).toBe(3);
+  });
+
+  it('should unescape special chars', () => {
     expect(unescape('\\001\\377\\n\\"\\\\\\r\\\'').length).toBe(7);
-    expect(
-        unescape(
-            '\\001\\000\\000\\000\\r\\000\\000\\000\\r\\000\\000\\000\\000\\002\\000\\000')
-            .length)
+    expect(unescape(
+               '\\001\\000\\000\\000\\r\\000\\000' +
+               '\\000\\r\\000\\000\\000\\000\\002\\000\\000')
+               .length)
         .toBe(16);
   });
 });

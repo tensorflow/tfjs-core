@@ -11,7 +11,6 @@
   "devDependencies": {
     "@types/jasmine": "~2.5.53",
     "@types/seedrandom": "~2.4.27",
-    "@types/text-encoding": "^0.6.4",
     "browserify": "~14.4.0",
     "cross-spawn": "~5.1.0",
     "http-server": "~0.10.0",
@@ -41,10 +40,9 @@
     "make-version": "./scripts/make-version"
   },
   "dependencies": {
-    "text-encoding": "^0.6.4",
-    "dag-iterator": "^0.2.2",
+    "dag-iterator": "file:../../../dag-iterator",
     "deeplearn": "^0.3.14",
-    "prototxt-parser": "^0.1.4",
-    "protobufjs": "~6.8.0"
+    "protobufjs": "~6.8.0",
+    "prototxt-parser": "^0.1.4"
   }
 }

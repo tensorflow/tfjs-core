@@ -15,26 +15,113 @@
  * =============================================================================
  */
 
-import {TensorflowModel} from './index';
+import {Graph, TensorflowModel} from './index';
 
-let originalTimeout: number;
+let model: TensorflowModel;
+const SIMPLE_MODEL: Graph = {
+  node: [
+    {
+      name: 'image_placeholder',
+      op: 'Placeholder',
+      attr: [
+        {
+          key: 'dtype',
+          value: {
+            type: 'DT_FLOAT',
+          }
+        },
+        {
+          key: 'shape',
+          value: {
+            shape: {dim: [{size: 1}, {size: 227}, {size: 227}, {size: 3}]}
+          }
+        }
+      ]
+    },
+    {
+      name: 'Const',
+      op: 'Const',
+      attr: [
+        {key: 'dtype', value: {type: 'DT_INT32'}}, {
+          key: 'value',
+          value: {tensor: {dtype: 'DT_INT32', tensor_shape: {}, int_val: 3}}
+        }
+      ]
+    },
+    {
+      name: 'Shape',
+      op: 'Const',
+      attr: [
+        {key: 'dtype', value: {type: 'DT_INT32'}}, {
+          key: 'value',
+          value: {
+            tensor: {
+              dtype: 'DT_INT32',
+              tensor_shape: {dim: {size: 4}},
+              tensor_content: '\\001\\000\\000\\000\\001\\000\\000\\000' +
+                  '\\001\\000\\000\\000\\350\\003\\000\\000'
+            }
+          }
+        }
+      ]
+    },
+    {
+      name: 'Conv2D',
+      op: 'Conv2D',
+      input: ['image_placeholder', 'Const'],
+      attr: [
+        {key: 'T', value: {type: 'DT_FLOAT'}},
+        {key: 'data_format', value: {s: 'NHWC'}},
+        {key: 'padding', value: {s: 'VALID'}},
+        {key: 'strides', value: {list: {i: [1, 2, 2, 1]}}},
+        {key: 'use_cudnn_on_gpu', value: {b: true}}
+      ]
+    },
+    {
+      name: 'BiasAdd',
+      op: 'BiasAdd',
+      input: ['Conv2D', 'Shape'],
+      attr: [
+        {key: 'T', value: {type: 'DT_FLOAT'}},
+        {key: 'data_format', value: {s: 'NHWC'}}
+      ]
+    }
+  ],
+  version: {major: 1.0}
+};
+
 describe('TensorflowModel', () => {
   beforeEach(() => {
-    originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
+    const promise = new Promise<Graph>(resolve => resolve(SIMPLE_MODEL));
+    model = new TensorflowModel(promise);
   });
 
-  afterEach(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
-  });
+  afterEach(() => {});
 
   it('should parse pbtxt file correctly', (done) => {
-    const model = new TensorflowModel(
-        'https://raw.githubusercontent.com/pyu10055/' +
-        'tf_models/master/squeezenet.pbtxt');
-
     model.load().then(() => {
       expect(model.nodes).not.toBeUndefined();
+      done();
+    });
+  });
+
+  it('should restruct the layers of the graph correctly', (done) => {
+    model.load().then(() => {
+      console.log('model loaded');
+      expect(model.layers()).toEqual([
+        {
+          nodes: [
+            {node: 'image_placeholder', parents: []},
+            {node: 'Const', parents: []}, {node: 'Shape', parents: []}
+          ]
+        },
+        {
+          nodes: [
+            {node: 'Conv2D', parents: ['image_placeholder', 'Const']},
+          ],
+        },
+        {nodes: [{node: 'BiasAdd', parents: ['Conv2D', 'Shape']}]}
+      ]);
       done();
     });
   });

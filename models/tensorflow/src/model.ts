@@ -16,21 +16,27 @@
  */
 import * as dag from 'dag-iterator';
 import {Array1D, Array3D, ENV, Model, NDArray} from 'deeplearn';
-import * as prototxtParser from 'prototxt-parser';
-import * as utils from './util';
+import * as util from './util';
 
 export interface Node {
   name: string;
   op: string;
   // tslint:disable-next-line:no-any
   attr: Array<{[key: string]: any}>;
-  input: string[];
+  input?: string[];
 }
 
 export interface Graph {
   node: Node[];
   version: {[key: string]: number};
 }
+
+export interface LayerNode {
+  node: string;
+  parents: string[];
+}
+
+export interface Layer { nodes: LayerNode[]; }
 
 export class TensorflowModel implements Model {
   /**
@@ -60,20 +66,17 @@ export class TensorflowModel implements Model {
    * @param caffemodelUrl url to the caffemodel file
    * @param prototxtUrl url to the prototxt file
    */
-  constructor(private modelFileUri: string) {}
+  constructor(private modelFilePromise: Promise<Graph>) {}
 
   /**
    * Load the model
    */
   load() {
-    return fetch(new Request(this.modelFileUri))
-        .then(res => res.text())
-        .then(text => prototxtParser.parse(text) as Graph)
-        .then(model => {
-          this.nodes = this.nodesToDagNodes(model);
-          this.edges = this.nodesToDagEdges(model);
-          console.log(this.nodes.length);
-        });
+    return this.modelFilePromise.then(model => {
+      this.nodes = this.nodesToDagNodes(model);
+      this.edges = this.nodesToDagEdges(model);
+      console.log(this.nodes.length);
+    });
   }
 
   private nodesToDagNodes(graph: Graph): Array<dag.INode<Node>> {
@@ -91,16 +94,15 @@ export class TensorflowModel implements Model {
     nodes.forEach((d) => {
       if (d.op === 'Const' && d.attr[1]['value']['tensor']['tensor_content']) {
         const str =
-            utils.unescape(d.attr[1]['value']['tensor']['tensor_content']);
+            util.unescape(d.attr[1]['value']['tensor']['tensor_content']);
         const uint = new Uint8Array(str.length);
-        for (var i = 0, j = str.length; i < j; ++i) {
+        for (let i = 0, j = str.length; i < j; ++i) {
           uint[i] = str.charCodeAt(i);
         }
         console.log('length = ' + uint.length);
         const values = new Float32Array(uint.buffer);
         console.log('length = ' + values.length);
-        console.log(values[0]);
-        console.log(values[1]);
+        values.forEach(v => console.log(v));
       }
       if (!!d.input) {
         const inputs = d.input instanceof Array ? d.input : [d.input];
@@ -140,6 +142,20 @@ export class TensorflowModel implements Model {
         }, untilLayer);
 
     return currAct;
+  }
+
+  layers(): Layer[] {
+    const layers: Layer[] = [];
+    dag.iterate<Node>(
+        this.nodes, this.edges, (node: Node, parents: Node[], i: number) => {
+          console.log(node, parents, i);
+          if (!layers[i]) {
+            layers[i] = {nodes: []};
+          }
+          layers[i].nodes.unshift(
+              {node: node.name, parents: parents.map((p) => p.name)});
+        });
+    return layers;
   }
 
   dispose() {

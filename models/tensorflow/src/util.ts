@@ -16,6 +16,8 @@
  */
 
 // Lookup table for non - utf8, with necessary escapes at(o >= 127 or o < 32)
+import * as prototxtParser from 'prototxt-parser';
+import {Graph} from './model';
 
 export function unescape(text: string): string {
   const UNESCAPE_STR_TO_BYTE: {[key: string]: number} = {};
@@ -36,4 +38,10 @@ export function unescape(text: string): string {
     }
     return match;
   });
+}
+
+export function loadProtoTxtFile(url: string): Promise<Graph> {
+  return fetch(new Request(url))
+      .then(res => res.text())
+      .then(text => prototxtParser.parse(text) as Graph);
 }
