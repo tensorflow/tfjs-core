@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
+import {ENV} from '../../environment';
 import * as conv_util from '../../math/conv_util';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../../math/ndarray';
 import * as test_util from '../../test_util';
@@ -25,14 +25,14 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Convolution2D} from './convolution';
 
 function assertNoNaNs(t: NDArray) {
-  const values = t.getValues();
+  const values = t.dataSync();
   for (let i = 0; i < values.length; ++i) {
     expect(isNaN(values[i])).toBe(false);
   }
 }
 
 describe('Convolution', () => {
-  let math: NDArrayMathCPU;
+  const math = ENV.math;
   let wTensor: Tensor;
   let xTensor: Tensor;
   let bTensor: Tensor;
@@ -41,7 +41,6 @@ describe('Convolution', () => {
   let gradients: SummedTensorArrayMap;
 
   beforeEach(() => {
-    math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
     gradients = new SummedTensorArrayMap(math);
   });
@@ -97,7 +96,7 @@ describe('Convolution', () => {
 
     const result = activations.get(yTensor);
 
-    expect(result.getValues()).toEqual(new Float32Array([
+    expect(result.dataSync()).toEqual(new Float32Array([
       7, -8, 8, -2, 7, -2, 5, 5, 4, 6, 1, 2, -1, 3, 7, -2, 1, 4
     ]));
   });

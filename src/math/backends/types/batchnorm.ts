@@ -16,9 +16,39 @@
  * =============================================================================
  */
 
-import {Array1D, Array2D, Array3D} from '../../ndarray';
+import {NamedArrayMap} from '../../../util';
+import {Array1D, Array2D, Array3D, Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputArrays, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
+
+// 4D
+export interface BatchNorm4DNode extends KernelNode {
+  inputAndArgs: BatchNorm4DInputConfig;
+  output: Array4D;
+  gradient: (dy: Array4D, y: Array4D) => BatchNorm4DGradientInputArrays;
+}
+
+export interface BatchNorm4DInputConfig extends KernelInputConfig {
+  inputs: BatchNorm4DInputArrays;
+  args: {varianceEpsilon: number};
+}
+
+export interface BatchNorm4DInputArrays extends NamedArrayMap {
+  x: Array4D;
+  mean: Array4D|Array1D;
+  variance: Array4D|Array1D;
+  scale?: Array4D|Array1D;
+  offset?: Array4D|Array1D;
+}
+
+export interface BatchNorm4DGradientInputArrays extends
+    TapeNodeInputGradientArrays {
+  x: () => Array4D;
+  mean: () => Array4D | Array1D;
+  variance: () => Array4D | Array1D;
+  scale?: () => Array4D | Array1D;
+  offset?: () => Array4D | Array1D;
+}
 
 // 3D
 export interface BatchNorm3DNode extends KernelNode {
@@ -32,7 +62,7 @@ export interface BatchNorm3DInputConfig extends KernelInputConfig {
   args: {varianceEpsilon: number};
 }
 
-export interface BatchNorm3DInputArrays extends TapeNodeInputArrays {
+export interface BatchNorm3DInputArrays extends NamedArrayMap {
   x: Array3D;
   mean: Array3D|Array1D;
   variance: Array3D|Array1D;
@@ -61,7 +91,7 @@ export interface BatchNorm2DInputConfig extends KernelInputConfig {
   args: {varianceEpsilon: number};
 }
 
-export interface BatchNorm2DInputArrays extends TapeNodeInputArrays {
+export interface BatchNorm2DInputArrays extends NamedArrayMap {
   x: Array2D;
   mean: Array2D|Array1D;
   variance: Array2D|Array1D;

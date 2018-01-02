@@ -15,11 +15,10 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
-import {NDArrayMathGPU, Scalar} from 'deeplearn';
+import {ENV, Scalar} from 'deeplearn';
 
 async function onePlusOne() {
-  const math = new NDArrayMathGPU();
+  const math = ENV.math;
   const a = Scalar.new(1);
   const b = Scalar.new(1);
 

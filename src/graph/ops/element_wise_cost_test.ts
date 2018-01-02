@@ -15,15 +15,14 @@
  * =============================================================================
  */
 
-import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
+import {ENV} from '../../environment';
 import {Array1D} from '../../math/ndarray';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {MeanSquaredCost} from './element_wise_cost';
 
 describe('MeanSquaredCost', () => {
-  let math: NDArrayMathCPU;
+  const math = ENV.math;
 
   let x1Tensor: Tensor;
   let x2Tensor: Tensor;
@@ -33,7 +32,6 @@ describe('MeanSquaredCost', () => {
   let gradients: SummedTensorArrayMap;
 
   beforeEach(() => {
-    math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
     gradients = new SummedTensorArrayMap(math);
   });
@@ -61,13 +59,13 @@ describe('MeanSquaredCost', () => {
 
     const y = activations.get(yTensor);
     expect(y.shape).toEqual([]);
-    expect(y.getValues()).toEqual(new Float32Array([30 / 8]));
+    expect(y.dataSync()).toEqual(new Float32Array([30 / 8]));
 
     const dx1 = gradients.get(x1Tensor);
     const dx2 = gradients.get(x2Tensor);
     expect(dx1.shape).toEqual(x1.shape);
     expect(dx2.shape).toEqual(x2.shape);
-    expect(dx1.getValues()).toEqual(new Float32Array([-1, -2, -3, -4]));
-    expect(dx2.getValues()).toEqual(new Float32Array([1, 2, 3, 4]));
+    expect(dx1.dataSync()).toEqual(new Float32Array([-1, -2, -3, -4]));
+    expect(dx2.dataSync()).toEqual(new Float32Array([1, 2, 3, 4]));
   });
 });

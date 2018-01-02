@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import {InputProvider} from '../../data/input_provider';
-import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
+import {ENV} from '../../environment';
 import {Array1D} from '../../math/ndarray';
 import * as test_util from '../../test_util';
 import {Graph} from '../graph';
@@ -24,8 +24,7 @@ import {SGDOptimizer} from './sgd_optimizer';
 
 describe('sgd optimizer', () => {
   it('basic', () => {
-    const safeMode = true;
-    const math = new NDArrayMathCPU(safeMode);
+    const math = ENV.math;
 
     const inputProvider: InputProvider = {
       getNextCopy() {
@@ -45,7 +44,7 @@ describe('sgd optimizer', () => {
       // w = reduce_sum(x^2 + x + 3)
       // dw/dx = [2*x_1 + 1, 2*x_2 + 1]
       session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);
-      const dwdx = session.gradientArrayMap.get(x).getValues();
+      const dwdx = session.gradientArrayMap.get(x).dataSync();
       test_util.expectArraysClose(dwdx, new Float32Array([5, 9]));
     });
   });

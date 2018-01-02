@@ -15,24 +15,22 @@
  * =============================================================================
  */
 
-import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
+import {ENV} from '../../environment';
 import * as conv_util from '../../math/conv_util';
 import {Array3D} from '../../math/ndarray';
 import * as test_util from '../../test_util';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {MaxPool} from './max_pool';
 
 describe('Max pool', () => {
-  let math: NDArrayMathCPU;
+  const math = ENV.math;
   let xTensor: Tensor;
   let yTensor: Tensor;
   let activations: TensorArrayMap;
   let gradients: SummedTensorArrayMap;
 
   beforeEach(() => {
-    math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
     gradients = new SummedTensorArrayMap(math);
   });
@@ -63,7 +61,7 @@ describe('Max pool', () => {
     op.feedForward(math, activations);
 
     // Feed forward.
-    const y = activations.get(yTensor);
+    const y = activations.get(yTensor) as Array3D<'float32'>;
     const expectedResult = Array3D.new([2, 2, depth], [5, 6, 9, 9]);
     expect(expectedResult.equals(y)).toBe(true);
 
@@ -73,7 +71,7 @@ describe('Max pool', () => {
 
     op.backProp(math, activations, gradients);
 
-    const dx = gradients.get(xTensor);
+    const dx = gradients.get(xTensor) as Array3D<'float32'>;
     const expectedBackprop =
         Array3D.new([3, 3, depth], [0, 0, 0, 0, 50, 60, 0, 170, 0]);
     expect(expectedBackprop.equals(dx)).toBe(true);
@@ -104,7 +102,7 @@ describe('Max pool', () => {
     const y = activations.get(yTensor);
     const expectedResult =
         Array3D.new([2, 2, 2], [6, 66, 8, 88, 14, 140, 16, 160]);
-    test_util.expectArraysClose(y.getValues(), expectedResult.getValues());
+    test_util.expectArraysClose(y.dataSync(), expectedResult.dataSync());
   });
 
   it('MaxPool depth = 2, with some negative numbers', () => {
@@ -131,7 +129,7 @@ describe('Max pool', () => {
     const expectedResult =
         Array3D.new([2, 2, 2], [6, 55, 8, 88, 14, 140, 16, 150]);
 
-    test_util.expectArraysClose(y.getValues(), expectedResult.getValues());
+    test_util.expectArraysClose(y.dataSync(), expectedResult.dataSync());
   });
 
   it('MaxPool downsampling depth is preserved', () => {

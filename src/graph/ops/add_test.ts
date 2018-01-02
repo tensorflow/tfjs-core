@@ -15,15 +15,14 @@
  * =============================================================================
  */
 
-import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
+import {ENV} from '../../environment';
 import {Array1D, Array2D, Scalar} from '../../math/ndarray';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {Add} from './add';
 
 describe('add operation', () => {
-  let math: NDArrayMathCPU;
+  const math = ENV.math;
 
   let t1: Tensor;
   let t2: Tensor;
@@ -33,7 +32,6 @@ describe('add operation', () => {
   let gradients: SummedTensorArrayMap;
 
   beforeEach(() => {
-    math = new NDArrayMathCPU();
     activations = new TensorArrayMap();
     gradients = new SummedTensorArrayMap(math);
   });
@@ -63,7 +61,7 @@ describe('add operation', () => {
     const yVal = activations.get(y);
 
     expect(yVal.shape).toEqual([3]);
-    expect(yVal.getValues()).toEqual(new Float32Array([4, 6, 8]));
+    expect(yVal.dataSync()).toEqual(new Float32Array([4, 6, 8]));
 
     const dy = Array1D.new([6, 7, 8]);
     gradients.add(y, dy);
@@ -74,10 +72,10 @@ describe('add operation', () => {
     const dx2 = gradients.get(t2);
 
     expect(dx1.shape).toEqual(x1.shape);
-    expect(dx1.getValues()).toEqual(dy.getValues());
+    expect(dx1.dataSync()).toEqual(dy.dataSync());
 
     expect(dx2.shape).toEqual(x2.shape);
-    expect(dx2.getValues()).toEqual(dy.getValues());
+    expect(dx2.dataSync()).toEqual(dy.dataSync());
   });
 
   it('adds two 2-D tensors', () => {
@@ -96,7 +94,7 @@ describe('add operation', () => {
     const yVal = activations.get(y);
 
     expect(yVal.shape).toEqual([2, 3]);
-    expect(yVal.getValues()).toEqual(new Float32Array([4, 6, 8, 11, 13, 15]));
+    expect(yVal.dataSync()).toEqual(new Float32Array([4, 6, 8, 11, 13, 15]));
 
     const dy = Array2D.new([2, 3], [10, 11, 12, 13, 14, 15]);
     gradients.add(y, dy);
@@ -107,10 +105,10 @@ describe('add operation', () => {
     const dx2 = gradients.get(t2);
 
     expect(dx1.shape).toEqual(x1.shape);
-    expect(dx1.getValues()).toEqual(dy.getValues());
+    expect(dx1.dataSync()).toEqual(dy.dataSync());
 
     expect(dx2.shape).toEqual(x2.shape);
-    expect(dx2.getValues()).toEqual(dy.getValues());
+    expect(dx2.dataSync()).toEqual(dy.dataSync());
   });
 
   it('ndarray + scalar', () => {
@@ -129,7 +127,7 @@ describe('add operation', () => {
     const yVal = activations.get(y);
 
     expect(yVal.shape).toEqual([2, 3]);
-    expect(yVal.getValues()).toEqual(new Float32Array([3, 4, 5, 6, 7, 8]));
+    expect(yVal.dataSync()).toEqual(new Float32Array([3, 4, 5, 6, 7, 8]));
 
     const dy = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
     gradients.add(y, dy);
@@ -140,7 +138,7 @@ describe('add operation', () => {
     const dx2 = gradients.get(t2);
 
     expect(dx1.shape).toEqual(x1.shape);
-    expect(dx1.getValues()).toEqual(dy.getValues());
+    expect(dx1.dataSync()).toEqual(dy.dataSync());
 
     expect(dx2.shape).toEqual(x2.shape);
     expect(dx2.get()).toEqual(42);
@@ -162,7 +160,7 @@ describe('add operation', () => {
     const yVal = activations.get(y);
 
     expect(yVal.shape).toEqual([2, 3]);
-    expect(yVal.getValues()).toEqual(new Float32Array([3, 4, 5, 6, 7, 8]));
+    expect(yVal.dataSync()).toEqual(new Float32Array([3, 4, 5, 6, 7, 8]));
 
     const dy = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
     gradients.add(y, dy);
@@ -176,7 +174,7 @@ describe('add operation', () => {
     expect(dx1.get()).toEqual(42);
 
     expect(dx2.shape).toEqual(x2.shape);
-    expect(dx2.getValues()).toEqual(dy.getValues());
+    expect(dx2.dataSync()).toEqual(dy.dataSync());
   });
 
   it('throws when shapes of X1 and X2 do not match', () => {
@@ -209,7 +207,7 @@ describe('add operation', () => {
     const yVal = activations.get(y);
 
     expect(yVal.shape).toEqual([2, 3]);
-    expect(yVal.getValues()).toEqual(new Float32Array([1, 3, 3, 4, 6, 6]));
+    expect(yVal.dataSync()).toEqual(new Float32Array([1, 3, 3, 4, 6, 6]));
 
     const dy = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
     gradients.add(y, dy);
@@ -220,10 +218,10 @@ describe('add operation', () => {
     const dx2 = gradients.get(t2);
 
     expect(dx1.shape).toEqual(x1.shape);
-    expect(dx1.getValues()).toEqual(dy.getValues());
+    expect(dx1.dataSync()).toEqual(dy.dataSync());
 
     expect(dx2.shape).toEqual(x2.shape);
-    expect(dx2.getValues()).toEqual(new Float32Array([10, 14, 18]));
+    expect(dx2.dataSync()).toEqual(new Float32Array([10, 14, 18]));
   });
 
   it('1D array + 2D array broadcast', () => {
@@ -242,7 +240,7 @@ describe('add operation', () => {
     const yVal = activations.get(y);
 
     expect(yVal.shape).toEqual([2, 3]);
-    expect(yVal.getValues()).toEqual(new Float32Array([1, 3, 3, 4, 6, 6]));
+    expect(yVal.dataSync()).toEqual(new Float32Array([1, 3, 3, 4, 6, 6]));
 
     const dy = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
     gradients.add(y, dy);
@@ -253,10 +251,10 @@ describe('add operation', () => {
     const dx2 = gradients.get(t2);
 
     expect(dx1.shape).toEqual(x1.shape);
-    expect(dx1.getValues()).toEqual(new Float32Array([10, 14, 18]));
+    expect(dx1.dataSync()).toEqual(new Float32Array([10, 14, 18]));
 
     expect(dx2.shape).toEqual(x2.shape);
-    expect(dx2.getValues()).toEqual(dy.getValues());
+    expect(dx2.dataSync()).toEqual(dy.dataSync());
   });
 
   it('throws when shapes do not match for broadcasting', () => {
@@ -272,5 +270,4 @@ describe('add operation', () => {
 
     expect(() => new Add(t1, t2, y)).toThrowError();
   });
-
 });

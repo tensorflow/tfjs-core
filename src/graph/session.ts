@@ -174,7 +174,10 @@ export class Session {
 
     if (this.prevBatchSize !== batchSize) {
       this.prevBatchSize = batchSize;
-      this.batchSizeScalar = Scalar.new(batchSize);
+      if (this.batchSizeScalar != null) {
+        this.batchSizeScalar.dispose();
+      }
+      this.batchSizeScalar = this.math.keep(Scalar.new(batchSize));
     }
 
     const feed = new FeedDictionary(feedEntries);
@@ -194,8 +197,8 @@ export class Session {
     optimizer.beforeBatch(
         this.math, batchSize, runtime, activations, gradients);
 
-    return this.math.scope((keep, track) => {
-      let cost = track(Scalar.new(0));
+    return this.math.scope(() => {
+      let cost = Scalar.new(0);
 
       for (let i = 0; i < batchSize; ++i) {
         session_util.disposeAndInitializeOperationOutputs(
@@ -219,7 +222,8 @@ export class Session {
             feed, activations, this.math);
 
         cost = this.updateCostForExample(
-            cost, activations.get(costTensor), costReduction);
+            cost, activations.get(costTensor) as Scalar<'float32'>,
+            costReduction);
       }
 
       optimizer.afterBatch(
@@ -230,8 +234,8 @@ export class Session {
   }
 
   private updateCostForExample(
-      totalCost: Scalar, currCost: Scalar,
-      costReduction: CostReduction): Scalar {
+      totalCost: Scalar<'float32'>, currCost: Scalar<'float32'>,
+      costReduction: CostReduction): Scalar<'float32'> {
     if (costReduction === CostReduction.MEAN ||
         costReduction === CostReduction.SUM) {
       return this.math.add(totalCost, currCost);
@@ -239,8 +243,9 @@ export class Session {
     return totalCost;
   }
 
-  private updateCostForBatch(totalCost: Scalar, costReduction: CostReduction):
-      Scalar {
+  private updateCostForBatch(
+      totalCost: Scalar<'float32'>,
+      costReduction: CostReduction): Scalar<'float32'> {
     if (costReduction === CostReduction.MEAN) {
       return this.math.divide(totalCost, this.batchSizeScalar);
     }

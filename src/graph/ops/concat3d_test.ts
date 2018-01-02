@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
+import {ENV} from '../../environment';
 import * as concat_util from '../../math/concat_util';
 import {Array3D} from '../../math/ndarray';
 import {Tensor} from '../graph';
@@ -24,7 +24,7 @@ import {TensorArrayMap} from '../tensor_array_map';
 import {Concat3D} from './concat3d';
 
 describe('concat3d operation', () => {
-  let math: NDArrayMathCPU;
+  const math = ENV.math;
 
   let x1Tensor: Tensor;
   let x2Tensor: Tensor;
@@ -33,7 +33,6 @@ describe('concat3d operation', () => {
   let tensorArrayMap: TensorArrayMap;
 
   beforeEach(() => {
-    math = new NDArrayMathCPU();
     tensorArrayMap = new TensorArrayMap();
   });
 
@@ -63,7 +62,7 @@ describe('concat3d operation', () => {
     const y = tensorArrayMap.get(yTensor);
 
     expect(y.shape).toEqual([2, 1, 3]);
-    expect(y.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+    expect(y.dataSync()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
   it('concats tensors, axis=1', () => {
@@ -86,7 +85,7 @@ describe('concat3d operation', () => {
     const y = tensorArrayMap.get(yTensor);
 
     expect(y.shape).toEqual([1, 2, 3]);
-    expect(y.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+    expect(y.dataSync()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
   it('concats tensors, axis=2', () => {
@@ -109,6 +108,6 @@ describe('concat3d operation', () => {
     const y = tensorArrayMap.get(yTensor);
 
     expect(y.shape).toEqual([1, 1, 6]);
-    expect(y.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
+    expect(y.dataSync()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 });
