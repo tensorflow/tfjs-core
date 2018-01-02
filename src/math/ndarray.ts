@@ -252,16 +252,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
 
   asType<D2 extends DataType>(dtype: D2): NDArray<D2, R> {
     this.throwIfDisposed();
-    if (this.dtype === dtype as string) {
-      // No-op.
-      return this as NDArray as NDArray<D2, R>;
-    }
-    // TODO(dsmilkov): Migrate casting to the backend.
-    const vals = this.dataSync();
-    const newVals = toTypedArray(vals, dtype);
-    return NDArray.make<D2, R>(
-               this.shape, {values: newVals}, dtype, this.math) as
-        NDArray<D2, R>;
+    return this.math.asType(this, dtype) as NDArray<D2, R>;
   }
 
   get rank(): number {

@@ -350,6 +350,25 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
                'Reshape', {inputs: {x}, args: {newShape}}, grad) as T;
   }
 
+  asType<D extends DataType, R extends Rank>(x: NDArray<DataType, R>, dtype: D):
+      RankMap<D>[R] {
+    if (x.dtype === dtype) {
+      // No-op.
+      return x as NDArray as RankMap<D>[R];
+    }
+    if (isUpCast(x.dtype, dtype)) {
+      return this.backendEngine.executeKernel(
+          'Cast', {inputs: {x}, args: {dtype}});
+    }
+    if (dtype === 'int32') {
+      return this.floor(x, dtype);
+    } else if (dtype === 'bool') {
+      return this.equal(x, Scalar.new(0, x.dtype)) as RankMap<D>[R];
+    } else {
+      throw new Error('should not happen');
+    }
+  }
+
   /**
    * Extracts a 1D slice from 1D array starting at coordinates `begin` and is
    * of length `size`.
@@ -1238,8 +1257,8 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
   }
 
   /**
-   * Computes floor of input NDArray element-wise. y = floor(x)
-   * TODO(nsthorat): Make this return an int32 when we add rank as a generic.
+   * Computes floor of input NDArray element-wise. y = floor(x).
+   *
    * @param x The input NDArray.
    */
   floor<T extends NDArray>(x: T): T {
