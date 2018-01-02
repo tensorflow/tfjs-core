@@ -116,9 +116,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
       this.id = NDArray.nextId++;
       this.math.register(this);
     }
-    if (values != null) {
-      this.math.write(this.id, values, this.dtype, this.shape);
-    }
+    this.math.write(this.id, values, this.dtype, this.shape);
   }
 
   /** Creates a ndarray of ones with the specified shape. */
@@ -151,7 +149,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
 
   /** Creates a ndarray with the same values/shape as the specified ndarray. */
   static like<T extends NDArray>(another: T): T {
-    const newValues = copyTypedArray(another.getValues(), another.dtype);
+    const newValues = copyTypedArray(another.dataSync(), another.dtype);
     return NDArray.make(
                another.shape, {values: newValues}, another.dtype,
                another.math) as T;

@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, CostReduction, ENV, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, NDArrayMath, Session, SGDOptimizer, Tensor} from 'deeplearn';
+import {Array1D, CostReduction, ENV, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, Session, SGDOptimizer, Tensor} from 'deeplearn';
 
 class ComplementaryColorModel {
   // Runs training.
@@ -126,7 +126,7 @@ class ComplementaryColorModel {
 
   predict(rgbColor: number[]): number[] {
     let complementColor: number[] = [];
-    this.math.scope((keep, track) => {
+    this.math.scope(() => {
       const mapping = [{
         tensor: this.inputTensor,
         data: Array1D.new(this.normalizeColor(rgbColor)),
@@ -156,10 +156,6 @@ class ComplementaryColorModel {
    */
   private generateTrainingData(exampleCount: number) {
     const rawInputs = new Array(exampleCount);
-    const oldMath = ENV.math;
-    const safeMode = false;
-    const math = new NDArrayMath('cpu', safeMode);
-    ENV.setMath(math);
 
     for (let i = 0; i < exampleCount; i++) {
       rawInputs[i] = [
@@ -187,7 +183,6 @@ class ComplementaryColorModel {
       {tensor: this.inputTensor, data: inputProvider},
       {tensor: this.targetTensor, data: targetProvider}
     ];
-    ENV.setMath(oldMath);
   }
 
   private generateRandomChannelValue() {

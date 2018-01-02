@@ -38,7 +38,9 @@ export class MathBackendCPU implements MathBackend {
   dispose() {}
   write<D extends DataType>(
       id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
-    this.data[id] = values;
+    if (values != null) {
+      this.data[id] = values;
+    }
   }
   writePixels(
       id: number,
@@ -1311,11 +1313,11 @@ export class MathBackendCPU implements MathBackend {
       x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
       varianceEpsilon: number, scale?: Array4D|Array1D,
       offset?: Array4D|Array1D): Array4D {
-    const xValues = x.getValues();
-    const meanValues = mean.getValues();
-    const varianceValues = variance.getValues();
-    const scaleValues = scale ? scale.getValues() : new Float32Array([1]);
-    const offsetValues = offset ? offset.getValues() : new Float32Array([0]);
+    const xValues = x.dataSync();
+    const meanValues = mean.dataSync();
+    const varianceValues = variance.dataSync();
+    const scaleValues = scale ? scale.dataSync() : new Float32Array([1]);
+    const offsetValues = offset ? offset.dataSync() : new Float32Array([0]);
     const outValues = new Float32Array(xValues.length);
 
     for (let i = 0; i < xValues.length; i++) {

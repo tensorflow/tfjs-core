@@ -84,10 +84,10 @@ export class MathBackendWebGL implements MathBackend {
   }
   write<D extends DataType>(
       id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
-    if (values == null) {
-      throw new Error('MathBackendWebGL.write(): values can not be null');
-    }
     const {texture, texShape} = this.getOrMakeTexData(id, shape, dtype);
+    if (values == null) {
+      return;
+    }
     if (texture != null) {
       // Release the old texture.
       this.textureManager.releaseTexture(texture, texShape);
