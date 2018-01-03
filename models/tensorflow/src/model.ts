@@ -16,27 +16,10 @@
  */
 import * as dag from 'dag-iterator';
 import {Array1D, Array3D, ENV, Model, NDArray} from 'deeplearn';
+
+import {performMathOp} from './node';
+import * as types from './types';
 import * as util from './util';
-
-export interface Node {
-  name: string;
-  op: string;
-  // tslint:disable-next-line:no-any
-  attr: Array<{[key: string]: any}>;
-  input?: string[];
-}
-
-export interface Graph {
-  node: Node[];
-  version: {[key: string]: number};
-}
-
-export interface LayerNode {
-  node: string;
-  parents: string[];
-}
-
-export interface Layer { nodes: LayerNode[]; }
 
 export class TensorflowModel implements Model {
   /**
@@ -54,7 +37,7 @@ export class TensorflowModel implements Model {
   /**
    * Model DAG Nodes
    */
-  nodes: Array<dag.INode<Node>>;
+  nodes: Array<dag.INode<types.Node>>;
 
   /**
    * Model DAG Edges
@@ -66,7 +49,7 @@ export class TensorflowModel implements Model {
    * @param caffemodelUrl url to the caffemodel file
    * @param prototxtUrl url to the prototxt file
    */
-  constructor(private modelFilePromise: Promise<Graph>) {}
+  constructor(private modelFilePromise: Promise<types.Graph>) {}
 
   /**
    * Load the model
@@ -79,13 +62,13 @@ export class TensorflowModel implements Model {
     });
   }
 
-  private nodesToDagNodes(graph: Graph): Array<dag.INode<Node>> {
+  private nodesToDagNodes(graph: types.Graph): Array<dag.INode<types.Node>> {
     return graph.node.map(node => {
       return {name: node.name, data: node};
     });
   }
 
-  private nodesToDagEdges(graph: Graph): dag.IEdge[] {
+  private nodesToDagEdges(graph: types.Graph): dag.IEdge[] {
     const nodes = graph.node;
     const edges: dag.IEdge[] = [];
     const edgeSet: {[edgeId: string]: boolean} = {};
@@ -125,8 +108,9 @@ export class TensorflowModel implements Model {
     const namedActivations: {[key: string]: NDArray} = {};
     let currAct: NDArray|NDArray[] = input;
 
-    dag.iterate<Node>(
-        this.nodes, this.edges, (node: Node, parents: Node[], i: number) => {
+    dag.iterate<types.Node>(
+        this.nodes,
+        this.edges, (node: types.Node, parents: types.Node[], i: number) => {
           if (i === 0 && this.preprocessOffset) {
             currAct = math.subtract(
                           currAct as Array3D, this.preprocessOffset) as Array3D;
@@ -136,7 +120,7 @@ export class TensorflowModel implements Model {
             currAct = parents.map((d) => namedActivations[d.name]);
           }
 
-          // currAct = performMathOp(math, currAct, node);
+          currAct = performMathOp(math, currAct, node);
 
           namedActivations[node.name] = currAct as NDArray;
         }, untilLayer);
@@ -144,10 +128,11 @@ export class TensorflowModel implements Model {
     return currAct;
   }
 
-  layers(): Layer[] {
-    const layers: Layer[] = [];
-    dag.iterate<Node>(
-        this.nodes, this.edges, (node: Node, parents: Node[], i: number) => {
+  layers(): types.Layer[] {
+    const layers: types.Layer[] = [];
+    dag.iterate<types.Node>(
+        this.nodes, this.edges,
+        (node: types.Node, parents: types.Node[], i: number) => {
           console.log(node, parents, i);
           if (!layers[i]) {
             layers[i] = {nodes: []};

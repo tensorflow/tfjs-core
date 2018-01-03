@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {Array4D} from 'deeplearn/dist/math/ndarray';
+
 import {Graph, TensorflowModel} from './index';
 
 let model: TensorflowModel;
@@ -32,9 +34,8 @@ const SIMPLE_MODEL: Graph = {
         },
         {
           key: 'shape',
-          value: {
-            shape: {dim: [{size: 1}, {size: 227}, {size: 227}, {size: 3}]}
-          }
+          value:
+              {shape: {dim: [{size: 3}, {size: 3}, {size: 3}, {size: 1}]}}
         }
       ]
     },
@@ -44,7 +45,13 @@ const SIMPLE_MODEL: Graph = {
       attr: [
         {key: 'dtype', value: {type: 'DT_INT32'}}, {
           key: 'value',
-          value: {tensor: {dtype: 'DT_INT32', tensor_shape: {}, int_val: 3}}
+          value: {
+            tensor: {
+              dtype: 'DT_INT32',
+              tensor_shape: {dim: [{size: 4}, {size: 3}, {size: 3}, {size: 1}]},
+              int_val: [0, 0, 0, 0, 1, 0, 0, 0, 0]
+            }
+          }
         }
       ]
     },
@@ -58,8 +65,7 @@ const SIMPLE_MODEL: Graph = {
             tensor: {
               dtype: 'DT_INT32',
               tensor_shape: {dim: {size: 4}},
-              tensor_content: '\\001\\000\\000\\000\\001\\000\\000\\000' +
-                  '\\001\\000\\000\\000\\350\\003\\000\\000'
+              int_val: [1, 1, 1, 1]
             }
           }
         }
@@ -103,6 +109,12 @@ describe('TensorflowModel', () => {
       expect(model.nodes).not.toBeUndefined();
       done();
     });
+  });
+
+  it('should predict correctly', (done) => {
+    const value = model.predict(
+        Array4D.new([3, 3, 3, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1], 'int32'));
+    expect(value).toEqual(Array4D.zeros([3, 3, 3, 1], 'int32'));
   });
 
   it('should restruct the layers of the graph correctly', (done) => {
