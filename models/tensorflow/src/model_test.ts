@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {test_util} from 'deeplearn';
 import {Array4D} from 'deeplearn/dist/math/ndarray';
 
 import {Graph, TensorflowModel} from './index';
@@ -48,7 +49,7 @@ const SIMPLE_MODEL: Graph = {
           value: {
             tensor: {
               dtype: 'DT_INT32',
-              tensor_shape: {dim: [{size: 4}, {size: 3}, {size: 3}, {size: 1}]},
+              tensor_shape: {dim: [{size: 3}, {size: 3}, {size: 1}, {size: 1}]},
               int_val: [0, 0, 0, 0, 1, 0, 0, 0, 0]
             }
           }
@@ -64,8 +65,8 @@ const SIMPLE_MODEL: Graph = {
           value: {
             tensor: {
               dtype: 'DT_INT32',
-              tensor_shape: {dim: {size: 4}},
-              int_val: [1, 1, 1, 1]
+              tensor_shape: {dim: [{size: 3}, {size: 1}, {size: 1}, {size: 1}]},
+              int_val: [1, 1, 1]
             }
           }
         }
@@ -112,9 +113,19 @@ describe('TensorflowModel', () => {
   });
 
   it('should predict correctly', (done) => {
-    const value = model.predict(
-        Array4D.new([3, 3, 3, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1], 'int32'));
-    expect(value).toEqual(Array4D.zeros([3, 3, 3, 1], 'int32'));
+    model.load().then(() => {
+      const value = model.predict(Array4D.new(
+          [3, 3, 3, 1],
+          [
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+          ],
+          'int32'));
+      expect(value.rank).toEqual(4);
+      expect(value.shape).toEqual([3, 1, 1, 1]);
+      test_util.expectArraysClose(value.dataSync(), Int32Array.from([2, 2, 2]));
+      done();
+    });
   });
 
   it('should restruct the layers of the graph correctly', (done) => {

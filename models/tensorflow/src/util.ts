@@ -56,18 +56,15 @@ export function tensorToNDArray(tensor: Tensor): NDArray {
   const dimSizes = (dims as Dim[]).map(dim => dim.size);
   switch (DataType[tensor.dtype as keyof typeof DataType]) {
     case DataType.DT_INT32: {
-      const values =
-          dimSizes.length == 0 ? tensor.int_val : getTensorContentValue(tensor);
+      const values = tensor.int_val || getTensorContentValue(tensor);
       return toNDArray(dimSizes, values, 'int32');
     }
     case DataType.DT_FLOAT: {
-      const values =
-          dimSizes.length == 0 ? tensor.int_val : getTensorContentValue(tensor);
+      const values = tensor.int_val || getTensorContentValue(tensor);
       return toNDArray(dimSizes, values, 'float32');
     }
     case DataType.DT_BOOL: {
-      const values = dimSizes.length == 0 ? tensor.bool_val :
-                                            getTensorContentValue(tensor);
+      const values = tensor.bool_val || getTensorContentValue(tensor);
       return toNDArray(dimSizes, values, 'bool');
     }
   }

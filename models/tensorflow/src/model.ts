@@ -19,7 +19,6 @@ import {Array1D, Array3D, ENV, Model, NDArray} from 'deeplearn';
 
 import {performMathOp} from './node';
 import * as types from './types';
-import * as util from './util';
 
 export class TensorflowModel implements Model {
   /**
@@ -75,18 +74,6 @@ export class TensorflowModel implements Model {
     const getEdgeId = (a: string|string[], b: string|string[]) => `${a}:#:${b}`;
 
     nodes.forEach((d) => {
-      if (d.op === 'Const' && d.attr[1]['value']['tensor']['tensor_content']) {
-        const str =
-            util.unescape(d.attr[1]['value']['tensor']['tensor_content']);
-        const uint = new Uint8Array(str.length);
-        for (let i = 0, j = str.length; i < j; ++i) {
-          uint[i] = str.charCodeAt(i);
-        }
-        console.log('length = ' + uint.length);
-        const values = new Float32Array(uint.buffer);
-        console.log('length = ' + values.length);
-        values.forEach(v => console.log(v));
-      }
       if (!!d.input) {
         const inputs = d.input instanceof Array ? d.input : [d.input];
         inputs.forEach((nodeName) => {
@@ -119,7 +106,6 @@ export class TensorflowModel implements Model {
           } else if (parents.length > 1) {
             currAct = parents.map((d) => namedActivations[d.name]);
           }
-
           currAct = performMathOp(math, currAct, node);
 
           namedActivations[node.name] = currAct as NDArray;

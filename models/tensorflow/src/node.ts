@@ -96,7 +96,8 @@ export function performMathOp(
       const inputs = input as NDArray[];
       const weights = inputs[1] as Array4D;
       return math.conv2d(
-          input as NDArray, weights, null, [stride[0], stride[1]], pad as any);
+          inputs[0] as NDArray, weights, null, [stride[0], stride[1]],
+          pad as any);
     }
 
     case 'AvgPool': {
