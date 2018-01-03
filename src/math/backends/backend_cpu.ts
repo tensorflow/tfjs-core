@@ -34,18 +34,24 @@ import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
   private data: {[id: number]: DataTypeMap[DataType]} = {};
-
-  dispose() {}
-  write<D extends DataType>(
-      id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
-    if (values != null) {
-      this.data[id] = values;
+  register(id: number, shape: number[], dtype: DataType): void {
+    this.data[id] = null;
+  }
+  write<D extends DataType>(id: number, values: DataTypeMap[D]): void {
+    if (values == null) {
+      throw new Error('MathBackendCPU.write(): values can not be null');
     }
+    this.throwIfNoData(id);
+    this.data[id] = values;
   }
   writePixels(
       id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
+    if (pixels == null) {
+      throw new Error('MathBackendCPU.writePixels(): pixels can not be null');
+    }
+    this.throwIfNoData(id);
     let vals: Uint8ClampedArray;
     if (pixels instanceof ImageData) {
       vals = pixels.data;
@@ -1406,6 +1412,7 @@ export class MathBackendCPU implements MathBackend {
     }
     return result;
   }
+  dispose() {}
 }
 
 ENV.registerBackend('cpu', () => new MathBackendCPU());

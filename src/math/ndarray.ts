@@ -116,7 +116,9 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
       this.id = NDArray.nextId++;
       this.math.register(this);
     }
-    this.math.write(this.id, values, this.dtype, this.shape);
+    if (values != null) {
+      this.math.write(this.id, values);
+    }
   }
 
   /** Creates a ndarray of ones with the specified shape. */
@@ -297,7 +299,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     }
     const vals = this.dataSync();
     vals[index] = value;
-    this.math.write(this.id, vals, this.dtype, this.shape);
+    this.math.write(this.id, vals);
   }
 
   async val(...locs: number[]): Promise<number> {
@@ -330,7 +332,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     this.throwIfDisposed();
     const vals = this.dataSync();
     vals.fill(value);
-    this.math.write(this.id, vals, this.dtype, this.shape);
+    this.math.write(this.id, vals);
   }
 
   /** @deprecated Use dataSync() instead. */
