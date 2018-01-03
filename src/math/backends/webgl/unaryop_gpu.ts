@@ -39,10 +39,8 @@ export class UnaryOpProgram implements GPGPUProgram {
   }
 }
 
-export const CHECK_NAN_SNIPPET = `
-  if (isNaN(x)) {
-    return x;
-  }
+const CHECK_NAN_SNIPPET = `
+  if (isNaN(x)) return x;
 `;
 
 export const ABS = `
@@ -77,7 +75,7 @@ export function LEAKY_RELU(alpha: number) {
 
 export function STEP(alpha = 0.0) {
   return CHECK_NAN_SNIPPET + `
-    return (x == x) ? (x > 0.0 ? 1.0 : float(${alpha})) : x;
+    return x > 0.0 ? 1.0 : float(${alpha});
   `;
 }
 

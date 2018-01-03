@@ -18,20 +18,21 @@
 
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataTypes, NDArray} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray} from '../ndarray';
 import {SumTypes} from '../types';
 import {MatrixOrientation} from './types/matmul';
 
 export interface NDArrayStorage {
-  read<T extends keyof DataTypes>(id: number): Promise<DataTypes[T]>;
-  readSync<T extends keyof DataTypes>(id: number): DataTypes[T];
+  read<D extends DataType>(id: number): Promise<DataTypeMap[D]>;
+  readSync<D extends DataType>(id: number): DataTypeMap[D];
   disposeData(id: number): void;
-  write<T extends keyof DataTypes>(
-      id: number, values: DataTypes[T], dtype: T, shape: number[]): void;
+  write<D extends DataType>(
+      id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void;
   writePixels(
       id: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void;
+  time(query: () => NDArray): Promise<number>;
 }
 
 /**
@@ -63,29 +64,29 @@ export interface MathBackend extends NDArrayStorage {
 
   neg<T extends NDArray>(a: T): T;
 
-  add<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G>;
-  subtract<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G>;
-  multiply<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>): NDArray<G>;
-  divide<G extends keyof DataTypes>(a: NDArray<G>, b: NDArray<G>):
-      NDArray<'float32'>;
+  add<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
+  subtract<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
+  multiply<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
+  divide<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<'float32'>;
 
-  sum<T extends keyof DataTypes>(x: NDArray<T>, axes: number[]):
-      NDArray<SumTypes[T]>;
+  sum<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<SumTypes[D]>;
 
   argMin(x: NDArray, axes: number[]): NDArray<'int32'>;
   argMax(x: NDArray, axes: number[]): NDArray<'int32'>;
 
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
 
-  topKValues<D extends keyof DataTypes, T extends NDArray<D>>(x: T, k: number):
+  topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D>;
   topKIndices(x: NDArray, k: number): Array1D<'int32'>;
 
-  min<G extends keyof DataTypes>(x: NDArray<G>, axes: number[]): NDArray<G>;
-  max<G extends keyof DataTypes>(x: NDArray<G>, axes: number[]): NDArray<G>;
+  min<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D>;
+  minimum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
+
+  max<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D>;
+  maximum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
 
   ceil<T extends NDArray>(x: T): T;
-
   floor<T extends NDArray>(x: T): T;
 
   pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T;
@@ -100,6 +101,8 @@ export interface MathBackend extends NDArrayStorage {
   eluDer<T extends NDArray>(x: T): T;
   selu<T extends NDArray>(x: T): T;
   leakyRelu<T extends NDArray>(x: T, alpha: number): T;
+  prelu<T extends NDArray>(x: T, alpha: T): T;
+  preluDer<T extends NDArray>(x: T, alpha: T): T;
 
   clip<T extends NDArray>(x: T, min: number, max: number): T;
 
@@ -136,11 +139,9 @@ export interface MathBackend extends NDArrayStorage {
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
 
-  tile<D extends keyof DataTypes, T extends NDArray<D>>(x: T, reps: number[]):
-      T;
+  tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T;
 
-  transpose<D extends keyof DataTypes, T extends NDArray<D>>(
-      x: T, perm: number[]): T;
+  transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
 
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
@@ -153,6 +154,10 @@ export interface MathBackend extends NDArrayStorage {
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
       varianceEpsilon: number, scale?: Array3D|Array1D,
       offset?: Array3D|Array1D): Array3D;
+  batchNormalization4D(
+      x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
+      varianceEpsilon: number, scale?: Array4D|Array1D,
+      offset?: Array4D|Array1D): Array4D;
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
       Array2D<'int32'>;

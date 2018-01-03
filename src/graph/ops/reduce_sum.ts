@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import {NDArrayMath} from '../../math/math';
-import {NDArray} from '../../math/ndarray';
+import {NDArray, Scalar} from '../../math/ndarray';
 import * as util from '../../util';
 import {Tensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {Operation} from './op';
 
 /**
@@ -32,7 +32,7 @@ export class ReduceSum extends Operation {
   constructor(private x: Tensor, private outTensor: Tensor) {
     super();
     util.assertShapesMatch(outTensor.shape, []);
-    this.ones = NDArray.ones(x.shape);
+    this.ones = ENV.math.keep(NDArray.ones(x.shape));
   }
 
   private ones: NDArray;
@@ -53,8 +53,12 @@ export class ReduceSum extends Operation {
     }
 
     math.scope(() => {
-      const dy = gradientArrays.get(this.outTensor);
+      const dy = gradientArrays.get(this.outTensor) as Scalar;
       gradientArrays.add(this.x, math.scalarTimesArray(dy, this.ones));
     });
+  }
+
+  dispose() {
+    this.ones.dispose();
   }
 }

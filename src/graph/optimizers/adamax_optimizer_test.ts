@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import {InputProvider} from '../../data/input_provider';
-import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
+import {ENV} from '../../environment';
 import {Array1D, NDArray} from '../../math/ndarray';
 import * as test_util from '../../test_util';
 import {Graph} from '../graph';
@@ -25,8 +25,7 @@ import {AdamaxOptimizer} from './adamax_optimizer';
 
 describe('adamax optimizer', () => {
   it('adamax', () => {
-    const safeMode = true;
-    const math = new NDArrayMathCPU(safeMode);
+    const math = ENV.math;
 
     const inputProvider: InputProvider = {
       getNextCopy() {
@@ -60,7 +59,7 @@ describe('adamax optimizer', () => {
       //            = [-0.1, -0.1]
       //
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
-      const dydw = session.activationArrayMap.get(w).getValues();
+      const dydw = session.activationArrayMap.get(w).dataSync();
       test_util.expectArraysClose(dydw, new Float32Array([-0.1, -0.1]), 1e-5);
 
       // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
@@ -81,7 +80,7 @@ describe('adamax optimizer', () => {
       //            = [-0.2, -0.2]
 
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
-      const dydw2 = session.activationArrayMap.get(w).getValues();
+      const dydw2 = session.activationArrayMap.get(w).dataSync();
       test_util.expectArraysClose(dydw2, new Float32Array([-.2, -.2]), 2e-5);
     });
   });

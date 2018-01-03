@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
-import {ConstantNode, Graph, Node, Tensor, VariableNode} from './graph';
 import * as conv_util from '../math/conv_util';
 import {NDArray} from '../math/ndarray';
+
+import {ConstantNode, Graph, Node, Tensor, VariableNode} from './graph';
 import {FeedDictionary} from './session';
 import * as session_util from './session_util';
 
@@ -124,35 +125,35 @@ describe('Constant', () => {
   it('from a single value', () => {
     const c = g.constant(3);
     expect(c.shape).toEqual([]);
-    const values = (c.node as ConstantNode).data.getValues();
+    const values = (c.node as ConstantNode).data.dataSync();
     expect(values).toEqual(new Float32Array([3]));
   });
 
   it('from 1d array', () => {
     const c = g.constant([1, 2, 3]);
     expect(c.shape).toEqual([3]);
-    const values = (c.node as ConstantNode).data.getValues();
+    const values = (c.node as ConstantNode).data.dataSync();
     expect(values).toEqual(new Float32Array([1, 2, 3]));
   });
 
   it('from 2d array', () => {
     const c = g.constant([[1, 2, 3], [4, 5, 6]]);
     expect(c.shape).toEqual([2, 3]);
-    const values = (c.node as ConstantNode).data.getValues();
+    const values = (c.node as ConstantNode).data.dataSync();
     expect(values).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
   it('from 3d array', () => {
     const c = g.constant([[[1], [2], [3]], [[4], [5], [6]]]);
     expect(c.shape).toEqual([2, 3, 1]);
-    const values = (c.node as ConstantNode).data.getValues();
+    const values = (c.node as ConstantNode).data.dataSync();
     expect(values).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
   it('from 4d array', () => {
     const c = g.constant([[[[1]], [[2]], [[3]]], [[[4]], [[5]], [[6]]]]);
     expect(c.shape).toEqual([2, 3, 1, 1]);
-    const values = (c.node as ConstantNode).data.getValues();
+    const values = (c.node as ConstantNode).data.dataSync();
     expect(values).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 });
@@ -238,8 +239,7 @@ describe('Add validation', () => {
   });
 
   it('Non-matching broadcast throws', () => {
-    expect(() => g.add(new Tensor([5, 3]), new Tensor([5])))
-        .toThrowError();
+    expect(() => g.add(new Tensor([5, 3]), new Tensor([5]))).toThrowError();
   });
 });
 
@@ -515,6 +515,25 @@ describe('leakyRelu validation', () => {
 
   it('Does not throw', () => {
     expect(g.leakyRelu(new Tensor([5, 4]), 0.2).shape).toEqual([5, 4]);
+  });
+});
+
+describe('pRelu validation', () => {
+  let g: Graph;
+
+  beforeEach(() => {
+    g = new Graph();
+  });
+
+  it('Different shapes throws', () => {
+    expect(() => g.prelu(new Tensor([5, 4]), new Tensor([1, 2, 3])))
+        .toThrowError();
+  });
+
+  it('Same size does not throw', () => {
+    expect(g.prelu(new Tensor([5, 4]), new Tensor([5, 4])).shape).toEqual([
+      5, 4
+    ]);
   });
 });
 
