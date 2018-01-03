@@ -32,7 +32,7 @@ cp -r "docs" "$TMP_DIR/"
 # Make demo directory (if not existing)
 mkdir -p "$TMP_DIR/demos"
 
-# Copy files to demos folder
+# Copy only top-level files in demos/ to tmp directory (ignore folders)
 find demos -maxdepth 1 -type f | xargs -I {} cp {} "$TMP_DIR/demos"
 
 # Build polymer demos (deploy-demo vulcanizes polymer apps).
