@@ -57,7 +57,6 @@ export class TensorflowModel implements Model {
     return this.modelFilePromise.then(model => {
       this.nodes = this.nodesToDagNodes(model);
       this.edges = this.nodesToDagEdges(model);
-      console.log(this.nodes.length);
     });
   }
 
@@ -119,11 +118,10 @@ export class TensorflowModel implements Model {
     dag.iterate<types.Node>(
         this.nodes, this.edges,
         (node: types.Node, parents: types.Node[], i: number) => {
-          console.log(node, parents, i);
           if (!layers[i]) {
             layers[i] = {nodes: []};
           }
-          layers[i].nodes.unshift(
+          layers[i].nodes.push(
               {node: node.name, parents: parents.map((p) => p.name)});
         });
     return layers;

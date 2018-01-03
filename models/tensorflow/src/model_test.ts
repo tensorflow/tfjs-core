@@ -130,7 +130,6 @@ describe('TensorflowModel', () => {
 
   it('should restruct the layers of the graph correctly', (done) => {
     model.load().then(() => {
-      console.log('model loaded');
       expect(model.layers()).toEqual([
         {
           nodes: [
