@@ -64,6 +64,9 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
   private webcamVideoElement: HTMLVideoElement;
   private staticImgElement: HTMLImageElement;
   private inferenceCanvas: HTMLCanvasElement;
+  /** Hidden. Used only for capturing frames from the video tag. */
+  private videoCanvas: HTMLCanvasElement;
+  private videoCtx: CanvasRenderingContext2D;
 
   private isMediaLoaded = false;
 
@@ -74,6 +77,10 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
         this.querySelector('#staticImg') as HTMLImageElement;
     this.webcamVideoElement =
         this.querySelector('#webcamVideo') as HTMLVideoElement;
+    this.videoCanvas = this.querySelector('#video-canvas') as HTMLCanvasElement;
+    this.videoCanvas.height = this.webcamVideoElement.height;
+    this.videoCanvas.width = this.webcamVideoElement.width;
+    this.videoCtx = this.videoCanvas.getContext('2d');
 
     const gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
     this.gpgpu = new GPGPUContext(gl);
@@ -184,7 +191,8 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
       const element =
           isWebcam ? this.webcamVideoElement : this.staticImgElement;
-      const image = Array3D.fromPixels(element, 3, this.math);
+      this.videoCtx.drawImage(element, 0, 0, element.width, element.height);
+      const image = Array3D.fromPixels(this.videoCanvas, 3, this.math);
 
       const inferenceResult =
           this.squeezeNet.predictWithActivation(image, this.selectedLayerName);
