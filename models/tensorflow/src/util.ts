@@ -19,6 +19,7 @@
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from 'deeplearn/dist/math/ndarray';
 import * as prototxtParser from 'prototxt-parser';
 
+import {TensorflowModel} from './model';
 import {DataType, Dim, Graph, Tensor} from './types';
 
 export function unescape(text: string): string {
@@ -42,7 +43,33 @@ export function unescape(text: string): string {
   });
 }
 
-export function loadProtoTxtFile(url: string): Promise<Graph> {
+export function loadLocalProtoTxtFile(file: string): Graph {
+  const fs = require('fs');
+  return prototxtParser.parse(fs.readFileSync(file, {encoding: 'utf8'})) as
+      Graph;
+}
+
+export function runSqueezenet() {
+  const path = require('path');
+  const promise = new Promise<Graph>(
+      (resolve, reject) => resolve(loadLocalProtoTxtFile(
+          path.join(path.resolve(), 'squeezenet.pbtxt'))));
+  const model = new TensorflowModel(promise);
+  model.load().then(() => {
+    const image = require('get-image-data');
+    image('./cat.jpg', (error: any, info: any) => {
+      setTimeout(function() {
+        (global as any).ImageData = require('canvas').ImageData;
+        const input = Array3D.fromPixels(info);
+        console.log(input);
+        const output = model.predict(input);
+        console.log(output);
+      }, 1000);
+    });
+  });
+}
+
+export function loadRemoteProtoTxtFile(url: string): Promise<Graph> {
   return fetch(new Request(url))
       .then(res => res.text())
       .then(text => prototxtParser.parse(text) as Graph);
@@ -54,17 +81,24 @@ export function tensorToNDArray(tensor: Tensor): NDArray {
     dims = [dims];
   }
   const dimSizes = (dims as Dim[]).map(dim => dim.size);
+  console.log(dimSizes);
   switch (DataType[tensor.dtype as keyof typeof DataType]) {
     case DataType.DT_INT32: {
-      const values = tensor.int_val || getTensorContentValue(tensor);
+      const values = tensor.int_val !== undefined ?
+          tensor.int_val :
+          getTensorContentValue(tensor);
       return toNDArray(dimSizes, values, 'int32');
     }
     case DataType.DT_FLOAT: {
-      const values = tensor.int_val || getTensorContentValue(tensor);
+      const values = tensor.float_val !== undefined ?
+          tensor.float_val :
+          getTensorContentValue(tensor);
       return toNDArray(dimSizes, values, 'float32');
     }
     case DataType.DT_BOOL: {
-      const values = tensor.bool_val || getTensorContentValue(tensor);
+      const values = tensor.bool_val !== undefined ?
+          tensor.bool_val :
+          getTensorContentValue(tensor);
       return toNDArray(dimSizes, values, 'bool');
     }
   }
@@ -73,6 +107,9 @@ export function tensorToNDArray(tensor: Tensor): NDArray {
 
 function getTensorContentValue(tensor: Tensor): Int32Array|Float32Array|
     Uint8Array {
+  if (!tensor.tensor_content) {
+    console.log(tensor);
+  }
   const str = unescape(tensor.tensor_content);
   const uint = new Uint8Array(str.length);
   for (let i = 0, j = str.length; i < j; ++i) {
@@ -80,6 +117,7 @@ function getTensorContentValue(tensor: Tensor): Int32Array|Float32Array|
   }
   switch (DataType[tensor.dtype as keyof typeof DataType]) {
     case DataType.DT_INT32: {
+      console.log(new Int32Array(uint.buffer));
       return new Int32Array(uint.buffer);
     }
     case DataType.DT_FLOAT: {
@@ -94,11 +132,20 @@ function getTensorContentValue(tensor: Tensor): Int32Array|Float32Array|
 
 function toNDArray(
     shape: number[], values: any, dtype: 'float32'|'int32'|'bool'): NDArray {
+  if (values instanceof Int32Array || values instanceof Float32Array ||
+      values instanceof Uint8Array) {
+    values = Array.prototype.slice.call(values);
+  }
+
   switch (shape.length) {
     case 0:
       return Scalar.new(values, dtype);
-    case 1:
+    case 1: {
+      if (!(values instanceof Array)) {
+        values = [values];
+      }
       return Array1D.new(values, dtype);
+    }
     case 2:
       return Array2D.new(shape as [number, number], values, dtype);
     case 3:

@@ -105,7 +105,18 @@ export class TensorflowModel implements Model {
           } else if (parents.length > 1) {
             currAct = parents.map((d) => namedActivations[d.name]);
           }
+          console.log('========================');
+          console.log(node.name);
+          console.log(node.op);
+          if (currAct instanceof Array) {
+            currAct.forEach(act => {
+              console.log(act.shape);
+              console.log(act.dataSync());
+            });
+          }
           currAct = performMathOp(math, currAct, node);
+          console.log(currAct);
+          console.log(currAct.dataSync());
 
           namedActivations[node.name] = currAct as NDArray;
         }, untilLayer);

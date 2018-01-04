@@ -1,5 +1,5 @@
 import {Array3D, Array4D, NDArray, NDArrayMath} from 'deeplearn';
-import {Array2D} from 'deeplearn/dist/math/ndarray';
+import {Array1D, Array2D, Scalar} from 'deeplearn/dist/math/ndarray';
 
 import {Attr, DataType, Node, Tensor} from './index';
 import {tensorToNDArray} from './util';
@@ -78,14 +78,19 @@ export function performMathOp(
           {tensor_shape: {dim: []}, dtype: DataType.DT_INT32.toString()});
       return tensorToNDArray(tensor);
     }
-    case 'Placeholder':
+    case 'Placeholder': {
+      const shapeParam = getParamForName(node.attr, 'shape');
+      if (shapeParam && shapeParam.value.shape.unknown_rank) {
+        return Scalar.new(0);
+      }
       return input as NDArray;
+    }
     case 'Floor': {
       return math.floor(input as NDArray);
     }
     case 'Mul': {
-      const inputs = input as Array2D[];
-      return math.matMul(inputs[0], inputs[1]);
+      const inputs = input as NDArray[];
+      return math.multiply(inputs[0], inputs[1]);
     }
     case 'Conv2D': {
       const convolutionParam = node.attr;
@@ -125,7 +130,7 @@ export function performMathOp(
     }
 
     case 'RandomUniform': {
-      return NDArray.randUniform(input as number[], 0, 1, 'float32');
+      return NDArray.randUniform((input as NDArray).shape, 0, 1, 'float32');
     }
 
     case 'RealDiv': {
@@ -141,11 +146,12 @@ export function performMathOp(
 
     case 'Slice': {
       const inputs = input as NDArray[];
-      const shape = Array.prototype.slice.call(
-                        inputs[1].dataSync()) as [number, number, number];
-      const size = Array.prototype.slice.call(
-                       inputs[1].dataSync()) as [number, number, number];
-      return math.slice3D(input as Array3D, shape, size);
+
+      const shape = inputs[1].dataSync()[0];
+      const size = inputs[2].dataSync()[0];
+      console.log(shape);
+      console.log(size);
+      return math.slice1D(inputs[0] as Array1D, shape, size);
     }
 
     case 'Sub': {
@@ -153,18 +159,25 @@ export function performMathOp(
       return math.subStrict(inputs[0], inputs[1]);
     }
 
-    case 'relu':
+    case 'Relu':
       return math.relu(input as NDArray);
 
     case 'Softmax':
       return math.softmax(input as NDArray);
 
+    case 'Pack':
     case 'ConcatV2': {
-      const inp = input as Array3D[];
+      if (!(input instanceof Array)) {
+        return input;
+      }
+      const inp = input as Array1D[];
       let out = inp[0];
       // Workaround until concat3D(NDArray[]) is supported
       for (let i = 1; i < inp.length; ++i) {
-        out = math.concat3D(out, inp[i], 2);
+        if (inp[i].rank !== 1) {
+          inp[i] = inp[i].as1D();
+        }
+        out = math.concat1D(out, inp[i]);
       }
       return out;
     }

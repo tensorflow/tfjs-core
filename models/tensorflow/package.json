@@ -40,9 +40,13 @@
     "make-version": "./scripts/make-version"
   },
   "dependencies": {
+    "canvas": "^1.6.9",
     "dag-iterator": "file:../../../dag-iterator",
     "deeplearn": "^0.3.14",
+    "get-image-data": "^3.0.1",
+    "node-fetch": "^1.7.3",
     "protobufjs": "~6.8.0",
-    "prototxt-parser": "^0.1.4"
+    "prototxt-parser": "^0.1.4",
+    "request": "^2.83.0"
   }
 }
