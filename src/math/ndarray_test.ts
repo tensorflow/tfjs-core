@@ -1296,6 +1296,14 @@ const testsReshape: MathTests = it => {
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([3, 2]);
   });
+
+  it('reshape is functional', math => {
+    const a = Scalar.new(2.4);
+    const b = a.reshape([]);
+    expect(a.id).not.toBe(b.id);
+    b.dispose();
+    test_util.expectArraysClose(a, [2.4]);
+  });
 };
 const testsAsType: MathTests = it => {
   it('scalar bool -> int32', () => {
@@ -1343,6 +1351,14 @@ const testsAsType: MathTests = it => {
   it('int32 CPU -> GPU -> CPU', () => {
     const a = Array1D.new([1, 2, 0, 0, 5], 'int32');
     test_util.expectArraysEqual(a, [1, 2, 0, 0, 5]);
+  });
+
+  it('asType is functional', math => {
+    const a = Scalar.new(2.4, 'float32');
+    const b = a.asType('float32');
+    expect(a.id).not.toBe(b.id);
+    b.dispose();
+    test_util.expectArraysClose(a, [2.4]);
   });
 };
 const testsAsXD: MathTests = it => {

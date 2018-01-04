@@ -65,7 +65,7 @@ export class MathBackendWebGL implements MathBackend {
 
   register(dataId: number, shape: number[], dtype: DataType): void {
     if (dataId in this.texData) {
-      throw new Error(`id ${dataId} already registered`);
+      throw new Error(`data id ${dataId} already registered`);
     }
     this.texData[dataId] = {
       shape,

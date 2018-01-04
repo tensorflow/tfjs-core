@@ -336,10 +336,6 @@ export class NDArrayMath implements NDArrayManager {
   reshape<D extends DataType, R extends Rank, T extends RankMap<D>[R]>(
       x: NDArray<D>, newShape: number[]): T {
     newShape = util.inferFromImplicitShape(newShape, x.size);
-    if (util.arraysEqual(x.shape, newShape)) {
-      // No-op.
-      return x as T;
-    }
     util.assert(
         x.size === util.sizeFromShape(newShape),
         'new shape and old shape must have the same number of elements.');
@@ -357,12 +353,8 @@ export class NDArrayMath implements NDArrayManager {
    */
   cast<D extends DataType, R extends Rank>(
       x: NDArray<DataType, R>, newDType: D): RankMap<D>[R] {
-    if (x.dtype === newDType) {
-      // No-op.
-      return x as NDArray as RankMap<D>[R];
-    }
     const grad = (dy: NDArray, y: NDArray) => {
-      return {x: () => dy};
+      return {x: () => dy.reshape(dy.shape)};
     };
     return this.backendEngine.executeKernel(
                'Cast', {inputs: {x}, args: {newDType}}, grad) as RankMap<D>[R];
