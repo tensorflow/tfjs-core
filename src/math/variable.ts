@@ -78,5 +78,4 @@ export class Variable<D extends DataType = DataType, R extends Rank = Rank>
   }
 }
 
-const variable = Variable.variable;
-export {variable};
+export const variable = Variable.variable;

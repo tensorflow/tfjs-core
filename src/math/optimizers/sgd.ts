@@ -4,7 +4,7 @@ import {Variable} from '../variable';
 
 import {Optimizer} from './optimizer';
 
-export class SGDOptimizer extends Optimizer {
+export class SGDOptimizerEager extends Optimizer {
   private c: Scalar;
 
   constructor(learningRate: number) {

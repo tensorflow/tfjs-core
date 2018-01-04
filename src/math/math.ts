@@ -613,10 +613,24 @@ export class NDArrayMath implements NDArrayStorage, NDArrayManager {
     const reduceShape = shapes[1];
     const reduceSize = util.sizeFromShape(reduceShape);
     return this.executeOp('mean', () => {
-      return this.scope(keep => {
+      // Use a custom gradient to bypass 2 gradient backprops since mean is used
+      // often.
+      // TODO(nsthorat): Maybe remove this custom gradient if backprop through
+      // divide / sum are fast enough.
+      return this.customGradient(() => {
         const res = this.divide(x, Scalar.new(reduceSize));
-        return this.sum(res, axis, keepDims);
-      });
+        const value = this.sum(res, axis, keepDims);
+
+        const gradients = (dy: NDArray, y: NDArray) => {
+          if (axis != null) {
+            throw new Error(`Gradient for mean not yet implemented for axis.`);
+          }
+          return {
+            x: () => this.multiply(NDArray.onesLike(x), Scalar.new(1 / x.size))
+          };
+        };
+        return {value, gradients};
+      }, {x}, 'mean') as NDArray<'float32'>;
     });
   }
 

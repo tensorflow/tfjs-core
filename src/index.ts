@@ -21,7 +21,8 @@ import * as gpgpu_util from './math/backends/webgl/gpgpu_util';
 // tslint:disable-next-line:max-line-length
 import * as render_ndarray_gpu_util from './math/backends/webgl/render_ndarray_gpu_util';
 import * as webgl_util from './math/backends/webgl/webgl_util';
-import * as conv_util from './math/conv_util';
+// import * as conv_util from './math/conv_util';
+import {variable} from './math/variable';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
@@ -54,16 +55,19 @@ export {GPGPUContext} from './math/backends/webgl/gpgpu_context';
 export {LSTMCell, NDArrayMath} from './math/math';
 // tslint:disable-next-line:max-line-length
 export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './math/ndarray';
+export {SGDOptimizerEager} from './math/optimizers/sgd';
 export {Model} from './model';
 export {version};
+
 // Second level exports.
 export {
-  conv_util,
+  // conv_util,
   environment,
   gpgpu_util,
   render_ndarray_gpu_util,
   test_util,
   util,
+  variable,
   webgl_util,
   xhr_dataset
 };
