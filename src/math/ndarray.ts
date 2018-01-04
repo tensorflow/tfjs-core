@@ -122,7 +122,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     this.math.register(this);
     if (values != null) {
-      this.math.write(this.dataId, values, this.dtype, this.shape);
+      this.math.write(this.dataId, values);
     }
   }
 
@@ -156,7 +156,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
 
   /** Creates a ndarray with the same values/shape as the specified ndarray. */
   static like<T extends NDArray>(another: T): T {
-    const newValues = copyTypedArray(another.getValues(), another.dtype);
+    const newValues = copyTypedArray(another.dataSync(), another.dtype);
     return NDArray.make(
                another.shape, {values: newValues}, another.dtype,
                another.math) as T;
@@ -283,7 +283,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     }
     const vals = this.dataSync();
     vals[index] = value;
-    this.math.write(this.dataId, vals, this.dtype, this.shape);
+    this.math.write(this.dataId, vals);
   }
 
   async val(...locs: number[]): Promise<number> {
@@ -316,7 +316,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     this.throwIfDisposed();
     const vals = this.dataSync();
     vals.fill(value);
-    this.math.write(this.dataId, vals, this.dtype, this.shape);
+    this.math.write(this.dataId, vals);
   }
 
   /** @deprecated Use dataSync() instead. */

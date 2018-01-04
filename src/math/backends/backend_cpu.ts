@@ -34,16 +34,32 @@ import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
   private data: {[dataId: number]: DataTypeMap[DataType]} = {};
+  private canvas: HTMLCanvasElement;
 
-  dispose() {}
-  write<D extends DataType>(
-      dataId: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
+  constructor() {
+    if (typeof document !== 'undefined') {
+      this.canvas = document.createElement('canvas');
+    }
+  }
+
+  register(dataId: number, shape: number[], dtype: DataType): void {
+    this.data[dataId] = null;
+  }
+  write<D extends DataType>(dataId: number, values: DataTypeMap[D]): void {
+    if (values == null) {
+      throw new Error('MathBackendCPU.write(): values can not be null');
+    }
+    this.throwIfNoData(dataId);
     this.data[dataId] = values;
   }
   writePixels(
       dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
+    if (pixels == null) {
+      throw new Error('MathBackendCPU.writePixels(): pixels can not be null');
+    }
+    this.throwIfNoData(dataId);
     let vals: Uint8ClampedArray;
     if (pixels instanceof ImageData) {
       vals = pixels.data;
@@ -54,13 +70,17 @@ export class MathBackendCPU implements MathBackend {
     } else if (
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
-      const canvas = document.createElement('canvas');
-      canvas.width = pixels.width;
-      canvas.height = pixels.height;
-      canvas.getContext('2d').drawImage(
-          pixels, 0, 0, canvas.width, canvas.height);
-      vals = canvas.getContext('2d')
-                 .getImageData(0, 0, canvas.width, canvas.height)
+      if (this.canvas == null) {
+        throw new Error(
+            'Can\'t read pixels from HTMLImageElement outside ' +
+            'the browser.');
+      }
+      this.canvas.width = pixels.width;
+      this.canvas.height = pixels.height;
+      this.canvas.getContext('2d').drawImage(
+          pixels, 0, 0, pixels.width, pixels.height);
+      vals = this.canvas.getContext('2d')
+                 .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
     } else {
       throw new Error(
@@ -1331,11 +1351,11 @@ export class MathBackendCPU implements MathBackend {
       x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
       varianceEpsilon: number, scale?: Array4D|Array1D,
       offset?: Array4D|Array1D): Array4D {
-    const xValues = x.getValues();
-    const meanValues = mean.getValues();
-    const varianceValues = variance.getValues();
-    const scaleValues = scale ? scale.getValues() : new Float32Array([1]);
-    const offsetValues = offset ? offset.getValues() : new Float32Array([0]);
+    const xValues = x.dataSync();
+    const meanValues = mean.dataSync();
+    const varianceValues = variance.dataSync();
+    const scaleValues = scale ? scale.dataSync() : new Float32Array([1]);
+    const offsetValues = offset ? offset.dataSync() : new Float32Array([0]);
     const outValues = new Float32Array(xValues.length);
 
     for (let i = 0; i < xValues.length; i++) {
@@ -1424,6 +1444,7 @@ export class MathBackendCPU implements MathBackend {
     }
     return result;
   }
+  dispose() {}
 }
 
 ENV.registerBackend('cpu', () => new MathBackendCPU());

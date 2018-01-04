@@ -26,7 +26,6 @@ import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
-
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -62,16 +61,36 @@ import * as webgl_util from './webgl/webgl_util';
 
 export class MathBackendWebGL implements MathBackend {
   private texData: {[dataId: number]: TextureData} = {};
+  private canvas: HTMLCanvasElement;
 
+  register(dataId: number, shape: number[], dtype: DataType): void {
+    if (dataId in this.texData) {
+      throw new Error(`id ${dataId} already registered`);
+    }
+    this.texData[dataId] = {
+      shape,
+      dtype,
+      values: null,
+      texture: null,
+      texShape: null,
+      textureType: null
+    };
+  }
   writePixels(
       dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
+    if (pixels == null) {
+      throw new Error('MathBackendWebGL.writePixels(): pixels can not be null');
+    }
+    this.throwIfNoData(dataId);
     const texShape: [number, number] = [pixels.height, pixels.width];
-    const texture = dataId in this.texData ?
-        this.texData[dataId].texture :
+    const texture = this.texData[dataId].texture ||
         this.textureManager.acquireTexture(texShape);
+    const {shape} = this.texData[dataId];
+
     this.texData[dataId] = {
+      shape,
       values: null,
       texture,
       textureType: TextureType.RGBA_COLOR,
@@ -79,37 +98,40 @@ export class MathBackendWebGL implements MathBackend {
       numChannels,
       dtype: 'int32'
     };
+    if (pixels instanceof HTMLVideoElement) {
+      if (this.canvas == null) {
+        throw new Error(
+            'Can\'t read pixels from HTMLImageElement outside ' +
+            'the browser.');
+      }
+      this.canvas.width = pixels.width;
+      this.canvas.height = pixels.height;
+      this.canvas.getContext('2d').drawImage(
+          pixels, 0, 0, pixels.width, pixels.height);
+      pixels = this.canvas;
+    }
     // Pixel data is immediate storage since it already lives on gpu.
     this.gpgpu.uploadPixelDataToTexture(texture, pixels);
   }
-  write<D extends DataType>(
-      dataId: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
+  write<D extends DataType>(dataId: number, values: DataTypeMap[D]): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
-    const {texture, texShape} = this.getOrMakeTexData(dataId, shape, dtype);
+    this.throwIfNoData(dataId);
+
+    const {texture, texShape} = this.texData[dataId];
     if (texture != null) {
       // Release the old texture.
       this.textureManager.releaseTexture(texture, texShape);
       this.texData[dataId].texture = null;
+      this.texData[dataId].texShape = null;
+      this.texData[dataId].textureType = null;
     }
-    // Point to the new values.
     this.texData[dataId].values = values;
+
     if (!this.delayedStorage) {
       this.uploadToGPU(dataId);
     }
-  }
-
-  private getOrMakeTexData(dataId: number, shape: number[], dtype: DataType):
-      TextureData {
-    if (!(dataId in this.texData)) {
-      const texShape =
-          webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
-      const textureType = TextureType.DEFAULT;
-      this.texData[dataId] =
-          {texture: null, values: null, textureType, texShape, dtype};
-    }
-    return this.texData[dataId];
   }
 
   readSync<D extends DataType>(dataId: number): DataTypeMap[D] {
@@ -199,6 +221,9 @@ export class MathBackendWebGL implements MathBackend {
     } else {
       this.gpgpuCreatedLocally = false;
     }
+    if (typeof document !== 'undefined') {
+      this.canvas = document.createElement('canvas');
+    }
     this.textureManager = new TextureManager(this.gpgpu);
   }
 
@@ -208,6 +233,7 @@ export class MathBackendWebGL implements MathBackend {
 
   clone<D extends DataType, T extends NDArray<D>>(x: T): T {
     this.throwIfNoData(x.dataId);
+    this.uploadToGPU(x.dataId);
     const {texShape} = this.texData[x.dataId];
     // Pretend the source was in logical shape that matches the texture shape.
     const source = x.as2D(texShape[0], texShape[1]);
@@ -771,7 +797,6 @@ export class MathBackendWebGL implements MathBackend {
       this.uploadToGPU(input.dataId);
       return {array: input, texData: this.texData[input.dataId]};
     });
-    this.getOrMakeTexData(output.dataId, output.shape, output.dtype);
     this.uploadToGPU(output.dataId);
     const outputData = {array: output, texData: this.texData[output.dataId]};
     const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
@@ -818,11 +843,15 @@ export class MathBackendWebGL implements MathBackend {
 
   private uploadToGPU(dataId: number): void {
     this.throwIfNoData(dataId);
-    const {texShape, values, texture, dtype} = this.texData[dataId];
+    const {shape, values, texture, dtype} = this.texData[dataId];
     if (texture != null) {
       // Array is already on GPU. No-op.
       return;
     }
+    const texShape =
+        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
+    this.texData[dataId].textureType = TextureType.DEFAULT;
+    this.texData[dataId].texShape = texShape;
     const newTexture = this.textureManager.acquireTexture(texShape);
     this.texData[dataId].texture = newTexture;
     if (values != null) {
@@ -842,6 +871,8 @@ export class MathBackendWebGL implements MathBackend {
     if (dontKeepCopyOnGPU && texture != null) {
       this.textureManager.releaseTexture(texture, texShape);
       this.texData[dataId].texture = null;
+      this.texData[dataId].texShape = null;
+      this.texData[dataId].textureType = null;
     }
     if (float32Values != null) {
       this.texData[dataId].values = float32ToTypedArray(float32Values, dtype);
