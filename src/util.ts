@@ -1,4 +1,4 @@
-import {DataTypes, NDArray} from './math/ndarray';
+import {DataType, DataTypeMap, NDArray} from './math/ndarray';
 
 /**
  * @license
@@ -77,6 +77,13 @@ export function assertShapesMatch(
   assert(
       arraysEqual(shapeA, shapeB),
       errorMessagePrefix + `Shapes ${shapeA} and ${shapeB} must match`);
+}
+
+export function assertTypesMatch(a: NDArray, b: NDArray): void {
+  assert(
+      a.dtype === b.dtype,
+      `The dtypes of the first (${a.dtype}) and ` +
+          `second (${b.dtype}) input must match`);
 }
 
 // tslint:disable-next-line:no-any
@@ -264,13 +271,11 @@ export function inferFromImplicitShape(
   return newShape;
 }
 
-export type DType = 'float32'|'int32'|'bool';
-
 export const NAN_INT32 = 1 << 31;
 export const NAN_BOOL = 255;
 export const NAN_FLOAT32 = NaN;
 
-export function getNaN(dtype: DType): number {
+export function getNaN(dtype: DataType): number {
   if (dtype === 'float32') {
     return NAN_FLOAT32;
   } else if (dtype === 'int32') {
@@ -282,7 +287,7 @@ export function getNaN(dtype: DType): number {
   }
 }
 
-export function isValNaN(val: number, dtype: DType): boolean {
+export function isValNaN(val: number, dtype: DataType): boolean {
   if (isNaN(val)) {
     return true;
   }
@@ -311,8 +316,8 @@ export function squeezeShape(shape: number[]):
   return {newShape, keptDims};
 }
 
-export function getTypedArrayFromDType<D extends keyof DataTypes>(
-    dtype: D, size: number): DataTypes[D] {
+export function getTypedArrayFromDType<D extends DataType>(
+    dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
     values = new Float32Array(size);
@@ -337,7 +342,7 @@ export function isNDArrayInList(
 }
 
 export function checkForNaN(
-    vals: TypedArray, dtype: keyof DataTypes, name: string): void {
+    vals: TypedArray, dtype: DataType, name: string): void {
   for (let i = 0; i < vals.length; i++) {
     if (isValNaN(vals[i], dtype)) {
       throw Error(`The result of the last math.${name} has NaNs.`);
@@ -345,17 +350,15 @@ export function checkForNaN(
   }
 }
 
-export function flattenNameArrayMap(nameArrayMap: NDArray|
-                                    NamedArrayMap): NDArray[] {
+export function flattenNameArrayMap(
+    nameArrayMap: NDArray|NamedArrayMap, keys?: string[]): NDArray[] {
   const xs: NDArray[] = [];
-  let xKeys: string[];
   if (nameArrayMap instanceof NDArray) {
     xs.push(nameArrayMap);
   } else {
     const xMap = nameArrayMap as {[xName: string]: NDArray};
-    xKeys = Object.keys(xMap);
-    for (let i = 0; i < xKeys.length; i++) {
-      xs.push(xMap[xKeys[i]]);
+    for (let i = 0; i < keys.length; i++) {
+      xs.push(xMap[keys[i]]);
     }
   }
   return xs;

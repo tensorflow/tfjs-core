@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArrayMathCPU} from '../../math/backends/backend_cpu';
+import {ENV} from '../../environment';
 import * as concat_util from '../../math/concat_util';
 import {Array1D, Array2D, Array3D, Array4D} from '../../math/ndarray';
 import {Tensor} from '../graph';
@@ -25,7 +25,7 @@ import {TensorArrayMap, SummedTensorArrayMap} from '../tensor_array_map';
 import {Concat1D, Concat2D, Concat3D, Concat4D} from './concat';
 
 describe('concat operation', () => {
-  let math: NDArrayMathCPU;
+  const math = ENV.math;  
 
   let x1Tensor: Tensor;
   let x2Tensor: Tensor;
@@ -35,7 +35,6 @@ describe('concat operation', () => {
   let gradientArrays: SummedTensorArrayMap;
 
   beforeEach(() => {
-    math = new NDArrayMathCPU();
     tensorArrayMap = new TensorArrayMap();
     gradientArrays = new SummedTensorArrayMap(math);
   });
