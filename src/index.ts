@@ -21,7 +21,7 @@ import * as gpgpu_util from './math/backends/webgl/gpgpu_util';
 // tslint:disable-next-line:max-line-length
 import * as render_ndarray_gpu_util from './math/backends/webgl/render_ndarray_gpu_util';
 import * as webgl_util from './math/backends/webgl/webgl_util';
-// import * as conv_util from './math/conv_util';
+import * as conv_util from './math/conv_util';
 import {variable} from './math/variable';
 import * as test_util from './test_util';
 import * as util from './util';
@@ -61,7 +61,7 @@ export {version};
 
 // Second level exports.
 export {
-  // conv_util,
+  conv_util,
   environment,
   gpgpu_util,
   render_ndarray_gpu_util,

@@ -1,71 +1,40 @@
 import * as dl from 'deeplearn';
 
-const TRAIN_TEST_RATIO = 5 / 6;
+import {MnistData} from './data';
 
-const dataset = new dl.XhrDataset({
-  'data': [
-    {
-      'name': 'images',
-      'path':
-          'https://storage.googleapis.com/learnjs-data/model-builder/mnist_images.png',
-      'dataType': 'png',
-      'shape': [28, 28, 1]
-    },
-    {
-      'name': 'labels',
-      'path':
-          'https://storage.googleapis.com/learnjs-data/model-builder/mnist_labels_uint8',
-      'dataType': 'uint8',
-      'shape': [10]
-    }
-  ],
-  modelConfigs: {}
-});
+const math = dl.ENV.math;
 
-function getTestData(): dl.NDArray[][] {
-  const data = dataset.getData();
-  if (data == null) {
-    return null;
+const optimizer = new dl.SGDOptimizerEager(.001);
+
+const W = dl.variable(
+    dl.Array2D.randNormal([784, 10], 0, 1 / Math.sqrt(784), 'float32'));
+
+const model = (xs: dl.Array2D<'float32'>): dl.Array2D<'float32'> => {
+  return math.matMul(xs, W) as dl.Array2D<'float32'>;
+};
+
+const loss = (labels: dl.Array2D<'float32'>,
+              ys: dl.Array2D<'float32'>): dl.Scalar => {
+  return math.mean(math.softmaxCrossEntropyWithLogits(labels, ys)) as dl.Scalar;
+};
+
+async function train() {
+  const data = new MnistData();
+  await data.load();
+
+  const numBatches = 50;
+  const batchSize = 64;
+  for (let i = 0; i < numBatches; i++) {
+    const lossValue = optimizer.minimize(() => {
+      const batch = data.getNextBatch(batchSize);
+
+      return loss(batch.labels, model(batch.xs));
+    });
+
+    console.log('loss:', lossValue.dataSync());
+
+    await dl.util.nextFrame();
   }
-  const [images, labels] = dataset.getData() as [dl.NDArray[], dl.NDArray[]];
-
-  const start = Math.floor(TRAIN_TEST_RATIO * images.length);
-
-  return [images.slice(start), labels.slice(start)];
 }
 
-function getTrainingData(): dl.NDArray[][] {
-  const [images, labels] = dataset.getData() as [dl.NDArray[], dl.NDArray[]];
-
-  const end = Math.floor(TRAIN_TEST_RATIO * images.length);
-
-  return [images.slice(0, end), labels.slice(0, end)];
-}
-
-const W = dl.variable(dl.Array2D.randNormal([784, 10]));
-function model(x: dl.Array2D) {
-  return dl.ENV.math.matMul(x, W);
-}
-
-function loss(labels: dl.Array2D<'float32'>, y: dl.Array2D) {
-  return dl.ENV.math.mean(dl.ENV.math.softmaxCrossEntropyWithLogits(labels, y))
-}
-
-async function mnist() {
-  await dataset.fetchData();
-
-  const trainingData = getTrainingData();
-  dl.util.createShuffledIndices(trainingData.length);
-
-  console.log(trainingData);
-
-  console.log(dl);
-
-  //   const optimizer = new dl.SGDOptimizerEager(.1);
-
-  console.log('data fetched...');
-}
-
-console.log(getTestData, getTrainingData);
-
-mnist();
+train();

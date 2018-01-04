@@ -10,7 +10,7 @@ export class SGDOptimizerEager extends Optimizer {
   constructor(learningRate: number) {
     super();
 
-    this.c = ENV.math.keep(Scalar.new(learningRate));
+    this.c = ENV.math.keep(Scalar.new(-learningRate));
   }
 
   applyGradients(variableGradients: {[varName: string]: Variable}) {

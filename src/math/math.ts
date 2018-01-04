@@ -2544,7 +2544,7 @@ export class NDArrayMath implements NDArrayManager {
    * Computes and returns the gradient of f(x) with respect to every variable.
    */
   variableGradients<D extends DataType>(f: () => Scalar<D>) {
-    return this.gradients(f, this.registeredVariables);
+    return this.valueAndGradients(f, this.registeredVariables);
   }
 
   /**
