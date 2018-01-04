@@ -34,6 +34,14 @@ import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
   private data: {[id: number]: DataTypeMap[DataType]} = {};
+  private canvas: HTMLCanvasElement;
+
+  constructor() {
+    if (typeof document !== 'undefined') {
+      this.canvas = document.createElement('canvas');
+    }
+  }
+
   register(id: number, shape: number[], dtype: DataType): void {
     this.data[id] = null;
   }
@@ -62,13 +70,17 @@ export class MathBackendCPU implements MathBackend {
     } else if (
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
-      const canvas = document.createElement('canvas');
-      canvas.width = pixels.width;
-      canvas.height = pixels.height;
-      canvas.getContext('2d').drawImage(
-          pixels, 0, 0, canvas.width, canvas.height);
-      vals = canvas.getContext('2d')
-                 .getImageData(0, 0, canvas.width, canvas.height)
+      if (this.canvas == null) {
+        throw new Error(
+            'Can\'t read pixels from HTMLImageElement outside ' +
+            'the browser.');
+      }
+      this.canvas.width = pixels.width;
+      this.canvas.height = pixels.height;
+      this.canvas.getContext('2d').drawImage(
+          pixels, 0, 0, pixels.width, pixels.height);
+      vals = this.canvas.getContext('2d')
+                 .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
     } else {
       throw new Error(

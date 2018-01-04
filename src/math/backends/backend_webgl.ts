@@ -61,6 +61,7 @@ import * as webgl_util from './webgl/webgl_util';
 
 export class MathBackendWebGL implements MathBackend {
   private texData: {[id: number]: TextureData} = {};
+  private canvas: HTMLCanvasElement;
 
   register(id: number, shape: number[], dtype: DataType): void {
     if (id in this.texData) {
@@ -97,6 +98,18 @@ export class MathBackendWebGL implements MathBackend {
       numChannels,
       dtype: 'int32'
     };
+    if (pixels instanceof HTMLVideoElement) {
+      if (this.canvas == null) {
+        throw new Error(
+            'Can\'t read pixels from HTMLImageElement outside ' +
+            'the browser.');
+      }
+      this.canvas.width = pixels.width;
+      this.canvas.height = pixels.height;
+      this.canvas.getContext('2d').drawImage(
+          pixels, 0, 0, pixels.width, pixels.height);
+      pixels = this.canvas;
+    }
     // Pixel data is immediate storage since it already lives on gpu.
     this.gpgpu.uploadPixelDataToTexture(texture, pixels);
   }
@@ -207,6 +220,9 @@ export class MathBackendWebGL implements MathBackend {
       this.gpgpuCreatedLocally = true;
     } else {
       this.gpgpuCreatedLocally = false;
+    }
+    if (typeof document !== 'undefined') {
+      this.canvas = document.createElement('canvas');
     }
     this.textureManager = new TextureManager(this.gpgpu);
   }
