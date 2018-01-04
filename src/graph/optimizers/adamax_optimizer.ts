@@ -17,11 +17,11 @@
 
 import {NDArrayMath} from '../../math/math';
 import {NDArray, Scalar} from '../../math/ndarray';
+import {Optimizer} from '../../math/optimizers/optimizer';
+import {Variable} from '../../math/variable';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
-import {Optimizer} from './optimizer';
 
 export class AdamaxOptimizer extends Optimizer {
   constructor(
@@ -34,6 +34,10 @@ export class AdamaxOptimizer extends Optimizer {
     this.b2 = Scalar.new(this.beta2);
 
     this.accB1 = Scalar.new(this.beta1);
+  }
+
+  applyGradients(variableGradients: {[varName: string]: Variable}) {
+    throw new Error(`Adamax optimizer not yet implemented for eager mode.`);
   }
 
   beforeBatch(

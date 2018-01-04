@@ -16,17 +16,20 @@
  */
 import {NDArrayMath} from '../../math/math';
 import {NDArray, Scalar} from '../../math/ndarray';
+import {Optimizer} from '../../math/optimizers/optimizer';
+import {Variable} from '../../math/variable';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
-import {Optimizer} from './optimizer';
-
 export class AdagradOptimizer extends Optimizer {
-  constructor(
-      protected learningRate: number, specifiedVariableList?: Node[]) {
+  constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.eps = Scalar.new(1e-6);
+  }
+
+  applyGradients(variableGradients: {[varName: string]: Variable}) {
+    throw new Error(`Adagrad optimizer not yet implemented for eager mode.`);
   }
 
   beforeBatch(

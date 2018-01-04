@@ -4,7 +4,7 @@ import {MnistData} from './data';
 
 const math = dl.ENV.math;
 
-const optimizer = new dl.SGDOptimizerEager(.001);
+const optimizer = new dl.SGDOptimizer(.001);
 
 const W = dl.variable(
     dl.Array2D.randNormal([784, 10], 0, 1 / Math.sqrt(784), 'float32'));

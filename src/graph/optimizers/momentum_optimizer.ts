@@ -17,11 +17,11 @@
 
 import {NDArrayMath} from '../../math/math';
 import {NDArray, Scalar} from '../../math/ndarray';
+import {SGDOptimizer} from '../../math/optimizers/sgd_optimizer';
+import {Variable} from '../../math/variable';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
-import {SGDOptimizer} from './sgd_optimizer';
 
 export class MomentumOptimizer extends SGDOptimizer {
   constructor(
@@ -29,6 +29,10 @@ export class MomentumOptimizer extends SGDOptimizer {
       specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.m = Scalar.new(this.momentum);
+  }
+
+  applyGradients(variableGradients: {[varName: string]: Variable}) {
+    throw new Error(`Momentum optimizer not yet implemented for eager mode.`);
   }
 
   beforeBatch(
