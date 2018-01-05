@@ -2586,8 +2586,9 @@ export class NDArrayMath implements NDArrayManager {
    */
   variableGradients<D extends DataType>(f: () => Scalar<D>):
       {value: Scalar<D>, gradients: NamedVariableMap} {
-    return this.valueAndGradients(f, this.registeredVariables) as
+    const a = this.valueAndGradients(f, this.registeredVariables) as
         {value: Scalar<D>, gradients: NamedVariableMap};
+    return a;
   }
 
   /**

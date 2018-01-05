@@ -42,7 +42,12 @@ export abstract class Optimizer {
   minimize<D extends DataType>(f: () => Scalar<D>, returnCost = false):
       Scalar<D>|null {
     const variableGradients = this.computeGradients(f);
+
     this.applyGradients(variableGradients.gradients);
+
+    // Dispose gradients.
+    const varNames = Object.keys(variableGradients.gradients);
+    varNames.forEach(varName => variableGradients.gradients[varName].dispose());
 
     if (returnCost) {
       return variableGradients.value as Scalar<D>;

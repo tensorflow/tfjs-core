@@ -30,7 +30,14 @@ const tests: MathTests = it => {
 
     const x = variable(Scalar.new(4));
 
+    let numArrays = math.getNumArrays();
+
     let cost = optimizer.minimize(() => math.square(x), /* returnCost */ true);
+
+    // Cost, internal c, and the new variable value should be the only
+    // additional arrays.
+    expect(math.getNumArrays()).toBe(numArrays + 3);
+    numArrays = math.getNumArrays();
 
     // de/dx = 2x
     const expectedValue1 = -2 * 4 * learningRate + 4;
@@ -38,6 +45,8 @@ const tests: MathTests = it => {
     test_util.expectArraysClose(cost, [Math.pow(4, 2)]);
 
     cost = optimizer.minimize(() => math.square(x), /* returnCost */ false);
+    // Cost should be the only additional array.
+    expect(math.getNumArrays()).toBe(numArrays + 1);
 
     const expectedValue2 = -2 * expectedValue1 * learningRate + expectedValue1;
     test_util.expectArraysClose(x, [expectedValue2]);
