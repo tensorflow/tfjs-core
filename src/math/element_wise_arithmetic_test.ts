@@ -183,6 +183,11 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
          expect(() => math.elementWiseMul(a, b)).toThrowError();
          expect(() => math.elementWiseMul(b, a)).toThrowError();
        });
+    it('nikhil scalar * scalar', math => {
+      const x = Scalar.new(4);
+      const y = math.multiply(x, Scalar.new(2));
+      test_util.expectArraysClose(y, [8]);
+    });
 
     it('same-shaped ndarrays', math => {
       const a = Array2D.new([2, 2], [1, 2, -3, -4]);

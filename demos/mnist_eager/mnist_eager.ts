@@ -28,14 +28,15 @@ async function train() {
 
   const steps = 100;
   const batchSize = 64;
+  const returnCost = true;
   for (let i = 0; i < steps; i++) {
-    const lossValue = optimizer.minimize(() => {
+    const cost = optimizer.minimize(() => {
       const batch = data.nextTrainBatch(batchSize);
 
       return loss(batch.labels, model(batch.xs));
-    });
+    }, returnCost);
 
-    const displayStr = `loss[${i}]: ${lossValue.dataSync()}`;
+    const displayStr = `loss[${i}]: ${cost.dataSync()}`;
     messageElement.innerText = `${displayStr}\n`;
     console.log(displayStr);
 

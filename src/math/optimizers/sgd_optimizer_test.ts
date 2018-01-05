@@ -15,42 +15,38 @@
  * =============================================================================
  */
 import {InputProvider} from '../../data/input_provider';
-import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import {Array1D, Scalar, variable} from '../../math/ndarray';
 import * as test_util from '../../test_util';
+import {MathTests} from '../../test_util';
 
 import {SGDOptimizer} from './sgd_optimizer';
 
-describe('sgd optimizer', () => {
-  it('eager', () => {
-    const math = ENV.math;
+const tests: MathTests = it => {
+  it('nikhil eager', math => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
-    math.scope(() => {
-      const x = variable(Scalar.new(4));
+    const x = variable(Scalar.new(4));
 
-      optimizer.minimize(() => math.square(x));
+    let cost = optimizer.minimize(() => math.square(x), /* returnCost */ true);
 
-      // de/dx = 2x
-      const expectedValue1 = -2 * 4 * learningRate + 4;
-      test_util.expectArraysClose(x, [expectedValue1]);
+    // de/dx = 2x
+    const expectedValue1 = -2 * 4 * learningRate + 4;
+    test_util.expectArraysClose(x, [expectedValue1]);
+    test_util.expectArraysClose(cost, [Math.pow(4, 2)]);
 
-      optimizer.minimize(() => math.square(x));
+    cost = optimizer.minimize(() => math.square(x), /* returnCost */ false);
 
-      const expectedValue2 =
-          -2 * expectedValue1 * learningRate + expectedValue1;
-      test_util.expectArraysClose(x, [expectedValue2]);
+    const expectedValue2 = -2 * expectedValue1 * learningRate + expectedValue1;
+    test_util.expectArraysClose(x, [expectedValue2]);
+    expect(cost).toBe(null);
 
-    });
     optimizer.dispose();
   });
 
-  it('graph', () => {
-    const math = ENV.math;
-
+  it('graph', math => {
     const inputProvider: InputProvider = {
       getNextCopy() {
         return Array1D.new([2, 4]);
@@ -58,19 +54,24 @@ describe('sgd optimizer', () => {
       disposeCopy(math, example) {}
     };
 
-    math.scope(() => {
-      const g = new Graph();
-      const x = g.placeholder('x', [2]);
-      const y = g.square(x);
-      const z = g.add(x, g.constant(3));
-      const w = g.reduceSum(g.add(y, z));
-      const optimizer = new SGDOptimizer(0.1);
-      const session = new Session(g, math);
-      // w = reduce_sum(x^2 + x + 3)
-      // dw/dx = [2*x_1 + 1, 2*x_2 + 1]
-      session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);
-      const dwdx = session.gradientArrayMap.get(x).dataSync();
-      test_util.expectArraysClose(dwdx, new Float32Array([5, 9]));
-    });
+    const g = new Graph();
+    const x = g.placeholder('x', [2]);
+    const y = g.square(x);
+    const z = g.add(x, g.constant(3));
+    const w = g.reduceSum(g.add(y, z));
+    const optimizer = new SGDOptimizer(0.1);
+    const session = new Session(g, math);
+    // w = reduce_sum(x^2 + x + 3)
+    // dw/dx = [2*x_1 + 1, 2*x_2 + 1]
+    session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);
+    const dwdx = session.gradientArrayMap.get(x).dataSync();
+    test_util.expectArraysClose(dwdx, new Float32Array([5, 9]), 1e-1);
   });
-});
+};
+
+test_util.describeMathCPU('SGDOptimizer', [tests]);
+test_util.describeMathGPU('SGDOptimizer', [tests], [
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+]);

@@ -19,6 +19,7 @@ import {ENV} from '../../environment';
 import {Node, VariableNode} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
 import * as session_util from '../../graph/session_util';
+// tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {DataType, NDArray, Scalar} from '../../math/ndarray';
@@ -38,10 +39,17 @@ export abstract class Optimizer {
   /**
    * Eager mode methods.
    */
-  minimize<D extends DataType>(f: () => Scalar<D>): Scalar<D> {
+  minimize<D extends DataType>(f: () => Scalar<D>, returnCost = false):
+      Scalar<D>|null {
     const variableGradients = this.computeGradients(f);
     this.applyGradients(variableGradients.gradients);
-    return variableGradients.value as Scalar<D>;
+
+    if (returnCost) {
+      return variableGradients.value as Scalar<D>;
+    } else {
+      variableGradients.value.dispose();
+      return null;
+    }
   }
 
   computeGradients<D extends DataType>(f: () => Scalar<D>):
