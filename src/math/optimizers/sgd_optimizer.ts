@@ -25,7 +25,7 @@ import {Scalar, Variable} from '../ndarray';
 import {Optimizer} from './optimizer';
 
 export class SGDOptimizer extends Optimizer {
-  private cEager: Scalar;
+  private c: Scalar;
 
   constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
@@ -33,17 +33,18 @@ export class SGDOptimizer extends Optimizer {
 
   // Eager mode
   applyGradients(variableGradients: {[varName: string]: Variable}) {
-    if (this.cEager == null) {
-      this.cEager = ENV.math.keep(Scalar.new(-this.learningRate));
+    const math = ENV.math;
+    if (this.c == null) {
+      this.c = math.keep(Scalar.new(-this.learningRate));
     }
 
     const varNames = Object.keys(variableGradients);
     varNames.forEach(varName => {
       const gradient = variableGradients[varName];
-      const value = ENV.math.registeredVariables[varName];
+      const value = math.registeredVariables[varName];
 
-      const newValue = ENV.math.scope(() => {
-        return ENV.math.add(ENV.math.multiply(this.cEager, gradient), value);
+      const newValue = math.scope(() => {
+        return math.add(math.multiply(this.c, gradient), value);
       });
 
       value.assign(newValue);
@@ -60,7 +61,7 @@ export class SGDOptimizer extends Optimizer {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
         const variable =
-            math.scaledArrayAdd(this.c, gradient, this.one, oldVariable);
+            math.scaledArrayAdd(this.cGraph, gradient, this.one, oldVariable);
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
 

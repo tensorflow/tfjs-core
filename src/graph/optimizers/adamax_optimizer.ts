@@ -84,7 +84,7 @@ export class AdamaxOptimizer extends Optimizer {
 
         const variable = math.scaledArrayAdd(
             this.one, oldVariable,
-            math.divideStrict(this.c, math.subtract(this.one, this.accB1)),
+            math.divideStrict(this.cGraph, math.subtract(this.one, this.accB1)),
             math.divide(
                 newFirstMoment, math.add(this.eps, newWeightedInfNorm)));
 

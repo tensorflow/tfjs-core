@@ -86,7 +86,7 @@ export class AdamOptimizer extends Optimizer {
             math.divide(newSecondMoment, math.subtract(this.one, this.accB2));
 
         const variable = math.scaledArrayAdd(
-            this.c,
+            this.cGraph,
             math.divide(
                 biasCorrectedFirstMoment,
                 math.add(math.sqrt(biasCorrectedSecondMoment), this.eps)),

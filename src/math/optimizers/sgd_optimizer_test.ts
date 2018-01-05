@@ -18,13 +18,37 @@ import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
-import {Array1D} from '../../math/ndarray';
+import {Array1D, Scalar, variable} from '../../math/ndarray';
 import * as test_util from '../../test_util';
 
 import {SGDOptimizer} from './sgd_optimizer';
 
 describe('sgd optimizer', () => {
-  it('basic', () => {
+  it('eager', () => {
+    const math = ENV.math;
+    const learningRate = .1;
+    const optimizer = new SGDOptimizer(learningRate);
+
+    math.scope(() => {
+      const x = variable(Scalar.new(4));
+
+      optimizer.minimize(() => math.square(x));
+
+      // de/dx = 2x
+      const expectedValue1 = -2 * 4 * learningRate + 4;
+      test_util.expectArraysClose(x, [expectedValue1]);
+
+      optimizer.minimize(() => math.square(x));
+
+      const expectedValue2 =
+          -2 * expectedValue1 * learningRate + expectedValue1;
+      test_util.expectArraysClose(x, [expectedValue2]);
+
+    });
+    optimizer.dispose();
+  });
+
+  it('graph', () => {
     const math = ENV.math;
 
     const inputProvider: InputProvider = {

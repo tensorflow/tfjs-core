@@ -74,7 +74,7 @@ export class AdadeltaOptimizer extends Optimizer {
             gradient);
 
         const variable =
-            math.scaledArrayAdd(this.c, updates, this.one, oldVariable);
+            math.scaledArrayAdd(this.cGraph, updates, this.one, oldVariable);
 
         const updateSquare = math.multiply(updates, updates);
         // Exponential decay of average updated values.

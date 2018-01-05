@@ -63,11 +63,11 @@ export abstract class Optimizer {
         session_util.getVariableNodesFromEvaluationSet(runtime.nodes) :
         this.specifiedVariableNodes;
     if (batchSize !== this.prevBatchSize) {
-      if (this.c != null) {
-        this.c.dispose();
+      if (this.cGraph != null) {
+        this.cGraph.dispose();
       }
       this.prevBatchSize = batchSize;
-      this.c = math.keep(Scalar.new(-this.learningRate / batchSize));
+      this.cGraph = math.keep(Scalar.new(-this.learningRate / batchSize));
     }
     this.variableNodes.forEach(
         node => this.variableGradients.set(
@@ -95,20 +95,24 @@ export abstract class Optimizer {
       gradientArrayMap: SummedTensorArrayMap): void;
 
   dispose() {
-    if (this.c != null) {
-      this.c.dispose();
+    if (this.cGraph != null) {
+      this.cGraph.dispose();
     }
     this.one.dispose();
-    this.variableNodes.forEach(node => {
-      node.data.dispose();
-    });
-    this.specifiedVariableNodes.forEach(node => {
-      node.data.dispose();
-    });
+    if (this.variableNodes != null) {
+      this.variableNodes.forEach(node => {
+        node.data.dispose();
+      });
+    }
+    if (this.specifiedVariableNodes != null) {
+      this.specifiedVariableNodes.forEach(node => {
+        node.data.dispose();
+      });
+    }
   }
 
   protected variableGradients = new TensorArrayMap();
   protected prevBatchSize: number;
   protected one: Scalar;
-  protected c: Scalar;
+  protected cGraph: Scalar;
 }

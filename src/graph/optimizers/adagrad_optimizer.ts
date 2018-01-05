@@ -58,7 +58,8 @@ export class AdagradOptimizer extends Optimizer {
         const gradientSquare = math.multiply(gradient, gradient);
         const cache = math.add(oldCache, gradientSquare);
         const variable = math.scaledArrayAdd(
-            this.c, math.divide(gradient, math.add(math.sqrt(cache), this.eps)),
+            this.cGraph,
+            math.divide(gradient, math.add(math.sqrt(cache), this.eps)),
             this.one, oldVariable);
         this.accumulatedSquaredGradients.set(node.output, keep(cache));
         activationArrayMap.set(node.output, keep(variable));

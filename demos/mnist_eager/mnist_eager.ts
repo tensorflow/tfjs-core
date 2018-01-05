@@ -5,11 +5,11 @@ import {MnistData} from './data';
 const math = dl.ENV.math;
 const optimizer = new dl.SGDOptimizer(.05);
 
-const W = dl.variable(
+const weights = dl.variable(
     dl.Array2D.randNormal([784, 10], 0, 1 / Math.sqrt(784), 'float32'));
 
 const model = (xs: dl.Array2D<'float32'>): dl.Array2D<'float32'> => {
-  return math.matMul(xs, W) as dl.Array2D<'float32'>;
+  return math.matMul(xs, weights) as dl.Array2D<'float32'>;
 };
 
 const loss = (labels: dl.Array2D<'float32'>,
