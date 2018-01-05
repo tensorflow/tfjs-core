@@ -1565,10 +1565,14 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   conv1d<T extends NDArray>(
       input: T, filter: Array3D, bias: Array1D|null, stride: number,
-      pad: 'valid'|'same'|number): T {
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input3D = input as NDArray as Array3D;
     let reshapedTo3D = false;
     if (input.rank === 2) {
@@ -1602,7 +1606,8 @@ export class NDArrayMath implements NDArrayManager {
     const strides: [number, number] = [1, stride];
 
     return this.executeOp('Conv1D', () => {
-      const res = this.conv2d(input4D, filter4D, bias, strides, pad);
+      const res = this.conv2d(input4D, filter4D, bias, strides, pad,
+        dimRoundingMode);
       if (reshapedTo3D) {
         return res.as2D(res.shape[2], res.shape[3]) as NDArray as T;
       }
@@ -1628,10 +1633,15 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   conv2d<T extends NDArray>(
       input: T, filter: Array4D, bias: Array1D|null,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -1658,7 +1668,8 @@ export class NDArrayMath implements NDArrayManager {
             `input depth for filter ${filter.shape[2]}.`);
 
     const convInfo =
-        conv_util.computeConv2DInfo(input4D.shape, filter.shape, strides, pad);
+        conv_util.computeConv2DInfo(input4D.shape, filter.shape, strides, pad,
+            dimRoundingMode);
     return this.executeOp('Conv2D', () => {
       const res = this.backendEngine.executeKernel(
           'Conv2D', {inputs: {x: input4D, filter, bias}, args: {convInfo}});
@@ -1684,11 +1695,15 @@ export class NDArrayMath implements NDArrayManager {
    * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   conv2dDerInput<T extends NDArray>(
       inShape: [number, number, number, number]|[number, number, number], dy: T,
       filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number): T {
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     util.assert(
         inShape.length === dy.rank,
         `Length of inShape ` +
@@ -1727,7 +1742,8 @@ export class NDArrayMath implements NDArrayManager {
             `match output depth for filter ${filter.shape[3]}.`);
 
     const convInfo =
-        conv_util.computeConv2DInfo(inShape4D, filter.shape, strides, pad);
+        conv_util.computeConv2DInfo(inShape4D, filter.shape, strides, pad,
+            dimRoundingMode);
     return this.executeOp('conv2dDerInput', () => {
       const res = this.backendEngine.executeKernel(
           'Conv2DDerInput', {inputs: {dy: dy4D, filter}, args: {convInfo}});
@@ -1768,10 +1784,15 @@ export class NDArrayMath implements NDArrayManager {
    * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   conv2dDerFilter<T extends NDArray>(
       input: T, dy: T, filterShape: [number, number, number, number],
-      strides: [number, number]|number, pad: 'valid'|'same'|number): Array4D {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): Array4D {
     let input4D = input as NDArray as Array4D;
     if (input.rank === 3) {
       input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
@@ -1802,7 +1823,8 @@ export class NDArrayMath implements NDArrayManager {
             `match output depth for filter (${filterShape[3]}).`);
 
     const convInfo =
-        conv_util.computeConv2DInfo(input4D.shape, filterShape, strides, pad);
+        conv_util.computeConv2DInfo(input4D.shape, filterShape, strides, pad,
+            dimRoundingMode);
     return this.backendEngine.executeKernel(
         'Conv2DDerFilter', {inputs: {x: input4D, dy: dy4D}, args: {convInfo}});
   }
@@ -1822,12 +1844,18 @@ export class NDArrayMath implements NDArrayManager {
    *     `[strideHeight, strideWidth]`.
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the non-transpose version of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   conv2dTranspose<T extends NDArray>(
       x: T, filter: Array4D,
       outputShape: [number, number, number, number]|[number, number, number],
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
-    return this.conv2dDerInput(outputShape, x, filter, strides, pad);
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    return this.conv2dDerInput(outputShape, x, filter, strides, pad,
+        dimRoundingMode);
   }
 
   /**
@@ -1863,10 +1891,15 @@ export class NDArrayMath implements NDArrayManager {
    *     convolution. Defaults to `[1, 1]`. If `rate` is a single number, then
    *     `rateHeight == rateWidth`. If it is greater than 1, then all values
    * of `strides` must be 1.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   depthwiseConv2D<T extends NDArray>(
       input: T, filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1]): T {
+      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -1894,7 +1927,8 @@ export class NDArrayMath implements NDArrayManager {
             `supported. Got rates '${rates}'`);
 
     const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filter.shape, strides, pad, true /* depthwise */);
+        input4D.shape, filter.shape, strides, pad, dimRoundingMode,
+            true /* depthwise */);
     return this.executeOp('depthwiseConv2D', () => {
       const res = this.backendEngine.executeKernel(
           'DepthwiseConv2D', {inputs: {x: input4D, filter}, args: {convInfo}});
@@ -1920,10 +1954,15 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   maxPool<T extends NDArray>(
       input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -1935,7 +1974,8 @@ export class NDArrayMath implements NDArrayManager {
         `Error in maxPool: input must be rank 4 but got rank ${input4D.rank}.`);
 
     const convInfo =
-        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
+        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad,
+            dimRoundingMode);
     return this.executeOp('maxPool', () => {
       const res = this.backendEngine.executeKernel(
           'MaxPool', {inputs: {x: input4D}, args: {convInfo}});
@@ -1960,10 +2000,15 @@ export class NDArrayMath implements NDArrayManager {
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   maxPoolBackprop<T extends NDArray>(
       dy: T, input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
@@ -1987,7 +2032,8 @@ export class NDArrayMath implements NDArrayManager {
             `${input4D.rank}.`);
 
     const convInfo =
-        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
+        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad,
+            dimRoundingMode);
     return this.executeOp('maxPoolBackprop', () => {
       const res = this.backendEngine.executeKernel(
           'MaxPoolBackprop',
@@ -2014,10 +2060,15 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   minPool<T extends NDArray>(
       input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -2029,7 +2080,8 @@ export class NDArrayMath implements NDArrayManager {
         `Error in minPool: x must be rank 4 but got rank ${input4D.rank}.`);
 
     const convInfo =
-        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
+        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad,
+            dimRoundingMode);
     return this.executeOp('minPool', () => {
       const res = this.backendEngine.executeKernel(
           'MinPool', {inputs: {x: input4D}, args: {convInfo}});
@@ -2055,10 +2107,15 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions. Caffe and Caffe2
+   * use different roundings for computing the output dimensions of Conv and
+   * Pool layers.
    */
   avgPool<T extends NDArray>(
       input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -2070,7 +2127,8 @@ export class NDArrayMath implements NDArrayManager {
         `Error in avgPool: x must be rank 4 but got rank ${input4D.rank}.`);
 
     const convInfo =
-        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
+        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad,
+            dimRoundingMode);
     return this.executeOp('avgPool', () => {
       const res = this.backendEngine.executeKernel(
           'AvgPool', {inputs: {x: input4D}, args: {convInfo}});
