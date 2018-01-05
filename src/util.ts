@@ -1,4 +1,4 @@
-import {DataType, DataTypeMap, NDArray} from './math/ndarray';
+import {DataType, DataTypeMap, NDArray, Variable} from './math/ndarray';
 
 /**
  * @license
@@ -24,6 +24,10 @@ export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
 
 export type NamedArrayMap = {
   [name: string]: NDArray
+};
+
+export type NamedVariableMap = {
+  [name: string]: Variable;
 };
 
 /** Shuffles the array using Fisher-Yates algorithm. */

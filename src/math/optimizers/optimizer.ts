@@ -21,7 +21,8 @@ import {SessionRuntime} from '../../graph/session';
 import * as session_util from '../../graph/session_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {DataType, NDArray, Scalar, Variable} from '../../math/ndarray';
+import {DataType, NDArray, Scalar} from '../../math/ndarray';
+import {NamedVariableMap} from '../../util';
 
 export abstract class Optimizer {
   protected variableNodes: VariableNode[];
@@ -44,13 +45,11 @@ export abstract class Optimizer {
   }
 
   computeGradients<D extends DataType>(f: () => Scalar<D>):
-      {value: Scalar<D>, gradients: {[varName: string]: Variable}} {
-    return ENV.math.variableGradients(f) as
-        {value: Scalar<D>, gradients: {[varName: string]: Variable}};
+      {value: Scalar<D>, gradients: NamedVariableMap} {
+    return ENV.math.variableGradients(f);
   }
 
-  abstract applyGradients(variableGradients: {[varName: string]: Variable}):
-      void;
+  abstract applyGradients(variableGradients: NamedVariableMap): void;
 
   /**
    * Graph mode methods.

@@ -16,8 +16,9 @@
  */
 
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar, Variable} from '../../math/ndarray';
+import {NDArray, Scalar} from '../../math/ndarray';
 import {SGDOptimizer} from '../../math/optimizers/sgd_optimizer';
+import {NamedVariableMap} from '../../util';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -30,7 +31,7 @@ export class MomentumOptimizer extends SGDOptimizer {
     this.m = Scalar.new(this.momentum);
   }
 
-  applyGradients(variableGradients: {[varName: string]: Variable}) {
+  applyGradients(variableGradients: NamedVariableMap) {
     throw new Error(`Momentum optimizer not yet implemented for eager mode.`);
   }
 

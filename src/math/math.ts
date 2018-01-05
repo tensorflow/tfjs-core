@@ -17,7 +17,7 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
-import {NamedArrayMap} from '../util';
+import {NamedArrayMap, NamedVariableMap} from '../util';
 import * as axis_util from './axis_util';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
@@ -2583,8 +2583,10 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Computes and returns the gradient of f(x) with respect to every variable.
    */
-  variableGradients<D extends DataType>(f: () => Scalar<D>) {
-    return this.valueAndGradients(f, this.registeredVariables);
+  variableGradients<D extends DataType>(f: () => Scalar<D>):
+      {value: Scalar<D>, gradients: NamedVariableMap} {
+    return this.valueAndGradients(f, this.registeredVariables) as
+        {value: Scalar<D>, gradients: NamedVariableMap};
   }
 
   /**

@@ -20,7 +20,8 @@ import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {Scalar, Variable} from '../ndarray';
+import {NamedVariableMap} from '../../util';
+import {Scalar} from '../ndarray';
 
 import {Optimizer} from './optimizer';
 
@@ -32,7 +33,7 @@ export class SGDOptimizer extends Optimizer {
   }
 
   // Eager mode
-  applyGradients(variableGradients: {[varName: string]: Variable}) {
+  applyGradients(variableGradients: NamedVariableMap) {
     const math = ENV.math;
     if (this.c == null) {
       this.c = math.keep(Scalar.new(-this.learningRate));
