@@ -24,7 +24,7 @@ import {MathTests} from '../../test_util';
 import {SGDOptimizer} from './sgd_optimizer';
 
 const tests: MathTests = it => {
-  it('nikhil eager', math => {
+  it('basic', math => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
