@@ -28,24 +28,43 @@ export class MnistData {
   private dataset: dl.XhrDataset;
   private trainingData: dl.NDArray[][];
   private testData: dl.NDArray[][];
-  private indices: Uint32Array;
+  private trainIndices: Uint32Array;
+  private testIndices: Uint32Array;
 
-  private shuffledIndex = 0;
+  private shuffledTrainIndex = 0;
+  private shuffledTestIndex = 0;
 
-  public getNextBatch(batchSize: number):
+  public nextTrainBatch(batchSize: number):
+      {xs: dl.Array2D<'float32'>, labels: dl.Array2D<'float32'>} {
+    return this.nextBatch(batchSize, this.trainingData, () => {
+      this.shuffledTrainIndex =
+          (this.shuffledTrainIndex + 1) % this.trainIndices.length;
+      return this.trainIndices[this.shuffledTrainIndex];
+    });
+  }
+
+  public nextTestBatch(batchSize: number):
+      {xs: dl.Array2D<'float32'>, labels: dl.Array2D<'float32'>} {
+    return this.nextBatch(batchSize, this.testData, () => {
+      this.shuffledTestIndex =
+          (this.shuffledTestIndex + 1) % this.testIndices.length;
+      return this.testIndices[this.shuffledTestIndex];
+    });
+  }
+
+  private nextBatch(
+      batchSize: number, data: dl.NDArray[][], index: () => number):
       {xs: dl.Array2D<'float32'>, labels: dl.Array2D<'float32'>} {
     let xs: dl.Array2D<'float32'> = null;
     let labels: dl.Array2D<'float32'> = null;
 
     for (let i = 0; i < batchSize; i++) {
-      this.shuffledIndex = (this.shuffledIndex + 1) % this.indices.length;
+      const idx = index();
 
-      const x = this.trainingData[0][this.shuffledIndex].reshape([1, 784]) as
-          dl.Array2D<'float32'>;
+      const x = data[0][idx].reshape([1, 784]) as dl.Array2D<'float32'>;
       xs = concatWithNulls(xs, x);
 
-      const label = this.trainingData[1][this.shuffledIndex].reshape([1, 10]) as
-          dl.Array2D<'float32'>;
+      const label = data[1][idx].reshape([1, 10]) as dl.Array2D<'float32'>;
       labels = concatWithNulls(labels, label);
     }
     return {xs, labels};
@@ -58,9 +77,10 @@ export class MnistData {
     this.dataset.normalizeWithinBounds(0, -1, 1);
     this.trainingData = this.getTrainingData();
     this.testData = this.getTestData();
-    console.log(this.testData.length);
 
-    this.indices = dl.util.createShuffledIndices(this.trainingData.length);
+    this.trainIndices =
+        dl.util.createShuffledIndices(this.trainingData[0].length);
+    this.testIndices = dl.util.createShuffledIndices(this.testData[0].length);
   }
 
   public getTrainingData(): dl.NDArray[][] {

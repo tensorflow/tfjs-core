@@ -16,9 +16,8 @@
  */
 
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/ndarray';
+import {NDArray, Scalar, Variable} from '../../math/ndarray';
 import {SGDOptimizer} from '../../math/optimizers/sgd_optimizer';
-import {Variable} from '../../math/variable';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';

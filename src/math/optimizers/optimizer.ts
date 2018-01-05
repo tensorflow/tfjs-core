@@ -21,8 +21,7 @@ import {SessionRuntime} from '../../graph/session';
 import * as session_util from '../../graph/session_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {DataType, NDArray, Scalar} from '../../math/ndarray';
-import {Variable} from '../variable';
+import {DataType, NDArray, Scalar, Variable} from '../../math/ndarray';
 
 export abstract class Optimizer {
   protected variableNodes: VariableNode[];

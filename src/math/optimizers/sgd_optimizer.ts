@@ -14,38 +14,43 @@
  * limitations under the License.
  * =============================================================================
  */
-import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar, Variable} from '../../math/ndarray';
-import {Optimizer} from '../../math/optimizers/optimizer';
-import {Node} from '../graph';
-import {SessionRuntime} from '../session';
-import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
-export class AdagradOptimizer extends Optimizer {
+import {ENV} from '../../environment';
+import {Node} from '../../graph/graph';
+import {SessionRuntime} from '../../graph/session';
+import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
+import {NDArrayMath} from '../../math/math';
+import {Scalar, Variable} from '../ndarray';
+
+import {Optimizer} from './optimizer';
+
+export class SGDOptimizer extends Optimizer {
+  private cEager: Scalar;
+
   constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
-    this.eps = Scalar.new(1e-6);
   }
 
+  // Eager mode
   applyGradients(variableGradients: {[varName: string]: Variable}) {
-    throw new Error(`Adagrad optimizer not yet implemented for eager mode.`);
-  }
-
-  beforeBatch(
-      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap,
-      gradientArrayMap: SummedTensorArrayMap) {
-    super.beforeBatch(
-        math, batchSize, runtime, activationArrayMap, gradientArrayMap);
-
-    if (this.accumulatedSquaredGradients.size() === 0) {
-      this.variableNodes.forEach(node => {
-        this.accumulatedSquaredGradients.set(
-            node.output, NDArray.zeros(node.output.shape));
-      });
+    if (this.cEager == null) {
+      this.cEager = ENV.math.keep(Scalar.new(-this.learningRate));
     }
+
+    const varNames = Object.keys(variableGradients);
+    varNames.forEach(varName => {
+      const gradient = variableGradients[varName];
+      const value = ENV.math.registeredVariables[varName];
+
+      const newValue = ENV.math.scope(() => {
+        return ENV.math.add(ENV.math.multiply(this.cEager, gradient), value);
+      });
+
+      value.assign(newValue);
+    });
   }
 
+  // Graph
   afterBatch(
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
@@ -54,17 +59,12 @@ export class AdagradOptimizer extends Optimizer {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
-        const oldCache = this.accumulatedSquaredGradients.get(node.output);
-        const gradientSquare = math.multiply(gradient, gradient);
-        const cache = math.add(oldCache, gradientSquare);
-        const variable = math.scaledArrayAdd(
-            this.c, math.divide(gradient, math.add(math.sqrt(cache), this.eps)),
-            this.one, oldVariable);
-        this.accumulatedSquaredGradients.set(node.output, keep(cache));
+        const variable =
+            math.scaledArrayAdd(this.c, gradient, this.one, oldVariable);
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
+
         oldVariable.dispose();
-        oldCache.dispose();
       });
     });
 
@@ -74,10 +74,9 @@ export class AdagradOptimizer extends Optimizer {
 
   dispose() {
     super.dispose();
-    this.eps.dispose();
-    this.accumulatedSquaredGradients.dispose();
   }
 
-  private accumulatedSquaredGradients = new TensorArrayMap();
-  private eps: Scalar;
+  setLearningRate(learningRate: number) {
+    this.learningRate = learningRate;
+  }
 }
