@@ -61,9 +61,16 @@ export function runSqueezenet() {
       setTimeout(function() {
         (global as any).ImageData = require('canvas').ImageData;
         const input = Array3D.fromPixels(info);
-        console.log(input);
-        const output = model.predict(input);
-        console.log(output);
+        const reshapedInput = input.reshape([1, ...input.shape]);
+        console.log(reshapedInput.shape);
+        const output = model.predict(undefined, {
+          'image_placeholder': reshapedInput,
+          'Placeholder': Scalar.new(1.0)
+        });
+
+        const data = Array.prototype.slice.call(output.dataSync());
+
+        console.log(data.indexOf(Math.max(...data)));
       }, 1000);
     });
   });

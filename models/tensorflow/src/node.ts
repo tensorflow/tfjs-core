@@ -64,7 +64,8 @@ function getNumericArrayParam(
  * @param blobs
  */
 export function performMathOp(
-    math: NDArrayMath, input: NDArray|NDArray[]|number[], node: Node): NDArray {
+    math: NDArrayMath, input: NDArray|NDArray[]|number[], node: Node,
+    feedDict: {[key: string]: NDArray}): NDArray {
   switch (node.op) {
     case 'Add':
     case 'BiasAdd': {
@@ -78,13 +79,8 @@ export function performMathOp(
           {tensor_shape: {dim: []}, dtype: DataType.DT_INT32.toString()});
       return tensorToNDArray(tensor);
     }
-    case 'Placeholder': {
-      const shapeParam = getParamForName(node.attr, 'shape');
-      if (shapeParam && shapeParam.value.shape.unknown_rank) {
-        return Scalar.new(0);
-      }
-      return input as NDArray;
-    }
+    case 'Placeholder':
+      return feedDict[node.name];
     case 'Floor': {
       return math.floor(input as NDArray);
     }
@@ -95,9 +91,9 @@ export function performMathOp(
     case 'Conv2D': {
       const convolutionParam = node.attr;
       const stride =
-          getNumericArrayParam(convolutionParam, 'stride', [1, 1], 1, 3);
+          getNumericArrayParam(convolutionParam, 'strides', [1, 1], 1, 3);
       const pad =
-          getStringParam(convolutionParam, 'pad', 'valid').toLowerCase();
+          getStringParam(convolutionParam, 'padding', 'valid').toLowerCase();
       const inputs = input as NDArray[];
       const weights = inputs[1] as Array4D;
       return math.conv2d(
@@ -107,8 +103,10 @@ export function performMathOp(
 
     case 'AvgPool': {
       const poolingParam = node.attr;
-      const stride = getNumericArrayParam(poolingParam, 'stride', [1, 1], 1, 3);
-      const pad = getStringParam(poolingParam, 'pad', 'valid').toLowerCase();
+      const stride =
+          getNumericArrayParam(poolingParam, 'strides', [1, 1], 1, 3);
+      const pad =
+          getStringParam(poolingParam, 'padding', 'valid').toLowerCase();
       let kernelSize =
           getNumericArrayParam(poolingParam, 'ksize', [1, 1], 1, 3);
 
@@ -119,8 +117,10 @@ export function performMathOp(
 
     case 'MaxPool': {
       const poolingParam = node.attr;
-      const stride = getNumericArrayParam(poolingParam, 'stride', [1, 1], 1, 3);
-      const pad = getStringParam(poolingParam, 'pad', 'valid').toLowerCase();
+      const stride =
+          getNumericArrayParam(poolingParam, 'strides', [1, 1], 1, 3);
+      const pad =
+          getStringParam(poolingParam, 'padding', 'valid').toLowerCase();
       let kernelSize =
           getNumericArrayParam(poolingParam, 'ksize', [1, 1], 1, 3);
 
@@ -130,7 +130,9 @@ export function performMathOp(
     }
 
     case 'RandomUniform': {
-      return NDArray.randUniform((input as NDArray).shape, 0, 1, 'float32');
+      return NDArray.randUniform(
+          Array.prototype.slice.call((input as NDArray).dataSync()), 0, 1,
+          'float32');
     }
 
     case 'RealDiv': {
@@ -141,22 +143,20 @@ export function performMathOp(
     case 'Reshape': {
       const inputs = input as NDArray[];
       const shape = Array.prototype.slice.call(inputs[1].dataSync());
-      return math.reshape(inputs[0], shape);
+      return inputs[0].reshape(shape);
     }
 
     case 'Slice': {
       const inputs = input as NDArray[];
 
-      const shape = inputs[1].dataSync()[0];
+      const begin = inputs[1].dataSync()[0];
       const size = inputs[2].dataSync()[0];
-      console.log(shape);
-      console.log(size);
-      return math.slice1D(inputs[0] as Array1D, shape, size);
+      return math.slice1D(inputs[0] as Array1D, begin, size);
     }
 
     case 'Sub': {
       const inputs = input as NDArray[];
-      return math.subStrict(inputs[0], inputs[1]);
+      return math.subtract(inputs[0], inputs[1]);
     }
 
     case 'Relu':
@@ -170,14 +170,23 @@ export function performMathOp(
       if (!(input instanceof Array)) {
         return input;
       }
-      const inp = input as Array1D[];
+      const inp = input as NDArray[];
+      const axis = inp[inp.length - 1].dataSync()[0];
       let out = inp[0];
-      // Workaround until concat3D(NDArray[]) is supported
-      for (let i = 1; i < inp.length; ++i) {
-        if (inp[i].rank !== 1) {
+      for (let i = 1; i < inp.length - 1; ++i) {
+        if (out.rank === 1) {
           inp[i] = inp[i].as1D();
+          out = math.concat1D(out as Array1D, inp[i] as Array1D);
         }
-        out = math.concat1D(out, inp[i]);
+        if (out.rank === 2) {
+          out = math.concat2D(out as Array2D, inp[i] as Array2D, axis);
+        }
+        if (out.rank === 3) {
+          out = math.concat3D(out as Array3D, inp[i] as Array3D, axis);
+        }
+        if (out.rank === 4) {
+          out = math.concat4D(out as Array4D, inp[i] as Array4D, axis);
+        }
       }
       return out;
     }

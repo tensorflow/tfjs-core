@@ -87,7 +87,9 @@ export class TensorflowModel implements Model {
     return edges;
   }
 
-  predict(input: NDArray, untilLayer?: string): NDArray {
+  predict(
+      input: NDArray, feedDict?: {[key: string]: NDArray},
+      untilLayer?: string): NDArray {
     const math = ENV.math;
 
     // Keep a map of named activations for rendering purposes.
@@ -97,10 +99,7 @@ export class TensorflowModel implements Model {
     dag.iterate<types.Node>(
         this.nodes,
         this.edges, (node: types.Node, parents: types.Node[], i: number) => {
-          if (i === 0 && this.preprocessOffset) {
-            currAct = math.subtract(
-                          currAct as Array3D, this.preprocessOffset) as Array3D;
-          } else if (parents.length === 1) {
+          if (parents.length === 1) {
             currAct = namedActivations[parents[0].name];
           } else if (parents.length > 1) {
             currAct = parents.map((d) => namedActivations[d.name]);
@@ -108,15 +107,14 @@ export class TensorflowModel implements Model {
           console.log('========================');
           console.log(node.name);
           console.log(node.op);
+          parents.forEach((p) => console.log(p.name));
           if (currAct instanceof Array) {
             currAct.forEach(act => {
               console.log(act.shape);
-              console.log(act.dataSync());
             });
           }
-          currAct = performMathOp(math, currAct, node);
-          console.log(currAct);
-          console.log(currAct.dataSync());
+          currAct = performMathOp(math, currAct, node, feedDict);
+          console.log(currAct.shape);
 
           namedActivations[node.name] = currAct as NDArray;
         }, untilLayer);
