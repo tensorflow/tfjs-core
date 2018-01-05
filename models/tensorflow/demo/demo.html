@@ -24,7 +24,9 @@
 
     const pixels = dl.Array3D.fromPixels(cat);
 
+    console.time('predict');
     const result = tfModel.predict(pixels);
+    console.timeEnd('predict');
 
     resultElement.innerText = '';
 
