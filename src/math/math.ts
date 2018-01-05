@@ -49,7 +49,7 @@ export class NDArrayMath implements NDArrayManager {
   private customBackend = false;
 
   // Public since optimizers will use it.
-  registeredVariables: {[varName: string]: Variable} = {};
+  registeredVariables: NamedVariableMap = {};
 
   time(query: () => NDArray): Promise<number> {
     return this.backend.time(query);
