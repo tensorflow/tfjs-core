@@ -631,9 +631,9 @@ export class NDArrayMath implements NDArrayManager {
     const reduceSize = util.sizeFromShape(reduceShape);
     return this.executeOp('mean', () => {
       // Use a custom gradient to bypass 2 gradient backprops since mean is used
-      // often.
+      // extremely often.
       // TODO(nsthorat): Maybe remove this custom gradient if backprop through
-      // divide / sum are fast enough.
+      // divide / sum are fast enough and we have broadcasting support.
       return this.customGradient(() => {
         const res = this.divide(x, Scalar.new(reduceSize));
         const value = this.sum(res, axis, keepDims);
@@ -643,7 +643,8 @@ export class NDArrayMath implements NDArrayManager {
             throw new Error(`Gradient for mean not yet implemented for axis.`);
           }
           return {
-            x: () => this.multiply(NDArray.onesLike(x), Scalar.new(1 / x.size))
+            x: () => this.multiply(
+                NDArray.onesLike(x), this.divide(dy, Scalar.new(x.size)))
           };
         };
         return {value, gradients};
