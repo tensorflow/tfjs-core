@@ -14,10 +14,8 @@
  * limitations under the License.
  * =============================================================================
  */
-import {NDArray} from './math/ndarray';
+import * as util from './util';
+import * as dl from 'deeplearn';
 
-export interface Model {
-  load(): Promise<void|void[]>;
-  predict(input: NDArray): NDArray;
-  dispose(): void;
-}
+export {SqueezeNet, GoogLeNet, GoogLeNetBN, VGG16, NiN, AgeNet, GenderNet} from './models';
+export {util, dl};

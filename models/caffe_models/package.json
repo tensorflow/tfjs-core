@@ -1,0 +1,36 @@
+{
+  "name": "deeplearn-caffe-models",
+  "version": "0.1.2",
+  "description": "Running pretrained Caffe models in deeplearn.js",
+  "main": "dist/index.js",
+  "unpkg": "dist/bundle.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "deeplearn-caffe": "file:///home/ckoerner/software/deeplearnjs/models/caffe"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PAIR-code/deeplearnjs.git"
+  },
+  "devDependencies": {
+    "browserify": "^14.5.0",
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-typescript": "^3.2.3",
+    "http-server": "^0.10.0",
+    "protobufjs": "~6.8.0",
+    "run-sequence": "^2.2.0",
+    "tinyify": "^2.4.0",
+    "tsify": "^3.0.3",
+    "tslint": "~5.6.0",
+    "typescript": "^2.6.2",
+    "vinyl-source-stream": "^1.1.0"
+  },
+  "scripts": {
+    "build": "gulp build",
+    "start": "http-server",
+    "publish-npm": "npm install && gulp build && npm publish"
+  },
+  "license": "Apache-2.0"
+}

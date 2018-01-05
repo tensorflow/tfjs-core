@@ -1,0 +1,48 @@
+<script src="../dist/deeplearn-caffe-models.js"></script>
+ 
+<img id="img"></img>
+<div id="result"></div>
+
+<script>
+  const img = document.getElementById('img');
+  img.onload = async () => {
+    const resultElement = document.getElementById('result');
+    const dl = deeplearnCaffeModels.dl;
+    const CAFFE_MODEL = deeplearnCaffeModels.GoogLeNetBN;
+
+    resultElement.innerText = 'Loading model...';
+
+    if (dl == null) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // Use WebGL
+    // const math = new dl.NDArrayMath('webgl', false);
+    // dl.ENV.setMath(math);
+
+    // Use CPU
+    const math = new dl.NDArrayMath('cpu', false);
+    dl.ENV.setMath(math);
+    
+    // Create and load model
+    const model = new CAFFE_MODEL();
+    await model.load();
+
+    resultElement.innerText = 'Predicting...';
+
+    const pixels = dl.Array3D.fromPixels(img);
+
+    const result = await model.predict(pixels);
+
+    resultElement.innerText = '';
+
+    const k = 5;
+    const topK = await deeplearnCaffeModels.util.getTopK(result, k);
+
+    for (let i = 0; i < k; i++) {
+      const idx = topK.indices[i];
+      resultElement.innerText += `${topK.values[i].toFixed(5)}: ${CAFFE_MODEL.labels[idx]}\n`;
+    };
+  };
+  img.src = 'img/cat.jpg';
+</script>

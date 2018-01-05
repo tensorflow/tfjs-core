@@ -1,0 +1,37 @@
+{
+  "name": "deeplearn-caffe",
+  "version": "0.1.0",
+  "description": "Caffe utility tools and model loader for deeplearn.js",
+  "main": "dist/node/index.js",
+  "unpkg": "dist/browser/deeplearn-caffe.min.js",
+  "types": "dist/node/index.d.ts",
+  "dependencies": {
+    "caffe-proto": "^0.1.0",
+    "dag-iterator": "^0.2.2",
+    "deeplearn": "file:///home/ckoerner/software/deeplearnjs",
+    "prototxt-parser": "^0.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PAIR-code/deeplearnjs.git"
+  },
+  "devDependencies": {
+    "browserify": "^14.5.0",
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-typescript": "^3.2.3",
+    "protobufjs": "~6.8.0",
+    "run-sequence": "^2.2.0",
+    "tinyify": "^2.4.0",
+    "tsify": "^3.0.3",
+    "tslint": "~5.6.0",
+    "typescript": "^2.6.2",
+    "vinyl-source-stream": "^1.1.0"
+  },
+  "scripts": {
+    "build": "gulp build",
+    "publish-npm": "npm install && gulp build && npm publish"
+  },
+  "license": "Apache-2.0"
+}

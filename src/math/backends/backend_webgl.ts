@@ -30,6 +30,7 @@ import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
+import {LRN3DProgram} from './webgl/lrn_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
@@ -395,6 +396,14 @@ export class MathBackendWebGL implements MathBackend {
         x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
         varianceEpsilon);
     return this.compileAndRun(program, inputs);
+  }
+
+  localResponseNormalization3D(
+    x: Array3D, k: number, n: number, alpha: number, beta: number): Array3D {
+
+    const program = new LRN3DProgram(
+        x.shape, k, n, alpha, beta);
+    return this.compileAndRun(program, [x]);
   }
 
   tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T {

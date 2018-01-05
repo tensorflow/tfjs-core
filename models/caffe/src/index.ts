@@ -14,10 +14,13 @@
  * limitations under the License.
  * =============================================================================
  */
-import {NDArray} from './math/ndarray';
+import * as util from './util';
+import * as blob from './blob';
+import * as layer from './layer';
 
-export interface Model {
-  load(): Promise<void|void[]>;
-  predict(input: NDArray): NDArray;
-  dispose(): void;
-}
+export {CaffeModel} from './model';
+export {
+  util,
+  blob,
+  layer
+};

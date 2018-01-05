@@ -2196,7 +2196,7 @@ export class NDArrayMath implements NDArrayManager {
         'BatchNorm3D',
         {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
   }
-
+  
   /**
    * Batch normalization 4D. Mean, variance, scale, and offset can be of two
    * shapes: 1) The same shape as the input: an Array4D. 2) In the common
@@ -2241,6 +2241,24 @@ export class NDArrayMath implements NDArrayManager {
     return this.backendEngine.executeKernel(
         'BatchNorm4D',
         {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+  }
+
+  localResponseNormalization3D(
+    x: Array3D, k: number = 1, n: number = 5,
+    alpha: number = 1, beta: number = 0.75): Array3D {
+
+    util.assert(
+        x.rank === 3,
+        `Error in localResponseNormalization3D: x must be rank 3 but got rank ` +
+            `${x.rank}.`);
+    util.assert(
+        n % 2 !== 0,
+        `n should be odd for localResponseNormalization3D but got n ` +
+            `${n}.`);
+
+    return this.backendEngine.executeKernel(
+        'LRN3D',
+        {inputs: {x}, args: {k, n, alpha, beta}});
   }
 
   //////////////
