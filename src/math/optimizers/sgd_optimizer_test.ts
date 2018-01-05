@@ -45,7 +45,7 @@ const tests: MathTests = it => {
     test_util.expectArraysClose(cost, [Math.pow(4, 2)]);
 
     cost = optimizer.minimize(() => math.square(x), /* returnCost */ false);
-    // Cost should be the only additional array.
+    // Only the new variable value should be new.
     expect(math.getNumArrays()).toBe(numArrays + 1);
 
     const expectedValue2 = -2 * expectedValue1 * learningRate + expectedValue1;
