@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import * as dag from 'dag-iterator';
-import {Array1D, Array3D, ENV, Model, NDArray} from 'deeplearn';
+import {Array1D, Array3D, ENV, Model, NDArray, NDArrayMath} from 'deeplearn';
 
 import {performMathOp} from './node';
 import * as types from './types';
@@ -48,7 +48,9 @@ export class TensorflowModel implements Model {
    * @param caffemodelUrl url to the caffemodel file
    * @param prototxtUrl url to the prototxt file
    */
-  constructor(private modelFilePromise: Promise<types.Graph>) {}
+  constructor(
+      private modelFilePromise: Promise<types.Graph>,
+      private math: NDArrayMath = ENV.math) {}
 
   /**
    * Load the model
@@ -90,8 +92,6 @@ export class TensorflowModel implements Model {
   predict(
       input: NDArray, feedDict?: {[key: string]: NDArray},
       untilLayer?: string): NDArray {
-    const math = ENV.math;
-
     // Keep a map of named activations for rendering purposes.
     const namedActivations: {[key: string]: NDArray} = {};
     let currAct: NDArray|NDArray[] = input;
@@ -113,7 +113,7 @@ export class TensorflowModel implements Model {
               console.log(act.shape);
             });
           }
-          currAct = performMathOp(math, currAct, node, feedDict);
+          currAct = performMathOp(this.math, currAct, node, feedDict);
           console.log(currAct.shape);
 
           namedActivations[node.name] = currAct as NDArray;

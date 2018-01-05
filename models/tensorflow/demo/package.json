@@ -1,0 +1,36 @@
+{
+  "name": "deeplearn-tf-squeezenet",
+  "version": "0.0.1",
+  "description": "Import Tensorflow SqueezeNet model and running in deeplearn.js",
+  "main": "dist/tfsqueezenet/index.js",
+  "unpkg": "dist/bundle.js",
+  "types": "dist/tfsqueezenet/index.d.ts",
+  "peerDependencies": {
+    "deeplearn-tensorflow": "0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PAIR-code/deeplearnjs.git"
+  },
+  "devDependencies": {
+    "browserify": "~14.5.0",
+    "browserify-shim": "~3.8.14",
+    "deeplearn": "0.3.16",
+    "mkdirp": "~0.5.1",
+    "tsify": "~3.0.3",
+    "tslint": "~5.8.0",
+    "typescript": "~2.6.1",
+    "uglifyjs": "~2.4.11",
+    "watchify": "~3.9.0"
+  },
+  "scripts": {
+    "prep": "yarn && mkdirp dist",
+    "build": "tsc --sourceMap false && browserify -g browserify-shim --standalone tfsqueezenet index.ts -p [tsify] -o dist/bundle.js",
+    "lint": "tslint -p . -t verbose",
+    "publish-npm": "yarn build && yarn publish"
+  },
+  "browserify-shim": {
+    "deeplearn": "global:dl"
+  },
+  "license": "Apache-2.0"
+}

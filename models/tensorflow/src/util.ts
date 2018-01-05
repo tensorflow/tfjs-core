@@ -49,32 +49,32 @@ export function loadLocalProtoTxtFile(file: string): Graph {
       Graph;
 }
 
-export function runSqueezenet() {
-  const path = require('path');
-  const promise = new Promise<Graph>(
-      (resolve, reject) => resolve(loadLocalProtoTxtFile(
-          path.join(path.resolve(), 'squeezenet.pbtxt'))));
-  const model = new TensorflowModel(promise);
-  model.load().then(() => {
-    const image = require('get-image-data');
-    image('./cat.jpg', (error: any, info: any) => {
-      setTimeout(function() {
-        (global as any).ImageData = require('canvas').ImageData;
-        const input = Array3D.fromPixels(info);
-        const reshapedInput = input.reshape([1, ...input.shape]);
-        console.log(reshapedInput.shape);
-        const output = model.predict(undefined, {
-          'image_placeholder': reshapedInput,
-          'Placeholder': Scalar.new(1.0)
-        });
+// export function runNodeSqueezenet() {
+//   const path = require('path');
+//   const promise = new Promise<Graph>(
+//       (resolve, reject) => resolve(loadLocalProtoTxtFile(
+//           path.join(path.resolve(), 'squeezenet.pbtxt'))));
+//   const model = new TensorflowModel(promise);
+//   model.load().then(() => {
+//     const image = require('get-image-data');
+//     image('./cat.jpg', (error: any, info: any) => {
+//       setTimeout(function() {
+//         (global as any).ImageData = require('canvas').ImageData;
+//         const input = Array3D.fromPixels(info);
+//         const reshapedInput = input.reshape([1, ...input.shape]);
+//         console.log(reshapedInput.shape);
+//         const output = model.predict(undefined, {
+//           'image_placeholder': reshapedInput,
+//           'Placeholder': Scalar.new(1.0)
+//         });
 
-        const data = Array.prototype.slice.call(output.dataSync());
+//         const data = Array.prototype.slice.call(output.dataSync());
 
-        console.log(data.indexOf(Math.max(...data)));
-      }, 1000);
-    });
-  });
-}
+//         console.log(data.indexOf(Math.max(...data)));
+//       }, 1000);
+//     });
+//   });
+// }
 
 export function loadRemoteProtoTxtFile(url: string): Promise<Graph> {
   return fetch(new Request(url))
