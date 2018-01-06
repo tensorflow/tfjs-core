@@ -217,13 +217,18 @@ function getPadAndOutInfo(
  * @param value
  * @param roundingMode
  */
-function conditionalRound(value: number, roundingMode?: 'floor'|'round'|'ceil') {
+function conditionalRound(value: number,
+    roundingMode?: 'floor'|'round'|'ceil') {
   switch (roundingMode) {
-    // used for Caffe Conv
-    case 'round': return Math.round(value);
-    // used for Caffe Pool
-    case 'ceil': return Math.ceil(value);
-    case 'floor': return Math.floor(value);
-    default: return value;
+    case 'round':
+      // used for Caffe Conv
+      return Math.round(value);
+    case 'ceil':
+      // used for Caffe Pool
+      return Math.ceil(value);
+    case 'floor':
+      return Math.floor(value);
+    default:
+      return value;
   }
 }
