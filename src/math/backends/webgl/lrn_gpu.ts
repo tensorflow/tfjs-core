@@ -31,7 +31,6 @@ export class LRN3DProgram implements GPGPUProgram {
     const maxH = xShape[1] - 1;
     const maxD = xShape[2] - 1;
 
-    // Force values to be floats
     const f0 = k;
     const f1 = alpha / n;
 
@@ -44,6 +43,9 @@ export class LRN3DProgram implements GPGPUProgram {
           int r = coords[0];
           int c = coords[1];
           int d = coords[2];
+
+          const float f0 = float(${f0});
+          const float f1 = float(${f1});
 
           float x = getX(r, c, d);
           float sum = 0.0;
@@ -58,7 +60,7 @@ export class LRN3DProgram implements GPGPUProgram {
             }
           }
 
-          float val = x * pow(float(${f0}) + float(${f1}) * sum, -float(${beta}));
+          float val = x * pow(f0 + f1 * sum, -float(${beta}));
           setOutput(val);
         }
       `;
@@ -71,6 +73,9 @@ export class LRN3DProgram implements GPGPUProgram {
           int c = coords[1];
           int d = coords[2];
 
+          const float f0 = float(${f0});
+          const float f1 = float(${f1});
+
           float x = getX(r, c, d);
           float sum = 0.0;
 
@@ -81,7 +86,7 @@ export class LRN3DProgram implements GPGPUProgram {
             }
           }
 
-          float val = x * pow(float(${f0}) + float(${f1}) * sum, -float(${beta}));
+          float val = x * pow(f0 + f1 * sum, -float(${beta}));
           setOutput(val);
         }
       `;
