@@ -40,8 +40,8 @@ export function showTestResults(
       totalCorrect++;
     }
 
-    pred.className = 'pred ' + (correct ? 'pred-correct' : 'pred-incorrect');
-    pred.innerText = 'pred: ' + prediction;
+    pred.className = `pred ${(correct ? 'pred-correct' : 'pred-incorrect')}`;
+    pred.innerText = `pred: ${prediction}`;
 
     div.appendChild(pred);
     div.appendChild(canvas);
