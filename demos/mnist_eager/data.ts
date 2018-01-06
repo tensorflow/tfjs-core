@@ -8,15 +8,15 @@ const mnistConfig: dl.XhrDatasetConfig = {
   'data': [
     {
       'name': 'images',
-      'path':
-          'https://storage.googleapis.com/learnjs-data/model-builder/mnist_images.png',
+      'path': 'https://storage.googleapis.com/learnjs-data/model-builder/' +
+          'mnist_images.png',
       'dataType': 'png',
       'shape': [28, 28, 1]
     },
     {
       'name': 'labels',
-      'path':
-          'https://storage.googleapis.com/learnjs-data/model-builder/mnist_labels_uint8',
+      'path': 'https://storage.googleapis.com/learnjs-data/model-builder/' +
+          'mnist_labels_uint8',
       'dataType': 'uint8',
       'shape': [10]
     }
@@ -83,7 +83,7 @@ export class MnistData {
     this.testIndices = dl.util.createShuffledIndices(this.testData[0].length);
   }
 
-  public getTrainingData(): dl.NDArray[][] {
+  private getTrainingData(): dl.NDArray[][] {
     const [images, labels] =
         this.dataset.getData() as [dl.NDArray[], dl.NDArray[]];
 
@@ -106,6 +106,10 @@ export class MnistData {
   }
 }
 
+/**
+ * TODO(nsthorat): Add math.stack, similar to np.stack, which will avoid the
+ * need for us allowing concating with null values.
+ */
 function concatWithNulls(
     ndarray1: dl.Array2D<'float32'>,
     ndarray2: dl.Array2D<'float32'>): dl.Array2D<'float32'> {
