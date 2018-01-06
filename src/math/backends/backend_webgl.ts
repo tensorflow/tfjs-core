@@ -26,6 +26,7 @@ import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
+
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -50,6 +51,7 @@ import {OneHotProgram} from './webgl/onehot_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
+import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {TextureData, TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
@@ -271,6 +273,11 @@ export class MathBackendWebGL implements MathBackend {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
     return this.compileAndRun(program, [x], null, customSetup);
+  }
+
+  reverse4D(x: Array4D, axis: number[]): Array4D {
+    const program = new ReverseProgram(x.shape, axis);
+    return this.compileAndRun(program, [x]);
   }
 
   private copy2D(
