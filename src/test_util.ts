@@ -247,10 +247,16 @@ export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
   }
   return d;
 }
-
+export enum TestMode {
+  FOCUS, // run only a specific test
+  EXCLUDE // exclude a specific test
+}
 export type MathTests =
-    (it: (name: string, testFn: (math: NDArrayMath) => void) => void) => void;
-export type Tests = (it: (name: string, testFn: () => void) => void) => void;
+    (it: (name: string, testFn: (math: NDArrayMath) => void,
+      testMode?: TestMode) => void) => void;
+export type Tests =
+    (it: (name: string, testFn: () => void,
+      testMode?: TestMode) => void) => void;
 
 export function describeMathCPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
@@ -299,10 +305,15 @@ function describeWithFeaturesAndExecutor(
   }
 }
 
+export type It = (name: string, testFunc: () => void|Promise<void>,
+  testMode?: TestMode) => void;
+
 // A wrapper around it() that calls done automatically if the function returns
 // a Promise, aka if it's an async/await function.
-const PROMISE_IT = (name: string, testFunc: () => void|Promise<void>) => {
-  it(name, (done: DoneFn) => {
+const PROMISE_IT: It = (name: string, testFunc: () => void|Promise<void>,
+    testMode?: TestMode) => {
+
+  const cb = (done: DoneFn) => {
     const result = testFunc();
     if (result instanceof Promise) {
       result.then(done, e => {
@@ -312,7 +323,18 @@ const PROMISE_IT = (name: string, testFunc: () => void|Promise<void>) => {
     } else {
       done();
     }
-  });
+  };
+
+  switch (testMode) {
+    case TestMode.EXCLUDE:
+      xit(name, cb);
+      break;
+    case TestMode.FOCUS:
+      fit(name, cb);
+      break;
+    default:
+      it(name, cb);
+  }
 };
 
 export function executeMathTests(
@@ -329,9 +351,10 @@ export function executeMathTests(
     math.endScope(null);
     math.dispose();
   };
-  const customIt =
-      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
-        PROMISE_IT(name, () => testFunc(math));
+  const customIt: It =
+      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>,
+          testMode?: TestMode) => {
+        PROMISE_IT(name, () => testFunc(math), testMode);
       };
 
   executeTests(
@@ -342,8 +365,7 @@ export function executeMathTests(
 export function executeTests(
     testName: string, tests: Tests[], features?: Features,
     customBeforeEach?: () => void, customAfterEach?: () => void,
-    customIt: (expectation: string, testFunc: () => void|Promise<void>) =>
-        void = PROMISE_IT) {
+    customIt: It = PROMISE_IT) {
   describe(testName, () => {
     beforeEach(() => {
       if (features != null) {
