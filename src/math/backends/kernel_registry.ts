@@ -307,7 +307,7 @@ const KERNEL_METHODS: {
   LRN3D: (backend: MathBackend, config: LRN3DInputConfig) => {
     return backend.localResponseNormalization3D(
       config.inputs.x, config.args.n, config.args.alpha, config.args.beta,
-      config.args.k);
+      config.args.normRegion, config.args.k);
   },
   Multinomial: (backend: MathBackend, config: MultinomialInputConfig) => {
     return backend.multinomial(

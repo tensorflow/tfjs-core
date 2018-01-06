@@ -2244,18 +2244,22 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Local response normalization (ACROSS_CHANNELS) - normalizes the activation
-   * of a local neighborhood across channels.
+   * Local response normalization - normalizes the activation of a local
+   * neighborhood across or within channels.
    * This is used for Caffe compatibility only. New models should use BatchNorm
    * instead!
    * @param x he input NDArray.
-   * @param n The number of channels to sum over.
+   * @param n The number of adjacent channels or spatial locations to sum over.
    * @param alpha A scaling parameter.
    * @param beta The exponent.
+   * @param normRegion A string from: ['acrossChannels', 'withinChannel'].
+   *     Default is 'acrossChannels'.
    * @param k A constant added to the basis.
    */
   localResponseNormalization3D(
-      x: Array3D, n = 5, alpha = 1, beta = 0.75, k = 1): Array3D {
+      x: Array3D, n = 5, alpha = 1, beta = 0.75,
+      normRegion: "acrossChannels"|"withinChannel" = "acrossChannels",
+      k = 1): Array3D {
     util.assert(x.rank === 3,
       `Error in localResponseNormalization3D: x must be rank 3 but got rank ` +
              `${x.rank}.`);
@@ -2264,7 +2268,7 @@ export class NDArrayMath implements NDArrayManager {
  
     return this.backendEngine.executeKernel(
         'LRN3D',
-        {inputs: {x}, args: {k, n, alpha, beta}});
+        {inputs: {x}, args: {n, alpha, beta, normRegion, k}});
   }
 
   //////////////

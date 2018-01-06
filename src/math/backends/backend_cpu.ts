@@ -1369,27 +1369,45 @@ export class MathBackendCPU implements MathBackend {
   }
 
   localResponseNormalization3D(
-      x: Array3D, n: number, alpha: number, beta: number, k: number): Array3D {
+      x: Array3D, n: number, alpha: number, beta: number,
+      normRegion: "acrossChannels"|"withinChannel", k: number): Array3D {
 
     const output = Array3D.zeros(x.shape);
     const n2 = Math.floor(n / 2);
+    const maxW = output.shape[0] - 1;
+    const maxH = output.shape[1] - 1;
     const maxD = output.shape[2] - 1;
     const f0 = k;
     const f1 = alpha / n;
 
+    const sumAcrossChannels = (r: number, c: number, d: number): number => {
+      let sum = 0.0;
+      for (let j = Math.max(0, d - n2); j <= Math.min(d + n2, maxD); j++) {
+        sum += Math.pow(x.get(r, c, j), 2);
+      }
+      return sum;
+    };
+
+    const sumWithinChannel = (r: number, c: number, d: number): number => {
+      let sum = 0.0;
+      for (let u = Math.max(0, r - n2); u <= Math.min(r + n2, maxW); u++) {
+        for (let v = Math.max(0, c - n2); v <= Math.min(c + n2, maxH); v++) {
+          sum += Math.pow(x.get(u, v, d), 2);
+        }
+      }
+      return sum;
+    };
+
     for (let r = 0; r < output.shape[0]; r++) {
-     for (let c = 0; c < output.shape[1]; c++) {
-       for (let d = 0; d < output.shape[2]; d++) {
-         let sum = 0.0;
-
-         for (let j = Math.max(0, d - n2); j <= Math.min(d + n2, maxD); j++) {
-           sum += Math.pow(x.get(r, c, j), 2);
-         }
-
-         const val = x.get(r, c, d) * Math.pow(f0 + f1 * sum, -beta);
-         output.set(val, r, c, d);
-       }
-     }
+      for (let c = 0; c < output.shape[1]; c++) {
+        for (let d = 0; d < output.shape[2]; d++) {
+          const sum = normRegion === "withinChannel"
+            ? sumWithinChannel(r, c, d)
+            : sumAcrossChannels(r, c, d);         
+          const val = x.get(r, c, d) * Math.pow(f0 + f1 * sum, -beta);
+          output.set(val, r, c, d);
+        }
+      }
     }
 
     return output;

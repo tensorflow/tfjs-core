@@ -30,7 +30,8 @@ export interface LRN3DNode extends KernelNode {
 
 export interface LRN3DInputConfig extends KernelInputConfig {
   inputs: LRN3DInputArrays;
-  args: {n: number, alpha: number, beta: number, k: number};
+  args: {n: number, alpha: number, beta: number,
+    normRegion: "acrossChannels"|"withinChannel", k: number};
 }
 
 export interface LRN3DInputArrays extends NamedArrayMap {

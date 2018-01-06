@@ -23,36 +23,70 @@ export class LRN3DProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      xShape: number[], n: number, alpha: number, beta: number, k: number) {
+      xShape: number[], n: number, alpha: number, beta: number,
+      normRegion: "acrossChannels"|"withinChannel", k: number) {
     
     const n2 = Math.floor(n / 2);
+    const maxW = xShape[0] - 1;
+    const maxH = xShape[1] - 1;
     const maxD = xShape[2] - 1;
-    const f0 = k * 1.0;
-    const f1 = alpha / n * 1.0;
+
+    // Force values to be floats
+    const f0 = k;
+    const f1 = alpha / n;
 
     this.outputShape = xShape;
  
-    this.userCode = `
-      void main() {
-        ivec3 coords = getOutputCoords();
-        float x = getX(r, c, d);
-        int r = coords[0];
-        int c = coords[1];
-        int d = coords[2];
+    if (normRegion === "withinChannel") {
+      this.userCode = `
+        void main() {
+          ivec3 coords = getOutputCoords();
+          int r = coords[0];
+          int c = coords[1];
+          int d = coords[2];
 
-        float sum = 0.0;
+          float x = getX(r, c, d);
+          float sum = 0.0;
 
-        for (int j = -${n2}; j <= ${n2}; j++) {
-          int idx = d + j;
-          if (idx >= 0 && idx < ${maxD}) {
-            sum += pow(getX(r, c, idx), 2.0);
+          for (int u = -${n2}; u <= ${n2}; u++) {
+            for (int v = -${n2}; v <= ${n2}; v++) {
+              int idx = r + u;
+              int idy = c + v;
+              if (idx >= 0 && idx <= ${maxW} && idy >= 0 && idy <= ${maxH}) {
+                sum += pow(getX(idx, idy, d), 2.0);
+              }
+            }
           }
-        }
 
-        float val = x * pow(${f0} + ${f1} * sum, -float(${beta}));
-        setOutput(val);
-      }
-    `;
+          float val = x * pow(float(${f0}) + float(${f1}) * sum, -float(${beta}));
+          setOutput(val);
+        }
+      `;
+    }
+    else {
+      this.userCode = `
+        void main() {
+          ivec3 coords = getOutputCoords();
+          int r = coords[0];
+          int c = coords[1];
+          int d = coords[2];
+
+          float x = getX(r, c, d);
+          float sum = 0.0;
+
+          for (int j = -${n2}; j <= ${n2}; j++) {
+            int idx = d + j;
+            if (idx >= 0 && idx <= ${maxD}) {
+              sum += pow(getX(r, c, idx), 2.0);
+            }
+          }
+
+          float val = x * pow(float(${f0}) + float(${f1}) * sum, -float(${beta}));
+          setOutput(val);
+        }
+      `;
+    }
+
     return;
   }
 }
