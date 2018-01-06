@@ -404,7 +404,5 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
  * `await dl.nextFrame();`
  */
 export function nextFrame(): Promise<void> {
-  return new Promise<void>(resolve => {
-    requestAnimationFrame(() => resolve());
-  });
+  return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 }

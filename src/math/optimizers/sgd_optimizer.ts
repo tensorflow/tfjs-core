@@ -76,7 +76,9 @@ export class SGDOptimizer extends Optimizer {
   }
 
   dispose() {
-    this.c.dispose();
+    if (this.c != null) {
+      this.c.dispose();
+    }
     super.dispose();
   }
 

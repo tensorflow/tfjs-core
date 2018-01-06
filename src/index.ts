@@ -33,6 +33,8 @@ export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProvide
 export {XhrDataset, XhrDatasetConfig, XhrModelConfig} from './data/xhr-dataset';
 export {ENV, Environment, Features} from './environment';
 export {Graph, Tensor} from './graph/graph';
+// tslint:disable-next-line:max-line-length
+export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
 export {AdadeltaOptimizer} from './graph/optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './graph/optimizers/adagrad_optimizer';
 export {AdamOptimizer} from './graph/optimizers/adam_optimizer';
@@ -40,8 +42,6 @@ export {AdamaxOptimizer} from './graph/optimizers/adamax_optimizer';
 export {MomentumOptimizer} from './graph/optimizers/momentum_optimizer';
 export {RMSPropOptimizer} from './graph/optimizers/rmsprop_optimizer';
 export {CostReduction, FeedEntry, Session} from './graph/session';
-// tslint:disable-next-line:max-line-length
-export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph_runner';
 // tslint:disable-next-line:max-line-length
 export {ConstantInitializer, Initializer, NDArrayInitializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, VarianceScalingInitializer, ZerosInitializer} from './initializers';
 export {MathBackendCPU, NDArrayMathCPU} from './math/backends/backend_cpu';
