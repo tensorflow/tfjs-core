@@ -1628,7 +1628,7 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Computes a 2D convolution over the input x.
    *
-   * @param input The input ndarray, of rank 4 or rank 3, of shape
+   * @param x The input ndarray, of rank 4 or rank 3, of shape
    *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
    * assumed.
    * @param filter The filter, rank 4, of shape
@@ -1644,18 +1644,18 @@ export class NDArrayMath implements NDArrayManager {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  conv2d<T extends NDArray>(
-      input: T, filter: Array4D, bias: Array1D|null,
+  conv2d<T extends Array3D|Array4D>(
+      x: T, filter: Array4D, bias: Array1D|null,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
-    let input4D = input as NDArray as Array4D;
+    let x4D = x as NDArray as Array4D;
     let reshapedTo4D = false;
-    if (input.rank === 3) {
+    if (x.rank === 3) {
       reshapedTo4D = true;
-      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     }
     util.assert(
-        input4D.rank === 4,
-        `Error in conv2d: input must be rank 4, but got rank ${input4D.rank}.`);
+        x4D.rank === 4,
+        `Error in conv2d: input must be rank 4, but got rank ${x4D.rank}.`);
     util.assert(
         filter.rank === 4,
         `Error in conv2d: filter must be rank 4, but got rank ` +
@@ -1668,15 +1668,25 @@ export class NDArrayMath implements NDArrayManager {
     }
 
     util.assert(
-        input4D.shape[3] === filter.shape[2],
-        `Error in conv2d: depth of input (${input4D.shape[3]}) must match  ` +
+        x4D.shape[3] === filter.shape[2],
+        `Error in conv2d: depth of input (${x4D.shape[3]}) must match  ` +
             `input depth for filter ${filter.shape[2]}.`);
 
     const convInfo =
-        conv_util.computeConv2DInfo(input4D.shape, filter.shape, strides, pad);
+        conv_util.computeConv2DInfo(x4D.shape, filter.shape, strides, pad);
+
+    const gradients = (dy: Array4D, y: Array4D) => {
+      return {
+        x: () => this.conv2dDerInput(x4D.shape, dy, filter, strides, pad),
+        filter: () => this.conv2dDerFilter(x4D, dy, filter.shape, strides, pad),
+        bias: () => this.conv2dDerBias(dy)
+      };
+    };
+
     return this.executeOp('Conv2D', () => {
       const res = this.backendEngine.executeKernel(
-          'Conv2D', {inputs: {x: input4D, filter, bias}, args: {convInfo}});
+          'Conv2D', {inputs: {x: x4D, filter, bias}, args: {convInfo}},
+          gradients);
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;
@@ -1784,8 +1794,9 @@ export class NDArrayMath implements NDArrayManager {
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
-  conv2dDerFilter<T extends NDArray>(
-      input: T, dy: T, filterShape: [number, number, number, number],
+  conv2dDerFilter(
+      input: Array4D, dy: Array4D,
+      filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number): Array4D {
     let input4D = input as NDArray as Array4D;
     if (input.rank === 3) {
