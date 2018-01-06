@@ -2255,13 +2255,12 @@ export class NDArrayMath implements NDArrayManager {
    * @param k A constant added to the basis.
    */
   localResponseNormalization3D(
-      x: Array3D, n: number = 5, alpha: number = 1, beta: number = 0.75,
-      k: number = 1): Array3D {
+      x: Array3D, n = 5, alpha = 1, beta = 0.75, k = 1): Array3D {
     util.assert(x.rank === 3,
-        `Error in localResponseNormalization3D: x must be rank 3 but got rank ` +
+      `Error in localResponseNormalization3D: x must be rank 3 but got rank ` +
              `${x.rank}.`);
     util.assert(n % 2 !== 0,
-        `n should be odd for localResponseNormalization3D but got n ${n}.`);
+      `n should be odd for localResponseNormalization3D but got n ${n}.`);
  
     return this.backendEngine.executeKernel(
         'LRN3D',
