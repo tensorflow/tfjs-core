@@ -2248,27 +2248,61 @@ export class NDArrayMath implements NDArrayManager {
    * neighborhood across or within channels.
    * This is used for Caffe compatibility only. New models should use BatchNorm
    * instead!
-   * @param x he input NDArray.
-   * @param n The number of adjacent channels or spatial locations to sum over.
-   * @param alpha A scaling parameter.
-   * @param beta The exponent.
+   * @param x The input NDArray.
+   * @param radius The number of adjacent channels or spatial locations of the
+   *     1D normalization window.
+   * @param bias A constant bias term for the basis.
+   * @param alpha A scale factor, usually positive.
+   * @param beta An exponent.
    * @param normRegion A string from: ['acrossChannels', 'withinChannel'].
    *     Default is 'acrossChannels'.
-   * @param k A constant added to the basis.
    */
   localResponseNormalization3D(
-      x: Array3D, n = 5, alpha = 1, beta = 0.75,
-      normRegion: "acrossChannels"|"withinChannel" = "acrossChannels",
-      k = 1): Array3D {
-    util.assert(x.rank === 3,
-      `Error in localResponseNormalization3D: x must be rank 3 but got rank ` +
-             `${x.rank}.`);
-    util.assert(n % 2 !== 0,
-      `n should be odd for localResponseNormalization3D but got n ${n}.`);
- 
+      x: Array3D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
+      normRegion: 'acrossChannels'|
+      'withinChannel' = 'acrossChannels'): Array3D {
+    util.assert(
+        x.rank === 3,
+        `Error in localResponseNormalization3D: x must be rank 3 but got
+         rank ${x.rank}.`);
+    util.assert(
+        radius % 2 !== 0,
+        `n should be odd for localResponseNormalization3D but got radius
+         ${radius}.`);
+
     return this.backendEngine.executeKernel(
-        'LRN3D',
-        {inputs: {x}, args: {n, alpha, beta, normRegion, k}});
+        'LRN3D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
+  }
+
+  /**
+   * Local response normalization - normalizes the activation of a local
+   * neighborhood across or within channels.
+   * This is used for Caffe compatibility only. New models should use BatchNorm
+   * instead!
+   * @param x The input NDArray.
+   * @param radius The number of adjacent channels or spatial locations of the
+   *     1D normalization window.
+   * @param bias A constant bias term for the basis.
+   * @param alpha A scale factor, usually positive.
+   * @param beta An exponent.
+   * @param normRegion A string from: ['acrossChannels', 'withinChannel'].
+   *     Default is 'acrossChannels'.
+   */
+  localResponseNormalization4D(
+      x: Array4D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
+      normRegion: 'acrossChannels'|
+      'withinChannel' = 'acrossChannels'): Array4D {
+    util.assert(
+        x.rank === 4,
+        `Error in localResponseNormalization4D: x must be rank 4 but got
+         rank ${x.rank}.`);
+    util.assert(
+        radius % 2 !== 0,
+        `n should be odd for localResponseNormalization4D but got radius
+         ${radius}.`);
+
+    return this.backendEngine.executeKernel(
+        'LRN4D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
   }
 
   //////////////

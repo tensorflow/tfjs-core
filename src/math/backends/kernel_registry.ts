@@ -17,13 +17,13 @@
 
 import * as util from '../../util';
 import {DataType, NDArray, Scalar} from '../ndarray';
+
 import {MathBackend} from './backend';
 import {KernelInputConfig} from './tape_types';
 // tslint:disable-next-line:max-line-length
 import {ArgMaxInputConfig, ArgMaxNode, ArgMinInputConfig, ArgMinNode} from './types/argminmax';
 // tslint:disable-next-line:max-line-length
 import {BatchNorm2DInputConfig, BatchNorm2DNode, BatchNorm3DInputConfig, BatchNorm3DNode, BatchNorm4DInputConfig, BatchNorm4DNode} from './types/batchnorm';
-import {LRN3DInputConfig, LRN3DNode} from './types/lrn';
 import {BinaryInputConfig, BinaryNode} from './types/binary';
 import {CastInputConfig, CastNode} from './types/cast';
 // tslint:disable-next-line:max-line-length
@@ -31,6 +31,8 @@ import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Co
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
 import {EqualInputConfig, EqualNode} from './types/logical';
+// tslint:disable-next-line:max-line-length
+import {LRN3DInputConfig, LRN3DNode, LRN4DInputConfig, LRN4DNode} from './types/lrn';
 import {MatMulInputConfig, MatMulNode} from './types/matmul';
 // tslint:disable-next-line:max-line-length
 import {MaximumInputConfig, MaximumNode, MaxInputConfig, MaxNode, MinimumInputConfig, MinimumNode, MinInputConfig, MinNode} from './types/minmax';
@@ -306,8 +308,13 @@ const KERNEL_METHODS: {
   },
   LRN3D: (backend: MathBackend, config: LRN3DInputConfig) => {
     return backend.localResponseNormalization3D(
-      config.inputs.x, config.args.n, config.args.alpha, config.args.beta,
-      config.args.normRegion, config.args.k);
+        config.inputs.x, config.args.radius, config.args.bias,
+        config.args.alpha, config.args.beta, config.args.normRegion);
+  },
+  LRN4D: (backend: MathBackend, config: LRN4DInputConfig) => {
+    return backend.localResponseNormalization4D(
+        config.inputs.x, config.args.radius, config.args.bias,
+        config.args.alpha, config.args.beta, config.args.normRegion);
   },
   Multinomial: (backend: MathBackend, config: MultinomialInputConfig) => {
     return backend.multinomial(
@@ -398,6 +405,7 @@ export interface KernelConfigRegistry {
   BatchNorm3D: BatchNorm3DNode;
   BatchNorm2D: BatchNorm2DNode;
   LRN3D: LRN3DNode;
+  LRN4D: LRN4DNode;
   Multinomial: MultinomialNode;
   OneHot: OneHotNode;
 }

@@ -26,11 +26,11 @@ import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
+
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
-import {LRN3DProgram} from './webgl/lrn_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
@@ -44,6 +44,7 @@ import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {ArrayData, GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
+import {LRNProgram} from './webgl/lrn_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
@@ -399,10 +400,18 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   localResponseNormalization3D(
-     x: Array3D, n: number, alpha: number, beta: number,
-     normRegion: "acrossChannels"|"withinChannel", k: number): Array3D {
+      x: Array3D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array3D {
+    const program =
+        new LRNProgram(x.shape, radius, bias, alpha, beta, normRegion);
+    return this.compileAndRun(program, [x]);
+  }
 
-    const program = new LRN3DProgram(x.shape, n, alpha, beta, normRegion, k);
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D {
+    const program =
+        new LRNProgram(x.shape, radius, bias, alpha, beta, normRegion);
     return this.compileAndRun(program, [x]);
   }
 

@@ -1369,16 +1369,15 @@ export class MathBackendCPU implements MathBackend {
   }
 
   localResponseNormalization3D(
-      x: Array3D, n: number, alpha: number, beta: number,
-      normRegion: "acrossChannels"|"withinChannel", k: number): Array3D {
-
+      x: Array3D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array3D {
     const output = Array3D.zeros(x.shape);
-    const n2 = Math.floor(n / 2);
+    const n2 = Math.floor(radius / 2);
     const maxW = output.shape[0] - 1;
     const maxH = output.shape[1] - 1;
     const maxD = output.shape[2] - 1;
-    const f0 = k;
-    const f1 = alpha / n;
+    const f0 = bias;
+    const f1 = alpha / radius;
 
     const sumAcrossChannels = (r: number, c: number, d: number): number => {
       let sum = 0.0;
@@ -1401,13 +1400,34 @@ export class MathBackendCPU implements MathBackend {
     for (let r = 0; r < output.shape[0]; r++) {
       for (let c = 0; c < output.shape[1]; c++) {
         for (let d = 0; d < output.shape[2]; d++) {
-          const sum = normRegion === "withinChannel"
-            ? sumWithinChannel(r, c, d)
-            : sumAcrossChannels(r, c, d);         
+          const sum = normRegion === 'withinChannel' ?
+              sumWithinChannel(r, c, d) :
+              sumAcrossChannels(r, c, d);
           const val = x.get(r, c, d) * Math.pow(f0 + f1 * sum, -beta);
           output.set(val, r, c, d);
         }
       }
+    }
+
+    return output;
+  }
+
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D {
+    const output = Array4D.zeros(x.shape);
+    const data = output.dataSync();
+    const s0 = output.strides[0];
+
+    // compute LRN per batch sample
+    for (let b = 0; b < output.shape[0]; b++) {
+      const batchData = data.slice(b * s0, (b + 1) * s0);
+      const batchShape = x.shape.slice(1);
+      const input3D =
+          Array3D.make(batchShape, {values: batchData}, x.dtype) as Array3D;
+      const output3D = this.localResponseNormalization3D(
+          input3D, radius, bias, alpha, beta, normRegion);
+      data.set(output3D.dataSync(), b * s0);
     }
 
     return output;

@@ -161,8 +161,12 @@ export interface MathBackend extends NDArrayStorage {
       offset?: Array4D|Array1D): Array4D;
 
   localResponseNormalization3D(
-    x: Array3D, n: number, alpha: number, beta: number,
-    normRegion: "acrossChannels"|"withinChannel", k: number): Array3D;
+      x: Array3D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array3D;
+
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D;
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
       Array2D<'int32'>;
