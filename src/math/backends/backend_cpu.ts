@@ -1368,6 +1368,33 @@ export class MathBackendCPU implements MathBackend {
     return Array4D.new(x.shape, outValues);
   }
 
+  localResponseNormalization3D(
+      x: Array3D, n: number, alpha: number, beta: number, k: number): Array3D {
+
+    const output = Array3D.zeros(x.shape);
+    const n2 = Math.floor(n / 2);
+    const max_depth = output.shape[2] - 1;
+    const f0 = k;
+    const f1 = alpha / n;
+
+    for (let r = 0; r < output.shape[0]; r++) {
+     for (let c = 0; c < output.shape[1]; c++) {
+       for (let d = 0; d < output.shape[2]; d++) {
+         let sum = 0.0;
+
+         for (let j = Math.max(0, d - n2); j <= Math.min(d + n2, max_depth); j++) {
+           sum += Math.pow(x.get(r, c, j), 2);
+         }
+
+         const val = x.get(r, c, d) * Math.pow(f0 + f1 * sum, -beta);
+         output.set(val, r, c, d);
+       }
+     }
+    }
+
+    return output;
+  }
+
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
       Array2D<'int32'> {
     const batchSize = probabilities.shape[0];
