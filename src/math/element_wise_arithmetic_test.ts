@@ -274,6 +274,54 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       expect(vjp.b.dtype).toEqual('float32');
       test_util.expectArraysClose(vjp.b, [3 * 1, 1 * 10, 2 * 15, 3 * 20], 1e-1);
     });
+
+    it('gradient: scalar * Array1D', math => {
+      const a = Scalar.new(2);
+      const b = Array1D.new([3, 4, 5]);
+      const dy = Array1D.new([6, 7, 8]);
+
+      const vjp = math.vjp(() => math.multiply(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.a.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [3 * 6 + 4 * 7 + 5 * 8]);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.b, [2 * 6, 2 * 7, 2 * 8]);
+    });
+
+    it('gradient: Array2D * scalar', math => {
+      const a = Array2D.new([2, 2], [[2, 3], [4, 5]]);
+      const b = Scalar.new(2);
+      const dy = Array2D.new([2, 2], [[6, 7], [8, 9]]);
+
+      const vjp = math.vjp(() => math.multiply(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.a.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [2 * 6, 2 * 7, 2 * 8, 2 * 9], 1e-1);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.b, [2 * 6 + 3 * 7 + 4 * 8 + 5 * 9], 1e-1);
+    });
+
+    it('gradient: Array2D * Array2D w/ broadcast', math => {
+      const a = Array2D.new([2, 1], [3, 4]);
+      const b = Array2D.new([2, 2], [[2, 3], [4, 5]]);
+      const dy = Array2D.new([2, 2], [[6, 7], [8, 9]]);
+
+      const vjp = math.vjp(() => math.multiply(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.a.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [2 * 6 + 3 * 7, 4 * 8 + 5 * 9], 1e-1);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.b, [6 * 3, 7 * 3, 8 * 4, 9 * 4], 1e-1);
+    });
   };
 
   test_util.describeMathCPU('multiply', [tests]);

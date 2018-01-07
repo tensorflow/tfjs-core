@@ -1195,19 +1195,29 @@ export class NDArrayMath implements NDArrayManager {
   multiply<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel(
-               'Mul', {inputs: {a, b}}, (dy: NDArray, y: NDArray) => {
-                 if (!util.arraysEqual(a.shape, b.shape)) {
-                   throw new Error(
-                       `Backprop through broadcasted multiply not ` +
-                       `supported yet.`);
-                 }
-                 return {
-                   a: () => this.multiply(dy, b),
-                   b: () => this.multiply(dy, a)
-                 };
-               }) as T;
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
+    const der = (dy: NDArray, y: NDArray) => {
+      const derA = () => {
+        const res = this.multiply(dy, b);
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          return this.sum(res, reduceAxes).reshape(a.shape);
+        }
+        return res;
+      };
+      const derB = () => {
+        const res = this.multiply(dy, a);
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          return this.sum(res, reduceAxes).reshape(b.shape);
+        }
+        return res;
+      };
+      return {a: derA, b: derB};
+    };
+    return this.backendEngine.executeKernel('Mul', {inputs: {a, b}}, der) as T;
   }
 
   /**
