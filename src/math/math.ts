@@ -1118,22 +1118,16 @@ export class NDArrayMath implements NDArrayManager {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel(
                'Sub', {inputs: {a, b}}, (dy: NDArray<D1>, y: NDArray<D1>) => {
-                 //  if (!util.arraysEqual(a.shape, b.shape) && (a.rank != 0 &&
-                 //  b.rank != 0)) {
-                 //    throw new Error(
-                 //        `Backprop through broadcasted subtract not ` +
-                 //        `yet supported.`);
-                 //  }
-
-                 // const aReducedDy = a.rank === 0 ? this.sum(dy) : dy;
-                 const bReducedDy = b.rank === 0 ? this.sum(dy) : dy;
+                 if (!util.arraysEqual(a.shape, b.shape)) {
+                   throw new Error(
+                       `Backprop through broadcasted subtract not ` +
+                       `yet supported.`);
+                 }
 
                  return {
                    a: () => this.multiply(dy, NDArray.onesLike(a)),
                    b: () => this.scope(
-                       () => this.multiply(
-                           bReducedDy.asType(b.dtype),
-                           this.neg(NDArray.onesLike(b))))
+                       () => this.multiply(dy, this.neg(NDArray.onesLike(b))))
                  };
                }) as T;
   }
