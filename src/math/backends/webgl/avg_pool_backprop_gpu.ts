@@ -34,10 +34,11 @@ export class AvgPool2DBackpropProgram implements GPGPUProgram {
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
 
-    const filterValue = 1 / (filterHeight * filterWidth);
+    const avgMultiplier = 1 / (filterHeight * filterWidth);
 
     this.userCode = `
       const ivec2 pads = ivec2(${padTop}, ${padLeft});
+      const float avgMultiplier = float(${avgMultiplier});
 
       void main() {
         ivec4 coords = getOutputCoords();
@@ -70,7 +71,7 @@ export class AvgPool2DBackpropProgram implements GPGPUProgram {
 
             float dyValue = getDy(b, idyR, idyC, d);
 
-            dotProd += dyValue * ${filterValue};
+            dotProd += dyValue * avgMultiplier;
           }
         }
         setOutput(dotProd);

@@ -215,8 +215,6 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       test_util.expectArraysClose(
           vjp.x, [3, 4, 1, 5, 6, 1, 2, 2, 0, 3, 4, 1, 5, 6, 1, 2, 2, 0]);
 
-      test_util.expectArraysClose(vjp.x, [12]);
-
       expect(vjp.filter.shape).toEqual(filterShape);
       // TODO(nsthorat): Fix the precision for byte textures.
       test_util.expectArraysClose(

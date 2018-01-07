@@ -702,17 +702,8 @@ export class NDArrayMath implements NDArrayManager {
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
 
-      const gradients = (dy: NDArray, y: NDArray) => {
-        if (axis != null) {
-          throw new Error(`Gradient not defined for axis != null`);
-        }
-        return {
-          x: () =>
-              this.multiply(dy, this.oneHot(y.as1D().asType('float32'), x.size))
-        };
-      };
       return this.backendEngine.executeKernel(
-          'ArgMax', {inputs: {x}, args: {axes}}, gradients);
+          'ArgMax', {inputs: {x}, args: {axes}});
     }) as T;
   }
 
@@ -1123,7 +1114,6 @@ export class NDArrayMath implements NDArrayManager {
                        `Backprop through broadcasted subtract not ` +
                        `yet supported.`);
                  }
-
                  return {
                    a: () => this.multiply(dy, NDArray.onesLike(a)),
                    b: () => this.scope(
@@ -1743,7 +1733,7 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Computes the derivative of the input of a 2D convolution.
    *
-   * @param inShape The shape of the input: [batch, height, width, inDepth].
+   * @param xShape The shape of the input: [batch, height, width, inDepth].
    * If length of 3, batch of 1 is assumed.
    * @param dy The derivative of the output, of rank 4 or rank 3 of shape
    *   [batch, outHeight, outWidth, outDepth]. If rank 3, batch of 1 is
@@ -1760,29 +1750,29 @@ export class NDArrayMath implements NDArrayManager {
    *     is of fractional size.
    */
   conv2dDerInput<T extends NDArray>(
-      inShape: [number, number, number, number]|[number, number, number], dy: T,
+      xShape: [number, number, number, number]|[number, number, number], dy: T,
       filter: Array4D, strides: [number, number]|number,
       pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     util.assert(
-        inShape.length === dy.rank,
+        xShape.length === dy.rank,
         `Length of inShape ` +
-            `(${inShape.length}) and rank of dy (${dy.rank}) must match`);
+            `(${xShape.length}) and rank of dy (${dy.rank}) must match`);
 
-    let inShape4D = inShape as [number, number, number, number];
+    let xShape4D = xShape as [number, number, number, number];
     let dy4D = dy as NDArray as Array4D;
     let reshapedTo4D = false;
     if (dy.rank === 3) {
       reshapedTo4D = true;
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-      inShape4D = [1, inShape[0], inShape[1], inShape[2]];
+      xShape4D = [1, xShape[0], xShape[1], xShape[2]];
     }
 
-    const inDepth = inShape4D[3];
+    const inDepth = xShape4D[3];
     const outDepth = dy4D.shape[3];
     util.assert(
-        inShape4D.length === 4,
+        xShape4D.length === 4,
         `Error in conv2dDerInput: inShape must be length 4, but got length ` +
-            `${inShape4D.length}.`);
+            `${xShape4D.length}.`);
     util.assert(
         dy4D.rank === 4,
         `Error in conv2dDerInput: dy must be rank 4, but got ` +
@@ -1807,7 +1797,7 @@ export class NDArrayMath implements NDArrayManager {
     }
 
     const convInfo = conv_util.computeConv2DInfo(
-        inShape4D, filter.shape, strides, pad, dimRoundingMode);
+        xShape4D, filter.shape, strides, pad, dimRoundingMode);
     return this.executeOp('conv2dDerInput', () => {
       const res = this.backendEngine.executeKernel(
           'Conv2DDerInput', {inputs: {dy: dy4D, filter}, args: {convInfo}});
@@ -1838,7 +1828,7 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Computes the derivative of the filter of a 2D convolution.
    *
-   * @param input The input ndarray, of rank 4 or rank 3 of shape
+   * @param x The input ndarray, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param dy The dy image, of rank 4 or rank 3, of shape
    *     [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
@@ -1854,21 +1844,21 @@ export class NDArrayMath implements NDArrayManager {
    *     is of fractional size.
    */
   conv2dDerFilter<T extends Array3D|Array4D>(
-      input: T, dy: T, filterShape: [number, number, number, number],
+      x: T, dy: T, filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): Array4D {
-    let input4D = input as NDArray as Array4D;
-    if (input.rank === 3) {
-      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+    let x4D = x as NDArray as Array4D;
+    if (x.rank === 3) {
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     }
     let dy4D = dy as NDArray as Array4D;
     if (dy4D.rank === 3) {
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
     }
     util.assert(
-        input4D.rank === 4,
+        x4D.rank === 4,
         `Error in conv2dDerFilter: input must be rank 4, but got shape ` +
-            `${input4D.shape}.`);
+            `${x4D.shape}.`);
     util.assert(
         dy4D.rank === 4,
         `Error in conv2dDerFilter: dy must be rank 4, but got shape ` +
@@ -1878,8 +1868,8 @@ export class NDArrayMath implements NDArrayManager {
         `Error in conv2dDerFilter: filterShape must be length 4, but got ` +
             `${filterShape}.`);
     util.assert(
-        input4D.shape[3] === filterShape[2],
-        `Error in conv2dDerFilter: depth of input ${input4D.shape[3]}) must ` +
+        x4D.shape[3] === filterShape[2],
+        `Error in conv2dDerFilter: depth of input ${x4D.shape[3]}) must ` +
             `match input depth in filter (${filterShape[2]}.`);
     util.assert(
         dy4D.shape[3] === filterShape[3],
@@ -1893,9 +1883,9 @@ export class NDArrayMath implements NDArrayManager {
     }
 
     const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filterShape, strides, pad, dimRoundingMode);
+        x4D.shape, filterShape, strides, pad, dimRoundingMode);
     return this.backendEngine.executeKernel(
-        'Conv2DDerFilter', {inputs: {x: input4D, dy: dy4D}, args: {convInfo}});
+        'Conv2DDerFilter', {inputs: {x: x4D, dy: dy4D}, args: {convInfo}});
   }
 
   /**
