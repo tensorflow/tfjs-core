@@ -1372,25 +1372,24 @@ export class MathBackendCPU implements MathBackend {
       x: Array3D, radius: number, bias: number, alpha: number, beta: number,
       normRegion: 'acrossChannels'|'withinChannel'): Array3D {
     const output = Array3D.zeros(x.shape);
-    const n2 = Math.floor(radius / 2);
+    const rad = radius;
     const maxW = output.shape[0] - 1;
     const maxH = output.shape[1] - 1;
     const maxD = output.shape[2] - 1;
-    const f0 = bias;
-    const f1 = alpha / radius;
 
     const sumAcrossChannels = (r: number, c: number, d: number): number => {
       let sum = 0.0;
-      for (let j = Math.max(0, d - n2); j <= Math.min(d + n2, maxD); j++) {
-        sum += Math.pow(x.get(r, c, j), 2);
+      for (let j = Math.max(0, d - rad); j <= Math.min(d + rad, maxD); j++) {
+        const z = x.get(r, c, j);
+        sum += z * z;
       }
       return sum;
     };
 
     const sumWithinChannel = (r: number, c: number, d: number): number => {
       let sum = 0.0;
-      for (let u = Math.max(0, r - n2); u <= Math.min(r + n2, maxW); u++) {
-        for (let v = Math.max(0, c - n2); v <= Math.min(c + n2, maxH); v++) {
+      for (let u = Math.max(0, r - rad); u <= Math.min(r + rad, maxW); u++) {
+        for (let v = Math.max(0, c - rad); v <= Math.min(c + rad, maxH); v++) {
           sum += Math.pow(x.get(u, v, d), 2);
         }
       }
@@ -1403,7 +1402,11 @@ export class MathBackendCPU implements MathBackend {
           const sum = normRegion === 'withinChannel' ?
               sumWithinChannel(r, c, d) :
               sumAcrossChannels(r, c, d);
-          const val = x.get(r, c, d) * Math.pow(f0 + f1 * sum, -beta);
+          // pow() call could be optimized depending on value of bias
+          // see github.com/tensorflow/tensorflow/..
+          // blob/26033a1644a9c4a5fbe3170ab2e864b6a4ccd4ca/..
+          // tensorflow/core/kernels/mkl_lrn_op.cc#L320
+          const val = x.get(r, c, d) * Math.pow(bias + alpha * sum, -beta);
           output.set(val, r, c, d);
         }
       }
@@ -1421,7 +1424,8 @@ export class MathBackendCPU implements MathBackend {
 
     // compute LRN per batch sample
     for (let b = 0; b < output.shape[0]; b++) {
-      const batchData = data.slice(b * s0, (b + 1) * s0);
+      const batchData = x.dataSync().slice(b * s0, (b + 1) * s0);
+      // b, [r, c, d]
       const batchShape = x.shape.slice(1);
       const input3D =
           Array3D.make(batchShape, {values: batchData}, x.dtype) as Array3D;

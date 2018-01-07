@@ -2266,10 +2266,9 @@ export class NDArrayMath implements NDArrayManager {
         `Error in localResponseNormalization3D: x must be rank 3 but got
          rank ${x.rank}.`);
     util.assert(
-        radius % 2 !== 0,
-        `n should be odd for localResponseNormalization3D but got radius
-         ${radius}.`);
-
+        util.isInt(radius),
+        `Error in localResponseNormalization3D: radius must be an integer
+         but got radius ${radius}.`);
     return this.backendEngine.executeKernel(
         'LRN3D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
   }
@@ -2279,7 +2278,9 @@ export class NDArrayMath implements NDArrayManager {
    * neighborhood across or within channels.
    * This is used for Caffe compatibility only. New models should use BatchNorm
    * instead!
-   * @param x The input NDArray.
+   * @param x The input NDArray. The 4-D input tensor is treated as a 3-D array
+   *     of 1D vectors (along the last dimension), and each vector is
+   * normalized independently.
    * @param radius The number of adjacent channels or spatial locations of the
    *     1D normalization window.
    * @param bias A constant bias term for the basis.
@@ -2297,9 +2298,9 @@ export class NDArrayMath implements NDArrayManager {
         `Error in localResponseNormalization4D: x must be rank 4 but got
          rank ${x.rank}.`);
     util.assert(
-        radius % 2 !== 0,
-        `n should be odd for localResponseNormalization4D but got radius
-         ${radius}.`);
+        util.isInt(radius),
+        `Error in localResponseNormalization3D: radius must be an integer
+         but got radius ${radius}.`);
 
     return this.backendEngine.executeKernel(
         'LRN4D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
