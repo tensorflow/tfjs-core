@@ -16,9 +16,9 @@
  */
 
 import * as test_util from '../test_util';
-import {MathTests, TestMode} from '../test_util';
+import {MathTests} from '../test_util';
 
-import {Array3D, Array4D} from './ndarray';
+import {Array2D, Array3D, Array4D} from './ndarray';
 
 const sqArr = (arr: number[]) => arr.map(d => d*d);
 const sumArr = (arr: number[]) => arr.reduce((prev, curr) => prev + curr, 0);
@@ -35,15 +35,24 @@ const flatten = (arr: any): number[] => {
 {
   const tests: MathTests = it => {
 
-    it('LRN3D with invalid radius', math => {
+    it('throws error with invalid input', math => {
+      // tslint:disable-next-line:no-any
+      const x: any = Array2D.new([1, 4], new Float32Array([1, 20, 300, 4]));
+      const radius = 3;
+
+      expect(() => math.localResponseNormalization3D(x, radius))
+        .toThrowError();
+    });
+
+    it('throws error with invalid radius', math => {
       const x = Array3D.new([1, 1, 4], new Float32Array([1, 20, 300, 4]));
       const radius = 0.5;
 
       expect(() => math.localResponseNormalization3D(x, radius))
         .toThrowError();
-    }, TestMode.FOCUS);
+    });
 
-    it('simple LRN3D acrossChannels', math => {
+    it('computes simple normalization across channels', math => {
       const x = Array3D.new([1, 1, 4], new Float32Array([1, 20, 300, 4]));
       const radius = 1;
       const bias = 1;
@@ -66,7 +75,7 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('complex LRN3D acrossChannels', math => {
+    it('computes complex normalization across channels', math => {
       const x = Array3D.new([2, 2, 4], new Float32Array([
         1, 20, 300, 4, 5, 15, 24, 200, 1, 20, 300, 4, 5, 15, 24, 200
       ]));
@@ -115,7 +124,7 @@ const flatten = (arr: any): number[] => {
           ]);
     });
 
-    it('simple LRN3D withinChannel', math => {
+    it('computes simple normalization within channel', math => {
       const x = Array3D.new([2, 2, 1], new Float32Array([1, 20, 300, 4]));
       const radius = 1;
       const bias = 1;
@@ -142,7 +151,7 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('complex LRN3D withinChannel', math => {
+    it('computes complex normalization within channel', math => {
       const x = Array3D.new([3, 3, 2], new Float32Array([
         1, 20, 300, 4, 23, 25, 13, 156, 123, 5, 15, 24, 200, 12, 12, 13, 21, 3
       ]));
@@ -252,7 +261,7 @@ const flatten = (arr: any): number[] => {
           ]);
     });
 
-    it('compare LRN3D result with tensorflow', math => {
+    it('yields same result as tensorflow', math => {
 
       // t = tf.random_uniform([1, 3, 3, 8])
       // l = tf.nn.lrn(t, depth_radius=2)
@@ -329,15 +338,24 @@ const flatten = (arr: any): number[] => {
 {
   const tests: MathTests = it => {
 
-    it('LRN4D with invalid radius', math => {
+    it('throws error with invalid input', math => {
+      // tslint:disable-next-line:no-any
+      const x: any = Array3D.new([1, 1, 4], new Float32Array([1, 20, 300, 4]));
+      const radius = 3;
+
+      expect(() => math.localResponseNormalization4D(x, radius))
+        .toThrowError();
+    });
+
+    it('throws error with invalid radius', math => {
       const x = Array4D.new([1, 1, 1, 4], new Float32Array([1, 20, 300, 4]));
       const radius = 0.5;
 
       expect(() => math.localResponseNormalization4D(x, radius))
         .toThrowError();
-    }, TestMode.FOCUS);
+    });
 
-    it('simple LRN4D acrossChannels', math => {
+    it('computes simple normalization across channels', math => {
       const x = Array4D.new([2, 1, 1, 4],
         new Float32Array([1, 20, 300, 4, 1, 20, 300, 4]));
       const radius = 1;
@@ -374,7 +392,7 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('simple LRN4D withinChannel', math => {
+    it('computes simple normalization within channel', math => {
       const x = Array4D.new([2, 2, 2, 1],
         new Float32Array([1, 20, 50, 4, 1, 20, 50, 4]));
       const radius = 1;
@@ -411,7 +429,7 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('compare LRN4D result with tensorflow', math => {
+    it('yields same result as tensorflow', math => {
 
       // t = tf.random_uniform([2, 3, 3, 8])
       // l = tf.nn.lrn(t, depth_radius=2)
