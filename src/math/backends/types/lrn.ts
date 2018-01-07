@@ -17,35 +17,9 @@
  */
 
 import {NamedArrayMap} from '../../../util';
-import {Array3D, Array4D} from '../../ndarray';
+import {Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
-
-// 3D
-export interface LRN3DNode extends KernelNode {
-  inputAndArgs: LRN3DInputConfig;
-  output: Array3D;
-  gradient: (dy: Array3D, y: Array3D) => LRN3DGradientInputArrays;
-}
-
-export interface LRN3DInputConfig extends KernelInputConfig {
-  inputs: LRN3DInputArrays;
-  args: {
-    radius: number,
-    bias: number,
-    alpha: number,
-    beta: number,
-    normRegion: 'acrossChannels'|'withinChannel'
-  };
-}
-
-export interface LRN3DInputArrays extends NamedArrayMap {
-  x: Array3D;
-}
-
-export interface LRN3DGradientInputArrays extends TapeNodeInputGradientArrays {
-  x: () => Array3D;
-}
 
 // 4D
 export interface LRN4DNode extends KernelNode {

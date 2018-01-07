@@ -160,10 +160,6 @@ export interface MathBackend extends NDArrayStorage {
       varianceEpsilon: number, scale?: Array4D|Array1D,
       offset?: Array4D|Array1D): Array4D;
 
-  localResponseNormalization3D(
-      x: Array3D, radius: number, bias: number, alpha: number, beta: number,
-      normRegion: 'acrossChannels'|'withinChannel'): Array3D;
-
   localResponseNormalization4D(
       x: Array4D, radius: number, bias: number, alpha: number, beta: number,
       normRegion: 'acrossChannels'|'withinChannel'): Array4D;

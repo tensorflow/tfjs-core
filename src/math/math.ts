@@ -2367,7 +2367,8 @@ export class NDArrayMath implements NDArrayManager {
    * instead!
    * @param x The input NDArray.
    * @param radius The number of adjacent channels or spatial locations of the
-   *     1D normalization window.
+   *     1D normalization window. In Tensorflow this param is called
+   *     'depth_radius' because only 'acrossChannels' mode is supported.
    * @param bias A constant bias term for the basis.
    * @param alpha A scale factor, usually positive.
    * @param beta An exponent.
@@ -2386,8 +2387,11 @@ export class NDArrayMath implements NDArrayManager {
         util.isInt(radius),
         `Error in localResponseNormalization3D: radius must be an integer
          but got radius ${radius}.`);
-    return this.backendEngine.executeKernel(
-        'LRN3D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
+
+    return this.localResponseNormalization4D(
+                   x.reshape([1].concat(x.shape)) as Array4D, radius, bias,
+                   alpha, beta, normRegion)
+               .reshape(x.shape) as Array3D;
   }
 
   /**
@@ -2399,7 +2403,8 @@ export class NDArrayMath implements NDArrayManager {
    *     of 1D vectors (along the last dimension), and each vector is
    * normalized independently.
    * @param radius The number of adjacent channels or spatial locations of the
-   *     1D normalization window.
+   *     1D normalization window. In Tensorflow this param is called
+   *     'depth_radius' because only 'acrossChannels' mode is supported.
    * @param bias A constant bias term for the basis.
    * @param alpha A scale factor, usually positive.
    * @param beta An exponent.

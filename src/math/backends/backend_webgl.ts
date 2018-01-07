@@ -397,14 +397,6 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, inputs);
   }
 
-  localResponseNormalization3D(
-      x: Array3D, radius: number, bias: number, alpha: number, beta: number,
-      normRegion: 'acrossChannels'|'withinChannel'): Array3D {
-    const program =
-        new LRNProgram(x.shape, radius, bias, alpha, beta, normRegion);
-    return this.compileAndRun(program, [x]);
-  }
-
   localResponseNormalization4D(
       x: Array4D, radius: number, bias: number, alpha: number, beta: number,
       normRegion: 'acrossChannels'|'withinChannel'): Array4D {

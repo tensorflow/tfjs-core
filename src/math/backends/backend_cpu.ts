@@ -1368,66 +1368,51 @@ export class MathBackendCPU implements MathBackend {
     return Array4D.new(x.shape, outValues);
   }
 
-  localResponseNormalization3D(
-      x: Array3D, radius: number, bias: number, alpha: number, beta: number,
-      normRegion: 'acrossChannels'|'withinChannel'): Array3D {
-    const output = Array3D.zeros(x.shape);
-    const rad = radius;
-    const maxW = output.shape[0] - 1;
-    const maxH = output.shape[1] - 1;
-    const maxD = output.shape[2] - 1;
-
-    const sumAcrossChannels = (r: number, c: number, d: number): number => {
-      let sum = 0.0;
-      for (let j = Math.max(0, d - rad); j <= Math.min(d + rad, maxD); j++) {
-        const z = x.get(r, c, j);
-        sum += z * z;
-      }
-      return sum;
-    };
-
-    const sumWithinChannel = (r: number, c: number, d: number): number => {
-      let sum = 0.0;
-      for (let u = Math.max(0, r - rad); u <= Math.min(r + rad, maxW); u++) {
-        for (let v = Math.max(0, c - rad); v <= Math.min(c + rad, maxH); v++) {
-          sum += Math.pow(x.get(u, v, d), 2);
-        }
-      }
-      return sum;
-    };
-
-    for (let r = 0; r < output.shape[0]; r++) {
-      for (let c = 0; c < output.shape[1]; c++) {
-        for (let d = 0; d < output.shape[2]; d++) {
-          const sum = normRegion === 'withinChannel' ?
-              sumWithinChannel(r, c, d) :
-              sumAcrossChannels(r, c, d);
-          const val = x.get(r, c, d) * Math.pow(bias + alpha * sum, -beta);
-          output.set(val, r, c, d);
-        }
-      }
-    }
-
-    return output;
-  }
-
   localResponseNormalization4D(
       x: Array4D, radius: number, bias: number, alpha: number, beta: number,
       normRegion: 'acrossChannels'|'withinChannel'): Array4D {
     const output = Array4D.zeros(x.shape);
-    const data = output.dataSync();
-    const s0 = output.strides[0];
+    const rad = radius;
+    const maxW = output.shape[1] - 1;
+    const maxH = output.shape[2] - 1;
+    const maxD = output.shape[3] - 1;
 
-    // compute LRN per batch sample
+    const sumAcrossChannels =
+        (b: number, r: number, c: number, d: number): number => {
+          let sum = 0.0;
+          for (let j = Math.max(0, d - rad); j <= Math.min(d + rad, maxD);
+               j++) {
+            const z = x.get(b, r, c, j);
+            sum += z * z;
+          }
+          return sum;
+        };
+
+    const sumWithinChannel =
+        (b: number, r: number, c: number, d: number): number => {
+          let sum = 0.0;
+          for (let u = Math.max(0, r - rad); u <= Math.min(r + rad, maxW);
+               u++) {
+            for (let v = Math.max(0, c - rad); v <= Math.min(c + rad, maxH);
+                 v++) {
+              sum += Math.pow(x.get(b, u, v, d), 2);
+            }
+          }
+          return sum;
+        };
+
     for (let b = 0; b < output.shape[0]; b++) {
-      const batchData = x.dataSync().slice(b * s0, (b + 1) * s0);
-      // b, [r, c, d]
-      const batchShape = x.shape.slice(1);
-      const input3D =
-          Array3D.make(batchShape, {values: batchData}, x.dtype) as Array3D;
-      const output3D = this.localResponseNormalization3D(
-          input3D, radius, bias, alpha, beta, normRegion);
-      data.set(output3D.dataSync(), b * s0);
+      for (let r = 0; r <= output.shape[1]; r++) {
+        for (let c = 0; c < output.shape[2]; c++) {
+          for (let d = 0; d < output.shape[3]; d++) {
+            const sum = normRegion === 'withinChannel' ?
+                sumWithinChannel(b, r, c, d) :
+                sumAcrossChannels(b, r, c, d);
+            const val = x.get(b, r, c, d) * Math.pow(bias + alpha * sum, -beta);
+            output.set(val, b, r, c, d);
+          }
+        }
+      }
     }
 
     return output;
