@@ -139,6 +139,51 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
       expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();
     });
+
+    it('throws when dimRoundingMode is set and pad is not a number', math => {
+      const inputDepth = 1;
+      const inputShape: [number, number, number] = [2, 2, inputDepth];
+      const outputDepth = 1;
+      const fSize = 2;
+      const pad = 'valid';
+      const stride = 1;
+      const dimRoundingMode = 'round';
+
+      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const w = Array4D.randNormal([fSize, fSize, inputDepth, outputDepth]);
+      const bias = Array1D.new([-1]);
+
+      expect(() => math.conv2d(x, w, bias, stride, pad, dimRoundingMode))
+          .toThrowError();
+    });
+
+    it('nikhil gradients Array3D input=3x3x1,d2=1,f=2,s=1,p=0', math => {
+      const inputDepth = 1;
+      const outputDepth = 1;
+      const inputShape: [number, number, number] = [3, 3, inputDepth];
+      const fSize = 2;
+      const stride = 1;
+      const pad = 0;
+
+      const weightsShape: [number, number, number, number] =
+          [fSize, fSize, inputDepth, outputDepth];
+      const weights = Array4D.zeros(weightsShape);
+      const bias = Array1D.new([-1]);
+
+      const x = Array3D.new(inputShape, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      const dy = Array3D.new([2, 2, 1], [3, 1, 2, 0]);
+
+      const vjp = math.vjp(
+          () => math.conv2d(x, weights, bias, stride, pad), {x, weights, bias},
+          dy);
+
+      // const result = math.conv2dDerFilter(x, dy, weightsShape, stride, pad);
+      const expected = [13, 19, 31, 37];
+
+      expect(vjp.weights.shape).toEqual(weightsShape);
+      // TODO(nsthorat): Fix the precision for byte textures.
+      test_util.expectArraysClose(vjp.weights, expected, 1e-1);
+    });
   };
 
   test_util.describeMathCPU('conv2d', [tests]);

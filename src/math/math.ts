@@ -1602,10 +1602,14 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   conv1d<T extends NDArray>(
       input: T, filter: Array3D, bias: Array1D|null, stride: number,
-      pad: 'valid'|'same'|number): T {
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input3D = input as NDArray as Array3D;
     let reshapedTo3D = false;
     if (input.rank === 2) {
@@ -1626,6 +1630,12 @@ export class NDArrayMath implements NDArrayManager {
           `Error in conv1d: bias must be rank 1, but got rank ` +
               `${bias.rank}.`);
     }
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in conv1d: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
 
     util.assert(
         input3D.shape[2] === filter.shape[1],
@@ -1639,7 +1649,8 @@ export class NDArrayMath implements NDArrayManager {
     const strides: [number, number] = [1, stride];
 
     return this.executeOp('Conv1D', () => {
-      const res = this.conv2d(input4D, filter4D, bias, strides, pad);
+      const res =
+          this.conv2d(input4D, filter4D, bias, strides, pad, dimRoundingMode);
       if (reshapedTo3D) {
         return res.as2D(res.shape[2], res.shape[3]) as NDArray as T;
       }
@@ -1665,10 +1676,15 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   conv2d<T extends Array3D|Array4D>(
       x: T, filter: Array4D, bias: Array1D|null,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as NDArray as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -1688,6 +1704,12 @@ export class NDArrayMath implements NDArrayManager {
           `Error in conv2d: bias must be rank 1, but got rank ` +
               `${bias.rank}.`);
     }
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in conv2d: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
 
     util.assert(
         x4D.shape[3] === filter.shape[2],
@@ -1695,7 +1717,7 @@ export class NDArrayMath implements NDArrayManager {
             `input depth for filter ${filter.shape[2]}.`);
 
     const convInfo =
-        conv_util.computeConv2DInfo(x4D.shape, filter.shape, strides, pad);
+        conv_util.computeConv2DInfo(x4D.shape, filter.shape, strides, pad, dimRoundingMode);
 
     return this.executeOp('Conv2D', () => {
       const gradients = (dy: Array4D, y: Array4D) => {
@@ -1732,11 +1754,15 @@ export class NDArrayMath implements NDArrayManager {
    * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   conv2dDerInput<T extends NDArray>(
       inShape: [number, number, number, number]|[number, number, number], dy: T,
       filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number): T {
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     util.assert(
         inShape.length === dy.rank,
         `Length of inShape ` +
@@ -1773,9 +1799,15 @@ export class NDArrayMath implements NDArrayManager {
         outDepth === filter.shape[3],
         `Error in conv2dDerInput: depth of output (${outDepth}) must` +
             `match output depth for filter ${filter.shape[3]}.`);
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in conv2dDerInput: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
 
-    const convInfo =
-        conv_util.computeConv2DInfo(inShape4D, filter.shape, strides, pad);
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape4D, filter.shape, strides, pad, dimRoundingMode);
     return this.executeOp('conv2dDerInput', () => {
       const res = this.backendEngine.executeKernel(
           'Conv2DDerInput', {inputs: {dy: dy4D, filter}, args: {convInfo}});
@@ -1816,10 +1848,15 @@ export class NDArrayMath implements NDArrayManager {
    * strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   conv2dDerFilter<T extends Array3D|Array4D>(
       input: T, dy: T, filterShape: [number, number, number, number],
-      strides: [number, number]|number, pad: 'valid'|'same'|number): Array4D {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): Array4D {
     let input4D = input as NDArray as Array4D;
     if (input.rank === 3) {
       input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
@@ -1848,9 +1885,15 @@ export class NDArrayMath implements NDArrayManager {
         dy4D.shape[3] === filterShape[3],
         `Error in conv2dDerFilter: depth of dy (${dy4D.shape[3]}) must ` +
             `match output depth for filter (${filterShape[3]}).`);
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in conv2dDerFilter: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
 
-    const convInfo =
-        conv_util.computeConv2DInfo(input4D.shape, filterShape, strides, pad);
+    const convInfo = conv_util.computeConv2DInfo(
+        input4D.shape, filterShape, strides, pad, dimRoundingMode);
     return this.backendEngine.executeKernel(
         'Conv2DDerFilter', {inputs: {x: input4D, dy: dy4D}, args: {convInfo}});
   }
@@ -1870,12 +1913,18 @@ export class NDArrayMath implements NDArrayManager {
    *     `[strideHeight, strideWidth]`.
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the non-transpose version of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   conv2dTranspose<T extends NDArray>(
       x: T, filter: Array4D,
       outputShape: [number, number, number, number]|[number, number, number],
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
-    return this.conv2dDerInput(outputShape, x, filter, strides, pad);
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    return this.conv2dDerInput(
+        outputShape, x, filter, strides, pad, dimRoundingMode);
   }
 
   /**
@@ -1911,10 +1960,15 @@ export class NDArrayMath implements NDArrayManager {
    *     convolution. Defaults to `[1, 1]`. If `rate` is a single number, then
    *     `rateHeight == rateWidth`. If it is greater than 1, then all values
    * of `strides` must be 1.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   depthwiseConv2D<T extends NDArray>(
       input: T, filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1]): T {
+      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -1940,9 +1994,16 @@ export class NDArrayMath implements NDArrayManager {
         rateHeight === 1 && rateWidth === 1,
         'Error in depthwiseConv2D: rates greater than 1 are not yet ' +
             `supported. Got rates '${rates}'`);
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in depthwiseConv2D: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
 
     const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filter.shape, strides, pad, true /* depthwise */);
+        input4D.shape, filter.shape, strides, pad, dimRoundingMode,
+        true /* depthwise */);
     return this.executeOp('depthwiseConv2D', () => {
       const res = this.backendEngine.executeKernel(
           'DepthwiseConv2D', {inputs: {x: input4D, filter}, args: {convInfo}});
@@ -1968,17 +2029,29 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   maxPool<T extends NDArray>(
+<<<<<<< HEAD
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
     let x4D = x as NDArray as Array4D;
+=======
+      input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    let input4D = input as NDArray as Array4D;
+>>>>>>> origin
     let reshapedTo4D = false;
     if (x.rank === 3) {
       reshapedTo4D = true;
       x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     }
     util.assert(
+<<<<<<< HEAD
         x4D.rank === 4,
         `Error in maxPool: input must be rank 4 but got rank ${x4D.rank}.`);
 
@@ -1991,6 +2064,18 @@ export class NDArrayMath implements NDArrayManager {
       }
     };
 
+=======
+        input4D.rank === 4,
+        `Error in maxPool: input must be rank 4 but got rank ${input4D.rank}.`);
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in maxPool: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+    const convInfo = conv_util.computePool2DInfo(
+        input4D.shape, filterSize, strides, pad, dimRoundingMode);
+>>>>>>> origin
     return this.executeOp('maxPool', () => {
       const res = this.backendEngine.executeKernel(
           'MaxPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
@@ -2015,10 +2100,15 @@ export class NDArrayMath implements NDArrayManager {
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   maxPoolBackprop<T extends NDArray>(
       dy: T, input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
@@ -2040,9 +2130,15 @@ export class NDArrayMath implements NDArrayManager {
         input4D.rank === 4,
         `Error in maxPoolBackprop: input must be rank 4 but got rank ` +
             `${input4D.rank}.`);
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in maxPoolBackprop: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
 
-    const convInfo =
-        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
+    const convInfo = conv_util.computePool2DInfo(
+        input4D.shape, filterSize, strides, pad, dimRoundingMode);
     return this.executeOp('maxPoolBackprop', () => {
       const res = this.backendEngine.executeKernel(
           'MaxPoolBackprop',
@@ -2069,10 +2165,15 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
   minPool<T extends NDArray>(
       input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -2082,9 +2183,14 @@ export class NDArrayMath implements NDArrayManager {
     util.assert(
         input4D.rank === 4,
         `Error in minPool: x must be rank 4 but got rank ${input4D.rank}.`);
-
-    const convInfo =
-        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in minPool: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+    const convInfo = conv_util.computePool2DInfo(
+        input4D.shape, filterSize, strides, pad, dimRoundingMode);
     return this.executeOp('minPool', () => {
       const res = this.backendEngine.executeKernel(
           'MinPool', {inputs: {x: input4D}, args: {convInfo}});
@@ -2110,7 +2216,12 @@ export class NDArrayMath implements NDArrayManager {
    *       than 1x1.
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
    */
+<<<<<<< HEAD
   avgPool<T extends Array3D|Array4D>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
@@ -2162,6 +2273,12 @@ export class NDArrayMath implements NDArrayManager {
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
 
+=======
+  avgPool<T extends NDArray>(
+      input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+>>>>>>> origin
     let input4D = input as NDArray as Array4D;
     let dy4D = dy as NDArray as Array4D;
     let reshapedTo4D = false;
@@ -2177,12 +2294,25 @@ export class NDArrayMath implements NDArrayManager {
             `${dy4D.rank}.`);
     util.assert(
         input4D.rank === 4,
+<<<<<<< HEAD
         `Error in avgPoolBackprop: input must be rank 4 but got rank ` +
             `${input4D.rank}.`);
 
     const convInfo =
         conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('avgPoolBackprop', () => {
+=======
+        `Error in avgPool: x must be rank 4 but got rank ${input4D.rank}.`);
+    if (dimRoundingMode) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in avgPool: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+    const convInfo = conv_util.computePool2DInfo(
+        input4D.shape, filterSize, strides, pad, dimRoundingMode);
+    return this.executeOp('avgPool', () => {
+>>>>>>> origin
       const res = this.backendEngine.executeKernel(
           'AvgPoolBackprop',
           {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});

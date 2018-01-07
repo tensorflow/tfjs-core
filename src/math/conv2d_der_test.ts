@@ -45,7 +45,7 @@ import {Array3D, Array4D} from './ndarray';
       test_util.expectArraysClose(result, expected, 1e-1);
     });
 
-    it('input=3x3x1,d2=1,f=2,s=1,p=0, batch=2', math => {
+    it('input=2x3x3x1,d2=1,f=2,s=1,p=0, batch=2', math => {
       const inputDepth = 1;
       const outputDepth = 1;
       const inputShape: [number, number, number, number] =
