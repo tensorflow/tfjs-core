@@ -76,7 +76,7 @@ export function computeConv2DInfo(
     filterShape: [number, number, number, number],
     strides: number|[number, number], pad: 'same'|'valid'|number,
     roundingMode?: 'floor'|'round'|'ceil', depthwise = false,
-    dataFormat: 'channelsFirst' | 'channelsLast' = 'channelsLast'): Conv2DInfo {
+    dataFormat: 'channelsFirst'|'channelsLast' = 'channelsLast'): Conv2DInfo {
   let [batchSize, inHeight, inWidth, inChannels] = [-1, -1, -1, -1];
   if (dataFormat === 'channelsLast') {
     [batchSize, inHeight, inWidth, inChannels] = inShape;
@@ -125,8 +125,8 @@ export function computeConv2DInfo(
  */
 export function computeOutputShape3D(
     inShape: [number, number, number], fieldSize: number, outDepth: number,
-    stride: number, zeroPad?: number, roundingMode?: 'floor'|'round'|'ceil'):
-    [number, number, number] {
+    stride: number, zeroPad?: number,
+    roundingMode?: 'floor'|'round'|'ceil'): [number, number, number] {
   if (zeroPad == null) {
     zeroPad = computeDefaultPad(inShape, fieldSize, stride);
   }
@@ -134,14 +134,14 @@ export function computeOutputShape3D(
   const inputCols = inShape[1];
 
   const outputRows = conditionalRound(
-    (inputRows - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
+      (inputRows - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
   util.assert(
       util.isInt(outputRows),
       `The output # of rows (${outputRows}) must be an integer. Change the ` +
           `stride and/or zero pad parameters`);
 
   const outputCols = conditionalRound(
-    (inputCols - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
+      (inputCols - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
   util.assert(
       util.isInt(outputCols),
       `The output # of columns (${outputCols}) must be an integer. Change ` +
@@ -217,8 +217,11 @@ function getPadAndOutInfo(
  * @param value
  * @param roundingMode
  */
-function conditionalRound(value: number,
-    roundingMode?: 'floor'|'round'|'ceil') {
+function conditionalRound(
+    value: number, roundingMode?: 'floor'|'round'|'ceil') {
+  if (!roundingMode) {
+    return value;
+  }
   switch (roundingMode) {
     case 'round':
       // used for Caffe Conv
@@ -229,6 +232,6 @@ function conditionalRound(value: number,
     case 'floor':
       return Math.floor(value);
     default:
-      return value;
+      throw new Error(`Unknown roundingMode ${roundingMode}`);
   }
 }
