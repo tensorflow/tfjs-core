@@ -46,18 +46,28 @@ export class LRNProgram implements GPGPUProgram {
       return is3D ? `getX(${r}, ${c}, ${d})` : `getX(b, ${r}, ${c}, ${d})`;
     };
 
+    // optimize pow(bias + alpha * sum, -beta)
+    // src: https://github.com/tensorflow/tensorflow/..
+    // blob/26033a1644a9c4a5fbe3170ab2e864b6a4ccd4ca/..
+    // tensorflow/core/kernels/mkl_lrn_op.cc#L320
+    const getPowOperator = (beta: number) => {
+      const basis = `float(${bias}) + float(${alpha}) * sum`;
+      if (beta === 0.5) {
+        return `inversesqrt(${basis})`;
+      } else if (beta === 1.0) {
+        return `1.0/(${basis})`;
+      } else {
+        return `exp(log(${basis}) * float(-${beta}));`;
+      }
+    };
+    const powOperator = getPowOperator(beta);
+
     if (normRegion === 'withinChannel') {
       this.userCode = `
         void main() {
           ${initialCoords}
-
-          const float bias = float(${bias});
-          const float alpha = float(${alpha});
-          const float beta = float(${beta});
-
           float x = ${getX('r', 'c', 'd')};
           float sum = 0.0;
-
           for (int u = -${rad}; u <= ${rad}; u++) {
             for (int v = -${rad}; v <= ${rad}; v++) {
               int idx = r + u;
@@ -68,8 +78,7 @@ export class LRNProgram implements GPGPUProgram {
               }
             }
           }
-
-          float val = x * pow(bias + alpha * sum, -beta);
+          float val = x * ${powOperator};
           setOutput(val);
         }
       `;
@@ -77,14 +86,8 @@ export class LRNProgram implements GPGPUProgram {
       this.userCode = `
         void main() {
           ${initialCoords}
-
-          const float bias = float(${bias});
-          const float alpha = float(${alpha});
-          const float beta = float(${beta});
-
           float x = ${getX('r', 'c', 'd')};
           float sum = 0.0;
-
           for (int j = -${rad}; j <= ${rad}; j++) {
             int idx = d + j;
             if (idx >= 0 && idx <=  ${maxD}) {
@@ -92,8 +95,7 @@ export class LRNProgram implements GPGPUProgram {
               sum += z * z;
             }
           }
-
-          float val = x * pow(bias + alpha * sum, -beta);
+          float val = x * ${powOperator};
           setOutput(val);
         }
       `;

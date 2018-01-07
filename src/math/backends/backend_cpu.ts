@@ -1402,10 +1402,6 @@ export class MathBackendCPU implements MathBackend {
           const sum = normRegion === 'withinChannel' ?
               sumWithinChannel(r, c, d) :
               sumAcrossChannels(r, c, d);
-          // pow() call could be optimized depending on value of bias
-          // see github.com/tensorflow/tensorflow/..
-          // blob/26033a1644a9c4a5fbe3170ab2e864b6a4ccd4ca/..
-          // tensorflow/core/kernels/mkl_lrn_op.cc#L320
           const val = x.get(r, c, d) * Math.pow(bias + alpha * sum, -beta);
           output.set(val, r, c, d);
         }

@@ -75,6 +75,52 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
+    it('uses beta = 1.0 to test GPU optimization', math => {
+      const x = Array3D.new([1, 1, 4], new Float32Array([1, 20, 300, 4]));
+      const radius = 1;
+      const bias = 1;
+      const alpha = 1;
+      const beta = 1.0;
+
+      const result = math.localResponseNormalization3D(x, radius, bias, alpha,
+        beta);
+
+      const f = (...vals: number[]) =>
+        Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
+
+      test_util.expectArraysClose(
+        result,
+        [
+          x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
+          x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
+          x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
+          x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
+        ]);
+    });
+
+    it('uses beta = 0.75 to test GPU optimization', math => {
+      const x = Array3D.new([1, 1, 4], new Float32Array([1, 20, 300, 4]));
+      const radius = 1;
+      const bias = 1;
+      const alpha = 1;
+      const beta = 0.75;
+
+      const result = math.localResponseNormalization3D(x, radius, bias, alpha,
+        beta);
+
+      const f = (...vals: number[]) =>
+        Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
+
+      test_util.expectArraysClose(
+        result,
+        [
+          x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
+          x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
+          x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
+          x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
+        ]);
+    });
+
     it('computes complex normalization across channels', math => {
       const x = Array3D.new([2, 2, 4], new Float32Array([
         1, 20, 300, 4, 5, 15, 24, 200, 1, 20, 300, 4, 5, 15, 24, 200
