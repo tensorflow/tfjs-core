@@ -1716,8 +1716,8 @@ export class NDArrayMath implements NDArrayManager {
         `Error in conv2d: depth of input (${x4D.shape[3]}) must match  ` +
             `input depth for filter ${filter.shape[2]}.`);
 
-    const convInfo =
-        conv_util.computeConv2DInfo(x4D.shape, filter.shape, strides, pad, dimRoundingMode);
+    const convInfo = conv_util.computeConv2DInfo(
+        x4D.shape, filter.shape, strides, pad, dimRoundingMode);
 
     return this.executeOp('Conv2D', () => {
       const gradients = (dy: Array4D, y: Array4D) => {
@@ -2035,38 +2035,18 @@ export class NDArrayMath implements NDArrayManager {
    *     is of fractional size.
    */
   maxPool<T extends NDArray>(
-<<<<<<< HEAD
       x: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
-    let x4D = x as NDArray as Array4D;
-=======
-      input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let input4D = input as NDArray as Array4D;
->>>>>>> origin
+    let x4D = x as NDArray as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
       reshapedTo4D = true;
       x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     }
     util.assert(
-<<<<<<< HEAD
         x4D.rank === 4,
         `Error in maxPool: input must be rank 4 but got rank ${x4D.rank}.`);
-
-    const convInfo =
-        conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
-
-    const gradients = (dy: Array4D, y: Array4D) => {
-      return {
-        x: () => this.maxPoolBackprop(dy, x4D, filterSize, strides, pad)
-      }
-    };
-
-=======
-        input4D.rank === 4,
-        `Error in maxPool: input must be rank 4 but got rank ${input4D.rank}.`);
     if (dimRoundingMode) {
       util.assert(
           util.isInt(pad as number),
@@ -2074,8 +2054,12 @@ export class NDArrayMath implements NDArrayManager {
               `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
     }
     const convInfo = conv_util.computePool2DInfo(
-        input4D.shape, filterSize, strides, pad, dimRoundingMode);
->>>>>>> origin
+        x4D.shape, filterSize, strides, pad, dimRoundingMode);
+
+    const gradients = (dy: Array4D, y: Array4D) => {
+      return {x: () => this.maxPoolBackprop(dy, x4D, filterSize, strides, pad)};
+    };
+
     return this.executeOp('maxPool', () => {
       const res = this.backendEngine.executeKernel(
           'MaxPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
@@ -2221,10 +2205,10 @@ export class NDArrayMath implements NDArrayManager {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-<<<<<<< HEAD
   avgPool<T extends Array3D|Array4D>(
       x: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as NDArray as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -2241,6 +2225,7 @@ export class NDArrayMath implements NDArrayManager {
     const gradients = (dy: Array4D, y: Array4D) => {
       return {x: () => this.avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
+
     return this.executeOp('avgPool', () => {
       const res = this.backendEngine.executeKernel(
           'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
@@ -2273,12 +2258,6 @@ export class NDArrayMath implements NDArrayManager {
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
 
-=======
-  avgPool<T extends NDArray>(
-      input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
->>>>>>> origin
     let input4D = input as NDArray as Array4D;
     let dy4D = dy as NDArray as Array4D;
     let reshapedTo4D = false;
@@ -2294,25 +2273,12 @@ export class NDArrayMath implements NDArrayManager {
             `${dy4D.rank}.`);
     util.assert(
         input4D.rank === 4,
-<<<<<<< HEAD
         `Error in avgPoolBackprop: input must be rank 4 but got rank ` +
             `${input4D.rank}.`);
 
     const convInfo =
         conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('avgPoolBackprop', () => {
-=======
-        `Error in avgPool: x must be rank 4 but got rank ${input4D.rank}.`);
-    if (dimRoundingMode) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in avgPool: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-    const convInfo = conv_util.computePool2DInfo(
-        input4D.shape, filterSize, strides, pad, dimRoundingMode);
-    return this.executeOp('avgPool', () => {
->>>>>>> origin
       const res = this.backendEngine.executeKernel(
           'AvgPoolBackprop',
           {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
