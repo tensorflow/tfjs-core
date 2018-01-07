@@ -505,8 +505,19 @@ export class NDArrayMath implements NDArrayManager {
    */
   concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
     concat_util.assertParams(a.shape, b.shape, axis);
+
+    const gradients = (dy: Array3D, y: Array3D) => {
+      const {x1Begin, x1Size, x2Begin, x2Size} =
+          concat_util.computeSliceSizes3D(a.shape, b.shape, axis);
+
+      return {
+        a: () => this.slice3D(dy, x1Begin, x1Size),
+        b: () => this.slice3D(dy, x2Begin, x2Size)
+      };
+    };
+
     return this.backendEngine.executeKernel(
-        'Concat3D', {inputs: {a, b}, args: {axis}});
+        'Concat3D', {inputs: {a, b}, args: {axis}}, gradients);
   }
 
   /**
@@ -690,8 +701,18 @@ export class NDArrayMath implements NDArrayManager {
         x = this.transpose(x, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
+
+      const gradients = (dy: NDArray, y: NDArray) => {
+        if (axis != null) {
+          throw new Error(`Gradient not defined for axis != null`);
+        }
+        return {
+          x: () =>
+              this.multiply(dy, this.oneHot(y.as1D().asType('float32'), x.size))
+        };
+      };
       return this.backendEngine.executeKernel(
-          'ArgMax', {inputs: {x}, args: {axes}});
+          'ArgMax', {inputs: {x}, args: {axes}}, gradients);
     }) as T;
   }
 
@@ -1097,15 +1118,22 @@ export class NDArrayMath implements NDArrayManager {
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel(
                'Sub', {inputs: {a, b}}, (dy: NDArray<D1>, y: NDArray<D1>) => {
-                 if (!util.arraysEqual(a.shape, b.shape)) {
-                   throw new Error(
-                       `Backprop through broadcasted subtract not ` +
-                       `yet supported.`);
-                 }
+                 //  if (!util.arraysEqual(a.shape, b.shape) && (a.rank != 0 &&
+                 //  b.rank != 0)) {
+                 //    throw new Error(
+                 //        `Backprop through broadcasted subtract not ` +
+                 //        `yet supported.`);
+                 //  }
+
+                 // const aReducedDy = a.rank === 0 ? this.sum(dy) : dy;
+                 const bReducedDy = b.rank === 0 ? this.sum(dy) : dy;
+
                  return {
                    a: () => this.multiply(dy, NDArray.onesLike(a)),
                    b: () => this.scope(
-                       () => this.multiply(dy, this.neg(NDArray.onesLike(b))))
+                       () => this.multiply(
+                           bReducedDy.asType(b.dtype),
+                           this.neg(NDArray.onesLike(b))))
                  };
                }) as T;
   }
@@ -1675,15 +1703,16 @@ export class NDArrayMath implements NDArrayManager {
     const convInfo =
         conv_util.computeConv2DInfo(x4D.shape, filter.shape, strides, pad);
 
-    const gradients = (dy: Array4D, y: Array4D) => {
-      return {
-        x: () => this.conv2dDerInput(x4D.shape, dy, filter, strides, pad),
-        filter: () => this.conv2dDerFilter(x4D, dy, filter.shape, strides, pad),
-        bias: () => this.conv2dDerBias(dy)
-      };
-    };
-
     return this.executeOp('Conv2D', () => {
+      const gradients = (dy: Array4D, y: Array4D) => {
+        return {
+          x: () => this.conv2dDerInput(x4D.shape, dy, filter, strides, pad),
+          filter: () =>
+              this.conv2dDerFilter(x4D, dy, filter.shape, strides, pad),
+          bias: () => this.conv2dDerBias(dy)
+        };
+      };
+
       const res = this.backendEngine.executeKernel(
           'Conv2D', {inputs: {x: x4D, filter, bias}, args: {convInfo}},
           gradients);
@@ -1794,9 +1823,8 @@ export class NDArrayMath implements NDArrayManager {
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
-  conv2dDerFilter(
-      input: Array4D, dy: Array4D,
-      filterShape: [number, number, number, number],
+  conv2dDerFilter<T extends Array3D|Array4D>(
+      input: T, dy: T, filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number): Array4D {
     let input4D = input as NDArray as Array4D;
     if (input.rank === 3) {
@@ -1935,7 +1963,7 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Computes the 2D max pooling of an image.
    *
-   * @param input The input ndarray, of rank 4 or rank 3 of shape
+   * @param x The input ndarray, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
@@ -1948,23 +1976,30 @@ export class NDArrayMath implements NDArrayManager {
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
   maxPool<T extends NDArray>(
-      input: T, filterSize: [number, number]|number,
+      x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
-    let input4D = input as NDArray as Array4D;
+    let x4D = x as NDArray as Array4D;
     let reshapedTo4D = false;
-    if (input.rank === 3) {
+    if (x.rank === 3) {
       reshapedTo4D = true;
-      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     }
     util.assert(
-        input4D.rank === 4,
-        `Error in maxPool: input must be rank 4 but got rank ${input4D.rank}.`);
+        x4D.rank === 4,
+        `Error in maxPool: input must be rank 4 but got rank ${x4D.rank}.`);
 
     const convInfo =
-        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
+        conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
+
+    const gradients = (dy: Array4D, y: Array4D) => {
+      return {
+        x: () => this.maxPoolBackprop(dy, x4D, filterSize, strides, pad)
+      }
+    };
+
     return this.executeOp('maxPool', () => {
       const res = this.backendEngine.executeKernel(
-          'MaxPool', {inputs: {x: input4D}, args: {convInfo}});
+          'MaxPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;
@@ -2070,7 +2105,7 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Computes the 2D average pooling of an image.
    *
-   * @param input The input ndarray, of rank 4 or rank 3 of shape
+   * @param x The input ndarray, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
@@ -2082,24 +2117,81 @@ export class NDArrayMath implements NDArrayManager {
    *   - For more info, see this guide:
    *     https://www.tensorflow.org/api_guides/python/nn#Convolution
    */
-  avgPool<T extends NDArray>(
-      input: T, filterSize: [number, number]|number,
+  avgPool<T extends Array3D|Array4D>(
+      x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+    let x4D = x as NDArray as Array4D;
+    let reshapedTo4D = false;
+    if (x.rank === 3) {
+      reshapedTo4D = true;
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    }
+    util.assert(
+        x4D.rank === 4,
+        `Error in avgPool: x must be rank 4 but got rank ${x4D.rank}.`);
+
+    const convInfo =
+        conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
+
+    const gradients = (dy: Array4D, y: Array4D) => {
+      return {x: () => this.avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
+    };
+    return this.executeOp('avgPool', () => {
+      const res = this.backendEngine.executeKernel(
+          'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
+      if (reshapedTo4D) {
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
+            T;
+      }
+      return res as NDArray as T;
+    });
+  }
+
+  /**
+   * Computes the backprop of an avg pool.
+   *
+   * @param dy The dy error, of rank 4 or rank 3 of shape
+   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
+   * assumed.
+   * @param input The input image, of rank 4 or rank 3 of shape
+   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
+   * assumed.
+   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
+   * @param strides The strides of the pooling: [strideHeight, strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
+   */
+  avgPoolBackprop<T extends NDArray>(
+      dy: T, input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+    util.assert(
+        input.rank === dy.rank,
+        `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
+
     let input4D = input as NDArray as Array4D;
+    let dy4D = dy as NDArray as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
       input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
     }
+
+    util.assert(
+        dy4D.rank === 4,
+        `Error in avgPoolBackprop: dy must be rank 4 but got rank ` +
+            `${dy4D.rank}.`);
     util.assert(
         input4D.rank === 4,
-        `Error in avgPool: x must be rank 4 but got rank ${input4D.rank}.`);
+        `Error in avgPoolBackprop: input must be rank 4 but got rank ` +
+            `${input4D.rank}.`);
 
     const convInfo =
         conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
-    return this.executeOp('avgPool', () => {
+    return this.executeOp('avgPoolBackprop', () => {
       const res = this.backendEngine.executeKernel(
-          'AvgPool', {inputs: {x: input4D}, args: {convInfo}});
+          'AvgPoolBackprop',
+          {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
             T;

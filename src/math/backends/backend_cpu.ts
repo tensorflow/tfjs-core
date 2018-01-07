@@ -1249,6 +1249,50 @@ export class MathBackendCPU implements MathBackend {
     return dx;
   }
 
+  avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
+    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const dx = Array4D.zeros(x.shape);
+
+    const filterValue = 1 / (filterHeight * filterWidth);
+
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let dxR = 0; dxR < convInfo.inHeight; ++dxR) {
+          for (let dxC = 0; dxC < convInfo.inWidth; ++dxC) {
+            // Shader code begins.
+            const dyRCorner = dxR - padTop;
+            const dyCCorner = dxC - padLeft;
+            let dotProd = 0;
+            for (let wR = 0; wR < filterHeight; ++wR) {
+              const dyR = (dyRCorner + wR) / strideHeight;
+              if (dyR < 0 || dyR >= convInfo.outHeight ||
+                  Math.floor(dyR) !== dyR) {
+                continue;
+              }
+              for (let wC = 0; wC < filterWidth; ++wC) {
+                const dyC = (dyCCorner + wC) / strideWidth;
+                if (dyC < 0 || dyC >= convInfo.outWidth ||
+                    Math.floor(dyC) !== dyC) {
+                  continue;
+                }
+
+                const pixel = dy.get(b, dyR, dyC, d);
+                dotProd += pixel * filterValue;
+              }
+            }
+            dx.set(dotProd, b, dxR, dxC, d);
+          }
+        }
+      }
+    }
+    return dx;
+  }
+
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     return this.pool(x, convInfo, 'min');
   }

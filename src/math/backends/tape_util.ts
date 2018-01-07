@@ -185,6 +185,8 @@ export function backpropagateGradients(
       // Call the gradient function.
       const grad = inputGradients[inputName]();
 
+      // console.log(i, inputName, grad.dataSync());
+
       const activation = node.inputAndArgs.inputs[inputName];
 
       if (arrayAccumulatedGradientMap[activation.id] == null) {

@@ -26,9 +26,11 @@ import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
+
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
+import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
@@ -753,6 +755,12 @@ export class MathBackendWebGL implements MathBackend {
     const result =
         this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
     maxPoolPositions.dispose();
+    return result as Array4D;
+  }
+
+  avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+    const avgPoolBackpropProgram = new AvgPool2DBackpropProgram(convInfo);
+    const result = this.compileAndRun(avgPoolBackpropProgram, [dy]);
     return result as Array4D;
   }
 
