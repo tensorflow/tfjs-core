@@ -248,15 +248,16 @@ export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
   return d;
 }
 export enum TestMode {
-  FOCUS, // run only a specific test
-  EXCLUDE // exclude a specific test
+  FOCUS,   // run only a specific test
+  EXCLUDE  // exclude a specific test
 }
 export type MathTests =
-    (it: (name: string, testFn: (math: NDArrayMath) => void,
-      testMode?: TestMode) => void) => void;
+    (it: (
+         name: string, testFn: (math: NDArrayMath) => void,
+         testMode?: TestMode) => void) => void;
 export type Tests =
-    (it: (name: string, testFn: () => void,
-      testMode?: TestMode) => void) => void;
+    (it: (name: string, testFn: () => void, testMode?: TestMode) => void) =>
+        void;
 
 export function describeMathCPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
@@ -305,37 +306,39 @@ function describeWithFeaturesAndExecutor(
   }
 }
 
-export type It = (name: string, testFunc: () => void|Promise<void>,
-  testMode?: TestMode) => void;
+export type It =
+    (name: string, testFunc: () => void|Promise<void>, testMode?: TestMode) =>
+        void;
 
 // A wrapper around it() that calls done automatically if the function returns
 // a Promise, aka if it's an async/await function.
-const PROMISE_IT: It = (name: string, testFunc: () => void|Promise<void>,
-    testMode?: TestMode) => {
+const PROMISE_IT: It =
+    (name: string, testFunc: () => void|Promise<void>, testMode?: TestMode) => {
+      const cb = (done: DoneFn) => {
+        const result = testFunc();
+        if (result instanceof Promise) {
+          result.then(done, e => {
+            fail(e);
+            done();
+          });
+        } else {
+          done();
+        }
+      };
 
-  const cb = (done: DoneFn) => {
-    const result = testFunc();
-    if (result instanceof Promise) {
-      result.then(done, e => {
-        fail(e);
-        done();
-      });
-    } else {
-      done();
-    }
-  };
-
-  switch (testMode) {
-    case TestMode.EXCLUDE:
-      xit(name, cb);
-      break;
-    case TestMode.FOCUS:
-      fit(name, cb);
-      break;
-    default:
-      it(name, cb);
-  }
-};
+      switch (testMode) {
+        case TestMode.EXCLUDE:
+          // tslint:disable-next-line:ban
+          xit(name, cb);
+          break;
+        case TestMode.FOCUS:
+          // tslint:disable-next-line:ban
+          fit(name, cb);
+          break;
+        default:
+          it(name, cb);
+      }
+    };
 
 export function executeMathTests(
     testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
@@ -353,7 +356,7 @@ export function executeMathTests(
   };
   const customIt: It =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>,
-          testMode?: TestMode) => {
+       testMode?: TestMode) => {
         PROMISE_IT(name, () => testFunc(math), testMode);
       };
 
