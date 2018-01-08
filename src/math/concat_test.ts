@@ -215,11 +215,11 @@ import {Array1D, Array2D, Array3D} from './ndarray';
     it('gradient concat axis=0', math => {
       const x1 = Array3D.new([1, 2, 2], [1, 11, 2, 22]);
       const x2 = Array3D.new([2, 2, 2], [5, 55, 6, 66, 7, 77, 8, 88]);
-
       const dy =
           Array3D.new([3, 2, 2], [66, 6, 55, 5, 44, 4, 33, 3, 22, 2, 11, 1]);
+      const axis = 0;
 
-      const vjp = math.vjp(() => math.concat3D(x1, x2, 0), {x1, x2}, dy);
+      const vjp = math.vjp(() => math.concat3D(x1, x2, axis), {x1, x2}, dy);
 
       expect(vjp.x1.shape).toEqual(x1.shape);
       test_util.expectArraysClose(vjp.x1, [66, 6, 55, 5]);
@@ -233,8 +233,9 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       const x2 = Array3D.new([2, 2, 2], [3, 33, 4, 44, 5, 55, 6, 66]);
       const dy =
           Array3D.new([2, 3, 2], [66, 6, 55, 5, 44, 4, 33, 3, 22, 2, 11, 1]);
+      const axis = 1;
 
-      const vjp = math.vjp(() => math.concat3D(x1, x2, 1), {x1, x2}, dy);
+      const vjp = math.vjp(() => math.concat3D(x1, x2, axis), {x1, x2}, dy);
 
       expect(vjp.x1.shape).toEqual(x1.shape);
       test_util.expectArraysClose(vjp.x1, [66, 6, 33, 3]);
@@ -246,11 +247,11 @@ import {Array1D, Array2D, Array3D} from './ndarray';
     it('gradient concat axis=2', math => {
       const x1 = Array3D.new([2, 2, 1], [1, 2, 3, 4]);
       const x2 = Array3D.new([2, 2, 2], [5, 55, 6, 66, 7, 77, 8, 88]);
-
       const dy = Array3D.new(
           [2, 2, 3], [4, 40, 400, 3, 30, 300, 2, 20, 200, 1, 10, 100]);
+      const axis = 2;
 
-      const vjp = math.vjp(() => math.concat3D(x1, x2, 2), {x1, x2}, dy);
+      const vjp = math.vjp(() => math.concat3D(x1, x2, axis), {x1, x2}, dy);
 
       expect(vjp.x1.shape).toEqual(x1.shape);
       test_util.expectArraysClose(vjp.x1, [4, 3, 2, 1]);

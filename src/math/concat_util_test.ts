@@ -72,7 +72,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [2, 3];
     const y = [5, 3];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes2D(x1, y, 0);
+        concat_util.computeGradientSliceShapes2D(x1, y, 0);
     expect(x1Begin).toEqual([0, 0]);
     expect(x1Size).toEqual([2, 3]);
     expect(x2Begin).toEqual([2, 0]);
@@ -83,7 +83,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [2, 3];
     const y = [2, 7];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes2D(x1, y, 1);
+        concat_util.computeGradientSliceShapes2D(x1, y, 1);
     expect(x1Begin).toEqual([0, 0]);
     expect(x1Size).toEqual([2, 3]);
     expect(x2Begin).toEqual([0, 3]);
@@ -94,7 +94,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [2, 3, 2];
     const y = [5, 3, 2];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes3D(x1, y, 0);
+        concat_util.computeGradientSliceShapes3D(x1, y, 0);
     expect(x1Begin).toEqual([0, 0, 0]);
     expect(x1Size).toEqual([2, 3, 2]);
     expect(x2Begin).toEqual([2, 0, 0]);
@@ -105,7 +105,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [2, 3, 2];
     const y = [2, 7, 2];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes3D(x1, y, 1);
+        concat_util.computeGradientSliceShapes3D(x1, y, 1);
     expect(x1Begin).toEqual([0, 0, 0]);
     expect(x1Size).toEqual([2, 3, 2]);
     expect(x2Begin).toEqual([0, 3, 0]);
@@ -116,7 +116,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [2, 3, 2];
     const y = [2, 3, 3];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes3D(x1, y, 2);
+        concat_util.computeGradientSliceShapes3D(x1, y, 2);
     expect(x1Begin).toEqual([0, 0, 0]);
     expect(x1Size).toEqual([2, 3, 2]);
     expect(x2Begin).toEqual([0, 0, 2]);
@@ -127,7 +127,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [2, 3, 2, 4];
     const y = [3, 3, 2, 4];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes4D(x1, y, 0);
+        concat_util.computeGradientSliceShapes4D(x1, y, 0);
     expect(x1Begin).toEqual([0, 0, 0, 0]);
     expect(x1Size).toEqual([2, 3, 2, 4]);
     expect(x2Begin).toEqual([2, 0, 0, 0]);
@@ -138,7 +138,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [3, 3, 2, 4];
     const y = [3, 4, 2, 4];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes4D(x1, y, 1);
+        concat_util.computeGradientSliceShapes4D(x1, y, 1);
     expect(x1Begin).toEqual([0, 0, 0, 0]);
     expect(x1Size).toEqual([3, 3, 2, 4]);
     expect(x2Begin).toEqual([0, 3, 0, 0]);
@@ -149,7 +149,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [3, 3, 2, 4];
     const y = [3, 3, 4, 4];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes4D(x1, y, 2);
+        concat_util.computeGradientSliceShapes4D(x1, y, 2);
     expect(x1Begin).toEqual([0, 0, 0, 0]);
     expect(x1Size).toEqual([3, 3, 2, 4]);
     expect(x2Begin).toEqual([0, 0, 2, 0]);
@@ -160,7 +160,7 @@ describe('concat_util.computeBackpropSizes', () => {
     const x1 = [2, 3, 2, 4];
     const y = [2, 3, 2, 8];
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes4D(x1, y, 3);
+        concat_util.computeGradientSliceShapes4D(x1, y, 3);
     expect(x1Begin).toEqual([0, 0, 0, 0]);
     expect(x1Size).toEqual([2, 3, 2, 4]);
     expect(x2Begin).toEqual([0, 0, 0, 4]);

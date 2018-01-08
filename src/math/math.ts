@@ -508,7 +508,7 @@ export class NDArrayMath implements NDArrayManager {
 
     const gradients = (dy: Array3D, y: Array3D) => {
       const {x1Begin, x1Size, x2Begin, x2Size} =
-          concat_util.computeGradientShapes3D(a.shape, y.shape, axis);
+          concat_util.computeGradientSliceShapes3D(a.shape, y.shape, axis);
       return {
         a: () => this.slice3D(dy, x1Begin, x1Size),
         b: () => this.slice3D(dy, x2Begin, x2Size)
@@ -2194,10 +2194,11 @@ export class NDArrayMath implements NDArrayManager {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  avgPool<T extends Array3D|Array4D>(
-      x: T, filterSize: [number, number]|number,
+  avgPool<R extends '3'|'4', T1 extends NDArray<'int32'|'float32', R>,
+                                        T2 extends NDArray<'float32', R>>(
+      x: T1, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T2 {
     let x4D = x as NDArray as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -2226,9 +2227,9 @@ export class NDArrayMath implements NDArrayManager {
           'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
+            T2;
       }
-      return res as NDArray as T;
+      return res as NDArray as T2;
     });
   }
 
@@ -2246,7 +2247,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
-  avgPoolBackprop<T extends NDArray>(
+  private avgPoolBackprop<T extends NDArray>(
       dy: T, input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
     util.assert(

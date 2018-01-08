@@ -1246,7 +1246,7 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    return dx;
+    return dx.asType(x.dtype);
   }
 
   avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -1282,15 +1282,15 @@ export class MathBackendCPU implements MathBackend {
                 }
 
                 const pixel = dy.get(b, dyR, dyC, d);
-                dotProd += pixel * avgMultiplier;
+                dotProd += pixel;
               }
             }
-            dx.set(dotProd, b, dxR, dxC, d);
+            dx.set(dotProd * avgMultiplier, b, dxR, dxC, d);
           }
         }
       }
     }
-    return dx;
+    return dx.asType(x.dtype);
   }
 
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -1298,7 +1298,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
-    return this.pool(x, convInfo, 'avg');
+    return this.pool(x, convInfo, 'avg').asType('float32');
   }
 
   resizeBilinear3D(

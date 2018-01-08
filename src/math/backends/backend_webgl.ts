@@ -737,17 +737,22 @@ export class MathBackendWebGL implements MathBackend {
 
   maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
-    return this.compileAndRun(program, [x]);
+    const output =
+        this.makeOutputArray(program.outputShape, x.dtype) as Array4D;
+    return this.compileAndRun(program, [x], output);
   }
 
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'min', false);
-    return this.compileAndRun(program, [x]);
+    const output =
+        this.makeOutputArray(program.outputShape, x.dtype) as Array4D;
+    return this.compileAndRun(program, [x], output);
   }
 
-  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D<'float32'> {
     const program = new Pool2DProgram(convInfo, 'avg', false);
-    return this.compileAndRun(program, [x]);
+    const output = this.makeOutputArray(program.outputShape, 'float32');
+    return this.compileAndRun(program, [x], output) as Array4D<'float32'>;
   }
 
   maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -758,17 +763,19 @@ export class MathBackendWebGL implements MathBackend {
         this.compileAndRun(maxPoolPositionsProgram, [x]);
 
     const maxPoolBackPropProgram = new MaxPool2DBackpropProgram(convInfo);
-
-    const result =
-        this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
+    const output =
+        this.makeOutputArray(maxPoolBackPropProgram.outputShape, x.dtype);
+    const result = this.compileAndRun(
+        maxPoolBackPropProgram, [dy, maxPoolPositions], output);
     maxPoolPositions.dispose();
     return result as Array4D;
   }
 
   avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
     const avgPoolBackpropProgram = new AvgPool2DBackpropProgram(convInfo);
-    const result = this.compileAndRun(avgPoolBackpropProgram, [dy]);
-    return result as Array4D;
+    const output =
+        this.makeOutputArray(avgPoolBackpropProgram.outputShape, x.dtype);
+    return this.compileAndRun(avgPoolBackpropProgram, [dy], output) as Array4D;
   }
 
   resizeBilinear3D(

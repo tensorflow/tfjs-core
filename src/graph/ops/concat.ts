@@ -95,7 +95,7 @@ export class Concat2D extends Operation {
     const dy = gradientArrays.get(this.yTensor) as Array2D;
 
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes2D(
+        concat_util.computeGradientSliceShapes2D(
             this.x1Tensor.shape, this.yTensor.shape, this.axis);
 
     math.scope((keep) => {
@@ -139,7 +139,7 @@ export class Concat3D extends Operation {
     const dy = gradientArrays.get(this.yTensor) as Array3D;
 
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes3D(
+        concat_util.computeGradientSliceShapes3D(
             this.x1Tensor.shape, this.yTensor.shape, this.axis);
 
     math.scope((keep) => {
@@ -183,7 +183,7 @@ export class Concat4D extends Operation {
     const dy = gradientArrays.get(this.yTensor) as Array4D;
 
     const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientShapes4D(
+        concat_util.computeGradientSliceShapes4D(
             this.x1Tensor.shape, this.yTensor.shape, this.axis);
 
     math.scope((keep) => {

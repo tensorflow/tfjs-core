@@ -58,7 +58,7 @@ export function computeOutShape(
   return outputShape;
 }
 
-export function computeGradientShapes2D(
+export function computeGradientSliceShapes2D(
     x1TensorShape: number[], yTensorShape: number[], axis: number): {
   x1Begin: [number, number],
   x1Size: [number, number],
@@ -81,7 +81,7 @@ export function computeGradientShapes2D(
   return {x1Begin, x1Size, x2Begin, x2Size};
 }
 
-export function computeGradientShapes3D(
+export function computeGradientSliceShapes3D(
     x1Shape: number[], yShape: number[], axis: number): {
   x1Begin: [number, number, number],
   x1Size: [number, number, number],
@@ -104,7 +104,7 @@ export function computeGradientShapes3D(
   return {x1Begin, x1Size, x2Begin, x2Size};
 }
 
-export function computeGradientShapes4D(
+export function computeGradientSliceShapes4D(
     x1TensorShape: number[], yTensorShape: number[], axis: number): {
   x1Begin: [number, number, number, number],
   x1Size: [number, number, number, number],
