@@ -2361,10 +2361,8 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Local response normalization - normalizes the activation of a local
-   * neighborhood across or within channels.
-   * This is used for Caffe compatibility only. New models should use BatchNorm
-   * instead!
+   * Normalizes the activation of a local neighborhood across or within
+   * channels.
    * @param x The input NDArray.
    * @param radius The number of adjacent channels or spatial locations of the
    *     1D normalization window. In Tensorflow this param is called
@@ -2388,17 +2386,15 @@ export class NDArrayMath implements NDArrayManager {
         `Error in localResponseNormalization3D: radius must be an integer
          but got radius ${radius}.`);
 
-    return this.localResponseNormalization4D(
-                   x.reshape([1].concat(x.shape)) as Array4D, radius, bias,
-                   alpha, beta, normRegion)
-               .reshape(x.shape) as Array3D;
+    const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    const res = this.localResponseNormalization4D(
+        input4D, radius, bias, alpha, beta, normRegion);
+    return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
   }
 
   /**
-   * Local response normalization - normalizes the activation of a local
-   * neighborhood across or within channels.
-   * This is used for Caffe compatibility only. New models should use BatchNorm
-   * instead!
+   * Normalizes the activation of a local neighborhood across or within
+   * channels.
    * @param x The input NDArray. The 4-D input tensor is treated as a 3-D array
    *     of 1D vectors (along the last dimension), and each vector is
    * normalized independently.
