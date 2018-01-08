@@ -1619,7 +1619,7 @@ export class NDArrayMath implements NDArrayManager {
           `Error in conv1d: bias must be rank 1, but got rank ` +
               `${bias.rank}.`);
     }
-    if (dimRoundingMode) {
+    if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
           `Error in conv1d: pad must be an integer when using, ` +
@@ -1693,7 +1693,7 @@ export class NDArrayMath implements NDArrayManager {
           `Error in conv2d: bias must be rank 1, but got rank ` +
               `${bias.rank}.`);
     }
-    if (dimRoundingMode) {
+    if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
           `Error in conv2d: pad must be an integer when using, ` +
@@ -1788,7 +1788,7 @@ export class NDArrayMath implements NDArrayManager {
         outDepth === filter.shape[3],
         `Error in conv2dDerInput: depth of output (${outDepth}) must` +
             `match output depth for filter ${filter.shape[3]}.`);
-    if (dimRoundingMode) {
+    if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
           `Error in conv2dDerInput: pad must be an integer when using, ` +
@@ -1874,7 +1874,7 @@ export class NDArrayMath implements NDArrayManager {
         dy4D.shape[3] === filterShape[3],
         `Error in conv2dDerFilter: depth of dy (${dy4D.shape[3]}) must ` +
             `match output depth for filter (${filterShape[3]}).`);
-    if (dimRoundingMode) {
+    if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
           `Error in conv2dDerFilter: pad must be an integer when using, ` +
@@ -1983,7 +1983,7 @@ export class NDArrayMath implements NDArrayManager {
         rateHeight === 1 && rateWidth === 1,
         'Error in depthwiseConv2D: rates greater than 1 are not yet ' +
             `supported. Got rates '${rates}'`);
-    if (dimRoundingMode) {
+    if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
           `Error in depthwiseConv2D: pad must be an integer when using, ` +
@@ -2036,7 +2036,7 @@ export class NDArrayMath implements NDArrayManager {
     util.assert(
         x4D.rank === 4,
         `Error in maxPool: input must be rank 4 but got rank ${x4D.rank}.`);
-    if (dimRoundingMode) {
+    if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
           `Error in maxPool: pad must be an integer when using, ` +
@@ -2103,7 +2103,7 @@ export class NDArrayMath implements NDArrayManager {
         input4D.rank === 4,
         `Error in maxPoolBackprop: input must be rank 4 but got rank ` +
             `${input4D.rank}.`);
-    if (dimRoundingMode) {
+    if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
           `Error in maxPoolBackprop: pad must be an integer when using, ` +
@@ -2156,7 +2156,7 @@ export class NDArrayMath implements NDArrayManager {
     util.assert(
         input4D.rank === 4,
         `Error in minPool: x must be rank 4 but got rank ${input4D.rank}.`);
-    if (dimRoundingMode) {
+    if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
           `Error in minPool: pad must be an integer when using, ` +
@@ -2207,6 +2207,12 @@ export class NDArrayMath implements NDArrayManager {
     util.assert(
         x4D.rank === 4,
         `Error in avgPool: x must be rank 4 but got rank ${x4D.rank}.`);
+    if (dimRoundingMode != null) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in avgPool: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
 
     const convInfo =
         conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
