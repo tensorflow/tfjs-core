@@ -17,6 +17,7 @@
 
 import * as util from '../../util';
 import {DataType, NDArray, Scalar} from '../ndarray';
+
 import {MathBackend} from './backend';
 import {KernelInputConfig} from './tape_types';
 // tslint:disable-next-line:max-line-length
@@ -48,7 +49,7 @@ import {SumInputConfig, SumNode} from './types/sum';
 // tslint:disable-next-line:max-line-length
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './types/topk';
 // tslint:disable-next-line:max-line-length
-import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
+import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, PadInputConfig, PadNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
   [kernel in keyof KernelConfigRegistry]: (
@@ -242,11 +243,14 @@ const KERNEL_METHODS: {
   Clip: (backend: MathBackend, config: ClipInputConfig<NDArray>) => {
     return backend.clip(config.inputs.x, config.args.min, config.args.max);
   },
-  Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
-    return backend.transpose(config.inputs.x, config.args.perm);
-  },
   Tile: (backend: MathBackend, config: TileInputConfig<NDArray>) => {
     return backend.tile(config.inputs.x, config.args.reps);
+  },
+  Pad: (backend: MathBackend, config: PadInputConfig<NDArray>) => {
+    return backend.pad(config.inputs.x, config.args.paddings);
+  },
+  Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
+    return backend.transpose(config.inputs.x, config.args.perm);
   },
   Conv2D: (backend: MathBackend, config: Conv2DInputConfig) => {
     return backend.conv2d(
@@ -377,6 +381,7 @@ export interface KernelConfigRegistry {
   Tanh: UnaryNode<NDArray>;
   Clip: ClipNode<NDArray>;
   Transpose: TransposeNode<NDArray>;
+  Pad: PadNode<NDArray>;
   Tile: TileNode<NDArray>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;

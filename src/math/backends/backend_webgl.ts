@@ -400,6 +400,13 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
+  pad<T extends NDArray>(x: T, paddings: number[]): T {
+    //
+    // TODO(kreeger): write me.
+    //
+    return null;
+  }
+
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T {
     const program = new TransposeProgram(x.shape, perm);
     return this.compileAndRun(program, [x]);

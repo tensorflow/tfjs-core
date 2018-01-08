@@ -100,3 +100,15 @@ export interface TileInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: UnaryInputArrays<T>;
   args: {reps: number[];};
 }
+
+// Pad
+export interface PadNode<T extends NDArray> extends KernelNode {
+  inputAndArgs: PadInputConfig<T>;
+  output: T;
+  gradient: (dy: T, y: T) => UnaryGradientInputArrays<T>;
+}
+
+export interface PadInputConfig<T extends NDArray> extends KernelInputConfig {
+  inputs: UnaryInputArrays<T>;
+  args: {paddings: number[];};
+}

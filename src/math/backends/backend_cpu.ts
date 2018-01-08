@@ -1081,6 +1081,13 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
+  pad<T extends NDArray>(x: T, paddings: number[]): T {
+    //
+    // TODO(kreeger): write me.
+    //
+    return null;
+  }
+
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T {
     const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
