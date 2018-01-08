@@ -1258,7 +1258,7 @@ export class MathBackendCPU implements MathBackend {
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
     const dx = Array4D.zeros(x.shape);
 
-    const filterValue = 1 / (filterHeight * filterWidth);
+    const avgMultiplier = 1 / (filterHeight * filterWidth);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -1282,7 +1282,7 @@ export class MathBackendCPU implements MathBackend {
                 }
 
                 const pixel = dy.get(b, dyR, dyC, d);
-                dotProd += pixel * filterValue;
+                dotProd += pixel * avgMultiplier;
               }
             }
             dx.set(dotProd, b, dxR, dxC, d);

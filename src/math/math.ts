@@ -508,8 +508,7 @@ export class NDArrayMath implements NDArrayManager {
 
     const gradients = (dy: Array3D, y: Array3D) => {
       const {x1Begin, x1Size, x2Begin, x2Size} =
-          concat_util.computeSliceSizes3D(a.shape, b.shape, axis);
-
+          concat_util.computeGradientShapes3D(a.shape, y.shape, axis);
       return {
         a: () => this.slice3D(dy, x1Begin, x1Size),
         b: () => this.slice3D(dy, x2Begin, x2Size)
