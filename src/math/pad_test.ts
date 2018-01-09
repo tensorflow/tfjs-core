@@ -27,6 +27,12 @@ import {Array2D} from './ndarray';
       const b = math.pad(a, [[1, 1], [1, 1]]);
       console.log('b', b.dataSync());
     });
+
+    it('KREEGER 2', math => {
+      const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
+      const b = math.pad(a, [[0, 0], [0, 0]]);
+      console.log('b', b.dataSync());
+    });
   };
 
   test_util.describeMathCPU('pad', [tests]);

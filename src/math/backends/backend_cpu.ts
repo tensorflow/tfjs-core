@@ -1101,9 +1101,11 @@ export class MathBackendCPU implements MathBackend {
       let rangeStart = -1;
       let rangeEnd = -1;
 
-      if (i >= topPadding && i < newShape[0] + bottomPadding) {
+      if (i >= topPadding && i < newShape[0] - bottomPadding) {
         rangeStart = i * newShape[1] + leftPadding;
-        rangeEnd = i * newShape[1] + x.shape[0];
+        rangeEnd = rangeStart + x.shape[0];
+        console.log('rangeStart', rangeStart);
+        console.log('rangeEnd', rangeEnd);
       }
 
       for (let j = 0; j < newShape[1]; j++) {
