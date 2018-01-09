@@ -15,4 +15,5 @@
  * =============================================================================
  */
 
+export {MobileNet} from './mobilenet';
 export {SqueezeNet} from './squeezenet';

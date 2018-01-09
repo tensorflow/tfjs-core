@@ -1,10 +1,10 @@
 {
-  "name": "deeplearn-tf-squeezenet",
+  "name": "deeplearn-tf-demo",
   "version": "0.0.1",
-  "description": "Import Tensorflow SqueezeNet model and running in deeplearn.js",
-  "main": "dist/tfsqueezenet/index.js",
+  "description": "Import Tensorflow models and running in deeplearn.js",
+  "main": "dist/tfdemo/index.js",
   "unpkg": "dist/bundle.js",
-  "types": "dist/tfsqueezenet/index.d.ts",
+  "types": "dist/tfdemo/index.d.ts",
   "peerDependencies": {
     "deeplearn-tensorflow": "0.1.0"
   },
@@ -25,7 +25,7 @@
   },
   "scripts": {
     "prep": "yarn && mkdirp dist",
-    "build": "tsc --sourceMap false && browserify -g browserify-shim --standalone tfsqueezenet index.ts -p [tsify] -o dist/bundle.js",
+    "build": "tsc --sourceMap false && browserify -g browserify-shim --standalone tfdemo index.ts -p [tsify] -o dist/bundle.js",
     "lint": "tslint -p . -t verbose",
     "publish-npm": "yarn build && yarn publish"
   },
