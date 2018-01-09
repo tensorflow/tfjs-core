@@ -1,23 +1,22 @@
-import {Array3D, Array4D, NDArray, NDArrayMath} from 'deeplearn';
-import {Array1D, Array2D, Scalar} from 'deeplearn/dist/math/ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 
-import {Attr, DataType, Node, Tensor} from './index';
+import {tensorflow} from './index';
 import {tensorToNDArray} from './util';
 
-function getParamForName(attr: Attr[], name: string): Attr {
-  return attr.find((a) => a.key === name);
+function getStringParam(
+    attrs: {[key: string]: tensorflow.IAttrValue}, name: string,
+    def: string): string {
+  const param = attrs[name];
+  return param ? String.fromCharCode.apply(null, param.s) || def : def;
 }
 
-function getStringParam(attrs: Attr[], name: string, def: string): string {
-  const param = getParamForName(attrs, name);
-  return param ? param.value.s || def : def;
+function getTensorParam(
+    attrs: {[key: string]: tensorflow.IAttrValue}, name: string,
+    def?: tensorflow.ITensor): tensorflow.ITensor|undefined {
+  const param = attrs[name];
+  return param ? param.tensor || def : def;
 }
 
-function getTensorParam(attrs: Attr[], name: string, def?: Tensor): Tensor|
-    undefined {
-  const param = getParamForName(attrs, name);
-  return param ? param.value.tensor || def : def;
-}
 /**
  * Retrieve the bounded numeric array from the param
  * @param param
@@ -26,57 +25,31 @@ function getTensorParam(attrs: Attr[], name: string, def?: Tensor): Tensor|
  * @param endIndex not included
  */
 function getNumericArrayParam(
-    attrs: Attr[], name: string, def: number[], startIndex?: number,
-    endIndex?: number): number[] {
-  const param = getParamForName(attrs, name);
+    attrs: {[key: string]: tensorflow.IAttrValue}, name: string, def: number[],
+    startIndex?: number, endIndex?: number): number[] {
+  const param = attrs[name];
   if (param) {
-    const value = param.value.list.f || param.value.list.i;
-    return value ? value.slice(startIndex, endIndex) : def;
+    const value =
+        (param.list.f.length ? param.list.f : param.list.i) as number[];
+    return value.length ? value.slice(startIndex, endIndex) : def;
   }
-
   return def;
 }
 
-/**
- * supporting operations
- * op: "Add"
- * op: "AvgPool"
- * op: "BiasAdd"
- * op: "ConcatV2"
- * op: "Const"
- * op: "Conv2D"
- * op: "Floor"
- * op: "MaxPool"
- * op: "Mul"
- * op: "Pack"
- * op: "Placeholder"
- * op: "RandomUniform"
- * op: "RealDiv"
- * op: "Relu"
- * op: "Reshape"
- * op: "Slice"
- * op: "Softmax"
- * op: "Sub"
- *
- * @param math
- * @param input
- * @param node
- * @param blobs
- */
 export function performMathOp(
-    math: NDArrayMath, input: NDArray|NDArray[]|number[], node: Node,
-    feedDict: {[key: string]: NDArray}): NDArray {
+    math: NDArrayMath, input: NDArray|NDArray[]|number[],
+    node: tensorflow.INodeDef, feedDict: {[key: string]: NDArray}): NDArray {
   switch (node.op) {
     case 'Add':
     case 'BiasAdd': {
       const inputs = input as NDArray[];
-      return math.add(inputs[0], inputs[1]);
+      return math.add(inputs[0].asType('float32'), inputs[1].asType('float32'));
     }
     case 'Const': {
       const constParam = node.attr;
       const tensor = getTensorParam(
           constParam, 'value',
-          {tensor_shape: {dim: []}, dtype: DataType.DT_INT32.toString()});
+          {tensorShape: {dim: []}, dtype: tensorflow.DataType.DT_INT32});
       return tensorToNDArray(tensor);
     }
     case 'Placeholder':
@@ -84,10 +57,12 @@ export function performMathOp(
     case 'Floor': {
       return math.floor(input as NDArray);
     }
+
     case 'Mul': {
       const inputs = input as NDArray[];
       return math.multiply(inputs[0], inputs[1]);
     }
+
     case 'Conv2D': {
       const convolutionParam = node.attr;
       const stride =

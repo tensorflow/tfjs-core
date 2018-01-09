@@ -1,5 +1,4 @@
 import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
-import {} from 'deeplearn/dist/math/ndarray';
 
 import * as model_util from '../../util';
 import {TensorflowModel} from '../src/index';
@@ -23,7 +22,8 @@ import {IMAGENET_CLASSES} from './imagenet_classes';
  * limitations under the License.
  * =============================================================================
  */
-const MODEL_FILE_URL = 'http://localhost:8000/squeezenet.pbtxt';
+const MODEL_TXT_FILE_URL = 'http://localhost:8000/squeezenet.pbtxt';
+const MODEL_FILE_URL = 'http://localhost:8000/squeezenet.pb';
 export class SqueezeNet {
   private model: TensorflowModel;
   constructor(private math: NDArrayMath) {}
@@ -33,10 +33,9 @@ export class SqueezeNet {
    */
   async load(): Promise<void> {
     this.model = new TensorflowModel(
-        util.loadRemoteProtoTxtFile(MODEL_FILE_URL), this.math);
+        util.loadRemoteProtoFile(MODEL_FILE_URL), this.math);
     return this.model.load();
   }
-
   /**
    * Infer through SqueezeNet, assumes variables have been loaded. This does
    * standard ImageNet pre-processing before inferring through the model. This
@@ -47,7 +46,6 @@ export class SqueezeNet {
    */
   predict(input: NDArray): Array1D {
     const reshapedInput = input.reshape([1, ...input.shape]);
-    console.log(reshapedInput.shape);
     return this.math.scope(() => {
       return this.model.predict(undefined, {
         'image_placeholder': reshapedInput,

@@ -18,7 +18,9 @@
 
     const math = dl.ENV.math;
     const tfModel = new tfsqueezenet.SqueezeNet(math);
+    console.time('load');
     await tfModel.load();
+    console.timeEnd('load');
 
     resultElement.innerText = 'Predicting...';
 

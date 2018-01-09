@@ -16,11 +16,10 @@
  */
 
 // Lookup table for non - utf8, with necessary escapes at(o >= 127 or o < 32)
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from 'deeplearn/dist/math/ndarray';
-import * as prototxtParser from 'prototxt-parser';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from 'deeplearn';
 
+import {tensorflow} from './index';
 import {TensorflowModel} from './model';
-import {DataType, Dim, Graph, Tensor} from './types';
 
 export function unescape(text: string): string {
   const UNESCAPE_STR_TO_BYTE: {[key: string]: number} = {};
@@ -43,17 +42,16 @@ export function unescape(text: string): string {
   });
 }
 
-export function loadLocalProtoTxtFile(file: string): Graph {
+export function loadLocalProtoFile(file: string): tensorflow.GraphDef {
   const fs = require('fs');
-  return prototxtParser.parse(fs.readFileSync(file, {encoding: 'utf8'})) as
-      Graph;
+  return tensorflow.GraphDef.decode(fs.readFileSync(file, {encoding: 'utf8'}));
 }
 
 // export function runNodeSqueezenet() {
 //   const path = require('path');
 //   const promise = new Promise<Graph>(
-//       (resolve, reject) => resolve(loadLocalProtoTxtFile(
-//           path.join(path.resolve(), 'squeezenet.pbtxt'))));
+//       (resolve, reject) => resolve(loadLocalProtoFile(
+//           path.join(path.resolve(), 'squeezenet.pb'))));
 //   const model = new TensorflowModel(promise);
 //   model.load().then(() => {
 //     const image = require('get-image-data');
@@ -76,66 +74,37 @@ export function loadLocalProtoTxtFile(file: string): Graph {
 //   });
 // }
 
-export function loadRemoteProtoTxtFile(url: string): Promise<Graph> {
+export function loadRemoteProtoFile(url: string): Promise<tensorflow.GraphDef> {
   return fetch(new Request(url))
-      .then(res => res.text())
-      .then(text => prototxtParser.parse(text) as Graph);
+      .then(res => res.arrayBuffer())
+      .then(buffer => tensorflow.GraphDef.decode(new Uint8Array(buffer)));
 }
 
-export function tensorToNDArray(tensor: Tensor): NDArray {
-  let dims = (tensor.tensor_shape.dim || []);
-  if (!(dims instanceof Array)) {
-    dims = [dims];
-  }
-  const dimSizes = (dims as Dim[]).map(dim => dim.size);
-  console.log(dimSizes);
-  switch (DataType[tensor.dtype as keyof typeof DataType]) {
-    case DataType.DT_INT32: {
-      const values = tensor.int_val !== undefined ?
-          tensor.int_val :
-          getTensorContentValue(tensor);
+export function tensorToNDArray(tensor: tensorflow.ITensor): NDArray {
+  let dims = tensor.tensorShape.dim;
+  const dimSizes = dims.map(dim => dim.size) as number[];
+  switch (tensor.dtype) {
+    case tensorflow.DataType.DT_INT32: {
+      const values = tensor.intVal.length ?
+          tensor.intVal :
+          new Int32Array(Uint8Array.from(tensor.tensorContent).buffer);
       return toNDArray(dimSizes, values, 'int32');
     }
-    case DataType.DT_FLOAT: {
-      const values = tensor.float_val !== undefined ?
-          tensor.float_val :
-          getTensorContentValue(tensor);
+    case tensorflow.DataType.DT_FLOAT: {
+      const values = tensor.floatVal.length ?
+          tensor.floatVal :
+          new Float32Array(Uint8Array.from(tensor.tensorContent).buffer);
       return toNDArray(dimSizes, values, 'float32');
     }
-    case DataType.DT_BOOL: {
-      const values = tensor.bool_val !== undefined ?
-          tensor.bool_val :
-          getTensorContentValue(tensor);
+    case tensorflow.DataType.DT_BOOL: {
+      const values =
+          tensor.boolVal.length ? tensor.boolVal : tensor.tensorContent;
       return toNDArray(dimSizes, values, 'bool');
     }
   }
   throw new Error(`tensor data type: ${tensor.dtype} is not supported`);
 }
 
-function getTensorContentValue(tensor: Tensor): Int32Array|Float32Array|
-    Uint8Array {
-  if (!tensor.tensor_content) {
-    console.log(tensor);
-  }
-  const str = unescape(tensor.tensor_content);
-  const uint = new Uint8Array(str.length);
-  for (let i = 0, j = str.length; i < j; ++i) {
-    uint[i] = str.charCodeAt(i);
-  }
-  switch (DataType[tensor.dtype as keyof typeof DataType]) {
-    case DataType.DT_INT32: {
-      console.log(new Int32Array(uint.buffer));
-      return new Int32Array(uint.buffer);
-    }
-    case DataType.DT_FLOAT: {
-      return new Float32Array(uint.buffer);
-    }
-    case DataType.DT_BOOL: {
-      return uint;
-    }
-  }
-  return uint;
-}
 
 function toNDArray(
     shape: number[], values: any, dtype: 'float32'|'int32'|'bool'): NDArray {

@@ -22,6 +22,7 @@
     "karma-jasmine": "~1.1.0",
     "karma-typescript": "~3.0.8",
     "opn": "~5.1.0",
+    "protobufjs": "~6.8.0",
     "shelljs": "~0.7.8",
     "tsify": "~3.0.1",
     "tslint": "~5.8.0",
@@ -33,20 +34,14 @@
   },
   "scripts": {
     "prep": "yarn && mkdirp dist",
-    "build": "tsc",
+    "build": "cp src/compiled_* dist/tensorflow/src && tsc",
     "test": "karma start",
     "test-travis": "karma start --browsers='bs_firefox_mac,bs_chrome_mac' --singleRun",
     "lint": "tslint -p . -t verbose",
     "make-version": "./scripts/make-version"
   },
   "dependencies": {
-    "canvas": "^1.6.9",
-    "dag-iterator": "file:../../../dag-iterator",
-    "deeplearn": "^0.3.14",
-    "get-image-data": "^3.0.1",
-    "node-fetch": "^1.7.3",
-    "protobufjs": "~6.8.0",
-    "prototxt-parser": "^0.1.4",
-    "request": "^2.83.0"
+    "dag-iterator": "^0.2.2",
+    "deeplearn": "^0.3.14"
   }
 }

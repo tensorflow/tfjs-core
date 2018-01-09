@@ -1,0 +1,732 @@
+{
+  "nested": {
+    "tensorflow": {
+      "nested": {
+        "Any": {
+          "fields": {
+            "typeUrl": {
+              "type": "string",
+              "id": 1
+            },
+            "value": {
+              "type": "bytes",
+              "id": 2
+            }
+          }
+        },
+        "DataType": {
+          "values": {
+            "DT_INVALID": 0,
+            "DT_FLOAT": 1,
+            "DT_DOUBLE": 2,
+            "DT_INT32": 3,
+            "DT_UINT8": 4,
+            "DT_INT16": 5,
+            "DT_INT8": 6,
+            "DT_STRING": 7,
+            "DT_COMPLEX64": 8,
+            "DT_INT64": 9,
+            "DT_BOOL": 10,
+            "DT_QINT8": 11,
+            "DT_QUINT8": 12,
+            "DT_QINT32": 13,
+            "DT_BFLOAT16": 14,
+            "DT_FLOAT_REF": 101,
+            "DT_DOUBLE_REF": 102,
+            "DT_INT32_REF": 103,
+            "DT_UINT8_REF": 104,
+            "DT_INT16_REF": 105,
+            "DT_INT8_REF": 106,
+            "DT_STRING_REF": 107,
+            "DT_COMPLEX64_REF": 108,
+            "DT_INT64_REF": 109,
+            "DT_BOOL_REF": 110,
+            "DT_QINT8_REF": 111,
+            "DT_QUINT8_REF": 112,
+            "DT_QINT32_REF": 113,
+            "DT_BFLOAT16_REF": 114
+          }
+        },
+        "TensorShape": {
+          "fields": {
+            "dim": {
+              "rule": "repeated",
+              "type": "Dim",
+              "id": 2
+            },
+            "unknownRank": {
+              "type": "bool",
+              "id": 3
+            }
+          },
+          "nested": {
+            "Dim": {
+              "fields": {
+                "size": {
+                  "type": "int64",
+                  "id": 1
+                },
+                "name": {
+                  "type": "string",
+                  "id": 2
+                }
+              }
+            }
+          }
+        },
+        "Tensor": {
+          "fields": {
+            "dtype": {
+              "type": "DataType",
+              "id": 1
+            },
+            "tensorShape": {
+              "type": "TensorShape",
+              "id": 2
+            },
+            "versionNumber": {
+              "type": "int32",
+              "id": 3
+            },
+            "tensorContent": {
+              "type": "bytes",
+              "id": 4
+            },
+            "floatVal": {
+              "rule": "repeated",
+              "type": "float",
+              "id": 5
+            },
+            "doubleVal": {
+              "rule": "repeated",
+              "type": "double",
+              "id": 6
+            },
+            "intVal": {
+              "rule": "repeated",
+              "type": "int32",
+              "id": 7
+            },
+            "stringVal": {
+              "rule": "repeated",
+              "type": "bytes",
+              "id": 8
+            },
+            "scomplexVal": {
+              "rule": "repeated",
+              "type": "float",
+              "id": 9
+            },
+            "int64Val": {
+              "rule": "repeated",
+              "type": "int64",
+              "id": 10
+            },
+            "boolVal": {
+              "rule": "repeated",
+              "type": "bool",
+              "id": 11
+            },
+            "uint32Val": {
+              "rule": "repeated",
+              "type": "uint32",
+              "id": 16
+            },
+            "uint64Val": {
+              "rule": "repeated",
+              "type": "uint64",
+              "id": 17
+            }
+          }
+        },
+        "AttrValue": {
+          "oneofs": {
+            "value": {
+              "oneof": [
+                "list",
+                "s",
+                "i",
+                "f",
+                "b",
+                "type",
+                "shape",
+                "tensor",
+                "placeholder",
+                "func"
+              ]
+            }
+          },
+          "fields": {
+            "list": {
+              "type": "ListValue",
+              "id": 1
+            },
+            "s": {
+              "type": "bytes",
+              "id": 2
+            },
+            "i": {
+              "type": "int64",
+              "id": 3
+            },
+            "f": {
+              "type": "float",
+              "id": 4
+            },
+            "b": {
+              "type": "bool",
+              "id": 5
+            },
+            "type": {
+              "type": "DataType",
+              "id": 6
+            },
+            "shape": {
+              "type": "TensorShape",
+              "id": 7
+            },
+            "tensor": {
+              "type": "Tensor",
+              "id": 8
+            },
+            "placeholder": {
+              "type": "string",
+              "id": 9
+            },
+            "func": {
+              "type": "NameAttrList",
+              "id": 10
+            }
+          },
+          "nested": {
+            "ListValue": {
+              "fields": {
+                "s": {
+                  "rule": "repeated",
+                  "type": "bytes",
+                  "id": 2
+                },
+                "i": {
+                  "rule": "repeated",
+                  "type": "int64",
+                  "id": 3
+                },
+                "f": {
+                  "rule": "repeated",
+                  "type": "float",
+                  "id": 4
+                },
+                "b": {
+                  "rule": "repeated",
+                  "type": "bool",
+                  "id": 5
+                },
+                "type": {
+                  "rule": "repeated",
+                  "type": "DataType",
+                  "id": 6
+                },
+                "shape": {
+                  "rule": "repeated",
+                  "type": "TensorShape",
+                  "id": 7
+                },
+                "tensor": {
+                  "rule": "repeated",
+                  "type": "Tensor",
+                  "id": 8
+                },
+                "func": {
+                  "rule": "repeated",
+                  "type": "NameAttrList",
+                  "id": 9
+                }
+              }
+            }
+          }
+        },
+        "NameAttrList": {
+          "fields": {
+            "name": {
+              "type": "string",
+              "id": 1
+            },
+            "attr": {
+              "keyType": "string",
+              "type": "AttrValue",
+              "id": 2
+            }
+          }
+        },
+        "NodeDef": {
+          "fields": {
+            "name": {
+              "type": "string",
+              "id": 1
+            },
+            "op": {
+              "type": "string",
+              "id": 2
+            },
+            "input": {
+              "rule": "repeated",
+              "type": "string",
+              "id": 3
+            },
+            "device": {
+              "type": "string",
+              "id": 4
+            },
+            "attr": {
+              "keyType": "string",
+              "type": "AttrValue",
+              "id": 5
+            }
+          }
+        },
+        "VersionDef": {
+          "fields": {
+            "producer": {
+              "type": "int32",
+              "id": 1
+            },
+            "minConsumer": {
+              "type": "int32",
+              "id": 2
+            },
+            "badConsumers": {
+              "rule": "repeated",
+              "type": "int32",
+              "id": 3
+            }
+          }
+        },
+        "GraphDef": {
+          "fields": {
+            "node": {
+              "rule": "repeated",
+              "type": "NodeDef",
+              "id": 1
+            },
+            "versions": {
+              "type": "VersionDef",
+              "id": 4
+            }
+          }
+        },
+        "CollectionDef": {
+          "oneofs": {
+            "kind": {
+              "oneof": [
+                "nodeList",
+                "bytesList",
+                "int64List",
+                "floatList",
+                "anyList"
+              ]
+            }
+          },
+          "fields": {
+            "nodeList": {
+              "type": "NodeList",
+              "id": 1
+            },
+            "bytesList": {
+              "type": "BytesList",
+              "id": 2
+            },
+            "int64List": {
+              "type": "Int64List",
+              "id": 3
+            },
+            "floatList": {
+              "type": "FloatList",
+              "id": 4
+            },
+            "anyList": {
+              "type": "AnyList",
+              "id": 5
+            }
+          },
+          "nested": {
+            "NodeList": {
+              "fields": {
+                "value": {
+                  "rule": "repeated",
+                  "type": "string",
+                  "id": 1
+                }
+              }
+            },
+            "BytesList": {
+              "fields": {
+                "value": {
+                  "rule": "repeated",
+                  "type": "bytes",
+                  "id": 1
+                }
+              }
+            },
+            "Int64List": {
+              "fields": {
+                "value": {
+                  "rule": "repeated",
+                  "type": "int64",
+                  "id": 1
+                }
+              }
+            },
+            "FloatList": {
+              "fields": {
+                "value": {
+                  "rule": "repeated",
+                  "type": "float",
+                  "id": 1
+                }
+              }
+            },
+            "AnyList": {
+              "fields": {
+                "value": {
+                  "rule": "repeated",
+                  "type": "Any",
+                  "id": 1
+                }
+              }
+            }
+          }
+        },
+        "SaverDef": {
+          "fields": {
+            "filenameTensorName": {
+              "type": "string",
+              "id": 1
+            },
+            "saveTensorName": {
+              "type": "string",
+              "id": 2
+            },
+            "restoreOpName": {
+              "type": "string",
+              "id": 3
+            },
+            "maxToKeep": {
+              "type": "int32",
+              "id": 4
+            },
+            "sharded": {
+              "type": "bool",
+              "id": 5
+            },
+            "keepCheckpointEveryNHours": {
+              "type": "float",
+              "id": 6
+            },
+            "version": {
+              "type": "CheckpointFormatVersion",
+              "id": 7
+            }
+          },
+          "nested": {
+            "CheckpointFormatVersion": {
+              "values": {
+                "LEGACY": 0,
+                "V1": 1,
+                "V2": 2
+              }
+            }
+          }
+        },
+        "TensorInfo": {
+          "oneofs": {
+            "encoding": {
+              "oneof": [
+                "name",
+                "cooSparse"
+              ]
+            }
+          },
+          "fields": {
+            "name": {
+              "type": "string",
+              "id": 1
+            },
+            "cooSparse": {
+              "type": "CooSparse",
+              "id": 4
+            },
+            "dtype": {
+              "type": "DataType",
+              "id": 2
+            },
+            "tensorShape": {
+              "type": "TensorShape",
+              "id": 3
+            }
+          },
+          "nested": {
+            "CooSparse": {
+              "fields": {
+                "valuesTensorName": {
+                  "type": "string",
+                  "id": 1
+                },
+                "indicesTensorName": {
+                  "type": "string",
+                  "id": 2
+                },
+                "denseShapeTensorName": {
+                  "type": "string",
+                  "id": 3
+                }
+              }
+            }
+          }
+        },
+        "SignatureDef": {
+          "fields": {
+            "inputs": {
+              "keyType": "string",
+              "type": "TensorInfo",
+              "id": 1
+            },
+            "outputs": {
+              "keyType": "string",
+              "type": "TensorInfo",
+              "id": 2
+            },
+            "methodName": {
+              "type": "string",
+              "id": 3
+            }
+          }
+        },
+        "AssetFileDef": {
+          "fields": {
+            "tensorInfo": {
+              "type": "TensorInfo",
+              "id": 1
+            },
+            "filename": {
+              "type": "string",
+              "id": 2
+            }
+          }
+        },
+        "OpDef": {
+          "fields": {
+            "name": {
+              "type": "string",
+              "id": 1
+            },
+            "inputArg": {
+              "rule": "repeated",
+              "type": "ArgDef",
+              "id": 2
+            },
+            "outputArg": {
+              "rule": "repeated",
+              "type": "ArgDef",
+              "id": 3
+            },
+            "attr": {
+              "rule": "repeated",
+              "type": "AttrDef",
+              "id": 4
+            },
+            "deprecation": {
+              "type": "OpDeprecation",
+              "id": 8
+            },
+            "summary": {
+              "type": "string",
+              "id": 5
+            },
+            "description": {
+              "type": "string",
+              "id": 6
+            },
+            "isCommutative": {
+              "type": "bool",
+              "id": 18
+            },
+            "isAggregate": {
+              "type": "bool",
+              "id": 16
+            },
+            "isStateful": {
+              "type": "bool",
+              "id": 17
+            },
+            "allowsUninitializedInput": {
+              "type": "bool",
+              "id": 19
+            }
+          },
+          "nested": {
+            "ArgDef": {
+              "fields": {
+                "name": {
+                  "type": "string",
+                  "id": 1
+                },
+                "description": {
+                  "type": "string",
+                  "id": 2
+                },
+                "type": {
+                  "type": "DataType",
+                  "id": 3
+                },
+                "typeAttr": {
+                  "type": "string",
+                  "id": 4
+                },
+                "numberAttr": {
+                  "type": "string",
+                  "id": 5
+                },
+                "typeListAttr": {
+                  "type": "string",
+                  "id": 6
+                },
+                "isRef": {
+                  "type": "bool",
+                  "id": 16
+                }
+              }
+            },
+            "AttrDef": {
+              "fields": {
+                "name": {
+                  "type": "string",
+                  "id": 1
+                },
+                "type": {
+                  "type": "string",
+                  "id": 2
+                },
+                "defaultValue": {
+                  "type": "AttrValue",
+                  "id": 3
+                },
+                "description": {
+                  "type": "string",
+                  "id": 4
+                },
+                "hasMinimum": {
+                  "type": "bool",
+                  "id": 5
+                },
+                "minimum": {
+                  "type": "int64",
+                  "id": 6
+                },
+                "allowedValues": {
+                  "type": "AttrValue",
+                  "id": 7
+                }
+              }
+            },
+            "OpDeprecation": {
+              "fields": {
+                "version": {
+                  "type": "int32",
+                  "id": 1
+                },
+                "explanation": {
+                  "type": "string",
+                  "id": 2
+                }
+              }
+            }
+          }
+        },
+        "OpList": {
+          "fields": {
+            "op": {
+              "rule": "repeated",
+              "type": "OpDef",
+              "id": 1
+            }
+          }
+        },
+        "MetaGraphDef": {
+          "fields": {
+            "metaInfoDef": {
+              "type": "MetaInfoDef",
+              "id": 1
+            },
+            "graphDef": {
+              "type": "GraphDef",
+              "id": 2
+            },
+            "saverDef": {
+              "type": "SaverDef",
+              "id": 3
+            },
+            "collectionDef": {
+              "keyType": "string",
+              "type": "CollectionDef",
+              "id": 4
+            },
+            "signatureDef": {
+              "keyType": "string",
+              "type": "SignatureDef",
+              "id": 5
+            },
+            "assetFileDef": {
+              "rule": "repeated",
+              "type": "AssetFileDef",
+              "id": 6
+            }
+          },
+          "nested": {
+            "MetaInfoDef": {
+              "fields": {
+                "metaGraphVersion": {
+                  "type": "string",
+                  "id": 1
+                },
+                "strippedOpList": {
+                  "type": "OpList",
+                  "id": 2
+                },
+                "anyInfo": {
+                  "type": "Any",
+                  "id": 3
+                },
+                "tags": {
+                  "rule": "repeated",
+                  "type": "string",
+                  "id": 4
+                },
+                "tensorflowVersion": {
+                  "type": "string",
+                  "id": 5
+                },
+                "tensorflowGitVersion": {
+                  "type": "string",
+                  "id": 6
+                }
+              }
+            }
+          }
+        },
+        "SavedModel": {
+          "fields": {
+            "savedModelSchemaVersion": {
+              "type": "int64",
+              "id": 1
+            },
+            "metaGraphs": {
+              "rule": "repeated",
+              "type": "MetaGraphDef",
+              "id": 2
+            }
+          }
+        }
+      }
+    }
+  }
+}
