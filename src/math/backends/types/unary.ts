@@ -110,5 +110,5 @@ export interface PadNode<T extends NDArray> extends KernelNode {
 
 export interface PadInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: UnaryInputArrays<T>;
-  args: {paddings: number[];};
+  args: {paddings: number[][];};
 }

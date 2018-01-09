@@ -1081,11 +1081,44 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  pad<T extends NDArray>(x: T, paddings: number[]): T {
-    //
-    // TODO(kreeger): write me.
-    //
-    return null;
+  pad<T extends NDArray>(x: T, paddings: number[][]): T {
+    const topPadding = paddings[0][0];
+    const bottomPadding = paddings[0][1];
+    const leftPadding = paddings[1][0];
+    const rightPadding = paddings[1][1];
+
+    const newShape = [
+      topPadding + x.shape[0] + bottomPadding,
+      leftPadding + x.shape[1] + rightPadding
+    ];
+    console.log('x.shape', x.shape);
+    console.log('newShape', newShape);
+
+    const newValues = [];
+    const values = x.dataSync();
+    let z = 0;
+    for (let i = 0; i < newShape[0]; i++) {
+      let rangeStart = -1;
+      let rangeEnd = -1;
+
+      if (i >= topPadding && i < newShape[0] + bottomPadding) {
+        rangeStart = i * newShape[1] + leftPadding;
+        rangeEnd = i * newShape[1] + x.shape[0];
+      }
+
+      for (let j = 0; j < newShape[1]; j++) {
+        const v = i * newShape[1] + j;
+        newValues[v] = 0;
+        if (v >= rangeStart && v <= rangeEnd) {
+          newValues[v] = values[z++];
+        } else {
+          newValues[v] = 0;
+        }
+      }
+      console.log('');
+    }
+    console.log('newValues', newValues);
+    return Array2D.new(newShape as [number, number], newValues) as T;
   }
 
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T {

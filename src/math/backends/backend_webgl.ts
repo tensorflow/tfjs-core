@@ -400,7 +400,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  pad<T extends NDArray>(x: T, paddings: number[]): T {
+  pad<T extends NDArray>(x: T, paddings: number[][]): T {
     //
     // TODO(kreeger): write me.
     //

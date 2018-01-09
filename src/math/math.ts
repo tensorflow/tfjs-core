@@ -1000,6 +1000,13 @@ export class NDArrayMath implements NDArrayManager {
                'Tile', {inputs: {x}, args: {reps}}) as T;
   }
 
+  // TODO(kreeger): Document me.
+  pad<T extends NDArray>(x: T, paddings: number[][]): T {
+    // TODO - validate paddings rank.
+    return this.backendEngine.executeKernel(
+               'Pad', {inputs: {x}, args: {paddings}}) as T;
+  }
+
   /**
    * Transposes the array. Permutes the dimensions according to `perm`.
    *
