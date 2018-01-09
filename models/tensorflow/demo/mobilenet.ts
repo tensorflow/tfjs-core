@@ -1,4 +1,4 @@
-import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
+import {Array1D, Array3D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 
 import * as model_util from '../../util';
 import {TensorflowModel} from '../src/index';
@@ -26,6 +26,10 @@ import {PredictionModel} from './prediction_model';
 const MODEL_TXT_FILE_URL = 'http://localhost:8000/mobilenet.pbtxt';
 const MODEL_FILE_URL = 'http://localhost:8000/mobilenet.pb';
 export class MobileNet extends PredictionModel {
+  // yolo variables
+  private PREPROCESS_DIVISOR = Scalar.new(255.0 / 2);
+  private ONE = Scalar.new(1);
+
   constructor(math: NDArrayMath) {
     super(math, MODEL_FILE_URL);
   }
@@ -40,9 +44,12 @@ export class MobileNet extends PredictionModel {
    */
   predict(input: NDArray): Array1D {
     const reshapedInput = input.reshape([1, ...input.shape]);
-    return super.predict(undefined, {
-      'image_placeholder': reshapedInput,
-      'Placeholder': Scalar.new(1.0)
-    }) as Array1D;
+    const preprocessedInput = this.math.arrayDividedByScalar(
+        this.math.subtract(input.asType('float32'), this.PREPROCESS_DIVISOR),
+        this.PREPROCESS_DIVISOR);
+    return super.predict(
+               undefined,
+               {'input': preprocessedInput, 'Placeholder': Scalar.new(1.0)}) as
+        Array1D;
   };
 }

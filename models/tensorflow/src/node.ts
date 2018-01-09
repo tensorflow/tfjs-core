@@ -1,8 +1,6 @@
 import {Array1D, Array2D, Array3D, Array4D, Scalar} from 'deeplearn';
 import {NDArray, NDArrayMath} from 'deeplearn';
 
-import {squeezeShape} from '../../../src/util';
-
 import {tensorflow} from './index';
 import {tensorToNDArray} from './util';
 
@@ -46,7 +44,11 @@ export function performMathOp(
     case 'Add':
     case 'BiasAdd': {
       const inputs = input as NDArray[];
-      return math.add(inputs[0].asType('float32'), inputs[1].asType('float32'));
+      if (inputs[0].dtype !== inputs[1].dtype) {
+        inputs[0] = inputs[0].asType('float32');
+        inputs[1] = inputs[1].asType('float32');
+      }
+      return math.add(inputs[0], inputs[1]);
     }
     case 'Const': {
       const constParam = node.attr;
@@ -63,6 +65,10 @@ export function performMathOp(
 
     case 'Mul': {
       const inputs = input as NDArray[];
+      if (inputs[0].dtype !== inputs[1].dtype) {
+        inputs[0] = inputs[0].asType('float32');
+        inputs[1] = inputs[1].asType('float32');
+      }
       return math.multiply(inputs[0], inputs[1]);
     }
 
@@ -79,7 +85,7 @@ export function performMathOp(
           pad as 'valid' | 'same');
     }
 
-    case 'depthwiseConv2D': {
+    case 'DepthwiseConv2dNative': {
       const convolutionParam = node.attr;
       const stride =
           getNumericArrayParam(convolutionParam, 'strides', [1, 1], 1, 3);
@@ -135,8 +141,10 @@ export function performMathOp(
     case 'Squeeze': {
       const squeezeInput = input as NDArray;
       const squeezeParam = node.attr;
-      const axis = getNumericArrayParam(squeezeParam, 'axis', []);
-      const {newShape} = squeezeShape(squeezeInput.shape, axis);
+      const axis = getNumericArrayParam(squeezeParam, 'axis', undefined);
+      const dims =
+          getNumericArrayParam(squeezeParam, 'squeeze_dims', undefined);
+      const {newShape} = squeezeShape(squeezeInput.shape, axis || dims);
       return math.reshape(squeezeInput, newShape);
     }
 
@@ -205,4 +213,29 @@ export function performMathOp(
       console.debug(node);
       throw TypeError(`Node type ${node.op} is not implemented`);
   }
+}
+
+/** Reduces the shape by removing all dimensions of shape 1. */
+export function squeezeShape(shape: number[], axis?: number[]):
+    {newShape: number[], keptDims: number[]} {
+  const newShape: number[] = [];
+  const keptDims: number[] = [];
+  let j = 0;
+  for (let i = 0; i < shape.length; ++i) {
+    if (axis) {
+      if (axis[j] === i && shape[i] > 1) {
+        throw new Error(`axis ${i} is not 1`);
+      }
+      if (axis[j] > i && shape[i] === 1) {
+        newShape.push(shape[i]);
+        keptDims.push(i);
+      }
+      if (axis[j] < i) j++;
+    }
+    if (shape[i] > 1) {
+      newShape.push(shape[i]);
+      keptDims.push(i);
+    }
+  }
+  return {newShape, keptDims};
 }

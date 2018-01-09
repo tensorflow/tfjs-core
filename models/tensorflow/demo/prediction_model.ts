@@ -26,7 +26,7 @@ const MODEL_TXT_FILE_URL = 'http://localhost:8000/squeezenet.pbtxt';
 const MODEL_FILE_URL = 'http://localhost:8000/squeezenet.pb';
 export class PredictionModel {
   private model: TensorflowModel;
-  constructor(private math: NDArrayMath, private fileUrl: string) {}
+  constructor(protected math: NDArrayMath, private fileUrl: string) {}
 
   /**
    * Loads necessary variables for SqueezeNet.
