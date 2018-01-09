@@ -49,7 +49,7 @@ import {SumInputConfig, SumNode} from './types/sum';
 // tslint:disable-next-line:max-line-length
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './types/topk';
 // tslint:disable-next-line:max-line-length
-import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, PadInputConfig, PadNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
+import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, Pad1DInputConfig, Pad1DNode, Pad2DInputConfig, Pad2DNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
   [kernel in keyof KernelConfigRegistry]: (
@@ -246,8 +246,11 @@ const KERNEL_METHODS: {
   Tile: (backend: MathBackend, config: TileInputConfig<NDArray>) => {
     return backend.tile(config.inputs.x, config.args.reps);
   },
-  Pad: (backend: MathBackend, config: PadInputConfig<NDArray>) => {
-    return backend.pad(config.inputs.x, config.args.paddings);
+  Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
+    return backend.pad1D(config.inputs.x, config.args.paddings);
+  },
+  Pad2D: (backend: MathBackend, config: Pad2DInputConfig) => {
+    return backend.pad2D(config.inputs.x, config.args.paddings);
   },
   Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
     return backend.transpose(config.inputs.x, config.args.perm);
@@ -381,7 +384,8 @@ export interface KernelConfigRegistry {
   Tanh: UnaryNode<NDArray>;
   Clip: ClipNode<NDArray>;
   Transpose: TransposeNode<NDArray>;
-  Pad: PadNode<NDArray>;
+  Pad1D: Pad1DNode;
+  Pad2D: Pad2DNode;
   Tile: TileNode<NDArray>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;

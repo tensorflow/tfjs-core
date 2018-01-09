@@ -17,20 +17,20 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array2D} from './ndarray';
+import {Array1D, Array2D} from './ndarray';
 
 // math.pad
 {
   const tests: MathTests = it => {
     it('KREEGER', math => {
-      const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
-      const b = math.pad(a, [[1, 1], [1, 1]]);
+      const a = Array1D.new([1, 2, 3, 4, 5, 6], 'int32');
+      const b = math.pad1D(a, [1, 1]);
       console.log('b', b.dataSync());
     });
 
     it('KREEGER 2', math => {
       const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
-      const b = math.pad(a, [[0, 0], [0, 0]]);
+      const b = math.pad2D(a, [[0, 0], [0, 0]]);
       console.log('b', b.dataSync());
     });
   };

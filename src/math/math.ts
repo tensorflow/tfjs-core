@@ -1000,11 +1000,36 @@ export class NDArrayMath implements NDArrayManager {
                'Tile', {inputs: {x}, args: {reps}}) as T;
   }
 
-  // TODO(kreeger): Document me.
-  pad<T extends NDArray>(x: T, paddings: number[][]): T {
-    // TODO - validate paddings rank.
+  /**
+   * Pads a Array1D.
+   *
+   * This operation will pad an array according to the `paddings` you specify.
+   * Paddings must be described as int32. Paddings rank must match target
+   * array's rank. Passing in the array `[[1, 2], [3, 4]]`  with paddings
+   * `[[1,1][1,1]` will result in `[[0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0]]`.
+   *
+   * This operation currently only implements the `CONSTANT` mode from
+   * Tensorflow's `pad` operation.
+   */
+  pad1D(x: Array1D, paddings: number[]): Array1D {
     return this.backendEngine.executeKernel(
-               'Pad', {inputs: {x}, args: {paddings}}) as T;
+        'Pad1D', {inputs: {x}, args: {paddings}});
+  }
+
+  /**
+   * Pads a Array2D.
+   *
+   * This operation will pad an array according to the `paddings` you specify.
+   * Paddings must be described as int32. Paddings rank must match target
+   * array's rank. Passing in the array `[[1, 2], [3, 4]]`  with paddings
+   * `[[1,1][1,1]` will result in `[[0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0]]`.
+   *
+   * This operation currently only implements the `CONSTANT` mode from
+   * Tensorflow's `pad` operation.
+   */
+  pad2D(x: Array2D, paddings: number[][]): Array2D {
+    return this.backendEngine.executeKernel(
+        'Pad2D', {inputs: {x}, args: {paddings}});
   }
 
   /**
