@@ -37,6 +37,8 @@ import {MaximumInputConfig, MaximumNode, MaxInputConfig, MaxNode, MinimumInputCo
 import {MultinomialInputConfig, MultinomialNode} from './types/multinomial';
 import {OneHotInputConfig, OneHotNode} from './types/onehot';
 // tslint:disable-next-line:max-line-length
+import {Pad1DInputConfig, Pad1DNode, Pad2DInputConfig, Pad2DNode} from './types/pad';
+// tslint:disable-next-line:max-line-length
 import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './types/pool';
 import {PowInputConfig, PowNode} from './types/pow';
 import {PReLUInputConfig, PReLUNode} from './types/prelu';
@@ -49,7 +51,7 @@ import {SumInputConfig, SumNode} from './types/sum';
 // tslint:disable-next-line:max-line-length
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './types/topk';
 // tslint:disable-next-line:max-line-length
-import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, Pad1DInputConfig, Pad1DNode, Pad2DInputConfig, Pad2DNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
+import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
   [kernel in keyof KernelConfigRegistry]: (

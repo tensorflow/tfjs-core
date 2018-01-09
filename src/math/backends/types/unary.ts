@@ -16,7 +16,7 @@
  */
 
 import {NamedArrayMap} from '../../../util';
-import {Array1D, Array2D, NDArray} from '../../ndarray';
+import {NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
@@ -99,44 +99,4 @@ export interface TileNode<T extends NDArray> extends KernelNode {
 export interface TileInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: UnaryInputArrays<T>;
   args: {reps: number[];};
-}
-
-// Pad1D
-export interface Pad1DNode extends KernelNode {
-  inputAndArgs: Pad1DInputConfig;
-  output: Array1D;
-  gradient: (dy: Array1D, y: Array1D) => Pad1DGradientInputArrays;
-}
-
-export interface Pad1DInputConfig extends KernelInputConfig {
-  inputs: Pad1DInputArrays;
-  args: {paddings: number[];};
-}
-
-export interface Pad1DInputArrays extends NamedArrayMap {
-  x: Array1D;
-}
-
-export interface Pad1DGradientInputArrays extends TapeNodeInputGradientArrays {
-  x: () => Array1D;
-}
-
-// Pad2D
-export interface Pad2DNode extends KernelNode {
-  inputAndArgs: Pad2DInputConfig;
-  output: Array2D;
-  gradient: (dy: Array2D, y: Array2D) => Pad2DGradientInputArrays;
-}
-
-export interface Pad2DInputConfig extends KernelInputConfig {
-  inputs: Pad2DInputArrays;
-  args: {paddings: number[][];};
-}
-
-export interface Pad2DInputArrays extends NamedArrayMap {
-  x: Array2D;
-}
-
-export interface Pad2DGradientInputArrays extends TapeNodeInputGradientArrays {
-  x: () => Array2D;
 }
