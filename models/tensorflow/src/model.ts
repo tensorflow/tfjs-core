@@ -61,6 +61,8 @@ export class TensorflowModel implements Model {
     return this.modelFilePromise.then(model => {
       this.nodes = this.nodesToDagNodes(model);
       this.edges = this.nodesToDagEdges(model);
+      console.log(this.nodes.length);
+      console.log([...new Set(this.nodes.map(n => n.data.op))].sort());
     });
   }
 

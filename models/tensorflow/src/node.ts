@@ -1,5 +1,7 @@
 import {Array1D, Array2D, Array3D, Array4D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 
+import {squeezeShape} from '../../../src/util';
+
 import {tensorflow} from './index';
 import {tensorToNDArray} from './util';
 
@@ -76,6 +78,20 @@ export function performMathOp(
           pad as any);
     }
 
+    case 'depthwiseConv2D': {
+      const convolutionParam = node.attr;
+      const stride =
+          getNumericArrayParam(convolutionParam, 'strides', [1, 1], 1, 3);
+      const pad =
+          getStringParam(convolutionParam, 'padding', 'valid').toLowerCase();
+      const rate = getNumericArrayParam(convolutionParam, 'rate', [1, 1]);
+      const inputs = input as NDArray[];
+      const weights = inputs[1] as Array4D;
+      return math.depthwiseConv2D(
+          inputs[0] as NDArray, weights, [stride[0], stride[1]], pad as any,
+          rate as [number, number]);
+    }
+
     case 'AvgPool': {
       const poolingParam = node.attr;
       const stride =
@@ -115,6 +131,14 @@ export function performMathOp(
       return math.divide(inputs[0], inputs[1]);
     }
 
+    case 'Squeeze': {
+      const squeezeInput = input as NDArray;
+      const squeezeParam = node.attr;
+      const axis = getNumericArrayParam(squeezeParam, 'axis', []);
+      const {newShape} = squeezeShape(squeezeInput.shape, axis);
+      return math.reshape(squeezeInput, newShape);
+    }
+
     case 'Reshape': {
       const inputs = input as NDArray[];
       const shape = Array.prototype.slice.call(inputs[1].dataSync());
@@ -137,8 +161,18 @@ export function performMathOp(
     case 'Relu':
       return math.relu(input as NDArray);
 
+    case 'Relu6':
+      return math.clip(input as NDArray, 0, 6);
+
+    case 'Rsqrt':
+      return math.divide(
+          Scalar.new(1.0, 'float32'), math.sqrt(input as NDArray));
+
     case 'Softmax':
       return math.softmax(input as NDArray);
+
+    case 'Identity':
+      return input as NDArray;
 
     case 'Pack':
     case 'ConcatV2': {
