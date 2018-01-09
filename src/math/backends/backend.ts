@@ -142,8 +142,8 @@ export interface MathBackend extends NDArrayStorage {
 
   tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T;
 
-  pad1D<T extends NDArray>(x: T, paddings: number[]): T;
-  pad2D<T extends NDArray>(x: T, paddings: number[][]): T;
+  pad1D(x: Array1D, paddings: number[]): Array1D;
+  pad2D(x: Array2D, paddings: number[][]): Array2D;
 
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
 

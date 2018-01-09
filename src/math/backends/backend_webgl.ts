@@ -400,14 +400,14 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  pad1D<Array1D>(x: Array1D, paddings: number[]): Array1D {
+  pad1D(x: Array1D, paddings: number[]): Array1D {
     //
     // TODO(kreeger): write me.
     //
     return null;
   }
 
-  pad2D<Array2D>(x: Array2D, paddings: number[][]): Array2D {
+  pad2D(x: Array2D, paddings: number[][]): Array2D {
     //
     // TODO(kreeger): write me.
     //

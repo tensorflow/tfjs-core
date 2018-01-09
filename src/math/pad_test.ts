@@ -19,21 +19,66 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {Array1D, Array2D} from './ndarray';
 
-// math.pad
+// math.pad1D
 {
   const tests: MathTests = it => {
-    it('KREEGER', math => {
+    it('Should pad 1D arrays', math => {
       const a = Array1D.new([1, 2, 3, 4, 5, 6], 'int32');
-      const b = math.pad1D(a, [1, 1]);
-      console.log('b', b.dataSync());
+      const b = math.pad1D(a, [2, 3]);
+      test_util.expectArraysEqual(b, [0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]);
     });
 
-    it('KREEGER 2', math => {
-      const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
-      const b = math.pad2D(a, [[0, 0], [0, 0]]);
-      console.log('b', b.dataSync());
+    it('Should not pad 1D arrays with 0s', math => {
+      const a = Array1D.new([1, 2, 3, 4], 'int32');
+      const b = math.pad1D(a, [0, 0]);
+      test_util.expectArraysEqual(b, [1, 2, 3, 4]);
+    });
+
+    it('Should handle NaNs with 1D arrays', math => {
+      const a = Array1D.new([1, NaN, 2, NaN]);
+      const b = math.pad1D(a, [1, 1]);
+      test_util.expectArraysEqual(b, [0, 1, NaN, 2, NaN, 0]);
     });
   };
 
-  test_util.describeMathCPU('pad', [tests]);
+  test_util.describeMathCPU('KREEGER pad1D', [tests]);
+}
+
+// math.path2D
+{
+  const tests: MathTests = it => {
+    it('Should pad 2D arrays', math => {
+      const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
+      const b = math.pad2D(a, [[2, 2], [1, 1]]);
+      // 0, 0, 0, 0, 0
+      // 0, 0, 0, 0, 0
+      // 0, 1, 2, 3, 0
+      // 0, 4, 5, 6, 0
+      // 0, 0, 0, 0, 0
+      // 0, 0, 0, 0, 0
+      test_util.expectArraysEqual(b, [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0,
+        0, 4, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+      ]);
+    });
+
+    it('Should not pad 2D arrays with 0s', math => {
+      const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
+      const b = math.pad2D(a, [[0, 0], [0, 0]]);
+      test_util.expectArraysEqual(b, [1, 2, 3, 4, 5, 6]);
+    });
+
+    it('Should handle NaNs with 2D arrays', math => {
+      const a = Array2D.new([2, 2], [[1, NaN], [1, NaN]]);
+      const b = math.pad2D(a, [[1, 1], [1, 1]]);
+      // 0, 0, 0,   0
+      // 0, 1, NaN, 0
+      // 0, 1, NaN, 0
+      // 0, 0, 0,   0
+      test_util.expectArraysEqual(
+          b, [0, 0, 0, 0, 0, 1, NaN, 0, 0, 1, NaN, 0, 0, 0, 0, 0]);
+    });
+  };
+
+  test_util.describeMathCPU('KREEGER pad2D', [tests]);
 }
