@@ -20,7 +20,8 @@ module.exports = function(config) {
     frameworks: ['jasmine', 'karma-typescript'],
     files: [{pattern: 'src/**/*.ts'}, {pattern: 'src/**/*.js'}],
     preprocessors: {
-      '**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
+      'src/**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
+      'src/**/*.js': ['karma-typescript'],  // *.tsx for React Jsx
     },
     karmaTypescriptConfig: {
       tsconfig: 'tsconfig.json',

@@ -19,7 +19,6 @@
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from 'deeplearn';
 
 import {tensorflow} from './index';
-import {TensorflowModel} from './model';
 
 export function unescape(text: string): string {
   const UNESCAPE_STR_TO_BYTE: {[key: string]: number} = {};
@@ -42,38 +41,6 @@ export function unescape(text: string): string {
   });
 }
 
-export function loadLocalProtoFile(file: string): tensorflow.GraphDef {
-  const fs = require('fs');
-  return tensorflow.GraphDef.decode(fs.readFileSync(file, {encoding: 'utf8'}));
-}
-
-// export function runNodeSqueezenet() {
-//   const path = require('path');
-//   const promise = new Promise<Graph>(
-//       (resolve, reject) => resolve(loadLocalProtoFile(
-//           path.join(path.resolve(), 'squeezenet.pb'))));
-//   const model = new TensorflowModel(promise);
-//   model.load().then(() => {
-//     const image = require('get-image-data');
-//     image('./cat.jpg', (error: any, info: any) => {
-//       setTimeout(function() {
-//         (global as any).ImageData = require('canvas').ImageData;
-//         const input = Array3D.fromPixels(info);
-//         const reshapedInput = input.reshape([1, ...input.shape]);
-//         console.log(reshapedInput.shape);
-//         const output = model.predict(undefined, {
-//           'image_placeholder': reshapedInput,
-//           'Placeholder': Scalar.new(1.0)
-//         });
-
-//         const data = Array.prototype.slice.call(output.dataSync());
-
-//         console.log(data.indexOf(Math.max(...data)));
-//       }, 1000);
-//     });
-//   });
-// }
-
 export function loadRemoteProtoFile(url: string): Promise<tensorflow.GraphDef> {
   return fetch(new Request(url))
       .then(res => res.arrayBuffer())
@@ -81,7 +48,7 @@ export function loadRemoteProtoFile(url: string): Promise<tensorflow.GraphDef> {
 }
 
 export function tensorToNDArray(tensor: tensorflow.ITensor): NDArray {
-  let dims = tensor.tensorShape.dim;
+  const dims = tensor.tensorShape.dim;
   const dimSizes = dims.map(dim => dim.size) as number[];
   switch (tensor.dtype) {
     case tensorflow.DataType.DT_INT32: {
@@ -101,13 +68,15 @@ export function tensorToNDArray(tensor: tensorflow.ITensor): NDArray {
           tensor.boolVal.length ? tensor.boolVal : tensor.tensorContent;
       return toNDArray(dimSizes, values, 'bool');
     }
+    default:
+      throw new Error(`tensor data type: ${tensor.dtype} is not supported`);
   }
-  throw new Error(`tensor data type: ${tensor.dtype} is not supported`);
 }
 
-
 function toNDArray(
-    shape: number[], values: any, dtype: 'float32'|'int32'|'bool'): NDArray {
+    shape: number[],
+    values: boolean[]|number[]|Int32Array|Float32Array|Uint8Array,
+    dtype: 'float32'|'int32'|'bool'): NDArray {
   if (values instanceof Int32Array || values instanceof Float32Array ||
       values instanceof Uint8Array) {
     values = Array.prototype.slice.call(values);
@@ -115,11 +84,8 @@ function toNDArray(
 
   switch (shape.length) {
     case 0:
-      return Scalar.new(values, dtype);
+      return Scalar.new(values[0], dtype);
     case 1: {
-      if (!(values instanceof Array)) {
-        values = [values];
-      }
       return Array1D.new(values, dtype);
     }
     case 2:

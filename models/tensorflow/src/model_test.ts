@@ -51,10 +51,12 @@ const SIMPLE_MODEL: tensorflow.IGraphDef = {
       op: 'Const',
       attr: {
         dtype: {type: tensorflow.DataType.DT_INT32},
-        tensor: {
-          type: tensorflow.DataType.DT_INT32,
-          shape: {dim: [{size: 3}, {size: 1}, {size: 1}, {size: 1}]},
-          i: 1
+        value: {
+          tensor: {
+            dtype: tensorflow.DataType.DT_INT32,
+            tensorShape: {dim: [{size: 3}, {size: 1}, {size: 1}, {size: 1}]},
+            intVal: [1, 1, 1]
+          }
         }
       }
     },
@@ -65,8 +67,8 @@ const SIMPLE_MODEL: tensorflow.IGraphDef = {
       attr: {
         T: {type: tensorflow.DataType.DT_FLOAT},
         dataFormat: {s: Uint8Array.from([, 12, 2])},
-        padding: {s: Uint8Array.from([1, 2, 3])},
-        strides: {list: {i: [1, 2, 2, 1]}},
+        padding: {s: Uint8Array.from([118, 97, 108, 105, 100])},
+        strides: {list: {f: [], i: [1, 2, 2, 1]}},
         useCudnnOnGpu: {b: true}
       }
     },
@@ -112,7 +114,8 @@ describe('TensorflowModel', () => {
       });
       expect(value.rank).toEqual(4);
       expect(value.shape).toEqual([3, 1, 1, 1]);
-      test_util.expectArraysClose(value.dataSync(), Int32Array.from([2, 2, 2]));
+      test_util.expectArraysClose(
+          value.dataSync(), Float32Array.from([2, 2, 2]));
       done();
     });
   });
@@ -122,8 +125,9 @@ describe('TensorflowModel', () => {
       expect(model.layers()).toEqual([
         {
           nodes: [
+            {node: 'Shape', parents: []},
+            {node: 'Const', parents: []},
             {node: 'image_placeholder', parents: []},
-            {node: 'Const', parents: []}, {node: 'Shape', parents: []}
           ]
         },
         {
