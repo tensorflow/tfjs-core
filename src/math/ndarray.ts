@@ -214,6 +214,15 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return this.math.reshape(this, newShape);
   }
 
+  /**
+   * @param axis An optional list of number. If specified, only
+   * squeezes the dimensions listed. The dimension index starts at 0. It is an
+   * error to squeeze a dimension that is not 1.
+   */
+  squeeze(axis?: number[]): NDArray {
+    return this.reshape(util.squeezeShape(this.shape, axis).newShape);
+  }
+
   /** Flatten a NDArray to a 1D array. */
   flatten(): Array1D<D> {
     this.throwIfDisposed();
