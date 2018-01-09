@@ -1,4 +1,4 @@
-import {Array1D, Array2D, Array3D, Array4D} from 'deeplearn';
+import {Array1D, Array2D, Array3D, Array4D, Scalar} from 'deeplearn';
 import {NDArray, NDArrayMath} from 'deeplearn';
 
 import {squeezeShape} from '../../../src/util';
