@@ -1091,8 +1091,6 @@ export class MathBackendCPU implements MathBackend {
       topPadding + x.shape[0] + bottomPadding,
       leftPadding + x.shape[1] + rightPadding
     ];
-    console.log('x.shape', x.shape);
-    console.log('newShape', newShape);
 
     const newValues = [];
     const values = x.dataSync();
@@ -1104,8 +1102,6 @@ export class MathBackendCPU implements MathBackend {
       if (i >= topPadding && i < newShape[0] - bottomPadding) {
         rangeStart = i * newShape[1] + leftPadding;
         rangeEnd = rangeStart + x.shape[0];
-        console.log('rangeStart', rangeStart);
-        console.log('rangeEnd', rangeEnd);
       }
 
       for (let j = 0; j < newShape[1]; j++) {
@@ -1117,9 +1113,7 @@ export class MathBackendCPU implements MathBackend {
           newValues[v] = 0;
         }
       }
-      console.log('');
     }
-    console.log('newValues', newValues);
     return Array2D.new(newShape as [number, number], newValues) as T;
   }
 
