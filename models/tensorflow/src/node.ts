@@ -1,4 +1,5 @@
-import {Array1D, Array2D, Array3D, Array4D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
+import {Array1D, Array2D, Array3D, Array4D} from 'deeplearn';
+import {NDArray, NDArrayMath} from 'deeplearn';
 
 import {squeezeShape} from '../../../src/util';
 
@@ -75,7 +76,7 @@ export function performMathOp(
       const weights = inputs[1] as Array4D;
       return math.conv2d(
           inputs[0] as NDArray, weights, null, [stride[0], stride[1]],
-          pad as any);
+          pad as 'valid' | 'same');
     }
 
     case 'depthwiseConv2D': {
@@ -98,12 +99,12 @@ export function performMathOp(
           getNumericArrayParam(poolingParam, 'strides', [1, 1], 1, 3);
       const pad =
           getStringParam(poolingParam, 'padding', 'valid').toLowerCase();
-      let kernelSize =
+      const kernelSize =
           getNumericArrayParam(poolingParam, 'ksize', [1, 1], 1, 3);
 
       return math.avgPool(
           input as Array3D, kernelSize as [number, number],
-          stride as [number, number], pad as any);
+          stride as [number, number], pad as 'valid' | 'same');
     }
 
     case 'MaxPool': {
@@ -112,12 +113,12 @@ export function performMathOp(
           getNumericArrayParam(poolingParam, 'strides', [1, 1], 1, 3);
       const pad =
           getStringParam(poolingParam, 'padding', 'valid').toLowerCase();
-      let kernelSize =
+      const kernelSize =
           getNumericArrayParam(poolingParam, 'ksize', [1, 1], 1, 3);
 
       return math.maxPool(
           input as Array3D, [kernelSize[0], kernelSize[1]],
-          [stride[0], stride[1]], pad as any);
+          [stride[0], stride[1]], pad as 'valid' | 'same');
     }
 
     case 'RandomUniform': {

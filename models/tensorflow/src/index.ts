@@ -19,4 +19,4 @@ export * from './model';
 export * from './types';
 export * from './util';
 export * from './node';
-export * from './compiled_api';
+export * from './compiled_api.js';

@@ -110,14 +110,14 @@ export class TensorflowModel implements Model {
           } else if (parents.length > 1) {
             currAct = parents.map((d) => namedActivations[d.name]);
           }
-          var start_time = new Date().getTime();
+          const startTime = new Date().getTime();
           console.time(node.name + ':' + node.op);
           currAct = performMathOp(this.math, currAct, node, feedDict);
           console.timeEnd(node.name + ':' + node.op);
-          var end_time = new Date().getTime();
+          const endTime = new Date().getTime();
 
           this.totalOpTime[node.op] =
-              (this.totalOpTime[node.op] || 0.) + end_time - start_time;
+              (this.totalOpTime[node.op] || 0.) + endTime - startTime;
 
           this.opCount[node.op] = (this.opCount[node.op] || 0) + 1;
 
@@ -125,7 +125,7 @@ export class TensorflowModel implements Model {
         },
         untilLayer);
 
-    for (let key in this.totalOpTime) {
+    for (const key in this.totalOpTime) {
       console.log(`${key} : ${this.totalOpTime[key] / this.opCount[key]} : ${
           this.totalOpTime[key]} : ${this.opCount[key]}`);
     }
