@@ -40,17 +40,6 @@ import {Array2D, Array3D, Array4D} from './ndarray';
       test_util.expectArraysClose(result, [5, 6, 9, 9]);
     });
 
-    it('x=[3,3,1] f=[2,2] s=1 int32', math => {
-      // Feed forward.
-      const x = Array3D.new([3, 3, 1], [1, 2, 3, 4, 5, 6, 7, 9, 8], 'int32');
-
-      const result = math.maxPool(x, 2, 1, 0);
-
-      expect(result.shape).toEqual([2, 2, 1]);
-      expect(result.dtype).toEqual('int32');
-      test_util.expectArraysClose(result, [5, 6, 9, 9]);
-    });
-
     it('x=[2,3,3,1] f=[2,2] s=1', math => {
       // Feed forward.
       const x = Array4D.new(
