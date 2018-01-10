@@ -181,7 +181,10 @@ export class BackendEngine {
     // Filter out the nodes that don't connect x => y.
     const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {
-      throw new Error(`Cannot compute gradient: y is not a function of xs.`);
+      throw new Error(
+          `Cannot compute gradient: y is not a function of xs.` +
+          `Make sure the xs you are computing gradients with respect ` +
+          `to are used inside the gradient function.`);
     }
 
     const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
@@ -190,10 +193,12 @@ export class BackendEngine {
     // Backprop gradients through the filtered nodes.
     tape_util.backpropagateGradients(arrayAccumulatedGradientMap, filteredTape);
 
-    const gradients: NDArray[] = [];
-    for (let i = 0; i < xs.length; i++) {
-      gradients.push(arrayAccumulatedGradientMap[xs[i].id]);
-    }
+    const gradients = xs.map(x => arrayAccumulatedGradientMap[x.id]);
+    gradients.forEach((grad, i) => {
+      if (grad == null) {
+        throw new Error(`Gradient error: y was not a function of xs[${i}]`);
+      }
+    });
     return gradients;
   }
 

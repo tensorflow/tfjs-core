@@ -15,12 +15,13 @@
  * =============================================================================
  */
 
-import {InputProvider} from './data/input_provider';
-import {Tensor} from './graph/graph';
-import {Optimizer} from './graph/optimizers/optimizer';
-import {CostReduction, FeedEntry, Session} from './graph/session';
-import {NDArrayMath} from './math/math';
-import {NDArray, Scalar} from './math/ndarray';
+import {InputProvider} from '../data/input_provider';
+import {NDArrayMath} from '../math/math';
+import {NDArray, Scalar} from '../math/ndarray';
+import {Optimizer} from '../math/optimizers/optimizer';
+
+import {Tensor} from './graph';
+import {CostReduction, FeedEntry, Session} from './session';
 
 const DEFAULT_EVAL_INTERVAL_MS = 1500;
 const DEFAULT_COST_INTERVAL_MS = 500;
@@ -311,7 +312,7 @@ export class GraphRunner {
             this.session.eval(this.metricTensor, this.metricFeedEntries) as
             NDArray<'float32'>;
 
-        metric = this.math.add(metric, metricValue);
+        metric = this.math.add(metric, metricValue.asType('float32'));
       }
 
       if (this.metricReduction === MetricReduction.MEAN) {

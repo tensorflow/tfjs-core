@@ -1,4 +1,4 @@
-import {DataType, DataTypeMap, NDArray} from './math/ndarray';
+import {DataType, DataTypeMap, NDArray, Variable} from './math/ndarray';
 
 /**
  * @license
@@ -24,6 +24,10 @@ export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
 
 export type NamedArrayMap = {
   [name: string]: NDArray
+};
+
+export type NamedVariableMap = {
+  [name: string]: Variable;
 };
 
 /** Shuffles the array using Fisher-Yates algorithm. */
@@ -375,4 +379,30 @@ export function unflattenToNameArrayMap(
     result[keys[i]] = flatArrays[i];
   }
   return result;
+}
+
+/**
+ * Returns true if the new type can't encode the old type without loss of
+ * precision.
+ */
+export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
+  if (newType === 'float32') {
+    return false;
+  }
+  if (newType === 'int32' && oldType !== 'float32') {
+    return false;
+  }
+  if (newType === 'bool' && oldType === 'bool') {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Returns a promise that resolve when a requestAnimationFrame has completed.
+ * This is simply a sugar method so that users can do the following:
+ * `await dl.nextFrame();`
+ */
+export function nextFrame(): Promise<void> {
+  return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 }

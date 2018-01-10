@@ -17,11 +17,11 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
-import {variable, Variable} from './variable';
+// tslint:disable-next-line:max-line-length
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, variable, Variable} from './ndarray';
 
 const tests: MathTests = it => {
-  it('simple update', math => {
+  it('simple assign', math => {
     const v = variable(Array1D.new([1, 2, 3]));
     test_util.expectArraysClose(v, [1, 2, 3]);
 
@@ -102,25 +102,23 @@ const tests: MathTests = it => {
     expect(yh).toBeNull();
   });
 
-  it('update will dispose old data', math => {
+  it('assign will dispose old data', math => {
     let v: Variable<'float32', '1'>;
-    const firstValue = Array1D.new([1, 2, 3]);
-
-    v = variable(firstValue);
+    v = variable(Array1D.new([1, 2, 3]));
     expect(math.getNumArrays()).toBe(1);
+    test_util.expectArraysClose(v, [1, 2, 3]);
 
-    const secondValue = Array1D.new([4, 5, 6]);
+    const secondArray = Array1D.new([4, 5, 6]);
     expect(math.getNumArrays()).toBe(2);
 
-    v.assign(secondValue);
+    v.assign(secondArray);
+    test_util.expectArraysClose(v, [4, 5, 6]);
+    // Assign disposes the 1st array.
     expect(math.getNumArrays()).toBe(1);
-    // The first value was disposed.
-    expect(() => firstValue.dataSync()).toThrowError();
 
     v.dispose();
+    // Disposing the variable disposes the 2nd array.
     expect(math.getNumArrays()).toBe(0);
-    // The second value was disposed.
-    expect(() => secondValue.dataSync()).toThrowError();
   });
 
   it('shape must match', math => {

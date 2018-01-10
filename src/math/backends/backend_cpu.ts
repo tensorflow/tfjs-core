@@ -24,7 +24,7 @@ import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, Scalar} from '../ndarray';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
 
@@ -33,17 +33,33 @@ import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
-  private data: {[id: number]: DataTypeMap[DataType]} = {};
+  private data: {[dataId: number]: DataTypeMap[DataType]} = {};
+  private canvas: HTMLCanvasElement;
 
-  dispose() {}
-  write<D extends DataType>(
-      id: number, values: DataTypeMap[D], dtype: D, shape: number[]): void {
-    this.data[id] = values;
+  constructor() {
+    if (typeof document !== 'undefined') {
+      this.canvas = document.createElement('canvas');
+    }
+  }
+
+  register(dataId: number, shape: number[], dtype: DataType): void {
+    this.data[dataId] = null;
+  }
+  write<D extends DataType>(dataId: number, values: DataTypeMap[D]): void {
+    if (values == null) {
+      throw new Error('MathBackendCPU.write(): values can not be null');
+    }
+    this.throwIfNoData(dataId);
+    this.data[dataId] = values;
   }
   writePixels(
-      id: number,
+      dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
+    if (pixels == null) {
+      throw new Error('MathBackendCPU.writePixels(): pixels can not be null');
+    }
+    this.throwIfNoData(dataId);
     let vals: Uint8ClampedArray;
     if (pixels instanceof ImageData) {
       vals = pixels.data;
@@ -54,13 +70,17 @@ export class MathBackendCPU implements MathBackend {
     } else if (
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
-      const canvas = document.createElement('canvas');
-      canvas.width = pixels.width;
-      canvas.height = pixels.height;
-      canvas.getContext('2d').drawImage(
-          pixels, 0, 0, canvas.width, canvas.height);
-      vals = canvas.getContext('2d')
-                 .getImageData(0, 0, canvas.width, canvas.height)
+      if (this.canvas == null) {
+        throw new Error(
+            'Can\'t read pixels from HTMLImageElement outside ' +
+            'the browser.');
+      }
+      this.canvas.width = pixels.width;
+      this.canvas.height = pixels.height;
+      this.canvas.getContext('2d').drawImage(
+          pixels, 0, 0, pixels.width, pixels.height);
+      vals = this.canvas.getContext('2d')
+                 .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
     } else {
       throw new Error(
@@ -78,28 +98,28 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    this.data[id] = values;
+    this.data[dataId] = values;
   }
-  async read<D extends DataType>(id: number): Promise<DataTypeMap[D]> {
-    this.throwIfNoData(id);
-    return this.data[id];
+  async read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]> {
+    this.throwIfNoData(dataId);
+    return this.data[dataId];
   }
-  readSync<D extends DataType>(id: number): DataTypeMap[D] {
-    this.throwIfNoData(id);
-    return this.data[id];
+  readSync<D extends DataType>(dataId: number): DataTypeMap[D] {
+    this.throwIfNoData(dataId);
+    return this.data[dataId];
   }
-  disposeData(id: number): void {
-    delete this.data[id];
+  disposeData(dataId: number): void {
+    delete this.data[dataId];
   }
   async time(query: () => NDArray): Promise<number> {
     const start = performance.now();
     query();
     return performance.now() - start;
   }
-  private throwIfNoData(id: number) {
-    if (!(id in this.data)) {
+  private throwIfNoData(dataId: number) {
+    if (!(dataId in this.data)) {
       throw new Error(
-          `No data found for NDArray with id ${id}. ` +
+          `No data found for NDArray with data id ${dataId}. ` +
           `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
           `If you need to construct your own math, make sure this array is ` +
           `allocated after the math construction`);
@@ -445,6 +465,16 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
+  notEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        return util.getNaN('bool');
+      } else {
+        return (aVal !== bVal) ? 1 : 0;
+      }
+    });
+  }
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D> {
     return this.topK(x, k).values as Array1D<D>;
@@ -722,6 +752,16 @@ export class MathBackendCPU implements MathBackend {
       resultValues[i] = Math.abs(values[i]);
     }
     return NDArray.make(x.shape, {values: resultValues}) as T;
+  }
+
+  int<R extends Rank>(x: NDArray<DataType, R>): NDArray<'int32', R> {
+    const resultValues = new Int32Array(x.size);
+    const values = x.dataSync();
+    for (let i = 0; i < values.length; ++i) {
+      resultValues[i] = values[i];
+    }
+    return NDArray.make(x.shape, {values: resultValues}, 'int32') as
+        NDArray<'int32', R>;
   }
 
   sigmoid<T extends NDArray>(x: T): T {
@@ -1206,7 +1246,51 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    return dx;
+    return dx.asType(x.dtype);
+  }
+
+  avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
+    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const dx = Array4D.zeros(x.shape);
+
+    const avgMultiplier = 1 / (filterHeight * filterWidth);
+
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let dxR = 0; dxR < convInfo.inHeight; ++dxR) {
+          for (let dxC = 0; dxC < convInfo.inWidth; ++dxC) {
+            // Shader code begins.
+            const dyRCorner = dxR - padTop;
+            const dyCCorner = dxC - padLeft;
+            let dotProd = 0;
+            for (let wR = 0; wR < filterHeight; ++wR) {
+              const dyR = (dyRCorner + wR) / strideHeight;
+              if (dyR < 0 || dyR >= convInfo.outHeight ||
+                  Math.floor(dyR) !== dyR) {
+                continue;
+              }
+              for (let wC = 0; wC < filterWidth; ++wC) {
+                const dyC = (dyCCorner + wC) / strideWidth;
+                if (dyC < 0 || dyC >= convInfo.outWidth ||
+                    Math.floor(dyC) !== dyC) {
+                  continue;
+                }
+
+                const pixel = dy.get(b, dyR, dyC, d);
+                dotProd += pixel;
+              }
+            }
+            dx.set(dotProd * avgMultiplier, b, dxR, dxC, d);
+          }
+        }
+      }
+    }
+    return dx.asType(x.dtype);
   }
 
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -1214,7 +1298,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
-    return this.pool(x, convInfo, 'avg');
+    return this.pool(x, convInfo, 'avg').asType('float32');
   }
 
   resizeBilinear3D(
@@ -1311,11 +1395,11 @@ export class MathBackendCPU implements MathBackend {
       x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
       varianceEpsilon: number, scale?: Array4D|Array1D,
       offset?: Array4D|Array1D): Array4D {
-    const xValues = x.getValues();
-    const meanValues = mean.getValues();
-    const varianceValues = variance.getValues();
-    const scaleValues = scale ? scale.getValues() : new Float32Array([1]);
-    const offsetValues = offset ? offset.getValues() : new Float32Array([0]);
+    const xValues = x.dataSync();
+    const meanValues = mean.dataSync();
+    const varianceValues = variance.dataSync();
+    const scaleValues = scale ? scale.dataSync() : new Float32Array([1]);
+    const offsetValues = offset ? offset.dataSync() : new Float32Array([0]);
     const outValues = new Float32Array(xValues.length);
 
     for (let i = 0; i < xValues.length; i++) {
@@ -1326,6 +1410,56 @@ export class MathBackendCPU implements MathBackend {
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
     return Array4D.new(x.shape, outValues);
+  }
+
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D {
+    const output = Array4D.zeros(x.shape);
+    const rad = radius;
+    const maxW = output.shape[1] - 1;
+    const maxH = output.shape[2] - 1;
+    const maxD = output.shape[3] - 1;
+
+    const sumAcrossChannels =
+        (b: number, r: number, c: number, d: number): number => {
+          let sum = 0.0;
+          for (let j = Math.max(0, d - rad); j <= Math.min(d + rad, maxD);
+               j++) {
+            const z = x.get(b, r, c, j);
+            sum += z * z;
+          }
+          return sum;
+        };
+
+    const sumWithinChannel =
+        (b: number, r: number, c: number, d: number): number => {
+          let sum = 0.0;
+          for (let u = Math.max(0, r - rad); u <= Math.min(r + rad, maxW);
+               u++) {
+            for (let v = Math.max(0, c - rad); v <= Math.min(c + rad, maxH);
+                 v++) {
+              sum += Math.pow(x.get(b, u, v, d), 2);
+            }
+          }
+          return sum;
+        };
+
+    for (let b = 0; b < output.shape[0]; b++) {
+      for (let r = 0; r <= output.shape[1]; r++) {
+        for (let c = 0; c < output.shape[2]; c++) {
+          for (let d = 0; d < output.shape[3]; d++) {
+            const sum = normRegion === 'withinChannel' ?
+                sumWithinChannel(b, r, c, d) :
+                sumAcrossChannels(b, r, c, d);
+            const val = x.get(b, r, c, d) * Math.pow(bias + alpha * sum, -beta);
+            output.set(val, b, r, c, d);
+          }
+        }
+      }
+    }
+
+    return output;
   }
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
@@ -1404,6 +1538,7 @@ export class MathBackendCPU implements MathBackend {
     }
     return result;
   }
+  dispose() {}
 }
 
 ENV.registerBackend('cpu', () => new MathBackendCPU());

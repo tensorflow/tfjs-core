@@ -48,8 +48,7 @@ const tests: MathTests = it => {
     expect(t.rank).toBe(2);
     expect(t.size).toBe(6);
 
-    test_util.expectArraysClose(
-        t, [1, 2, 3, 4, 5, 6]);
+    test_util.expectArraysClose(t, [1, 2, 3, 4, 5, 6]);
 
     // Out of bounds indexing.
     expect(t.get(5, 3)).toBeUndefined();
@@ -137,41 +136,129 @@ const tests: MathTests = it => {
     expect(a.shape).toEqual([]);
   });
 
-  it('index2Loc Array1D', () => {
-    const t = Array1D.zeros([3]);
-    expect(t.indexToLoc(0)).toEqual([0]);
-    expect(t.indexToLoc(1)).toEqual([1]);
-    expect(t.indexToLoc(2)).toEqual([2]);
+  it('indexToLoc Scalar', () => {
+    const a = Scalar.new(0);
+    expect(a.indexToLoc(0)).toEqual([]);
+
+    const b = NDArray.zeros<'float32', '0'>([]);
+    expect(b.indexToLoc(0)).toEqual([]);
   });
 
-  it('index2Loc Array2D', () => {
-    const t = Array2D.zeros([3, 2]);
-    expect(t.indexToLoc(0)).toEqual([0, 0]);
-    expect(t.indexToLoc(1)).toEqual([0, 1]);
-    expect(t.indexToLoc(2)).toEqual([1, 0]);
-    expect(t.indexToLoc(3)).toEqual([1, 1]);
-    expect(t.indexToLoc(4)).toEqual([2, 0]);
-    expect(t.indexToLoc(5)).toEqual([2, 1]);
+  it('indexToLoc Array1D', () => {
+    const a = Array1D.zeros([3]);
+    expect(a.indexToLoc(0)).toEqual([0]);
+    expect(a.indexToLoc(1)).toEqual([1]);
+    expect(a.indexToLoc(2)).toEqual([2]);
+
+    const b = NDArray.zeros<'float32', '1'>([3]);
+    expect(b.indexToLoc(0)).toEqual([0]);
+    expect(b.indexToLoc(1)).toEqual([1]);
+    expect(b.indexToLoc(2)).toEqual([2]);
   });
 
-  it('index2Loc Array3D', () => {
-    const t = Array2D.zeros([3, 2, 2]);
-    expect(t.indexToLoc(0)).toEqual([0, 0, 0]);
-    expect(t.indexToLoc(1)).toEqual([0, 0, 1]);
-    expect(t.indexToLoc(2)).toEqual([0, 1, 0]);
-    expect(t.indexToLoc(3)).toEqual([0, 1, 1]);
-    expect(t.indexToLoc(4)).toEqual([1, 0, 0]);
-    expect(t.indexToLoc(5)).toEqual([1, 0, 1]);
-    expect(t.indexToLoc(11)).toEqual([2, 1, 1]);
+  it('indexToLoc Array2D', () => {
+    const a = Array2D.zeros([3, 2]);
+    expect(a.indexToLoc(0)).toEqual([0, 0]);
+    expect(a.indexToLoc(1)).toEqual([0, 1]);
+    expect(a.indexToLoc(2)).toEqual([1, 0]);
+    expect(a.indexToLoc(3)).toEqual([1, 1]);
+    expect(a.indexToLoc(4)).toEqual([2, 0]);
+    expect(a.indexToLoc(5)).toEqual([2, 1]);
+
+    const b = NDArray.zeros<'float32', '2'>([3, 2]);
+    expect(b.indexToLoc(0)).toEqual([0, 0]);
+    expect(b.indexToLoc(1)).toEqual([0, 1]);
+    expect(b.indexToLoc(2)).toEqual([1, 0]);
+    expect(b.indexToLoc(3)).toEqual([1, 1]);
+    expect(b.indexToLoc(4)).toEqual([2, 0]);
+    expect(b.indexToLoc(5)).toEqual([2, 1]);
   });
 
-  it('index2Loc NDArray 5D', () => {
+  it('indexToLoc Array3D', () => {
+    const a = Array3D.zeros([3, 2, 2]);
+    expect(a.indexToLoc(0)).toEqual([0, 0, 0]);
+    expect(a.indexToLoc(1)).toEqual([0, 0, 1]);
+    expect(a.indexToLoc(2)).toEqual([0, 1, 0]);
+    expect(a.indexToLoc(3)).toEqual([0, 1, 1]);
+    expect(a.indexToLoc(4)).toEqual([1, 0, 0]);
+    expect(a.indexToLoc(5)).toEqual([1, 0, 1]);
+    expect(a.indexToLoc(11)).toEqual([2, 1, 1]);
+
+    const b = NDArray.zeros<'float32', '3'>([3, 2, 2]);
+    expect(b.indexToLoc(0)).toEqual([0, 0, 0]);
+    expect(b.indexToLoc(1)).toEqual([0, 0, 1]);
+    expect(b.indexToLoc(2)).toEqual([0, 1, 0]);
+    expect(b.indexToLoc(3)).toEqual([0, 1, 1]);
+    expect(b.indexToLoc(4)).toEqual([1, 0, 0]);
+    expect(b.indexToLoc(5)).toEqual([1, 0, 1]);
+    expect(b.indexToLoc(11)).toEqual([2, 1, 1]);
+  });
+
+  it('indexToLoc NDArray 5D', () => {
     const values = new Float32Array([1, 2, 3, 4]);
-    const t = NDArray.make([2, 1, 1, 1, 2], {values});
-    expect(t.indexToLoc(0)).toEqual([0, 0, 0, 0, 0]);
-    expect(t.indexToLoc(1)).toEqual([0, 0, 0, 0, 1]);
-    expect(t.indexToLoc(2)).toEqual([1, 0, 0, 0, 0]);
-    expect(t.indexToLoc(3)).toEqual([1, 0, 0, 0, 1]);
+    const a = NDArray.make([2, 1, 1, 1, 2], {values});
+    expect(a.indexToLoc(0)).toEqual([0, 0, 0, 0, 0]);
+    expect(a.indexToLoc(1)).toEqual([0, 0, 0, 0, 1]);
+    expect(a.indexToLoc(2)).toEqual([1, 0, 0, 0, 0]);
+    expect(a.indexToLoc(3)).toEqual([1, 0, 0, 0, 1]);
+  });
+
+  it('locToIndex Scalar', () => {
+    const a = Scalar.new(0);
+    expect(a.locToIndex([])).toEqual(0);
+
+    const b = NDArray.zeros<'float32', '0'>([]);
+    expect(b.locToIndex([])).toEqual(0);
+  });
+
+  it('locToIndex Array1D', () => {
+    const a = Array1D.zeros([3]);
+    expect(a.locToIndex([0])).toEqual(0);
+    expect(a.locToIndex([1])).toEqual(1);
+    expect(a.locToIndex([2])).toEqual(2);
+
+    const b = NDArray.zeros<'float32', '1'>([3]);
+    expect(b.locToIndex([0])).toEqual(0);
+    expect(b.locToIndex([1])).toEqual(1);
+    expect(b.locToIndex([2])).toEqual(2);
+  });
+
+  it('locToIndex Array2D', () => {
+    const a = Array2D.zeros([3, 2]);
+    expect(a.locToIndex([0, 0])).toEqual(0);
+    expect(a.locToIndex([0, 1])).toEqual(1);
+    expect(a.locToIndex([1, 0])).toEqual(2);
+    expect(a.locToIndex([1, 1])).toEqual(3);
+    expect(a.locToIndex([2, 0])).toEqual(4);
+    expect(a.locToIndex([2, 1])).toEqual(5);
+
+    const b = NDArray.zeros<'float32', '2'>([3, 2]);
+    expect(b.locToIndex([0, 0])).toEqual(0);
+    expect(b.locToIndex([0, 1])).toEqual(1);
+    expect(b.locToIndex([1, 0])).toEqual(2);
+    expect(b.locToIndex([1, 1])).toEqual(3);
+    expect(b.locToIndex([2, 0])).toEqual(4);
+    expect(b.locToIndex([2, 1])).toEqual(5);
+  });
+
+  it('locToIndex Array3D', () => {
+    const a = Array3D.zeros([3, 2, 2]);
+    expect(a.locToIndex([0, 0, 0])).toEqual(0);
+    expect(a.locToIndex([0, 0, 1])).toEqual(1);
+    expect(a.locToIndex([0, 1, 0])).toEqual(2);
+    expect(a.locToIndex([0, 1, 1])).toEqual(3);
+    expect(a.locToIndex([1, 0, 0])).toEqual(4);
+    expect(a.locToIndex([1, 0, 1])).toEqual(5);
+    expect(a.locToIndex([2, 1, 1])).toEqual(11);
+
+    const b = NDArray.zeros<'float32', '3'>([3, 2, 2]);
+    expect(b.locToIndex([0, 0, 0])).toEqual(0);
+    expect(b.locToIndex([0, 0, 1])).toEqual(1);
+    expect(b.locToIndex([0, 1, 0])).toEqual(2);
+    expect(b.locToIndex([0, 1, 1])).toEqual(3);
+    expect(b.locToIndex([1, 0, 0])).toEqual(4);
+    expect(b.locToIndex([1, 0, 1])).toEqual(5);
+    expect(b.locToIndex([2, 1, 1])).toEqual(11);
   });
 
   it('NDArray<D, X> is assignable to Scalar/ArrayXD', math => {
@@ -210,8 +297,7 @@ const testsNew: MathTests = it => {
 
   it('Array2D.new() from number[][]', () => {
     const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]]);
-    test_util.expectArraysClose(
-        a, [1, 2, 3, 4, 5, 6]);
+    test_util.expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
   });
 
   it('Array2D.new() from number[][], but shape does not match', () => {
@@ -221,8 +307,7 @@ const testsNew: MathTests = it => {
 
   it('Array3D.new() from number[][][]', () => {
     const a = Array3D.new([2, 3, 1], [[[1], [2], [3]], [[4], [5], [6]]]);
-    test_util.expectArraysClose(
-        a, [1, 2, 3, 4, 5, 6]);
+    test_util.expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
   });
 
   it('Array3D.new() from number[][][], but shape does not match', () => {
@@ -277,16 +362,14 @@ const testsZeros: MathTests = it => {
     const a = Array2D.zeros([3, 2]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
-    test_util.expectArraysClose(
-        a, [0, 0, 0, 0, 0, 0]);
+    test_util.expectArraysClose(a, [0, 0, 0, 0, 0, 0]);
   });
 
   it('2D float32 dtype', () => {
     const a = Array2D.zeros([3, 2], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
-    test_util.expectArraysClose(
-        a, [0, 0, 0, 0, 0, 0]);
+    test_util.expectArraysClose(a, [0, 0, 0, 0, 0, 0]);
   });
 
   it('2D int32 dtype', () => {
@@ -307,16 +390,14 @@ const testsZeros: MathTests = it => {
     const a = Array3D.zeros([2, 2, 2]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 2]);
-    test_util.expectArraysClose(
-        a, [0, 0, 0, 0, 0, 0, 0, 0]);
+    test_util.expectArraysClose(a, [0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('3D float32 dtype', () => {
     const a = Array3D.zeros([2, 2, 2], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 2]);
-    test_util.expectArraysClose(
-        a, [0, 0, 0, 0, 0, 0, 0, 0]);
+    test_util.expectArraysClose(a, [0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('3D int32 dtype', () => {
@@ -337,16 +418,14 @@ const testsZeros: MathTests = it => {
     const a = Array4D.zeros([3, 2, 1, 1]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2, 1, 1]);
-    test_util.expectArraysClose(
-        a, [0, 0, 0, 0, 0, 0]);
+    test_util.expectArraysClose(a, [0, 0, 0, 0, 0, 0]);
   });
 
   it('4D float32 dtype', () => {
     const a = Array4D.zeros([3, 2, 1, 1], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2, 1, 1]);
-    test_util.expectArraysClose(
-        a, [0, 0, 0, 0, 0, 0]);
+    test_util.expectArraysClose(a, [0, 0, 0, 0, 0, 0]);
   });
 
   it('4D int32 dtype', () => {
@@ -396,16 +475,14 @@ const testsOnes: MathTests = it => {
     const a = Array2D.ones([3, 2]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
-    test_util.expectArraysClose(
-        a, [1, 1, 1, 1, 1, 1]);
+    test_util.expectArraysClose(a, [1, 1, 1, 1, 1, 1]);
   });
 
   it('2D float32 dtype', () => {
     const a = Array2D.ones([3, 2], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
-    test_util.expectArraysClose(
-        a, [1, 1, 1, 1, 1, 1]);
+    test_util.expectArraysClose(a, [1, 1, 1, 1, 1, 1]);
   });
 
   it('2D int32 dtype', () => {
@@ -426,16 +503,14 @@ const testsOnes: MathTests = it => {
     const a = Array3D.ones([2, 2, 2]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 2]);
-    test_util.expectArraysClose(
-        a, [1, 1, 1, 1, 1, 1, 1, 1]);
+    test_util.expectArraysClose(a, [1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it('3D float32 dtype', () => {
     const a = Array3D.ones([2, 2, 2], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 2]);
-    test_util.expectArraysClose(
-        a, [1, 1, 1, 1, 1, 1, 1, 1]);
+    test_util.expectArraysClose(a, [1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it('3D int32 dtype', () => {
@@ -456,16 +531,14 @@ const testsOnes: MathTests = it => {
     const a = Array4D.ones([3, 2, 1, 1]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2, 1, 1]);
-    test_util.expectArraysClose(
-        a, [1, 1, 1, 1, 1, 1]);
+    test_util.expectArraysClose(a, [1, 1, 1, 1, 1, 1]);
   });
 
   it('4D float32 dtype', () => {
     const a = Array4D.ones([3, 2, 1, 1], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2, 1, 1]);
-    test_util.expectArraysClose(
-        a, [1, 1, 1, 1, 1, 1]);
+    test_util.expectArraysClose(a, [1, 1, 1, 1, 1, 1]);
   });
 
   it('4D int32 dtype', () => {
@@ -757,8 +830,7 @@ const testsFill: MathTests = it => {
 
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
-    test_util.expectArraysClose(
-        a, [2, 2, 2, 2, 2, 2]);
+    test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2]);
   });
 
   it('3D fill', () => {
@@ -767,8 +839,7 @@ const testsFill: MathTests = it => {
 
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2, 1]);
-    test_util.expectArraysClose(
-        a, [2, 2, 2, 2, 2, 2]);
+    test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2]);
   });
 
   it('4D fill', () => {
@@ -777,8 +848,7 @@ const testsFill: MathTests = it => {
 
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2, 1, 2]);
-    test_util.expectArraysClose(
-        a, [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
+    test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
   });
 };
 
@@ -1314,6 +1384,14 @@ const testsReshape: MathTests = it => {
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([3, 2]);
   });
+
+  it('reshape is functional', math => {
+    const a = Scalar.new(2.4);
+    const b = a.reshape([]);
+    expect(a.id).not.toBe(b.id);
+    b.dispose();
+    test_util.expectArraysClose(a, [2.4]);
+  });
 };
 const testsAsType: MathTests = it => {
   it('scalar bool -> int32', () => {
@@ -1337,6 +1415,15 @@ const testsAsType: MathTests = it => {
     expect(a.get(1, 1)).toBe(0);
   });
 
+  it('array2d int32 -> bool', () => {
+    const a = Array2D.new([2, 2], [1, 3, 0, -1], 'int32').asType('bool');
+    expect(a.dtype).toBe('bool');
+    expect(a.get(0, 0)).toBe(1);
+    expect(a.get(0, 1)).toBe(1);
+    expect(a.get(1, 0)).toBe(0);
+    expect(a.get(1, 1)).toBe(1);
+  });
+
   it('array3d bool -> float32', () => {
     const a = Array3D.new([2, 2, 1], [true, false, false, true], 'bool')
                   .asType('float32');
@@ -1352,6 +1439,14 @@ const testsAsType: MathTests = it => {
   it('int32 CPU -> GPU -> CPU', () => {
     const a = Array1D.new([1, 2, 0, 0, 5], 'int32');
     test_util.expectArraysEqual(a, [1, 2, 0, 0, 5]);
+  });
+
+  it('asType is functional', math => {
+    const a = Scalar.new(2.4, 'float32');
+    const b = a.asType('float32');
+    expect(a.id).not.toBe(b.id);
+    b.dispose();
+    test_util.expectArraysClose(a, [2.4]);
   });
 };
 const testsAsXD: MathTests = it => {
@@ -1842,8 +1937,7 @@ const testsFromPixels: MathTests = it => {
 
     const array = Array3D.fromPixels(pixels, 3);
 
-    test_util.expectArraysEqual(
-        array, [0, 80, 160]);
+    test_util.expectArraysEqual(array, [0, 80, 160]);
   });
 
   it('ImageData 1x1x4', () => {
@@ -1855,8 +1949,7 @@ const testsFromPixels: MathTests = it => {
 
     const array = Array3D.fromPixels(pixels, 4);
 
-    test_util.expectArraysEqual(
-        array, [0, 80, 160, 240]);
+    test_util.expectArraysEqual(array, [0, 80, 160, 240]);
   });
 
   it('ImageData 2x2x3', () => {
@@ -1872,8 +1965,7 @@ const testsFromPixels: MathTests = it => {
     const array = Array3D.fromPixels(pixels, 3);
 
     test_util.expectArraysEqual(
-        array,
-        [0, 2, 4, 8, 10, 12, 16, 18, 20, 24, 26, 28]);
+        array, [0, 2, 4, 8, 10, 12, 16, 18, 20, 24, 26, 28]);
   });
 
   it('ImageData 2x2x4', () => {

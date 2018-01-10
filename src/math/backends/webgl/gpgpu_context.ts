@@ -68,7 +68,9 @@ export class GPGPUContext {
   }
 
   public dispose() {
-    this.throwIfDisposed();
+    if (this.disposed) {
+      return;
+    }
     if (this.program != null) {
       console.warn(
           'Disposing a GPGPUContext that still has a bound WebGLProgram.' +
@@ -107,7 +109,7 @@ export class GPGPUContext {
 
   public uploadPixelDataToTexture(
       texture: WebGLTexture,
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement) {
+      pixels: ImageData|HTMLImageElement|HTMLCanvasElement) {
     this.throwIfDisposed();
     gpgpu_util.uploadPixelDataToTexture(this.gl, texture, pixels);
   }
