@@ -34,7 +34,7 @@ function printArray(array: Array1D) {
 // math.pad1D
 {
   const tests: MathTests = it => {
-    it('KREEGER Should pad 1D arrays', math => {
+    it('Should pad 1D arrays', math => {
       const a = Array1D.new([1, 2, 3, 4, 5, 6], 'int32');
       const b = math.pad1D(a, [2, 3]);
       printArray(b);
@@ -61,10 +61,10 @@ function printArray(array: Array1D) {
   // expect(f).toThrowError();
 
   // test_util.describeMathCPU('pad1D', [tests]);
-  test_util.describeMathGPU('pad1D', [tests], [
-    // {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  test_util.describeMathGPU('KREEGER pad1D', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    // {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
 

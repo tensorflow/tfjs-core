@@ -29,32 +29,15 @@ export class Pad1DProgram implements GPGPUProgram {
     this.outputShape = [leftPadding + xShape[0] + rightPadding];
     this.rank = 1;
 
-    // I don't think imod() is the right method for this.
     this.userCode = `
-      int testmod(int x, int y) {
-        if (x < ${leftPadding} || x > ${leftPadding} + ${xShape[0]}) {
-          return 0;
-        }
-        return x;
-      }
-
       void main() {
         int resRC = getOutputCoords();
-        setOutput(getX(testmod(resRC, ${xShape[0]})));
-        // setOutput(getX(imod(resRC, ${xShape[0]})));
+        if (resRC < ${leftPadding} || resRC >= ${leftPadding} + ${xShape[0]}) {
+          setOutput(0.0);
+        } else {
+          setOutput(getX(resRC - ${leftPadding}));
+        }
       }
     `;
-
-    // const newValues = [];
-    // const values = x.dataSync();
-    // let z = 0;
-    // for (let i = 0; i < leftPadding + values.length + rightPadding; i++) {
-    //   if (i >= leftPadding && i < leftPadding + values.length) {
-    //     newValues[i] = values[z++];
-    //   } else {
-    //     newValues[i] = 0;
-    //   }
-    // }
-    // return Array1D.new(newValues);
   }
 }
