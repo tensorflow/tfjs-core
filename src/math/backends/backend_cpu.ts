@@ -1063,6 +1063,7 @@ export class MathBackendCPU implements MathBackend {
     } else {
       throw new Error(`Dtype ${x.dtype} not supported for tile`);
     }
+    console.log('newShape', newShape);
     const resultValues = new dtype(util.sizeFromShape(newShape));
     const result = NDArray.make(newShape, {values: resultValues}, x.dtype) as T;
     const values = x.dataSync();
@@ -1078,13 +1079,14 @@ export class MathBackendCPU implements MathBackend {
 
       resultValues[i] = values[originalIndex];
     }
+    console.log('resultValues', resultValues);
     return result;
   }
 
   pad1D(x: Array1D, paddings: number[]): Array1D {
     const leftPadding = paddings[0];
     const rightPadding = paddings[1];
-    const newValues = [];
+    const newValues = [];  // TODO - expand to desired size. Type?
     const values = x.dataSync();
     let z = 0;
     for (let i = 0; i < leftPadding + values.length + rightPadding; i++) {
@@ -1108,7 +1110,7 @@ export class MathBackendCPU implements MathBackend {
       leftPadding + x.shape[1] + rightPadding
     ];
 
-    const newValues = [];
+    const newValues = [];  // TODO - expand to desired size. Type?
     const values = x.dataSync();
     let z = 0;
     for (let i = 0; i < newShape[0]; i++) {

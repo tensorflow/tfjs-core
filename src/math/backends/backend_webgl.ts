@@ -26,6 +26,7 @@ import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
+
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -46,6 +47,7 @@ import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
+import {Pad1DProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
@@ -401,10 +403,10 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   pad1D(x: Array1D, paddings: number[]): Array1D {
-    //
-    // TODO(kreeger): write me.
-    //
-    return null;
+    console.log('x', x);
+    console.log('paddings', paddings);
+    const program = new Pad1DProgram(x.shape, paddings);
+    return this.compileAndRun(program, [x]);
   }
 
   pad2D(x: Array2D, paddings: number[][]): Array2D {

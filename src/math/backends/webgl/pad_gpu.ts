@@ -17,14 +17,36 @@
 
 import {GPGPUProgram} from './gpgpu_math';
 
-export class PadProgram implements GPGPUProgram {
-  variableNames: string[];
-  outputShape: number[] = [];
+export class Pad1DProgram implements GPGPUProgram {
+  variableNames = ['x'];
+  outputShape: number[];
   userCode: string;
+  rank: number;
 
-  constructor() {
-    //
-    // TODO(kreeger): Left off right here.
-    //
+  constructor(xShape: number[], paddings: number[]) {
+    const leftPadding = paddings[0];
+    const rightPadding = paddings[1];
+    this.outputShape = [leftPadding + xShape[0] + rightPadding];
+    this.rank = 1;
+
+    // I don't think imod() is the right method for this.
+    this.userCode = `
+      void main() {
+        int resRC = getOutputCoords();
+        setOutput(getX(imod(resRC, ${xShape[0]})));
+      }
+    `;
+
+    // const newValues = [];
+    // const values = x.dataSync();
+    // let z = 0;
+    // for (let i = 0; i < leftPadding + values.length + rightPadding; i++) {
+    //   if (i >= leftPadding && i < leftPadding + values.length) {
+    //     newValues[i] = values[z++];
+    //   } else {
+    //     newValues[i] = 0;
+    //   }
+    // }
+    // return Array1D.new(newValues);
   }
 }
