@@ -48,7 +48,7 @@ import {Array1D, Array2D} from './ndarray';
   // };
   // expect(f).toThrowError();
 
-  test_util.describeMathCPU('pad1D', [tests]);
+  // test_util.describeMathCPU('pad1D', [tests]);
   test_util.describeMathGPU('pad1D', [tests], [
     // {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},

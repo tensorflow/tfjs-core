@@ -24,7 +24,7 @@ import {Array1D, Array2D, Array3D} from './ndarray';
 // math.tile
 {
   const tests: MathTests = it => {
-    it('1D (tile) KREEGER', math => {
+    it('1D (tile)', math => {
       const t = Array1D.new([1, 2, 3]);
       const t2 = math.tile(t, [2]);
 

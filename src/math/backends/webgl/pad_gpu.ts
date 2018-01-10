@@ -31,9 +31,17 @@ export class Pad1DProgram implements GPGPUProgram {
 
     // I don't think imod() is the right method for this.
     this.userCode = `
+      int testmod(int x, int y) {
+        if (x < ${leftPadding}) {
+          return -1;
+        }
+        return imod(x, y);
+      }
+
       void main() {
         int resRC = getOutputCoords();
-        setOutput(getX(imod(resRC, ${xShape[0]})));
+        setOutput(getX(testmod(resRC, ${xShape[0]})));
+        // setOutput(getX(imod(resRC, ${xShape[0]})));
       }
     `;
 
