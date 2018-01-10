@@ -40,6 +40,8 @@ export class TileProgram implements GPGPUProgram {
         setOutput(getA(${sourceCoords}));
       }
     `;
+
+    console.log('tile.userCode', this.userCode);
   }
 }
 

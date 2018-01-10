@@ -26,6 +26,7 @@ export class Pad1DProgram implements GPGPUProgram {
   constructor(xShape: number[], paddings: number[]) {
     const leftPadding = paddings[0];
     const rightPadding = paddings[1];
+
     this.outputShape = [leftPadding + xShape[0] + rightPadding];
     this.rank = 1;
 
@@ -39,5 +40,42 @@ export class Pad1DProgram implements GPGPUProgram {
         }
       }
     `;
+  }
+}
+
+export class Pad2DProgram implements GPGPUProgram {
+  variableNames = ['x'];
+  outputShape: number[];
+  userCode: string;
+  rank: number;
+
+  constructor(xShape: number[], paddings: number[][]) {
+    const topPadding = paddings[0][0];
+    const bottomPadding = paddings[0][1];
+    const leftPadding = paddings[1][0];
+    const rightPadding = paddings[1][1];
+
+    this.outputShape = [
+      topPadding + xShape[0] + bottomPadding,
+      leftPadding + xShape[1] + rightPadding
+    ];
+    this.rank = 2;
+
+    const sourceCoords = `resRC.x - ${topPadding}, resRC.y - ${leftPadding}`;
+
+    this.userCode = `
+      void main() {
+        ivec2 resRC = getOutputCoords();
+        int topShape = ${topPadding} + ${xShape[0]};
+        int leftShape = ${leftPadding} + ${xShape[1]};
+        if (resRC.x < ${topPadding} || resRC.x >= topShape ||
+            resRC.y < ${leftPadding} || resRC.y >= leftShape) {
+          setOutput(0.0);
+        } else {
+          setOutput(getX(${sourceCoords}));
+        }
+      }
+    `;
+    // console.log('this.userCode', this.userCode);
   }
 }

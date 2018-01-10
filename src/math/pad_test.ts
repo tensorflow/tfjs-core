@@ -19,38 +19,25 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {Array1D, Array2D} from './ndarray';
 
-function printArray(array: Array1D) {
-  const v = array.dataSync();
-  let str = '';
-  for (let i = 0; i < v.length; i++) {
-    str += v[i];
-    if (i < v.length - 1) {
-      str += ', ';
-    }
-  }
-  console.log(str);
-}
-
 // math.pad1D
 {
   const tests: MathTests = it => {
     it('Should pad 1D arrays', math => {
       const a = Array1D.new([1, 2, 3, 4, 5, 6], 'int32');
       const b = math.pad1D(a, [2, 3]);
-      printArray(b);
-      test_util.expectArraysEqual(b, [0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]);
+      test_util.expectArraysClose(b, [0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]);
     });
 
     it('Should not pad 1D arrays with 0s', math => {
       const a = Array1D.new([1, 2, 3, 4], 'int32');
       const b = math.pad1D(a, [0, 0]);
-      test_util.expectArraysEqual(b, [1, 2, 3, 4]);
+      test_util.expectArraysClose(b, [1, 2, 3, 4]);
     });
 
     it('Should handle NaNs with 1D arrays', math => {
       const a = Array1D.new([1, NaN, 2, NaN]);
       const b = math.pad1D(a, [1, 1]);
-      test_util.expectArraysEqual(b, [0, 1, NaN, 2, NaN, 0]);
+      test_util.expectArraysClose(b, [0, 1, NaN, 2, NaN, 0]);
     });
   };
 
@@ -60,8 +47,8 @@ function printArray(array: Array1D) {
   // };
   // expect(f).toThrowError();
 
-  // test_util.describeMathCPU('pad1D', [tests]);
-  test_util.describeMathGPU('KREEGER pad1D', [tests], [
+  test_util.describeMathCPU('pad1D', [tests]);
+  test_util.describeMathGPU('pad1D', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
@@ -72,15 +59,23 @@ function printArray(array: Array1D) {
 {
   const tests: MathTests = it => {
     it('Should pad 2D arrays', math => {
-      const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
-      const b = math.pad2D(a, [[2, 2], [1, 1]]);
+      let a = Array2D.new([2, 1], [[1], [2]], 'int32');
+      let b = math.pad2D(a, [[1, 1], [1, 1]]);
+      // 0, 0, 0
+      // 0, 1, 0
+      // 0, 2, 0
+      // 0, 0, 0
+      test_util.expectArraysClose(b, [0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0]);
+
+      a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
+      b = math.pad2D(a, [[2, 2], [1, 1]]);
       // 0, 0, 0, 0, 0
       // 0, 0, 0, 0, 0
       // 0, 1, 2, 3, 0
       // 0, 4, 5, 6, 0
       // 0, 0, 0, 0, 0
       // 0, 0, 0, 0, 0
-      test_util.expectArraysEqual(b, [
+      test_util.expectArraysClose(b, [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0,
         0, 4, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
       ]);
@@ -89,7 +84,7 @@ function printArray(array: Array1D) {
     it('Should not pad 2D arrays with 0s', math => {
       const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
       const b = math.pad2D(a, [[0, 0], [0, 0]]);
-      test_util.expectArraysEqual(b, [1, 2, 3, 4, 5, 6]);
+      test_util.expectArraysClose(b, [1, 2, 3, 4, 5, 6]);
     });
 
     it('Should handle NaNs with 2D arrays', math => {
@@ -99,12 +94,17 @@ function printArray(array: Array1D) {
       // 0, 1, NaN, 0
       // 0, 1, NaN, 0
       // 0, 0, 0,   0
-      test_util.expectArraysEqual(
+      test_util.expectArraysClose(
           b, [0, 0, 0, 0, 0, 1, NaN, 0, 0, 1, NaN, 0, 0, 0, 0, 0]);
     });
 
     // TODO - test invalid paddings
   };
 
-  test_util.describeMathCPU('KREEGER pad2D', [tests]);
+  test_util.describeMathCPU('pad2D KREEGER', [tests]);
+  test_util.describeMathGPU('pad2D KREEGER', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
 }
