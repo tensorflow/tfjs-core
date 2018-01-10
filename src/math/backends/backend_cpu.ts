@@ -1323,7 +1323,51 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    return dx;
+    return dx.asType(x.dtype);
+  }
+
+  avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
+    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const dx = Array4D.zeros(x.shape);
+
+    const avgMultiplier = 1 / (filterHeight * filterWidth);
+
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let dxR = 0; dxR < convInfo.inHeight; ++dxR) {
+          for (let dxC = 0; dxC < convInfo.inWidth; ++dxC) {
+            // Shader code begins.
+            const dyRCorner = dxR - padTop;
+            const dyCCorner = dxC - padLeft;
+            let dotProd = 0;
+            for (let wR = 0; wR < filterHeight; ++wR) {
+              const dyR = (dyRCorner + wR) / strideHeight;
+              if (dyR < 0 || dyR >= convInfo.outHeight ||
+                  Math.floor(dyR) !== dyR) {
+                continue;
+              }
+              for (let wC = 0; wC < filterWidth; ++wC) {
+                const dyC = (dyCCorner + wC) / strideWidth;
+                if (dyC < 0 || dyC >= convInfo.outWidth ||
+                    Math.floor(dyC) !== dyC) {
+                  continue;
+                }
+
+                const pixel = dy.get(b, dyR, dyC, d);
+                dotProd += pixel;
+              }
+            }
+            dx.set(dotProd * avgMultiplier, b, dxR, dxC, d);
+          }
+        }
+      }
+    }
+    return dx.asType(x.dtype);
   }
 
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -1331,7 +1375,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
-    return this.pool(x, convInfo, 'avg');
+    return this.pool(x, convInfo, 'avg').asType('float32');
   }
 
   resizeBilinear3D(
@@ -1443,6 +1487,56 @@ export class MathBackendCPU implements MathBackend {
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
     return Array4D.new(x.shape, outValues);
+  }
+
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D {
+    const output = Array4D.zeros(x.shape);
+    const rad = radius;
+    const maxW = output.shape[1] - 1;
+    const maxH = output.shape[2] - 1;
+    const maxD = output.shape[3] - 1;
+
+    const sumAcrossChannels =
+        (b: number, r: number, c: number, d: number): number => {
+          let sum = 0.0;
+          for (let j = Math.max(0, d - rad); j <= Math.min(d + rad, maxD);
+               j++) {
+            const z = x.get(b, r, c, j);
+            sum += z * z;
+          }
+          return sum;
+        };
+
+    const sumWithinChannel =
+        (b: number, r: number, c: number, d: number): number => {
+          let sum = 0.0;
+          for (let u = Math.max(0, r - rad); u <= Math.min(r + rad, maxW);
+               u++) {
+            for (let v = Math.max(0, c - rad); v <= Math.min(c + rad, maxH);
+                 v++) {
+              sum += Math.pow(x.get(b, u, v, d), 2);
+            }
+          }
+          return sum;
+        };
+
+    for (let b = 0; b < output.shape[0]; b++) {
+      for (let r = 0; r <= output.shape[1]; r++) {
+        for (let c = 0; c < output.shape[2]; c++) {
+          for (let d = 0; d < output.shape[3]; d++) {
+            const sum = normRegion === 'withinChannel' ?
+                sumWithinChannel(b, r, c, d) :
+                sumAcrossChannels(b, r, c, d);
+            const val = x.get(b, r, c, d) * Math.pow(bias + alpha * sum, -beta);
+            output.set(val, b, r, c, d);
+          }
+        }
+      }
+    }
+
+    return output;
   }
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):

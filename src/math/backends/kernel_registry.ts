@@ -31,6 +31,7 @@ import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Co
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
 import {EqualInputConfig, EqualNode} from './types/logical';
+import {LRN4DInputConfig, LRN4DNode} from './types/lrn';
 import {MatMulInputConfig, MatMulNode} from './types/matmul';
 // tslint:disable-next-line:max-line-length
 import {MaximumInputConfig, MaximumNode, MaxInputConfig, MaxNode, MinimumInputConfig, MinimumNode, MinInputConfig, MinNode} from './types/minmax';
@@ -54,8 +55,8 @@ import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValu
 import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
-  [kernel in keyof KernelConfigRegistry]: (
-      backend: MathBackend, config: KernelInputConfig) => NDArray
+  [kernel in keyof KernelConfigRegistry]:
+      (backend: MathBackend, config: KernelInputConfig) => NDArray
 } = {
   // NOTE: Using {} and "return" makes VSCode run much faster.
   MatMul: (backend: MathBackend, config: MatMulInputConfig) => {
@@ -289,6 +290,10 @@ const KERNEL_METHODS: {
   AvgPool: (backend: MathBackend, config: PoolInputConfig) => {
     return backend.avgPool(config.inputs.x, config.args.convInfo);
   },
+  AvgPoolBackprop: (backend: MathBackend, config: PoolBackpropInputConfig) => {
+    return backend.avgPoolBackprop(
+        config.inputs.dy, config.inputs.x, config.args.convInfo);
+  },
   MinPool: (backend: MathBackend, config: PoolInputConfig) => {
     return backend.minPool(config.inputs.x, config.args.convInfo);
   },
@@ -311,6 +316,11 @@ const KERNEL_METHODS: {
     return backend.batchNormalization2D(
         config.inputs.x, config.inputs.mean, config.inputs.variance,
         config.args.varianceEpsilon, config.inputs.scale, config.inputs.offset);
+  },
+  LRN4D: (backend: MathBackend, config: LRN4DInputConfig) => {
+    return backend.localResponseNormalization4D(
+        config.inputs.x, config.args.radius, config.args.bias,
+        config.args.alpha, config.args.beta, config.args.normRegion);
   },
   Multinomial: (backend: MathBackend, config: MultinomialInputConfig) => {
     return backend.multinomial(
@@ -397,11 +407,13 @@ export interface KernelConfigRegistry {
   MaxPool: PoolNode;
   MaxPoolBackprop: PoolBackpropNode;
   AvgPool: PoolNode;
+  AvgPoolBackprop: PoolBackpropNode;
   MinPool: PoolNode;
   ResizeBilinear3D: ResizeBilinear3DNode;
   BatchNorm4D: BatchNorm4DNode;
   BatchNorm3D: BatchNorm3DNode;
   BatchNorm2D: BatchNorm2DNode;
+  LRN4D: LRN4DNode;
   Multinomial: MultinomialNode;
   OneHot: OneHotNode;
 }
