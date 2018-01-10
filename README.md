@@ -89,7 +89,12 @@ $ yarn prep # Installs dependencies.
 ```
 
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
-development. Make sure to install [TSLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) and the `clang-format` command line tool with the [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format) for auto-formatting (Be sure to use the [NPM/Yarn clang-format binary](https://github.com/angular/clang-format)).
+development. Make sure to install
+[TSLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=eg2.tslint)
+and the npm [clang-format](https://github.com/angular/clang-format) `1.2.2` or later
+with the
+[Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format)
+for auto-formatting.
 
 
 To interactively develop any of the demos (e.g. `demos/nn-art/`):

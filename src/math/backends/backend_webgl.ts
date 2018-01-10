@@ -30,6 +30,7 @@ import {SumTypes, SumTypesMap} from '../types';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
+import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
@@ -43,7 +44,7 @@ import {Copy2DProgram} from './webgl/copy_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {ArrayData, GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
-import * as gpgpu_util from './webgl/gpgpu_util';
+import {LRNProgram} from './webgl/lrn_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
@@ -217,8 +218,7 @@ export class MathBackendWebGL implements MathBackend {
       throw new Error('WebGL is not supported on this device');
     }
     if (gpgpu == null) {
-      const gl = gpgpu_util.createWebGLContext();
-      this.gpgpu = new GPGPUContext(gl);
+      this.gpgpu = new GPGPUContext();
       this.gpgpuCreatedLocally = true;
     } else {
       this.gpgpuCreatedLocally = false;
@@ -402,6 +402,14 @@ export class MathBackendWebGL implements MathBackend {
         x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
         varianceEpsilon);
     return this.compileAndRun(program, inputs);
+  }
+
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D {
+    const program =
+        new LRNProgram(x.shape, radius, bias, alpha, beta, normRegion);
+    return this.compileAndRun(program, [x]);
   }
 
   tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T {
@@ -735,17 +743,22 @@ export class MathBackendWebGL implements MathBackend {
 
   maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
-    return this.compileAndRun(program, [x]);
+    const output =
+        this.makeOutputArray(program.outputShape, x.dtype) as Array4D;
+    return this.compileAndRun(program, [x], output);
   }
 
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'min', false);
-    return this.compileAndRun(program, [x]);
+    const output =
+        this.makeOutputArray(program.outputShape, x.dtype) as Array4D;
+    return this.compileAndRun(program, [x], output);
   }
 
-  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D<'float32'> {
     const program = new Pool2DProgram(convInfo, 'avg', false);
-    return this.compileAndRun(program, [x]);
+    const output = this.makeOutputArray(program.outputShape, 'float32');
+    return this.compileAndRun(program, [x], output) as Array4D<'float32'>;
   }
 
   maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -756,11 +769,19 @@ export class MathBackendWebGL implements MathBackend {
         this.compileAndRun(maxPoolPositionsProgram, [x]);
 
     const maxPoolBackPropProgram = new MaxPool2DBackpropProgram(convInfo);
-
-    const result =
-        this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
+    const output =
+        this.makeOutputArray(maxPoolBackPropProgram.outputShape, x.dtype);
+    const result = this.compileAndRun(
+        maxPoolBackPropProgram, [dy, maxPoolPositions], output);
     maxPoolPositions.dispose();
     return result as Array4D;
+  }
+
+  avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+    const avgPoolBackpropProgram = new AvgPool2DBackpropProgram(convInfo);
+    const output =
+        this.makeOutputArray(avgPoolBackpropProgram.outputShape, x.dtype);
+    return this.compileAndRun(avgPoolBackpropProgram, [dy], output) as Array4D;
   }
 
   resizeBilinear3D(
@@ -827,7 +848,12 @@ export class MathBackendWebGL implements MathBackend {
     return this.textureManager;
   }
 
+  private disposed = false;
+
   dispose() {
+    if (this.disposed) {
+      return;
+    }
     for (const key in this.binaryCache) {
       this.gpgpu.deleteProgram(this.binaryCache[key].webGLProgram);
     }
@@ -836,6 +862,7 @@ export class MathBackendWebGL implements MathBackend {
     if (this.gpgpuCreatedLocally) {
       this.gpgpu.dispose();
     }
+    this.disposed = true;
   }
 
   private throwIfNoData(dataId: number) {
