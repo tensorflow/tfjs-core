@@ -1005,13 +1005,16 @@ export class NDArrayMath implements NDArrayManager {
    *
    * This operation will pad an array according to the `paddings` you specify.
    * Paddings must be described as int32. Paddings rank must match target
-   * array's rank. Passing in the array `[[1, 2], [3, 4]]`  with paddings
-   * `[[1,1][1,1]` will result in `[[0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0]]`.
+   * array's rank. Passing in the array `[1, 2]` with paddings `[1, 2]` will
+   * result in `[0,1,2,0,0].
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
    */
   pad1D(x: Array1D, paddings: number[]): Array1D {
+    util.assert(
+        paddings.length === 2,
+        'Invalid number of paddings. Must be length of 2.');
     return this.backendEngine.executeKernel(
         'Pad1D', {inputs: {x}, args: {paddings}});
   }
@@ -1021,13 +1024,16 @@ export class NDArrayMath implements NDArrayManager {
    *
    * This operation will pad an array according to the `paddings` you specify.
    * Paddings must be described as int32. Paddings rank must match target
-   * array's rank. Passing in the array `[[1, 2], [3, 4]]`  with paddings
+   * array's rank. Passing in the array `[[1, 2], [3, 4]]` with paddings
    * `[[1,1][1,1]` will result in `[[0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0]]`.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
    */
   pad2D(x: Array2D, paddings: number[][]): Array2D {
+    util.assert(
+        paddings[0].length === 2 && paddings[1].length === 2,
+        'Invalid number of paddings. Must be length of 2 each.');
     return this.backendEngine.executeKernel(
         'Pad2D', {inputs: {x}, args: {paddings}});
   }

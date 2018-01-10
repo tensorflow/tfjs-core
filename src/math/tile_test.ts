@@ -32,12 +32,6 @@ import {Array1D, Array2D, Array3D} from './ndarray';
       test_util.expectArraysClose(t2, [1, 2, 3, 1, 2, 3]);
     });
 
-    // it('KREEGER', math => {
-    //   const t = Array2D.new([2, 2], [1, 11, 2, 22]);
-    //   const t2 = math.tile(t, [1, 2]);
-    //   printArray(t2);
-    // });
-
     it('2D (tile)', math => {
       const t = Array2D.new([2, 2], [1, 11, 2, 22]);
       let t2 = math.tile(t, [1, 2]);
@@ -174,10 +168,10 @@ import {Array1D, Array2D, Array3D} from './ndarray';
     });
   };
 
-  // test_util.describeMathCPU('tile', [tests]);
+  test_util.describeMathCPU('tile', [tests]);
   test_util.describeMathGPU('tile', [tests], [
-    // {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    // {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }

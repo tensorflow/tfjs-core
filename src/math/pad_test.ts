@@ -39,13 +39,19 @@ import {Array1D, Array2D} from './ndarray';
       const b = math.pad1D(a, [1, 1]);
       test_util.expectArraysClose(b, [0, 1, NaN, 2, NaN, 0]);
     });
-  };
 
-  // TODO - test invalid paddings
-  // const f = () => {
-  //   math.clip(a, min, max);
-  // };
-  // expect(f).toThrowError();
+    it('Should handle invalid paddings', math => {
+      const a = Array1D.new([1, 2, 3, 4], 'int32');
+      let f = () => {
+        math.pad1D(a, [2, 2, 2]);
+      };
+      expect(f).toThrowError();
+      f = () => {
+        math.pad1D(a, [1]);
+      };
+      expect(f).toThrowError();
+    });
+  };
 
   test_util.describeMathCPU('pad1D', [tests]);
   test_util.describeMathGPU('pad1D', [tests], [
@@ -98,11 +104,21 @@ import {Array1D, Array2D} from './ndarray';
           b, [0, 0, 0, 0, 0, 1, NaN, 0, 0, 1, NaN, 0, 0, 0, 0, 0]);
     });
 
-    // TODO - test invalid paddings
+    it('Should handle invalid paddings', math => {
+      const a = Array2D.new([2, 1], [[1], [2]], 'int32');
+      let f = () => {
+        math.pad2D(a, [[2, 2, 2], [1]]);
+      };
+      expect(f).toThrowError();
+      f = () => {
+        math.pad2D(a, [[1], []]);
+      };
+      expect(f).toThrowError();
+    });
   };
 
-  test_util.describeMathCPU('pad2D KREEGER', [tests]);
-  test_util.describeMathGPU('pad2D KREEGER', [tests], [
+  test_util.describeMathCPU('pad2D', [tests]);
+  test_util.describeMathGPU('pad2D', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
