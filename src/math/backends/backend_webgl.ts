@@ -503,6 +503,13 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
+  logicalOr(a: NDArray<'bool'>, b: NDArray<'bool'>): NDArray<'bool'> {
+    //
+    // TODO(kreeger): write me
+    //
+    return null;
+  }
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D> {
     throw new Error('topKValues GPU not yet implemented!');

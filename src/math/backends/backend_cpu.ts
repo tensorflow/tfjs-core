@@ -475,6 +475,13 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
+  logicalOr(a: NDArray<'bool'>, b: NDArray<'bool'>): NDArray<'bool'> {
+    //
+    // TODO(kreeger): write me
+    //
+    return null;
+  }
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D> {
     return this.topK(x, k).values as Array1D<D>;
