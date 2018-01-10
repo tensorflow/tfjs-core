@@ -1063,7 +1063,6 @@ export class MathBackendCPU implements MathBackend {
     } else {
       throw new Error(`Dtype ${x.dtype} not supported for tile`);
     }
-    console.log('newShape', newShape);
     const resultValues = new dtype(util.sizeFromShape(newShape));
     const result = NDArray.make(newShape, {values: resultValues}, x.dtype) as T;
     const values = x.dataSync();
@@ -1079,7 +1078,6 @@ export class MathBackendCPU implements MathBackend {
 
       resultValues[i] = values[originalIndex];
     }
-    console.log('resultValues', resultValues);
     return result;
   }
 
