@@ -32,10 +32,10 @@ export class Pad1DProgram implements GPGPUProgram {
     // I don't think imod() is the right method for this.
     this.userCode = `
       int testmod(int x, int y) {
-        if (x < ${leftPadding}) {
-          return -1;
+        if (x < ${leftPadding} || x > ${leftPadding} + ${xShape[0]}) {
+          return 0;
         }
-        return imod(x, y);
+        return x;
       }
 
       void main() {

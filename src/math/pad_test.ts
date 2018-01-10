@@ -19,13 +19,25 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {Array1D, Array2D} from './ndarray';
 
+function printArray(array: Array1D) {
+  const v = array.dataSync();
+  let str = '';
+  for (let i = 0; i < v.length; i++) {
+    str += v[i];
+    if (i < v.length - 1) {
+      str += ', ';
+    }
+  }
+  console.log(str);
+}
+
 // math.pad1D
 {
   const tests: MathTests = it => {
     it('KREEGER Should pad 1D arrays', math => {
       const a = Array1D.new([1, 2, 3, 4, 5, 6], 'int32');
       const b = math.pad1D(a, [2, 3]);
-      console.log('b', b.dataSync());
+      printArray(b);
       test_util.expectArraysEqual(b, [0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]);
     });
 
