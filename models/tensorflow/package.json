@@ -43,6 +43,6 @@
     "@types/long": "^3.0.32",
     "dag-iterator": "^0.3.0",
     "deeplearn": "^0.3.14",
-    "protobufjs": "~6.8.0"
+    "protobufjs": "^6.8.0"
   }
 }

@@ -24,6 +24,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
+    "preinstall": "cd .. && yarn prep && yarn build && cd ./demo && npm install ../",
     "prep": "yarn && mkdirp dist",
     "build": "tsc --sourceMap false && browserify -g browserify-shim --standalone tfdemo index.ts -p [tsify] -o dist/bundle.js",
     "lint": "tslint -p . -t verbose",
@@ -33,5 +34,11 @@
     "deeplearn": "global:dl"
   },
   "license": "Apache-2.0",
-  "dependencies": {}
+  "dependencies": {
+    "@types/long": "^3.0.32",
+    "dag-iterator": "^0.3.0",
+    "deeplearn": "^0.3.14",
+    "deeplearn-tensorflow": "file:..",
+    "protobufjs": "~6.8.0"
+  }
 }
