@@ -313,11 +313,11 @@ export function squeezeShape(shape: number[], axis?: number[]):
   const keptDims: number[] = [];
   let j = 0;
   for (let i = 0; i < shape.length; ++i) {
-    if (axis) {
+    if (axis !== undefined) {
       if (axis[j] === i && shape[i] > 1) {
         throw new Error(`axis ${i} is not 1`);
       }
-      if ((!axis[j] || axis[j] > i) && shape[i] === 1) {
+      if ((axis[j] === undefined || axis[j] > i) && shape[i] === 1) {
         newShape.push(shape[i]);
         keptDims.push(i);
       }

@@ -219,8 +219,8 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
    * squeezes the dimensions listed. The dimension index starts at 0. It is an
    * error to squeeze a dimension that is not 1.
    */
-  squeeze(axis?: number[]): NDArray {
-    return this.reshape(util.squeezeShape(this.shape, axis).newShape);
+  squeeze<T extends NDArray<D>>(axis?: number[]): T {
+    return this.reshape(util.squeezeShape(this.shape, axis).newShape) as T;
   }
 
   /** Flatten a NDArray to a 1D array. */
