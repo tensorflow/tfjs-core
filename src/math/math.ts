@@ -30,7 +30,6 @@ import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, RankMap, Scalar, Variable} from './ndarray';
-import * as reverse_util from './reverse_util';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
 
@@ -447,15 +446,7 @@ export class NDArrayMath implements NDArrayManager {
         [].concat(axis).every(ax => util.isInt(ax)),
         `Error in reverse2D: All values in param axis must be integers but
                got axis ${axis}`);
-    util.assert(
-        [].concat(axis).every(ax => ax < x.rank),
-        `Error in reverse2D: All values in param axis must be less than
-               rank ${x.rank} but got axis ${axis}`);
-    util.assert(
-        [].concat(axis).every(ax => ax >= -x.rank),
-        `Error in reverse2D: All values in param axis must be greater than
-                       rank -${x.rank} but got axis ${axis}`);
-    const axisCleaned = reverse_util.cleanAxisParam(axis, x.rank, 2);
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 2);
     const input4D = x.as4D(1, 1, x.shape[0], x.shape[1]);
     const res = this.reverse4D(input4D, axisCleaned);
     return res.as2D(res.shape[2], res.shape[3]);
@@ -473,15 +464,7 @@ export class NDArrayMath implements NDArrayManager {
         [].concat(axis).every(ax => util.isInt(ax)),
         `Error in reverse3D: All values in param axis must be integers but
                got axis ${axis}`);
-    util.assert(
-        [].concat(axis).every(ax => ax < x.rank),
-        `Error in reverse3D: All values in param axis must be less than
-               rank ${x.rank} but got axis ${axis}`);
-    util.assert(
-        [].concat(axis).every(ax => ax >= -x.rank),
-        `Error in reverse3D: All values in param axis must be greater than
-                       rank -${x.rank} but got axis ${axis}`);
-    const axisCleaned = reverse_util.cleanAxisParam(axis, x.rank, 1);
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 1);
     const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     const res = this.reverse4D(input4D, axisCleaned);
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
@@ -499,15 +482,7 @@ export class NDArrayMath implements NDArrayManager {
         [].concat(axis).every(ax => util.isInt(ax)),
         `Error in reverse4D: All values in param axis must be integers but
                got axis ${axis}`);
-    util.assert(
-        [].concat(axis).every(ax => ax < x.rank),
-        `Error in reverse4D: All values in param axis must be less than
-               rank ${x.rank} but got axis ${axis}`);
-    util.assert(
-        [].concat(axis).every(ax => ax >= -x.rank),
-        `Error in reverse4D: All values in param axis must be greater than
-                       rank -${x.rank} but got axis ${axis}`);
-    const axisCleaned = reverse_util.cleanAxisParam(axis, x.rank);
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape);
     return this.backendEngine.executeKernel(
         'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}});
   }
