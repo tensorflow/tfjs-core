@@ -76,6 +76,5 @@ export class Pad2DProgram implements GPGPUProgram {
         }
       }
     `;
-    // console.log('this.userCode', this.userCode);
   }
 }
