@@ -1084,10 +1084,23 @@ export class MathBackendCPU implements MathBackend {
   pad1D(x: Array1D, paddings: number[]): Array1D {
     const leftPadding = paddings[0];
     const rightPadding = paddings[1];
-    const newValues = [];  // TODO - expand to desired size. Type?
+
+    let dtype;
+    if (x.dtype === 'float32') {
+      dtype = Float32Array;
+    } else if (x.dtype === 'int32') {
+      dtype = Int32Array;
+    } else if (x.dtype === 'bool') {
+      dtype = Uint8Array;
+    } else {
+      throw new Error(`Dtype ${x.dtype} not supported for tile`);
+    }
+
     const values = x.dataSync();
+    const newValues = new dtype(leftPadding + values.length + rightPadding);
+
     let z = 0;
-    for (let i = 0; i < leftPadding + values.length + rightPadding; i++) {
+    for (let i = 0; i < newValues.length; i++) {
       if (i >= leftPadding && i < leftPadding + values.length) {
         newValues[i] = values[z++];
       } else {
@@ -1108,8 +1121,20 @@ export class MathBackendCPU implements MathBackend {
       leftPadding + x.shape[1] + rightPadding
     ];
 
-    const newValues = [];  // TODO - expand to desired size. Type?
+    let dtype;
+    if (x.dtype === 'float32') {
+      dtype = Float32Array;
+    } else if (x.dtype === 'int32') {
+      dtype = Int32Array;
+    } else if (x.dtype === 'bool') {
+      dtype = Uint8Array;
+    } else {
+      throw new Error(`Dtype ${x.dtype} not supported for tile`);
+    }
+
     const values = x.dataSync();
+    const newValues = new dtype(util.sizeFromShape(newShape));
+
     let z = 0;
     for (let i = 0; i < newShape[0]; i++) {
       let rangeStart = -1;
