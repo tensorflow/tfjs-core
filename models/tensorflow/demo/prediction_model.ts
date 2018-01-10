@@ -1,4 +1,4 @@
-import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
+import {Array1D, NDArray, NDArrayMath} from 'deeplearn';
 
 import * as model_util from '../../util';
 import {TensorflowModel} from '../src/index';
@@ -22,8 +22,6 @@ import {IMAGENET_CLASSES} from './imagenet_classes';
  * limitations under the License.
  * =============================================================================
  */
-const MODEL_TXT_FILE_URL = 'http://localhost:8000/squeezenet.pbtxt';
-const MODEL_FILE_URL = 'http://localhost:8000/squeezenet.pb';
 export class PredictionModel {
   private model: TensorflowModel;
   constructor(protected math: NDArrayMath, private fileUrl: string) {}
@@ -57,7 +55,7 @@ export class PredictionModel {
    * @param logits Pre-softmax logits array.
    * @param topK How many top classes to return.
    */
-  async getTopKClasses(logits: Array1D, topK: number, offset: number = 0):
+  async getTopKClasses(logits: Array1D, topK: number, offset = 0):
       Promise<{[className: string]: number}> {
     const predictions = this.math.scope(() => {
       return this.math.softmax(logits).asType('float32');

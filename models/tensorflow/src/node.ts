@@ -95,8 +95,8 @@ export function performMathOp(
       const inputs = input as NDArray[];
       const weights = inputs[1] as Array4D;
       return math.depthwiseConv2D(
-          inputs[0] as NDArray, weights, [stride[0], stride[1]], pad as any,
-          rate as [number, number]);
+          inputs[0] as NDArray, weights, [stride[0], stride[1]],
+          pad as 'valid' | 'same', rate as [number, number]);
     }
 
     case 'AvgPool': {

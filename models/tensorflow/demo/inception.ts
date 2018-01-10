@@ -17,7 +17,6 @@
 import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 import {PredictionModel} from './prediction_model';
 
-const MODEL_TXT_FILE_URL = 'http://localhost:8000/inceptionV3.pbtxt';
 const MODEL_FILE_URL = 'http://localhost:8000/inceptionV3.pb';
 export class Inception extends PredictionModel {
   // yolo variables

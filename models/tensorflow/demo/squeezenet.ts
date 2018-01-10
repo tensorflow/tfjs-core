@@ -17,7 +17,6 @@
 import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 import {PredictionModel} from './prediction_model';
 
-const MODEL_TXT_FILE_URL = 'http://localhost:8000/squeezenet.pbtxt';
 const MODEL_FILE_URL = 'http://localhost:8000/squeezenet.pb';
 export class SqueezeNet extends PredictionModel {
   constructor(math: NDArrayMath) {

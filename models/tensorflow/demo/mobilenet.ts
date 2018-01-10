@@ -15,16 +15,9 @@
  * =============================================================================
  */
 
-import {Array1D, Array3D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
-
-import * as model_util from '../../util';
-import {TensorflowModel} from '../src/index';
-import * as util from '../src/util';
-
-import {IMAGENET_CLASSES} from './imagenet_classes';
+import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 import {PredictionModel} from './prediction_model';
 
-const MODEL_TXT_FILE_URL = 'http://localhost:8000/mobilenet.pbtxt';
 const MODEL_FILE_URL = 'http://localhost:8000/mobilenet.pb';
 export class MobileNet extends PredictionModel {
   // yolo variables
