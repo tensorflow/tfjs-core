@@ -1068,8 +1068,29 @@ export class NDArrayMath implements NDArrayManager {
   add<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Add', {inputs: {a, b}}) as T;
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
+    const der = (dy: NDArray, y: NDArray) => {
+      const derA = () => {
+        let res = dy;
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes);
+        }
+        return res.reshape(a.shape);
+      };
+      const derB = () => {
+        let res = dy;
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes);
+        }
+        return res.reshape(b.shape);
+      };
+      return {a: derA, b: derB};
+    };
+    return this.backendEngine.executeKernel('Add', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1094,20 +1115,29 @@ export class NDArrayMath implements NDArrayManager {
   subtract<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel(
-               'Sub', {inputs: {a, b}}, (dy: NDArray<D1>, y: NDArray<D1>) => {
-                 if (!util.arraysEqual(a.shape, b.shape)) {
-                   throw new Error(
-                       `Backprop through broadcasted subtract not ` +
-                       `yet supported.`);
-                 }
-                 return {
-                   a: () => this.multiply(dy, NDArray.onesLike(a)),
-                   b: () => this.scope(
-                       () => this.multiply(dy, this.neg(NDArray.onesLike(b))))
-                 };
-               }) as T;
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
+    const der = (dy: NDArray, y: NDArray) => {
+      const derA = () => {
+        let res = dy;
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes);
+        }
+        return res.reshape(a.shape);
+      };
+      const derB = () => {
+        let res = dy;
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes);
+        }
+        return this.neg(res).reshape(b.shape);
+      };
+      return {a: derA, b: derB};
+    };
+    return this.backendEngine.executeKernel('Sub', {inputs: {a, b}}, der) as T;
   }
 
   /**
