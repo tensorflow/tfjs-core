@@ -15,5 +15,6 @@
  * =============================================================================
  */
 
+export {Inception} from './inception';
 export {MobileNet} from './mobilenet';
 export {SqueezeNet} from './squeezenet';

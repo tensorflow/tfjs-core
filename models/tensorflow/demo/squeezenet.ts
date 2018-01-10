@@ -1,6 +1,3 @@
-import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
-import {PredictionModel} from './prediction_model';
-
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -17,6 +14,9 @@ import {PredictionModel} from './prediction_model';
  * limitations under the License.
  * =============================================================================
  */
+import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
+import {PredictionModel} from './prediction_model';
+
 const MODEL_TXT_FILE_URL = 'http://localhost:8000/squeezenet.pbtxt';
 const MODEL_FILE_URL = 'http://localhost:8000/squeezenet.pb';
 export class SqueezeNet extends PredictionModel {
@@ -38,5 +38,5 @@ export class SqueezeNet extends PredictionModel {
       'image_placeholder': reshapedInput,
       'Placeholder': Scalar.new(1.0)
     }) as Array1D;
-  };
+  }
 }

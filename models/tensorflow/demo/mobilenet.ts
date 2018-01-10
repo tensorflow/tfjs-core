@@ -1,12 +1,3 @@
-import {Array1D, Array3D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
-
-import * as model_util from '../../util';
-import {TensorflowModel} from '../src/index';
-import * as util from '../src/util';
-
-import {IMAGENET_CLASSES} from './imagenet_classes';
-import {PredictionModel} from './prediction_model';
-
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -23,12 +14,21 @@ import {PredictionModel} from './prediction_model';
  * limitations under the License.
  * =============================================================================
  */
+
+import {Array1D, Array3D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
+
+import * as model_util from '../../util';
+import {TensorflowModel} from '../src/index';
+import * as util from '../src/util';
+
+import {IMAGENET_CLASSES} from './imagenet_classes';
+import {PredictionModel} from './prediction_model';
+
 const MODEL_TXT_FILE_URL = 'http://localhost:8000/mobilenet.pbtxt';
 const MODEL_FILE_URL = 'http://localhost:8000/mobilenet.pb';
 export class MobileNet extends PredictionModel {
   // yolo variables
   private PREPROCESS_DIVISOR = Scalar.new(255.0 / 2);
-  private ONE = Scalar.new(1);
 
   constructor(math: NDArrayMath) {
     super(math, MODEL_FILE_URL);
@@ -43,13 +43,11 @@ export class MobileNet extends PredictionModel {
    * @return The pre-softmax logits.
    */
   predict(input: NDArray): Array1D {
-    const reshapedInput = input.reshape([1, ...input.shape]);
     const preprocessedInput = this.math.arrayDividedByScalar(
         this.math.subtract(input.asType('float32'), this.PREPROCESS_DIVISOR),
         this.PREPROCESS_DIVISOR);
-    return super.predict(
-               undefined,
-               {'input': preprocessedInput, 'Placeholder': Scalar.new(1.0)}) as
-        Array1D;
-  };
+    const reshapedInput =
+        preprocessedInput.reshape([1, ...preprocessedInput.shape]);
+    return super.predict(undefined, {'input': reshapedInput}) as Array1D;
+  }
 }

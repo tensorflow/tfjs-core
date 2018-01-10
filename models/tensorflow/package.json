@@ -41,7 +41,7 @@
     "make-version": "../../scripts/make-version"
   },
   "dependencies": {
-    "dag-iterator": "^0.2.2",
+    "dag-iterator": "^0.3.0",
     "deeplearn": "^0.3.14"
   }
 }

@@ -915,9 +915,9 @@ custom-event@~1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/custom-event/-/custom-event-1.0.1.tgz#5d02a46850adf1b4a317946a3928fccb5bfd0425"
 
-dag-iterator@^0.2.2:
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/dag-iterator/-/dag-iterator-0.2.3.tgz#fe7fb1ac311ca3266870164e2e5befc5ad9a760d"
+dag-iterator@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/dag-iterator/-/dag-iterator-0.3.0.tgz#f78c2551405e077f675ecf2e785bf49b1851dc46"
 
 dashdash@^1.12.0:
   version "1.14.1"
