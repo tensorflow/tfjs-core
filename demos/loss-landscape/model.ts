@@ -15,11 +15,20 @@ const math = dl.ENV.math;
 const optimizer = new dl.SGDOptimizer(LEARNING_RATE);
 
 // Set up the model and loss function.
-export const weights = dl.variable(dl.Array2D.randNormal(
-    [IMAGE_SIZE, LABELS_SIZE], 0, 1 / Math.sqrt(IMAGE_SIZE), 'float32'));
+const weights1 =
+    dl.variable(dl.Array2D.randNormal([IMAGE_SIZE, 30], 0, 1, 'float32'));
+
+const weights2 = dl.variable(dl.Array2D.randNormal([30, 200], 0, 1, 'float32'));
+
+const weights3 =
+    dl.variable(dl.Array2D.randNormal([200, LABELS_SIZE], 0, 1, 'float32'));
 
 export function model(xs: dl.Array2D<'float32'>): dl.Array2D<'float32'> {
-  return math.matMul(xs, weights) as dl.Array2D<'float32'>;
+  const layer1 = math.matMul(xs, weights1);
+  const act1 = math.relu(layer1);
+  const layer2 = math.matMul(act1, weights2);
+  const act2 = math.relu(layer2);
+  return math.matMul(act2, weights3) as dl.Array2D<'float32'>;
 }
 
 export function loss(
