@@ -1015,14 +1015,16 @@ export class NDArrayMath implements NDArrayManager {
    * Pads a Array1D.
    *
    * This operation will pad an array according to the `paddings` you specify.
-   * Paddings must be described as int32. Paddings rank must match target
-   * array's rank. Passing in the array `[1, 2]` with paddings `[1, 2]` will
-   * result in `[0,1,2,0,0].
+   * Paddings rank must match target array's rank.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
+   *
+   * @param x The array to pad.
+   * @param paddings A tuple of ints [padLeft, padRight], how much to pad on the
+   * left and right side of the array.
    */
-  pad1D(x: Array1D, paddings: number[]): Array1D {
+  pad1D(x: Array1D, paddings: [number, number]): Array1D {
     util.assert(
         paddings.length === 2,
         'Invalid number of paddings. Must be length of 2.');
@@ -1034,14 +1036,16 @@ export class NDArrayMath implements NDArrayManager {
    * Pads a Array2D.
    *
    * This operation will pad an array according to the `paddings` you specify.
-   * Paddings must be described as int32. Paddings rank must match target
-   * array's rank. Passing in the array `[[1, 2], [3, 4]]` with paddings
-   * `[[1,1][1,1]` will result in `[[0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0]]`.
+   * Paddings rank must match target array's rank.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
+   *
+   * @param x The array to pad.
+   * @param paddings A pair of tiple ints
+   * [[padTop, padBottom], [padLeft, padRight]], how much to pad on the array.
    */
-  pad2D(x: Array2D, paddings: number[][]): Array2D {
+  pad2D(x: Array2D, paddings: Array<[number, number]>): Array2D {
     util.assert(
         paddings[0].length === 2 && paddings[1].length === 2,
         'Invalid number of paddings. Must be length of 2 each.');

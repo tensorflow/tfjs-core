@@ -42,12 +42,8 @@ import {Array1D, Array2D} from './ndarray';
 
     it('Should handle invalid paddings', math => {
       const a = Array1D.new([1, 2, 3, 4], 'int32');
-      let f = () => {
+      const f = () => {
         math.pad1D(a, [2, 2, 2]);
-      };
-      expect(f).toThrowError();
-      f = () => {
-        math.pad1D(a, [1]);
       };
       expect(f).toThrowError();
     });
@@ -106,12 +102,8 @@ import {Array1D, Array2D} from './ndarray';
 
     it('Should handle invalid paddings', math => {
       const a = Array2D.new([2, 1], [[1], [2]], 'int32');
-      let f = () => {
-        math.pad2D(a, [[2, 2, 2], [1]]);
-      };
-      expect(f).toThrowError();
-      f = () => {
-        math.pad2D(a, [[1], []]);
+      const f = () => {
+        math.pad2D(a, [[2, 2, 2], [1, 1, 1]]);
       };
       expect(f).toThrowError();
     });
