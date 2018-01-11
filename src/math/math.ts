@@ -757,7 +757,12 @@ export class NDArrayMath implements NDArrayManager {
     return this.notEqual(a, b);
   }
 
-  /** TODO(kreeger): Document me. */
+  /**
+   * Returns the truth value of a OR b element-wise. Supports broadcasting.
+   *
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   */
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
