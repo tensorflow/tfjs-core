@@ -17,6 +17,12 @@
   "[typescript]": {
     "editor.formatOnSave": true
   },
+  "[vue-html]": {
+    "editor.formatOnSave": true
+  },
+  "[vue]": {
+    "editor.formatOnSave": true
+  },
   "clang-format.style": "Google",
   "files.insertFinalNewline": true,
   "editor.detectIndentation": false,

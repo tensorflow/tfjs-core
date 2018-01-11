@@ -20,7 +20,11 @@ const shell = require('shelljs');
 const argv = require('minimist')(process.argv.slice(2));
 
 /** List of vue demos. */
-const VUE_DEMOS = new Set(['vue-demo', 'latent-space-explorer']);
+const VUE_DEMOS = new Set([
+  'game_of_life',
+  'vue-demo',
+  'latent-space-explorer',
+  'loss-landscape']);
 
 const demoPath = argv._[0];
 const demoFolder = path.basename(demoPath);
@@ -29,7 +33,8 @@ const outDir = argv._[1];
 
 if (VUE_DEMOS.has(demoFolder)) {
   shell.cd('demos');
-  const cmd = `./node_modules/.bin/poi build ${demoFolder}`;
+  shell.cd(demoFolder);
+  const cmd = `../node_modules/.bin/poi build . -c ../poi.config.js`;
   if (shell.exec(cmd).code !== 0) {
     shell.echo(`Failed building ${demoFolder}`);
     shell.exit(1);

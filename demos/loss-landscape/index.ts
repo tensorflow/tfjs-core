@@ -1,9 +1,13 @@
 import * as dl from 'deeplearn';
-import {PlotlyHTMLElement} from 'plotly.js';
+import Vue from 'vue';
+import App from './App.vue';
 import {MnistData} from './data';
 import * as model from './model';
 import * as plot from './plot';
 import * as ui from './ui';
+
+// tslint:disable-next-line:no-unused-expression
+new Vue({el: '#app', render: h => h(App)});
 
 const math = dl.ENV.math;
 
@@ -17,15 +21,6 @@ async function train() {
   ui.isTraining();
   await model.train(data, ui.trainingLog);
 }
-
-// function test() {
-//   const testExamples = 50;
-//   const batch = data.nextTestBatch(testExamples);
-//   const predictions = model.predict(batch.xs);
-//   const labels = model.classesFromLabel(batch.labels);
-
-//   ui.showTestResults(batch, predictions, labels);
-// }
 
 function genDirections() {
   const dirs: {[name: string]: dl.Array1D<'float32'>} = {};
@@ -46,7 +41,7 @@ for (let i = 0; i <= stepsPerDir; i++) {
   alphas.push(dl.Scalar.new(2 * (i / stepsPerDir) - 1));
 }
 
-let lastChart: PlotlyHTMLElement = null;
+let lastChart: {remove(): void} = null;
 
 async function evaluateLoss() {
   const start = performance.now();
@@ -91,7 +86,6 @@ async function evaluateLoss() {
   }
   lastChart = await plot.plot(matrix);
   console.log(performance.now() - start, 'ms');
-  // console.log(lossVals);
 }
 
 async function mnist() {
