@@ -8,6 +8,7 @@
         <option value="fan-in">Gaussian with fan-in</option>
         <option value="fan-out">Gaussian with fan-out</option>
       </select>
+      <button id="train">Train</button>
     </div>
     <!-- Plotly chart will be drawn inside this DIV -->
     <div id="chart"></div>
