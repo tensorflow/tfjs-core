@@ -760,10 +760,8 @@ export class NDArrayMath implements NDArrayManager {
   /** TODO(kreeger): Document me. */
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
     util.assertTypesMatch(a, b);
-    //
-    // TODO(kreeger): write me.
-    //
-    return null;
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('LogicalOr', {inputs: {a, b}});
   }
 
   /**

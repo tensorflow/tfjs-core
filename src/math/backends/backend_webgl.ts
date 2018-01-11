@@ -504,10 +504,10 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
-    //
-    // TODO(kreeger): write me
-    //
-    return null;
+    const program =
+        new BinaryOpProgram(binaryop_gpu.LOGICAL_OR, a.shape, b.shape);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [a, b], output);
   }
 
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):

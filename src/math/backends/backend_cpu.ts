@@ -476,10 +476,13 @@ export class MathBackendCPU implements MathBackend {
   }
 
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
-    //
-    // TODO(kreeger): write me
-    //
-    return null;
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        return util.getNaN('bool');
+      } else {
+        return aVal || bVal;
+      }
+    });
   }
 
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):

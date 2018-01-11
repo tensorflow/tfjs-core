@@ -17,20 +17,22 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
 import {Array1D} from './ndarray';
 
-const tests: MathTests = it => {
-  it('Should do something', math => {
-    const a = Array1D.new([1, 0, 0], 'int32');
-    const b = Array1D.new([0, 1, 0], 'int32');
-    console.log(math.logicalOr(a, b).dataSync());
-  });
+{
+  const tests: MathTests = it => {
+    it('Should do something KREEGER', math => {
+      const a = Array1D.new([1, 0, 0], 'int32');
+      const b = Array1D.new([0, 1, 0], 'int32');
+      console.log('hi');
+      console.log(math.logicalOr(a, b).dataSync());
+    });
+  };
 
-  test_util.describeMathCPU('pad1D', [tests]);
-  test_util.describeMathGPU('pad1D', [tests], [
+  test_util.describeMathCPU('logicalOr', [tests]);
+  test_util.describeMathGPU('logicalOr', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
-};
+}
