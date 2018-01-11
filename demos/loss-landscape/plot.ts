@@ -1,4 +1,5 @@
-import * as Plotly from 'plotly.js';
+// tslint:disable-next-line:no-any
+declare const Plotly: any;
 
 export async function plot(zData: number[][]) {
   const data = [{z: zData, type: 'contour', showscale: false}];

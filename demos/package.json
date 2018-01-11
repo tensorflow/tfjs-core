@@ -56,7 +56,6 @@
     "deeplearn": "~0.4.1",
     "deeplearn-knn-image-classifier": "~0.2.3",
     "deeplearn-squeezenet": "~0.1.9",
-    "plotly.js": "~1.31.2",
     "tslint": "~5.8.0",
     "vue": "~2.5.9"
   },
