@@ -17,7 +17,7 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D, Array2D} from './ndarray';
+import {Array1D, Array2D, Scalar} from './ndarray';
 
 // math.pad1D
 {
@@ -32,6 +32,20 @@ import {Array1D, Array2D} from './ndarray';
       const a = Array1D.new([1, 2, 3, 4], 'int32');
       const b = math.pad1D(a, [0, 0]);
       test_util.expectArraysClose(b, [1, 2, 3, 4]);
+    });
+
+    it('Should handle padding with custom value KREEGER', math => {
+      let a = Array1D.new([1, 2, 3, 4], 'int32');
+      let b = math.pad1D(a, [2, 3], Scalar.new(9, 'int32'));
+      test_util.expectArraysClose(b, [9, 9, 1, 2, 3, 4, 9, 9, 9]);
+
+      a = Array1D.new([1, 2, 3, 4]);
+      b = math.pad1D(a, [2, 1], Scalar.new(1.1));
+      test_util.expectArraysClose(b, [1.1, 1.1, 1, 2, 3, 4, 1.1]);
+
+      a = Array1D.new([1, 2, 3, 4]);
+      b = math.pad1D(a, [2, 1], Scalar.new(1));
+      test_util.expectArraysClose(b, [1, 1, 1, 2, 3, 4, 1]);
     });
 
     it('Should handle NaNs with 1D arrays', math => {
@@ -87,6 +101,26 @@ import {Array1D, Array2D} from './ndarray';
       const a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
       const b = math.pad2D(a, [[0, 0], [0, 0]]);
       test_util.expectArraysClose(b, [1, 2, 3, 4, 5, 6]);
+    });
+
+    it('Should handle padding with custom value KREEGER', math => {
+      let a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
+      let b = math.pad2D(a, [[1, 1], [1, 1]], Scalar.new(10, 'int32'));
+      test_util.expectArraysClose(b, [
+        10, 10, 10, 10, 10, 10, 1,  2,  3,  10,
+        10, 4,  5,  6,  10, 10, 10, 10, 10, 10
+      ]);
+
+      a = Array2D.new([2, 1], [[1], [1]]);
+      b = math.pad2D(a, [[1, 1], [1, 1]], Scalar.new(-2.1));
+      test_util.expectArraysClose(
+          b,
+          [-2.1, -2.1, -2.1, -2.1, 1, -2.1, -2.1, 1, -2.1, -2.1, -2.1, -2.1]);
+
+      a = Array2D.new([2, 1], [[1], [1]]);
+      b = math.pad2D(a, [[1, 1], [1, 1]], Scalar.new(-2));
+      test_util.expectArraysClose(
+          b, [-2, -2, -2, -2, 1, -2, -2, 1, -2, -2, -2, -2]);
     });
 
     it('Should handle NaNs with 2D arrays', math => {

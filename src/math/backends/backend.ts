@@ -18,7 +18,7 @@
 
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, Scalar} from '../ndarray';
 import {SumTypes} from '../types';
 import {MatrixOrientation} from './types/matmul';
 
@@ -143,8 +143,10 @@ export interface MathBackend extends NDArrayStorage {
 
   tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T;
 
-  pad1D(x: Array1D, paddings: number[]): Array1D;
-  pad2D(x: Array2D, paddings: number[][]): Array2D;
+  pad1D(x: Array1D, paddings: [number, number], constantValues?: Scalar):
+      Array1D;
+  pad2D(x: Array2D, paddings: Array<[number, number]>, constantValues?: Scalar):
+      Array2D;
 
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
 

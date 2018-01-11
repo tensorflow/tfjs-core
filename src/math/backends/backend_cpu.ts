@@ -1081,7 +1081,8 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  pad1D(x: Array1D, paddings: number[]): Array1D {
+  pad1D(x: Array1D, paddings: [number, number], constantValues?: Scalar):
+      Array1D {
     const leftPadding = paddings[0];
     const rightPadding = paddings[1];
 
@@ -1096,6 +1097,7 @@ export class MathBackendCPU implements MathBackend {
       throw new Error(`Dtype ${x.dtype} not supported for tile`);
     }
 
+    const constant = constantValues !== undefined ? constantValues.get() : 0;
     const values = x.dataSync();
     const newValues = new dtype(leftPadding + values.length + rightPadding);
 
@@ -1104,13 +1106,14 @@ export class MathBackendCPU implements MathBackend {
       if (i >= leftPadding && i < leftPadding + values.length) {
         newValues[i] = values[z++];
       } else {
-        newValues[i] = 0;
+        newValues[i] = constant;
       }
     }
     return Array1D.new(newValues);
   }
 
-  pad2D(x: Array2D, paddings: number[][]): Array2D {
+  pad2D(x: Array2D, paddings: Array<[number, number]>, constantValues?: Scalar):
+      Array2D {
     const topPadding = paddings[0][0];
     const bottomPadding = paddings[0][1];
     const leftPadding = paddings[1][0];
@@ -1132,6 +1135,7 @@ export class MathBackendCPU implements MathBackend {
       throw new Error(`Dtype ${x.dtype} not supported for tile`);
     }
 
+    const constant = constantValues ? constantValues.get() : 0;
     const values = x.dataSync();
     const newValues = new dtype(util.sizeFromShape(newShape));
 
@@ -1147,11 +1151,10 @@ export class MathBackendCPU implements MathBackend {
 
       for (let j = 0; j < newShape[1]; j++) {
         const v = i * newShape[1] + j;
-        newValues[v] = 0;
         if (v >= rangeStart && v <= rangeEnd) {
           newValues[v] = values[z++];
         } else {
-          newValues[v] = 0;
+          newValues[v] = constant;
         }
       }
     }

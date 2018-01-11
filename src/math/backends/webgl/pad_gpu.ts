@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {Scalar} from '../../ndarray';
+
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Pad1DProgram implements GPGPUProgram {
@@ -23,9 +25,11 @@ export class Pad1DProgram implements GPGPUProgram {
   userCode: string;
   rank: number;
 
-  constructor(xShape: number[], paddings: number[]) {
+  constructor(
+      xShape: number[], paddings: [number, number], constantValues?: Scalar) {
     const leftPadding = paddings[0];
     const rightPadding = paddings[1];
+    const constant = getConstantFloatingStr(constantValues);
 
     this.outputShape = [leftPadding + xShape[0] + rightPadding];
     this.rank = 1;
@@ -34,7 +38,7 @@ export class Pad1DProgram implements GPGPUProgram {
       void main() {
         int resRC = getOutputCoords();
         if (resRC < ${leftPadding} || resRC >= ${leftPadding} + ${xShape[0]}) {
-          setOutput(0.0);
+          setOutput(${constant});
         } else {
           setOutput(getX(resRC - ${leftPadding}));
         }
@@ -49,11 +53,14 @@ export class Pad2DProgram implements GPGPUProgram {
   userCode: string;
   rank: number;
 
-  constructor(xShape: number[], paddings: number[][]) {
+  constructor(
+      xShape: number[], paddings: Array<[number, number]>,
+      constantValues?: Scalar) {
     const topPadding = paddings[0][0];
     const bottomPadding = paddings[0][1];
     const leftPadding = paddings[1][0];
     const rightPadding = paddings[1][1];
+    const constant = getConstantFloatingStr(constantValues);
 
     this.outputShape = [
       topPadding + xShape[0] + bottomPadding,
@@ -70,11 +77,23 @@ export class Pad2DProgram implements GPGPUProgram {
         int leftShape = ${leftPadding} + ${xShape[1]};
         if (resRC.x < ${topPadding} || resRC.x >= topShape ||
             resRC.y < ${leftPadding} || resRC.y >= leftShape) {
-          setOutput(0.0);
+          setOutput(${constant});
         } else {
           setOutput(getX(${sourceCoords}));
         }
       }
     `;
+  }
+}
+
+function getConstantFloatingStr(constantValues?: Scalar) {
+  if (constantValues !== undefined) {
+    const constant = constantValues.get().toString();
+    if (constant.indexOf('.') === -1) {
+      return constant + '.0';
+    }
+    return constant;
+  } else {
+    return '0.0';
   }
 }

@@ -55,8 +55,8 @@ import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValu
 import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
-  [kernel in keyof KernelConfigRegistry]:
-      (backend: MathBackend, config: KernelInputConfig) => NDArray
+  [kernel in keyof KernelConfigRegistry]: (
+      backend: MathBackend, config: KernelInputConfig) => NDArray
 } = {
   // NOTE: Using {} and "return" makes VSCode run much faster.
   MatMul: (backend: MathBackend, config: MatMulInputConfig) => {
@@ -250,10 +250,12 @@ const KERNEL_METHODS: {
     return backend.tile(config.inputs.x, config.args.reps);
   },
   Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
-    return backend.pad1D(config.inputs.x, config.args.paddings);
+    return backend.pad1D(
+        config.inputs.x, config.args.paddings, config.args.constantValues);
   },
   Pad2D: (backend: MathBackend, config: Pad2DInputConfig) => {
-    return backend.pad2D(config.inputs.x, config.args.paddings);
+    return backend.pad2D(
+        config.inputs.x, config.args.paddings, config.args.constantValues);
   },
   Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
     return backend.transpose(config.inputs.x, config.args.perm);
