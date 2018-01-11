@@ -9,6 +9,8 @@ import * as ui from './ui';
 // tslint:disable-next-line:no-unused-expression
 new Vue({el: '#app', render: h => h(App)});
 
+ui.setup();
+
 const math = dl.ENV.math;
 
 let data: MnistData;

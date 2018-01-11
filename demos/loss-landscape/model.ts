@@ -71,3 +71,32 @@ export function classesFromLabel(y: dl.Array2D<'float32'>): number[] {
 
   return Array.from(pred.dataSync());
 }
+
+export enum WeightInit {
+  FAN_IN = 'fan-in',
+  FAN_OUT = 'fan-out',
+  UNIT = 'unit'
+}
+
+export function changeWeights(selection: WeightInit) {
+  const mean = 0;
+  for (const varName in math.registeredVariables) {
+    const v = math.registeredVariables[varName];
+    let std = 1;
+    switch (selection) {
+      case WeightInit.FAN_IN:
+        std = Math.sqrt(2 / v.shape[0]);
+        break;
+      case WeightInit.FAN_OUT:
+        std = Math.sqrt(2 / v.shape[1]);
+        break;
+      case WeightInit.UNIT:
+        std = 1;
+        break;
+      default:
+        throw new Error(`Unknown weight init ${selection}`);
+    }
+    v.assign(dl.NDArray.randNormal(v.shape, mean, std));
+  }
+  console.log(math.getNumArrays());
+}
