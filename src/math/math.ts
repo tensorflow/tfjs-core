@@ -757,6 +757,15 @@ export class NDArrayMath implements NDArrayManager {
     return this.notEqual(a, b);
   }
 
+  /** TODO(kreeger): Document me. */
+  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
+    util.assertTypesMatch(a, b);
+    //
+    // TODO(kreeger): write me.
+    //
+    return null;
+  }
+
   /**
    * Computes the top K values and flattened indices.
    * @param x The input NDArray.

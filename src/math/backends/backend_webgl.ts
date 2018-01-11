@@ -503,7 +503,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
-  logicalOr(a: NDArray<'bool'>, b: NDArray<'bool'>): NDArray<'bool'> {
+  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
     //
     // TODO(kreeger): write me
     //

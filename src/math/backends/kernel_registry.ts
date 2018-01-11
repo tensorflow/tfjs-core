@@ -30,7 +30,8 @@ import {CastInputConfig, CastNode} from './types/cast';
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './types/concat';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
-import {EqualInputConfig, EqualNode} from './types/logical';
+// tslint:disable-next-line:max-line-length
+import {EqualInputConfig, EqualNode, LogicalOrInputConfig, LogicalOrNode} from './types/logical';
 import {LRN4DInputConfig, LRN4DNode} from './types/lrn';
 import {MatMulInputConfig, MatMulNode} from './types/matmul';
 // tslint:disable-next-line:max-line-length
@@ -53,8 +54,8 @@ import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValu
 import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
-  [kernel in keyof KernelConfigRegistry]:
-      (backend: MathBackend, config: KernelInputConfig) => NDArray
+  [kernel in keyof KernelConfigRegistry]: (
+      backend: MathBackend, config: KernelInputConfig) => NDArray
 } = {
   // NOTE: Using {} and "return" makes VSCode run much faster.
   MatMul: (backend: MathBackend, config: MatMulInputConfig) => {
@@ -122,6 +123,9 @@ const KERNEL_METHODS: {
   },
   NotEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.notEqual(config.inputs.a, config.inputs.b);
+  },
+  LogicalOr: (backend: MathBackend, config: LogicalOrInputConfig) => {
+    return backend.logicalOr(config.inputs.a, config.inputs.b);
   },
   TopKValues:
       (backend: MathBackend, config: TopKValuesInputConfig<NDArray>) => {
@@ -352,6 +356,7 @@ export interface KernelConfigRegistry {
   ArgMin: ArgMinNode;
   Equal: EqualNode;
   NotEqual: EqualNode;
+  LogicalOr: LogicalOrNode;
   TopKValues: TopKValuesNode<DataType, NDArray>;
   TopKIndices: TopKIndicesNode;
   Min: MinNode<DataType>;
