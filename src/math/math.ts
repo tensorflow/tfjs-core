@@ -1022,8 +1022,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The array to pad.
    * @param paddings A tuple of ints [padLeft, padRight], how much to pad on the
    *     left and right side of the array.
-   * @param constantValues The scalar pad value to use. Must be the same type as
-   *     the passed in array. Defaults to 0.
+   * @param constantValue The scalar pad value to use. Defaults to 0.
    */
   pad1D(x: Array1D, paddings: [number, number], constantValue = 0): Array1D {
     util.assert(
@@ -1045,8 +1044,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param paddings A pair of tuple ints
    *     [[padTop, padBottom], [padLeft, padRight]], how much to pad on the
    *     array.
-   * @param constantValues The scalar pad value to use. Must be the same type as
-   *     the passed in array. Defaults to 0.
+   * @param constantValue The scalar pad value to use. Defaults to 0.
    */
   pad2D(
       x: Array2D, paddings: [[number, number], [number, number]],
