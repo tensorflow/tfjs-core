@@ -137,12 +137,12 @@ export class TensorflowModel implements Model {
     const layers: types.Layer[] = [];
     dag.iterate<tensorflow.INodeDef>(
         this.nodes, this.edges,
-        (node: tensorflow.INodeDef, parents: tensorflow.INodeDef[],
-         i: number) => {
-          if (!layers[i]) {
-            layers[i] = {nodes: []};
+        (node: tensorflow.INodeDef, parents: tensorflow.INodeDef[], i: number,
+         layer: number) => {
+          if (!layers[layer]) {
+            layers[layer] = {nodes: []};
           }
-          layers[i].nodes.push(
+          layers[layer].nodes.push(
               {node: node.name, parents: parents.map((p) => p.name)});
         });
     return layers;

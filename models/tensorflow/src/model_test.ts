@@ -114,8 +114,7 @@ describe('TensorflowModel', () => {
       });
       expect(value.rank).toEqual(4);
       expect(value.shape).toEqual([3, 1, 1, 1]);
-      test_util.expectArraysClose(
-          value.dataSync(), Float32Array.from([2, 2, 2]));
+      test_util.expectArraysClose(value.dataSync(), Int32Array.from([2, 2, 2]));
       done();
     });
   });
@@ -141,3 +140,10 @@ describe('TensorflowModel', () => {
     });
   });
 });
+
+[Object({nodes: [Object({node: 'Shape', parents: []})]}),
+ Object({nodes: [Object({node: 'Const', parents: []})]}),
+ Object({nodes: [Object({node: 'image_placeholder', parents: []})]}), Object({
+   nodes: [Object({node: 'Conv2D', parents: ['image_placeholder', 'Const']})]
+ }),
+ Object({nodes: [Object({node: 'BiasAdd', parents: ['Conv2D', 'Shape']})]})]
