@@ -1015,58 +1015,48 @@ export class NDArrayMath implements NDArrayManager {
    * Pads a Array1D.
    *
    * This operation will pad an array according to the `paddings` you specify.
-   * Paddings rank must match target array's rank.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
    *
    * @param x The array to pad.
    * @param paddings A tuple of ints [padLeft, padRight], how much to pad on the
-   * left and right side of the array.
+   *     left and right side of the array.
    * @param constantValues The scalar pad value to use. Must be the same type as
-   * the passed in array. Defaults to 0.
+   *     the passed in array. Defaults to 0.
    */
-  pad1D(x: Array1D, paddings: [number, number], constantValues?: Scalar):
-      Array1D {
+  pad1D(x: Array1D, paddings: [number, number], constantValue = 0): Array1D {
     util.assert(
         paddings.length === 2,
         'Invalid number of paddings. Must be length of 2.');
-    if (constantValues) {
-      util.assert(
-          x.dtype === constantValues.dtype,
-          'Constant values must match passed in array type.');
-    }
     return this.backendEngine.executeKernel(
-        'Pad1D', {inputs: {x}, args: {paddings, constantValues}});
+        'Pad1D', {inputs: {x}, args: {paddings, constantValue}});
   }
 
   /**
    * Pads a Array2D.
    *
    * This operation will pad an array according to the `paddings` you specify.
-   * Paddings rank must match target array's rank.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
    *
    * @param x The array to pad.
-   * @param paddings A pair of tiple ints
-   * [[padTop, padBottom], [padLeft, padRight]], how much to pad on the array.
+   * @param paddings A pair of tuple ints
+   *     [[padTop, padBottom], [padLeft, padRight]], how much to pad on the
+   *     array.
    * @param constantValues The scalar pad value to use. Must be the same type as
-   * the passed in array. Defaults to 0.
+   *     the passed in array. Defaults to 0.
    */
-  pad2D(x: Array2D, paddings: Array<[number, number]>, constantValues?: Scalar):
-      Array2D {
+  pad2D(
+      x: Array2D, paddings: [[number, number], [number, number]],
+      constantValue = 0): Array2D {
     util.assert(
-        paddings[0].length === 2 && paddings[1].length === 2,
+        paddings.length === 2 && paddings[0].length === 2 &&
+            paddings[1].length === 2,
         'Invalid number of paddings. Must be length of 2 each.');
-    if (constantValues) {
-      util.assert(
-          x.dtype === constantValues.dtype,
-          'Constant values must match passed in array type.');
-    }
     return this.backendEngine.executeKernel(
-        'Pad2D', {inputs: {x}, args: {paddings, constantValues}});
+        'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
   }
 
   /**

@@ -22,7 +22,7 @@ import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
@@ -412,15 +412,16 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  pad1D(x: Array1D, paddings: [number, number], constantValues?: Scalar):
+  pad1D(x: Array1D, paddings: [number, number], constantValue: number):
       Array1D {
-    const program = new Pad1DProgram(x.shape, paddings, constantValues);
+    const program = new Pad1DProgram(x.shape, paddings, constantValue);
     return this.compileAndRun(program, [x]);
   }
 
-  pad2D(x: Array2D, paddings: Array<[number, number]>, constantValues?: Scalar):
-      Array2D {
-    const program = new Pad2DProgram(x.shape, paddings, constantValues);
+  pad2D(
+      x: Array2D, paddings: [[number, number], [number, number]],
+      constantValue: number): Array2D {
+    const program = new Pad2DProgram(x.shape, paddings, constantValue);
     return this.compileAndRun(program, [x]);
   }
 

@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import {Scalar} from '../../ndarray';
-
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Pad1DProgram implements GPGPUProgram {
@@ -26,10 +24,10 @@ export class Pad1DProgram implements GPGPUProgram {
   rank: number;
 
   constructor(
-      xShape: number[], paddings: [number, number], constantValues?: Scalar) {
+      xShape: number[], paddings: [number, number], constantValue: number) {
     const leftPadding = paddings[0];
     const rightPadding = paddings[1];
-    const constant = getConstantFloatingStr(constantValues);
+    const constant = getConstantFloatingStr(constantValue);
 
     this.outputShape = [leftPadding + xShape[0] + rightPadding];
     this.rank = 1;
@@ -54,13 +52,13 @@ export class Pad2DProgram implements GPGPUProgram {
   rank: number;
 
   constructor(
-      xShape: number[], paddings: Array<[number, number]>,
-      constantValues?: Scalar) {
+      xShape: number[], paddings: [[number, number], [number, number]],
+      constantValue: number) {
     const topPadding = paddings[0][0];
     const bottomPadding = paddings[0][1];
     const leftPadding = paddings[1][0];
     const rightPadding = paddings[1][1];
-    const constant = getConstantFloatingStr(constantValues);
+    const constant = getConstantFloatingStr(constantValue);
 
     this.outputShape = [
       topPadding + xShape[0] + bottomPadding,
@@ -86,14 +84,10 @@ export class Pad2DProgram implements GPGPUProgram {
   }
 }
 
-function getConstantFloatingStr(constantValues?: Scalar) {
-  if (constantValues !== undefined) {
-    const constant = constantValues.get().toString();
-    if (constant.indexOf('.') === -1) {
-      return constant + '.0';
-    }
-    return constant;
-  } else {
-    return '0.0';
+function getConstantFloatingStr(constantValue: number): string {
+  const strValue = constantValue.toString();
+  if (strValue.indexOf('.') === -1) {
+    return strValue + '.0';
   }
+  return strValue;
 }

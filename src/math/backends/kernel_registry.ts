@@ -251,11 +251,11 @@ const KERNEL_METHODS: {
   },
   Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
     return backend.pad1D(
-        config.inputs.x, config.args.paddings, config.args.constantValues);
+        config.inputs.x, config.args.paddings, config.args.constantValue);
   },
   Pad2D: (backend: MathBackend, config: Pad2DInputConfig) => {
     return backend.pad2D(
-        config.inputs.x, config.args.paddings, config.args.constantValues);
+        config.inputs.x, config.args.paddings, config.args.constantValue);
   },
   Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
     return backend.transpose(config.inputs.x, config.args.perm);
