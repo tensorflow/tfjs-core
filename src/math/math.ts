@@ -771,7 +771,13 @@ export class NDArrayMath implements NDArrayManager {
     return this.backendEngine.executeKernel('LogicalOr', {inputs: {a, b}});
   }
 
-  /** TODO(kreeger): Document me. */
+  /**
+   * Returns the elements, either `a` or `b` depending on the `condition`.
+   *
+   * @param condition
+   * @param a
+   * @param b
+   */
   where(condition: NDArray<'bool'>, a: NDArray, b: NDArray): NDArray {
     util.assert(
         condition.dtype === 'bool' || a.dtype === 'bool' || b.dtype === 'bool',

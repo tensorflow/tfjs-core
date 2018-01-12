@@ -28,8 +28,22 @@ export class WhereProgram implements GPGPUProgram {
     this.outputShape = shape;
     this.rank = rank;
 
+    let sourceCoords;
+    if (rank > 4) {
+      throw Error(`Where for rank ${rank} is not yet supported`);
+    }
+    if (rank === 1) {
+      sourceCoords = `resRC`;
+    } else {
+      const currentCoords = ['resRC.x', 'resRC.y', 'resRC.z', 'resRC.w'];
+      const coordVars = [];
+      for (let i = 0; i < shape.length; i++) {
+        coordVars.push(`${currentCoords[i]}`);
+      }
+      sourceCoords = coordVars.join();
+    }
+
     const dtype = getCoordsDataType(this.rank);
-    const sourceCoords = getSourceCoords(shape);
 
     this.userCode = `
       void main() {
@@ -43,23 +57,4 @@ export class WhereProgram implements GPGPUProgram {
       }
     `;
   }
-}
-
-// TODO - move into constructor?
-function getSourceCoords(shape: number[]): string {
-  const rank = shape.length;
-  if (rank > 4) {
-    throw Error(`Where for rank ${rank} is not yet supported`);
-  }
-  if (rank === 1) {
-    return `resRC`;
-  }
-
-  const currentCoords = ['resRC.x', 'resRC.y', 'resRC.z', 'resRC.w'];
-
-  const sourceCoords = [];
-  for (let i = 0; i < shape.length; i++) {
-    sourceCoords.push(`${currentCoords[i]}`);
-  }
-  return sourceCoords.join();
 }

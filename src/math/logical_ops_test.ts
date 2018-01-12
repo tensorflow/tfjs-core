@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 
-import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
 // LogicalOr:
 {
