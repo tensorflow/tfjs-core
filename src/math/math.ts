@@ -764,7 +764,9 @@ export class NDArrayMath implements NDArrayManager {
    * @param b The second input `NDArray<'bool'>`.
    */
   logicalOr(a: NDArray<'bool'>, b: NDArray<'bool'>): NDArray<'bool'> {
-    util.assert(a.dtype === 'bool', 'Error Array must be of type bool.');
+    util.assert(
+        a.dtype === 'bool' || b.dtype === 'bool',
+        'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return this.backendEngine.executeKernel('LogicalOr', {inputs: {a, b}});
   }

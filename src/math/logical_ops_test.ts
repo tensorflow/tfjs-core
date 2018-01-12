@@ -27,7 +27,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
   const tests: MathTests = it => {
     // Array1D:
-    it('Should handle Array1D.', math => {
+    it('Array1D.', math => {
       let a = Array1D.new([1, 0, 0], 'bool');
       let b = Array1D.new([0, 1, 0], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1, 0]);
@@ -40,7 +40,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       b = Array1D.new([1, 1], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1]);
     });
-    it('Should handle mismatched Array1D shapes', math => {
+    it('mismatched Array1D shapes', math => {
       const a = Array1D.new([1, 0], 'bool');
       const b = Array1D.new([0, 1, 0], 'bool');
       const f = () => {
@@ -48,14 +48,14 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       };
       expect(f).toThrowError();
     });
-    it('Should handle NaNs in Array1D', math => {
+    it('NaNs in Array1D', math => {
       const a = Array1D.new([1, NaN, 0], 'bool');
       const b = Array1D.new([0, 0, NaN], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, boolNaN, boolNaN]);
     });
 
     // Array2D:
-    it('Should handle Array2D', math => {
+    it('Array2D', math => {
       let a = Array2D.new([2, 3], [[1, 0, 1], [0, 0, 0]], 'bool');
       let b = Array2D.new([2, 3], [[0, 0, 0], [0, 1, 0]], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 0, 1, 0, 1, 0]);
@@ -64,12 +64,12 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       b = Array2D.new([2, 3], [[0, 0, 0], [1, 1, 1]], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [0, 0, 0, 1, 1, 1]);
     });
-    it('Should handle broadcasting Array2D shapes', math => {
+    it('broadcasting Array2D shapes', math => {
       const a = Array2D.new([2, 1], [[1], [0]], 'bool');
       const b = Array2D.new([2, 3], [[0, 0, 0], [0, 1, 0]], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1, 1, 0, 1, 0]);
     });
-    it('Should handle NaNs in Array2D', math => {
+    it('NaNs in Array2D', math => {
       const a = Array2D.new([2, 2], [[1, NaN], [0, NaN]], 'bool');
       const b = Array2D.new([2, 2], [[0, NaN], [1, NaN]], 'bool');
       test_util.expectArraysClose(
@@ -77,7 +77,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
     });
 
     // Array3D:
-    it('Should handle Array3D', math => {
+    it('Array3D', math => {
       let a =
           Array3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [0]]], 'bool');
       let b =
@@ -88,7 +88,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       b = Array3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [0, 0, 0, 1, 1, 1]);
     });
-    it('Should handle broadcasting Array3D shapes', math => {
+    it('broadcasting Array3D shapes', math => {
       const a = Array3D.new(
           [2, 3, 2], [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
           'bool');
@@ -97,7 +97,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       test_util.expectArraysClose(
           math.logicalOr(a, b), [1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0]);
     });
-    it('Should handle NaNs in Array3D', math => {
+    it('NaNs in Array3D', math => {
       const a =
           Array3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'bool');
       const b =
@@ -107,7 +107,7 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
     });
 
     // Array4D:
-    it('Should handle Array4D', math => {
+    it('Array4D', math => {
       let a = Array4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       let b = Array4D.new([2, 2, 1, 1], [0, 1, 0, 0], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1, 1, 0]);
@@ -120,14 +120,14 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       b = Array4D.new([2, 2, 1, 1], [1, 1, 1, 1], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1, 1, 1]);
     });
-    it('Should handle broadcasting Array4D shapes', math => {
+    it('broadcasting Array4D shapes', math => {
       const a = Array4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       const b = Array4D.new(
           [2, 2, 1, 2], [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], 'bool');
       test_util.expectArraysClose(
           math.logicalOr(a, b), [1, 1, 0, 0, 1, 1, 1, 1]);
     });
-    it('Should handle NaNs in Array4D', math => {
+    it('NaNs in Array4D', math => {
       const a = Array4D.new([2, 2, 1, 1], [1, NaN, 1, 0], 'bool');
       const b = Array4D.new([2, 2, 1, 1], [0, 1, 0, NaN], 'bool');
       test_util.expectArraysClose(
