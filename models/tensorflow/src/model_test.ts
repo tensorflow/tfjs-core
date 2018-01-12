@@ -140,10 +140,3 @@ describe('TensorflowModel', () => {
     });
   });
 });
-
-[Object({nodes: [Object({node: 'Shape', parents: []})]}),
- Object({nodes: [Object({node: 'Const', parents: []})]}),
- Object({nodes: [Object({node: 'image_placeholder', parents: []})]}), Object({
-   nodes: [Object({node: 'Conv2D', parents: ['image_placeholder', 'Const']})]
- }),
- Object({nodes: [Object({node: 'BiasAdd', parents: ['Conv2D', 'Shape']})]})]

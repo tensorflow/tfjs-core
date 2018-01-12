@@ -14,7 +14,8 @@
  * limitations under the License.
  * =============================================================================
  */
-import {getBoolParam, getNumericArrayParam, getStringParam, getTensorParam, performMathOp, tensorflow} from './index';
+// tslint:disable-next-line:max-line-length
+import {getBoolParam, getNumericArrayParam, getStringParam, getTensorParam, tensorflow} from './index';
 
 describe('node', () => {
   let node: tensorflow.NodeDef;
@@ -24,8 +25,6 @@ describe('node', () => {
     node.op = 'Const';
     node.input = ['input1'];
   });
-
-  describe('performMathOp', () => {});
 
   describe('getBoolParam', () => {
     it('should load correctly', () => {
