@@ -2,16 +2,15 @@ import {Array1D, Array2D, Array3D, Array4D, Scalar} from 'deeplearn';
 import {NDArray, NDArrayMath} from 'deeplearn';
 
 import {tensorflow} from './index';
-import {tensorToNDArray} from './util';
 
-function getStringParam(
+export function getStringParam(
     attrs: {[key: string]: tensorflow.IAttrValue}, name: string,
     def: string): string {
   const param = attrs[name];
   return param ? String.fromCharCode.apply(null, param.s) || def : def;
 }
 
-function getTensorParam(
+export function getTensorParam(
     attrs: {[key: string]: tensorflow.IAttrValue}, name: string,
     def?: tensorflow.ITensor): tensorflow.ITensor|undefined {
   const param = attrs[name];
@@ -25,7 +24,7 @@ function getTensorParam(
  * @param startIndex
  * @param endIndex not included
  */
-function getNumericArrayParam(
+export function getNumericArrayParam(
     attrs: {[key: string]: tensorflow.IAttrValue}, name: string, def: number[],
     startIndex?: number, endIndex?: number): number[] {
   const param = attrs[name];
@@ -39,7 +38,8 @@ function getNumericArrayParam(
 
 export function performMathOp(
     math: NDArrayMath, input: NDArray|NDArray[]|number[],
-    node: tensorflow.INodeDef, feedDict: {[key: string]: NDArray}): NDArray {
+    node: tensorflow.INodeDef, feedDict: {[key: string]: NDArray},
+    weights: {[key: string]: NDArray}): NDArray {
   switch (node.op) {
     case 'Add':
     case 'BiasAdd': {
@@ -51,11 +51,7 @@ export function performMathOp(
       return math.add(inputs[0], inputs[1]);
     }
     case 'Const': {
-      const constParam = node.attr;
-      const tensor = getTensorParam(
-          constParam, 'value',
-          {tensorShape: {dim: []}, dtype: tensorflow.DataType.DT_INT32});
-      return tensorToNDArray(tensor);
+      return weights[node.name];
     }
     case 'Placeholder':
       return feedDict[node.name];
@@ -123,8 +119,8 @@ export function performMathOp(
           getNumericArrayParam(poolingParam, 'ksize', [1, 1], 1, 3);
 
       return math.maxPool(
-          input as Array3D, [kernelSize[0], kernelSize[1]],
-          [stride[0], stride[1]], pad as 'valid' | 'same');
+          input as Array3D, kernelSize as [number, number],
+          stride as [number, number], pad as 'valid' | 'same');
     }
 
     case 'RandomUniform': {
@@ -142,6 +138,7 @@ export function performMathOp(
       const squeezeInput = input as NDArray;
       const squeezeParam = node.attr;
       const axis = getNumericArrayParam(squeezeParam, 'axis', undefined);
+      // deprecated attr name but still exist in old model files.
       const dims =
           getNumericArrayParam(squeezeParam, 'squeeze_dims', undefined);
       const {newShape} = squeezeShape(squeezeInput.shape, axis || dims);
@@ -156,10 +153,26 @@ export function performMathOp(
 
     case 'Slice': {
       const inputs = input as NDArray[];
+      const begin = inputs[1].dataSync();
+      const size = inputs[2].dataSync();
 
-      const begin = inputs[1].dataSync()[0];
-      const size = inputs[2].dataSync()[0];
-      return math.slice1D(inputs[0] as Array1D, begin, size);
+      switch (inputs[0].rank) {
+        case 1:
+          return math.slice1D(inputs[0] as Array1D, begin[0], size[0]);
+        case 2:
+          return math.slice2D(
+              inputs[0] as Array2D, [begin[0], begin[1]], [size[0], size[1]]);
+        case 3:
+          return math.slice3D(
+              inputs[0] as Array3D, [begin[0], begin[1], begin[2]],
+              [size[0], size[1], size[2]]);
+        case 4:
+          return math.slice4D(
+              inputs[0] as Array4D, [begin[0], begin[1], begin[2], begin[3]],
+              [size[0], size[1], size[2], size[3]]);
+        default:
+          throw new Error(`input rank = ${inputs[0].rank} is not supported.`);
+      }
     }
 
     case 'Sub': {
@@ -192,25 +205,28 @@ export function performMathOp(
       const axis = inp[inp.length - 1].dataSync()[0];
       let out = inp[0];
       for (let i = 1; i < inp.length - 1; ++i) {
-        if (out.rank === 1) {
-          inp[i] = inp[i].as1D();
-          out = math.concat1D(out as Array1D, inp[i] as Array1D);
-        }
-        if (out.rank === 2) {
-          out = math.concat2D(out as Array2D, inp[i] as Array2D, axis);
-        }
-        if (out.rank === 3) {
-          out = math.concat3D(out as Array3D, inp[i] as Array3D, axis);
-        }
-        if (out.rank === 4) {
-          out = math.concat4D(out as Array4D, inp[i] as Array4D, axis);
+        switch (out.rank) {
+          case 1:
+            // inp[i] = inp[i].as1D();
+            out = math.concat1D(out as Array1D, inp[i] as Array1D);
+            break;
+          case 2:
+            out = math.concat2D(out as Array2D, inp[i] as Array2D, axis);
+            break;
+          case 3:
+            out = math.concat3D(out as Array3D, inp[i] as Array3D, axis);
+            break;
+          case 4:
+            out = math.concat4D(out as Array4D, inp[i] as Array4D, axis);
+            break;
+          default:
+            throw new Error(`input rank = ${out.rank} is not supported.`);
         }
       }
       return out;
     }
 
     default:
-      console.debug(node);
       throw TypeError(`Node type ${node.op} is not implemented`);
   }
 }

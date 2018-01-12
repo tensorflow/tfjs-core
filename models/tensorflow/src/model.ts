@@ -17,7 +17,7 @@
 import * as dag from 'dag-iterator';
 import {Array1D, Array3D, ENV, Model, NDArray, NDArrayMath} from 'deeplearn';
 
-import {tensorflow} from './index';
+import {getTensorParam, tensorflow, tensorToNDArray} from './index';
 import {performMathOp} from './node';
 import * as types from './types';
 
@@ -45,6 +45,10 @@ export class TensorflowModel implements Model {
   edges: dag.IEdge[];
 
   /**
+   * Model weight map
+   */
+  weights: {[key: string]: NDArray} = {};
+  /**
    * Constructor
    * @param caffemodelUrl url to the caffemodel file
    * @param prototxtUrl url to the prototxt file
@@ -52,8 +56,6 @@ export class TensorflowModel implements Model {
   constructor(
       private modelFilePromise: Promise<tensorflow.IGraphDef>,
       private math: NDArrayMath = ENV.math) {}
-  private totalOpTime: {[key: string]: number} = {};
-  private opCount: {[key: string]: number} = {};
   /**
    * Load the model
    */
@@ -61,8 +63,7 @@ export class TensorflowModel implements Model {
     return this.modelFilePromise.then(model => {
       this.nodes = this.nodesToDagNodes(model);
       this.edges = this.nodesToDagEdges(model);
-      console.log(this.nodes.length);
-      console.log([...new Set(this.nodes.map(n => n.data.op))].sort());
+      this.loadWeights();
     });
   }
 
@@ -94,6 +95,18 @@ export class TensorflowModel implements Model {
     return edges;
   }
 
+  private loadWeights() {
+    this.nodes.forEach((node) => {
+      if (node.data.op === 'Const') {
+        const constParam = node.data.attr;
+        const tensor = getTensorParam(
+            constParam, 'value',
+            {tensorShape: {dim: []}, dtype: tensorflow.DataType.DT_INT32});
+        this.weights[node.data.name] = tensorToNDArray(tensor);
+      }
+    });
+  }
+
   predict(
       input: NDArray, feedDict?: {[key: string]: NDArray},
       untilLayer?: string): NDArray {
@@ -101,7 +114,7 @@ export class TensorflowModel implements Model {
     const namedActivations: {[key: string]: NDArray} = {};
     let currAct: NDArray|NDArray[] = input;
 
-    dag.iterate<tensorflow.INodeDef>(
+    dag.iterateDfs<tensorflow.INodeDef>(
         this.nodes, this.edges,
         (node: tensorflow.INodeDef, parents: tensorflow.INodeDef[],
          i: number) => {
@@ -110,25 +123,13 @@ export class TensorflowModel implements Model {
           } else if (parents.length > 1) {
             currAct = parents.map((d) => namedActivations[d.name]);
           }
-          const startTime = new Date().getTime();
-          console.time(node.name + ':' + node.op);
-          currAct = performMathOp(this.math, currAct, node, feedDict);
-          console.timeEnd(node.name + ':' + node.op);
-          const endTime = new Date().getTime();
-
-          this.totalOpTime[node.op] =
-              (this.totalOpTime[node.op] || 0.) + endTime - startTime;
-
-          this.opCount[node.op] = (this.opCount[node.op] || 0) + 1;
+          currAct =
+              performMathOp(this.math, currAct, node, feedDict, this.weights);
 
           namedActivations[node.name] = currAct as NDArray;
         },
         untilLayer);
 
-    for (const key in this.totalOpTime) {
-      console.log(`${key} : ${this.totalOpTime[key] / this.opCount[key]} : ${
-          this.totalOpTime[key]} : ${this.opCount[key]}`);
-    }
     return currAct;
   }
 
