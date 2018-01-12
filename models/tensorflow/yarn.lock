@@ -974,9 +974,9 @@ deep-is@~0.1.3:
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/deep-is/-/deep-is-0.1.3.tgz#b369d6fb5dbc13eecf524f91b070feedc357cf34"
 
-deeplearn@^0.3.14:
-  version "0.3.17"
-  resolved "https://registry.yarnpkg.com/deeplearn/-/deeplearn-0.3.17.tgz#cf8ecc076600f5d7524c3859a098ca6898d25ed0"
+deeplearn@0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/deeplearn/-/deeplearn-0.4.1.tgz#51242098b271f6686f13b53c09c42c98b8ab5bcd"
   dependencies:
     seedrandom "~2.4.3"
 

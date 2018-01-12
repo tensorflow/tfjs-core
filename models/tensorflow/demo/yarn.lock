@@ -620,12 +620,12 @@ deep-extend@~0.4.0:
   dependencies:
     "@types/long" "^3.0.32"
     dag-iterator "^0.3.0"
-    deeplearn "^0.3.14"
+    deeplearn "0.4.1"
     protobufjs "^6.8.0"
 
-deeplearn@^0.3.14:
-  version "0.3.17"
-  resolved "https://registry.yarnpkg.com/deeplearn/-/deeplearn-0.3.17.tgz#cf8ecc076600f5d7524c3859a098ca6898d25ed0"
+deeplearn@0.4.1, deeplearn@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/deeplearn/-/deeplearn-0.4.1.tgz#51242098b271f6686f13b53c09c42c98b8ab5bcd"
   dependencies:
     seedrandom "~2.4.3"
 

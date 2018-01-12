@@ -22,16 +22,20 @@ import {IMAGENET_CLASSES} from './imagenet_classes';
  * limitations under the License.
  * =============================================================================
  */
+
+const GOOGLE_CLOUD_STORAGE_DIR =
+    'https://storage.googleapis.com/learnjs-data/tf_model_zoo/';
+
 export class PredictionModel {
   private model: TensorflowModel;
-  constructor(protected math: NDArrayMath, private fileUrl: string) {}
-
+  constructor(protected math: NDArrayMath, private filePath: string) {}
   /**
    * Loads necessary variables for SqueezeNet.
    */
   async load(): Promise<void> {
-    this.model =
-        new TensorflowModel(util.loadRemoteProtoFile(this.fileUrl), this.math);
+    this.model = new TensorflowModel(
+        util.loadRemoteProtoFile(GOOGLE_CLOUD_STORAGE_DIR + this.filePath),
+        this.math);
     return this.model.load();
   }
   /**

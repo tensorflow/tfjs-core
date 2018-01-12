@@ -17,7 +17,7 @@
 import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 import {PredictionModel} from './prediction_model';
 
-const MODEL_FILE_URL = 'http://localhost:8000/squeezenet.pb';
+const MODEL_FILE_URL = 'squeezenet/frozen.pb';
 export class SqueezeNet extends PredictionModel {
   constructor(math: NDArrayMath) {
     super(math, MODEL_FILE_URL);
