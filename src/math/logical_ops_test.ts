@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 
-import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
 
 // LogicalOr:
 {
@@ -137,6 +137,50 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
   test_util.describeMathCPU('logicalOr', [tests]);
   test_util.describeMathGPU('logicalOr', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// Where
+{
+  const tests: MathTests = it => {
+    it('Array1D', math => {
+      const c = Array1D.new([1, 0, 1, 0], 'bool');
+      const a = Array1D.new([10, 10, 10, 10]);
+      const b = Array1D.new([20, 20, 20, 20]);
+      test_util.expectArraysClose(math.where(c, a, b), [10, 20, 10, 20]);
+    });
+
+    it('Array2D', math => {
+      const c = Array2D.new([2, 2], [[1, 0], [0, 1]], 'bool');
+      const a = Array2D.new([2, 2], [[10, 10], [10, 10]]);
+      const b = Array2D.new([2, 2], [[5, 5], [5, 5]]);
+      test_util.expectArraysClose(math.where(c, a, b), [10, 5, 5, 10]);
+    });
+
+    it('Array3D', math => {
+      const c =
+          Array3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [0]]], 'bool');
+      const a = Array3D.new([2, 3, 1], [[[5], [5], [5]], [[5], [5], [5]]]);
+      const b = Array3D.new([2, 3, 1], [[[3], [3], [3]], [[3], [3], [3]]]);
+      test_util.expectArraysClose(math.where(c, a, b), [5, 3, 5, 3, 3, 3]);
+    });
+
+    it('Array4D', math => {
+      const c = Array4D.new([2, 2, 1, 1], [1, 0, 1, 1], 'bool');
+      const a = Array4D.new([2, 2, 1, 1], [7, 7, 7, 7]);
+      const b = Array4D.new([2, 2, 1, 1], [3, 3, 3, 3]);
+      test_util.expectArraysClose(math.where(c, a, b), [7, 3, 7, 7]);
+    });
+
+    // Test failure different a/b shapes
+    // Test failure condition rank conditions vs. a.
+  };
+
+  test_util.describeMathCPU('where KREEGER', [tests]);
+  test_util.describeMathGPU('where KREEGER', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

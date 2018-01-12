@@ -771,6 +771,34 @@ export class NDArrayMath implements NDArrayManager {
     return this.backendEngine.executeKernel('LogicalOr', {inputs: {a, b}});
   }
 
+  /** TODO(kreeger): Document me. */
+  where(condition: NDArray<'bool'>, a: NDArray, b: NDArray): NDArray {
+    util.assert(
+        condition.dtype === 'bool' || a.dtype === 'bool' || b.dtype === 'bool',
+        'Error Array must be of type bool.');
+
+    // TODO - assert x has same shape as condition - or if condition is rank 1,
+    // a may have a higher rank, but the first dimension must match the size of
+    // condition.
+
+    util.assertShapesMatch(a.shape, b.shape, 'Error in notEqualStrict: ');
+
+    // Default to highest percision of number:
+    let dtype;
+    if (a.dtype === 'float32' || b.dtype === 'float32') {
+      dtype = 'float32';
+    } else if (a.dtype === 'int32' || b.dtype === 'int32') {
+      dtype = 'int32';
+    } else if (a.dtype === 'bool' || b.dtype === 'bool') {
+      dtype = 'bool';
+    } else {
+      throw new Error(`Dtype ${a.dtype} not supported for where`);
+    }
+
+    return this.backendEngine.executeKernel(
+        'Where', {inputs: {condition, a, b}, args: {dtype: dtype as DataType}});
+  }
+
   /**
    * Computes the top K values and flattened indices.
    * @param x The input NDArray.

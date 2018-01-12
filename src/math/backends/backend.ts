@@ -79,6 +79,9 @@ export interface MathBackend extends NDArrayStorage {
 
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
 
+  where<D extends DataType>(
+      condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray<D>;
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D>;
   topKIndices(x: NDArray, k: number): Array1D<'int32'>;

@@ -16,7 +16,7 @@
  */
 
 import {NamedArrayMap} from '../../../util';
-import {NDArray} from '../../ndarray';
+import {DataType, NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
@@ -52,4 +52,29 @@ export interface LogicalOrNode extends KernelNode {
 
 export interface LogicalOrInputConfig extends KernelInputConfig {
   inputs: DualInputArrays;
+}
+
+// Where
+export interface WhereNode extends KernelNode {
+  inputAndArgs: WhereInputConfig;
+  output: NDArray;
+  gradient: (dy: NDArray, y: NDArray) => WhereGradientInputArrays;
+}
+
+export interface WhereInputConfig extends KernelInputConfig {
+  inputs: WhereInputArrays;
+  args: {dtype: DataType};
+}
+
+// TODO - does condition mess this up?
+export interface WhereInputArrays extends NamedArrayMap {
+  condition: NDArray;
+  a: NDArray;
+  b: NDArray;
+}
+
+export interface WhereGradientInputArrays extends TapeNodeInputGradientArrays {
+  condition: () => NDArray;
+  a: () => NDArray;
+  b: () => NDArray;
 }

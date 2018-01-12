@@ -485,6 +485,50 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
+  where<D extends DataType>(
+      condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray<D> {
+    const values = condition.dataSync();
+    const aValues = a.dataSync();
+    const bValues = b.dataSync();
+
+    let atype;
+    if (dtype === 'float32') {
+      atype = Float32Array;
+    } else if (dtype === 'int32') {
+      atype = Int32Array;
+    } else if (dtype === 'bool') {
+      atype = Uint8Array;
+    } else {
+      throw new Error(`Dtype ${dtype} not supported for tile`);
+    }
+
+    // Default to highest type of number:
+    // let atype;
+    // let dtype;
+    // if (a.dtype === 'float32' || b.dtype === 'float32') {
+    //   atype = Float32Array;
+    //   dtype = 'float32';
+    // } else if (a.dtype === 'int32' || b.dtype === 'int32') {
+    //   atype = Int32Array;
+    //   dtype = 'int32';
+    // } else if (a.dtype === 'bool' || b.dtype === 'bool') {
+    //   atype = Uint8Array;
+    //   dtype = 'bool';
+    // } else {
+    //   throw new Error(`Dtype ${a.dtype} not supported for where`);
+    // }
+
+    const newValues = new atype(aValues.length);
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] === 1) {
+        newValues[i] = aValues[i];
+      } else {
+        newValues[i] = bValues[i];
+      }
+    }
+    return NDArray.make(a.shape, {values: newValues}, dtype);
+  }
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D> {
     return this.topK(x, k).values as Array1D<D>;
