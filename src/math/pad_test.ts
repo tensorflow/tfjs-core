@@ -34,7 +34,7 @@ import {Array1D, Array2D} from './ndarray';
       test_util.expectArraysClose(b, [1, 2, 3, 4]);
     });
 
-    it('Should handle padding with custom value KREEGER', math => {
+    it('Should handle padding with custom value', math => {
       let a = Array1D.new([1, 2, 3, 4], 'int32');
       let b = math.pad1D(a, [2, 3], 9);
       test_util.expectArraysClose(b, [9, 9, 1, 2, 3, 4, 9, 9, 9]);
@@ -103,7 +103,7 @@ import {Array1D, Array2D} from './ndarray';
       test_util.expectArraysClose(b, [1, 2, 3, 4, 5, 6]);
     });
 
-    it('Should handle padding with custom value KREEGER', math => {
+    it('Should handle padding with custom value', math => {
       let a = Array2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
       let b = math.pad2D(a, [[1, 1], [1, 1]], 10);
       test_util.expectArraysClose(b, [
