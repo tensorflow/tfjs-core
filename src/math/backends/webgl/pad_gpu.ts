@@ -27,7 +27,6 @@ export class Pad1DProgram implements GPGPUProgram {
       xShape: number[], paddings: [number, number], constantValue: number) {
     const leftPadding = paddings[0];
     const rightPadding = paddings[1];
-    const constant = getConstantFloatingStr(constantValue);
 
     this.outputShape = [leftPadding + xShape[0] + rightPadding];
     this.rank = 1;
@@ -36,7 +35,7 @@ export class Pad1DProgram implements GPGPUProgram {
       void main() {
         int resRC = getOutputCoords();
         if (resRC < ${leftPadding} || resRC >= ${leftPadding} + ${xShape[0]}) {
-          setOutput(${constant});
+          setOutput(float(${constantValue}));
         } else {
           setOutput(getX(resRC - ${leftPadding}));
         }
@@ -58,7 +57,6 @@ export class Pad2DProgram implements GPGPUProgram {
     const bottomPadding = paddings[0][1];
     const leftPadding = paddings[1][0];
     const rightPadding = paddings[1][1];
-    const constant = getConstantFloatingStr(constantValue);
 
     this.outputShape = [
       topPadding + xShape[0] + bottomPadding,
@@ -75,19 +73,11 @@ export class Pad2DProgram implements GPGPUProgram {
         int leftShape = ${leftPadding} + ${xShape[1]};
         if (resRC.x < ${topPadding} || resRC.x >= topShape ||
             resRC.y < ${leftPadding} || resRC.y >= leftShape) {
-          setOutput(${constant});
+          setOutput(float(${constantValue}));
         } else {
           setOutput(getX(${sourceCoords}));
         }
       }
     `;
   }
-}
-
-function getConstantFloatingStr(constantValue: number): string {
-  const strValue = constantValue.toString();
-  if (strValue.indexOf('.') === -1) {
-    return strValue + '.0';
-  }
-  return strValue;
 }
