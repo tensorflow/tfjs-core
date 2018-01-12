@@ -9,23 +9,42 @@ const TRAIN_STEPS = 10;
 // Data constants.
 const IMAGE_SIZE = 784;
 const LABELS_SIZE = 10;
+const LANDSCAPE_STEPS_PER_DIR = 20;
 
+// dl.js state.
 const math = dl.ENV.math;
+let optimizer: dl.SGDOptimizer;
+let alphas: Array<dl.Scalar<'float32'>>;
+let weights: Array<dl.Variable<'float32'>>;
 
-const optimizer = new dl.SGDOptimizer(LEARNING_RATE);
+export function init() {
+  optimizer = new dl.SGDOptimizer(LEARNING_RATE);
+  alphas = [];
+  for (let i = 0; i <= LANDSCAPE_STEPS_PER_DIR; i++) {
+    alphas.push(dl.Scalar.new(2 * (i / LANDSCAPE_STEPS_PER_DIR) - 1));
+  }
+  initModel();
+}
 
-const weights1 =
-    dl.variable(dl.Array2D.randNormal([IMAGE_SIZE, 30], 0, 1, 'float32'));
-const weights2 = dl.variable(dl.Array2D.randNormal([30, 200], 0, 1, 'float32'));
-const weights3 =
-    dl.variable(dl.Array2D.randNormal([200, LABELS_SIZE], 0, 1, 'float32'));
+export function initModel() {
+  initFCModel();
+}
+
+export function initFCModel() {
+  weights = [];
+  weights.push(
+      dl.variable(dl.Array2D.randNormal([IMAGE_SIZE, 30], 0, 1, 'float32')));
+  weights.push(dl.variable(dl.Array2D.randNormal([30, 200], 0, 1, 'float32')));
+  weights.push(
+      dl.variable(dl.Array2D.randNormal([200, LABELS_SIZE], 0, 1, 'float32')));
+}
 
 export function model(xs: dl.Array2D<'float32'>): dl.Array2D<'float32'> {
-  const layer1 = math.matMul(xs, weights1);
+  const layer1 = math.matMul(xs, weights[0] as dl.Array2D);
   const act1 = math.relu(layer1);
-  const layer2 = math.matMul(act1, weights2);
+  const layer2 = math.matMul(act1, weights[1] as dl.Array2D);
   const act2 = math.relu(layer2);
-  return math.matMul(act2, weights3) as dl.Array2D<'float32'>;
+  return math.matMul(act2, weights[2] as dl.Array2D) as dl.Array2D<'float32'>;
 }
 
 export function loss(
@@ -34,23 +53,20 @@ export function loss(
 }
 
 // Train the model.
-export async function train(data: MnistData, log: (message: string) => void) {
-  const returnCost = true;
+export async function train(data: MnistData): Promise<number> {
+  let cost: dl.Scalar;
   for (let i = 0; i < TRAIN_STEPS; i++) {
-    const cost = optimizer.minimize(() => {
+    cost = optimizer.minimize(() => {
       const batch = data.nextTrainBatch(BATCH_SIZE);
       const lossVal = loss(batch.labels, model(batch.xs));
       return lossVal;
-    }, returnCost);
-
-    log(`loss[${i}]: ${cost.dataSync()}`);
-    cost.dispose();
+    }, i === TRAIN_STEPS - 1 /* returnCost */);
     await dl.util.nextFrame();
   }
+  const result = await cost.val();
+  cost.dispose();
+  return result;
 }
-
-// Tests the model on a set
-export function test(data: MnistData) {}
 
 // Predict the digit number from a batch of input images.
 export function predict(x: dl.Array2D<'float32'>): number[] {
@@ -75,7 +91,7 @@ export enum WeightInit {
   UNIT = 'unit'
 }
 
-export function changeWeights(selection: WeightInit) {
+export function reinitWeights(selection: WeightInit) {
   const mean = 0;
   for (const varName in math.registeredVariables) {
     const v = math.registeredVariables[varName];
@@ -110,19 +126,11 @@ function genDirections() {
   return dirs;
 }
 
-const stepsPerDir = 20;
-const alphas: Array<dl.Scalar<'float32'>> = [];
-for (let i = 0; i <= stepsPerDir; i++) {
-  alphas.push(dl.Scalar.new(2 * (i / stepsPerDir) - 1));
-}
-
-export async function evaluateLoss(data: MnistData): Promise<number[][]> {
+export async function computeLandscape(data: MnistData): Promise<number[][]> {
   const matrix: number[][] = [];
   await math.scope(async () => {
-    const start = performance.now();
     const losses: Array<Promise<number>> = [];
-    const batchSize = 50;
-    const batch = data.nextTestBatch(batchSize);
+    const batch = data.nextTestBatch(BATCH_SIZE);
     const dirs1 = genDirections();
     const dirs2 = genDirections();
     const vs: {[name: string]: dl.Array1D} = {};
@@ -130,8 +138,8 @@ export async function evaluateLoss(data: MnistData): Promise<number[][]> {
     for (const varName in math.registeredVariables) {
       vs[varName] = math.registeredVariables[varName].flatten();
     }
-    for (let i = 0; i <= stepsPerDir; i++) {
-      for (let j = 0; j <= stepsPerDir; j++) {
+    for (let i = 0; i <= LANDSCAPE_STEPS_PER_DIR; i++) {
+      for (let j = 0; j <= LANDSCAPE_STEPS_PER_DIR; j++) {
         const lossVal = math.scope(() => {
           for (const varName in math.registeredVariables) {
             const variable = math.registeredVariables[varName];
@@ -148,15 +156,14 @@ export async function evaluateLoss(data: MnistData): Promise<number[][]> {
       }
     }
     const lossVals = await Promise.all(losses);
-    for (let i = 0; i <= stepsPerDir; i++) {
+    for (let i = 0; i <= LANDSCAPE_STEPS_PER_DIR; i++) {
       const row: number[] = [];
-      for (let j = 0; j <= stepsPerDir; j++) {
-        const index = i * (stepsPerDir + 1) + j;
+      for (let j = 0; j <= LANDSCAPE_STEPS_PER_DIR; j++) {
+        const index = i * (LANDSCAPE_STEPS_PER_DIR + 1) + j;
         row.push(lossVals[index]);
       }
       matrix.push(row);
     }
-    console.log(performance.now() - start, 'ms');
     // Reset the weights.
     for (const varName in math.registeredVariables) {
       const variable = math.registeredVariables[varName];

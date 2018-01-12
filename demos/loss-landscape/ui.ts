@@ -1,6 +1,29 @@
 import * as controller from './controller';
-import * as model from './model';
 import {WeightInit} from './model';
+
+let statusElement: HTMLElement;
+let messageElement: HTMLElement;
+// tslint:disable-next-line:no-any
+declare const Plotly: any;
+
+export function init() {
+  statusElement = document.getElementById('status');
+  messageElement = document.getElementById('message');
+  const trainButton = document.getElementById('train') as HTMLButtonElement;
+  trainButton.onclick = async () => {
+    trainButton.disabled = true;
+    trainButton.textContent = 'Training...';
+    await controller.trainClicked();
+    trainButton.disabled = false;
+    trainButton.textContent = 'Train';
+  };
+  const weightInitSelect =
+      document.getElementById('weight-init') as HTMLSelectElement;
+  weightInitSelect.onchange = () => {
+    const selection = weightInitSelect.value as WeightInit;
+    controller.changeWeightsInit(selection);
+  };
+}
 
 export function isTraining() {
   statusElement.innerText = 'Training...';
@@ -10,26 +33,9 @@ export function trainingLog(message: string) {
   console.log(message);
 }
 
-let statusElement: HTMLElement;
-let messageElement: HTMLElement;
-
-export function setup() {
-  statusElement = document.getElementById('status');
-  messageElement = document.getElementById('message');
-  const trainButton = document.getElementById('train');
-  trainButton.onclick = () => {
-    controller.trainClicked();
-  };
-  const weightInitSelect =
-      document.getElementById('weight-init') as HTMLSelectElement;
-  weightInitSelect.onchange = () => {
-    const selection = weightInitSelect.value as WeightInit;
-    model.changeWeights(selection);
-  };
+export function dataLoaded() {
+  statusElement.textContent = '';
 }
-
-// tslint:disable-next-line:no-any
-declare const Plotly: any;
 
 export async function plot(zData: number[][]) {
   const data = [{z: zData, type: 'contour', showscale: false}];
