@@ -1,4 +1,4 @@
-import {Array1D, Array2D, Array3D, Array4D, Scalar} from 'deeplearn';
+import {Array1D, Array2D, Array3D, Array4D, MatrixOrientation, Scalar} from 'deeplearn';
 import {NDArray, NDArrayMath} from 'deeplearn';
 
 import {tensorflow} from './index';
@@ -8,6 +8,13 @@ export function getStringParam(
     def: string): string {
   const param = attrs[name];
   return param ? String.fromCharCode.apply(null, param.s) || def : def;
+}
+
+export function getBoolParam(
+    attrs: {[key: string]: tensorflow.IAttrValue}, name: string,
+    def: boolean): boolean {
+  const param = attrs[name];
+  return param ? param.b : def;
 }
 
 export function getTensorParam(
@@ -68,6 +75,16 @@ export function performMathOp(
       return math.multiply(inputs[0], inputs[1]);
     }
 
+    case 'MatMul': {
+      const inputs = input as NDArray[];
+      const transposeA = getBoolParam(node.attr, 'transpose_a', false);
+      const transposeB = getBoolParam(node.attr, 'transpose_b', false);
+      return math.matMul(
+          inputs[0] as Array2D, inputs[1] as Array2D,
+          transposeA ? MatrixOrientation.TRANSPOSED : MatrixOrientation.REGULAR,
+          transposeB ? MatrixOrientation.TRANSPOSED :
+                       MatrixOrientation.REGULAR);
+    }
     case 'Conv2D': {
       const convolutionParam = node.attr;
       const stride =

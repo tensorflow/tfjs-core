@@ -17,7 +17,7 @@
 import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 import {PredictionModel} from './prediction_model';
 
-const MODEL_FILE_URL = 'inception_v3_2016_08_28/frozen.pb';
+const MODEL_FILE_URL = 'inception_v4_2016_09_09/frozen.pb';
 export class Inception extends PredictionModel {
   // yolo variables
   private PREPROCESS_DIVISOR = Scalar.new(255.0 / 2);
