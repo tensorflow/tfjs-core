@@ -23,8 +23,19 @@ import {DataType, NDArray} from './math/ndarray';
 import * as util from './util';
 import {TypedArray} from './util';
 
+// This is how the it(), fit() and xit() function look in your tests
+export type MathIt = (name: string, testFn: (math: NDArrayMath) => void) =>
+    void;
+
+// This is the internal representation of the it(), fit() and xit() functions
+export type It = (name: string, testFn: () => void|Promise<void>) => void;
+
+export type MathTests = (it: MathIt, fit?: MathIt, xit?: MathIt) => void;
+export type Tests = (it: It, fit?: It, xit?: It) => void;
+
 /** Accuracy for tests. */
-// TODO(nsthorat || smilkov): Fix this low precision for byte-backed textures.
+// TODO(nsthorat || smilkov): Fix this low precision for byte-backed
+// textures.
 export const TEST_EPSILON = 1e-2;
 
 export function mean(values: TypedArray|number[]) {
@@ -247,17 +258,6 @@ export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
   }
   return d;
 }
-export enum TestMode {
-  FOCUS,   // run only a specific test
-  EXCLUDE  // exclude a specific test
-}
-export type MathTests =
-    (it: (
-         name: string, testFn: (math: NDArrayMath) => void,
-         testMode?: TestMode) => void) => void;
-export type Tests =
-    (it: (name: string, testFn: () => void, testMode?: TestMode) => void) =>
-        void;
 
 export function describeMathCPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
@@ -306,39 +306,35 @@ function describeWithFeaturesAndExecutor(
   }
 }
 
-export type It =
-    (name: string, testFunc: () => void|Promise<void>, testMode?: TestMode) =>
-        void;
+function resolveTestFuncPromise(testFunc: () => void|Promise<void>) {
+  return (done: DoneFn) => {
+    const result = testFunc();
+    if (result instanceof Promise) {
+      result.then(done, e => {
+        fail(e);
+        done();
+      });
+    } else {
+      done();
+    }
+  };
+}
 
 // A wrapper around it() that calls done automatically if the function returns
 // a Promise, aka if it's an async/await function.
-const PROMISE_IT: It =
-    (name: string, testFunc: () => void|Promise<void>, testMode?: TestMode) => {
-      const cb = (done: DoneFn) => {
-        const result = testFunc();
-        if (result instanceof Promise) {
-          result.then(done, e => {
-            fail(e);
-            done();
-          });
-        } else {
-          done();
-        }
-      };
+const PROMISE_IT: It = (name: string, testFunc: () => void|Promise<void>) => {
+  it(name, resolveTestFuncPromise(testFunc));
+};
 
-      switch (testMode) {
-        case TestMode.EXCLUDE:
-          // tslint:disable-next-line:ban
-          xit(name, cb);
-          break;
-        case TestMode.FOCUS:
-          // tslint:disable-next-line:ban
-          fit(name, cb);
-          break;
-        default:
-          it(name, cb);
-      }
-    };
+const PROMISE_FIT: It = (name: string, testFunc: () => void|Promise<void>) => {
+  // tslint:disable-next-line:ban
+  fit(name, resolveTestFuncPromise(testFunc));
+};
+
+const PROMISE_XIT: It = (name: string, testFunc: () => void|Promise<void>) => {
+  // tslint:disable-next-line:ban
+  xit(name, resolveTestFuncPromise(testFunc));
+};
 
 export function executeMathTests(
     testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
@@ -355,20 +351,28 @@ export function executeMathTests(
     math.dispose();
   };
   const customIt: It =
-      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>,
-       testMode?: TestMode) => {
-        PROMISE_IT(name, () => testFunc(math), testMode);
+      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
+        PROMISE_IT(name, () => testFunc(math));
+      };
+  const customFit: It =
+      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
+        PROMISE_FIT(name, () => testFunc(math));
+      };
+  const customXit: It =
+      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
+        PROMISE_XIT(name, () => testFunc(math));
       };
 
   executeTests(
       testName, tests as Tests[], features, customBeforeEach, customAfterEach,
-      customIt);
+      customIt, customFit, customXit);
 }
 
 function executeTests(
     testName: string, tests: Tests[], features?: Features,
     customBeforeEach?: () => void, customAfterEach?: () => void,
-    customIt: It = PROMISE_IT) {
+    customIt: It = PROMISE_IT, customFit: It = PROMISE_FIT,
+    customXit: It = PROMISE_XIT) {
   describe(testName, () => {
     beforeEach(() => {
       if (features != null) {
@@ -391,7 +395,7 @@ function executeTests(
       }
     });
 
-    tests.forEach(test => test(customIt));
+    tests.forEach(test => test(customIt, customFit, customXit));
   });
 }
 
