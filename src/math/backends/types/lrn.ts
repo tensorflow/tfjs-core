@@ -1,3 +1,4 @@
+
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -16,40 +17,32 @@
  */
 
 import {NamedArrayMap} from '../../../util';
-import {NDArray} from '../../ndarray';
+import {Array4D} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
-export interface DualInputArrays extends NamedArrayMap {
-  a: NDArray;
-  b: NDArray;
+// 4D
+export interface LRN4DNode extends KernelNode {
+  inputAndArgs: LRN4DInputConfig;
+  output: Array4D;
+  gradient: (dy: Array4D, y: Array4D) => LRN4DGradientInputArrays;
 }
 
-export interface DualGradientInputArrays extends TapeNodeInputGradientArrays {
-  a: () => NDArray;
-  b: () => NDArray;
+export interface LRN4DInputConfig extends KernelInputConfig {
+  inputs: LRN4DInputArrays;
+  args: {
+    radius: number,
+    bias: number,
+    alpha: number,
+    beta: number,
+    normRegion: 'acrossChannels'|'withinChannel'
+  };
 }
 
-// Equal/NotEqual
-export interface EqualNode extends KernelNode {
-  inputAndArgs: EqualInputConfig;
-  output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
+export interface LRN4DInputArrays extends NamedArrayMap {
+  x: Array4D;
 }
 
-export interface EqualInputConfig extends KernelInputConfig {
-  inputs: DualInputArrays;
-}
-
-// LogicalOr
-export interface LogicalOrNode extends KernelNode {
-  inputAndArgs: LogicalOrInputConfig;
-  output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
-}
-
-export interface LogicalOrInputConfig extends KernelInputConfig {
-  inputs: DualInputArrays;
+export interface LRN4DGradientInputArrays extends TapeNodeInputGradientArrays {
+  x: () => Array4D;
 }

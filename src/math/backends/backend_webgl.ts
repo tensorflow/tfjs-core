@@ -26,9 +26,11 @@ import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
+
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
+import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
@@ -42,10 +44,12 @@ import {Copy2DProgram} from './webgl/copy_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {ArrayData, GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
+import {LRNProgram} from './webgl/lrn_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
+import {Pad1DProgram, Pad2DProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
@@ -395,8 +399,29 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, inputs);
   }
 
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D {
+    const program =
+        new LRNProgram(x.shape, radius, bias, alpha, beta, normRegion);
+    return this.compileAndRun(program, [x]);
+  }
+
   tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T {
     const program = new TileProgram(x.shape, reps);
+    return this.compileAndRun(program, [x]);
+  }
+
+  pad1D(x: Array1D, paddings: [number, number], constantValue: number):
+      Array1D {
+    const program = new Pad1DProgram(x.shape, paddings, constantValue);
+    return this.compileAndRun(program, [x]);
+  }
+
+  pad2D(
+      x: Array2D, paddings: [[number, number], [number, number]],
+      constantValue: number): Array2D {
+    const program = new Pad2DProgram(x.shape, paddings, constantValue);
     return this.compileAndRun(program, [x]);
   }
 
@@ -488,6 +513,13 @@ export class MathBackendWebGL implements MathBackend {
   notEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
     const program =
         new BinaryOpProgram(binaryop_gpu.NOT_EQUAL, a.shape, b.shape);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [a, b], output);
+  }
+
+  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.LOGICAL_OR, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
@@ -726,17 +758,22 @@ export class MathBackendWebGL implements MathBackend {
 
   maxPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
-    return this.compileAndRun(program, [x]);
+    const output =
+        this.makeOutputArray(program.outputShape, x.dtype) as Array4D;
+    return this.compileAndRun(program, [x], output);
   }
 
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'min', false);
-    return this.compileAndRun(program, [x]);
+    const output =
+        this.makeOutputArray(program.outputShape, x.dtype) as Array4D;
+    return this.compileAndRun(program, [x], output);
   }
 
-  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D<'float32'> {
     const program = new Pool2DProgram(convInfo, 'avg', false);
-    return this.compileAndRun(program, [x]);
+    const output = this.makeOutputArray(program.outputShape, 'float32');
+    return this.compileAndRun(program, [x], output) as Array4D<'float32'>;
   }
 
   maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -747,11 +784,19 @@ export class MathBackendWebGL implements MathBackend {
         this.compileAndRun(maxPoolPositionsProgram, [x]);
 
     const maxPoolBackPropProgram = new MaxPool2DBackpropProgram(convInfo);
-
-    const result =
-        this.compileAndRun(maxPoolBackPropProgram, [dy, maxPoolPositions]);
+    const output =
+        this.makeOutputArray(maxPoolBackPropProgram.outputShape, x.dtype);
+    const result = this.compileAndRun(
+        maxPoolBackPropProgram, [dy, maxPoolPositions], output);
     maxPoolPositions.dispose();
     return result as Array4D;
+  }
+
+  avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+    const avgPoolBackpropProgram = new AvgPool2DBackpropProgram(convInfo);
+    const output =
+        this.makeOutputArray(avgPoolBackpropProgram.outputShape, x.dtype);
+    return this.compileAndRun(avgPoolBackpropProgram, [dy], output) as Array4D;
   }
 
   resizeBilinear3D(
