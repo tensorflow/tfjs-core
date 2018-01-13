@@ -475,6 +475,16 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
+  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        return util.getNaN('bool');
+      } else {
+        return aVal || bVal;
+      }
+    });
+  }
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D> {
     return this.topK(x, k).values as Array1D<D>;
@@ -1081,6 +1091,85 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
+  pad1D(x: Array1D, paddings: [number, number], constantValue: number):
+      Array1D {
+    const leftPadding = paddings[0];
+    const rightPadding = paddings[1];
+
+    let dtype;
+    if (x.dtype === 'float32') {
+      dtype = Float32Array;
+    } else if (x.dtype === 'int32') {
+      dtype = Int32Array;
+    } else if (x.dtype === 'bool') {
+      dtype = Uint8Array;
+    } else {
+      throw new Error(`Dtype ${x.dtype} not supported for tile`);
+    }
+
+    const values = x.dataSync();
+    const newValues = new dtype(leftPadding + values.length + rightPadding);
+
+    let z = 0;
+    for (let i = 0; i < newValues.length; i++) {
+      if (i >= leftPadding && i < leftPadding + values.length) {
+        newValues[i] = values[z++];
+      } else {
+        newValues[i] = constantValue;
+      }
+    }
+    return Array1D.new(newValues);
+  }
+
+  pad2D(
+      x: Array2D, paddings: [[number, number], [number, number]],
+      constantValue: number): Array2D {
+    const topPadding = paddings[0][0];
+    const bottomPadding = paddings[0][1];
+    const leftPadding = paddings[1][0];
+    const rightPadding = paddings[1][1];
+
+    const newShape = [
+      topPadding + x.shape[0] + bottomPadding,
+      leftPadding + x.shape[1] + rightPadding
+    ];
+
+    let dtype;
+    if (x.dtype === 'float32') {
+      dtype = Float32Array;
+    } else if (x.dtype === 'int32') {
+      dtype = Int32Array;
+    } else if (x.dtype === 'bool') {
+      dtype = Uint8Array;
+    } else {
+      throw new Error(`Dtype ${x.dtype} not supported for tile`);
+    }
+
+    const values = x.dataSync();
+    const newValues = new dtype(util.sizeFromShape(newShape));
+
+    let z = 0;
+    for (let i = 0; i < newShape[0]; i++) {
+      let rangeStart = -1;
+      let rangeEnd = -1;
+
+      if (i >= topPadding && i < newShape[0] - bottomPadding) {
+        rangeStart = i * newShape[1] + leftPadding;
+        rangeEnd = rangeStart + x.shape[1] - 1;
+      }
+
+      for (let j = 0; j < newShape[1]; j++) {
+        const v = i * newShape[1] + j;
+        if (v >= rangeStart && v <= rangeEnd) {
+          newValues[v] = values[z++];
+        } else {
+          newValues[v] = constantValue;
+        }
+      }
+    }
+    return Array2D.new(newShape as [number, number], newValues);
+  }
+
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T {
     const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
@@ -1246,7 +1335,51 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    return dx;
+    return dx.asType(x.dtype);
+  }
+
+  avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
+    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const dx = Array4D.zeros(x.shape);
+
+    const avgMultiplier = 1 / (filterHeight * filterWidth);
+
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let dxR = 0; dxR < convInfo.inHeight; ++dxR) {
+          for (let dxC = 0; dxC < convInfo.inWidth; ++dxC) {
+            // Shader code begins.
+            const dyRCorner = dxR - padTop;
+            const dyCCorner = dxC - padLeft;
+            let dotProd = 0;
+            for (let wR = 0; wR < filterHeight; ++wR) {
+              const dyR = (dyRCorner + wR) / strideHeight;
+              if (dyR < 0 || dyR >= convInfo.outHeight ||
+                  Math.floor(dyR) !== dyR) {
+                continue;
+              }
+              for (let wC = 0; wC < filterWidth; ++wC) {
+                const dyC = (dyCCorner + wC) / strideWidth;
+                if (dyC < 0 || dyC >= convInfo.outWidth ||
+                    Math.floor(dyC) !== dyC) {
+                  continue;
+                }
+
+                const pixel = dy.get(b, dyR, dyC, d);
+                dotProd += pixel;
+              }
+            }
+            dx.set(dotProd * avgMultiplier, b, dxR, dxC, d);
+          }
+        }
+      }
+    }
+    return dx.asType(x.dtype);
   }
 
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -1254,7 +1387,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
-    return this.pool(x, convInfo, 'avg');
+    return this.pool(x, convInfo, 'avg').asType('float32');
   }
 
   resizeBilinear3D(
@@ -1366,6 +1499,56 @@ export class MathBackendCPU implements MathBackend {
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
     return Array4D.new(x.shape, outValues);
+  }
+
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D {
+    const output = Array4D.zeros(x.shape);
+    const rad = radius;
+    const maxW = output.shape[1] - 1;
+    const maxH = output.shape[2] - 1;
+    const maxD = output.shape[3] - 1;
+
+    const sumAcrossChannels =
+        (b: number, r: number, c: number, d: number): number => {
+          let sum = 0.0;
+          for (let j = Math.max(0, d - rad); j <= Math.min(d + rad, maxD);
+               j++) {
+            const z = x.get(b, r, c, j);
+            sum += z * z;
+          }
+          return sum;
+        };
+
+    const sumWithinChannel =
+        (b: number, r: number, c: number, d: number): number => {
+          let sum = 0.0;
+          for (let u = Math.max(0, r - rad); u <= Math.min(r + rad, maxW);
+               u++) {
+            for (let v = Math.max(0, c - rad); v <= Math.min(c + rad, maxH);
+                 v++) {
+              sum += Math.pow(x.get(b, u, v, d), 2);
+            }
+          }
+          return sum;
+        };
+
+    for (let b = 0; b < output.shape[0]; b++) {
+      for (let r = 0; r <= output.shape[1]; r++) {
+        for (let c = 0; c < output.shape[2]; c++) {
+          for (let d = 0; d < output.shape[3]; d++) {
+            const sum = normRegion === 'withinChannel' ?
+                sumWithinChannel(b, r, c, d) :
+                sumAcrossChannels(b, r, c, d);
+            const val = x.get(b, r, c, d) * Math.pow(bias + alpha * sum, -beta);
+            output.set(val, b, r, c, d);
+          }
+        }
+      }
+    }
+
+    return output;
   }
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):

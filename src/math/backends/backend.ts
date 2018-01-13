@@ -76,6 +76,9 @@ export interface MathBackend extends NDArrayStorage {
 
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
   notEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D>;
   topKIndices(x: NDArray, k: number): Array1D<'int32'>;
@@ -139,8 +142,14 @@ export interface MathBackend extends NDArrayStorage {
 
   minPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
+  avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T;
+
+  pad1D(x: Array1D, paddings: [number, number], constantValue: number): Array1D;
+  pad2D(
+      x: Array2D, paddings: [[number, number], [number, number]],
+      constantValue: number): Array2D;
 
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
 
@@ -159,6 +168,10 @@ export interface MathBackend extends NDArrayStorage {
       x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
       varianceEpsilon: number, scale?: Array4D|Array1D,
       offset?: Array4D|Array1D): Array4D;
+
+  localResponseNormalization4D(
+      x: Array4D, radius: number, bias: number, alpha: number, beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'): Array4D;
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
       Array2D<'int32'>;

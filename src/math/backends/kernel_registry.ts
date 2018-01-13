@@ -17,6 +17,7 @@
 
 import * as util from '../../util';
 import {DataType, NDArray, Scalar} from '../ndarray';
+
 import {MathBackend} from './backend';
 import {KernelInputConfig} from './tape_types';
 // tslint:disable-next-line:max-line-length
@@ -29,12 +30,16 @@ import {CastInputConfig, CastNode} from './types/cast';
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './types/concat';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
-import {EqualInputConfig, EqualNode} from './types/logical';
+// tslint:disable-next-line:max-line-length
+import {EqualInputConfig, EqualNode, LogicalOrInputConfig, LogicalOrNode} from './types/logical';
+import {LRN4DInputConfig, LRN4DNode} from './types/lrn';
 import {MatMulInputConfig, MatMulNode} from './types/matmul';
 // tslint:disable-next-line:max-line-length
 import {MaximumInputConfig, MaximumNode, MaxInputConfig, MaxNode, MinimumInputConfig, MinimumNode, MinInputConfig, MinNode} from './types/minmax';
 import {MultinomialInputConfig, MultinomialNode} from './types/multinomial';
 import {OneHotInputConfig, OneHotNode} from './types/onehot';
+// tslint:disable-next-line:max-line-length
+import {Pad1DInputConfig, Pad1DNode, Pad2DInputConfig, Pad2DNode} from './types/pad';
 // tslint:disable-next-line:max-line-length
 import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './types/pool';
 import {PowInputConfig, PowNode} from './types/pow';
@@ -120,6 +125,9 @@ const KERNEL_METHODS: {
   },
   NotEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.notEqual(config.inputs.a, config.inputs.b);
+  },
+  LogicalOr: (backend: MathBackend, config: LogicalOrInputConfig) => {
+    return backend.logicalOr(config.inputs.a, config.inputs.b);
   },
   TopKValues:
       (backend: MathBackend, config: TopKValuesInputConfig<NDArray>) => {
@@ -242,11 +250,19 @@ const KERNEL_METHODS: {
   Clip: (backend: MathBackend, config: ClipInputConfig<NDArray>) => {
     return backend.clip(config.inputs.x, config.args.min, config.args.max);
   },
-  Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
-    return backend.transpose(config.inputs.x, config.args.perm);
-  },
   Tile: (backend: MathBackend, config: TileInputConfig<NDArray>) => {
     return backend.tile(config.inputs.x, config.args.reps);
+  },
+  Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
+    return backend.pad1D(
+        config.inputs.x, config.args.paddings, config.args.constantValue);
+  },
+  Pad2D: (backend: MathBackend, config: Pad2DInputConfig) => {
+    return backend.pad2D(
+        config.inputs.x, config.args.paddings, config.args.constantValue);
+  },
+  Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
+    return backend.transpose(config.inputs.x, config.args.perm);
   },
   Conv2D: (backend: MathBackend, config: Conv2DInputConfig) => {
     return backend.conv2d(
@@ -280,6 +296,10 @@ const KERNEL_METHODS: {
   AvgPool: (backend: MathBackend, config: PoolInputConfig) => {
     return backend.avgPool(config.inputs.x, config.args.convInfo);
   },
+  AvgPoolBackprop: (backend: MathBackend, config: PoolBackpropInputConfig) => {
+    return backend.avgPoolBackprop(
+        config.inputs.dy, config.inputs.x, config.args.convInfo);
+  },
   MinPool: (backend: MathBackend, config: PoolInputConfig) => {
     return backend.minPool(config.inputs.x, config.args.convInfo);
   },
@@ -302,6 +322,11 @@ const KERNEL_METHODS: {
     return backend.batchNormalization2D(
         config.inputs.x, config.inputs.mean, config.inputs.variance,
         config.args.varianceEpsilon, config.inputs.scale, config.inputs.offset);
+  },
+  LRN4D: (backend: MathBackend, config: LRN4DInputConfig) => {
+    return backend.localResponseNormalization4D(
+        config.inputs.x, config.args.radius, config.args.bias,
+        config.args.alpha, config.args.beta, config.args.normRegion);
   },
   Multinomial: (backend: MathBackend, config: MultinomialInputConfig) => {
     return backend.multinomial(
@@ -341,6 +366,7 @@ export interface KernelConfigRegistry {
   ArgMin: ArgMinNode;
   Equal: EqualNode;
   NotEqual: EqualNode;
+  LogicalOr: LogicalOrNode;
   TopKValues: TopKValuesNode<DataType, NDArray>;
   TopKIndices: TopKIndicesNode;
   Min: MinNode<DataType>;
@@ -377,6 +403,8 @@ export interface KernelConfigRegistry {
   Tanh: UnaryNode<NDArray>;
   Clip: ClipNode<NDArray>;
   Transpose: TransposeNode<NDArray>;
+  Pad1D: Pad1DNode;
+  Pad2D: Pad2DNode;
   Tile: TileNode<NDArray>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;
@@ -386,11 +414,13 @@ export interface KernelConfigRegistry {
   MaxPool: PoolNode;
   MaxPoolBackprop: PoolBackpropNode;
   AvgPool: PoolNode;
+  AvgPoolBackprop: PoolBackpropNode;
   MinPool: PoolNode;
   ResizeBilinear3D: ResizeBilinear3DNode;
   BatchNorm4D: BatchNorm4DNode;
   BatchNorm3D: BatchNorm3DNode;
   BatchNorm2D: BatchNorm2DNode;
+  LRN4D: LRN4DNode;
   Multinomial: MultinomialNode;
   OneHot: OneHotNode;
 }
