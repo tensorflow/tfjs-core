@@ -1348,8 +1348,28 @@ export class NDArrayMath implements NDArrayManager {
    * @param b The second NDArray to divide element-wise.
    */
   divide<T extends NDArray<'float32'>>(a: NDArray, b: NDArray): T {
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Div', {inputs: {a, b}}) as T;
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const der = (dy: NDArray, y: NDArray) => {
+      const derA = () => {
+        const res = this.divide(dy, b);
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          return this.sum(res, reduceAxes).reshape(a.shape);
+        }
+        return res;
+      };
+      const derB = () => {
+        let res = this.multiply(dy, a);
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes).reshape(b.shape);
+        }
+        return this.neg(this.divide(res, this.square(b)));
+      };
+      return {a: derA, b: derB};
+    };
+    return this.backendEngine.executeKernel('Div', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -2680,8 +2700,7 @@ export class NDArrayMath implements NDArrayManager {
       const o = this.slice2D(res, [0, sliceCols * 3], sliceSize);
 
       const newC = this.addStrict(
-          this.multiplyStrict(
-              c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+          this.multiplyStrict(c, this.sigmoid(this.add(forgetBias, f))),
           this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
       const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
 

@@ -77,7 +77,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const c = Scalar.new(2);
       const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
 
-      const r = math.scalarDividedByArray(c, a);
+      const r = math.divide(c, a);
 
       test_util.expectArraysClose(
           r, [2 / 1, 2 / 2, 2 / 3, 2 / 4, 2 / 5, 2 / 6]);
@@ -87,24 +87,16 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const c = Scalar.new(NaN);
       const a = Array2D.new([1, 3], [1, 2, 3]);
 
-      const r = math.scalarDividedByArray(c, a);
+      const r = math.divide(c, a);
 
       test_util.expectArraysEqual(r, [NaN, NaN, NaN]);
-    });
-
-    it('scalar divided by array throws when passed non scalar', math => {
-      // tslint:disable-next-line:no-any
-      const c: any = Array1D.new([1, 2, 3]);
-      const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-
-      expect(() => math.scalarDividedByArray(c, a)).toThrowError();
     });
 
     it('array divided by scalar', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
       const c = Scalar.new(2);
 
-      const r = math.arrayDividedByScalar(a, c);
+      const r = math.divide(a, c);
 
       test_util.expectArraysClose(
           r, [1 / 2, 2 / 2, 3 / 2, 4 / 2, 5 / 2, 6 / 2]);
@@ -114,35 +106,108 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const a = Array2D.new([1, 3], [1, 2, NaN]);
       const c = Scalar.new(2);
 
-      const r = math.arrayDividedByScalar(a, c);
+      const r = math.divide(a, c);
       test_util.expectArraysClose(r, [1 / 2, 2 / 2, NaN]);
     });
 
-    it('array divided by scalar throws when passed non scalar', math => {
-      // tslint:disable-next-line:no-any
-      const c: any = Array1D.new([1, 2, 3]);
-      const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    it('gradient: Scalar', math => {
+      const a = Scalar.new(5);
+      const b = Scalar.new(2);
+      const dy = Scalar.new(4);
 
-      expect(() => math.arrayDividedByScalar(a, c)).toThrowError();
+      const vjp = math.vjp(() => math.divide(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.a.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [4 / 2]);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.b, [-4 * 5 / (2 * 2)]);
     });
 
-    it('scalar times ndarray', math => {
-      const a = Array2D.new([3, 2], [2, -5, 1, 1, 4, 0]);
-      const c = Scalar.new(2);
+    it('gradient: Array1D', math => {
+      const a = Array1D.new([1, 2, 3]);
+      const b = Array1D.new([3, 4, 5]);
+      const dy = Array1D.new([1, 10, 20]);
+      const vjp = math.vjp(() => math.divide(a, b), {a, b}, dy);
 
-      const expected = [4, -10, 2, 2, 8, 0];
-      const result = math.scalarTimesArray(c, a);
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [1 / 3, 10 / 4, 20 / 5]);
 
-      expect(result.shape).toEqual([3, 2]);
-      test_util.expectArraysClose(result, expected);
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          vjp.b, [-1 * 1 / 9, -10 * 2 / 16, -20 * 3 / 25]);
     });
 
-    it('scalar times ndarray throws when passed non-scalar', math => {
-      const a = Array2D.new([3, 2], [2, -5, 1, 1, 4, 0]);
-      // tslint:disable-next-line:no-any
-      const c: any = Array1D.new([1, 2, 3, 4]);
+    it('gradient: Array2D', math => {
+      const a = Array2D.new([2, 2], [3, 1, 2, 3]);
+      const b = Array2D.new([2, 2], [1, 3, 4, 5]);
+      const dy = Array2D.new([2, 2], [1, 10, 15, 20]);
 
-      expect(() => math.scalarTimesArray(c, a)).toThrowError();
+      const vjp = math.vjp(() => math.divide(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.a.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [1 / 1, 10 / 3, 15 / 4, 20 / 5], 1e-1);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          vjp.b, [-1 * 3 / 1, -10 * 1 / 9, -15 * 2 / 16, -20 * 3 / 25], 1e-1);
+    });
+
+    it('gradient: scalar / Array1D', math => {
+      const a = Scalar.new(2);
+      const b = Array1D.new([3, 4, 5]);
+      const dy = Array1D.new([6, 7, 8]);
+
+      const vjp = math.vjp(() => math.divide(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.a.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [6 / 3 + 7 / 4 + 8 / 5]);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          vjp.b, [-6 * 2 / 9, -7 * 2 / 16, -8 * 2 / 25]);
+    });
+
+    it('gradient: Array2D / scalar', math => {
+      const a = Array2D.new([2, 2], [[2, 3], [4, 5]]);
+      const b = Scalar.new(2);
+      const dy = Array2D.new([2, 2], [[6, 7], [8, 9]]);
+
+      const vjp = math.vjp(() => math.divide(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.a.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [6 / 2, 7 / 2, 8 / 2, 9 / 2], 1e-1);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          vjp.b, [-6 * 2 / 4 + -7 * 3 / 4 + -8 * 4 / 4 + -9 * 5 / 4], 1e-1);
+    });
+
+    it('gradient: Array2D / Array2D w/ broadcast', math => {
+      const a = Array2D.new([2, 1], [3, 4]);
+      const b = Array2D.new([2, 2], [[2, 3], [4, 5]]);
+      const dy = Array2D.new([2, 2], [[6, 7], [8, 9]]);
+
+      const vjp = math.vjp(() => math.divide(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.a.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [6 / 2 + 7 / 3, 8 / 4 + 9 / 5], 1e-1);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          vjp.b, [-6 * 3 / 4, -7 * 3 / 9, -8 * 4 / 16, -9 * 4 / 25], 1e-1);
     });
   };
 
@@ -157,31 +222,31 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
 // multiply
 {
   const tests: MathTests = it => {
-    it('elementWiseMul same-shaped ndarrays', math => {
+    it('multiplyStrict same-shaped ndarrays', math => {
       const a = Array2D.new([2, 2], [1, 2, -3, -4]);
       const b = Array2D.new([2, 2], [5, 3, 4, -7]);
       const expected = [5, 6, -12, 28];
-      const result = math.elementWiseMul(a, b);
+      const result = math.multiplyStrict(a, b);
 
       expect(result.shape).toEqual([2, 2]);
       test_util.expectArraysClose(result, expected);
     });
 
-    it('elementWiseMul propagates NaNs', math => {
+    it('multiplyStrict propagates NaNs', math => {
       const a = Array2D.new([2, 2], [1, 3, 4, 0]);
       const b = Array2D.new([2, 2], [NaN, 3, NaN, 3]);
 
-      const result = math.elementWiseMul(a, b);
+      const result = math.multiplyStrict(a, b);
       test_util.expectArraysClose(result, [NaN, 9, NaN, 0]);
     });
 
-    it('elementWiseMul throws when passed ndarrays of different shapes',
+    it('multiplyStrict throws when passed ndarrays of different shapes',
        math => {
          const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
          const b = Array2D.new([2, 2], [5, 3, 4, -7]);
 
-         expect(() => math.elementWiseMul(a, b)).toThrowError();
-         expect(() => math.elementWiseMul(b, a)).toThrowError();
+         expect(() => math.multiplyStrict(a, b)).toThrowError();
+         expect(() => math.multiplyStrict(b, a)).toThrowError();
        });
 
     it('same-shaped ndarrays', math => {
@@ -477,7 +542,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const c = Scalar.new(5);
       const a = Array1D.new([1, 2, 3]);
 
-      const result = math.scalarPlusArray(c, a);
+      const result = math.add(c, a);
 
       test_util.expectArraysClose(result, [6, 7, 8]);
     });
@@ -486,17 +551,9 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const c = Scalar.new(NaN);
       const a = Array1D.new([1, 2, 3]);
 
-      const res = math.scalarPlusArray(c, a);
+      const res = math.add(c, a);
 
       test_util.expectArraysEqual(res, [NaN, NaN, NaN]);
-    });
-
-    it('c + A throws when passed non scalar', math => {
-      // tslint:disable-next-line:no-any
-      const c: any = Array1D.new([1, 2, 3]);
-      const a = Array1D.new([1, 2, 3]);
-
-      expect(() => math.scalarPlusArray(c, a)).toThrowError();
     });
 
     it('A + B broadcasting same rank NDArrays different shape', math => {
@@ -635,24 +692,16 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const c = Scalar.new(5);
       const a = Array1D.new([7, 2, 3]);
 
-      const result = math.scalarMinusArray(c, a);
+      const result = math.subtract(c, a);
 
       test_util.expectArraysClose(result, [-2, 3, 2]);
-    });
-
-    it('c - A throws when passed non scalar', math => {
-      // tslint:disable-next-line:no-any
-      const c: any = Array1D.new([1, 2, 3]);
-      const a = Array1D.new([1, 2, 3]);
-
-      expect(() => math.scalarMinusArray(c, a)).toThrowError();
     });
 
     it('A - c', math => {
       const a = Array1D.new([1, 2, -3]);
       const c = Scalar.new(5);
 
-      const result = math.arrayMinusScalar(a, c);
+      const result = math.subtract(a, c);
 
       test_util.expectArraysClose(result, [-4, -3, -8]);
     });
@@ -661,17 +710,9 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const a = Array1D.new([1, NaN, 3]);
       const c = Scalar.new(5);
 
-      const res = math.arrayMinusScalar(a, c);
+      const res = math.subtract(a, c);
 
       test_util.expectArraysClose(res, [-4, NaN, -2]);
-    });
-
-    it('A - c throws when passed non scalar', math => {
-      // tslint:disable-next-line:no-any
-      const c: any = Array1D.new([1, 2, 3]);
-      const a = Array1D.new([1, 2, 3]);
-
-      expect(() => math.arrayMinusScalar(a, c)).toThrowError();
     });
 
     it('A - B', math => {
