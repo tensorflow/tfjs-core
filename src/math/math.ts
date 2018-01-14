@@ -436,15 +436,12 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Reverses a 2D array along a specified axis
    * @param x The input array.
-   * @param axis The set of dimensions to reverse
+   * @param axis The set of dimensions to reverse. Must be in the
+   *     range [-rank(x), rank(x)).
    */
   reverse2D(x: Array2D, axis: number|number[]): Array2D {
     util.assert(x.rank === 2, `Error in reverse2D: x must be rank 2 but got
              rank ${x.rank}.`);
-    util.assert(
-        [].concat(axis).every(ax => util.isInt(ax)),
-        `Error in reverse2D: All values in param axis must be integers but
-               got axis ${axis}`);
     const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 2);
     const input4D = x.as4D(1, 1, x.shape[0], x.shape[1]);
     const res = this.reverse4D(input4D, axisCleaned);
@@ -454,15 +451,12 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Reverses a 3D array along a specified axis
    * @param x The input array.
-   * @param axis The set of dimensions to reverse
+   * @param axis The set of dimensions to reverse. Must be in the
+   *     range [-rank(x), rank(x)).
    */
   reverse3D(x: Array3D, axis: number|number[]): Array3D {
     util.assert(x.rank === 3, `Error in reverse3D: x must be rank 3 but got
              rank ${x.rank}.`);
-    util.assert(
-        [].concat(axis).every(ax => util.isInt(ax)),
-        `Error in reverse3D: All values in param axis must be integers but
-               got axis ${axis}`);
     const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 1);
     const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     const res = this.reverse4D(input4D, axisCleaned);
@@ -472,15 +466,12 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Reverses a 4D array along a specified axis
    * @param x The input array.
-   * @param axis The set of dimensions to reverse
+   * @param axis The set of dimensions to reverse. Must be in the
+   *     range [-rank(x), rank(x)).
    */
   reverse4D(x: Array4D, axis: number|number[]): Array4D {
     util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
              rank ${x.rank}.`);
-    util.assert(
-        [].concat(axis).every(ax => util.isInt(ax)),
-        `Error in reverse4D: All values in param axis must be integers but
-               got axis ${axis}`);
     const axisCleaned = axis_util.parseAxisParam(axis, x.shape);
     return this.backendEngine.executeKernel(
         'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}});
