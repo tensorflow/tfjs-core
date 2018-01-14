@@ -133,6 +133,9 @@ const KERNEL_METHODS: {
   Greater: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.greater(config.inputs.a, config.inputs.b);
   },
+  GreaterEqual: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.greaterEqual(config.inputs.a, config.inputs.b);
+  },
   LogicalOr: (backend: MathBackend, config: LogicalOrInputConfig) => {
     return backend.logicalOr(config.inputs.a, config.inputs.b);
   },
@@ -375,6 +378,7 @@ export interface KernelConfigRegistry {
   Equal: EqualNode;
   NotEqual: EqualNode;
   Greater: EqualNode;
+  GreaterEqual: EqualNode;
   LogicalOr: LogicalOrNode;
   TopKValues: TopKValuesNode<DataType, NDArray>;
   TopKIndices: TopKIndicesNode;
