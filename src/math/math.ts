@@ -1095,12 +1095,12 @@ export class NDArrayMath implements NDArrayManager {
   }
 
 /**
-  * Gather slices from array `x`'s axis `axis` according to `indices`
-  *
-  * @param x The array to transpose.
-  * @param indices The indices of the values to extract.
-  * @param axis Optional. The axis over which to select values.
-  */
+ * Gather slices from array `x`'s axis `axis` according to `indices`
+ *
+ * @param x The array to transpose.
+ * @param indices The indices of the values to extract.
+ * @param axis Optional. The axis over which to select values.
+ */
   gather<D extends DataType, T extends NDArray<D>>(
       x: T, indices: number[], axis?: number): T {
     if (axis == null) {
