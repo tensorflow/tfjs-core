@@ -64,7 +64,6 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       expect(res.dtype).toBe('bool');
       test_util.expectArraysClose(res, [0, 0, 0]);
 
-
       a = Array1D.new([3.123, 3.321], 'float32');
       b = Array1D.new([0.45, 0.123], 'float32');
       res = math.greater(a, b);
