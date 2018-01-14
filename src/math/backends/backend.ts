@@ -78,6 +78,9 @@ export interface MathBackend extends NDArrayStorage {
 
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
   notEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D>;
   topKIndices(x: NDArray, k: number): Array1D<'int32'>;
@@ -144,6 +147,11 @@ export interface MathBackend extends NDArrayStorage {
   avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
 
   tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T;
+
+  pad1D(x: Array1D, paddings: [number, number], constantValue: number): Array1D;
+  pad2D(
+      x: Array2D, paddings: [[number, number], [number, number]],
+      constantValue: number): Array2D;
 
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
 

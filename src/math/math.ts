@@ -823,6 +823,20 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
+   * Returns the truth value of a OR b element-wise. Supports broadcasting.
+   *
+   * @param a The first input `NDArray<'bool'>`.
+   * @param b The second input `NDArray<'bool'>`.
+   */
+  logicalOr(a: NDArray<'bool'>, b: NDArray<'bool'>): NDArray<'bool'> {
+    util.assert(
+        a.dtype === 'bool' || b.dtype === 'bool',
+        'Error Array must be of type bool.');
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('LogicalOr', {inputs: {a, b}});
+  }
+
+  /**
    * Computes the top K values and flattened indices.
    * @param x The input NDArray.
    * @param k How many top values to compute.
@@ -1074,6 +1088,52 @@ export class NDArrayMath implements NDArrayManager {
             `must match length of reps ${reps}.`);
     return this.backendEngine.executeKernel(
                'Tile', {inputs: {x}, args: {reps}}) as T;
+  }
+
+  /**
+   * Pads a Array1D.
+   *
+   * This operation will pad an array according to the `paddings` you specify.
+   *
+   * This operation currently only implements the `CONSTANT` mode from
+   * Tensorflow's `pad` operation.
+   *
+   * @param x The array to pad.
+   * @param paddings A tuple of ints [padLeft, padRight], how much to pad on the
+   *     left and right side of the array.
+   * @param constantValue The scalar pad value to use. Defaults to 0.
+   */
+  pad1D(x: Array1D, paddings: [number, number], constantValue = 0): Array1D {
+    util.assert(
+        paddings.length === 2,
+        'Invalid number of paddings. Must be length of 2.');
+    return this.backendEngine.executeKernel(
+        'Pad1D', {inputs: {x}, args: {paddings, constantValue}});
+  }
+
+  /**
+   * Pads a Array2D.
+   *
+   * This operation will pad an array according to the `paddings` you specify.
+   *
+   * This operation currently only implements the `CONSTANT` mode from
+   * Tensorflow's `pad` operation.
+   *
+   * @param x The array to pad.
+   * @param paddings A pair of tuple ints
+   *     [[padTop, padBottom], [padLeft, padRight]], how much to pad on the
+   *     array.
+   * @param constantValue The scalar pad value to use. Defaults to 0.
+   */
+  pad2D(
+      x: Array2D, paddings: [[number, number], [number, number]],
+      constantValue = 0): Array2D {
+    util.assert(
+        paddings.length === 2 && paddings[0].length === 2 &&
+            paddings[1].length === 2,
+        'Invalid number of paddings. Must be length of 2 each.');
+    return this.backendEngine.executeKernel(
+        'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
   }
 
   /**
