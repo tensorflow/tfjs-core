@@ -588,34 +588,38 @@ export class NDArrayMath implements NDArrayManager {
    */
   sum<D extends DataType, T extends NDArray<SumTypes[D]>>(
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
-    const origAxes = axis_util.parseAxisParam(axis, x.shape);
-    let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const axes = axis_util.parseAxisParam(axis, x.shape);
     return this.executeOp('sum', () => {
-      if (permutedAxes != null) {
-        x = this.transpose(x, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
-      }
-      const res = this.backendEngine.executeKernel(
-          'Sum', {inputs: {x}, args: {axes}}, (dy: T, y: T) => {
-            return {
-              x: () => {
-                // TODO(nsthorat): Fix gradients for sum when using axis
-                // reduction.
-                if (axis != null) {
-                  throw new Error(
-                      `Gradients for sum with axis reduction not yet ` +
-                      `supported.`);
-                }
-                return this.multiply(dy, NDArray.ones(x.shape, dy.dtype));
-              }
-            };
+      // Use a custom gradient to bypass 2 gradient backprops since sum is used
+      // extremely often.
+      return this.customGradient(() => {
+        const permutation = axis_util.getAxesPermutation(axes, x.rank);
+        let reductionAxes = axes;
+        let permutedX = x;
+        if (permutation != null) {
+          permutedX = this.transpose(x, permutation);
+          reductionAxes =
+              axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
+        }
+        let value = this.backendEngine.executeKernel(
+            'Sum', {inputs: {x: permutedX}, args: {axes: reductionAxes}});
+        if (keepDims) {
+          const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
+          value = value.reshape(newShape);
+        }
+
+        const gradients = (dy: NDArray) => {
+          const expandedDyShape = x.shape.slice();
+          axes.forEach(axis => {
+            expandedDyShape[axis] = 1;
           });
-      if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
-        return res.reshape(newShape);
-      }
-      return res;
+          const expandedDy = dy.reshape(expandedDyShape);
+          const derX = () =>
+              this.multiply(expandedDy, NDArray.ones(x.shape, x.dtype));
+          return {x: derX};
+        };
+        return {value, gradients};
+      }, {x}, 'sum');
     }) as T;
   }
 
@@ -642,20 +646,21 @@ export class NDArrayMath implements NDArrayManager {
     return this.executeOp('mean', () => {
       // Use a custom gradient to bypass 2 gradient backprops since mean is used
       // extremely often.
-      // TODO(nsthorat): Maybe remove this custom gradient if backprop through
-      // divide / sum are fast enough and we have broadcasting support.
       return this.customGradient(() => {
-        const res = this.divide(x, Scalar.new(reduceSize));
+        const reduceSizeScalar = Scalar.new(reduceSize);
+        const res = this.divide(x, reduceSizeScalar);
         const value = this.sum(res, axis, keepDims);
 
-        const gradients = (dy: NDArray, y: NDArray) => {
-          if (axis != null) {
-            throw new Error(`Gradient for mean not yet implemented for axis.`);
-          }
-          return {
-            x: () => this.multiply(
-                NDArray.onesLike(x), this.divide(dy, Scalar.new(x.size)))
-          };
+        const gradients = (dy: NDArray) => {
+          const expandedDyShape = x.shape.slice();
+          axes.forEach(axis => {
+            expandedDyShape[axis] = 1;
+          });
+          const expandedDy = dy.reshape(expandedDyShape);
+          const derX = () => this.divide(
+              this.multiply(expandedDy, NDArray.ones(x.shape, x.dtype)),
+              reduceSizeScalar);
+          return {x: derX};
         };
         return {value, gradients};
       }, {x}, 'mean') as NDArray<'float32'>;
@@ -673,7 +678,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   argMin<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     return this.executeOp('argMin', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
@@ -694,7 +699,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   argMax<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     return this.executeOp('argMax', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
@@ -812,7 +817,7 @@ export class NDArrayMath implements NDArrayManager {
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     return this.executeOp('min', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
@@ -860,7 +865,7 @@ export class NDArrayMath implements NDArrayManager {
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     return this.executeOp('max', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
@@ -1086,12 +1091,17 @@ export class NDArrayMath implements NDArrayManager {
     if (perm == null) {
       perm = x.shape.map((s, i) => i).reverse();
     }
+    const der = (dy: NDArray) => {
+      const undoPerm = axis_util.getUndoAxesPermutation(perm);
+      const derX = () => this.transpose(dy, undoPerm);
+      return {x: derX};
+    };
     util.assert(
         x.rank === perm.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of perm ${perm}.`);
     return this.backendEngine.executeKernel(
-               'Transpose', {inputs: {x}, args: {perm}}) as T;
+               'Transpose', {inputs: {x}, args: {perm}}, der) as T;
   }
 
   /** @deprecated Use math.add(c, A) instead. */
