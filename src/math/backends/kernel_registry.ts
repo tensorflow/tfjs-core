@@ -254,7 +254,8 @@ const KERNEL_METHODS: {
     return backend.tile(config.inputs.x, config.args.reps);
   },
   Gather: (backend: MathBackend, config: GatherInputConfig<NDArray>) => {
-    return backend.gather(config.inputs.x, config.args.indices, config.args.axis);
+    return backend.gather(
+        config.inputs.x, config.args.indices, config.args.axis);
   },
   Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
     return backend.pad1D(

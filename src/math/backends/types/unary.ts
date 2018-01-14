@@ -108,7 +108,8 @@ export interface GatherNode<T extends NDArray> extends KernelNode {
   gradient: (dy: T, y: T) => UnaryGradientInputArrays<T>;
 }
 
-export interface GatherInputConfig<T extends NDArray> extends KernelInputConfig {
+export interface GatherInputConfig<T extends NDArray> extends 
+    KernelInputConfig {
   inputs: UnaryInputArrays<T>;
   args: {indices: number[]; axis: number;};
 }
