@@ -100,3 +100,15 @@ export interface TileInputConfig<T extends NDArray> extends KernelInputConfig {
   inputs: UnaryInputArrays<T>;
   args: {reps: number[];};
 }
+
+// Gather
+export interface GatherNode<T extends NDArray> extends KernelNode {
+  inputAndArgs: GatherInputConfig<T>;
+  output: T;
+  gradient: (dy: T, y: T) => UnaryGradientInputArrays<T>;
+}
+
+export interface GatherInputConfig<T extends NDArray> extends KernelInputConfig {
+  inputs: UnaryInputArrays<T>;
+  args: {indices: number[]; axis: number;};
+}

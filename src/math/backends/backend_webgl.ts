@@ -58,6 +58,7 @@ import {TextureData, TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
+import {GatherProgram} from './webgl/gather_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -428,6 +429,13 @@ export class MathBackendWebGL implements MathBackend {
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T {
     const program = new TransposeProgram(x.shape, perm);
     return this.compileAndRun(program, [x]);
+  }
+
+  gather<D extends DataType, T extends NDArray<D>>(
+      x: T, indices: number[], axis: number): T {
+    const indicesArray = Array1D.new(indices, 'int32');
+    const program = new GatherProgram(x.shape, indices, axis);
+    return this.compileAndRun(program, [x, indicesArray]);
   }
 
   private reduce<D extends DataType>(

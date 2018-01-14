@@ -1193,6 +1193,35 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
+  gather<D extends DataType, T extends NDArray<D>>(
+       x: T, indices: number[], axis: number): T {
+    const newShape: number[] = x.shape.slice();
+    newShape[axis] = indices.length;
+    let dtype;
+    if (x.dtype === 'float32') {
+      dtype = Float32Array;
+    } else if (x.dtype === 'int32') {
+      dtype = Int32Array;
+    } else if (x.dtype === 'bool') {
+      dtype = Uint8Array;
+    } else {
+      throw new Error(`Dtype ${x.dtype} not supported for gather`);
+    }
+    const resultValues = new dtype(util.sizeFromShape(newShape));
+    const result = NDArray.make(newShape, {values: resultValues}, x.dtype) as T;
+    const values = x.getValues();
+    for (let i = 0; i < result.size; ++i) {
+      const newLoc = result.indexToLoc(i);
+
+      const originalLoc: number[] = newLoc.slice();
+      originalLoc[axis] = indices[newLoc[axis]];
+
+      const originalIndex = x.locToIndex(originalLoc);
+      resultValues[i] = values[originalIndex];
+    }
+    return result;
+  }
+
   private pool(x: Array4D, convInfo: Conv2DInfo, poolType: 'max'|'min'|'avg') {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
