@@ -857,9 +857,11 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Returns the elements, either `a` or `b` depending on the `condition`.
    *
-   * @param condition
-   * @param a
-   * @param b
+   * @param condition The input as `NDAray<'bool'>.
+   * @param a Input as `NDArray` which may have the same shape as
+   *     `condition`. If `condition` is rank 1, `a` may have a higher rank but
+   *     its first dimension must match the size of `condition`.
+   * @param b Input as `NDArray` with the same shape and type as `a`.
    */
   where(condition: NDArray<'bool'>, a: NDArray, b: NDArray): NDArray {
     util.assert(

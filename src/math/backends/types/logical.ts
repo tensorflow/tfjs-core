@@ -66,7 +66,6 @@ export interface WhereInputConfig extends KernelInputConfig {
   args: {dtype: DataType};
 }
 
-// TODO - does condition mess this up?
 export interface WhereInputArrays extends NamedArrayMap {
   condition: NDArray;
   a: NDArray;
