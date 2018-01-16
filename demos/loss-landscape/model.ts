@@ -4,7 +4,6 @@ import {MnistData} from './data';
 // Hyperparameters.
 const LEARNING_RATE = .05;
 const BATCH_SIZE = 64;
-const TRAIN_STEPS = 10;
 
 // Data constants.
 const IMAGE_SIZE = 784;
@@ -16,6 +15,7 @@ const math = dl.ENV.math;
 let optimizer: dl.SGDOptimizer;
 let alphas: Array<dl.Scalar<'float32'>>;
 let weights: Array<dl.Variable<'float32'>>;
+let iter = 0;
 
 export function init() {
   optimizer = new dl.SGDOptimizer(LEARNING_RATE);
@@ -37,6 +37,7 @@ export function initFCModel() {
   weights.push(dl.variable(dl.Array2D.randNormal([30, 200], 0, 1, 'float32')));
   weights.push(
       dl.variable(dl.Array2D.randNormal([200, LABELS_SIZE], 0, 1, 'float32')));
+  iter = 0;
 }
 
 export function model(xs: dl.Array2D<'float32'>): dl.Array2D<'float32'> {
@@ -53,19 +54,21 @@ export function loss(
 }
 
 // Train the model.
-export async function train(data: MnistData): Promise<number> {
+export async function train(
+    data: MnistData, steps: number): Promise<[number, number]> {
   let cost: dl.Scalar;
-  for (let i = 0; i < TRAIN_STEPS; i++) {
+  for (let i = 0; i < steps; i++) {
     cost = optimizer.minimize(() => {
       const batch = data.nextTrainBatch(BATCH_SIZE);
       const lossVal = loss(batch.labels, model(batch.xs));
       return lossVal;
-    }, i === TRAIN_STEPS - 1 /* returnCost */);
+    }, i === steps - 1 /* returnCost */);
+    iter++;
     await dl.util.nextFrame();
   }
   const result = await cost.val();
   cost.dispose();
-  return result;
+  return [result, iter];
 }
 
 // Predict the digit number from a batch of input images.
@@ -111,6 +114,7 @@ export function reinitWeights(selection: WeightInit) {
     }
     v.assign(dl.NDArray.randNormal(v.shape, mean, std));
   }
+  iter = 0;
 }
 
 function genDirections() {

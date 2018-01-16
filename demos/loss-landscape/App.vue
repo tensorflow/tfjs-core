@@ -1,24 +1,32 @@
 <template>
   <div id="container">
     <h1>Visualizing the landscape of neural nets</h1>
-    <div id="status">Loading data...</div>
-    <div id="message"></div>
-    <div id="controls">
-      <select id="weight-init">
-        <option value="unit">Gaussian(0, 1)</option>
-        <option value="fan-in">Gaussian with fan-in</option>
-        <option value="fan-out">Gaussian with fan-out</option>
-      </select>
-      <button id="train">Train</button>
+    <div v-if="loadingData" id="status">Loading data...</div>
+    <div v-bind:class="{hidden: loadingData}">
+      <div id="controls">
+        <label>Weight initialization:</label>
+        <select id="weight-init" ref="weightSelect" @change="changeWeightsInit">
+          <option value="unit" selected>N(0, 1)</option>
+          <option value="fan-in">N(0, fan-in)</option>
+          <option value="fan-out">N(0, fan-out)</option>
+        </select>
+      </div>
+      <div id="all-charts">
+        <div class="charts" v-for="chartsData in charts" :key="chartsData.id">
+          <div class="chart" v-for="(plot, idx) in chartsData.plots" :key="idx">
+            <Plot :data="plot"></Plot>
+          </div>
+        </div>
+      </div>
     </div>
-    <!-- Plotly chart will be drawn inside this DIV -->
-    <div id="chart"></div>
   </div>
 </template>
 
 <style>
 html,
 body {
+  display: flex;
+  box-sizing: border-box;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   width: 100%;
   height: 100%;
@@ -29,16 +37,33 @@ h1 {
   font-weight: 300;
   font-size: 40px;
 }
-#chart {
-  width: 300px;
-  height: 300px;
-}
 #container {
-  margin: 60px 60px;
+  margin-top: 60px;
+  margin-left: 60px;
   flex-direction: column;
   display: flex;
   width: 100%;
   height: 100%;
+}
+#all-charts {
+  display: flex;
+  width: 100%;
+  margin-top: 20px;
+  flex-direction: column;
+}
+.charts {
+  display: flex;
+  border-bottom: 10px solid #eee;
+  width: 100%;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.chart {
+  margin-right: 15px;
+  margin-bottom: 15px;
+}
+.hidden {
+  display: none;
 }
 </style>
 

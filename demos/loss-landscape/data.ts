@@ -86,12 +86,9 @@ export class MnistData {
     await this.dataset.fetchData();
     console.log('num arrays before normalize', math.getNumArrays());
     this.dataset.normalizeWithinBounds(0, -1, 1);
-    console.log('num arrays before getTraining', math.getNumArrays());
+    console.log('num arrays after normalize', math.getNumArrays());
     this.trainingData = this.getTrainingData();
-    console.log('num arrays before getTest', math.getNumArrays());
     this.testData = this.getTestData();
-    console.log('num arrays after getTest', math.getNumArrays());
-
     this.trainIndices =
         dl.util.createShuffledIndices(this.trainingData[0].length);
     this.testIndices = dl.util.createShuffledIndices(this.testData[0].length);
