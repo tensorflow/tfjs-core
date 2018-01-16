@@ -121,10 +121,12 @@ function genDirections() {
   const dirs: {[name: string]: dl.Array1D<'float32'>} = {};
   for (const varName in math.registeredVariables) {
     dirs[varName] = math.scope(() => {
-      const v = math.registeredVariables[varName].flatten();
-      const dir = dl.Array1D.randNormal([v.size], 0, 1, 'float32');
-      return math.multiply(dir, math.divide(math.norm(v), math.norm(dir))) as
-          dl.Array1D<'float32'>;
+      const v = math.registeredVariables[varName];
+      const vNorm = math.norm(v, 'euclidean', 0);
+      const dir =
+          dl.Array2D.randNormal(v.shape as [number, number], 0, 1, 'float32');
+      const dirNorm = math.norm(dir, 'euclidean', 0);
+      return math.multiply(dir, math.divide(vNorm, dirNorm)).flatten();
     });
   }
   return dirs;
