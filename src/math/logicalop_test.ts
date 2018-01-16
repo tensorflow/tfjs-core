@@ -153,6 +153,43 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       test_util.expectArraysClose(math.where(c, a, b), [10, 20, 10, 20]);
     });
 
+    it('Array1D different a/b shapes', math => {
+      let c = Array1D.new([1, 0, 1, 0], 'bool');
+      let a = Array1D.new([10, 10, 10]);
+      let b = Array1D.new([20, 20, 20, 20]);
+      let f = () => {
+        math.where(c, a, b);
+      };
+      expect(f).toThrowError();
+
+      c = Array1D.new([1, 0, 1, 0], 'bool');
+      a = Array1D.new([10, 10, 10, 10]);
+      b = Array1D.new([20, 20, 20]);
+      f = () => {
+        math.where(c, a, b);
+      };
+    });
+
+    it('Array1D different condition/a shapes', math => {
+      const c = Array1D.new([1, 0, 1, 0], 'bool');
+      const a = Array1D.new([10, 10, 10]);
+      const b = Array1D.new([20, 20, 20]);
+      const f = () => {
+        math.where(c, a, b);
+      };
+      expect(f).toThrowError();
+    });
+
+    // it('Array1D different `a` dimension w/ condition rank 1', math => {
+    //   const c = Array1D.new([1, 0, 1, 0], 'bool');
+    //   let a = Array1D.new([10, 10, 10]);
+    //   let b = Array1D.new([20, 20, 20]);
+    //   const f = () => {
+    //     math.where(c, a, b);
+    //   };
+    //   expect(f).toThrowError();
+    // });
+
     it('Array2D', math => {
       const c = Array2D.new([2, 2], [[1, 0], [0, 1]], 'bool');
       const a = Array2D.new([2, 2], [[10, 10], [10, 10]]);

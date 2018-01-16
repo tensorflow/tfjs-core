@@ -866,11 +866,19 @@ export class NDArrayMath implements NDArrayManager {
         condition.dtype === 'bool' || a.dtype === 'bool' || b.dtype === 'bool',
         'Error Array must be of type bool.');
 
-    // TODO - assert x has same shape as condition - or if condition is rank 1,
-    // a may have a higher rank, but the first dimension must match the size of
-    // condition.
-
     util.assertShapesMatch(a.shape, b.shape, 'Error in notEqualStrict: ');
+
+    if (condition.rank === 1) {
+      // If condition rank is 1, then the first dimension must match the size of
+      // condition.
+      util.assert(
+          condition.shape[0] === a.shape[0],
+          'The first dimension of `a` must match the size of `condition`.');
+    } else {
+      // A must have the same shape as condition.
+      util.assertShapesMatch(
+          condition.shape, b.shape, 'Error in notEqualStrict: ');
+    }
 
     // Default to highest percision of number:
     let dtype;
