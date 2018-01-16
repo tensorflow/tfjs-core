@@ -1197,19 +1197,9 @@ export class MathBackendCPU implements MathBackend {
        x: T, indices: number[], axis: number): T {
     const newShape: number[] = x.shape.slice();
     newShape[axis] = indices.length;
-    let dtype;
-    if (x.dtype === 'float32') {
-      dtype = Float32Array;
-    } else if (x.dtype === 'int32') {
-      dtype = Int32Array;
-    } else if (x.dtype === 'bool') {
-      dtype = Uint8Array;
-    } else {
-      throw new Error(`Dtype ${x.dtype} not supported for gather`);
-    }
-    const resultValues = new dtype(util.sizeFromShape(newShape));
-    const result = NDArray.make(newShape, {values: resultValues}, x.dtype) as T;
+    const result = NDArray.zeros(newShape, x.dtype) as T;
     const values = x.getValues();
+    const resultValues = result.dataSync();
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
 

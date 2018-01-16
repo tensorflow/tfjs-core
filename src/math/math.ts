@@ -1099,13 +1099,10 @@ export class NDArrayMath implements NDArrayManager {
  *
  * @param x The array to transpose.
  * @param indices The indices of the values to extract.
- * @param axis Optional. The axis over which to select values.
+ * @param axis Optional. The axis over which to select values. Defaults to 0.
  */
   gather<D extends DataType, T extends NDArray<D>>(
-      x: T, indices: number[], axis?: number): T {
-    if (axis == null) {
-      axis = 0;
-    }
+      x: T, indices: number[], axis = 0): T {
     return this.backendEngine.executeKernel(
                'Gather', {inputs:{x}, args: {indices, axis}}) as T;
   }

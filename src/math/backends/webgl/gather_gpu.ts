@@ -44,7 +44,7 @@ export class GatherProgram implements GPGPUProgram {
 function getSourceCoords(aShape: number[], axis: number): string {
   const rank = aShape.length;
   if (rank > 4) {
-    throw Error(`Tile for rank ${rank} is not yet supported`);
+    throw Error(`Gather for rank ${rank} is not yet supported`);
   }
   if (rank === 1) {
     return `int(getIndices(resRC))`;
