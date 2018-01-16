@@ -57,6 +57,8 @@ export interface MathBackend extends NDArrayStorage {
     number, number, number, number
   ]): Array4D;
 
+  reverse4D(a: Array4D, axis: number[]): Array4D;
+
   concat1D(a: Array1D, b: Array1D): Array1D;
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D;
   concat3D(a: Array3D, b: Array3D, axis: number): Array3D;
@@ -76,6 +78,9 @@ export interface MathBackend extends NDArrayStorage {
 
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
   notEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  greater(a: NDArray, b: NDArray): NDArray<'bool'>;
+  greaterEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
 
