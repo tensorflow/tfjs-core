@@ -130,6 +130,9 @@ const KERNEL_METHODS: {
   NotEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.notEqual(config.inputs.a, config.inputs.b);
   },
+  Less: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.less(config.inputs.a, config.inputs.b);
+  },
   Greater: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.greater(config.inputs.a, config.inputs.b);
   },
@@ -377,6 +380,7 @@ export interface KernelConfigRegistry {
   ArgMin: ArgMinNode;
   Equal: EqualNode;
   NotEqual: EqualNode;
+  Less: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
   LogicalOr: LogicalOrNode;
