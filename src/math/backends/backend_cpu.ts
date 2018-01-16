@@ -547,28 +547,16 @@ export class MathBackendCPU implements MathBackend {
       throw new Error(`Dtype ${dtype} not supported for tile`);
     }
 
-    // Default to highest type of number:
-    // let atype;
-    // let dtype;
-    // if (a.dtype === 'float32' || b.dtype === 'float32') {
-    //   atype = Float32Array;
-    //   dtype = 'float32';
-    // } else if (a.dtype === 'int32' || b.dtype === 'int32') {
-    //   atype = Int32Array;
-    //   dtype = 'int32';
-    // } else if (a.dtype === 'bool' || b.dtype === 'bool') {
-    //   atype = Uint8Array;
-    //   dtype = 'bool';
-    // } else {
-    //   throw new Error(`Dtype ${a.dtype} not supported for where`);
-    // }
-
+    let index = 0;
+    const offset = condition.rank > 1 || a.rank === 1 ? 1 : a.shape[1];
     const newValues = new atype(aValues.length);
     for (let i = 0; i < values.length; i++) {
-      if (values[i] === 1) {
-        newValues[i] = aValues[i];
-      } else {
-        newValues[i] = bValues[i];
+      for (let j = 0; j < offset; j++) {
+        if (values[i] === 1) {
+          newValues[index++] = aValues[i];
+        } else {
+          newValues[index++] = bValues[i];
+        }
       }
     }
     return NDArray.make(a.shape, {values: newValues}, dtype);

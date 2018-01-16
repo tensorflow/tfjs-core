@@ -24,23 +24,31 @@ export class WhereProgram implements GPGPUProgram {
   userCode: string;
   rank: number;
 
-  constructor(shape: number[], rank: number) {
+  constructor(cRank: number, shape: number[], rank: number) {
     this.outputShape = shape;
     this.rank = rank;
 
-    let sourceCoords;
+    let cCoords;
+    let abCoords;
     if (rank > 4) {
       throw Error(`Where for rank ${rank} is not yet supported`);
     }
+
     if (rank === 1) {
-      sourceCoords = `resRC`;
+      abCoords = `resRC`;
+      cCoords = `resRC`;
     } else {
       const currentCoords = ['resRC.x', 'resRC.y', 'resRC.z', 'resRC.w'];
-      const coordVars = [];
+      const cCoordVars = [];
+      const abCoordVars = [];
       for (let i = 0; i < shape.length; i++) {
-        coordVars.push(`${currentCoords[i]}`);
+        abCoordVars.push(`${currentCoords[i]}`);
+        if (i < cRank) {
+          cCoordVars.push(`${currentCoords[i]}`);
+        }
       }
-      sourceCoords = coordVars.join();
+      cCoords = cCoordVars.join();
+      abCoords = abCoordVars.join();
     }
 
     const dtype = getCoordsDataType(this.rank);
@@ -48,11 +56,11 @@ export class WhereProgram implements GPGPUProgram {
     this.userCode = `
       void main() {
         ${dtype} resRC = getOutputCoords();
-        float cVal = getC(${sourceCoords});
+        float cVal = getC(${cCoords});
         if (cVal >= 1.0) {
-          setOutput(getA(${sourceCoords}));
+          setOutput(getA(${abCoords}));
         } else {
-          setOutput(getB(${sourceCoords}));
+          setOutput(getB(${abCoords}));
         }
       }
     `;

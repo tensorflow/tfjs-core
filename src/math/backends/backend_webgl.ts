@@ -546,7 +546,7 @@ export class MathBackendWebGL implements MathBackend {
 
   where<D extends DataType>(
       condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray<D> {
-    const program = new WhereProgram(a.shape, a.rank);
+    const program = new WhereProgram(condition.rank, a.shape, a.rank);
     const output = this.makeOutputArray(program.outputShape, dtype);
     return this.compileAndRun(program, [condition, a, b], output);
   }
