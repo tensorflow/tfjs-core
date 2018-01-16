@@ -24,9 +24,9 @@ export class GatherProgram implements GPGPUProgram {
   userCode: string;
   rank: number;
 
-  constructor(aShape: number[], indices: number[], axis: number) {
+  constructor(aShape: number[], indicesLength: number, axis: number) {
     const outputShape: number[] = aShape.slice();
-    outputShape[axis] = indices.length;
+    outputShape[axis] = indicesLength;
     this.outputShape = outputShape;
     this.rank = outputShape.length;
     const dtype = getCoordsDataType(this.rank);

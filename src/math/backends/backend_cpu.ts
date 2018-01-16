@@ -1194,17 +1194,18 @@ export class MathBackendCPU implements MathBackend {
   }
 
   gather<D extends DataType, T extends NDArray<D>>(
-       x: T, indices: number[], axis: number): T {
+       x: T, indices: Array1D<'int32'>, axis: number): T {
     const newShape: number[] = x.shape.slice();
-    newShape[axis] = indices.length;
+    const indicesValues = indices.dataSync();
+    newShape[axis] = indicesValues.length;
     const result = NDArray.zeros(newShape, x.dtype) as T;
-    const values = x.getValues();
+    const values = x.dataSync();
     const resultValues = result.dataSync();
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
 
       const originalLoc: number[] = newLoc.slice();
-      originalLoc[axis] = indices[newLoc[axis]];
+      originalLoc[axis] = indicesValues[newLoc[axis]];
 
       const originalIndex = x.locToIndex(originalLoc);
       resultValues[i] = values[originalIndex];

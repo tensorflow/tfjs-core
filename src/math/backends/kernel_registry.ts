@@ -53,7 +53,7 @@ import {SumInputConfig, SumNode} from './types/sum';
 // tslint:disable-next-line:max-line-length
 import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValuesNode} from './types/topk';
 // tslint:disable-next-line:max-line-length
-import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, GatherInputConfig, GatherNode, UnaryInputConfig, UnaryNode} from './types/unary';
+import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
   [kernel in keyof KernelConfigRegistry]: (
@@ -253,10 +253,6 @@ const KERNEL_METHODS: {
   Tile: (backend: MathBackend, config: TileInputConfig<NDArray>) => {
     return backend.tile(config.inputs.x, config.args.reps);
   },
-  Gather: (backend: MathBackend, config: GatherInputConfig<NDArray>) => {
-    return backend.gather(
-        config.inputs.x, config.args.indices, config.args.axis);
-  },
   Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
     return backend.pad1D(
         config.inputs.x, config.args.paddings, config.args.constantValue);
@@ -410,7 +406,6 @@ export interface KernelConfigRegistry {
   Pad1D: Pad1DNode;
   Pad2D: Pad2DNode;
   Tile: TileNode<NDArray>;
-  Gather: GatherNode<NDArray>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;
   Conv2DDerFilter: Conv2DDerFilterNode;

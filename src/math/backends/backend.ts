@@ -154,7 +154,7 @@ export interface MathBackend extends NDArrayStorage {
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
 
   gather<D extends DataType, T extends NDArray<D>>(
-      x: T, indices: number[], axis: number): T;
+      x: T, indices: Array1D<'int32'>, axis: number): T;
 
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;

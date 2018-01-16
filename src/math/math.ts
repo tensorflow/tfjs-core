@@ -1102,9 +1102,9 @@ export class NDArrayMath implements NDArrayManager {
  * @param axis Optional. The axis over which to select values. Defaults to 0.
  */
   gather<D extends DataType, T extends NDArray<D>>(
-      x: T, indices: number[], axis = 0): T {
+      x: T, indices: Array1D<'int32'>, axis = 0): T {
     return this.backendEngine.executeKernel(
-               'Gather', {inputs:{x}, args: {indices, axis}}) as T;
+               'Gather', {inputs:{x, indices}, args: {axis}}) as T;
   }
 
   /** @deprecated Use math.add(c, A) instead. */
