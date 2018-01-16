@@ -1,11 +1,9 @@
 import * as dl from 'deeplearn';
 import Vue from 'vue';
 import {MnistData} from './data';
-import * as model from './model';
-import {WeightInit} from './model';
+import {Model} from './model';
+import {ModelType, WeightInit} from './model';
 import Plot from './Plot.vue';
-
-const TRAIN_STEPS = 50;
 
 export type ChartData = {
   width: number,
@@ -18,17 +16,29 @@ export type ChartData = {
 };
 
 class State {
+  trainSteps = 50;
   weightSelect: HTMLSelectElement;
+  modelTypeSelect: HTMLSelectElement;
   data: MnistData;
+  model: Model;
 
   async init(vue: Vue) {
     this.weightSelect = vue.$refs.weightSelect as HTMLSelectElement;
+    this.modelTypeSelect = vue.$refs.modelTypeSelect as HTMLSelectElement;
     // tslint:disable-next-line:no-any
-    this.data = (window as any).mnistData || await this.loadData();
+    this.data = (window as any).mnistData || await this.loadDataOnce();
+    // tslint:disable-next-line:no-any
+    if ((window as any).model) {
+      // tslint:disable-next-line:no-any
+      (window as any).model.dispose();
+    }
+    this.model = new Model();
+    // tslint:disable-next-line:no-any
+    (window as any).model = this.model;
+    this.model.init();
   }
 
-  private async loadData() {
-    model.init();
+  private async loadDataOnce() {
     const data = new MnistData();
     await data.load();
     // tslint:disable-next-line:no-any
@@ -56,19 +66,21 @@ export default Vue.extend({
   methods: {
     async disableUI() {
       this.s.weightSelect.disabled = true;
+      this.s.modelTypeSelect.disabled = true;
       await dl.util.nextFrame();
       await dl.util.nextFrame();
     },
     async enableUI() {
       this.s.weightSelect.disabled = false;
+      this.s.modelTypeSelect.disabled = false;
       await dl.util.nextFrame();
       await dl.util.nextFrame();
     },
     async changeWeightsInit(event: Event) {
       await this.disableUI();
       const selection = this.s.weightSelect.value as WeightInit;
-      model.reinitWeights(selection);
-      const zData = await model.computeLandscape(this.s.data);
+      this.s.model.reinitWeights(selection);
+      const zData = await this.s.model.computeLandscape(this.s.data);
       const n = Math.ceil(zData.length / 2);
       const loss = zData[n][n];
       const modelType = 'FC';
@@ -85,12 +97,17 @@ export default Vue.extend({
 
       await this.enableUI();
     },
+    async changeModelType(event: Event) {
+      const selection = this.s.modelTypeSelect.value as ModelType;
+      console.log(selection);
+    },
     async train(): Promise<ChartData> {
       let start = performance.now();
-      const [loss, iter] = await model.train(this.s.data, TRAIN_STEPS);
+      const [loss, iter] =
+          await this.s.model.train(this.s.data, this.s.trainSteps);
       console.log('training took', performance.now() - start, 'ms');
       start = performance.now();
-      const zData = await model.computeLandscape(this.s.data);
+      const zData = await this.s.model.computeLandscape(this.s.data);
       const modelType = 'FC';
       const weightInit =
           getWeightInitString(this.s.weightSelect.value as WeightInit);

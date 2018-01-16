@@ -4,12 +4,21 @@
     <div v-if="loadingData" id="status">Loading data...</div>
     <div v-bind:class="{hidden: loadingData}">
       <div id="controls">
-        <label>Weight initialization:</label>
-        <select id="weight-init" ref="weightSelect" @change="changeWeightsInit">
-          <option value="unit" selected>N(0, 1)</option>
-          <option value="fan-in">N(0, fan-in)</option>
-          <option value="fan-out">N(0, fan-out)</option>
-        </select>
+        <div class="control">
+          <label>Weight initialization:</label>
+          <select ref="weightSelect" @change="changeWeightsInit">
+            <option value="unit" selected>N(0, 1)</option>
+            <option value="fan-in">N(0, fan-in)</option>
+            <option value="fan-out">N(0, fan-out)</option>
+          </select>
+        </div>
+        <div class="control">
+          <label>Model architecture:</label>
+          <select ref="modelTypeSelect" @change="changeModelType">
+            <option value="fc" selected>Fully Connected</option>
+            <option value="conv">Convolutional</option>
+          </select>
+        </div>
       </div>
       <div id="all-charts">
         <div class="charts" v-for="chartsData in charts" :key="chartsData.id">
@@ -64,6 +73,20 @@ h1 {
 }
 .hidden {
   display: none;
+}
+#controls {
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+}
+.control {
+  margin: 5px 0;
+  display: flex;
+  justify-content: space-between;
+}
+.control select {
+  width: 200px;
+  height: 20px;
 }
 </style>
 
