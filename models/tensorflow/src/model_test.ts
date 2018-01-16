@@ -103,7 +103,7 @@ describe('TensorflowModel', () => {
 
   it('should predict correctly', (done) => {
     model.load().then(() => {
-      const value = model.predict(undefined, {
+      const value = model.predict({
         'image_placeholder': Array4D.new(
             [3, 3, 3, 1],
             [

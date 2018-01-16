@@ -19,6 +19,7 @@ import {Array1D, Array2D, Array3D, Array4D, MatrixOrientation, Scalar} from 'dee
 import {NDArray, NDArrayMath} from 'deeplearn';
 
 import {tensorflow} from './index';
+import * as types from './types';
 
 export function getStringParam(
     attrs: {[key: string]: tensorflow.IAttrValue}, name: string,
@@ -62,7 +63,7 @@ export function getNumericArrayParam(
 
 export function performMathOp(
     math: NDArrayMath, input: NDArray|NDArray[]|number[],
-    node: tensorflow.INodeDef, feedDict: {[key: string]: NDArray},
+    node: tensorflow.INodeDef, feedDict: types.InputMap,
     weights: {[key: string]: NDArray}): NDArray {
   switch (node.op) {
     case 'Add':
@@ -102,6 +103,7 @@ export function performMathOp(
           transposeB ? MatrixOrientation.TRANSPOSED :
                        MatrixOrientation.REGULAR);
     }
+
     case 'Conv2D': {
       const convolutionParam = node.attr;
       const stride =

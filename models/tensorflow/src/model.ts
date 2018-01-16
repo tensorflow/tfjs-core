@@ -28,13 +28,6 @@ export class TensorflowModel implements Model {
   protected variables: {[varName: string]: NDArray[]};
 
   /**
-   * Preprocessing Offset
-   */
-  protected preprocessOffset: Array1D|Array3D;
-
-  // protected preprocessDim: number;
-
-  /**
    * Model DAG Nodes
    */
   nodes: Array<dag.INode<tensorflow.INodeDef>>;
@@ -107,30 +100,44 @@ export class TensorflowModel implements Model {
     });
   }
 
-  predict(
-      input: NDArray, feedDict?: {[key: string]: NDArray},
-      untilLayer?: string): NDArray {
+  /**
+   * Generate the prediction for the input using the loaded model.
+   * For model with multiple inputs, feedDict map should be used to bind the
+   * inputs to the placeholder nodes.
+   * @param feedDict map of inputs or a single input
+   * @param untilLayer run prediction until a particular node identified by the
+   *    node name.
+   */
+  predict(feedDict: types.InputMap|NDArray, untilLayer?: string): NDArray
+      |undefined {
+    // default the single input to the name of 'input'
+    if (feedDict instanceof NDArray) {
+      feedDict = {'input': feedDict};
+    }
     // Keep a map of named activations for rendering purposes.
     const namedActivations: {[key: string]: NDArray} = {};
-    let currAct: NDArray|NDArray[] = input;
+    let currAct: NDArray|NDArray[] = undefined;
 
-    dag.iterateDfs<tensorflow.INodeDef>(
-        this.nodes, this.edges,
-        (node: tensorflow.INodeDef, parents: tensorflow.INodeDef[],
-         i: number) => {
-          if (parents.length === 1) {
-            currAct = namedActivations[parents[0].name];
-          } else if (parents.length > 1) {
-            currAct = parents.map((d) => namedActivations[d.name]);
-          }
-          currAct =
-              performMathOp(this.math, currAct, node, feedDict, this.weights);
+    this.math.scope(() => {
+      dag.iterateDfs<tensorflow.INodeDef>(
+          this.nodes, this.edges,
+          (node: tensorflow.INodeDef, parents: tensorflow.INodeDef[],
+           i: number) => {
+            if (parents.length === 1) {
+              currAct = namedActivations[parents[0].name];
+            } else if (parents.length > 1) {
+              currAct = parents.map((d) => namedActivations[d.name]);
+            }
+            currAct = performMathOp(
+                this.math, currAct, node, feedDict as types.InputMap,
+                this.weights);
 
-          namedActivations[node.name] = currAct as NDArray;
-        },
-        untilLayer);
+            namedActivations[node.name] = currAct as NDArray;
+          },
+          untilLayer);
+    });
 
-    return currAct;
+    return currAct as NDArray;
   }
 
   layers(): types.Layer[] {
@@ -149,9 +156,8 @@ export class TensorflowModel implements Model {
   }
 
   dispose() {
-    this.preprocessOffset.dispose();
-    for (const varName in this.variables) {
-      this.variables[varName].map((d) => d.dispose());
+    for (const weightName in this.weights) {
+      this.weights[weightName].dispose();
     }
   }
 }

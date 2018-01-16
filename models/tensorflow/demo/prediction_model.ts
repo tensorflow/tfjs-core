@@ -48,7 +48,7 @@ export class PredictionModel {
    */
   predict(input: NDArray, feedDicts: {[key: string]: NDArray}): Array1D {
     return this.math.scope(() => {
-      return this.model.predict(input, feedDicts) as Array1D;
+      return this.model.predict(feedDicts) as Array1D;
     });
   }
 

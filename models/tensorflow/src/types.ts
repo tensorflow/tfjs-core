@@ -14,11 +14,15 @@
  * limitations under the License.
  * =============================================================================
  */
+import {NDArray} from 'deeplearn';
+
 export interface LayerNode {
   node: string;
   parents: string[];
 }
 
-export interface Layer {
-  nodes: LayerNode[];
-}
+export interface Layer { nodes: LayerNode[]; }
+
+export type InputMap = {
+  [key: string]: NDArray
+};
