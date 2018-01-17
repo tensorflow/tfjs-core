@@ -30,6 +30,7 @@ import {CastInputConfig, CastNode} from './types/cast';
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './types/concat';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
+import {GatherInputConfig, GatherNode} from './types/gather';
 // tslint:disable-next-line:max-line-length
 import {EqualInputConfig, EqualNode, LogicalOrInputConfig, LogicalOrNode, WhereInputConfig, WhereNode} from './types/logical';
 import {LRN4DInputConfig, LRN4DNode} from './types/lrn';
@@ -129,6 +130,9 @@ const KERNEL_METHODS: {
   },
   NotEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.notEqual(config.inputs.a, config.inputs.b);
+  },
+  LessEqual: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.lessEqual(config.inputs.a, config.inputs.b);
   },
   Greater: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.greater(config.inputs.a, config.inputs.b);
@@ -268,6 +272,10 @@ const KERNEL_METHODS: {
   Tile: (backend: MathBackend, config: TileInputConfig<NDArray>) => {
     return backend.tile(config.inputs.x, config.args.reps);
   },
+  Gather: (backend: MathBackend, config: GatherInputConfig<NDArray>) => {
+    return backend.gather(
+        config.inputs.x, config.inputs.indices, config.args.axis);
+  },
   Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
     return backend.pad1D(
         config.inputs.x, config.args.paddings, config.args.constantValue);
@@ -382,6 +390,7 @@ export interface KernelConfigRegistry {
   ArgMin: ArgMinNode;
   Equal: EqualNode;
   NotEqual: EqualNode;
+  LessEqual: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
   LogicalOr: LogicalOrNode;
@@ -425,6 +434,7 @@ export interface KernelConfigRegistry {
   Pad1D: Pad1DNode;
   Pad2D: Pad2DNode;
   Tile: TileNode<NDArray>;
+  Gather: GatherNode<NDArray>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;
   Conv2DDerFilter: Conv2DDerFilterNode;
