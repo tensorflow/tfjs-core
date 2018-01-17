@@ -40,6 +40,9 @@ export const NOT_EQUAL = CHECK_NAN_SNIPPET + `
 export const LESS = CHECK_NAN_SNIPPET + `
   return float(a < b);
 `;
+export const LESS_EQUAL = CHECK_NAN_SNIPPET + `
+  return float(a <= b);
+`;
 export const GREATER = CHECK_NAN_SNIPPET + `
   return float(a > b);
 `;
