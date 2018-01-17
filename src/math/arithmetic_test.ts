@@ -141,6 +141,37 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
           vjp.b, [-1 * 1 / 9, -10 * 2 / 16, -20 * 3 / 25]);
     });
 
+    it('gradient: Array1D with int32', math => {
+      const a = Array1D.new([1, 2, 3], 'int32');
+      const b = Array1D.new([3, 4, 5], 'int32');
+      const dy = Array1D.new([1, 10, 20]);
+      const vjp = math.vjp(() => math.divide(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [1 / 3, 10 / 4, 20 / 5]);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          vjp.b, [-1 * 1 / 9, -10 * 2 / 16, -20 * 3 / 25]);
+    });
+
+    it('gradient: 1d<int32> with 1d<bool> ', math => {
+      const a = Array1D.new([true, false, true], 'bool');
+      const b = Array1D.new([1, 2, 3], 'int32');
+      const dy = Array1D.new([1, 19, 20]);
+      const vjp = math.vjp(() => math.divide(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [1, 19 / 2, 20 / 3]);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.b, [-1 / 1, 0, -20 / 9]);
+    });
+
     it('gradient: Array2D', math => {
       const a = Array2D.new([2, 2], [3, 1, 2, 3]);
       const b = Array2D.new([2, 2], [1, 3, 4, 5]);
@@ -228,6 +259,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const result = math.multiplyStrict(a, b);
 
       expect(result.shape).toEqual([2, 2]);
+      expect(result.dtype).toBe('float32');
       test_util.expectArraysClose(result, expected);
     });
 
@@ -236,6 +268,8 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const b = Array2D.new([2, 2], [NaN, 3, NaN, 3]);
 
       const result = math.multiplyStrict(a, b);
+
+      expect(result.dtype).toBe('float32');
       test_util.expectArraysClose(result, [NaN, 9, NaN, 0]);
     });
 
@@ -247,6 +281,25 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
          expect(() => math.multiplyStrict(a, b)).toThrowError();
          expect(() => math.multiplyStrict(b, a)).toThrowError();
        });
+
+    it('multiplyStrict throws when dtypes do not match', math => {
+      const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6], 'float32');
+      const b = Array2D.new([2, 2], [5, 3, 4, -7], 'int32');
+
+      expect(() => math.multiplyStrict(a, b as Array2D as Array2D<'float32'>))
+          .toThrowError();
+      expect(() => math.multiplyStrict(b, a as Array2D as Array2D<'int32'>))
+          .toThrowError();
+    });
+
+    it('multiplyStrict int32 * int32', math => {
+      const a = Array2D.new([2, 2], [1, 2, -3, -4], 'int32');
+      const b = Array2D.new([2, 2], [2, 1, 3, -4], 'int32');
+      const res = math.multiplyStrict(a, b);
+
+      expect(res.dtype).toBe('int32');
+      test_util.expectArraysClose(res, [2, 2, -9, 16]);
+    });
 
     it('same-shaped ndarrays', math => {
       const a = Array2D.new([2, 2], [1, 2, -3, -4]);
@@ -311,6 +364,21 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
     it('gradient: Array1D', math => {
       const a = Array1D.new([1, 2, 3]);
       const b = Array1D.new([3, 4, 5]);
+      const dy = Array1D.new([1, 10, 20]);
+      const vjp = math.vjp(() => math.multiply(a, b), {a, b}, dy);
+
+      expect(vjp.a.shape).toEqual(a.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.a, [3 * 1, 4 * 10, 5 * 20]);
+
+      expect(vjp.b.shape).toEqual(b.shape);
+      expect(vjp.b.dtype).toEqual('float32');
+      test_util.expectArraysClose(vjp.b, [1 * 1, 2 * 10, 3 * 20]);
+    });
+
+    it('gradient: Array1D with dtype int32', math => {
+      const a = Array1D.new([1, 2, 3], 'int32');
+      const b = Array1D.new([3, 4, 5], 'int32');
       const dy = Array1D.new([1, 10, 20]);
       const vjp = math.vjp(() => math.multiply(a, b), {a, b}, dy);
 

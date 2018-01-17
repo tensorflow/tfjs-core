@@ -60,11 +60,10 @@ import {Array2D, Array3D} from './ndarray';
       const perm = [2, 1, 0];
       const dy =
           Array3D.new([2, 2, 2], [111, 211, 121, 221, 112, 212, 122, 222]);
-      const vjp = math.vjp(() => math.transpose(t, perm), {t}, dy);
-      expect(vjp.t.shape).toEqual(t.shape);
-      expect(vjp.t.dtype).toEqual('float32');
-      test_util.expectArraysClose(
-          vjp.t, [111, 112, 121, 122, 211, 212, 221, 222]);
+      const dt = math.vjp(() => math.transpose(t, perm), t, dy);
+      expect(dt.shape).toEqual(t.shape);
+      expect(dt.dtype).toEqual('float32');
+      test_util.expectArraysClose(dt, [111, 112, 121, 122, 211, 212, 221, 222]);
     });
   };
 
