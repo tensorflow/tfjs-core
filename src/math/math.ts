@@ -223,7 +223,7 @@ export class NDArrayMath implements NDArrayManager {
 
     return this.backendEngine.executeKernel(
         'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
-        (dy: Array2D, y: Array2D) => {
+        (dy: Array2D<'float32'>, y: Array2D) => {
           if (aOrientation === MatrixOrientation.TRANSPOSED ||
               bOrientation === MatrixOrientation.TRANSPOSED) {
             throw new Error(
@@ -339,7 +339,7 @@ export class NDArrayMath implements NDArrayManager {
         x.size === util.sizeFromShape(newShape),
         'new shape and old shape must have the same number of elements.');
 
-    const grad = (dy: NDArray, y: NDArray) => {
+    const grad = (dy: NDArray<'float32'>, y: NDArray) => {
       return {x: () => dy.reshape(x.shape)};
     };
     return this.backendEngine.executeKernel(
@@ -352,7 +352,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   cast<D extends DataType, R extends Rank>(
       x: NDArray<DataType, R>, newDType: D): RankMap<D>[R] {
-    const grad = (dy: NDArray, y: NDArray) => {
+    const grad = (dy: NDArray<'float32'>, y: NDArray) => {
       return {x: () => dy.reshape(dy.shape)};
     };
     return this.backendEngine.executeKernel(
@@ -419,6 +419,62 @@ export class NDArrayMath implements NDArrayManager {
     slice_util.assertParamsValid(x, begin, size);
     return this.backendEngine.executeKernel(
         'Slice4D', {inputs: {x}, args: {begin, size}});
+  }
+
+  /**
+   * Reverses a 1D array
+   * @param x The input array.
+   */
+  reverse1D(x: Array1D): Array1D {
+    util.assert(x.rank === 1, `Error in reverse1D: x must be rank 1 but got
+             rank ${x.rank}.`);
+    const input4D = x.as4D(1, 1, 1, x.shape[0]);
+    const res = this.reverse4D(input4D, [3]);
+    return res.as1D();
+  }
+
+  /**
+   * Reverses a 2D array along a specified axis
+   * @param x The input array.
+   * @param axis The set of dimensions to reverse. Must be in the
+   *     range [-rank(x), rank(x)).
+   */
+  reverse2D(x: Array2D, axis: number|number[]): Array2D {
+    util.assert(x.rank === 2, `Error in reverse2D: x must be rank 2 but got
+             rank ${x.rank}.`);
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 2);
+    const input4D = x.as4D(1, 1, x.shape[0], x.shape[1]);
+    const res = this.reverse4D(input4D, axisCleaned);
+    return res.as2D(res.shape[2], res.shape[3]);
+  }
+
+  /**
+   * Reverses a 3D array along a specified axis
+   * @param x The input array.
+   * @param axis The set of dimensions to reverse. Must be in the
+   *     range [-rank(x), rank(x)).
+   */
+  reverse3D(x: Array3D, axis: number|number[]): Array3D {
+    util.assert(x.rank === 3, `Error in reverse3D: x must be rank 3 but got
+             rank ${x.rank}.`);
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 1);
+    const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    const res = this.reverse4D(input4D, axisCleaned);
+    return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+  }
+
+  /**
+   * Reverses a 4D array along a specified axis
+   * @param x The input array.
+   * @param axis The set of dimensions to reverse. Must be in the
+   *     range [-rank(x), rank(x)).
+   */
+  reverse4D(x: Array4D, axis: number|number[]): Array4D {
+    util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
+             rank ${x.rank}.`);
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape);
+    return this.backendEngine.executeKernel(
+        'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}});
   }
 
   /**
@@ -506,7 +562,7 @@ export class NDArrayMath implements NDArrayManager {
   concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
     concat_util.assertParams(a.shape, b.shape, axis);
 
-    const gradients = (dy: Array3D, y: Array3D) => {
+    const gradients = (dy: Array3D<'float32'>, y: Array3D) => {
       const {x1Begin, x1Size, x2Begin, x2Size} =
           concat_util.computeGradientSliceShapes3D(a.shape, y.shape, axis);
       return {
@@ -553,7 +609,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param keepDims Optional. If true, retains reduced dimensions with length
    *     of 1. Defaults to false.
    */
-  logSumExp<T extends NDArray>(
+  logSumExp<T extends NDArray<'float32'>>(
       input: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, input.shape);
     return this.executeOp('logSumExp', () => {
@@ -588,34 +644,38 @@ export class NDArrayMath implements NDArrayManager {
    */
   sum<D extends DataType, T extends NDArray<SumTypes[D]>>(
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
-    const origAxes = axis_util.parseAxisParam(axis, x.shape);
-    let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const axes = axis_util.parseAxisParam(axis, x.shape);
     return this.executeOp('sum', () => {
-      if (permutedAxes != null) {
-        x = this.transpose(x, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
-      }
-      const res = this.backendEngine.executeKernel(
-          'Sum', {inputs: {x}, args: {axes}}, (dy: T, y: T) => {
-            return {
-              x: () => {
-                // TODO(nsthorat): Fix gradients for sum when using axis
-                // reduction.
-                if (axis != null) {
-                  throw new Error(
-                      `Gradients for sum with axis reduction not yet ` +
-                      `supported.`);
-                }
-                return this.multiply(dy, NDArray.ones(x.shape, dy.dtype));
-              }
-            };
+      // Use a custom gradient to bypass 2 gradient backprops since sum is used
+      // extremely often.
+      return this.customGradient(() => {
+        const permutation = axis_util.getAxesPermutation(axes, x.rank);
+        let reductionAxes = axes;
+        let permutedX = x;
+        if (permutation != null) {
+          permutedX = this.transpose(x, permutation);
+          reductionAxes =
+              axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
+        }
+        let value = this.backendEngine.executeKernel(
+            'Sum', {inputs: {x: permutedX}, args: {axes: reductionAxes}});
+        if (keepDims) {
+          const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
+          value = value.reshape(newShape);
+        }
+
+        const gradients = (dy: NDArray<'float32'>) => {
+          const expandedDyShape = x.shape.slice();
+          axes.forEach(axis => {
+            expandedDyShape[axis] = 1;
           });
-      if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
-        return res.reshape(newShape);
-      }
-      return res;
+          const expandedDy = dy.reshape(expandedDyShape);
+          const derX = () =>
+              this.multiply(expandedDy, NDArray.ones(x.shape, 'float32'));
+          return {x: derX};
+        };
+        return {value, gradients};
+      }, {x}, 'sum');
     }) as T;
   }
 
@@ -642,20 +702,21 @@ export class NDArrayMath implements NDArrayManager {
     return this.executeOp('mean', () => {
       // Use a custom gradient to bypass 2 gradient backprops since mean is used
       // extremely often.
-      // TODO(nsthorat): Maybe remove this custom gradient if backprop through
-      // divide / sum are fast enough and we have broadcasting support.
       return this.customGradient(() => {
-        const res = this.divide(x, Scalar.new(reduceSize));
+        const reduceSizeScalar = Scalar.new(reduceSize);
+        const res = this.divide(x, reduceSizeScalar);
         const value = this.sum(res, axis, keepDims);
 
-        const gradients = (dy: NDArray, y: NDArray) => {
-          if (axis != null) {
-            throw new Error(`Gradient for mean not yet implemented for axis.`);
-          }
-          return {
-            x: () => this.multiply(
-                NDArray.onesLike(x), this.divide(dy, Scalar.new(x.size)))
-          };
+        const gradients = (dy: NDArray<'float32'>) => {
+          const expandedDyShape = x.shape.slice();
+          axes.forEach(axis => {
+            expandedDyShape[axis] = 1;
+          });
+          const expandedDy = dy.reshape(expandedDyShape);
+          const derX = () => this.divide(
+              this.multiply(expandedDy, NDArray.ones(x.shape, 'float32')),
+              reduceSizeScalar);
+          return {x: derX};
         };
         return {value, gradients};
       }, {x}, 'mean') as NDArray<'float32'>;
@@ -673,7 +734,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   argMin<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     return this.executeOp('argMin', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
@@ -694,7 +755,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   argMax<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     return this.executeOp('argMax', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
@@ -758,6 +819,46 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
+   * Returns the truth value of (a <= b) element-wise. Supports broadcasting.
+   *
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   */
+  lessEqual<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
+      a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('LessEqual', {inputs: {a, b}}) as T;
+  }
+
+  /**
+   * Returns the truth value of (a > b) element-wise. Supports broadcasting.
+   *
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   */
+  greater<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
+      a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('Greater', {inputs: {a, b}}) as T;
+  }
+
+  /**
+   * Returns the truth value of (a >= b) element-wise. Supports broadcasting.
+   *
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   */
+  greaterEqual<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
+      a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('GreaterEqual', {inputs: {a, b}}) as
+        T;
+  }
+
+  /**
    * Returns the truth value of a OR b element-wise. Supports broadcasting.
    *
    * @param a The first input `NDArray<'bool'>`.
@@ -812,7 +913,7 @@ export class NDArrayMath implements NDArrayManager {
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     return this.executeOp('min', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
@@ -860,7 +961,7 @@ export class NDArrayMath implements NDArrayManager {
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getPermutedAxes(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     return this.executeOp('max', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
@@ -896,7 +997,8 @@ export class NDArrayMath implements NDArrayManager {
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
-  softmax<T extends NDArray>(logits: T, dim = -1): T {
+  softmax<D extends DataType, R extends Rank>(logits: NDArray<D, R>, dim = -1):
+      RankMap<'float32'>[R] {
     if (dim === -1) {
       dim = logits.rank - 1;
     }
@@ -906,7 +1008,7 @@ export class NDArrayMath implements NDArrayManager {
           `Logits was rank ${logits.rank} and dim was ${dim}`);
     }
 
-    const gradients = (dy: T, y: T) => {
+    const gradients = (dy: NDArray<'float32', R>, y: NDArray<'float32', R>) => {
       return {
         logits: () => {
           const dyTimesY = this.multiply(dy, y);
@@ -923,10 +1025,10 @@ export class NDArrayMath implements NDArrayManager {
         // exp(X - logSumExp(X))
         const keepDims = true;
         const lse = this.logSumExp(logits, [dim], keepDims);
-        const logResult = this.subtract(logits, lse);
-        const value = this.exp(logResult) as T;
+        const logResult = this.subtract(logits.asType('float32'), lse);
+        const value = this.exp(logResult);
         return {value, gradients};
-      }, {logits}, 'softmax');
+      }, {logits}, 'softmax') as RankMap<'float32'>[R];
     });
   }
 
@@ -954,9 +1056,10 @@ export class NDArrayMath implements NDArrayManager {
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
-  softmaxCrossEntropyWithLogits<I extends NDArray<'float32'>,
-                                          O extends NDArray<'float32'>>(
-      labels: I, logits: I, dim = -1): O {
+  softmaxCrossEntropyWithLogits<
+      R extends Rank, A extends NDArray<DataType, R>, B extends
+          NDArray<DataType, R>, O extends NDArray<'float32'>>(
+      labels: A, logits: B, dim = -1): O {
     util.assertShapesMatch(
         labels.shape, logits.shape, 'Error in softmaxCrossEntropyWithLogits: ');
     if (dim === -1) {
@@ -984,14 +1087,15 @@ export class NDArrayMath implements NDArrayManager {
 
           return {
             logits: () => this.multiply(
-                dy.reshape(dyShape), this.subtract(softmaxLogits, labels)),
+                dy.reshape(dyShape),
+                this.subtract(softmaxLogits, labels.asType('float32'))),
             labels: () => this.multiply(
                 dy.reshape(dyShape), this.subtract(labels, softmaxLogits))
           };
         };
 
         return {value, gradients};
-      }, {labels, logits}, 'softmaxCrossEntropyWithLogits');
+      }, {labels, logits}, 'softmaxCrossEntropyWithLogits') as O;
     });
   }
 
@@ -1086,12 +1190,17 @@ export class NDArrayMath implements NDArrayManager {
     if (perm == null) {
       perm = x.shape.map((s, i) => i).reverse();
     }
+    const der = (dy: NDArray<'float32'>) => {
+      const undoPerm = axis_util.getUndoAxesPermutation(perm);
+      const derX = () => this.transpose(dy, undoPerm);
+      return {x: derX};
+    };
     util.assert(
         x.rank === perm.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of perm ${perm}.`);
     return this.backendEngine.executeKernel(
-               'Transpose', {inputs: {x}, args: {perm}}) as T;
+               'Transpose', {inputs: {x}, args: {perm}}, der) as T;
   }
 
 /**
@@ -1152,8 +1261,29 @@ export class NDArrayMath implements NDArrayManager {
   add<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Add', {inputs: {a, b}}) as T;
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
+    const der = (dy: NDArray<'float32'>, y: NDArray) => {
+      const derA = () => {
+        let res = dy;
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes);
+        }
+        return res.reshape(a.shape);
+      };
+      const derB = () => {
+        let res = dy;
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes);
+        }
+        return res.reshape(b.shape);
+      };
+      return {a: derA, b: derB};
+    };
+    return this.backendEngine.executeKernel('Add', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1178,20 +1308,29 @@ export class NDArrayMath implements NDArrayManager {
   subtract<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel(
-               'Sub', {inputs: {a, b}}, (dy: NDArray<D1>, y: NDArray<D1>) => {
-                 if (!util.arraysEqual(a.shape, b.shape)) {
-                   throw new Error(
-                       `Backprop through broadcasted subtract not ` +
-                       `yet supported.`);
-                 }
-                 return {
-                   a: () => this.multiply(dy, NDArray.onesLike(a)),
-                   b: () => this.scope(
-                       () => this.multiply(dy, this.neg(NDArray.onesLike(b))))
-                 };
-               }) as T;
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
+    const der = (dy: NDArray<'float32'>, y: NDArray) => {
+      const derA = () => {
+        let res = dy;
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes);
+        }
+        return res.reshape(a.shape);
+      };
+      const derB = () => {
+        let res = dy;
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes);
+        }
+        return this.neg(res).reshape(b.shape);
+      };
+      return {a: derA, b: derB};
+    };
+    return this.backendEngine.executeKernel('Sub', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1212,7 +1351,7 @@ export class NDArrayMath implements NDArrayManager {
         'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
-    const gradient = (dy: NDArray<D>, y: NDArray<D>) => {
+    const gradient = (dy: NDArray<'float32'>, y: NDArray<D>) => {
       if (!util.arraysEqual(a.shape, b.shape)) {
         throw new Error(
             `Gradient of pow not yet supported for broadcasted shapes.`);
@@ -1279,19 +1418,29 @@ export class NDArrayMath implements NDArrayManager {
   multiply<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel(
-               'Mul', {inputs: {a, b}}, (dy: NDArray, y: NDArray) => {
-                 if (!util.arraysEqual(a.shape, b.shape)) {
-                   throw new Error(
-                       `Backprop through broadcasted multiply not ` +
-                       `supported yet.`);
-                 }
-                 return {
-                   a: () => this.multiply(dy, b),
-                   b: () => this.multiply(dy, a)
-                 };
-               }) as T;
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
+    const der = (dy: NDArray<'float32'>, y: NDArray) => {
+      const derA = () => {
+        const res = this.multiply(dy, b.asType('float32'));
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          return this.sum(res, reduceAxes).reshape(a.shape);
+        }
+        return res;
+      };
+      const derB = () => {
+        const res = this.multiply(dy, a.asType('float32'));
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          return this.sum(res, reduceAxes).reshape(b.shape);
+        }
+        return res;
+      };
+      return {a: derA, b: derB};
+    };
+    return this.backendEngine.executeKernel('Mul', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1321,8 +1470,28 @@ export class NDArrayMath implements NDArrayManager {
    * @param b The second NDArray to divide element-wise.
    */
   divide<T extends NDArray<'float32'>>(a: NDArray, b: NDArray): T {
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Div', {inputs: {a, b}}) as T;
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const der = (dy: NDArray<'float32'>, y: NDArray) => {
+      const derA = () => {
+        const res = this.divide(dy, b.asType('float32'));
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          return this.sum(res, reduceAxes).reshape(a.shape);
+        }
+        return res;
+      };
+      const derB = () => {
+        let res = this.multiply(dy, a.asType('float32'));
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          res = this.sum(res, reduceAxes).reshape(b.shape);
+        }
+        return this.neg(this.divide(res, this.square(b)));
+      };
+      return {a: derA, b: derB};
+    };
+    return this.backendEngine.executeKernel('Div', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1403,11 +1572,12 @@ export class NDArrayMath implements NDArrayManager {
    *
    * @param x The input array.
    */
-  square<T extends NDArray>(x: T): T {
+  square<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T): T {
     return this.backendEngine.executeKernel(
-               'Square', {inputs: {x}}, (dy: T, y: T) => {
+               'Square', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
                  return {
-                   x: () => this.multiply(dy, this.multiply(x, Scalar.new(2)))
+                   x: () => this.multiply(
+                       dy, this.multiply(x.asType('float32'), Scalar.new(2)))
                  };
                }) as T;
   }
@@ -1439,10 +1609,12 @@ export class NDArrayMath implements NDArrayManager {
    * Computes rectified linear element-wise, max(x, 0).
    * @param x The input NDArray.
    */
-  relu<T extends NDArray>(x: T): T {
+  relu<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T): T {
     return this.backendEngine.executeKernel(
-               'Relu', {inputs: {x}}, (dy: T, y: T) => {
-                 return {x: () => this.multiply(dy, this.step(x))};
+               'Relu', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
+                 return {
+                   x: () => this.multiply(dy, this.step(x).asType('float32'))
+                 };
                }) as T;
   }
 
@@ -1782,7 +1954,7 @@ export class NDArrayMath implements NDArrayManager {
         x4D.shape, filter.shape, strides, pad, dimRoundingMode);
 
     return this.executeOp('Conv2D', () => {
-      const gradients = (dy: Array4D, y: Array4D) => {
+      const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
         return {
           x: () => this.conv2dDerInput(x4D.shape, dy, filter, strides, pad),
           filter: () =>
@@ -2118,7 +2290,7 @@ export class NDArrayMath implements NDArrayManager {
     const convInfo = conv_util.computePool2DInfo(
         x4D.shape, filterSize, strides, pad, dimRoundingMode);
 
-    const gradients = (dy: Array4D, y: Array4D) => {
+    const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
       return {x: () => this.maxPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
 
@@ -2267,11 +2439,10 @@ export class NDArrayMath implements NDArrayManager {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  avgPool<R extends '3'|'4', T1 extends NDArray<'int32'|'float32', R>,
-                                        T2 extends NDArray<'float32', R>>(
-      x: T1, filterSize: [number, number]|number,
+  avgPool<R extends '3'|'4'>(
+      x: NDArray<'int32'|'float32', R>, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T2 {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
     let x4D = x as NDArray as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -2291,7 +2462,7 @@ export class NDArrayMath implements NDArrayManager {
     const convInfo =
         conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
 
-    const gradients = (dy: Array4D, y: Array4D) => {
+    const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
       return {x: () => this.avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
 
@@ -2299,10 +2470,10 @@ export class NDArrayMath implements NDArrayManager {
       const res = this.backendEngine.executeKernel(
           'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T2;
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
+            RankMap<'float32'>[R];
       }
-      return res as NDArray as T2;
+      return res as RankMap<'float32'>[R];
     });
   }
 
@@ -2653,8 +2824,7 @@ export class NDArrayMath implements NDArrayManager {
       const o = this.slice2D(res, [0, sliceCols * 3], sliceSize);
 
       const newC = this.addStrict(
-          this.multiplyStrict(
-              c, this.sigmoid(this.scalarPlusArray(forgetBias, f))),
+          this.multiplyStrict(c, this.sigmoid(this.add(forgetBias, f))),
           this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
       const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
 
@@ -2866,8 +3036,8 @@ export class NDArrayMath implements NDArrayManager {
    * an object mapping a string to an NDArray. If using the object mode, this
    * method will return an object of the same shape.
    */
-  vjp<T extends NDArray|NamedArrayMap, R extends NDArray>(
-      f: () => R, x: T, dy: R): T {
+  vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
+      f: () => NDArray<DataType, R>, x: T, dy: NDArray<'float32', R>): T {
     const keys = x instanceof NDArray ? null : Object.keys(x);
     const xs = util.flattenNameArrayMap(x, keys);
 
@@ -2959,12 +3129,13 @@ export class NDArrayMath implements NDArrayManager {
    * @param name An optional name for the customGradient method. Used for
    * debugging.
    */
-  customGradient<D extends DataType, T extends NDArray<D>>(
+  customGradient<D extends DataType, R extends Rank>(
       f: () => {
-        value: T,
-        gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
+        value: NDArray<D, R>,
+        gradients: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
+            TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name?: string): T {
+      inputs: NamedArrayMap, name?: string): NDArray<D, R> {
     return this.backendEngine.customGradient(
         f, inputs, name == null ? '' : name);
   }
