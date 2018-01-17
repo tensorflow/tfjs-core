@@ -433,7 +433,7 @@ export class MathBackendWebGL implements MathBackend {
 
   gather<D extends DataType, T extends NDArray<D>>(
       x: T, indices: Array1D<'int32'>, axis: number): T {
-    const program = new GatherProgram(x.shape, indices.dataSync().length, axis);
+    const program = new GatherProgram(x.shape, indices.size, axis);
     return this.compileAndRun(program, [x, indices]);
   }
 
