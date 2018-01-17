@@ -31,7 +31,7 @@ import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Co
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
 // tslint:disable-next-line:max-line-length
-import {EqualInputConfig, EqualNode, LogicalOrInputConfig, LogicalOrNode} from './types/logical';
+import {EqualInputConfig, EqualNode, LogicalInputConfig, LogicalNode} from './types/logical';
 import {LRN4DInputConfig, LRN4DNode} from './types/lrn';
 import {MatMulInputConfig, MatMulNode} from './types/matmul';
 // tslint:disable-next-line:max-line-length
@@ -139,7 +139,10 @@ const KERNEL_METHODS: {
   GreaterEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.greaterEqual(config.inputs.a, config.inputs.b);
   },
-  LogicalOr: (backend: MathBackend, config: LogicalOrInputConfig) => {
+  LogicalAnd: (backend: MathBackend, config: LogicalInputConfig) => {
+    return backend.logicalAnd(config.inputs.a, config.inputs.b);
+  },
+  LogicalOr: (backend: MathBackend, config: LogicalInputConfig) => {
     return backend.logicalOr(config.inputs.a, config.inputs.b);
   },
   TopKValues:
@@ -383,7 +386,8 @@ export interface KernelConfigRegistry {
   LessEqual: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
-  LogicalOr: LogicalOrNode;
+  LogicalAnd: LogicalNode;
+  LogicalOr: LogicalNode;
   TopKValues: TopKValuesNode<DataType, NDArray>;
   TopKIndices: TopKIndicesNode;
   Min: MinNode<DataType>;
