@@ -819,6 +819,19 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
+   * Returns the truth value of (a < b) element-wise. Supports broadcasting.
+   *
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   */
+  less<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
+      a: NDArray<D1>, b: NDArray<D2>): T {
+    util.assertTypesMatch(a, b);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return this.backendEngine.executeKernel('Less', {inputs: {a, b}}) as T;
+  }
+
+  /**
    * Returns the truth value of (a <= b) element-wise. Supports broadcasting.
    *
    * @param a The first input `NDArray`.
@@ -1215,6 +1228,19 @@ export class NDArrayMath implements NDArrayManager {
             `must match length of perm ${perm}.`);
     return this.backendEngine.executeKernel(
                'Transpose', {inputs: {x}, args: {perm}}, der) as T;
+  }
+
+/**
+ * Gather slices from array `x`'s axis `axis` according to `indices`
+ *
+ * @param x The array to transpose.
+ * @param indices The indices of the values to extract.
+ * @param axis Optional. The axis over which to select values. Defaults to 0.
+ */
+  gather<D extends DataType, T extends NDArray<D>>(
+      x: T, indices: Array1D<'int32'>, axis = 0): T {
+    return this.backendEngine.executeKernel(
+               'Gather', {inputs:{x, indices}, args: {axis}}) as T;
   }
 
   /** @deprecated Use math.add(c, A) instead. */
@@ -2440,11 +2466,10 @@ export class NDArrayMath implements NDArrayManager {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  avgPool<R extends '3'|'4', T1 extends NDArray<'int32'|'float32', R>,
-                                        T2 extends NDArray<'float32', R>>(
-      x: T1, filterSize: [number, number]|number,
+  avgPool<R extends '3'|'4'>(
+      x: NDArray<'int32'|'float32', R>, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T2 {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
     let x4D = x as NDArray as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -2472,10 +2497,10 @@ export class NDArrayMath implements NDArrayManager {
       const res = this.backendEngine.executeKernel(
           'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T2;
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
+            RankMap<'float32'>[R];
       }
-      return res as NDArray as T2;
+      return res as RankMap<'float32'>[R];
     });
   }
 

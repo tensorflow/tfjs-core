@@ -130,6 +130,9 @@ const KERNEL_METHODS: {
   NotEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.notEqual(config.inputs.a, config.inputs.b);
   },
+  Less: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.less(config.inputs.a, config.inputs.b);
+  },
   LessEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.lessEqual(config.inputs.a, config.inputs.b);
   },
@@ -269,6 +272,10 @@ const KERNEL_METHODS: {
   Tile: (backend: MathBackend, config: TileInputConfig<NDArray>) => {
     return backend.tile(config.inputs.x, config.args.reps);
   },
+  Gather: (backend: MathBackend, config: GatherInputConfig<NDArray>) => {
+    return backend.gather(
+        config.inputs.x, config.inputs.indices, config.args.axis);
+  },
   Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
     return backend.pad1D(
         config.inputs.x, config.args.paddings, config.args.constantValue);
@@ -383,6 +390,7 @@ export interface KernelConfigRegistry {
   ArgMin: ArgMinNode;
   Equal: EqualNode;
   NotEqual: EqualNode;
+  Less: EqualNode;
   LessEqual: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
@@ -427,6 +435,7 @@ export interface KernelConfigRegistry {
   Pad1D: Pad1DNode;
   Pad2D: Pad2DNode;
   Tile: TileNode<NDArray>;
+  Gather: GatherNode<NDArray>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;
   Conv2DDerFilter: Conv2DDerFilterNode;

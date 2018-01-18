@@ -79,6 +79,7 @@ export interface MathBackend extends NDArrayStorage {
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
   notEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
+  less(a: NDArray, b: NDArray): NDArray<'bool'>;
   lessEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
   greater(a: NDArray, b: NDArray): NDArray<'bool'>;
@@ -160,6 +161,9 @@ export interface MathBackend extends NDArrayStorage {
       constantValue: number): Array2D;
 
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
+
+  gather<D extends DataType, T extends NDArray<D>>(
+      x: T, indices: Array1D<'int32'>, axis: number): T;
 
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
