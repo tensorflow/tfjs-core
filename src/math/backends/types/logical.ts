@@ -30,7 +30,7 @@ export interface DualGradientInputArrays extends TapeNodeInputGradientArrays {
   b: () => NDArray;
 }
 
-// Equal/NotEqual/LessEqual/Greater/GreaterEqual
+// Equal/NotEqual/Less/LessEqual/Greater/GreaterEqual
 export interface EqualNode extends KernelNode {
   inputAndArgs: EqualInputConfig;
   output: NDArray<'bool'>;
@@ -42,15 +42,15 @@ export interface EqualInputConfig extends KernelInputConfig {
   inputs: DualInputArrays;
 }
 
-// LogicalOr
-export interface LogicalOrNode extends KernelNode {
-  inputAndArgs: LogicalOrInputConfig;
+// LogicalAnd/LogicalOr
+export interface LogicalNode extends KernelNode {
+  inputAndArgs: LogicalInputConfig;
   output: NDArray<'bool'>;
   gradient:
       (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
 }
 
-export interface LogicalOrInputConfig extends KernelInputConfig {
+export interface LogicalInputConfig extends KernelInputConfig {
   inputs: DualInputArrays;
 }
 

@@ -32,7 +32,7 @@ import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Co
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
 import {GatherInputConfig, GatherNode} from './types/gather';
 // tslint:disable-next-line:max-line-length
-import {EqualInputConfig, EqualNode, LogicalOrInputConfig, LogicalOrNode, WhereInputConfig, WhereNode} from './types/logical';
+import {EqualInputConfig, EqualNode, LogicalInputConfig, LogicalNode, WhereInputConfig, WhereNode} from './types/logical';
 import {LRN4DInputConfig, LRN4DNode} from './types/lrn';
 import {MatMulInputConfig, MatMulNode} from './types/matmul';
 // tslint:disable-next-line:max-line-length
@@ -131,6 +131,9 @@ const KERNEL_METHODS: {
   NotEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.notEqual(config.inputs.a, config.inputs.b);
   },
+  Less: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.less(config.inputs.a, config.inputs.b);
+  },
   LessEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.lessEqual(config.inputs.a, config.inputs.b);
   },
@@ -140,7 +143,10 @@ const KERNEL_METHODS: {
   GreaterEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.greaterEqual(config.inputs.a, config.inputs.b);
   },
-  LogicalOr: (backend: MathBackend, config: LogicalOrInputConfig) => {
+  LogicalAnd: (backend: MathBackend, config: LogicalInputConfig) => {
+    return backend.logicalAnd(config.inputs.a, config.inputs.b);
+  },
+  LogicalOr: (backend: MathBackend, config: LogicalInputConfig) => {
     return backend.logicalOr(config.inputs.a, config.inputs.b);
   },
   Where: (backend: MathBackend, config: WhereInputConfig) => {
@@ -390,10 +396,12 @@ export interface KernelConfigRegistry {
   ArgMin: ArgMinNode;
   Equal: EqualNode;
   NotEqual: EqualNode;
+  Less: EqualNode;
   LessEqual: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
-  LogicalOr: LogicalOrNode;
+  LogicalAnd: LogicalNode;
+  LogicalOr: LogicalNode;
   Where: WhereNode;
   TopKValues: TopKValuesNode<DataType, NDArray>;
   TopKIndices: TopKIndicesNode;
