@@ -149,6 +149,9 @@ const KERNEL_METHODS: {
   LogicalOr: (backend: MathBackend, config: LogicalInputConfig) => {
     return backend.logicalOr(config.inputs.a, config.inputs.b);
   },
+  LogicalXor: (backend: MathBackend, config: LogicalInputConfig) => {
+    return backend.logicalXor(config.inputs.a, config.inputs.b);
+  },
   TopKValues:
       (backend: MathBackend, config: TopKValuesInputConfig<NDArray>) => {
         return backend.topKValues(config.inputs.x, config.args.k);
@@ -397,6 +400,7 @@ export interface KernelConfigRegistry {
   GreaterEqual: EqualNode;
   LogicalAnd: LogicalNode;
   LogicalOr: LogicalNode;
+  LogicalXor: LogicalNode;
   TopKValues: TopKValuesNode<DataType, NDArray>;
   TopKIndices: TopKIndicesNode;
   Min: MinNode<DataType>;

@@ -560,6 +560,16 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
+  logicalXor(a: NDArray, b: NDArray): NDArray<'bool'> {
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        return util.getNaN('bool');
+      } else {
+        return aVal ^ bVal;
+      }
+    });
+  }
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D> {
     return this.topK(x, k).values as Array1D<D>;
@@ -1269,7 +1279,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   gather<D extends DataType, T extends NDArray<D>>(
-       x: T, indices: Array1D<'int32'>, axis: number): T {
+      x: T, indices: Array1D<'int32'>, axis: number): T {
     const newShape: number[] = x.shape.slice();
     const indicesValues = indices.dataSync();
     newShape[axis] = indicesValues.length;

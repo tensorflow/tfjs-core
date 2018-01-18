@@ -42,7 +42,7 @@ export interface EqualInputConfig extends KernelInputConfig {
   inputs: DualInputArrays;
 }
 
-// LogicalAnd/LogicalOr
+// LogicalAnd/LogicalOr/LogicalXor
 export interface LogicalNode extends KernelNode {
   inputAndArgs: LogicalInputConfig;
   output: NDArray<'bool'>;
