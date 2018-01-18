@@ -1,46 +1,79 @@
 <template>
-  <div id="container">
-    <h1>Visualizing the landscape of neural nets</h1>
-    <div v-if="loadingData" id="status">Loading data...</div>
-    <div v-bind:class="{hidden: loadingData}">
-      <div id="controls">
-        <div class="control">
-          <label>Weight initialization:</label>
-          <select ref="weightSelect" @change="changeWeightsInit">
-            <option value="unit" selected>N(0, 1)</option>
-            <option value="fan-in">N(0, fan-in)</option>
-            <option value="fan-out">N(0, fan-out)</option>
-          </select>
-        </div>
-        <div class="control">
-          <label>Model architecture:</label>
-          <select ref="modelTypeSelect" @change="changeModelType">
-            <option value="fc" selected>Fully Connected</option>
-            <option value="conv">Convolutional</option>
-          </select>
-        </div>
+  <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header">
+      <div class="mdl-layout__header-row">
+        <!-- Title -->
+        <span class="mdl-layout-title">Visualizing the landscape of neural nets</span>
+        <!-- Add spacer, to align navigation to the right -->
+        <div class="mdl-layout-spacer"></div>
+        <!-- Navigation. We hide it in small screens. -->
+        <nav class="mdl-navigation mdl-layout--large-screen-only">
+          <a class="mdl-navigation__link" href="">Code</a>
+          <a class="mdl-navigation__link" href="">Share</a>
+        </nav>
       </div>
-      <div id="all-charts">
-        <div class="charts" v-for="chartsData in charts" :key="chartsData.id">
-          <div class="chart" v-for="(plot, idx) in chartsData.plots" :key="idx">
-            <Plot :data="plot"></Plot>
+    </header>
+    <div class="mdl-layout__drawer">
+      <span class="mdl-layout-title">NN Landscape Explorer</span>
+      <nav class="mdl-navigation">
+        <a class="mdl-navigation__link" href="">Nothing</a>
+        <a class="mdl-navigation__link" href="">to</a>
+        <a class="mdl-navigation__link" href="">See</a>
+        <a class="mdl-navigation__link" href="">Here</a>
+      </nav>
+    </div>
+    <main class="mdl-layout__content">
+      <div class="page-content">
+  
+  
+        <div v-if="loadingData" id="status">Loading data...</div>
+        <div v-bind:class="{hidden: loadingData}">
+          <div id="controls">
+            <div class="control">
+              <label>Weight initialization:</label>
+              <select ref="weightSelect" @change="changeWeightsInit">
+                <option value="unit" selected>N(0, 1)</option>
+                <option value="fan-in">N(0, fan-in)</option>
+                <option value="fan-out">N(0, fan-out)</option>
+              </select>
+            </div>
+            <div class="control">
+              <label>Model architecture:</label>
+              <select ref="modelTypeSelect" @change="changeModelType">
+                <option value="fc" selected>Fully Connected</option>
+                <option value="conv">Convolutional</option>
+              </select>
+            </div>
+          </div>
+          <div id="all-charts">
+            <div class="charts" v-for="chartsData in charts" :key="chartsData.id">
+              <div class="chart" v-for="(plot, idx) in chartsData.plots" :key="idx">
+                <Plot :data="plot"></Plot>
+              </div>
+            </div>
           </div>
         </div>
+  
+  
+  
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <style>
+html, body {
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+/*
 html,
 body {
-  display: flex;
-  box-sizing: border-box;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  margin: 0;
+  display: flex;
 }
 h1 {
   font-weight: 300;
@@ -88,7 +121,7 @@ h1 {
   width: 200px;
   height: 20px;
 }
+*/
 </style>
 
 <script lang="ts" src="./app.ts"></script>
-
