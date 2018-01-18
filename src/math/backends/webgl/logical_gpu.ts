@@ -22,11 +22,9 @@ export class WhereProgram implements GPGPUProgram {
   variableNames = ['c', 'a', 'b'];
   outputShape: number[];
   userCode: string;
-  rank: number;
 
   constructor(cRank: number, shape: number[], rank: number) {
     this.outputShape = shape;
-    this.rank = rank;
 
     let cCoords;
     let abCoords;
@@ -51,7 +49,7 @@ export class WhereProgram implements GPGPUProgram {
       abCoords = abCoordVars.join();
     }
 
-    const dtype = getCoordsDataType(this.rank);
+    const dtype = getCoordsDataType(rank);
 
     this.userCode = `
       void main() {
