@@ -16,7 +16,8 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array2D, ENV, gpgpu_util, GPGPUContext, MathBackendWebGL, NDArray, NDArrayMath, webgl_util} from 'deeplearn';
+import {Array2D, ENV, gpgpu_util, GPGPUContext, MathBackendWebGL, NDArrayMath, Scalar, webgl_util} from 'deeplearn';
+
 import * as nn_art_util from './nn_art_util';
 
 const MAX_LAYERS = 10;
@@ -51,9 +52,10 @@ export class CPPN {
   private backend: MathBackendWebGL;
   private gpgpu: GPGPUContext;
   private renderShader: WebGLProgram;
-  private addLatentVariablesShader: WebGLProgram;
+  // private addLatentVariablesShader: WebGLProgram;
 
   private inputAtlas: Array2D;
+  private ones: Array2D<'float32'>;
   private weights: Array2D[] = [];
 
   private z1Counter = 0;
@@ -84,10 +86,10 @@ export class CPPN {
     this.inferenceCanvas.height = canvasSize;
 
     this.renderShader = nn_art_util.getRenderShader(this.gpgpu, canvasSize);
-    this.addLatentVariablesShader = nn_art_util.getAddLatentVariablesShader(
-        this.gpgpu, NUM_IMAGE_SPACE_VARIABLES);
+
     this.inputAtlas = nn_art_util.createInputAtlas(
         canvasSize, NUM_IMAGE_SPACE_VARIABLES, NUM_LATENT_VARIABLES);
+    this.ones = Array2D.ones([this.inputAtlas.shape[0], 1]);
   }
 
   generateWeights(neuronsPerLayer: number, weightsStdev: number) {
@@ -97,14 +99,14 @@ export class CPPN {
     this.weights = [];
 
     this.weights.push(Array2D.randTruncatedNormal(
-        [neuronsPerLayer, NUM_IMAGE_SPACE_VARIABLES + NUM_LATENT_VARIABLES], 0,
+        [NUM_IMAGE_SPACE_VARIABLES + NUM_LATENT_VARIABLES, neuronsPerLayer], 0,
         weightsStdev));
     for (let i = 0; i < MAX_LAYERS; i++) {
       this.weights.push(Array2D.randTruncatedNormal(
           [neuronsPerLayer, neuronsPerLayer], 0, weightsStdev));
     }
     this.weights.push(Array2D.randTruncatedNormal(
-        [4 /** max output channels */, neuronsPerLayer], 0, weightsStdev));
+        [neuronsPerLayer, 4 /** max output channels */], 0, weightsStdev));
   }
 
   setColorMode(colorMode: ColorMode) {
@@ -144,36 +146,38 @@ export class CPPN {
 
     this.z1Counter += 1 / this.z1Scale;
     this.z2Counter += 1 / this.z2Scale;
-    const z1 = Math.sin(this.z1Counter);
-    const z2 = Math.cos(this.z2Counter);
-
-    // Add the latent variables.
-    const inputAtlasWithLatentVariables =
-        NDArray.make(this.inputAtlas.shape, {}) as Array2D;
-    nn_art_util.addLatentVariables(
-        this.gpgpu, this.addLatentVariablesShader,
-        this.backend.getTexture(this.inputAtlas.dataId),
-        this.backend.getTexture(inputAtlasWithLatentVariables.dataId),
-        this.inputAtlas.shape, z1, z2);
-
-    let lastOutput = inputAtlasWithLatentVariables;
 
     this.math.scope(() => {
-      for (let i = 0; i < this.numLayers; i++) {
-        const matmulResult = this.math.matMul(this.weights[i], lastOutput);
+      const concatAxis = 1;
+      const z1 = Scalar.new(Math.sin(this.z1Counter));
+      const z2 = Scalar.new(Math.cos(this.z2Counter));
+      const latentVars = this.math.concat2D(
+          this.math.multiply(z1, this.ones) as Array2D,
+          this.math.multiply(z2, this.ones) as Array2D, concatAxis);
 
-        lastOutput = (i === this.numLayers - 1) ?
+      let lastOutput =
+          this.math.concat2D(this.inputAtlas, latentVars, concatAxis);
+
+      for (let i = 0; i < this.numLayers; i++) {
+        const lastLayer = (i === this.numLayers - 1);
+        const matmulResult = this.math.matMul(
+            lastOutput,
+            lastLayer ? this.weights[this.weights.length - 1] :
+                        this.weights[i]);
+
+        lastOutput = lastLayer ?
             this.math.sigmoid(matmulResult) :
             activationFunctionMap[this.selectedActivationFunctionName](
                 this.math, matmulResult);
       }
+      console.log('o', lastOutput.shape);
       nn_art_util.render(
           this.gpgpu, this.renderShader,
           this.backend.getTexture(lastOutput.dataId), outputDimensions,
           colorModeIndex);
     });
 
-    inputAtlasWithLatentVariables.dispose();
+    // inputAtlasWithLatentVariables.dispose();
 
     requestAnimationFrame(() => this.runInferenceLoop());
   }

@@ -30,6 +30,7 @@ export interface GPGPUProgram {
   outputShape: number[];
   userCode: string;
   supportsBroadcasting?: boolean;
+  setup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void;
 }
 
 export interface GPGPUBinary {
@@ -135,9 +136,8 @@ function validateBinaryAndProgram(
 }
 
 export function runProgram<T extends NDArray, K extends NDArray>(
-    binary: GPGPUBinary, inputs: Array<ArrayData<T>>, output: ArrayData<K>,
-    customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) =>
-        void): void {
+    binary: GPGPUBinary, inputs: Array<ArrayData<T>>,
+    output: ArrayData<K>): void {
   validateBinaryAndProgram(binary.inShapeInfos, inputs);
   validateBinaryAndProgram([binary.outShapeInfo], [output]);
 
@@ -157,9 +157,10 @@ export function runProgram<T extends NDArray, K extends NDArray>(
     gpgpu.gl.uniform1f(binary.uniformLocations[NAN_UNIFORM_NAME], NaN);
   }
 
-  if (customSetup != null) {
-    customSetup(gpgpu, binary.webGLProgram);
+  if (binary.program.setup != null) {
+    binary.program.setup(gpgpu, binary.webGLProgram);
   }
+
   gpgpu.executeProgram(binary.attributeLocations);
 }
 

@@ -26,7 +26,9 @@ export class MultinomialProgram implements GPGPUProgram {
   // Caching uniform location for speed.
   seedLoc: WebGLUniformLocation;
 
-  constructor(batchSize: number, numOutcomes: number, numSamples: number) {
+  constructor(
+      batchSize: number, numOutcomes: number, numSamples: number,
+      private seed: number) {
     this.outputShape = [batchSize, numSamples];
 
     this.userCode = `
@@ -54,12 +56,10 @@ export class MultinomialProgram implements GPGPUProgram {
     `;
   }
 
-  getCustomSetupFunc(seed: number) {
-    return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
-      if (this.seedLoc == null) {
-        this.seedLoc = gpgpu.getUniformLocation(webGLProgram, 'seed');
-      }
-      gpgpu.gl.uniform1f(this.seedLoc, seed);
-    };
-  }
+  setup(gpgpu: GPGPUContext, webGLProgram: WebGLProgram) {
+    if (this.seedLoc == null) {
+      this.seedLoc = gpgpu.getUniformLocation(webGLProgram, 'seed');
+    }
+    gpgpu.gl.uniform1f(this.seedLoc, this.seed);
+  };
 }

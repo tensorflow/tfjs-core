@@ -28,7 +28,7 @@ export class SliceProgram implements GPGPUProgram {
   // Caching uniform location for speed.
   startLoc: WebGLUniformLocation;
 
-  constructor(destSize: number[]) {
+  constructor(private start: number[], destSize: number[]) {
     this.outputShape = destSize;
     this.rank = destSize.length;
 
@@ -45,35 +45,36 @@ export class SliceProgram implements GPGPUProgram {
     `;
   }
 
-  getCustomSetupFunc(start: number[]) {
-    if (start.length !== this.rank) {
+  setup(gpgpu: GPGPUContext, webGLProgram: WebGLProgram) {
+    if (this.start.length !== this.rank) {
       throw Error(
           `The rank (${this.rank}) of the program must match the ` +
-          `length of start (${start.length})`);
+          `length of start (${this.start.length})`);
     }
-    return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
+
+    if (this.startLoc == null) {
+      this.startLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'start');
       if (this.startLoc == null) {
-        this.startLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'start');
-        if (this.startLoc == null) {
-          // This means the compiler has optimized and realized it doesn't need
-          // the uniform.
-          return;
-        }
+        // This means the compiler has optimized and realized it doesn't need
+        // the uniform.
+        return;
       }
-      if (this.rank === 1) {
-        gpgpu.gl.uniform1i(this.startLoc, start[0]);
-      } else if (this.rank === 2) {
-        gpgpu.gl.uniform2i(this.startLoc, start[0], start[1]);
-      } else if (this.rank === 3) {
-        gpgpu.gl.uniform3i(this.startLoc, start[0], start[1], start[2]);
-      } else if (this.rank === 4) {
-        gpgpu.gl.uniform4i(
-            this.startLoc, start[0], start[1], start[2], start[3]);
-      } else {
-        throw Error(`Slicing for rank ${this.rank} is not yet supported`);
-      }
-    };
-  }
+    }
+    if (this.rank === 1) {
+      gpgpu.gl.uniform1i(this.startLoc, this.start[0]);
+    } else if (this.rank === 2) {
+      gpgpu.gl.uniform2i(this.startLoc, this.start[0], this.start[1]);
+    } else if (this.rank === 3) {
+      gpgpu.gl.uniform3i(
+          this.startLoc, this.start[0], this.start[1], this.start[2]);
+    } else if (this.rank === 4) {
+      gpgpu.gl.uniform4i(
+          this.startLoc, this.start[0], this.start[1], this.start[2],
+          this.start[3]);
+    } else {
+      throw Error(`Slicing for rank ${this.rank} is not yet supported`);
+    }
+  };
 }
 
 function getCoords(rank: number): string {
