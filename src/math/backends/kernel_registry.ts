@@ -30,7 +30,9 @@ import {CastInputConfig, CastNode} from './types/cast';
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './types/concat';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
-import {EqualInputConfig, EqualNode} from './types/logical';
+import {GatherInputConfig, GatherNode} from './types/gather';
+// tslint:disable-next-line:max-line-length
+import {EqualInputConfig, EqualNode, LogicalInputConfig, LogicalNode, WhereInputConfig, WhereNode} from './types/logical';
 import {LRN4DInputConfig, LRN4DNode} from './types/lrn';
 import {MatMulInputConfig, MatMulNode} from './types/matmul';
 // tslint:disable-next-line:max-line-length
@@ -38,12 +40,15 @@ import {MaximumInputConfig, MaximumNode, MaxInputConfig, MaxNode, MinimumInputCo
 import {MultinomialInputConfig, MultinomialNode} from './types/multinomial';
 import {OneHotInputConfig, OneHotNode} from './types/onehot';
 // tslint:disable-next-line:max-line-length
+import {Pad1DInputConfig, Pad1DNode, Pad2DInputConfig, Pad2DNode} from './types/pad';
+// tslint:disable-next-line:max-line-length
 import {PoolBackpropInputConfig, PoolBackpropNode, PoolInputConfig, PoolNode} from './types/pool';
 import {PowInputConfig, PowNode} from './types/pow';
 import {PReLUInputConfig, PReLUNode} from './types/prelu';
 import {ReshapeNode} from './types/reshape';
 // tslint:disable-next-line:max-line-length
 import {ResizeBilinear3DInputConfig, ResizeBilinear3DNode} from './types/resize_bilinear';
+import {Reverse4DInputConfig, Reverse4DNode} from './types/reverse';
 // tslint:disable-next-line:max-line-length
 import {Slice1DInputConfig, Slice1DNode, Slice2DInputConfig, Slice2DNode, Slice3DInputConfig, Slice3DNode, Slice4DInputConfig, Slice4DNode} from './types/slice';
 import {SumInputConfig, SumNode} from './types/sum';
@@ -53,8 +58,8 @@ import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValu
 import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
-  [kernel in keyof KernelConfigRegistry]:
-      (backend: MathBackend, config: KernelInputConfig) => NDArray
+  [kernel in keyof KernelConfigRegistry]: (
+      backend: MathBackend, config: KernelInputConfig) => NDArray
 } = {
   // NOTE: Using {} and "return" makes VSCode run much faster.
   MatMul: (backend: MathBackend, config: MatMulInputConfig) => {
@@ -80,6 +85,9 @@ const KERNEL_METHODS: {
   Slice4D: (backend: MathBackend, config: Slice4DInputConfig) => {
     return backend.slice4D(
         config.inputs.x, config.args.begin, config.args.size);
+  },
+  Reverse4D: (backend: MathBackend, config: Reverse4DInputConfig) => {
+    return backend.reverse4D(config.inputs.x, config.args.axis);
   },
   Concat1D: (backend: MathBackend, config: Concat1DInputConfig) => {
     return backend.concat1D(config.inputs.a, config.inputs.b);
@@ -122,6 +130,29 @@ const KERNEL_METHODS: {
   },
   NotEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.notEqual(config.inputs.a, config.inputs.b);
+  },
+  Less: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.less(config.inputs.a, config.inputs.b);
+  },
+  LessEqual: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.lessEqual(config.inputs.a, config.inputs.b);
+  },
+  Greater: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.greater(config.inputs.a, config.inputs.b);
+  },
+  GreaterEqual: (backend: MathBackend, config: EqualInputConfig) => {
+    return backend.greaterEqual(config.inputs.a, config.inputs.b);
+  },
+  LogicalAnd: (backend: MathBackend, config: LogicalInputConfig) => {
+    return backend.logicalAnd(config.inputs.a, config.inputs.b);
+  },
+  LogicalOr: (backend: MathBackend, config: LogicalInputConfig) => {
+    return backend.logicalOr(config.inputs.a, config.inputs.b);
+  },
+  Where: (backend: MathBackend, config: WhereInputConfig) => {
+    return backend.where(
+        config.inputs.condition, config.inputs.a, config.inputs.b,
+        config.args.dtype);
   },
   TopKValues:
       (backend: MathBackend, config: TopKValuesInputConfig<NDArray>) => {
@@ -244,11 +275,23 @@ const KERNEL_METHODS: {
   Clip: (backend: MathBackend, config: ClipInputConfig<NDArray>) => {
     return backend.clip(config.inputs.x, config.args.min, config.args.max);
   },
-  Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
-    return backend.transpose(config.inputs.x, config.args.perm);
-  },
   Tile: (backend: MathBackend, config: TileInputConfig<NDArray>) => {
     return backend.tile(config.inputs.x, config.args.reps);
+  },
+  Gather: (backend: MathBackend, config: GatherInputConfig<NDArray>) => {
+    return backend.gather(
+        config.inputs.x, config.inputs.indices, config.args.axis);
+  },
+  Pad1D: (backend: MathBackend, config: Pad1DInputConfig) => {
+    return backend.pad1D(
+        config.inputs.x, config.args.paddings, config.args.constantValue);
+  },
+  Pad2D: (backend: MathBackend, config: Pad2DInputConfig) => {
+    return backend.pad2D(
+        config.inputs.x, config.args.paddings, config.args.constantValue);
+  },
+  Transpose: (backend: MathBackend, config: TransposeInputConfig<NDArray>) => {
+    return backend.transpose(config.inputs.x, config.args.perm);
   },
   Conv2D: (backend: MathBackend, config: Conv2DInputConfig) => {
     return backend.conv2d(
@@ -338,6 +381,7 @@ export interface KernelConfigRegistry {
   Slice2D: Slice2DNode;
   Slice3D: Slice3DNode;
   Slice4D: Slice4DNode;
+  Reverse4D: Reverse4DNode;
   Concat1D: Concat1DNode;
   Concat2D: Concat2DNode;
   Concat3D: Concat3DNode;
@@ -352,6 +396,13 @@ export interface KernelConfigRegistry {
   ArgMin: ArgMinNode;
   Equal: EqualNode;
   NotEqual: EqualNode;
+  Less: EqualNode;
+  LessEqual: EqualNode;
+  Greater: EqualNode;
+  GreaterEqual: EqualNode;
+  LogicalAnd: LogicalNode;
+  LogicalOr: LogicalNode;
+  Where: WhereNode;
   TopKValues: TopKValuesNode<DataType, NDArray>;
   TopKIndices: TopKIndicesNode;
   Min: MinNode<DataType>;
@@ -388,7 +439,10 @@ export interface KernelConfigRegistry {
   Tanh: UnaryNode<NDArray>;
   Clip: ClipNode<NDArray>;
   Transpose: TransposeNode<NDArray>;
+  Pad1D: Pad1DNode;
+  Pad2D: Pad2DNode;
   Tile: TileNode<NDArray>;
+  Gather: GatherNode<NDArray>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;
   Conv2DDerFilter: Conv2DDerFilterNode;
