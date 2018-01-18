@@ -30,6 +30,7 @@ import {CastInputConfig, CastNode} from './types/cast';
 import {Concat1DInputConfig, Concat1DNode, Concat2DInputConfig, Concat2DNode, Concat3DInputConfig, Concat3DNode, Concat4DInputConfig, Concat4DNode} from './types/concat';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerBiasInputConfig, Conv2DDerBiasNode, Conv2DDerFilterInputConfig, Conv2DDerFilterNode, Conv2DDerInputInputConfig, Conv2DDerInputNode, Conv2DInputConfig, Conv2DNode, DepthwiseConv2DInputConfig} from './types/conv';
+import {GatherInputConfig, GatherNode} from './types/gather';
 // tslint:disable-next-line:max-line-length
 import {EqualInputConfig, EqualNode, LogicalInputConfig, LogicalNode} from './types/logical';
 import {LRN4DInputConfig, LRN4DNode} from './types/lrn';
