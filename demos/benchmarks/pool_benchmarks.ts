@@ -43,9 +43,9 @@ function getPoolingOp(option: string, math: NDArrayMath): (
         return math.minPool(x, filterSize, strides, pad);
       };
     case 'avg':
-      return (x: Array3D<'float32'>, filterSize: [number, number]|number,
+      return (x: Array3D, filterSize: [number, number]|number,
               strides: [number, number]|number, pad: 'valid'|'same'|number) => {
-        return math.avgPool(x, filterSize, strides, pad) as Array3D;
+        return math.avgPool(x.asType('float32'), filterSize, strides, pad);
       };
     default:
       throw new Error(`Not found such ops: ${option}`);

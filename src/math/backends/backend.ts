@@ -57,6 +57,8 @@ export interface MathBackend extends NDArrayStorage {
     number, number, number, number
   ]): Array4D;
 
+  reverse4D(a: Array4D, axis: number[]): Array4D;
+
   concat1D(a: Array1D, b: Array1D): Array1D;
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D;
   concat3D(a: Array3D, b: Array3D, axis: number): Array3D;
@@ -76,6 +78,19 @@ export interface MathBackend extends NDArrayStorage {
 
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
   notEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  less(a: NDArray, b: NDArray): NDArray<'bool'>;
+  lessEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  greater(a: NDArray, b: NDArray): NDArray<'bool'>;
+  greaterEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'>;
+  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  where<D extends DataType>(
+      condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray<D>;
+
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D>;
   topKIndices(x: NDArray, k: number): Array1D<'int32'>;
@@ -143,7 +158,15 @@ export interface MathBackend extends NDArrayStorage {
 
   tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T;
 
+  pad1D(x: Array1D, paddings: [number, number], constantValue: number): Array1D;
+  pad2D(
+      x: Array2D, paddings: [[number, number], [number, number]],
+      constantValue: number): Array2D;
+
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
+
+  gather<D extends DataType, T extends NDArray<D>>(
+      x: T, indices: Array1D<'int32'>, axis: number): T;
 
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;

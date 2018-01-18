@@ -16,27 +16,64 @@
  */
 
 import {NamedArrayMap} from '../../../util';
-import {NDArray} from '../../ndarray';
+import {DataType, NDArray} from '../../ndarray';
 // tslint:disable-next-line:max-line-length
 import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
 
-export interface EqualNode extends KernelNode {
-  inputAndArgs: EqualInputConfig;
-  output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => EqualGradientInputArrays;
-}
-
-export interface EqualInputConfig extends KernelInputConfig {
-  inputs: EqualInputArrays;
-}
-
-export interface EqualInputArrays extends NamedArrayMap {
+export interface DualInputArrays extends NamedArrayMap {
   a: NDArray;
   b: NDArray;
 }
 
-export interface EqualGradientInputArrays extends TapeNodeInputGradientArrays {
+export interface DualGradientInputArrays extends TapeNodeInputGradientArrays {
+  a: () => NDArray;
+  b: () => NDArray;
+}
+
+// Equal/NotEqual/Less/LessEqual/Greater/GreaterEqual
+export interface EqualNode extends KernelNode {
+  inputAndArgs: EqualInputConfig;
+  output: NDArray<'bool'>;
+  gradient:
+      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
+}
+
+export interface EqualInputConfig extends KernelInputConfig {
+  inputs: DualInputArrays;
+}
+
+// LogicalAnd/LogicalOr
+export interface LogicalNode extends KernelNode {
+  inputAndArgs: LogicalInputConfig;
+  output: NDArray<'bool'>;
+  gradient:
+      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
+}
+
+export interface LogicalInputConfig extends KernelInputConfig {
+  inputs: DualInputArrays;
+}
+
+// Where
+export interface WhereNode extends KernelNode {
+  inputAndArgs: WhereInputConfig;
+  output: NDArray;
+  gradient: (dy: NDArray, y: NDArray) => WhereGradientInputArrays;
+}
+
+export interface WhereInputConfig extends KernelInputConfig {
+  inputs: WhereInputArrays;
+  args: {dtype: DataType};
+}
+
+export interface WhereInputArrays extends NamedArrayMap {
+  condition: NDArray;
+  a: NDArray;
+  b: NDArray;
+}
+
+export interface WhereGradientInputArrays extends TapeNodeInputGradientArrays {
+  condition: () => NDArray;
   a: () => NDArray;
   b: () => NDArray;
 }
