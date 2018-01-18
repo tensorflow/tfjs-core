@@ -20,14 +20,14 @@ export class Model {
   // Data constants.
   IMAGE_SIZE = 784;
   LABELS_SIZE = 10;
-  LANDSCAPE_STEPS_PER_DIR = 20;
+  LANDSCAPE_STEPS_PER_DIR = 5;
   // dl.js state.
   math = dl.ENV.math;
   optimizer: dl.SGDOptimizer;
   alphas: Array<dl.Scalar<'float32'>> = [];
-  weights: Array<dl.Variable<'float32'>> = [];
   iter = 0;
   modelType: ModelType = ModelType.FC;
+  weightInit: WeightInit = WeightInit.UNIT;
 
   init() {
     if (this.optimizer) {
@@ -45,7 +45,6 @@ export class Model {
 
   setModel(newModelType: ModelType) {
     this.disposeAllVars();
-    this.weights = [];
     if (newModelType === ModelType.FC) {
       this.setFCModel();
     } else if (newModelType === ModelType.CONV) {
@@ -55,6 +54,7 @@ export class Model {
   }
 
   async train(data: MnistData, steps?: number): Promise<[number, number]> {
+    const start = performance.now();
     let cost: dl.Scalar;
     steps = steps || 50;
     for (let i = 0; i < steps; i++) {
@@ -68,6 +68,7 @@ export class Model {
     }
     const result = await cost.val();
     cost.dispose();
+    console.log('Training took', performance.now() - start, 'ms');
     return [result, this.iter];
   }
 
@@ -77,14 +78,7 @@ export class Model {
     this.disposeAllVars();
   }
 
-  model(xs: dl.Array2D<'float32'>): dl.Array2D<'float32'> {
-    const layer1 = this.math.matMul(xs, this.weights[0] as dl.Array2D);
-    const act1 = this.math.relu(layer1);
-    const layer2 = this.math.matMul(act1, this.weights[1] as dl.Array2D);
-    const act2 = this.math.relu(layer2);
-    return this.math.matMul(act2, this.weights[2] as dl.Array2D) as
-        dl.Array2D<'float32'>;
-  }
+  private model: (xs: dl.Array2D<'float32'>) => dl.Array2D<'float32'>;
 
   loss(labels: dl.Array2D<'float32'>, ys: dl.Array2D<'float32'>): dl.Scalar {
     return this.math.mean(this.math.softmaxCrossEntropyWithLogits(
@@ -152,8 +146,15 @@ export class Model {
     await this.math.scope(async () => {
       const losses: Array<Promise<number>> = [];
       const batch = data.nextTestBatch(this.BATCH_SIZE);
+      const start = performance.now();
       const dirs1 = this.genDirections();
       const dirs2 = this.genDirections();
+      const promises = [];
+      for (const name in dirs2) {
+        promises.push(dirs2[name].data());
+      }
+      await Promise.all(promises);
+      console.log('gen directions took', performance.now() - start, 'ms');
       const vs: {[name: string]: dl.Array1D} = {};
 
       for (const varName in this.math.registeredVariables) {
@@ -198,8 +199,79 @@ export class Model {
     return matrix;
   }
 
+  private setFCModel() {
+    const m = this.math;
+    const w1 = dl.variable(
+        dl.Array2D.randNormal([this.IMAGE_SIZE, 30], 0, 1, 'float32'));
+    const w2 = dl.variable(dl.Array2D.randNormal([30, 60], 0, 1, 'float32'));
+    const w3 = dl.variable(
+        dl.Array2D.randNormal([60, this.LABELS_SIZE], 0, 1, 'float32'));
+    this.iter = 0;
+    this.model = xs => {
+      const layer1 = m.matMul(xs, w1 as dl.Array2D);
+      const act1 = m.relu(layer1);
+      const layer2 = m.matMul(act1, w2 as dl.Array2D);
+      const act2 = m.relu(layer2);
+      return m.matMul(act2, w3 as dl.Array2D) as dl.Array2D<'float32'>;
+    };
+  }
+
   private setConvModel() {
-    console.log('conv model inited');
+    const m = this.math;
+
+    function filterVar(shape: [number, number, number, number]) {
+      return dl.variable(
+          dl.Array4D.randTruncatedNormal(shape, 0, 0.1, 'float32'));
+    }
+
+    function biasVar(size: number) {
+      const a = dl.Array1D.zeros([size], 'float32');
+      a.fill(0.1);
+      return dl.variable(a);
+    }
+
+    function fcVar(shape: [number, number]) {
+      return dl.variable(
+          dl.Array2D.randTruncatedNormal(shape, 0, 0.1, 'float32'));
+    }
+
+    function conv2d(image: dl.Array4D, filter: dl.Array4D, bias: dl.Array1D):
+        dl.Array4D<'float32'> {
+      return m.conv2d(image, filter, bias, [1, 1, 1, 1], 'same') as
+          dl.Array4D<'float32'>;
+    }
+
+    function maxPool2x2(image: dl.Array4D): dl.Array4D<'float32'> {
+      return m.maxPool(image, 2, 2, 'same') as dl.Array4D<'float32'>;
+    }
+
+    const filter1 = filterVar([5, 5, 1, 32]);
+    const filter1Bias = biasVar(32);
+
+    const filter2 = filterVar([5, 5, 32, 64]);
+    const filter2Bias = biasVar(64);
+
+    const fc1W = fcVar([7 * 7 * 64, 1024]);
+    const fc1Bias = biasVar(1024);
+
+    const fc2W = fcVar([1024, 10]);
+    const fc2Bias = biasVar(10);
+
+    this.model = xs => {
+      const image = xs.as4D(-1, 28, 28, 1);
+      const conv1 = m.relu(conv2d(image, filter1, filter1Bias));
+      const pool1 = maxPool2x2(conv1);
+
+      const conv2 = m.relu(conv2d(pool1, filter2, filter2Bias));
+      const pool2 = maxPool2x2(conv2);
+
+      const fc1 =
+          m.relu(m.add(m.matMul(pool2.as2D(-1, 7 * 7 * 64), fc1W), fc1Bias)) as
+          dl.Array2D<'float32'>;
+      const fc2 =
+          m.relu(m.add(m.matMul(fc1, fc2W), fc2Bias)) as dl.Array2D<'float32'>;
+      return fc2;
+    };
   }
 
   private disposeAllVars() {
@@ -207,15 +279,5 @@ export class Model {
       this.math.registeredVariables[varName].dispose();
       delete this.math.registeredVariables[varName];
     }
-  }
-
-  private setFCModel() {
-    this.weights.push(dl.variable(
-        dl.Array2D.randNormal([this.IMAGE_SIZE, 30], 0, 1, 'float32')));
-    this.weights.push(
-        dl.variable(dl.Array2D.randNormal([30, 60], 0, 1, 'float32')));
-    this.weights.push(dl.variable(
-        dl.Array2D.randNormal([60, this.LABELS_SIZE], 0, 1, 'float32')));
-    this.iter = 0;
   }
 }
