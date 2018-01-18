@@ -41,6 +41,7 @@ import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} fro
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {Copy2DProgram} from './webgl/copy_gpu';
+import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {ArrayData, GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
@@ -59,7 +60,6 @@ import {TextureData, TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
-import {GatherProgram} from './webgl/gather_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -554,6 +554,11 @@ export class MathBackendWebGL implements MathBackend {
         new BinaryOpProgram(binaryop_gpu.GREATER_EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
+  }
+
+  logicalNot<T extends NDArray>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.LOGICAL_NOT);
+    return this.compileAndRun(program, [x]) as T;
   }
 
   logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'> {

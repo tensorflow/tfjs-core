@@ -540,6 +540,15 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
+  logicalNot<T extends NDArray>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Int32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      newValues[i] = values[i] ? 0 : 1;
+    }
+    return NDArray.make(x.shape, {values: newValues}, 'bool') as T;
+  }
+
   logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'> {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
@@ -1269,7 +1278,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   gather<D extends DataType, T extends NDArray<D>>(
-       x: T, indices: Array1D<'int32'>, axis: number): T {
+      x: T, indices: Array1D<'int32'>, axis: number): T {
     const newShape: number[] = x.shape.slice();
     const indicesValues = indices.dataSync();
     newShape[axis] = indicesValues.length;

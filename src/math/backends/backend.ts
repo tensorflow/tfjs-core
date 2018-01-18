@@ -85,6 +85,7 @@ export interface MathBackend extends NDArrayStorage {
   greater(a: NDArray, b: NDArray): NDArray<'bool'>;
   greaterEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
+  logicalNot(a: NDArray): NDArray<'bool'>;
   logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'>;
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
 

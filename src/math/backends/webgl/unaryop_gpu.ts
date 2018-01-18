@@ -150,6 +150,10 @@ export const SQUARE = `
   return x * x;
 `;
 
+export const LOGICAL_NOT = `
+  return float(!x);
+`;
+
 export const TO_INT = `
   return float(int(x));
 `;

@@ -143,6 +143,9 @@ const KERNEL_METHODS: {
   GreaterEqual: (backend: MathBackend, config: EqualInputConfig) => {
     return backend.greaterEqual(config.inputs.a, config.inputs.b);
   },
+  LogicalNot: (backend: MathBackend, config: UnaryInputConfig<NDArray>) => {
+    return backend.logicalNot(config.inputs.a);
+  },
   LogicalAnd: (backend: MathBackend, config: LogicalInputConfig) => {
     return backend.logicalAnd(config.inputs.a, config.inputs.b);
   },
@@ -395,6 +398,7 @@ export interface KernelConfigRegistry {
   LessEqual: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
+  LogicalNot: UnaryNode<NDArray>;
   LogicalAnd: LogicalNode;
   LogicalOr: LogicalNode;
   TopKValues: TopKValuesNode<DataType, NDArray>;
