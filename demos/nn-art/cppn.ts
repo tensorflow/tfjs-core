@@ -99,7 +99,7 @@ export class CPPN {
     this.runInferenceLoop();
   }
 
-  private runInferenceLoop() {
+  private async runInferenceLoop() {
     const math = ENV.math;
 
     if (!this.isInferring) {
@@ -109,7 +109,7 @@ export class CPPN {
     this.z1Counter += 1 / this.z1Scale;
     this.z2Counter += 1 / this.z2Scale;
 
-    math.scope(() => {
+    await math.scope(async () => {
       const concatAxis = 1;
       const z1 = Scalar.new(Math.sin(this.z1Counter));
       const z2 = Scalar.new(Math.cos(this.z2Counter));
@@ -134,7 +134,7 @@ export class CPPN {
                 math, matmulResult);
       }
 
-      renderToCanvas(lastOutput as Array3D, this.inferenceCanvas);
+      await renderToCanvas(lastOutput as Array3D, this.inferenceCanvas);
     });
 
     requestAnimationFrame(() => this.runInferenceLoop());
@@ -146,11 +146,11 @@ export class CPPN {
 }
 
 // TODO(nsthorat): Move this to a core library util.
-function renderToCanvas(a: Array3D, canvas: HTMLCanvasElement) {
+async function renderToCanvas(a: Array3D, canvas: HTMLCanvasElement) {
   const [height, width, ] = a.shape;
   const ctx = canvas.getContext('2d');
   const imageData = new ImageData(width, height);
-  const data = a.dataSync();
+  const data = await a.data();
   for (let i = 0; i < height * width; ++i) {
     const j = i * 4;
     const k = i * 3;
