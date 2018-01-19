@@ -41,7 +41,6 @@ import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} fro
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {Copy2DProgram} from './webgl/copy_gpu';
-import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {ArrayData, GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
@@ -61,6 +60,7 @@ import {TextureData, TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
+import {GatherProgram} from './webgl/gather_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -250,29 +250,32 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   slice1D(x: Array1D, begin: number, size: number): Array1D {
-    const program = new SliceProgram([begin], [size]);
-    return this.compileAndRun(program, [x]);
+    const program = new SliceProgram([size]);
+    const customSetup = program.getCustomSetupFunc([begin]);
+    return this.compileAndRun(program, [x], null, customSetup);
   }
 
   slice2D(x: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    const program = new SliceProgram(begin, size);
-    return this.compileAndRun(program, [x]);
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [x], null, customSetup);
   }
 
   slice3D(x: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
-    console.log('begin', begin, 'size', size);
-    const program = new SliceProgram(begin, size);
-    return this.compileAndRun(program, [x]);
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [x], null, customSetup);
   }
 
   slice4D(x: Array4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Array4D {
-    const program = new SliceProgram(begin, size);
-    return this.compileAndRun(program, [x]);
+    const program = new SliceProgram(size);
+    const customSetup = program.getCustomSetupFunc(begin);
+    return this.compileAndRun(program, [x], null, customSetup);
   }
 
   reverse4D(x: Array4D, axis: number[]): Array4D {
@@ -285,10 +288,10 @@ export class MathBackendWebGL implements MathBackend {
       sourceSizeRowCol: [number, number], dest: Array2D,
       destBeginRowCol: [number, number],
       destSizeRowCol: [number, number]): void {
-    const program = new Copy2DProgram(
-        sourceSizeRowCol[1], sourceBeginRowCol, destBeginRowCol,
-        destSizeRowCol);
-    this.compileAndRun(program, [source], dest);
+    const program = new Copy2DProgram(sourceSizeRowCol[1], destSizeRowCol[1]);
+    const customSetup = program.getCustomSetupFunc(
+        sourceBeginRowCol, destBeginRowCol, destSizeRowCol);
+    this.compileAndRun(program, [source], dest, customSetup);
   }
 
   concat1D(a: Array1D, b: Array1D): Array1D {
@@ -862,11 +865,11 @@ export class MathBackendWebGL implements MathBackend {
       Array2D<'int32'> {
     const batchSize = probs.shape[0];
     const numOutcomes = probs.shape[1];
-    const program =
-        new MultinomialProgram(batchSize, numOutcomes, numSamples, seed);
+    const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);
     const output =
         this.makeOutputArray(program.outputShape, 'int32') as Array2D<'int32'>;
-    return this.compileAndRun(program, [probs], output);
+    const customSetup = program.getCustomSetupFunc(seed);
+    return this.compileAndRun(program, [probs], output, customSetup);
   }
 
   oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
@@ -880,8 +883,10 @@ export class MathBackendWebGL implements MathBackend {
     return NDArray.make(shape, {}, dtype) as T;
   }
 
-  compileAndRun<T extends NDArray, K extends NDArray>(
-      program: GPGPUProgram, inputs: T[], output?: K): K {
+  private compileAndRun<T extends NDArray, K extends NDArray>(
+      program: GPGPUProgram, inputs: T[], output?: K,
+      customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void):
+      K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -896,7 +901,7 @@ export class MathBackendWebGL implements MathBackend {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
-    gpgpu_math.runProgram(binary, inputsData, outputData);
+    gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
     return output;
   }
 
