@@ -16,21 +16,16 @@
  */
 
 import {Array1D, DataType, NDArray, Rank} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 export interface GatherNode<D extends DataType, R extends Rank, T extends
                                 NDArray<D, R> = NDArray<D, R>> extends
     KernelNode {
-  inputAndArgs: GatherInputConfig<T>;
+  inputAndArgs:
+      {inputs: {x: T; indices: Array1D<'int32'>;}; args: {axis: number};};
   output: T;
   gradient: (dy: NDArray<'float32', R>, y: T) => {
     x: () => NDArray<'float32', R>;
     indices: () => Array1D<'float32'>;
   };
-}
-
-export interface GatherInputConfig<T extends NDArray> extends
-    KernelInputConfig {
-  inputs: {x: T; indices: Array1D<'int32'>;};
-  args: {axis: number};
 }

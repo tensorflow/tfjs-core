@@ -16,68 +16,48 @@
  */
 
 import {Array1D, Array2D, Array3D, Array4D, DataType} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
-// 1D
 export interface Slice1DNode<D extends DataType> extends KernelNode {
-  inputAndArgs: Slice1DInputConfig<D>;
+  inputAndArgs:
+      {inputs: {x: Array1D<D>;}; args: {begin: number; size: number;};};
   output: Array1D<D>;
   gradient: (dy: Array1D<'float32'>, y: Array1D<D>) => {
     x: () => Array1D<'float32'>;
   };
 }
 
-export interface Slice1DInputConfig<D extends DataType> extends
-    KernelInputConfig {
-  inputs: {x: Array1D<D>;};
-  args: {begin: number; size: number;};
-}
-
-// 2D
 export interface Slice2DNode<D extends DataType> extends KernelNode {
-  inputAndArgs: Slice2DInputConfig<D>;
+  inputAndArgs: {
+    inputs: {x: Array2D<D>;};
+    args: {begin: [number, number]; size: [number, number];};
+  };
   output: Array2D<D>;
   gradient: (dy: Array2D<'float32'>, y: Array2D<D>) => {
     x: () => Array2D<'float32'>;
   };
 }
 
-export interface Slice2DInputConfig<D extends DataType> extends
-    KernelInputConfig {
-  inputs: {x: Array2D<D>;};
-  args: {begin: [number, number]; size: [number, number];};
-}
-
-// 3D
 export interface Slice3DNode<D extends DataType> extends KernelNode {
-  inputAndArgs: Slice3DInputConfig<D>;
+  inputAndArgs: {
+    inputs: {x: Array3D<D>;};
+    args: {begin: [number, number, number]; size: [number, number, number];};
+  };
   output: Array3D<D>;
   gradient: (dy: Array3D<'float32'>, y: Array3D<D>) => {
     x: () => Array3D<'float32'>;
   };
 }
 
-export interface Slice3DInputConfig<D extends DataType> extends
-    KernelInputConfig {
-  inputs: {x: Array3D<D>;};
-  args: {begin: [number, number, number]; size: [number, number, number];};
-}
-
-// 4D
 export interface Slice4DNode<D extends DataType> extends KernelNode {
-  inputAndArgs: Slice4DInputConfig<D>;
+  inputAndArgs: {
+    inputs: {x: Array4D<D>;}; args: {
+      begin: [number, number, number, number];
+      size: [number, number, number, number];
+    };
+  };
   output: Array4D<D>;
   gradient: (dy: Array4D<'float32'>, y: Array4D<D>) => {
     x: () => Array4D<'float32'>;
-  };
-}
-
-export interface Slice4DInputConfig<D extends DataType> extends
-    KernelInputConfig {
-  inputs: {x: Array4D<D>;};
-  args: {
-    begin: [number, number, number, number];
-    size: [number, number, number, number];
   };
 }

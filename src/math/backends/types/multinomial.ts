@@ -17,17 +17,13 @@
  */
 
 import {Array2D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 export interface MultinomialNode extends KernelNode {
-  inputAndArgs: MultinomialInputConfig;
+  inputAndArgs:
+      {inputs: {probs: Array2D;}; args: {numSamples: number; seed: number};};
   output: Array2D<'int32'>;
   gradient: (dy: Array2D<'float32'>, y: Array2D<'int32'>) => {
     probs: () => Array2D<'float32'>;
   };
-}
-
-export interface MultinomialInputConfig extends KernelInputConfig {
-  inputs: {probs: Array2D;};
-  args: {numSamples: number; seed: number};
 }

@@ -17,11 +17,13 @@
 
 import {Conv2DInfo} from '../../conv_util';
 import {Array1D, Array4D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
-// Conv2D
 export interface Conv2DNode extends KernelNode {
-  inputAndArgs: Conv2DInputConfig;
+  inputAndArgs: {
+    inputs: {x: Array4D; filter: Array4D; bias?: Array1D;};
+    args: {convInfo: Conv2DInfo;};
+  };
   output: Array4D;
   gradient: (dy: Array4D<'float32'>, y: Array4D) => {
     x: () => Array4D<'float32'>;
@@ -30,14 +32,11 @@ export interface Conv2DNode extends KernelNode {
   };
 }
 
-export interface Conv2DInputConfig extends KernelInputConfig {
-  inputs: {x: Array4D; filter: Array4D; bias?: Array1D;};
-  args: {convInfo: Conv2DInfo;};
-}
-
-// Conv2DDerInput
 export interface Conv2DDerInputNode extends KernelNode {
-  inputAndArgs: Conv2DDerInputInputConfig;
+  inputAndArgs: {
+    inputs: {dy: Array4D<'float32'>; filter: Array4D;};
+    args: {convInfo: Conv2DInfo;};
+  };
   output: Array4D<'float32'>;
   gradient: (dy: Array4D<'float32'>, y: Array4D) => {
     dy: () => Array4D<'float32'>;
@@ -45,14 +44,11 @@ export interface Conv2DDerInputNode extends KernelNode {
   };
 }
 
-export interface Conv2DDerInputInputConfig extends KernelInputConfig {
-  inputs: {dy: Array4D<'float32'>; filter: Array4D;};
-  args: {convInfo: Conv2DInfo;};
-}
-
-// Conv2DDerFilter
 export interface Conv2DDerFilterNode extends KernelNode {
-  inputAndArgs: Conv2DDerFilterInputConfig;
+  inputAndArgs: {
+    inputs: {x: Array4D; dy: Array4D<'float32'>;};
+    args: {convInfo: Conv2DInfo;};
+  };
   output: Array4D<'float32'>;
   gradient: (dy: Array4D<'float32'>, y: Array4D<'float32'>) => {
     x: () => Array4D<'float32'>;
@@ -60,35 +56,20 @@ export interface Conv2DDerFilterNode extends KernelNode {
   };
 }
 
-export interface Conv2DDerFilterInputConfig extends KernelInputConfig {
-  inputs: {x: Array4D; dy: Array4D<'float32'>;};
-  args: {convInfo: Conv2DInfo;};
-}
-
-// Conv2DDerBias
 export interface Conv2DDerBiasNode extends KernelNode {
-  inputAndArgs: Conv2DDerBiasInputConfig;
+  inputAndArgs: {inputs: {dy: Array4D;};};
   output: Array1D<'float32'>;
   gradient: (dy: Array1D<'float32'>, y: Array1D<'float32'>) => {
     dy: () => Array4D<'float32'>;
   };
 }
 
-export interface Conv2DDerBiasInputConfig extends KernelInputConfig {
-  inputs: {dy: Array4D;};
-}
-
-// DepthwiseConv2D
 export interface DepthwiseConv2DNode extends KernelNode {
-  inputAndArgs: DepthwiseConv2DInputConfig;
+  inputAndArgs:
+      {inputs: {x: Array4D; filter: Array4D;}; args: {convInfo: Conv2DInfo;};};
   output: Array4D;
   gradient: (dy: Array4D<'float32'>, y: Array4D) => {
     x: () => Array4D<'float32'>;
     filter: () => Array4D<'float32'>;
   };
-}
-
-export interface DepthwiseConv2DInputConfig extends KernelInputConfig {
-  inputs: {x: Array4D; filter: Array4D;};
-  args: {convInfo: Conv2DInfo;};
 }

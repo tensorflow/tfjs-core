@@ -16,18 +16,14 @@
  */
 
 import {DataType, NDArray, Rank} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 export interface PowNode<D extends DataType, R extends Rank, T extends
                              NDArray<D, R> = NDArray<D, R>> extends KernelNode {
-  inputAndArgs: PowInputConfig<T>;
+  inputAndArgs: {inputs: {a: T; b: NDArray<'int32'>;};};
   output: T;
   gradient: (dy: NDArray<'float32', R>, y: T) => {
     a: () => NDArray<'float32', R>;
     b: () => NDArray<'float32'>;
   }
-}
-
-export interface PowInputConfig<T extends NDArray> extends KernelInputConfig {
-  inputs: {a: T; b: NDArray<'int32'>;}
 }

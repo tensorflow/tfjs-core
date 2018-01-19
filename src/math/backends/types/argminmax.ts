@@ -16,30 +16,20 @@
  */
 
 import {NDArray} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 export interface ArgMaxNode extends KernelNode {
-  inputAndArgs: ArgMaxInputConfig;
+  inputAndArgs: {inputs: {x: NDArray;}; args: {axes: number[];};};
   output: NDArray<'int32'>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<'int32'>) => {
     x: () => NDArray<'float32'>;
   };
-}
-
-export interface ArgMaxInputConfig extends KernelInputConfig {
-  inputs: {x: NDArray;};
-  args: {axes: number[];};
 }
 
 export interface ArgMinNode extends KernelNode {
-  inputAndArgs: ArgMinInputConfig;
+  inputAndArgs: {inputs: {x: NDArray;}; args: {axes: number[];};};
   output: NDArray<'int32'>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<'int32'>) => {
     x: () => NDArray<'float32'>;
   };
-}
-
-export interface ArgMinInputConfig extends KernelInputConfig {
-  inputs: {x: NDArray;};
-  args: {axes: number[];};
 }

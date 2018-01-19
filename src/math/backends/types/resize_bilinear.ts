@@ -16,17 +16,15 @@
  */
 
 import {Array3D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 export interface ResizeBilinear3DNode extends KernelNode {
-  inputAndArgs: ResizeBilinear3DInputConfig;
+  inputAndArgs: {
+    inputs: {x: Array3D;};
+    args: {newShape2D: [number, number]; alignCorners: boolean};
+  };
   output: Array3D;
   gradient: (dy: Array3D<'float32'>, y: Array3D) => {
     x: () => Array3D<'float32'>;
   };
-}
-
-export interface ResizeBilinear3DInputConfig extends KernelInputConfig {
-  inputs: {x: Array3D;};
-  args: {newShape2D: [number, number]; alignCorners: boolean};
 }

@@ -16,20 +16,18 @@
  */
 
 import {Array2D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 export interface MatMulNode extends KernelNode {
-  inputAndArgs: MatMulInputConfig;
+  inputAndArgs: {
+    inputs: {a: Array2D; b: Array2D;};
+    args: {aOrientation: MatrixOrientation; bOrientation: MatrixOrientation};
+  };
   output: Array2D;
   gradient: (dy: Array2D<'float32'>, y: Array2D) => {
     a: () => Array2D<'float32'>;
     b: () => Array2D<'float32'>;
   };
-}
-
-export interface MatMulInputConfig extends KernelInputConfig {
-  inputs: {a: Array2D; b: Array2D;};
-  args: {aOrientation: MatrixOrientation; bOrientation: MatrixOrientation};
 }
 
 export enum MatrixOrientation {

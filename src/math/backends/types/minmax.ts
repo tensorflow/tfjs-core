@@ -16,58 +16,40 @@
  */
 
 import {DataType, NDArray} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 // Reduction min.
 export interface MinNode<D extends DataType> extends KernelNode {
-  inputAndArgs: MinInputConfig<D>;
+  inputAndArgs: {inputs: {x: NDArray<D>;};};
   output: NDArray<D>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<D>) => {
     x: () => NDArray<'float32'>;
   };
-}
-
-export interface MinInputConfig<D extends DataType> extends KernelInputConfig {
-  inputs: {x: NDArray<D>;};
 }
 
 // Element-wise min.
 export interface MinimumNode<D extends DataType> extends KernelNode {
-  inputAndArgs: MinimumInputConfig<D>;
+  inputAndArgs: {inputs: {a: NDArray<D>, b: NDArray<D>};};
   output: NDArray<D>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<D>) => {
     a: () => NDArray<'float32'>, b: () => NDArray<'float32'>
   };
 }
 
-export interface MinimumInputConfig<D extends DataType> extends
-    KernelInputConfig {
-  inputs: {a: NDArray<D>, b: NDArray<D>};
-}
-
 // Reduction Max
 export interface MaxNode<D extends DataType> extends KernelNode {
-  inputAndArgs: MaxInputConfig<D>;
+  inputAndArgs: {inputs: {x: NDArray<D>;};};
   output: NDArray<D>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<D>) => {
     x: () => NDArray<'float32'>;
   };
 }
 
-export interface MaxInputConfig<D extends DataType> extends KernelInputConfig {
-  inputs: {x: NDArray<D>;};
-}
-
 // Element-wise max.
 export interface MaximumNode<D extends DataType> extends KernelNode {
-  inputAndArgs: MaximumInputConfig<D>;
+  inputAndArgs: {inputs: {a: NDArray<D>, b: NDArray<D>};};
   output: NDArray<D>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<D>) => {
     a: () => NDArray<'float32'>, b: () => NDArray<'float32'>
   };
-}
-
-export interface MaximumInputConfig<D extends DataType> extends
-    KernelInputConfig {
-  inputs: {a: NDArray<D>, b: NDArray<D>};
 }

@@ -16,25 +16,21 @@
  */
 
 import {DataType, NDArray} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 // Equal/NotEqual/Less/LessEqual/Greater/GreaterEqual
 export interface EqualNode extends KernelNode {
-  inputAndArgs: EqualInputConfig;
+  inputAndArgs: {inputs: {a: NDArray; b: NDArray;};};
   output: NDArray<'bool'>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<'bool'>) => {
     a: () => NDArray<'float32'>;
     b: () => NDArray<'float32'>;
   };
-}
-
-export interface EqualInputConfig extends KernelInputConfig {
-  inputs: {a: NDArray; b: NDArray;};
 }
 
 // LogicalAnd/LogicalOr
 export interface LogicalNode extends KernelNode {
-  inputAndArgs: LogicalInputConfig;
+  inputAndArgs: {inputs: {a: NDArray; b: NDArray;};};
   output: NDArray<'bool'>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<'bool'>) => {
     a: () => NDArray<'float32'>;
@@ -42,22 +38,16 @@ export interface LogicalNode extends KernelNode {
   };
 }
 
-export interface LogicalInputConfig extends KernelInputConfig {
-  inputs: {a: NDArray; b: NDArray;};
-}
-
 // Where
 export interface WhereNode extends KernelNode {
-  inputAndArgs: WhereInputConfig;
+  inputAndArgs: {
+    inputs: {condition: NDArray; a: NDArray; b: NDArray;};
+    args: {dtype: DataType};
+  };
   output: NDArray;
   gradient: (dy: NDArray<'float32'>, y: NDArray) => {
     condition: () => NDArray<'float32'>;
     a: () => NDArray<'float32'>;
     b: () => NDArray<'float32'>;
   };
-}
-
-export interface WhereInputConfig extends KernelInputConfig {
-  inputs: {condition: NDArray; a: NDArray; b: NDArray;};
-  args: {dtype: DataType};
 }

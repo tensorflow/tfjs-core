@@ -16,20 +16,16 @@
  */
 
 import {DataType, NDArray, Rank} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 // PReLU
 export interface PReLUNode<D extends DataType, R extends Rank, T extends
                                NDArray<D, R> = NDArray<D, R>> extends
     KernelNode {
-  inputAndArgs: PReLUInputConfig<T>;
+  inputAndArgs: {inputs: {x: T; alpha: T;};};
   output: T;
   gradient: (dy: NDArray<'float32', R>, y: T) => {
     x: () => NDArray<'float32', R>;
     alpha: () => NDArray<'float32', R>;
   }
-}
-
-export interface PReLUInputConfig<T extends NDArray> extends KernelInputConfig {
-  inputs: {x: T; alpha: T;}
 }

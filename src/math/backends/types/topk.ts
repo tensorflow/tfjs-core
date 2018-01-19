@@ -16,35 +16,24 @@
  */
 
 import {Array1D, DataType, NDArray, Rank} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 // Values
 export interface TopKValuesNode<D extends DataType, R extends Rank, T extends
                                     NDArray<D, R> = NDArray<D, R>> extends
     KernelNode {
-  inputAndArgs: TopKValuesInputConfig<T>;
+  inputAndArgs: {inputs: {x: T;}; args: {k: number};};
   output: Array1D<D>;
   gradient: (dy: Array1D<'float32'>, y: Array1D<D>) => {
     x: () => NDArray<'float32', R>;
   };
 }
 
-export interface TopKValuesInputConfig<T extends NDArray> extends
-    KernelInputConfig {
-  inputs: {x: T;};
-  args: {k: number};
-}
-
 // Indices
 export interface TopKIndicesNode extends KernelNode {
-  inputAndArgs: TopKIndicesInputConfig;
+  inputAndArgs: {inputs: {x: NDArray;}; args: {k: number};};
   output: Array1D<'int32'>;
   gradient: (dy: Array1D<'float32'>, y: Array1D<'int32'>) => {
     x: () => NDArray<'float32'>;
   };
-}
-
-export interface TopKIndicesInputConfig extends KernelInputConfig {
-  inputs: {x: NDArray;};
-  args: {k: number};
 }

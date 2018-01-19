@@ -16,32 +16,28 @@
  */
 
 import {Array1D, Array2D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
-// Pad1D
 export interface Pad1DNode extends KernelNode {
-  inputAndArgs: Pad1DInputConfig;
+  inputAndArgs: {
+    inputs: {x: Array1D;};
+    args: {paddings: [number, number], constantValue: number};
+  };
   output: Array1D;
   gradient: (dy: Array1D<'float32'>, y: Array1D) => {
     x: () => Array1D<'float32'>;
   };
 }
 
-export interface Pad1DInputConfig extends KernelInputConfig {
-  inputs: {x: Array1D;};
-  args: {paddings: [number, number], constantValue: number};
-}
-
-// Pad2D
 export interface Pad2DNode extends KernelNode {
-  inputAndArgs: Pad2DInputConfig;
+  inputAndArgs: {
+    inputs: {x: Array2D;}; args: {
+      paddings: [[number, number], [number, number]],
+      constantValue: number
+    };
+  };
   output: Array2D;
   gradient: (dy: Array2D<'float32'>, y: Array2D) => {
     x: () => Array2D<'float32'>;
   };
-}
-
-export interface Pad2DInputConfig extends KernelInputConfig {
-  inputs: {x: Array2D;};
-  args: {paddings: [[number, number], [number, number]], constantValue: number};
 }

@@ -16,18 +16,12 @@
  */
 
 import {Array4D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
-// 4D
 export interface Reverse4DNode extends KernelNode {
-  inputAndArgs: Reverse4DInputConfig;
+  inputAndArgs: {inputs: {x: Array4D;}; args: {axis: number[];};};
   output: Array4D;
   gradient: (dy: Array4D<'float32'>, y: Array4D) => {
     x: () => Array4D<'float32'>;
   };
-}
-
-export interface Reverse4DInputConfig extends KernelInputConfig {
-  inputs: {x: Array4D;};
-  args: {axis: number[];};
 }

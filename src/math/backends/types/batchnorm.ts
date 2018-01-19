@@ -17,11 +17,17 @@
  */
 
 import {Array1D, Array2D, Array3D, Array4D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
-// 4D
 export interface BatchNorm4DNode extends KernelNode {
-  inputAndArgs: BatchNorm4DInputConfig;
+  inputAndArgs: {
+    inputs: {
+      x: Array4D; mean: Array4D | Array1D; variance: Array4D | Array1D;
+      scale?: Array4D | Array1D;
+      offset?: Array4D | Array1D;
+    };
+    args: {varianceEpsilon: number};
+  };
   output: Array4D;
   gradient: (dy: Array4D<'float32'>, y: Array4D) => {
     x: () => Array4D<'float32'>;
@@ -32,18 +38,15 @@ export interface BatchNorm4DNode extends KernelNode {
   };
 }
 
-export interface BatchNorm4DInputConfig extends KernelInputConfig {
-  inputs: {
-    x: Array4D; mean: Array4D | Array1D; variance: Array4D | Array1D;
-    scale?: Array4D | Array1D;
-    offset?: Array4D | Array1D;
-  };
-  args: {varianceEpsilon: number};
-}
-
-// 3D
 export interface BatchNorm3DNode extends KernelNode {
-  inputAndArgs: BatchNorm3DInputConfig;
+  inputAndArgs: {
+    inputs: {
+      x: Array3D; mean: Array3D | Array1D; variance: Array3D | Array1D;
+      scale?: Array3D | Array1D;
+      offset?: Array3D | Array1D;
+    };
+    args: {varianceEpsilon: number};
+  };
   output: Array3D;
   gradient: (dy: Array3D<'float32'>, y: Array3D) => {
     x: () => Array3D<'float32'>;
@@ -54,18 +57,15 @@ export interface BatchNorm3DNode extends KernelNode {
   };
 }
 
-export interface BatchNorm3DInputConfig extends KernelInputConfig {
-  inputs: {
-    x: Array3D; mean: Array3D | Array1D; variance: Array3D | Array1D;
-    scale?: Array3D | Array1D;
-    offset?: Array3D | Array1D;
-  };
-  args: {varianceEpsilon: number};
-}
-
-// 2D
 export interface BatchNorm2DNode extends KernelNode {
-  inputAndArgs: BatchNorm2DInputConfig;
+  inputAndArgs: {
+    inputs: {
+      x: Array2D; mean: Array2D | Array1D; variance: Array2D | Array1D;
+      scale?: Array2D | Array1D;
+      offset?: Array2D | Array1D;
+    };
+    args: {varianceEpsilon: number};
+  };
   output: Array2D;
   gradient: (dy: Array2D<'float32'>, y: Array2D) => {
     x: () => Array2D<'float32'>;
@@ -74,13 +74,4 @@ export interface BatchNorm2DNode extends KernelNode {
     scale?: () => Array2D<'float32'>| Array1D<'float32'>;
     offset?: () => Array2D<'float32'>| Array1D<'float32'>;
   };
-}
-
-export interface BatchNorm2DInputConfig extends KernelInputConfig {
-  inputs: {
-    x: Array2D; mean: Array2D | Array1D; variance: Array2D | Array1D;
-    scale?: Array2D | Array1D;
-    offset?: Array2D | Array1D;
-  };
-  args: {varianceEpsilon: number};
 }

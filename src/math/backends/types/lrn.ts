@@ -21,20 +21,17 @@ import {KernelInputConfig, KernelNode} from '../tape_types';
 
 // 4D
 export interface LRN4DNode extends KernelNode {
-  inputAndArgs: LRN4DInputConfig;
+  inputAndArgs: {
+    inputs: {x: Array4D;}; args: {
+      radius: number,
+      bias: number,
+      alpha: number,
+      beta: number,
+      normRegion: 'acrossChannels'|'withinChannel'
+    };
+  };
   output: Array4D;
   gradient: (dy: Array4D<'float32'>, y: Array4D) => {
     x: () => Array4D<'float32'>;
-  };
-}
-
-export interface LRN4DInputConfig extends KernelInputConfig {
-  inputs: {x: Array4D;};
-  args: {
-    radius: number,
-    bias: number,
-    alpha: number,
-    beta: number,
-    normRegion: 'acrossChannels'|'withinChannel'
   };
 }

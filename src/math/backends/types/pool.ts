@@ -17,33 +17,24 @@
 
 import {Conv2DInfo} from '../../conv_util';
 import {Array4D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 // Pool
 export interface PoolNode extends KernelNode {
-  inputAndArgs: PoolInputConfig;
+  inputAndArgs: {inputs: {x: Array4D;}; args: {convInfo: Conv2DInfo;};};
   output: Array4D;
   gradient: (dy: Array4D<'float32'>, y: Array4D) => {
     x: () => Array4D<'float32'>;
   };
 }
 
-export interface PoolInputConfig extends KernelInputConfig {
-  inputs: {x: Array4D;};
-  args: {convInfo: Conv2DInfo;};
-}
-
 // PoolBackprop
 export interface PoolBackpropNode extends KernelNode {
-  inputAndArgs: PoolInputConfig;
+  inputAndArgs:
+      {inputs: {dy: Array4D; x: Array4D;}; args: {convInfo: Conv2DInfo;};};
   output: Array4D;
   gradient: (dy: Array4D<'float32'>, y: Array4D) => {
     dy: () => Array4D<'float32'>;
     x: () => Array4D<'float32'>;
   };
-}
-
-export interface PoolBackpropInputConfig extends KernelInputConfig {
-  inputs: {dy: Array4D; x: Array4D;};
-  args: {convInfo: Conv2DInfo;};
 }

@@ -16,17 +16,15 @@
  */
 
 import {Array1D, Array2D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 export interface OneHotNode extends KernelNode {
-  inputAndArgs: OneHotInputConfig;
+  inputAndArgs: {
+    inputs: {indices: Array1D;};
+    args: {depth: number; onValue: number; offValue: number};
+  };
   output: Array2D;
   gradient: (dy: Array2D<'float32'>, y: Array2D) => {
     indices: () => Array1D<'float32'>;
   };
-}
-
-export interface OneHotInputConfig extends KernelInputConfig {
-  inputs: {indices: Array1D;};
-  args: {depth: number; onValue: number; offValue: number};
 }

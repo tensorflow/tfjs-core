@@ -16,17 +16,13 @@
  */
 
 import {NDArray} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 export interface BinaryNode extends KernelNode {
-  inputAndArgs: BinaryInputConfig;
+  inputAndArgs: {inputs: {a: NDArray; b: NDArray;};};
   output: NDArray;
   gradient: (dy: NDArray<'float32'>, y: NDArray) => {
     a: () => NDArray<'float32'>;
     b: () => NDArray<'float32'>;
   };
-}
-
-export interface BinaryInputConfig extends KernelInputConfig {
-  inputs: {a: NDArray; b: NDArray;};
 }
