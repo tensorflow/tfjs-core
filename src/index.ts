@@ -17,7 +17,6 @@
 
 import * as xhr_dataset from './data/xhr-dataset';
 import * as environment from './environment';
-import * as gpgpu_math from './math/backends/webgl/gpgpu_math';
 import * as gpgpu_util from './math/backends/webgl/gpgpu_util';
 // tslint:disable-next-line:max-line-length
 import * as render_ndarray_gpu_util from './math/backends/webgl/render_ndarray_gpu_util';
@@ -49,7 +48,6 @@ export {MathBackendCPU, NDArrayMathCPU} from './math/backends/backend_cpu';
 export {MathBackendWebGL, NDArrayMathGPU} from './math/backends/backend_webgl';
 export {MatrixOrientation} from './math/backends/types/matmul';
 export {GPGPUContext} from './math/backends/webgl/gpgpu_context';
-export {GPGPUBinary, GPGPUProgram} from './math/backends/webgl/gpgpu_math';
 // tslint:disable-next-line:max-line-length
 export {LSTMCell, NDArrayMath} from './math/math';
 // tslint:disable-next-line:max-line-length
@@ -63,7 +61,6 @@ export {version};
 export {
   conv_util,
   environment,
-  gpgpu_math,
   gpgpu_util,
   render_ndarray_gpu_util,
   test_util,
