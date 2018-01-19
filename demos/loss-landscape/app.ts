@@ -22,6 +22,7 @@ class State {
   weightInit: WeightInit = WeightInit.UNIT;
   data: MnistData;
   model: Model;
+  NUM_PLOTS = 5;
 
   async init(vue: Vue) {
     this.weightSelect = vue.$refs.weightSelect as HTMLSelectElement;
@@ -96,7 +97,7 @@ export default Vue.extend({
                      id: number} = {id: this.plotsId++, plots: []};
       this.charts.unshift(charts);
       charts.plots.push(await this.computeChartData(0));
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < this.s.NUM_PLOTS - 1; i++) {
         charts.plots.push(await this.train());
       }
       await this.enableUI();

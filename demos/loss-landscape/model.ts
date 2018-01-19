@@ -20,12 +20,13 @@ export class Model {
   // Hyperparameters.
   private LEARNING_RATE = .1;
   private BATCH_SIZE = 64;
+  private TEST_BATCH_SIZE = 64 * 10;
 
   // Data constants.
   private IMAGE_SIZE = 784;
   private LABELS_SIZE = 10;
   private LANDSCAPE_STEPS_PER_DIR = 10;
-  private TRAIN_STEPS = 100;
+  private TRAIN_STEPS = 30;
 
   // dl.js state.
   private math = dl.ENV.math;
@@ -40,7 +41,7 @@ export class Model {
 
   init(data: MnistData) {
     this.data = data;
-    this.testBatch = data.nextTestBatch(this.BATCH_SIZE);
+    this.testBatch = data.nextTestBatch(this.TEST_BATCH_SIZE);
     if (this.optimizer) {
       this.optimizer.dispose();
     }
@@ -49,7 +50,7 @@ export class Model {
     this.alphas = [];
     for (let i = 0; i <= this.LANDSCAPE_STEPS_PER_DIR; i++) {
       this.alphas.push(
-          dl.Scalar.new(2 * (i / this.LANDSCAPE_STEPS_PER_DIR) - 1));
+          dl.Scalar.new(0.5 * (i / this.LANDSCAPE_STEPS_PER_DIR) - 0.25));
     }
     this.setModel(this.modelType);
   }
@@ -64,7 +65,6 @@ export class Model {
       }
     });
     this.reinitWeights(this.weightInit);
-    this.iter = 0;
     this.modelType = newModelType;
     this.disposeRandDirs(0);
     this.disposeRandDirs(1);
@@ -113,6 +113,7 @@ export class Model {
         v.assign(dl.NDArray.randTruncatedNormal(v.shape, 0, std));
       }
     });
+    this.data.reset();
     this.iter = 0;
   }
 
@@ -220,13 +221,13 @@ export class Model {
       return m.maxPool(image, 2, 2, 'same') as dl.Array4D<'float32'>;
     }
 
-    const filter1 = filterVar([5, 5, 1, 8]);
-    const filter1Bias = biasVar(8);
+    const filter1 = filterVar([3, 3, 1, 4]);
+    const filter1Bias = biasVar(4);
 
-    const filter2 = filterVar([5, 5, 8, 16]);
-    const filter2Bias = biasVar(16);
+    const filter2 = filterVar([3, 3, 4, 8]);
+    const filter2Bias = biasVar(8);
 
-    const fc1W = fcVar([7 * 7 * 16, 10]);
+    const fc1W = fcVar([7 * 7 * 8, 10]);
     const fc1Bias = biasVar(10);
 
     this.model = xs => {
@@ -237,7 +238,7 @@ export class Model {
       const conv2 = m.relu(conv2d(pool1, filter2, filter2Bias));
       const pool2 = maxPool2x2(conv2);
 
-      const fc1 = m.add(m.matMul(pool2.as2D(-1, 7 * 7 * 16), fc1W), fc1Bias) as
+      const fc1 = m.add(m.matMul(pool2.as2D(-1, 7 * 7 * 8), fc1W), fc1Bias) as
           dl.Array2D<'float32'>;
       return fc1;
     };

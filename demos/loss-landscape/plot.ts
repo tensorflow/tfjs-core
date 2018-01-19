@@ -7,14 +7,24 @@ declare const Plotly: any;
 export default Vue.extend({
   props: {data: Object},
   mounted() {
-    const data = [{z: this.data.zData, type: 'contour', showscale: false}];
+    const data = [{
+      z: this.data.zData.map((x: number[]) => x.map(y => Math.log10(1 + y))),
+      type: 'contour',
+      // colorscale: [
+      //   [0, 'rgb(245,147,34)'], [0.5, 'rgb(232, 234, 235)'],
+      //   [1, 'rgb(8,119,189)']
+      // ],
+      // zmin: 0.2,
+      // zmax: 1.5,
+      showscale: false,
+      ncontours: 20  // 500
+    }];
     const layout = {
       title: 'Loss surface',
       autosize: false,
       showlegend: false,
       width: this.data.width,
       height: this.data.height,
-      ncontours: 15,
       margin: {
         l: 0,
         r: 0,

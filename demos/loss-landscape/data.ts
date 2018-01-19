@@ -1,7 +1,5 @@
 import * as dl from 'deeplearn';
 
-const math = dl.ENV.math;
-
 const TRAIN_TEST_RATIO = 5 / 6;
 
 const mnistConfig: dl.XhrDatasetConfig = {
@@ -53,40 +51,35 @@ export class MnistData {
   private nextBatch(
       batchSize: number, data: dl.NDArray[][], index: () => number):
       {xs: dl.Array2D<'float32'>, labels: dl.Array2D<'float32'>} {
-    const [xs, labels] = math.scope(() => {
-      let xs: dl.Array2D<'float32'> = null;
-      let labels: dl.Array2D<'float32'> = null;
+    const xSize = data[0][0].size;
+    const xs = dl.Array2D.zeros([batchSize, xSize], 'float32');
+    const xsVals = xs.dataSync();
 
-      for (let i = 0; i < batchSize; i++) {
-        const idx = index();
+    const labelSize = data[1][0].size;
+    const labels = dl.Array2D.zeros([batchSize, labelSize], 'float32');
+    const labelsVals = labels.dataSync();
 
-        const x = dl.Array2D.like(
-            data[0][idx].reshape([1, 784]) as dl.Array2D<'float32'>);
-        if (xs == null) {
-          xs = x;
-        } else {
-          xs = math.concat2D(xs, x, 0) as dl.Array2D<'float32'>;
-        }
-        const label = dl.Array2D.like(
-            data[1][idx].reshape([1, 10]) as dl.Array2D<'float32'>);
-        if (labels == null) {
-          labels = label;
-        } else {
-          labels = math.concat2D(labels, label, 0) as dl.Array2D<'float32'>;
-        }
-      }
-      return [xs, labels];
-    });
+    for (let i = 0; i < batchSize; i++) {
+      const idx = index();
+
+      const xVals = data[0][idx].dataSync();
+      xsVals.set(xVals, i * xSize);
+
+      const labelVals = data[1][idx].dataSync();
+      labelsVals.set(labelVals, i * labelSize);
+    }
     return {xs, labels};
+  }
+
+  public reset() {
+    this.shuffledTrainIndex = 0;
+    this.shuffledTestIndex = 0;
   }
 
   public async load() {
     this.dataset = new dl.XhrDataset(mnistConfig);
-    console.log('num arrays before fetch data', math.getNumArrays());
     await this.dataset.fetchData();
-    console.log('num arrays before normalize', math.getNumArrays());
     this.dataset.normalizeWithinBounds(0, -1, 1);
-    console.log('num arrays after normalize', math.getNumArrays());
     this.trainingData = this.getTrainingData();
     this.testData = this.getTestData();
     this.trainIndices =
