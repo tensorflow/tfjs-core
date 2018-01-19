@@ -853,11 +853,6 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [indices]);
   }
 
-  renderImage(x: Array3D) {
-    const program = new RenderProgram(x.shape);
-    return this.compileAndRun(program, [x]);
-  }
-
   private makeOutputArray<D extends DataType, T extends NDArray<D>>(
       shape: number[], dtype: D): T {
     return NDArray.make(shape, {}, dtype) as T;

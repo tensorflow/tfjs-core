@@ -252,7 +252,6 @@ export class GPGPUContext {
         textureUnit);
   }
 
-
   public setOutputMatrixTexture(
       outputMatrixTexture: WebGLTexture, rows: number, columns: number) {
     this.setOutputMatrixTextureDriver(outputMatrixTexture, columns, rows);
