@@ -15,52 +15,36 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../../util';
-import {Array1D, DataType, NDArray} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
+import {Array1D, DataType, NDArray, Rank} from '../../ndarray';
+import {KernelInputConfig, KernelNode} from '../tape_types';
 
 // Values
-export interface TopKValuesNode<D extends DataType, T extends NDArray<D>>
-    extends KernelNode {
+export interface TopKValuesNode<D extends DataType, R extends Rank, T extends
+                                    NDArray<D, R> = NDArray<D, R>> extends
+    KernelNode {
   inputAndArgs: TopKValuesInputConfig<T>;
   output: Array1D<D>;
-  gradient: (dy: Array1D<D>, y: Array1D<D>) => TopKValuesGradientInputArrays<T>;
+  gradient: (dy: Array1D<'float32'>, y: Array1D<D>) => {
+    x: () => NDArray<'float32', R>;
+  };
 }
 
 export interface TopKValuesInputConfig<T extends NDArray> extends
     KernelInputConfig {
-  inputs: TopKValuesInputArrays<T>;
+  inputs: {x: T;};
   args: {k: number};
-}
-
-export interface TopKValuesInputArrays<T extends NDArray> extends
-    NamedArrayMap {
-  x: T;
-}
-
-export interface TopKValuesGradientInputArrays<T extends NDArray> extends
-    TapeNodeInputGradientArrays {
-  x: () => T;
 }
 
 // Indices
 export interface TopKIndicesNode extends KernelNode {
   inputAndArgs: TopKIndicesInputConfig;
   output: Array1D<'int32'>;
-  gradient:
-      (dy: Array1D<'int32'>,
-       y: Array1D<'int32'>) => TopKIndicesGradientInputArrays;
+  gradient: (dy: Array1D<'float32'>, y: Array1D<'int32'>) => {
+    x: () => NDArray<'float32'>;
+  };
 }
 
 export interface TopKIndicesInputConfig extends KernelInputConfig {
-  inputs: TopKIndicesInputArrays;
+  inputs: {x: NDArray;};
   args: {k: number};
-}
-
-export interface TopKIndicesInputArrays extends NamedArrayMap { x: NDArray; }
-
-export interface TopKIndicesGradientInputArrays extends
-    TapeNodeInputGradientArrays {
-  x: () => NDArray;
 }

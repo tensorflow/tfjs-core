@@ -21,8 +21,8 @@ import {KernelInputConfig, KernelNode} from '../tape_types';
 export interface ReshapeNode extends KernelNode {
   inputAndArgs: ReshapeInputConfig;
   output: NDArray;
-  gradient: (dy: NDArray, y: NDArray) => {
-    x: () => NDArray
+  gradient: (dy: NDArray<'float32'>, y: NDArray) => {
+    x: () => NDArray<'float32'>
   };
 }
 

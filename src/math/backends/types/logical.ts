@@ -15,41 +15,33 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../../util';
 import {NDArray} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
-
-export interface DualInputArrays extends NamedArrayMap {
-  a: NDArray;
-  b: NDArray;
-}
-
-export interface DualGradientInputArrays extends TapeNodeInputGradientArrays {
-  a: () => NDArray;
-  b: () => NDArray;
-}
+import {KernelInputConfig, KernelNode} from '../tape_types';
 
 // Equal/NotEqual/LessEqual/Greater/GreaterEqual
 export interface EqualNode extends KernelNode {
   inputAndArgs: EqualInputConfig;
   output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
+  gradient: (dy: NDArray<'float32'>, y: NDArray<'bool'>) => {
+    a: () => NDArray<'float32'>;
+    b: () => NDArray<'float32'>;
+  };
 }
 
 export interface EqualInputConfig extends KernelInputConfig {
-  inputs: DualInputArrays;
+  inputs: {a: NDArray; b: NDArray;};
 }
 
 // LogicalOr
 export interface LogicalOrNode extends KernelNode {
   inputAndArgs: LogicalOrInputConfig;
   output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
+  gradient: (dy: NDArray<'float32'>, y: NDArray<'bool'>) => {
+    a: () => NDArray<'float32'>;
+    b: () => NDArray<'float32'>;
+  };
 }
 
 export interface LogicalOrInputConfig extends KernelInputConfig {
-  inputs: DualInputArrays;
+  inputs: {a: NDArray; b: NDArray;};
 }

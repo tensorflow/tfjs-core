@@ -16,29 +16,18 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../../util';
 import {Array2D} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelInputConfig, KernelNode} from '../tape_types';
 
 export interface MultinomialNode extends KernelNode {
   inputAndArgs: MultinomialInputConfig;
   output: Array2D<'int32'>;
-  gradient:
-      (dy: Array2D<'int32'>,
-       y: Array2D<'int32'>) => MultinomialGradientInputArrays;
+  gradient: (dy: Array2D<'float32'>, y: Array2D<'int32'>) => {
+    probs: () => Array2D<'float32'>;
+  };
 }
 
 export interface MultinomialInputConfig extends KernelInputConfig {
-  inputs: MultinomialInputArrays;
+  inputs: {probs: Array2D;};
   args: {numSamples: number; seed: number};
-}
-
-export interface MultinomialInputArrays extends NamedArrayMap {
-  probs: Array2D;
-}
-
-export interface MultinomialGradientInputArrays extends
-    TapeNodeInputGradientArrays {
-  probs: () => Array2D;
 }

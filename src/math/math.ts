@@ -231,9 +231,11 @@ export class NDArrayMath implements NDArrayManager {
           }
           return {
             a: () => this.matMul(
-                dy, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
+                         dy, b, MatrixOrientation.REGULAR,
+                         MatrixOrientation.TRANSPOSED) as Array2D<'float32'>,
             b: () => this.matMul(
-                a, dy, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR)
+                         a, dy, MatrixOrientation.TRANSPOSED,
+                         MatrixOrientation.REGULAR) as Array2D<'float32'>
           };
         });
   }
@@ -367,10 +369,11 @@ export class NDArrayMath implements NDArrayManager {
    * @param begin The offset to start the slice from.
    * @param size The size of the slice.
    */
-  slice1D(x: Array1D, begin: number, size: number): Array1D {
+  slice1D<D extends DataType>(x: Array1D<D>, begin: number, size: number):
+      Array1D<D> {
     slice_util.assertParamsValid(x, [begin], [size]);
     return this.backendEngine.executeKernel(
-        'Slice1D', {inputs: {x}, args: {begin, size}});
+               'Slice1D', {inputs: {x}, args: {begin, size}}) as Array1D<D>;
   }
 
   /**
@@ -381,11 +384,12 @@ export class NDArrayMath implements NDArrayManager {
    * @param begin The [row, col] 2d coordinates to start the slice from.
    * @param size The size of the slice.
    */
-  slice2D(x: Array2D, begin: [number, number], size: [number, number]):
-      Array2D {
+  slice2D<D extends DataType>(x: Array2D<D>, begin: [number, number], size: [
+    number, number
+  ]): Array2D<D> {
     slice_util.assertParamsValid(x, begin, size);
     return this.backendEngine.executeKernel(
-        'Slice2D', {inputs: {x}, args: {begin, size}});
+               'Slice2D', {inputs: {x}, args: {begin, size}}) as Array2D<D>;
   }
 
   /**
@@ -396,12 +400,12 @@ export class NDArrayMath implements NDArrayManager {
    * @param begin The [row, col, depth] 3d coordinates to start the slice from.
    * @param size The size of the slice.
    */
-  slice3D(x: Array3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Array3D {
+  slice3D<D extends DataType>(
+      x: Array3D<D>, begin: [number, number, number],
+      size: [number, number, number]): Array3D<D> {
     slice_util.assertParamsValid(x, begin, size);
     return this.backendEngine.executeKernel(
-        'Slice3D', {inputs: {x}, args: {begin, size}});
+               'Slice3D', {inputs: {x}, args: {begin, size}}) as Array3D<D>;
   }
 
   /**
@@ -413,12 +417,12 @@ export class NDArrayMath implements NDArrayManager {
    *              slice from.
    * @param size The size of the slice.
    */
-  slice4D(x: Array4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Array4D {
+  slice4D<D extends DataType>(
+      x: Array4D<D>, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D<D> {
     slice_util.assertParamsValid(x, begin, size);
     return this.backendEngine.executeKernel(
-        'Slice4D', {inputs: {x}, args: {begin, size}});
+               'Slice4D', {inputs: {x}, args: {begin, size}}) as Array4D<D>;
   }
 
   /**
@@ -1980,17 +1984,18 @@ export class NDArrayMath implements NDArrayManager {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  conv2dDerInput<T extends NDArray>(
-      xShape: [number, number, number, number]|[number, number, number], dy: T,
-      filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+  conv2dDerInput<R extends Rank>(
+      xShape: [number, number, number, number]|[number, number, number],
+      dy: NDArray<'float32', R>, filter: Array4D,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<'float32', R> {
     util.assert(
         xShape.length === dy.rank,
         `Length of inShape ` +
             `(${xShape.length}) and rank of dy (${dy.rank}) must match`);
 
     let xShape4D = xShape as [number, number, number, number];
-    let dy4D = dy as NDArray as Array4D;
+    let dy4D = dy as Array4D<'float32'>;
     let reshapedTo4D = false;
     if (dy.rank === 3) {
       reshapedTo4D = true;
@@ -2033,10 +2038,10 @@ export class NDArrayMath implements NDArrayManager {
       const res = this.backendEngine.executeKernel(
           'Conv2DDerInput', {inputs: {dy: dy4D, filter}, args: {convInfo}});
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
+            NDArray<'float32', R>;
       }
-      return res as NDArray as T;
+      return res as NDArray<'float32', R>;
     });
   }
 
@@ -2047,7 +2052,7 @@ export class NDArrayMath implements NDArrayManager {
    *   shape [batch, height, width, outDepth]. If rank 3, batch of 1 is
    * assumed.
    */
-  conv2dDerBias(dy: Array3D|Array4D): Array1D {
+  conv2dDerBias(dy: Array3D<'float32'>|Array4D<'float32'>): Array1D<'float32'> {
     let dy4D = dy as Array4D;
     if (dy.rank === 3) {
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
@@ -2074,15 +2079,16 @@ export class NDArrayMath implements NDArrayManager {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  conv2dDerFilter<T extends Array3D|Array4D>(
-      x: T, dy: T, filterShape: [number, number, number, number],
+  conv2dDerFilter<R extends '3'|'4'>(
+      x: NDArray<DataType, R>, dy: NDArray<'float32', R>,
+      filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): Array4D {
-    let x4D = x as NDArray as Array4D;
+      dimRoundingMode?: 'floor'|'round'|'ceil'): Array4D<'float32'> {
+    let x4D = x as Array4D;
     if (x.rank === 3) {
       x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     }
-    let dy4D = dy as NDArray as Array4D;
+    let dy4D = dy as Array4D<'float32'>;
     if (dy4D.rank === 3) {
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
     }
@@ -2139,11 +2145,11 @@ export class NDArrayMath implements NDArrayManager {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  conv2dTranspose<T extends NDArray>(
-      x: T, filter: Array4D,
+  conv2dTranspose<R extends Rank>(
+      x: NDArray<'float32', R>, filter: Array4D,
       outputShape: [number, number, number, number]|[number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<'float32', R> {
     return this.conv2dDerInput(
         outputShape, x, filter, strides, pad, dimRoundingMode);
   }
@@ -2310,10 +2316,10 @@ export class NDArrayMath implements NDArrayManager {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  maxPoolBackprop<T extends NDArray>(
-      dy: T, input: T, filterSize: [number, number]|number,
+  maxPoolBackprop<D extends DataType, R extends Rank, T extends NDArray<D, R>>(
+      dy: NDArray<'float32', R>, input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<'float32', R> {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
@@ -2349,10 +2355,10 @@ export class NDArrayMath implements NDArrayManager {
           'MaxPoolBackprop',
           {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
+            NDArray<'float32', R>;
       }
-      return res as NDArray as T;
+      return res as NDArray<'float32', R>;
     });
   }
 
@@ -2478,9 +2484,11 @@ export class NDArrayMath implements NDArrayManager {
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm
    *     used in the forward prop of the op.
    */
-  private avgPoolBackprop<T extends NDArray>(
-      dy: T, input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+  private avgPoolBackprop<D extends DataType,
+                                    R extends Rank, T extends NDArray<D, R>>(
+      dy: NDArray<'float32', R>, input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number,
+      pad: 'valid'|'same'|number): NDArray<'float32', R> {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
@@ -2510,10 +2518,10 @@ export class NDArrayMath implements NDArrayManager {
           'AvgPoolBackprop',
           {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
+            NDArray<'float32', R>;
       }
-      return res as NDArray as T;
+      return res as NDArray<'float32', R>;
     });
   }
 
@@ -3065,13 +3073,16 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Computes and returns the gradient of f(x) with respect to every variable.
-   * Computes and returns the gradient of f(x) with respect to every variable.
+   * Computes and returns the gradient of f(x) with respect to every trainable
+   * variable.
+   * @param f The function to execute. f() should return a scalar.
+   * @param varList An optional list of variables to provide gradients with
+   * respect to.
    */
-  variableGradients<D extends DataType>(f: () => Scalar<D>):
-      {value: Scalar<D>, gradients: NamedVariableMap} {
-    return this.valueAndGradients(f, this.registeredVariables) as
-        {value: Scalar<D>, gradients: NamedVariableMap};
+  variableGradients<D extends DataType>(
+      f: () => Scalar<D>,
+      varList?: Variable[]): {value: Scalar<D>, gradients: NamedArrayMap} {
+    return this.backendEngine.variableGradientsAndValue(f, varList);
   }
 
   /**

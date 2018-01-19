@@ -16,7 +16,7 @@
  */
 
 import * as util from '../../util';
-import {DataType, NDArray, Scalar} from '../ndarray';
+import {DataType, NDArray, Rank, Scalar} from '../ndarray';
 
 import {MathBackend} from './backend';
 import {KernelInputConfig} from './tape_types';
@@ -57,7 +57,7 @@ import {TopKIndicesInputConfig, TopKIndicesNode, TopKValuesInputConfig, TopKValu
 import {ClipInputConfig, ClipNode, LeakyReluInputConfig, LeakyReluNode, StepInputConfig, StepNode, TileInputConfig, TileNode, TransposeInputConfig, TransposeNode, UnaryInputConfig, UnaryNode} from './types/unary';
 
 const KERNEL_METHODS: {
-  [kernel in keyof KernelConfigRegistry]: (
+  [kernel in keyof KernelConfigRegistry<DataType, Rank>]: (
       backend: MathBackend, config: KernelInputConfig) => NDArray
 } = {
   // NOTE: Using {} and "return" makes VSCode run much faster.
@@ -69,19 +69,23 @@ const KERNEL_METHODS: {
   Clone: (backend: MathBackend, config: UnaryInputConfig<NDArray>) => {
     return backend.clone(config.inputs.x);
   },
-  Slice1D: (backend: MathBackend, config: Slice1DInputConfig) => {
+  Slice1D: <D extends DataType>(
+      backend: MathBackend, config: Slice1DInputConfig<D>) => {
     return backend.slice1D(
         config.inputs.x, config.args.begin, config.args.size);
   },
-  Slice2D: (backend: MathBackend, config: Slice2DInputConfig) => {
+  Slice2D: <D extends DataType>(
+      backend: MathBackend, config: Slice2DInputConfig<D>) => {
     return backend.slice2D(
         config.inputs.x, config.args.begin, config.args.size);
   },
-  Slice3D: (backend: MathBackend, config: Slice3DInputConfig) => {
+  Slice3D: <D extends DataType>(
+      backend: MathBackend, config: Slice3DInputConfig<D>) => {
     return backend.slice3D(
         config.inputs.x, config.args.begin, config.args.size);
   },
-  Slice4D: (backend: MathBackend, config: Slice4DInputConfig) => {
+  Slice4D: <D extends DataType>(
+      backend: MathBackend, config: Slice4DInputConfig<D>) => {
     return backend.slice4D(
         config.inputs.x, config.args.begin, config.args.size);
   },
@@ -351,31 +355,32 @@ const KERNEL_METHODS: {
         config.args.offValue);
   }
 };
-export function executeKernel<K extends keyof KernelConfigRegistry, R extends
-                                  KernelConfigRegistry[K]['output']>(
+export function executeKernel<D extends DataType, R extends Rank, K extends
+                                  keyof KernelConfigRegistry<D, R>, O extends
+                                      KernelConfigRegistry<D, R>[K]['output']>(
     backend: MathBackend, kernelName: K,
-    config: KernelConfigRegistry[K]['inputAndArgs']): R {
-  return KERNEL_METHODS[kernelName](backend, config) as R;
+    config: KernelConfigRegistry<D, R>[K]['inputAndArgs']): O {
+  return KERNEL_METHODS[kernelName](backend, config) as O;
 }
 
-export interface KernelConfigRegistry {
+export interface KernelConfigRegistry<D extends DataType, R extends Rank> {
   MatMul: MatMulNode;
-  Clone: UnaryNode<NDArray>;
-  Slice1D: Slice1DNode;
-  Slice2D: Slice2DNode;
-  Slice3D: Slice3DNode;
-  Slice4D: Slice4DNode;
+  Clone: UnaryNode<D, R>;
+  Slice1D: Slice1DNode<D>;
+  Slice2D: Slice2DNode<D>;
+  Slice3D: Slice3DNode<D>;
+  Slice4D: Slice4DNode<D>;
   Reverse4D: Reverse4DNode;
   Concat1D: Concat1DNode;
   Concat2D: Concat2DNode;
   Concat3D: Concat3DNode;
   Concat4D: Concat4DNode;
-  Neg: UnaryNode<NDArray>;
+  Neg: UnaryNode<D, R>;
   Add: BinaryNode;
   Sub: BinaryNode;
   Mul: BinaryNode;
   Div: BinaryNode;
-  Sum: SumNode<DataType>;
+  Sum: SumNode<D>;
   ArgMax: ArgMaxNode;
   ArgMin: ArgMinNode;
   Equal: EqualNode;
@@ -384,45 +389,45 @@ export interface KernelConfigRegistry {
   Greater: EqualNode;
   GreaterEqual: EqualNode;
   LogicalOr: LogicalOrNode;
-  TopKValues: TopKValuesNode<DataType, NDArray>;
+  TopKValues: TopKValuesNode<D, R>;
   TopKIndices: TopKIndicesNode;
-  Min: MinNode<DataType>;
-  Minimum: MinimumNode<DataType>;
-  Max: MaxNode<DataType>;
-  Maximum: MaximumNode<DataType>;
-  Ceil: UnaryNode<NDArray>;
-  Floor: UnaryNode<NDArray>;
-  Pow: PowNode<NDArray>;
-  Exp: UnaryNode<NDArray>;
-  Log: UnaryNode<NDArray>;
-  Sqrt: UnaryNode<NDArray>;
-  Square: UnaryNode<NDArray>;
-  Relu: UnaryNode<NDArray>;
-  LeakyRelu: LeakyReluNode<NDArray>;
-  PReLU: PReLUNode<NDArray>;
-  PReLUDer: PReLUNode<NDArray>;
+  Min: MinNode<D>;
+  Minimum: MinimumNode<D>;
+  Max: MaxNode<D>;
+  Maximum: MaximumNode<D>;
+  Ceil: UnaryNode<D, R>;
+  Floor: UnaryNode<D, R>;
+  Pow: PowNode<D, R>;
+  Exp: UnaryNode<D, R>;
+  Log: UnaryNode<D, R>;
+  Sqrt: UnaryNode<D, R>;
+  Square: UnaryNode<D, R>;
+  Relu: UnaryNode<D, R>;
+  LeakyRelu: LeakyReluNode<D, R>;
+  PReLU: PReLUNode<D, R>;
+  PReLUDer: PReLUNode<D, R>;
   Reshape: ReshapeNode;
   Cast: CastNode;
-  Elu: UnaryNode<NDArray>;
-  EluDer: UnaryNode<NDArray>;
-  Selu: UnaryNode<NDArray>;
-  Abs: UnaryNode<NDArray>;
-  Sigmoid: UnaryNode<NDArray>;
-  Step: StepNode<NDArray>;
-  Sin: UnaryNode<NDArray>;
-  Cos: UnaryNode<NDArray>;
-  Tan: UnaryNode<NDArray>;
-  Asin: UnaryNode<NDArray>;
-  Acos: UnaryNode<NDArray>;
-  Atan: UnaryNode<NDArray>;
-  Sinh: UnaryNode<NDArray>;
-  Cosh: UnaryNode<NDArray>;
-  Tanh: UnaryNode<NDArray>;
-  Clip: ClipNode<NDArray>;
-  Transpose: TransposeNode<NDArray>;
+  Elu: UnaryNode<D, R>;
+  EluDer: UnaryNode<D, R>;
+  Selu: UnaryNode<D, R>;
+  Abs: UnaryNode<D, R>;
+  Sigmoid: UnaryNode<D, R>;
+  Step: StepNode<D, R>;
+  Sin: UnaryNode<D, R>;
+  Cos: UnaryNode<D, R>;
+  Tan: UnaryNode<D, R>;
+  Asin: UnaryNode<D, R>;
+  Acos: UnaryNode<D, R>;
+  Atan: UnaryNode<D, R>;
+  Sinh: UnaryNode<D, R>;
+  Cosh: UnaryNode<D, R>;
+  Tanh: UnaryNode<D, R>;
+  Clip: ClipNode<D, R>;
+  Transpose: TransposeNode<D, R>;
   Pad1D: Pad1DNode;
   Pad2D: Pad2DNode;
-  Tile: TileNode<NDArray>;
+  Tile: TileNode<D, R>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;
   Conv2DDerFilter: Conv2DDerFilterNode;

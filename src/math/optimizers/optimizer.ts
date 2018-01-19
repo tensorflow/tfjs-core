@@ -22,8 +22,8 @@ import * as session_util from '../../graph/session_util';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {DataType, NDArray, Scalar} from '../../math/ndarray';
-import {NamedVariableMap} from '../../util';
+import {DataType, NDArray, Scalar, Variable} from '../../math/ndarray';
+import {NamedArrayMap} from '../../util';
 
 export abstract class Optimizer {
   protected variableNodes: VariableNode[];
@@ -39,9 +39,10 @@ export abstract class Optimizer {
   /**
    * Eager mode methods.
    */
-  minimize<D extends DataType>(f: () => Scalar<D>, returnCost = false):
-      Scalar<D>|null {
-    const {value, gradients} = this.computeGradients(f);
+  minimize<D extends DataType>(
+      f: () => Scalar<D>, returnCost = false,
+      varList?: Variable[]): Scalar<D>|null {
+    const {value, gradients} = this.computeGradients(f, varList);
 
     this.applyGradients(gradients);
 
@@ -57,12 +58,13 @@ export abstract class Optimizer {
     }
   }
 
-  computeGradients<D extends DataType>(f: () => Scalar<D>):
-      {value: Scalar<D>, gradients: NamedVariableMap} {
-    return ENV.math.variableGradients(f);
+  computeGradients<D extends DataType>(
+      f: () => Scalar<D>,
+      varList?: Variable[]): {value: Scalar<D>, gradients: NamedArrayMap} {
+    return ENV.math.variableGradients(f, varList);
   }
 
-  abstract applyGradients(variableGradients: NamedVariableMap): void;
+  abstract applyGradients(variableGradients: NamedArrayMap): void;
 
   /**
    * Graph mode methods.
