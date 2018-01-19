@@ -64,7 +64,7 @@ limitations under the License.
       <a href="http://blog.otoro.net/2016/03/25/generating-abstract-patterns-with-tensorflow/" target="_blank">What is a CPPN?</a>
       <div id="disabled-demo-overlay" style="display: none">
         <div id="disabled-demo">
-          Your device is not yet supported, so we cannot show this demo. We are working hard on supporting more devices. For now, come back on desktop Chrome!
+          Your device does not support WebGL, so we cannot show this demo. Please enable hardware acceleration or come back on a device that supports WebGL.
         </div>
       </div>
     </div>

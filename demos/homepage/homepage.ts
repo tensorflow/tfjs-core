@@ -21,10 +21,7 @@ import * as demo_util from '../util';
 const inferenceCanvas =
     document.querySelector('#inference') as HTMLCanvasElement;
 
-const isDeviceDisabled = demo_util.isSafari() && demo_util.isMobile();
-const enableCPPN = demo_util.isWebGLSupported() && !isDeviceDisabled;
-
-if (enableCPPN) {
+if (demo_util.isWebGLSupported()) {
   startCPPN();
 } else {
   document.getElementById('disabled-demo-overlay').style.display = '';
