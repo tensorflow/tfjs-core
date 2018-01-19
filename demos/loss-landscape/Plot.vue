@@ -15,7 +15,7 @@
 .plot {
   display: flex;
   flex-direction: column;
-  width: 150px;
+  width: 100px;
 }
 .info {
   color: #666;

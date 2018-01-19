@@ -16,9 +16,10 @@ export type ChartData = {
 };
 
 class State {
-  trainSteps = 50;
   weightSelect: HTMLSelectElement;
   modelTypeSelect: HTMLSelectElement;
+  modelType: ModelType = ModelType.FC;
+  weightInit: WeightInit = WeightInit.UNIT;
   data: MnistData;
   model: Model;
 
@@ -35,7 +36,7 @@ class State {
     this.model = new Model();
     // tslint:disable-next-line:no-any
     (window as any).model = this.model;
-    this.model.init();
+    this.model.init(this.data);
   }
 
   private async loadDataOnce() {
@@ -79,47 +80,46 @@ export default Vue.extend({
     async changeWeightsInit(event: Event) {
       await this.disableUI();
       const selection = this.s.weightSelect.value as WeightInit;
+      this.s.weightInit = selection;
       this.s.model.reinitWeights(selection);
-      const zData = await this.s.model.computeLandscape(this.s.data);
-      const n = Math.ceil(zData.length / 2);
-      const loss = zData[n][n];
-      const modelType = 'FC';
-      const weightInit = getWeightInitString(selection);
-      const iter = 0;
+      this.visualizeLandscape();
+    },
+    async changeModelType(event: Event) {
+      await this.disableUI();
+      const newModelType = this.s.modelTypeSelect.value as ModelType;
+      this.s.modelType = newModelType;
+      this.s.model.setModel(newModelType);
+      this.visualizeLandscape();
+    },
+    async visualizeLandscape() {
       const charts: {plots: ChartData[],
                      id: number} = {id: this.plotsId++, plots: []};
       this.charts.unshift(charts);
-      charts.plots.push(
-          {width: 150, height: 150, zData, loss, modelType, weightInit, iter});
+      charts.plots.push(await this.computeChartData(0));
       for (let i = 0; i < 4; i++) {
         charts.plots.push(await this.train());
       }
-
       await this.enableUI();
     },
-    async changeModelType(event: Event) {
-      const selection = this.s.modelTypeSelect.value as ModelType;
-      console.log(selection);
-    },
-    async train(): Promise<ChartData> {
-      let start = performance.now();
-      const [loss, iter] =
-          await this.s.model.train(this.s.data, this.s.trainSteps);
-      console.log('training took', performance.now() - start, 'ms');
-      start = performance.now();
-      const zData = await this.s.model.computeLandscape(this.s.data);
-      const modelType = 'FC';
-      const weightInit =
-          getWeightInitString(this.s.weightSelect.value as WeightInit);
+    async computeChartData(iter: number) {
+      const start = performance.now();
+      const zData = await this.s.model.computeLandscape();
+      console.log('compute landscape took', performance.now() - start, 'ms');
+      const n = Math.ceil(zData.length / 2);
+      const loss = zData[n][n];
       return {
-        width: 150,
-        height: 150,
+        width: 100,
+        height: 100,
         zData,
         loss,
-        modelType,
-        weightInit,
+        modelType: this.s.modelType,
+        weightInit: getWeightInitString(this.s.weightInit),
         iter
       };
+    },
+    async train(): Promise<ChartData> {
+      const iter = await this.s.model.train();
+      return this.computeChartData(iter);
     },
   },
   components: {Plot}
