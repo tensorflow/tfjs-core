@@ -447,7 +447,7 @@ export interface KernelConfigRegistry<D extends DataType, R extends Rank> {
   Pad1D: Pad1DNode;
   Pad2D: Pad2DNode;
   Tile: TileNode<D, R>;
-  Gather: GatherNode<NDArray>;
+  Gather: GatherNode<D, R>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;
   Conv2DDerFilter: Conv2DDerFilterNode;

@@ -192,7 +192,9 @@ export class BackendEngine {
       trainableVariableNames =
           trainableVariables.map(variable => variable.name);
 
-      const gradients = this.gradientWrt(y, trainableVariables);
+      const gradients = trainableVariables.length === 0 ?
+          [] :
+          this.gradientWrt(y, trainableVariables);
       return [y, ...gradients];
     }, gradientsMode);
 

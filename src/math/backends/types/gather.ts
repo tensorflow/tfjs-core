@@ -19,7 +19,8 @@ import {Array1D, DataType, NDArray, Rank} from '../../ndarray';
 import {KernelInputConfig, KernelNode} from '../tape_types';
 
 export interface GatherNode<D extends DataType, R extends Rank, T extends
-                                NDArray<D, R>> extends KernelNode {
+                                NDArray<D, R> = NDArray<D, R>> extends
+    KernelNode {
   inputAndArgs: GatherInputConfig<T>;
   output: T;
   gradient: (dy: NDArray<'float32', R>, y: T) => {

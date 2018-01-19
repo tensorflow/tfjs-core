@@ -27,33 +27,46 @@ const tests: MathTests = it => {
 
     const x = variable(Scalar.new(4));
     const bias = variable(Scalar.new(1));
+    const strayVariable = variable(Scalar.new(-1));
 
     let numArrays = math.getNumArrays();
 
-    let cost = optimizer.minimize(
-        () => math.add(math.square(x), bias), /* returnCost */ true);
+    const f = () => math.addStrict(math.square(x), bias);
+
+    let cost = optimizer.minimize(f, /* returnCost */ true);
 
     // Cost should be the only additional array.
     expect(math.getNumArrays()).toBe(numArrays + 1);
 
     // de/dx = 2x
     const expectedX1 = -2 * 4 * learningRate + 4;
+    // de/db = 1
+    const expectedBias1 = -1 * learningRate + 1;
     test_util.expectArraysClose(x, [expectedX1]);
+    test_util.expectArraysClose(bias, [expectedBias1]);
     test_util.expectArraysClose(cost, [Math.pow(4, 2) + 1]);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
 
     cost.dispose();
     numArrays = math.getNumArrays();
 
-    cost = optimizer.minimize(() => math.square(x), /* returnCost */ false);
+    cost = optimizer.minimize(f, /* returnCost */ false);
     // There should be no new additional NDArrays.
     expect(math.getNumArrays()).toBe(numArrays);
 
     const expectedX2 = -2 * expectedX1 * learningRate + expectedX1;
+    const expectedBias2 = -learningRate + expectedBias1;
     test_util.expectArraysClose(x, [expectedX2]);
+    test_util.expectArraysClose(bias, [expectedBias2]);
     expect(cost).toBe(null);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
 
     optimizer.dispose();
     x.dispose();
+    bias.dispose();
+    strayVariable.dispose();
     // There should be no more NDArrays.
     expect(math.getNumArrays()).toBe(0);
   });
@@ -64,22 +77,31 @@ const tests: MathTests = it => {
 
     const x = variable(Scalar.new(4));
     const bias = variable(Scalar.new(1));
-    const varList = [x];
+    const strayVariable = variable(Scalar.new(-1));
+    const varList = [x, bias];
 
-    let cost = optimizer.minimize(
-        () => math.add(math.square(x), bias), /* returnCost */ true, varList);
+    const f = () => math.addStrict(math.square(x), bias);
+
+    let cost = optimizer.minimize(f, /* returnCost */ true, varList);
 
     // de/dx = 2x
     const expectedX1 = -2 * 4 * learningRate + 4;
+    // de/db = 1
+    const expectedBias1 = -1 * learningRate + 1;
     test_util.expectArraysClose(x, [expectedX1]);
+    test_util.expectArraysClose(bias, [expectedBias1]);
     test_util.expectArraysClose(cost, [Math.pow(4, 2) + 1]);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
 
-    cost = optimizer.minimize(
-        () => math.add(math.square(x), bias) as Scalar<'float32'>,
-        /* returnCost */ false, varList);
+    cost = optimizer.minimize(f, /* returnCost */ false, varList);
 
     const expectedX2 = -2 * expectedX1 * learningRate + expectedX1;
+    const expectedBias2 = -learningRate + expectedBias1;
     test_util.expectArraysClose(x, [expectedX2]);
+    test_util.expectArraysClose(bias, [expectedBias2]);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
     expect(cost).toBe(null);
 
     optimizer.dispose();
@@ -91,22 +113,29 @@ const tests: MathTests = it => {
 
     const x = variable(Scalar.new(4));
     const bias = variable(Scalar.new(1));
+    const strayVariable = variable(Scalar.new(-1));
     const varList: Variable[] = [];
 
-    let cost = optimizer.minimize(
-        () => math.square(x), /* returnCost */ true, varList);
+    const f = () => math.addStrict(math.square(x), bias);
+
+    let cost = optimizer.minimize(f, /* returnCost */ true, varList);
 
     // x should not have been updated.
     test_util.expectArraysClose(x, [4]);
+    // bias should not have been updated.
+    test_util.expectArraysClose(bias, [1]);
     test_util.expectArraysClose(cost, [Math.pow(4, 2) + 1]);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
 
-    cost = optimizer.minimize(
-        () => math.add(math.square(x), bias) as Scalar<'float32'>,
-        /* returnCost */ false, varList);
+    cost = optimizer.minimize(f, /* returnCost */ false, varList);
 
     // x again should not have been updated.
     test_util.expectArraysClose(x, [4]);
-    test_util.expectArraysClose(cost, [Math.pow(4, 2) + 1]);
+    // bias again should not have been updated.
+    test_util.expectArraysClose(bias, [1]);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
     expect(cost).toBe(null);
 
     optimizer.dispose();
@@ -118,26 +147,101 @@ const tests: MathTests = it => {
 
     const x = variable(Scalar.new(4));
     const bias = variable(Scalar.new(1));
+    const strayVariable = variable(Scalar.new(-1));
     const varList = [x];
 
-    let cost = optimizer.minimize(
-        () => math.add(math.square(x), bias), /* returnCost */ true, varList);
+    const f = () => math.addStrict(math.square(x), bias);
+
+    let cost = optimizer.minimize(f, /* returnCost */ true, varList);
 
     // de/dx = 2x
     const expectedValue1 = -2 * 4 * learningRate + 4;
     test_util.expectArraysClose(x, [expectedValue1]);
-    // Bias should remain unchanged.
+    // bias should remain unchanged.
     test_util.expectArraysClose(bias, [1]);
     test_util.expectArraysClose(cost, [Math.pow(4, 2) + 1]);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
 
-    cost = optimizer.minimize(
-        () => math.square(x), /* returnCost */ false, varList);
+    cost = optimizer.minimize(f, /* returnCost */ false, varList);
 
     const expectedValue2 = -2 * expectedValue1 * learningRate + expectedValue1;
     test_util.expectArraysClose(x, [expectedValue2]);
     // Bias still should remain unchanged.
     test_util.expectArraysClose(bias, [1]);
     expect(cost).toBe(null);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
+
+    optimizer.dispose();
+  });
+
+  it('only bias trainable', math => {
+    const learningRate = .1;
+    const optimizer = new SGDOptimizer(learningRate);
+
+    const trainable = false;
+    const x = variable(Scalar.new(4), trainable);
+    const bias = variable(Scalar.new(1));
+    const strayVariable = variable(Scalar.new(-1));
+
+    const f = () => math.addStrict(math.square(x), bias);
+
+    let cost = optimizer.minimize(f, /* returnCost */ true);
+
+    // x should not have been updated.
+    test_util.expectArraysClose(x, [4]);
+    // de/db = 1
+    const expectedBias1 = -1 * learningRate + 1;
+    test_util.expectArraysClose(bias, [expectedBias1]);
+    test_util.expectArraysClose(cost, [Math.pow(4, 2) + 1]);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
+
+    cost = optimizer.minimize(f, /* returnCost */ false);
+
+    // x should not have been updated.
+    test_util.expectArraysClose(x, [4]);
+    const expectedBias2 = -learningRate + expectedBias1;
+    test_util.expectArraysClose(bias, [expectedBias2]);
+    expect(cost).toBe(null);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
+
+    optimizer.dispose();
+  });
+
+  it('only bias trainable, only x in varList does nothing', math => {
+    const learningRate = .1;
+    const optimizer = new SGDOptimizer(learningRate);
+
+    const trainable = false;
+    const x = variable(Scalar.new(4), trainable);
+    const bias = variable(Scalar.new(1));
+    const strayVariable = variable(Scalar.new(-1));
+    const varList = [x];
+
+    const f = () => math.addStrict(math.square(x), bias);
+
+    let cost = optimizer.minimize(f, /* returnCost */ true, varList);
+
+    // x should not have been updated.
+    test_util.expectArraysClose(x, [4]);
+    // bias should remain unchanged.
+    test_util.expectArraysClose(bias, [1]);
+    test_util.expectArraysClose(cost, [Math.pow(4, 2) + 1]);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
+
+    cost = optimizer.minimize(f, /* returnCost */ false, varList);
+
+    // x should not have been updated.
+    test_util.expectArraysClose(x, [4]);
+    // bias should not have been updated.
+    test_util.expectArraysClose(bias, [1]);
+    expect(cost).toBe(null);
+    // The stray variable should remain unchanged.
+    test_util.expectArraysClose(strayVariable, [-1]);
 
     optimizer.dispose();
   });
