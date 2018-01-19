@@ -15,34 +15,33 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
-import {Array2D, Array3D, ENV, NDArray, NDArrayMath, Scalar} from 'deeplearn';
-
+import * as dl from 'deeplearn';
 import * as nn_art_util from './nn_art_util';
 
 const MAX_LAYERS = 10;
+const math = dl.ENV.math;
 
 export type ActivationFunction = 'tanh'|'sin'|'relu'|'step';
 const activationFunctionMap: {
-  [activationFunction in ActivationFunction]: (
-      math: NDArrayMath, ndarray: Array2D) => Array2D
+  [activationFunction in ActivationFunction]: (ndarray: dl.Array2D) =>
+      dl.Array2D
 } = {
-  'tanh': (math: NDArrayMath, ndarray: Array2D) => math.tanh(ndarray),
-  'sin': (math: NDArrayMath, ndarray: Array2D) => math.sin(ndarray),
-  'relu': (math: NDArrayMath, ndarray: Array2D) => math.relu(ndarray),
-  'step': (math: NDArrayMath, ndarray: Array2D) => math.step(ndarray)
+  'tanh': (x: dl.Array2D) => math.tanh(x),
+  'sin': (x: dl.Array2D) => math.sin(x),
+  'relu': (x: dl.Array2D) => math.relu(x),
+  'step': (x: dl.Array2D) => math.step(x)
 };
 
 const NUM_IMAGE_SPACE_VARIABLES = 3;  // x, y, r
 const NUM_LATENT_VARIABLES = 2;
 
 export class CPPN {
-  private inputAtlas: Array2D;
-  private ones: Array2D<'float32'>;
+  private inputAtlas: dl.Array2D;
+  private ones: dl.Array2D<'float32'>;
 
-  private firstLayerWeights: Array2D;
-  private intermediateWeights: Array2D[] = [];
-  private lastLayerWeights: Array2D;
+  private firstLayerWeights: dl.Array2D;
+  private intermediateWeights: dl.Array2D[] = [];
+  private lastLayerWeights: dl.Array2D;
 
   private z1Counter = 0;
   private z2Counter = 0;
@@ -61,7 +60,7 @@ export class CPPN {
 
     this.inputAtlas = nn_art_util.createInputAtlas(
         canvasSize, NUM_IMAGE_SPACE_VARIABLES, NUM_LATENT_VARIABLES);
-    this.ones = Array2D.ones([this.inputAtlas.shape[0], 1]);
+    this.ones = dl.Array2D.ones([this.inputAtlas.shape[0], 1]);
   }
 
   generateWeights(neuronsPerLayer: number, weightsStdev: number) {
@@ -76,14 +75,14 @@ export class CPPN {
       this.lastLayerWeights.dispose();
     }
 
-    this.firstLayerWeights = Array2D.randTruncatedNormal(
+    this.firstLayerWeights = dl.Array2D.randTruncatedNormal(
         [NUM_IMAGE_SPACE_VARIABLES + NUM_LATENT_VARIABLES, neuronsPerLayer], 0,
         weightsStdev);
     for (let i = 0; i < MAX_LAYERS; i++) {
-      this.intermediateWeights.push(Array2D.randTruncatedNormal(
+      this.intermediateWeights.push(dl.Array2D.randTruncatedNormal(
           [neuronsPerLayer, neuronsPerLayer], 0, weightsStdev));
     }
-    this.lastLayerWeights = Array2D.randTruncatedNormal(
+    this.lastLayerWeights = dl.Array2D.randTruncatedNormal(
         [neuronsPerLayer, 3 /** max output channels */], 0, weightsStdev);
   }
 
@@ -109,7 +108,7 @@ export class CPPN {
   }
 
   private async runInferenceLoop() {
-    const math = ENV.math;
+    const math = dl.ENV.math;
 
     if (!this.isInferring) {
       return;
@@ -119,36 +118,40 @@ export class CPPN {
     this.z2Counter += 1 / this.z2Scale;
 
     await math.scope(async () => {
-      const concatAxis = 1;
-      const z1 = Scalar.new(Math.sin(this.z1Counter));
-      const z2 = Scalar.new(Math.cos(this.z2Counter));
-      const latentVars = math.concat2D(
-          math.multiply(z1, this.ones) as Array2D,
-          math.multiply(z2, this.ones) as Array2D, concatAxis);
+      const z1 = dl.Scalar.new(Math.sin(this.z1Counter));
+      const z2 = dl.Scalar.new(Math.cos(this.z2Counter));
 
-      let lastOutput: NDArray =
+      const concatAxis = 1;
+      const latentVars = math.concat2D(
+          math.multiply(z1, this.ones) as dl.Array2D,
+          math.multiply(z2, this.ones) as dl.Array2D, concatAxis);
+
+      const activation = (x: dl.Array2D) =>
+          activationFunctionMap[this.selectedActivationFunctionName](x);
+
+      let lastOutput: dl.NDArray =
           math.concat2D(this.inputAtlas, latentVars, concatAxis);
-      lastOutput = activationFunctionMap[this.selectedActivationFunctionName](
-          math, math.matMul(lastOutput as Array2D, this.firstLayerWeights));
+      lastOutput = activation(
+          math.matMul(lastOutput as dl.Array2D, this.firstLayerWeights));
 
       for (let i = 0; i < this.numLayers; i++) {
         const matmulResult =
-            math.matMul(lastOutput as Array2D, this.intermediateWeights[i]);
+            math.matMul(lastOutput as dl.Array2D, this.intermediateWeights[i]);
 
-        lastOutput = activationFunctionMap[this.selectedActivationFunctionName](
-            math, matmulResult)
+        lastOutput = activation(matmulResult);
       }
 
       lastOutput =
           math.sigmoid(
-                  math.matMul(lastOutput as Array2D, this.lastLayerWeights))
+                  math.matMul(lastOutput as dl.Array2D, this.lastLayerWeights))
               .reshape(
                   [this.inferenceCanvas.height, this.inferenceCanvas.width, 3]);
 
-      await renderToCanvas(lastOutput as Array3D, this.inferenceCanvas);
+      await renderToCanvas(lastOutput as dl.Array3D, this.inferenceCanvas);
     });
 
-    requestAnimationFrame(() => this.runInferenceLoop());
+    await dl.util.nextFrame();
+    this.runInferenceLoop();
   }
 
   stopInferenceLoop() {
@@ -157,7 +160,7 @@ export class CPPN {
 }
 
 // TODO(nsthorat): Move this to a core library util.
-async function renderToCanvas(a: Array3D, canvas: HTMLCanvasElement) {
+async function renderToCanvas(a: dl.Array3D, canvas: HTMLCanvasElement) {
   const [height, width, ] = a.shape;
   const ctx = canvas.getContext('2d');
   const imageData = new ImageData(width, height);
