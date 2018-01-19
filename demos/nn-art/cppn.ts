@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array2D, ENV, gpgpu_util, GPGPUContext, MathBackendWebGL, NDArray, NDArrayMath, render_ndarray_gpu_util, Scalar, webgl_util} from 'deeplearn';
+import {Array2D, Array3D, ENV, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 
 import * as nn_art_util from './nn_art_util';
 
@@ -37,11 +37,6 @@ const NUM_IMAGE_SPACE_VARIABLES = 3;  // x, y, r
 const NUM_LATENT_VARIABLES = 2;
 
 export class CPPN {
-  private math: NDArrayMath;
-  private backend: MathBackendWebGL;
-  private gpgpu: GPGPUContext;
-  private renderShader: WebGLProgram;
-
   private inputAtlas: Array2D;
   private ones: Array2D<'float32'>;
   private weights: Array2D[] = [];
@@ -57,20 +52,9 @@ export class CPPN {
   private isInferring = false;
 
   constructor(private inferenceCanvas: HTMLCanvasElement) {
-    const gl = gpgpu_util.createWebGLContext(this.inferenceCanvas);
-    this.gpgpu = new GPGPUContext(gl);
-    this.backend = new MathBackendWebGL(this.gpgpu);
-    const safeMode = false;
-    this.math = new NDArrayMath(this.backend, safeMode);
-    ENV.setMath(this.math);
-
-    const maxTextureSize = webgl_util.queryMaxTextureSize(gl);
-    const canvasSize = Math.floor(Math.sqrt(maxTextureSize));
+    const canvasSize = 128;
     this.inferenceCanvas.width = canvasSize;
     this.inferenceCanvas.height = canvasSize;
-
-    this.renderShader =
-        render_ndarray_gpu_util.getRenderRGBShader(this.gpgpu, canvasSize);
 
     this.inputAtlas = nn_art_util.createInputAtlas(
         canvasSize, NUM_IMAGE_SPACE_VARIABLES, NUM_LATENT_VARIABLES);
@@ -116,6 +100,8 @@ export class CPPN {
   }
 
   private runInferenceLoop() {
+    const math = ENV.math;
+
     if (!this.isInferring) {
       return;
     }
@@ -123,34 +109,32 @@ export class CPPN {
     this.z1Counter += 1 / this.z1Scale;
     this.z2Counter += 1 / this.z2Scale;
 
-    this.math.scope(() => {
+    math.scope(() => {
       const concatAxis = 1;
       const z1 = Scalar.new(Math.sin(this.z1Counter));
       const z2 = Scalar.new(Math.cos(this.z2Counter));
-      const latentVars = this.math.concat2D(
-          this.math.multiply(z1, this.ones) as Array2D,
-          this.math.multiply(z2, this.ones) as Array2D, concatAxis);
+      const latentVars = math.concat2D(
+          math.multiply(z1, this.ones) as Array2D,
+          math.multiply(z2, this.ones) as Array2D, concatAxis);
 
       let lastOutput: NDArray =
-          this.math.concat2D(this.inputAtlas, latentVars, concatAxis);
+          math.concat2D(this.inputAtlas, latentVars, concatAxis);
 
       for (let i = 0; i < this.numLayers; i++) {
         const lastLayer = (i === this.numLayers - 1);
-        const matmulResult = this.math.matMul(
+        const matmulResult = math.matMul(
             lastOutput as Array2D,
             lastLayer ? this.weights[this.weights.length - 1] :
                         this.weights[i]);
 
         lastOutput = lastLayer ?
-            this.math.sigmoid(matmulResult.reshape(
+            math.sigmoid(matmulResult.reshape(
                 [this.inferenceCanvas.height, this.inferenceCanvas.width, 3])) :
             activationFunctionMap[this.selectedActivationFunctionName](
-                this.math, matmulResult);
+                math, matmulResult);
       }
 
-      render_ndarray_gpu_util.renderToCanvas(
-          this.gpgpu, this.renderShader,
-          this.backend.getTexture(lastOutput.dataId));
+      renderToCanvas(lastOutput as Array3D, this.inferenceCanvas);
     });
 
     requestAnimationFrame(() => this.runInferenceLoop());
@@ -159,4 +143,21 @@ export class CPPN {
   stopInferenceLoop() {
     this.isInferring = false;
   }
+}
+
+// TODO(nsthorat): Move this to a core library util.
+function renderToCanvas(a: Array3D, canvas: HTMLCanvasElement) {
+  const [height, width, ] = a.shape;
+  const ctx = canvas.getContext('2d');
+  const imageData = new ImageData(width, height);
+  const data = a.dataSync();
+  for (let i = 0; i < height * width; ++i) {
+    const j = i * 4;
+    const k = i * 3;
+    imageData.data[j + 0] = Math.round(255 * data[k + 0]);
+    imageData.data[j + 1] = Math.round(255 * data[k + 1]);
+    imageData.data[j + 2] = Math.round(255 * data[k + 2]);
+    imageData.data[j + 3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
 }
