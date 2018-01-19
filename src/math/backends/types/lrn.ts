@@ -17,7 +17,7 @@
  */
 
 import {Array4D} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
 // 4D
 export interface LRN4DNode extends KernelNode {

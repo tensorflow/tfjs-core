@@ -20,7 +20,7 @@ import {KernelNode} from '../tape_types';
 
 // Reduction min.
 export interface MinNode<D extends DataType> extends KernelNode {
-  inputAndArgs: {inputs: {x: NDArray<D>;};};
+  inputAndArgs: {inputs: {x: NDArray<D>;}; args: {axes: number[]}};
   output: NDArray<D>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<D>) => {
     x: () => NDArray<'float32'>;
@@ -38,7 +38,7 @@ export interface MinimumNode<D extends DataType> extends KernelNode {
 
 // Reduction Max
 export interface MaxNode<D extends DataType> extends KernelNode {
-  inputAndArgs: {inputs: {x: NDArray<D>;};};
+  inputAndArgs: {inputs: {x: NDArray<D>;}; args: {axes: number[]}};
   output: NDArray<D>;
   gradient: (dy: NDArray<'float32'>, y: NDArray<D>) => {
     x: () => NDArray<'float32'>;

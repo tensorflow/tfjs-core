@@ -25,5 +25,5 @@ export interface PowNode<D extends DataType, R extends Rank, T extends
   gradient: (dy: NDArray<'float32', R>, y: T) => {
     a: () => NDArray<'float32', R>;
     b: () => NDArray<'float32'>;
-  }
+  };
 }

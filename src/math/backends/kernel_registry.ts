@@ -221,13 +221,11 @@ const KERNEL_METHODS: {
        config: UnaryNode<DataType, Rank>['inputAndArgs']) => {
         return backend.relu(config.inputs.x);
       },
-  Reshape:
-      (backend: MathBackend,
-       config: UnaryNode<DataType, Rank>['inputAndArgs']) => {
-        const x = config.inputs.x;
-        const newShape = config.args.newShape;
-        return NDArray.make(newShape, {dataId: x.dataId}, x.dtype);
-      },
+  Reshape: (backend: MathBackend, config: ReshapeNode['inputAndArgs']) => {
+    const x = config.inputs.x;
+    const newShape = config.args.newShape;
+    return NDArray.make(newShape, {dataId: x.dataId}, x.dtype);
+  },
   Cast: (backend: MathBackend, config: CastNode['inputAndArgs']) => {
     const x = config.inputs.x;
     const newDType = config.args.newDType;

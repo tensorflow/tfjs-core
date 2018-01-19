@@ -27,5 +27,5 @@ export interface PReLUNode<D extends DataType, R extends Rank, T extends
   gradient: (dy: NDArray<'float32', R>, y: T) => {
     x: () => NDArray<'float32', R>;
     alpha: () => NDArray<'float32', R>;
-  }
+  };
 }
