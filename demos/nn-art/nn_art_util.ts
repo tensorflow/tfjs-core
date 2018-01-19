@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array2D} from 'deeplearn';
+import * as dl from 'deeplearn';
 
 export function createInputAtlas(
     imageSize: number, inputNumDimensions: number, numLatentVariables: number) {
@@ -31,7 +31,7 @@ export function createInputAtlas(
     }
   }
 
-  return Array2D.new([imageSize * imageSize, inputNumDimensions], coords);
+  return dl.Array2D.new([imageSize * imageSize, inputNumDimensions], coords);
 }
 
 // Normalizes x, y to -.5 <=> +.5, adds a radius term, and pads zeros with the
