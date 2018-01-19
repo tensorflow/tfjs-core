@@ -3,7 +3,7 @@
     <header class="mdl-layout__header">
       <div class="mdl-layout__header-row">
         <!-- Title -->
-        <span class="mdl-layout-title">Visualizing the landscape of neural nets</span>
+        <span class="mdl-layout-title">Visualizing the Landscape of Neural Nets</span>
         <!-- Add spacer, to align navigation to the right -->
         <div class="mdl-layout-spacer"></div>
         <!-- Navigation. We hide it in small screens. -->
@@ -22,52 +22,155 @@
         <a class="mdl-navigation__link" href="">Here</a>
       </nav>
     </div>
-    <main class="mdl-layout__content">
-      <div class="page-content">
-  
-  
-        <div v-if="loadingData" id="status">Loading data...</div>
-        <div v-bind:class="{hidden: loadingData}">
-          <div id="controls">
-            <div class="control">
-              <label>Weight initialization:</label>
+    <main class="mdl-layout__content nnl-main">
+
+      <aside class="mdl-components__nav mdl-shadow--4dp nnl-controls">
+        <h2>Conditions</h2>
+        <table>
+          <tr>
+            <td>Weight:</td>
+            <td>
               <select ref="weightSelect" @change="changeWeightsInit">
                 <option value="unit" selected>N(0, 1)</option>
                 <option value="fan-in">N(0, fan-in)</option>
                 <option value="fan-out">N(0, fan-out)</option>
               </select>
-            </div>
-            <div class="control">
-              <label>Model architecture:</label>
+            </td>
+          </tr>
+          <tr>
+            <td>Model:</td>
+            <td>
               <select ref="modelTypeSelect" @change="changeModelType">
                 <option value="fc" selected>Fully Connected</option>
                 <option value="conv">Convolutional</option>
               </select>
-            </div>
-          </div>
-          <div id="all-charts">
-            <div class="charts" v-for="chartsData in charts" :key="chartsData.id">
-              <div class="chart" v-for="(plot, idx) in chartsData.plots" :key="idx">
-                <Plot :data="plot"></Plot>
-              </div>
-            </div>
-          </div>
-        </div>
-  
-  
-  
+            </td>
+          </tr>
+        </table>
+        <p class="nnl-help-text">
+          Make any change to these conditions to automatically run a new experiment.
+        </p>
+      </aside>
+
+      <div v-if="loadingData" class="nnl-status">
+          Loading data...
       </div>
+      <div class="nnl-results" v-bind:class="{hidden: loadingData}">
+        <table>
+          <tr class="nnl-result" v-for="chartsData in charts" :key="chartsData.id">
+            <th class="nnl-settings">
+              <h3>Experiment #{{chartsData.id + 1}}</h3>
+              <table>
+                <tr>
+                  <td>Weight:</td>
+                  <td>{{chartsData.plots[0].weightInit}}</td>
+                </tr>
+                <tr>
+                  <td>Model:</td>
+                  <td>{{chartsData.plots[0].modelType}}</td>
+                </tr>
+                <tr>
+                  <td>Final Loss:</td>
+                  <td>{{chartsData.plots[chartsData.plots.length - 1].loss.toFixed(2)}}</td>
+                </tr>
+              </table>
+            </th>
+            <td>
+              <div class="nnl-charts">
+                <div class="nnl-chart" v-for="(plot, idx) in chartsData.plots" :key="idx">
+                  <Plot :data="plot"></Plot>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div><!-- /nnl-results -->
     </main>
   </div>
 </template>
 
 <style>
-html, body {
+.nnl-main {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.nnl-controls {
   box-sizing: border-box;
-  height: 100%;
+  flex-shrink: 0;
+  max-width: 300px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  padding: 36px;
+}
+.nnl-controls h2 {
+  font-size: 24px;
+  line-height: 1.2;
   margin: 0;
   padding: 0;
+}
+.nnl-controls table {
+  border-collapse: collapse;
+  font-weight: 300;
+  margin: 12px 0;
+}
+.nnl-controls select {
   width: 100%;
+}
+
+.nnl-help-text {
+  box-sizing: border-box;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.2;
+  margin: 0;
+  padding: 0;
+}
+
+.nnl-status {
+  box-sizing: border-box;
+  flex-grow: 1;
+  height: 100%;
+  overflow: hidden;
+  padding: 36px;
+}
+
+.nnl-results {
+  box-sizing: border-box;
+  flex-grow: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 36px;
+}
+.nnl-settings {
+  text-align: left;
+  vertical-align: top;
+}
+.nnl-settings h3 {
+  font-size: 16px;
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+}
+.nnl-settings table {
+  border-collapse: collapse;
+  font-weight: 300;
+  margin-top: 12px;
+}
+.nnl-settings td {
+  padding-right: 12px;
+  white-space: nowrap;
+}
+.nnl-charts {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-bottom: 64px;
+}
+.nnl-chart {
+  margin-right: 16px;
 }
 /*
 html,
