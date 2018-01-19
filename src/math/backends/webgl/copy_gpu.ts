@@ -23,9 +23,7 @@ export class Copy2DProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(
-      srcNumCols: number, private sourceStart: [number, number],
-      private destStart: [number, number], private destSize: [number, number]) {
+  constructor(srcNumCols: number, destNumCols: number) {
     this.outputShape = null;
     this.userCode = `
       uniform ivec2 sourceStart;
@@ -33,7 +31,7 @@ export class Copy2DProgram implements GPGPUProgram {
 
       void main() {
         ivec2 destCoords = getOutputCoords() - destStart;
-        int index = destCoords.x * ${destSize[1]} + destCoords.y;
+        int index = destCoords.x * ${destNumCols} + destCoords.y;
         int r = index / ${srcNumCols};
         ivec2 sourceCoords = sourceStart + ivec2(r, index - r * ${srcNumCols});
         setOutput(getSource(sourceCoords.x, sourceCoords.y));
@@ -41,15 +39,18 @@ export class Copy2DProgram implements GPGPUProgram {
     `;
   }
 
-  setup(gpgpu: GPGPUContext, webGLProgram: WebGLProgram) {
-    gpgpu.setOutputMatrixWriteRegion(
-        this.destStart[0], this.destSize[0], this.destStart[1],
-        this.destSize[1]);
-    const sourceStartCRLoc =
-        gpgpu.getUniformLocation(webGLProgram, 'sourceStart');
-    gpgpu.gl.uniform2i(
-        sourceStartCRLoc, this.sourceStart[0], this.sourceStart[1]);
-    const destStartCRLoc = gpgpu.getUniformLocation(webGLProgram, 'destStart');
-    gpgpu.gl.uniform2i(destStartCRLoc, this.destStart[0], this.destStart[1]);
-  };
+  getCustomSetupFunc(
+      sourceStart: [number, number], destStart: [number, number],
+      destSize: [number, number]) {
+    return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
+      gpgpu.setOutputMatrixWriteRegion(
+          destStart[0], destSize[0], destStart[1], destSize[1]);
+      const sourceStartCRLoc =
+          gpgpu.getUniformLocation(webGLProgram, 'sourceStart');
+      gpgpu.gl.uniform2i(sourceStartCRLoc, sourceStart[0], sourceStart[1]);
+      const destStartCRLoc =
+          gpgpu.getUniformLocation(webGLProgram, 'destStart');
+      gpgpu.gl.uniform2i(destStartCRLoc, destStart[0], destStart[1]);
+    };
+  }
 }
