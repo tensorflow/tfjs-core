@@ -45,6 +45,7 @@ import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {ArrayData, GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
+import {WhereProgram} from './webgl/logical_gpu';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
@@ -526,6 +527,12 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
+  less(a: NDArray, b: NDArray): NDArray<'bool'> {
+    const program = new BinaryOpProgram(binaryop_gpu.LESS, a.shape, b.shape);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [a, b], output);
+  }
+
   lessEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
     const program =
         new BinaryOpProgram(binaryop_gpu.LESS_EQUAL, a.shape, b.shape);
@@ -546,11 +553,25 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
+  logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'> {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.LOGICAL_AND, a.shape, b.shape);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [a, b], output);
+  }
+
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
     const program =
         new BinaryOpProgram(binaryop_gpu.LOGICAL_OR, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
+  }
+
+  where<D extends DataType>(
+      condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray<D> {
+    const program = new WhereProgram(condition.rank, a.shape, a.rank);
+    const output = this.makeOutputArray(program.outputShape, dtype);
+    return this.compileAndRun(program, [condition, a, b], output);
   }
 
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):

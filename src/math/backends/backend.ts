@@ -79,12 +79,17 @@ export interface MathBackend extends NDArrayStorage {
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
   notEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
+  less(a: NDArray, b: NDArray): NDArray<'bool'>;
   lessEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
   greater(a: NDArray, b: NDArray): NDArray<'bool'>;
   greaterEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
+  logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'>;
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  where<D extends DataType>(
+      condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray<D>;
 
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D>;
