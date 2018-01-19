@@ -39,7 +39,10 @@ const NUM_LATENT_VARIABLES = 2;
 export class CPPN {
   private inputAtlas: Array2D;
   private ones: Array2D<'float32'>;
-  private weights: Array2D[] = [];
+
+  private firstLayerWeights: Array2D;
+  private intermediateWeights: Array2D[] = [];
+  private lastLayerWeights: Array2D;
 
   private z1Counter = 0;
   private z2Counter = 0;
@@ -62,20 +65,26 @@ export class CPPN {
   }
 
   generateWeights(neuronsPerLayer: number, weightsStdev: number) {
-    for (let i = 0; i < this.weights.length; i++) {
-      this.weights[i].dispose();
+    for (let i = 0; i < this.intermediateWeights.length; i++) {
+      this.intermediateWeights[i].dispose();
     }
-    this.weights = [];
+    this.intermediateWeights = [];
+    if (this.firstLayerWeights != null) {
+      this.firstLayerWeights.dispose();
+    }
+    if (this.lastLayerWeights != null) {
+      this.lastLayerWeights.dispose();
+    }
 
-    this.weights.push(Array2D.randTruncatedNormal(
+    this.firstLayerWeights = Array2D.randTruncatedNormal(
         [NUM_IMAGE_SPACE_VARIABLES + NUM_LATENT_VARIABLES, neuronsPerLayer], 0,
-        weightsStdev));
+        weightsStdev);
     for (let i = 0; i < MAX_LAYERS; i++) {
-      this.weights.push(Array2D.randTruncatedNormal(
+      this.intermediateWeights.push(Array2D.randTruncatedNormal(
           [neuronsPerLayer, neuronsPerLayer], 0, weightsStdev));
     }
-    this.weights.push(Array2D.randTruncatedNormal(
-        [neuronsPerLayer, 3 /** max output channels */], 0, weightsStdev));
+    this.lastLayerWeights = Array2D.randTruncatedNormal(
+        [neuronsPerLayer, 3 /** max output channels */], 0, weightsStdev);
   }
 
   setActivationFunction(activationFunction: ActivationFunction) {
@@ -119,20 +128,22 @@ export class CPPN {
 
       let lastOutput: NDArray =
           math.concat2D(this.inputAtlas, latentVars, concatAxis);
+      lastOutput = activationFunctionMap[this.selectedActivationFunctionName](
+          math, math.matMul(lastOutput as Array2D, this.firstLayerWeights));
 
       for (let i = 0; i < this.numLayers; i++) {
-        const lastLayer = (i === this.numLayers - 1);
-        const matmulResult = math.matMul(
-            lastOutput as Array2D,
-            lastLayer ? this.weights[this.weights.length - 1] :
-                        this.weights[i]);
+        const matmulResult =
+            math.matMul(lastOutput as Array2D, this.intermediateWeights[i]);
 
-        lastOutput = lastLayer ?
-            math.sigmoid(matmulResult.reshape(
-                [this.inferenceCanvas.height, this.inferenceCanvas.width, 3])) :
-            activationFunctionMap[this.selectedActivationFunctionName](
-                math, matmulResult);
+        lastOutput = activationFunctionMap[this.selectedActivationFunctionName](
+            math, matmulResult)
       }
+
+      lastOutput =
+          math.sigmoid(
+                  math.matMul(lastOutput as Array2D, this.lastLayerWeights))
+              .reshape(
+                  [this.inferenceCanvas.height, this.inferenceCanvas.width, 3]);
 
       await renderToCanvas(lastOutput as Array3D, this.inferenceCanvas);
     });
