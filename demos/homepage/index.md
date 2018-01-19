@@ -31,23 +31,6 @@ limitations under the License.
     <div class="mdl-layout-spacer  mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
     <div class="mdl-cell mdl-cell--3-col mdl-cell--8-col-tablet mdl-cell--4-col-phone cppn-controls">
       <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height">
-        <input class="mdl-textfield__input" type="text" id="colormode" value="rgb" readonly tabIndex="-1">
-        <label for="colormode">
-          <i class="mdl-icon-toggle__label material-icons">keyboard_arrow_down</i>
-        </label>
-        <label for="colormode" class="mdl-textfield__label">Color mode</label>
-        <ul for="colormode" class="mdl-menu mdl-menu--bottom-left mdl-js-menu" id="color-selector">
-          <li class="mdl-menu__item" data-val="rgb">rgb</li>
-          <li class="mdl-menu__item" data-val="rgba">rgba</li>
-          <li class="mdl-menu__item" data-val="hsv">hsv</li>
-          <li class="mdl-menu__item" data-val="hsva">hsva</li>
-          <li class="mdl-menu__item" data-val="yuv">yuv</li>
-          <li class="mdl-menu__item" data-val="yuva">yuva</li>
-          <li class="mdl-menu__item" data-val="bw">bw</li>
-        </ul>
-      </div>
-      <br>
-      <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height">
         <input class="mdl-textfield__input" type="text" id="activation-fn" value="tanh" readonly tabIndex="-1">
         <label for="activation-fn">
           <i class="mdl-icon-toggle__label material-icons">keyboard_arrow_down</i>

@@ -16,22 +16,11 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array2D, ENV, gpgpu_util, GPGPUContext, MathBackendWebGL, NDArrayMath, Scalar, webgl_util} from 'deeplearn';
+import {Array2D, ENV, gpgpu_util, GPGPUContext, MathBackendWebGL, NDArray, NDArrayMath, render_ndarray_gpu_util, Scalar, webgl_util} from 'deeplearn';
 
 import * as nn_art_util from './nn_art_util';
 
 const MAX_LAYERS = 10;
-
-export type ColorMode = 'rgb'|'rgba'|'hsv'|'hsva'|'yuv'|'yuva'|'bw';
-const colorModeOutputDimensions: {[colorMode in ColorMode]: number} = {
-  'rgb': 3,
-  'rgba': 4,
-  'hsv': 3,
-  'hsva': 4,
-  'yuv': 3,
-  'yuva': 4,
-  'bw': 1
-};
 
 export type ActivationFunction = 'tanh'|'sin'|'relu'|'step';
 const activationFunctionMap: {
@@ -52,7 +41,6 @@ export class CPPN {
   private backend: MathBackendWebGL;
   private gpgpu: GPGPUContext;
   private renderShader: WebGLProgram;
-  // private addLatentVariablesShader: WebGLProgram;
 
   private inputAtlas: Array2D;
   private ones: Array2D<'float32'>;
@@ -64,10 +52,6 @@ export class CPPN {
   private z2Scale: number;
   private numLayers: number;
 
-  private colorModeNames: ColorMode[] =
-      ['rgb', 'rgba', 'hsv', 'hsva', 'yuv', 'yuva', 'bw'];
-
-  private selectedColorModeName: ColorMode;
   private selectedActivationFunctionName: ActivationFunction;
 
   private isInferring = false;
@@ -85,7 +69,8 @@ export class CPPN {
     this.inferenceCanvas.width = canvasSize;
     this.inferenceCanvas.height = canvasSize;
 
-    this.renderShader = nn_art_util.getRenderShader(this.gpgpu, canvasSize);
+    this.renderShader =
+        render_ndarray_gpu_util.getRenderRGBShader(this.gpgpu, canvasSize);
 
     this.inputAtlas = nn_art_util.createInputAtlas(
         canvasSize, NUM_IMAGE_SPACE_VARIABLES, NUM_LATENT_VARIABLES);
@@ -106,11 +91,7 @@ export class CPPN {
           [neuronsPerLayer, neuronsPerLayer], 0, weightsStdev));
     }
     this.weights.push(Array2D.randTruncatedNormal(
-        [neuronsPerLayer, 4 /** max output channels */], 0, weightsStdev));
-  }
-
-  setColorMode(colorMode: ColorMode) {
-    this.selectedColorModeName = colorMode;
+        [neuronsPerLayer, 3 /** max output channels */], 0, weightsStdev));
   }
 
   setActivationFunction(activationFunction: ActivationFunction) {
@@ -139,11 +120,6 @@ export class CPPN {
       return;
     }
 
-    const colorModeIndex =
-        this.colorModeNames.indexOf(this.selectedColorModeName);
-    const outputDimensions =
-        colorModeOutputDimensions[this.selectedColorModeName];
-
     this.z1Counter += 1 / this.z1Scale;
     this.z2Counter += 1 / this.z2Scale;
 
@@ -155,29 +131,27 @@ export class CPPN {
           this.math.multiply(z1, this.ones) as Array2D,
           this.math.multiply(z2, this.ones) as Array2D, concatAxis);
 
-      let lastOutput =
+      let lastOutput: NDArray =
           this.math.concat2D(this.inputAtlas, latentVars, concatAxis);
 
       for (let i = 0; i < this.numLayers; i++) {
         const lastLayer = (i === this.numLayers - 1);
         const matmulResult = this.math.matMul(
-            lastOutput,
+            lastOutput as Array2D,
             lastLayer ? this.weights[this.weights.length - 1] :
                         this.weights[i]);
 
         lastOutput = lastLayer ?
-            this.math.sigmoid(matmulResult) :
+            this.math.sigmoid(matmulResult.reshape(
+                [this.inferenceCanvas.height, this.inferenceCanvas.width, 3])) :
             activationFunctionMap[this.selectedActivationFunctionName](
                 this.math, matmulResult);
       }
-      console.log('o', lastOutput.shape);
-      nn_art_util.render(
-          this.gpgpu, this.renderShader,
-          this.backend.getTexture(lastOutput.dataId), outputDimensions,
-          colorModeIndex);
-    });
 
-    // inputAtlasWithLatentVariables.dispose();
+      render_ndarray_gpu_util.renderToCanvas(
+          this.gpgpu, this.renderShader,
+          this.backend.getTexture(lastOutput.dataId));
+    });
 
     requestAnimationFrame(() => this.runInferenceLoop());
   }
