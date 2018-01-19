@@ -26,7 +26,7 @@
   border: 1px solid #ccc;
   border-radius: 5%;
   padding: 10px;
-  width: 150px;
+  width: 100px;
 }
 .info {
   margin-bottom: 10px;

@@ -149,6 +149,7 @@ export abstract class InMemoryDataset {
       }
       newExamples.push(
           NDArray.make(example.shape, {values: normalizedValues}, 'float32'));
+      example.dispose();
     });
     return newExamples;
   }

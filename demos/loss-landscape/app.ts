@@ -16,7 +16,6 @@ export type ChartData = {
 };
 
 class State {
-  trainSteps = 5;
   weightSelect: HTMLSelectElement;
   modelTypeSelect: HTMLSelectElement;
   modelType: ModelType = ModelType.FC;
@@ -37,7 +36,7 @@ class State {
     this.model = new Model();
     // tslint:disable-next-line:no-any
     (window as any).model = this.model;
-    this.model.init();
+    this.model.init(this.data);
   }
 
   private async loadDataOnce() {
@@ -100,16 +99,17 @@ export default Vue.extend({
       for (let i = 0; i < 4; i++) {
         charts.plots.push(await this.train());
       }
-
       await this.enableUI();
     },
     async computeChartData(iter: number) {
-      const zData = await this.s.model.computeLandscape(this.s.data);
+      const start = performance.now();
+      const zData = await this.s.model.computeLandscape();
+      console.log('compute landscape took', performance.now() - start, 'ms');
       const n = Math.ceil(zData.length / 2);
       const loss = zData[n][n];
       return {
-        width: 150,
-        height: 150,
+        width: 100,
+        height: 100,
         zData,
         loss,
         modelType: this.s.modelType,
@@ -118,9 +118,7 @@ export default Vue.extend({
       };
     },
     async train(): Promise<ChartData> {
-      const start = performance.now();
-      const [, iter] = await this.s.model.train(this.s.data, this.s.trainSteps);
-      console.log('training took', performance.now() - start, 'ms');
+      const iter = await this.s.model.train();
       return this.computeChartData(iter);
     },
   },
