@@ -263,6 +263,7 @@ export class MathBackendWebGL implements MathBackend {
   slice3D(x: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
+    console.log('begin', begin, 'size', size);
     const program = new SliceProgram(begin, size);
     return this.compileAndRun(program, [x]);
   }
