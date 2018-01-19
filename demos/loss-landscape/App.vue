@@ -172,59 +172,6 @@
 .nnl-chart {
   margin-right: 16px;
 }
-/*
-html,
-body {
-  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
-  display: flex;
-}
-h1 {
-  font-weight: 300;
-  font-size: 40px;
-}
-#container {
-  margin-top: 60px;
-  margin-left: 60px;
-  flex-direction: column;
-  display: flex;
-  width: 100%;
-  height: 100%;
-}
-#all-charts {
-  display: flex;
-  width: 100%;
-  margin-top: 20px;
-  flex-direction: column;
-}
-.charts {
-  display: flex;
-  border-bottom: 10px solid #eee;
-  width: 100%;
-  flex-wrap: wrap;
-  margin-top: 20px;
-}
-.chart {
-  margin-right: 15px;
-  margin-bottom: 15px;
-}
-.hidden {
-  display: none;
-}
-#controls {
-  width: 400px;
-  display: flex;
-  flex-direction: column;
-}
-.control {
-  margin: 5px 0;
-  display: flex;
-  justify-content: space-between;
-}
-.control select {
-  width: 200px;
-  height: 20px;
-}
-*/
 </style>
 
 <script lang="ts" src="./app.ts"></script>
