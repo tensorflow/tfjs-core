@@ -26,7 +26,7 @@ import {ScopeResult, ScopeResultImmediate} from './backends/tape_util';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
-import {matMul} from './matmul';
+import * as matmul from './matmul';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, RankMap, Scalar, Variable} from './ndarray';
 import * as slice_util from './slice_util';
@@ -96,7 +96,7 @@ export class NDArrayMath implements NDArrayManager {
     return this.backend.read(dataId);
   }
 
-  matMul: typeof matMul;
+  matMul = matmul.matMul;
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
@@ -110,7 +110,6 @@ export class NDArrayMath implements NDArrayManager {
       this.backend = backend;
     }
     this.backendEngine = new BackendEngine(this.backend, safeMode);
-    this.matMul = matMul;
     ENV.setMath(this);
   }
 
@@ -219,7 +218,7 @@ export class NDArrayMath implements NDArrayManager {
         `Error in vectorTimesMatrix: size of vector (${v.size}) ` +
             `must match first dimension of matrix (${matrix.shape[0]})`);
 
-    return matMul(v.as2D(1, -1), matrix).as1D();
+    return this.matMul(v.as2D(1, -1), matrix).as1D();
   }
 
   /**
@@ -242,7 +241,7 @@ export class NDArrayMath implements NDArrayManager {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return matMul(matrix, v.as2D(-1, 1)).as1D();
+    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
   }
 
   /**
@@ -259,7 +258,7 @@ export class NDArrayMath implements NDArrayManager {
         v1.size === v2.size,
         `Error in dotProduct: size of inputs (${v1.size}) and (` +
             `${v2.size}) must match.`);
-    return matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
+    return this.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
   }
 
   /**
@@ -273,7 +272,7 @@ export class NDArrayMath implements NDArrayManager {
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +
             `${v1.rank} and ${v2.rank}.`);
 
-    return matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
+    return this.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
   }
 
   ///////////////
@@ -2831,7 +2830,7 @@ export class NDArrayMath implements NDArrayManager {
       c: Array2D, h: Array2D): [Array2D, Array2D] {
     const res = this.scope(() => {
       const combined = this.concat2D(data, h, 1);
-      const weighted = matMul(combined, lstmKernel);
+      const weighted = this.matMul(combined, lstmKernel);
       const res = this.add(weighted, lstmBias) as Array2D;
 
       // i = input_gate, j = new_input, f = forget_gate, o = output_gate
