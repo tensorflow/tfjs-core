@@ -37,7 +37,15 @@ export abstract class Optimizer {
   }
 
   /**
-   * Eager mode methods.
+   * Executes `f()` and minimizes the scalar output of `f()` by computing
+   * gradients of y with respect to the list of trainable variables provided by
+   * `varList`. If no list is provided, it defaults to all trainable variables.
+   * @param f The function to execute and whose output to minimize.
+   * @param returnCost Whether to return the scalar cost value produced by
+   * executing `f()`.
+   * @param varList An optional list of variables to update. If specified, only
+   * the trainable variables in varList will be updated by minimize. Defaults to
+   * all trainable variables.
    */
   minimize<D extends DataType>(
       f: () => Scalar<D>, returnCost = false,
@@ -58,12 +66,26 @@ export abstract class Optimizer {
     }
   }
 
+  /**
+   * Executes f() and computes the gradient of the scalar output of f() with
+   * respect to the list of trainable variables provided by `varList`. If no
+   * list is provided, it defaults to all trainable variables.
+   * @param f The function to execute and whose output to use for computing
+   * gradients with respect to variables.
+   * @param varList An optional list of variables to compute gradients with
+   * respect to. If specified, only the trainable variables in varList will have
+   * gradients computed with respect to. Defaults to all trainable variables.
+   */
   computeGradients<D extends DataType>(
       f: () => Scalar<D>,
       varList?: Variable[]): {value: Scalar<D>, gradients: NamedArrayMap} {
     return ENV.math.variableGradients(f, varList);
   }
 
+  /**
+   * Updates variables by using the computed gradients.
+   * @param variableGradients A mapping of variable name to its gradient value.
+   */
   abstract applyGradients(variableGradients: NamedArrayMap): void;
 
   /**

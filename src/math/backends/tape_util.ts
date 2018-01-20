@@ -204,17 +204,15 @@ export function backpropagateGradients(
   }
 }
 
-export function computeTrainableVariableInputs(
-    tape: Tape, varList?: Variable[]): Variable[] {
+export function computeVariableInputs(
+    tape: Tape, varList: Variable[]): Variable[] {
   const trainableVariables: Variable[] = [];
   const trainableVariablesSeen: {[ndarrayId: number]: boolean} = {};
 
   const variableIds: {[ndarrayId: number]: boolean} = {};
-  if (varList != null) {
-    varList.forEach(variable => {
-      variableIds[variable.id] = true;
-    });
-  }
+  varList.forEach(variable => {
+    variableIds[variable.id] = true;
+  });
 
   for (let i = 0; i < tape.length; i++) {
     const node = tape[i];
@@ -223,8 +221,7 @@ export function computeTrainableVariableInputs(
     const keys = Object.keys(inputs);
     for (const key of keys) {
       const input = inputs[key];
-      if (!trainableVariablesSeen[input.id] && input instanceof Variable &&
-          input.trainable) {
+      if (input instanceof Variable && !trainableVariablesSeen[input.id]) {
         // When specifying a variable list, filter out variables that aren't
         // specified explicitly.
         if (varList != null) {

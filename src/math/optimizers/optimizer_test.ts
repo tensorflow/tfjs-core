@@ -103,8 +103,6 @@ const tests: MathTests = it => {
     // The stray variable should remain unchanged.
     test_util.expectArraysClose(strayVariable, [-1]);
     expect(cost).toBe(null);
-
-    optimizer.dispose();
   });
 
   it('varList empty array of variables to update updates nothing', math => {
@@ -137,8 +135,6 @@ const tests: MathTests = it => {
     // The stray variable should remain unchanged.
     test_util.expectArraysClose(strayVariable, [-1]);
     expect(cost).toBe(null);
-
-    optimizer.dispose();
   });
 
   it('varList subset of variables update', math => {
@@ -172,8 +168,6 @@ const tests: MathTests = it => {
     expect(cost).toBe(null);
     // The stray variable should remain unchanged.
     test_util.expectArraysClose(strayVariable, [-1]);
-
-    optimizer.dispose();
   });
 
   it('only bias trainable', math => {
@@ -207,8 +201,6 @@ const tests: MathTests = it => {
     expect(cost).toBe(null);
     // The stray variable should remain unchanged.
     test_util.expectArraysClose(strayVariable, [-1]);
-
-    optimizer.dispose();
   });
 
   it('only bias trainable, only x in varList does nothing', math => {
@@ -242,8 +234,6 @@ const tests: MathTests = it => {
     expect(cost).toBe(null);
     // The stray variable should remain unchanged.
     test_util.expectArraysClose(strayVariable, [-1]);
-
-    optimizer.dispose();
   });
 };
 

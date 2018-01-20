@@ -61,14 +61,12 @@ export class BackendEngine {
       kernelName: K, config: C,
       grad?: KernelConfigRegistry<D, R>[K]['gradient']):
       KernelConfigRegistry<D, R>[K]['output'] {
-    const kernelFn = () =>
-        kernel_registry.executeKernel(this.backend, kernelName, config);
-
     let start: number;
     if (this.debugMode) {
       start = performance.now();
     }
-    const result = kernelFn();
+    const result =
+        kernel_registry.executeKernel(this.backend, kernelName, config);
     if (this.debugMode) {
       const vals = result.dataSync();
       const time = util.rightPad(`${performance.now() - start}ms`, 9);
@@ -143,8 +141,8 @@ export class BackendEngine {
       const y = f();
       if (y.rank !== 0) {
         throw new Error(
-            `Cannot compute gradient of non-scalar y output. ` +
-            `Got y with rank ${y.rank}`);
+            `Cannot compute gradient of non-scalar y output of f(). ` +
+            `Got y with rank ${y.rank} and shape ${y.shape}.`);
       }
       const gradients = this.gradientWrt(y, xs);
       if (returnValue) {
@@ -177,38 +175,37 @@ export class BackendEngine {
 
   variableGradientsAndValue<D extends DataType>(
       f: () => Scalar<D>,
-      varList?: Variable[]): {value: Scalar<D>, gradients: NamedArrayMap} {
+      varList: Variable[]): {value: Scalar<D>, gradients: NamedArrayMap} {
     const gradientsMode = true;
-    let trainableVariableNames: string[];
+    let variableNames: string[];
     const result = this.scope('gradients', () => {
       const y = f();
       if (y.rank !== 0) {
         throw new Error(
-            `Cannot compute gradient of non-scalar y output. ` +
-            `Got y with rank ${y.rank}`);
+            `Cannot compute gradient of non-scalar y output of f(). ` +
+            `Got y with rank ${y.rank} and shape ${y.shape}.`);
       }
-      const trainableVariables =
-          tape_util.computeTrainableVariableInputs(this.activeTape, varList);
-      trainableVariableNames =
-          trainableVariables.map(variable => variable.name);
 
-      const gradients = trainableVariables.length === 0 ?
+      const inputVariables =
+          tape_util.computeVariableInputs(this.activeTape, varList);
+      variableNames = inputVariables.map(variable => variable.name);
+
+      const gradients = inputVariables.length === 0 ?
           [] :
-          this.gradientWrt(y, trainableVariables);
+          this.gradientWrt(y, inputVariables);
       return [y, ...gradients];
     }, gradientsMode);
 
     const gradients: NamedArrayMap = {};
-    for (let i = 0; i < trainableVariableNames.length; i++) {
-      gradients[trainableVariableNames[i]] = result[i + 1];
+    for (let i = 0; i < variableNames.length; i++) {
+      gradients[variableNames[i]] = result[i + 1];
     }
 
     return {value: result[0] as Scalar<D>, gradients};
   }
 
-  private gradientWrt<D extends DataType, R extends Rank,
-                                                    T extends NDArray<D, R>>(
-      y: T, xs: NDArray[], dy?: NDArray<'float32', R>): NDArray[] {
+  private gradientWrt<D extends DataType, R extends Rank>(
+      y: NDArray<D, R>, xs: NDArray[], dy?: NDArray<'float32', R>): NDArray[] {
     // Filter out the nodes that don't connect x => y.
     const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {

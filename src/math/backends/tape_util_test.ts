@@ -659,7 +659,8 @@ import * as tape_util from './tape_util';
         gradient: null
       }];
 
-      const inputs = tape_util.computeTrainableVariableInputs(tape);
+      const varList: Variable[] = [];
+      const inputs = tape_util.computeVariableInputs(tape, varList);
 
       expect(inputs).toEqual([]);
     });
@@ -679,28 +680,8 @@ import * as tape_util from './tape_util';
         gradient: null
       }];
 
-      const inputs = tape_util.computeTrainableVariableInputs(tape);
-
-      expect(inputs).toEqual([]);
-    });
-
-    it('one variable input, not trainable', math => {
-      const trainable = false;
-      const x = variable(Scalar.new(1), trainable);
-      const y = Scalar.new(2);
-
-      const tape: Tape = [{
-        id: 0,
-        type: 'kernel',
-        name: 'node0',
-        inputAndArgs: {
-          inputs: {x},
-        },
-        output: y,
-        gradient: null
-      }];
-
-      const inputs = tape_util.computeTrainableVariableInputs(tape);
+      const varList: Variable[] = [];
+      const inputs = tape_util.computeVariableInputs(tape, varList);
 
       expect(inputs).toEqual([]);
     });
@@ -721,7 +702,7 @@ import * as tape_util from './tape_util';
       }];
 
       const varList: Variable[] = [];
-      const inputs = tape_util.computeTrainableVariableInputs(tape, varList);
+      const inputs = tape_util.computeVariableInputs(tape, varList);
 
       expect(inputs).toEqual([]);
     });
@@ -742,27 +723,7 @@ import * as tape_util from './tape_util';
       }];
 
       const varList: Variable[] = [x];
-      const inputs = tape_util.computeTrainableVariableInputs(tape, varList);
-
-      expect(inputs).toEqual([x]);
-    });
-
-    it('one variable input', math => {
-      const x = variable(Scalar.new(1));
-      const y = Scalar.new(2);
-
-      const tape: Tape = [{
-        id: 0,
-        type: 'kernel',
-        name: 'node0',
-        inputAndArgs: {
-          inputs: {x},
-        },
-        output: y,
-        gradient: null
-      }];
-
-      const inputs = tape_util.computeTrainableVariableInputs(tape);
+      const inputs = tape_util.computeVariableInputs(tape, varList);
 
       expect(inputs).toEqual([x]);
     });
@@ -797,7 +758,8 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const inputs = tape_util.computeTrainableVariableInputs(tape);
+      const varList: Variable[] = [];
+      const inputs = tape_util.computeVariableInputs(tape, varList);
 
       expect(inputs).toEqual([]);
     });
@@ -837,51 +799,10 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const inputs = tape_util.computeTrainableVariableInputs(tape);
+      const varList: Variable[] = [x1, x2];
+      const inputs = tape_util.computeVariableInputs(tape, varList);
 
       expect(inputs).toEqual([x1, x2]);
-    });
-
-    it('multiple inputs, two variables, one not trainable', math => {
-      const x1 = variable(Scalar.new(1));
-      const intermediate1 = Scalar.new(0);
-
-      const trainable = false;
-      const x2 = variable(Scalar.new(0), trainable);
-      const y = Scalar.new(2);
-
-      const notInTape = variable(Scalar.new(3));
-      // Silence the compiler, we just want to make sure that a variable not
-      // in the tape is not included in the trainable variable inputs.
-      expect(notInTape).not.toBeNull();
-
-      const tape: Tape = [
-        {
-          id: 0,
-          type: 'kernel',
-          name: 'node0',
-          inputAndArgs: {
-            inputs: {x1},
-          },
-          output: intermediate1,
-          gradient: null
-        },
-        {
-          id: 1,
-          type: 'kernel',
-          name: 'node1',
-          inputAndArgs: {
-            inputs: {intermediate1, x2},
-          },
-          output: y,
-          gradient: null
-        }
-      ];
-
-      const inputs = tape_util.computeTrainableVariableInputs(tape);
-
-      // Only x1 is trainable.
-      expect(inputs).toEqual([x1]);
     });
 
     it('multiple inputs, two variables, only one in varList', math => {
@@ -919,54 +840,12 @@ import * as tape_util from './tape_util';
         }
       ];
 
-      const inputs = tape_util.computeTrainableVariableInputs(tape, [x2]);
+      const varList: Variable[] = [x2];
+      const inputs = tape_util.computeVariableInputs(tape, varList);
 
       // Only x2 is in varList.
       expect(inputs).toEqual([x2]);
     });
-
-    it('multiple inputs, two variables, only one in varList not trainable',
-       math => {
-         const x1 = variable(Scalar.new(1));
-         const intermediate1 = Scalar.new(0);
-
-         const trainable = false;
-         const x2 = variable(Scalar.new(0), trainable);
-         const y = Scalar.new(2);
-
-         const notInTape = variable(Scalar.new(3));
-         // Silence the compiler, we just want to make sure that a variable not
-         // in the tape is not included in the trainable variable inputs.
-         expect(notInTape).not.toBeNull();
-
-         const tape: Tape = [
-           {
-             id: 0,
-             type: 'kernel',
-             name: 'node0',
-             inputAndArgs: {
-               inputs: {x1},
-             },
-             output: intermediate1,
-             gradient: null
-           },
-           {
-             id: 1,
-             type: 'kernel',
-             name: 'node1',
-             inputAndArgs: {
-               inputs: {intermediate1, x2},
-             },
-             output: y,
-             gradient: null
-           }
-         ];
-
-         const inputs = tape_util.computeTrainableVariableInputs(tape, [x2]);
-
-         // Only x2 is in varList, but is not trainable.
-         expect(inputs).toEqual([]);
-       });
   };
   test_util.describeMathCPU('tape_util.computeInputs', [tests]);
 }
