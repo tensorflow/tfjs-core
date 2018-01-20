@@ -115,7 +115,7 @@ export class CPPN {
     this.z1Counter += 1 / this.z1Scale;
     this.z2Counter += 1 / this.z2Scale;
 
-    await math.scope(async () => {
+    const lastOutput = math.scope(() => {
       const z1 = dl.Scalar.new(Math.sin(this.z1Counter));
       const z2 = dl.Scalar.new(Math.cos(this.z2Counter));
 
@@ -139,15 +139,13 @@ export class CPPN {
         lastOutput = activation(matmulResult);
       }
 
-      lastOutput =
-          math.sigmoid(
-                  math.matMul(lastOutput as dl.Array2D, this.lastLayerWeights))
-              .reshape(
-                  [this.inferenceCanvas.height, this.inferenceCanvas.width, 3]);
-
-      await renderToCanvas(lastOutput as dl.Array3D, this.inferenceCanvas);
+      return math
+          .sigmoid(math.matMul(lastOutput as dl.Array2D, this.lastLayerWeights))
+          .reshape(
+              [this.inferenceCanvas.height, this.inferenceCanvas.width, 3]);
     });
 
+    await renderToCanvas(lastOutput as dl.Array3D, this.inferenceCanvas);
     await dl.util.nextFrame();
     this.runInferenceLoop();
   }
