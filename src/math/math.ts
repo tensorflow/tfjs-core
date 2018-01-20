@@ -23,10 +23,10 @@ import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
 import {TapeNodeInputGradientArrays} from './backends/tape_types';
 import {ScopeResult, ScopeResultImmediate} from './backends/tape_util';
-import {MatrixOrientation} from './backends/types/matmul';
 import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
+import {matMul} from './matmul';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, RankMap, Scalar, Variable} from './ndarray';
 import * as slice_util from './slice_util';
@@ -44,7 +44,7 @@ export interface NDArrayManager {
 }
 
 export class NDArrayMath implements NDArrayManager {
-  protected backendEngine: BackendEngine;
+  backendEngine: BackendEngine;
   private registeredArrays = new Map<number, number>();
   private backend: MathBackend;
   private customBackend = false;
@@ -96,6 +96,8 @@ export class NDArrayMath implements NDArrayManager {
     return this.backend.read(dataId);
   }
 
+  matMul: typeof matMul;
+
   /**
    * @param safeMode In safe mode, you must use math operations inside
    *     a math.scope() which will automatically clean up intermediate NDArrays.
@@ -108,6 +110,8 @@ export class NDArrayMath implements NDArrayManager {
       this.backend = backend;
     }
     this.backendEngine = new BackendEngine(this.backend, safeMode);
+    this.matMul = matMul;
+    ENV.setMath(this);
   }
 
   /**
@@ -191,54 +195,6 @@ export class NDArrayMath implements NDArrayManager {
     }
   }
 
-  /**
-   * Computes the dot product of two matrices, A * B. These must be matrices,
-   * use matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct
-   * in other cases.
-   * @param a First matrix in dot product operation.
-   * @param b Second matrix in dot product operation.
-   * @param aOrientation The MatrixOrientation of A. If using TRANSPOSED, will
-   * compute A^T * B.
-   * @param bOrientation The MatrixOrientation of B. If using TRANSPOSED, will
-   * compute A * B^T.
-   */
-  matMul(
-      a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
-      bOrientation = MatrixOrientation.REGULAR): Array2D {
-    const innerShapeA =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
-    const innerShapeB =
-        (bOrientation === MatrixOrientation.REGULAR) ? b.shape[0] : b.shape[1];
-
-    util.assert(
-        a.rank === 2 && b.rank === 2,
-        `Error in matMul: inputs must be rank 2, got ranks ${a.rank}` +
-            ` and ${b.rank}.`);
-
-    util.assert(
-        innerShapeA === innerShapeB,
-        `Error in matMul: inner shapes (${innerShapeA}) and (` +
-            `${innerShapeB}) of NDArrays with shapes ${a.shape} and ` +
-            `${b.shape} and orientations ${MatrixOrientation[aOrientation]}` +
-            ` and ${MatrixOrientation[bOrientation]} must match.`);
-
-    return this.backendEngine.executeKernel(
-        'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
-        (dy: Array2D<'float32'>, y: Array2D) => {
-          if (aOrientation === MatrixOrientation.TRANSPOSED ||
-              bOrientation === MatrixOrientation.TRANSPOSED) {
-            throw new Error(
-                `Backprop for transposed MatMul not yet implemented.`);
-          }
-          return {
-            a: () => this.matMul(
-                dy, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
-            b: () => this.matMul(
-                a, dy, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR)
-          };
-        });
-  }
-
   private executeOp<T extends NDArray>(name: string, f: () => T): T {
     // TODO(nsthorat): Do operation logging and performance profiling.
     return f();
@@ -263,7 +219,7 @@ export class NDArrayMath implements NDArrayManager {
         `Error in vectorTimesMatrix: size of vector (${v.size}) ` +
             `must match first dimension of matrix (${matrix.shape[0]})`);
 
-    return this.matMul(v.as2D(1, -1), matrix).as1D();
+    return matMul(v.as2D(1, -1), matrix).as1D();
   }
 
   /**
@@ -286,7 +242,7 @@ export class NDArrayMath implements NDArrayManager {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
+    return matMul(matrix, v.as2D(-1, 1)).as1D();
   }
 
   /**
@@ -303,7 +259,7 @@ export class NDArrayMath implements NDArrayManager {
         v1.size === v2.size,
         `Error in dotProduct: size of inputs (${v1.size}) and (` +
             `${v2.size}) must match.`);
-    return this.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
+    return matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
   }
 
   /**
@@ -317,7 +273,7 @@ export class NDArrayMath implements NDArrayManager {
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +
             `${v1.rank} and ${v2.rank}.`);
 
-    return this.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
+    return matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
   }
 
   ///////////////
@@ -2875,7 +2831,7 @@ export class NDArrayMath implements NDArrayManager {
       c: Array2D, h: Array2D): [Array2D, Array2D] {
     const res = this.scope(() => {
       const combined = this.concat2D(data, h, 1);
-      const weighted = this.matMul(combined, lstmKernel);
+      const weighted = matMul(combined, lstmKernel);
       const res = this.add(weighted, lstmBias) as Array2D;
 
       // i = input_gate, j = new_input, f = forget_gate, o = output_gate
