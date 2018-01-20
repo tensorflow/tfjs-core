@@ -108,8 +108,6 @@ export class CPPN {
   }
 
   private async runInferenceLoop() {
-    const math = dl.ENV.math;
-
     if (!this.isInferring) {
       return;
     }
