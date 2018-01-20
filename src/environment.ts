@@ -17,7 +17,6 @@
 
 import * as device_util from './device_util';
 import {MathBackend} from './math/backends/backend';
-import {BackendEngine} from './math/backends/backend_engine';
 import {NDArrayMath} from './math/math';
 import * as util from './util';
 
@@ -167,8 +166,6 @@ export class Environment {
   private BACKEND_REGISTRY: {[id in BackendType]: MathBackend} = {} as any;
   private backends: {[id in BackendType]: MathBackend} = this.BACKEND_REGISTRY;
 
-  engine: BackendEngine;
-
   constructor(features?: Features) {
     if (features != null) {
       this.features = features;
@@ -237,7 +234,6 @@ export class Environment {
     if (this.globalMath != null) {
       this.globalMath.dispose();
       this.globalMath = null;
-      this.engine = null;
     }
     if (this.backends !== this.BACKEND_REGISTRY) {
       for (const name in this.backends) {
@@ -249,7 +245,6 @@ export class Environment {
 
   setMath(math: NDArrayMath) {
     this.globalMath = math;
-    this.engine = math.backendEngine;
   }
 
   getBackend(name: BackendType): MathBackend {

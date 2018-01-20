@@ -44,7 +44,7 @@ export interface NDArrayManager {
 }
 
 export class NDArrayMath implements NDArrayManager {
-  backendEngine: BackendEngine;
+  engine: BackendEngine;
   private registeredArrays = new Map<number, number>();
   private backend: MathBackend;
   private customBackend = false;
@@ -69,7 +69,7 @@ export class NDArrayMath implements NDArrayManager {
     }
     this.registeredArrays.set(a.dataId, refCount + 1);
     if (!(a instanceof Variable)) {
-      this.backendEngine.track(a);
+      this.engine.track(a);
     }
   }
 
@@ -109,7 +109,7 @@ export class NDArrayMath implements NDArrayManager {
       this.customBackend = true;
       this.backend = backend;
     }
-    this.backendEngine = new BackendEngine(this.backend, safeMode);
+    this.engine = new BackendEngine(this.backend, safeMode);
     ENV.setMath(this);
   }
 
@@ -118,7 +118,7 @@ export class NDArrayMath implements NDArrayManager {
    * and checked for NaNs. This significantly impacts performance.
    */
   enableDebugMode() {
-    this.backendEngine.enableDebugMode();
+    this.engine.enableDebugMode();
     console.warn(
         'Debugging mode is ON. The output of every math call will ' +
         'be downloaded to CPU and checked for NaNs. ' +
@@ -138,7 +138,7 @@ export class NDArrayMath implements NDArrayManager {
           (keep: <T1 extends NDArray>(ndarray: T1) => T1,
            track: <T2 extends NDArray>(ndarray: T2) => T2) => T): T {
     const gradientsMode = false;
-    return this.backendEngine.scope('scope', scopeFn, gradientsMode);
+    return this.engine.scope('scope', scopeFn, gradientsMode);
   }
 
   /**
@@ -154,7 +154,7 @@ export class NDArrayMath implements NDArrayManager {
            track: <D2 extends DataType, T2 extends NDArray<D2>>(ndarray: T2) =>
                T2) => T): T {
     const gradientsMode = true;
-    return this.backendEngine.scope('gradientsScope', scopeFn, gradientsMode);
+    return this.engine.scope('gradientsScope', scopeFn, gradientsMode);
   }
 
   /**
@@ -163,7 +163,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   startScope() {
     const gradientsMode = false;
-    this.backendEngine.startScope(gradientsMode);
+    this.engine.startScope(gradientsMode);
   }
 
   /**
@@ -172,7 +172,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   endScope(result: ScopeResultImmediate) {
     const gradientsMode = false;
-    this.backendEngine.endScope(result, gradientsMode);
+    this.engine.endScope(result, gradientsMode);
   }
 
   /**
@@ -180,7 +180,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param result The NDArray to keep from being disposed.
    */
   keep<T extends NDArray>(result: T): T {
-    return this.backendEngine.keep(result);
+    return this.engine.keep(result);
   }
 
   /** @deprecated This is a no-op. */
@@ -284,7 +284,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The NDArray to clone.
    */
   clone<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Clone', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Clone', {inputs: {x}}) as T;
   }
 
   /** Reshapes the array. */
@@ -298,7 +298,7 @@ export class NDArrayMath implements NDArrayManager {
     const grad = (dy: NDArray<'float32'>, y: NDArray) => {
       return {x: () => dy.reshape(x.shape)};
     };
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Reshape', {inputs: {x}, args: {newShape}}, grad) as T;
   }
 
@@ -311,7 +311,7 @@ export class NDArrayMath implements NDArrayManager {
     const grad = (dy: NDArray<'float32'>, y: NDArray) => {
       return {x: () => dy.reshape(dy.shape)};
     };
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Cast', {inputs: {x}, args: {newDType}}, grad) as RankMap<D>[R];
   }
 
@@ -325,7 +325,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   slice1D(x: Array1D, begin: number, size: number): Array1D {
     slice_util.assertParamsValid(x, [begin], [size]);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Slice1D', {inputs: {x}, args: {begin, size}});
   }
 
@@ -340,7 +340,7 @@ export class NDArrayMath implements NDArrayManager {
   slice2D(x: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
     slice_util.assertParamsValid(x, begin, size);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Slice2D', {inputs: {x}, args: {begin, size}});
   }
 
@@ -356,7 +356,7 @@ export class NDArrayMath implements NDArrayManager {
     number, number, number
   ]): Array3D {
     slice_util.assertParamsValid(x, begin, size);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Slice3D', {inputs: {x}, args: {begin, size}});
   }
 
@@ -373,7 +373,7 @@ export class NDArrayMath implements NDArrayManager {
     number, number, number, number
   ]): Array4D {
     slice_util.assertParamsValid(x, begin, size);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Slice4D', {inputs: {x}, args: {begin, size}});
   }
 
@@ -429,7 +429,7 @@ export class NDArrayMath implements NDArrayManager {
     util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
              rank ${x.rank}.`);
     const axisCleaned = axis_util.parseAxisParam(axis, x.shape);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}});
   }
 
@@ -447,7 +447,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   concat1D(a: Array1D, b: Array1D): Array1D {
     concat_util.assertParams(a.shape, b.shape, 0);
-    return this.backendEngine.executeKernel('Concat1D', {inputs: {a, b}});
+    return this.engine.executeKernel('Concat1D', {inputs: {a, b}});
   }
 
   /**
@@ -480,7 +480,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
     concat_util.assertParams(a.shape, b.shape, axis);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Concat2D', {inputs: {a, b}, args: {axis}});
   }
 
@@ -527,7 +527,7 @@ export class NDArrayMath implements NDArrayManager {
       };
     };
 
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Concat3D', {inputs: {a, b}, args: {axis}}, gradients);
   }
 
@@ -542,7 +542,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
     concat_util.assertParams(a.shape, b.shape, axis);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Concat4D', {inputs: {a, b}, args: {axis}});
   }
 
@@ -613,7 +613,7 @@ export class NDArrayMath implements NDArrayManager {
           reductionAxes =
               axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
         }
-        let value = this.backendEngine.executeKernel(
+        let value = this.engine.executeKernel(
             'Sum', {inputs: {x: permutedX}, args: {axes: reductionAxes}});
         if (keepDims) {
           const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
@@ -696,8 +696,7 @@ export class NDArrayMath implements NDArrayManager {
         x = this.transpose(x, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
-      return this.backendEngine.executeKernel(
-          'ArgMin', {inputs: {x}, args: {axes}});
+      return this.engine.executeKernel('ArgMin', {inputs: {x}, args: {axes}});
     }) as T;
   }
 
@@ -718,8 +717,7 @@ export class NDArrayMath implements NDArrayManager {
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
 
-      return this.backendEngine.executeKernel(
-          'ArgMax', {inputs: {x}, args: {axes}});
+      return this.engine.executeKernel('ArgMax', {inputs: {x}, args: {axes}});
     }) as T;
   }
 
@@ -746,7 +744,7 @@ export class NDArrayMath implements NDArrayManager {
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Equal', {inputs: {a, b}}) as T;
+    return this.engine.executeKernel('Equal', {inputs: {a, b}}) as T;
   }
 
   equalStrict<T extends NDArray>(a: T, b: T): NDArray<'bool'> {
@@ -765,7 +763,7 @@ export class NDArrayMath implements NDArrayManager {
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('NotEqual', {inputs: {a, b}}) as T;
+    return this.engine.executeKernel('NotEqual', {inputs: {a, b}}) as T;
   }
 
   notEqualStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
@@ -784,7 +782,7 @@ export class NDArrayMath implements NDArrayManager {
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Less', {inputs: {a, b}}) as T;
+    return this.engine.executeKernel('Less', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -797,7 +795,7 @@ export class NDArrayMath implements NDArrayManager {
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('LessEqual', {inputs: {a, b}}) as T;
+    return this.engine.executeKernel('LessEqual', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -810,7 +808,7 @@ export class NDArrayMath implements NDArrayManager {
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Greater', {inputs: {a, b}}) as T;
+    return this.engine.executeKernel('Greater', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -823,8 +821,7 @@ export class NDArrayMath implements NDArrayManager {
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('GreaterEqual', {inputs: {a, b}}) as
-        T;
+    return this.engine.executeKernel('GreaterEqual', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -838,7 +835,7 @@ export class NDArrayMath implements NDArrayManager {
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('LogicalAnd', {inputs: {a, b}});
+    return this.engine.executeKernel('LogicalAnd', {inputs: {a, b}});
   }
 
   /**
@@ -852,7 +849,7 @@ export class NDArrayMath implements NDArrayManager {
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('LogicalOr', {inputs: {a, b}});
+    return this.engine.executeKernel('LogicalOr', {inputs: {a, b}});
   }
 
   /**
@@ -885,7 +882,7 @@ export class NDArrayMath implements NDArrayManager {
 
     // Default to highest percision of number:
     const dtype = types.upcastType(a.dtype, b.dtype);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Where',
                {inputs: {condition, a, b}, args: {dtype: dtype as DataType}}) as
         T;
@@ -904,10 +901,10 @@ export class NDArrayMath implements NDArrayManager {
     let values: Array1D;
     let indices: Array1D<'int32'>;
     this.executeOp('topK', () => {
-      values = this.backendEngine.executeKernel(
-          'TopKValues', {inputs: {x}, args: {k}});
-      indices = this.backendEngine.executeKernel(
-          'TopKIndices', {inputs: {x}, args: {k}});
+      values =
+          this.engine.executeKernel('TopKValues', {inputs: {x}, args: {k}});
+      indices =
+          this.engine.executeKernel('TopKIndices', {inputs: {x}, args: {k}});
       return values;
     });
     const result = {values, indices};
@@ -938,7 +935,7 @@ export class NDArrayMath implements NDArrayManager {
         x = this.transpose(x, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
                       'Min', {inputs: {x}, args: {axes}}) as NDArray<D>;
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
@@ -959,7 +956,7 @@ export class NDArrayMath implements NDArrayManager {
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Minimum', {inputs: {a, b}}) as T;
+    return this.engine.executeKernel('Minimum', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -986,7 +983,7 @@ export class NDArrayMath implements NDArrayManager {
         x = this.transpose(x, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
       }
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
                       'Max', {inputs: {x}, args: {axes}}) as NDArray<D>;
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
@@ -1007,7 +1004,7 @@ export class NDArrayMath implements NDArrayManager {
       a: NDArray<D1>, b: NDArray<D2>): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Maximum', {inputs: {a, b}}) as T;
+    return this.engine.executeKernel('Maximum', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -1144,8 +1141,7 @@ export class NDArrayMath implements NDArrayManager {
         x.rank === reps.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of reps ${reps}.`);
-    return this.backendEngine.executeKernel(
-               'Tile', {inputs: {x}, args: {reps}}) as T;
+    return this.engine.executeKernel('Tile', {inputs: {x}, args: {reps}}) as T;
   }
 
   /**
@@ -1165,7 +1161,7 @@ export class NDArrayMath implements NDArrayManager {
     util.assert(
         paddings.length === 2,
         'Invalid number of paddings. Must be length of 2.');
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Pad1D', {inputs: {x}, args: {paddings, constantValue}});
   }
 
@@ -1190,7 +1186,7 @@ export class NDArrayMath implements NDArrayManager {
         paddings.length === 2 && paddings[0].length === 2 &&
             paddings[1].length === 2,
         'Invalid number of paddings. Must be length of 2 each.');
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
   }
 
@@ -1218,7 +1214,7 @@ export class NDArrayMath implements NDArrayManager {
         x.rank === perm.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of perm ${perm}.`);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Transpose', {inputs: {x}, args: {perm}}, der) as T;
   }
 
@@ -1231,7 +1227,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   gather<D extends DataType, T extends NDArray<D>>(
       x: T, indices: Array1D<'int32'>, axis = 0): T {
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Gather', {inputs: {x, indices}, args: {axis}}) as T;
   }
 
@@ -1267,7 +1263,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input array.
    */
   neg<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Neg', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Neg', {inputs: {x}}) as T;
   }
 
   /**
@@ -1302,7 +1298,7 @@ export class NDArrayMath implements NDArrayManager {
       };
       return {a: derA, b: derB};
     };
-    return this.backendEngine.executeKernel('Add', {inputs: {a, b}}, der) as T;
+    return this.engine.executeKernel('Add', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1349,7 +1345,7 @@ export class NDArrayMath implements NDArrayManager {
       };
       return {a: derA, b: derB};
     };
-    return this.backendEngine.executeKernel('Sub', {inputs: {a, b}}, der) as T;
+    return this.engine.executeKernel('Sub', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1392,8 +1388,7 @@ export class NDArrayMath implements NDArrayManager {
       return {a: derA, b: derB};
     };
 
-    return this.backendEngine.executeKernel(
-               'Pow', {inputs: {a, b}}, gradient) as T;
+    return this.engine.executeKernel('Pow', {inputs: {a, b}}, gradient) as T;
   }
 
   /**
@@ -1459,7 +1454,7 @@ export class NDArrayMath implements NDArrayManager {
       };
       return {a: derA, b: derB};
     };
-    return this.backendEngine.executeKernel('Mul', {inputs: {a, b}}, der) as T;
+    return this.engine.executeKernel('Mul', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1510,7 +1505,7 @@ export class NDArrayMath implements NDArrayManager {
       };
       return {a: derA, b: derB};
     };
-    return this.backendEngine.executeKernel('Div', {inputs: {a, b}}, der) as T;
+    return this.engine.executeKernel('Div', {inputs: {a, b}}, der) as T;
   }
 
   /**
@@ -1550,7 +1545,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   ceil<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Ceil', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Ceil', {inputs: {x}}) as T;
   }
 
   /**
@@ -1559,7 +1554,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   floor<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Floor', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Floor', {inputs: {x}}) as T;
   }
 
   /**
@@ -1567,7 +1562,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   exp<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Exp', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Exp', {inputs: {x}}) as T;
   }
 
   /**
@@ -1575,7 +1570,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   log<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Log', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Log', {inputs: {x}}) as T;
   }
 
   /**
@@ -1583,7 +1578,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   sqrt<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Sqrt', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Sqrt', {inputs: {x}}) as T;
   }
 
   /**
@@ -1592,7 +1587,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input array.
    */
   square<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T): T {
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Square', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
                  return {
                    x: () => this.multiply(
@@ -1606,7 +1601,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   abs<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Abs', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Abs', {inputs: {x}}) as T;
   }
 
   /**
@@ -1620,8 +1615,8 @@ export class NDArrayMath implements NDArrayManager {
         (min <= max),
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
-    return this.backendEngine.executeKernel(
-               'Clip', {inputs: {x}, args: {min, max}}) as T;
+    return this.engine.executeKernel('Clip', {inputs: {x}, args: {min, max}}) as
+        T;
   }
 
   /**
@@ -1629,7 +1624,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   relu<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T): T {
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Relu', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
                  return {
                    x: () => this.multiply(dy, this.step(x).asType('float32'))
@@ -1642,7 +1637,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param {T} x the input NDArray
    */
   elu<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Elu', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Elu', {inputs: {x}}) as T;
   }
 
   /**
@@ -1650,7 +1645,7 @@ export class NDArrayMath implements NDArrayManager {
    * @hidden
    */
   eluDer<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('EluDer', {inputs: {x}}) as T;
+    return this.engine.executeKernel('EluDer', {inputs: {x}}) as T;
   }
 
   /**
@@ -1658,7 +1653,7 @@ export class NDArrayMath implements NDArrayManager {
    * @hidden
    */
   selu<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Selu', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Selu', {inputs: {x}}) as T;
   }
 
   /**
@@ -1668,7 +1663,7 @@ export class NDArrayMath implements NDArrayManager {
    * @return {NDArray}
    */
   leakyRelu<T extends NDArray>(x: T, alpha = 0.2): T {
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'LeakyRelu', {inputs: {x}, args: {alpha}}) as T;
   }
 
@@ -1679,7 +1674,7 @@ export class NDArrayMath implements NDArrayManager {
    * @return {NDArray}
    */
   prelu<T extends NDArray>(x: T, alpha: T): T {
-    return this.backendEngine.executeKernel('PReLU', {inputs: {x, alpha}}) as T;
+    return this.engine.executeKernel('PReLU', {inputs: {x, alpha}}) as T;
   }
 
   /**
@@ -1689,8 +1684,7 @@ export class NDArrayMath implements NDArrayManager {
    * @return {NDArray}
    */
   preluDer<T extends NDArray>(x: T, alpha: T): T {
-    return this.backendEngine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as
-        T;
+    return this.engine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as T;
   }
 
   /**
@@ -1698,7 +1692,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   sigmoid<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Sigmoid', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Sigmoid', {inputs: {x}}) as T;
   }
 
   /**
@@ -1706,7 +1700,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   sin<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Sin', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Sin', {inputs: {x}}) as T;
   }
 
   /**
@@ -1714,7 +1708,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   cos<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Cos', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Cos', {inputs: {x}}) as T;
   }
 
   /**
@@ -1722,7 +1716,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   tan<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Tan', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Tan', {inputs: {x}}) as T;
   }
 
   /**
@@ -1730,7 +1724,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   asin<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Asin', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Asin', {inputs: {x}}) as T;
   }
 
   /**
@@ -1738,7 +1732,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   acos<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Acos', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Acos', {inputs: {x}}) as T;
   }
 
   /**
@@ -1746,7 +1740,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   atan<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Atan', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Atan', {inputs: {x}}) as T;
   }
 
   /**
@@ -1754,7 +1748,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   sinh<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Sinh', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Sinh', {inputs: {x}}) as T;
   }
 
   /**
@@ -1762,7 +1756,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   cosh<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Cosh', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Cosh', {inputs: {x}}) as T;
   }
 
   /**
@@ -1770,7 +1764,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param x The input NDArray.
    */
   tanh<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Tanh', {inputs: {x}}) as T;
+    return this.engine.executeKernel('Tanh', {inputs: {x}}) as T;
   }
 
   /**
@@ -1781,8 +1775,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param alpha The gradient when input is negative.
    */
   step<T extends NDArray>(x: T, alpha = 0.0): T {
-    return this.backendEngine.executeKernel(
-               'Step', {inputs: {x}, args: {alpha}}) as T;
+    return this.engine.executeKernel('Step', {inputs: {x}, args: {alpha}}) as T;
   }
 
   /**
@@ -1982,7 +1975,7 @@ export class NDArrayMath implements NDArrayManager {
         };
       };
 
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
           'Conv2D', {inputs: {x: x4D, filter, bias}, args: {convInfo}},
           gradients);
       if (reshapedTo4D) {
@@ -2062,7 +2055,7 @@ export class NDArrayMath implements NDArrayManager {
     const convInfo = conv_util.computeConv2DInfo(
         xShape4D, filter.shape, strides, pad, dimRoundingMode);
     return this.executeOp('conv2dDerInput', () => {
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
           'Conv2DDerInput', {inputs: {dy: dy4D, filter}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
@@ -2084,8 +2077,7 @@ export class NDArrayMath implements NDArrayManager {
     if (dy.rank === 3) {
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
     }
-    return this.backendEngine.executeKernel(
-        'Conv2DDerBias', {inputs: {dy: dy4D}});
+    return this.engine.executeKernel('Conv2DDerBias', {inputs: {dy: dy4D}});
   }
 
   /**
@@ -2147,7 +2139,7 @@ export class NDArrayMath implements NDArrayManager {
 
     const convInfo = conv_util.computeConv2DInfo(
         x4D.shape, filterShape, strides, pad, dimRoundingMode);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Conv2DDerFilter', {inputs: {x: x4D, dy: dy4D}, args: {convInfo}});
   }
 
@@ -2258,7 +2250,7 @@ export class NDArrayMath implements NDArrayManager {
         input4D.shape, filter.shape, strides, pad, dimRoundingMode,
         true /* depthwise */);
     return this.executeOp('depthwiseConv2D', () => {
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
           'DepthwiseConv2D', {inputs: {x: input4D, filter}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
@@ -2314,7 +2306,7 @@ export class NDArrayMath implements NDArrayManager {
     };
 
     return this.executeOp('maxPool', () => {
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
           'MaxPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
@@ -2377,7 +2369,7 @@ export class NDArrayMath implements NDArrayManager {
     const convInfo = conv_util.computePool2DInfo(
         input4D.shape, filterSize, strides, pad, dimRoundingMode);
     return this.executeOp('maxPoolBackprop', () => {
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
           'MaxPoolBackprop',
           {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
@@ -2429,7 +2421,7 @@ export class NDArrayMath implements NDArrayManager {
     const convInfo = conv_util.computePool2DInfo(
         input4D.shape, filterSize, strides, pad, dimRoundingMode);
     return this.executeOp('minPool', () => {
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
           'MinPool', {inputs: {x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
@@ -2486,7 +2478,7 @@ export class NDArrayMath implements NDArrayManager {
     };
 
     return this.executeOp('avgPool', () => {
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
           'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
       if (reshapedTo4D) {
         return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
@@ -2538,7 +2530,7 @@ export class NDArrayMath implements NDArrayManager {
     const convInfo =
         conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
     return this.executeOp('avgPoolBackprop', () => {
-      const res = this.backendEngine.executeKernel(
+      const res = this.engine.executeKernel(
           'AvgPoolBackprop',
           {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
       if (reshapedTo4D) {
@@ -2568,7 +2560,7 @@ export class NDArrayMath implements NDArrayManager {
         newShape2D.length === 2,
         `Error in resizeBilinear3D: new shape must 2D, but got shape ` +
             `${newShape2D}.`);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'ResizeBilinear3D', {inputs: {x}, args: {newShape2D, alignCorners}});
   }
 
@@ -2613,7 +2605,7 @@ export class NDArrayMath implements NDArrayManager {
               `but got rank ${offset.rank}.`);
     }
 
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'BatchNorm2D',
         {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
   }
@@ -2659,7 +2651,7 @@ export class NDArrayMath implements NDArrayManager {
               `but got rank ${offset.rank}.`);
     }
 
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'BatchNorm3D',
         {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
   }
@@ -2705,7 +2697,7 @@ export class NDArrayMath implements NDArrayManager {
               `but got rank ${offset.rank}.`);
     }
 
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'BatchNorm4D',
         {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
   }
@@ -2770,7 +2762,7 @@ export class NDArrayMath implements NDArrayManager {
         `Error in localResponseNormalization3D: radius must be an integer
          but got radius ${radius}.`);
 
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'LRN4D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
   }
 
@@ -2882,7 +2874,7 @@ export class NDArrayMath implements NDArrayManager {
       probabilities = probabilities.as2D(1, -1);
     }
     return this.executeOp('multinomial', () => {
-      const res = this.backendEngine.executeKernel('Multinomial', {
+      const res = this.engine.executeKernel('Multinomial', {
         inputs: {probs: (probabilities as Array2D)},
         args: {numSamples, seed}
       });
@@ -2909,7 +2901,7 @@ export class NDArrayMath implements NDArrayManager {
     if (depth < 2) {
       throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
     }
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
   }
 
@@ -3060,7 +3052,7 @@ export class NDArrayMath implements NDArrayManager {
     const keys = x instanceof NDArray ? null : Object.keys(x);
     const xs = util.flattenNameArrayMap(x, keys);
 
-    const vjp = this.backendEngine.vjp(f, xs, dy) as NDArray[];
+    const vjp = this.engine.vjp(f, xs, dy) as NDArray[];
 
     if (x instanceof NDArray) {
       return vjp[0] as T;
@@ -3086,8 +3078,7 @@ export class NDArrayMath implements NDArrayManager {
     const xs = util.flattenNameArrayMap(x, keys);
 
     const returnValue = false;
-    const gradients =
-        this.backendEngine.gradients(f, xs, returnValue) as NDArray[];
+    const gradients = this.engine.gradients(f, xs, returnValue) as NDArray[];
 
     if (x instanceof NDArray) {
       return gradients[0] as T;
@@ -3124,8 +3115,7 @@ export class NDArrayMath implements NDArrayManager {
     const xs = util.flattenNameArrayMap(x, keys);
 
     const returnValue = true;
-    const valueAndGradients =
-        this.backendEngine.gradients(f, xs, returnValue) as
+    const valueAndGradients = this.engine.gradients(f, xs, returnValue) as
         {value: Scalar, gradients: NDArray[]};
 
     let gradients: T;
@@ -3155,8 +3145,7 @@ export class NDArrayMath implements NDArrayManager {
             TapeNodeInputGradientArrays
       },
       inputs: NamedArrayMap, name?: string): NDArray<D, R> {
-    return this.backendEngine.customGradient(
-        f, inputs, name == null ? '' : name);
+    return this.engine.customGradient(f, inputs, name == null ? '' : name);
   }
 
   disposeData(dataId: number): void {
