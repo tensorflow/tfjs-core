@@ -171,29 +171,36 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Runs the operations in the provided scope function. After the function
-   * runs, it cleans up all the `NDArray`s allocated, other than those returned
-   * by the function.
+   * Executes the provided function and after it is executed, cleans up all
+   * intermediate NDArrays allocated by the function except those returned by
+   * the function.
    *
    * When in safe mode, you must enclose all `NDArray` creation and math ops
    * inside a `math.scope()` to prevent memory leaks.
    *
-   * @param name The name of the scope, optional. If a name is provided,
-   *     and debug mode is on, the timing and the memory usage of the function
-   *     will be tracked and displayed on the console using the provided name.
+   * @param nameOrScopeFn The name of the scope, or the function to execute.
+   *     If a name is provided, the 2nd argument should be the function.
+   *     If a name is provided, and debug mode is on, the timing and the memory
+   *     usage of the function will be tracked and displayed on the console
+   *     using the provided name.
    * @param scopeFn The function to execute.
+   * @param gradientsMode If true, enables gradients mode.
+   *     See math.gradientsScope for details.
    */
-  scope<T extends ScopeResult>(name: string|ScopeFn<T>, scopeFn?: ScopeFn<T>):
-      T {
+  scope<T extends ScopeResult>(
+      nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>,
+      gradientsMode = false): T {
     if (scopeFn == null) {
       // Called with only 1 argument.
-      if (typeof name !== 'function') {
+      if (typeof nameOrScopeFn !== 'function') {
         throw new Error('Please provide a function to math.scope()');
       }
-      scopeFn = name;
+      scopeFn = nameOrScopeFn;
+      nameOrScopeFn = 'scope';
     } else {
       // Called with 2 arguments.
-      if (typeof name !== 'string' && !(name instanceof String)) {
+      if (typeof nameOrScopeFn !== 'string' &&
+          !(nameOrScopeFn instanceof String)) {
         throw new Error(
             'When calling with two arguments, the first argument ' +
             'to math.scope() must be a string');
@@ -205,24 +212,24 @@ export class NDArrayMath implements NDArrayManager {
       }
       // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
     }
-    const gradientsMode = false;
-    return this.engine.scope('scope', scopeFn, gradientsMode);
+    return this.engine.scope(nameOrScopeFn as string, scopeFn, gradientsMode);
   }
 
   /**
    * Create a new gradients scope. Similar to scope, but forces all inner scopes
    * to not clean up so that gradient operations can be used inside of this
    * scope.
-   * @param scopeFn The function to execute with chained math operations.
+   * @param nameOrScopeFn The name of the scope, or the function to execute.
+   *     If a name is provided, the 2nd argument should be the function.
+   *     If a name is provided, and debug mode is on, the timing and the memory
+   *     usage of the function will be tracked and displayed on the console
+   *     using the provided name.
+   * @param scopeFn The function to execute.
    */
   gradientsScope<T extends ScopeResult>(
-      scopeFn:
-          (keep:
-               <D1 extends DataType, T1 extends NDArray<D1>>(ndarray: T1) => T1,
-           track: <D2 extends DataType, T2 extends NDArray<D2>>(ndarray: T2) =>
-               T2) => T): T {
+      nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
     const gradientsMode = true;
-    return this.engine.scope('gradientsScope', scopeFn, gradientsMode);
+    return this.scope(nameOrScopeFn, scopeFn, gradientsMode);
   }
 
   /**

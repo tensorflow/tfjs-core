@@ -182,7 +182,7 @@ export class Environment {
     return this.features[feature];
   }
 
-  getBestBackend(): BackendType {
+  getBestBackendType(): BackendType {
     const orderedBackends: BackendType[] = ['webgl', 'cpu'];
     for (let i = 0; i < orderedBackends.length; ++i) {
       const backendId = orderedBackends[i];
@@ -295,7 +295,7 @@ export class Environment {
 
   get math(): NDArrayMath {
     if (this.globalMath == null) {
-      const bestBackend = this.getBestBackend();
+      const bestBackend = this.getBestBackendType();
       const safeMode = false;
       this.setMath(new NDArrayMath(bestBackend, safeMode));
     }
