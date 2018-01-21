@@ -17,6 +17,7 @@
 
 import * as device_util from './device_util';
 import {MathBackend} from './math/backends/backend';
+import {BackendEngine} from './math/backends/backend_engine';
 import {NDArrayMath} from './math/math';
 import * as util from './util';
 
@@ -301,6 +302,10 @@ export class Environment {
       this.setMath(new NDArrayMath(bestBackend, safeMode));
     }
     return this.globalMath;
+  }
+
+  get engine(): BackendEngine {
+    return this.globalMath.engine;
   }
 }
 

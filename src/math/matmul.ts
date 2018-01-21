@@ -51,7 +51,7 @@ export function matMul(
           `${b.shape} and orientations ${MatrixOrientation[aOrientation]}` +
           ` and ${MatrixOrientation[bOrientation]} must match.`);
 
-  return ENV.math.engine.executeKernel(
+  return ENV.engine.executeKernel(
       'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
       (dy: Array2D<'float32'>, y: Array2D) => {
         if (aOrientation === MatrixOrientation.TRANSPOSED ||
