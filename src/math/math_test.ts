@@ -176,7 +176,6 @@ import {Array1D, Array2D, Array3D, NDArray, Scalar} from './ndarray';
 
     it('single argument, but not a function throws error', math => {
       expect(() => {
-        // tslint:disable-next-line:no-any
         math.scope('asdf');
       }).toThrowError();
     });
