@@ -163,9 +163,8 @@ export type BackendType = 'webgl'|'cpu';
 export class Environment {
   private features: Features = {};
   private globalMath: NDArrayMath = null;
-  // tslint:disable-next-line:no-any
-  private BACKEND_REGISTRY: {[id in BackendType]: MathBackend} = {} as any;
-  private backends: {[id in BackendType]: MathBackend} = this.BACKEND_REGISTRY;
+  private BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
+  private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -226,8 +225,7 @@ export class Environment {
   setFeatures(features: Features) {
     this.reset();
     this.features = features;
-    // tslint:disable-next-line:no-any
-    this.backends = {} as any;
+    this.backends = {};
   }
 
   reset() {
@@ -238,7 +236,7 @@ export class Environment {
     }
     if (this.backends !== this.BACKEND_REGISTRY) {
       for (const name in this.backends) {
-        this.backends[name as BackendType].dispose();
+        this.backends[name].dispose();
       }
       this.backends = this.BACKEND_REGISTRY;
     }
