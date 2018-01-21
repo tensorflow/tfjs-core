@@ -18,11 +18,12 @@
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap, NamedVariableMap} from '../util';
+
 import * as axis_util from './axis_util';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
 import {TapeNodeInputGradientArrays} from './backends/tape_types';
-import {ScopeResult, ScopeResultImmediate} from './backends/tape_util';
+import {ScopeFn, ScopeResult, ScopeResultImmediate} from './backends/tape_util';
 import * as batchnorm from './batchnorm';
 import * as broadcast_util from './broadcast_util';
 import * as concat from './concat';
@@ -170,17 +171,40 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Create a new math scope. Put chained math operations inside a scope
-   * function closure so that the library automatically cleans up NDArrays
-   * from intermediate math operations. You must create a scope in safe mode
-   * to call math operations. If a result is returned from the scope, it will
-   * also be tracked, which means there must be yet another wrapping scope.
-   * @param scopeFn The function to execute with chained math operations.
+   * Runs the operations in the provided scope function. After the function
+   * runs, it cleans up all the `NDArray`s allocated, other than those returned
+   * by the function.
+   *
+   * When in safe mode, you must enclose all `NDArray` creation and math ops
+   * inside a `math.scope()` to prevent memory leaks.
+   *
+   * @param name The name of the scope, optional. If a name is provided,
+   *     and debug mode is on, the timing and the memory usage of the function
+   *     will be tracked and displayed on the console using the provided name.
+   * @param scopeFn The function to execute.
    */
-  scope<T extends ScopeResult>(
-      scopeFn:
-          (keep: <T1 extends NDArray>(ndarray: T1) => T1,
-           track: <T2 extends NDArray>(ndarray: T2) => T2) => T): T {
+  scope<T extends ScopeResult>(name: string|ScopeFn<T>, scopeFn?: ScopeFn<T>):
+      T {
+    if (scopeFn == null) {
+      // Called with only 1 argument.
+      if (typeof name !== 'function') {
+        throw new Error('Please provide a function to math.scope()');
+      }
+      scopeFn = name;
+    } else {
+      // Called with 2 arguments.
+      if (typeof name !== 'string' && !(name instanceof String)) {
+        throw new Error(
+            'When calling with two arguments, the first argument ' +
+            'to math.scope() must be a string');
+      }
+      if (typeof scopeFn !== 'function') {
+        throw new Error(
+            'When calling with two arguments, the 2nd argument ' +
+            'to math.scope() must be a function');
+      }
+      // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
+    }
     const gradientsMode = false;
     return this.engine.scope('scope', scopeFn, gradientsMode);
   }
@@ -238,11 +262,6 @@ export class NDArrayMath implements NDArrayManager {
     }
   }
 
-  private executeOp<T extends NDArray>(name: string, f: () => T): T {
-    // TODO(nsthorat): Do operation logging and performance profiling.
-    return f();
-  }
-
   /**
    * Clones an NDArray of any shape.
    * @param x The NDArray to clone.
@@ -297,7 +316,7 @@ export class NDArrayMath implements NDArrayManager {
   logSumExp<T extends NDArray<'float32'>>(
       input: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    return this.executeOp('logSumExp', () => {
+    return this.scope('logSumExp', () => {
       const xMax = this.max(input, axes, true /* keepDims */);
       const a = this.subtract(input, xMax);
       const b = this.exp(a);
@@ -330,7 +349,7 @@ export class NDArrayMath implements NDArrayManager {
   sum<D extends DataType, T extends NDArray<SumTypes[D]>>(
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, x.shape);
-    return this.executeOp('sum', () => {
+    return this.scope('sum', () => {
       // Use a custom gradient to bypass 2 gradient backprops since sum is used
       // extremely often.
       return this.customGradient(() => {
@@ -384,7 +403,7 @@ export class NDArrayMath implements NDArrayManager {
     const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
     const reduceShape = shapes[1];
     const reduceSize = util.sizeFromShape(reduceShape);
-    return this.executeOp('mean', () => {
+    return this.scope('mean', () => {
       // Use a custom gradient to bypass 2 gradient backprops since mean is used
       // extremely often.
       return this.customGradient(() => {
@@ -420,7 +439,7 @@ export class NDArrayMath implements NDArrayManager {
   argMin<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
-    return this.executeOp('argMin', () => {
+    return this.scope('argMin', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
@@ -440,7 +459,7 @@ export class NDArrayMath implements NDArrayManager {
   argMax<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
-    return this.executeOp('argMax', () => {
+    return this.scope('argMax', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
@@ -457,7 +476,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return this.executeOp('argMaxEquals', () => this.scope(() => {
+    return this.scope('argMaxEquals', () => this.scope(() => {
       return this.equal(this.argMax(x1), this.argMax(x2));
     }));
   }
@@ -629,7 +648,7 @@ export class NDArrayMath implements NDArrayManager {
             `ndarray, got shape ${x.shape}.`);
     let values: Array1D;
     let indices: Array1D<'int32'>;
-    this.executeOp('topK', () => {
+    this.scope('topK', () => {
       values =
           this.engine.executeKernel('TopKValues', {inputs: {x}, args: {k}});
       indices =
@@ -659,7 +678,7 @@ export class NDArrayMath implements NDArrayManager {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
-    return this.executeOp('min', () => {
+    return this.scope('min', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
@@ -707,7 +726,7 @@ export class NDArrayMath implements NDArrayManager {
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
-    return this.executeOp('max', () => {
+    return this.scope('max', () => {
       if (permutedAxes != null) {
         x = this.transpose(x, permutedAxes);
         axes = axis_util.getInnerMostAxes(axes.length, x.rank);
@@ -766,7 +785,7 @@ export class NDArrayMath implements NDArrayManager {
       };
     };
 
-    return this.executeOp('softmax', () => {
+    return this.scope('softmax', () => {
       return this.customGradient(() => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
@@ -819,7 +838,7 @@ export class NDArrayMath implements NDArrayManager {
           `and dim was ${dim}`);
     }
 
-    return this.executeOp('softmaxCrossEntropyWithLogits', () => {
+    return this.scope('softmaxCrossEntropyWithLogits', () => {
       // Use a custom gradient for numerical stability.
       return this.customGradient(() => {
         const softmaxLogits = this.softmax(logits, dim);
@@ -1527,7 +1546,7 @@ export class NDArrayMath implements NDArrayManager {
             `NDArray of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
-    return this.executeOp('scaledArrayAdd', () => {
+    return this.scope('scaledArrayAdd', () => {
       return this.scope(() => {
         // TODO(nsthorat): Add an SGEMM kernel and then update this.
         return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
@@ -1753,7 +1772,7 @@ export class NDArrayMath implements NDArrayManager {
     if (probabilities.rank === 1) {
       probabilities = probabilities.as2D(1, -1);
     }
-    return this.executeOp('multinomial', () => {
+    return this.scope('multinomial', () => {
       const res = this.engine.executeKernel('Multinomial', {
         inputs: {probs: (probabilities as Array2D)},
         args: {numSamples, seed}

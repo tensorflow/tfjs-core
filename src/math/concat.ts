@@ -33,7 +33,7 @@ import * as slice from './slice';
  * @return The concatenated array.
  */
 export function concat1D(a: Array1D, b: Array1D): Array1D {
-  return ENV.run('concat1D', () => {
+  return ENV.math.scope('concat1D', () => {
     concat_util.assertParams(a.shape, b.shape, 0);
     return ENV.engine.executeKernel('Concat1D', {inputs: {a, b}});
   });
@@ -68,7 +68,7 @@ export function concat1D(a: Array1D, b: Array1D): Array1D {
  * @return The concatenated array.
  */
 export function concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-  return ENV.run('concat2D', () => {
+  return ENV.math.scope('concat2D', () => {
     concat_util.assertParams(a.shape, b.shape, axis);
     return ENV.engine.executeKernel('Concat2D', {inputs: {a, b}, args: {axis}});
   });
@@ -106,7 +106,7 @@ export function concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
  * @return The concatenated array.
  */
 export function concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
-  return ENV.run('concat3D', () => {
+  return ENV.math.scope('concat3D', () => {
     concat_util.assertParams(a.shape, b.shape, axis);
 
     const gradients = (dy: Array3D<'float32'>, y: Array3D) => {
@@ -133,7 +133,7 @@ export function concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
  * @return The concatenated array.
  */
 export function concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
-  return ENV.run('concat4D', () => {
+  return ENV.math.scope('concat4D', () => {
     concat_util.assertParams(a.shape, b.shape, axis);
     return ENV.engine.executeKernel('Concat4D', {inputs: {a, b}, args: {axis}});
   });

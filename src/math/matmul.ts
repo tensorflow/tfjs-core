@@ -34,7 +34,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 export function matMul(
     a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
     bOrientation = MatrixOrientation.REGULAR): Array2D {
-  return ENV.run('matMul', () => {
+  return ENV.math.scope('matMul', () => {
     const innerShapeA =
         (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
     const innerShapeB =
@@ -78,7 +78,7 @@ export function matMul(
  * @param matrix The matrix in dot product operation.
  */
 export function vectorTimesMatrix(v: Array1D, matrix: Array2D): Array1D {
-  return ENV.run('vectorTimesMatrix', () => {
+  return ENV.math.scope('vectorTimesMatrix', () => {
     util.assert(
         v.rank === 1,
         `Error in vectorTimesMatrix: first input must be rank 1, but got ` +
@@ -101,7 +101,7 @@ export function vectorTimesMatrix(v: Array1D, matrix: Array2D): Array1D {
  * @param v The vector in dot product operation.
  */
 export function matrixTimesVector(matrix: Array2D, v: Array1D): Array1D {
-  return ENV.run('matrixTimesVector', () => {
+  return ENV.math.scope('matrixTimesVector', () => {
     util.assert(
         v.rank === 1,
         `Error in matrixTimesVector: second input must rank 1, but got ` +
@@ -126,7 +126,7 @@ export function matrixTimesVector(matrix: Array2D, v: Array1D): Array1D {
  * @param v2 The second vector in the dot product operation.
  */
 export function dotProduct(v1: Array1D, v2: Array1D): Scalar {
-  return ENV.run('dotProduct', () => {
+  return ENV.math.scope('dotProduct', () => {
     util.assert(
         v1.rank === 1 && v2.rank === 1,
         `Error in dotProduct: inputs must be rank 1, but got ranks ` +
@@ -145,7 +145,7 @@ export function dotProduct(v1: Array1D, v2: Array1D): Scalar {
  * @param v2 The second vector in the dot product operation.
  */
 export function outerProduct(v1: Array1D, v2: Array1D): Array2D {
-  return ENV.run('outerProduct', () => {
+  return ENV.math.scope('outerProduct', () => {
     util.assert(
         v1.rank === 1 && v2.rank === 1,
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +

@@ -43,7 +43,7 @@ import {Array4D, DataType, NDArray, Rank, RankMap} from './ndarray';
 export function maxPool<T extends NDArray>(
     x: T, filterSize: [number, number]|number, strides: [number, number]|number,
     pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  return ENV.run('maxPool', () => {
+  return ENV.math.scope('maxPool', () => {
     let x4D = x as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -97,7 +97,7 @@ export function maxPoolBackprop<
     dy: NDArray<'float32', R>, input: NDArray<D, R>,
     filterSize: [number, number]|number, strides: [number, number]|number,
     pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  return ENV.run('maxPoolBackprop', () => {
+  return ENV.math.scope('maxPoolBackprop', () => {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
@@ -160,7 +160,7 @@ export function minPool<T extends NDArray>(
     input: T, filterSize: [number, number]|number,
     strides: [number, number]|number, pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  return ENV.run('minPool', () => {
+  return ENV.math.scope('minPool', () => {
     let input4D = input as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -210,7 +210,7 @@ export function avgPool<R extends '3'|'4'>(
     x: NDArray<'int32'|'float32', R>, filterSize: [number, number]|number,
     strides: [number, number]|number, pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
-  return ENV.run('avgPool', () => {
+  return ENV.math.scope('avgPool', () => {
     let x4D = x as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -262,7 +262,7 @@ function avgPoolBackprop<D extends DataType, R extends
     dy: NDArray<'float32', R>, input: NDArray<D, R>,
     filterSize: [number, number]|number, strides: [number, number]|number,
     pad: 'valid'|'same'|number): T {
-  return ENV.run('avgPoolBackprop', () => {
+  return ENV.math.scope('avgPoolBackprop', () => {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);

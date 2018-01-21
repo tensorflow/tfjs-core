@@ -35,7 +35,7 @@ export function batchNormalization2D(
     x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
     varianceEpsilon = .001, scale?: Array2D|Array1D,
     offset?: Array2D|Array1D): Array2D {
-  return ENV.run('batchNorm2D', () => {
+  return ENV.math.scope('batchNorm2D', () => {
     util.assert(
         x.rank === 2,
         `Error in batchNormalization3D: x must be rank 3 but got rank ` +
@@ -83,7 +83,7 @@ export function batchNormalization3D(
     x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
     varianceEpsilon = .001, scale?: Array3D|Array1D,
     offset?: Array3D|Array1D): Array3D {
-  return ENV.run('batchNorm3D', () => {
+  return ENV.math.scope('batchNorm3D', () => {
     util.assert(
         x.rank === 3,
         `Error in batchNormalization3D: x must be rank 3 but got rank ` +
@@ -131,7 +131,7 @@ export function batchNormalization4D(
     x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
     varianceEpsilon = .001, scale?: Array4D|Array1D,
     offset?: Array4D|Array1D): Array4D {
-  return ENV.run('batchNorm4D', () => {
+  return ENV.math.scope('batchNorm4D', () => {
     util.assert(
         x.rank === 4,
         `Error in batchNormalization4D: x must be rank 4 but got rank ` +

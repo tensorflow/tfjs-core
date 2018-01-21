@@ -45,7 +45,7 @@ import {Array1D, Array3D, Array4D, DataType, NDArray, Rank, RankMap} from './nda
 export function conv1d<T extends NDArray>(
     input: T, filter: Array3D, bias: Array1D|null, stride: number,
     pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  return ENV.run('Conv1D', () => {
+  return ENV.math.scope('Conv1D', () => {
     let input3D = input as Array3D;
     let reshapedTo3D = false;
     if (input.rank === 2) {
@@ -118,7 +118,7 @@ export function conv1d<T extends NDArray>(
 export function conv2d<T extends Array3D|Array4D>(
     x: T, filter: Array4D, bias: Array1D|null, strides: [number, number]|number,
     pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  return ENV.run('Conv2D', () => {
+  return ENV.math.scope('Conv2D', () => {
     let x4D = x as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -195,7 +195,7 @@ export function conv2dDerInput<R extends Rank, T extends RankMap<'float32'>[R]>(
     dy: NDArray<'float32', R>, filter: Array4D,
     strides: [number, number]|number, pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  return ENV.run('conv2dDerInput', () => {
+  return ENV.math.scope('conv2dDerInput', () => {
     util.assert(
         xShape.length === dy.rank,
         `Length of inShape ` +
@@ -259,7 +259,7 @@ export function conv2dDerInput<R extends Rank, T extends RankMap<'float32'>[R]>(
  */
 export function conv2dDerBias(dy: Array3D<'float32'>|
                               Array4D<'float32'>): Array1D<'float32'> {
-  return ENV.run('conv2dDerBias', () => {
+  return ENV.math.scope('conv2dDerBias', () => {
     let dy4D = dy as Array4D;
     if (dy.rank === 3) {
       dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
@@ -291,7 +291,7 @@ export function conv2dDerFilter<R extends '3'|'4'>(
     filterShape: [number, number, number, number],
     strides: [number, number]|number, pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil'): Array4D<'float32'> {
-  return ENV.run('conv2dDerFilter', () => {
+  return ENV.math.scope('conv2dDerFilter', () => {
     let x4D = x as Array4D;
     if (x.rank === 3) {
       x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
@@ -404,7 +404,7 @@ export function depthwiseConv2D<T extends NDArray>(
     input: T, filter: Array4D, strides: [number, number]|number,
     pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
     dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  return ENV.run('depthwiseConv2D', () => {
+  return ENV.math.scope('depthwiseConv2D', () => {
     let input4D = input as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {

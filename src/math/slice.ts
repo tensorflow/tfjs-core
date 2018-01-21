@@ -29,7 +29,7 @@ import * as slice_util from './slice_util';
  */
 export function slice1D<D extends DataType>(
     x: Array1D<D>, begin: number, size: number): Array1D<D> {
-  return ENV.run('slice1D', () => {
+  return ENV.math.scope('slice1D', () => {
     slice_util.assertParamsValid(x, [begin], [size]);
     return ENV.engine.executeKernel(
                'Slice1D', {inputs: {x}, args: {begin, size}}) as Array1D<D>;
@@ -47,7 +47,7 @@ export function slice1D<D extends DataType>(
 export function slice2D<D extends DataType>(
     x: Array2D<D>, begin: [number, number],
     size: [number, number]): Array2D<D> {
-  return ENV.run('slice2D', () => {
+  return ENV.math.scope('slice2D', () => {
     slice_util.assertParamsValid(x, begin, size);
     return ENV.engine.executeKernel(
                'Slice2D', {inputs: {x}, args: {begin, size}}) as Array2D<D>;
@@ -65,7 +65,7 @@ export function slice2D<D extends DataType>(
 export function slice3D<D extends DataType>(
     x: Array3D<D>, begin: [number, number, number],
     size: [number, number, number]): Array3D<D> {
-  return ENV.run('slice3D', () => {
+  return ENV.math.scope('slice3D', () => {
     slice_util.assertParamsValid(x, begin, size);
     return ENV.engine.executeKernel(
                'Slice3D', {inputs: {x}, args: {begin, size}}) as Array3D<D>;
@@ -84,7 +84,7 @@ export function slice3D<D extends DataType>(
 export function slice4D<D extends DataType>(
     x: Array4D<D>, begin: [number, number, number, number],
     size: [number, number, number, number]): Array4D<D> {
-  return ENV.run('slice4D', () => {
+  return ENV.math.scope('slice4D', () => {
     slice_util.assertParamsValid(x, begin, size);
     return ENV.engine.executeKernel(
                'Slice4D', {inputs: {x}, args: {begin, size}}) as Array4D<D>;
