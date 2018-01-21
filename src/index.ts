@@ -25,7 +25,6 @@ import * as conv_util from './math/conv_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
-
 export {CheckpointLoader} from './data/checkpoint_loader';
 export {DataStats, InMemoryDataset} from './data/dataset';
 // tslint:disable-next-line:max-line-length
@@ -49,13 +48,20 @@ export {MathBackendWebGL, NDArrayMathGPU} from './math/backends/backend_webgl';
 export {MatrixOrientation} from './math/backends/types/matmul';
 export {GPGPUContext} from './math/backends/webgl/gpgpu_context';
 // tslint:disable-next-line:max-line-length
+export {batchNormalization2D, batchNormalization3D, batchNormalization4D} from './math/batchnorm';
+export {concat1D, concat2D, concat3D, concat4D} from './math/concat';
+export {conv1d, conv2d, conv2dTranspose, depthwiseConv2D} from './math/conv';
 export {LSTMCell, NDArrayMath} from './math/math';
-export {matMul} from './math/matmul';
+// tslint:disable-next-line:max-line-length
+export {dotProduct, matMul, matrixTimesVector, outerProduct, vectorTimesMatrix} from './math/matmul';
 // tslint:disable-next-line:max-line-length
 export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './math/ndarray';
 export {variable, Variable} from './math/ndarray';
 export {Optimizer} from './math/optimizers/optimizer';
 export {SGDOptimizer} from './math/optimizers/sgd_optimizer';
+export {avgPool, maxPool, minPool} from './math/pool';
+export {reverse1D, reverse2D, reverse3D, reverse4D} from './math/reverse';
+export {slice1D, slice2D, slice3D, slice4D} from './math/slice';
 export {Model} from './model';
 export {version};
 // Second level exports.

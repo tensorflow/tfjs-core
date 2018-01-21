@@ -18,6 +18,7 @@
 import * as device_util from './device_util';
 import {MathBackend} from './math/backends/backend';
 import {BackendEngine} from './math/backends/backend_engine';
+import {ScopeResult} from './math/backends/tape_util';
 import {NDArrayMath} from './math/math';
 import * as util from './util';
 
@@ -291,6 +292,30 @@ export class Environment {
     } catch (err) {
       return false;
     }
+  }
+
+  run<T extends ScopeResult>(name: string|(() => T), scope?: () => T): T {
+    if (scope == null) {
+      // Called with only 1 argument.
+      if (typeof name !== 'function') {
+        throw new Error('Please provide a function to dl.run()');
+      }
+      scope = name;
+    } else {
+      // Called with 2 arguments.
+      if (typeof name !== 'string' && !(name instanceof String)) {
+        throw new Error(
+            'When calling with two arguments, the first argument ' +
+            'to dl.run() must be a string');
+      }
+      if (typeof scope !== 'function') {
+        throw new Error(
+            'When calling with two arguments, the 2nd argument ' +
+            'to dl.run() must be a function');
+      }
+      // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
+    }
+    return this.math.scope(scope);
   }
 
   get math(): NDArrayMath {
