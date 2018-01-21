@@ -61,9 +61,11 @@ export function matMul(
         }
         return {
           a: () => matMul(
-              dy, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
+                       dy, b, MatrixOrientation.REGULAR,
+                       MatrixOrientation.TRANSPOSED) as Array2D<'float32'>,
           b: () => matMul(
-              a, dy, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR)
+                       a, dy, MatrixOrientation.TRANSPOSED,
+                       MatrixOrientation.REGULAR) as Array2D<'float32'>
         };
       });
 }
