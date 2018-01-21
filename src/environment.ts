@@ -294,30 +294,6 @@ export class Environment {
     }
   }
 
-  run<T extends ScopeResult>(name: string|(() => T), scope?: () => T): T {
-    if (scope == null) {
-      // Called with only 1 argument.
-      if (typeof name !== 'function') {
-        throw new Error('Please provide a function to dl.run()');
-      }
-      scope = name;
-    } else {
-      // Called with 2 arguments.
-      if (typeof name !== 'string' && !(name instanceof String)) {
-        throw new Error(
-            'When calling with two arguments, the first argument ' +
-            'to dl.run() must be a string');
-      }
-      if (typeof scope !== 'function') {
-        throw new Error(
-            'When calling with two arguments, the 2nd argument ' +
-            'to dl.run() must be a function');
-      }
-      // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
-    }
-    return this.math.scope(scope);
-  }
-
   get math(): NDArrayMath {
     if (this.globalMath == null) {
       const bestBackend = this.getBestBackend();
@@ -330,6 +306,8 @@ export class Environment {
   get engine(): BackendEngine {
     return this.globalMath.engine;
   }
+
+  run = run;
 }
 
 // Expects flags from URL in the format ?dljsflags=FLAG1:1,FLAG2:true.
@@ -390,3 +368,41 @@ function getOrMakeEnvironment(): Environment {
 }
 
 export let ENV = getOrMakeEnvironment();
+
+/**
+ * Runs the operations in the provided scope function. After the function runs,
+ * it cleans up all the `NDArray`s allocated, other than those returned by the
+ * function.
+ *
+ * When in safe mode, you must enclose all `NDArray` creation and math ops
+ * inside a `dl.run()` to prevent memory leaks.
+ *
+ * @param name The name of the scope, optional. If a name is provided,
+ *     and debug mode is on, the timing and the memory usage of the function
+ *     will be tracked and displayed on the console using the provided name.
+ * @param scopeFn The function to execute.
+ */
+export function run<T extends ScopeResult>(
+    name: string|(() => T), scope?: () => T): T {
+  if (scope == null) {
+    // Called with only 1 argument.
+    if (typeof name !== 'function') {
+      throw new Error('Please provide a function to dl.run()');
+    }
+    scope = name;
+  } else {
+    // Called with 2 arguments.
+    if (typeof name !== 'string' && !(name instanceof String)) {
+      throw new Error(
+          'When calling with two arguments, the first argument ' +
+          'to dl.run() must be a string');
+    }
+    if (typeof scope !== 'function') {
+      throw new Error(
+          'When calling with two arguments, the 2nd argument ' +
+          'to dl.run() must be a function');
+    }
+    // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
+  }
+  return ENV.math.scope(scope);
+}
