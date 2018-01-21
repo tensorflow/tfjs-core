@@ -476,9 +476,9 @@ export class NDArrayMath implements NDArrayManager {
    */
   argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return this.scope('argMaxEquals', () => this.scope(() => {
+    return this.scope('argMaxEquals', () => {
       return this.equal(this.argMax(x1), this.argMax(x2));
-    }));
+    });
   }
 
   /**
@@ -1122,13 +1122,11 @@ export class NDArrayMath implements NDArrayManager {
             `Gradient of pow not yet supported for broadcasted shapes.`);
       }
       const derA = () => {
-        return this.scope(() => {
-          return this.multiply(
-              dy,
-              this.multiply(
-                  b.asType(a.dtype),
-                  this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
-        });
+        return this.multiply(
+            dy,
+            this.multiply(
+                b.asType(a.dtype),
+                this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
       };
       const derB = () => {
         throw new Error(
@@ -1547,10 +1545,8 @@ export class NDArrayMath implements NDArrayManager {
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
     return this.scope('scaledArrayAdd', () => {
-      return this.scope(() => {
-        // TODO(nsthorat): Add an SGEMM kernel and then update this.
-        return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
-      });
+      // TODO(nsthorat): Add an SGEMM kernel and then update this.
+      return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
     });
   }
 
@@ -1683,7 +1679,7 @@ export class NDArrayMath implements NDArrayManager {
   multiRNNCell(
       lstmCells: LSTMCell[], data: Array2D, c: Array2D[],
       h: Array2D[]): [Array2D[], Array2D[]] {
-    const res = this.scope(() => {
+    const res = this.scope('multiRNNCell', () => {
       let input = data;
       const newStates = [];
       for (let i = 0; i < lstmCells.length; i++) {
@@ -1719,7 +1715,7 @@ export class NDArrayMath implements NDArrayManager {
   basicLSTMCell(
       forgetBias: Scalar, lstmKernel: Array2D, lstmBias: Array1D, data: Array2D,
       c: Array2D, h: Array2D): [Array2D, Array2D] {
-    const res = this.scope(() => {
+    const res = this.scope('basicLSTMCell', () => {
       const combined = this.concat2D(data, h, 1);
       const weighted = this.matMul(combined, lstmKernel);
       const res = this.add(weighted, lstmBias) as Array2D;
@@ -1819,7 +1815,7 @@ export class NDArrayMath implements NDArrayManager {
   moments(x: NDArray, axis: number|number[] = null, keepDims = false):
       {mean: NDArray<'float32'>, variance: NDArray<'float32'>} {
     const axes = axis_util.parseAxisParam(axis, x.shape);
-    const result = this.scope(() => {
+    const result = this.scope('moments', () => {
       const mean = this.mean(x, axes, keepDims);
       let keepDimsShape = mean.shape;
       if (!keepDims) {
@@ -1864,7 +1860,7 @@ export class NDArrayMath implements NDArrayManager {
   norm<D extends DataType>(
       x: NDArray<D>, ord: number|'euclidean'|'fro' = 'euclidean',
       axis: number|number[] = null, keepDims = false): NDArray<D|SumTypes[D]> {
-    return this.scope(() => {
+    return this.scope('norm', () => {
       const norm = this.normInternal(x, ord, axis);
       let keepDimsShape = norm.shape;
       if (keepDims) {
