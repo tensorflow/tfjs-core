@@ -33,8 +33,10 @@ import * as slice from './slice';
  * @return The concatenated array.
  */
 export function concat1D(a: Array1D, b: Array1D): Array1D {
-  concat_util.assertParams(a.shape, b.shape, 0);
-  return ENV.engine.executeKernel('Concat1D', {inputs: {a, b}});
+  return ENV.run('concat1D', () => {
+    concat_util.assertParams(a.shape, b.shape, 0);
+    return ENV.engine.executeKernel('Concat1D', {inputs: {a, b}});
+  });
 }
 
 /**
@@ -66,8 +68,10 @@ export function concat1D(a: Array1D, b: Array1D): Array1D {
  * @return The concatenated array.
  */
 export function concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-  concat_util.assertParams(a.shape, b.shape, axis);
-  return ENV.engine.executeKernel('Concat2D', {inputs: {a, b}, args: {axis}});
+  return ENV.run('concat2D', () => {
+    concat_util.assertParams(a.shape, b.shape, axis);
+    return ENV.engine.executeKernel('Concat2D', {inputs: {a, b}, args: {axis}});
+  });
 }
 
 /**
@@ -102,19 +106,21 @@ export function concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
  * @return The concatenated array.
  */
 export function concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
-  concat_util.assertParams(a.shape, b.shape, axis);
+  return ENV.run('concat3D', () => {
+    concat_util.assertParams(a.shape, b.shape, axis);
 
-  const gradients = (dy: Array3D<'float32'>, y: Array3D) => {
-    const {x1Begin, x1Size, x2Begin, x2Size} =
-        concat_util.computeGradientSliceShapes3D(a.shape, y.shape, axis);
-    return {
-      a: () => slice.slice3D(dy, x1Begin, x1Size),
-      b: () => slice.slice3D(dy, x2Begin, x2Size)
+    const gradients = (dy: Array3D<'float32'>, y: Array3D) => {
+      const {x1Begin, x1Size, x2Begin, x2Size} =
+          concat_util.computeGradientSliceShapes3D(a.shape, y.shape, axis);
+      return {
+        a: () => slice.slice3D(dy, x1Begin, x1Size),
+        b: () => slice.slice3D(dy, x2Begin, x2Size)
+      };
     };
-  };
 
-  return ENV.engine.executeKernel(
-      'Concat3D', {inputs: {a, b}, args: {axis}}, gradients);
+    return ENV.engine.executeKernel(
+        'Concat3D', {inputs: {a, b}, args: {axis}}, gradients);
+  });
 }
 
 /**
@@ -127,6 +133,8 @@ export function concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
  * @return The concatenated array.
  */
 export function concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
-  concat_util.assertParams(a.shape, b.shape, axis);
-  return ENV.engine.executeKernel('Concat4D', {inputs: {a, b}, args: {axis}});
+  return ENV.run('concat4D', () => {
+    concat_util.assertParams(a.shape, b.shape, axis);
+    return ENV.engine.executeKernel('Concat4D', {inputs: {a, b}, args: {axis}});
+  });
 }

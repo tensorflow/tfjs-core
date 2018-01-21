@@ -25,11 +25,13 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
  * @param x The input array.
  */
 export function reverse1D(x: Array1D): Array1D {
-  util.assert(x.rank === 1, `Error in reverse1D: x must be rank 1 but got
+  return ENV.run('reverse1D', () => {
+    util.assert(x.rank === 1, `Error in reverse1D: x must be rank 1 but got
              rank ${x.rank}.`);
-  const input4D = x.as4D(1, 1, 1, x.shape[0]);
-  const res = reverse4D(input4D, [3]);
-  return res.as1D();
+    const input4D = x.as4D(1, 1, 1, x.shape[0]);
+    const res = reverse4D(input4D, [3]);
+    return res.as1D();
+  });
 }
 
 /**
@@ -39,12 +41,14 @@ export function reverse1D(x: Array1D): Array1D {
  *     range [-rank(x), rank(x)).
  */
 export function reverse2D(x: Array2D, axis: number|number[]): Array2D {
-  util.assert(x.rank === 2, `Error in reverse2D: x must be rank 2 but got
+  return ENV.run('reverse2D', () => {
+    util.assert(x.rank === 2, `Error in reverse2D: x must be rank 2 but got
              rank ${x.rank}.`);
-  const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 2);
-  const input4D = x.as4D(1, 1, x.shape[0], x.shape[1]);
-  const res = reverse4D(input4D, axisCleaned);
-  return res.as2D(res.shape[2], res.shape[3]);
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 2);
+    const input4D = x.as4D(1, 1, x.shape[0], x.shape[1]);
+    const res = reverse4D(input4D, axisCleaned);
+    return res.as2D(res.shape[2], res.shape[3]);
+  });
 }
 
 /**
@@ -54,12 +58,14 @@ export function reverse2D(x: Array2D, axis: number|number[]): Array2D {
  *     range [-rank(x), rank(x)).
  */
 export function reverse3D(x: Array3D, axis: number|number[]): Array3D {
-  util.assert(x.rank === 3, `Error in reverse3D: x must be rank 3 but got
+  return ENV.run('reverse3D', () => {
+    util.assert(x.rank === 3, `Error in reverse3D: x must be rank 3 but got
              rank ${x.rank}.`);
-  const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 1);
-  const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-  const res = reverse4D(input4D, axisCleaned);
-  return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 1);
+    const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    const res = reverse4D(input4D, axisCleaned);
+    return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+  });
 }
 
 /**
@@ -69,9 +75,11 @@ export function reverse3D(x: Array3D, axis: number|number[]): Array3D {
  *     range [-rank(x), rank(x)).
  */
 export function reverse4D(x: Array4D, axis: number|number[]): Array4D {
-  util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
+  return ENV.run('reverse4D', () => {
+    util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
              rank ${x.rank}.`);
-  const axisCleaned = axis_util.parseAxisParam(axis, x.shape);
-  return ENV.engine.executeKernel(
-      'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}});
+    const axisCleaned = axis_util.parseAxisParam(axis, x.shape);
+    return ENV.engine.executeKernel(
+        'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}});
+  });
 }

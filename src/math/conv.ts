@@ -45,50 +45,50 @@ import {Array1D, Array3D, Array4D, DataType, NDArray, Rank, RankMap} from './nda
 export function conv1d<T extends NDArray>(
     input: T, filter: Array3D, bias: Array1D|null, stride: number,
     pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  let input3D = input as NDArray as Array3D;
-  let reshapedTo3D = false;
-  if (input.rank === 2) {
-    reshapedTo3D = true;
-    input3D = input.as3D(1, input.shape[0], input.shape[1]);
-  }
-
-  util.assert(
-      input3D.rank === 3,
-      `Error in conv1d: input must be rank 3, but got rank ${input3D.rank}.`);
-  util.assert(
-      filter.rank === 3,
-      `Error in conv1d: filter must be rank 3, but got rank ` +
-          `${filter.rank}.`);
-  if (bias != null) {
-    util.assert(
-        bias.rank === 1,
-        `Error in conv1d: bias must be rank 1, but got rank ` +
-            `${bias.rank}.`);
-  }
-  if (dimRoundingMode != null) {
-    util.assert(
-        util.isInt(pad as number),
-        `Error in conv1d: pad must be an integer when using, ` +
-            `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-  }
-
-  util.assert(
-      input3D.shape[2] === filter.shape[1],
-      `Error in conv1d: depth of input (${input3D.shape[2]}) must match  ` +
-          `input depth for filter ${filter.shape[1]}.`);
-
-  const filter4D =
-      filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
-  const input4D =
-      input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
-  const strides: [number, number] = [1, stride];
-
   return ENV.run('Conv1D', () => {
+    let input3D = input as Array3D;
+    let reshapedTo3D = false;
+    if (input.rank === 2) {
+      reshapedTo3D = true;
+      input3D = input.as3D(1, input.shape[0], input.shape[1]);
+    }
+
+    util.assert(
+        input3D.rank === 3,
+        `Error in conv1d: input must be rank 3, but got rank ${input3D.rank}.`);
+    util.assert(
+        filter.rank === 3,
+        `Error in conv1d: filter must be rank 3, but got rank ` +
+            `${filter.rank}.`);
+    if (bias != null) {
+      util.assert(
+          bias.rank === 1,
+          `Error in conv1d: bias must be rank 1, but got rank ` +
+              `${bias.rank}.`);
+    }
+    if (dimRoundingMode != null) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in conv1d: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+
+    util.assert(
+        input3D.shape[2] === filter.shape[1],
+        `Error in conv1d: depth of input (${input3D.shape[2]}) must match  ` +
+            `input depth for filter ${filter.shape[1]}.`);
+
+    const filter4D =
+        filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
+    const input4D =
+        input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
+    const strides: [number, number] = [1, stride];
+
     const res = conv2d(input4D, filter4D, bias, strides, pad, dimRoundingMode);
     if (reshapedTo3D) {
-      return res.as2D(res.shape[2], res.shape[3]) as NDArray as T;
+      return res.as2D(res.shape[2], res.shape[3]) as T;
     }
-    return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as T;
+    return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as T;
   });
 }
 
@@ -118,41 +118,41 @@ export function conv1d<T extends NDArray>(
 export function conv2d<T extends Array3D|Array4D>(
     x: T, filter: Array4D, bias: Array1D|null, strides: [number, number]|number,
     pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  let x4D = x as NDArray as Array4D;
-  let reshapedTo4D = false;
-  if (x.rank === 3) {
-    reshapedTo4D = true;
-    x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-  }
-  util.assert(
-      x4D.rank === 4,
-      `Error in conv2d: input must be rank 4, but got rank ${x4D.rank}.`);
-  util.assert(
-      filter.rank === 4,
-      `Error in conv2d: filter must be rank 4, but got rank ` +
-          `${filter.rank}.`);
-  if (bias != null) {
-    util.assert(
-        bias.rank === 1,
-        `Error in conv2d: bias must be rank 1, but got rank ` +
-            `${bias.rank}.`);
-  }
-  if (dimRoundingMode != null) {
-    util.assert(
-        util.isInt(pad as number),
-        `Error in conv2d: pad must be an integer when using, ` +
-            `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-  }
-
-  util.assert(
-      x4D.shape[3] === filter.shape[2],
-      `Error in conv2d: depth of input (${x4D.shape[3]}) must match  ` +
-          `input depth for filter ${filter.shape[2]}.`);
-
-  const convInfo = conv_util.computeConv2DInfo(
-      x4D.shape, filter.shape, strides, pad, dimRoundingMode);
-
   return ENV.run('Conv2D', () => {
+    let x4D = x as Array4D;
+    let reshapedTo4D = false;
+    if (x.rank === 3) {
+      reshapedTo4D = true;
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    }
+    util.assert(
+        x4D.rank === 4,
+        `Error in conv2d: input must be rank 4, but got rank ${x4D.rank}.`);
+    util.assert(
+        filter.rank === 4,
+        `Error in conv2d: filter must be rank 4, but got rank ` +
+            `${filter.rank}.`);
+    if (bias != null) {
+      util.assert(
+          bias.rank === 1,
+          `Error in conv2d: bias must be rank 1, but got rank ` +
+              `${bias.rank}.`);
+    }
+    if (dimRoundingMode != null) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in conv2d: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+
+    util.assert(
+        x4D.shape[3] === filter.shape[2],
+        `Error in conv2d: depth of input (${x4D.shape[3]}) must match  ` +
+            `input depth for filter ${filter.shape[2]}.`);
+
+    const convInfo = conv_util.computeConv2DInfo(
+        x4D.shape, filter.shape, strides, pad, dimRoundingMode);
+
     const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
       return {
         x: () => conv2dDerInput(x4D.shape, dy, filter, strides, pad),
@@ -165,9 +165,9 @@ export function conv2d<T extends Array3D|Array4D>(
         'Conv2D', {inputs: {x: x4D, filter, bias}, args: {convInfo}},
         gradients);
     if (reshapedTo4D) {
-      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as T;
+      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
-    return res as NDArray as T;
+    return res as T;
   });
 }
 
@@ -195,52 +195,52 @@ export function conv2dDerInput<R extends Rank, T extends RankMap<'float32'>[R]>(
     dy: NDArray<'float32', R>, filter: Array4D,
     strides: [number, number]|number, pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  util.assert(
-      xShape.length === dy.rank,
-      `Length of inShape ` +
-          `(${xShape.length}) and rank of dy (${dy.rank}) must match`);
-
-  let xShape4D = xShape as [number, number, number, number];
-  let dy4D = dy as Array4D<'float32'>;
-  let reshapedTo4D = false;
-  if (dy.rank === 3) {
-    reshapedTo4D = true;
-    dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-    xShape4D = [1, xShape[0], xShape[1], xShape[2]];
-  }
-
-  const inDepth = xShape4D[3];
-  const outDepth = dy4D.shape[3];
-  util.assert(
-      xShape4D.length === 4,
-      `Error in conv2dDerInput: inShape must be length 4, but got length ` +
-          `${xShape4D.length}.`);
-  util.assert(
-      dy4D.rank === 4,
-      `Error in conv2dDerInput: dy must be rank 4, but got ` +
-          `rank ${dy4D.rank}`);
-  util.assert(
-      filter.rank === 4,
-      `Error in conv2dDerInput: filter must be rank 4, but got ` +
-          `rank ${filter.rank}`);
-  util.assert(
-      inDepth === filter.shape[2],
-      `Error in conv2dDerInput: depth of input (${inDepth}) must ` +
-          `match input depth for filter ${filter.shape[2]}.`);
-  util.assert(
-      outDepth === filter.shape[3],
-      `Error in conv2dDerInput: depth of output (${outDepth}) must` +
-          `match output depth for filter ${filter.shape[3]}.`);
-  if (dimRoundingMode != null) {
-    util.assert(
-        util.isInt(pad as number),
-        `Error in conv2dDerInput: pad must be an integer when using, ` +
-            `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-  }
-
-  const convInfo = conv_util.computeConv2DInfo(
-      xShape4D, filter.shape, strides, pad, dimRoundingMode);
   return ENV.run('conv2dDerInput', () => {
+    util.assert(
+        xShape.length === dy.rank,
+        `Length of inShape ` +
+            `(${xShape.length}) and rank of dy (${dy.rank}) must match`);
+
+    let xShape4D = xShape as [number, number, number, number];
+    let dy4D = dy as Array4D<'float32'>;
+    let reshapedTo4D = false;
+    if (dy.rank === 3) {
+      reshapedTo4D = true;
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+      xShape4D = [1, xShape[0], xShape[1], xShape[2]];
+    }
+
+    const inDepth = xShape4D[3];
+    const outDepth = dy4D.shape[3];
+    util.assert(
+        xShape4D.length === 4,
+        `Error in conv2dDerInput: inShape must be length 4, but got length ` +
+            `${xShape4D.length}.`);
+    util.assert(
+        dy4D.rank === 4,
+        `Error in conv2dDerInput: dy must be rank 4, but got ` +
+            `rank ${dy4D.rank}`);
+    util.assert(
+        filter.rank === 4,
+        `Error in conv2dDerInput: filter must be rank 4, but got ` +
+            `rank ${filter.rank}`);
+    util.assert(
+        inDepth === filter.shape[2],
+        `Error in conv2dDerInput: depth of input (${inDepth}) must ` +
+            `match input depth for filter ${filter.shape[2]}.`);
+    util.assert(
+        outDepth === filter.shape[3],
+        `Error in conv2dDerInput: depth of output (${outDepth}) must` +
+            `match output depth for filter ${filter.shape[3]}.`);
+    if (dimRoundingMode != null) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in conv2dDerInput: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+
+    const convInfo = conv_util.computeConv2DInfo(
+        xShape4D, filter.shape, strides, pad, dimRoundingMode);
     const res = ENV.engine.executeKernel(
         'Conv2DDerInput', {inputs: {dy: dy4D, filter}, args: {convInfo}});
     if (reshapedTo4D) {
@@ -259,11 +259,13 @@ export function conv2dDerInput<R extends Rank, T extends RankMap<'float32'>[R]>(
  */
 export function conv2dDerBias(dy: Array3D<'float32'>|
                               Array4D<'float32'>): Array1D<'float32'> {
-  let dy4D = dy as Array4D;
-  if (dy.rank === 3) {
-    dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-  }
-  return ENV.engine.executeKernel('Conv2DDerBias', {inputs: {dy: dy4D}});
+  return ENV.run('conv2dDerBias', () => {
+    let dy4D = dy as Array4D;
+    if (dy.rank === 3) {
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+    }
+    return ENV.engine.executeKernel('Conv2DDerBias', {inputs: {dy: dy4D}});
+  });
 }
 
 /**
@@ -289,45 +291,47 @@ export function conv2dDerFilter<R extends '3'|'4'>(
     filterShape: [number, number, number, number],
     strides: [number, number]|number, pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil'): Array4D<'float32'> {
-  let x4D = x as Array4D;
-  if (x.rank === 3) {
-    x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-  }
-  let dy4D = dy as Array4D<'float32'>;
-  if (dy4D.rank === 3) {
-    dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-  }
-  util.assert(
-      x4D.rank === 4,
-      `Error in conv2dDerFilter: input must be rank 4, but got shape ` +
-          `${x4D.shape}.`);
-  util.assert(
-      dy4D.rank === 4,
-      `Error in conv2dDerFilter: dy must be rank 4, but got shape ` +
-          `${dy4D.shape}.`);
-  util.assert(
-      filterShape.length === 4,
-      `Error in conv2dDerFilter: filterShape must be length 4, but got ` +
-          `${filterShape}.`);
-  util.assert(
-      x4D.shape[3] === filterShape[2],
-      `Error in conv2dDerFilter: depth of input ${x4D.shape[3]}) must ` +
-          `match input depth in filter (${filterShape[2]}.`);
-  util.assert(
-      dy4D.shape[3] === filterShape[3],
-      `Error in conv2dDerFilter: depth of dy (${dy4D.shape[3]}) must ` +
-          `match output depth for filter (${filterShape[3]}).`);
-  if (dimRoundingMode != null) {
+  return ENV.run('conv2dDerFilter', () => {
+    let x4D = x as Array4D;
+    if (x.rank === 3) {
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    }
+    let dy4D = dy as Array4D<'float32'>;
+    if (dy4D.rank === 3) {
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+    }
     util.assert(
-        util.isInt(pad as number),
-        `Error in conv2dDerFilter: pad must be an integer when using, ` +
-            `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-  }
+        x4D.rank === 4,
+        `Error in conv2dDerFilter: input must be rank 4, but got shape ` +
+            `${x4D.shape}.`);
+    util.assert(
+        dy4D.rank === 4,
+        `Error in conv2dDerFilter: dy must be rank 4, but got shape ` +
+            `${dy4D.shape}.`);
+    util.assert(
+        filterShape.length === 4,
+        `Error in conv2dDerFilter: filterShape must be length 4, but got ` +
+            `${filterShape}.`);
+    util.assert(
+        x4D.shape[3] === filterShape[2],
+        `Error in conv2dDerFilter: depth of input ${x4D.shape[3]}) must ` +
+            `match input depth in filter (${filterShape[2]}.`);
+    util.assert(
+        dy4D.shape[3] === filterShape[3],
+        `Error in conv2dDerFilter: depth of dy (${dy4D.shape[3]}) must ` +
+            `match output depth for filter (${filterShape[3]}).`);
+    if (dimRoundingMode != null) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in conv2dDerFilter: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
 
-  const convInfo = conv_util.computeConv2DInfo(
-      x4D.shape, filterShape, strides, pad, dimRoundingMode);
-  return ENV.engine.executeKernel(
-      'Conv2DDerFilter', {inputs: {x: x4D, dy: dy4D}, args: {convInfo}});
+    const convInfo = conv_util.computeConv2DInfo(
+        x4D.shape, filterShape, strides, pad, dimRoundingMode);
+    return ENV.engine.executeKernel(
+        'Conv2DDerFilter', {inputs: {x: x4D, dy: dy4D}, args: {convInfo}});
+  });
 }
 
 /**
@@ -400,48 +404,48 @@ export function depthwiseConv2D<T extends NDArray>(
     input: T, filter: Array4D, strides: [number, number]|number,
     pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
     dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  let input4D = input as NDArray as Array4D;
-  let reshapedTo4D = false;
-  if (input.rank === 3) {
-    reshapedTo4D = true;
-    input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
-  }
-  util.assert(
-      input4D.rank === 4,
-      `Error in depthwiseConv2D: input must be rank 4, but got ` +
-          `rank ${input4D.rank}.`);
-  util.assert(
-      filter.rank === 4,
-      `Error in depthwiseConv2D: filter must be rank 4, but got rank ` +
-          `${filter.rank}.`);
-  util.assert(
-      input4D.shape[3] === filter.shape[2],
-      `Error in depthwiseConv2D: number of input channels ` +
-          `(${input4D.shape[3]}) must match the inChannels dimension in ` +
-          `filter ${filter.shape[2]}.`);
-  rates = rates || [1, 1];
-  const [rateHeight, rateWidth] = parseTupleParam(rates);
-  util.assert(
-      rateHeight === 1 && rateWidth === 1,
-      'Error in depthwiseConv2D: rates greater than 1 are not yet ' +
-          `supported. Got rates '${rates}'`);
-  if (dimRoundingMode != null) {
-    util.assert(
-        util.isInt(pad as number),
-        `Error in depthwiseConv2D: pad must be an integer when using, ` +
-            `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-  }
-
-  const convInfo = conv_util.computeConv2DInfo(
-      input4D.shape, filter.shape, strides, pad, dimRoundingMode,
-      true /* depthwise */);
   return ENV.run('depthwiseConv2D', () => {
+    let input4D = input as Array4D;
+    let reshapedTo4D = false;
+    if (input.rank === 3) {
+      reshapedTo4D = true;
+      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
+    }
+    util.assert(
+        input4D.rank === 4,
+        `Error in depthwiseConv2D: input must be rank 4, but got ` +
+            `rank ${input4D.rank}.`);
+    util.assert(
+        filter.rank === 4,
+        `Error in depthwiseConv2D: filter must be rank 4, but got rank ` +
+            `${filter.rank}.`);
+    util.assert(
+        input4D.shape[3] === filter.shape[2],
+        `Error in depthwiseConv2D: number of input channels ` +
+            `(${input4D.shape[3]}) must match the inChannels dimension in ` +
+            `filter ${filter.shape[2]}.`);
+    rates = rates || [1, 1];
+    const [rateHeight, rateWidth] = parseTupleParam(rates);
+    util.assert(
+        rateHeight === 1 && rateWidth === 1,
+        'Error in depthwiseConv2D: rates greater than 1 are not yet ' +
+            `supported. Got rates '${rates}'`);
+    if (dimRoundingMode != null) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in depthwiseConv2D: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+
+    const convInfo = conv_util.computeConv2DInfo(
+        input4D.shape, filter.shape, strides, pad, dimRoundingMode,
+        true /* depthwise */);
     const res = ENV.engine.executeKernel(
         'DepthwiseConv2D', {inputs: {x: input4D, filter}, args: {convInfo}});
     if (reshapedTo4D) {
-      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as T;
+      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
-    return res as NDArray as T;
+    return res as T;
   });
 }
 

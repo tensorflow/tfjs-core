@@ -223,7 +223,7 @@ describe('Backend', () => {
   it('default ENV has cpu and webgl, and webgl is the best available', () => {
     expect(ENV.getBackend('webgl') != null).toBe(true);
     expect(ENV.getBackend('cpu') != null).toBe(true);
-    expect(ENV.getBestBackend()).toBe(ENV.getBackend('webgl'));
+    expect(ENV.getBestBackend()).toBe('webgl');
   });
 
   it('custom webgl registration', () => {
@@ -254,7 +254,7 @@ describe('Backend', () => {
     const success = ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
     expect(success).toBe(false);
     expect(ENV.getBackend('webgl') == null).toBe(true);
-    expect(ENV.getBestBackend()).toBe(ENV.getBackend('cpu'));
+    expect(ENV.getBestBackend()).toBe('cpu');
   });
 });
 
@@ -293,7 +293,7 @@ describe('ENV.run', () => {
     }).toThrowError();
   });
 
-  it('2 arguments, but second is not a function', () => {
+  it('2 arguments, but second is not a function throws error', () => {
     expect(() => {
       // tslint:disable-next-line:no-any
       ENV.run('name', 'another name' as any);

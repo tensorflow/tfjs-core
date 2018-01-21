@@ -35,34 +35,36 @@ export function batchNormalization2D(
     x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
     varianceEpsilon = .001, scale?: Array2D|Array1D,
     offset?: Array2D|Array1D): Array2D {
-  util.assert(
-      x.rank === 2,
-      `Error in batchNormalization3D: x must be rank 3 but got rank ` +
-          `${x.rank}.`);
-  util.assert(
-      mean.rank === 2 || mean.rank === 1,
-      `Error in batchNormalization2D: mean must be rank 2 or rank 1 but ` +
-          `got rank ${mean.rank}.`);
-  util.assert(
-      variance.rank === 2 || variance.rank === 1,
-      `Error in batchNormalization2D: variance must be rank 2 or rank 1 ` +
-          `but got rank ${variance.rank}.`);
-  if (scale != null) {
+  return ENV.run('batchNorm2D', () => {
     util.assert(
-        scale.rank === 2 || scale.rank === 1,
-        `Error in batchNormalization2D: scale must be rank 2 or rank 1 ` +
-            `but got rank ${scale.rank}.`);
-  }
-  if (offset != null) {
+        x.rank === 2,
+        `Error in batchNormalization3D: x must be rank 3 but got rank ` +
+            `${x.rank}.`);
     util.assert(
-        offset.rank === 2 || offset.rank === 1,
-        `Error in batchNormalization2D: offset must be rank 2 or rank 1 ` +
-            `but got rank ${offset.rank}.`);
-  }
+        mean.rank === 2 || mean.rank === 1,
+        `Error in batchNormalization2D: mean must be rank 2 or rank 1 but ` +
+            `got rank ${mean.rank}.`);
+    util.assert(
+        variance.rank === 2 || variance.rank === 1,
+        `Error in batchNormalization2D: variance must be rank 2 or rank 1 ` +
+            `but got rank ${variance.rank}.`);
+    if (scale != null) {
+      util.assert(
+          scale.rank === 2 || scale.rank === 1,
+          `Error in batchNormalization2D: scale must be rank 2 or rank 1 ` +
+              `but got rank ${scale.rank}.`);
+    }
+    if (offset != null) {
+      util.assert(
+          offset.rank === 2 || offset.rank === 1,
+          `Error in batchNormalization2D: offset must be rank 2 or rank 1 ` +
+              `but got rank ${offset.rank}.`);
+    }
 
-  return ENV.engine.executeKernel(
-      'BatchNorm2D',
-      {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+    return ENV.engine.executeKernel(
+        'BatchNorm2D',
+        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+  });
 }
 
 /**
@@ -81,34 +83,36 @@ export function batchNormalization3D(
     x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
     varianceEpsilon = .001, scale?: Array3D|Array1D,
     offset?: Array3D|Array1D): Array3D {
-  util.assert(
-      x.rank === 3,
-      `Error in batchNormalization3D: x must be rank 3 but got rank ` +
-          `${x.rank}.`);
-  util.assert(
-      mean.rank === 3 || mean.rank === 1,
-      `Error in batchNormalization3D: mean must be rank 3 or rank 1 but ` +
-          `got rank ${mean.rank}.`);
-  util.assert(
-      variance.rank === 3 || variance.rank === 1,
-      `Error in batchNormalization3D: variance must be rank 3 or rank 1 ` +
-          `but got rank ${variance.rank}.`);
-  if (scale != null) {
+  return ENV.run('batchNorm3D', () => {
     util.assert(
-        scale.rank === 3 || scale.rank === 1,
-        `Error in batchNormalization3D: scale must be rank 3 or rank 1 ` +
-            `but got rank ${scale.rank}.`);
-  }
-  if (offset != null) {
+        x.rank === 3,
+        `Error in batchNormalization3D: x must be rank 3 but got rank ` +
+            `${x.rank}.`);
     util.assert(
-        offset.rank === 3 || offset.rank === 1,
-        `Error in batchNormalization3D: offset must be rank 3 or rank 1 ` +
-            `but got rank ${offset.rank}.`);
-  }
+        mean.rank === 3 || mean.rank === 1,
+        `Error in batchNormalization3D: mean must be rank 3 or rank 1 but ` +
+            `got rank ${mean.rank}.`);
+    util.assert(
+        variance.rank === 3 || variance.rank === 1,
+        `Error in batchNormalization3D: variance must be rank 3 or rank 1 ` +
+            `but got rank ${variance.rank}.`);
+    if (scale != null) {
+      util.assert(
+          scale.rank === 3 || scale.rank === 1,
+          `Error in batchNormalization3D: scale must be rank 3 or rank 1 ` +
+              `but got rank ${scale.rank}.`);
+    }
+    if (offset != null) {
+      util.assert(
+          offset.rank === 3 || offset.rank === 1,
+          `Error in batchNormalization3D: offset must be rank 3 or rank 1 ` +
+              `but got rank ${offset.rank}.`);
+    }
 
-  return ENV.engine.executeKernel(
-      'BatchNorm3D',
-      {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+    return ENV.engine.executeKernel(
+        'BatchNorm3D',
+        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+  });
 }
 
 /**
@@ -127,32 +131,34 @@ export function batchNormalization4D(
     x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
     varianceEpsilon = .001, scale?: Array4D|Array1D,
     offset?: Array4D|Array1D): Array4D {
-  util.assert(
-      x.rank === 4,
-      `Error in batchNormalization4D: x must be rank 4 but got rank ` +
-          `${x.rank}.`);
-  util.assert(
-      mean.rank === 4 || mean.rank === 1,
-      `Error in batchNormalization4D: mean must be rank 4 or rank 1 but ` +
-          `got rank ${mean.rank}.`);
-  util.assert(
-      variance.rank === 4 || variance.rank === 1,
-      `Error in batchNormalization4D: variance must be rank 4 or rank 1 ` +
-          `but got rank ${variance.rank}.`);
-  if (scale != null) {
+  return ENV.run('batchNorm4D', () => {
     util.assert(
-        scale.rank === 4 || scale.rank === 1,
-        `Error in batchNormalization4D: scale must be rank 4 or rank 1 ` +
-            `but got rank ${scale.rank}.`);
-  }
-  if (offset != null) {
+        x.rank === 4,
+        `Error in batchNormalization4D: x must be rank 4 but got rank ` +
+            `${x.rank}.`);
     util.assert(
-        offset.rank === 4 || offset.rank === 1,
-        `Error in batchNormalization4D: offset must be rank 4 or rank 1 ` +
-            `but got rank ${offset.rank}.`);
-  }
+        mean.rank === 4 || mean.rank === 1,
+        `Error in batchNormalization4D: mean must be rank 4 or rank 1 but ` +
+            `got rank ${mean.rank}.`);
+    util.assert(
+        variance.rank === 4 || variance.rank === 1,
+        `Error in batchNormalization4D: variance must be rank 4 or rank 1 ` +
+            `but got rank ${variance.rank}.`);
+    if (scale != null) {
+      util.assert(
+          scale.rank === 4 || scale.rank === 1,
+          `Error in batchNormalization4D: scale must be rank 4 or rank 1 ` +
+              `but got rank ${scale.rank}.`);
+    }
+    if (offset != null) {
+      util.assert(
+          offset.rank === 4 || offset.rank === 1,
+          `Error in batchNormalization4D: offset must be rank 4 or rank 1 ` +
+              `but got rank ${offset.rank}.`);
+    }
 
-  return ENV.engine.executeKernel(
-      'BatchNorm4D',
-      {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+    return ENV.engine.executeKernel(
+        'BatchNorm4D',
+        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
+  });
 }
