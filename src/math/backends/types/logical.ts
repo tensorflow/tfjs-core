@@ -15,41 +15,39 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../../util';
-import {NDArray} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
+import {DataType, NDArray} from '../../ndarray';
+import {KernelNode} from '../tape_types';
 
-export interface DualInputArrays extends NamedArrayMap {
-  a: NDArray;
-  b: NDArray;
-}
-
-export interface DualGradientInputArrays extends TapeNodeInputGradientArrays {
-  a: () => NDArray;
-  b: () => NDArray;
-}
-
-// Equal/NotEqual/Greater/GreaterEqual
+// Equal/NotEqual/Less/LessEqual/Greater/GreaterEqual
 export interface EqualNode extends KernelNode {
-  inputAndArgs: EqualInputConfig;
+  inputAndArgs: {inputs: {a: NDArray; b: NDArray;};};
   output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
+  gradient: (dy: NDArray<'float32'>, y: NDArray<'bool'>) => {
+    a: () => NDArray<'float32'>;
+    b: () => NDArray<'float32'>;
+  };
 }
 
-export interface EqualInputConfig extends KernelInputConfig {
-  inputs: DualInputArrays;
-}
-
-// LogicalOr
-export interface LogicalOrNode extends KernelNode {
-  inputAndArgs: LogicalOrInputConfig;
+// LogicalAnd/LogicalOr
+export interface LogicalNode extends KernelNode {
+  inputAndArgs: {inputs: {a: NDArray; b: NDArray;};};
   output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
+  gradient: (dy: NDArray<'float32'>, y: NDArray<'bool'>) => {
+    a: () => NDArray<'float32'>;
+    b: () => NDArray<'float32'>;
+  };
 }
 
-export interface LogicalOrInputConfig extends KernelInputConfig {
-  inputs: DualInputArrays;
+// Where
+export interface WhereNode extends KernelNode {
+  inputAndArgs: {
+    inputs: {condition: NDArray; a: NDArray; b: NDArray;};
+    args: {dtype: DataType};
+  };
+  output: NDArray;
+  gradient: (dy: NDArray<'float32'>, y: NDArray) => {
+    condition: () => NDArray<'float32'>;
+    a: () => NDArray<'float32'>;
+    b: () => NDArray<'float32'>;
+  };
 }

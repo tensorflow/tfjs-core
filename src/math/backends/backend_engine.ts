@@ -17,8 +17,7 @@
 
 import * as util from '../../util';
 import {NamedArrayMap} from '../../util';
-import {DataType, NDArray, Scalar} from '../ndarray';
-
+import {DataType, NDArray, Rank, Scalar, Variable} from '../ndarray';
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
@@ -56,18 +55,18 @@ export class BackendEngine {
     this.debugMode = true;
   }
 
-  executeKernel<K extends keyof KernelConfigRegistry,
-                          C extends KernelConfigRegistry[K]['inputAndArgs']>(
-      kernelName: K, config: C, grad?: KernelConfigRegistry[K]['gradient']):
-      KernelConfigRegistry[K]['output'] {
-    const kernelFn = () =>
-        kernel_registry.executeKernel(this.backend, kernelName, config);
-
+  executeKernel<D extends DataType, R extends Rank, K extends
+                    keyof KernelConfigRegistry<D, R>,
+                    C extends KernelConfigRegistry<D, R>[K]['inputAndArgs']>(
+      kernelName: K, config: C,
+      grad?: KernelConfigRegistry<D, R>[K]['gradient']):
+      KernelConfigRegistry<D, R>[K]['output'] {
     let start: number;
     if (this.debugMode) {
       start = performance.now();
     }
-    const result = kernelFn();
+    const result =
+        kernel_registry.executeKernel(this.backend, kernelName, config);
     if (this.debugMode) {
       const vals = result.dataSync();
       const time = util.rightPad(`${performance.now() - start}ms`, 9);
@@ -99,15 +98,17 @@ export class BackendEngine {
     return result;
   }
 
-  customGradient<D extends DataType, T extends NDArray<D>>(
+  customGradient<D extends DataType, R extends Rank>(
       f: () => {
-        value: T,
-        gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
+        value: NDArray<D, R>,
+        gradients: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
+            TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name: string): T {
+      inputs: NamedArrayMap, name: string): NDArray<D, R> {
     this.customGradientDepth++;
 
-    let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
+    let gradientsFunc: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
+        TapeNodeInputGradientArrays;
     const gradientsMode = true;
     const result = this.scope('customGradient', () => {
       const {value, gradients} = f();
@@ -118,7 +119,7 @@ export class BackendEngine {
     this.customGradientDepth--;
 
     if (this.activeTape != null && this.customGradientDepth === 0) {
-      const evaluatedNode: TapeNode<T> = {
+      const evaluatedNode: TapeNode<NDArray<D, R>> = {
         id: this.nextTapeNodeId++,
         type: 'customGradient',
         name,
@@ -140,8 +141,8 @@ export class BackendEngine {
       const y = f();
       if (y.rank !== 0) {
         throw new Error(
-            `Cannot compute gradient of non-scalar y output. ` +
-            `Got y with rank ${y.rank}`);
+            `Cannot compute gradient of non-scalar y output of f(). ` +
+            `Got y with rank ${y.rank} and shape ${y.shape}.`);
       }
       const gradients = this.gradientWrt(y, xs);
       if (returnValue) {
@@ -158,7 +159,8 @@ export class BackendEngine {
     }
   }
 
-  vjp<T extends NDArray>(f: () => T, xs: NDArray[], dy: T): NDArray[] {
+  vjp<D extends DataType, R extends Rank, T extends NDArray<D, R>>(
+      f: () => T, xs: NDArray[], dy: NDArray<'float32', R>): NDArray[] {
     const gradientsMode = true;
     return this.scope('vjp', () => {
       const y = f();
@@ -167,17 +169,43 @@ export class BackendEngine {
             `Cannot compute vector jacobian product, ` +
             `y shape (${y.shape}) does not match dy shape (${dy.shape}).`);
       }
-      if (y.dtype !== dy.dtype) {
-        throw new Error(
-            `Cannot compute vector jacobian product, ` +
-            `y dtype (${y.dtype}) does not match dy dtype (${dy.dtype}).`);
-      }
       return this.gradientWrt(y, xs, dy);
     }, gradientsMode);
   }
 
-  private gradientWrt<T extends NDArray>(y: T, xs: NDArray[], dy?: T):
-      NDArray[] {
+  variableGradientsAndValue<D extends DataType>(
+      f: () => Scalar<D>,
+      varList: Variable[]): {value: Scalar<D>, gradients: NamedArrayMap} {
+    const gradientsMode = true;
+    let variableNames: string[];
+    const result = this.scope('gradients', () => {
+      const y = f();
+      if (y.rank !== 0) {
+        throw new Error(
+            `Cannot compute gradient of non-scalar y output of f(). ` +
+            `Got y with rank ${y.rank} and shape ${y.shape}.`);
+      }
+
+      const inputVariables =
+          tape_util.computeVariableInputs(this.activeTape, varList);
+      variableNames = inputVariables.map(variable => variable.name);
+
+      const gradients = inputVariables.length === 0 ?
+          [] :
+          this.gradientWrt(y, inputVariables);
+      return [y, ...gradients];
+    }, gradientsMode);
+
+    const gradients: NamedArrayMap = {};
+    for (let i = 0; i < variableNames.length; i++) {
+      gradients[variableNames[i]] = result[i + 1];
+    }
+
+    return {value: result[0] as Scalar<D>, gradients};
+  }
+
+  private gradientWrt<D extends DataType, R extends Rank>(
+      y: NDArray<D, R>, xs: NDArray[], dy?: NDArray<'float32', R>): NDArray[] {
     // Filter out the nodes that don't connect x => y.
     const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {
@@ -187,8 +215,10 @@ export class BackendEngine {
           `to are used inside the gradient function.`);
     }
 
-    const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-    arrayAccumulatedGradientMap[y.id] = dy == null ? Scalar.new(1) : dy;
+    const arrayAccumulatedGradientMap:
+        {[ndarrayId: number]: NDArray<'float32'>} = {};
+    arrayAccumulatedGradientMap[y.id] =
+        dy == null ? Scalar.new(1, 'float32') : dy;
 
     // Backprop gradients through the filtered nodes.
     tape_util.backpropagateGradients(arrayAccumulatedGradientMap, filteredTape);

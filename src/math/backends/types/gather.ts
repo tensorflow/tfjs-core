@@ -1,4 +1,3 @@
-
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -16,22 +15,17 @@
  * =============================================================================
  */
 
-import {Array4D} from '../../ndarray';
+import {Array1D, DataType, NDArray, Rank} from '../../ndarray';
 import {KernelNode} from '../tape_types';
 
-// 4D
-export interface LRN4DNode extends KernelNode {
-  inputAndArgs: {
-    inputs: {x: Array4D;}; args: {
-      radius: number,
-      bias: number,
-      alpha: number,
-      beta: number,
-      normRegion: 'acrossChannels'|'withinChannel'
-    };
-  };
-  output: Array4D;
-  gradient: (dy: Array4D<'float32'>, y: Array4D) => {
-    x: () => Array4D<'float32'>;
+export interface GatherNode<D extends DataType, R extends Rank, T extends
+                                NDArray<D, R> = NDArray<D, R>> extends
+    KernelNode {
+  inputAndArgs:
+      {inputs: {x: T; indices: Array1D<'int32'>;}; args: {axis: number};};
+  output: T;
+  gradient: (dy: NDArray<'float32', R>, y: T) => {
+    x: () => NDArray<'float32', R>;
+    indices: () => Array1D<'float32'>;
   };
 }

@@ -48,14 +48,17 @@ export interface MathBackend extends NDArrayStorage {
 
   clone<T extends NDArray>(ndarray: T): T;
 
-  slice1D(x: Array1D, begin: number, size: number): Array1D;
-  slice2D(x: Array2D, begin: [number, number], size: [number, number]): Array2D;
-  slice3D(x: Array3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Array3D;
-  slice4D(x: Array4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Array4D;
+  slice1D<D extends DataType>(x: Array1D<D>, begin: number, size: number):
+      Array1D<D>;
+  slice2D<D extends DataType>(x: Array2D<D>, begin: [number, number], size: [
+    number, number
+  ]): Array2D<D>;
+  slice3D<D extends DataType>(
+      x: Array3D<D>, begin: [number, number, number],
+      size: [number, number, number]): Array3D<D>;
+  slice4D<D extends DataType>(
+      x: Array4D<D>, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D<D>;
 
   reverse4D(a: Array4D, axis: number[]): Array4D;
 
@@ -79,10 +82,17 @@ export interface MathBackend extends NDArrayStorage {
   equal(a: NDArray, b: NDArray): NDArray<'bool'>;
   notEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
+  less(a: NDArray, b: NDArray): NDArray<'bool'>;
+  lessEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+
   greater(a: NDArray, b: NDArray): NDArray<'bool'>;
   greaterEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
 
+  logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'>;
   logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
+
+  where<D extends DataType>(
+      condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray<D>;
 
   topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
       Array1D<D>;
@@ -157,6 +167,9 @@ export interface MathBackend extends NDArrayStorage {
       constantValue: number): Array2D;
 
   transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
+
+  gather<D extends DataType, T extends NDArray<D>>(
+      x: T, indices: Array1D<'int32'>, axis: number): T;
 
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
