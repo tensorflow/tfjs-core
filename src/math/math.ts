@@ -495,7 +495,7 @@ export class NDArrayMath implements NDArrayManager {
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('LogicalXor', {inputs: {a, b}});
+    return this.engine.executeKernel('LogicalXor', {inputs: {a, b}});
   }
 
   /**
