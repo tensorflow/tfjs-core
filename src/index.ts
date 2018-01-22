@@ -32,7 +32,7 @@ import * as minmax from './math/minmax';
 import * as pool from './math/pool';
 import * as reverse from './math/reverse';
 import * as slice from './math/slice';
-import * as transpose from './math/transpose';
+import {Ops as TranposeOps} from './math/transpose';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
@@ -103,7 +103,7 @@ export const avgPool = pool.Ops.avgPool;
 export const maxPool = pool.Ops.maxPool;
 export const minPool = pool.Ops.minPool;
 
-export const transpose = transpose.Ops.transpose;
+export const transpose = TranposeOps.transpose;
 
 export const reverse1D = reverse.Ops.reverse1D;
 export const reverse2D = reverse.Ops.reverse2D;
