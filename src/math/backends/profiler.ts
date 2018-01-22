@@ -14,6 +14,7 @@ export class Profiler {
 
     const wrappedFn = () => {
       result = f();
+      console.log(result);
       return result;
     };
 
@@ -31,16 +32,30 @@ export class Profiler {
     };
 
     if (this.pendingTimer == null) {
-      console.log('has panding timer');
+      console.log('NO panding timer', kernelName);
       this.pendingTimer = this.backend.time(wrappedFn);
       this.pendingTimer.then(timeMs => {
         log(timeMs);
-        this.pendingTimer = null;
+        // this.pendingTimer = null;
       });
     } else {
-      console.log('no panding timer');
+      console.log('panding timer');
 
-      this.pendingTimer.then(() => this.backend.time(wrappedFn).then(log));
+      //
+      // TODO: We need to return "result" immediately, it's undefined because we
+      // don't execute the kernel until the previous kernel is done.
+      // We should execute immediately and hold onto the WebGLQuery so we can
+      // query it at a later time. This means we also need to split up the last
+      // part of the query.
+      //
+
+      this.pendingTimer.then(() => {
+        console.log('pending timer done...', kernelName);
+        this.backend.time(wrappedFn).then(timeMs => {
+          console.log('in wrapped', kernelName, result);
+          log(timeMs);
+        });
+      });
     }
 
     return result as T;

@@ -417,6 +417,12 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
       throw new Error(`NDArray is disposed.`);
     }
   }
+
+  toString(): string {
+    // const constructor =
+    const constructors = ['Scalar', 'Array1D', 'Array2D', 'Array3D', 'Array4D'];
+    return `${constructors[parseInt(this.rankType)]}[${this.shape}]`;
+  }
 }
 
 export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {

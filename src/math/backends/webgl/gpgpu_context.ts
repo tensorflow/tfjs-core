@@ -348,7 +348,7 @@ export class GPGPUContext {
       };
 
       util.repeatedTry(() => this.isQueryAvailable(query))
-          .then(() => this.getQueryElapsedTime(query))
+          .then(() => resolve(this.getQueryElapsedTime(query)))
           .catch(resolveWithWarning);
     });
   }
