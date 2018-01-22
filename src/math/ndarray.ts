@@ -421,7 +421,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   toString(): string {
     // const constructor =
     const constructors = ['Scalar', 'Array1D', 'Array2D', 'Array3D', 'Array4D'];
-    return `${constructors[parseInt(this.rankType)]}[${this.shape}]`;
+    return `${constructors[parseInt(this.rankType, 10)]}[${this.shape}]`;
   }
 }
 
