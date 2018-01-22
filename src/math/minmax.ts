@@ -171,6 +171,6 @@ export class Ops {
   @operation
   static argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return compare.Ops.equal(this.argMax(x1), this.argMax(x2));
+    return compare.Ops.equal(Ops.argMax(x1), Ops.argMax(x2));
   }
 }

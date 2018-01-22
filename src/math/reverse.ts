@@ -31,7 +31,7 @@ export class Ops {
     util.assert(x.rank === 1, `Error in reverse1D: x must be rank 1 but got
              rank ${x.rank}.`);
     const input4D = x.as4D(1, 1, 1, x.shape[0]);
-    const res = this.reverse4D(input4D, [3]);
+    const res = Ops.reverse4D(input4D, [3]);
     return res.as1D();
   }
 
@@ -47,7 +47,7 @@ export class Ops {
              rank ${x.rank}.`);
     const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 2);
     const input4D = x.as4D(1, 1, x.shape[0], x.shape[1]);
-    const res = this.reverse4D(input4D, axisCleaned);
+    const res = Ops.reverse4D(input4D, axisCleaned);
     return res.as2D(res.shape[2], res.shape[3]);
   }
 
@@ -63,7 +63,7 @@ export class Ops {
              rank ${x.rank}.`);
     const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 1);
     const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-    const res = this.reverse4D(input4D, axisCleaned);
+    const res = Ops.reverse4D(input4D, axisCleaned);
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
   }
 

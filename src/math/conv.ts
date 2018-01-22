@@ -87,7 +87,7 @@ export class Ops {
     const strides: [number, number] = [1, stride];
 
     const res =
-        this.conv2d(input4D, filter4D, bias, strides, pad, dimRoundingMode);
+        Ops.conv2d(input4D, filter4D, bias, strides, pad, dimRoundingMode);
     if (reshapedTo3D) {
       return res.as2D(res.shape[2], res.shape[3]) as T;
     }
@@ -158,9 +158,9 @@ export class Ops {
 
     const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
       return {
-        x: () => this.conv2dDerInput(x4D.shape, dy, filter, strides, pad),
-        filter: () => this.conv2dDerFilter(x4D, dy, filter.shape, strides, pad),
-        bias: () => this.conv2dDerBias(dy)
+        x: () => Ops.conv2dDerInput(x4D.shape, dy, filter, strides, pad),
+        filter: () => Ops.conv2dDerFilter(x4D, dy, filter.shape, strides, pad),
+        bias: () => Ops.conv2dDerBias(dy)
       };
     };
 
@@ -359,7 +359,7 @@ export class Ops {
       outputShape: [number, number, number, number]|[number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
-    return this.conv2dDerInput(
+    return Ops.conv2dDerInput(
         outputShape, x, filter, strides, pad, dimRoundingMode);
   }
 

@@ -63,10 +63,10 @@ export class Ops {
                 `Backprop for transposed MatMul not yet implemented.`);
           }
           return {
-            a: () => this.matMul(
+            a: () => Ops.matMul(
                          dy, b, MatrixOrientation.REGULAR,
                          MatrixOrientation.TRANSPOSED) as Array2D<'float32'>,
-            b: () => this.matMul(
+            b: () => Ops.matMul(
                          a, dy, MatrixOrientation.TRANSPOSED,
                          MatrixOrientation.REGULAR) as Array2D<'float32'>
           };
@@ -92,7 +92,7 @@ export class Ops {
         v.size === matrix.shape[0],
         `Error in vectorTimesMatrix: size of vector (${v.size}) ` +
             `must match first dimension of matrix (${matrix.shape[0]})`);
-    return this.matMul(v.as2D(1, -1), matrix).as1D();
+    return Ops.matMul(v.as2D(1, -1), matrix).as1D();
   }
 
   /**
@@ -116,7 +116,7 @@ export class Ops {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
+    return Ops.matMul(matrix, v.as2D(-1, 1)).as1D();
   }
 
   /**
@@ -134,7 +134,7 @@ export class Ops {
         v1.size === v2.size,
         `Error in dotProduct: size of inputs (${v1.size}) and (` +
             `${v2.size}) must match.`);
-    return this.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
+    return Ops.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
   }
 
   /**
@@ -149,6 +149,6 @@ export class Ops {
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +
             `${v1.rank} and ${v2.rank}.`);
 
-    return this.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
+    return Ops.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
   }
 }
