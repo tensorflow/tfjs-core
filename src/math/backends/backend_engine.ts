@@ -15,12 +15,15 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import * as util from '../../util';
 import {NamedArrayMap} from '../../util';
 import {DataType, NDArray, Rank, Scalar, Variable} from '../ndarray';
+
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
+import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
 import {KernelNode, Tape, TapeNode, TapeNodeInputGradientArrays} from './tape_types';
 import * as tape_util from './tape_util';
@@ -43,16 +46,14 @@ export class BackendEngine {
   private activeScope: ScopeState;
   private scopeStack: ScopeState[];
 
-  private debugMode = false;
+  private profiler: Profiler;
 
   constructor(private backend: MathBackend, private safeMode: boolean) {
     // Create a default outer scope.
     this.activeScope = {keep: [], track: []};
     this.scopeStack = [this.activeScope];
-  }
 
-  enableDebugMode() {
-    this.debugMode = true;
+    this.profiler = new Profiler(backend);
   }
 
   executeKernel<D extends DataType, R extends Rank, K extends
@@ -61,26 +62,21 @@ export class BackendEngine {
       kernelName: K, config: C,
       grad?: KernelConfigRegistry<D, R>[K]['gradient']):
       KernelConfigRegistry<D, R>[K]['output'] {
-    let start: number;
-    if (this.debugMode) {
-      start = performance.now();
-    }
-    const result =
-        kernel_registry.executeKernel(this.backend, kernelName, config);
-    if (this.debugMode) {
-      const vals = result.dataSync();
-      const time = util.rightPad(`${performance.now() - start}ms`, 9);
-      const paddedName = util.rightPad(kernelName, 25);
-      const rank = result.rank;
-      const size = result.size;
-      const shape = util.rightPad(result.shape.toString(), 14);
-      console.log(
-          `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-          'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      util.checkForNaN(vals, result.dtype, name);
+    let result: KernelConfigRegistry<D, R>[K]['output'];
+    if (!ENV.get('DEBUG')) {
+      // NOTE: This isn't pulled out into a separate function to so that we keep
+      // a shallow stack trace.
+      result = kernel_registry.executeKernel(this.backend, kernelName, config);
+    } else {
+      result = this.profiler.timeKernel(
+          kernelName,
+          () =>
+              kernel_registry.executeKernel(this.backend, kernelName, config));
     }
 
-    if (this.activeTape != null && this.customGradientDepth === 0) {
+    const recordKernel =
+        this.activeTape != null && this.customGradientDepth === 0;
+    if (recordKernel) {
       config = tape_util.stripUndefinedInputsFromInputConfig(config) as C;
 
       const evaluatedNode: KernelNode = {

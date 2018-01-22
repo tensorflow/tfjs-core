@@ -184,7 +184,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
       const element =
           isWebcam ? this.webcamVideoElement : this.staticImgElement;
-      const image = Array3D.fromPixels(element, 3, this.math);
+      const image = Array3D.fromPixels(element, 3);
 
       const inferenceResult =
           this.squeezeNet.predictWithActivation(image, this.selectedLayerName);

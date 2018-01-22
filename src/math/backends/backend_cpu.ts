@@ -111,11 +111,16 @@ export class MathBackendCPU implements MathBackend {
   disposeData(dataId: number): void {
     delete this.data[dataId];
   }
+
   async time(query: () => NDArray): Promise<number> {
+    return this.timeSync(query);
+  }
+  timeSync(query: () => NDArray): number {
     const start = performance.now();
     query();
     return performance.now() - start;
   }
+
   private throwIfNoData(dataId: number) {
     if (!(dataId in this.data)) {
       throw new Error(

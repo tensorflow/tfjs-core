@@ -20,14 +20,17 @@ import * as util from '../../../util';
 import * as gpgpu_util from './gpgpu_util';
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
-import {WebGLLoseContextExtension} from './webgl_util';
+// tslint:disable-next-line:max-line-length
+import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension} from './webgl_util';
 
 export class GPGPUContext {
-  gl: WebGLRenderingContext;
-  textureFloatExtension: {};
+  gl: WebGLRenderingContext|WebGL2RenderingContext;
+  textureFloatExtension: OESTextureFloat;
   colorBufferFloatExtension: {};
   getBufferSubDataAsyncExtension: {};
-  loseContextExtension: WebGLLoseContextExtension;
+  loseContextExtension: WebGLLoseContext;
+  disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension|
+      WebGL1DisjointQueryTimerExtension;
   vertexBuffer: WebGLBuffer;
   indexBuffer: WebGLBuffer;
   framebuffer: WebGLFramebuffer;
@@ -55,7 +58,7 @@ export class GPGPUContext {
 
     this.loseContextExtension =
         webgl_util.getExtensionOrThrow(this.gl, 'WEBGL_lose_context') as
-        WebGLLoseContextExtension;
+        WebGLLoseContext;
 
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) {
       this.getBufferSubDataAsyncExtension =
@@ -303,103 +306,146 @@ export class GPGPUContext {
     webgl_util.callAndCheck(this.gl, () => this.gl.finish());
   }
 
+  private getQueryTimerExtension(webGLVersion: 1|2):
+      WebGL1DisjointQueryTimerExtension|WebGL2DisjointQueryTimerExtension {
+    if (this.disjointQueryTimerExtension == null) {
+      this.disjointQueryTimerExtension =
+          webgl_util.getExtensionOrThrow(
+              this.gl,
+              webGLVersion === 2 ? 'EXT_disjoint_timer_query_webgl2' :
+                                   'EXT_disjoint_timer_query') as
+              WebGL1DisjointQueryTimerExtension |
+          WebGL2DisjointQueryTimerExtension;
+    }
+    return this.disjointQueryTimerExtension;
+  }
+
+  private getQueryTimerExtensionWebGL2(): WebGL2DisjointQueryTimerExtension {
+    return this.getQueryTimerExtension(2);
+  }
+
+  private getQueryTimerExtensionWebGL1(): WebGL1DisjointQueryTimerExtension {
+    return this.getQueryTimerExtension(1) as WebGL1DisjointQueryTimerExtension;
+  }
+
   /**
    * Executes a query function which contains GL commands and resolves when
    * the command buffer has finished executing the query.
    * @param queryFn The query function containing GL commands to execute.
-   * @return a promise that resolves with the ellapsed time in milliseconds.
+   * @return a promise that resolves with the ellapsed GPU time in milliseconds.
    */
   public runQuery(queryFn: () => void): Promise<number> {
-    if (ENV.get('WEBGL_VERSION') === 2) {
-      return this.runQueryWebGL2(queryFn);
+    const query = this.beginQuery();
+
+    queryFn();
+
+    this.endQuery();
+
+    return new Promise<number>((resolve, reject) => {
+      const resolveWithWarning = () => {
+        console.warn('Disjoint query timer never available.');
+        resolve(-1);
+      };
+
+      util.repeatedTry(() => this.isQueryAvailable(query))
+          .then(() => this.getQueryElapsedTime(query))
+          .catch(resolveWithWarning);
+    });
+  }
+
+  /**
+   * Executes a query function which contains GL commands and returns the
+   * ellapsed GPU time.
+   * @param queryFn The query function containing GL commands to execute.
+   * @param syncFn The CPU / GPU synchronization function. This is called after
+   * the query is ended.
+   * @return the ellapsed GPU time in milliseconds.
+   */
+  public runQuerySync(queryFn: () => void, syncFn: () => void): number {
+    const query = this.beginQuery();
+
+    queryFn();
+
+    this.endQuery();
+
+    syncFn();
+
+    const queryAvailable = this.isQueryAvailable(query);
+    if (!queryAvailable) {
+      throw new Error(`Query not available.`);
     }
-    return this.runQueryWebGL1(queryFn);
+
+    return this.getQueryElapsedTime(query);
   }
 
-  private runQueryWebGL2(benchmark: () => void): Promise<number> {
-    const ext = webgl_util.getExtensionOrThrow(
-        this.gl, 'EXT_disjoint_timer_query_webgl2');
-    // tslint:disable-next-line:no-any
-    const query = (this.gl as any).createQuery();
+  private beginQuery(): WebGLQuery {
+    if (ENV.get('WEBGL_VERSION') === 2) {
+      const gl2 = this.gl as WebGL2RenderingContext;
+      const ext = this.getQueryTimerExtensionWebGL2();
 
-    // tslint:disable-next-line:no-any
-    (this.gl as any).beginQuery((ext as any).TIME_ELAPSED_EXT, query);
+      const query = gl2.createQuery();
+      gl2.beginQuery(ext.TIME_ELAPSED_EXT, query);
 
-    benchmark();
+      return query;
+    } else {
+      const ext = this.getQueryTimerExtensionWebGL1();
+      const query = ext.createQueryEXT();
 
-    // tslint:disable-next-line:no-any
-    (this.gl as any).endQuery((ext as any).TIME_ELAPSED_EXT);
+      ext.beginQueryEXT(ext.TIME_ELAPSED_EXT, query);
 
-    return new Promise<number>((resolve, reject) => {
-      const queryGPU = () => {
-        const available =
-            // tslint:disable-next-line:no-any
-            (this.gl as any)
-                .getQueryParameter(
-                    // tslint:disable-next-line:no-any
-                    query, (this.gl as any).QUERY_RESULT_AVAILABLE);
-
-        const disjoint =
-            // tslint:disable-next-line:no-any
-            this.gl.getParameter((ext as any).GPU_DISJOINT_EXT);
-        return available && !disjoint;
-      };
-
-      const getTimeElapsed = () => {
-        const timeElapsedNanos =
-            // tslint:disable-next-line:no-any
-            (this.gl as any)
-                // tslint:disable-next-line:no-any
-                .getQueryParameter(query, (this.gl as any).QUERY_RESULT);
-        // Return milliseconds.
-        resolve(timeElapsedNanos / 1000000);
-      };
-
-      const resolveWithWarning = () => {
-        console.warn('Disjoint query timer never available.');
-        resolve(-1);
-      };
-
-      util.repeatedTry(queryGPU).then(getTimeElapsed).catch(resolveWithWarning);
-    });
+      return query;
+    }
   }
 
-  private runQueryWebGL1(benchmark: () => void): Promise<number> {
-    const ext = webgl_util.getExtensionOrThrow(
-                    // tslint:disable-next-line:no-any
-                    this.gl, 'EXT_disjoint_timer_query') as any;
-    const query = ext.createQueryEXT();
+  private endQuery() {
+    if (ENV.get('WEBGL_VERSION') === 2) {
+      const gl2 = this.gl as WebGL2RenderingContext;
+      const ext = this.getQueryTimerExtensionWebGL2();
 
-    ext.beginQueryEXT(ext.TIME_ELAPSED_EXT, query);
+      gl2.endQuery(ext.TIME_ELAPSED_EXT);
+    } else {
+      const ext = this.getQueryTimerExtensionWebGL1();
+      ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
+    }
+  }
 
-    benchmark();
+  private isQueryAvailable(query: WebGLQuery): boolean {
+    if (ENV.get('WEBGL_VERSION') === 2) {
+      const gl2 = this.gl as WebGL2RenderingContext;
+      const ext = this.getQueryTimerExtensionWebGL2();
 
-    ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
+      const available =
+          gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
 
-    return new Promise<number>((resolve, reject) => {
-      const queryGPU = () => {
-        const available =
-            ext.getQueryObjectEXT(query, ext.QUERY_RESULT_AVAILABLE_EXT);
+      const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+      return available && !disjoint;
+    } else {
+      const ext = this.getQueryTimerExtensionWebGL1();
 
-        const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+      const available =
+          ext.getQueryObjectEXT(query, ext.QUERY_RESULT_AVAILABLE_EXT);
 
-        return available && !disjoint;
-      };
+      const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
 
-      const getTimeElapsed = () => {
-        const timeElapsedNanos =
-            ext.getQueryObjectEXT(query, ext.QUERY_RESULT_EXT);
-        // Return milliseconds.
-        resolve(timeElapsedNanos / 1000000);
-      };
+      return available && !disjoint;
+    }
+  }
 
-      const resolveWithWarning = () => {
-        console.warn('Disjoint query timer never available.');
-        resolve(-1);
-      };
+  private getQueryElapsedTime(query: WebGLQuery) {
+    if (ENV.get('WEBGL_VERSION') === 2) {
+      const gl2 = this.gl as WebGL2RenderingContext;
 
-      util.repeatedTry(queryGPU).then(getTimeElapsed).catch(resolveWithWarning);
-    });
+      const timeElapsedNanos = gl2.getQueryParameter(query, gl2.QUERY_RESULT);
+      // Return milliseconds.
+      return timeElapsedNanos / 1000000;
+    } else {
+      const ext = this.getQueryTimerExtensionWebGL1();
+
+      const timeElapsedNanos =
+          ext.getQueryObjectEXT(query, ext.QUERY_RESULT_EXT);
+      // Return milliseconds.
+      return timeElapsedNanos / 1000000;
+    }
   }
 
   private downloadMatrixDriverSetup(texture: WebGLTexture) {

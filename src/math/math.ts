@@ -163,7 +163,7 @@ export class NDArrayMath implements NDArrayManager {
    * and checked for NaNs. This significantly impacts performance.
    */
   enableDebugMode() {
-    this.engine.enableDebugMode();
+    ENV.set('DEBUG', true);
     console.warn(
         'Debugging mode is ON. The output of every math call will ' +
         'be downloaded to CPU and checked for NaNs. ' +

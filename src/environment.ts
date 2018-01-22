@@ -27,6 +27,8 @@ export enum Type {
 }
 
 export interface Features {
+  // Whether to enable debug mode.
+  'DEBUG'?: boolean;
   // Whether the disjoint_query_timer extension is an available extension.
   'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED'?: boolean;
   // Whether the timer object from the disjoint_query_timer extension gives
@@ -42,6 +44,7 @@ export interface Features {
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
+  {name: 'DEBUG', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
@@ -170,6 +173,13 @@ export class Environment {
     if (features != null) {
       this.features = features;
     }
+
+    if (this.get('DEBUG')) {
+      console.warn(
+          'Debugging mode is ON. The output of every math call will ' +
+          'be downloaded to CPU and checked for NaNs. ' +
+          'This significantly impacts performance.');
+    }
   }
 
   get<K extends keyof Features>(feature: K): Features[K] {
@@ -180,6 +190,10 @@ export class Environment {
     this.features[feature] = this.evaluateFeature(feature);
 
     return this.features[feature];
+  }
+
+  set<K extends keyof Features>(feature: K, value: Features[K]): void {
+    this.features[feature] = value;
   }
 
   getBestBackendType(): BackendType {
@@ -194,7 +208,9 @@ export class Environment {
   }
 
   private evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
-    if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED') {
+    if (feature === 'DEBUG') {
+      return false;
+    } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED') {
       const webGLVersion = this.get('WEBGL_VERSION');
 
       if (webGLVersion === 0) {

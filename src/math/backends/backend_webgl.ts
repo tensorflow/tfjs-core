@@ -192,6 +192,22 @@ export class MathBackendWebGL implements MathBackend {
     }
     return this.gpgpu.runQuery(query);
   }
+  // timeSync(query: () => NDArray): number {
+  //   if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+  //     const start = performance.now();
+  //     const a = query();
+  //     a.dataSync();
+  //     return performance.now() - start;
+  //   }
+
+  //   // Hold on to the result so we can use it to sync CPU / GPU.
+  //   let result: NDArray;
+  //   const wrappedQuery = () => {
+  //     result = query();
+  //   };
+  //   return this.gpgpu.runQuerySync(wrappedQuery, () => result.dataSync());
+  // }
+
   disposeData(dataId: number): void {
     if (dataId in this.texData) {
       const {texture, texShape} = this.texData[dataId];
