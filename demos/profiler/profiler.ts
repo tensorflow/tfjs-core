@@ -1,9 +1,16 @@
 import * as dl from 'deeplearn';
+import {SqueezeNet} from 'deeplearn-squeezenet';
 
-const math = dl.ENV.math;
-const a = dl.Scalar.new(1);
+(async () => {
+  const squeezeNet = new SqueezeNet(dl.ENV.math);
+  await squeezeNet.load();
 
-const result = math.neg(math.square(a));
+  // const math = dl.ENV.math;
+  // const a = dl.Array1D.randNormal([1000]);
 
+  const result = squeezeNet.predict(dl.Array3D.randNormal([227, 227, 3]));
 
-console.log(result.dataSync());
+  // const result = math.neg(math.square(math.square(a)));
+
+  console.log(result.dataSync());
+})();

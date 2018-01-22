@@ -113,12 +113,22 @@ export class MathBackendCPU implements MathBackend {
   }
 
   async time(query: () => NDArray): Promise<number> {
-    return this.timeSync(query);
-  }
-  timeSync(query: () => NDArray): number {
     const start = performance.now();
     query();
     return performance.now() - start;
+  }
+
+  startTimer(): {startMs: number, endMs: null} {
+    return {startMs: performance.now(), endMs: null};
+  }
+
+  endTimer(query: {startMs: number, endMs: null}):
+      {startMs: number, endMs: number} {
+    return {startMs: query.startMs, endMs: performance.now()};
+  }
+
+  async getQueryTime(query: {startMs: number, endMs: number}): Promise<number> {
+    return query.endMs - query.startMs;
   }
 
   private throwIfNoData(dataId: number) {

@@ -341,6 +341,10 @@ export class GPGPUContext {
 
     this.endQuery();
 
+    return this.getQueryTime(query);
+  }
+
+  getQueryTime(query: WebGLQuery): Promise<number> {
     return new Promise<number>((resolve, reject) => {
       const resolveWithWarning = () => {
         console.warn('Disjoint query timer never available.');
@@ -353,32 +357,7 @@ export class GPGPUContext {
     });
   }
 
-  /**
-   * Executes a query function which contains GL commands and returns the
-   * ellapsed GPU time.
-   * @param queryFn The query function containing GL commands to execute.
-   * @param syncFn The CPU / GPU synchronization function. This is called after
-   * the query is ended.
-   * @return the ellapsed GPU time in milliseconds.
-   */
-  public runQuerySync(queryFn: () => void, syncFn: () => void): number {
-    const query = this.beginQuery();
-
-    queryFn();
-
-    this.endQuery();
-
-    syncFn();
-
-    const queryAvailable = this.isQueryAvailable(query);
-    if (!queryAvailable) {
-      throw new Error(`Query not available.`);
-    }
-
-    return this.getQueryElapsedTime(query);
-  }
-
-  private beginQuery(): WebGLQuery {
+  beginQuery(): WebGLQuery {
     if (ENV.get('WEBGL_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
@@ -397,7 +376,7 @@ export class GPGPUContext {
     }
   }
 
-  private endQuery() {
+  endQuery() {
     if (ENV.get('WEBGL_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
@@ -409,7 +388,7 @@ export class GPGPUContext {
     }
   }
 
-  private isQueryAvailable(query: WebGLQuery): boolean {
+  isQueryAvailable(query: WebGLQuery): boolean {
     if (ENV.get('WEBGL_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
