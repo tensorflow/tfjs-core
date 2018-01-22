@@ -15,7 +15,8 @@
  * =============================================================================
  */
 
-import {ENV, operation} from '../environment';
+import {ENV} from '../environment';
+import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D, DataType} from './ndarray';
 import * as slice_util from './slice_util';
 

@@ -364,18 +364,4 @@ function getOrMakeEnvironment(): Environment {
   return ns.ENV;
 }
 
-/**
- * Decorator for wrapping functions that perform math operations on
- * NDArrays. The function will be wrapped in a named scope that cleans all
- * memory usage after the function is done.
- */
-export function operation(
-    target: {}, name: string, descriptor: PropertyDescriptor) {
-  const fn = descriptor.value;
-  // tslint:disable-next-line:no-any
-  descriptor.value = (...args: any[]) =>
-      ENV.math.scope(name, () => fn(...args));
-  return descriptor;
-}
-
 export let ENV = getOrMakeEnvironment();

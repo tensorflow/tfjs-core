@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
-import {ENV, operation} from '../environment';
+import {ENV} from '../environment';
 import * as util from '../util';
 import * as axis_util from './axis_util';
+import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 
 export class Ops {

@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-import {ENV, operation} from '../environment';
+import {ENV} from '../environment';
 import * as util from '../util';
 import * as conv_util from './conv_util';
-// tslint:disable-next-line:max-line-length
+import {operation} from './decorators';
 import {Array4D, DataType, NDArray, Rank, RankMap} from './ndarray';
 
 export class Ops {
@@ -65,7 +65,7 @@ export class Ops {
         x4D.shape, filterSize, strides, pad, dimRoundingMode);
 
     const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
-      return {x: () => this.maxPoolBackprop(dy, x4D, filterSize, strides, pad)};
+      return {x: () => Ops.maxPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
     const res = ENV.engine.executeKernel(
         'MaxPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
@@ -230,7 +230,7 @@ export class Ops {
         conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
 
     const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
-      return {x: () => this.avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
+      return {x: () => Ops.avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
     const res = ENV.engine.executeKernel(
         'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);

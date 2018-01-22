@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
-import {ENV, operation} from '../environment';
+import {ENV} from '../environment';
 import * as util from '../util';
 import {MatrixOrientation} from './backends/types/matmul';
+import {operation} from './decorators';
 import {Array1D, Array2D, Scalar} from './ndarray';
 
 export class Ops {
