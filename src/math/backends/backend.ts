@@ -37,6 +37,7 @@ export interface NDArrayStorage {
 export interface BackendTimer {
   time(query: () => NDArray): Promise<number>;
   startTimer(): {};
+
   endTimer(query: {}): {};
   getQueryTime(query: {}): Promise<number>;
 }
