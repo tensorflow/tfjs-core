@@ -115,7 +115,7 @@ export class Ops {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return matMul(matrix, v.as2D(-1, 1)).as1D();
+    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
   }
 
   /**

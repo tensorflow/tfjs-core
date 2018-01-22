@@ -45,7 +45,7 @@ export class Ops {
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.transpose(x, permutedAxes);
+      x = transpose.Ops.transpose(x, permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     const res = ENV.engine.executeKernel('Min', {inputs: {x}, args: {axes}}) as
@@ -93,7 +93,7 @@ export class Ops {
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.transpose(x, permutedAxes);
+      x = transpose.Ops.transpose(x, permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     const res = ENV.engine.executeKernel('Max', {inputs: {x}, args: {axes}}) as
@@ -135,7 +135,7 @@ export class Ops {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.transpose(x, permutedAxes);
+      x = transpose.Ops.transpose(x, permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     return ENV.engine.executeKernel('ArgMin', {inputs: {x}, args: {axes}}) as T;
@@ -155,7 +155,7 @@ export class Ops {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.transpose(x, permutedAxes);
+      x = transpose.Ops.transpose(x, permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
 
