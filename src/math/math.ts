@@ -1085,8 +1085,18 @@ export class NDArrayMath implements NDArrayManager {
    * Computes square root of the input NDArray element-wise. y = sqrt(x)
    * @param x The input NDArray.
    */
-  sqrt<T extends NDArray>(x: T): T {
-    return this.engine.executeKernel('Sqrt', {inputs: {x}}) as T;
+  sqrt<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T): T {
+    return this.engine.executeKernel(
+               'Sqrt', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
+                 return {
+                   x: () => this.multiply(
+                       dy,
+                       this.divide(
+                           Scalar.new(1),
+                           this.multiply(
+                               this.sqrt(x.asType('float32')), Scalar.new(2))))
+                 };
+               }) as T;
   }
 
   /**
@@ -1108,8 +1118,16 @@ export class NDArrayMath implements NDArrayManager {
    * Computes absolute value element-wise.
    * @param x The input NDArray.
    */
-  abs<T extends NDArray>(x: T): T {
-    return this.engine.executeKernel('Abs', {inputs: {x}}) as T;
+  abs<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T): T {
+    return this.engine.executeKernel(
+               'Abs', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
+                 return {
+                   x: () => this.multiply(
+                       dy,
+                       this.divide(
+                           x.asType('float32'), this.abs(x.asType('float32'))))
+                 };
+               }) as T;
   }
 
   /**
