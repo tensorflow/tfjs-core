@@ -68,9 +68,10 @@ export class Ops {
    * @param b The second NDArray to multiply element-wise.
    */
 
+  @operation
   static addStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
-    return this.add(a, b) as T;
+    return Ops.add(a, b) as T;
   }
 
   /**
@@ -92,7 +93,7 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = reduce.Ops.sum(res, reduceAxes);
+          res = reduction_ops.Ops.sum(res, reduceAxes);
         }
         return res.reshape(a.shape);
       };
@@ -100,7 +101,7 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = reduce.Ops.sum(res, reduceAxes);
+          res = reduction_ops.Ops.sum(res, reduceAxes);
         }
         return unary_ops.Ops.neg(res).reshape(b.shape);
       };
@@ -134,11 +135,11 @@ export class Ops {
             `Gradient of pow not yet supported for broadcasted shapes.`);
       }
       const derA = () => {
-        return this.multiply(
+        return Ops.multiply(
             dy,
-            this.multiply(
+            Ops.multiply(
                 b.asType(a.dtype),
-                this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
+                Ops.pow(a, Ops.subtract(b, Scalar.new(1, 'int32')))));
       };
       const derB = () => {
         throw new Error(
@@ -162,13 +163,14 @@ export class Ops {
   static powStrict<D extends DataType>(a: NDArray<D>, b: NDArray<'int32'>):
       NDArray<D> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in powStrict: ');
-    return this.pow(a, b);
+    return Ops.pow(a, b);
   }
 
   /** @deprecated Use math.subtract instead. */
-  sub<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
+  @operation
+  static sub<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
       a: NDArray<D1>, b: NDArray<D2>): T {
-    return this.subtract(a, b);
+    return Ops.subtract(a, b);
   }
 
   /**
@@ -181,7 +183,7 @@ export class Ops {
   @operation
   static subStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
-    return this.subtract(a, b);
+    return Ops.subtract(a, b);
   }
 
   /**
@@ -200,18 +202,18 @@ export class Ops {
 
     const der = (dy: NDArray<'float32'>, y: NDArray) => {
       const derA = () => {
-        const res = this.multiply(dy, b.asType('float32'));
+        const res = Ops.multiply(dy, b.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          return this.sum(res, reduceAxes).reshape(a.shape);
+          return reduction_ops.Ops.sum(res, reduceAxes).reshape(a.shape);
         }
         return res;
       };
       const derB = () => {
-        const res = this.multiply(dy, a.asType('float32'));
+        const res = Ops.multiply(dy, a.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          return this.sum(res, reduceAxes).reshape(b.shape);
+          return reduction_ops.Ops.sum(res, reduceAxes).reshape(b.shape);
         }
         return res;
       };
@@ -225,7 +227,7 @@ export class Ops {
    */
   @operation
   static elementWiseMul<T extends NDArray>(a: T, b: T): T {
-    return this.multiplyStrict(a, b);
+    return Ops.multiplyStrict(a, b);
   }
 
   /**
@@ -238,7 +240,7 @@ export class Ops {
   @operation
   static multiplyStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in multiplyStrict: ');
-    return this.multiply(a, b) as T;
+    return Ops.multiply(a, b) as T;
   }
 
   /**
@@ -254,20 +256,20 @@ export class Ops {
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: NDArray<'float32'>, y: NDArray) => {
       const derA = () => {
-        const res = this.divide(dy, b.asType('float32'));
+        const res = Ops.divide(dy, b.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          return this.sum(res, reduceAxes).reshape(a.shape);
+          return reduction_ops.Ops.sum(res, reduceAxes).reshape(a.shape);
         }
         return res;
       };
       const derB = () => {
-        let res = this.multiply(dy, a.asType('float32'));
+        let res = Ops.multiply(dy, a.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = this.sum(res, reduceAxes).reshape(b.shape);
+          res = reduction_ops.Ops.sum(res, reduceAxes).reshape(b.shape);
         }
-        return this.neg(this.divide(res, this.square(b)));
+        return unary_ops.Ops.neg(Ops.divide(res, unary_ops.Ops.square(b)));
       };
       return {a: derA, b: derB};
     };
@@ -284,7 +286,7 @@ export class Ops {
   @operation
   static divideStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
-    return this.divide(a, b) as T;
+    return Ops.divide(a, b) as T;
   }
 
   /** @deprecated Use math.divide(c, A) instead. */
@@ -294,7 +296,7 @@ export class Ops {
         c.size === 1,
         `Error in scalarDividedByArray: first argument must be rank 0, but ` +
             `got NDArray of rank ${c.rank}.`);
-    return this.divide(c, a) as T;
+    return Ops.divide(c, a) as T;
   }
 
   /** @deprecated Use math.divide(A, c) instead. */
@@ -304,7 +306,7 @@ export class Ops {
         c.size === 1,
         `Error in arrayDividedByScalar: second argument must be rank 0, ` +
             `but got NDArray of rank ${c.rank}.`);
-    return this.divide(a, c) as T;
+    return Ops.divide(a, c) as T;
   }
 
   /**

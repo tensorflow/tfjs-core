@@ -141,20 +141,24 @@ export class Ops {
 
   /**
    * Computes exponential linear element-wise
-   * @param {T} x the input NDArray
+   * @param x the input NDArray
    */
   @operation
   static elu<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Elu', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes the derivative of elu which is used ly
-   * @hidden
-   */
-  @operation
-  static eluDer<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('EluDer', {inputs: {x}}) as T;
+    const der = (dy: NDArray<'float32'>) => {
+      return {
+        x: () => {
+          return ENV.engine.executeKernel('EluDer', {inputs: {x}}) as
+              NDArray<'float32'>;
+        },
+        alpha: () => {
+          throw new Error(
+              'Derivative of prelu with respect to alpha is ' +
+              'not implemented yet');
+        }
+      };
+    };
+    return ENV.engine.executeKernel('Elu', {inputs: {x}}, der) as T;
   }
 
   /**
@@ -168,7 +172,7 @@ export class Ops {
 
   /**
    * Computes leaky rectified linear element-wise
-   * @param {T} x the input NDArray
+   * @param x the input NDArray
    * @param alpha scaling factor for negative values, defaults to 0.2
    * @return {NDArray}
    */
@@ -180,24 +184,26 @@ export class Ops {
 
   /**
    * Computes leaky rectified linear element-wise with parametric alphas
-   * @param {T} x the input NDArray
-   * @param {T} alpha scaling factor NDArray for negative values
+   * @param x the input NDArray
+   * @param alpha scaling factor NDArray for negative values
    * @return {NDArray}
    */
   @operation
   static prelu<T extends NDArray>(x: T, alpha: T): T {
-    return ENV.engine.executeKernel('PReLU', {inputs: {x, alpha}}) as T;
-  }
-
-  /**
-   * Computes the derivative of PReLU
-   * @param {T} x the input NDArray
-   * @param {T} alpha scaling factor NDArray for negative values
-   * @return {NDArray}
-   */
-  @operation
-  static preluDer<T extends NDArray>(x: T, alpha: T): T {
-    return ENV.engine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as T;
+    const der = (dy: NDArray<'float32'>) => {
+      return {
+        x: () => {
+          return ENV.engine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as
+              NDArray<'float32'>;
+        },
+        alpha: () => {
+          throw new Error(
+              'Derivative of prelu with respect to alpha is ' +
+              'not implemented yet');
+        }
+      };
+    };
+    return ENV.engine.executeKernel('PReLU', {inputs: {x, alpha}}, der) as T;
   }
 
   /**

@@ -104,8 +104,11 @@ export class NDArrayMath implements NDArrayManager {
   argMax = reduction_ops.Ops.argMax;
   argMaxEquals = reduction_ops.Ops.argMaxEquals;
   argMin = reduction_ops.Ops.argMin;
+  logSumExp = reduction_ops.Ops.logSumExp;
   max = reduction_ops.Ops.max;
+  mean = reduction_ops.Ops.mean;
   min = reduction_ops.Ops.min;
+  sum = reduction_ops.Ops.sum;
 
   add = binary_ops.Ops.add;
   addStrict = binary_ops.Ops.addStrict;
@@ -123,6 +126,8 @@ export class NDArrayMath implements NDArrayManager {
   powStrict = binary_ops.Ops.powStrict;
   /** @deprecated */
   scalarDividedByArray = binary_ops.Ops.scalarDividedByArray;
+  /** @deprecated */
+  sub = binary_ops.Ops.sub;
   subStrict = binary_ops.Ops.subStrict;
   subtract = binary_ops.Ops.subtract;
 
@@ -136,6 +141,32 @@ export class NDArrayMath implements NDArrayManager {
   lessEqual = compare.Ops.lessEqual;
   notEqual = compare.Ops.notEqual;
   notEqualStrict = compare.Ops.notEqualStrict;
+
+  abs = unary_ops.Ops.abs;
+  acos = unary_ops.Ops.acos;
+  asin = unary_ops.Ops.asin;
+  atan = unary_ops.Ops.atan;
+  ceil = unary_ops.Ops.ceil;
+  clip = unary_ops.Ops.clip;
+  cos = unary_ops.Ops.cos;
+  cosh = unary_ops.Ops.cosh;
+  elu = unary_ops.Ops.elu;
+  exp = unary_ops.Ops.exp;
+  floor = unary_ops.Ops.floor;
+  leakyRelu = unary_ops.Ops.leakyRelu;
+  log = unary_ops.Ops.log;
+  neg = unary_ops.Ops.neg;
+  prelu = unary_ops.Ops.prelu;
+  relu = unary_ops.Ops.relu;
+  selu = unary_ops.Ops.selu;
+  sigmoid = unary_ops.Ops.sigmoid;
+  sin = unary_ops.Ops.sin;
+  sinh = unary_ops.Ops.sinh;
+  sqrt = unary_ops.Ops.sqrt;
+  square = unary_ops.Ops.square;
+  step = unary_ops.Ops.step;
+  tan = unary_ops.Ops.tan;
+  tanh = unary_ops.Ops.tanh;
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};

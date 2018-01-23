@@ -17,9 +17,15 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
+
 import * as axis_util from './axis_util';
+import * as binary_ops from './binary_ops';
+import * as compare from './compare';
 import {operation} from './decorators';
 import {DataType, NDArray, Scalar} from './ndarray';
+import * as transpose from './transpose';
+import {SumTypes} from './types';
+import * as unary_ops from './unary_ops';
 
 export class Ops {
   /**
@@ -41,18 +47,18 @@ export class Ops {
   static logSumExp<T extends NDArray<'float32'>>(
       input: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    const xMax = this.max(input, axes, true /* keepDims */);
-    const a = this.subtract(input, xMax);
-    const b = this.exp(a);
-    const c = this.sum(b, axes);
-    const d = this.log(c);
-    const res = this.add(xMax.reshape(d.shape), d);
+    const xMax = Ops.max(input, axes, true /* keepDims */);
+    const a = binary_ops.Ops.subtract(input, xMax);
+    const b = unary_ops.Ops.exp(a);
+    const c = Ops.sum(b, axes);
+    const d = unary_ops.Ops.log(c);
+    const res = binary_ops.Ops.add(xMax.reshape(d.shape), d);
 
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
-      return res.reshape(newShape);
+      return res.reshape(newShape) as T;
     }
-    return res;
+    return res as T;
   }
 
   /**
@@ -73,38 +79,36 @@ export class Ops {
   static sum<D extends DataType, T extends NDArray<SumTypes[D]>>(
       x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, x.shape);
-    return this.scope('sum', () => {
-      // Use a custom gradient to bypass 2 gradient backprops since sum is used
-      // extremely often.
-      return this.customGradient(() => {
-        const permutation = axis_util.getAxesPermutation(axes, x.rank);
-        let reductionAxes = axes;
-        let permutedX = x;
-        if (permutation != null) {
-          permutedX = this.transpose(x, permutation);
-          reductionAxes =
-              axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
-        }
-        let value = this.engine.executeKernel(
-            'Sum', {inputs: {x: permutedX}, args: {axes: reductionAxes}});
-        if (keepDims) {
-          const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
-          value = value.reshape(newShape);
-        }
+    // Use a custom gradient to bypass 2 gradient backprops since sum is used
+    // extremely often.
+    return ENV.math.customGradient(() => {
+      const permutation = axis_util.getAxesPermutation(axes, x.rank);
+      let reductionAxes = axes;
+      let permutedX = x;
+      if (permutation != null) {
+        permutedX = transpose.Ops.transpose(x, permutation);
+        reductionAxes =
+            axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
+      }
+      let value = ENV.engine.executeKernel(
+          'Sum', {inputs: {x: permutedX}, args: {axes: reductionAxes}});
+      if (keepDims) {
+        const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
+        value = value.reshape(newShape);
+      }
 
-        const gradients = (dy: NDArray<'float32'>) => {
-          const expandedDyShape = x.shape.slice();
-          axes.forEach(axis => {
-            expandedDyShape[axis] = 1;
-          });
-          const expandedDy = dy.reshape(expandedDyShape);
-          const derX = () =>
-              this.multiply(expandedDy, NDArray.ones(x.shape, 'float32'));
-          return {x: derX};
-        };
-        return {value, gradients};
-      }, {x}, 'sum');
-    }) as T;
+      const gradients = (dy: NDArray<'float32'>) => {
+        const expandedDyShape = x.shape.slice();
+        axes.forEach(axis => {
+          expandedDyShape[axis] = 1;
+        });
+        const expandedDy = dy.reshape(expandedDyShape);
+        const derX = () => binary_ops.Ops.multiply(
+            expandedDy, NDArray.ones(x.shape, 'float32'));
+        return {x: derX};
+      };
+      return {value, gradients};
+    }, {x}, 'sum') as T;
   }
 
   /**
@@ -128,28 +132,27 @@ export class Ops {
     const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
     const reduceShape = shapes[1];
     const reduceSize = util.sizeFromShape(reduceShape);
-    return this.scope('mean', () => {
-      // Use a custom gradient to bypass 2 gradient backprops since mean is used
-      // extremely often.
-      return this.customGradient(() => {
-        const reduceSizeScalar = Scalar.new(reduceSize);
-        const res = this.divide(x, reduceSizeScalar);
-        const value = this.sum(res, axis, keepDims);
+    // Use a custom gradient to bypass 2 gradient backprops since mean is used
+    // extremely often.
+    return ENV.math.customGradient(() => {
+      const reduceSizeScalar = Scalar.new(reduceSize);
+      const res = binary_ops.Ops.divide(x, reduceSizeScalar);
+      const value = Ops.sum(res, axis, keepDims);
 
-        const gradients = (dy: NDArray<'float32'>) => {
-          const expandedDyShape = x.shape.slice();
-          axes.forEach(axis => {
-            expandedDyShape[axis] = 1;
-          });
-          const expandedDy = dy.reshape(expandedDyShape);
-          const derX = () => this.divide(
-              this.multiply(expandedDy, NDArray.ones(x.shape, 'float32')),
-              reduceSizeScalar);
-          return {x: derX};
-        };
-        return {value, gradients};
-      }, {x}, 'mean') as NDArray<'float32'>;
-    });
+      const gradients = (dy: NDArray<'float32'>) => {
+        const expandedDyShape = x.shape.slice();
+        axes.forEach(axis => {
+          expandedDyShape[axis] = 1;
+        });
+        const expandedDy = dy.reshape(expandedDyShape);
+        const derX = () => binary_ops.Ops.divide(
+            binary_ops.Ops.multiply(
+                expandedDy, NDArray.ones(x.shape, 'float32')),
+            reduceSizeScalar);
+        return {x: derX};
+      };
+      return {value, gradients};
+    }, {x}, 'mean') as NDArray<'float32'>;
   }
 
   /**

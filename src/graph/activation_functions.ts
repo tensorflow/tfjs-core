@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {NDArrayMath} from './math';
-import {NDArray, Scalar} from './ndarray';
+import {NDArrayMath} from '../math/math';
+import {NDArray, Scalar} from '../math/ndarray';
 
 /** A node's activation function and its derivative. */
 export interface ActivationFunction {
@@ -106,16 +106,4 @@ export class SquareFunc implements ActivationFunction {
   dispose() {
     this.two.dispose();
   }
-}
-
-export class EluFunc implements ActivationFunction {
-  output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.elu(x);
-  }
-
-  der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.eluDer(x);
-  }
-
-  dispose() {}
 }
