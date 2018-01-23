@@ -17,7 +17,7 @@
 
 import {NDArrayMath} from '../../math/math';
 // tslint:disable-next-line:max-line-length
-import {ActivationFunction, LeakyReluFunc, ReLUFunc, SigmoidFunc, SquareFunc, TanHFunc} from '../activation_functions';
+import {ActivationFunction, EluFunc, LeakyReluFunc, ReLUFunc, SigmoidFunc, SquareFunc, TanHFunc} from '../activation_functions';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
@@ -104,5 +104,37 @@ export class Sigmoid extends ElementWiseActivation {
 export class Square extends ElementWiseActivation {
   constructor(xTensor: Tensor, yTensor: Tensor) {
     super(xTensor, yTensor, new SquareFunc());
+  }
+}
+
+/**
+ * @hidden
+ */
+export class Elu extends ElementWiseActivation {
+  constructor(xTensor: Tensor, yTensor: Tensor) {
+    super(xTensor, yTensor, new EluFunc());
+  }
+}
+
+/**
+ * @hidden
+ */
+export class PReLU extends Operation {
+  constructor(
+      private xTensor: Tensor, private alphaTensor: Tensor,
+      private yTensor: Tensor) {
+    super();
+  }
+  feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
+    const x = inferenceArrays.get(this.xTensor);
+    const alpha = inferenceArrays.get(this.alphaTensor);
+      math.scope((keep) => {
+      inferenceArrays.set(this.yTensor, keep(math.prelu(x, alpha)));
+    });
+  }
+  backProp(
+      math: NDArrayMath, inferenceArrays: TensorArrayMap,
+      gradientArrays: SummedTensorArrayMap) {
+    throw new Error('Not implemented');
   }
 }
