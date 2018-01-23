@@ -64,6 +64,11 @@ export interface URLProperty {
   type: Type;
 }
 
+function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
+  const ext = gl.getExtension(extensionName);
+  return ext != null;
+}
+
 function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
   if (webGLVersion === 0) {
     throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
@@ -99,11 +104,6 @@ function isWebGLVersionEnabled(webGLVersion: 1|2) {
   return false;
 }
 
-function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
-  const ext = gl.getExtension(extensionName);
-  return ext != null;
-}
-
 function getWebGLDisjointQueryTimerVersion(webGLVersion: number): number {
   if (webGLVersion === 0) {
     return 0;
@@ -134,11 +134,11 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
   const gl = getWebGLRenderingContext(webGLVersion);
 
   if (webGLVersion === 1) {
-    if (gl.getExtension('OES_texture_float') == null) {
+    if (!hasExtension(gl, 'OES_texture_float')) {
       return false;
     }
   } else {
-    if (gl.getExtension('EXT_color_buffer_float') == null) {
+    if (!hasExtension(gl, 'EXT_color_buffer_float')) {
       return false;
     }
   }
@@ -174,8 +174,8 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
     return false;
   }
   const gl = getWebGLRenderingContext(webGLVersion);
-  const ext = gl.getExtension('WEBGL_get_buffer_sub_data_async');
-  const isEnabled = ext != null;
+
+  const isEnabled = hasExtension(gl, 'WEBGL_get_buffer_sub_data_async');
   loseContext(gl);
   return isEnabled;
 }
