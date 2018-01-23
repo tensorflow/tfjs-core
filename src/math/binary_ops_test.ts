@@ -55,7 +55,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     it('derivative propagates NaN', math => {
       const x = Array1D.new([0.5, -0.1, NaN]);
       const a = Array1D.new([0.2, 0.3, 0.25]);
-      const dy = Array1D.new([1, 1, 1, 1]);
+      const dy = Array1D.new([1, 1, 1]);
 
       const dx = math.vjp(() => math.prelu(x, a), x, dy);
 

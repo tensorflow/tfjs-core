@@ -29,6 +29,7 @@ import * as conv from './math/conv';
 import * as conv_util from './math/conv_util';
 // tslint:disable-next-line:max-line-length
 import * as matmul from './math/matmul';
+import {Ops as NormOps} from './math/norm';
 import * as pool from './math/pool';
 import * as reduction_ops from './math/reduction_ops';
 import * as reverse from './math/reverse';
@@ -173,3 +174,5 @@ export const pow = binary_ops.Ops.pow;
 export const powStrict = binary_ops.Ops.powStrict;
 export const subStrict = binary_ops.Ops.subStrict;
 export const subtract = binary_ops.Ops.subtract;
+
+export const norm = NormOps.norm;

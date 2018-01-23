@@ -18,6 +18,7 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import * as binary_ops from './binary_ops';
+const multiply = binary_ops.Ops.multiply;
 import {operation} from './decorators';
 import {DataType, NDArray, Rank, Scalar} from './ndarray';
 
@@ -90,10 +91,8 @@ export class Ops {
     return ENV.engine.executeKernel(
                'Square', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
                  return {
-                   x: () => binary_ops.Ops.multiply(
-                       dy,
-                       binary_ops.Ops.multiply(
-                           x.asType('float32'), Scalar.new(2)))
+                   x: () => multiply(
+                       dy, multiply(x.asType('float32'), Scalar.new(2)))
                  };
                }) as T;
   }
@@ -132,10 +131,7 @@ export class Ops {
       x: T): T {
     return ENV.engine.executeKernel(
                'Relu', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
-                 return {
-                   x: () => binary_ops.Ops.multiply(
-                       dy, Ops.step(x).asType('float32'))
-                 };
+                 return {x: () => multiply(dy, Ops.step(x).asType('float32'))};
                }) as T;
   }
 

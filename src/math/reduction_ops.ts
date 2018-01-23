@@ -17,15 +17,22 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-
 import * as axis_util from './axis_util';
 import * as binary_ops from './binary_ops';
+const add = binary_ops.Ops.add;
+const subtract = binary_ops.Ops.subtract;
+const multiply = binary_ops.Ops.multiply;
+const divide = binary_ops.Ops.divide;
 import * as compare from './compare';
+const equal = compare.Ops.equal;
 import {operation} from './decorators';
 import {DataType, NDArray, Scalar} from './ndarray';
-import * as transpose from './transpose';
+import {Ops as TransposeOps} from './transpose';
+const transpose = TransposeOps.transpose;
 import {SumTypes} from './types';
 import * as unary_ops from './unary_ops';
+const exp = unary_ops.Ops.exp;
+const log = unary_ops.Ops.log;
 
 export class Ops {
   /**
@@ -48,11 +55,11 @@ export class Ops {
       input: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, input.shape);
     const xMax = Ops.max(input, axes, true /* keepDims */);
-    const a = binary_ops.Ops.subtract(input, xMax);
-    const b = unary_ops.Ops.exp(a);
+    const a = subtract(input, xMax);
+    const b = exp(a);
     const c = Ops.sum(b, axes);
-    const d = unary_ops.Ops.log(c);
-    const res = binary_ops.Ops.add(xMax.reshape(d.shape), d);
+    const d = log(c);
+    const res = add(xMax.reshape(d.shape), d);
 
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
@@ -86,7 +93,7 @@ export class Ops {
       let reductionAxes = axes;
       let permutedX = x;
       if (permutation != null) {
-        permutedX = transpose.Ops.transpose(x, permutation);
+        permutedX = transpose(x, permutation);
         reductionAxes =
             axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
       }
@@ -103,8 +110,8 @@ export class Ops {
           expandedDyShape[axis] = 1;
         });
         const expandedDy = dy.reshape(expandedDyShape);
-        const derX = () => binary_ops.Ops.multiply(
-            expandedDy, NDArray.ones(x.shape, 'float32'));
+        const derX = () =>
+            multiply(expandedDy, NDArray.ones(x.shape, 'float32'));
         return {x: derX};
       };
       return {value, gradients};
@@ -136,7 +143,7 @@ export class Ops {
     // extremely often.
     return ENV.math.customGradient(() => {
       const reduceSizeScalar = Scalar.new(reduceSize);
-      const res = binary_ops.Ops.divide(x, reduceSizeScalar);
+      const res = divide(x, reduceSizeScalar);
       const value = Ops.sum(res, axis, keepDims);
 
       const gradients = (dy: NDArray<'float32'>) => {
@@ -145,9 +152,8 @@ export class Ops {
           expandedDyShape[axis] = 1;
         });
         const expandedDy = dy.reshape(expandedDyShape);
-        const derX = () => binary_ops.Ops.divide(
-            binary_ops.Ops.multiply(
-                expandedDy, NDArray.ones(x.shape, 'float32')),
+        const derX = () => divide(
+            multiply(expandedDy, NDArray.ones(x.shape, 'float32')),
             reduceSizeScalar);
         return {x: derX};
       };
@@ -176,7 +182,7 @@ export class Ops {
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.Ops.transpose(x, permutedAxes);
+      x = transpose(x, permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     const res = ENV.engine.executeKernel('Min', {inputs: {x}, args: {axes}}) as
@@ -209,7 +215,7 @@ export class Ops {
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.Ops.transpose(x, permutedAxes);
+      x = transpose(x, permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     const res = ENV.engine.executeKernel('Max', {inputs: {x}, args: {axes}}) as
@@ -236,7 +242,7 @@ export class Ops {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.Ops.transpose(x, permutedAxes);
+      x = transpose(x, permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     return ENV.engine.executeKernel('ArgMin', {inputs: {x}, args: {axes}}) as T;
@@ -256,7 +262,7 @@ export class Ops {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.Ops.transpose(x, permutedAxes);
+      x = transpose(x, permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
 
@@ -271,6 +277,6 @@ export class Ops {
   @operation
   static argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return compare.Ops.equal(Ops.argMax(x1), Ops.argMax(x2));
+    return equal(Ops.argMax(x1), Ops.argMax(x2));
   }
 }
