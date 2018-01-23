@@ -18,6 +18,7 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import {ArrayData} from '../util';
+import {MatrixOrientation} from './backends/types/matmul';
 import {RandNormalDataTypes} from './rand';
 import {MPRandGauss} from './rand';
 
@@ -417,6 +418,8 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
       throw new Error(`NDArray is disposed.`);
     }
   }
+
+  // Chain API.
 }
 
 export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {
@@ -529,6 +532,32 @@ export class Array1D<D extends DataType = DataType> extends NDArray<D, '1'> {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
         Array1D<D>;
   }
+
+  // Chain API.
+
+  timesMatrix(matrix: Array2D): Array1D {
+    return ENV.math.vectorTimesMatrix(this, matrix);
+  }
+
+  dotProduct(v2: Array1D): Scalar {
+    return ENV.math.dotProduct(this, v2);
+  }
+
+  outerProduct(v2: Array1D): Array2D {
+    return ENV.math.outerProduct(this, v2);
+  }
+
+  slice(begin: number, size: number): Array1D<D> {
+    return ENV.math.slice1D(this, begin, size);
+  }
+
+  reverse(): Array1D {
+    return ENV.math.reverse1D(this);
+  }
+
+  concat(b: Array1D): Array1D {
+    return ENV.math.concat1D(this, b);
+  }
 }
 
 export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
@@ -619,6 +648,30 @@ export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
       shape: [number, number], a: number, b: number, dtype?: D): Array2D<D> {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
         Array2D<D>;
+  }
+
+  // Chain API.
+
+  matMul(
+      b: Array2D, aOrientation = MatrixOrientation.REGULAR,
+      bOrientation = MatrixOrientation.REGULAR): Array2D {
+    return ENV.math.matMul(this, b, aOrientation, bOrientation);
+  }
+
+  timesVector(v: Array1D): Array1D {
+    return ENV.math.matrixTimesVector(this, v);
+  }
+
+  slice(begin: [number, number], size: [number, number]): Array2D<D> {
+    return ENV.math.slice2D(this, begin, size);
+  }
+
+  reverse(axis: number|number[]): Array2D {
+    return ENV.math.reverse2D(this, axis);
+  }
+
+  concat(b: Array2D, axis: number): Array2D {
+    return ENV.math.concat2D(this, b, axis);
   }
 }
 
@@ -712,6 +765,21 @@ export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
       dtype?: D): Array3D<D> {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
         Array3D<D>;
+  }
+
+  // Chain API.
+
+  slice(begin: [number, number, number], size: [number, number, number]):
+      Array3D<D> {
+    return ENV.math.slice3D(this, begin, size);
+  }
+
+  reverse(axis: number|number[]): Array3D {
+    return ENV.math.reverse3D(this, axis);
+  }
+
+  concat(b: Array3D, axis: number): Array3D {
+    return ENV.math.concat3D(this, b, axis);
   }
 }
 
@@ -812,6 +880,21 @@ export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
       dtype?: D): Array4D<D> {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
         Array4D<D>;
+  }
+
+  // Chain API.
+  slice(begin: [number, number, number, number], size: [
+    number, number, number, number
+  ]): Array4D<D> {
+    return ENV.math.slice4D(this, begin, size);
+  }
+
+  reverse(axis: number|number[]): Array4D {
+    return ENV.math.reverse4D(this, axis);
+  }
+
+  concat(b: Array4D, axis: number): Array4D {
+    return ENV.math.concat4D(this, b, axis);
   }
 }
 
