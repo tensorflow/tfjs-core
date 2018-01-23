@@ -174,7 +174,7 @@ export class MathBackendWebGL implements MathBackend {
       return this.texData[dataId].values;
     }
 
-    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0) {
       return this.readSync(dataId);
     }
 
@@ -184,7 +184,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.readSync(dataId);
   }
   async time(query: () => NDArray): Promise<number> {
-    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0) {
       const start = performance.now();
       const a = query();
       await a.data();
@@ -202,7 +202,7 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   getQueryTime(query: WebGLQuery): Promise<number> {
-    return this.gpgpu.getQueryTime(query);
+    return this.gpgpu.pollQueryTime(query);
   }
 
   disposeData(dataId: number): void {

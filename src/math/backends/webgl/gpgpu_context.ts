@@ -306,14 +306,15 @@ export class GPGPUContext {
     webgl_util.callAndCheck(this.gl, () => this.gl.finish());
   }
 
-  private getQueryTimerExtension(webGLVersion: 1|2):
-      WebGL1DisjointQueryTimerExtension|WebGL2DisjointQueryTimerExtension {
+  private getQueryTimerExtension(): WebGL1DisjointQueryTimerExtension
+      |WebGL2DisjointQueryTimerExtension {
     if (this.disjointQueryTimerExtension == null) {
       this.disjointQueryTimerExtension =
           webgl_util.getExtensionOrThrow(
               this.gl,
-              webGLVersion === 2 ? 'EXT_disjoint_timer_query_webgl2' :
-                                   'EXT_disjoint_timer_query') as
+              ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2 ?
+                  'EXT_disjoint_timer_query_webgl2' :
+                  'EXT_disjoint_timer_query') as
               WebGL1DisjointQueryTimerExtension |
           WebGL2DisjointQueryTimerExtension;
     }
@@ -321,11 +322,11 @@ export class GPGPUContext {
   }
 
   private getQueryTimerExtensionWebGL2(): WebGL2DisjointQueryTimerExtension {
-    return this.getQueryTimerExtension(2);
+    return this.getQueryTimerExtension();
   }
 
   private getQueryTimerExtensionWebGL1(): WebGL1DisjointQueryTimerExtension {
-    return this.getQueryTimerExtension(1) as WebGL1DisjointQueryTimerExtension;
+    return this.getQueryTimerExtension() as WebGL1DisjointQueryTimerExtension;
   }
 
   /**
@@ -341,24 +342,11 @@ export class GPGPUContext {
 
     this.endQuery();
 
-    return this.getQueryTime(query);
-  }
-
-  getQueryTime(query: WebGLQuery): Promise<number> {
-    return new Promise<number>((resolve, reject) => {
-      const resolveWithWarning = () => {
-        console.warn('Disjoint query timer never available.');
-        resolve(-1);
-      };
-
-      util.repeatedTry(() => this.isQueryAvailable(query))
-          .then(() => resolve(this.getQueryElapsedTime(query)))
-          .catch(resolveWithWarning);
-    });
+    return this.pollQueryTime(query);
   }
 
   beginQuery(): WebGLQuery {
-    if (ENV.get('WEBGL_VERSION') === 2) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
 
@@ -377,7 +365,7 @@ export class GPGPUContext {
   }
 
   endQuery() {
-    if (ENV.get('WEBGL_VERSION') === 2) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
 
@@ -389,7 +377,7 @@ export class GPGPUContext {
   }
 
   isQueryAvailable(query: WebGLQuery): boolean {
-    if (ENV.get('WEBGL_VERSION') === 2) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
 
@@ -410,8 +398,21 @@ export class GPGPUContext {
     }
   }
 
-  private getQueryElapsedTime(query: WebGLQuery) {
-    if (ENV.get('WEBGL_VERSION') === 2) {
+  pollQueryTime(query: WebGLQuery): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+      const resolveWithWarning = () => {
+        console.warn('Disjoint query timer never available.');
+        resolve(-1);
+      };
+
+      util.repeatedTry(() => this.isQueryAvailable(query))
+          .then(() => resolve(this.getQueryTime(query)))
+          .catch(resolveWithWarning);
+    });
+  }
+
+  private getQueryTime(query: WebGLQuery): number {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
 
       const timeElapsedNanos = gl2.getQueryParameter(query, gl2.QUERY_RESULT);

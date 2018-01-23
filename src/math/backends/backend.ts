@@ -35,7 +35,11 @@ export interface NDArrayStorage {
 }
 
 export interface BackendTimer {
+  // Time a function, resolves with the ellapsed time.
   time(query: () => NDArray): Promise<number>;
+  // Calling these three functions independently should be equivalent to calling
+  // time. We split them up so we can queue getQueryTimer promises so they don't
+  // run in parallel.
   startTimer(): {};
   endTimer(query: {}): {};
   getQueryTime(query: {}): Promise<number>;
