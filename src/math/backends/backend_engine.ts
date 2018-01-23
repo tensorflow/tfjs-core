@@ -68,7 +68,7 @@ export class BackendEngine {
       // a shallow stack trace.
       result = kernel_registry.executeKernel(this.backend, kernelName, config);
     } else {
-      result = this.profiler.timeKernel(
+      result = this.profiler.profileKernel(
           kernelName,
           () =>
               kernel_registry.executeKernel(this.backend, kernelName, config));

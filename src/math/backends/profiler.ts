@@ -11,7 +11,7 @@ export class Profiler {
 
   constructor(private backendTimer: BackendTimer) {}
 
-  timeKernel<T extends NDArray>(kernelName: Kernel, f: () => T): T {
+  profileKernel<T extends NDArray>(kernelName: Kernel, f: () => T): T {
     let result: NDArray;
 
     const shouldTimeKernel = this.pendingKernel === false;
@@ -29,25 +29,28 @@ export class Profiler {
       this.pendingKernel = false;
 
       const vals = result.dataSync();
+      util.checkForNaN(vals, result.dtype, name);
+
+      const profile = (timeMs: number) => {
+        this.logKernelProfile(kernelName, result, vals, timeMs);
+      };
 
       if (this.pendingTimer == null) {
         this.pendingTimer = this.backendTimer.getQueryTime(query);
         this.pendingTimer.then(timeMs => {
-          this.logKernelTiming(kernelName, result, vals, timeMs);
+          profile(timeMs);
           this.pendingTimer = null;
         });
       } else {
         this.pendingTimer.then(
-            () => this.backendTimer.getQueryTime(query).then(timeMs => {
-              this.logKernelTiming(kernelName, result, vals, timeMs);
-            }));
+            () => this.backendTimer.getQueryTime(query).then(profile));
       }
     }
 
     return result as T;
   }
 
-  logKernelTiming(
+  logKernelProfile(
       kernelName: Kernel, result: NDArray, vals: TypedArray, timeMs: number) {
     const time = util.rightPad(`${timeMs}ms`, 9);
     const paddedName = util.rightPad(kernelName, 25);
@@ -57,6 +60,5 @@ export class Profiler {
     console.log(
         `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
         'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-    util.checkForNaN(vals, result.dtype, name);
   }
 }
