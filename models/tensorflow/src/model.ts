@@ -135,6 +135,7 @@ export class TensorflowModel implements Model {
             namedActivations[node.name] = currAct as NDArray;
           },
           untilLayer);
+      return currAct;
     });
 
     return currAct as NDArray;
