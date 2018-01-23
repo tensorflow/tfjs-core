@@ -1,19 +1,21 @@
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array4D, CheckpointLoader, ENV, NDArray} from 'deeplearn';
+import {XhrDataset, XhrDatasetConfig} from 'deeplearn/dist/data/xhr-dataset';
+import {Array3D} from 'deeplearn/dist/math/ndarray';
 
-function loadImage(path: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.addEventListener('load', () => {
-      resolve(img);
-    });
-    img.src = path;
-  });
-}
+// function loadImage(path: string): Promise<HTMLImageElement> {
+//   return new Promise((resolve, reject) => {
+//     const img = new Image();
+//     img.addEventListener('load', () => {
+//       resolve(img);
+//     });
+//     img.src = path;
+//   });
+// }
 
-function showImage(image: HTMLImageElement) {
-  document.body.appendChild(image);
-}
+// function showImage(image: HTMLImageElement) {
+//   document.body.appendChild(image);
+// }
 
 function loadModelVariables(): Promise<{[varName: string]: NDArray}> {
   console.log('loadCheckpoint');
@@ -21,8 +23,7 @@ function loadModelVariables(): Promise<{[varName: string]: NDArray}> {
   return loader.getAllVariables();
 }
 
-function inference(
-    modelVars: {[varName: string]: NDArray}, image: HTMLImageElement) {
+function inference(modelVars: {[varName: string]: NDArray}, input: Array3D) {
   const FLAGS = {batchSize: 1};
   const labelStrings = [
     'airplane',
@@ -39,7 +40,7 @@ function inference(
 
   const math = ENV.math;
 
-  const input = math.cast(NDArray.fromPixels(image), 'float32');
+  // const input = math.cast(NDArray.fromPixels(image), 'float32');
 
   const conv1Weights = modelVars['conv1/weights'] as Array4D;
   const conv1Biases = modelVars['conv1/biases'] as Array1D;
@@ -138,15 +139,94 @@ function inference(
   };
 }
 
+interface label {
+  label: number;
+  labelString: string;
+}
+
+function loadCifar10SampleData():
+    Promise<{images: NDArray[], labelled: label[]}> {
+  const datasetConfig: XhrDatasetConfig = {
+    'data': [
+      {
+        'name': 'images',
+        'path':
+            // tslint:disable-next-line:max-line-length
+            'https://storage.googleapis.com/learnjs-data/model-builder/cifar10_images.png',
+        'dataType': 'png',
+        'shape': [32, 32, 3]
+      },
+      {
+        'name': 'labels',
+        'path':
+            // tslint:disable-next-line:max-line-length
+            'https://storage.googleapis.com/learnjs-data/model-builder/cifar10_labels_uint8',
+        'dataType': 'uint8',
+        'shape': [10]
+      }
+    ],
+    'labelClassNames': [
+      'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse',
+      'ship', 'truck'
+    ],
+    modelConfigs: undefined,
+  };
+
+  const dataset = new XhrDataset(datasetConfig);
+
+  return dataset.fetchData().then(() => {
+    console.log('loaded data');
+    console.log(dataset);
+    eval('window[\'__dataset\'] = dataset');
+
+    const NUM_IMAGES = 10000;
+    let [images, labels] = dataset.getData();
+
+    images = images.slice(0, NUM_IMAGES);
+    labels = labels.slice(0, NUM_IMAGES);
+
+    // Resize the images
+    images = images.map((i) => {
+      return ENV.math.resizeBilinear3D(i as Array3D, [24, 24]);
+    });
+
+    const labelled = labels.map((l) => {
+      const label = ENV.math.argMax(l).get(0);
+      const labelString = datasetConfig.labelClassNames[label];
+      return {
+        label,
+        labelString,
+      };
+    });
+
+    return {
+      images,
+      labelled,
+    };
+  });
+}
+
 function runDemo() {
   console.log('run demo');
 
-  Promise.all([loadModelVariables(), loadImage('data/bird7.png')])
-      .then(([modelVars, image]) => {
+  Promise.all([loadModelVariables(), loadCifar10SampleData()])
+      .then(([modelVars, testData]) => {
         console.log('Loaded model vars');
-        showImage(image);
-        const res = inference(modelVars, image);
-        console.log('Prediction res', res);
+
+        let correct = 0;
+        const total = testData.images.length;
+        testData.images.forEach((image, index) => {
+          const res = inference(modelVars, image as Array3D);
+          if (res.predictionLabel === testData.labelled[index].labelString) {
+            correct += 1;
+          }
+          // console.log(
+          //     res.predictionLabel === testData.labelled[index].labelString,
+          //     ' : ', 'Prediction: ', res.predictionLabel,
+          //     '  Truth:', testData.labelled[index].labelString);
+        });
+
+        console.log('DONE', correct / total, total);
       })
       .catch((err) => {
         console.log('err loading data', err);
