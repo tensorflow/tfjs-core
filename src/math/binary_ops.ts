@@ -21,10 +21,7 @@ import * as broadcast_util from './broadcast_util';
 import {operation} from './decorators';
 import {DataType, NDArray, Scalar} from './ndarray';
 import * as reduction_ops from './reduction_ops';
-const sum = reduction_ops.Ops.sum;
 import * as unary_ops from './unary_ops';
-const neg = unary_ops.Ops.neg;
-const square = unary_ops.Ops.square;
 
 export class Ops {
   /**
@@ -46,7 +43,7 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = sum(res, reduceAxes);
+          res = reduction_ops.Ops.sum(res, reduceAxes);
         }
         return res.reshape(a.shape);
       };
@@ -54,7 +51,7 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = sum(res, reduceAxes);
+          res = reduction_ops.Ops.sum(res, reduceAxes);
         }
         return res.reshape(b.shape);
       };
@@ -96,7 +93,7 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = sum(res, reduceAxes);
+          res = reduction_ops.Ops.sum(res, reduceAxes);
         }
         return res.reshape(a.shape);
       };
@@ -104,9 +101,9 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = sum(res, reduceAxes);
+          res = reduction_ops.Ops.sum(res, reduceAxes);
         }
-        return neg(res).reshape(b.shape);
+        return unary_ops.Ops.neg(res).reshape(b.shape);
       };
       return {a: derA, b: derB};
     };
@@ -208,7 +205,7 @@ export class Ops {
         const res = Ops.multiply(dy, b.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          return sum(res, reduceAxes).reshape(a.shape);
+          return reduction_ops.Ops.sum(res, reduceAxes).reshape(a.shape);
         }
         return res;
       };
@@ -216,7 +213,7 @@ export class Ops {
         const res = Ops.multiply(dy, a.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          return sum(res, reduceAxes).reshape(b.shape);
+          return reduction_ops.Ops.sum(res, reduceAxes).reshape(b.shape);
         }
         return res;
       };
@@ -262,7 +259,7 @@ export class Ops {
         const res = Ops.divide(dy, b.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          return sum(res, reduceAxes).reshape(a.shape);
+          return reduction_ops.Ops.sum(res, reduceAxes).reshape(a.shape);
         }
         return res;
       };
@@ -270,9 +267,9 @@ export class Ops {
         let res = Ops.multiply(dy, a.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = sum(res, reduceAxes).reshape(b.shape);
+          res = reduction_ops.Ops.sum(res, reduceAxes).reshape(b.shape);
         }
-        return neg(Ops.divide(res, square(b)));
+        return unary_ops.Ops.neg(Ops.divide(res, unary_ops.Ops.square(b)));
       };
       return {a: derA, b: derB};
     };

@@ -20,7 +20,6 @@ import * as concat_util from './concat_util';
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 import * as slice from './slice';
-const slice3D = slice.Ops.slice3D;
 
 export class Ops {
   /**
@@ -114,8 +113,8 @@ export class Ops {
       const {x1Begin, x1Size, x2Begin, x2Size} =
           concat_util.computeGradientSliceShapes3D(a.shape, y.shape, axis);
       return {
-        a: () => slice3D(dy, x1Begin, x1Size),
-        b: () => slice3D(dy, x2Begin, x2Size)
+        a: () => slice.Ops.slice3D(dy, x1Begin, x1Size),
+        b: () => slice.Ops.slice3D(dy, x2Begin, x2Size)
       };
     };
 

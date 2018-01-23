@@ -16,19 +16,12 @@
  */
 
 import * as axis_util from './axis_util';
-
+import * as binary_ops from './binary_ops';
 import {operation} from './decorators';
 import {DataType, NDArray, Scalar} from './ndarray';
 import * as reduction_ops from './reduction_ops';
-const max = reduction_ops.Ops.max;
-const min = reduction_ops.Ops.min;
-const sum = reduction_ops.Ops.sum;
 import {SumTypes} from './types';
 import * as unary_ops from './unary_ops';
-const abs = unary_ops.Ops.abs;
-const sqrt = unary_ops.Ops.sqrt;
-import * as binary_ops from './binary_ops';
-const pow = binary_ops.Ops.pow;
 
 export class Ops {
   /**
@@ -78,7 +71,7 @@ function normInternal<D extends DataType>(
     axis: number|number[] = null): NDArray<D|SumTypes[D]> {
   // scalar
   if (x.rank === 0) {
-    return abs(x);
+    return unary_ops.Ops.abs(x);
   }
 
   // consider vector when no axis is specified
@@ -90,17 +83,19 @@ function normInternal<D extends DataType>(
   if (x.rank === 1 || typeof axis === 'number' ||
       axis instanceof Array && axis.length === 1) {
     if (p === 1) {
-      return sum(abs(x), axis);
+      return reduction_ops.Ops.sum(unary_ops.Ops.abs(x), axis);
     }
     if (p === Infinity) {
-      return max(abs(x), axis);
+      return reduction_ops.Ops.max(unary_ops.Ops.abs(x), axis);
     }
     if (p === -Infinity) {
-      return min(abs(x), axis);
+      return reduction_ops.Ops.min(unary_ops.Ops.abs(x), axis);
     }
     if (p === 'euclidean' || p === 2) {
       // norm(x, 2) = sum(abs(xi) ^ 2) ^ 1/2
-      return sqrt(sum(pow(abs(x), Scalar.new(2, 'int32')), axis));
+      return unary_ops.Ops.sqrt(reduction_ops.Ops.sum(
+          binary_ops.Ops.pow(unary_ops.Ops.abs(x), Scalar.new(2, 'int32')),
+          axis));
     }
 
     throw new Error(`Error in norm: invalid ord value: ${p}`);
@@ -109,17 +104,21 @@ function normInternal<D extends DataType>(
   // matrix (assumption axis[0] < axis[1])
   if (axis instanceof Array && axis.length === 2) {
     if (p === 1) {
-      return max(sum(abs(x), axis[0]), axis[1] - 1);
+      return reduction_ops.Ops.max(
+          reduction_ops.Ops.sum(unary_ops.Ops.abs(x), axis[0]), axis[1] - 1);
     }
     if (p === Infinity) {
-      return max(sum(abs(x), axis[1]), axis[0]);
+      return reduction_ops.Ops.max(
+          reduction_ops.Ops.sum(unary_ops.Ops.abs(x), axis[1]), axis[0]);
     }
     if (p === -Infinity) {
-      return min(sum(abs(x), axis[1]), axis[0]);
+      return reduction_ops.Ops.min(
+          reduction_ops.Ops.sum(unary_ops.Ops.abs(x), axis[1]), axis[0]);
     }
     if (p === 'fro' || p === 'euclidean') {
       // norm(x) = sqrt(sum(pow(x, 2)))
-      return sqrt(sum(pow(x, Scalar.new(2, 'int32')), axis));
+      return unary_ops.Ops.sqrt(reduction_ops.Ops.sum(
+          binary_ops.Ops.pow(x, Scalar.new(2, 'int32')), axis));
     }
 
     throw new Error(`Error in norm: invalid ord value: ${p}`);
