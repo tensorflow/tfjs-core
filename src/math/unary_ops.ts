@@ -19,7 +19,8 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import * as binary_ops from './binary_ops';
 import {operation} from './decorators';
-import {DataType, NDArray, Rank, Scalar} from './ndarray';
+import {NDArray, Scalar} from './ndarray';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**

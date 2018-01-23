@@ -19,8 +19,9 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './decorators';
-import {DataType, NDArray, Scalar} from './ndarray';
+import {NDArray, Scalar} from './ndarray';
 import * as reduction_ops from './reduction_ops';
+import {DataType} from './types';
 import * as unary_ops from './unary_ops';
 
 export class Ops {

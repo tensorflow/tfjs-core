@@ -17,6 +17,7 @@
 
 import * as xhr_dataset from './data/xhr-dataset';
 import * as environment from './environment';
+import * as array_ops from './math/array_ops';
 import * as gpgpu_util from './math/backends/webgl/gpgpu_util';
 // tslint:disable-next-line:max-line-length
 import * as render_ndarray_gpu_util from './math/backends/webgl/render_ndarray_gpu_util';
@@ -176,3 +177,14 @@ export const subStrict = binary_ops.Ops.subStrict;
 export const subtract = binary_ops.Ops.subtract;
 
 export const norm = NormOps.norm;
+
+export const clone = array_ops.Ops.clone;
+export const fromPixels = array_ops.Ops.fromPixels;
+export const ones = array_ops.Ops.ones;
+export const onesLike = array_ops.Ops.onesLike;
+export const zeros = array_ops.Ops.zeros;
+export const zerosLike = array_ops.Ops.zerosLike;
+export const rand = array_ops.Ops.rand;
+export const randNormal = array_ops.Ops.randNormal;
+export const randTruncatedNormal = array_ops.Ops.randTruncatedNormal;
+export const randUniform = array_ops.Ops.randUniform;

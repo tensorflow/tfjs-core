@@ -21,9 +21,9 @@ import * as axis_util from './axis_util';
 import * as binary_ops from './binary_ops';
 import * as compare from './compare';
 import {operation} from './decorators';
-import {DataType, NDArray, Scalar} from './ndarray';
+import {NDArray, Scalar} from './ndarray';
 import * as transpose from './transpose';
-import {SumTypes} from './types';
+import {DataType, SumTypes} from './types';
 import * as unary_ops from './unary_ops';
 
 export class Ops {

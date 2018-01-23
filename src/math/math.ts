@@ -18,6 +18,7 @@
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap, NamedVariableMap} from '../util';
+
 import * as axis_util from './axis_util';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
@@ -31,7 +32,7 @@ import * as concat from './concat';
 import * as conv from './conv';
 import * as matmul from './matmul';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, RankMap, Scalar, Variable} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
 import * as norm from './norm';
 import * as pool from './pool';
 import * as reduction_ops from './reduction_ops';
@@ -39,6 +40,7 @@ import * as reverse from './reverse';
 import * as slice from './slice';
 import * as transpose from './transpose';
 import * as types from './types';
+import {DataType, DataTypeMap, Rank, RankMap} from './types';
 import * as unary_ops from './unary_ops';
 
 export interface LSTMCell {
@@ -64,6 +66,7 @@ export class NDArrayMath implements NDArrayManager {
   matrixTimesVector = matmul.Ops.matrixTimesVector;
   dotProduct = matmul.Ops.dotProduct;
 
+  slice = slice.Ops.slice;
   slice1D = slice.Ops.slice1D;
   slice2D = slice.Ops.slice2D;
   slice3D = slice.Ops.slice3D;
