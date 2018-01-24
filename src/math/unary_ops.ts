@@ -81,12 +81,10 @@ export class Ops {
     return ENV.engine.executeKernel(
                'Sqrt', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
                  return {
-                   x: () => binary_ops.Ops.multiply(
+                   x: () => binary_ops.Ops.divide(
                        dy,
-                       binary_ops.Ops.divide(
-                           Scalar.new(1),
-                           binary_ops.Ops.multiply(
-                               this.sqrt(x.asType('float32')), Scalar.new(2))))
+                       binary_ops.Ops.multiply(
+                           Ops.sqrt(x.asType('float32')), Scalar.new(2)))
                  };
                }) as T;
   }
@@ -121,9 +119,7 @@ export class Ops {
                'Abs', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
                  return {
                    x: () => binary_ops.Ops.multiply(
-                       dy,
-                       binary_ops.Ops.divide(
-                           x.asType('float32'), this.abs(x.asType('float32'))))
+                       dy, Ops.step(x.asType('float32'), -1))
                  };
                }) as T;
   }
