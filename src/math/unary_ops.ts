@@ -76,8 +76,19 @@ export class Ops {
    * @param x The input NDArray.
    */
   @operation
-  static sqrt<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Sqrt', {inputs: {x}}) as T;
+  static sqrt<D extends DataType, R extends Rank, T extends NDArray<D, R>>(
+      x: T): T {
+    return ENV.engine.executeKernel(
+               'Sqrt', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
+                 return {
+                   x: () => binary_ops.Ops.multiply(
+                       dy,
+                       binary_ops.Ops.divide(
+                           Scalar.new(1),
+                           binary_ops.Ops.multiply(
+                               this.sqrt(x.asType('float32')), Scalar.new(2))))
+                 };
+               }) as T;
   }
 
   /**
@@ -104,8 +115,17 @@ export class Ops {
    * @param x The input NDArray.
    */
   @operation
-  static abs<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Abs', {inputs: {x}}) as T;
+  static abs<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T):
+      T {
+    return ENV.engine.executeKernel(
+               'Abs', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
+                 return {
+                   x: () => binary_ops.Ops.multiply(
+                       dy,
+                       binary_ops.Ops.divide(
+                           x.asType('float32'), this.abs(x.asType('float32'))))
+                 };
+               }) as T;
   }
 
   /**
