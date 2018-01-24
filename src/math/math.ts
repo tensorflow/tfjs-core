@@ -119,21 +119,27 @@ export class NDArrayMath implements NDArrayManager {
   addStrict = binary_ops.Ops.addStrict;
   /** @deprecated */
   arrayDividedByScalar = binary_ops.Ops.arrayDividedByScalar;
-  divide = binary_ops.Ops.divide;
-  divideStrict = binary_ops.Ops.divideStrict;
+  div = binary_ops.Ops.div;
+  divide = this.div;  // Alias.
+  divStrict = binary_ops.Ops.divStrict;
+  divideStrict = this.divStrict;  // Alias.
   /** @deprecated */
   elementWiseMul = binary_ops.Ops.elementWiseMul;
   maximum = binary_ops.Ops.maximum;
+  maximumStrict = binary_ops.Ops.maximumStrict;
   minimum = binary_ops.Ops.minimum;
-  multiply = binary_ops.Ops.multiply;
-  multiplyStrict = binary_ops.Ops.multiplyStrict;
+  minimumStrict = binary_ops.Ops.minimumStrict;
+  mul = binary_ops.Ops.mul;
+  multiply = this.mul;  // Alias.
+  mulStrict = binary_ops.Ops.mulStrict;
+  multiplyStrict = this.mulStrict;  // Alias.
   pow = binary_ops.Ops.pow;
   powStrict = binary_ops.Ops.powStrict;
   /** @deprecated */
   scalarDividedByArray = binary_ops.Ops.scalarDividedByArray;
+  sub = binary_ops.Ops.sub;
+  subtract = this.sub;  // Alias.
   subStrict = binary_ops.Ops.subStrict;
-  subtract = binary_ops.Ops.subtract;
-  sub = this.subtract;
 
   transpose = transpose.Ops.transpose;
 

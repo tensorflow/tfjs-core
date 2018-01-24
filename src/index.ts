@@ -165,16 +165,18 @@ export const tanh = unary_ops.Ops.tanh;
 
 export const add = binary_ops.Ops.add;
 export const addStrict = binary_ops.Ops.addStrict;
-export const divide = binary_ops.Ops.divide;
-export const divideStrict = binary_ops.Ops.divideStrict;
+export const div = binary_ops.Ops.div;
+export const divStrict = binary_ops.Ops.divStrict;
 export const maximum = binary_ops.Ops.maximum;
+export const maximumStrict = binary_ops.Ops.maximumStrict;
 export const minimum = binary_ops.Ops.minimum;
-export const multiply = binary_ops.Ops.multiply;
-export const multiplyStrict = binary_ops.Ops.multiplyStrict;
+export const minimumStrict = binary_ops.Ops.minimumStrict;
+export const mul = binary_ops.Ops.mul;
+export const mulStrict = binary_ops.Ops.mulStrict;
 export const pow = binary_ops.Ops.pow;
 export const powStrict = binary_ops.Ops.powStrict;
+export const sub = binary_ops.Ops.sub;
 export const subStrict = binary_ops.Ops.subStrict;
-export const subtract = binary_ops.Ops.subtract;
 
 export const norm = NormOps.norm;
 

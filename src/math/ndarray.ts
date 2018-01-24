@@ -346,6 +346,21 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     }
   }
 
+  /** Casts the array to type `float32` */
+  toFloat() {
+    return this.asType('float32');
+  }
+
+  /** Casts the array to type `int32` */
+  toInt() {
+    return this.asType('int32');
+  }
+
+  /** Casts the array to type `bool` */
+  toBool() {
+    return this.asType('bool');
+  }
+
   // Chain API.
 
   matMul(
@@ -444,6 +459,24 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   }
   mulStrict(x: NDArray<D, R>): RankMap<D>[R] {
     return ENV.math.multiplyStrict(this, x);
+  }
+  div<T extends NDArray<'float32'>>(x: NDArray<D>): T {
+    return ENV.math.div(this, x);
+  }
+  divStrict(x: NDArray<D, R>): RankMap<D>[R] {
+    return ENV.math.divStrict(this, x);
+  }
+  minimum<T extends NDArray<D>>(x: NDArray<D>): T {
+    return ENV.math.minimum(this, x);
+  }
+  minimumStrict(x: NDArray<D, R>): RankMap<D>[R] {
+    return ENV.math.minimumStrict(this, x);
+  }
+  maximum<T extends NDArray<D>>(x: NDArray<D>): T {
+    return ENV.math.maximum(this, x);
+  }
+  maximumStrict(x: NDArray<D, R>): RankMap<D>[R] {
+    return ENV.math.maximumStrict(this, x);
   }
 }
 
