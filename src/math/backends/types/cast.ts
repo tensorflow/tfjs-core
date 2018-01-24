@@ -15,18 +15,14 @@
  * =============================================================================
  */
 
-import {DataType, NDArray} from '../../ndarray';
-import {KernelInputConfig, KernelNode} from '../tape_types';
+import {NDArray} from '../../ndarray';
+import {DataType} from '../../types';
+import {KernelNode} from '../tape_types';
 
 export interface CastNode extends KernelNode {
-  inputAndArgs: CastInputConfig;
+  inputAndArgs: {inputs: {x: NDArray}; args: {newDType: DataType};};
   output: NDArray;
-  gradient: (dy: NDArray, y: NDArray) => {
-    x: () => NDArray
+  gradient: (dy: NDArray<'float32'>, y: NDArray) => {
+    x: () => NDArray<'float32'>
   };
-}
-
-export interface CastInputConfig extends KernelInputConfig {
-  inputs: {x: NDArray};
-  args: {newDType: DataType};
 }
