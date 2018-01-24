@@ -148,10 +148,7 @@ export class Ops {
   static elu<T extends NDArray>(x: T): T {
     const der = (dy: NDArray<'float32'>) => {
       return {
-        x: () => {
-          return ENV.engine.executeKernel('EluDer', {inputs: {x}}) as
-              NDArray<'float32'>;
-        },
+        x: () => binary_ops.Ops.multiply(dy, eluDer(x)),
         alpha: () => {
           throw new Error(
               'Derivative of prelu with respect to alpha is ' +
@@ -193,10 +190,7 @@ export class Ops {
   static prelu<T extends NDArray>(x: T, alpha: T): T {
     const der = (dy: NDArray<'float32'>) => {
       return {
-        x: () => {
-          return ENV.engine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as
-              NDArray<'float32'>;
-        },
+        x: () => binary_ops.Ops.multiply(dy, preluDer(x, alpha)),
         alpha: () => {
           throw new Error(
               'Derivative of prelu with respect to alpha is ' +
@@ -308,4 +302,14 @@ export class Ops {
   static step<T extends NDArray>(x: T, alpha = 0.0): T {
     return ENV.engine.executeKernel('Step', {inputs: {x}, args: {alpha}}) as T;
   }
+}
+
+function preluDer(x: NDArray, alpha: NDArray): NDArray<'float32'> {
+  return ENV.engine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as
+      NDArray<'float32'>;
+}
+
+function eluDer(x: NDArray): NDArray<'float32'> {
+  return ENV.engine.executeKernel('EluDer', {inputs: {x}}) as
+      NDArray<'float32'>;
 }

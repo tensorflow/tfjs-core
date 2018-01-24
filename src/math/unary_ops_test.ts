@@ -747,12 +747,12 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
     it('derivative', math => {
       const x = Array1D.new([1, 3, -2]);
-      const dy = Array1D.new([1, 1, 1]);
+      const dy = Array1D.new([5, 50, 500]);
       const gradients = math.vjp(() => math.elu(x), x, dy);
 
       expect(gradients.shape).toEqual(x.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [1, 1, Math.exp(-2)]);
+      test_util.expectArraysClose(gradients, [5, 50, 500 * Math.exp(-2)], 1e-1);
     });
   };
   test_util.describeMathCPU('elu', [tests]);
