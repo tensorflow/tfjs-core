@@ -16,7 +16,6 @@
  */
 
 import * as axis_util from './axis_util';
-import * as binary_ops from './binary_ops';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
 import * as reduction_ops from './reduction_ops';
@@ -94,8 +93,7 @@ function normInternal<D extends DataType>(
     if (p === 'euclidean' || p === 2) {
       // norm(x, 2) = sum(abs(xi) ^ 2) ^ 1/2
       return unary_ops.Ops.sqrt(reduction_ops.Ops.sum(
-          binary_ops.Ops.pow(unary_ops.Ops.abs(x), Scalar.new(2, 'int32')),
-          axis));
+          unary_ops.Ops.abs(x).pow(Scalar.new(2, 'int32')), axis));
     }
 
     throw new Error(`Error in norm: invalid ord value: ${p}`);
@@ -117,8 +115,8 @@ function normInternal<D extends DataType>(
     }
     if (p === 'fro' || p === 'euclidean') {
       // norm(x) = sqrt(sum(pow(x, 2)))
-      return unary_ops.Ops.sqrt(reduction_ops.Ops.sum(
-          binary_ops.Ops.pow(x, Scalar.new(2, 'int32')), axis));
+      return unary_ops.Ops.sqrt(
+          reduction_ops.Ops.sum(x.pow(Scalar.new(2, 'int32')), axis));
     }
 
     throw new Error(`Error in norm: invalid ord value: ${p}`);

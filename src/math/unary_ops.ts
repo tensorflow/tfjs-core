@@ -17,7 +17,6 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-import * as binary_ops from './binary_ops';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
 import {DataType, Rank} from './types';
@@ -91,10 +90,7 @@ export class Ops {
     return ENV.engine.executeKernel(
                'Square', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
                  return {
-                   x: () => binary_ops.Ops.multiply(
-                       dy,
-                       binary_ops.Ops.multiply(
-                           x.asType('float32'), Scalar.new(2)))
+                   x: () => dy.mul(x.asType('float32').mul(Scalar.new(2)))
                  };
                }) as T;
   }
@@ -133,10 +129,7 @@ export class Ops {
       x: T): T {
     return ENV.engine.executeKernel(
                'Relu', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
-                 return {
-                   x: () => binary_ops.Ops.multiply(
-                       dy, Ops.step(x).asType('float32'))
-                 };
+                 return {x: () => dy.mul(Ops.step(x).asType('float32'))};
                }) as T;
   }
 
@@ -148,7 +141,7 @@ export class Ops {
   static elu<T extends NDArray>(x: T): T {
     const der = (dy: NDArray<'float32'>) => {
       return {
-        x: () => binary_ops.Ops.multiply(dy, eluDer(x)),
+        x: () => dy.mul(eluDer(x)),
         alpha: () => {
           throw new Error(
               'Derivative of prelu with respect to alpha is ' +
@@ -190,7 +183,7 @@ export class Ops {
   static prelu<T extends NDArray>(x: T, alpha: T): T {
     const der = (dy: NDArray<'float32'>) => {
       return {
-        x: () => binary_ops.Ops.multiply(dy, preluDer(x, alpha)),
+        x: () => dy.mul(preluDer(x, alpha)),
         alpha: () => {
           throw new Error(
               'Derivative of prelu with respect to alpha is ' +

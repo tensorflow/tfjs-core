@@ -84,7 +84,7 @@ export class SigmoidFunc implements ActivationFunction {
     return math.scope(() => {
       // y * (1 - y) = y - y^2
       const ySquared = math.multiplyStrict(y, y);
-      return math.subStrict(y, ySquared);
+      return math.subStrict(y, ySquared) as T;
     });
   }
 
@@ -95,7 +95,7 @@ export class SquareFunc implements ActivationFunction {
   private two = Scalar.new(2);
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.multiplyStrict(x, x);
+    return math.multiplyStrict(x, x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {

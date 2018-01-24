@@ -131,10 +131,9 @@ export class NDArrayMath implements NDArrayManager {
   powStrict = binary_ops.Ops.powStrict;
   /** @deprecated */
   scalarDividedByArray = binary_ops.Ops.scalarDividedByArray;
-  /** @deprecated */
-  sub = binary_ops.Ops.sub;
   subStrict = binary_ops.Ops.subStrict;
   subtract = binary_ops.Ops.subtract;
+  sub = this.subtract;
 
   transpose = transpose.Ops.transpose;
 

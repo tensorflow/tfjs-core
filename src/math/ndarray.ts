@@ -21,7 +21,8 @@ import {ArrayData} from '../util';
 import * as array_ops from './array_ops';
 import {MatrixOrientation} from './backends/types/matmul';
 import {RandNormalDataTypes} from './rand';
-import {DataType, DataTypeMap, Rank, RankMap, ShapeMap} from './types';
+// tslint:disable-next-line:max-line-length
+import {DataType, DataTypeMap, Rank, RankMap, ShapeMap, SumTypes} from './types';
 
 /** @hidden */
 export interface NDArrayData<D extends DataType> {
@@ -245,10 +246,6 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return this.dataSync()[index];
   }
 
-  add(value: number, ...locs: number[]) {
-    this.set(this.get(...locs) + value, ...locs);
-  }
-
   set(value: number, ...locs: number[]) {
     this.throwIfDisposed();
     util.assert(
@@ -354,24 +351,17 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   matMul(
       b: Array2D<D>, aOrientation = MatrixOrientation.REGULAR,
       bOrientation = MatrixOrientation.REGULAR): Array2D<D> {
-    if (this.rank !== 2) {
-      console.log(`NDArray must be of rank 2, but is of rank "${this.rank}"`);
-    }
     return ENV.math.matMul(this as Array2D<D>, b, aOrientation, bOrientation);
   }
-
   slice(begin: ShapeMap[R], size: ShapeMap[R]): RankMap<D>[R] {
     return ENV.math.slice(this, begin, size);
   }
-
   reverse(axis: number|number[]): RankMap<D>[R] {
     return ENV.math.reverse(this, axis);
   }
-
   concat(x: NDArray<D, R>, axis: number): RankMap<D>[R] {
     return ENV.math.concat(this, x, axis);
   }
-
   batchNormalization(
       mean: RankMap<D>[R]|Array1D, variance: RankMap<D>[R]|Array1D,
       varianceEpsilon = .001, scale?: RankMap<D>[R]|Array1D,
@@ -379,7 +369,6 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return ENV.math.batchNormalization(
         this, mean, variance, varianceEpsilon, scale, offset);
   }
-
   avgPool(
       filterSize: [number, number]|number, strides: [number, number]|number,
       pad: 'valid'|'same'|number,
@@ -388,7 +377,6 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
         this as NDArray<'int32'|'float32', '3'|'4'>, filterSize, strides, pad,
         dimRoundingMode);
   }
-
   maxPool(
       filterSize: [number, number]|number, strides: [number, number]|number,
       pad: 'valid'|'same'|number,
@@ -396,7 +384,6 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return ENV.math.maxPool(
         this as NDArray<D, '3'|'4'>, filterSize, strides, pad, dimRoundingMode);
   }
-
   minPool(
       filterSize: [number, number]|number, strides: [number, number]|number,
       pad: 'valid'|'same'|number,
@@ -404,9 +391,59 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return ENV.math.minPool(
         this as NDArray<D, '3'|'4'>, filterSize, strides, pad, dimRoundingMode);
   }
-
   clone(): RankMap<D>[R] {
     return ENV.math.clone(this);
+  }
+  logSumExp<T extends NDArray<'float32'>>(
+      axis: number|number[] = null, keepDims = false): T {
+    return ENV.math.logSumExp(this, axis, keepDims);
+  }
+  sum<T extends NDArray<SumTypes[D]>>(
+      axis: number|number[] = null, keepDims = false): T {
+    return ENV.math.sum(this, axis, keepDims);
+  }
+  mean<T extends NDArray<'float32'>>(
+      axis: number|number[] = null, keepDims = false): T {
+    return ENV.math.mean(this, axis, keepDims);
+  }
+  min<T extends NDArray<D>>(axis: number|number[] = null, keepDims = false): T {
+    return ENV.math.min(this, axis, keepDims);
+  }
+  max<T extends NDArray<D>>(axis: number|number[] = null, keepDims = false): T {
+    return ENV.math.max(this, axis, keepDims);
+  }
+  argMin<T extends NDArray<'int32'>>(axis: number = null): T {
+    return ENV.math.argMin(this, axis);
+  }
+  argMax<T extends NDArray<'int32'>>(axis: number = null): T {
+    return ENV.math.argMax(this, axis);
+  }
+  argMaxEquals(x: NDArray): Scalar<'bool'> {
+    return ENV.math.argMaxEquals(this, x);
+  }
+  add<T extends NDArray<D>>(x: NDArray<D>): T {
+    return ENV.math.add(this, x);
+  }
+  addStrict(x: NDArray<D, R>): RankMap<D>[R] {
+    return ENV.math.addStrict(this, x);
+  }
+  sub<T extends NDArray<D>>(x: NDArray<D>): T {
+    return ENV.math.subtract(this, x);
+  }
+  subStrict(x: NDArray<D, R>): RankMap<D>[R] {
+    return ENV.math.subStrict(this, x);
+  }
+  pow<T extends NDArray<D>>(exp: NDArray<'int32'>): T {
+    return ENV.math.pow(this, exp);
+  }
+  powStrict(exp: NDArray<'int32'>): RankMap<D>[R] {
+    return ENV.math.powStrict(this, exp);
+  }
+  mul<T extends NDArray<D>>(x: NDArray<D>): T {
+    return ENV.math.multiply(this, x);
+  }
+  mulStrict(x: NDArray<D, R>): RankMap<D>[R] {
+    return ENV.math.multiplyStrict(this, x);
   }
 }
 
@@ -424,10 +461,6 @@ export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {
   async val(): Promise<number> {
     await this.data();
     return this.get();
-  }
-
-  add(value: number) {
-    this.dataSync()[0] += value;
   }
 
   locToIndex(loc: number[]): number {
@@ -459,10 +492,6 @@ export class Array1D<D extends DataType = DataType> extends NDArray<D, '1'> {
   async val(i: number): Promise<number> {
     await this.data();
     return this.get(i);
-  }
-
-  add(value: number, i: number) {
-    this.dataSync()[i] += value;
   }
 
   locToIndex(loc: [number]): number {
@@ -540,10 +569,6 @@ export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
 
   get(i: number, j: number) {
     return this.dataSync()[this.strides[0] * i + j];
-  }
-
-  add(value: number, i: number, j: number) {
-    this.dataSync()[this.strides[0] * i + j] += value;
   }
 
   async val(i: number, j: number): Promise<number> {
@@ -633,10 +658,6 @@ export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
     return this.get(i, j, k);
   }
 
-  add(value: number, i: number, j: number, k: number) {
-    this.dataSync()[this.strides[0] * i + this.strides[1] * j + k] += value;
-  }
-
   locToIndex(locs: [number, number, number]): number {
     return this.strides[0] * locs[0] + this.strides[1] * locs[1] + locs[2];
   }
@@ -720,12 +741,6 @@ export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
   async val(i: number, j: number, k: number, l: number): Promise<number> {
     await this.data();
     return this.get(i, j, k, l);
-  }
-
-  add(value: number, i: number, j: number, k: number, l: number) {
-    this.dataSync()
-        [this.strides[0] * i + this.strides[1] * j + this.strides[2] * k + l] +=
-        value;
   }
 
   locToIndex(locs: [number, number, number, number]): number {

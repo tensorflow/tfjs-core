@@ -21,7 +21,7 @@ import * as broadcast_util from './broadcast_util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
 import * as reduction_ops from './reduction_ops';
-import {DataType} from './types';
+import {DataType, Rank, RankMap} from './types';
 import * as unary_ops from './unary_ops';
 
 export class Ops {
@@ -70,9 +70,10 @@ export class Ops {
    */
 
   @operation
-  static addStrict<T extends NDArray>(a: T, b: T): T {
+  static addStrict<D extends DataType, R extends Rank>(
+      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
-    return Ops.add(a, b) as T;
+    return Ops.add(a, b);
   }
 
   /**
@@ -112,69 +113,6 @@ export class Ops {
   }
 
   /**
-   * Computes the power of one value to another.
-   * Given a tensor x and a tensor y, this operation computes x^y for
-   * corresponding elements in x and y. For example:
-   * x = tf.constant([[2, 2], [3, 3]])
-   * y = tf.constant([[8, 16], [2, 3]])
-   * pow(x, y)  # [[256, 65536], [9, 27]]
-   *
-   * @param a The base NDArray to pow element-wise.
-   * @param b The exponent NDArray to pow element-wise.
-   */
-  @operation
-  static pow<D extends DataType, T extends NDArray<D>>(
-      a: NDArray<D>, b: NDArray<'int32'>): T {
-    util.assert(
-        b.dtype === 'int32',
-        'only supports int32 data type for the exponent parameter.');
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-
-    const gradient = (dy: NDArray<'float32'>, y: NDArray<D>) => {
-      if (!util.arraysEqual(a.shape, b.shape)) {
-        throw new Error(
-            `Gradient of pow not yet supported for broadcasted shapes.`);
-      }
-      const derA = () => {
-        return Ops.multiply(
-            dy,
-            Ops.multiply(
-                b.asType(a.dtype),
-                Ops.pow(a, Ops.subtract(b, Scalar.new(1, 'int32')))));
-      };
-      const derB = () => {
-        throw new Error(
-            `Backprop through exponent of math.pow not ` +
-            `implemented yet.`);
-      };
-      return {a: derA, b: derB};
-    };
-
-    return ENV.engine.executeKernel('Pow', {inputs: {a, b}}, gradient) as T;
-  }
-
-  /**
-   * Computes the power of one value to another. Inputs must
-   * be the same shape. For broadcasting support, use math.pow() instead.
-   *
-   * @param a The base NDArray to pow element-wise.
-   * @param b The exponent NDArray to pow element-wise.
-   */
-  @operation
-  static powStrict<D extends DataType>(a: NDArray<D>, b: NDArray<'int32'>):
-      NDArray<D> {
-    util.assertShapesMatch(a.shape, b.shape, 'Error in powStrict: ');
-    return Ops.pow(a, b);
-  }
-
-  /** @deprecated Use math.subtract instead. */
-  @operation
-  static sub<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    return Ops.subtract(a, b);
-  }
-
-  /**
    * Subtracts two NDArrays element-wise, A - B. Inputs must
    * be the same shape. For broadcasting support, use math.sub() instead.
    *
@@ -182,9 +120,67 @@ export class Ops {
    * @param b The second NDArray to multiply element-wise.
    */
   @operation
-  static subStrict<T extends NDArray>(a: T, b: T): T {
+  static subStrict<D extends DataType, R extends Rank>(
+      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
     return Ops.subtract(a, b);
+  }
+
+  /**
+   * Computes the power of one value to another. Supports broadcasting.
+   * Given a tensor x and a tensor y, this operation computes x^y for
+   * corresponding elements in x and y. For example:
+   * x = tf.constant([[2, 2], [3, 3]])
+   * y = tf.constant([[8, 16], [2, 3]])
+   * pow(x, y)  # [[256, 65536], [9, 27]]
+   *
+   * @param base The base NDArray to pow element-wise.
+   * @param exp The exponent NDArray to pow element-wise.
+   */
+  @operation
+  static pow<D extends DataType, T extends NDArray<D>>(
+      base: NDArray<D>, exp: NDArray<'int32'>): T {
+    util.assert(
+        exp.dtype === 'int32',
+        'only supports int32 data type for the exponent parameter.');
+    broadcast_util.assertAndGetBroadcastShape(base.shape, exp.shape);
+
+    const gradient = (dy: NDArray<'float32'>, y: NDArray<D>) => {
+      if (!util.arraysEqual(base.shape, exp.shape)) {
+        throw new Error(
+            `Gradient of pow not yet supported for broadcasted shapes.`);
+      }
+      const derBase = () => {
+        return Ops.multiply(
+            dy,
+            Ops.multiply(
+                exp.asType(base.dtype),
+                Ops.pow(base, Ops.subtract(exp, Scalar.new(1, 'int32')))));
+      };
+      const derExp = () => {
+        throw new Error(
+            `Backprop through exponent of math.pow not ` +
+            `implemented yet.`);
+      };
+      return {base: derBase, exp: derExp};
+    };
+
+    return ENV.engine.executeKernel('Pow', {inputs: {base, exp}}, gradient) as
+        T;
+  }
+
+  /**
+   * Computes the power of one value to another. Inputs must
+   * be the same shape. For broadcasting support, use math.pow() instead.
+   *
+   * @param base The base NDArray to pow element-wise.
+   * @param exp The exponent NDArray to pow element-wise.
+   */
+  @operation
+  static powStrict<D extends DataType, R extends Rank>(
+      base: NDArray<D, R>, exp: NDArray<'int32'>): RankMap<D>[R] {
+    util.assertShapesMatch(base.shape, exp.shape, 'Error in powStrict: ');
+    return Ops.pow(base, exp);
   }
 
   /**
@@ -227,7 +223,8 @@ export class Ops {
    * @deprecated Use math.multiplyStrict() instead.
    */
   @operation
-  static elementWiseMul<T extends NDArray>(a: T, b: T): T {
+  static elementWiseMul<D extends DataType, R extends Rank>(
+      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     return Ops.multiplyStrict(a, b);
   }
 
@@ -239,9 +236,10 @@ export class Ops {
    * @param b The second NDArray to multiply element-wise.
    */
   @operation
-  static multiplyStrict<T extends NDArray>(a: T, b: T): T {
+  static multiplyStrict<D extends DataType, R extends Rank>(
+      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in multiplyStrict: ');
-    return Ops.multiply(a, b) as T;
+    return Ops.multiply(a, b) as RankMap<D>[R];
   }
 
   /**

@@ -18,7 +18,6 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import * as axis_util from './axis_util';
-import * as binary_ops from './binary_ops';
 import * as compare from './compare';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
@@ -47,11 +46,11 @@ export class Ops {
       input: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, input.shape);
     const xMax = Ops.max(input, axes, true /* keepDims */);
-    const a = binary_ops.Ops.subtract(input, xMax);
+    const a = input.sub(xMax);
     const b = unary_ops.Ops.exp(a);
     const c = Ops.sum(b, axes);
     const d = unary_ops.Ops.log(c);
-    const res = binary_ops.Ops.add(xMax.reshape(d.shape), d);
+    const res = xMax.reshape(d.shape).add(d);
 
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
@@ -102,8 +101,7 @@ export class Ops {
           expandedDyShape[axis] = 1;
         });
         const expandedDy = dy.reshape(expandedDyShape);
-        const derX = () => binary_ops.Ops.multiply(
-            expandedDy, NDArray.ones(x.shape, 'float32'));
+        const derX = () => expandedDy.mul(NDArray.ones(x.shape, 'float32'));
         return {x: derX};
       };
       return {value, gradients};
@@ -125,8 +123,8 @@ export class Ops {
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
   @operation
-  static mean(x: NDArray, axis: number|number[] = null, keepDims = false):
-      NDArray<'float32'> {
+  static mean<T extends NDArray<'float32'>>(
+      x: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
     const reduceShape = shapes[1];
@@ -135,7 +133,7 @@ export class Ops {
     // extremely often.
     return ENV.math.customGradient(() => {
       const reduceSizeScalar = Scalar.new(reduceSize);
-      const res = binary_ops.Ops.divide(x, reduceSizeScalar);
+      const res = x.div(reduceSizeScalar);
       const value = Ops.sum(res, axis, keepDims);
 
       const gradients = (dy: NDArray<'float32'>) => {
@@ -144,14 +142,12 @@ export class Ops {
           expandedDyShape[axis] = 1;
         });
         const expandedDy = dy.reshape(expandedDyShape);
-        const derX = () => binary_ops.Ops.divide(
-            binary_ops.Ops.multiply(
-                expandedDy, NDArray.ones(x.shape, 'float32')),
-            reduceSizeScalar);
+        const derX = () => expandedDy.mul(NDArray.ones(x.shape, 'float32'))
+                               .div(reduceSizeScalar);
         return {x: derX};
       };
       return {value, gradients};
-    }, {x}, 'mean') as NDArray<'float32'>;
+    }, {x}, 'mean') as T;
   }
 
   /**
