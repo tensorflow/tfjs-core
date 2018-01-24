@@ -518,7 +518,7 @@ export class NDArrayMath implements NDArrayManager {
         const keepDims = true;
         const lse = this.logSumExp(logits, [dim], keepDims);
         const logResult = this.subtract(logits.asType('float32'), lse);
-        const value = this.exp(logResult);
+        const value = this.exp(logResult) as T;
         return {value, gradients};
       }, {logits}, 'softmax') as RankMap<'float32'>[R];
     });
@@ -596,8 +596,9 @@ export class NDArrayMath implements NDArrayManager {
   //////////////////////
 
   /** @deprecated Use math.transpose() instead. */
-  switchDim<T extends NDArray>(a: T, newDim: number[]): T {
-    return this.transpose(a, newDim);
+  switchDim<D extends DataType, R extends Rank>(
+      x: NDArray<D, R>, perm?: number[]): RankMap<D>[R] {
+    return this.transpose(x, perm);
   }
 
   /**
@@ -910,7 +911,8 @@ export class NDArrayMath implements NDArrayManager {
       const o = this.slice2D(res, [0, sliceCols * 3], sliceSize);
 
       const newC = this.addStrict(
-          this.multiplyStrict(c, this.sigmoid(this.add(forgetBias, f))),
+          this.multiplyStrict(
+              c, this.sigmoid(this.add(forgetBias, f) as Array2D)),
           this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
       const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
 
@@ -1137,7 +1139,7 @@ export class NDArrayMath implements NDArrayManager {
         gradients: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
             TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name?: string): NDArray<D, R> {
+      inputs: NamedArrayMap, name?: string): RankMap<D>[R] {
     return this.engine.customGradient(f, inputs, name == null ? '' : name);
   }
 

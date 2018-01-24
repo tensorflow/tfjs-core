@@ -29,7 +29,7 @@ export class TanHFunc implements ActivationFunction {
   private one = Scalar.new(1);
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.tanh(x);
+    return math.tanh(x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
@@ -47,11 +47,11 @@ export class TanHFunc implements ActivationFunction {
 
 export class ReLUFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.relu(x);
+    return math.relu(x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.step(x);
+    return math.step(x) as T;
   }
 
   dispose() {}
@@ -65,11 +65,11 @@ export class LeakyReluFunc implements ActivationFunction {
   }
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.leakyRelu(x, this.alpha);
+    return math.leakyRelu(x, this.alpha) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.step(x, this.alpha);
+    return math.step(x, this.alpha) as T;
   }
 
   dispose() {}
@@ -77,7 +77,7 @@ export class LeakyReluFunc implements ActivationFunction {
 
 export class SigmoidFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.sigmoid(x);
+    return math.sigmoid(x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T): T {
@@ -110,7 +110,7 @@ export class SquareFunc implements ActivationFunction {
 
 export class EluFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.elu(x);
+    return math.elu(x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T): T {

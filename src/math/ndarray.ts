@@ -229,9 +229,9 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return this.reshape<'4'>([rows, columns, depth, depth2]);
   }
 
-  asType<D2 extends DataType>(dtype: D2): RankMap<D2>[R] {
+  asType<D2 extends DataType>(dtype: D2): NDArray<D2, R> {
     this.throwIfDisposed();
-    return ENV.math.cast(this, dtype);
+    return ENV.math.cast(this, dtype) as NDArray<D2, R>;
   }
 
   get rank(): number {
@@ -333,12 +333,6 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     ENV.math.disposeData(this.dataId);
   }
 
-  equals(t: NDArray<D, R>): boolean {
-    this.throwIfDisposed();
-    return this.dtype === t.dtype && util.arraysEqual(this.shape, t.shape) &&
-        util.arraysEqual(this.dataSync(), t.dataSync());
-  }
-
   private isDisposed = false;
   private throwIfDisposed() {
     if (this.isDisposed) {
@@ -409,6 +403,9 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   clone(): RankMap<D>[R] {
     return ENV.math.clone(this);
   }
+
+  // Reduction ops.
+
   logSumExp<T extends NDArray<'float32'>>(
       axis: number|number[] = null, keepDims = false): T {
     return ENV.math.logSumExp(this, axis, keepDims);
@@ -436,6 +433,9 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   argMaxEquals(x: NDArray): Scalar<'bool'> {
     return ENV.math.argMaxEquals(this, x);
   }
+
+  // Binary ops.
+
   add<T extends NDArray<D>>(x: NDArray<D>): T {
     return ENV.math.add(this, x);
   }
@@ -478,6 +478,53 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   maximumStrict(x: NDArray<D, R>): RankMap<D>[R] {
     return ENV.math.maximumStrict(this, x);
   }
+  transpose(perm?: number[]): RankMap<D>[R] {
+    return ENV.math.transpose(this, perm);
+  }
+
+  // Compare ops.
+
+  notEqual<T extends NDArray<'bool'>>(x: NDArray<D>): T {
+    return ENV.math.notEqual(this, x);
+  }
+  notEqualStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
+    return ENV.math.notEqualStrict(this, x);
+  }
+  less<T extends NDArray<'bool'>>(x: NDArray<D>): T {
+    return ENV.math.less(this, x);
+  }
+  lessStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
+    return ENV.math.lessStrict(this, x);
+  }
+  equal<T extends NDArray<'bool'>>(x: NDArray<D>): T {
+    return ENV.math.equal(this, x);
+  }
+  equalStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
+    return ENV.math.equalStrict(this, x);
+  }
+  lessEqual<T extends NDArray<'bool'>>(x: NDArray<D>): T {
+    return ENV.math.lessEqual(this, x);
+  }
+  lessEqualStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
+    return ENV.math.lessEqualStrict(this, x);
+  }
+  greater<T extends NDArray<'bool'>>(x: NDArray<D>): T {
+    return ENV.math.greater(this, x);
+  }
+  greaterStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
+    return ENV.math.greaterStrict(this, x);
+  }
+  greaterEqual<T extends NDArray<'bool'>>(x: NDArray<D>): T {
+    return ENV.math.greaterEqual(this, x);
+  }
+  greaterEqualStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
+    return ENV.math.greaterEqualStrict(this, x);
+  }
+
+  // Unary ops.
+  neg(): RankMap<D>[R] {
+    return ENV.math.neg(this);
+  }
 }
 
 export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {
@@ -485,10 +532,6 @@ export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {
       Scalar<D> {
     const values = [value] as number[] | boolean[];
     return new Scalar([], dtype, toTypedArray(values, dtype));
-  }
-
-  get(): number {
-    return this.dataSync()[0];
   }
 
   async val(): Promise<number> {
@@ -516,10 +559,6 @@ export class Array1D<D extends DataType = DataType> extends NDArray<D, '1'> {
               `not 1 dimensional.`);
     }
     return new Array1D([values.length], dtype, toTypedArray(values, dtype));
-  }
-
-  get(i: number): number {
-    return this.dataSync()[i];
   }
 
   async val(i: number): Promise<number> {
@@ -600,10 +639,6 @@ export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
     return new Array2D(shape, dtype, toTypedArray(values, dtype));
   }
 
-  get(i: number, j: number) {
-    return this.dataSync()[this.strides[0] * i + j];
-  }
-
   async val(i: number, j: number): Promise<number> {
     await this.data();
     return this.get(i, j);
@@ -680,10 +715,6 @@ export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
       }
     }
     return new Array3D(shape, dtype, toTypedArray(values, dtype));
-  }
-
-  get(i: number, j: number, k: number) {
-    return this.dataSync()[this.strides[0] * i + this.strides[1] * j + k];
   }
 
   async val(i: number, j: number, k: number): Promise<number> {
@@ -764,11 +795,6 @@ export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
       }
     }
     return new Array4D(shape, dtype, toTypedArray(values, dtype));
-  }
-
-  get(i: number, j: number, k: number, l: number) {
-    return this.dataSync()
-        [this.strides[0] * i + this.strides[1] * j + this.strides[2] * k + l];
   }
 
   async val(i: number, j: number, k: number, l: number): Promise<number> {

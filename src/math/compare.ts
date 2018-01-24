@@ -83,7 +83,8 @@ export class Ops {
   }
 
   @operation
-  static equalStrict<T extends NDArray>(a: T, b: T): NDArray<'bool'> {
+  static equalStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
+      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in equalStrict: ');
     return Ops.equal(a, b);
   }
