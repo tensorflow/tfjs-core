@@ -150,8 +150,35 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return array_ops.Ops.fromPixels(pixels, numChannels);
   }
 
+  /** @deprecated Please use dl.rand() */
+  static rand<D extends DataType, R extends Rank>(
+      shape: number[], randFunction: () => number, dtype?: D): RankMap<D>[R] {
+    return array_ops.Ops.rand(shape, randFunction, dtype);
+  }
+
+  /** @deprecated Please use dl.randNormal() */
+  static randNormal<D extends keyof RandNormalDataTypes, R extends Rank>(
+      shape: number[], mean = 0, stdDev = 1, dtype?: D,
+      seed?: number): RankMap<D>[R] {
+    return array_ops.Ops.randNormal(shape, mean, stdDev, dtype, seed);
+  }
+
+  /** @deprecated Please use dl.randTruncatedNormal() */
+  static randTruncatedNormal<D extends keyof RandNormalDataTypes,
+                                       R extends Rank>(
+      shape: number[], mean = 0, stdDev = 1, dtype?: D,
+      seed?: number): RankMap<D>[R] {
+    return array_ops.Ops.randTruncatedNormal(shape, mean, stdDev, dtype, seed);
+  }
+
+  /** @deprecated Please use dl.randUniform() */
+  static randUniform<D extends DataType, R extends Rank>(
+      shape: number[], a: number, b: number, dtype?: D): RankMap<D>[R] {
+    return array_ops.Ops.randUniform(shape, a, b, dtype);
+  }
+
   /** Reshapes the current ndarray into the provided shape. */
-  reshape<R2 extends Rank>(newShape: number[]): RankMap<D>[R2] {
+  reshape<R2 extends Rank>(newShape: ShapeMap[R2]): RankMap<D>[R2] {
     this.throwIfDisposed();
     return ENV.math.reshape(this, newShape);
   }
@@ -315,33 +342,6 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
         util.arraysEqual(this.dataSync(), t.dataSync());
   }
 
-  /** @deprecated Please use dl.rand() */
-  static rand<D extends DataType, R extends Rank>(
-      shape: number[], randFunction: () => number, dtype?: D): RankMap<D>[R] {
-    return array_ops.Ops.rand(shape, randFunction, dtype);
-  }
-
-  /** @deprecated Please use dl.randNormal() */
-  static randNormal<D extends keyof RandNormalDataTypes, R extends Rank>(
-      shape: number[], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): RankMap<D>[R] {
-    return array_ops.Ops.randNormal(shape, mean, stdDev, dtype, seed);
-  }
-
-  /** @deprecated Please use dl.randTruncatedNormal() */
-  static randTruncatedNormal<D extends keyof RandNormalDataTypes,
-                                       R extends Rank>(
-      shape: number[], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): RankMap<D>[R] {
-    return array_ops.Ops.randTruncatedNormal(shape, mean, stdDev, dtype, seed);
-  }
-
-  /** @deprecated Please use dl.randUniform() */
-  static randUniform<D extends DataType, R extends Rank>(
-      shape: number[], a: number, b: number, dtype?: D): RankMap<D>[R] {
-    return array_ops.Ops.randUniform(shape, a, b, dtype);
-  }
-
   private isDisposed = false;
   private throwIfDisposed() {
     if (this.isDisposed) {
@@ -362,6 +362,51 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
 
   slice(begin: ShapeMap[R], size: ShapeMap[R]): RankMap<D>[R] {
     return ENV.math.slice(this, begin, size);
+  }
+
+  reverse(axis: number|number[]): RankMap<D>[R] {
+    return ENV.math.reverse(this, axis);
+  }
+
+  concat(x: NDArray<D, R>, axis: number): RankMap<D>[R] {
+    return ENV.math.concat(this, x, axis);
+  }
+
+  batchNormalization(
+      mean: RankMap<D>[R]|Array1D, variance: RankMap<D>[R]|Array1D,
+      varianceEpsilon = .001, scale?: RankMap<D>[R]|Array1D,
+      offset?: RankMap<D>[R]|Array1D): RankMap<D>[R] {
+    return ENV.math.batchNormalization(
+        this, mean, variance, varianceEpsilon, scale, offset);
+  }
+
+  avgPool(
+      filterSize: [number, number]|number, strides: [number, number]|number,
+      pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
+    return ENV.math.avgPool(
+        this as NDArray<'int32'|'float32', '3'|'4'>, filterSize, strides, pad,
+        dimRoundingMode);
+  }
+
+  maxPool(
+      filterSize: [number, number]|number, strides: [number, number]|number,
+      pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<D>[R] {
+    return ENV.math.maxPool(
+        this as NDArray<D, '3'|'4'>, filterSize, strides, pad, dimRoundingMode);
+  }
+
+  minPool(
+      filterSize: [number, number]|number, strides: [number, number]|number,
+      pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<D>[R] {
+    return ENV.math.minPool(
+        this as NDArray<D, '3'|'4'>, filterSize, strides, pad, dimRoundingMode);
+  }
+
+  clone(): RankMap<D>[R] {
+    return ENV.math.clone(this);
   }
 }
 
