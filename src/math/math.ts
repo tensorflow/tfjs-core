@@ -26,7 +26,6 @@ import {TapeNodeInputGradientArrays} from './backends/tape_types';
 import {ScopeFn, ScopeResult, ScopeResultImmediate} from './backends/tape_util';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
-import * as broadcast_util from './broadcast_util';
 import * as compare from './compare';
 import * as concat from './concat';
 import * as conv from './conv';
@@ -40,7 +39,6 @@ import * as reduction_ops from './reduction_ops';
 import * as reverse from './reverse';
 import * as slice from './slice';
 import * as transpose from './transpose';
-import * as types from './types';
 import {DataType, DataTypeMap, Rank, RankMap} from './types';
 import * as unary_ops from './unary_ops';
 
