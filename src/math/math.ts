@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,20 +18,30 @@
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap, NamedVariableMap} from '../util';
+
 import * as axis_util from './axis_util';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
 import {TapeNodeInputGradientArrays} from './backends/tape_types';
-import {ScopeResult, ScopeResultImmediate} from './backends/tape_util';
-import {MatrixOrientation} from './backends/types/matmul';
+import {ScopeFn, ScopeResult, ScopeResultImmediate} from './backends/tape_util';
+import * as batchnorm from './batchnorm';
+import * as binary_ops from './binary_ops';
 import * as broadcast_util from './broadcast_util';
-import * as concat_util from './concat_util';
-import * as conv_util from './conv_util';
+import * as compare from './compare';
+import * as concat from './concat';
+import * as conv from './conv';
+import * as matmul from './matmul';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, RankMap, Scalar, Variable} from './ndarray';
-import * as slice_util from './slice_util';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
+import * as norm from './norm';
+import * as pool from './pool';
+import * as reduction_ops from './reduction_ops';
+import * as reverse from './reverse';
+import * as slice from './slice';
+import * as transpose from './transpose';
 import * as types from './types';
-import {SumTypes} from './types';
+import {DataType, DataTypeMap, Rank, RankMap} from './types';
+import * as unary_ops from './unary_ops';
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
@@ -44,10 +54,135 @@ export interface NDArrayManager {
 }
 
 export class NDArrayMath implements NDArrayManager {
-  protected backendEngine: BackendEngine;
+  engine: BackendEngine;
   private registeredArrays = new Map<number, number>();
   private backend: MathBackend;
   private customBackend = false;
+
+  // Ops.
+  matMul = matmul.Ops.matMul;
+  vectorTimesMatrix = matmul.Ops.vectorTimesMatrix;
+  outerProduct = matmul.Ops.outerProduct;
+  matrixTimesVector = matmul.Ops.matrixTimesVector;
+  dotProduct = matmul.Ops.dotProduct;
+
+  slice = slice.Ops.slice;
+  slice1D = slice.Ops.slice1D;
+  slice2D = slice.Ops.slice2D;
+  slice3D = slice.Ops.slice3D;
+  slice4D = slice.Ops.slice4D;
+
+  reverse = reverse.Ops.reverse;
+  reverse1D = reverse.Ops.reverse1D;
+  reverse2D = reverse.Ops.reverse2D;
+  reverse3D = reverse.Ops.reverse3D;
+  reverse4D = reverse.Ops.reverse4D;
+
+  concat = concat.Ops.concat;
+  concat1D = concat.Ops.concat1D;
+  concat2D = concat.Ops.concat2D;
+  concat3D = concat.Ops.concat3D;
+  concat4D = concat.Ops.concat4D;
+
+  batchNormalization = batchnorm.Ops.batchNormalization;
+  batchNormalization2D = batchnorm.Ops.batchNormalization2D;
+  batchNormalization3D = batchnorm.Ops.batchNormalization3D;
+  batchNormalization4D = batchnorm.Ops.batchNormalization4D;
+
+  avgPool = pool.Ops.avgPool;
+  maxPool = pool.Ops.maxPool;
+  minPool = pool.Ops.minPool;
+  /** @deprecated */
+  maxPoolBackprop = pool.Ops.maxPoolBackprop;
+
+  conv1d = conv.Ops.conv1d;
+  conv2d = conv.Ops.conv2d;
+  conv2dTranspose = conv.Ops.conv2dTranspose;
+  depthwiseConv2D = conv.Ops.depthwiseConv2D;
+  /** @deprecated */
+  conv2dDerBias = conv.Ops.conv2dDerBias;
+  /** @deprecated */
+  conv2dDerFilter = conv.Ops.conv2dDerFilter;
+  /** @deprecated */
+  conv2dDerInput = conv.Ops.conv2dDerInput;
+
+  argMax = reduction_ops.Ops.argMax;
+  argMaxEquals = reduction_ops.Ops.argMaxEquals;
+  argMin = reduction_ops.Ops.argMin;
+  logSumExp = reduction_ops.Ops.logSumExp;
+  max = reduction_ops.Ops.max;
+  mean = reduction_ops.Ops.mean;
+  min = reduction_ops.Ops.min;
+  sum = reduction_ops.Ops.sum;
+
+  add = binary_ops.Ops.add;
+  addStrict = binary_ops.Ops.addStrict;
+  /** @deprecated */
+  arrayDividedByScalar = binary_ops.Ops.arrayDividedByScalar;
+  div = binary_ops.Ops.div;
+  divide = this.div;  // Alias.
+  divStrict = binary_ops.Ops.divStrict;
+  divideStrict = this.divStrict;  // Alias.
+  /** @deprecated */
+  elementWiseMul = binary_ops.Ops.elementWiseMul;
+  maximum = binary_ops.Ops.maximum;
+  maximumStrict = binary_ops.Ops.maximumStrict;
+  minimum = binary_ops.Ops.minimum;
+  minimumStrict = binary_ops.Ops.minimumStrict;
+  mul = binary_ops.Ops.mul;
+  multiply = this.mul;  // Alias.
+  mulStrict = binary_ops.Ops.mulStrict;
+  multiplyStrict = this.mulStrict;  // Alias.
+  pow = binary_ops.Ops.pow;
+  powStrict = binary_ops.Ops.powStrict;
+  /** @deprecated */
+  scalarDividedByArray = binary_ops.Ops.scalarDividedByArray;
+  sub = binary_ops.Ops.sub;
+  subtract = this.sub;  // Alias.
+  subStrict = binary_ops.Ops.subStrict;
+
+  transpose = transpose.Ops.transpose;
+
+  equal = compare.Ops.equal;
+  equalStrict = compare.Ops.equalStrict;
+  greater = compare.Ops.greater;
+  greaterStrict = compare.Ops.greaterStrict;
+  greaterEqual = compare.Ops.greaterEqual;
+  greaterEqualStrict = compare.Ops.greaterEqualStrict;
+  less = compare.Ops.less;
+  lessStrict = compare.Ops.lessStrict;
+  lessEqual = compare.Ops.lessEqual;
+  lessEqualStrict = compare.Ops.lessEqualStrict;
+  notEqual = compare.Ops.notEqual;
+  notEqualStrict = compare.Ops.notEqualStrict;
+
+  abs = unary_ops.Ops.abs;
+  acos = unary_ops.Ops.acos;
+  asin = unary_ops.Ops.asin;
+  atan = unary_ops.Ops.atan;
+  ceil = unary_ops.Ops.ceil;
+  clip = unary_ops.Ops.clip;
+  cos = unary_ops.Ops.cos;
+  cosh = unary_ops.Ops.cosh;
+  elu = unary_ops.Ops.elu;
+  exp = unary_ops.Ops.exp;
+  floor = unary_ops.Ops.floor;
+  leakyRelu = unary_ops.Ops.leakyRelu;
+  log = unary_ops.Ops.log;
+  neg = unary_ops.Ops.neg;
+  prelu = unary_ops.Ops.prelu;
+  relu = unary_ops.Ops.relu;
+  selu = unary_ops.Ops.selu;
+  sigmoid = unary_ops.Ops.sigmoid;
+  sin = unary_ops.Ops.sin;
+  sinh = unary_ops.Ops.sinh;
+  sqrt = unary_ops.Ops.sqrt;
+  square = unary_ops.Ops.square;
+  step = unary_ops.Ops.step;
+  tan = unary_ops.Ops.tan;
+  tanh = unary_ops.Ops.tanh;
+
+  norm = norm.Ops.norm;
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
@@ -69,7 +204,7 @@ export class NDArrayMath implements NDArrayManager {
     }
     this.registeredArrays.set(a.dataId, refCount + 1);
     if (!(a instanceof Variable)) {
-      this.backendEngine.track(a);
+      this.engine.track(a);
     }
   }
 
@@ -107,7 +242,8 @@ export class NDArrayMath implements NDArrayManager {
       this.customBackend = true;
       this.backend = backend;
     }
-    this.backendEngine = new BackendEngine(this.backend, safeMode);
+    this.engine = new BackendEngine(this.backend, safeMode);
+    ENV.setMath(this);
   }
 
   /**
@@ -115,7 +251,7 @@ export class NDArrayMath implements NDArrayManager {
    * and checked for NaNs. This significantly impacts performance.
    */
   enableDebugMode() {
-    this.backendEngine.enableDebugMode();
+    this.engine.enableDebugMode();
     console.warn(
         'Debugging mode is ON. The output of every math call will ' +
         'be downloaded to CPU and checked for NaNs. ' +
@@ -123,35 +259,65 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Create a new math scope. Put chained math operations inside a scope
-   * function closure so that the library automatically cleans up NDArrays
-   * from intermediate math operations. You must create a scope in safe mode
-   * to call math operations. If a result is returned from the scope, it will
-   * also be tracked, which means there must be yet another wrapping scope.
-   * @param scopeFn The function to execute with chained math operations.
+   * Executes the provided function and after it is executed, cleans up all
+   * intermediate NDArrays allocated by the function except those returned by
+   * the function.
+   *
+   * When in safe mode, you must enclose all `NDArray` creation and math ops
+   * inside a `math.scope()` to prevent memory leaks.
+   *
+   * @param nameOrScopeFn The name of the scope, or the function to execute.
+   *     If a name is provided, the 2nd argument should be the function.
+   *     If a name is provided, and debug mode is on, the timing and the memory
+   *     usage of the function will be tracked and displayed on the console
+   *     using the provided name.
+   * @param scopeFn The function to execute.
+   * @param gradientsMode If true, enables gradients mode.
+   *     See math.gradientsScope for details.
    */
   scope<T extends ScopeResult>(
-      scopeFn:
-          (keep: <T1 extends NDArray>(ndarray: T1) => T1,
-           track: <T2 extends NDArray>(ndarray: T2) => T2) => T): T {
-    const gradientsMode = false;
-    return this.backendEngine.scope('scope', scopeFn, gradientsMode);
+      nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>,
+      gradientsMode = false): T {
+    if (scopeFn == null) {
+      // Called with only 1 argument.
+      if (typeof nameOrScopeFn !== 'function') {
+        throw new Error('Please provide a function to math.scope()');
+      }
+      scopeFn = nameOrScopeFn;
+      nameOrScopeFn = 'scope';
+    } else {
+      // Called with 2 arguments.
+      if (typeof nameOrScopeFn !== 'string' &&
+          !(nameOrScopeFn instanceof String)) {
+        throw new Error(
+            'When calling with two arguments, the first argument ' +
+            'to math.scope() must be a string');
+      }
+      if (typeof scopeFn !== 'function') {
+        throw new Error(
+            'When calling with two arguments, the 2nd argument ' +
+            'to math.scope() must be a function');
+      }
+      // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
+    }
+    return this.engine.scope(nameOrScopeFn as string, scopeFn, gradientsMode);
   }
 
   /**
    * Create a new gradients scope. Similar to scope, but forces all inner scopes
    * to not clean up so that gradient operations can be used inside of this
    * scope.
-   * @param scopeFn The function to execute with chained math operations.
+   * @param nameOrScopeFn The name of the scope, or the function to execute.
+   *     If a name is provided, the 2nd argument should be the function.
+   *     If a name is provided, and debug mode is on, the timing and the memory
+   *     usage of the function will be tracked and displayed on the console
+   *     using the provided name.
+   * @param scopeFn The function to execute.
    */
   gradientsScope<T extends ScopeResult>(
-      scopeFn:
-          (keep:
-               <D1 extends DataType, T1 extends NDArray<D1>>(ndarray: T1) => T1,
-           track: <D2 extends DataType, T2 extends NDArray<D2>>(ndarray: T2) =>
-               T2) => T): T {
+      nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
     const gradientsMode = true;
-    return this.backendEngine.scope('gradientsScope', scopeFn, gradientsMode);
+    return this.scope(nameOrScopeFn, scopeFn, gradientsMode);
   }
 
   /**
@@ -160,7 +326,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   startScope() {
     const gradientsMode = false;
-    this.backendEngine.startScope(gradientsMode);
+    this.engine.startScope(gradientsMode);
   }
 
   /**
@@ -169,7 +335,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   endScope(result: ScopeResultImmediate) {
     const gradientsMode = false;
-    this.backendEngine.endScope(result, gradientsMode);
+    this.engine.endScope(result, gradientsMode);
   }
 
   /**
@@ -177,7 +343,7 @@ export class NDArrayMath implements NDArrayManager {
    * @param result The NDArray to keep from being disposed.
    */
   keep<T extends NDArray>(result: T): T {
-    return this.backendEngine.keep(result);
+    return this.engine.keep(result);
   }
 
   /** @deprecated This is a no-op. */
@@ -192,149 +358,16 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Computes the dot product of two matrices, A * B. These must be matrices,
-   * use matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct
-   * in other cases.
-   * @param a First matrix in dot product operation.
-   * @param b Second matrix in dot product operation.
-   * @param aOrientation The MatrixOrientation of A. If using TRANSPOSED, will
-   * compute A^T * B.
-   * @param bOrientation The MatrixOrientation of B. If using TRANSPOSED, will
-   * compute A * B^T.
-   */
-  matMul(
-      a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
-      bOrientation = MatrixOrientation.REGULAR): Array2D {
-    const innerShapeA =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
-    const innerShapeB =
-        (bOrientation === MatrixOrientation.REGULAR) ? b.shape[0] : b.shape[1];
-
-    util.assert(
-        a.rank === 2 && b.rank === 2,
-        `Error in matMul: inputs must be rank 2, got ranks ${a.rank}` +
-            ` and ${b.rank}.`);
-
-    util.assert(
-        innerShapeA === innerShapeB,
-        `Error in matMul: inner shapes (${innerShapeA}) and (` +
-            `${innerShapeB}) of NDArrays with shapes ${a.shape} and ` +
-            `${b.shape} and orientations ${MatrixOrientation[aOrientation]}` +
-            ` and ${MatrixOrientation[bOrientation]} must match.`);
-
-    return this.backendEngine.executeKernel(
-        'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
-        (dy: Array2D<'float32'>, y: Array2D) => {
-          if (aOrientation === MatrixOrientation.TRANSPOSED ||
-              bOrientation === MatrixOrientation.TRANSPOSED) {
-            throw new Error(
-                `Backprop for transposed MatMul not yet implemented.`);
-          }
-          return {
-            a: () => this.matMul(
-                dy, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
-            b: () => this.matMul(
-                a, dy, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR)
-          };
-        });
-  }
-
-  private executeOp<T extends NDArray>(name: string, f: () => T): T {
-    // TODO(nsthorat): Do operation logging and performance profiling.
-    return f();
-  }
-
-  /**
-   * Computes the dot product of a vector and a matrix, v * B.
-   * @param v The vector in dot product operation.
-   * @param matrix The matrix in dot product operation.
-   */
-  vectorTimesMatrix(v: Array1D, matrix: Array2D): Array1D {
-    util.assert(
-        v.rank === 1,
-        `Error in vectorTimesMatrix: first input must be rank 1, but got ` +
-            `rank ${v.rank}.`);
-    util.assert(
-        matrix.rank === 2,
-        `Error in vectorTimesMatrix: second input must be rank 2, but got ` +
-            `rank ${matrix.rank}.`);
-    util.assert(
-        v.size === matrix.shape[0],
-        `Error in vectorTimesMatrix: size of vector (${v.size}) ` +
-            `must match first dimension of matrix (${matrix.shape[0]})`);
-
-    return this.matMul(v.as2D(1, -1), matrix).as1D();
-  }
-
-  /**
-   * Computes the dot product of a matrix and vector, A * v.
-   * @param matrix The matrix in dot product operation.
-   * @param v The vector in dot product operation.
-   */
-  matrixTimesVector(matrix: Array2D, v: Array1D): Array1D {
-    util.assert(
-        v.rank === 1,
-        `Error in matrixTimesVector: second input must rank 1, but got ` +
-            `rank ${v.rank}.`);
-    util.assert(
-        matrix.rank === 2,
-        `Error in matrixTimesVector: first input must be a rank 2, but got ` +
-            `rank ${matrix.rank}.`);
-    util.assert(
-        v.size === matrix.shape[1],
-        `Error in matrixTimesVector: size of first rank 1 input ${v.size} ` +
-            `must match inner dimension of second rank 2 input, but got ` +
-            `shape ${matrix.shape}.`);
-
-    return this.matMul(matrix, v.as2D(-1, 1)).as1D();
-  }
-
-  /**
-   * Computes the dot product of two vectors, v1 * v2.
-   * @param v1 The first vector in the dot product operation.
-   * @param v2 The second vector in the dot product operation.
-   */
-  dotProduct(v1: Array1D, v2: Array1D): Scalar {
-    util.assert(
-        v1.rank === 1 && v2.rank === 1,
-        `Error in dotProduct: inputs must be rank 1, but got ranks ` +
-            `${v1.rank} and ${v2.rank}.`);
-    util.assert(
-        v1.size === v2.size,
-        `Error in dotProduct: size of inputs (${v1.size}) and (` +
-            `${v2.size}) must match.`);
-    return this.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
-  }
-
-  /**
-   * Computes the outer product of two vectors, v1 and v2.
-   * @param v1 The first vector in the outer product operation.
-   * @param v2 The second vector in the dot product operation.
-   */
-  outerProduct(v1: Array1D, v2: Array1D): Array2D {
-    util.assert(
-        v1.rank === 1 && v2.rank === 1,
-        `Error in outerProduct: inputs must be rank 1, but got ranks ` +
-            `${v1.rank} and ${v2.rank}.`);
-
-    return this.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
-  }
-
-  ///////////////
-  // Shape ops //
-  ///////////////
-
-  /**
    * Clones an NDArray of any shape.
    * @param x The NDArray to clone.
    */
-  clone<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Clone', {inputs: {x}}) as T;
+  clone<D extends DataType, R extends Rank>(x: NDArray<D, R>): RankMap<D>[R] {
+    return this.engine.executeKernel('Clone', {inputs: {x}}) as RankMap<D>[R];
   }
 
   /** Reshapes the array. */
-  reshape<D extends DataType, R extends Rank, T extends RankMap<D>[R]>(
-      x: NDArray<D>, newShape: number[]): T {
+  reshape<D extends DataType, R extends Rank>(
+      x: NDArray<D>, newShape: number[]): RankMap<D>[R] {
     newShape = util.inferFromImplicitShape(newShape, x.size);
     util.assert(
         x.size === util.sizeFromShape(newShape),
@@ -343,8 +376,9 @@ export class NDArrayMath implements NDArrayManager {
     const grad = (dy: NDArray<'float32'>, y: NDArray) => {
       return {x: () => dy.reshape(x.shape)};
     };
-    return this.backendEngine.executeKernel(
-               'Reshape', {inputs: {x}, args: {newShape}}, grad) as T;
+    return this.engine.executeKernel(
+               'Reshape', {inputs: {x}, args: {newShape}}, grad) as
+        RankMap<D>[R];
   }
 
   /**
@@ -356,520 +390,8 @@ export class NDArrayMath implements NDArrayManager {
     const grad = (dy: NDArray<'float32'>, y: NDArray) => {
       return {x: () => dy.reshape(dy.shape)};
     };
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Cast', {inputs: {x}, args: {newDType}}, grad) as RankMap<D>[R];
-  }
-
-  /**
-   * Extracts a 1D slice from 1D array starting at coordinates `begin` and is
-   * of length `size`.
-   *
-   * @param x The input array to slice from.
-   * @param begin The offset to start the slice from.
-   * @param size The size of the slice.
-   */
-  slice1D(x: Array1D, begin: number, size: number): Array1D {
-    slice_util.assertParamsValid(x, [begin], [size]);
-    return this.backendEngine.executeKernel(
-        'Slice1D', {inputs: {x}, args: {begin, size}});
-  }
-
-  /**
-   * Extracts a 2D slice from a 2D array starting at coordinates `begin` and
-   * is of size `size`.
-   *
-   * @param x The input array to slice from.
-   * @param begin The [row, col] 2d coordinates to start the slice from.
-   * @param size The size of the slice.
-   */
-  slice2D(x: Array2D, begin: [number, number], size: [number, number]):
-      Array2D {
-    slice_util.assertParamsValid(x, begin, size);
-    return this.backendEngine.executeKernel(
-        'Slice2D', {inputs: {x}, args: {begin, size}});
-  }
-
-  /**
-   * Extracts a 3D slice from a 3D array starting at coordinates `begin` and
-   * is of size `size`.
-   *
-   * @param x The input array to slice from.
-   * @param begin The [row, col, depth] 3d coordinates to start the slice from.
-   * @param size The size of the slice.
-   */
-  slice3D(x: Array3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Array3D {
-    slice_util.assertParamsValid(x, begin, size);
-    return this.backendEngine.executeKernel(
-        'Slice3D', {inputs: {x}, args: {begin, size}});
-  }
-
-  /**
-   * Extracts a 4D slice from a 4D array starting at coordinates `begin` and
-   * is of size `size`.
-   *
-   * @param x The input array to slice from.
-   * @param begin The [row, col, depth, depth2] 4d coordinates to start the
-   *              slice from.
-   * @param size The size of the slice.
-   */
-  slice4D(x: Array4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Array4D {
-    slice_util.assertParamsValid(x, begin, size);
-    return this.backendEngine.executeKernel(
-        'Slice4D', {inputs: {x}, args: {begin, size}});
-  }
-
-  /**
-   * Reverses a 1D array
-   * @param x The input array.
-   */
-  reverse1D(x: Array1D): Array1D {
-    util.assert(x.rank === 1, `Error in reverse1D: x must be rank 1 but got
-             rank ${x.rank}.`);
-    const input4D = x.as4D(1, 1, 1, x.shape[0]);
-    const res = this.reverse4D(input4D, [3]);
-    return res.as1D();
-  }
-
-  /**
-   * Reverses a 2D array along a specified axis
-   * @param x The input array.
-   * @param axis The set of dimensions to reverse. Must be in the
-   *     range [-rank(x), rank(x)).
-   */
-  reverse2D(x: Array2D, axis: number|number[]): Array2D {
-    util.assert(x.rank === 2, `Error in reverse2D: x must be rank 2 but got
-             rank ${x.rank}.`);
-    const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 2);
-    const input4D = x.as4D(1, 1, x.shape[0], x.shape[1]);
-    const res = this.reverse4D(input4D, axisCleaned);
-    return res.as2D(res.shape[2], res.shape[3]);
-  }
-
-  /**
-   * Reverses a 3D array along a specified axis
-   * @param x The input array.
-   * @param axis The set of dimensions to reverse. Must be in the
-   *     range [-rank(x), rank(x)).
-   */
-  reverse3D(x: Array3D, axis: number|number[]): Array3D {
-    util.assert(x.rank === 3, `Error in reverse3D: x must be rank 3 but got
-             rank ${x.rank}.`);
-    const axisCleaned = axis_util.parseAxisParam(axis, x.shape).map(a => a + 1);
-    const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-    const res = this.reverse4D(input4D, axisCleaned);
-    return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
-  }
-
-  /**
-   * Reverses a 4D array along a specified axis
-   * @param x The input array.
-   * @param axis The set of dimensions to reverse. Must be in the
-   *     range [-rank(x), rank(x)).
-   */
-  reverse4D(x: Array4D, axis: number|number[]): Array4D {
-    util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
-             rank ${x.rank}.`);
-    const axisCleaned = axis_util.parseAxisParam(axis, x.shape);
-    return this.backendEngine.executeKernel(
-        'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}});
-  }
-
-  /**
-   * Concatenates two 1D arrays.
-   *
-   * For example, if:
-   * A: shape(3) = |r1, g1, b1|
-   * B: shape(2) = |r2, g2|
-   * C = concat1D(A, B) == |r1, g1, b1, r2, g2|
-   *
-   * @param a The first array.
-   * @param b The second array.
-   * @return The concatenated array.
-   */
-  concat1D(a: Array1D, b: Array1D): Array1D {
-    concat_util.assertParams(a.shape, b.shape, 0);
-    return this.backendEngine.executeKernel('Concat1D', {inputs: {a, b}});
-  }
-
-  /**
-   * Concatenates two 2D arrays along a given axis.
-   *
-   * For example, if:
-   * A: shape(2, 3) = | r1, g1, b1 |
-   *                  | r2, g2, b2 |
-   *
-   * B: shape(2, 3) = | r3, g3, b3 |
-   *                  | r4, g4, b4 |
-   *
-   * C = concat2D(A, B, axis)
-   *
-   * if axis = 0:
-   * C: shape(4, 3) = | r1, g1, b1 |
-   *                  | r2, g2, b2 |
-   *                  | r3, g3, b3 |
-   *                  | r4, g4, b4 |
-   *
-   * if axis = 1:
-   * C = shape(2, 6) = | r1, g1, b1, r3, g3, b3 |
-   *                   | r2, g2, b2, r4, g4, b4 |
-   *
-   *
-   * @param a The first array.
-   * @param b The second array.
-   * @param axis The axis to concatenate along.
-   * @return The concatenated array.
-   */
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-    concat_util.assertParams(a.shape, b.shape, axis);
-    return this.backendEngine.executeKernel(
-        'Concat2D', {inputs: {a, b}, args: {axis}});
-  }
-
-  /**
-   * Concatenates two 3D ndarrays along a given axis.
-   *
-   * For example, if:
-   * A: shape(2, 1, 3) = | r1, g1, b1 |
-   *                     | r2, g2, b2 |
-   *
-   * B: shape(2, 1, 3) = | r3, g3, b3 |
-   *                     | r4, g4, b4 |
-   *
-   * C = concat3D(A, B, axis)
-   *
-   * if axis = 0:
-   * C: shape(4, 1, 3) = | r1, g1, b1 |
-   *                     | r2, g2, b2 |
-   *                     | r3, g3, b3 |
-   *                     | r4, g4, b4 |
-   *
-   * if axis = 1:
-   * C: shape(2, 2, 3) = | r1, g1, b1, r3, g3, b3 |
-   *                     | r2, g2, b2, r4, g4, b4 |
-   *
-   * if axis = 2:
-   * C = shape(2, 1, 6) = | r1, g1, b1, r3, g3, b3 |
-   *                      | r2, g2, b2, r4, g4, b4 |
-   *
-   * @param a The first array to concat.
-   * @param b The second array to conat.
-   * @param axis The axis to concate along.
-   * @return The concatenated array.
-   */
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
-    concat_util.assertParams(a.shape, b.shape, axis);
-
-    const gradients = (dy: Array3D<'float32'>, y: Array3D) => {
-      const {x1Begin, x1Size, x2Begin, x2Size} =
-          concat_util.computeGradientSliceShapes3D(a.shape, y.shape, axis);
-      return {
-        a: () => this.slice3D(dy, x1Begin, x1Size),
-        b: () => this.slice3D(dy, x2Begin, x2Size)
-      };
-    };
-
-    return this.backendEngine.executeKernel(
-        'Concat3D', {inputs: {a, b}, args: {axis}}, gradients);
-  }
-
-  /**
-   * Concatenates two 4D ndarrays along a given axis. See math.concat2D() for
-   * documentation.
-   *
-   * @param a The first array to concat.
-   * @param b The second array to conat.
-   * @param axis The axis to concate along.
-   * @return The concatenated array.
-   */
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
-    concat_util.assertParams(a.shape, b.shape, axis);
-    return this.backendEngine.executeKernel(
-        'Concat4D', {inputs: {a, b}, args: {axis}});
-  }
-
-  ///////////////////
-  // Reduction ops //
-  ///////////////////
-
-  /**
-   * Computes the log(sum(exp(elements across the reduction dimensions)).
-   *
-   * Reduces the input along the dimensions given in `axis`. Unless `keepDims`
-   * is true, the rank of the array is reduced by 1 for each entry in `axis`.
-   * If `keepDims` is true, the reduced dimensions are retained with length 1.
-   * If `axis` has no entries, all dimensions are reduced, and an array with a
-   * single element is returned.
-   *
-   * @param input The input NDArray.
-   * @param axis Optional. The dimension(s) to reduce. If null (the default),
-   *     reduces all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with length
-   *     of 1. Defaults to false.
-   */
-  logSumExp<T extends NDArray<'float32'>>(
-      input: NDArray, axis: number|number[] = null, keepDims = false): T {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    return this.executeOp('logSumExp', () => {
-      const xMax = this.max(input, axes, true /* keepDims */);
-      const a = this.subtract(input, xMax);
-      const b = this.exp(a);
-      const c = this.sum(b, axes);
-      const d = this.log(c);
-      const res = this.add(xMax.reshape(d.shape), d);
-
-      if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, axes);
-        return res.reshape(newShape);
-      }
-      return res;
-    }) as T;
-  }
-
-  /**
-   * Computes the sum of elements across dimensions of an array.
-   *
-   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
-   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
-   * If `keepDims` is true, the reduced dimensions are retained with length 1.
-   * If axes has no entries, all dimensions are reduced, and an array with a
-   * single element is returned.
-   *
-   * @param x The input array to compute the sum over.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces
-   *     all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
-   */
-  sum<D extends DataType, T extends NDArray<SumTypes[D]>>(
-      x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
-    const axes = axis_util.parseAxisParam(axis, x.shape);
-    return this.executeOp('sum', () => {
-      // Use a custom gradient to bypass 2 gradient backprops since sum is used
-      // extremely often.
-      return this.customGradient(() => {
-        const permutation = axis_util.getAxesPermutation(axes, x.rank);
-        let reductionAxes = axes;
-        let permutedX = x;
-        if (permutation != null) {
-          permutedX = this.transpose(x, permutation);
-          reductionAxes =
-              axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
-        }
-        let value = this.backendEngine.executeKernel(
-            'Sum', {inputs: {x: permutedX}, args: {axes: reductionAxes}});
-        if (keepDims) {
-          const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
-          value = value.reshape(newShape);
-        }
-
-        const gradients = (dy: NDArray<'float32'>) => {
-          const expandedDyShape = x.shape.slice();
-          axes.forEach(axis => {
-            expandedDyShape[axis] = 1;
-          });
-          const expandedDy = dy.reshape(expandedDyShape);
-          const derX = () =>
-              this.multiply(expandedDy, NDArray.ones(x.shape, 'float32'));
-          return {x: derX};
-        };
-        return {value, gradients};
-      }, {x}, 'sum');
-    }) as T;
-  }
-
-  /**
-   * Computes the mean of elements across dimensions of an array.
-   *
-   * Reduces `x` along the dimensions given in `axis`. Unless `keepDims` is
-   * true, the rank of the array is reduced by 1 for each entry in `axis`.
-   * If `keepDims` is true, the reduced dimensions are retained with length 1.
-   * If `axis` has no entries, all dimensions are reduced, and an array with a
-   * single element is returned.
-   *
-   * @param x The input array.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces
-   *     all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
-   */
-  mean(x: NDArray, axis: number|number[] = null, keepDims = false):
-      NDArray<'float32'> {
-    const axes = axis_util.parseAxisParam(axis, x.shape);
-    const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const reduceShape = shapes[1];
-    const reduceSize = util.sizeFromShape(reduceShape);
-    return this.executeOp('mean', () => {
-      // Use a custom gradient to bypass 2 gradient backprops since mean is used
-      // extremely often.
-      return this.customGradient(() => {
-        const reduceSizeScalar = Scalar.new(reduceSize);
-        const res = this.divide(x, reduceSizeScalar);
-        const value = this.sum(res, axis, keepDims);
-
-        const gradients = (dy: NDArray<'float32'>) => {
-          const expandedDyShape = x.shape.slice();
-          axes.forEach(axis => {
-            expandedDyShape[axis] = 1;
-          });
-          const expandedDy = dy.reshape(expandedDyShape);
-          const derX = () => this.divide(
-              this.multiply(expandedDy, NDArray.ones(x.shape, 'float32')),
-              reduceSizeScalar);
-          return {x: derX};
-        };
-        return {value, gradients};
-      }, {x}, 'mean') as NDArray<'float32'>;
-    });
-  }
-
-  /**
-   * Returns the indices of the minimum values along an `axis`. The result has
-   * the same shape as `input` with the dimension along `axis` removed.
-   *
-   * @param x The input array.
-   * @param axis Optional. The dimension to reduce. By default it reduces
-   * across all axes and returns the flat index.
-   *
-   */
-  argMin<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
-    let axes = axis_util.parseAxisParam(axis, x.shape);
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
-    return this.executeOp('argMin', () => {
-      if (permutedAxes != null) {
-        x = this.transpose(x, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
-      }
-      return this.backendEngine.executeKernel(
-          'ArgMin', {inputs: {x}, args: {axes}});
-    }) as T;
-  }
-
-  /**
-   * Returns the indices of the maximum values along an `axis`. The result has
-   * the same shape as `input` with the dimension along `axis` removed.
-   *
-   * @param x The input array.
-   * @param axis Optional. The dimension to reduce. By default it reduces
-   *     across all axes and returns the flat index
-   */
-  argMax<T extends NDArray<'int32'>>(x: NDArray, axis: number = null): T {
-    let axes = axis_util.parseAxisParam(axis, x.shape);
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
-    return this.executeOp('argMax', () => {
-      if (permutedAxes != null) {
-        x = this.transpose(x, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
-      }
-
-      return this.backendEngine.executeKernel(
-          'ArgMax', {inputs: {x}, args: {axes}});
-    }) as T;
-  }
-
-  /**
-   * Returns a 1 if the argMax of x1 and x2 are the same, otherwise 0.
-   * @param x1 The first input NDArray.
-   * @param x2 The second input NDArray.
-   */
-  argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
-    util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return this.executeOp('argMaxEquals', () => this.scope(() => {
-      return this.equal(this.argMax(x1), this.argMax(x2));
-    }));
-  }
-
-  /**
-   * Returns the truth value of (a == b) element-wise. Supports broadcasting.
-   * For a stricter version without broadcasting use math.equalStrict().
-   *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
-   */
-  equal<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Equal', {inputs: {a, b}}) as T;
-  }
-
-  equalStrict<T extends NDArray>(a: T, b: T): NDArray<'bool'> {
-    util.assertShapesMatch(a.shape, b.shape, 'Error in equalStrict: ');
-    return this.equal(a, b);
-  }
-
-  /**
-   * Returns the truth value of (a != b) element-wise. Supports broadcasting.
-   * For a stricter version without broadcasting use math.notEqualStrict().
-   *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
-   */
-  notEqual<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('NotEqual', {inputs: {a, b}}) as T;
-  }
-
-  notEqualStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
-      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
-    util.assertShapesMatch(a.shape, b.shape, 'Error in notEqualStrict: ');
-    return this.notEqual(a, b);
-  }
-
-  /**
-   * Returns the truth value of (a < b) element-wise. Supports broadcasting.
-   *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
-   */
-  less<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Less', {inputs: {a, b}}) as T;
-  }
-
-  /**
-   * Returns the truth value of (a <= b) element-wise. Supports broadcasting.
-   *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
-   */
-  lessEqual<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('LessEqual', {inputs: {a, b}}) as T;
-  }
-
-  /**
-   * Returns the truth value of (a > b) element-wise. Supports broadcasting.
-   *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
-   */
-  greater<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Greater', {inputs: {a, b}}) as T;
-  }
-
-  /**
-   * Returns the truth value of (a >= b) element-wise. Supports broadcasting.
-   *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
-   */
-  greaterEqual<D1 extends DataType, D2 extends D1, T extends NDArray<'bool'>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('GreaterEqual', {inputs: {a, b}}) as
-        T;
   }
 
   /**
@@ -883,7 +405,7 @@ export class NDArrayMath implements NDArrayManager {
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('LogicalAnd', {inputs: {a, b}});
+    return this.engine.executeKernel('LogicalAnd', {inputs: {a, b}});
   }
 
   /**
@@ -897,7 +419,7 @@ export class NDArrayMath implements NDArrayManager {
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('LogicalOr', {inputs: {a, b}});
+    return this.engine.executeKernel('LogicalOr', {inputs: {a, b}});
   }
 
   /**
@@ -930,7 +452,7 @@ export class NDArrayMath implements NDArrayManager {
 
     // Default to highest percision of number:
     const dtype = types.upcastType(a.dtype, b.dtype);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Where',
                {inputs: {condition, a, b}, args: {dtype: dtype as DataType}}) as
         T;
@@ -948,111 +470,15 @@ export class NDArrayMath implements NDArrayManager {
             `ndarray, got shape ${x.shape}.`);
     let values: Array1D;
     let indices: Array1D<'int32'>;
-    this.executeOp('topK', () => {
-      values = this.backendEngine.executeKernel(
-          'TopKValues', {inputs: {x}, args: {k}});
-      indices = this.backendEngine.executeKernel(
-          'TopKIndices', {inputs: {x}, args: {k}});
+    this.scope('topK', () => {
+      values =
+          this.engine.executeKernel('TopKValues', {inputs: {x}, args: {k}});
+      indices =
+          this.engine.executeKernel('TopKIndices', {inputs: {x}, args: {k}});
       return values;
     });
     const result = {values, indices};
     return result;
-  }
-
-  /**
-   * Computes the minimum value from the input.
-   *
-   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
-   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
-   * If `keepDims` is true, the reduced dimensions are retained with length 1.
-   * If `axes` has no entries, all dimensions are reduced, and an array with a
-   * single element is returned.
-   *
-   * @param x The input NDArray.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces
-   *     all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
-   */
-  min<D extends DataType, T extends NDArray<D>>(
-      x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
-    const origAxes = axis_util.parseAxisParam(axis, x.shape);
-    let axes = origAxes;
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
-    return this.executeOp('min', () => {
-      if (permutedAxes != null) {
-        x = this.transpose(x, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
-      }
-      const res = this.backendEngine.executeKernel(
-                      'Min', {inputs: {x}, args: {axes}}) as NDArray<D>;
-      if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
-        return res.reshape(newShape);
-      }
-      return res;
-    }) as T;
-  }
-
-  /**
-   * Returns the min of a and b (`a < b ? a : b`) element-wise.
-   * Supports broadcasting.
-   *
-   * @param a The first ndarray.
-   * @param b The second ndarray. Must have the same type as `a`.
-   */
-  minimum<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Minimum', {inputs: {a, b}}) as T;
-  }
-
-  /**
-   * Computes the maximum of elements across dimensions of an array.
-   *
-   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
-   * is true, the rank of the array is reduced by 1 for each entry in `axes`.
-   * If `keepDims` is true, the reduced dimensions are retained with length 1.
-   * If `axes` has no entries, all dimensions are reduced, and an array with a
-   * single element is returned.
-   *
-   * @param x The input array.
-   * @param axis Optional. The dimension(s) to reduce. By default it reduces
-   *     all dimensions.
-   * @param keepDims Optional. If true, retains reduced dimensions with size 1.
-   */
-  max<D extends DataType, T extends NDArray<D>>(
-      x: NDArray<D>, axis: number|number[] = null, keepDims = false): T {
-    const origAxes = axis_util.parseAxisParam(axis, x.shape);
-    let axes = origAxes;
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
-    return this.executeOp('max', () => {
-      if (permutedAxes != null) {
-        x = this.transpose(x, permutedAxes);
-        axes = axis_util.getInnerMostAxes(axes.length, x.rank);
-      }
-      const res = this.backendEngine.executeKernel(
-                      'Max', {inputs: {x}, args: {axes}}) as NDArray<D>;
-      if (keepDims) {
-        const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
-        return res.reshape(newShape);
-      }
-      return res;
-    }) as T;
-  }
-
-  /**
-   * Returns the max of a and b (`a > b ? a : b`) element-wise.
-   * Supports broadcasting.
-   *
-   * @param a The first ndarray.
-   * @param b The second ndarray. Must have the same type as `a`.
-   */
-  maximum<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return this.backendEngine.executeKernel('Maximum', {inputs: {a, b}}) as T;
   }
 
   /**
@@ -1061,8 +487,8 @@ export class NDArrayMath implements NDArrayManager {
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
-  softmax<D extends DataType, R extends Rank>(logits: NDArray<D, R>, dim = -1):
-      RankMap<'float32'>[R] {
+  softmax<D extends DataType, R extends Rank, T extends NDArray<'float32', R>>(
+      logits: NDArray<D, R>, dim = -1): RankMap<'float32'>[R] {
     if (dim === -1) {
       dim = logits.rank - 1;
     }
@@ -1072,25 +498,27 @@ export class NDArrayMath implements NDArrayManager {
           `Logits was rank ${logits.rank} and dim was ${dim}`);
     }
 
-    const gradients = (dy: NDArray<'float32', R>, y: NDArray<'float32', R>) => {
+    const gradients = (dy: T, y: T) => {
       return {
         logits: () => {
           const dyTimesY = this.multiply(dy, y);
           const keepDims = true;
           return this.subtract(
-              dyTimesY, this.multiply(this.sum(dyTimesY, [dim], keepDims), y));
+                     dyTimesY,
+                     this.multiply(this.sum(dyTimesY, [dim], keepDims), y)) as
+              NDArray<'float32', R>;
         }
       };
     };
 
-    return this.executeOp('softmax', () => {
+    return this.scope('softmax', () => {
       return this.customGradient(() => {
         // Do it in log space for numerical stability.
         // exp(X - logSumExp(X))
         const keepDims = true;
         const lse = this.logSumExp(logits, [dim], keepDims);
         const logResult = this.subtract(logits.asType('float32'), lse);
-        const value = this.exp(logResult);
+        const value = this.exp(logResult) as T;
         return {value, gradients};
       }, {logits}, 'softmax') as RankMap<'float32'>[R];
     });
@@ -1136,7 +564,7 @@ export class NDArrayMath implements NDArrayManager {
           `and dim was ${dim}`);
     }
 
-    return this.executeOp('softmaxCrossEntropyWithLogits', () => {
+    return this.scope('softmaxCrossEntropyWithLogits', () => {
       // Use a custom gradient for numerical stability.
       return this.customGradient(() => {
         const softmaxLogits = this.softmax(logits, dim);
@@ -1168,8 +596,9 @@ export class NDArrayMath implements NDArrayManager {
   //////////////////////
 
   /** @deprecated Use math.transpose() instead. */
-  switchDim<T extends NDArray>(a: T, newDim: number[]): T {
-    return this.transpose(a, newDim);
+  switchDim<D extends DataType, R extends Rank>(
+      x: NDArray<D, R>, perm?: number[]): RankMap<D>[R] {
+    return this.transpose(x, perm);
   }
 
   /**
@@ -1189,8 +618,7 @@ export class NDArrayMath implements NDArrayManager {
         x.rank === reps.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of reps ${reps}.`);
-    return this.backendEngine.executeKernel(
-               'Tile', {inputs: {x}, args: {reps}}) as T;
+    return this.engine.executeKernel('Tile', {inputs: {x}, args: {reps}}) as T;
   }
 
   /**
@@ -1210,7 +638,7 @@ export class NDArrayMath implements NDArrayManager {
     util.assert(
         paddings.length === 2,
         'Invalid number of paddings. Must be length of 2.');
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Pad1D', {inputs: {x}, args: {paddings, constantValue}});
   }
 
@@ -1235,36 +663,8 @@ export class NDArrayMath implements NDArrayManager {
         paddings.length === 2 && paddings[0].length === 2 &&
             paddings[1].length === 2,
         'Invalid number of paddings. Must be length of 2 each.');
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
-  }
-
-  /**
-   * Transposes the array. Permutes the dimensions according to `perm`.
-   *
-   * The returned array's dimension `i` will correspond to the input dimension
-   * `perm[i]`. If `perm` is not given, it is set to `[n-1...0]`, where `n` is
-   * the rank of the input array. Hence by default, this operation performs a
-   * regular matrix transpose on 2-D input arrays.
-   *
-   * @param x The array to transpose.
-   * @param perm Optional. The permutation of the dimensions of a.
-   */
-  transpose<T extends NDArray>(x: T, perm?: number[]): T {
-    if (perm == null) {
-      perm = x.shape.map((s, i) => i).reverse();
-    }
-    const der = (dy: NDArray<'float32'>) => {
-      const undoPerm = axis_util.getUndoAxesPermutation(perm);
-      const derX = () => this.transpose(dy, undoPerm);
-      return {x: derX};
-    };
-    util.assert(
-        x.rank === perm.length,
-        `Error in transpose: rank of input ${x.rank} ` +
-            `must match length of perm ${perm}.`);
-    return this.backendEngine.executeKernel(
-               'Transpose', {inputs: {x}, args: {perm}}, der) as T;
   }
 
   /**
@@ -1276,7 +676,7 @@ export class NDArrayMath implements NDArrayManager {
    */
   gather<D extends DataType, T extends NDArray<D>>(
       x: T, indices: Array1D<'int32'>, axis = 0): T {
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
                'Gather', {inputs: {x, indices}, args: {axis}}) as T;
   }
 
@@ -1308,529 +708,6 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Computes -1 * A element-wise.
-   * @param x The input array.
-   */
-  neg<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Neg', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Adds two NDArrays element-wise, A + B. Supports broadcasting.
-   * For a stricter version without broadcasting use math.addStrict().
-   *
-   * @param a The first `NDArray` to add.
-   * @param b The second `NDArray` to add. Must have the same type as `a`.
-   */
-  add<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    const outShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-
-    const der = (dy: NDArray<'float32'>, y: NDArray) => {
-      const derA = () => {
-        let res = dy;
-        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
-        if (reduceAxes.length > 0) {
-          res = this.sum(res, reduceAxes);
-        }
-        return res.reshape(a.shape);
-      };
-      const derB = () => {
-        let res = dy;
-        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
-        if (reduceAxes.length > 0) {
-          res = this.sum(res, reduceAxes);
-        }
-        return res.reshape(b.shape);
-      };
-      return {a: derA, b: derB};
-    };
-    return this.backendEngine.executeKernel('Add', {inputs: {a, b}}, der) as T;
-  }
-
-  /**
-   * Adds two NDArrays element-wise, A + B. Inputs must
-   * be the same shape. For broadcasting support, use math.add() instead.
-   *
-   * @param a The first NDArray to multiply element-wise.
-   * @param b The second NDArray to multiply element-wise.
-   */
-  addStrict<T extends NDArray>(a: T, b: T): T {
-    util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
-    return this.add(a, b) as T;
-  }
-
-  /**
-   * Subtracts two NDArrays element-wise, A - B. Supports broadcasting.
-   * For a stricter version without broadcasting use math.subStrict().
-   *
-   * @param a The first `NDArray`.
-   * @param b The second `NDArray`. Must have the same dtype as `a`.
-   */
-  subtract<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    const outShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-
-    const der = (dy: NDArray<'float32'>, y: NDArray) => {
-      const derA = () => {
-        let res = dy;
-        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
-        if (reduceAxes.length > 0) {
-          res = this.sum(res, reduceAxes);
-        }
-        return res.reshape(a.shape);
-      };
-      const derB = () => {
-        let res = dy;
-        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
-        if (reduceAxes.length > 0) {
-          res = this.sum(res, reduceAxes);
-        }
-        return this.neg(res).reshape(b.shape);
-      };
-      return {a: derA, b: derB};
-    };
-    return this.backendEngine.executeKernel('Sub', {inputs: {a, b}}, der) as T;
-  }
-
-  /**
-   * Computes the power of one value to another.
-   * Given a tensor x and a tensor y, this operation computes x^y for
-   * corresponding elements in x and y. For example:
-   * x = tf.constant([[2, 2], [3, 3]])
-   * y = tf.constant([[8, 16], [2, 3]])
-   * pow(x, y)  # [[256, 65536], [9, 27]]
-   *
-   * @param a The base NDArray to pow element-wise.
-   * @param b The exponent NDArray to pow element-wise.
-   */
-  pow<D extends DataType, T extends NDArray<D>>(
-      a: NDArray<D>, b: NDArray<'int32'>): T {
-    util.assert(
-        b.dtype === 'int32',
-        'only supports int32 data type for the exponent parameter.');
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-
-    const gradient = (dy: NDArray<'float32'>, y: NDArray<D>) => {
-      if (!util.arraysEqual(a.shape, b.shape)) {
-        throw new Error(
-            `Gradient of pow not yet supported for broadcasted shapes.`);
-      }
-      const derA = () => {
-        return this.scope(() => {
-          return this.multiply(
-              dy,
-              this.multiply(
-                  b.asType(a.dtype),
-                  this.pow(a, this.subtract(b, Scalar.new(1, 'int32')))));
-        });
-      };
-      const derB = () => {
-        throw new Error(
-            `Backprop through exponent of math.pow not ` +
-            `implemented yet.`);
-      };
-      return {a: derA, b: derB};
-    };
-
-    return this.backendEngine.executeKernel(
-               'Pow', {inputs: {a, b}}, gradient) as T;
-  }
-
-  /**
-   * Computes the power of one value to another. Inputs must
-   * be the same shape. For broadcasting support, use math.pow() instead.
-   *
-   * @param a The base NDArray to pow element-wise.
-   * @param b The exponent NDArray to pow element-wise.
-   */
-  powStrict<D extends DataType>(a: NDArray<D>, b: NDArray<'int32'>):
-      NDArray<D> {
-    util.assertShapesMatch(a.shape, b.shape, 'Error in powStrict: ');
-    return this.pow(a, b);
-  }
-
-  /** @deprecated Use math.subtract instead. */
-  sub<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    return this.subtract(a, b);
-  }
-
-  /**
-   * Subtracts two NDArrays element-wise, A - B. Inputs must
-   * be the same shape. For broadcasting support, use math.sub() instead.
-   *
-   * @param a The first NDArray to multiply element-wise.
-   * @param b The second NDArray to multiply element-wise.
-   */
-  subStrict<T extends NDArray>(a: T, b: T): T {
-    util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
-    return this.subtract(a, b);
-  }
-
-  /**
-   * Multiplies two NDArrays element-wise, A * B. Supports broadcasting.
-   * For a stricter version without broadcasting use math.multiplyStrict().
-   *
-   * @param a The first `NDArray`.
-   * @param b The second `NDArray`. Must have the same dtype as `a`.
-   */
-  multiply<D1 extends DataType, D2 extends D1, T extends NDArray<D1>>(
-      a: NDArray<D1>, b: NDArray<D2>): T {
-    util.assertTypesMatch(a, b);
-    const outShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-
-    const der = (dy: NDArray<'float32'>, y: NDArray) => {
-      const derA = () => {
-        const res = this.multiply(dy, b.asType('float32'));
-        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
-        if (reduceAxes.length > 0) {
-          return this.sum(res, reduceAxes).reshape(a.shape);
-        }
-        return res;
-      };
-      const derB = () => {
-        const res = this.multiply(dy, a.asType('float32'));
-        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
-        if (reduceAxes.length > 0) {
-          return this.sum(res, reduceAxes).reshape(b.shape);
-        }
-        return res;
-      };
-      return {a: derA, b: derB};
-    };
-    return this.backendEngine.executeKernel('Mul', {inputs: {a, b}}, der) as T;
-  }
-
-  /**
-   * @deprecated Use math.multiplyStrict() instead.
-   */
-  elementWiseMul<T extends NDArray>(a: T, b: T): T {
-    return this.multiplyStrict(a, b);
-  }
-
-  /**
-   * Multiplies two NDArrays element-wise, A * B. Inputs must
-   * be the same shape. For broadcasting support, use math.multiply() instead.
-   *
-   * @param a The first NDArray to multiply element-wise.
-   * @param b The second NDArray to multiply element-wise.
-   */
-  multiplyStrict<T extends NDArray>(a: T, b: T): T {
-    util.assertShapesMatch(a.shape, b.shape, 'Error in multiplyStrict: ');
-    return this.multiply(a, b) as T;
-  }
-
-  /**
-   * Divides two NDArrays element-wise, A / B. Supports broadcasting.
-   * For a stricter version without broadcasting use math.divideStrict().
-   *
-   * @param a The first NDArray to divide element-wise.
-   * @param b The second NDArray to divide element-wise.
-   */
-  divide<T extends NDArray<'float32'>>(a: NDArray, b: NDArray): T {
-    const outShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const der = (dy: NDArray<'float32'>, y: NDArray) => {
-      const derA = () => {
-        const res = this.divide(dy, b.asType('float32'));
-        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
-        if (reduceAxes.length > 0) {
-          return this.sum(res, reduceAxes).reshape(a.shape);
-        }
-        return res;
-      };
-      const derB = () => {
-        let res = this.multiply(dy, a.asType('float32'));
-        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
-        if (reduceAxes.length > 0) {
-          res = this.sum(res, reduceAxes).reshape(b.shape);
-        }
-        return this.neg(this.divide(res, this.square(b)));
-      };
-      return {a: derA, b: derB};
-    };
-    return this.backendEngine.executeKernel('Div', {inputs: {a, b}}, der) as T;
-  }
-
-  /**
-   * Divides two NDArrays element-wise, A / B. Inputs must
-   * be the same shape. For broadcasting support, use math.divide() instead.
-   *
-   * @param a The first NDArray to multiply element-wise.
-   * @param b The second NDArray to multiply element-wise.
-   */
-  divideStrict<T extends NDArray>(a: T, b: T): T {
-    util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
-    return this.divide(a, b) as T;
-  }
-
-  /** @deprecated Use math.divide(c, A) instead. */
-  scalarDividedByArray<T extends NDArray>(c: Scalar, a: T): T {
-    util.assert(
-        c.size === 1,
-        `Error in scalarDividedByArray: first argument must be rank 0, but ` +
-            `got NDArray of rank ${c.rank}.`);
-    return this.divide(c, a) as T;
-  }
-
-  /** @deprecated Use math.divide(A, c) instead. */
-  arrayDividedByScalar<T extends NDArray>(a: T, c: Scalar): T {
-    util.assert(
-        c.size === 1,
-        `Error in arrayDividedByScalar: second argument must be rank 0, ` +
-            `but got NDArray of rank ${c.rank}.`);
-    return this.divide(a, c) as T;
-  }
-
-  /**
-   * Computes ceiling of input NDArray element-wise. y = ceil(x)
-   * TODO(nsthorat): Make this return an int32 when we add rank as a
-   * generic.
-   * @param x The input NDArray.
-   */
-  ceil<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Ceil', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes floor of input NDArray element-wise. y = floor(x).
-   *
-   * @param x The input NDArray.
-   */
-  floor<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Floor', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes exponential of the input NDArray element-wise. y = e ^ x
-   * @param x The input NDArray.
-   */
-  exp<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Exp', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes natural logarithm of the input NDArray element-wise. y = ln(x)
-   * @param x The input NDArray.
-   */
-  log<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Log', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes square root of the input NDArray element-wise. y = sqrt(x)
-   * @param x The input NDArray.
-   */
-  sqrt<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Sqrt', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes square of `x` element-wise.
-   *
-   * @param x The input array.
-   */
-  square<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T): T {
-    return this.backendEngine.executeKernel(
-               'Square', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
-                 return {
-                   x: () => this.multiply(
-                       dy, this.multiply(x.asType('float32'), Scalar.new(2)))
-                 };
-               }) as T;
-  }
-
-  /**
-   * Computes absolute value element-wise.
-   * @param x The input NDArray.
-   */
-  abs<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Abs', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Clips values element-wise.
-   * @param x The input NDArray.
-   * @param min Lower-bound of range to be clipped to.
-   * @param max Upper-bound of range to be clipped to.
-   */
-  clip<T extends NDArray>(x: T, min: number, max: number): T {
-    util.assert(
-        (min <= max),
-        `Error in clip: min (${min}) must be` +
-            `less than or equal to max (${max}).`);
-    return this.backendEngine.executeKernel(
-               'Clip', {inputs: {x}, args: {min, max}}) as T;
-  }
-
-  /**
-   * Computes rectified linear element-wise, max(x, 0).
-   * @param x The input NDArray.
-   */
-  relu<D extends DataType, R extends Rank, T extends NDArray<D, R>>(x: T): T {
-    return this.backendEngine.executeKernel(
-               'Relu', {inputs: {x}}, (dy: NDArray<'float32', R>, y: T) => {
-                 return {
-                   x: () => this.multiply(dy, this.step(x).asType('float32'))
-                 };
-               }) as T;
-  }
-
-  /**
-   * Computes exponential linear element-wise
-   * @param {T} x the input NDArray
-   */
-  elu<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Elu', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes the derivative of elu which is used ly
-   * @hidden
-   */
-  eluDer<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('EluDer', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes scaled exponential linear element-wise.
-   * @hidden
-   */
-  selu<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Selu', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes leaky rectified linear element-wise
-   * @param {T} x the input NDArray
-   * @param alpha scaling factor for negative values, defaults to 0.2
-   * @return {NDArray}
-   */
-  leakyRelu<T extends NDArray>(x: T, alpha = 0.2): T {
-    return this.backendEngine.executeKernel(
-               'LeakyRelu', {inputs: {x}, args: {alpha}}) as T;
-  }
-
-  /**
-   * Computes leaky rectified linear element-wise with parametric alphas
-   * @param {T} x the input NDArray
-   * @param {T} alpha scaling factor NDArray for negative values
-   * @return {NDArray}
-   */
-  prelu<T extends NDArray>(x: T, alpha: T): T {
-    return this.backendEngine.executeKernel('PReLU', {inputs: {x, alpha}}) as T;
-  }
-
-  /**
-   * Computes the derivative of PReLU
-   * @param {T} x the input NDArray
-   * @param {T} alpha scaling factor NDArray for negative values
-   * @return {NDArray}
-   */
-  preluDer<T extends NDArray>(x: T, alpha: T): T {
-    return this.backendEngine.executeKernel('PReLUDer', {inputs: {x, alpha}}) as
-        T;
-  }
-
-  /**
-   * Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).
-   * @param x The input NDArray.
-   */
-  sigmoid<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Sigmoid', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes sin of the input NDArray element-wise, y = sin(x).
-   * @param x The input NDArray.
-   */
-  sin<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Sin', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes cos of the input NDArray element-wise, y = cos(x).
-   * @param x The input NDArray.
-   */
-  cos<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Cos', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes tan of the input NDArray element-wise, y = tan(x).
-   * @param x The input NDArray.
-   */
-  tan<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Tan', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes asin of the input NDArray element-wise, y = asin(x).
-   * @param x The input NDArray.
-   */
-  asin<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Asin', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes acos of the input NDArray element-wise, y = acos(x).
-   * @param x The input NDArray.
-   */
-  acos<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Acos', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes atan of the input NDArray element-wise, y = atan(x).
-   * @param x The input NDArray.
-   */
-  atan<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Atan', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes hyperbolic sin of the input NDArray element-wise, y = sinh(x).
-   * @param x The input NDArray.
-   */
-  sinh<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Sinh', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes hyperbolic cos of the input NDArray element-wise, y = cosh(x).
-   * @param x The input NDArray.
-   */
-  cosh<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Cosh', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes hyperbolic tangent of the input NDArray element-wise.
-   * @param x The input NDArray.
-   */
-  tanh<T extends NDArray>(x: T): T {
-    return this.backendEngine.executeKernel('Tanh', {inputs: {x}}) as T;
-  }
-
-  /**
-   * Computes step of the input NDArray element-wise,
-   * y=1 if x>0|alpha*x if x<=0.
-   *
-   * @param x The input NDArray.
-   * @param alpha The gradient when input is negative.
-   */
-  step<T extends NDArray>(x: T, alpha = 0.0): T {
-    return this.backendEngine.executeKernel(
-               'Step', {inputs: {x}, args: {alpha}}) as T;
-  }
-
-  /**
    * Computes a scaled array add operation, c1 * A + c2 * B.
    * @param c1 The first scalar in the scaled array add computation.
    * @param a The first NDArray in the scaled array add computation.
@@ -1848,11 +725,9 @@ export class NDArrayMath implements NDArrayManager {
             `NDArray of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
-    return this.executeOp('scaledArrayAdd', () => {
-      return this.scope(() => {
-        // TODO(nsthorat): Add an SGEMM kernel and then update this.
-        return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
-      });
+    return this.scope('scaledArrayAdd', () => {
+      // TODO(nsthorat): Add an SGEMM kernel and then update this.
+      return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
     });
   }
 
@@ -1880,720 +755,6 @@ export class NDArrayMath implements NDArrayManager {
     return this.multiply(a, b) as Array2D;
   }
 
-  /////////////////////
-  // Convolution ops //
-  /////////////////////
-
-  /**
-   * Computes a 1D convolution over the input x.
-   * @param input The input ndarray, of rank 3 or rank 2, of shape
-   *     `[batch, width, inChannels]`. If rank 2, batch of 1 is assumed.
-   * @param filter The filter, rank 3, of shape
-   *     [filterWidth, inDepth, outDepth].
-   * @param bias Optional bias, rank 1 of shape [outDepth].
-   * @param stride The number of entries by which the filter is moved right at
-   *     each step.
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
-   *    - 'same' pad and stride 1: output will be of same size as input,
-   *       regardless of filter size.
-   *    - 'valid' pad: output will be smaller than input if filter is larger
-   *       than 1x1.
-   *   - For more info, see this guide:
-   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  conv1d<T extends NDArray>(
-      input: T, filter: Array3D, bias: Array1D|null, stride: number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let input3D = input as NDArray as Array3D;
-    let reshapedTo3D = false;
-    if (input.rank === 2) {
-      reshapedTo3D = true;
-      input3D = input.as3D(1, input.shape[0], input.shape[1]);
-    }
-
-    util.assert(
-        input3D.rank === 3,
-        `Error in conv1d: input must be rank 3, but got rank ${input3D.rank}.`);
-    util.assert(
-        filter.rank === 3,
-        `Error in conv1d: filter must be rank 3, but got rank ` +
-            `${filter.rank}.`);
-    if (bias != null) {
-      util.assert(
-          bias.rank === 1,
-          `Error in conv1d: bias must be rank 1, but got rank ` +
-              `${bias.rank}.`);
-    }
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in conv1d: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-
-    util.assert(
-        input3D.shape[2] === filter.shape[1],
-        `Error in conv1d: depth of input (${input3D.shape[2]}) must match  ` +
-            `input depth for filter ${filter.shape[1]}.`);
-
-    const filter4D =
-        filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
-    const input4D =
-        input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
-    const strides: [number, number] = [1, stride];
-
-    return this.executeOp('Conv1D', () => {
-      const res =
-          this.conv2d(input4D, filter4D, bias, strides, pad, dimRoundingMode);
-      if (reshapedTo3D) {
-        return res.as2D(res.shape[2], res.shape[3]) as NDArray as T;
-      }
-      return res.as3D(res.shape[0], res.shape[2], res.shape[3]) as NDArray as T;
-    });
-  }
-
-  /**
-   * Computes a 2D convolution over the input x.
-   *
-   * @param x The input ndarray, of rank 4 or rank 3, of shape
-   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
-   * assumed.
-   * @param filter The filter, rank 4, of shape
-   *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param bias Optional bias, rank 1 of shape [outDepth].
-   * @param strides The strides of the convolution: [strideHeight,
-   * strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
-   *    - 'same' pad and stride 1: output will be of same size as input,
-   *       regardless of filter size.
-   *    - 'valid' pad: output will be smaller than input if filter is larger
-   *       than 1x1.
-   *   - For more info, see this guide:
-   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  conv2d<T extends Array3D|Array4D>(
-      x: T, filter: Array4D, bias: Array1D|null,
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let x4D = x as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (x.rank === 3) {
-      reshapedTo4D = true;
-      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-    }
-    util.assert(
-        x4D.rank === 4,
-        `Error in conv2d: input must be rank 4, but got rank ${x4D.rank}.`);
-    util.assert(
-        filter.rank === 4,
-        `Error in conv2d: filter must be rank 4, but got rank ` +
-            `${filter.rank}.`);
-    if (bias != null) {
-      util.assert(
-          bias.rank === 1,
-          `Error in conv2d: bias must be rank 1, but got rank ` +
-              `${bias.rank}.`);
-    }
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in conv2d: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-
-    util.assert(
-        x4D.shape[3] === filter.shape[2],
-        `Error in conv2d: depth of input (${x4D.shape[3]}) must match  ` +
-            `input depth for filter ${filter.shape[2]}.`);
-
-    const convInfo = conv_util.computeConv2DInfo(
-        x4D.shape, filter.shape, strides, pad, dimRoundingMode);
-
-    return this.executeOp('Conv2D', () => {
-      const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
-        return {
-          x: () => this.conv2dDerInput(x4D.shape, dy, filter, strides, pad),
-          filter: () =>
-              this.conv2dDerFilter(x4D, dy, filter.shape, strides, pad),
-          bias: () => this.conv2dDerBias(dy)
-        };
-      };
-
-      const res = this.backendEngine.executeKernel(
-          'Conv2D', {inputs: {x: x4D, filter, bias}, args: {convInfo}},
-          gradients);
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
-      }
-      return res as NDArray as T;
-    });
-  }
-
-  /**
-   * Computes the derivative of the input of a 2D convolution.
-   *
-   * @param xShape The shape of the input: [batch, height, width, inDepth].
-   * If length of 3, batch of 1 is assumed.
-   * @param dy The derivative of the output, of rank 4 or rank 3 of shape
-   *   [batch, outHeight, outWidth, outDepth]. If rank 3, batch of 1 is
-   * assumed.
-   * @param filter The filter, rank 4, of shape
-   *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight,
-   * strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
-   *     used in the forward prop of the op.
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  conv2dDerInput<T extends NDArray>(
-      xShape: [number, number, number, number]|[number, number, number], dy: T,
-      filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    util.assert(
-        xShape.length === dy.rank,
-        `Length of inShape ` +
-            `(${xShape.length}) and rank of dy (${dy.rank}) must match`);
-
-    let xShape4D = xShape as [number, number, number, number];
-    let dy4D = dy as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (dy.rank === 3) {
-      reshapedTo4D = true;
-      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-      xShape4D = [1, xShape[0], xShape[1], xShape[2]];
-    }
-
-    const inDepth = xShape4D[3];
-    const outDepth = dy4D.shape[3];
-    util.assert(
-        xShape4D.length === 4,
-        `Error in conv2dDerInput: inShape must be length 4, but got length ` +
-            `${xShape4D.length}.`);
-    util.assert(
-        dy4D.rank === 4,
-        `Error in conv2dDerInput: dy must be rank 4, but got ` +
-            `rank ${dy4D.rank}`);
-    util.assert(
-        filter.rank === 4,
-        `Error in conv2dDerInput: filter must be rank 4, but got ` +
-            `rank ${filter.rank}`);
-    util.assert(
-        inDepth === filter.shape[2],
-        `Error in conv2dDerInput: depth of input (${inDepth}) must ` +
-            `match input depth for filter ${filter.shape[2]}.`);
-    util.assert(
-        outDepth === filter.shape[3],
-        `Error in conv2dDerInput: depth of output (${outDepth}) must` +
-            `match output depth for filter ${filter.shape[3]}.`);
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in conv2dDerInput: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-
-    const convInfo = conv_util.computeConv2DInfo(
-        xShape4D, filter.shape, strides, pad, dimRoundingMode);
-    return this.executeOp('conv2dDerInput', () => {
-      const res = this.backendEngine.executeKernel(
-          'Conv2DDerInput', {inputs: {dy: dy4D, filter}, args: {convInfo}});
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
-      }
-      return res as NDArray as T;
-    });
-  }
-
-  /**
-   * Computes the derivative of the bias of a 2D convolution.
-   *
-   * @param dy The gradient for the output of this op, of rank 4 or rank 3 of
-   *   shape [batch, height, width, outDepth]. If rank 3, batch of 1 is
-   * assumed.
-   */
-  conv2dDerBias(dy: Array3D|Array4D): Array1D {
-    let dy4D = dy as Array4D;
-    if (dy.rank === 3) {
-      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-    }
-    return this.backendEngine.executeKernel(
-        'Conv2DDerBias', {inputs: {dy: dy4D}});
-  }
-
-  /**
-   * Computes the derivative of the filter of a 2D convolution.
-   *
-   * @param x The input ndarray, of rank 4 or rank 3 of shape
-   *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
-   * @param dy The dy image, of rank 4 or rank 3, of shape
-   *     [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
-   * @param filterShape The shape of the filter, length 4,
-   *     [filterHeight, filterWidth, inDepth, outDepth].
-   * @param strides The strides of the convolution: [strideHeight,
-   * strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
-   *     used in the forward prop of the op.
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  conv2dDerFilter<T extends Array3D|Array4D>(
-      x: T, dy: T, filterShape: [number, number, number, number],
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): Array4D {
-    let x4D = x as NDArray as Array4D;
-    if (x.rank === 3) {
-      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-    }
-    let dy4D = dy as NDArray as Array4D;
-    if (dy4D.rank === 3) {
-      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-    }
-    util.assert(
-        x4D.rank === 4,
-        `Error in conv2dDerFilter: input must be rank 4, but got shape ` +
-            `${x4D.shape}.`);
-    util.assert(
-        dy4D.rank === 4,
-        `Error in conv2dDerFilter: dy must be rank 4, but got shape ` +
-            `${dy4D.shape}.`);
-    util.assert(
-        filterShape.length === 4,
-        `Error in conv2dDerFilter: filterShape must be length 4, but got ` +
-            `${filterShape}.`);
-    util.assert(
-        x4D.shape[3] === filterShape[2],
-        `Error in conv2dDerFilter: depth of input ${x4D.shape[3]}) must ` +
-            `match input depth in filter (${filterShape[2]}.`);
-    util.assert(
-        dy4D.shape[3] === filterShape[3],
-        `Error in conv2dDerFilter: depth of dy (${dy4D.shape[3]}) must ` +
-            `match output depth for filter (${filterShape[3]}).`);
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in conv2dDerFilter: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-
-    const convInfo = conv_util.computeConv2DInfo(
-        x4D.shape, filterShape, strides, pad, dimRoundingMode);
-    return this.backendEngine.executeKernel(
-        'Conv2DDerFilter', {inputs: {x: x4D, dy: dy4D}, args: {convInfo}});
-  }
-
-  /**
-   * Computes the transposed 2D convolution of an image, also known as a
-   * deconvolution.
-   *
-   * @param x The input image, of rank 4 or rank 3, of shape
-   *   [batch, height, width, inDepth]. If rank 3, batch of 1 is assumed.
-   * @param filter The filter, rank 4, of shape
-   *     `[filterHeight, filterWidth, outDepth, inDepth]`.
-   *     `inDepth` must match `inDepth` in `x`.
-   * @param outputShape Output shape, of rank 4 or rank 3:
-   *     [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
-   * @param strides The strides of the original convolution:
-   *     `[strideHeight, strideWidth]`.
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
-   *     used in the non-transpose version of the op.
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  conv2dTranspose<T extends NDArray>(
-      x: T, filter: Array4D,
-      outputShape: [number, number, number, number]|[number, number, number],
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    return this.conv2dDerInput(
-        outputShape, x, filter, strides, pad, dimRoundingMode);
-  }
-
-  /**
-   * Depthwise 2D convolution.
-   *
-   * Given a 4D `input` array and a `filter` array of shape
-   * `[filterHeight, filterWidth, inChannels, channelMultiplier]` containing
-   * `inChannels` convolutional filters of depth 1, this op applies a
-   * different filter to each input channel (expanding from 1 channel to
-   * `channelMultiplier` channels for each), then concatenates the results
-   * together. The output has `inChannels * channelMultiplier` channels.
-   *
-   * See https://www.tensorflow.org/api_docs/python/tf/nn/depthwise_conv2d for
-   * more details.
-   *
-   * @param input The input ndarray, of rank 4 or rank 3, of shape
-   *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
-   * assumed.
-   * @param filter The filter ndarray, rank 4, of shape
-   *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`.
-   * @param strides The strides of the convolution: [strideHeight,
-   * strideWidth]. If strides is a single number, then `strideHeight ==
-   * strideWidth`.
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
-   *   - 'same' pad and stride 1: output will be of same size as input,
-   *       regardless of filter size.
-   *   - 'valid' pad: output will be smaller than input if filter is larger
-   *       than 1x1.
-   *   - For more info, see this guide:
-   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
-   * @param rates The dilation rates: `[rateHeight, rateWidth]` in which we
-   *     sample input values across the height and width dimensions in atrous
-   *     convolution. Defaults to `[1, 1]`. If `rate` is a single number, then
-   *     `rateHeight == rateWidth`. If it is greater than 1, then all values
-   * of `strides` must be 1.
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  depthwiseConv2D<T extends NDArray>(
-      input: T, filter: Array4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let input4D = input as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (input.rank === 3) {
-      reshapedTo4D = true;
-      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
-    }
-    util.assert(
-        input4D.rank === 4,
-        `Error in depthwiseConv2D: input must be rank 4, but got ` +
-            `rank ${input4D.rank}.`);
-    util.assert(
-        filter.rank === 4,
-        `Error in depthwiseConv2D: filter must be rank 4, but got rank ` +
-            `${filter.rank}.`);
-    util.assert(
-        input4D.shape[3] === filter.shape[2],
-        `Error in depthwiseConv2D: number of input channels ` +
-            `(${input4D.shape[3]}) must match the inChannels dimension in ` +
-            `filter ${filter.shape[2]}.`);
-    rates = rates || [1, 1];
-    const [rateHeight, rateWidth] = parseTupleParam(rates);
-    util.assert(
-        rateHeight === 1 && rateWidth === 1,
-        'Error in depthwiseConv2D: rates greater than 1 are not yet ' +
-            `supported. Got rates '${rates}'`);
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in depthwiseConv2D: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-
-    const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filter.shape, strides, pad, dimRoundingMode,
-        true /* depthwise */);
-    return this.executeOp('depthwiseConv2D', () => {
-      const res = this.backendEngine.executeKernel(
-          'DepthwiseConv2D', {inputs: {x: input4D, filter}, args: {convInfo}});
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
-      }
-      return res as NDArray as T;
-    });
-  }
-
-  /**
-   * Computes the 2D max pooling of an image.
-   *
-   * @param x The input ndarray, of rank 4 or rank 3 of shape
-   *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
-   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
-   * @param strides The strides of the pooling: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
-   *    - 'same' pad and stride 1: output will be of same size as input,
-   *       regardless of filter size.
-   *    - 'valid' pad: output will be smaller than input if filter is larger
-   *       than 1x1.
-   *   - For more info, see this guide:
-   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  maxPool<T extends NDArray>(
-      x: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let x4D = x as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (x.rank === 3) {
-      reshapedTo4D = true;
-      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-    }
-    util.assert(
-        x4D.rank === 4,
-        `Error in maxPool: input must be rank 4 but got rank ${x4D.rank}.`);
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in maxPool: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-    const convInfo = conv_util.computePool2DInfo(
-        x4D.shape, filterSize, strides, pad, dimRoundingMode);
-
-    const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
-      return {x: () => this.maxPoolBackprop(dy, x4D, filterSize, strides, pad)};
-    };
-
-    return this.executeOp('maxPool', () => {
-      const res = this.backendEngine.executeKernel(
-          'MaxPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
-      }
-      return res as NDArray as T;
-    });
-  }
-
-  /**
-   * Computes the backprop of a max pool.
-   *
-   * @param dy The dy error, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
-   * assumed.
-   * @param input The input image, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
-   * assumed.
-   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
-   * @param strides The strides of the pooling: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
-   *     used in the forward prop of the op.
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  maxPoolBackprop<T extends NDArray>(
-      dy: T, input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    util.assert(
-        input.rank === dy.rank,
-        `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
-
-    let input4D = input as NDArray as Array4D;
-    let dy4D = dy as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (input.rank === 3) {
-      reshapedTo4D = true;
-      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
-      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-    }
-
-    util.assert(
-        dy4D.rank === 4,
-        `Error in maxPoolBackprop: dy must be rank 4 but got rank ` +
-            `${dy4D.rank}.`);
-    util.assert(
-        input4D.rank === 4,
-        `Error in maxPoolBackprop: input must be rank 4 but got rank ` +
-            `${input4D.rank}.`);
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in maxPoolBackprop: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-
-    const convInfo = conv_util.computePool2DInfo(
-        input4D.shape, filterSize, strides, pad, dimRoundingMode);
-    return this.executeOp('maxPoolBackprop', () => {
-      const res = this.backendEngine.executeKernel(
-          'MaxPoolBackprop',
-          {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
-      }
-      return res as NDArray as T;
-    });
-  }
-
-  /**
-   * Computes the 2D min pooling of an image.
-   *
-   * @param input The input ndarray, of rank 4 or rank 3 of shape
-   *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
-   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
-   * @param strides The strides of the pooling: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
-   *    - 'same' pad and stride 1: output will be of same size as input,
-   *       regardless of filter size.
-   *    - 'valid' pad: output will be smaller than input if filter is larger
-   *       than 1x1.
-   *   - For more info, see this guide:
-   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  minPool<T extends NDArray>(
-      input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let input4D = input as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (input.rank === 3) {
-      reshapedTo4D = true;
-      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
-    }
-    util.assert(
-        input4D.rank === 4,
-        `Error in minPool: x must be rank 4 but got rank ${input4D.rank}.`);
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in minPool: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-    const convInfo = conv_util.computePool2DInfo(
-        input4D.shape, filterSize, strides, pad, dimRoundingMode);
-    return this.executeOp('minPool', () => {
-      const res = this.backendEngine.executeKernel(
-          'MinPool', {inputs: {x: input4D}, args: {convInfo}});
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
-      }
-      return res as NDArray as T;
-    });
-  }
-
-  /**
-   * Computes the 2D average pooling of an image.
-   *
-   * @param x The input ndarray, of rank 4 or rank 3 of shape
-   *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
-   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
-   * @param strides The strides of the pooling: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm.
-   *    - 'same' pad and stride 1: output will be of same size as input,
-   *       regardless of filter size.
-   *    - 'valid' pad: output will be smaller than input if filter is larger
-   *       than 1x1.
-   *   - For more info, see this guide:
-   *     https://www.tensorflow.org/api_guides/python/nn#Convolution
-   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
-   *     rounding mode used when computing output dimensions if pad is a
-   *     number. If none is provided, it will not round and error if the output
-   *     is of fractional size.
-   */
-  avgPool<R extends '3'|'4'>(
-      x: NDArray<'int32'|'float32', R>, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
-    let x4D = x as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (x.rank === 3) {
-      reshapedTo4D = true;
-      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-    }
-    util.assert(
-        x4D.rank === 4,
-        `Error in avgPool: x must be rank 4 but got rank ${x4D.rank}.`);
-    if (dimRoundingMode != null) {
-      util.assert(
-          util.isInt(pad as number),
-          `Error in avgPool: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-    }
-
-    const convInfo =
-        conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
-
-    const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
-      return {x: () => this.avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
-    };
-
-    return this.executeOp('avgPool', () => {
-      const res = this.backendEngine.executeKernel(
-          'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
-            RankMap<'float32'>[R];
-      }
-      return res as RankMap<'float32'>[R];
-    });
-  }
-
-  /**
-   * Computes the backprop of an avg pool.
-   *
-   * @param dy The dy error, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
-   * assumed.
-   * @param input The input image, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
-   * assumed.
-   * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
-   * @param strides The strides of the pooling: [strideHeight, strideWidth].
-   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
-   *     used in the forward prop of the op.
-   */
-  private avgPoolBackprop<T extends NDArray>(
-      dy: T, input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
-    util.assert(
-        input.rank === dy.rank,
-        `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
-
-    let input4D = input as NDArray as Array4D;
-    let dy4D = dy as NDArray as Array4D;
-    let reshapedTo4D = false;
-    if (input.rank === 3) {
-      reshapedTo4D = true;
-      input4D = input.as4D(1, input.shape[0], input.shape[1], input.shape[2]);
-      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
-    }
-
-    util.assert(
-        dy4D.rank === 4,
-        `Error in avgPoolBackprop: dy must be rank 4 but got rank ` +
-            `${dy4D.rank}.`);
-    util.assert(
-        input4D.rank === 4,
-        `Error in avgPoolBackprop: input must be rank 4 but got rank ` +
-            `${input4D.rank}.`);
-
-    const convInfo =
-        conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
-    return this.executeOp('avgPoolBackprop', () => {
-      const res = this.backendEngine.executeKernel(
-          'AvgPoolBackprop',
-          {inputs: {dy: dy4D, x: input4D}, args: {convInfo}});
-      if (reshapedTo4D) {
-        return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray as
-            T;
-      }
-      return res as NDArray as T;
-    });
-  }
-
   /*
    * Bilinear resize a 3D array per each channel to a new 2D shape.
    * @param x The input Array3D.
@@ -2613,146 +774,8 @@ export class NDArrayMath implements NDArrayManager {
         newShape2D.length === 2,
         `Error in resizeBilinear3D: new shape must 2D, but got shape ` +
             `${newShape2D}.`);
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'ResizeBilinear3D', {inputs: {x}, args: {newShape2D, alignCorners}});
-  }
-
-  /**
-   * Batch normalization 2D. Mean, variance, scale, and offset can be of two
-   * shapes: 1) The same shape as the input: an Array2D. 2) In the common
-   * case, the depth dimension is the last dimension of x, so the values would
-   * be an Array1D of shape [depth].
-   * @param x The input NDArray.
-   * @param mean A mean NDArray.
-   * @param variance A variance NDArray.
-   * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param scale A scale NDArray.
-   * @param offset An offset NDArray.
-   */
-  batchNormalization2D(
-      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
-      varianceEpsilon = .001, scale?: Array2D|Array1D,
-      offset?: Array2D|Array1D): Array2D {
-    util.assert(
-        x.rank === 2,
-        `Error in batchNormalization3D: x must be rank 3 but got rank ` +
-            `${x.rank}.`);
-    util.assert(
-        mean.rank === 2 || mean.rank === 1,
-        `Error in batchNormalization2D: mean must be rank 2 or rank 1 but ` +
-            `got rank ${mean.rank}.`);
-    util.assert(
-        variance.rank === 2 || variance.rank === 1,
-        `Error in batchNormalization2D: variance must be rank 2 or rank 1 ` +
-            `but got rank ${variance.rank}.`);
-    if (scale != null) {
-      util.assert(
-          scale.rank === 2 || scale.rank === 1,
-          `Error in batchNormalization2D: scale must be rank 2 or rank 1 ` +
-              `but got rank ${scale.rank}.`);
-    }
-    if (offset != null) {
-      util.assert(
-          offset.rank === 2 || offset.rank === 1,
-          `Error in batchNormalization2D: offset must be rank 2 or rank 1 ` +
-              `but got rank ${offset.rank}.`);
-    }
-
-    return this.backendEngine.executeKernel(
-        'BatchNorm2D',
-        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
-  }
-
-  /**
-   * Batch normalization 3D. Mean, variance, scale, and offset can be of two
-   * shapes: 1) The same shape as the input: an Array3D. 2) In the common
-   * case, the depth dimension is the last dimension of x, so the values would
-   * be an Array1D of shape [depth].
-   * @param x The input NDArray.
-   * @param mean A mean NDArray.
-   * @param variance A variance NDArray.
-   * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param scale A scale NDArray.
-   * @param offset An offset NDArray.
-   */
-  batchNormalization3D(
-      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
-      varianceEpsilon = .001, scale?: Array3D|Array1D,
-      offset?: Array3D|Array1D): Array3D {
-    util.assert(
-        x.rank === 3,
-        `Error in batchNormalization3D: x must be rank 3 but got rank ` +
-            `${x.rank}.`);
-    util.assert(
-        mean.rank === 3 || mean.rank === 1,
-        `Error in batchNormalization3D: mean must be rank 3 or rank 1 but ` +
-            `got rank ${mean.rank}.`);
-    util.assert(
-        variance.rank === 3 || variance.rank === 1,
-        `Error in batchNormalization3D: variance must be rank 3 or rank 1 ` +
-            `but got rank ${variance.rank}.`);
-    if (scale != null) {
-      util.assert(
-          scale.rank === 3 || scale.rank === 1,
-          `Error in batchNormalization3D: scale must be rank 3 or rank 1 ` +
-              `but got rank ${scale.rank}.`);
-    }
-    if (offset != null) {
-      util.assert(
-          offset.rank === 3 || offset.rank === 1,
-          `Error in batchNormalization3D: offset must be rank 3 or rank 1 ` +
-              `but got rank ${offset.rank}.`);
-    }
-
-    return this.backendEngine.executeKernel(
-        'BatchNorm3D',
-        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
-  }
-
-  /**
-   * Batch normalization 4D. Mean, variance, scale, and offset can be of two
-   * shapes: 1) The same shape as the input: an Array4D. 2) In the common
-   * case, the depth dimension is the last dimension of x, so the values would
-   * be an Array1D of shape [depth].
-   * @param x The input NDArray.
-   * @param mean A mean NDArray.
-   * @param variance A variance NDArray.
-   * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param scale A scale NDArray.
-   * @param offset An offset NDArray.
-   */
-  batchNormalization4D(
-      x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
-      varianceEpsilon = .001, scale?: Array4D|Array1D,
-      offset?: Array4D|Array1D): Array4D {
-    util.assert(
-        x.rank === 4,
-        `Error in batchNormalization4D: x must be rank 4 but got rank ` +
-            `${x.rank}.`);
-    util.assert(
-        mean.rank === 4 || mean.rank === 1,
-        `Error in batchNormalization4D: mean must be rank 4 or rank 1 but ` +
-            `got rank ${mean.rank}.`);
-    util.assert(
-        variance.rank === 4 || variance.rank === 1,
-        `Error in batchNormalization4D: variance must be rank 4 or rank 1 ` +
-            `but got rank ${variance.rank}.`);
-    if (scale != null) {
-      util.assert(
-          scale.rank === 4 || scale.rank === 1,
-          `Error in batchNormalization4D: scale must be rank 4 or rank 1 ` +
-              `but got rank ${scale.rank}.`);
-    }
-    if (offset != null) {
-      util.assert(
-          offset.rank === 4 || offset.rank === 1,
-          `Error in batchNormalization4D: offset must be rank 4 or rank 1 ` +
-              `but got rank ${offset.rank}.`);
-    }
-
-    return this.backendEngine.executeKernel(
-        'BatchNorm4D',
-        {inputs: {x, mean, variance, scale, offset}, args: {varianceEpsilon}});
   }
 
   /**
@@ -2815,7 +838,7 @@ export class NDArrayMath implements NDArrayManager {
         `Error in localResponseNormalization3D: radius must be an integer
          but got radius ${radius}.`);
 
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'LRN4D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
   }
 
@@ -2837,7 +860,7 @@ export class NDArrayMath implements NDArrayManager {
   multiRNNCell(
       lstmCells: LSTMCell[], data: Array2D, c: Array2D[],
       h: Array2D[]): [Array2D[], Array2D[]] {
-    const res = this.scope(() => {
+    const res = this.scope('multiRNNCell', () => {
       let input = data;
       const newStates = [];
       for (let i = 0; i < lstmCells.length; i++) {
@@ -2873,7 +896,7 @@ export class NDArrayMath implements NDArrayManager {
   basicLSTMCell(
       forgetBias: Scalar, lstmKernel: Array2D, lstmBias: Array1D, data: Array2D,
       c: Array2D, h: Array2D): [Array2D, Array2D] {
-    const res = this.scope(() => {
+    const res = this.scope('basicLSTMCell', () => {
       const combined = this.concat2D(data, h, 1);
       const weighted = this.matMul(combined, lstmKernel);
       const res = this.add(weighted, lstmBias) as Array2D;
@@ -2888,7 +911,8 @@ export class NDArrayMath implements NDArrayManager {
       const o = this.slice2D(res, [0, sliceCols * 3], sliceSize);
 
       const newC = this.addStrict(
-          this.multiplyStrict(c, this.sigmoid(this.add(forgetBias, f))),
+          this.multiplyStrict(
+              c, this.sigmoid(this.add(forgetBias, f) as Array2D)),
           this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
       const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
 
@@ -2926,8 +950,8 @@ export class NDArrayMath implements NDArrayManager {
     if (probabilities.rank === 1) {
       probabilities = probabilities.as2D(1, -1);
     }
-    return this.executeOp('multinomial', () => {
-      const res = this.backendEngine.executeKernel('Multinomial', {
+    return this.scope('multinomial', () => {
+      const res = this.engine.executeKernel('Multinomial', {
         inputs: {probs: (probabilities as Array2D)},
         args: {numSamples, seed}
       });
@@ -2954,7 +978,7 @@ export class NDArrayMath implements NDArrayManager {
     if (depth < 2) {
       throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
     }
-    return this.backendEngine.executeKernel(
+    return this.engine.executeKernel(
         'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
   }
 
@@ -2973,7 +997,7 @@ export class NDArrayMath implements NDArrayManager {
   moments(x: NDArray, axis: number|number[] = null, keepDims = false):
       {mean: NDArray<'float32'>, variance: NDArray<'float32'>} {
     const axes = axis_util.parseAxisParam(axis, x.shape);
-    const result = this.scope(() => {
+    const result = this.scope('moments', () => {
       const mean = this.mean(x, axes, keepDims);
       let keepDimsShape = mean.shape;
       if (!keepDims) {
@@ -2985,107 +1009,6 @@ export class NDArrayMath implements NDArrayManager {
       return {mean, variance};
     });
     return result;
-  }
-
-  /**
-   * Computes the norm of scalar, vectors, and matrices.
-   * This function can compute several different vector norms (the 1-norm, the
-   * Euclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0)
-   * and matrix norms (Frobenius, 1-norm, and inf-norm).
-   *
-   * @param x The input array.
-   * @param ord Optional. Order of the norm. Supported norm types are
-   * following: ord         norm for matrices          norm for vectors
-   *     -------------------------------------------------------
-   *     'euclidean' Frobenius norm             2-norm
-   *     ‘fro’       Frobenius norm	            –
-   *     Infinity    max(sum(abs(x), axis=1))   max(abs(x))
-   *     -Infinity   min(sum(abs(x), axis=1))   min(abs(x))
-   *     1           max(sum(abs(x), axis=0))   sum(abs(x))
-   *     2           -                          sum(abs(x)^2)^1/2*
-   *
-   * @param axis Optional. If axis is null (the default), the input is
-   * considered a vector and a single vector norm is computed over the entire
-   * set of values in the NDArray, i.e. norm(x, ord) is equivalent
-   * to norm(x.reshape([-1]), ord). If axis is a integer, the input
-   * is considered a batch of vectors, and axis determines the axis in x
-   * over which to compute vector norms. If axis is a 2-tuple of integer it is
-   * considered a batch of matrices and axis determines the axes in NDArray
-   * over which to compute a matrix norm.
-   * @param keepDims Optional. If true, the norm have the same dimensionality
-   * as the input.
-   */
-  norm<D extends DataType>(
-      x: NDArray<D>, ord: number|'euclidean'|'fro' = 'euclidean',
-      axis: number|number[] = null, keepDims = false): NDArray<D|SumTypes[D]> {
-    return this.scope(() => {
-      const norm = this.normInternal(x, ord, axis);
-      let keepDimsShape = norm.shape;
-      if (keepDims) {
-        const axes = axis_util.parseAxisParam(axis, x.shape);
-        keepDimsShape = axis_util.expandShapeToKeepDim(norm.shape, axes);
-      }
-      return norm.reshape(keepDimsShape);
-    });
-  }
-
-  /**
-   * Calculate the norm for different NDAarray.
-   */
-  private normInternal<D extends DataType>(
-      x: NDArray<D>, p: number|string,
-      axis: number|number[] = null): NDArray<D|SumTypes[D]> {
-    // scalar
-    if (x.rank === 0) {
-      return this.abs(x);
-    }
-
-    // consider vector when no axis is specified
-    if (x.rank !== 1 && axis === null) {
-      return this.normInternal(x.reshape([-1]), p, axis);
-    }
-
-    // vector
-    if (x.rank === 1 || typeof axis === 'number' ||
-        axis instanceof Array && axis.length === 1) {
-      if (p === 1) {
-        return this.sum(this.abs(x), axis);
-      }
-      if (p === Infinity) {
-        return this.max(this.abs(x), axis);
-      }
-      if (p === -Infinity) {
-        return this.min(this.abs(x), axis);
-      }
-      if (p === 'euclidean' || p === 2) {
-        // norm(x, 2) = sum(abs(xi) ^ 2) ^ 1/2
-        return this.sqrt(
-            this.sum(this.pow(this.abs(x), Scalar.new(2, 'int32')), axis));
-      }
-
-      throw new Error(`Error in norm: invalid ord value: ${p}`);
-    }
-
-    // matrix (assumption axis[0] < axis[1])
-    if (axis instanceof Array && axis.length === 2) {
-      if (p === 1) {
-        return this.max(this.sum(this.abs(x), axis[0]), axis[1] - 1);
-      }
-      if (p === Infinity) {
-        return this.max(this.sum(this.abs(x), axis[1]), axis[0]);
-      }
-      if (p === -Infinity) {
-        return this.min(this.sum(this.abs(x), axis[1]), axis[0]);
-      }
-      if (p === 'fro' || p === 'euclidean') {
-        // norm(x) = sqrt(sum(pow(x, 2)))
-        return this.sqrt(this.sum(this.pow(x, Scalar.new(2, 'int32')), axis));
-      }
-
-      throw new Error(`Error in norm: invalid ord value: ${p}`);
-    }
-
-    throw new Error(`Error in norm: invalid axis: ${axis}`);
   }
 
   /**
@@ -3105,7 +1028,7 @@ export class NDArrayMath implements NDArrayManager {
     const keys = x instanceof NDArray ? null : Object.keys(x);
     const xs = util.flattenNameArrayMap(x, keys);
 
-    const vjp = this.backendEngine.vjp(f, xs, dy) as NDArray[];
+    const vjp = this.engine.vjp(f, xs, dy) as NDArray[];
 
     if (x instanceof NDArray) {
       return vjp[0] as T;
@@ -3131,8 +1054,7 @@ export class NDArrayMath implements NDArrayManager {
     const xs = util.flattenNameArrayMap(x, keys);
 
     const returnValue = false;
-    const gradients =
-        this.backendEngine.gradients(f, xs, returnValue) as NDArray[];
+    const gradients = this.engine.gradients(f, xs, returnValue) as NDArray[];
 
     if (x instanceof NDArray) {
       return gradients[0] as T;
@@ -3142,13 +1064,32 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Computes and returns the gradient of f(x) with respect to every variable.
-   * Computes and returns the gradient of f(x) with respect to every variable.
+   * Computes and returns the gradient of f(x) with respect to the list of
+   * trainable variables provided by `varList`. If no list is provided, it
+   * defaults to all trainable variables.
+   * @param f The function to execute. f() should return a scalar.
+   * @param varList An optional list of variables to provide gradients with
+   * respect to. Defaults to all trainable variables.
    */
-  variableGradients<D extends DataType>(f: () => Scalar<D>):
-      {value: Scalar<D>, gradients: NamedVariableMap} {
-    return this.valueAndGradients(f, this.registeredVariables) as
-        {value: Scalar<D>, gradients: NamedVariableMap};
+  variableGradients<D extends DataType>(
+      f: () => Scalar<D>,
+      varList?: Variable[]): {value: Scalar<D>, gradients: NamedArrayMap} {
+    if (varList == null) {
+      // Get all of the trainable variables.
+      varList = [];
+      const varNames = Object.keys(this.registeredVariables);
+      for (let i = 0; i < varNames.length; i++) {
+        const variable = this.registeredVariables[varNames[i]];
+        if (variable.trainable) {
+          varList.push(variable);
+        }
+      }
+    } else {
+      // Prune non-trainable variables.
+      varList = varList.filter(variable => variable.trainable);
+    }
+
+    return this.engine.variableGradientsAndValue(f, varList);
   }
 
   /**
@@ -3169,8 +1110,7 @@ export class NDArrayMath implements NDArrayManager {
     const xs = util.flattenNameArrayMap(x, keys);
 
     const returnValue = true;
-    const valueAndGradients =
-        this.backendEngine.gradients(f, xs, returnValue) as
+    const valueAndGradients = this.engine.gradients(f, xs, returnValue) as
         {value: Scalar, gradients: NDArray[]};
 
     let gradients: T;
@@ -3199,9 +1139,8 @@ export class NDArrayMath implements NDArrayManager {
         gradients: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
             TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name?: string): NDArray<D, R> {
-    return this.backendEngine.customGradient(
-        f, inputs, name == null ? '' : name);
+      inputs: NamedArrayMap, name?: string): RankMap<D>[R] {
+    return this.engine.customGradient(f, inputs, name == null ? '' : name);
   }
 
   disposeData(dataId: number): void {
@@ -3219,8 +1158,4 @@ export class NDArrayMath implements NDArrayManager {
     // debugging when in debug mode. Creating a stack trace is too expensive
     // to do unconditionally.
   }
-}
-
-function parseTupleParam(param: number|[number, number]): [number, number] {
-  return typeof param === 'number' ? [param, param] : param;
 }

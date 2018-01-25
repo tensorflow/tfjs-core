@@ -21,12 +21,11 @@ import {TypedArray} from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
-// tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
-
+import {DataType, DataTypeMap, Rank} from '../types';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -41,6 +40,7 @@ import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} fro
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {Copy2DProgram} from './webgl/copy_gpu';
+import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {ArrayData, GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
@@ -60,7 +60,6 @@ import {TextureData, TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
-import {GatherProgram} from './webgl/gather_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -249,30 +248,32 @@ export class MathBackendWebGL implements MathBackend {
     return output.reshape(x.shape) as T;
   }
 
-  slice1D(x: Array1D, begin: number, size: number): Array1D {
+  slice1D<D extends DataType>(x: Array1D<D>, begin: number, size: number):
+      Array1D<D> {
     const program = new SliceProgram([size]);
     const customSetup = program.getCustomSetupFunc([begin]);
     return this.compileAndRun(program, [x], null, customSetup);
   }
 
-  slice2D(x: Array2D, begin: [number, number], size: [number, number]):
-      Array2D {
+  slice2D<D extends DataType>(x: Array2D<D>, begin: [number, number], size: [
+    number, number
+  ]): Array2D<D> {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
     return this.compileAndRun(program, [x], null, customSetup);
   }
 
-  slice3D(x: Array3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Array3D {
+  slice3D<D extends DataType>(
+      x: Array3D<D>, begin: [number, number, number],
+      size: [number, number, number]): Array3D<D> {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
     return this.compileAndRun(program, [x], null, customSetup);
   }
 
-  slice4D(x: Array4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Array4D {
+  slice4D<D extends DataType>(
+      x: Array4D<D>, begin: [number, number, number, number],
+      size: [number, number, number, number]): Array4D<D> {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
     return this.compileAndRun(program, [x], null, customSetup);
@@ -998,13 +999,11 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   getGPGPUContext(): GPGPUContext {
-    return (this.backendEngine.getBackend() as MathBackendWebGL)
-        .getGPGPUContext();
+    return (this.engine.getBackend() as MathBackendWebGL).getGPGPUContext();
   }
 
   getTextureManager(): TextureManager {
-    return (this.backendEngine.getBackend() as MathBackendWebGL)
-        .getTextureManager();
+    return (this.engine.getBackend() as MathBackendWebGL).getTextureManager();
   }
 }
 

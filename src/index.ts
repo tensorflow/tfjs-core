@@ -25,7 +25,6 @@ import * as conv_util from './math/conv_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
-
 export {CheckpointLoader} from './data/checkpoint_loader';
 export {DataStats, InMemoryDataset} from './data/dataset';
 // tslint:disable-next-line:max-line-length
@@ -48,11 +47,9 @@ export {MathBackendCPU, NDArrayMathCPU} from './math/backends/backend_cpu';
 export {MathBackendWebGL, NDArrayMathGPU} from './math/backends/backend_webgl';
 export {MatrixOrientation} from './math/backends/types/matmul';
 export {GPGPUContext} from './math/backends/webgl/gpgpu_context';
-// tslint:disable-next-line:max-line-length
 export {LSTMCell, NDArrayMath} from './math/math';
 // tslint:disable-next-line:max-line-length
-export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './math/ndarray';
-export {variable, Variable} from './math/ndarray';
+export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, variable, Variable} from './math/ndarray';
 export {Optimizer} from './math/optimizers/optimizer';
 export {SGDOptimizer} from './math/optimizers/sgd_optimizer';
 export {Model} from './model';
@@ -68,3 +65,4 @@ export {
   webgl_util,
   xhr_dataset
 };
+export * from './math/ops';
