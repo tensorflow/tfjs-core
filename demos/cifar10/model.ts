@@ -1,5 +1,5 @@
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, CheckpointLoader, ENV, NDArray} from 'deeplearn';
+import {Array1D, Array2D, Array4D, CheckpointLoader, ENV, NDArray} from 'deeplearn';
 
 /**
  * Loads model variables from the paths provided in the manifest.
@@ -19,9 +19,7 @@ export function loadModelVariables(manifestPath = 'weights/'):
  * @param input array3D representing image.
  */
 export function inference(
-    modelVars: {[varName: string]: NDArray}, input: Array3D) {
-  // TODO: Figure out how to support larger batches
-  const FLAGS = {batchSize: 1};
+    modelVars: {[varName: string]: NDArray}, input: Array4D) {
   const math = ENV.math;
 
   const labelStrings = [
@@ -36,6 +34,8 @@ export function inference(
     'ship',
     'truck',
   ];
+
+  const batchSize = input.shape[0];
 
   // Load the weights and biases from the serialized model
   const conv1Weights = modelVars['conv1/weights'] as Array4D;
@@ -67,10 +67,9 @@ export function inference(
     });
 
     // Pool and Norm
-    // TODO: Put this in the conv2 math.scope
     const pool = math.maxPool(conv1Res, [3, 3], [2, 2], 'same');
     const norm =
-        math.localResponseNormalization3D(pool, 4, 1.0, 0.001 / 9.0, 0.75);
+        math.localResponseNormalization4D(pool, 4, 1.0, 0.001 / 9.0, 0.75);
 
     // Conv2
     const conv2Res = math.scope((keep) => {
@@ -87,16 +86,15 @@ export function inference(
     });
 
     // Norm then pool.
-    // TODO put this in the local3 math.scope
     const norm2 =
-        math.localResponseNormalization3D(conv2Res, 4, 1.0, 0.001 / 9.0, 0.75);
+        math.localResponseNormalization4D(conv2Res, 4, 1.0, 0.001 / 9.0, 0.75);
     const pool2 = math.maxPool(norm2, [3, 3], [2, 2], 'same');
 
     // Local3
     const local3Res = math.scope((keep) => {
       // Note: -1 in the reshape tells deeplearn to determine the second
       // dimension automatically.
-      const reshaped = math.reshape(pool2, [FLAGS.batchSize, -1]) as Array2D;
+      const reshaped = math.reshape(pool2, [batchSize, -1]) as Array2D;
       const mul = math.matMul(reshaped, local3Weights) as Array2D;
 
       const biased = math.add(mul, local3Biases) as Array2D;
@@ -119,7 +117,7 @@ export function inference(
     // softmax_linear.
     const softmaxRes = math.scope((keep) => {
       const mul = math.matMul(local4Res, softmaxWeights);
-      const biased = math.add(mul, softmaxBiases);
+      const biased = math.add(mul, softmaxBiases) as Array2D;
       const softmax = biased;
 
       return softmax;
@@ -128,9 +126,10 @@ export function inference(
     return softmaxRes;
   });
 
-  const logits = finalRes.getValues();
-  const prediction = math.argMax(finalRes).get(0);
-  const predictionLabel = labelStrings[prediction];
+  const logits = finalRes.reshape([-1, 10]) as Array2D;
+  const prediction = math.argMax(finalRes, 1) as Array1D<'int32'>;
+  const predictionLabel =
+      Array.from(prediction.getValues()).map(i => labelStrings[i]);
 
   return {
     logits,
