@@ -17,14 +17,12 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-import {ArrayData} from '../util';
-
 import * as array_ops from './array_ops';
 import {MatrixOrientation} from './backends/types/matmul';
 import * as ops from './ops';
 import {RandNormalDataTypes} from './rand';
 // tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
+import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
 
 /** @hidden */
 export interface NDArrayData {

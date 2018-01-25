@@ -16,20 +16,8 @@
  */
 
 import {NDArray, Variable} from './math/ndarray';
-import {DataType, DataTypeMap, TypedArray} from './math/types';
-
-export type FlatVector = boolean[]|number[]|TypedArray;
-export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
-export type ArrayData<D extends DataType> =
-    DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
-
-export type NamedArrayMap = {
-  [name: string]: NDArray
-};
-
-export type NamedVariableMap = {
-  [name: string]: Variable;
-};
+// tslint:disable-next-line:max-line-length
+import {DataType, DataTypeMap, FlatVector, NamedArrayMap, RegularArray} from './math/types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any

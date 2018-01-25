@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {NDArray, Variable} from './ndarray';
+
 export enum DType {
   float32 = 'float32',
   int32 = 'int32',
@@ -40,6 +42,19 @@ export type DataType = keyof DataTypeMap;
 export type TypedArray = DataTypeMap[DataType];
 
 export type Rank = '0'|'1'|'2'|'3'|'4'|'higher';
+
+export type FlatVector = boolean[]|number[]|TypedArray;
+export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
+export type ArrayData<D extends DataType> =
+    DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
+
+export type NamedArrayMap = {
+  [name: string]: NDArray
+};
+
+export type NamedVariableMap = {
+  [name: string]: Variable;
+};
 
 enum UpcastInt32AndMap {
   float32 = 'float32',
