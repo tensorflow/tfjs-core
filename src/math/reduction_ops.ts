@@ -18,10 +18,8 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import * as axis_util from './axis_util';
-import * as compare from './compare';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
-import * as transpose from './transpose';
 import {DataType, SumTypes} from './types';
 
 export class Ops {
@@ -44,10 +42,10 @@ export class Ops {
   static logSumExp<T extends NDArray<'float32'>>(
       input: NDArray, axis: number|number[] = null, keepDims = false): T {
     const axes = axis_util.parseAxisParam(axis, input.shape);
-    const xMax = Ops.max(input, axes, true /* keepDims */);
+    const xMax = input.max(axes, true /* keepDims */);
     const a = input.sub(xMax);
     const b = a.exp();
-    const c = Ops.sum(b, axes);
+    const c = b.sum(axes);
     const d = c.log();
     const res = xMax.reshape(d.shape).add(d);
 
@@ -83,7 +81,7 @@ export class Ops {
       let reductionAxes = axes;
       let permutedX = x;
       if (permutation != null) {
-        permutedX = transpose.Ops.transpose(x, permutation);
+        permutedX = x.transpose(permutation);
         reductionAxes =
             axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
       }
@@ -133,7 +131,7 @@ export class Ops {
     return ENV.math.customGradient(() => {
       const reduceSizeScalar = Scalar.new(reduceSize);
       const res = x.div(reduceSizeScalar);
-      const value = Ops.sum(res, axis, keepDims);
+      const value = res.sum(axis, keepDims);
 
       const gradients = (dy: NDArray<'float32'>) => {
         const expandedDyShape = x.shape.slice();
@@ -170,7 +168,7 @@ export class Ops {
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.Ops.transpose(x, permutedAxes);
+      x = x.transpose(permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     const res = ENV.engine.executeKernel('Min', {inputs: {x}, args: {axes}}) as
@@ -203,7 +201,7 @@ export class Ops {
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.Ops.transpose(x, permutedAxes);
+      x = x.transpose(permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     const res = ENV.engine.executeKernel('Max', {inputs: {x}, args: {axes}}) as
@@ -230,7 +228,7 @@ export class Ops {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.Ops.transpose(x, permutedAxes);
+      x = x.transpose(permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     return ENV.engine.executeKernel('ArgMin', {inputs: {x}, args: {axes}}) as T;
@@ -250,7 +248,7 @@ export class Ops {
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
-      x = transpose.Ops.transpose(x, permutedAxes);
+      x = x.transpose(permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
 
@@ -265,6 +263,6 @@ export class Ops {
   @operation
   static argMaxEquals(x1: NDArray, x2: NDArray): Scalar<'bool'> {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return compare.Ops.equal(Ops.argMax(x1), Ops.argMax(x2));
+    return x1.argMax().equal(x2.argMax());
   }
 }

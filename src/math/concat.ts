@@ -19,7 +19,6 @@ import {ENV} from '../environment';
 import * as concat_util from './concat_util';
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
-import * as slice from './slice';
 import {DataType, Rank, RankMap} from './types';
 
 export class Ops {
@@ -118,8 +117,8 @@ export class Ops {
       const {x1Begin, x1Size, x2Begin, x2Size} =
           concat_util.computeGradientSliceShapes3D(a.shape, y.shape, axis);
       return {
-        a: () => slice.Ops.slice3D(dy, x1Begin, x1Size),
-        b: () => slice.Ops.slice3D(dy, x2Begin, x2Size)
+        a: () => dy.slice(x1Begin, x1Size),
+        b: () => dy.slice(x2Begin, x2Size)
       };
     };
 
@@ -152,13 +151,13 @@ export class Ops {
     if (a.rank === 0) {
       throw new Error('Cannot concatenate a scalar');
     } else if (a.rank === 1) {
-      return Ops.concat1D(a as Array1D<D>, b as Array1D<D>);
+      return a.concat(b, axis);
     } else if (a.rank === 2) {
-      return Ops.concat2D(a as Array2D<D>, b as Array2D<D>, axis);
+      return a.concat(b, axis);
     } else if (a.rank === 3) {
-      return Ops.concat3D(a as Array3D<D>, b as Array3D<D>, axis);
+      return a.concat(b, axis);
     } else if (a.rank === 4) {
-      return Ops.concat4D(a as Array4D<D>, b as Array4D<D>, axis);
+      return a.concat(b, axis);
     } else {
       throw new Error(`Concat for rank ${a.rank} is not yet implemented`);
     }

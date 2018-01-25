@@ -149,11 +149,9 @@ export class Ops {
             `Gradient of pow not yet supported for broadcasted shapes.`);
       }
       const derBase = () => {
-        return Ops.mul(
-            dy,
-            Ops.mul(
-                exp.asType(base.dtype),
-                Ops.pow(base, Ops.sub(exp, Scalar.new(1, 'int32')))));
+        const dx = exp.toFloat().mul(
+            base.pow(exp.sub(Scalar.new(1, 'int32'))).toFloat());
+        return dy.mul(dx);
       };
       const derExp = () => {
         throw new Error(
@@ -178,7 +176,7 @@ export class Ops {
   static powStrict<D extends DataType, R extends Rank>(
       base: NDArray<D, R>, exp: NDArray<'int32'>): RankMap<D>[R] {
     util.assertShapesMatch(base.shape, exp.shape, 'Error in powStrict: ');
-    return Ops.pow(base, exp);
+    return base.pow(exp);
   }
 
   /**
@@ -197,7 +195,7 @@ export class Ops {
 
     const der = (dy: NDArray<'float32'>, y: NDArray) => {
       const derA = () => {
-        const res = Ops.mul(dy, b.asType('float32'));
+        const res = dy.mul(b.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
           return res.sum(reduceAxes).reshape(a.shape);
@@ -205,7 +203,7 @@ export class Ops {
         return res;
       };
       const derB = () => {
-        const res = Ops.mul(dy, a.asType('float32'));
+        const res = dy.mul(a.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
           return res.sum(reduceAxes).reshape(b.shape);
@@ -223,7 +221,7 @@ export class Ops {
   @operation
   static elementWiseMul<D extends DataType, R extends Rank>(
       a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
-    return Ops.mulStrict(a, b);
+    return a.mulStrict(b);
   }
 
   /**
@@ -237,7 +235,7 @@ export class Ops {
   static mulStrict<D extends DataType, R extends Rank>(
       a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in multiplyStrict: ');
-    return Ops.mul(a, b) as RankMap<D>[R];
+    return a.mul(b) as RankMap<D>[R];
   }
 
   /**
@@ -254,7 +252,7 @@ export class Ops {
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: NDArray<'float32'>, y: NDArray) => {
       const derA = () => {
-        const res = Ops.div(dy, b.asType('float32'));
+        const res = dy.div(b.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
           return res.sum(reduceAxes).reshape(a.shape);
@@ -262,13 +260,13 @@ export class Ops {
         return res;
       };
       const derB = () => {
-        let res = Ops.mul(dy, a.asType('float32'));
+        let res = dy.mul(a.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
           res = res.sum(reduceAxes).reshape(b.shape);
         }
         const tmp = b.square() as NDArray;
-        return Ops.div(res, tmp.asType('float32')).neg() as NDArray<'float32'>;
+        return res.div(tmp.asType('float32')).neg() as NDArray<'float32'>;
       };
       return {a: derA, b: derB};
     };
@@ -286,7 +284,7 @@ export class Ops {
   static divStrict<D extends DataType, R extends Rank>(
       a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
-    return Ops.div(a, b) as RankMap<D>[R];
+    return a.div(b) as RankMap<D>[R];
   }
 
   /** @deprecated Use div() instead. */
@@ -296,7 +294,7 @@ export class Ops {
         c.size === 1,
         `Error in scalarDividedByArray: first argument must be rank 0, but ` +
             `got NDArray of rank ${c.rank}.`);
-    return Ops.div(c, a) as T;
+    return c.div(a) as T;
   }
 
   /** @deprecated Use div(A, c) instead. */
@@ -306,7 +304,7 @@ export class Ops {
         c.size === 1,
         `Error in arrayDividedByScalar: second argument must be rank 0, ` +
             `but got NDArray of rank ${c.rank}.`);
-    return Ops.div(a, c) as T;
+    return a.div(c) as T;
   }
 
   /**
@@ -335,7 +333,7 @@ export class Ops {
   static minimumStrict<D extends DataType, R extends Rank>(
       a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');
-    return Ops.minimum(a, b) as RankMap<D>[R];
+    return a.minimum(b) as RankMap<D>[R];
   }
 
   /**
@@ -364,6 +362,6 @@ export class Ops {
   static maximumStrict<D extends DataType, R extends Rank>(
       a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');
-    return Ops.maximum(a, b) as RankMap<D>[R];
+    return a.maximum(b) as RankMap<D>[R];
   }
 }

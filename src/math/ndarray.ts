@@ -20,6 +20,7 @@ import * as util from '../util';
 import {ArrayData} from '../util';
 import * as array_ops from './array_ops';
 import {MatrixOrientation} from './backends/types/matmul';
+import * as ops from './ops';
 import {RandNormalDataTypes} from './rand';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, Rank, RankMap, ShapeMap, SumTypes} from './types';
@@ -113,7 +114,8 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   }
 
   /** @deprecated Please use dl.clone() */
-  static like<T extends NDArray>(x: T): T {
+  static like<D extends DataType, R extends Rank>(x: NDArray<D, R>):
+      RankMap<D>[R] {
     return array_ops.Ops.clone(x);
   }
 
@@ -363,29 +365,29 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   matMul(
       b: Array2D<D>, aOrientation = MatrixOrientation.REGULAR,
       bOrientation = MatrixOrientation.REGULAR): Array2D<D> {
-    return ENV.math.matMul(this as Array2D<D>, b, aOrientation, bOrientation);
+    return ops.matMul(this as Array2D<D>, b, aOrientation, bOrientation);
   }
   slice(begin: ShapeMap[R], size: ShapeMap[R]): RankMap<D>[R] {
-    return ENV.math.slice(this, begin, size);
+    return ops.slice(this, begin, size);
   }
   reverse(axis: number|number[]): RankMap<D>[R] {
-    return ENV.math.reverse(this, axis);
+    return ops.reverse(this, axis);
   }
   concat(x: NDArray<D, R>, axis: number): RankMap<D>[R] {
-    return ENV.math.concat(this, x, axis);
+    return ops.concat(this, x, axis);
   }
   batchNormalization(
       mean: RankMap<D>[R]|Array1D, variance: RankMap<D>[R]|Array1D,
       varianceEpsilon = .001, scale?: RankMap<D>[R]|Array1D,
       offset?: RankMap<D>[R]|Array1D): RankMap<D>[R] {
-    return ENV.math.batchNormalization(
+    return ops.batchNormalization(
         this, mean, variance, varianceEpsilon, scale, offset);
   }
   avgPool(
       filterSize: [number, number]|number, strides: [number, number]|number,
       pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
-    return ENV.math.avgPool(
+    return ops.avgPool(
         this as NDArray<'int32'|'float32', '3'|'4'>, filterSize, strides, pad,
         dimRoundingMode);
   }
@@ -393,212 +395,212 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
       filterSize: [number, number]|number, strides: [number, number]|number,
       pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<D>[R] {
-    return ENV.math.maxPool(
+    return ops.maxPool(
         this as NDArray<D, '3'|'4'>, filterSize, strides, pad, dimRoundingMode);
   }
   minPool(
       filterSize: [number, number]|number, strides: [number, number]|number,
       pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<D>[R] {
-    return ENV.math.minPool(
+    return ops.minPool(
         this as NDArray<D, '3'|'4'>, filterSize, strides, pad, dimRoundingMode);
   }
   clone(): RankMap<D>[R] {
-    return ENV.math.clone(this);
+    return ops.clone(this);
   }
 
   // Reduction ops.
 
   logSumExp<T extends NDArray<'float32'>>(
       axis: number|number[] = null, keepDims = false): T {
-    return ENV.math.logSumExp(this, axis, keepDims);
+    return ops.logSumExp(this, axis, keepDims);
   }
   sum<T extends NDArray<SumTypes[D]>>(
       axis: number|number[] = null, keepDims = false): T {
-    return ENV.math.sum(this, axis, keepDims);
+    return ops.sum(this, axis, keepDims);
   }
   mean<T extends NDArray<'float32'>>(
       axis: number|number[] = null, keepDims = false): T {
-    return ENV.math.mean(this, axis, keepDims);
+    return ops.mean(this, axis, keepDims);
   }
   min<T extends NDArray<D>>(axis: number|number[] = null, keepDims = false): T {
-    return ENV.math.min(this, axis, keepDims);
+    return ops.min(this, axis, keepDims);
   }
   max<T extends NDArray<D>>(axis: number|number[] = null, keepDims = false): T {
-    return ENV.math.max(this, axis, keepDims);
+    return ops.max(this, axis, keepDims);
   }
   argMin<T extends NDArray<'int32'>>(axis: number = null): T {
-    return ENV.math.argMin(this, axis);
+    return ops.argMin(this, axis);
   }
   argMax<T extends NDArray<'int32'>>(axis: number = null): T {
-    return ENV.math.argMax(this, axis);
+    return ops.argMax(this, axis);
   }
   argMaxEquals(x: NDArray): Scalar<'bool'> {
-    return ENV.math.argMaxEquals(this, x);
+    return ops.argMaxEquals(this, x);
   }
 
   // Binary ops.
 
   add<T extends NDArray<D>>(x: NDArray<D>): T {
-    return ENV.math.add(this, x);
+    return ops.add(this, x);
   }
   addStrict(x: NDArray<D, R>): RankMap<D>[R] {
-    return ENV.math.addStrict(this, x);
+    return ops.addStrict(this, x);
   }
   sub<T extends NDArray<D>>(x: NDArray<D>): T {
-    return ENV.math.sub(this, x);
+    return ops.sub(this, x);
   }
   subStrict(x: NDArray<D, R>): RankMap<D>[R] {
-    return ENV.math.subStrict(this, x);
+    return ops.subStrict(this, x);
   }
   pow<T extends NDArray<D>>(exp: NDArray<'int32'>): T {
-    return ENV.math.pow(this, exp);
+    return ops.pow(this, exp);
   }
   powStrict(exp: NDArray<'int32'>): RankMap<D>[R] {
-    return ENV.math.powStrict(this, exp);
+    return ops.powStrict(this, exp);
   }
   mul<T extends NDArray<D>>(x: NDArray<D>): T {
-    return ENV.math.multiply(this, x);
+    return ops.mul(this, x);
   }
   mulStrict(x: NDArray<D, R>): RankMap<D>[R] {
-    return ENV.math.mulStrict(this, x);
+    return ops.mulStrict(this, x);
   }
   div<T extends NDArray<'float32'>>(x: NDArray<D>): T {
-    return ENV.math.div(this, x);
+    return ops.div(this, x);
   }
   divStrict(x: NDArray<D, R>): RankMap<D>[R] {
-    return ENV.math.divStrict(this, x);
+    return ops.divStrict(this, x);
   }
   minimum<T extends NDArray<D>>(x: NDArray<D>): T {
-    return ENV.math.minimum(this, x);
+    return ops.minimum(this, x);
   }
   minimumStrict(x: NDArray<D, R>): RankMap<D>[R] {
-    return ENV.math.minimumStrict(this, x);
+    return ops.minimumStrict(this, x);
   }
   maximum<T extends NDArray<D>>(x: NDArray<D>): T {
-    return ENV.math.maximum(this, x);
+    return ops.maximum(this, x);
   }
   maximumStrict(x: NDArray<D, R>): RankMap<D>[R] {
-    return ENV.math.maximumStrict(this, x);
+    return ops.maximumStrict(this, x);
   }
   transpose(perm?: number[]): RankMap<D>[R] {
-    return ENV.math.transpose(this, perm);
+    return ops.transpose(this, perm);
   }
 
   // Compare ops.
 
   notEqual<T extends NDArray<'bool'>>(x: NDArray<D>): T {
-    return ENV.math.notEqual(this, x);
+    return ops.notEqual(this, x);
   }
   notEqualStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
-    return ENV.math.notEqualStrict(this, x);
+    return ops.notEqualStrict(this, x);
   }
   less<T extends NDArray<'bool'>>(x: NDArray<D>): T {
-    return ENV.math.less(this, x);
+    return ops.less(this, x);
   }
   lessStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
-    return ENV.math.lessStrict(this, x);
+    return ops.lessStrict(this, x);
   }
   equal<T extends NDArray<'bool'>>(x: NDArray<D>): T {
-    return ENV.math.equal(this, x);
+    return ops.equal(this, x);
   }
   equalStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
-    return ENV.math.equalStrict(this, x);
+    return ops.equalStrict(this, x);
   }
   lessEqual<T extends NDArray<'bool'>>(x: NDArray<D>): T {
-    return ENV.math.lessEqual(this, x);
+    return ops.lessEqual(this, x);
   }
   lessEqualStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
-    return ENV.math.lessEqualStrict(this, x);
+    return ops.lessEqualStrict(this, x);
   }
   greater<T extends NDArray<'bool'>>(x: NDArray<D>): T {
-    return ENV.math.greater(this, x);
+    return ops.greater(this, x);
   }
   greaterStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
-    return ENV.math.greaterStrict(this, x);
+    return ops.greaterStrict(this, x);
   }
   greaterEqual<T extends NDArray<'bool'>>(x: NDArray<D>): T {
-    return ENV.math.greaterEqual(this, x);
+    return ops.greaterEqual(this, x);
   }
   greaterEqualStrict(x: NDArray<D, R>): RankMap<'bool'>[R] {
-    return ENV.math.greaterEqualStrict(this, x);
+    return ops.greaterEqualStrict(this, x);
   }
 
   // Unary ops.
   neg(): RankMap<D>[R] {
-    return ENV.math.neg(this);
+    return ops.neg(this);
   }
   ceil(): RankMap<D>[R] {
-    return ENV.math.ceil(this);
+    return ops.ceil(this);
   }
   floor(): RankMap<D>[R] {
-    return ENV.math.floor(this);
+    return ops.floor(this);
   }
   exp(): RankMap<D>[R] {
-    return ENV.math.exp(this);
+    return ops.exp(this);
   }
   log(): RankMap<D>[R] {
-    return ENV.math.log(this);
+    return ops.log(this);
   }
   sqrt(): RankMap<D>[R] {
-    return ENV.math.sqrt(this);
+    return ops.sqrt(this);
   }
   square(): RankMap<D>[R] {
-    return ENV.math.square(this);
+    return ops.square(this);
   }
   abs(): RankMap<D>[R] {
-    return ENV.math.abs(this);
+    return ops.abs(this);
   }
   clip(min: number, max: number): RankMap<D>[R] {
-    return ENV.math.clip(this, min, max);
+    return ops.clip(this, min, max);
   }
   relu(): RankMap<D>[R] {
-    return ENV.math.relu(this);
+    return ops.relu(this);
   }
   elu(): RankMap<D>[R] {
-    return ENV.math.elu(this);
+    return ops.elu(this);
   }
   selu(): RankMap<D>[R] {
-    return ENV.math.selu(this);
+    return ops.selu(this);
   }
   leakyRelu(alpha = 0.2): RankMap<D>[R] {
-    return ENV.math.leakyRelu(this, alpha);
+    return ops.leakyRelu(this, alpha);
   }
   prelu(alpha: NDArray<D, R>): RankMap<D>[R] {
-    return ENV.math.prelu(this, alpha);
+    return ops.prelu(this, alpha);
   }
   sigmoid(): RankMap<D>[R] {
-    return ENV.math.sigmoid(this);
+    return ops.sigmoid(this);
   }
   sin(): RankMap<D>[R] {
-    return ENV.math.sin(this);
+    return ops.sin(this);
   }
   cos(): RankMap<D>[R] {
-    return ENV.math.cos(this);
+    return ops.cos(this);
   }
   tan(): RankMap<D>[R] {
-    return ENV.math.tan(this);
+    return ops.tan(this);
   }
   asin(): RankMap<D>[R] {
-    return ENV.math.asin(this);
+    return ops.asin(this);
   }
   acos(): RankMap<D>[R] {
-    return ENV.math.acos(this);
+    return ops.acos(this);
   }
   atan(): RankMap<D>[R] {
-    return ENV.math.atan(this);
+    return ops.atan(this);
   }
   sinh(): RankMap<D>[R] {
-    return ENV.math.sinh(this);
+    return ops.sinh(this);
   }
   cosh(): RankMap<D>[R] {
-    return ENV.math.cosh(this);
+    return ops.cosh(this);
   }
   tanh(): RankMap<D>[R] {
-    return ENV.math.tanh(this);
+    return ops.tanh(this);
   }
   step(alpha = 0.0): RankMap<D>[R] {
-    return ENV.math.step(this, alpha);
+    return ops.step(this, alpha);
   }
 }
 

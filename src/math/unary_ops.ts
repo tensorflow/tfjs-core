@@ -150,7 +150,7 @@ export class Ops {
     return ENV.engine.executeKernel(
                'Relu', {inputs: {x}},
                (dy: NDArray<'float32', R>, y: RankMap<D>[R]) => {
-                 const stepRes = Ops.step(x) as NDArray<'float32'>;
+                 const stepRes = x.step() as NDArray<'float32'>;
                  return {x: () => dy.mul(stepRes.asType('float32'))};
                }) as RankMap<D>[R];
   }

@@ -42,7 +42,7 @@ export class Ops {
     }
     const der = (dy: NDArray<'float32'>) => {
       const undoPerm = axis_util.getUndoAxesPermutation(perm);
-      const derX = () => Ops.transpose(dy, undoPerm);
+      const derX = () => dy.transpose(undoPerm);
       return {x: derX};
     };
     util.assert(
