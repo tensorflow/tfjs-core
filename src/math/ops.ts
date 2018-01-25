@@ -145,3 +145,5 @@ export const rand = array_ops.Ops.rand;
 export const randNormal = array_ops.Ops.randNormal;
 export const randTruncatedNormal = array_ops.Ops.randTruncatedNormal;
 export const randUniform = array_ops.Ops.randUniform;
+export const pad1D = array_ops.Ops.pad1D;
+export const pad2D = array_ops.Ops.pad2D;

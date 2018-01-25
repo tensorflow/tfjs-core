@@ -19,6 +19,7 @@ import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap, NamedVariableMap} from '../util';
 
+import * as array_ops from './array_ops';
 import * as axis_util from './axis_util';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
@@ -183,6 +184,9 @@ export class NDArrayMath implements NDArrayManager {
   tanh = unary_ops.Ops.tanh;
 
   norm = norm.Ops.norm;
+
+  pad1D = array_ops.Ops.pad1D;
+  pad2D = array_ops.Ops.pad2D;
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
@@ -619,52 +623,6 @@ export class NDArrayMath implements NDArrayManager {
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of reps ${reps}.`);
     return this.engine.executeKernel('Tile', {inputs: {x}, args: {reps}}) as T;
-  }
-
-  /**
-   * Pads a Array1D.
-   *
-   * This operation will pad an array according to the `paddings` you specify.
-   *
-   * This operation currently only implements the `CONSTANT` mode from
-   * Tensorflow's `pad` operation.
-   *
-   * @param x The array to pad.
-   * @param paddings A tuple of ints [padLeft, padRight], how much to pad on the
-   *     left and right side of the array.
-   * @param constantValue The scalar pad value to use. Defaults to 0.
-   */
-  pad1D(x: Array1D, paddings: [number, number], constantValue = 0): Array1D {
-    util.assert(
-        paddings.length === 2,
-        'Invalid number of paddings. Must be length of 2.');
-    return this.engine.executeKernel(
-        'Pad1D', {inputs: {x}, args: {paddings, constantValue}});
-  }
-
-  /**
-   * Pads a Array2D.
-   *
-   * This operation will pad an array according to the `paddings` you specify.
-   *
-   * This operation currently only implements the `CONSTANT` mode from
-   * Tensorflow's `pad` operation.
-   *
-   * @param x The array to pad.
-   * @param paddings A pair of tuple ints
-   *     [[padTop, padBottom], [padLeft, padRight]], how much to pad on the
-   *     array.
-   * @param constantValue The scalar pad value to use. Defaults to 0.
-   */
-  pad2D(
-      x: Array2D, paddings: [[number, number], [number, number]],
-      constantValue = 0): Array2D {
-    util.assert(
-        paddings.length === 2 && paddings[0].length === 2 &&
-            paddings[1].length === 2,
-        'Invalid number of paddings. Must be length of 2 each.');
-    return this.engine.executeKernel(
-        'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
   }
 
   /**
