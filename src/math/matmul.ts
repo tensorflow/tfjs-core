@@ -20,6 +20,7 @@ import * as util from '../util';
 import {MatrixOrientation} from './backends/types/matmul';
 import {operation} from './decorators';
 import {Array1D, Array2D, Scalar} from './ndarray';
+import {DataType} from './types';
 
 export class Ops {
   /**
@@ -34,9 +35,9 @@ export class Ops {
    * compute A * B^T.
    */
   @operation
-  static matMul(
-      a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
-      bOrientation = MatrixOrientation.REGULAR): Array2D {
+  static matMul<D extends DataType>(
+      a: Array2D<D>, b: Array2D<D>, aOrientation = MatrixOrientation.REGULAR,
+      bOrientation = MatrixOrientation.REGULAR): Array2D<D> {
     const innerShapeA =
         (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
     const innerShapeB =
@@ -55,22 +56,23 @@ export class Ops {
             ` and ${MatrixOrientation[bOrientation]} must match.`);
 
     return ENV.engine.executeKernel(
-        'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
-        (dy: Array2D<'float32'>, y: Array2D) => {
-          if (aOrientation === MatrixOrientation.TRANSPOSED ||
-              bOrientation === MatrixOrientation.TRANSPOSED) {
-            throw new Error(
-                `Backprop for transposed MatMul not yet implemented.`);
-          }
-          return {
-            a: () => Ops.matMul(
-                         dy, b, MatrixOrientation.REGULAR,
-                         MatrixOrientation.TRANSPOSED) as Array2D<'float32'>,
-            b: () => Ops.matMul(
-                         a, dy, MatrixOrientation.TRANSPOSED,
-                         MatrixOrientation.REGULAR) as Array2D<'float32'>
-          };
-        });
+               'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
+               (dy: Array2D<'float32'>, y: Array2D) => {
+                 if (aOrientation === MatrixOrientation.TRANSPOSED ||
+                     bOrientation === MatrixOrientation.TRANSPOSED) {
+                   throw new Error(
+                       `Backprop for transposed MatMul not yet implemented.`);
+                 }
+                 return {
+                   a: () =>
+                       dy.matMul(
+                           b.asType('float32'), MatrixOrientation.REGULAR,
+                           MatrixOrientation.TRANSPOSED) as Array2D<'float32'>,
+                   b: () => a.asType('float32').matMul(
+                                dy, MatrixOrientation.TRANSPOSED,
+                                MatrixOrientation.REGULAR) as Array2D<'float32'>
+                 };
+               }) as Array2D<D>;
   }
 
   /**
@@ -92,7 +94,7 @@ export class Ops {
         v.size === matrix.shape[0],
         `Error in vectorTimesMatrix: size of vector (${v.size}) ` +
             `must match first dimension of matrix (${matrix.shape[0]})`);
-    return Ops.matMul(v.as2D(1, -1), matrix).as1D();
+    return v.as2D(1, -1).matMul(matrix).as1D();
   }
 
   /**
@@ -116,7 +118,7 @@ export class Ops {
             `must match inner dimension of second rank 2 input, but got ` +
             `shape ${matrix.shape}.`);
 
-    return Ops.matMul(matrix, v.as2D(-1, 1)).as1D();
+    return matrix.matMul(v.as2D(-1, 1)).as1D();
   }
 
   /**
@@ -134,7 +136,7 @@ export class Ops {
         v1.size === v2.size,
         `Error in dotProduct: size of inputs (${v1.size}) and (` +
             `${v2.size}) must match.`);
-    return Ops.matMul(v1.as2D(1, -1), v2.as2D(-1, 1)).asScalar();
+    return v1.as2D(1, -1).matMul(v2.as2D(-1, 1)).asScalar();
   }
 
   /**
@@ -149,6 +151,6 @@ export class Ops {
         `Error in outerProduct: inputs must be rank 1, but got ranks ` +
             `${v1.rank} and ${v2.rank}.`);
 
-    return Ops.matMul(v1.as2D(-1, 1), v2.as2D(1, -1));
+    return v1.as2D(-1, 1).matMul(v2.as2D(1, -1));
   }
 }

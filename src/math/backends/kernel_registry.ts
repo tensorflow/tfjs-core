@@ -16,8 +16,8 @@
  */
 
 import * as util from '../../util';
-import {DataType, NDArray, Rank, Scalar} from '../ndarray';
-
+import {NDArray, Scalar} from '../ndarray';
+import {DataType, Rank} from '../types';
 import {MathBackend} from './backend';
 import {ArgMaxNode, ArgMinNode} from './types/argminmax';
 // tslint:disable-next-line:max-line-length
@@ -176,7 +176,7 @@ export function executeKernel<D extends DataType, R extends Rank, K extends
     return backend.floor(config.inputs.x) as O;
   } else if (kernelName === 'Pow') {
     const config = inputAndArgs as PowNode<D, R>['inputAndArgs'];
-    return backend.pow(config.inputs.a, config.inputs.b) as O;
+    return backend.pow(config.inputs.base, config.inputs.exp) as O;
   } else if (kernelName === 'Exp') {
     const config = inputAndArgs as UnaryNode<D, R>['inputAndArgs'];
     return backend.exp(config.inputs.x) as O;

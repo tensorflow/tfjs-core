@@ -18,8 +18,8 @@
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import {NamedArrayMap} from '../../util';
-import {DataType, NDArray, Rank, Scalar, Variable} from '../ndarray';
-
+import {NDArray, Scalar, Variable} from '../ndarray';
+import {DataType, Rank, RankMap} from '../types';
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
@@ -100,7 +100,7 @@ export class BackendEngine {
         gradients: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
             TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name: string): NDArray<D, R> {
+      inputs: NamedArrayMap, name: string): RankMap<D>[R] {
     this.customGradientDepth++;
 
     let gradientsFunc: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
@@ -127,7 +127,7 @@ export class BackendEngine {
       this.activeTape.push(evaluatedNode);
     }
 
-    return result;
+    return result as RankMap<D>[R];
   }
 
   gradients(f: () => Scalar, xs: NDArray[], returnValue: boolean): NDArray[]|
