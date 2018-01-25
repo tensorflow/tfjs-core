@@ -37,61 +37,26 @@ export interface DataTypeMap {
   bool: Uint8Array;
 }
 export type DataType = keyof DataTypeMap;
+export type DataVal = DataTypeMap[DataType];
 
 export type Rank = '0'|'1'|'2'|'3'|'4'|'higher';
 
-export interface SumTypes {
-  float32: 'float32';
-  int32: 'int32';
-  bool: 'int32';
-}
-
-export enum SumTypesMap {
+enum UpcastInt32AndMap {
   float32 = 'float32',
   int32 = 'int32',
   bool = 'int32'
 }
 
-export interface UpcastInt32And {
-  float32: 'float32';
-  int32: 'int32';
-  bool: 'int32';
-}
-
-export enum UpcastInt32AndMap {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'int32'
-}
-
-export interface UpcastBoolAnd {
-  float32: 'float32';
-  int32: 'int32';
-  bool: 'bool';
-}
-
-export enum UpcastBoolAndMap {
+enum UpcastBoolAndMap {
   float32 = 'float32',
   int32 = 'int32',
   bool = 'bool'
 }
 
-export interface UpcastFloat32And {
-  float32: 'float32';
-  int32: 'float32';
-  bool: 'float32';
-}
-
-export enum UpcastFloat32AndMap {
+enum UpcastFloat32AndMap {
   float32 = 'float32',
   int32 = 'float32',
   bool = 'float32'
-}
-
-export interface UpcastType {
-  float32: UpcastFloat32And;
-  int32: UpcastInt32And;
-  bool: UpcastBoolAnd;
 }
 
 const upcastTypeMap = {

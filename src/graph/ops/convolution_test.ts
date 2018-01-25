@@ -109,7 +109,7 @@ describe('Convolution', () => {
 
     const weights = NDArray.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = NDArray.randNormal([outputDepth]);
-    const x = NDArray.randNormal<'float32', '3'>([5, 5, inputDepth]);
+    const x = NDArray.randNormal<'3'>([5, 5, inputDepth]);
 
     wTensor = new Tensor(weights.shape);
     xTensor = new Tensor(x.shape);
@@ -139,7 +139,7 @@ describe('Convolution', () => {
 
     const weights = NDArray.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = NDArray.randNormal([outputDepth]);
-    const x = NDArray.randNormal<'float32', '3'>([5, 5, inputDepth]);
+    const x = NDArray.randNormal<'3'>([5, 5, inputDepth]);
 
     wTensor = new Tensor(weights.shape);
     xTensor = new Tensor(x.shape);
@@ -170,7 +170,7 @@ describe('Convolution', () => {
 
     const weights = NDArray.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = NDArray.randNormal([outputDepth]);
-    const x = NDArray.randNormal<'float32', '3'>([30, 30, inputDepth]);
+    const x = NDArray.randNormal<'3'>([30, 30, inputDepth]);
 
     wTensor = new Tensor(weights.shape);
     xTensor = new Tensor(x.shape);
@@ -203,7 +203,7 @@ describe('Convolution', () => {
     const stride = 1;
     const zeroPad = 0;
 
-    const x3d = NDArray.randNormal<'float32', '3'>([3, 3, inputDepth]);
+    const x3d = NDArray.randNormal<'3'>([3, 3, inputDepth]);
     const x = x3d.as2D(3, 3);
     const weights = NDArray.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = NDArray.randNormal([outputDepth]);
@@ -315,7 +315,7 @@ describe('Convolution', () => {
 
     const weights = NDArray.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = NDArray.randNormal([outputDepth]);
-    const x = NDArray.randNormal<'float32', '3'>([10, 10, inputDepth]);
+    const x = NDArray.randNormal<'3'>([10, 10, inputDepth]);
 
     wTensor = new Tensor(weights.shape);
     xTensor = new Tensor(x.shape);

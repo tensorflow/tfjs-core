@@ -65,8 +65,8 @@ const commonTests: MathTests = it => {
   });
 
   it('A x B^t shapes do not match', math => {
-    const a = NDArray.zeros<'float32', '2'>([2, 3]);
-    const b = NDArray.zeros<'float32', '2'>([3, 2]);
+    const a = NDArray.zeros<'2'>([2, 3]);
+    const b = NDArray.zeros<'2'>([3, 2]);
 
     const f = () => {
       math.matMul(
@@ -76,8 +76,8 @@ const commonTests: MathTests = it => {
   });
 
   it('A^t x B shapes do not match', math => {
-    const a = NDArray.zeros<'float32', '2'>([2, 3]);
-    const b = NDArray.zeros<'float32', '2'>([3, 2]);
+    const a = NDArray.zeros<'2'>([2, 3]);
+    const b = NDArray.zeros<'2'>([3, 2]);
 
     const f = () => {
       math.matMul(
@@ -87,8 +87,8 @@ const commonTests: MathTests = it => {
   });
 
   it('A^t x B^t shapes do not match', math => {
-    const a = NDArray.zeros<'float32', '2'>([3, 2]);
-    const b = NDArray.zeros<'float32', '2'>([3, 2]);
+    const a = NDArray.zeros<'2'>([3, 2]);
+    const b = NDArray.zeros<'2'>([3, 2]);
 
     const f = () => {
       math.matMul(
@@ -270,11 +270,11 @@ const gpuTests: MathTests = it => {
   it('Matrix times vector, large matrix', math => {
     const maxTexSize = 16000;
     const sharedDim = maxTexSize + 4;
-    const matrix = NDArray.zeros<'float32', '2'>([2, sharedDim]);
+    const matrix = NDArray.zeros<'2'>([2, sharedDim]);
     matrix.set(1, 0, sharedDim - 3);
     matrix.set(1, 0, sharedDim - 2);
 
-    const v = NDArray.zeros<'float32', '1'>([sharedDim]);
+    const v = NDArray.zeros<'1'>([sharedDim]);
     v.set(1, sharedDim - 3);
     v.set(1, sharedDim - 2);
 

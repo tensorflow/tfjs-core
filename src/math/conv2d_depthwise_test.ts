@@ -147,8 +147,8 @@ import {Array4D, NDArray} from './ndarray';
       const chMul = 3;
       const inDepth = 2;
 
-      const x = NDArray.zeros<'float32', '3'>([3, 3, inDepth]);
-      const w = NDArray.zeros<'float32', '4'>([fSize, fSize, inDepth, chMul]);
+      const x = NDArray.zeros<'3'>([3, 3, inDepth]);
+      const w = NDArray.zeros<'4'>([fSize, fSize, inDepth, chMul]);
       const result = math.depthwiseConv2D(x, w, stride, pad);
       expect(result.shape).toEqual([3, 3, inDepth * chMul]);
     });

@@ -36,10 +36,10 @@ export class Ops {
    * @param offset An offset NDArray.
    */
   @operation
-  static batchNormalization2D<D extends DataType>(
-      x: Array2D<D>, mean: Array2D<D>|Array1D<D>,
-      variance: Array2D<D>|Array1D<D>, varianceEpsilon = .001,
-      scale?: Array2D|Array1D, offset?: Array2D<D>|Array1D<D>): Array2D<D> {
+  static batchNormalization2D(
+      x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
+      varianceEpsilon = .001, scale?: Array2D|Array1D,
+      offset?: Array2D|Array1D): Array2D {
     util.assert(
         x.rank === 2,
         `Error in batchNormalization3D: x must be rank 3 but got rank ` +
@@ -68,7 +68,7 @@ export class Ops {
     return ENV.engine.executeKernel('BatchNorm2D', {
       inputs: {x, mean, variance, scale, offset},
       args: {varianceEpsilon}
-    }) as Array2D<D>;
+    }) as Array2D;
   }
 
   /**
@@ -84,11 +84,10 @@ export class Ops {
    * @param offset An offset NDArray.
    */
   @operation
-  static batchNormalization3D<D extends DataType>(
-      x: Array3D<D>, mean: Array3D<D>|Array1D<D>,
-      variance: Array3D<D>|Array1D<D>, varianceEpsilon = .001,
-      scale?: Array3D<D>|Array1D<D>,
-      offset?: Array3D<D>|Array1D<D>): Array3D<D> {
+  static batchNormalization3D(
+      x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
+      varianceEpsilon = .001, scale?: Array3D|Array1D,
+      offset?: Array3D|Array1D): Array3D {
     util.assert(
         x.rank === 3,
         `Error in batchNormalization3D: x must be rank 3 but got rank ` +
@@ -117,7 +116,7 @@ export class Ops {
     return ENV.engine.executeKernel('BatchNorm3D', {
       inputs: {x, mean, variance, scale, offset},
       args: {varianceEpsilon}
-    }) as Array3D<D>;
+    }) as Array3D;
   }
 
   /**
@@ -133,11 +132,10 @@ export class Ops {
    * @param offset An offset NDArray.
    */
   @operation
-  static batchNormalization4D<D extends DataType>(
-      x: Array4D<D>, mean: Array4D<D>|Array1D<D>,
-      variance: Array4D<D>|Array1D<D>, varianceEpsilon = .001,
-      scale?: Array4D<D>|Array1D<D>,
-      offset?: Array4D<D>|Array1D<D>): Array4D<D> {
+  static batchNormalization4D(
+      x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
+      varianceEpsilon = .001, scale?: Array4D|Array1D,
+      offset?: Array4D|Array1D): Array4D {
     util.assert(
         x.rank === 4,
         `Error in batchNormalization4D: x must be rank 4 but got rank ` +
@@ -166,36 +164,35 @@ export class Ops {
     return ENV.engine.executeKernel('BatchNorm4D', {
       inputs: {x, mean, variance, scale, offset},
       args: {varianceEpsilon}
-    }) as Array4D<D>;
+    }) as Array4D;
   }
 
-  static batchNormalization<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, mean: NDArray<D, R>|Array1D,
-      variance: NDArray<D, R>|Array1D, varianceEpsilon = .001,
-      scale?: NDArray<D, R>|Array1D,
-      offset?: NDArray<D, R>|Array1D): NDArray<D, R> {
+  static batchNormalization<R extends Rank>(
+      x: NDArray<R>, mean: NDArray<R>|Array1D, variance: NDArray<R>|Array1D,
+      varianceEpsilon = .001, scale?: NDArray<R>|Array1D,
+      offset?: NDArray<R>|Array1D): NDArray<R> {
     if (x.rank === 0) {
       throw new Error(`Batchnorm for scalar is not supported`);
     } else if (x.rank === 1) {
       throw new Error(`Batchnorm for rank 1 is not yet implemented`);
     } else if (x.rank === 2) {
       return Ops.batchNormalization2D(
-                 x as Array2D<D>, mean as Array2D<D>| Array1D<D>,
-                 variance as Array2D<D>| Array1D<D>, varianceEpsilon,
-                 scale as Array2D<D>| Array1D<D>,
-                 offset as Array2D<D>| Array1D<D>) as NDArray<D, R>;
+                 x as Array2D, mean as Array2D | Array1D,
+                 variance as Array2D | Array1D, varianceEpsilon,
+                 scale as Array2D | Array1D, offset as Array2D | Array1D) as
+          NDArray<R>;
     } else if (x.rank === 3) {
       return Ops.batchNormalization3D(
-                 x as Array3D<D>, mean as Array3D<D>| Array1D<D>,
-                 variance as Array3D<D>| Array1D<D>, varianceEpsilon,
-                 scale as Array3D<D>| Array1D<D>,
-                 offset as Array3D<D>| Array1D<D>) as NDArray<D, R>;
+                 x as Array3D, mean as Array3D | Array1D,
+                 variance as Array3D | Array1D, varianceEpsilon,
+                 scale as Array3D | Array1D, offset as Array3D | Array1D) as
+          NDArray<R>;
     } else if (x.rank === 4) {
       return Ops.batchNormalization4D(
-                 x as Array4D<D>, mean as Array4D<D>| Array1D<D>,
-                 variance as Array4D<D>| Array1D<D>, varianceEpsilon,
-                 scale as Array4D<D>| Array1D<D>,
-                 offset as Array4D<D>| Array1D<D>) as NDArray<D, R>;
+                 x as Array4D, mean as Array4D | Array1D,
+                 variance as Array4D | Array1D, varianceEpsilon,
+                 scale as Array4D | Array1D, offset as Array4D | Array1D) as
+          NDArray<R>;
     } else {
       throw new Error(`Batchnorm for rank ${x.rank} is not yet implemented`);
     }

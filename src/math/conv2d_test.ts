@@ -133,8 +133,8 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
       const stride = 1;
 
       const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w = NDArray.randNormal<'float32', '4'>(
-          [fSize, fSize, wrongInputDepth, outputDepth]);
+      const w =
+          NDArray.randNormal<'4'>([fSize, fSize, wrongInputDepth, outputDepth]);
       const bias = Array1D.new([-1]);
 
       expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();
@@ -150,8 +150,8 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
       const dimRoundingMode = 'round';
 
       const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w = NDArray.randNormal<'float32', '4'>(
-          [fSize, fSize, inputDepth, outputDepth]);
+      const w =
+          NDArray.randNormal<'4'>([fSize, fSize, inputDepth, outputDepth]);
       const bias = Array1D.new([-1]);
 
       expect(() => math.conv2d(x, w, bias, stride, pad, dimRoundingMode))
@@ -168,7 +168,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
 
       const filterShape: [number, number, number, number] =
           [filterSize, filterSize, inputDepth, outputDepth];
-      const filter = NDArray.ones<'float32', '4'>(filterShape);
+      const filter = NDArray.ones<'4'>(filterShape);
       const bias = Array1D.new([-1]);
 
       const x = Array3D.new(inputShape, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -200,7 +200,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
 
       const filterShape: [number, number, number, number] =
           [filterSize, filterSize, inputDepth, outputDepth];
-      const filter = NDArray.ones<'float32', '4'>(filterShape);
+      const filter = NDArray.ones<'4'>(filterShape);
 
       const bias = Array1D.new([-1]);
 

@@ -287,9 +287,9 @@ import {Array1D, Array2D, Array3D, NDArray, Scalar} from './ndarray';
       const a = Array2D.new([2, 3], [1, 2, -3, -4, 5, 6], 'float32');
       const b = Array2D.new([2, 2], [5, 3, 4, -7], 'int32');
 
-      expect(() => math.multiplyStrict(a, b as Array2D as Array2D<'float32'>))
+      expect(() => math.multiplyStrict(a, b as Array2D as Array2D))
           .toThrowError();
-      expect(() => math.multiplyStrict(b, a as Array2D as Array2D<'int32'>))
+      expect(() => math.multiplyStrict(b, a as Array2D as Array2D))
           .toThrowError();
     });
 

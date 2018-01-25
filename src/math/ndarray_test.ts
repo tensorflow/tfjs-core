@@ -81,7 +81,7 @@ const tests: MathTests = it => {
     test_util.expectNumbersClose(t4Like.get(0, 0, 0, 1), 2);
 
     // NDArray of ones.
-    const x = dl.ones<'float32', '3'>([3, 4, 2]);
+    const x = dl.ones<'3'>([3, 4, 2]);
     expect(x.rank).toBe(3);
     expect(x.size).toBe(24);
     for (let i = 0; i < 3; i++) {
@@ -93,7 +93,7 @@ const tests: MathTests = it => {
     }
 
     // NDArray of zeros.
-    const z = dl.zeros<'float32', '3'>([3, 4, 2]);
+    const z = dl.zeros<'3'>([3, 4, 2]);
     expect(z.rank).toBe(3);
     expect(z.size).toBe(24);
     for (let i = 0; i < 3; i++) {
@@ -140,7 +140,7 @@ const tests: MathTests = it => {
     const a = Scalar.new(0);
     expect(a.indexToLoc(0)).toEqual([]);
 
-    const b = dl.zeros<'float32', '0'>([]);
+    const b = dl.zeros<'0'>([]);
     expect(b.indexToLoc(0)).toEqual([]);
   });
 
@@ -150,7 +150,7 @@ const tests: MathTests = it => {
     expect(a.indexToLoc(1)).toEqual([1]);
     expect(a.indexToLoc(2)).toEqual([2]);
 
-    const b = dl.zeros<'float32', '1'>([3]);
+    const b = dl.zeros<'1'>([3]);
     expect(b.indexToLoc(0)).toEqual([0]);
     expect(b.indexToLoc(1)).toEqual([1]);
     expect(b.indexToLoc(2)).toEqual([2]);
@@ -165,7 +165,7 @@ const tests: MathTests = it => {
     expect(a.indexToLoc(4)).toEqual([2, 0]);
     expect(a.indexToLoc(5)).toEqual([2, 1]);
 
-    const b = dl.zeros<'float32', '2'>([3, 2]);
+    const b = dl.zeros<'2'>([3, 2]);
     expect(b.indexToLoc(0)).toEqual([0, 0]);
     expect(b.indexToLoc(1)).toEqual([0, 1]);
     expect(b.indexToLoc(2)).toEqual([1, 0]);
@@ -184,7 +184,7 @@ const tests: MathTests = it => {
     expect(a.indexToLoc(5)).toEqual([1, 0, 1]);
     expect(a.indexToLoc(11)).toEqual([2, 1, 1]);
 
-    const b = dl.zeros<'float32', '3'>([3, 2, 2]);
+    const b = dl.zeros<'3'>([3, 2, 2]);
     expect(b.indexToLoc(0)).toEqual([0, 0, 0]);
     expect(b.indexToLoc(1)).toEqual([0, 0, 1]);
     expect(b.indexToLoc(2)).toEqual([0, 1, 0]);
@@ -207,24 +207,24 @@ const tests: MathTests = it => {
     const a = Scalar.new(0);
     expect(a.locToIndex([])).toEqual(0);
 
-    const b = dl.zeros<'float32', '0'>([]);
+    const b = dl.zeros<'0'>([]);
     expect(b.locToIndex([])).toEqual(0);
   });
 
   it('locToIndex Array1D', () => {
-    const a = dl.zeros<'float32', '1'>([3]);
+    const a = dl.zeros<'1'>([3]);
     expect(a.locToIndex([0])).toEqual(0);
     expect(a.locToIndex([1])).toEqual(1);
     expect(a.locToIndex([2])).toEqual(2);
 
-    const b = dl.zeros<'float32', '1'>([3]);
+    const b = dl.zeros<'1'>([3]);
     expect(b.locToIndex([0])).toEqual(0);
     expect(b.locToIndex([1])).toEqual(1);
     expect(b.locToIndex([2])).toEqual(2);
   });
 
   it('locToIndex Array2D', () => {
-    const a = dl.zeros<'float32', '2'>([3, 2]);
+    const a = dl.zeros<'2'>([3, 2]);
     expect(a.locToIndex([0, 0])).toEqual(0);
     expect(a.locToIndex([0, 1])).toEqual(1);
     expect(a.locToIndex([1, 0])).toEqual(2);
@@ -232,7 +232,7 @@ const tests: MathTests = it => {
     expect(a.locToIndex([2, 0])).toEqual(4);
     expect(a.locToIndex([2, 1])).toEqual(5);
 
-    const b = dl.zeros<'float32', '2'>([3, 2]);
+    const b = dl.zeros<'2'>([3, 2]);
     expect(b.locToIndex([0, 0])).toEqual(0);
     expect(b.locToIndex([0, 1])).toEqual(1);
     expect(b.locToIndex([1, 0])).toEqual(2);
@@ -242,7 +242,7 @@ const tests: MathTests = it => {
   });
 
   it('locToIndex Array3D', () => {
-    const a = dl.zeros<'float32', '3'>([3, 2, 2]);
+    const a = dl.zeros<'3'>([3, 2, 2]);
     expect(a.locToIndex([0, 0, 0])).toEqual(0);
     expect(a.locToIndex([0, 0, 1])).toEqual(1);
     expect(a.locToIndex([0, 1, 0])).toEqual(2);
@@ -251,7 +251,7 @@ const tests: MathTests = it => {
     expect(a.locToIndex([1, 0, 1])).toEqual(5);
     expect(a.locToIndex([2, 1, 1])).toEqual(11);
 
-    const b = dl.zeros<'float32', '3'>([3, 2, 2]);
+    const b = dl.zeros<'3'>([3, 2, 2]);
     expect(b.locToIndex([0, 0, 0])).toEqual(0);
     expect(b.locToIndex([0, 0, 1])).toEqual(1);
     expect(b.locToIndex([0, 1, 0])).toEqual(2);
@@ -261,26 +261,26 @@ const tests: MathTests = it => {
     expect(b.locToIndex([2, 1, 1])).toEqual(11);
   });
 
-  it('NDArray<D, X> is assignable to Scalar/ArrayXD', math => {
+  it('NDArray<math>', () => {
     // This test asserts compilation, not doing any run-time assertion.
-    const a: NDArray<'float32', '0'> = null;
-    const b: Scalar<'float32'> = a;
+    const a: NDArray<'0'> = null;
+    const b: Scalar = a;
     expect(b).toBeNull();
 
-    const a1: NDArray<'float32', '1'> = null;
-    const b1: Array1D<'float32'> = a1;
+    const a1: NDArray<'1'> = null;
+    const b1: Array1D = a1;
     expect(b1).toBeNull();
 
-    const a2: NDArray<'float32', '2'> = null;
-    const b2: Array2D<'float32'> = a2;
+    const a2: NDArray<'2'> = null;
+    const b2: Array2D = a2;
     expect(b2).toBeNull();
 
-    const a3: NDArray<'float32', '3'> = null;
-    const b3: Array3D<'float32'> = a3;
+    const a3: NDArray<'3'> = null;
+    const b3: Array3D = a3;
     expect(b3).toBeNull();
 
-    const a4: NDArray<'float32', '4'> = null;
-    const b4: Array4D<'float32'> = a4;
+    const a4: NDArray<'4'> = null;
+    const b4: Array4D = a4;
     expect(b4).toBeNull();
   });
 };
@@ -331,7 +331,7 @@ const testsNew: MathTests = it => {
 };
 const testsFill: MathTests = it => {
   it('1D fill', () => {
-    const a = dl.zeros<'float32', '1'>([3]);
+    const a = dl.zeros<'1'>([3]);
     a.fill(2);
 
     expect(a.dtype).toBe('float32');
@@ -340,7 +340,7 @@ const testsFill: MathTests = it => {
   });
 
   it('2D fill', () => {
-    const a = dl.zeros<'float32', '1'>([3, 2]);
+    const a = dl.zeros<'1'>([3, 2]);
     a.fill(2);
 
     expect(a.dtype).toBe('float32');
@@ -349,7 +349,7 @@ const testsFill: MathTests = it => {
   });
 
   it('3D fill', () => {
-    const a = dl.zeros<'float32', '1'>([3, 2, 1]);
+    const a = dl.zeros<'1'>([3, 2, 1]);
     a.fill(2);
 
     expect(a.dtype).toBe('float32');
@@ -358,7 +358,7 @@ const testsFill: MathTests = it => {
   });
 
   it('4D fill', () => {
-    const a = dl.zeros<'float32', '1'>([3, 2, 1, 2]);
+    const a = dl.zeros<'1'>([3, 2, 1, 2]);
     a.fill(2);
 
     expect(a.dtype).toBe('float32');

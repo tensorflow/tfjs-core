@@ -56,12 +56,10 @@ export class BackendEngine {
     this.debugMode = true;
   }
 
-  executeKernel<D extends DataType, R extends Rank, K extends
-                    keyof KernelConfigRegistry<D, R>,
-                    C extends KernelConfigRegistry<D, R>[K]['inputAndArgs']>(
-      kernelName: K, config: C,
-      grad?: KernelConfigRegistry<D, R>[K]['gradient']):
-      KernelConfigRegistry<D, R>[K]['output'] {
+  executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, C
+                    extends KernelConfigRegistry<R>[K]['inputAndArgs']>(
+      kernelName: K, config: C, grad?: KernelConfigRegistry<R>[K]['gradient']):
+      KernelConfigRegistry<R>[K]['output'] {
     let start: number;
     if (this.debugMode) {
       start = performance.now();
@@ -99,16 +97,16 @@ export class BackendEngine {
     return result;
   }
 
-  customGradient<D extends DataType, R extends Rank>(
+  customGradient<R extends Rank>(
       f: () => {
-        value: NDArray<D, R>,
-        gradients: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
-            TapeNodeInputGradientArrays
+        value: NDArray<R>,
+        gradients:
+            (dy: NDArray<R>, y: NDArray<R>) => TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name: string): NDArray<D, R> {
+      inputs: NamedArrayMap, name: string): NDArray<R> {
     this.customGradientDepth++;
 
-    let gradientsFunc: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
+    let gradientsFunc: (dy: NDArray<R>, y: NDArray<R>) =>
         TapeNodeInputGradientArrays;
     const gradientsMode = true;
     const result = this.scope('customGradient', () => {
@@ -120,7 +118,7 @@ export class BackendEngine {
     this.customGradientDepth--;
 
     if (this.activeTape != null && this.customGradientDepth === 0) {
-      const evaluatedNode: TapeNode<NDArray<D, R>> = {
+      const evaluatedNode: TapeNode<NDArray<R>> = {
         id: this.nextTapeNodeId++,
         type: 'customGradient',
         name,
@@ -132,7 +130,7 @@ export class BackendEngine {
       this.activeTape.push(evaluatedNode);
     }
 
-    return result as NDArray<D, R>;
+    return result as NDArray<R>;
   }
 
   gradients(f: () => Scalar, xs: NDArray[], returnValue: boolean): NDArray[]|
@@ -160,8 +158,8 @@ export class BackendEngine {
     }
   }
 
-  vjp<D extends DataType, R extends Rank, T extends NDArray<D, R>>(
-      f: () => T, xs: NDArray[], dy: NDArray<'float32', R>): NDArray[] {
+  vjp<R extends Rank, T extends NDArray<R>>(
+      f: () => T, xs: NDArray[], dy: NDArray<R>): NDArray[] {
     const gradientsMode = true;
     return this.scope('vjp', () => {
       const y = f();
@@ -174,9 +172,8 @@ export class BackendEngine {
     }, gradientsMode);
   }
 
-  variableGradientsAndValue<D extends DataType>(
-      f: () => Scalar<D>,
-      varList: Variable[]): {value: Scalar<D>, gradients: NamedArrayMap} {
+  variableGradientsAndValue(f: () => Scalar, varList: Variable[]):
+      {value: Scalar, gradients: NamedArrayMap} {
     const gradientsMode = true;
     let variableNames: string[];
     const result = this.scope('gradients', () => {
@@ -202,11 +199,11 @@ export class BackendEngine {
       gradients[variableNames[i]] = result[i + 1];
     }
 
-    return {value: result[0] as Scalar<D>, gradients};
+    return {value: result[0] as Scalar, gradients};
   }
 
-  private gradientWrt<D extends DataType, R extends Rank>(
-      y: NDArray<D, R>, xs: NDArray[], dy?: NDArray<'float32', R>): NDArray[] {
+  private gradientWrt<R extends Rank>(
+      y: NDArray<R>, xs: NDArray[], dy?: NDArray<'float32', R>): NDArray[] {
     // Filter out the nodes that don't connect x => y.
     const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {
@@ -216,8 +213,7 @@ export class BackendEngine {
           `to are used inside the gradient function.`);
     }
 
-    const arrayAccumulatedGradientMap:
-        {[ndarrayId: number]: NDArray<'float32'>} = {};
+    const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
     arrayAccumulatedGradientMap[y.id] =
         dy == null ? Scalar.new(1, 'float32') : dy;
 
@@ -245,8 +241,7 @@ export class BackendEngine {
   scope<T extends ScopeResult>(
       name: string,
       scopeFn:
-          (keep:
-               <D1 extends DataType, T1 extends NDArray<D1>>(ndarray: T1) => T1,
+          (keep: <T1 extends NDArray<D1>>(ndarray: T1) => T1,
            track: <D2 extends DataType, T2 extends NDArray<D2>>(ndarray: T2) =>
                T2) => T,
       gradientsMode: boolean): T {
@@ -352,7 +347,7 @@ export class BackendEngine {
    *
    * @param result The NDArray to track in the current scope.
    */
-  track<D extends DataType, T extends NDArray<D>>(result: T): T {
+  track<T extends NDArray>(result: T): T {
     if (this.scopeStack.length === 1) {
       if (this.safeMode) {
         throw new Error(

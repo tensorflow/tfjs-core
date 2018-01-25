@@ -32,14 +32,14 @@ export interface TapeNode<T extends TapeNodeOutput> {
 
   output: T;
   gradient:
-      (dy: NDArray<'float32'>|NamedArrayMap<'float32'>,
+      (dy: NDArray|NamedArrayMap<'float32'>,
        y: T) => TapeNodeInputGradientArrays;
 }
 
 export interface TapeNodeInputConfig { inputs: NamedArrayMap; }
 
 export type TapeNodeInputGradientArrays = {
-  [inputName: string]: () => NDArray<'float32'>;
+  [inputName: string]: () => NDArray;
 };
 
 // Kernel nodes

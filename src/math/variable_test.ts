@@ -57,7 +57,7 @@ const tests: MathTests = it => {
   });
 
   it('variables are not affected by scopes', math => {
-    let v: Variable<'float32', '1'>;
+    let v: Variable<'1'>;
     expect(math.getNumArrays()).toBe(0);
 
     math.scope(() => {
@@ -77,33 +77,33 @@ const tests: MathTests = it => {
 
   it('variables are assignable to ndarrays', () => {
     // This test asserts compilation, not doing any run-time assertion.
-    const x0: Variable<'float32', '0'> = null;
-    const y0: Scalar<'float32'> = x0;
+    const x0: Variable<'0'> = null;
+    const y0: Scalar = x0;
     expect(y0).toBeNull();
 
-    const x1: Variable<'float32', '1'> = null;
-    const y1: Array1D<'float32'> = x1;
+    const x1: Variable<'1'> = null;
+    const y1: Array1D = x1;
     expect(y1).toBeNull();
 
-    const x2: Variable<'float32', '2'> = null;
-    const y2: Array2D<'float32'> = x2;
+    const x2: Variable<'2'> = null;
+    const y2: Array2D = x2;
     expect(y2).toBeNull();
 
-    const x3: Variable<'float32', '3'> = null;
-    const y3: Array3D<'float32'> = x3;
+    const x3: Variable<'3'> = null;
+    const y3: Array3D = x3;
     expect(y3).toBeNull();
 
-    const x4: Variable<'float32', '4'> = null;
-    const y4: Array4D<'float32'> = x4;
+    const x4: Variable<'4'> = null;
+    const y4: Array4D = x4;
     expect(y4).toBeNull();
 
-    const xh: Variable<'float32', 'higher'> = null;
-    const yh: NDArray<'float32'> = xh;
+    const xh: Variable<'higher'> = null;
+    const yh: NDArray = xh;
     expect(yh).toBeNull();
   });
 
   it('assign will dispose old data', math => {
-    let v: Variable<'float32', '1'>;
+    let v: Variable<'1'>;
     v = variable(Array1D.new([1, 2, 3]));
     expect(math.getNumArrays()).toBe(1);
     test_util.expectArraysClose(v, [1, 2, 3]);

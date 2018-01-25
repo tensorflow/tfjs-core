@@ -434,7 +434,7 @@ import * as tape_util from './tape_util';
       const dy = Scalar.new(1);
 
       const accumulatedGradientsMap:
-          {[ndarrayId: number]: NDArray<'float32'>} = {};
+          {[ndarrayId: number]: NDArray} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [{
@@ -460,7 +460,7 @@ import * as tape_util from './tape_util';
       const dy = Scalar.new(1);
 
       const accumulatedGradientsMap:
-          {[ndarrayId: number]: NDArray<'float32'>} = {};
+          {[ndarrayId: number]: NDArray} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [{
@@ -471,7 +471,7 @@ import * as tape_util from './tape_util';
           inputs: {x},
         },
         output: y,
-        gradient: (dy: Scalar<'float32'>, y: Scalar) => {
+        gradient: (dy: Scalar, y: Scalar) => {
           return {x: () => math.add(dy, Scalar.new(1))};
         }
       }];
@@ -489,7 +489,7 @@ import * as tape_util from './tape_util';
       const dy = Scalar.new(1);
 
       const accumulatedGradientsMap:
-          {[ndarrayId: number]: NDArray<'float32'>} = {};
+          {[ndarrayId: number]: NDArray} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [
@@ -501,7 +501,7 @@ import * as tape_util from './tape_util';
             inputs: {x},
           },
           output: intermediate,
-          gradient: (dy: Scalar<'float32'>, y: Scalar) => {
+          gradient: (dy: Scalar, y: Scalar) => {
             return {x: () => math.add(dy, Scalar.new(1))};
           }
         },
@@ -513,7 +513,7 @@ import * as tape_util from './tape_util';
             inputs: {intermediate},
           },
           output: y,
-          gradient: (dy: Scalar<'float32'>, y: Scalar) => {
+          gradient: (dy: Scalar, y: Scalar) => {
             return {intermediate: () => math.add(dy, Scalar.new(1))};
           }
         }
@@ -534,7 +534,7 @@ import * as tape_util from './tape_util';
       const dy = Scalar.new(1);
 
       const accumulatedGradientsMap:
-          {[ndarrayId: number]: NDArray<'float32'>} = {};
+          {[ndarrayId: number]: NDArray} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [
@@ -546,7 +546,7 @@ import * as tape_util from './tape_util';
             inputs: {x},
           },
           output: intermediate1,
-          gradient: (dy: Scalar<'float32'>, y: Scalar) => {
+          gradient: (dy: Scalar, y: Scalar) => {
             return {x: () => math.add(dy, Scalar.new(1))};
           }
         },
@@ -558,7 +558,7 @@ import * as tape_util from './tape_util';
             inputs: {x},
           },
           output: intermediate2,
-          gradient: (dy: Scalar<'float32'>, y: Scalar) => {
+          gradient: (dy: Scalar, y: Scalar) => {
             return {x: () => math.add(dy, Scalar.new(1))};
           }
         },
@@ -570,7 +570,7 @@ import * as tape_util from './tape_util';
             inputs: {intermediate1, intermediate2},
           },
           output: y,
-          gradient: (dy: Scalar<'float32'>, y: Scalar) => {
+          gradient: (dy: Scalar, y: Scalar) => {
             return {
               intermediate1: () => math.add(dy, Scalar.new(1)),
               intermediate2: () => math.add(dy, Scalar.new(1))
@@ -596,7 +596,7 @@ import * as tape_util from './tape_util';
          const dy = Scalar.new(1);
 
          const accumulatedGradientsMap:
-             {[ndarrayId: number]: NDArray<'float32'>} = {};
+             {[ndarrayId: number]: NDArray} = {};
          accumulatedGradientsMap[y.id] = dy;
 
          const tape: Array<TapeNode<TapeNodeOutput>> = [
@@ -623,7 +623,7 @@ import * as tape_util from './tape_util';
                inputs: {intermediate1, intermediate2},
              },
              output: y,
-             gradient: (dy: Scalar<'float32'>, y: Scalar) => {
+             gradient: (dy: Scalar, y: Scalar) => {
                return {
                  intermediate1: () => math.add(dy, Scalar.new(2)),
                  intermediate2: () => math.add(dy, Scalar.new(3))

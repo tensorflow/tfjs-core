@@ -65,13 +65,13 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
     });
 
     it('returns a ndarray of slice size', math => {
-      const a = NDArray.zeros<'float32', '2'>([100, 100]);
+      const a = NDArray.zeros<'2'>([100, 100]);
       const b = math.slice2D(a, [0, 0], [12, 34]);
       expect(b.shape).toEqual([12, 34]);
     });
 
     it('returns the upper-left submatrix when begin is [0, 0]', math => {
-      const a = NDArray.randUniform<'float32', '2'>([10, 10], -1, 1);
+      const a = NDArray.randUniform<'2'>([10, 10], -1, 1);
       const b = math.slice2D(a, [0, 0], [2, 2]);
       const aValues = a.dataSync();
 

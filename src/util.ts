@@ -23,8 +23,8 @@ export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
 export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
 
-export type NamedArrayMap<D extends DataType = DataType> = {
-  [name: string]: NDArray<D>
+export type NamedArrayMap = {
+  [name: string]: NDArray
 };
 
 export type NamedVariableMap = {
@@ -332,8 +332,7 @@ export function squeezeShape(shape: number[], axis?: number[]):
   return {newShape, keptDims};
 }
 
-export function getTypedArrayFromDType<D extends DataType>(
-    dtype: D, size: number): DataTypeMap[D] {
+export function getTypedArrayFromDType(dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
     values = new Float32Array(size);
@@ -419,7 +418,7 @@ export function nextFrame(): Promise<void> {
   return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 }
 
-export function copyTypedArray<D extends DataType>(
+export function copyTypedArray(
     array: DataTypeMap[D]|number[]|boolean[], dtype: D): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);

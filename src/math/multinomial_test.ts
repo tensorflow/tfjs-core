@@ -58,7 +58,7 @@ const tests: MathTests = it => {
 
   it('Flip a ten-sided coin and check bounds', math => {
     const numOutcomes = 10;
-    const probs = NDArray.zeros<'float32', '1'>([numOutcomes]);
+    const probs = NDArray.zeros<'1'>([numOutcomes]);
     for (let i = 0; i < numOutcomes; ++i) {
       probs.set(1 / numOutcomes, i);
     }
