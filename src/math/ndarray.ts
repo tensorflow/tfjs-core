@@ -597,8 +597,8 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   tanh(): RankMap<D>[R] {
     return ENV.math.tanh(this);
   }
-  step(): RankMap<D>[R] {
-    return ENV.math.step(this);
+  step(alpha = 0.0): RankMap<D>[R] {
+    return ENV.math.step(this, alpha);
   }
 }
 
