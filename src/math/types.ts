@@ -41,6 +41,7 @@ export interface DataTypeMap {
 export type DataType = keyof DataTypeMap;
 export type TypedArray = DataTypeMap[DataType];
 
+// TODO(smilkov): Make this enum.
 export type Rank = '0'|'1'|'2'|'3'|'4'|'higher';
 
 export type FlatVector = boolean[]|number[]|TypedArray;
@@ -82,4 +83,9 @@ const upcastTypeMap = {
 
 export function upcastType(typeA: DataType, typeB: DataType): DataType {
   return upcastTypeMap[typeA][typeB];
+}
+
+/** Returns the output type after summation. */
+export function sumOutType(type: DataType) {
+  return upcastType(type, 'int32');
 }

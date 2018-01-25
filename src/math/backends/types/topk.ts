@@ -25,7 +25,7 @@ export interface TopKValuesNode<
   inputAndArgs: {inputs: {x: T;}; args: {k: number};};
   output: Array1D;
   gradient: (dy: Array1D, y: Array1D) => {
-    x: () => NDArray<R>;
+    x: () => T;
   };
 }
 

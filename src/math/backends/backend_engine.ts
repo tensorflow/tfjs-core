@@ -97,17 +97,15 @@ export class BackendEngine {
     return result;
   }
 
-  customGradient<R extends Rank>(
+  customGradient<R extends Rank, T extends NDArray<R>>(
       f: () => {
-        value: NDArray<R>,
-        gradients:
-            (dy: NDArray<R>, y: NDArray<R>) => TapeNodeInputGradientArrays
+        value: T,
+        gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name: string): NDArray<R> {
+      inputs: NamedArrayMap, name: string): T {
     this.customGradientDepth++;
 
-    let gradientsFunc: (dy: NDArray<R>, y: NDArray<R>) =>
-        TapeNodeInputGradientArrays;
+    let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
     const gradientsMode = true;
     const result = this.scope('customGradient', () => {
       const {value, gradients} = f();
@@ -130,7 +128,7 @@ export class BackendEngine {
       this.activeTape.push(evaluatedNode);
     }
 
-    return result as NDArray<R>;
+    return result;
   }
 
   gradients(f: () => Scalar, xs: NDArray[], returnValue: boolean): NDArray[]|
@@ -158,8 +156,8 @@ export class BackendEngine {
     }
   }
 
-  vjp<R extends Rank, T extends NDArray<R>>(
-      f: () => T, xs: NDArray[], dy: NDArray<R>): NDArray[] {
+  vjp<R extends Rank, T extends NDArray<R>>(f: () => T, xs: NDArray[], dy: T):
+      NDArray[] {
     const gradientsMode = true;
     return this.scope('vjp', () => {
       const y = f();
@@ -202,8 +200,8 @@ export class BackendEngine {
     return {value: result[0] as Scalar, gradients};
   }
 
-  private gradientWrt<R extends Rank>(
-      y: NDArray<R>, xs: NDArray[], dy?: NDArray<R>): NDArray[] {
+  private gradientWrt<R extends Rank, T extends NDArray<R>>(
+      y: T, xs: NDArray[], dy?: T): NDArray[] {
     // Filter out the nodes that don't connect x => y.
     const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {

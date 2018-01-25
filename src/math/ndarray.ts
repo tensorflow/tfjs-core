@@ -17,7 +17,6 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-import * as array_ops from './array_ops';
 import {MatrixOrientation} from './backends/types/matmul';
 import * as ops from './ops';
 import {RandNormalDataTypes} from './rand';
@@ -94,28 +93,28 @@ export class NDArray<R extends Rank = Rank> {
   /** @deprecated Please use dl.ones() */
   static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
       NDArray<R> {
-    return array_ops.Ops.ones(shape, dtype);
+    return ops.ones(shape, dtype);
   }
 
   /** @deprecated Please use dl.zeros() */
   static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
       NDArray<R> {
-    return array_ops.Ops.zeros(shape, dtype);
+    return ops.zeros(shape, dtype);
   }
 
   /** @deprecated Please use dl.onesLike() */
   static onesLike<T extends NDArray>(x: T): T {
-    return array_ops.Ops.onesLike(x);
+    return ops.onesLike(x);
   }
 
   /** @deprecated Please use dl.zerosLike() */
   static zerosLike<T extends NDArray>(x: T): T {
-    return array_ops.Ops.zerosLike(x);
+    return ops.zerosLike(x);
   }
 
   /** @deprecated Please use dl.clone() */
   static like<R extends Rank>(x: NDArray<R>): NDArray<R> {
-    return array_ops.Ops.clone(x);
+    return ops.clone(x);
   }
 
   /**
@@ -131,33 +130,33 @@ export class NDArray<R extends Rank = Rank> {
   static fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels = 3): Array3D {
-    return array_ops.Ops.fromPixels(pixels, numChannels);
+    return ops.fromPixels(pixels, numChannels);
   }
 
   /** @deprecated Please use dl.rand() */
   static rand<D extends DataType, R extends Rank>(
       shape: ShapeMap[R], randFunction: () => number, dtype?: D): NDArray<R> {
-    return array_ops.Ops.rand(shape, randFunction, dtype);
+    return ops.rand(shape, randFunction, dtype);
   }
 
   /** @deprecated Please use dl.randNormal() */
   static randNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
       dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
-    return array_ops.Ops.randNormal(shape, mean, stdDev, dtype, seed);
+    return ops.randNormal(shape, mean, stdDev, dtype, seed);
   }
 
   /** @deprecated Please use dl.randTruncatedNormal() */
   static randTruncatedNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
       dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
-    return array_ops.Ops.randTruncatedNormal(shape, mean, stdDev, dtype, seed);
+    return ops.randTruncatedNormal(shape, mean, stdDev, dtype, seed);
   }
 
   /** @deprecated Please use dl.randUniform() */
   static randUniform<R extends Rank>(
       shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
-    return array_ops.Ops.randUniform(shape, a, b, dtype);
+    return ops.randUniform(shape, a, b, dtype);
   }
 
   /** Reshapes the current ndarray into the provided shape. */

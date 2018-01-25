@@ -43,10 +43,10 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static maxPool<R extends '3'|'4'>(
-      x: NDArray<R>, filterSize: [number, number]|number,
+  static maxPool<R extends '3'|'4', T extends NDArray<R>>(
+      x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -71,9 +71,9 @@ export class Ops {
     const res = ENV.engine.executeKernel(
         'MaxPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
     if (reshapedTo4D) {
-      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray<R>;
+      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
-    return res as NDArray<R>;
+    return res as T;
   }
 
   /**
@@ -96,7 +96,7 @@ export class Ops {
    */
   @operation
   static maxPoolBackprop<R extends Rank, T extends NDArray<R>>(
-      dy: NDArray<R>, input: NDArray<R>, filterSize: [number, number]|number,
+      dy: T, input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     util.assert(
@@ -157,10 +157,10 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static minPool<R extends '3'|'4'>(
-      input: NDArray<R>, filterSize: [number, number]|number,
+  static minPool<R extends '3'|'4', T extends NDArray<R>>(
+      input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -181,9 +181,9 @@ export class Ops {
     const res = ENV.engine.executeKernel(
         'MinPool', {inputs: {x: input4D}, args: {convInfo}});
     if (reshapedTo4D) {
-      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray<R>;
+      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
-    return res as NDArray<R>;
+    return res as T;
   }
 
   /**
@@ -206,10 +206,10 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static avgPool<R extends '3'|'4'>(
-      x: NDArray<R>, filterSize: [number, number]|number,
+  static avgPool<R extends '3'|'4', T extends NDArray<R>>(
+      x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -235,9 +235,9 @@ export class Ops {
     const res = ENV.engine.executeKernel(
         'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
     if (reshapedTo4D) {
-      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as NDArray<R>;
+      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
-    return res as NDArray<R>;
+    return res as T;
   }
 
   /**
@@ -256,7 +256,7 @@ export class Ops {
    */
   @operation
   static avgPoolBackprop<R extends '3'|'4', T extends NDArray<R>>(
-      dy: NDArray<R>, input: NDArray<R>, filterSize: [number, number]|number,
+      dy: T, input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
     util.assert(
         input.rank === dy.rank,
