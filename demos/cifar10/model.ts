@@ -62,8 +62,7 @@ export function inference(
           input, conv1Weights, conv1Biases, [1, 1],
           'same'  // Could be nice as a constant.
       );
-      const relu = math.relu(conv);
-      return relu;
+      return math.relu(conv);
     });
 
     // Pool and Norm
@@ -73,16 +72,8 @@ export function inference(
 
     // Conv2
     const conv2Res = math.scope((keep) => {
-      const conv = math.conv2d(
-          norm,
-          conv2Weights,
-          conv2Biases,
-          [1, 1],
-          'same',
-      );
-
-      const relu = math.relu(conv);
-      return relu;
+      const conv = math.conv2d(norm, conv2Weights, conv2Biases, [1, 1], 'same');
+      return math.relu(conv);
     });
 
     // Norm then pool.
@@ -98,18 +89,14 @@ export function inference(
       const mul = math.matMul(reshaped, local3Weights) as Array2D;
 
       const biased = math.add(mul, local3Biases) as Array2D;
-      const local3 = math.relu(biased);
-
-      return local3;
+      return math.relu(biased);
     });
 
     // Local4
     const local4Res = math.scope((keep) => {
       const mul = math.matMul(local3Res, local4Weights);
       const biased = math.add(mul, local4Biases) as Array2D;
-      const local4 = math.relu(biased);
-
-      return local4;
+      return math.relu(biased);
     });
 
     // Note this doesn't actually apply softmax and the tensorflow
@@ -129,11 +116,7 @@ export function inference(
   const logits = finalRes.reshape([-1, 10]) as Array2D;
   const prediction = math.argMax(finalRes, 1) as Array1D<'int32'>;
   const predictionLabel =
-      Array.from(prediction.getValues()).map(i => labelStrings[i]);
+      Array.from(prediction.dataSync()).map(i => labelStrings[i]);
 
-  return {
-    logits,
-    prediction,
-    predictionLabel,
-  };
+  return {logits, prediction, predictionLabel};
 }

@@ -11,7 +11,7 @@ interface Label {
  *
  * @param limit number of images and labels to return
  */
-export function loadCifarData(limit = 100):
+export async function loadCifarData(limit = 100):
     Promise<{images: NDArray[], labelled: Label[]}> {
   const datasetConfig: XhrDatasetConfig = {
     'data': [
@@ -36,36 +36,28 @@ export function loadCifarData(limit = 100):
       'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse',
       'ship', 'truck'
     ],
-    modelConfigs: undefined,
+    modelConfigs: null,
   };
 
   const dataset = new XhrDataset(datasetConfig);
 
-  return dataset.fetchData().then(() => {
-    let [images, labels] = dataset.getData();
+  await dataset.fetchData();
+  let [images, labels] = dataset.getData();
 
-    images = images.slice(0, limit);
-    labels = labels.slice(0, limit);
+  images = images.slice(0, limit);
+  labels = labels.slice(0, limit);
 
-    // Resize the images
-    images = images.map((i) => {
-      return ENV.math.resizeBilinear3D(i as Array3D, [24, 24]);
-    });
+  // Resize the images
+  images = images.map((i) => ENV.math.resizeBilinear3D(i as Array3D, [24, 24]));
 
-    const labelled = labels.map((l) => {
-      const label = ENV.math.argMax(l).get(0);
-      const labelString = datasetConfig.labelClassNames[label];
-      return {
-        label,
-        labelString,
-      };
-    });
+  const labelled = labels.map((l) => {
+    const label = ENV.math.argMax(l).get(0);
+    const labelString = datasetConfig.labelClassNames[label];
 
-    return {
-      images,
-      labelled,
-    };
+    return {label, labelString};
   });
+
+  return {images, labelled};
 }
 
 /**
@@ -73,16 +65,13 @@ export function loadCifarData(limit = 100):
  * @param images
  */
 export function toArray4d(images: Array3D[]): Array4D {
-  console.log('toArray4d:start');
   const asArray4d: Array4D[] = images.map((i) => {
     const newShape = [1, ...i.shape];
     return i.reshape(newShape) as Array4D;
   });
 
-  const all = asArray4d.reduce((memo, curr) => {
-    return ENV.math.concat4D(memo, curr, 0);
-  });
+  const all =
+      asArray4d.reduce((memo, curr) => ENV.math.concat4D(memo, curr, 0));
 
-  console.log('toArray4d:out', all.shape);
   return all;
 }
