@@ -20,7 +20,7 @@ import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
-import {DataType, Rank, RankMap} from './types';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**
@@ -69,7 +69,7 @@ export class Ops {
 
   @operation
   static addStrict<D extends DataType, R extends Rank>(
-      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
+      a: NDArray<D, R>, b: NDArray<D, R>): NDArray<D, R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
     return a.add(b);
   }
@@ -119,7 +119,7 @@ export class Ops {
    */
   @operation
   static subStrict<D extends DataType, R extends Rank>(
-      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
+      a: NDArray<D, R>, b: NDArray<D, R>): NDArray<D, R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
     return a.sub(b);
   }
@@ -174,7 +174,7 @@ export class Ops {
    */
   @operation
   static powStrict<D extends DataType, R extends Rank>(
-      base: NDArray<D, R>, exp: NDArray<'int32'>): RankMap<D>[R] {
+      base: NDArray<D, R>, exp: NDArray<'int32'>): NDArray<D, R> {
     util.assertShapesMatch(base.shape, exp.shape, 'Error in powStrict: ');
     return base.pow(exp);
   }
@@ -220,7 +220,7 @@ export class Ops {
    */
   @operation
   static elementWiseMul<D extends DataType, R extends Rank>(
-      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
+      a: NDArray<D, R>, b: NDArray<D, R>): NDArray<D, R> {
     return a.mulStrict(b);
   }
 
@@ -233,9 +233,9 @@ export class Ops {
    */
   @operation
   static mulStrict<D extends DataType, R extends Rank>(
-      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
+      a: NDArray<D, R>, b: NDArray<D, R>): NDArray<D, R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in multiplyStrict: ');
-    return a.mul(b) as RankMap<D>[R];
+    return a.mul(b) as NDArray<D, R>;
   }
 
   /**
@@ -282,9 +282,9 @@ export class Ops {
    */
   @operation
   static divStrict<D extends DataType, R extends Rank>(
-      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
+      a: NDArray<D, R>, b: NDArray<D, R>): NDArray<D, R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
-    return a.div(b) as RankMap<D>[R];
+    return a.div(b) as NDArray<D, R>;
   }
 
   /** @deprecated Use div() instead. */
@@ -331,9 +331,9 @@ export class Ops {
    */
   @operation
   static minimumStrict<D extends DataType, R extends Rank>(
-      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
+      a: NDArray<D, R>, b: NDArray<D, R>): NDArray<D, R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');
-    return a.minimum(b) as RankMap<D>[R];
+    return a.minimum(b) as NDArray<D, R>;
   }
 
   /**
@@ -360,8 +360,8 @@ export class Ops {
    */
   @operation
   static maximumStrict<D extends DataType, R extends Rank>(
-      a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
+      a: NDArray<D, R>, b: NDArray<D, R>): NDArray<D, R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');
-    return a.maximum(b) as RankMap<D>[R];
+    return a.maximum(b) as NDArray<D, R>;
   }
 }

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array1D, Array2D, NDArray} from '../math/ndarray';
+import {Array2D, NDArray} from '../math/ndarray';
 import * as test_util from '../test_util';
 
 import {InMemoryDataset} from './dataset';
@@ -41,8 +41,8 @@ describe('Dataset', () => {
         Array2D.new([2, 3], [4, 5, 40, -4, 4, 1])
       ],
       [
-        Array1D.randNormal([1]), Array1D.randNormal([1]),
-        Array1D.randNormal([1]), Array1D.randNormal([1])
+        NDArray.randNormal([1]), NDArray.randNormal([1]),
+        NDArray.randNormal([1]), NDArray.randNormal([1])
       ]
     ];
     const dataset = new StubDataset(data);

@@ -58,7 +58,7 @@ const tests: MathTests = it => {
 
   it('Flip a ten-sided coin and check bounds', math => {
     const numOutcomes = 10;
-    const probs = Array1D.zeros([numOutcomes]);
+    const probs = NDArray.zeros<'float32', '1'>([numOutcomes]);
     for (let i = 0; i < numOutcomes; ++i) {
       probs.set(1 / numOutcomes, i);
     }
@@ -91,7 +91,6 @@ const tests: MathTests = it => {
     outcomeProbs =
         computeProbs(result.dataSync().slice(2 * NUM_SAMPLES), numOutcomes);
     test_util.expectArraysClose(outcomeProbs, [1, 0, 0], EPSILON);
-
   });
 
   it('passing Array3D throws error', math => {

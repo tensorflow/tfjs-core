@@ -20,7 +20,7 @@ import * as util from '../util';
 import * as conv_util from './conv_util';
 import {operation} from './decorators';
 import {Array1D, Array3D, Array4D, NDArray} from './ndarray';
-import {DataType, Rank, RankMap} from './types';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**
@@ -193,7 +193,7 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static conv2dDerInput<R extends Rank, T extends RankMap<'float32'>[R]>(
+  static conv2dDerInput<R extends Rank, T extends NDArray<'float32', R>>(
       xShape: [number, number, number, number]|[number, number, number],
       dy: NDArray<'float32', R>, filter: Array4D,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
@@ -358,7 +358,7 @@ export class Ops {
       x: NDArray<'float32', R>, filter: Array4D,
       outputShape: [number, number, number, number]|[number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<'float32', R> {
     return Ops.conv2dDerInput(
         outputShape, x, filter, strides, pad, dimRoundingMode);
   }

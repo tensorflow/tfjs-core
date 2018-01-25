@@ -955,7 +955,7 @@ const testsFromPixels: MathTests = it => {
     pixels.data[2] = 160;
     pixels.data[3] = 240;
 
-    const array = Array3D.fromPixels(pixels, 3);
+    const array = NDArray.fromPixels(pixels, 3);
 
     test_util.expectArraysEqual(array, [0, 80, 160]);
   });
@@ -967,7 +967,7 @@ const testsFromPixels: MathTests = it => {
     pixels.data[2] = 160;
     pixels.data[3] = 240;
 
-    const array = Array3D.fromPixels(pixels, 4);
+    const array = NDArray.fromPixels(pixels, 4);
 
     test_util.expectArraysEqual(array, [0, 80, 160, 240]);
   });
@@ -982,7 +982,7 @@ const testsFromPixels: MathTests = it => {
       pixels.data[i] = i * 2;
     }
 
-    const array = Array3D.fromPixels(pixels, 3);
+    const array = NDArray.fromPixels(pixels, 3);
 
     test_util.expectArraysEqual(
         array, [0, 2, 4, 8, 10, 12, 16, 18, 20, 24, 26, 28]);
@@ -997,7 +997,7 @@ const testsFromPixels: MathTests = it => {
       pixels.data[i] = i * 2;
     }
 
-    const array = Array3D.fromPixels(pixels, 4);
+    const array = NDArray.fromPixels(pixels, 4);
 
     test_util.expectArraysClose(
         array,

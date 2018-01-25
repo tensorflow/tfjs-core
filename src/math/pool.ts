@@ -20,7 +20,7 @@ import * as util from '../util';
 import * as conv_util from './conv_util';
 import {operation} from './decorators';
 import {Array4D, NDArray} from './ndarray';
-import {DataType, Rank, RankMap} from './types';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**
@@ -46,7 +46,7 @@ export class Ops {
   static maxPool<D extends DataType, R extends '3'|'4'>(
       x: NDArray<D, R>, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<D>[R] {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<D, R> {
     let x4D = x as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -72,9 +72,9 @@ export class Ops {
         'MaxPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
-          RankMap<D>[R];
+          NDArray<D, R>;
     }
-    return res as RankMap<D>[R];
+    return res as NDArray<D, R>;
   }
 
   /**
@@ -97,7 +97,7 @@ export class Ops {
    */
   @operation
   static maxPoolBackprop<
-      D extends DataType, R extends Rank, T extends RankMap<'float32'>[R]>(
+      D extends DataType, R extends Rank, T extends NDArray<'float32', R>>(
       dy: NDArray<'float32', R>, input: NDArray<D, R>,
       filterSize: [number, number]|number, strides: [number, number]|number,
       pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -162,7 +162,7 @@ export class Ops {
   static minPool<D extends DataType, R extends '3'|'4'>(
       input: NDArray<D, R>, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<D>[R] {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<D, R> {
     let input4D = input as Array4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
@@ -184,9 +184,9 @@ export class Ops {
         'MinPool', {inputs: {x: input4D}, args: {convInfo}});
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
-          RankMap<D>[R];
+          NDArray<D, R>;
     }
-    return res as RankMap<D>[R];
+    return res as NDArray<D, R>;
   }
 
   /**
@@ -212,7 +212,7 @@ export class Ops {
   static avgPool<R extends '3'|'4'>(
       x: NDArray<'int32'|'float32', R>, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<'float32', R> {
     let x4D = x as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -239,9 +239,9 @@ export class Ops {
         'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
-          RankMap<'float32'>[R];
+          NDArray<'float32', R>;
     }
-    return res as RankMap<'float32'>[R];
+    return res as NDArray<'float32', R>;
   }
 
   /**
@@ -260,7 +260,7 @@ export class Ops {
    */
   @operation
   static avgPoolBackprop<D extends DataType, R extends
-                         '3'|'4', T extends RankMap<'float32'>[R]>(
+                         '3'|'4', T extends NDArray<'float32', R>>(
       dy: NDArray<'float32', R>, input: NDArray<D, R>,
       filterSize: [number, number]|number, strides: [number, number]|number,
       pad: 'valid'|'same'|number): T {

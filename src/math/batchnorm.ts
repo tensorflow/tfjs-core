@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
-import {DataType, Rank, RankMap} from './types';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**
@@ -170,29 +170,32 @@ export class Ops {
   }
 
   static batchNormalization<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, mean: RankMap<D>[R]|Array1D,
-      variance: RankMap<D>[R]|Array1D, varianceEpsilon = .001,
-      scale?: RankMap<D>[R]|Array1D,
-      offset?: RankMap<D>[R]|Array1D): RankMap<D>[R] {
+      x: NDArray<D, R>, mean: NDArray<D, R>|Array1D,
+      variance: NDArray<D, R>|Array1D, varianceEpsilon = .001,
+      scale?: NDArray<D, R>|Array1D,
+      offset?: NDArray<D, R>|Array1D): NDArray<D, R> {
     if (x.rank === 0) {
       throw new Error(`Batchnorm for scalar is not supported`);
     } else if (x.rank === 1) {
       throw new Error(`Batchnorm for rank 1 is not yet implemented`);
     } else if (x.rank === 2) {
       return Ops.batchNormalization2D(
-          x as Array2D<D>, mean as Array2D<D>| Array1D<D>,
-          variance as Array2D<D>| Array1D<D>, varianceEpsilon,
-          scale as Array2D<D>| Array1D<D>, offset as Array2D<D>| Array1D<D>);
+                 x as Array2D<D>, mean as Array2D<D>| Array1D<D>,
+                 variance as Array2D<D>| Array1D<D>, varianceEpsilon,
+                 scale as Array2D<D>| Array1D<D>,
+                 offset as Array2D<D>| Array1D<D>) as NDArray<D, R>;
     } else if (x.rank === 3) {
       return Ops.batchNormalization3D(
-          x as Array3D<D>, mean as Array3D<D>| Array1D<D>,
-          variance as Array3D<D>| Array1D<D>, varianceEpsilon,
-          scale as Array3D<D>| Array1D<D>, offset as Array3D<D>| Array1D<D>);
+                 x as Array3D<D>, mean as Array3D<D>| Array1D<D>,
+                 variance as Array3D<D>| Array1D<D>, varianceEpsilon,
+                 scale as Array3D<D>| Array1D<D>,
+                 offset as Array3D<D>| Array1D<D>) as NDArray<D, R>;
     } else if (x.rank === 4) {
       return Ops.batchNormalization4D(
-          x as Array4D<D>, mean as Array4D<D>| Array1D<D>,
-          variance as Array4D<D>| Array1D<D>, varianceEpsilon,
-          scale as Array4D<D>| Array1D<D>, offset as Array4D<D>| Array1D<D>);
+                 x as Array4D<D>, mean as Array4D<D>| Array1D<D>,
+                 variance as Array4D<D>| Array1D<D>, varianceEpsilon,
+                 scale as Array4D<D>| Array1D<D>,
+                 offset as Array4D<D>| Array1D<D>) as NDArray<D, R>;
     } else {
       throw new Error(`Batchnorm for rank ${x.rank} is not yet implemented`);
     }

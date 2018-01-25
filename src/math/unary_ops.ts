@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
-import {DataType, Rank, RankMap} from './types';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**
@@ -28,8 +28,8 @@ export class Ops {
    */
   @operation
   static neg<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Neg', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Neg', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -40,8 +40,8 @@ export class Ops {
    */
   @operation
   static ceil<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Ceil', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Ceil', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -51,8 +51,8 @@ export class Ops {
    */
   @operation
   static floor<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Floor', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Floor', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -61,8 +61,8 @@ export class Ops {
    */
   @operation
   static exp<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Exp', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Exp', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -71,8 +71,8 @@ export class Ops {
    */
   @operation
   static log<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Log', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Log', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -81,7 +81,7 @@ export class Ops {
    */
   @operation
   static sqrt<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
+      NDArray<D, R> {
     return ENV.engine.executeKernel(
                'Sqrt', {inputs: {x}},
                (dy: NDArray<'float32', R>, y: NDArray<D, R>) => {
@@ -89,7 +89,7 @@ export class Ops {
                    x: () =>
                        dy.div(x.asType('float32').sqrt().mul(Scalar.new(2)))
                  };
-               }) as RankMap<D>[R];
+               }) as NDArray<D, R>;
   }
 
   /**
@@ -99,14 +99,14 @@ export class Ops {
    */
   @operation
   static square<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
+      NDArray<D, R> {
     return ENV.engine.executeKernel(
                'Square', {inputs: {x}},
-               (dy: NDArray<'float32', R>, y: RankMap<D>[R]) => {
+               (dy: NDArray<'float32', R>, y: NDArray<D, R>) => {
                  return {
                    x: () => dy.mul(x.asType('float32').mul(Scalar.new(2)))
                  };
-               }) as RankMap<D>[R];
+               }) as NDArray<D, R>;
   }
 
   /**
@@ -115,12 +115,12 @@ export class Ops {
    */
   @operation
   static abs<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
+      NDArray<D, R> {
     return ENV.engine.executeKernel(
                'Abs', {inputs: {x}},
                (dy: NDArray<'float32', R>, y: NDArray<D, R>) => {
                  return {x: () => dy.mul(x.toFloat().step(-1))};
-               }) as RankMap<D>[R];
+               }) as NDArray<D, R>;
   }
 
   /**
@@ -131,13 +131,13 @@ export class Ops {
    */
   @operation
   static clip<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, min: number, max: number): RankMap<D>[R] {
+      x: NDArray<D, R>, min: number, max: number): NDArray<D, R> {
     util.assert(
         (min <= max),
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
     return ENV.engine.executeKernel('Clip', {inputs: {x}, args: {min, max}}) as
-        RankMap<D>[R];
+        NDArray<D, R>;
   }
 
   /**
@@ -146,13 +146,13 @@ export class Ops {
    */
   @operation
   static relu<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
+      NDArray<D, R> {
     return ENV.engine.executeKernel(
                'Relu', {inputs: {x}},
-               (dy: NDArray<'float32', R>, y: RankMap<D>[R]) => {
+               (dy: NDArray<'float32', R>, y: NDArray<D, R>) => {
                  const stepRes = x.step() as NDArray<'float32'>;
                  return {x: () => dy.mul(stepRes.asType('float32'))};
-               }) as RankMap<D>[R];
+               }) as NDArray<D, R>;
   }
 
   /**
@@ -161,7 +161,7 @@ export class Ops {
    */
   @operation
   static elu<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
+      NDArray<D, R> {
     const der = (dy: NDArray<'float32'>) => {
       return {
         x: () => dy.mul(eluDer(x)),
@@ -172,7 +172,7 @@ export class Ops {
         }
       };
     };
-    return ENV.engine.executeKernel('Elu', {inputs: {x}}, der) as RankMap<D>[R];
+    return ENV.engine.executeKernel('Elu', {inputs: {x}}, der) as NDArray<D, R>;
   }
 
   /**
@@ -181,8 +181,8 @@ export class Ops {
    */
   @operation
   static selu<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Selu', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Selu', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -193,9 +193,9 @@ export class Ops {
    */
   @operation
   static leakyRelu<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, alpha = 0.2): RankMap<D>[R] {
+      x: NDArray<D, R>, alpha = 0.2): NDArray<D, R> {
     return ENV.engine.executeKernel(
-               'LeakyRelu', {inputs: {x}, args: {alpha}}) as RankMap<D>[R];
+               'LeakyRelu', {inputs: {x}, args: {alpha}}) as NDArray<D, R>;
   }
 
   /**
@@ -206,7 +206,7 @@ export class Ops {
    */
   @operation
   static prelu<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, alpha: NDArray<D, R>): RankMap<D>[R] {
+      x: NDArray<D, R>, alpha: NDArray<D, R>): NDArray<D, R> {
     const der = (dy: NDArray<'float32'>) => {
       return {
         x: () => dy.mul(preluDer(x, alpha)),
@@ -218,7 +218,7 @@ export class Ops {
       };
     };
     return ENV.engine.executeKernel('PReLU', {inputs: {x, alpha}}, der) as
-        RankMap<D>[R];
+        NDArray<D, R>;
   }
 
   /**
@@ -227,8 +227,8 @@ export class Ops {
    */
   @operation
   static sigmoid<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Sigmoid', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Sigmoid', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -237,8 +237,8 @@ export class Ops {
    */
   @operation
   static sin<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Sin', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Sin', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -247,8 +247,8 @@ export class Ops {
    */
   @operation
   static cos<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Cos', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Cos', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -257,8 +257,8 @@ export class Ops {
    */
   @operation
   static tan<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Tan', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Tan', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -267,8 +267,8 @@ export class Ops {
    */
   @operation
   static asin<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Asin', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Asin', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -277,8 +277,8 @@ export class Ops {
    */
   @operation
   static acos<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Acos', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Acos', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -287,8 +287,8 @@ export class Ops {
    */
   @operation
   static atan<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Atan', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Atan', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -297,8 +297,8 @@ export class Ops {
    */
   @operation
   static sinh<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Sinh', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Sinh', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -307,8 +307,8 @@ export class Ops {
    */
   @operation
   static cosh<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Cosh', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Cosh', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -317,8 +317,8 @@ export class Ops {
    */
   @operation
   static tanh<D extends DataType, R extends Rank>(x: NDArray<D, R>):
-      RankMap<D>[R] {
-    return ENV.engine.executeKernel('Tanh', {inputs: {x}}) as RankMap<D>[R];
+      NDArray<D, R> {
+    return ENV.engine.executeKernel('Tanh', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /**
@@ -330,9 +330,9 @@ export class Ops {
    */
   @operation
   static step<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, alpha = 0.0): RankMap<D>[R] {
+      x: NDArray<D, R>, alpha = 0.0): NDArray<D, R> {
     return ENV.engine.executeKernel('Step', {inputs: {x}, args: {alpha}}) as
-        RankMap<D>[R];
+        NDArray<D, R>;
   }
 }
 

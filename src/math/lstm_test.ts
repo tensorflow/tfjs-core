@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D, Scalar} from './ndarray';
+import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
 // math.basicLSTMCell
 {
@@ -47,15 +47,15 @@ import {Array1D, Array2D, Scalar} from './ndarray';
           math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
 
       const c = [
-        Array2D.zeros([1, lstmBias1.shape[0] / 4]),
-        Array2D.zeros([1, lstmBias2.shape[0] / 4])
+        NDArray.zeros<'float32', '2'>([1, lstmBias1.shape[0] / 4]),
+        NDArray.zeros<'float32', '2'>([1, lstmBias2.shape[0] / 4])
       ];
       const h = [
-        Array2D.zeros([1, lstmBias1.shape[0] / 4]),
-        Array2D.zeros([1, lstmBias2.shape[0] / 4])
+        NDArray.zeros<'float32', '2'>([1, lstmBias1.shape[0] / 4]),
+        NDArray.zeros<'float32', '2'>([1, lstmBias2.shape[0] / 4])
       ];
 
-      const onehot = Array2D.zeros([1, 2]);
+      const onehot = NDArray.zeros<'float32', '2'>([1, 2]);
       onehot.set(1.0, 0, 0);
 
       const output = math.multiRNNCell([lstm1, lstm2], onehot, c, h);
@@ -67,15 +67,15 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     });
 
     it('basicLSTMCell with batch=2', math => {
-      const lstmKernel = Array2D.randNormal([3, 4]);
-      const lstmBias = Array1D.randNormal([4]);
+      const lstmKernel = NDArray.randNormal<'float32', '2'>([3, 4]);
+      const lstmBias = NDArray.randNormal<'float32', '1'>([4]);
       const forgetBias = Scalar.new(1.0);
 
-      const data = Array2D.randNormal([1, 2]);
+      const data = NDArray.randNormal<'float32', '2'>([1, 2]);
       const batchedData = math.concat2D(data, data, 0);  // 2x2
-      const c = Array2D.randNormal([1, 1]);
+      const c = NDArray.randNormal<'float32', '2'>([1, 1]);
       const batchedC = math.concat2D(c, c, 0);  // 2x1
-      const h = Array2D.randNormal([1, 1]);
+      const h = NDArray.randNormal<'float32', '2'>([1, 1]);
       const batchedH = math.concat2D(h, h, 0);  // 2x1
       const [newC, newH] = math.basicLSTMCell(
           forgetBias, lstmKernel, lstmBias, batchedData, batchedC, batchedH);

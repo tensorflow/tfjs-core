@@ -17,7 +17,8 @@
 
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
+
+import {Array1D, Array2D, Array3D, NDArray, Scalar} from './ndarray';
 
 // divide
 {
@@ -983,7 +984,7 @@ import {Array1D, Array2D, Array3D, Scalar} from './ndarray';
       const a = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
       const b = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
       // tslint:disable-next-line:no-any
-      const c1: any = Array1D.randNormal([10]);
+      const c1: any = NDArray.randNormal([10]);
       const c2 = Scalar.new(2);
 
       expect(() => math.scaledArrayAdd(c1 as Scalar, a, c2, b)).toThrowError();

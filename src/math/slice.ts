@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
 import * as slice_util from './slice_util';
-import {DataType, Rank, RankMap, ShapeMap} from './types';
+import {DataType, Rank, ShapeMap} from './types';
 
 export class Ops {
   /**
@@ -92,22 +92,23 @@ export class Ops {
 
   @operation
   static slice<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, begin: ShapeMap[R], size: ShapeMap[R]): RankMap<D>[R] {
+      x: NDArray<D, R>, begin: ShapeMap[R], size: ShapeMap[R]): NDArray<D, R> {
     if (x.rank === 0) {
       throw new Error('Slicing scalar is not possible');
     } else if (x.rank === 1) {
-      return Ops.slice1D(x as Array1D<D>, begin[0], size[0]);
+      return Ops.slice1D(x as Array1D<D>, begin[0], size[0]) as NDArray<D, R>;
     } else if (x.rank === 2) {
       return Ops.slice2D(
-          x as Array2D<D>, begin as [number, number], size as [number, number]);
+                 x as Array2D<D>, begin as [number, number],
+                 size as [number, number]) as NDArray<D, R>;
     } else if (x.rank === 3) {
       return Ops.slice3D(
-          x as Array3D<D>, begin as [number, number, number],
-          size as [number, number, number]);
+                 x as Array3D<D>, begin as [number, number, number],
+                 size as [number, number, number]) as NDArray<D, R>;
     } else if (x.rank === 4) {
       return Ops.slice4D(
-          x as Array4D<D>, begin as [number, number, number, number],
-          size as [number, number, number, number]);
+                 x as Array4D<D>, begin as [number, number, number, number],
+                 size as [number, number, number, number]) as NDArray<D, R>;
     } else {
       throw new Error(`Slicing for rank ${x.rank} not implemented yet`);
     }

@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
 
 // math.conv1d
 {
@@ -116,7 +116,8 @@ import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
       const stride = 1;
 
       const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w = Array3D.randNormal([fSize, wrongInputDepth, outputDepth]);
+      const w = NDArray.randNormal<'float32', '3'>(
+          [fSize, wrongInputDepth, outputDepth]);
       const bias = Array1D.new([-1]);
 
       expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();

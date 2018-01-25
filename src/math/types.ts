@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
-
 export enum DType {
   float32 = 'float32',
   int32 = 'int32',
@@ -40,16 +38,7 @@ export interface DataTypeMap {
 }
 export type DataType = keyof DataTypeMap;
 
-/** @hidden */
-export interface RankMap<D extends DataType> {
-  0: Scalar<D>;
-  1: Array1D<D>;
-  2: Array2D<D>;
-  3: Array3D<D>;
-  4: Array4D<D>;
-  higher: NDArray<D, 'higher'>;
-}
-export type Rank = keyof RankMap<DataType>;
+export type Rank = '0'|'1'|'2'|'3'|'4'|'higher';
 
 export interface SumTypes {
   float32: 'float32';

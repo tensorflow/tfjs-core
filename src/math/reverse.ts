@@ -21,7 +21,7 @@ import * as util from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
-import {DataType, Rank, RankMap} from './types';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**
@@ -97,17 +97,17 @@ export class Ops {
    */
   @operation
   static reverse<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, axis: number|number[]): RankMap<D>[R] {
+      x: NDArray<D, R>, axis: number|number[]): NDArray<D, R> {
     if (x.rank === 0) {
       return x.reshape(x.shape);
     } else if (x.rank === 1) {
-      return Ops.reverse1D(x as Array1D<D>);
+      return Ops.reverse1D(x as Array1D<D>) as NDArray<D, R>;
     } else if (x.rank === 2) {
-      return Ops.reverse2D(x as Array2D<D>, axis);
+      return Ops.reverse2D(x as Array2D<D>, axis) as NDArray<D, R>;
     } else if (x.rank === 3) {
-      return Ops.reverse3D(x as Array3D<D>, axis);
+      return Ops.reverse3D(x as Array3D<D>, axis) as NDArray<D, R>;
     } else if (x.rank === 4) {
-      return Ops.reverse4D(x as Array4D<D>, axis);
+      return Ops.reverse4D(x as Array4D<D>, axis) as NDArray<D, R>;
     } else {
       throw new Error(`Reverse for rank ${x.rank} is not yet implemented`);
     }

@@ -40,7 +40,7 @@ import * as reverse from './reverse';
 import * as slice from './slice';
 import * as transpose from './transpose';
 import * as types from './types';
-import {DataType, DataTypeMap, Rank, RankMap} from './types';
+import {DataType, DataTypeMap, Rank} from './types';
 import * as unary_ops from './unary_ops';
 
 export interface LSTMCell {
@@ -361,13 +361,13 @@ export class NDArrayMath implements NDArrayManager {
    * Clones an NDArray of any shape.
    * @param x The NDArray to clone.
    */
-  clone<D extends DataType, R extends Rank>(x: NDArray<D, R>): RankMap<D>[R] {
-    return this.engine.executeKernel('Clone', {inputs: {x}}) as RankMap<D>[R];
+  clone<D extends DataType, R extends Rank>(x: NDArray<D, R>): NDArray<D, R> {
+    return this.engine.executeKernel('Clone', {inputs: {x}}) as NDArray<D, R>;
   }
 
   /** Reshapes the array. */
   reshape<D extends DataType, R extends Rank>(
-      x: NDArray<D>, newShape: number[]): RankMap<D>[R] {
+      x: NDArray<D>, newShape: number[]): NDArray<D, R> {
     newShape = util.inferFromImplicitShape(newShape, x.size);
     util.assert(
         x.size === util.sizeFromShape(newShape),
@@ -378,7 +378,7 @@ export class NDArrayMath implements NDArrayManager {
     };
     return this.engine.executeKernel(
                'Reshape', {inputs: {x}, args: {newShape}}, grad) as
-        RankMap<D>[R];
+        NDArray<D, R>;
   }
 
   /**
@@ -386,12 +386,12 @@ export class NDArrayMath implements NDArrayManager {
    * this is a no-op.
    */
   cast<D extends DataType, R extends Rank>(
-      x: NDArray<DataType, R>, newDType: D): RankMap<D>[R] {
+      x: NDArray<DataType, R>, newDType: D): NDArray<D, R> {
     const grad = (dy: NDArray<'float32'>, y: NDArray) => {
       return {x: () => dy.reshape(dy.shape)};
     };
     return this.engine.executeKernel(
-               'Cast', {inputs: {x}, args: {newDType}}, grad) as RankMap<D>[R];
+               'Cast', {inputs: {x}, args: {newDType}}, grad) as NDArray<D, R>;
   }
 
   /**
@@ -488,7 +488,7 @@ export class NDArrayMath implements NDArrayManager {
    *     which indicates the last dimension.
    */
   softmax<D extends DataType, R extends Rank, T extends NDArray<'float32', R>>(
-      logits: NDArray<D, R>, dim = -1): RankMap<'float32'>[R] {
+      logits: NDArray<D, R>, dim = -1): NDArray<'float32', R> {
     if (dim === -1) {
       dim = logits.rank - 1;
     }
@@ -520,7 +520,7 @@ export class NDArrayMath implements NDArrayManager {
         const logResult = this.subtract(logits.asType('float32'), lse);
         const value = this.exp(logResult) as T;
         return {value, gradients};
-      }, {logits}, 'softmax') as RankMap<'float32'>[R];
+      }, {logits}, 'softmax') as NDArray<'float32', R>;
     });
   }
 
@@ -597,7 +597,7 @@ export class NDArrayMath implements NDArrayManager {
 
   /** @deprecated Use math.transpose() instead. */
   switchDim<D extends DataType, R extends Rank>(
-      x: NDArray<D, R>, perm?: number[]): RankMap<D>[R] {
+      x: NDArray<D, R>, perm?: number[]): NDArray<D, R> {
     return this.transpose(x, perm);
   }
 
@@ -1139,7 +1139,7 @@ export class NDArrayMath implements NDArrayManager {
         gradients: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
             TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name?: string): RankMap<D>[R] {
+      inputs: NamedArrayMap, name?: string): NDArray<D, R> {
     return this.engine.customGradient(f, inputs, name == null ? '' : name);
   }
 

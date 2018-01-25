@@ -20,7 +20,7 @@ import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './decorators';
 import {NDArray} from './ndarray';
-import {DataType, Rank, RankMap} from './types';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**
@@ -40,7 +40,7 @@ export class Ops {
 
   @operation
   static notEqualStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
-      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
+      a: NDArray<D1, R>, b: NDArray<D2, R>): NDArray<'bool', R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in notEqualStrict: ');
     return a.notEqual(b);
   }
@@ -62,7 +62,7 @@ export class Ops {
 
   @operation
   static lessStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
-      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
+      a: NDArray<D1, R>, b: NDArray<D2, R>): NDArray<'bool', R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in lessStrict: ');
     return a.less(b);
   }
@@ -84,7 +84,7 @@ export class Ops {
 
   @operation
   static equalStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
-      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
+      a: NDArray<D1, R>, b: NDArray<D2, R>): NDArray<'bool', R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in equalStrict: ');
     return a.equal(b);
   }
@@ -106,7 +106,7 @@ export class Ops {
 
   @operation
   static lessEqualStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
-      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
+      a: NDArray<D1, R>, b: NDArray<D2, R>): NDArray<'bool', R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in lessEqualStrict: ');
     return a.lessEqual(b);
   }
@@ -128,7 +128,7 @@ export class Ops {
 
   @operation
   static greaterStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
-      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
+      a: NDArray<D1, R>, b: NDArray<D2, R>): NDArray<'bool', R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in greaterStrict: ');
     return a.greater(b);
   }
@@ -150,7 +150,7 @@ export class Ops {
 
   @operation
   static greaterEqualStrict<R extends Rank, D1 extends DataType, D2 extends D1>(
-      a: NDArray<D1, R>, b: NDArray<D2, R>): RankMap<'bool'>[R] {
+      a: NDArray<D1, R>, b: NDArray<D2, R>): NDArray<'bool', R> {
     util.assertShapesMatch(a.shape, b.shape, 'Error in greaterEqualStrict: ');
     return a.greaterEqual(b);
   }

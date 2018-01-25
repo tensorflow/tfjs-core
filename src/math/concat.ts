@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import * as concat_util from './concat_util';
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
-import {DataType, Rank, RankMap} from './types';
+import {DataType, Rank} from './types';
 
 export class Ops {
   /**
@@ -146,7 +146,7 @@ export class Ops {
 
   @operation
   static concat<D extends DataType, R extends Rank>(
-      a: NDArray<D, R>, b: NDArray<D, R>, axis: number): RankMap<D>[R] {
+      a: NDArray<D, R>, b: NDArray<D, R>, axis: number): NDArray<D, R> {
     concat_util.assertParams(a.shape, b.shape, axis);
     if (a.rank === 0) {
       throw new Error('Cannot concatenate a scalar');
