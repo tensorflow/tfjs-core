@@ -40,7 +40,7 @@ import * as reverse from './reverse';
 import * as slice from './slice';
 import * as transpose from './transpose';
 import * as types from './types';
-import {DataType, DataVal, Rank} from './types';
+import {DataType, Rank, TypedArray} from './types';
 import * as unary_ops from './unary_ops';
 
 export interface LSTMCell {
@@ -221,13 +221,13 @@ export class NDArrayMath implements NDArrayManager {
       numChannels: number): void {
     this.backend.writePixels(dataId, pixels, numChannels);
   }
-  write(dataId: number, values: DataVal): void {
+  write(dataId: number, values: TypedArray): void {
     this.backend.write(dataId, values);
   }
-  readSync(dataId: number): DataVal {
+  readSync(dataId: number): TypedArray {
     return this.backend.readSync(dataId);
   }
-  read(dataId: number): Promise<DataVal> {
+  read(dataId: number): Promise<TypedArray> {
     return this.backend.read(dataId);
   }
 

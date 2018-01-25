@@ -26,7 +26,8 @@ import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../ndarray';
 import * as types from '../types';
-import {DataType, DataTypeMap, Rank} from '../types';
+import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
+
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
@@ -44,7 +45,7 @@ export class MathBackendCPU implements MathBackend {
   register(dataId: number, shape: number[], dtype: DataType): void {
     this.data[dataId] = null;
   }
-  write(dataId: number, values: DataTypeMap[D]): void {
+  write(dataId: number, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
@@ -99,11 +100,11 @@ export class MathBackendCPU implements MathBackend {
     }
     this.data[dataId] = values;
   }
-  async read(dataId: number): Promise<DataTypeMap[D]> {
+  async read(dataId: number): Promise<TypedArray> {
     this.throwIfNoData(dataId);
     return this.data[dataId];
   }
-  readSync(dataId: number): DataTypeMap[D] {
+  readSync(dataId: number): TypedArray {
     this.throwIfNoData(dataId);
     return this.data[dataId];
   }
@@ -131,12 +132,12 @@ export class MathBackendCPU implements MathBackend {
 
   slice1D(x: Array1D, begin: number, size: number): Array1D {
     const newVals = x.dataSync().slice(begin, begin + size);
-    return Array1D.new(newVals);
+    return Array1D.new(newVals, x.dtype);
   }
 
   slice2D(x: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    const result = NDArray.zeros<D, '2'>(size, x.dtype);
+    const result = NDArray.zeros<'2'>(size, x.dtype);
     const [startI, startJ] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -151,7 +152,7 @@ export class MathBackendCPU implements MathBackend {
   slice3D(x: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
-    const result = NDArray.zeros<D, '3'>(size, x.dtype);
+    const result = NDArray.zeros<'3'>(size, x.dtype);
     const [startI, startJ, startK] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -167,7 +168,7 @@ export class MathBackendCPU implements MathBackend {
   slice4D(x: Array4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Array4D {
-    const result = NDArray.zeros<D, '4'>(size, x.dtype);
+    const result = NDArray.zeros<'4'>(size, x.dtype);
     const [startI, startJ, startK, startL] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -400,11 +401,11 @@ export class MathBackendCPU implements MathBackend {
                a, b, 'float32', (aValue, bValue) => aValue / bValue) as NDArray;
   }
 
-  sum(x: NDArray, axes: number[]): NDArray<SumTypes[D]> {
+  sum(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const resultDtype = SumTypesMap[x.dtype] as keyof SumTypes;
+    const resultDtype = types.upcastType(x.dtype, 'int32');
     const result = NDArray.zeros(outShape, resultDtype);
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.dataSync();
@@ -418,7 +419,7 @@ export class MathBackendCPU implements MathBackend {
       }
       vals[i] = sum;
     }
-    return result as NDArray<SumTypes[D]>;
+    return result;
   }
 
   argMin(x: NDArray, axes: number[]): NDArray {
@@ -559,7 +560,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  where(condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray {
+  where(condition: NDArray, a: NDArray, b: NDArray, dtype: DataType): NDArray {
     const values = condition.dataSync();
     const aValues = a.dataSync();
     const bValues = b.dataSync();
@@ -605,7 +606,7 @@ export class MathBackendCPU implements MathBackend {
       topkIndices[i] = valuesAndIndices[i].index;
     }
     return {
-      values: Array1D.new<D>(topkValues),
+      values: Array1D.new(topkValues, x.dtype),
       indices: Array1D.new<'int32'>(topkIndices)
     };
   }
@@ -1179,7 +1180,7 @@ export class MathBackendCPU implements MathBackend {
     const rightPadding = paddings[1];
 
     const values = x.dataSync();
-    const result = NDArray.zeros<DataType, '1'>(
+    const result = NDArray.zeros<'1'>(
         [leftPadding + values.length + rightPadding], x.dtype);
     const newValues = result.dataSync();
 
@@ -1207,7 +1208,7 @@ export class MathBackendCPU implements MathBackend {
       leftPadding + x.shape[1] + rightPadding
     ];
 
-    const result = NDArray.zeros<DataType, '2'>(newShape, x.dtype);
+    const result = NDArray.zeros<'2'>(newShape, x.dtype);
     const newValues = result.dataSync();
 
     const values = x.dataSync();
@@ -1639,7 +1640,7 @@ export class MathBackendCPU implements MathBackend {
       Array2D {
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
-    const res = NDArray.zeros<'int32', '2'>([batchSize, numSamples], 'int32');
+    const res = NDArray.zeros<'2'>([batchSize, numSamples], 'int32');
     const resVals = res.dataSync();
     const probVals = probabilities.dataSync();
 
@@ -1684,7 +1685,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   private broadcastedBinaryOp(
-      a: NDArray, b: NDArray, dtype: D,
+      a: NDArray, b: NDArray, dtype: DataType,
       op: (a: number, b: number) => number): NDArray {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);

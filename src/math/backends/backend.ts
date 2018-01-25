@@ -19,15 +19,15 @@
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
-import {DataType, DataVal, Rank} from '../types';
+import {DataType, Rank, TypedArray} from '../types';
 
 import {MatrixOrientation} from './types/matmul';
 
 export interface NDArrayStorage {
-  read(dataId: number): Promise<DataVal>;
-  readSync(dataId: number): DataVal;
+  read(dataId: number): Promise<TypedArray>;
+  readSync(dataId: number): TypedArray;
   disposeData(dataId: number): void;
-  write(dataId: number, values: DataVal): void;
+  write(dataId: number, values: TypedArray): void;
   writePixels(
       dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,

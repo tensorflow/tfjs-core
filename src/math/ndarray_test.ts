@@ -63,9 +63,7 @@ const tests: MathTests = it => {
     expect(t.shape).toEqual([3]);
     test_util.expectNumbersClose(t.get(1), 3);
 
-    expect(() => Array3D.new([1, 2, 3, 5], [
-      1, 2
-    ])).toThrowError('Shape should be of length 3');
+    expect(() => Array3D.new([1, 2, 3, 5], [1, 2])).toThrowError();
 
     const t4 = Array4D.new([1, 2, 1, 2], [1, 2, 3, 4]);
     test_util.expectNumbersClose(t4.get(0, 0, 0, 0), 1);

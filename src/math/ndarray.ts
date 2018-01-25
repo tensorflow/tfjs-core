@@ -24,12 +24,12 @@ import {MatrixOrientation} from './backends/types/matmul';
 import * as ops from './ops';
 import {RandNormalDataTypes} from './rand';
 // tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, DataVal, Rank, ShapeMap} from './types';
+import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
 
 /** @hidden */
 export interface NDArrayData {
   dataId?: number;
-  values?: DataVal;
+  values?: TypedArray;
 }
 
 export class NDArray<R extends Rank = Rank> {
@@ -60,7 +60,8 @@ export class NDArray<R extends Rank = Rank> {
   strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: DataVal, dataId?: number) {
+      shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
+      dataId?: number) {
     this.size = util.sizeFromShape(shape);
     if (values != null) {
       util.assert(
@@ -293,12 +294,12 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   /** @deprecated Use dataSync() instead. */
-  getValues(): DataVal {
+  getValues(): TypedArray {
     return this.dataSync();
   }
 
   /** @deprecated Use data() instead. */
-  getValuesAsync(): Promise<DataVal> {
+  getValuesAsync(): Promise<TypedArray> {
     return this.data();
   }
 
@@ -306,7 +307,7 @@ export class NDArray<R extends Rank = Rank> {
    * Asynchronously downloads the values from the NDArray. Returns a promise
    * that resolves when the data is ready.
    */
-  async data(): Promise<DataVal> {
+  async data(): Promise<TypedArray> {
     this.throwIfDisposed();
     return ENV.math.read(this.dataId);
   }
@@ -315,7 +316,7 @@ export class NDArray<R extends Rank = Rank> {
    * Synchronously downloads the values from the NDArray. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
-  dataSync(): DataVal {
+  dataSync(): TypedArray {
     this.throwIfDisposed();
     return ENV.math.readSync(this.dataId);
   }
@@ -595,8 +596,7 @@ export class NDArray<R extends Rank = Rank> {
 }
 
 export class Scalar extends NDArray<'0'> {
-  static new<D extends DataType = 'float32'>(value: number|boolean, dtype?: D):
-      Scalar {
+  static new(value: number|boolean, dtype?: DataType): Scalar {
     const values = [value] as number[] | boolean[];
     return new Scalar([], dtype, toTypedArray(values, dtype));
   }
@@ -735,20 +735,22 @@ export class Variable<R extends Rank = Rank> extends NDArray<R> {
 const variable = Variable.variable;
 export {variable};
 
-function instanceofTypedArray(a: ArrayData): boolean {
+function instanceofTypedArray(a: ArrayData<DataType>): boolean {
   return a instanceof Float32Array || a instanceof Int32Array ||
       a instanceof Uint8Array;
 }
 
-function noConversionNeeded(a: ArrayData, dtype: DataType): boolean {
+function noConversionNeeded<D extends DataType>(
+    a: ArrayData<D>, dtype: D): boolean {
   return (a instanceof Float32Array && dtype === 'float32') ||
       (a instanceof Int32Array && dtype === 'int32') ||
       (a instanceof Uint8Array && dtype === 'bool');
 }
 
-function toTypedArray(a: ArrayData, dtype: DataType): DataVal {
+function toTypedArray<D extends DataType>(
+    a: ArrayData<D>, dtype: D): DataTypeMap[D] {
   if (noConversionNeeded(a, dtype)) {
-    return a as DataVal;
+    return a as DataTypeMap[D];
   }
   if (Array.isArray(a)) {
     a = util.flatten(a) as number[];

@@ -37,7 +37,7 @@ export interface DataTypeMap {
   bool: Uint8Array;
 }
 export type DataType = keyof DataTypeMap;
-export type DataVal = DataTypeMap[DataType];
+export type TypedArray = DataTypeMap[DataType];
 
 export type Rank = '0'|'1'|'2'|'3'|'4'|'higher';
 

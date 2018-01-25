@@ -17,14 +17,13 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {TypedArray} from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
-import {DataType, DataTypeMap, DataVal, Rank} from '../types';
+import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
@@ -118,7 +117,7 @@ export class MathBackendWebGL implements MathBackend {
     // Pixel data is immediate storage since it already lives on gpu.
     this.gpgpu.uploadPixelDataToTexture(texture, pixels);
   }
-  write(dataId: number, values: DataVal): void {
+  write(dataId: number, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
@@ -139,7 +138,7 @@ export class MathBackendWebGL implements MathBackend {
     }
   }
 
-  readSync(dataId: number): DataVal {
+  readSync(dataId: number): TypedArray {
     this.throwIfNoData(dataId);
     const {texture, values, textureType, texShape, numChannels} =
         this.texData[dataId];
@@ -158,7 +157,7 @@ export class MathBackendWebGL implements MathBackend {
     this.cacheOnCPU(dataId, float32Values);
     return this.texData[dataId].values;
   }
-  async read(dataId: number): Promise<DataVal> {
+  async read(dataId: number): Promise<TypedArray> {
     this.throwIfNoData(dataId);
     const {texture, values, textureType, texShape} = this.texData[dataId];
     if (values != null) {
@@ -442,7 +441,8 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x, indices]);
   }
 
-  private reduce(x: Array2D, reduceType: 'max'|'min'|'sum', dtype: D): Array2D {
+  private reduce(x: Array2D, reduceType: 'max'|'min'|'sum', dtype: DataType):
+      Array2D {
     const batchSize = x.shape[0];
     const inSize = x.shape[1];
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
@@ -487,13 +487,13 @@ export class MathBackendWebGL implements MathBackend {
     return this.argReduce(x, reduceType, output);
   }
 
-  sum(x: NDArray, axes: number[]): NDArray<SumTypes[D]> {
+  sum(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
     const a2D = x.as2D(-1, inSize);
-    const outputDType = SumTypesMap[x.dtype];
+    const outputDType = types.upcastType(x.dtype, 'int32');
     return this.reduce(a2D, 'sum', outputDType).reshape(outShape);
   }
 
@@ -568,7 +568,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
-  where(condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray {
+  where(condition: NDArray, a: NDArray, b: NDArray, dtype: DataType): NDArray {
     const program = new WhereProgram(condition.rank, a.shape, a.rank);
     const output = this.makeOutputArray(program.outputShape, dtype);
     return this.compileAndRun(program, [condition, a, b], output);
@@ -871,7 +871,8 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [indices]);
   }
 
-  private makeOutputArray<T extends NDArray>(shape: number[], dtype: D): T {
+  private makeOutputArray<T extends NDArray>(shape: number[], dtype: DataType):
+      T {
     return NDArray.make(shape, {}, dtype) as T;
   }
 
@@ -998,7 +999,8 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 }
 
-function float32ToTypedArray(a: Float32Array, dtype: D): DataTypeMap[D] {
+function float32ToTypedArray<D extends DataType>(
+    a: Float32Array, dtype: D): DataTypeMap[D] {
   if (dtype === 'float32') {
     return a;
   } else if (dtype === 'int32' || dtype === 'bool') {
@@ -1015,7 +1017,8 @@ function float32ToTypedArray(a: Float32Array, dtype: D): DataTypeMap[D] {
   }
 }
 
-function typedArrayToFloat32(a: TypedArray, dtype: DataType): Float32Array {
+function typedArrayToFloat32<D extends DataType>(
+    a: DataTypeMap[D], dtype: D): Float32Array {
   if (a instanceof Float32Array) {
     return a;
   } else {

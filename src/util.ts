@@ -16,12 +16,12 @@
  */
 
 import {NDArray, Variable} from './math/ndarray';
-import {DataType, DataTypeMap} from './math/types';
+import {DataType, DataTypeMap, TypedArray} from './math/types';
 
-export type TypedArray = Float32Array|Int32Array|Uint8Array;
 export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
-export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
+export type ArrayData<D extends DataType> =
+    DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
 
 export type NamedArrayMap = {
   [name: string]: NDArray
@@ -333,7 +333,7 @@ export function squeezeShape(shape: number[], axis?: number[]):
 }
 
 export function getTypedArrayFromDType<D extends DataType>(
-    dtype: DataType, size: number): DataTypeMap[D] {
+    dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
     values = new Float32Array(size);
@@ -357,8 +357,8 @@ export function isNDArrayInList(
   return false;
 }
 
-export function checkForNaN(
-    vals: TypedArray, dtype: DataType, name: string): void {
+export function checkForNaN<D extends DataType>(
+    vals: DataTypeMap[D], dtype: D, name: string): void {
   for (let i = 0; i < vals.length; i++) {
     if (isValNaN(vals[i], dtype)) {
       throw Error(`The result of the last math.${name} has NaNs.`);
