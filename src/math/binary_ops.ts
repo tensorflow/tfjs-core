@@ -20,9 +20,7 @@ import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
-import * as reduction_ops from './reduction_ops';
 import {DataType, Rank, RankMap} from './types';
-import * as unary_ops from './unary_ops';
 
 export class Ops {
   /**
@@ -44,7 +42,7 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = reduction_ops.Ops.sum(res, reduceAxes);
+          res = res.sum(reduceAxes);
         }
         return res.reshape(a.shape);
       };
@@ -52,7 +50,7 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = reduction_ops.Ops.sum(res, reduceAxes);
+          res = res.sum(reduceAxes);
         }
         return res.reshape(b.shape);
       };
@@ -73,7 +71,7 @@ export class Ops {
   static addStrict<D extends DataType, R extends Rank>(
       a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
-    return Ops.add(a, b);
+    return a.add(b);
   }
 
   /**
@@ -95,7 +93,7 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = reduction_ops.Ops.sum(res, reduceAxes);
+          res = res.sum(reduceAxes);
         }
         return res.reshape(a.shape);
       };
@@ -103,9 +101,9 @@ export class Ops {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = reduction_ops.Ops.sum(res, reduceAxes);
+          res = res.sum(reduceAxes);
         }
-        return unary_ops.Ops.neg(res).reshape(b.shape);
+        return res.neg().reshape(b.shape);
       };
       return {a: derA, b: derB};
     };
@@ -123,7 +121,7 @@ export class Ops {
   static subStrict<D extends DataType, R extends Rank>(
       a: NDArray<D, R>, b: NDArray<D, R>): RankMap<D>[R] {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
-    return Ops.sub(a, b);
+    return a.sub(b);
   }
 
   /**
@@ -202,7 +200,7 @@ export class Ops {
         const res = Ops.mul(dy, b.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          return reduction_ops.Ops.sum(res, reduceAxes).reshape(a.shape);
+          return res.sum(reduceAxes).reshape(a.shape);
         }
         return res;
       };
@@ -210,7 +208,7 @@ export class Ops {
         const res = Ops.mul(dy, a.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          return reduction_ops.Ops.sum(res, reduceAxes).reshape(b.shape);
+          return res.sum(reduceAxes).reshape(b.shape);
         }
         return res;
       };
@@ -259,7 +257,7 @@ export class Ops {
         const res = Ops.div(dy, b.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
-          return reduction_ops.Ops.sum(res, reduceAxes).reshape(a.shape);
+          return res.sum(reduceAxes).reshape(a.shape);
         }
         return res;
       };
@@ -267,10 +265,10 @@ export class Ops {
         let res = Ops.mul(dy, a.asType('float32'));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
-          res = reduction_ops.Ops.sum(res, reduceAxes).reshape(b.shape);
+          res = res.sum(reduceAxes).reshape(b.shape);
         }
-        return unary_ops.Ops.neg(
-            Ops.div(res, unary_ops.Ops.square(b).asType('float32')));
+        const tmp = b.square() as NDArray;
+        return Ops.div(res, tmp.asType('float32')).neg() as NDArray<'float32'>;
       };
       return {a: derA, b: derB};
     };

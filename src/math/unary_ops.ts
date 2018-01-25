@@ -17,9 +17,8 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-
 import {operation} from './decorators';
-import {Array1D, NDArray, Scalar} from './ndarray';
+import {NDArray, Scalar} from './ndarray';
 import {DataType, Rank, RankMap} from './types';
 
 export class Ops {
@@ -140,9 +139,8 @@ export class Ops {
     return ENV.engine.executeKernel(
                'Relu', {inputs: {x}},
                (dy: NDArray<'float32', R>, y: RankMap<D>[R]) => {
-                 const tmp = Ops.step(x);  // as Array1D<'float32'>;
-                 const tmp2 = tmp.asType('float32');
-                 return {x: () => dy.mul(tmp2)};
+                 const stepRes = Ops.step(x) as NDArray<'float32'>;
+                 return {x: () => dy.mul(stepRes.asType('float32'))};
                }) as RankMap<D>[R];
   }
 

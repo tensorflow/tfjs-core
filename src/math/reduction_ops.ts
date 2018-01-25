@@ -23,7 +23,6 @@ import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
 import * as transpose from './transpose';
 import {DataType, SumTypes} from './types';
-import * as unary_ops from './unary_ops';
 
 export class Ops {
   /**
@@ -47,9 +46,9 @@ export class Ops {
     const axes = axis_util.parseAxisParam(axis, input.shape);
     const xMax = Ops.max(input, axes, true /* keepDims */);
     const a = input.sub(xMax);
-    const b = unary_ops.Ops.exp(a);
+    const b = a.exp();
     const c = Ops.sum(b, axes);
-    const d = unary_ops.Ops.log(c);
+    const d = c.log();
     const res = xMax.reshape(d.shape).add(d);
 
     if (keepDims) {

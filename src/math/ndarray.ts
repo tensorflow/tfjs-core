@@ -525,6 +525,78 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   neg(): RankMap<D>[R] {
     return ENV.math.neg(this);
   }
+  ceil(): RankMap<D>[R] {
+    return ENV.math.ceil(this);
+  }
+  floor(): RankMap<D>[R] {
+    return ENV.math.floor(this);
+  }
+  exp(): RankMap<D>[R] {
+    return ENV.math.exp(this);
+  }
+  log(): RankMap<D>[R] {
+    return ENV.math.log(this);
+  }
+  sqrt(): RankMap<D>[R] {
+    return ENV.math.sqrt(this);
+  }
+  square(): RankMap<D>[R] {
+    return ENV.math.square(this);
+  }
+  abs(): RankMap<D>[R] {
+    return ENV.math.abs(this);
+  }
+  clip(min: number, max: number): RankMap<D>[R] {
+    return ENV.math.clip(this, min, max);
+  }
+  relu(): RankMap<D>[R] {
+    return ENV.math.relu(this);
+  }
+  elu(): RankMap<D>[R] {
+    return ENV.math.elu(this);
+  }
+  selu(): RankMap<D>[R] {
+    return ENV.math.selu(this);
+  }
+  leakyRelu(alpha = 0.2): RankMap<D>[R] {
+    return ENV.math.leakyRelu(this);
+  }
+  prelu(alpha: NDArray<D, R>): RankMap<D>[R] {
+    return ENV.math.prelu(this, alpha);
+  }
+  sigmoid(): RankMap<D>[R] {
+    return ENV.math.sigmoid(this);
+  }
+  sin(): RankMap<D>[R] {
+    return ENV.math.sin(this);
+  }
+  cos(): RankMap<D>[R] {
+    return ENV.math.cos(this);
+  }
+  tan(): RankMap<D>[R] {
+    return ENV.math.tan(this);
+  }
+  asin(): RankMap<D>[R] {
+    return ENV.math.asin(this);
+  }
+  acos(): RankMap<D>[R] {
+    return ENV.math.acos(this);
+  }
+  atan(): RankMap<D>[R] {
+    return ENV.math.atan(this);
+  }
+  sinh(): RankMap<D>[R] {
+    return ENV.math.sinh(this);
+  }
+  cosh(): RankMap<D>[R] {
+    return ENV.math.cosh(this);
+  }
+  tanh(): RankMap<D>[R] {
+    return ENV.math.tanh(this);
+  }
+  step(): RankMap<D>[R] {
+    return ENV.math.step(this);
+  }
 }
 
 export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {
