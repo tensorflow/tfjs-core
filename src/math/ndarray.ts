@@ -239,6 +239,9 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   }
 
   get(...locs: number[]) {
+    if (locs.length === 0) {
+      locs = [0];
+    }
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
@@ -443,7 +446,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return ENV.math.addStrict(this, x);
   }
   sub<T extends NDArray<D>>(x: NDArray<D>): T {
-    return ENV.math.subtract(this, x);
+    return ENV.math.sub(this, x);
   }
   subStrict(x: NDArray<D, R>): RankMap<D>[R] {
     return ENV.math.subStrict(this, x);
@@ -458,7 +461,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return ENV.math.multiply(this, x);
   }
   mulStrict(x: NDArray<D, R>): RankMap<D>[R] {
-    return ENV.math.multiplyStrict(this, x);
+    return ENV.math.mulStrict(this, x);
   }
   div<T extends NDArray<'float32'>>(x: NDArray<D>): T {
     return ENV.math.div(this, x);
@@ -559,7 +562,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return ENV.math.selu(this);
   }
   leakyRelu(alpha = 0.2): RankMap<D>[R] {
-    return ENV.math.leakyRelu(this);
+    return ENV.math.leakyRelu(this, alpha);
   }
   prelu(alpha: NDArray<D, R>): RankMap<D>[R] {
     return ENV.math.prelu(this, alpha);
