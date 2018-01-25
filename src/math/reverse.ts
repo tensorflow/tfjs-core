@@ -99,7 +99,7 @@ export class Ops {
   static reverse<D extends DataType, R extends Rank>(
       x: NDArray<D, R>, axis: number|number[]): RankMap<D>[R] {
     if (x.rank === 0) {
-      return x.clone();
+      return x.reshape(x.shape);
     } else if (x.rank === 1) {
       return Ops.reverse1D(x as Array1D<D>);
     } else if (x.rank === 2) {

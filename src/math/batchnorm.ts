@@ -175,7 +175,7 @@ export class Ops {
       scale?: RankMap<D>[R]|Array1D,
       offset?: RankMap<D>[R]|Array1D): RankMap<D>[R] {
     if (x.rank === 0) {
-      throw new Error('Batchnorm for scalar is not supported');
+      throw new Error(`Batchnorm for scalar is not supported`);
     } else if (x.rank === 1) {
       throw new Error(`Batchnorm for rank 1 is not yet implemented`);
     } else if (x.rank === 2) {
