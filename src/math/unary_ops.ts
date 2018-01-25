@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
-import {DataType, Rank} from './types';
+import {Rank} from './types';
 
 export class Ops {
   /**

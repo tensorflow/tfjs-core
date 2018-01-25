@@ -113,7 +113,7 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
     const config = inputAndArgs as BinaryNode['inputAndArgs'];
     return backend.divide(config.inputs.a, config.inputs.b) as O;
   } else if (kernelName === 'Sum') {
-    const config = inputAndArgs as SumNode<'float32'|'int32'>['inputAndArgs'];
+    const config = inputAndArgs as SumNode['inputAndArgs'];
     return backend.sum(config.inputs.x, config.args.axes) as O;
   } else if (kernelName === 'ArgMax') {
     const config = inputAndArgs as ArgMaxNode['inputAndArgs'];
@@ -157,16 +157,16 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
     const config = inputAndArgs as TopKIndicesNode['inputAndArgs'];
     return backend.topKIndices(config.inputs.x, config.args.k) as O;
   } else if (kernelName === 'Min') {
-    const config = inputAndArgs as MinNode<D>['inputAndArgs'];
+    const config = inputAndArgs as MinNode['inputAndArgs'];
     return backend.min(config.inputs.x, config.args.axes) as O;
   } else if (kernelName === 'Minimum') {
-    const config = inputAndArgs as MinimumNode<D>['inputAndArgs'];
+    const config = inputAndArgs as MinimumNode['inputAndArgs'];
     return backend.minimum(config.inputs.a, config.inputs.b) as O;
   } else if (kernelName === 'Max') {
-    const config = inputAndArgs as MaxNode<D>['inputAndArgs'];
+    const config = inputAndArgs as MaxNode['inputAndArgs'];
     return backend.max(config.inputs.x, config.args.axes) as O;
   } else if (kernelName === 'Maximum') {
-    const config = inputAndArgs as MaximumNode<D>['inputAndArgs'];
+    const config = inputAndArgs as MaximumNode['inputAndArgs'];
     return backend.maximum(config.inputs.a, config.inputs.b) as O;
   } else if (kernelName === 'Ceil') {
     const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
@@ -376,10 +376,10 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
 export interface KernelConfigRegistry<R extends Rank> {
   MatMul: MatMulNode;
   Clone: UnaryNode<R>;
-  Slice1D: Slice1DNode<D>;
-  Slice2D: Slice2DNode<D>;
-  Slice3D: Slice3DNode<D>;
-  Slice4D: Slice4DNode<D>;
+  Slice1D: Slice1DNode;
+  Slice2D: Slice2DNode;
+  Slice3D: Slice3DNode;
+  Slice4D: Slice4DNode;
   Reverse4D: Reverse4DNode;
   Concat1D: Concat1DNode;
   Concat2D: Concat2DNode;
@@ -390,7 +390,7 @@ export interface KernelConfigRegistry<R extends Rank> {
   Sub: BinaryNode;
   Mul: BinaryNode;
   Div: BinaryNode;
-  Sum: SumNode<D>;
+  Sum: SumNode;
   ArgMax: ArgMaxNode;
   ArgMin: ArgMinNode;
   Equal: EqualNode;
@@ -404,10 +404,10 @@ export interface KernelConfigRegistry<R extends Rank> {
   Where: WhereNode;
   TopKValues: TopKValuesNode<R>;
   TopKIndices: TopKIndicesNode;
-  Min: MinNode<D>;
-  Minimum: MinimumNode<D>;
-  Max: MaxNode<D>;
-  Maximum: MaximumNode<D>;
+  Min: MinNode;
+  Minimum: MinimumNode;
+  Max: MaxNode;
+  Maximum: MaximumNode;
   Ceil: UnaryNode<R>;
   Floor: UnaryNode<R>;
   Pow: PowNode<R>;

@@ -17,7 +17,7 @@
 
 import {NamedArrayMap} from '../../util';
 import {NDArray} from '../ndarray';
-import {DataType, Rank} from '../types';
+import {Rank} from '../types';
 import {KernelConfigRegistry} from './kernel_registry';
 
 export type Tape = Array<TapeNode<TapeNodeOutput>>;
@@ -31,9 +31,7 @@ export interface TapeNode<T extends TapeNodeOutput> {
   inputAndArgs: TapeNodeInputConfig;
 
   output: T;
-  gradient:
-      (dy: NDArray|NamedArrayMap<'float32'>,
-       y: T) => TapeNodeInputGradientArrays;
+  gradient: (dy: NDArray|NamedArrayMap, y: T) => TapeNodeInputGradientArrays;
 }
 
 export interface TapeNodeInputConfig { inputs: NamedArrayMap; }
@@ -44,7 +42,7 @@ export type TapeNodeInputGradientArrays = {
 
 // Kernel nodes
 export interface KernelNode extends TapeNode<NDArray> {
-  kernel: keyof KernelConfigRegistry<DataType, Rank>;
+  kernel: keyof KernelConfigRegistry<Rank>;
   inputAndArgs: KernelInputConfig;
   output: NDArray;
 }

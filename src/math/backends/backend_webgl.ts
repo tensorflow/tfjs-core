@@ -24,8 +24,8 @@ import {NDArrayMath} from '../math';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
-import {SumTypes, SumTypesMap} from '../types';
-import {DataType, DataTypeMap, Rank} from '../types';
+import {DataType, DataTypeMap, DataVal, Rank} from '../types';
+
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -118,7 +118,7 @@ export class MathBackendWebGL implements MathBackend {
     // Pixel data is immediate storage since it already lives on gpu.
     this.gpgpu.uploadPixelDataToTexture(texture, pixels);
   }
-  write(dataId: number, values: DataTypeMap[D]): void {
+  write(dataId: number, values: DataVal): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
@@ -139,7 +139,7 @@ export class MathBackendWebGL implements MathBackend {
     }
   }
 
-  readSync(dataId: number): DataTypeMap[D] {
+  readSync(dataId: number): DataVal {
     this.throwIfNoData(dataId);
     const {texture, values, textureType, texShape, numChannels} =
         this.texData[dataId];
@@ -158,7 +158,7 @@ export class MathBackendWebGL implements MathBackend {
     this.cacheOnCPU(dataId, float32Values);
     return this.texData[dataId].values;
   }
-  async read(dataId: number): Promise<DataTypeMap[D]> {
+  async read(dataId: number): Promise<DataVal> {
     this.throwIfNoData(dataId);
     const {texture, values, textureType, texShape} = this.texData[dataId];
     if (values != null) {
@@ -242,7 +242,7 @@ export class MathBackendWebGL implements MathBackend {
     // Pretend the source was in logical shape that matches the texture shape.
     const source = x.as2D(texShape[0], texShape[1]);
     // Do the same for output.
-    const output = this.makeOutputArray<D, Array2D>(texShape, x.dtype);
+    const output = this.makeOutputArray<Array2D>(texShape, x.dtype);
     this.copy2D(source, [0, 0], texShape, output, [0, 0], texShape);
     // Get back to the original logical shape.
     return output.reshape(x.shape) as T;

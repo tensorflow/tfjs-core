@@ -19,15 +19,15 @@
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
-import {DataType, DataTypeMap, Rank} from '../types';
-import {SumTypes} from '../types';
+import {DataType, DataVal, Rank} from '../types';
+
 import {MatrixOrientation} from './types/matmul';
 
 export interface NDArrayStorage {
-  read(dataId: number): Promise<DataTypeMap[D]>;
-  readSync(dataId: number): DataTypeMap[D];
+  read(dataId: number): Promise<DataVal>;
+  readSync(dataId: number): DataVal;
   disposeData(dataId: number): void;
-  write(dataId: number, values: DataTypeMap[D]): void;
+  write(dataId: number, values: DataVal): void;
   writePixels(
       dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
@@ -72,7 +72,7 @@ export interface MathBackend extends NDArrayStorage {
   multiply(a: NDArray, b: NDArray): NDArray;
   divide(a: NDArray, b: NDArray): NDArray;
 
-  sum(x: NDArray, axes: number[]): NDArray<SumTypes[D]>;
+  sum(x: NDArray, axes: number[]): NDArray;
 
   argMin(x: NDArray, axes: number[]): NDArray;
   argMax(x: NDArray, axes: number[]): NDArray;
@@ -89,7 +89,7 @@ export interface MathBackend extends NDArrayStorage {
   logicalAnd(a: NDArray, b: NDArray): NDArray;
   logicalOr(a: NDArray, b: NDArray): NDArray;
 
-  where(condition: NDArray, a: NDArray, b: NDArray, dtype: D): NDArray;
+  where(condition: NDArray, a: NDArray, b: NDArray, dtype: DataType): NDArray;
 
   topKValues<T extends NDArray>(x: T, k: number): Array1D;
   topKIndices(x: NDArray, k: number): Array1D;

@@ -149,16 +149,15 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   /** @deprecated Please use dl.randTruncatedNormal() */
-  static randTruncatedNormal<D extends keyof RandNormalDataTypes,
-                                       R extends Rank>(
-      shape: ShapeMap[R], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): NDArray<R> {
+  static randTruncatedNormal<R extends Rank>(
+      shape: ShapeMap[R], mean = 0, stdDev = 1,
+      dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
     return array_ops.Ops.randTruncatedNormal(shape, mean, stdDev, dtype, seed);
   }
 
   /** @deprecated Please use dl.randUniform() */
-  static randUniform<D extends DataType, R extends Rank>(
-      shape: ShapeMap[R], a: number, b: number, dtype?: D): NDArray<R> {
+  static randUniform<R extends Rank>(
+      shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
     return array_ops.Ops.randUniform(shape, a, b, dtype);
   }
 

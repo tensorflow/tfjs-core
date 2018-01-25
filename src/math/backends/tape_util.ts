@@ -156,7 +156,7 @@ export function backpropagateGradients(
   for (let i = filteredTape.length - 1; i >= 0; i--) {
     const node = filteredTape[i];
 
-    let dy: NDArray|NamedArrayMap<'float32'>;
+    let dy: NDArray|NamedArrayMap;
     if (node.output instanceof NDArray) {
       dy = arrayAccumulatedGradientMap[node.output.id];
     } else {

@@ -80,7 +80,7 @@ export class Ops {
    * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
   @operation
-  static sub<T extends NDArray<D1>>(a: NDArray<R>, b: NDArray<D2>): T {
+  static sub<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
@@ -181,7 +181,7 @@ export class Ops {
    * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
   @operation
-  static mul<T extends NDArray<D1>>(a: NDArray<R>, b: NDArray<D2>): T {
+  static mul<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
@@ -289,7 +289,7 @@ export class Ops {
 
   /** @deprecated Use div(A, c) instead. */
   @operation
-  static arrayDividedByScalar(a: T, c: Scalar): T {
+  static arrayDividedByScalar<T extends NDArray>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
         `Error in arrayDividedByScalar: second argument must be rank 0, ` +
@@ -305,7 +305,7 @@ export class Ops {
    * @param b The second ndarray. Must have the same type as `a`.
    */
   @operation
-  static minimum<T extends NDArray<D1>>(a: NDArray<R>, b: NDArray<D2>): T {
+  static minimum<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return ENV.engine.executeKernel('Minimum', {inputs: {a, b}}) as T;
@@ -333,7 +333,7 @@ export class Ops {
    * @param b The second ndarray. Must have the same type as `a`.
    */
   @operation
-  static maximum<T extends NDArray<D1>>(a: NDArray<R>, b: NDArray<D2>): T {
+  static maximum<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     return ENV.engine.executeKernel('Maximum', {inputs: {a, b}}) as T;

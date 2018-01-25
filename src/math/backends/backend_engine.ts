@@ -18,7 +18,7 @@
 import * as util from '../../util';
 import {NamedArrayMap} from '../../util';
 import {NDArray, Scalar, Variable} from '../ndarray';
-import {DataType, Rank} from '../types';
+import {Rank} from '../types';
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
@@ -203,7 +203,7 @@ export class BackendEngine {
   }
 
   private gradientWrt<R extends Rank>(
-      y: NDArray<R>, xs: NDArray[], dy?: NDArray<'float32', R>): NDArray[] {
+      y: NDArray<R>, xs: NDArray[], dy?: NDArray<R>): NDArray[] {
     // Filter out the nodes that don't connect x => y.
     const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {
@@ -241,9 +241,8 @@ export class BackendEngine {
   scope<T extends ScopeResult>(
       name: string,
       scopeFn:
-          (keep: <T1 extends NDArray<D1>>(ndarray: T1) => T1,
-           track: <D2 extends DataType, T2 extends NDArray<D2>>(ndarray: T2) =>
-               T2) => T,
+          (keep: <T1 extends NDArray>(ndarray: T1) => T1,
+           track: <T2 extends NDArray>(ndarray: T2) => T2) => T,
       gradientsMode: boolean): T {
     this.startScope(gradientsMode);
 

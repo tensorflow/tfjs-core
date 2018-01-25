@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
-import {DataType, Rank} from './types';
+import {Rank} from './types';
 
 export class Ops {
   /**

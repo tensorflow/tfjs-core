@@ -40,7 +40,7 @@ import * as reverse from './reverse';
 import * as slice from './slice';
 import * as transpose from './transpose';
 import * as types from './types';
-import {DataType, DataTypeMap, Rank} from './types';
+import {DataType, DataVal, Rank} from './types';
 import * as unary_ops from './unary_ops';
 
 export interface LSTMCell {
@@ -221,13 +221,13 @@ export class NDArrayMath implements NDArrayManager {
       numChannels: number): void {
     this.backend.writePixels(dataId, pixels, numChannels);
   }
-  write(dataId: number, values: DataTypeMap[D]): void {
+  write(dataId: number, values: DataVal): void {
     this.backend.write(dataId, values);
   }
-  readSync(dataId: number): DataTypeMap[D] {
+  readSync(dataId: number): DataVal {
     return this.backend.readSync(dataId);
   }
-  read(dataId: number): Promise<DataTypeMap[D]> {
+  read(dataId: number): Promise<DataVal> {
     return this.backend.read(dataId);
   }
 
@@ -383,7 +383,7 @@ export class NDArrayMath implements NDArrayManager {
    * Casts a tensor to a new type. If the new type matches the old type,
    * this is a no-op.
    */
-  cast<R extends Rank>(x: NDArray<R>, newDType: D): NDArray<R> {
+  cast<R extends Rank>(x: NDArray<R>, newDType: DataType): NDArray<R> {
     const grad = (dy: NDArray, y: NDArray) => {
       return {x: () => dy.reshape(dy.shape)};
     };
@@ -485,7 +485,7 @@ export class NDArrayMath implements NDArrayManager {
    *     which indicates the last dimension.
    */
   softmax<R extends Rank, T extends NDArray<R>>(logits: NDArray<R>, dim = -1):
-      NDArray<'float32', R> {
+      NDArray<R> {
     if (dim === -1) {
       dim = logits.rank - 1;
     }
@@ -693,7 +693,7 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /** @deprecated Use math.sub(A, c) instead. */
-  arrayMinusScalar(a: T, c: Scalar): T {
+  arrayMinusScalar<T extends NDArray>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
         `Error in arrayMinusScalar: second argument must be rank 0, but ` +
@@ -1042,8 +1042,7 @@ export class NDArrayMath implements NDArrayManager {
    * an object mapping a string to an NDArray. If using the object mode, this
    * method will return an object of the same shape.
    */
-  gradients<T extends NDArray|NamedArrayMap, D extends DataType>(
-      f: () => Scalar, x: T): T {
+  gradients<T extends NDArray|NamedArrayMap>(f: () => Scalar, x: T): T {
     const keys = x instanceof NDArray ? null : Object.keys(x);
     const xs = util.flattenNameArrayMap(x, keys);
 
@@ -1097,8 +1096,8 @@ export class NDArrayMath implements NDArrayManager {
    * an object mapping a string to an NDArray. If using the object mode,
    * this method will return an object of the same shape.
    */
-  valueAndGradients<T extends NDArray|NamedArrayMap, D extends DataType>(
-      f: () => Scalar, x: T): {value: Scalar, gradients: T} {
+  valueAndGradients<T extends NDArray|NamedArrayMap>(f: () => Scalar, x: T):
+      {value: Scalar, gradients: T} {
     const keys = x instanceof NDArray ? null : Object.keys(x);
     const xs = util.flattenNameArrayMap(x, keys);
 

@@ -332,7 +332,8 @@ export function squeezeShape(shape: number[], axis?: number[]):
   return {newShape, keptDims};
 }
 
-export function getTypedArrayFromDType(dtype: D, size: number): DataTypeMap[D] {
+export function getTypedArrayFromDType<D extends DataType>(
+    dtype: DataType, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
     values = new Float32Array(size);
@@ -418,7 +419,7 @@ export function nextFrame(): Promise<void> {
   return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 }
 
-export function copyTypedArray(
+export function copyTypedArray<D extends DataType>(
     array: DataTypeMap[D]|number[]|boolean[], dtype: D): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
