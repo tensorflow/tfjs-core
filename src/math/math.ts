@@ -19,7 +19,6 @@ import {BackendType, ENV} from '../environment';
 import * as util from '../util';
 import {NamedArrayMap, NamedVariableMap} from '../util';
 
-import * as array_ops from './array_ops';
 import * as axis_util from './axis_util';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
@@ -35,6 +34,7 @@ import * as matmul from './matmul';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
 import * as norm from './norm';
+import * as pad_ops from './pad';
 import * as pool from './pool';
 import * as reduction_ops from './reduction_ops';
 import * as reverse from './reverse';
@@ -185,8 +185,8 @@ export class NDArrayMath implements NDArrayManager {
 
   norm = norm.Ops.norm;
 
-  pad1D = array_ops.Ops.pad1D;
-  pad2D = array_ops.Ops.pad2D;
+  pad1D = pad_ops.Ops.pad1D;
+  pad2D = pad_ops.Ops.pad2D;
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
