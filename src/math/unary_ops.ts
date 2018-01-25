@@ -29,7 +29,11 @@ export class Ops {
   @operation
   static neg<D extends DataType, R extends Rank>(x: NDArray<D, R>):
       RankMap<D>[R] {
-    return ENV.engine.executeKernel('Neg', {inputs: {x}}) as RankMap<D>[R];
+    return ENV.engine.executeKernel(
+               'Neg', {inputs: {x}},
+               (dy: NDArray<'float32', R>, y: NDArray<D, R>) => {
+                 return {x: () => dy.mul(Scalar.new(-1))};
+               }) as RankMap<D>[R];
   }
 
   /**
