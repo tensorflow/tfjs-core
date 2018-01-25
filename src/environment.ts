@@ -233,7 +233,7 @@ export class Environment {
       const webGLVersion = this.get('WEBGL_VERSION');
 
       if (webGLVersion === 0) {
-        return false;
+        return 0;
       }
 
       return getWebGLDisjointQueryTimerVersion(webGLVersion);
