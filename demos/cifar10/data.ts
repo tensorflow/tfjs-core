@@ -1,10 +1,5 @@
-import {Array3D, ENV, NDArray, XhrDataset, XhrDatasetConfig} from 'deeplearn';
-import {Array4D} from 'deeplearn/dist/math/ndarray';
+import * as dl from 'deeplearn';
 
-interface Label {
-  label: number;
-  labelString: string;
-}
 
 /**
  * Load all of the Cifar10 data and then return a subset of it.
@@ -12,8 +7,8 @@ interface Label {
  * @param limit number of images and labels to return
  */
 export async function loadCifarData(limit = 100):
-    Promise<{images: NDArray[], labelled: Label[]}> {
-  const datasetConfig: XhrDatasetConfig = {
+    Promise<{images: dl.NDArray[], labels: dl.NDArray[]}> {
+  const datasetConfig: dl.XhrDatasetConfig = {
     'data': [
       {
         'name': 'images',
@@ -39,7 +34,7 @@ export async function loadCifarData(limit = 100):
     modelConfigs: null,
   };
 
-  const dataset = new XhrDataset(datasetConfig);
+  const dataset = new dl.XhrDataset(datasetConfig);
 
   await dataset.fetchData();
   let [images, labels] = dataset.getData();
@@ -48,30 +43,47 @@ export async function loadCifarData(limit = 100):
   labels = labels.slice(0, limit);
 
   // Resize the images
-  images = images.map((i) => ENV.math.resizeBilinear3D(i as Array3D, [24, 24]));
+  images = images.map(
+      (i) => dl.ENV.math.resizeBilinear3D(i as dl.Array3D, [24, 24]));
 
-  const labelled = labels.map((l) => {
-    const label = ENV.math.argMax(l).get(0);
-    const labelString = datasetConfig.labelClassNames[label];
+  // const labelled = labels.map((l) => {
+  //   const label = ENV.math.argMax(l).get(0);
+  //   const labelString = datasetConfig.labelClassNames[label];
 
-    return {label, labelString};
-  });
+  //   return {label, labelString};
+  // });
 
-  return {images, labelled};
+  return {images, labels};
 }
 
 /**
  * Convert an array of Array3d's to one Array4D
  * @param images
  */
-export function toArray4d(images: Array3D[]): Array4D {
-  const asArray4d: Array4D[] = images.map((i) => {
+export function toArray4d(images: dl.Array3D[]): dl.Array4D {
+  const asArray4d: dl.Array4D[] = images.map((i) => {
     const newShape = [1, ...i.shape];
-    return i.reshape(newShape) as Array4D;
+    return i.reshape(newShape) as dl.Array4D;
   });
 
   const all =
-      asArray4d.reduce((memo, curr) => ENV.math.concat4D(memo, curr, 0));
+      asArray4d.reduce((memo, curr) => dl.ENV.math.concat4D(memo, curr, 0));
+
+  return all;
+}
+
+/**
+ * Convert an array of Array1d's to one Array2D
+ * @param images
+ */
+export function toArray2d(input: dl.Array1D[]): dl.Array2D {
+  const asArray2d: dl.Array2D[] = input.map((i) => {
+    const newShape = [1, ...i.shape];
+    return i.reshape(newShape) as dl.Array2D;
+  });
+
+  const all =
+      asArray2d.reduce((memo, curr) => dl.ENV.math.concat2D(memo, curr, 0));
 
   return all;
 }

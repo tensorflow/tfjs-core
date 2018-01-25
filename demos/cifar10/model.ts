@@ -21,19 +21,6 @@ export function inference(
     modelVars: {[varName: string]: dl.NDArray}, input: dl.Array4D) {
   const math = dl.ENV.math;
 
-  const labelStrings = [
-    'airplane',
-    'automobile',
-    'bird',
-    'cat',
-    'deer',
-    'dog',
-    'frog',
-    'horse',
-    'ship',
-    'truck',
-  ];
-
   const batchSize = input.shape[0];
 
   // Load the weights and biases from the serialized model
@@ -114,8 +101,6 @@ export function inference(
 
   const logits = finalRes.reshape([-1, 10]) as dl.Array2D;
   const prediction = math.argMax(finalRes, 1) as dl.Array1D<'int32'>;
-  const predictionLabel =
-      Array.from(prediction.dataSync()).map(i => labelStrings[i]);
 
-  return {logits, prediction, predictionLabel};
+  return {logits, prediction};
 }

@@ -1,39 +1,44 @@
 import * as dl from 'deeplearn';
 
-import {loadCifarData, toArray4d} from './data';
+import {loadCifarData, toArray2d, toArray4d} from './data';
 import {inference, loadModelVariables} from './model';
 
 async function start() {
   console.log('Start');
 
   const [modelVars, testData] =
-      await Promise.all([loadModelVariables('weights/'), loadCifarData()]);
+      await Promise.all([loadModelVariables('weights/'), loadCifarData(10000)]);
 
   console.log('Loaded model, loaded data');
 
-  let correct = 0;
+  let numCorrect = 0;
   const total = testData.images.length;
 
   // Make a batch
-  const batchSize = 50;
+  const batchSize = 500;
   for (let start = 0; start < testData.images.length; start += batchSize) {
-    const batch =
-        testData.images.slice(start, start + batchSize) as dl.Array3D[];
-    const inputBatch = toArray4d(batch);
-    const labelBatch = testData.labelled.slice(start, start + batchSize);
+    const inputBatch = toArray4d(
+        testData.images.slice(start, start + batchSize) as dl.Array3D[]);
 
-    const res = inference(modelVars, inputBatch);
+    const truePredAsNDarray = toArray2d(
+        testData.labels.slice(start, start + batchSize) as dl.Array1D[]);
+    const truePredictions = dl.ENV.math.argMax(truePredAsNDarray, 1);
 
-    for (let i = 0; i < res.predictionLabel.length; i++) {
-      const predictionLabel = res.predictionLabel[i];
-      const trueLabel = labelBatch[i].labelString;
-      if (predictionLabel === trueLabel) {
-        correct += 1;
-      }
-    }
+    console.time(`Inference Time:batchSize=${batchSize}`);
+    const {prediction} = inference(modelVars, inputBatch);
+    console.timeEnd(`Inference Time:batchSize=${batchSize}`);
+
+    const batchCorrect =
+        dl.ENV.math.sum(dl.ENV.math.equal(prediction, truePredictions)).get(0);
+
+    numCorrect += batchCorrect;
+
+    console.log('batchCorrect', batchCorrect);
   }
+
   console.log(
-      'Correct', correct, ' Total: ', total, ' Accuracy', correct / total);
+      'Correct', numCorrect, ' Total: ', total, ' Accuracy',
+      numCorrect / total);
 }
 
 start();
