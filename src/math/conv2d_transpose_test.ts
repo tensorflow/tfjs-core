@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
+import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
-import {Array2D, Array3D, Array4D, NDArray} from './ndarray';
+import {Array2D, Array3D, Array4D} from './ndarray';
 
 // math.conv2dTranspose
 {
@@ -106,7 +106,7 @@ import {Array2D, Array3D, Array4D, NDArray} from './ndarray';
          const origStride = 1;
 
          const x = Array3D.new(inputShape, [2, 2]);
-         const w = NDArray.randNormal<'4'>(
+         const w = dl.randNormal<'4'>(
              [fSize, fSize, origInputDepth, wrongOrigOutputDepth]);
 
          expect(

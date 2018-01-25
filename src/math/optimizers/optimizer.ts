@@ -23,7 +23,7 @@ import * as session_util from '../../graph/session_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {NDArray, Scalar, Variable} from '../../math/ndarray';
-import {NamedArrayMap} from '../../util';
+import {NamedArrayMap} from '../types';
 
 export abstract class Optimizer {
   protected variableNodes: VariableNode[];

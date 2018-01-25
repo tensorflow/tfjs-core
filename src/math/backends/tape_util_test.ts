@@ -16,11 +16,10 @@
  * =============================================================================
  */
 
+import {NamedArrayMap} from '../../math/types';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
-import {NamedArrayMap} from '../../util';
 import {NDArray, Scalar, variable, Variable} from '../ndarray';
-
 // tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';

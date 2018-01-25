@@ -16,8 +16,8 @@
  */
 
 import * as util from '../../util';
-import {NamedArrayMap} from '../../util';
 import {NDArray, Variable} from '../ndarray';
+import {NamedArrayMap} from '../types';
 
 // tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';

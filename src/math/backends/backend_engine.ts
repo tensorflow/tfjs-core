@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
+import {NamedArrayMap} from '../../math/types';
 import * as util from '../../util';
-import {NamedArrayMap} from '../../util';
 import {NDArray, Scalar, Variable} from '../ndarray';
 import {Rank} from '../types';
 import {MathBackend} from './backend';

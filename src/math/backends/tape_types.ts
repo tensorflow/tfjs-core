@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../util';
+import {NamedArrayMap} from '../../math/types';
 import {NDArray} from '../ndarray';
 import {Rank} from '../types';
 import {KernelConfigRegistry} from './kernel_registry';

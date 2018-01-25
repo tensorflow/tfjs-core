@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
+import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D, Array2D, NDArray} from './ndarray';
+import {Array1D, Array2D} from './ndarray';
 
 const tests: MathTests = it => {
   const NUM_SAMPLES = 10000;
@@ -58,7 +59,7 @@ const tests: MathTests = it => {
 
   it('Flip a ten-sided coin and check bounds', math => {
     const numOutcomes = 10;
-    const probs = NDArray.zeros<'1'>([numOutcomes]);
+    const probs = dl.zeros<'1'>([numOutcomes]);
     for (let i = 0; i < numOutcomes; ++i) {
       probs.set(1 / numOutcomes, i);
     }
@@ -94,7 +95,7 @@ const tests: MathTests = it => {
   });
 
   it('passing Array3D throws error', math => {
-    const probs = NDArray.zeros([3, 2, 2]) as Array1D;
+    const probs = dl.zeros([3, 2, 2]) as Array1D;
     expect(() => math.multinomial(probs, 3)).toThrowError();
   });
 

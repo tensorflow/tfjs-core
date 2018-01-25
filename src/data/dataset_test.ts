@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as dl from '../index';
 import {Array2D, NDArray} from '../math/ndarray';
 import * as test_util from '../test_util';
 
@@ -41,8 +42,8 @@ describe('Dataset', () => {
         Array2D.new([2, 3], [4, 5, 40, -4, 4, 1])
       ],
       [
-        NDArray.randNormal([1]), NDArray.randNormal([1]),
-        NDArray.randNormal([1]), NDArray.randNormal([1])
+        dl.randNormal([1]), dl.randNormal([1]), dl.randNormal([1]),
+        dl.randNormal([1])
       ]
     ];
     const dataset = new StubDataset(data);
