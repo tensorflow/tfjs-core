@@ -66,7 +66,11 @@ export class Ops {
   @operation
   static exp<D extends DataType, R extends Rank>(x: NDArray<D, R>):
       RankMap<D>[R] {
-    return ENV.engine.executeKernel('Exp', {inputs: {x}}) as RankMap<D>[R];
+    return ENV.engine.executeKernel(
+               'Exp', {inputs: {x}},
+               (dy: NDArray<'float32', R>, y: NDArray<D, R>) => {
+                 return {x: () => dy.mul(Ops.exp(x.asType('float32')))};
+               }) as RankMap<D>[R];
   }
 
   /**
@@ -76,7 +80,11 @@ export class Ops {
   @operation
   static log<D extends DataType, R extends Rank>(x: NDArray<D, R>):
       RankMap<D>[R] {
-    return ENV.engine.executeKernel('Log', {inputs: {x}}) as RankMap<D>[R];
+    return ENV.engine.executeKernel(
+               'Log', {inputs: {x}},
+               (dy: NDArray<'float32', R>, y: NDArray<D, R>) => {
+                 return {x: () => dy.div(x.asType('float32'))};
+               }) as RankMap<D>[R];
   }
 
   /**
