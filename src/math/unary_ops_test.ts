@@ -666,7 +666,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(5);
+      const a = Scalar.new(0.5);
       const dy = Scalar.new(8);
 
       const gradients = math.vjp(() => math.tan(a), a, dy);
@@ -674,7 +674,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
       test_util.expectArraysClose(
-          gradients, [8 * (1 + Math.tan(5) * Math.tan(5))], 1);
+          gradients, [8 / (Math.cos(0.5) * Math.cos(0.5))], 1e-1);
     });
 
     it('gradients: Array1D', math => {
@@ -688,7 +688,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const expected = [];
       for (let i = 0; i < a.size; i++) {
         expected[i] =
-            dyValues[i] * (1 + Math.tan(aValues[i]) * Math.tan(aValues[i]));
+            dyValues[i] / (Math.cos(aValues[i]) * Math.cos(aValues[i]));
       }
 
       expect(gradients.shape).toEqual(a.shape);
@@ -707,7 +707,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const expected = [];
       for (let i = 0; i < a.size; i++) {
         expected[i] =
-            dyValues[i] * (1 + Math.tan(aValues[i]) * Math.tan(aValues[i]));
+            dyValues[i] / (Math.cos(aValues[i]) * Math.cos(aValues[i]));
       }
 
       expect(gradients.shape).toEqual(a.shape);
