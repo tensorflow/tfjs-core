@@ -21,8 +21,10 @@ import * as binary_ops from './binary_ops';
 import * as compare_ops from './compare';
 import * as concat_ops from './concat';
 import * as conv_ops from './conv';
+import * as logical_ops from './logical_ops';
 import * as matmul_ops from './matmul';
 import * as norm_ops from './norm';
+import * as pad_ops from './pad';
 import * as pool_ops from './pool';
 import * as reduction_ops from './reduction_ops';
 import * as reverse_ops from './reverse';
@@ -92,6 +94,10 @@ export const lessEqualStrict = compare_ops.Ops.lessEqualStrict;
 export const notEqual = compare_ops.Ops.notEqual;
 export const notEqualStrict = compare_ops.Ops.notEqualStrict;
 
+export const logicalAnd = logical_ops.Ops.logicalAnd;
+export const logicalOr = logical_ops.Ops.logicalOr;
+export const where = logical_ops.Ops.where;
+
 export const abs = unary_ops.Ops.abs;
 export const acos = unary_ops.Ops.acos;
 export const asin = unary_ops.Ops.asin;
@@ -145,3 +151,5 @@ export const rand = array_ops.Ops.rand;
 export const randNormal = array_ops.Ops.randNormal;
 export const randTruncatedNormal = array_ops.Ops.randTruncatedNormal;
 export const randUniform = array_ops.Ops.randUniform;
+export const pad1D = pad_ops.Ops.pad1D;
+export const pad2D = pad_ops.Ops.pad2D;
