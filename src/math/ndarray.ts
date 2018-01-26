@@ -602,12 +602,6 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   step(alpha = 0.0): RankMap<D>[R] {
     return ops.step(this, alpha);
   }
-
-  toString(): string {
-    // const constructor =
-    const constructors = ['Scalar', 'Array1D', 'Array2D', 'Array3D', 'Array4D'];
-    return `${constructors[parseInt(this.rankType, 10)]}[${this.shape}]`;
-  }
 }
 
 export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {
