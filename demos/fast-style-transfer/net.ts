@@ -112,7 +112,8 @@ export class TransformNet implements Model {
     const newShape: [number, number, number] = [newRows, newCols, numFilters];
 
     const y = this.math.conv2dTranspose(
-        input, this.variables[this.varName(varId)] as Array4D, newShape,
+        input as Array3D<'float32'>,
+        this.variables[this.varName(varId)] as Array4D, newShape,
         [strides, strides], 'same');
 
     const y2 = this.instanceNorm(y, varId + 1);

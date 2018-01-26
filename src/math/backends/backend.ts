@@ -32,8 +32,22 @@ export interface NDArrayStorage {
       dataId: number,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void;
-  time(query: () => NDArray): Promise<number>;
   register(dataId: number, shape: number[], dtype: DataType): void;
+}
+
+export interface TimerQuery {
+  startMs: number;
+  endMs?: number;
+}
+
+export interface BackendTimer {
+  time(f: () => NDArray): Promise<number>;
+  // Calling these three functions independently should be equivalent to calling
+  // time. We split them up so we can queue getQueryTimer promises so they don't
+  // run in parallel.
+  startTimer(): {};
+  endTimer(query: {}): {};
+  getQueryTime(query: {}): Promise<number>;
 }
 
 /**
@@ -42,7 +56,7 @@ export interface NDArrayStorage {
  * methods, this can be done gradually (throw an error for unimplemented
  * methods).
  */
-export interface MathBackend extends NDArrayStorage {
+export interface MathBackend extends NDArrayStorage, BackendTimer {
   matMul(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D;

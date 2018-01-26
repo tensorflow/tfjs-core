@@ -62,8 +62,8 @@ export class ConvGPUBenchmark implements BenchmarkTest {
       W = Array4D.randUniform(wShape, -1, 1);
       x = Array3D.randUniform([size, size, regParams.outDepth], -1, 1);
 
-      benchmark = () =>
-          math.conv2dTranspose(x, W, [size, size, inDepth], stride, pad);
+      benchmark = () => math.conv2dTranspose(
+          x as Array3D<'float32'>, W, [size, size, inDepth], stride, pad);
     } else if (opType === 'depthwise') {
       const depthwiseParams = params as DepthwiseConvParams;
       const wShape = conv_util.computeWeightsShape4D(

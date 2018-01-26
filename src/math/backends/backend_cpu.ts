@@ -28,7 +28,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../ndarray';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, SumTypes, SumTypesMap} from '../types';
 import * as axis_util from './../axis_util';
-import {MathBackend} from './backend';
+import {MathBackend, TimerQuery} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
@@ -110,11 +110,27 @@ export class MathBackendCPU implements MathBackend {
   disposeData(dataId: number): void {
     delete this.data[dataId];
   }
-  async time(query: () => NDArray): Promise<number> {
-    const start = performance.now();
-    query();
-    return performance.now() - start;
+
+  time(f: () => NDArray): Promise<number> {
+    const query = this.startTimer();
+    f();
+    this.endTimer(query);
+    return this.getQueryTime(query);
   }
+
+  startTimer(): TimerQuery {
+    return {startMs: performance.now(), endMs: null};
+  }
+
+  endTimer(query: TimerQuery): TimerQuery {
+    query.endMs = performance.now();
+    return query;
+  }
+
+  async getQueryTime(query: TimerQuery): Promise<number> {
+    return query.endMs - query.startMs;
+  }
+
   private throwIfNoData(dataId: number) {
     if (!(dataId in this.data)) {
       throw new Error(

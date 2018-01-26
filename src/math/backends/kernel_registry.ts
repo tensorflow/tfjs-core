@@ -460,3 +460,4 @@ export interface KernelConfigRegistry<D extends DataType, R extends Rank> {
   Multinomial: MultinomialNode;
   OneHot: OneHotNode;
 }
+export type Kernel = keyof KernelConfigRegistry<DataType, Rank>;

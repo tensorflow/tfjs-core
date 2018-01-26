@@ -46,11 +46,11 @@ reader.getAllVariables().then(async vars => {
     const lstm2 =
         math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
 
-    let c = [
+    let c: Array2D[] = [
       Array2D.zeros([1, lstmBias1.shape[0] / 4]),
       Array2D.zeros([1, lstmBias2.shape[0] / 4])
     ];
-    let h = [
+    let h: Array2D[] = [
       Array2D.zeros([1, lstmBias1.shape[0] / 4]),
       Array2D.zeros([1, lstmBias2.shape[0] / 4])
     ];

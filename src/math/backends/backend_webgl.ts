@@ -26,7 +26,7 @@ import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
 import {DataType, DataTypeMap, Rank} from '../types';
-import {MathBackend} from './backend';
+import {MathBackend, TimerQuery} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
@@ -173,7 +173,7 @@ export class MathBackendWebGL implements MathBackend {
       return this.texData[dataId].values;
     }
 
-    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0) {
       return this.readSync(dataId);
     }
 
@@ -182,15 +182,42 @@ export class MathBackendWebGL implements MathBackend {
     await this.gpgpu.runQuery(() => {});
     return this.readSync(dataId);
   }
-  async time(query: () => NDArray): Promise<number> {
-    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+  async time(f: () => NDArray): Promise<number> {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0) {
       const start = performance.now();
-      const a = query();
+      const a = f();
       await a.data();
       return performance.now() - start;
     }
-    return this.gpgpu.runQuery(query);
+    return this.gpgpu.runQuery(f);
   }
+
+  startTimer(): WebGLQuery|TimerQuery {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
+      return this.gpgpu.beginQuery();
+    }
+    return {startMs: performance.now(), endMs: null};
+  }
+
+  endTimer(query: WebGLQuery|TimerQuery): WebGLQuery|
+      {startMs: number, endMs: number} {
+    if (query instanceof WebGLQuery) {
+      this.gpgpu.endQuery();
+      return query;
+    }
+    (query as TimerQuery).endMs = performance.now();
+    return query;
+  }
+
+  async getQueryTime(query: WebGLQuery|TimerQuery): Promise<number> {
+    if (query instanceof WebGLQuery) {
+      return this.gpgpu.pollQueryTime(query);
+    }
+    const timerQuery = query as TimerQuery;
+
+    return timerQuery.endMs - timerQuery.startMs;
+  }
+
   disposeData(dataId: number): void {
     if (dataId in this.texData) {
       const {texture, texShape} = this.texData[dataId];
