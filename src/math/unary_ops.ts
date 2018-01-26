@@ -219,7 +219,10 @@ export class Ops {
    */
   @operation
   static sin<R extends Rank, T extends NDArray<R>>(x: T): T {
-    return ENV.engine.executeKernel('Sin', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel(
+               'Sin', {inputs: {x}}, (dy: NDArray<R>, y: NDArray<R>) => {
+                 return {x: () => dy.mul(Ops.cos(x.toFloat()))};
+               }) as T;
   }
 
   /**
@@ -228,7 +231,12 @@ export class Ops {
    */
   @operation
   static cos<R extends Rank, T extends NDArray<R>>(x: T): T {
-    return ENV.engine.executeKernel('Cos', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel(
+               'Cos', {inputs: {x}}, (dy: NDArray<R>, y: NDArray<R>) => {
+                 return {
+                   x: () => dy.mul(Ops.sin(x.toFloat()).mul(Scalar.new(-1)))
+                 };
+               }) as T;
   }
 
   /**
@@ -237,7 +245,13 @@ export class Ops {
    */
   @operation
   static tan<R extends Rank, T extends NDArray<R>>(x: T): T {
-    return ENV.engine.executeKernel('Tan', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel(
+               'Tan', {inputs: {x}}, (dy: NDArray<R>, y: NDArray<R>) => {
+                 return {
+                   x: () => dy.mul(
+                       Ops.square(Ops.tan(x.toFloat())).add(Scalar.new(1)))
+                 };
+               }) as T;
   }
 
   /**
