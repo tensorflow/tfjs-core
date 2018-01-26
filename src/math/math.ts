@@ -38,7 +38,6 @@ import * as reduction_ops from './reduction_ops';
 import * as reverse from './reverse';
 import * as slice from './slice';
 import * as transpose from './transpose';
-import * as types from './types';
 import {NamedArrayMap, NamedVariableMap} from './types';
 import {DataType, Rank, TypedArray} from './types';
 import * as unary_ops from './unary_ops';
