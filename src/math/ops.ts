@@ -21,6 +21,7 @@ import * as binary_ops from './binary_ops';
 import * as compare_ops from './compare';
 import * as concat_ops from './concat';
 import * as conv_ops from './conv';
+import * as logical_ops from './logical_ops';
 import * as matmul_ops from './matmul';
 import * as norm_ops from './norm';
 import * as pool_ops from './pool';
@@ -91,6 +92,10 @@ export const lessEqual = compare_ops.Ops.lessEqual;
 export const lessEqualStrict = compare_ops.Ops.lessEqualStrict;
 export const notEqual = compare_ops.Ops.notEqual;
 export const notEqualStrict = compare_ops.Ops.notEqualStrict;
+
+export const logicalAnd = logical_ops.Ops.logicalAnd;
+export const logicalOr = logical_ops.Ops.logicalOr;
+export const where = logical_ops.Ops.where;
 
 export const abs = unary_ops.Ops.abs;
 export const acos = unary_ops.Ops.acos;
