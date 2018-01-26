@@ -560,14 +560,14 @@ import {Array1D, Array2D, Scalar} from './ndarray';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(5);
+      const a = Scalar.new(0.5);
       const dy = Scalar.new(3);
 
       const gradients = math.vjp(() => math.exp(a), a, dy);
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [3 * Math.exp(5)], 1);
+      test_util.expectArraysClose(gradients, [3 * Math.exp(0.5)], 1e-1);
     });
 
     it('gradients: Array1D', math => {
