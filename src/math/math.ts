@@ -422,10 +422,10 @@ export class NDArrayMath implements NDArrayManager {
   /**
    * Returns the truth value of a XOR b element-wise. Supports broadcasting.
    *
-   * @param a The first input `NDArray<'bool'>`.
-   * @param b The second input `NDArray<'bool'>`.
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`.
    */
-  logicalXor(a: NDArray<'bool'>, b: NDArray<'bool'>): NDArray<'bool'> {
+  logicalXor(a: NDArray, b: NDArray): NDArray {
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
