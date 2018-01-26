@@ -17,9 +17,11 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
+
 import * as axis_util from './axis_util';
 import {operation} from './decorators';
-import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
+import {Rank} from './types';
 
 export class Ops {
   /**
@@ -79,6 +81,32 @@ export class Ops {
              rank ${x.rank}.`);
     const axisCleaned = axis_util.parseAxisParam(axis, x.shape);
     return ENV.engine.executeKernel(
-        'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}});
+               'Reverse4D', {inputs: {x}, args: {axis: axisCleaned}}) as
+        Array4D;
+  }
+
+  /**
+   * Reverses an NDArray along a specified axis.
+   *
+   * @param x The input array.
+   * @param axis The set of dimensions to reverse. Must be in the
+   *     range [-rank(x), rank(x)).
+   */
+  @operation
+  static reverse<R extends Rank>(x: NDArray<R>, axis: number|number[]):
+      NDArray<R> {
+    if (x.rank === 0) {
+      return x.reshape(x.shape);
+    } else if (x.rank === 1) {
+      return Ops.reverse1D(x as Array1D) as NDArray<R>;
+    } else if (x.rank === 2) {
+      return Ops.reverse2D(x as Array2D, axis) as NDArray<R>;
+    } else if (x.rank === 3) {
+      return Ops.reverse3D(x as Array3D, axis) as NDArray<R>;
+    } else if (x.rank === 4) {
+      return Ops.reverse4D(x as Array4D, axis) as NDArray<R>;
+    } else {
+      throw new Error(`Reverse for rank ${x.rank} is not yet implemented`);
+    }
   }
 }

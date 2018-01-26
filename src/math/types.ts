@@ -1,5 +1,3 @@
-import {DataType} from './ndarray';
-
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -17,58 +15,68 @@ import {DataType} from './ndarray';
  * =============================================================================
  */
 
-export interface SumTypes {
-  float32: 'float32';
-  int32: 'int32';
-  bool: 'int32';
-}
+import {NDArray, Variable} from './ndarray';
 
-export enum SumTypesMap {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'int32'
-}
-
-export interface UpcastInt32And {
-  float32: 'float32';
-  int32: 'int32';
-  bool: 'int32';
-}
-
-export enum UpcastInt32AndMap {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'int32'
-}
-
-export interface UpcastBoolAnd {
-  float32: 'float32';
-  int32: 'int32';
-  bool: 'bool';
-}
-
-export enum UpcastBoolAndMap {
+export enum DType {
   float32 = 'float32',
   int32 = 'int32',
   bool = 'bool'
 }
 
-export interface UpcastFloat32And {
-  float32: 'float32';
-  int32: 'float32';
-  bool: 'float32';
+export interface ShapeMap {
+  R0: number[];
+  R1: [number];
+  R2: [number, number];
+  R3: [number, number, number];
+  R4: [number, number, number, number];
 }
 
-export enum UpcastFloat32AndMap {
+/** @hidden */
+export interface DataTypeMap {
+  float32: Float32Array;
+  int32: Int32Array;
+  bool: Uint8Array;
+}
+export type DataType = keyof DataTypeMap;
+export type TypedArray = DataTypeMap[DataType];
+
+export enum Rank {
+  R0 = 'R0',
+  R1 = 'R1',
+  R2 = 'R2',
+  R3 = 'R3',
+  R4 = 'R4'
+}
+
+export type FlatVector = boolean[]|number[]|TypedArray;
+export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
+export type ArrayData<D extends DataType> =
+    DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
+
+export type NamedArrayMap = {
+  [name: string]: NDArray
+};
+
+export type NamedVariableMap = {
+  [name: string]: Variable;
+};
+
+enum UpcastInt32AndMap {
+  float32 = 'float32',
+  int32 = 'int32',
+  bool = 'int32'
+}
+
+enum UpcastBoolAndMap {
+  float32 = 'float32',
+  int32 = 'int32',
+  bool = 'bool'
+}
+
+enum UpcastFloat32AndMap {
   float32 = 'float32',
   int32 = 'float32',
   bool = 'float32'
-}
-
-export interface UpcastType {
-  float32: UpcastFloat32And;
-  int32: UpcastInt32And;
-  bool: UpcastBoolAnd;
 }
 
 const upcastTypeMap = {
@@ -79,4 +87,9 @@ const upcastTypeMap = {
 
 export function upcastType(typeA: DataType, typeB: DataType): DataType {
   return upcastTypeMap[typeA][typeB];
+}
+
+/** Returns the output type after summation. */
+export function sumOutType(type: DataType) {
+  return upcastType(type, 'int32');
 }

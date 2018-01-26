@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {NDArrayMath} from './math';
-import {NDArray, Scalar} from './ndarray';
+import {NDArrayMath} from '../math/math';
+import {NDArray, Scalar} from '../math/ndarray';
 
 /** A node's activation function and its derivative. */
 export interface ActivationFunction {
@@ -29,14 +29,14 @@ export class TanHFunc implements ActivationFunction {
   private one = Scalar.new(1);
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.tanh(x);
+    return math.tanh(x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
     return math.scope(() => {
       const ySquared = math.multiplyStrict(y, y);
       // 1 - y^2.
-      return math.subtract(this.one, ySquared as NDArray<'float32'>) as T;
+      return math.subtract(this.one, ySquared as NDArray) as T;
     });
   }
 
@@ -47,11 +47,11 @@ export class TanHFunc implements ActivationFunction {
 
 export class ReLUFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.relu(x);
+    return math.relu(x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.step(x);
+    return math.step(x) as T;
   }
 
   dispose() {}
@@ -65,11 +65,11 @@ export class LeakyReluFunc implements ActivationFunction {
   }
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.leakyRelu(x, this.alpha);
+    return math.leakyRelu(x, this.alpha) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.step(x, this.alpha);
+    return math.step(x, this.alpha) as T;
   }
 
   dispose() {}
@@ -77,14 +77,14 @@ export class LeakyReluFunc implements ActivationFunction {
 
 export class SigmoidFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.sigmoid(x);
+    return math.sigmoid(x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T): T {
     return math.scope(() => {
       // y * (1 - y) = y - y^2
       const ySquared = math.multiplyStrict(y, y);
-      return math.subStrict(y, ySquared);
+      return math.subStrict(y, ySquared) as T;
     });
   }
 
@@ -95,12 +95,12 @@ export class SquareFunc implements ActivationFunction {
   private two = Scalar.new(2);
 
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.multiplyStrict(x, x);
+    return math.multiplyStrict(x, x) as T;
   }
 
   der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
     // dy/dx = 2*x.
-    return math.multiply(this.two, x as NDArray<'float32'>) as T;
+    return math.multiply(this.two, x as NDArray) as T;
   }
 
   dispose() {
@@ -110,11 +110,11 @@ export class SquareFunc implements ActivationFunction {
 
 export class EluFunc implements ActivationFunction {
   output<T extends NDArray>(math: NDArrayMath, x: T) {
-    return math.elu(x);
+    return math.elu(x) as T;
   }
 
-  der<T extends NDArray>(math: NDArrayMath, x: T, y: T) {
-    return math.eluDer(x);
+  der<T extends NDArray>(math: NDArrayMath, x: T, y: T): T {
+    throw new Error('Not implemented');
   }
 
   dispose() {}

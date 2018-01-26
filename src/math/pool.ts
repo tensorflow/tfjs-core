@@ -19,7 +19,8 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import * as conv_util from './conv_util';
 import {operation} from './decorators';
-import {Array4D, DataType, NDArray, Rank, RankMap} from './ndarray';
+import {Array4D, NDArray} from './ndarray';
+import {Rank} from './types';
 
 export class Ops {
   /**
@@ -42,7 +43,7 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static maxPool<T extends NDArray>(
+  static maxPool<R extends Rank.R3|Rank.R4, T extends NDArray<R>>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -64,7 +65,7 @@ export class Ops {
     const convInfo = conv_util.computePool2DInfo(
         x4D.shape, filterSize, strides, pad, dimRoundingMode);
 
-    const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
+    const gradients = (dy: Array4D, y: Array4D) => {
       return {x: () => Ops.maxPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
     const res = ENV.engine.executeKernel(
@@ -94,11 +95,10 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static maxPoolBackprop<
-      D extends DataType, R extends Rank, T extends RankMap<'float32'>[R]>(
-      dy: NDArray<'float32', R>, input: NDArray<D, R>,
-      filterSize: [number, number]|number, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+  static maxPoolBackprop<R extends Rank, T extends NDArray<R>>(
+      dy: T, input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
@@ -157,7 +157,7 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static minPool<T extends NDArray>(
+  static minPool<R extends Rank.R3|Rank.R4, T extends NDArray<R>>(
       input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -206,10 +206,10 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static avgPool<R extends '3'|'4'>(
-      x: NDArray<'int32'|'float32', R>, filterSize: [number, number]|number,
+  static avgPool<R extends Rank.R3|Rank.R4, T extends NDArray<R>>(
+      x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): RankMap<'float32'>[R] {
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as Array4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -229,16 +229,15 @@ export class Ops {
     const convInfo =
         conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
 
-    const gradients = (dy: Array4D<'float32'>, y: Array4D) => {
+    const gradients = (dy: Array4D, y: Array4D) => {
       return {x: () => Ops.avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
     const res = ENV.engine.executeKernel(
         'AvgPool', {inputs: {x: x4D}, args: {convInfo}}, gradients);
     if (reshapedTo4D) {
-      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as
-          RankMap<'float32'>[R];
+      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
-    return res as RankMap<'float32'>[R];
+    return res as T;
   }
 
   /**
@@ -256,11 +255,9 @@ export class Ops {
    *     used in the forward prop of the op.
    */
   @operation
-  static avgPoolBackprop<D extends DataType, R extends
-                         '3'|'4', T extends RankMap<'float32'>[R]>(
-      dy: NDArray<'float32', R>, input: NDArray<D, R>,
-      filterSize: [number, number]|number, strides: [number, number]|number,
-      pad: 'valid'|'same'|number): T {
+  static avgPoolBackprop<R extends Rank.R3|Rank.R4, T extends NDArray<R>>(
+      dy: T, input: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
