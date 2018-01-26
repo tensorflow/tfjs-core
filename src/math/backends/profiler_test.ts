@@ -39,13 +39,10 @@ class TestBackendTimer implements BackendTimer {
   }
 }
 
-{
-  const tests: MathTests = it => {
-    it('profiles simple function ', () => {
-      const profiler = new Profiler(new TestBackendTimer());
-      console.log(profiler);
-    });
-
-    test_util.describeMathCPU('profiler.Profiler', [tests]);
-  };
-}
+const tests: MathTests = it => {
+  it('profiles simple function ', () => {
+    const profiler = new Profiler(new TestBackendTimer());
+    console.log(profiler);
+  });
+};
+test_util.describeMathCPU('profiler.Profiler', [tests]);
