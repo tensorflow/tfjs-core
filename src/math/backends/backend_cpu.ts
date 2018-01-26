@@ -137,7 +137,7 @@ export class MathBackendCPU implements MathBackend {
 
   slice2D(x: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    const result = ops.zeros<'2'>(size, x.dtype);
+    const result = ops.zeros<Rank.R2>(size, x.dtype);
     const [startI, startJ] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -152,7 +152,7 @@ export class MathBackendCPU implements MathBackend {
   slice3D(x: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
-    const result = ops.zeros<'3'>(size, x.dtype);
+    const result = ops.zeros<Rank.R3>(size, x.dtype);
     const [startI, startJ, startK] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -168,7 +168,7 @@ export class MathBackendCPU implements MathBackend {
   slice4D(x: Array4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Array4D {
-    const result = ops.zeros<'4'>(size, x.dtype);
+    const result = ops.zeros<Rank.R4>(size, x.dtype);
     const [startI, startJ, startK, startL] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -211,7 +211,7 @@ export class MathBackendCPU implements MathBackend {
 
   concat1D(a: Array1D, b: Array1D): Array1D {
     const outShape = concat_util.computeOutShape(a.shape, b.shape, 0);
-    const result = ops.zeros<'1'>(outShape as [number]);
+    const result = ops.zeros<Rank.R1>(outShape as [number]);
 
     // Use built-in TypedArray.set() method for speed.
     const aVals = a.dataSync();
@@ -225,7 +225,7 @@ export class MathBackendCPU implements MathBackend {
 
   concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
-    const result = ops.zeros<'2'>(outShape as [number, number]);
+    const result = ops.zeros<Rank.R2>(outShape as [number, number]);
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
@@ -258,7 +258,7 @@ export class MathBackendCPU implements MathBackend {
   concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
 
-    const result = ops.zeros<'3'>(outShape as [number, number, number]);
+    const result = ops.zeros<Rank.R3>(outShape as [number, number, number]);
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
@@ -294,7 +294,8 @@ export class MathBackendCPU implements MathBackend {
 
   concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
     const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
-    const result = ops.zeros<'4'>(outShape as [number, number, number, number]);
+    const result =
+        ops.zeros<Rank.R4>(outShape as [number, number, number, number]);
 
     if (axis === 0) {
       // Use built-in TypedArray.set() method for speed.
@@ -976,7 +977,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const y = ops.zeros<'4'>(convInfo.outShape);
+    const y = ops.zeros<Rank.R4>(convInfo.outShape);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
@@ -1016,7 +1017,7 @@ export class MathBackendCPU implements MathBackend {
     const leftPad = filterWidth - 1 - convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-    const dx = ops.zeros<'4'>(convInfo.inShape);
+    const dx = ops.zeros<Rank.R4>(convInfo.inShape);
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
         for (let xR = 0; xR < convInfo.inHeight; ++xR) {
@@ -1059,7 +1060,7 @@ export class MathBackendCPU implements MathBackend {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const dW = ops.zeros<'4'>(convInfo.filterShape);
+    const dW = ops.zeros<Rank.R4>(convInfo.filterShape);
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
@@ -1118,7 +1119,7 @@ export class MathBackendCPU implements MathBackend {
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
-    const y = ops.zeros<'4'>(convInfo.outShape);
+    const y = ops.zeros<Rank.R4>(convInfo.outShape);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
@@ -1179,8 +1180,8 @@ export class MathBackendCPU implements MathBackend {
     const rightPadding = paddings[1];
 
     const values = x.dataSync();
-    const result =
-        ops.zeros<'1'>([leftPadding + values.length + rightPadding], x.dtype);
+    const result = ops.zeros<Rank.R1>(
+        [leftPadding + values.length + rightPadding], x.dtype);
     const newValues = result.dataSync();
 
     let z = 0;
@@ -1207,7 +1208,7 @@ export class MathBackendCPU implements MathBackend {
       leftPadding + x.shape[1] + rightPadding
     ];
 
-    const result = ops.zeros<'2'>(newShape, x.dtype);
+    const result = ops.zeros<Rank.R2>(newShape, x.dtype);
     const newValues = result.dataSync();
 
     const values = x.dataSync();
@@ -1281,7 +1282,7 @@ export class MathBackendCPU implements MathBackend {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const y = ops.zeros<'4'>(convInfo.outShape);
+    const y = ops.zeros<Rank.R4>(convInfo.outShape);
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
     for (let b = 0; b < convInfo.batchSize; ++b) {
@@ -1331,7 +1332,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   maxPoolPositions(x: Array4D, convInfo: Conv2DInfo) {
-    const maxPositions = ops.zeros<'4'>(convInfo.outShape);
+    const maxPositions = ops.zeros<Rank.R4>(convInfo.outShape);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -1378,7 +1379,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
-    const dx = ops.zeros<'4'>(x.shape);
+    const dx = ops.zeros<Rank.R4>(x.shape);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -1428,7 +1429,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
-    const dx = ops.zeros<'4'>(x.shape);
+    const dx = ops.zeros<Rank.R4>(x.shape);
 
     const avgMultiplier = 1 / (filterHeight * filterWidth);
 
@@ -1476,7 +1477,8 @@ export class MathBackendCPU implements MathBackend {
   resizeBilinear3D(
       x: Array3D, newShape2D: [number, number],
       alignCorners: boolean): Array3D {
-    const output = ops.zeros<'3'>([newShape2D[0], newShape2D[1], x.shape[2]]);
+    const output =
+        ops.zeros<Rank.R3>([newShape2D[0], newShape2D[1], x.shape[2]]);
 
     const effectiveInputSize =
         alignCorners ? [x.shape[0] - 1, x.shape[1] - 1, x.shape[2]] : x.shape;
@@ -1587,7 +1589,7 @@ export class MathBackendCPU implements MathBackend {
   localResponseNormalization4D(
       x: Array4D, radius: number, bias: number, alpha: number, beta: number,
       normRegion: 'acrossChannels'|'withinChannel'): Array4D {
-    const output = ops.zeros<'4'>(x.shape);
+    const output = ops.zeros<Rank.R4>(x.shape);
     const rad = radius;
     const maxW = output.shape[1] - 1;
     const maxH = output.shape[2] - 1;
@@ -1638,7 +1640,7 @@ export class MathBackendCPU implements MathBackend {
       Array2D {
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
-    const res = ops.zeros<'2'>([batchSize, numSamples], 'int32');
+    const res = ops.zeros<Rank.R2>([batchSize, numSamples], 'int32');
     const resVals = res.dataSync();
     const probVals = probabilities.dataSync();
 

@@ -24,12 +24,11 @@ export enum DType {
 }
 
 export interface ShapeMap {
-  0: number[];
-  1: [number];
-  2: [number, number];
-  3: [number, number, number];
-  4: [number, number, number, number];
-  higher: number[];
+  R0: number[];
+  R1: [number];
+  R2: [number, number];
+  R3: [number, number, number];
+  R4: [number, number, number, number];
 }
 
 /** @hidden */
@@ -41,8 +40,13 @@ export interface DataTypeMap {
 export type DataType = keyof DataTypeMap;
 export type TypedArray = DataTypeMap[DataType];
 
-// TODO(smilkov): Make this enum.
-export type Rank = '0'|'1'|'2'|'3'|'4'|'higher';
+export enum Rank {
+  R0 = 'R0',
+  R1 = 'R1',
+  R2 = 'R2',
+  R3 = 'R3',
+  R4 = 'R4'
+}
 
 export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];

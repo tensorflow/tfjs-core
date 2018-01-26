@@ -19,6 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, variable, Variable} from './ndarray';
+import {Rank} from './types';
 
 const tests: MathTests = it => {
   it('simple assign', math => {
@@ -57,7 +58,7 @@ const tests: MathTests = it => {
   });
 
   it('variables are not affected by scopes', math => {
-    let v: Variable<'1'>;
+    let v: Variable<Rank.R1>;
     expect(math.getNumArrays()).toBe(0);
 
     math.scope(() => {
@@ -77,33 +78,33 @@ const tests: MathTests = it => {
 
   it('variables are assignable to ndarrays', () => {
     // This test asserts compilation, not doing any run-time assertion.
-    const x0: Variable<'0'> = null;
+    const x0: Variable<Rank.R0> = null;
     const y0: Scalar = x0;
     expect(y0).toBeNull();
 
-    const x1: Variable<'1'> = null;
+    const x1: Variable<Rank.R1> = null;
     const y1: Array1D = x1;
     expect(y1).toBeNull();
 
-    const x2: Variable<'2'> = null;
+    const x2: Variable<Rank.R2> = null;
     const y2: Array2D = x2;
     expect(y2).toBeNull();
 
-    const x3: Variable<'3'> = null;
+    const x3: Variable<Rank.R3> = null;
     const y3: Array3D = x3;
     expect(y3).toBeNull();
 
-    const x4: Variable<'4'> = null;
+    const x4: Variable<Rank.R4> = null;
     const y4: Array4D = x4;
     expect(y4).toBeNull();
 
-    const xh: Variable<'higher'> = null;
+    const xh: Variable = null;
     const yh: NDArray = xh;
     expect(yh).toBeNull();
   });
 
   it('assign will dispose old data', math => {
-    let v: Variable<'1'>;
+    let v: Variable<Rank.R1>;
     v = variable(Array1D.new([1, 2, 3]));
     expect(math.getNumArrays()).toBe(1);
     test_util.expectArraysClose(v, [1, 2, 3]);

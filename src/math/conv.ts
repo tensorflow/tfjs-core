@@ -285,7 +285,7 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static conv2dDerFilter<R extends '3'|'4'>(
+  static conv2dDerFilter<R extends Rank.R3|Rank.R4>(
       x: NDArray<R>, dy: NDArray<R>,
       filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,

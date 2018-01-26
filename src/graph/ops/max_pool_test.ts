@@ -19,9 +19,11 @@ import {ENV} from '../../environment';
 import * as dl from '../../index';
 import * as conv_util from '../../math/conv_util';
 import {Array3D} from '../../math/ndarray';
+import {Rank} from '../../math/types';
 import * as test_util from '../../test_util';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
+
 import {MaxPool} from './max_pool';
 
 describe('Max pool', () => {
@@ -138,7 +140,7 @@ describe('Max pool', () => {
     const stride = 2;
     const pad = 0;
 
-    const x = dl.randNormal<'3'>([6, 6, 5]);
+    const x = dl.randNormal<Rank.R3>([6, 6, 5]);
 
     xTensor = new Tensor(x.shape);
     yTensor = new Tensor(conv_util.computeOutputShape3D(

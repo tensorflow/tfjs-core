@@ -19,6 +19,7 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {Array4D} from './ndarray';
+import {Rank} from './types';
 
 // math.depthwiseConv2D
 {
@@ -148,8 +149,8 @@ import {Array4D} from './ndarray';
       const chMul = 3;
       const inDepth = 2;
 
-      const x = dl.zeros<'3'>([3, 3, inDepth]);
-      const w = dl.zeros<'4'>([fSize, fSize, inDepth, chMul]);
+      const x = dl.zeros<Rank.R3>([3, 3, inDepth]);
+      const w = dl.zeros<Rank.R4>([fSize, fSize, inDepth, chMul]);
       const result = math.depthwiseConv2D(x, w, stride, pad);
       expect(result.shape).toEqual([3, 3, inDepth * chMul]);
     });

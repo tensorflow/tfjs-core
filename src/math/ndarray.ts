@@ -46,7 +46,7 @@ export class NDArray<R extends Rank = Rank> {
   size: number;
   /** The data type for the array. */
   dtype: DataType;
-  /** The rank type for the array ('0','1','2','3','4','higher'). */
+  /** The rank type for the array (see `Rank` enum). */
   rankType: R;
 
   /**
@@ -183,27 +183,27 @@ export class NDArray<R extends Rank = Rank> {
   asScalar(): Scalar {
     this.throwIfDisposed();
     util.assert(this.size === 1, 'The array must have only 1 element.');
-    return this.reshape<'0'>([]);
+    return this.reshape<Rank.R0>([]);
   }
 
   as1D(): Array1D {
     this.throwIfDisposed();
-    return this.reshape<'1'>([this.size]);
+    return this.reshape<Rank.R1>([this.size]);
   }
 
   as2D(rows: number, columns: number): Array2D {
     this.throwIfDisposed();
-    return this.reshape<'2'>([rows, columns]);
+    return this.reshape<Rank.R2>([rows, columns]);
   }
 
   as3D(rows: number, columns: number, depth: number): Array3D {
     this.throwIfDisposed();
-    return this.reshape<'3'>([rows, columns, depth]);
+    return this.reshape<Rank.R3>([rows, columns, depth]);
   }
 
   as4D(rows: number, columns: number, depth: number, depth2: number): Array4D {
     this.throwIfDisposed();
-    return this.reshape<'4'>([rows, columns, depth, depth2]);
+    return this.reshape<Rank.R4>([rows, columns, depth, depth2]);
   }
 
   asType<D2 extends DataType>(dtype: D2): NDArray<R> {
@@ -376,7 +376,7 @@ export class NDArray<R extends Rank = Rank> {
       pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
     return ops.avgPool(
-               this as NDArray<'3'|'4'>, filterSize, strides, pad,
+               this as NDArray<Rank.R3|Rank.R4>, filterSize, strides, pad,
                dimRoundingMode) as NDArray<R>;
   }
   maxPool(
@@ -384,7 +384,7 @@ export class NDArray<R extends Rank = Rank> {
       pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
     return ops.maxPool(
-               this as NDArray<'3'|'4'>, filterSize, strides, pad,
+               this as NDArray<Rank.R3|Rank.R4>, filterSize, strides, pad,
                dimRoundingMode) as NDArray<R>;
   }
   minPool(
@@ -392,7 +392,7 @@ export class NDArray<R extends Rank = Rank> {
       pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
     return ops.minPool(
-               this as NDArray<'3'|'4'>, filterSize, strides, pad,
+               this as NDArray<Rank.R3|Rank.R4>, filterSize, strides, pad,
                dimRoundingMode) as NDArray<R>;
   }
   clone(): NDArray<R> {
@@ -592,14 +592,14 @@ export class NDArray<R extends Rank = Rank> {
   }
 }
 
-export class Scalar extends NDArray<'0'> {
+export class Scalar extends NDArray<Rank.R0> {
   static new(value: number|boolean, dtype?: DataType): Scalar {
     const values = [value] as number[] | boolean[];
     return new Scalar([], dtype, toTypedArray(values, dtype));
   }
 }
 
-export class Array1D extends NDArray<'1'> {
+export class Array1D extends NDArray<Rank.R1> {
   static new<D extends DataType = 'float32'>(
       values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Array1D {
     if (!instanceofTypedArray(values)) {
@@ -613,7 +613,7 @@ export class Array1D extends NDArray<'1'> {
   }
 }
 
-export class Array2D extends NDArray<'2'> {
+export class Array2D extends NDArray<Rank.R2> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number],
       values: DataTypeMap[D]|number[]|number[][]|boolean[]|boolean[][],
@@ -632,7 +632,7 @@ export class Array2D extends NDArray<'2'> {
   }
 }
 
-export class Array3D extends NDArray<'3'> {
+export class Array3D extends NDArray<Rank.R3> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number],
       values: DataTypeMap[D]|number[]|number[][][]|boolean[]|boolean[][][],
@@ -651,7 +651,7 @@ export class Array3D extends NDArray<'3'> {
   }
 }
 
-export class Array4D extends NDArray<'4'> {
+export class Array4D extends NDArray<Rank.R4> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number, number],
       values: DataTypeMap[D]|number[]|number[][][][]|boolean[]|boolean[][][][],

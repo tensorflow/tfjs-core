@@ -19,9 +19,11 @@ import {ENV} from '../../environment';
 import * as dl from '../../index';
 import * as conv_util from '../../math/conv_util';
 import {Array1D, Array2D, NDArray} from '../../math/ndarray';
+import {Rank} from '../../math/types';
 import * as test_util from '../../test_util';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
+
 import {Convolution2D} from './convolution';
 
 function assertNoNaNs(t: NDArray) {
@@ -106,10 +108,9 @@ describe('Convolution', () => {
     const outputDepth = 2;
     const fSize = 3;
     const stride = 1;
-
     const weights = dl.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = dl.randNormal([outputDepth]);
-    const x = dl.randNormal<'3'>([5, 5, inputDepth]);
+    const x = dl.randNormal<Rank.R3>([5, 5, inputDepth]);
 
     wTensor = new Tensor(weights.shape);
     xTensor = new Tensor(x.shape);
@@ -139,7 +140,7 @@ describe('Convolution', () => {
 
     const weights = dl.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = dl.randNormal([outputDepth]);
-    const x = dl.randNormal<'3'>([5, 5, inputDepth]);
+    const x = dl.randNormal<Rank.R3>([5, 5, inputDepth]);
 
     wTensor = new Tensor(weights.shape);
     xTensor = new Tensor(x.shape);
@@ -170,7 +171,7 @@ describe('Convolution', () => {
 
     const weights = dl.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = dl.randNormal([outputDepth]);
-    const x = dl.randNormal<'3'>([30, 30, inputDepth]);
+    const x = dl.randNormal<Rank.R3>([30, 30, inputDepth]);
 
     wTensor = new Tensor(weights.shape);
     xTensor = new Tensor(x.shape);
@@ -203,7 +204,7 @@ describe('Convolution', () => {
     const stride = 1;
     const zeroPad = 0;
 
-    const x3d = dl.randNormal<'3'>([3, 3, inputDepth]);
+    const x3d = dl.randNormal<Rank.R3>([3, 3, inputDepth]);
     const x = x3d.as2D(3, 3);
     const weights = dl.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = dl.randNormal([outputDepth]);
@@ -315,7 +316,7 @@ describe('Convolution', () => {
 
     const weights = dl.randNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = dl.randNormal([outputDepth]);
-    const x = dl.randNormal<'3'>([10, 10, inputDepth]);
+    const x = dl.randNormal<Rank.R3>([10, 10, inputDepth]);
 
     wTensor = new Tensor(weights.shape);
     xTensor = new Tensor(x.shape);

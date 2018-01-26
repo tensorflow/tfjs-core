@@ -43,7 +43,7 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static maxPool<R extends '3'|'4', T extends NDArray<R>>(
+  static maxPool<R extends Rank.R3|Rank.R4, T extends NDArray<R>>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -157,7 +157,7 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static minPool<R extends '3'|'4', T extends NDArray<R>>(
+  static minPool<R extends Rank.R3|Rank.R4, T extends NDArray<R>>(
       input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -206,7 +206,7 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static avgPool<R extends '3'|'4', T extends NDArray<R>>(
+  static avgPool<R extends Rank.R3|Rank.R4, T extends NDArray<R>>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -255,7 +255,7 @@ export class Ops {
    *     used in the forward prop of the op.
    */
   @operation
-  static avgPoolBackprop<R extends '3'|'4', T extends NDArray<R>>(
+  static avgPoolBackprop<R extends Rank.R3|Rank.R4, T extends NDArray<R>>(
       dy: T, input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
     util.assert(
