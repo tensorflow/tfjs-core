@@ -27,11 +27,11 @@ export class Ops {
   /**
    * Returns the truth value of a AND b element-wise. Supports broadcasting.
    *
-   * @param a The first input `NDArray<'bool'>`.
-   * @param b The second input `NDArray<'bool'>`.
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`.
    */
   @operation
-  static logicalAnd(a: NDArray<'bool'>, b: NDArray<'bool'>): NDArray<'bool'> {
+  static logicalAnd(a: NDArray, b: NDArray): NDArray {
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
@@ -42,11 +42,11 @@ export class Ops {
   /**
    * Returns the truth value of a OR b element-wise. Supports broadcasting.
    *
-   * @param a The first input `NDArray<'bool'>`.
-   * @param b The second input `NDArray<'bool'>`.
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`.
    */
   @operation
-  static logicalOr(a: NDArray<'bool'>, b: NDArray<'bool'>): NDArray<'bool'> {
+  static logicalOr(a: NDArray, b: NDArray): NDArray {
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
@@ -65,7 +65,7 @@ export class Ops {
    * @return An `NDArray` with the same type and shape as `a` and `b`.
    */
   @operation
-  static where<T extends NDArray>(condition: NDArray<'bool'>, a: T, b: T): T {
+  static where<T extends NDArray>(condition: NDArray, a: T, b: T): T {
     util.assert(
         condition.dtype === 'bool' || a.dtype === 'bool' || b.dtype === 'bool',
         'Error Array must be of type bool.');
