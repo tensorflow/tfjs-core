@@ -32,6 +32,7 @@ import * as matmul from './matmul';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
 import * as norm from './norm';
+import * as ops from './ops';
 import * as pad_ops from './pad';
 import * as pool from './pool';
 import * as reduction_ops from './reduction_ops';
