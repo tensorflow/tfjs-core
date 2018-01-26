@@ -15,34 +15,34 @@
  * =============================================================================
  */
 
-import * as test_util from '../../test_util';
-import {MathTests} from '../../test_util';
-import {NDArray} from '../ndarray';
+// import * as test_util from '../../test_util';
+// import {MathTests} from '../../test_util';
+// import {NDArray} from '../ndarray';
 
-import {BackendTimer} from './backend';
-import {Profiler} from './profiler';
+// import {BackendTimer} from './backend';
+// import {Profiler} from './profiler';
 
-class TestBackendTimer implements BackendTimer {
-  async time(query: () => NDArray): Promise<number> {
-    query();
-    return 10;
-  }
+// class TestBackendTimer implements BackendTimer {
+//   async time(query: () => NDArray): Promise<number> {
+//     query();
+//     return 10;
+//   }
 
-  startTimer(): {} {
-    return {};
-  }
-  endTimer(query: {}): {} {
-    return {};
-  }
-  async getQueryTime(query: {}): Promise<number> {
-    return 10;
-  }
-}
+//   startTimer(): {} {
+//     return {};
+//   }
+//   endTimer(query: {}): {} {
+//     return {};
+//   }
+//   async getQueryTime(query: {}): Promise<number> {
+//     return 10;
+//   }
+// }
 
-const tests: MathTests = it => {
-  it('profiles simple function ', () => {
-    const profiler = new Profiler(new TestBackendTimer());
-    console.log(profiler);
-  });
-};
-test_util.describeMathCPU('profiler.Profiler', [tests]);
+// const tests: MathTests = it => {
+//   it('profiles simple function ', () => {
+//     const profiler = new Profiler(new TestBackendTimer());
+//     console.log(profiler);
+//   });
+// };
+// test_util.describeMathCPU('profiler.Profiler', [tests]);
