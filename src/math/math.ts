@@ -187,8 +187,8 @@ export class NDArrayMath implements NDArrayManager {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
-  time(query: () => NDArray): Promise<number> {
-    return this.backend.time(query);
+  time(f: () => NDArray): Promise<number> {
+    return this.backend.time(f);
   }
 
   getNumArrays() {

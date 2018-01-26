@@ -28,7 +28,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../ndarray';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, SumTypes, SumTypesMap} from '../types';
 import * as axis_util from './../axis_util';
-import {MathBackend} from './backend';
+import {MathBackend, TimerQuery} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
@@ -111,22 +111,23 @@ export class MathBackendCPU implements MathBackend {
     delete this.data[dataId];
   }
 
-  async time(query: () => NDArray): Promise<number> {
-    const start = performance.now();
-    query();
-    return performance.now() - start;
+  time(f: () => NDArray): Promise<number> {
+    const query = this.startTimer();
+    f();
+    this.endTimer(query);
+    return this.getQueryTime(query);
   }
 
-  startTimer(): {startMs: number, endMs: null} {
+  startTimer(): TimerQuery {
     return {startMs: performance.now(), endMs: null};
   }
 
-  endTimer(query: {startMs: number, endMs: null}):
-      {startMs: number, endMs: number} {
-    return {startMs: query.startMs, endMs: performance.now()};
+  endTimer(query: TimerQuery): TimerQuery {
+    query.endMs = performance.now();
+    return query;
   }
 
-  async getQueryTime(query: {startMs: number, endMs: number}): Promise<number> {
+  async getQueryTime(query: TimerQuery): Promise<number> {
     return query.endMs - query.startMs;
   }
 

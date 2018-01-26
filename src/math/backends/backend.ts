@@ -35,9 +35,13 @@ export interface NDArrayStorage {
   register(dataId: number, shape: number[], dtype: DataType): void;
 }
 
+export interface TimerQuery {
+  startMs: number;
+  endMs?: number;
+}
+
 export interface BackendTimer {
-  // Time a function, resolves with the ellapsed time.
-  time(query: () => NDArray): Promise<number>;
+  time(f: () => NDArray): Promise<number>;
   // Calling these three functions independently should be equivalent to calling
   // time. We split them up so we can queue getQueryTimer promises so they don't
   // run in parallel.
