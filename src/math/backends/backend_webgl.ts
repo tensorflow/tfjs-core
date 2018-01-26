@@ -63,6 +63,7 @@ import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as webgl_util from './webgl/webgl_util';
+import {WebGLQuery} from './webgl/webgl_util';
 
 export class MathBackendWebGL implements MathBackend {
   private texData: {[dataId: number]: TextureData} = {};
@@ -201,7 +202,7 @@ export class MathBackendWebGL implements MathBackend {
 
   endTimer(query: WebGLQuery|TimerQuery): WebGLQuery|
       {startMs: number, endMs: number} {
-    if (query instanceof WebGLQuery) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       this.gpgpu.endQuery();
       return query;
     }
@@ -210,7 +211,7 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   async getQueryTime(query: WebGLQuery|TimerQuery): Promise<number> {
-    if (query instanceof WebGLQuery) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       return this.gpgpu.pollQueryTime(query);
     }
     const timerQuery = query as TimerQuery;

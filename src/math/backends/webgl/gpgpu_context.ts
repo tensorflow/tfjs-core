@@ -17,18 +17,19 @@
 
 import {ENV} from '../../../environment';
 import * as util from '../../../util';
+
 import * as gpgpu_util from './gpgpu_util';
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
 // tslint:disable-next-line:max-line-length
-import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension} from './webgl_util';
+import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension, WebGL2RenderingContext, WebGLLoseContextExtension, WebGLQuery} from './webgl_util';
 
 export class GPGPUContext {
-  gl: WebGLRenderingContext|WebGL2RenderingContext;
-  textureFloatExtension: OESTextureFloat;
+  gl: WebGLRenderingContext;
+  textureFloatExtension: {};
   colorBufferFloatExtension: {};
   getBufferSubDataAsyncExtension: {};
-  loseContextExtension: WebGLLoseContext;
+  loseContextExtension: WebGLLoseContextExtension;
   disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension|
       WebGL1DisjointQueryTimerExtension;
   vertexBuffer: WebGLBuffer;
@@ -58,7 +59,7 @@ export class GPGPUContext {
 
     this.loseContextExtension =
         webgl_util.getExtensionOrThrow(this.gl, 'WEBGL_lose_context') as
-        WebGLLoseContext;
+        WebGLLoseContextExtension;
 
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) {
       this.getBufferSubDataAsyncExtension =

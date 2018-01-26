@@ -67,14 +67,6 @@
     "@types/glob" "*"
     "@types/node" "*"
 
-"@types/webgl-ext@~0.0.29":
-  version "0.0.29"
-  resolved "https://registry.yarnpkg.com/@types/webgl-ext/-/webgl-ext-0.0.29.tgz#4d479baf1124795f53d54bdc85b386e0f194d90a"
-
-"@types/webgl2@~0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@types/webgl2/-/webgl2-0.0.2.tgz#0ea93b1976c7d57ee19abcda3d04ba9aa1787d11"
-
 JSONStream@^1.0.3:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/JSONStream/-/JSONStream-1.3.2.tgz#c102371b6ec3a7cf3b847ca00c20bb0fce4c6dea"
