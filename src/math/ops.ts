@@ -171,9 +171,7 @@ export const softmax = softmax_ops.Ops.softmax;
 import {NDArray} from './ndarray';
 import {Rank} from './types';
 // tslint:disable-next-line:no-unused-expression
-NDArray;
-// tslint:disable-next-line:no-unused-expression
-Rank;
+[NDArray, Rank];
 
 export const losses = {
   softmaxCrossEntropy: softmax_ops.Ops.softmaxCrossEntropy
