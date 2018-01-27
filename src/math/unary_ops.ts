@@ -248,7 +248,11 @@ export class Ops {
    */
   @operation
   static asin<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Asin', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Asin', {inputs: {x}}, (dy: T, y: T) => {
+      return {
+        x: () => dy.div(Ops.sqrt(Scalar.new(1).sub(x.toFloat().square())))
+      };
+    }) as T;
   }
 
   /**
@@ -257,7 +261,11 @@ export class Ops {
    */
   @operation
   static acos<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Acos', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Acos', {inputs: {x}}, (dy: T, y: T) => {
+      return {
+        x: () => dy.div(Ops.sqrt(Scalar.new(1).sub(x.toFloat().square()))).neg()
+      };
+    }) as T;
   }
 
   /**
@@ -266,7 +274,9 @@ export class Ops {
    */
   @operation
   static atan<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Atan', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Atan', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => dy.div(Scalar.new(1).add(x.toFloat().square()))};
+    }) as T;
   }
 
   /**
