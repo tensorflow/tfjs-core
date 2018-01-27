@@ -45,7 +45,6 @@ export class ResizeBilinearProgram implements GPGPUProgram {
         int d = coords[3];
         ivec2 yRC = coords.yz;
 
-
         // Fractional source index.
         vec2 sourceFracIndexRC = vec2(yRC) * effectiveInputOverOutputRatioRC;
 

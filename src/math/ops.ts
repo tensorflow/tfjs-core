@@ -26,7 +26,6 @@ import * as logical_ops from './logical_ops';
 import * as lstm_ops from './lstm';
 import * as matmul_ops from './matmul';
 import * as norm_ops from './norm';
-import * as pad_ops from './pad';
 import * as pool_ops from './pool';
 import * as reduction_ops from './reduction_ops';
 import * as reverse_ops from './reverse';
@@ -161,9 +160,8 @@ export const tile = array_ops.Ops.tile;
 export const gather = array_ops.Ops.gather;
 export const multinomial = array_ops.Ops.multinomial;
 export const oneHot = array_ops.Ops.oneHot;
-
-export const pad1D = pad_ops.Ops.pad1D;
-export const pad2D = pad_ops.Ops.pad2D;
+export const pad1D = array_ops.Ops.pad1D;
+export const pad2D = array_ops.Ops.pad2D;
 
 export const basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
 export const multiRNNCell = lstm_ops.Ops.multiRNNCell;

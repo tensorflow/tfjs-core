@@ -101,10 +101,8 @@ export class Ops {
     // Use a custom gradient for numerical stability.
     return ENV.math.customGradient('softmaxCrossEntropy', () => {
       const softmaxLogits = logits.softmax(dim);
-      const yPlusEps = Scalar.new(1e-5).add(softmaxLogits);
-      const logOutput = yPlusEps.log();
-      const tarLogOutput = labels.mul(logOutput);
-      const costVector = tarLogOutput.neg();
+      const costVector =
+          Scalar.new(1e-5).add(softmaxLogits).log().mul(labels).neg();
       const value = costVector.sum([dim]) as O;
 
       const gradients = (dy: O, y: O) => {

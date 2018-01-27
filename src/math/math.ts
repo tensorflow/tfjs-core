@@ -36,7 +36,6 @@ import * as matmul from './matmul';
 import {Array1D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
 import * as norm from './norm';
 import * as ops from './ops';
-import * as pad_ops from './pad';
 import * as pool from './pool';
 import * as reduction_ops from './reduction_ops';
 import * as reverse from './reverse';
@@ -189,9 +188,6 @@ export class NDArrayMath implements NDArrayManager {
 
   norm = norm.Ops.norm;
 
-  pad1D = pad_ops.Ops.pad1D;
-  pad2D = pad_ops.Ops.pad2D;
-
   basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
   multiRNNCell = lstm_ops.Ops.multiRNNCell;
 
@@ -205,6 +201,8 @@ export class NDArrayMath implements NDArrayManager {
   tile = array_ops.Ops.tile;
   oneHot = array_ops.Ops.oneHot;
   multinomial = array_ops.Ops.multinomial;
+  pad1D = array_ops.Ops.pad1D;
+  pad2D = array_ops.Ops.pad2D;
 
   /** @deprecated Use dl.image.resizeBilinear() */
   resizeBilinear3D = image_ops.Ops.resizeBilinear;

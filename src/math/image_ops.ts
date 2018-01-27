@@ -26,7 +26,7 @@ export class Ops {
    *
    * @param images The images, of rank 4 or rank 3, of shape
    *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
-   * @param newShape2D The new shape `[newHeight, newWidth]` to resize the
+   * @param size The new shape `[newHeight, newWidth]` to resize the
    *     images to. Each channel is resized individually.
    * @param alignCorners An optional bool. Defaults to False. If true, rescale
    *     input by (new_height - 1) / (height - 1), which exactly aligns the 4
@@ -35,15 +35,15 @@ export class Ops {
    */
   @operation
   static resizeBilinear<T extends Array3D|Array4D>(
-      images: T, newShape2D: [number, number], alignCorners = false): T {
+      images: T, size: [number, number], alignCorners = false): T {
     util.assert(
         images.rank === 3 || images.rank === 4,
         `Error in resizeBilinear: x must be rank 3 or 4, but got ` +
             `rank ${images.rank}.`);
     util.assert(
-        newShape2D.length === 2,
+        size.length === 2,
         `Error in resizeBilinear: new shape must 2D, but got shape ` +
-            `${newShape2D}.`);
+            `${size}.`);
     let batchImages = images as Array4D;
     let reshapedTo4D = false;
     if (images.rank === 3) {
@@ -51,7 +51,7 @@ export class Ops {
       batchImages =
           images.as4D(1, images.shape[0], images.shape[1], images.shape[2]);
     }
-    const [newHeight, newWidth] = newShape2D;
+    const [newHeight, newWidth] = size;
     const res = ENV.engine.executeKernel(
         'ResizeBilinear',
         {inputs: {x: batchImages}, args: {newHeight, newWidth, alignCorners}});

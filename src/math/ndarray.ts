@@ -167,6 +167,7 @@ export class NDArray<R extends Rank = Rank> {
    * error to squeeze a dimension that is not 1.
    */
   squeeze<T extends NDArray>(axis?: number[]): T {
+    this.throwIfDisposed();
     return this.reshape(util.squeezeShape(this.shape, axis).newShape) as T;
   }
 
@@ -212,6 +213,7 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   get(...locs: number[]) {
+    this.throwIfDisposed();
     if (locs.length === 0) {
       locs = [0];
     }
@@ -323,7 +325,7 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   private isDisposed = false;
-  private throwIfDisposed() {
+  protected throwIfDisposed() {
     if (this.isDisposed) {
       throw new Error(`NDArray is disposed.`);
     }
@@ -353,59 +355,44 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   tile<T extends this>(this: T, reps: number[]): T {
+    this.throwIfDisposed();
     return ops.tile(this, reps);
   }
 
   gather<T extends this>(this: T, indices: Array1D, axis = 0): T {
+    this.throwIfDisposed();
     return ops.gather(this, indices);
   }
 
   matMul(
       b: Array2D, aOrientation = MatrixOrientation.REGULAR,
       bOrientation = MatrixOrientation.REGULAR): Array2D {
+    this.throwIfDisposed();
     return ops.matMul(this as Array2D, b, aOrientation, bOrientation);
   }
   slice(begin: ShapeMap[R], size: ShapeMap[R]): NDArray<R> {
+    this.throwIfDisposed();
     return ops.slice(this, begin, size);
   }
   reverse(axis: number|number[]): NDArray<R> {
+    this.throwIfDisposed();
     return ops.reverse(this, axis);
   }
   concat(x: NDArray<R>, axis: number): NDArray<R> {
+    this.throwIfDisposed();
     return ops.concat(this, x, axis);
   }
   batchNormalization(
       mean: NDArray<R>|Array1D, variance: NDArray<R>|Array1D,
       varianceEpsilon = .001, scale?: NDArray<R>|Array1D,
       offset?: NDArray<R>|Array1D): NDArray<R> {
+    this.throwIfDisposed();
     return ops.batchNormalization(
         this, mean, variance, varianceEpsilon, scale, offset);
   }
-  avgPool(
-      filterSize: [number, number]|number, strides: [number, number]|number,
-      pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
-    return ops.avgPool(
-               this as NDArray<Rank.R3|Rank.R4>, filterSize, strides, pad,
-               dimRoundingMode) as NDArray<R>;
-  }
-  maxPool(
-      filterSize: [number, number]|number, strides: [number, number]|number,
-      pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
-    return ops.maxPool(
-               this as NDArray<Rank.R3|Rank.R4>, filterSize, strides, pad,
-               dimRoundingMode) as NDArray<R>;
-  }
-  minPool(
-      filterSize: [number, number]|number, strides: [number, number]|number,
-      pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): NDArray<R> {
-    return ops.minPool(
-               this as NDArray<Rank.R3|Rank.R4>, filterSize, strides, pad,
-               dimRoundingMode) as NDArray<R>;
-  }
+
   clone(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.clone(this);
   }
 
@@ -413,212 +400,332 @@ export class NDArray<R extends Rank = Rank> {
 
   logSumExp<T extends NDArray>(axis: number|number[] = null, keepDims = false):
       T {
+    this.throwIfDisposed();
     return ops.logSumExp(this, axis, keepDims);
   }
   sum<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
     return ops.sum(this, axis, keepDims);
   }
   mean<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
     return ops.mean(this, axis, keepDims);
   }
   min<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
     return ops.min(this, axis, keepDims);
   }
   max<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
     return ops.max(this, axis, keepDims);
   }
   argMin<T extends NDArray>(axis: number = null): T {
+    this.throwIfDisposed();
     return ops.argMin(this, axis);
   }
   argMax<T extends NDArray>(axis: number = null): T {
+    this.throwIfDisposed();
     return ops.argMax(this, axis);
   }
   argMaxEquals(x: NDArray): Scalar {
+    this.throwIfDisposed();
     return ops.argMaxEquals(this, x);
   }
 
   // Binary ops.
 
   add<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.add(this, x);
   }
   addStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.addStrict(this, x);
   }
   sub<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.sub(this, x);
   }
   subStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.subStrict(this, x);
   }
   pow<T extends NDArray>(exp: NDArray): T {
+    this.throwIfDisposed();
     return ops.pow(this, exp);
   }
   powStrict(exp: NDArray): NDArray<R> {
+    this.throwIfDisposed();
     return ops.powStrict(this, exp);
   }
   mul<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.mul(this, x);
   }
   mulStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.mulStrict(this, x);
   }
   div<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.div(this, x);
   }
   divStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.divStrict(this, x);
   }
   minimum<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.minimum(this, x);
   }
   minimumStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.minimumStrict(this, x);
   }
   maximum<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.maximum(this, x);
   }
   maximumStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.maximumStrict(this, x);
   }
   transpose(perm?: number[]): NDArray<R> {
+    this.throwIfDisposed();
     return ops.transpose(this, perm);
   }
 
   // Compare ops.
 
   notEqual<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.notEqual(this, x);
   }
   notEqualStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.notEqualStrict(this, x);
   }
   less<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.less(this, x);
   }
   lessStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.lessStrict(this, x);
   }
   equal<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.equal(this, x);
   }
   equalStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.equalStrict(this, x);
   }
   lessEqual<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.lessEqual(this, x);
   }
   lessEqualStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.lessEqualStrict(this, x);
   }
   greater<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.greater(this, x);
   }
   greaterStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.greaterStrict(this, x);
   }
   greaterEqual<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
     return ops.greaterEqual(this, x);
   }
   greaterEqualStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
     return ops.greaterEqualStrict(this, x);
   }
 
   // Compare ops.
   logicalAnd(x: NDArray): NDArray {
+    this.throwIfDisposed();
     return ops.logicalAnd(this, x);
   }
   logicalOr(x: NDArray): NDArray {
+    this.throwIfDisposed();
     return ops.logicalOr(this, x);
   }
   where(condition: NDArray, x: NDArray): NDArray {
+    this.throwIfDisposed();
     return ops.where(condition, this, x);
   }
 
   // Unary ops.
   neg(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.neg(this);
   }
   ceil(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.ceil(this);
   }
   floor(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.floor(this);
   }
   exp(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.exp(this);
   }
   log(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.log(this);
   }
   sqrt(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.sqrt(this);
   }
   square(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.square(this);
   }
   abs(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.abs(this);
   }
   clip(min: number, max: number): NDArray<R> {
+    this.throwIfDisposed();
     return ops.clip(this, min, max);
   }
   relu(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.relu(this);
   }
   elu(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.elu(this);
   }
   selu(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.selu(this);
   }
   leakyRelu(alpha = 0.2): NDArray<R> {
+    this.throwIfDisposed();
     return ops.leakyRelu(this, alpha);
   }
   prelu(alpha: NDArray<R>): NDArray<R> {
+    this.throwIfDisposed();
     return ops.prelu(this, alpha);
   }
   sigmoid(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.sigmoid(this);
   }
   sin(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.sin(this);
   }
   cos(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.cos(this);
   }
   tan(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.tan(this);
   }
   asin(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.asin(this);
   }
   acos(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.acos(this);
   }
   atan(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.atan(this);
   }
   sinh(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.sinh(this);
   }
   cosh(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.cosh(this);
   }
   tanh(): NDArray<R> {
+    this.throwIfDisposed();
     return ops.tanh(this);
   }
   step(alpha = 0.0): NDArray<R> {
+    this.throwIfDisposed();
     return ops.step(this, alpha);
   }
   softmax<T extends this>(this: T, dim = -1): T {
+    this.throwIfDisposed();
     return ops.softmax(this, dim);
   }
 
   // Image ops.
   resizeBilinear<T extends Array3D|Array4D>(
       this: T, newShape2D: [number, number], alignCorners = false): T {
+    (this as NDArray).throwIfDisposed();
     return ops.image.resizeBilinear(this, newShape2D, alignCorners);
+  }
+
+  // Convolutions.
+  conv1d<T extends Array2D|Array3D>(
+      this: T, filter: Array3D, bias: Array1D|null, stride: number,
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.conv1d(this, filter, bias, stride, pad, dimRoundingMode);
+  }
+  conv2d<T extends Array3D|Array4D>(
+      this: T, filter: Array4D, bias: Array1D|null,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.conv2d(this, filter, bias, strides, pad, dimRoundingMode);
+  }
+  conv2dTranspose<T extends Array3D|Array4D>(
+      this: T, filter: Array4D,
+      outputShape: [number, number, number, number]|[number, number, number],
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.conv2dTranspose(
+        this, filter, outputShape, strides, pad, dimRoundingMode);
+  }
+  depthwiseConv2D<T extends Array3D|Array4D>(
+      this: T, filter: Array4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.depthwiseConv2D(
+        this, filter, strides, pad, rates, dimRoundingMode);
+  }
+
+  // Pooling.
+  avgPool<T extends Array3D|Array4D>(
+      this: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.avgPool(this, filterSize, strides, pad, dimRoundingMode);
+  }
+  maxPool<T extends Array3D|Array4D>(
+      this: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.maxPool(this, filterSize, strides, pad, dimRoundingMode);
+  }
+  minPool<T extends Array3D|Array4D>(
+      this: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.minPool(this, filterSize, strides, pad, dimRoundingMode);
   }
 }
 
