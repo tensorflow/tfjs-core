@@ -15,18 +15,19 @@
  * =============================================================================
  */
 
-import {Array1D, Array2D, CheckpointLoader, ENV, NDArray, Scalar} from 'deeplearn';
+import {Array1D, Array2D, CheckpointLoader, ENV, NDArray, Scalar}
+  from 'deeplearn';
 export class Main {
-  private canvas:any;
-  private input:any;
-  private ctx:any;
-  private prev:any;
-  private drawing:boolean=false;
+  private canvas:HTMLCanvasElement;
+  private inputCanvas:HTMLCanvasElement;
+  private ctx:CanvasRenderingContext2D;
+  private prev:{[varName: string]: number};
+  private drawing=false;
   private reader:CheckpointLoader;
-  private allVaribales:any;
+  private allVaribales:{[varName: string]: NDArray};
   constructor() {
-    this.canvas = document.getElementById('main');
-    this.input = document.getElementById('input');
+    this.canvas = document.getElementById('main') as HTMLCanvasElement;
+    this.inputCanvas = document.getElementById('input') as HTMLCanvasElement;
     this.canvas.width  = 449; // 16 * 28 + 1
     this.canvas.height = 449; // 16 * 28 + 1
     this.ctx = this.canvas.getContext('2d');
@@ -61,7 +62,7 @@ export class Main {
     }
     this.drawInput();
   }
-  onMouseDown(e:any) {
+  onMouseDown(e:MouseEvent) {
     this.canvas.style.cursor = 'default';
     this.drawing = true;
     this.prev = this.getPosition(e.clientX, e.clientY);
@@ -70,9 +71,9 @@ export class Main {
     this.drawing = false;
     this.drawInput();
   }
-  onMouseMove(e:any) {
+  onMouseMove(e:MouseEvent) {
     if (this.drawing) {
-      let curr = this.getPosition(e.clientX, e.clientY);
+      const curr = this.getPosition(e.clientX, e.clientY);
       this.ctx.lineWidth = 16;
       this.ctx.lineCap = 'round';
       this.ctx.beginPath();
@@ -84,40 +85,42 @@ export class Main {
     }
   }
   getPosition(clientX:number, clientY:number) {
-    let rect = this.canvas.getBoundingClientRect();
+    const rect = this.canvas.getBoundingClientRect();
     return {
       x: clientX - rect.left,
       y: clientY - rect.top
     };
   }
   drawInput() {
-    let ctx = this.input.getContext('2d');
-    let img = new Image();
+    const ctx = this.inputCanvas.getContext('2d');
+    const img = new Image();
     img.onload = () => {
-      let inputs:Array<number> = [];
-      let small = document.createElement('canvas').getContext('2d');
+      const inputs:number[] = [];
+      const small = document.createElement('canvas').getContext('2d');
       small.drawImage(img, 0, 0, img.width, img.height, 0, 0, 28, 28);
-      let data = small.getImageData(0, 0, 28, 28).data;
+      const data = small.getImageData(0, 0, 28, 28).data;
       for (let i = 0; i < 28; i++) {
         for (let j = 0; j < 28; j++) {
-          let n = 4 * (i * 28 + j);
+          const n = 4 * (i * 28 + j);
           inputs[i * 28 + j] = (data[n + 0] + data[n + 1] + data[n + 2]) / 3;
-          ctx.fillStyle = 'rgb(' + [data[n + 0], data[n + 1], data[n + 2]].join(',') + ')';
+          ctx.fillStyle =
+            'rgb(' + [data[n + 0], data[n + 1], data[n + 2]].join(',') + ')';
           ctx.fillRect(j * 5, i * 5, 5, 5);
         }
       }
-      if (Math.min(...data) === 255) {
+      if (Math.min(...inputs) === 255) {
         return;
       }
       for (let i = inputs.length - 1; i >= 0; i--) {
         inputs[i]=Number(((255-inputs[i])/255).toFixed(3));
       }
-      let x = Array1D.new(inputs);
+      const x = Array1D.new(inputs);
       // Infer through the model to get a prediction.
       infer(x, this.allVaribales).val().then(val=>{
         const predictedLabel = Math.round(val);
-        document.getElementById('predictedLabel').innerHTML = `${predictedLabel}`;
-      })
+        document.getElementById('predictedLabel').innerHTML
+        = `${predictedLabel}`;
+      });
     };
     img.src = this.canvas.toDataURL();
   }
