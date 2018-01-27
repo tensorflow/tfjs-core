@@ -75,7 +75,7 @@ export class Ops {
     const axes = axis_util.parseAxisParam(axis, x.shape);
     // Use a custom gradient to bypass 2 gradient backprops since sum is used
     // extremely often.
-    return ENV.math.customGradient(() => {
+    return ENV.math.customGradient('sum', () => {
       const permutation = axis_util.getAxesPermutation(axes, x.rank);
       let reductionAxes = axes;
       let permutedX = x;
@@ -101,7 +101,7 @@ export class Ops {
         return {x: derX};
       };
       return {value, gradients};
-    }, {x}, 'sum') as T;
+    }, {x}) as T;
   }
 
   /**
@@ -127,7 +127,7 @@ export class Ops {
     const reduceSize = util.sizeFromShape(reduceShape);
     // Use a custom gradient to bypass 2 gradient backprops since mean is used
     // extremely often.
-    return ENV.math.customGradient(() => {
+    return ENV.math.customGradient('mean', () => {
       const reduceSizeScalar = Scalar.new(reduceSize);
       const res = x.div(reduceSizeScalar);
       const value = res.sum(axis, keepDims);
@@ -143,7 +143,7 @@ export class Ops {
         return {x: derX};
       };
       return {value, gradients};
-    }, {x}, 'mean') as T;
+    }, {x}) as T;
   }
 
   /**

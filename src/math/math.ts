@@ -39,6 +39,7 @@ import * as pool from './pool';
 import * as reduction_ops from './reduction_ops';
 import * as reverse from './reverse';
 import * as slice from './slice';
+import * as softmax_ops from './softmax';
 import * as transpose from './transpose';
 import {NamedArrayMap, NamedVariableMap} from './types';
 import {DataType, Rank, TypedArray} from './types';
@@ -190,6 +191,9 @@ export class NDArrayMath implements NDArrayManager {
 
   basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
   multiRNNCell = lstm_ops.Ops.multiRNNCell;
+
+  softmax = softmax_ops.Ops.softmax;
+  softmaxCrossEntropy = softmax_ops.Ops.softmaxCrossEntropy;
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
@@ -419,115 +423,6 @@ export class NDArrayMath implements NDArrayManager {
     });
     const result = {values, indices};
     return result;
-  }
-
-  /**
-   * Computes the softmax normalized vector given the logits.
-   * @param logits The logits array.
-   * @param dim The dimension softmax would be performed on. Defaults to -1
-   *     which indicates the last dimension.
-   */
-  softmax<R extends Rank, T extends NDArray<R>>(logits: NDArray<R>, dim = -1):
-      NDArray<R> {
-    if (dim === -1) {
-      dim = logits.rank - 1;
-    }
-    if (dim !== logits.rank - 1) {
-      throw Error(
-          'Softmax along a non-last dimension is not yet supported. ' +
-          `Logits was rank ${logits.rank} and dim was ${dim}`);
-    }
-
-    const gradients = (dy: T, y: T) => {
-      return {
-        logits: () => {
-          const dyTimesY = this.multiply(dy, y);
-          const keepDims = true;
-          return this.subtract(
-                     dyTimesY,
-                     this.multiply(this.sum(dyTimesY, [dim], keepDims), y)) as
-              NDArray<R>;
-        }
-      };
-    };
-
-    return this.scope('softmax', () => {
-      return this.customGradient(() => {
-        // Do it in log space for numerical stability.
-        // exp(X - logSumExp(X))
-        const keepDims = true;
-        const lse = this.logSumExp(logits, [dim], keepDims);
-        const logResult = this.subtract(logits.asType('float32'), lse);
-        const value = this.exp(logResult) as T;
-        return {value, gradients};
-      }, {logits}, 'softmax') as NDArray<R>;
-    });
-  }
-
-  /**
-   * Computes softmax cross entropy between logits and labels.
-   *
-   * Measures the probability error in discrete classification tasks in which
-   * the classes are mutually exclusive (each entry is in exactly one class).
-   * For example, each CIFAR-10 image is labeled with one and only one label: an
-   * image can be a dog or a truck, but not both.
-   *
-   * NOTE: While the classes are mutually exclusive, their probabilities need
-   * not be. All that is required is that each row of labels is a valid
-   * probability distribution. If they are not, the computation of the gradient
-   * will be incorrect.
-   *
-   * WARNING: This op expects unscaled logits, since it performs a softmax on
-   * logits internally for efficiency. Do not call this op with the output of
-   * softmax, as it will produce incorrect results.
-   *
-   * logits and labels must have the same shape, e.g. [batch_size, num_classes]
-   * and the same dtype.
-   * @param labels The labels array.
-   * @param logits The logits array.
-   * @param dim The dimension softmax would be performed on. Defaults to -1
-   *     which indicates the last dimension.
-   */
-  softmaxCrossEntropyWithLogits<R extends Rank, A extends NDArray<R>, B extends
-                                    NDArray<R>, O extends NDArray>(
-      labels: A, logits: B, dim = -1): O {
-    util.assertShapesMatch(
-        labels.shape, logits.shape, 'Error in softmaxCrossEntropyWithLogits: ');
-    if (dim === -1) {
-      dim = logits.rank - 1;
-    }
-    if (dim !== logits.rank - 1) {
-      throw Error(
-          `Softmax cross entropy along a non-last dimension is not yet ` +
-          `supported. Labels / logits was rank ${logits.rank} ` +
-          `and dim was ${dim}`);
-    }
-
-    return this.scope('softmaxCrossEntropyWithLogits', () => {
-      // Use a custom gradient for numerical stability.
-      return this.customGradient(() => {
-        const softmaxLogits = this.softmax(logits, dim);
-        const yPlusEps = this.add(Scalar.new(1e-5), softmaxLogits);
-        const logOutput = this.log(yPlusEps);
-        const tarLogOutput = this.multiply(labels, logOutput);
-        const costVector = this.neg(tarLogOutput);
-        const value = this.sum(costVector, [dim]) as O;
-
-        const gradients = (dy: O, y: O) => {
-          const dyShape = axis_util.expandShapeToKeepDim(dy.shape, [dim]);
-
-          return {
-            logits: () => this.multiply(
-                dy.reshape(dyShape),
-                this.subtract(softmaxLogits, labels.asType('float32'))),
-            labels: () => this.multiply(
-                dy.reshape(dyShape), this.subtract(labels, softmaxLogits))
-          };
-        };
-
-        return {value, gradients};
-      }, {labels, logits}, 'softmaxCrossEntropyWithLogits') as O;
-    });
   }
 
   /** @deprecated Use math.transpose() instead. */
@@ -925,11 +820,11 @@ export class NDArrayMath implements NDArrayManager {
    * debugging.
    */
   customGradient<R extends Rank, T extends NDArray<R>>(
-      f: () => {
+      name: string, f: () => {
         value: T,
         gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name?: string): T {
+      inputs: NamedArrayMap): T {
     return this.engine.customGradient(f, inputs, name == null ? '' : name);
   }
 

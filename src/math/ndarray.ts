@@ -603,6 +603,9 @@ export class NDArray<R extends Rank = Rank> {
   step(alpha = 0.0): NDArray<R> {
     return ops.step(this, alpha);
   }
+  softmax<T extends NDArray<R>>(this: T, dim = -1): T {
+    return ops.softmax(this, dim);
+  }
 }
 
 export class Scalar extends NDArray<Rank.R0> {

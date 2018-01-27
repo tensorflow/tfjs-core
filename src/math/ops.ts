@@ -30,6 +30,7 @@ import * as pool_ops from './pool';
 import * as reduction_ops from './reduction_ops';
 import * as reverse_ops from './reverse';
 import * as slice_ops from './slice';
+import * as softmax_ops from './softmax';
 import * as transpose_ops from './transpose';
 import * as unary_ops from './unary_ops';
 
@@ -157,3 +158,17 @@ export const pad2D = pad_ops.Ops.pad2D;
 
 export const basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
 export const multiRNNCell = lstm_ops.Ops.multiRNNCell;
+
+export const softmax = softmax_ops.Ops.softmax;
+
+// // So typings can propagate.
+// import {NDArray} from './ndarray';
+// import {Rank} from './types';
+// // tslint:disable-next-line:no-unused-expression
+// NDArray;
+// // tslint:disable-next-line:no-unused-expression
+// Rank;
+
+// export const losses = {
+//   softmaxCrossEntropy: softmax_ops.Ops.softmaxCrossEntropy
+// };

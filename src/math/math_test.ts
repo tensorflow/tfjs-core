@@ -637,7 +637,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       const dy = Scalar.new(4);
 
       const vjp = math.vjp(() => {
-        return math.customGradient(() => {
+        return math.customGradient('test', () => {
           const value = math.pow(a, b);
 
           const gradients = (dy: NDArray, y: NDArray) => {
@@ -661,7 +661,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
       const vjp = math.vjp(() => {
         return math.vjp(() => {
-          return math.customGradient(() => {
+          return math.customGradient('test', () => {
             const value = math.pow(a, b);
             const gradients = (dy: NDArray, y: NDArray) => {
               return {a: () => math.multiply(dy, a)};
