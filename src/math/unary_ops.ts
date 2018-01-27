@@ -293,7 +293,10 @@ export class Ops {
    */
   @operation
   static sinh<R extends Rank, T extends NDArray<R>>(x: T): T {
-    return ENV.engine.executeKernel('Sinh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel(
+               'Sinh', {inputs: {x}}, (dy: NDArray<R>, y: NDArray<R>) => {
+                 return {x: () => x.toFloat().cosh().mul(dy)};
+               }) as T;
   }
 
   /**
@@ -302,7 +305,10 @@ export class Ops {
    */
   @operation
   static cosh<R extends Rank, T extends NDArray<R>>(x: T): T {
-    return ENV.engine.executeKernel('Cosh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel(
+               'Cosh', {inputs: {x}}, (dy: NDArray<R>, y: NDArray<R>) => {
+                 return {x: () => x.toFloat().sinh().mul(dy)};
+               }) as T;
   }
 
   /**
@@ -311,7 +317,10 @@ export class Ops {
    */
   @operation
   static tanh<R extends Rank, T extends NDArray<R>>(x: T): T {
-    return ENV.engine.executeKernel('Tanh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel(
+               'Tanh', {inputs: {x}}, (dy: NDArray<R>, y: NDArray<R>) => {
+                 return {x: () => dy.div(x.cosh().square())};
+               }) as T;
   }
 
   /**
