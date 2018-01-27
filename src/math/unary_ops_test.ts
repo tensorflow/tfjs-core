@@ -126,6 +126,41 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const result = math.abs(a);
       test_util.expectArraysClose(result, [1, 2, 0, 3, 0.1, NaN]);
     });
+
+    it('gradients: Scalar', math => {
+      const a = Scalar.new(4);
+      const dy = Scalar.new(8);
+
+      const gradients = math.vjp(() => math.abs(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [8 * 1], 1e-1);
+    });
+
+    it('gradients: Array1D', math => {
+      const a = Array1D.new([1, 2, -3, 5]);
+      const dy = Array1D.new([1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.abs(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients, [1 * 1, 2 * 1, 3 * -1, 4 * 1], 1e-1);
+    });
+
+    it('gradients: Array2D', math => {
+      const a = Array2D.new([2, 2], [3, -1, -2, 3]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.abs(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients, [1 * 1, 2 * -1, 3 * -1, 4 * 1], 1e-1);
+    });
   };
 
   test_util.describeMathCPU('abs', [tests]);
@@ -182,6 +217,41 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const expected = [-1, 3, -2, -7, NaN];
       test_util.expectArraysClose(result, expected);
     });
+
+    it('gradients: Scalar', math => {
+      const a = Scalar.new(4);
+      const dy = Scalar.new(8);
+
+      const gradients = math.vjp(() => math.neg(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [8 * -1], 1e-1);
+    });
+
+    it('gradients: Array1D', math => {
+      const a = Array1D.new([1, 2, -3, 5]);
+      const dy = Array1D.new([1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.neg(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients, [1 * -1, 2 * -1, 3 * -1, 4 * -1], 1e-1);
+    });
+
+    it('gradients: Array2D', math => {
+      const a = Array2D.new([2, 2], [3, -1, -2, 3]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.neg(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients, [1 * -1, 2 * -1, 3 * -1, 4 * -1], 1e-1);
+    });
   };
 
   test_util.describeMathCPU('neg', [tests]);
@@ -237,6 +307,51 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([1, NaN]);
       const r = math.sqrt(a);
       test_util.expectArraysClose(r, [Math.sqrt(1), NaN]);
+    });
+
+    it('gradients: Scalar', math => {
+      const a = Scalar.new(4);
+      const dy = Scalar.new(8);
+
+      const gradients = math.vjp(() => math.sqrt(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [8 / (2 * Math.sqrt(4))], 1e-1);
+    });
+
+    it('gradients: Array1D', math => {
+      const a = Array1D.new([1, 2, 3, 5]);
+      const dy = Array1D.new([1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.sqrt(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients,
+          [
+            1 / (2 * Math.sqrt(1)), 2 / (2 * Math.sqrt(2)),
+            3 / (2 * Math.sqrt(3)), 4 / (2 * Math.sqrt(5))
+          ],
+          1e-1);
+    });
+
+    it('gradients: Array2D', math => {
+      const a = Array2D.new([2, 2], [3, 1, 2, 3]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.sqrt(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients,
+          [
+            1 / (2 * Math.sqrt(3)), 2 / (2 * Math.sqrt(1)),
+            3 / (2 * Math.sqrt(2)), 4 / (2 * Math.sqrt(3))
+          ],
+          1e-1);
     });
   };
 
@@ -328,6 +443,41 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const r = math.log(a);
       test_util.expectArraysClose(r, [Math.log(1), NaN]);
     });
+
+    it('gradients: Scalar', math => {
+      const a = Scalar.new(5);
+      const dy = Scalar.new(3);
+
+      const gradients = math.vjp(() => math.log(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [3 / 5], 1e-1);
+    });
+
+    it('gradients: Array1D', math => {
+      const a = Array1D.new([-1, 2, 3, -5]);
+      const dy = Array1D.new([1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.log(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients, [1 / -1, 2 / 2, 3 / 3, 4 / -5], 1e-1);
+    });
+
+    it('gradients: Array2D', math => {
+      const a = Array2D.new([2, 2], [-3, 1, 2, 3]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.log(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients, [1 / -3, 2 / 1, 3 / 2, 4 / 3], 1e-1);
+    });
   };
 
   test_util.describeMathCPU('log', [tests]);
@@ -408,6 +558,47 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const r = math.exp(a);
       test_util.expectArraysClose(r, [Math.exp(1), NaN, 1]);
     });
+
+    it('gradients: Scalar', math => {
+      const a = Scalar.new(0.5);
+      const dy = Scalar.new(3);
+
+      const gradients = math.vjp(() => math.exp(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [3 * Math.exp(0.5)], 1e-1);
+    });
+
+    it('gradients: Array1D', math => {
+      const a = Array1D.new([-1, 2, 3, -5]);
+      const dy = Array1D.new([1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.exp(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients,
+          [
+            1 * Math.exp(-1), 2 * Math.exp(2), 3 * Math.exp(3), 4 * Math.exp(-5)
+          ],
+          1e-1);
+    });
+
+    it('gradients: Array2D', math => {
+      const a = Array2D.new([2, 2], [-3, 1, 2, 3]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.exp(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients,
+          [1 * Math.exp(-3), 2 * Math.exp(1), 3 * Math.exp(2), 4 * Math.exp(3)],
+          1e-1);
+    });
   };
 
   test_util.describeMathCPU('exp', [tests]);
@@ -437,6 +628,47 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([4, NaN, 0]);
       const res = math.sin(a);
       test_util.expectArraysClose(res, [Math.sin(4), NaN, Math.sin(0)]);
+    });
+
+    it('gradients: Scalar', math => {
+      const a = Scalar.new(5);
+      const dy = Scalar.new(8);
+
+      const gradients = math.vjp(() => math.sin(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [8 * Math.cos(5)], 1e-1);
+    });
+
+    it('gradients: Array1D', math => {
+      const a = Array1D.new([-1, 2, 3, -5]);
+      const dy = Array1D.new([1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.sin(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients,
+          [
+            1 * Math.cos(-1), 2 * Math.cos(2), 3 * Math.cos(3), 4 * Math.cos(-5)
+          ],
+          1e-1);
+    });
+
+    it('gradients: Array2D', math => {
+      const a = Array2D.new([2, 2], [-3, 1, 2, 3]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.sin(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients,
+          [1 * Math.cos(-3), 2 * Math.cos(1), 3 * Math.cos(2), 4 * Math.cos(3)],
+          1e-1);
     });
   };
 
@@ -468,6 +700,51 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const res = math.cos(a);
       test_util.expectArraysClose(res, [Math.cos(4), NaN, Math.cos(0)]);
     });
+
+    it('gradients: Scalar', math => {
+      const a = Scalar.new(5);
+      const dy = Scalar.new(8);
+
+      const gradients = math.vjp(() => math.cos(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [8 * Math.sin(5) * -1], 1e-1);
+    });
+
+    it('gradients: Array1D', math => {
+      const a = Array1D.new([-1, 2, 3, -5]);
+      const dy = Array1D.new([1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.cos(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients,
+          [
+            1 * Math.sin(-1) * -1, 2 * Math.sin(2) * -1, 3 * Math.sin(3) * -1,
+            4 * Math.sin(-5) * -1
+          ],
+          1e-1);
+    });
+
+    it('gradients: Array2D', math => {
+      const a = Array2D.new([2, 2], [-3, 1, 2, 3]);
+      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+
+      const gradients = math.vjp(() => math.cos(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients,
+          [
+            1 * Math.sin(-3) * -1, 2 * Math.sin(1) * -1, 3 * Math.sin(2) * -1,
+            4 * Math.sin(3) * -1
+          ],
+          1e-1);
+    });
   };
 
   test_util.describeMathCPU('cos', [tests]);
@@ -497,6 +774,56 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Array1D.new([4, NaN, 0]);
       const res = math.tan(a);
       test_util.expectArraysClose(res, [Math.tan(4), NaN, Math.tan(0)]);
+    });
+
+    it('gradients: Scalar', math => {
+      const a = Scalar.new(0.5);
+      const dy = Scalar.new(8);
+
+      const gradients = math.vjp(() => math.tan(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients, [8 / (Math.cos(0.5) * Math.cos(0.5))], 1e-1);
+    });
+
+    it('gradients: Array1D', math => {
+      const aValues = [-1, 2, 3, -5];
+      const dyValues = [1, 2, 3, 4];
+      const a = Array1D.new(aValues);
+      const dy = Array1D.new(dyValues);
+
+      const gradients = math.vjp(() => math.tan(a), a, dy);
+
+      const expected = [];
+      for (let i = 0; i < a.size; i++) {
+        expected[i] =
+            dyValues[i] / (Math.cos(aValues[i]) * Math.cos(aValues[i]));
+      }
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, expected, 1e-1);
+    });
+
+    it('gradients: Array2D', math => {
+      const aValues = [-3, 1, 2, 3];
+      const dyValues = [1, 2, 3, 4];
+      const a = Array2D.new([2, 2], aValues);
+      const dy = Array2D.new([2, 2], dyValues);
+
+      const gradients = math.vjp(() => math.tan(a), a, dy);
+
+      const expected = [];
+      for (let i = 0; i < a.size; i++) {
+        expected[i] =
+            dyValues[i] / (Math.cos(aValues[i]) * Math.cos(aValues[i]));
+      }
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, expected, 1e-1);
     });
   };
 
@@ -743,6 +1070,16 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const result = math.elu(a);
       expect(result.shape).toEqual(a.shape);
       test_util.expectArraysClose(result, [1, NaN]);
+    });
+
+    it('derivative', math => {
+      const x = Array1D.new([1, 3, -2]);
+      const dy = Array1D.new([5, 50, 500]);
+      const gradients = math.vjp(() => math.elu(x), x, dy);
+
+      expect(gradients.shape).toEqual(x.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [5, 50, 500 * Math.exp(-2)], 1e-1);
     });
   };
   test_util.describeMathCPU('elu', [tests]);
