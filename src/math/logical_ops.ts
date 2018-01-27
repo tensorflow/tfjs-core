@@ -55,6 +55,21 @@ export class Ops {
   }
 
   /**
+   * Returns the truth value of a XOR b element-wise. Supports broadcasting.
+   *
+   * @param a The first input `NDArray`.
+   * @param b The second input `NDArray`.
+   */
+  @operation
+  static logicalXor(a: NDArray, b: NDArray): NDArray {
+    util.assert(
+        a.dtype === 'bool' && b.dtype === 'bool',
+        'Error Array must be of type bool.');
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return ENV.engine.executeKernel('LogicalXor', {inputs: {a, b}});
+  }
+
+  /**
    * Returns the elements, either `a` or `b` depending on the `condition`.
    *
    * @param condition The input as `NDAray<'bool'>.
