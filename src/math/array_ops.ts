@@ -17,8 +17,9 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
+
 import {operation} from './decorators';
-import {Array1D, Array3D, NDArray, NDArrayData} from './ndarray';
+import {Array1D, Array2D, Array3D, NDArray, NDArrayData} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
@@ -75,7 +76,7 @@ export class Ops {
   }
 
   @operation
-  static randTruncatedNormal<R extends Rank>(
+  static truncatedNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
       dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
@@ -113,6 +114,68 @@ export class Ops {
       values[i] = randFunction();
     }
     return NDArray.make(shape, {values}, dtype);
+  }
+
+  /**
+   * Draws samples from a multinomial distribution.
+   *
+   * @param probabilities 1D array with normalized outcome probabilities, or
+   *     2D array of shape `[batchSize, numOutcomes]`.
+   * @param numSamples Number of samples to draw for each row slice.
+   * @param seed Optional. The seed number.
+   * @return 1D array of shape `[numSamples]`, or 2D array of shape
+   *     `[batchSize, numSamples]`, depending on the rank of the input.
+   */
+  @operation
+  static multinomial(
+      probabilities: Array1D|Array2D, numSamples: number, seed?: number):
+      Array1D|Array2D {
+    const numOutcomes = probabilities.size;
+    if (numOutcomes < 2) {
+      throw new Error(
+          `Error in multinomial: you need at least 2 outcomes, but got ` +
+          `${numOutcomes}.`);
+    }
+    if (probabilities.rank > 2) {
+      throw new Error(
+          `Rank of probabilities must be 1 or 2, but is ${probabilities.rank}`);
+    }
+    seed = seed || Math.random();
+    const origRank = probabilities.rank;
+
+    if (probabilities.rank === 1) {
+      probabilities = probabilities.as2D(1, -1);
+    }
+    const res = ENV.engine.executeKernel('Multinomial', {
+      inputs: {probs: (probabilities as Array2D)},
+      args: {numSamples, seed}
+    });
+    if (origRank === 1) {
+      return res.as1D();
+    }
+    return res;
+  }
+
+  /**
+   * Returns a one-hot array. The locations represented by `indices` take
+   * value `onValue` (defaults to 1), while all other locations take value
+   * `offValue` (defaults to 0).
+   *
+   * @param indices 1D Array of indices.
+   * @param depth The depth of the one hot dimension.
+   * @param onValue A number used to fill in output when the index matches the
+   *     location.
+   * @param offValue A number used to fill in the output when the index does
+   *     not match the location.
+   */
+  @operation
+  static oneHot(indices: Array1D, depth: number, onValue = 1, offValue = 0):
+      Array2D {
+    if (depth < 2) {
+      throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
+    }
+    return ENV.engine.executeKernel(
+        'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
   }
 
   @operation

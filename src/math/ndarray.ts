@@ -148,11 +148,11 @@ export class NDArray<R extends Rank = Rank> {
     return ops.randNormal(shape, mean, stdDev, dtype, seed);
   }
 
-  /** @deprecated Please use dl.randTruncatedNormal() */
+  /** @deprecated Please use dl.truncatedNormal() */
   static randTruncatedNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
       dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
-    return ops.randTruncatedNormal(shape, mean, stdDev, dtype, seed);
+    return ops.truncatedNormal(shape, mean, stdDev, dtype, seed);
   }
 
   /** @deprecated Please use dl.randUniform() */
@@ -613,6 +613,12 @@ export class NDArray<R extends Rank = Rank> {
   }
   softmax<T extends this>(this: T, dim = -1): T {
     return ops.softmax(this, dim);
+  }
+
+  // Image ops.
+  resizeBilinear<T extends Array3D|Array4D>(
+      this: T, newShape2D: [number, number], alignCorners = false): T {
+    return ops.image.resizeBilinear(this, newShape2D, alignCorners);
   }
 }
 

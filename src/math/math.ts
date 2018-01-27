@@ -17,6 +17,7 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
+
 import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
@@ -27,11 +28,12 @@ import * as binary_ops from './binary_ops';
 import * as compare from './compare';
 import * as concat from './concat';
 import * as conv from './conv';
+import * as image_ops from './image_ops';
 import * as logical from './logical_ops';
 import * as lstm_ops from './lstm';
 import * as matmul from './matmul';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
+import {Array1D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
 import * as norm from './norm';
 import * as ops from './ops';
 import * as pad_ops from './pad';
@@ -201,6 +203,11 @@ export class NDArrayMath implements NDArrayManager {
   gather = array_ops.Ops.gather;
   reshape = array_ops.Ops.reshape;
   tile = array_ops.Ops.tile;
+  oneHot = array_ops.Ops.oneHot;
+  multinomial = array_ops.Ops.multinomial;
+
+  /** @deprecated Use dl.image.resizeBilinear() */
+  resizeBilinear3D = image_ops.Ops.resizeBilinear;
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
@@ -463,29 +470,6 @@ export class NDArrayMath implements NDArrayManager {
     return this.multiply(c, a) as T;
   }
 
-  /*
-   * Bilinear resize a 3D array per each channel to a new 2D shape.
-   * @param x The input Array3D.
-   * @param newShape2D The new shape to resize the Array3D to. Each channel is
-   * resized individually.
-   * @param alignCorners An optional bool. Defaults to False. If true, rescale
-   * input by (new_height - 1) / (height - 1), which exactly aligns the 4
-   * corners of images and resized images. If false, rescale by new_height /
-   * height. Treat similarly the width dimension.
-   */
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number], alignCorners = false): Array3D {
-    util.assert(
-        x.rank === 3,
-        `Error in resizeBilinear3D: x must be rank 3 but got rank ${x.rank}.`);
-    util.assert(
-        newShape2D.length === 2,
-        `Error in resizeBilinear3D: new shape must 2D, but got shape ` +
-            `${newShape2D}.`);
-    return this.engine.executeKernel(
-        'ResizeBilinear3D', {inputs: {x}, args: {newShape2D, alignCorners}});
-  }
-
   /**
    * Normalizes the activation of a local neighborhood across or within
    * channels.
@@ -548,67 +532,6 @@ export class NDArrayMath implements NDArrayManager {
 
     return this.engine.executeKernel(
         'LRN4D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
-  }
-
-  /**
-   * Draws samples from a multinomial distribution.
-   *
-   * @param probabilities 1D array with normalized outcome probabilities, or
-   *     2D array of shape `[batchSize, numOutcomes]`.
-   * @param numSamples Number of samples to draw for each row slice.
-   * @param seed Optional. The seed number.
-   * @return 1D array of shape `[numSamples]`, or 2D array of shape
-   *     `[batchSize, numSamples]`, depending on the rank of the input.
-   */
-  multinomial(
-      probabilities: Array1D|Array2D, numSamples: number,
-      seed?: number): Array1D|Array2D {
-    const numOutcomes = probabilities.size;
-    if (numOutcomes < 2) {
-      throw new Error(
-          `Error in multinomial: you need at least 2 outcomes, but got ` +
-          `${numOutcomes}.`);
-    }
-    if (probabilities.rank > 2) {
-      throw new Error(
-          `Rank of probabilities must be 1 or 2, but is ${probabilities.rank}`);
-    }
-    seed = seed || Math.random();
-    const origRank = probabilities.rank;
-
-    if (probabilities.rank === 1) {
-      probabilities = probabilities.as2D(1, -1);
-    }
-    return this.scope('multinomial', () => {
-      const res = this.engine.executeKernel('Multinomial', {
-        inputs: {probs: (probabilities as Array2D)},
-        args: {numSamples, seed}
-      });
-      if (origRank === 1) {
-        return res.as1D();
-      }
-      return res;
-    });
-  }
-
-  /**
-   * Returns a one-hot array. The locations represented by `indices` take
-   * value `onValue` (defaults to 1), while all other locations take value
-   * `offValue` (defaults to 0).
-   *
-   * @param indices 1D Array of indices.
-   * @param depth The depth of the one hot dimension.
-   * @param onValue A number used to fill in output when the index matches the
-   *     location.
-   * @param offValue A number used to fill in the output when the index does
-   *     not match the location.
-   */
-  oneHot(indices: Array1D, depth: number, onValue = 1, offValue = 0): Array2D {
-    if (depth < 2) {
-      throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
-    }
-    return this.engine.executeKernel(
-        'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
   }
 
   /**
