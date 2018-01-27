@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../environment';
-import {util} from '../index';
+import * as util from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';

@@ -17,7 +17,7 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
-import * as axis_util from './axis_util';
+import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
 import {BackendEngine} from './backends/backend_engine';
 import {TapeNodeInputGradientArrays} from './backends/tape_types';
@@ -42,7 +42,7 @@ import * as slice from './slice';
 import * as softmax_ops from './softmax';
 import * as transpose from './transpose';
 import {NamedArrayMap, NamedVariableMap} from './types';
-import {DataType, Rank, TypedArray} from './types';
+import {Rank, TypedArray} from './types';
 import * as unary_ops from './unary_ops';
 
 export interface NDArrayManager {
@@ -111,6 +111,7 @@ export class NDArrayMath implements NDArrayManager {
   max = reduction_ops.Ops.max;
   mean = reduction_ops.Ops.mean;
   min = reduction_ops.Ops.min;
+  moments = reduction_ops.Ops.moments;
   sum = reduction_ops.Ops.sum;
 
   add = binary_ops.Ops.add;
@@ -194,6 +195,12 @@ export class NDArrayMath implements NDArrayManager {
 
   softmax = softmax_ops.Ops.softmax;
   softmaxCrossEntropy = softmax_ops.Ops.softmaxCrossEntropy;
+
+  cast = array_ops.Ops.cast;
+  clone = array_ops.Ops.clone;
+  gather = array_ops.Ops.gather;
+  reshape = array_ops.Ops.reshape;
+  tile = array_ops.Ops.tile;
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
@@ -369,40 +376,6 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   /**
-   * Clones an NDArray of any shape.
-   * @param x The NDArray to clone.
-   */
-  clone<R extends Rank>(x: NDArray<R>): NDArray<R> {
-    return this.engine.executeKernel('Clone', {inputs: {x}}) as NDArray<R>;
-  }
-
-  /** Reshapes the array. */
-  reshape<R extends Rank>(x: NDArray, newShape: number[]): NDArray<R> {
-    newShape = util.inferFromImplicitShape(newShape, x.size);
-    util.assert(
-        x.size === util.sizeFromShape(newShape),
-        'new shape and old shape must have the same number of elements.');
-
-    const grad = (dy: NDArray, y: NDArray) => {
-      return {x: () => dy.reshape(x.shape)};
-    };
-    return this.engine.executeKernel(
-               'Reshape', {inputs: {x}, args: {newShape}}, grad) as NDArray<R>;
-  }
-
-  /**
-   * Casts a tensor to a new type. If the new type matches the old type,
-   * this is a no-op.
-   */
-  cast<R extends Rank>(x: NDArray<R>, newDType: DataType): NDArray<R> {
-    const grad = (dy: NDArray, y: NDArray) => {
-      return {x: () => dy.reshape(dy.shape)};
-    };
-    return this.engine.executeKernel(
-               'Cast', {inputs: {x}, args: {newDType}}, grad) as NDArray<R>;
-  }
-
-  /**
    * Computes the top K values and flattened indices.
    * @param x The input NDArray.
    * @param k How many top values to compute.
@@ -428,38 +401,6 @@ export class NDArrayMath implements NDArrayManager {
   /** @deprecated Use math.transpose() instead. */
   switchDim<R extends Rank>(x: NDArray<R>, perm?: number[]): NDArray<R> {
     return ops.transpose<R>(x, perm);
-  }
-
-  /**
-   * Construct an array by repeating it the number of times given by reps.
-   *
-   * This operation creates a new array by replicating `input` `reps`
-   * times. The output tensor's i'th dimension has `input.shape[i] *
-   * reps[i]` elements, and the values of `input` are replicated
-   * `reps[i]` times along the i'th dimension. For example, tiling
-   * `[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.
-   *
-   * @param x The array to transpose.
-   * @param reps Determines the number of replications per dimension.
-   */
-  tile<T extends NDArray>(x: T, reps: number[]): T {
-    util.assert(
-        x.rank === reps.length,
-        `Error in transpose: rank of input ${x.rank} ` +
-            `must match length of reps ${reps}.`);
-    return this.engine.executeKernel('Tile', {inputs: {x}, args: {reps}}) as T;
-  }
-
-  /**
-   * Gather slices from array `x`'s axis `axis` according to `indices`
-   *
-   * @param x The array to transpose.
-   * @param indices The indices of the values to extract.
-   * @param axis Optional. The axis over which to select values. Defaults to 0.
-   */
-  gather<T extends NDArray>(x: T, indices: Array1D, axis = 0): T {
-    return this.engine.executeKernel(
-               'Gather', {inputs: {x, indices}, args: {axis}}) as T;
   }
 
   /** @deprecated Use math.add(c, A) instead. */
@@ -668,35 +609,6 @@ export class NDArrayMath implements NDArrayManager {
     }
     return this.engine.executeKernel(
         'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
-  }
-
-  /**
-   * Calculates the mean and variance of `x`. The mean and variance are
-   * calculated by aggregating the contents of `x` across `axes`. If `x` is
-   * 1-D and `axes = [0]` this is just the mean and variance of a vector.
-   *
-   * @param x The input array.
-   * @param axis Optional. The dimension(s) along with to compute mean and
-   *     variance. By default it reduces all dimensions.
-   * @param keepDims If true, the moments have the same dimensionality as the
-   *     input.
-   * @return An object with two keys: `mean` and `variance`.
-   */
-  moments(x: NDArray, axis: number|number[] = null, keepDims = false):
-      {mean: NDArray, variance: NDArray} {
-    const axes = axis_util.parseAxisParam(axis, x.shape);
-    const result = this.scope('moments', () => {
-      const mean = this.mean(x, axes, keepDims);
-      let keepDimsShape = mean.shape;
-      if (!keepDims) {
-        keepDimsShape = axis_util.expandShapeToKeepDim(mean.shape, axes);
-      }
-      const devSquared = this.square(
-          this.subtract(x.asType('float32'), mean.reshape(keepDimsShape)));
-      const variance = this.mean(devSquared, axes, keepDims);
-      return {mean, variance};
-    });
-    return result;
   }
 
   /**

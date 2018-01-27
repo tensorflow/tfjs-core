@@ -81,6 +81,7 @@ export const logSumExp = reduction_ops.Ops.logSumExp;
 export const max = reduction_ops.Ops.max;
 export const mean = reduction_ops.Ops.mean;
 export const min = reduction_ops.Ops.min;
+export const moments = reduction_ops.Ops.moments;
 export const sum = reduction_ops.Ops.sum;
 
 export const equal = compare_ops.Ops.equal;
@@ -143,6 +144,7 @@ export const subStrict = binary_ops.Ops.subStrict;
 
 export const norm = norm_ops.Ops.norm;
 
+export const cast = array_ops.Ops.cast;
 export const clone = array_ops.Ops.clone;
 export const fromPixels = array_ops.Ops.fromPixels;
 export const ones = array_ops.Ops.ones;
@@ -153,6 +155,10 @@ export const rand = array_ops.Ops.rand;
 export const randNormal = array_ops.Ops.randNormal;
 export const randTruncatedNormal = array_ops.Ops.randTruncatedNormal;
 export const randUniform = array_ops.Ops.randUniform;
+export const reshape = array_ops.Ops.reshape;
+export const tile = array_ops.Ops.tile;
+export const gather = array_ops.Ops.gather;
+
 export const pad1D = pad_ops.Ops.pad1D;
 export const pad2D = pad_ops.Ops.pad2D;
 
@@ -161,14 +167,14 @@ export const multiRNNCell = lstm_ops.Ops.multiRNNCell;
 
 export const softmax = softmax_ops.Ops.softmax;
 
-// // So typings can propagate.
-// import {NDArray} from './ndarray';
-// import {Rank} from './types';
-// // tslint:disable-next-line:no-unused-expression
-// NDArray;
-// // tslint:disable-next-line:no-unused-expression
-// Rank;
+// So typings can propagate.
+import {NDArray} from './ndarray';
+import {Rank} from './types';
+// tslint:disable-next-line:no-unused-expression
+NDArray;
+// tslint:disable-next-line:no-unused-expression
+Rank;
 
-// export const losses = {
-//   softmaxCrossEntropy: softmax_ops.Ops.softmaxCrossEntropy
-// };
+export const losses = {
+  softmaxCrossEntropy: softmax_ops.Ops.softmaxCrossEntropy
+};

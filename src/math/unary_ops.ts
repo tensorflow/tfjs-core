@@ -82,7 +82,7 @@ export class Ops {
   @operation
   static sqrt<T extends NDArray>(x: T): T {
     return ENV.engine.executeKernel('Sqrt', {inputs: {x}}, (dy: T, y: T) => {
-      return {x: () => dy.div(x.asType('float32').sqrt().mul(Scalar.new(2)))};
+      return {x: () => dy.div(x.toFloat().sqrt().mul(Scalar.new(2)))};
     }) as T;
   }
 
@@ -94,7 +94,7 @@ export class Ops {
   @operation
   static square<T extends NDArray>(x: T): T {
     return ENV.engine.executeKernel('Square', {inputs: {x}}, (dy: T, y: T) => {
-      return {x: () => dy.mul(x.asType('float32').mul(Scalar.new(2)))};
+      return {x: () => dy.mul(x.toFloat().mul(Scalar.new(2)))};
     }) as T;
   }
 
@@ -133,7 +133,7 @@ export class Ops {
   static relu<T extends NDArray>(x: T): T {
     return ENV.engine.executeKernel('Relu', {inputs: {x}}, (dy: T, y: T) => {
       const stepRes = x.step() as NDArray;
-      return {x: () => dy.mul(stepRes.asType('float32'))};
+      return {x: () => dy.mul(stepRes.toFloat())};
     }) as T;
   }
 

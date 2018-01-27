@@ -1471,7 +1471,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
-    return this.pool(x, convInfo, 'avg').asType('float32');
+    return this.pool(x, convInfo, 'avg').toFloat();
   }
 
   resizeBilinear3D(

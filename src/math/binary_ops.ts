@@ -187,7 +187,7 @@ export class Ops {
 
     const der = (dy: NDArray, y: NDArray) => {
       const derA = () => {
-        const res = dy.mul(b.asType('float32'));
+        const res = dy.mul(b.toFloat());
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
           return res.sum(reduceAxes).reshape(a.shape);
@@ -195,7 +195,7 @@ export class Ops {
         return res;
       };
       const derB = () => {
-        const res = dy.mul(a.asType('float32'));
+        const res = dy.mul(a.toFloat());
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
           return res.sum(reduceAxes).reshape(b.shape);
@@ -241,7 +241,7 @@ export class Ops {
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: NDArray, y: NDArray) => {
       const derA = () => {
-        const res = dy.div(b.asType('float32'));
+        const res = dy.div(b.toFloat());
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
           return res.sum(reduceAxes).reshape(a.shape);
@@ -249,13 +249,13 @@ export class Ops {
         return res;
       };
       const derB = () => {
-        let res = dy.mul(a.asType('float32'));
+        let res = dy.mul(a.toFloat());
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
           res = res.sum(reduceAxes).reshape(b.shape);
         }
         const tmp = b.square() as NDArray;
-        return res.div(tmp.asType('float32')).neg() as NDArray;
+        return res.div(tmp.toFloat()).neg() as NDArray;
       };
       return {a: derA, b: derB};
     };

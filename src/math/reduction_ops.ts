@@ -262,4 +262,30 @@ export class Ops {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
     return x1.argMax().equal(x2.argMax());
   }
+
+  /**
+   * Calculates the mean and variance of `x`. The mean and variance are
+   * calculated by aggregating the contents of `x` across `axes`. If `x` is
+   * 1-D and `axes = [0]` this is just the mean and variance of a vector.
+   *
+   * @param x The input array.
+   * @param axis Optional. The dimension(s) along with to compute mean and
+   *     variance. By default it reduces all dimensions.
+   * @param keepDims If true, the moments have the same dimensionality as the
+   *     input.
+   * @return An object with two keys: `mean` and `variance`.
+   */
+  @operation
+  static moments(x: NDArray, axis: number|number[] = null, keepDims = false):
+      {mean: NDArray, variance: NDArray} {
+    const axes = axis_util.parseAxisParam(axis, x.shape);
+    const mean = x.mean(axes, keepDims);
+    let keepDimsShape = mean.shape;
+    if (!keepDims) {
+      keepDimsShape = axis_util.expandShapeToKeepDim(mean.shape, axes);
+    }
+    const devSquared = x.toFloat().sub(mean.reshape(keepDimsShape)).square();
+    const variance = devSquared.mean(axes, keepDims);
+    return {mean, variance};
+  }
 }
