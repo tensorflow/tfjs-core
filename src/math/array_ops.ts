@@ -20,19 +20,21 @@ import * as util from '../util';
 import {operation} from './decorators';
 import {Array3D, NDArray, NDArrayData} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
-import {DataType, DataTypeMap, Rank} from './types';
+import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
 export class Ops {
   /** Creates a ndarray of ones with the specified shape. */
   @operation
-  static ones<R extends Rank>(shape: number[], dtype?: DataType): NDArray<R> {
+  static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
+      NDArray<R> {
     const values = makeOnesTypedArray(util.sizeFromShape(shape), dtype);
     return NDArray.make(shape, {values}, dtype);
   }
 
   /** Creates a ndarray of zeros with the specified shape. */
   @operation
-  static zeros<R extends Rank>(shape: number[], dtype?: DataType): NDArray<R> {
+  static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
+      NDArray<R> {
     const values = makeZerosTypedArray(util.sizeFromShape(shape), dtype);
     return NDArray.make(shape, {values}, dtype);
   }
@@ -55,15 +57,15 @@ export class Ops {
 
   /** Creates a ndarray with the same values/shape as the specified ndarray. */
   @operation
-  static clone<R extends Rank>(x: NDArray<R>): NDArray<R> {
+  static clone<T extends NDArray>(x: T): T {
     const newValues = util.copyTypedArray(x.dataSync(), x.dtype);
-    return NDArray.make(x.shape, {values: newValues}, x.dtype) as NDArray<R>;
+    return NDArray.make(x.shape, {values: newValues}, x.dtype) as T;
   }
 
   @operation
   static randNormal<R extends Rank>(
-      shape: number[], mean = 0, stdDev = 1, dtype?: keyof RandNormalDataTypes,
-      seed?: number): NDArray<R> {
+      shape: ShapeMap[R], mean = 0, stdDev = 1,
+      dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
@@ -74,8 +76,8 @@ export class Ops {
 
   @operation
   static randTruncatedNormal<R extends Rank>(
-      shape: number[], mean = 0, stdDev = 1, dtype?: keyof RandNormalDataTypes,
-      seed?: number): NDArray<R> {
+      shape: ShapeMap[R], mean = 0, stdDev = 1,
+      dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
@@ -86,13 +88,13 @@ export class Ops {
 
   @operation
   static randUniform<R extends Rank>(
-      shape: number[], a: number, b: number, dtype?: DataType): NDArray<R> {
+      shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype);
   }
 
   @operation
   static rand<R extends Rank>(
-      shape: number[], randFunction: () => number, dtype?: DataType):
+      shape: ShapeMap[R], randFunction: () => number, dtype?: DataType):
       NDArray<R> {
     const size = util.sizeFromShape(shape);
 

@@ -28,6 +28,7 @@ import * as compare from './compare';
 import * as concat from './concat';
 import * as conv from './conv';
 import * as logical from './logical_ops';
+import * as lstm_ops from './lstm';
 import * as matmul from './matmul';
 // tslint:disable-next-line:max-line-length
 import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
@@ -186,6 +187,9 @@ export class NDArrayMath implements NDArrayManager {
 
   pad1D = pad_ops.Ops.pad1D;
   pad2D = pad_ops.Ops.pad2D;
+
+  basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
+  multiRNNCell = lstm_ops.Ops.multiRNNCell;
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
@@ -526,10 +530,6 @@ export class NDArrayMath implements NDArrayManager {
     });
   }
 
-  //////////////////////
-  // Element-wise ops //
-  //////////////////////
-
   /** @deprecated Use math.transpose() instead. */
   switchDim<R extends Rank>(x: NDArray<R>, perm?: number[]): NDArray<R> {
     return ops.transpose<R>(x, perm);
@@ -625,21 +625,6 @@ export class NDArrayMath implements NDArrayManager {
         `Error in arrayDividedByScalar: first argument must be rank 0, but ` +
             `got rank ${c.rank}.`);
     return this.multiply(c, a) as T;
-  }
-
-  /**
-   * @deprecated Use math.multiply() instead.
-   */
-  elementWiseMulBroadcast(a: Array2D, b: Array2D): Array2D {
-    util.assert(
-        a.rank === 2,
-        `Error in elementWiseMulBroadcast: first argument must be ` +
-            `rank 2, but got rank ${a.rank}.`);
-    util.assert(
-        b.rank === 2,
-        `Error in elementWiseMulBroadcast: second argument must be ` +
-            `rank 2, but got rank ${b.rank}.`);
-    return this.multiply(a, b) as Array2D;
   }
 
   /*

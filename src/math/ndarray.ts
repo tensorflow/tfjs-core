@@ -113,7 +113,7 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   /** @deprecated Please use dl.clone() */
-  static like<R extends Rank>(x: NDArray<R>): NDArray<R> {
+  static like<T extends NDArray>(x: T): T {
     return ops.clone(x);
   }
 
@@ -121,9 +121,10 @@ export class NDArray<R extends Rank = Rank> {
    * Makes a new ndarray with the provided shape and values. Values should be in
    * a flat array.
    */
-  static make<D extends DataType = 'float32', R extends Rank = Rank>(
-      shape: ShapeMap[R], data: NDArrayData, dtype?: D): NDArray<R> {
-    return new NDArray(shape, dtype, data.values, data.dataId) as NDArray<R>;
+  static make<T extends NDArray<R>, D extends DataType = 'float32',
+                                              R extends Rank = Rank>(
+      shape: ShapeMap[R], data: NDArrayData, dtype?: D): T {
+    return new NDArray(shape, dtype, data.values, data.dataId) as T;
   }
 
   /** @deprecated Please use dl.fromPixels() */
@@ -134,8 +135,9 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   /** @deprecated Please use dl.rand() */
-  static rand<D extends DataType, R extends Rank>(
-      shape: ShapeMap[R], randFunction: () => number, dtype?: D): NDArray<R> {
+  static rand<R extends Rank>(
+      shape: ShapeMap[R], randFunction: () => number,
+      dtype?: DataType): NDArray<R> {
     return ops.rand(shape, randFunction, dtype);
   }
 
@@ -432,13 +434,13 @@ export class NDArray<R extends Rank = Rank> {
   add<T extends NDArray>(x: NDArray): T {
     return ops.add(this, x);
   }
-  addStrict(x: NDArray<R>): NDArray<R> {
+  addStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.addStrict(this, x);
   }
   sub<T extends NDArray>(x: NDArray): T {
     return ops.sub(this, x);
   }
-  subStrict(x: NDArray<R>): NDArray<R> {
+  subStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.subStrict(this, x);
   }
   pow<T extends NDArray>(exp: NDArray): T {
@@ -450,25 +452,25 @@ export class NDArray<R extends Rank = Rank> {
   mul<T extends NDArray>(x: NDArray): T {
     return ops.mul(this, x);
   }
-  mulStrict(x: NDArray<R>): NDArray<R> {
+  mulStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.mulStrict(this, x);
   }
   div<T extends NDArray>(x: NDArray): T {
     return ops.div(this, x);
   }
-  divStrict(x: NDArray<R>): NDArray<R> {
+  divStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.divStrict(this, x);
   }
   minimum<T extends NDArray>(x: NDArray): T {
     return ops.minimum(this, x);
   }
-  minimumStrict(x: NDArray<R>): NDArray<R> {
+  minimumStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.minimumStrict(this, x);
   }
   maximum<T extends NDArray>(x: NDArray): T {
     return ops.maximum(this, x);
   }
-  maximumStrict(x: NDArray<R>): NDArray<R> {
+  maximumStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.maximumStrict(this, x);
   }
   transpose(perm?: number[]): NDArray<R> {
@@ -480,37 +482,37 @@ export class NDArray<R extends Rank = Rank> {
   notEqual<T extends NDArray>(x: NDArray): T {
     return ops.notEqual(this, x);
   }
-  notEqualStrict(x: NDArray<R>): NDArray<R> {
+  notEqualStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.notEqualStrict(this, x);
   }
   less<T extends NDArray>(x: NDArray): T {
     return ops.less(this, x);
   }
-  lessStrict(x: NDArray<R>): NDArray<R> {
+  lessStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.lessStrict(this, x);
   }
   equal<T extends NDArray>(x: NDArray): T {
     return ops.equal(this, x);
   }
-  equalStrict(x: NDArray<R>): NDArray<R> {
+  equalStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.equalStrict(this, x);
   }
   lessEqual<T extends NDArray>(x: NDArray): T {
     return ops.lessEqual(this, x);
   }
-  lessEqualStrict(x: NDArray<R>): NDArray<R> {
+  lessEqualStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.lessEqualStrict(this, x);
   }
   greater<T extends NDArray>(x: NDArray): T {
     return ops.greater(this, x);
   }
-  greaterStrict(x: NDArray<R>): NDArray<R> {
+  greaterStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.greaterStrict(this, x);
   }
   greaterEqual<T extends NDArray>(x: NDArray): T {
     return ops.greaterEqual(this, x);
   }
-  greaterEqualStrict(x: NDArray<R>): NDArray<R> {
+  greaterEqualStrict<T extends NDArray<R>>(this: T, x: T): T {
     return ops.greaterEqualStrict(this, x);
   }
 
@@ -712,9 +714,9 @@ export class Variable<R extends Rank = Rank> extends NDArray<R> {
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.
    */
-  static variable<D extends DataType, R extends Rank>(
+  static variable<R extends Rank>(
       initialValue: NDArray<R>, trainable = true, name?: string,
-      dtype?: D): Variable<R> {
+      dtype?: DataType): Variable<R> {
     if (dtype != null && dtype !== initialValue.dtype) {
       initialValue = initialValue.asType(dtype) as NDArray<R>;
     }
@@ -761,7 +763,7 @@ function toTypedArray<D extends DataType>(
     return a as DataTypeMap[D];
   }
   if (Array.isArray(a)) {
-    a = util.flatten(a) as number[];
+    a = util.flatten(a as number[]);
   }
   return util.copyTypedArray(a, dtype);
 }

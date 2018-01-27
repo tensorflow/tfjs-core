@@ -22,6 +22,7 @@ import * as compare_ops from './compare';
 import * as concat_ops from './concat';
 import * as conv_ops from './conv';
 import * as logical_ops from './logical_ops';
+import * as lstm_ops from './lstm';
 import * as matmul_ops from './matmul';
 import * as norm_ops from './norm';
 import * as pad_ops from './pad';
@@ -153,3 +154,6 @@ export const randTruncatedNormal = array_ops.Ops.randTruncatedNormal;
 export const randUniform = array_ops.Ops.randUniform;
 export const pad1D = pad_ops.Ops.pad1D;
 export const pad2D = pad_ops.Ops.pad2D;
+
+export const basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
+export const multiRNNCell = lstm_ops.Ops.multiRNNCell;
