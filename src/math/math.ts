@@ -43,10 +43,6 @@ import {NamedArrayMap, NamedVariableMap} from './types';
 import {DataType, Rank, TypedArray} from './types';
 import * as unary_ops from './unary_ops';
 
-export interface LSTMCell {
-  (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];
-}
-
 export interface NDArrayManager {
   getNumArrays(): number;
   register(a: NDArray): void;
@@ -731,85 +727,6 @@ export class NDArrayMath implements NDArrayManager {
 
     return this.engine.executeKernel(
         'LRN4D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
-  }
-
-  //////////////
-  // LSTM ops //
-  //////////////
-
-  /**
-   * Computes the next states and outputs of a stack of LSTMCells.
-   * Each cell output is used as input to the next cell.
-   * This is only the forward mode.
-   * Derived from tf.contrib.rn.MultiRNNCell.
-   * @param lstmCells Array of LSTMCell functions.
-   * @param data The input to the cell.
-   * @param c Array of previous cell states.
-   * @param h Array of previous cell outputs.
-   * @return Tuple [nextCellStates, cellOutputs]
-   */
-  multiRNNCell(
-      lstmCells: LSTMCell[], data: Array2D, c: Array2D[],
-      h: Array2D[]): [Array2D[], Array2D[]] {
-    const res = this.scope('multiRNNCell', () => {
-      let input = data;
-      const newStates = [];
-      for (let i = 0; i < lstmCells.length; i++) {
-        const output = lstmCells[i](input, c[i], h[i]);
-        newStates.push(output[0]);
-        newStates.push(output[1]);
-        input = output[1];
-      }
-
-      return newStates;
-    });
-    const newC: Array2D[] = [];
-    const newH: Array2D[] = [];
-    for (let i = 0; i < res.length; i += 2) {
-      newC.push(res[i]);
-      newH.push(res[i + 1]);
-    }
-    return [newC, newH];
-  }
-
-  /**
-   * Computes the next state and output of a BasicLSTMCell.
-   * This is only the forward mode.
-   * Derived from tf.contrib.rnn.BasicLSTMCell.
-   * @param forgetBias Forget bias for the cell.
-   * @param lstmKernel The weights for the cell.
-   * @param lstmBias The bias for the cell.
-   * @param data The input to the cell.
-   * @param c Previous cell state.
-   * @param h Previous cell output.
-   * @return Tuple [nextCellState, cellOutput]
-   */
-  basicLSTMCell(
-      forgetBias: Scalar, lstmKernel: Array2D, lstmBias: Array1D, data: Array2D,
-      c: Array2D, h: Array2D): [Array2D, Array2D] {
-    const res = this.scope('basicLSTMCell', () => {
-      const combined = this.concat2D(data, h, 1);
-      const weighted = this.matMul(combined, lstmKernel);
-      const res = this.add(weighted, lstmBias) as Array2D;
-
-      // i = input_gate, j = new_input, f = forget_gate, o = output_gate
-      const batchSize = res.shape[0];
-      const sliceCols = res.shape[1] / 4;
-      const sliceSize: [number, number] = [batchSize, sliceCols];
-      const i = this.slice2D(res, [0, 0], sliceSize);
-      const j = this.slice2D(res, [0, sliceCols], sliceSize);
-      const f = this.slice2D(res, [0, sliceCols * 2], sliceSize);
-      const o = this.slice2D(res, [0, sliceCols * 3], sliceSize);
-
-      const newC = this.addStrict(
-          this.multiplyStrict(
-              c, this.sigmoid(this.add(forgetBias, f) as Array2D)),
-          this.multiplyStrict(this.sigmoid(i), this.tanh(j)));
-      const newH = this.multiplyStrict(this.tanh(newC), this.sigmoid(o));
-
-      return [newC, newH];
-    });
-    return [res[0], res[1]];
   }
 
   /**
