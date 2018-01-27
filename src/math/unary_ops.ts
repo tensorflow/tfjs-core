@@ -204,9 +204,9 @@ export class Ops {
    * @param x The input NDArray.
    */
   @operation
-  static sigmoid<R extends Rank, T extends NDArray<R>>(x: T): T {
+  static sigmoid<T extends NDArray>(x: T): T {
     return ENV.engine.executeKernel(
-      'Sigmoid', {inputs: {x}}, (dy: NDArray<R>, y: NDArray<R>) => {
+      'Sigmoid', {inputs: {x}}, (dy: NDArray, y: NDArray) => {
           return {x: () => y.toFloat().mul(onesLike(y).sub(y)).mul(dy)};
       }) as T;
   }
