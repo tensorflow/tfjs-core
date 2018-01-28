@@ -17,7 +17,7 @@
 
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
-import {NDArray} from '../ndarray';
+import {NDArray, Scalar} from '../ndarray';
 
 import {BackendTimer} from './backend';
 import {Profiler} from './profiler';
@@ -42,7 +42,13 @@ class TestBackendTimer implements BackendTimer {
 const tests: MathTests = it => {
   it('profiles simple function ', () => {
     const profiler = new Profiler(new TestBackendTimer());
-    console.log(profiler);
+    spyOn(profiler, 'logKernelProfile');
+
+    profiler.profileKernel('MatMul', () => {
+      return Scalar.new(1);
+    });
+
+    console.log(profiler.logKernelProfile.calls.count);
   });
 };
 test_util.describeMathCPU('profiler.Profiler', [tests]);

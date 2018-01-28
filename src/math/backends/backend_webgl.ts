@@ -182,6 +182,7 @@ export class MathBackendWebGL implements MathBackend {
     await this.gpgpu.runQuery(() => {});
     return this.readSync(dataId);
   }
+
   async time(f: () => NDArray): Promise<number> {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0) {
       const start = performance.now();
