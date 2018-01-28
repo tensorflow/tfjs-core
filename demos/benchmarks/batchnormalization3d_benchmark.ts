@@ -37,8 +37,7 @@ export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
     const varianceEpsilon = .001;
     const start = performance.now();
 
-    math.batchNormalization3D(
-        x, mean, variance, varianceEpsilon, undefined, undefined);
+    x.batchNormalization(mean, variance, varianceEpsilon);
 
     const end = performance.now();
 
@@ -52,15 +51,16 @@ export class BatchNormalization3DGPUBenchmark implements BenchmarkTest {
     const safeMode = false;
     const math = new dl.NDArrayMath('webgl', safeMode);
     dl.ENV.setMath(math);
+
     const x = dl.randUniform<dl.Rank.R3>([size, size, 8], -1, 1);
     const mean = dl.Array1D.new([0]);
     const variance = dl.Array1D.new([1]);
     const varianceEpsilon = .001;
 
-    const benchmark = () => math.batchNormalization3D(
-        x, mean, variance, varianceEpsilon, undefined, undefined);
+    const benchmark = () =>
+        x.batchNormalization(mean, variance, varianceEpsilon);
 
-    const time = await benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
+    const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
 
     x.dispose();
     mean.dispose();

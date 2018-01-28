@@ -46,7 +46,7 @@ Example usage with a 2x3 matrix:
 
 ```js
 const shape = [2, 3];  // 2 rows, 3 columns
-const a = Array2D.new(shape, [1.0, 2.0, 3.0, 10.0, 20.0, 30.0]);
+const a = dl.Array2D.new(shape, [1.0, 2.0, 3.0, 10.0, 20.0, 30.0]);
 ```
 
 `NDArray`s can store data either on the GPU as a `WebGLTexture`, where each
@@ -81,10 +81,10 @@ performance.
 Example of taking the mean squared difference between two matrices:
 
 ```js
-const math = ENV.math;
+const math = dl.ENV.math;
 
-const a = Array2D.new([2, 2], [1.0, 2.0, 3.0, 4.0]);
-const b = Array2D.new([2, 2], [0.0, 2.0, 4.0, 6.0]);
+const a = dl.Array2D.new([2, 2], [1.0, 2.0, 3.0, 4.0]);
+const b = dl.Array2D.new([2, 2], [0.0, 2.0, 4.0, 6.0]);
 
 // Non-blocking math calls.
 const diff = math.sub(a, b);
@@ -128,7 +128,7 @@ functions. When you call a graph method to add an operation, you get back a
 An example graph that multiplies an input by a variable:
 
 ```js
-const g = new Graph();
+const g = new dl.Graph();
 
 // Placeholders are input containers. This is the container for where we will
 // feed an input NDArray when we execute the graph.
@@ -172,10 +172,10 @@ Training with the `Graph` object from above:
 ```js
 const learningRate = .00001;
 const batchSize = 3;
-const math = ENV.math;
+const math = dl.ENV.math;
 
-const session = new Session(g, math);
-const optimizer = new SGDOptimizer(learningRate);
+const session = new dl.Session(g, math);
+const optimizer = new dl.SGDOptimizer(learningRate);
 
 const inputs: Array1D[] = [
   Array1D.new([1.0, 2.0, 3.0]),
@@ -191,12 +191,12 @@ const labels: Array1D[] = [
 
 // Shuffles inputs and labels and keeps them mutually in sync.
 const shuffledInputProviderBuilder =
-  new InCPUMemoryShuffledInputProviderBuilder([inputs, labels]);
+  new dl.InCPUMemoryShuffledInputProviderBuilder([inputs, labels]);
 const [inputProvider, labelProvider] =
   shuffledInputProviderBuilder.getInputProviders();
 
 // Maps tensors to InputProviders.
-const feedEntries: FeedEntry[] = [
+const feedEntries: dl.FeedEntry[] = [
   {tensor: inputTensor, data: inputProvider},
   {tensor: labelTensor, data: labelProvider}
 ];
@@ -215,10 +215,10 @@ for (let i = 0; i < NUM_BATCHES; i++) {
 After training, we can infer through the graph:
 
 ```js
-const testInput = Array1D.new([0.1, 0.2, 0.3]);
+const testInput = dl.Array1D.new([0.1, 0.2, 0.3]);
 
 // session.eval can take NDArrays as input data.
-const testFeedEntries: FeedEntry[] = [
+const testFeedEntries: dl.FeedEntry[] = [
   {tensor: inputTensor, data: testInput}
 ];
 

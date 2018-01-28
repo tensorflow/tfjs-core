@@ -14,27 +14,26 @@
  * limitations under the License.
  * =============================================================================
  */
-// tslint:disable-next-line:max-line-length
-import {Array2D, ENV, NDArray, NDArrayMath, Scalar} from 'deeplearn';
+import * as dl from 'deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 import * as benchmark_util from './benchmark_util';
 
-function getReductionOp(option: string, math: NDArrayMath): (input: NDArray) =>
-    Scalar {
+function getReductionOp(
+    option: string, math: dl.NDArrayMath): (x: dl.NDArray) => dl.Scalar {
   switch (option) {
     case 'max':
-      return input => math.max(input);
+      return x => x.max();
     case 'min':
-      return input => math.min(input);
+      return x => x.min();
     case 'argMax':
-      return input => math.argMax(input) as Scalar;
+      return x => x.argMax() as dl.Scalar;
     case 'argMin':
-      return input => math.argMin(input) as Scalar;
+      return x => x.argMin() as dl.Scalar;
     case 'sum':
-      return input => math.sum(input) as Scalar;
+      return x => x.sum() as dl.Scalar;
     case 'logSumExp':
-      return input => math.logSumExp(input) as Scalar;
+      return x => x.logSumExp() as dl.Scalar;
     default:
       throw new Error(`Not found such ops: ${option}`);
   }
@@ -43,9 +42,10 @@ function getReductionOp(option: string, math: NDArrayMath): (input: NDArray) =>
 export class ReductionOpsCPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string): Promise<number> {
     const safeMode = false;
-    const math = new NDArrayMath('cpu', safeMode);
-    ENV.setMath(math);
-    const input = Array2D.randUniform([size, size], -1, 1);
+    const math = new dl.NDArrayMath('cpu', safeMode);
+    dl.ENV.setMath(math);
+
+    const input: dl.Array2D = dl.randUniform([size, size], -1, 1);
     const op = getReductionOp(option, math);
     const start = performance.now();
 
@@ -61,14 +61,15 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
 export class ReductionOpsGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string) {
     const safeMode = false;
-    const math = new NDArrayMath('webgl', safeMode);
-    ENV.setMath(math);
-    const input = Array2D.randUniform([size, size], -1, 1);
+    const math = new dl.NDArrayMath('webgl', safeMode);
+    dl.ENV.setMath(math);
+
+    const input: dl.Array2D = dl.randUniform([size, size], -1, 1);
     const op = getReductionOp(option, math);
 
     const benchmark = () => op(input);
 
-    const time = await benchmark_util.warmupAndBenchmarkGPU(math, benchmark);
+    const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
 
     input.dispose();
 
