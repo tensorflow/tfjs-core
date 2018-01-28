@@ -234,7 +234,7 @@ export class GameOfLifeModel {
       sizeOfThisLayer: number, includeRelu = true,
       includeBias = true): dl.Tensor {
     return graph.layers.dense(
-        'fully_connected_' + layerIndex, inputLayer, sizeOfThisLayer,
+        'fully_connected_' + layerIndex.toString(), inputLayer, sizeOfThisLayer,
         includeRelu ? (x) => graph.relu(x) : (x) => graph.sigmoid(x),
         includeBias);
   }
