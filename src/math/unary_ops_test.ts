@@ -1265,7 +1265,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
       test_util.expectArraysClose(
-          gradients, [8 / (Math.cosh(0.5) * Math.cosh(0.5))], 1e-1);
+          gradients, [8 * (1 - (Math.tanh(0.5) * Math.tanh(0.5)))], 1e-1);
     });
 
     it('gradients: Array1D', math => {
@@ -1279,7 +1279,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const expected = [];
       for (let i = 0; i < a.size; i++) {
         expected[i] =
-            dyValues[i] / (Math.cosh(aValues[i]) * Math.cosh(aValues[i]));
+            dyValues[i] * (1 - (Math.tanh(aValues[i]) * Math.tanh(aValues[i])));
       }
 
       expect(gradients.shape).toEqual(a.shape);
@@ -1298,7 +1298,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const expected = [];
       for (let i = 0; i < a.size; i++) {
         expected[i] =
-            dyValues[i] / (Math.cosh(aValues[i]) * Math.cosh(aValues[i]));
+            dyValues[i] * (1 - (Math.tanh(aValues[i]) * Math.tanh(aValues[i])));
       }
 
       expect(gradients.shape).toEqual(a.shape);
