@@ -206,7 +206,7 @@ export class Ops {
   static sigmoid<T extends NDArray>(x: T): T {
     return ENV.engine.executeKernel(
       'Sigmoid', {inputs: {x}}, (dy: NDArray, y: NDArray) => {
-          return {x: () => y.toFloat().mul(Scalar.new(1).sub(y)).mul(dy)};
+          return {x: () => dy.mul(y.mul(Scalar.new(1).sub(y)))};
       }) as T;
   }
 

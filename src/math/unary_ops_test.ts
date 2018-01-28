@@ -292,8 +292,8 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       const expected = [];
       for (let i = 0; i < a.size; i++) {
-        const e = Math.exp(-a.get(i));
-        expected[i] = dy.get(i) * e / Math.pow(1 + e, 2);
+        const y = 1 / (1 + Math.exp(-a.get(i)));
+        expected[i] = dy.get(i) * y * (1 - y);
       }
 
       test_util.expectArraysClose(gradients, expected, 1e-2);
