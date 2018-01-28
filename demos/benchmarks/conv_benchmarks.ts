@@ -16,7 +16,11 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, conv_util, ENV, NDArray} from 'deeplearn';
+// import * as dl from 'deeplearn';
+// import {Array1D, Array3D, Array4D, conv_util, ENV, NDArray} from 'deeplearn';
+
+const dl = {};
+import {Array2D as dl.Array2D} from 'deeplearn';
 
 import {BenchmarkTest} from './benchmark';
 import * as benchmark_util from './benchmark_util';
@@ -42,7 +46,7 @@ export class ConvGPUBenchmark implements BenchmarkTest {
     const stride = params.stride;
     const pad = params.pad;
 
-    let x = Array3D.randUniform(inShape, -1, 1);
+    let x = NDArray.randUniform(inShape, -1, 1);
     let W: Array4D;
     let b: Array1D;
 
