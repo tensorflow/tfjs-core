@@ -36,7 +36,7 @@ export class Ops {
    */
   @operation
   static concat1D(a: Array1D, b: Array1D): Array1D {
-    return Ops.concat(a, b, 0);
+    return Ops.concat(a, b, 0 /* axis */);
   }
 
   /**
