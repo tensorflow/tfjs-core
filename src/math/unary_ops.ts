@@ -40,7 +40,9 @@ export class Ops {
    */
   @operation
   static ceil<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Ceil', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Ceil', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => dy.ceil()};
+    }) as T;
   }
 
   /**
@@ -50,7 +52,9 @@ export class Ops {
    */
   @operation
   static floor<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Floor', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Floor', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => dy.floor()};
+    }) as T;
   }
 
   /**
