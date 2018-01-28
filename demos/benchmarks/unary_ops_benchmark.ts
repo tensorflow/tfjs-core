@@ -20,7 +20,7 @@ import * as dl from 'deeplearn';
 import {BenchmarkTest} from './benchmark';
 import * as benchmark_util from './benchmark_util';
 
-function getUnaryOp(option: string, math: dl.NDArrayMath) {
+function getUnaryOp(option: string) {
   switch (option) {
     case 'log':
       return (x: dl.NDArray) => x.log();
@@ -66,7 +66,7 @@ export class UnaryOpsCPUBenchmark implements BenchmarkTest {
     dl.ENV.setMath(math);
 
     const input: dl.Array2D = dl.randUniform([size, size], -1, 1);
-    const op = getUnaryOp(option, math);
+    const op = getUnaryOp(option);
     const start = performance.now();
 
     math.scope(() => {
@@ -85,7 +85,7 @@ export class UnaryOpsGPUBenchmark implements BenchmarkTest {
     dl.ENV.setMath(math);
 
     const input: dl.Array2D = dl.randUniform([size, size], -1, 1);
-    const op = getUnaryOp(option, math);
+    const op = getUnaryOp(option);
 
     const benchmark = () => op(input);
 

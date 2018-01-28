@@ -45,13 +45,13 @@ reader.getAllVariables().then(async vars => {
     const lstm2 =
         math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
 
-    let c = [
-      dl.zeros<dl.Rank.R2>([1, lstmBias1.shape[0] / 4]),
-      dl.zeros<dl.Rank.R2>([1, lstmBias2.shape[0] / 4])
+    let c: dl.Array2D[] = [
+      dl.zeros([1, lstmBias1.shape[0] / 4]),
+      dl.zeros([1, lstmBias2.shape[0] / 4])
     ];
-    let h = [
-      dl.zeros<dl.Rank.R2>([1, lstmBias1.shape[0] / 4]),
-      dl.zeros<dl.Rank.R2>([1, lstmBias2.shape[0] / 4])
+    let h: dl.Array2D[] = [
+      dl.zeros([1, lstmBias1.shape[0] / 4]),
+      dl.zeros([1, lstmBias2.shape[0] / 4])
     ];
 
     let input = primerData;

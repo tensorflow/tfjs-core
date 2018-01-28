@@ -19,21 +19,20 @@ import * as dl from 'deeplearn';
 import {BenchmarkTest} from './benchmark';
 import * as benchmark_util from './benchmark_util';
 
-function getReductionOp(
-    option: string, math: dl.NDArrayMath): (x: dl.NDArray) => dl.Scalar {
+function getReductionOp(option: string): (x: dl.NDArray) => dl.Scalar {
   switch (option) {
     case 'max':
       return x => x.max();
     case 'min':
       return x => x.min();
     case 'argMax':
-      return x => x.argMax() as dl.Scalar;
+      return x => x.argMax();
     case 'argMin':
-      return x => x.argMin() as dl.Scalar;
+      return x => x.argMin();
     case 'sum':
-      return x => x.sum() as dl.Scalar;
+      return x => x.sum();
     case 'logSumExp':
-      return x => x.logSumExp() as dl.Scalar;
+      return x => x.logSumExp();
     default:
       throw new Error(`Not found such ops: ${option}`);
   }
@@ -46,7 +45,7 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
     dl.ENV.setMath(math);
 
     const input: dl.Array2D = dl.randUniform([size, size], -1, 1);
-    const op = getReductionOp(option, math);
+    const op = getReductionOp(option);
     const start = performance.now();
 
     math.scope(() => {
@@ -65,7 +64,7 @@ export class ReductionOpsGPUBenchmark implements BenchmarkTest {
     dl.ENV.setMath(math);
 
     const input: dl.Array2D = dl.randUniform([size, size], -1, 1);
-    const op = getReductionOp(option, math);
+    const op = getReductionOp(option);
 
     const benchmark = () => op(input);
 

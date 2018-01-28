@@ -34,8 +34,8 @@ export class GameOfLife {
     let world: dl.NDArray;
     let worldNext: dl.NDArray;
     this.math.scope(keep => {
-      const randWorld = dl.NDArray.randUniform<dl.Rank.R2>(
-          [this.size - 2, this.size - 2], 0, 2, 'int32');
+      const randWorld: dl.Array2D =
+          dl.randUniform([this.size - 2, this.size - 2], 0, 2, 'int32');
       const worldPadded = GameOfLife.padArray(randWorld);
       // TODO(kreeger): This logic can be vectorized and kept on the GPU with a
       // logical_or() and where() implementations.
@@ -199,7 +199,7 @@ export class GameOfLifeModel {
     let values = null;
     this.math.scope(() => {
       const mapping =
-          [{tensor: this.inputTensor, data: world.flatten().asType('float32')}];
+          [{tensor: this.inputTensor, data: world.flatten().toFloat()}];
 
       const evalOutput = this.session.eval(this.predictionTensor, mapping);
       values = evalOutput.dataSync();
@@ -212,8 +212,8 @@ export class GameOfLifeModel {
     const outputs = [];
     for (let i = 0; i < worlds.length; i++) {
       const example = worlds[i];
-      inputs.push(example[0].flatten().asType('float32'));
-      outputs.push(example[1].flatten().asType('float32'));
+      inputs.push(example[0].flatten().toFloat());
+      outputs.push(example[1].flatten().toFloat());
     }
 
     // TODO(kreeger): Don't really need to shuffle these.

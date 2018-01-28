@@ -70,7 +70,7 @@ export class NDArrayLogitsVisualizer extends NDArrayLogitsVisualizerPolymer {
   drawLogits(
       predictedLogits: dl.Array1D, labelLogits: dl.Array1D,
       labelClassNames?: string[]) {
-    const labelClass = dl.ENV.math.argMax(labelLogits).get();
+    const labelClass = labelLogits.argMax().get();
 
     const topk = this.topK(predictedLogits.dataSync() as Float32Array, TOP_K);
     const topkIndices = topk.indices;
