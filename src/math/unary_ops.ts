@@ -41,8 +41,10 @@ export class Ops {
    * @param x The input NDArray.
    */
   @operation
-  static ceil<R extends Rank, T extends NDArray<R>>(x: T): T {
-    return ENV.engine.executeKernel('Ceil', {inputs: {x}}) as T;
+  static ceil<T extends NDArray>(x: T): T {
+    return ENV.engine.executeKernel('Ceil', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => dy.ceil()};
+    }) as T;
   }
 
   /**
@@ -51,8 +53,10 @@ export class Ops {
    * @param x The input NDArray.
    */
   @operation
-  static floor<R extends Rank, T extends NDArray<R>>(x: T): T {
-    return ENV.engine.executeKernel('Floor', {inputs: {x}}) as T;
+  static floor<T extends NDArray>(x: T): T {
+    return ENV.engine.executeKernel('Floor', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => dy.floor()};
+    }) as T;
   }
 
   /**
