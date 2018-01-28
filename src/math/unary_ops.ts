@@ -19,7 +19,6 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
-import {onesLike} from './ops';
 
 export class Ops {
   /**
@@ -207,7 +206,7 @@ export class Ops {
   static sigmoid<T extends NDArray>(x: T): T {
     return ENV.engine.executeKernel(
       'Sigmoid', {inputs: {x}}, (dy: NDArray, y: NDArray) => {
-          return {x: () => y.toFloat().mul(onesLike(y).sub(y)).mul(dy)};
+          return {x: () => y.toFloat().mul(Scalar.new(1).sub(y)).mul(dy)};
       }) as T;
   }
 
