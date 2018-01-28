@@ -19,6 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
+import * as ops from './ops';
 
 export class Ops {
   /**
@@ -40,7 +41,24 @@ export class Ops {
    */
   @operation
   static ceil<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Ceil', {inputs: {x}}) as T;
+    const gradient = (dy: T, y: T) => {
+      return {
+        x: () => {
+          // Currently, Scalars are not supported by ops.where
+          util.assert(x.rank !== 0, 'Error in ceil gradient: ');
+          const mask = x.less(x.ceil());
+
+          const zeros = NDArray.zeros(mask.shape);
+          const nans = NDArray.zeros(mask.shape);
+          nans.fill(NaN);
+
+          const res = ops.where(mask, zeros, nans);
+
+          return dy.mul(res);
+        }
+      };
+    };
+    return ENV.engine.executeKernel('Ceil', {inputs: {x}}, gradient) as T;
   }
 
   /**
@@ -50,7 +68,24 @@ export class Ops {
    */
   @operation
   static floor<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Floor', {inputs: {x}}) as T;
+    const gradient = (dy: T, y: T) => {
+      return {
+        x: () => {
+          // Currently, Scalars are not supported by ops.where
+          util.assert(x.rank !== 0, 'Error in floor gradient: ');
+          const mask = x.greater(x.floor());
+
+          const zeros = NDArray.zeros(mask.shape);
+          const nans = NDArray.zeros(mask.shape);
+          nans.fill(NaN);
+
+          const res = ops.where(mask, zeros, nans);
+
+          return dy.mul(res);
+        }
+      };
+    };
+    return ENV.engine.executeKernel('Floor', {inputs: {x}}, gradient) as T;
   }
 
   /**
