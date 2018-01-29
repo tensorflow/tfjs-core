@@ -112,7 +112,8 @@ function getWebGLDisjointQueryTimerVersion(webGLVersion: number): number {
   let queryTimerVersion: number;
   const gl = getWebGLRenderingContext(webGLVersion);
 
-  if (hasExtension(gl, 'EXT_disjoint_timer_query_webgl2')) {
+  if (hasExtension(gl, 'EXT_disjoint_timer_query_webgl2') &&
+      webGLVersion === 2) {
     queryTimerVersion = 2;
   } else if (hasExtension(gl, 'EXT_disjoint_timer_query')) {
     queryTimerVersion = 1;
