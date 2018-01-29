@@ -41,6 +41,8 @@ export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
 
     const end = performance.now();
 
+    math.dispose();
+
     this.lastRunTimeMs = end - start;
     return this.lastRunTimeMs;
   }

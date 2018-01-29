@@ -77,10 +77,10 @@ export class FontModel {
 
     const adjusted = this.math.scope(keep => {
       const idx = dl.Array1D.new([charId]);
-      const onehotVector =
-          this.math.oneHot(idx, this.numberOfValidChars).as1D();
+      const onehotVector = dl.oneHot(idx, this.numberOfValidChars).as1D();
 
-      const inputData = this.math.concat1D(embedding.as1D(), onehotVector);
+      const axis = 0;
+      const inputData = embedding.as1D().concat(onehotVector, axis);
 
       let lastOutput = inputData;
 

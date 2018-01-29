@@ -21,7 +21,7 @@ const weights: dl.Array2D = dl.variable(
 const model = (xs: dl.Array2D) => xs.matMul(weights);
 
 const loss = (labels: dl.Array2D, ys: dl.Array2D) =>
-    math.softmaxCrossEntropy(labels, ys).mean() as dl.Scalar;
+    dl.losses.softmaxCrossEntropy(labels, ys).mean() as dl.Scalar;
 
 // Train the model.
 export async function train(data: MnistData, log: (message: string) => void) {

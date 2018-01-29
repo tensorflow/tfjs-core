@@ -80,7 +80,7 @@ export class TransformNet implements dl.Model {
                  .mul(this.timesScalar)
                  .add(this.plusScalar)
                  .clip(0, 255)
-                 .div(dl.Scalar.new(255.)) as dl.Array3D;
+                 .div(dl.Scalar.new(255)) as dl.Array3D;
     });
 
     return img;

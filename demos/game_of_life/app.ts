@@ -100,8 +100,12 @@ class TrainDisplay {
 
   private randomRGBA(): string {
     const s = 255;
-    return `rgba(${Math.round(Math.random() * s)},${
-        Math.round(Math.random() * s)},${Math.round(Math.random() * s)},1)`;
+    const [r, g, b] = [
+      Math.round(Math.random() * s), Math.round(Math.random() * s),
+      Math.round(Math.random() * s)
+    ];
+
+    return `rgba(${r},${g},${b},1)`;
   }
 }
 

@@ -52,6 +52,8 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
       op(input).get();
     });
 
+    math.dispose();
+
     const end = performance.now();
     return end - start;
   }
@@ -71,6 +73,7 @@ export class ReductionOpsGPUBenchmark implements BenchmarkTest {
     const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
 
     input.dispose();
+    math.dispose();
 
     return time;
   }

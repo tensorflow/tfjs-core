@@ -120,8 +120,6 @@ if (!isDeviceSupported) {
   start();
 }
 
-const math = dl.ENV.math;
-
 let modelReady = false;
 
 function start() {
@@ -390,8 +388,8 @@ document.getElementById('save-2').onclick = () => {
   updateConditioningParams();
 };
 
-function getConditioning(math: dl.NDArrayMath): dl.Array1D {
-  return math.scope(keep => {
+function getConditioning(): dl.Array1D {
+  return dl.ENV.math.scope(keep => {
     if (!conditioned) {
       // TODO(nsthorat): figure out why we have to cast these shapes to numbers.
       // The linter is complaining, though VSCode can infer the types.
@@ -401,10 +399,9 @@ function getConditioning(math: dl.NDArrayMath): dl.Array1D {
       conditioning.set(1.0, 0);
       return conditioning;
     } else {
-      const conditioningValues =
-          math.concat1D(noteDensityEncoding, pitchHistogramEncoding);
-
       const axis = 0;
+      const conditioningValues =
+          noteDensityEncoding.concat(pitchHistogramEncoding, axis);
       return dl.Array1D.new([0]).concat(conditioningValues, axis);
     }
   });
@@ -415,13 +412,10 @@ async function generateStep(loopId: number) {
     // Was part of an outdated generateStep() scheduled via setTimeout.
     return;
   }
-  await math.scope(async keep => {
-    const lstm1 =
-        math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
-    const lstm2 =
-        math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
-    const lstm3 =
-        math.basicLSTMCell.bind(math, forgetBias, lstmKernel3, lstmBias3);
+  await dl.ENV.math.scope(async keep => {
+    const lstm1 = dl.basicLSTMCell.bind(forgetBias, lstmKernel1, lstmBias1);
+    const lstm2 = dl.basicLSTMCell.bind(forgetBias, lstmKernel2, lstmBias2);
+    const lstm3 = dl.basicLSTMCell.bind(forgetBias, lstmKernel3, lstmBias3);
 
     const outputs: dl.Scalar[] = [];
     // Generate some notes.
@@ -433,11 +427,11 @@ async function generateStep(loopId: number) {
       if (i === 0) {
         lastSample.dispose();
       }
-      const conditioning = getConditioning(math);
+      const conditioning = getConditioning();
       const axis = 0;
       const input = conditioning.concat(eventInput, axis);
       const output =
-          math.multiRNNCell([lstm1, lstm2, lstm3], input.as2D(1, -1), c, h);
+          dl.multiRNNCell([lstm1, lstm2, lstm3], input.as2D(1, -1), c, h);
       c = output[0];
       h = output[1];
 

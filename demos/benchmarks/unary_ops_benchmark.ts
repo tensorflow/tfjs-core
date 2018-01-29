@@ -73,6 +73,8 @@ export class UnaryOpsCPUBenchmark implements BenchmarkTest {
       op(input).get();
     });
 
+    math.dispose();
+
     const end = performance.now();
     return end - start;
   }

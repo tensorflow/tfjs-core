@@ -30,11 +30,14 @@ export class MatmulCPUBenchmark implements BenchmarkTest {
     const safeMode = false;
     const math = new dl.NDArrayMath('cpu', safeMode);
     dl.ENV.setMath(math);
+
     const a: dl.Array2D = dl.randUniform([size, size], -1, 1);
     const b: dl.Array2D = dl.randUniform([size, size], -1, 1);
     const start = performance.now();
     math.matMul(a, b);
     const end = performance.now();
+
+    math.dispose();
 
     this.lastRunTimeMs = end - start;
     return this.lastRunTimeMs;
@@ -46,6 +49,7 @@ export class MatmulGPUBenchmark implements BenchmarkTest {
     const safeMode = false;
     const math = new dl.NDArrayMath('webgl', safeMode);
     dl.ENV.setMath(math);
+
     const a: dl.Array2D = dl.randNormal([size, size]);
     const b: dl.Array2D = dl.randNormal([size, size]);
 

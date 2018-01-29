@@ -75,6 +75,8 @@ export class PoolCPUBenchmark implements BenchmarkTest {
     }
     const avgTime = (performance.now() - start) / CPU_OP_RUNS;
 
+    math.dispose();
+
     return new Promise<number>((resolve, reject) => {
       resolve(avgTime);
     });
@@ -97,7 +99,9 @@ export class PoolGPUBenchmark implements BenchmarkTest {
 
     const benchmark = () => op(x, fieldSize, stride, 'same');
     const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
+
     x.dispose();
+    math.dispose();
 
     return time;
   }

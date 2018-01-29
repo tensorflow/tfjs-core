@@ -65,7 +65,7 @@ async function intro() {
   const learningRate = .00001;
   const batchSize = 3;
 
-  const session = new dl.Session(g, math);
+  const session = new dl.Session(g, dl.ENV.math);
   const optimizer = new dl.SGDOptimizer(learningRate);
 
   const inputs: dl.Array1D[] = [

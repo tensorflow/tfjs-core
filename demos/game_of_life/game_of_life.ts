@@ -67,28 +67,15 @@ export class GameOfLife {
 
   /** Counts total sum of neighbors for a given world. */
   private countNeighbors(size: number, worldPadded: dl.Array2D): dl.Array2D {
-    let neighborCount = this.math.add(
-        this.math.slice2D(worldPadded, [0, 0], [size - 2, size - 2]),
-        this.math.slice2D(worldPadded, [0, 1], [size - 2, size - 2]));
-    neighborCount = this.math.add(
-        neighborCount,
-        this.math.slice2D(worldPadded, [0, 2], [size - 2, size - 2]));
-    neighborCount = this.math.add(
-        neighborCount,
-        this.math.slice2D(worldPadded, [1, 0], [size - 2, size - 2]));
-    neighborCount = this.math.add(
-        neighborCount,
-        this.math.slice2D(worldPadded, [1, 2], [size - 2, size - 2]));
-    neighborCount = this.math.add(
-        neighborCount,
-        this.math.slice2D(worldPadded, [2, 0], [size - 2, size - 2]));
-    neighborCount = this.math.add(
-        neighborCount,
-        this.math.slice2D(worldPadded, [2, 1], [size - 2, size - 2]));
-    neighborCount = this.math.add(
-        neighborCount,
-        this.math.slice2D(worldPadded, [2, 2], [size - 2, size - 2]));
-    return neighborCount as dl.Array2D;
+    return worldPadded.slice([0, 0], [size - 2, size - 2])
+        .add(worldPadded.slice([0, 1], [size - 2, size - 2]))
+        .add(worldPadded.slice([0, 2], [size - 2, size - 2]))
+        .add(worldPadded.slice([0, 2], [size - 2, size - 2]))
+        .add(worldPadded.slice([1, 0], [size - 2, size - 2]))
+        .add(worldPadded.slice([1, 2], [size - 2, size - 2]))
+        .add(worldPadded.slice([2, 0], [size - 2, size - 2]))
+        .add(worldPadded.slice([2, 1], [size - 2, size - 2]))
+        .add(worldPadded.slice([2, 2], [size - 2, size - 2]));
   }
 
   /* Helper method to pad an array until the op is ready. */
