@@ -73,10 +73,17 @@ export interface MathBackend extends NDArrayStorage, BackendTimer {
 
   reverse4D(a: Array4D, axis: number[]): Array4D;
 
-  concat1D(a: Array1D, b: Array1D): Array1D;
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D;
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D;
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D;
+  // Any concat of n-dimensional tensors across any axis can be reduced to
+  // a concatenation of two-dimensional tensors across the axis 1 by first
+  // partitioning the axes of the original tensors into those less than the axis
+  // to be concatenated across and the rest. Then reshape the tensors into a
+  // two-dimensional tensor by collapsing these two sets of axes and concatenate
+  // the resulting matrices across the axis 1, finally reshaping the result to
+  // have the proper shape.
+  // This method always take a rank-2 tensor (i.e a matrix) and concatenate it
+  // along the axis 1 ("putting them next to each other" as opposed to
+  // "putting them on top of one another").
+  concat(a: Array2D, b: Array2D): Array2D;
 
   neg<T extends NDArray>(a: T): T;
 
@@ -179,8 +186,9 @@ export interface MathBackend extends NDArrayStorage, BackendTimer {
 
   gather<T extends NDArray>(x: T, indices: Array1D, axis: number): T;
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
+  resizeBilinear(
+      x: Array4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Array4D;
 
   batchNormalization2D(
       x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,

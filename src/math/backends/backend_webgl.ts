@@ -52,7 +52,7 @@ import {OneHotProgram} from './webgl/onehot_gpu';
 import {Pad1DProgram, Pad2DProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
-import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
+import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {TextureData, TextureType} from './webgl/tex_util';
@@ -320,23 +320,9 @@ export class MathBackendWebGL implements MathBackend {
     this.compileAndRun(program, [source], dest, customSetup);
   }
 
-  concat1D(a: Array1D, b: Array1D): Array1D {
-    const program = new ConcatProgram(a.shape, b.shape, 0);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
+  // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
+  concat(a: Array2D, b: Array2D): Array2D {
+    const program = new ConcatProgram(a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
@@ -875,11 +861,11 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(avgPoolBackpropProgram, [dy], output) as Array4D;
   }
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number],
-      alignCorners: boolean): Array3D {
+  resizeBilinear(
+      x: Array4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Array4D {
     const program =
-        new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
+        new ResizeBilinearProgram(x.shape, newHeight, newWidth, alignCorners);
     return this.compileAndRun(program, [x]);
   }
 
