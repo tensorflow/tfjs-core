@@ -15,7 +15,7 @@ export function loadModelVariables(manifestPath = 'weights/'):
  * Perform inference on an Array3d represending an image.
  *
  * @param modelVars key-value map of model variables
- * @param input array3D representing image.
+ * @param input
  */
 export function inference(
     modelVars: {[varName: string]: dl.NDArray}, input: dl.Array4D) {

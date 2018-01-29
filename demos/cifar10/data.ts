@@ -1,13 +1,16 @@
 import * as dl from 'deeplearn';
 
+export interface CifarData {
+  images: dl.NDArray[];
+  labels: dl.NDArray[];
+}
 
 /**
  * Load all of the Cifar10 data and then return a subset of it.
  *
  * @param limit number of images and labels to return
  */
-export async function loadCifarData(limit = 100):
-    Promise<{images: dl.NDArray[], labels: dl.NDArray[]}> {
+export async function loadCifarData(limit = 100): Promise<CifarData> {
   const datasetConfig: dl.XhrDatasetConfig = {
     'data': [
       {
@@ -37,6 +40,7 @@ export async function loadCifarData(limit = 100):
   const dataset = new dl.XhrDataset(datasetConfig);
 
   await dataset.fetchData();
+  dataset.normalizeWithinBounds(0, -1, 1);
   let [images, labels] = dataset.getData();
 
   images = images.slice(0, limit);
