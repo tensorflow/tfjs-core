@@ -18,7 +18,7 @@
 import {Array1D, NDArray, NDArrayMath, Scalar} from 'deeplearn';
 import {PredictionModel} from './prediction_model';
 
-const MODEL_FILE_URL = 'mobilenet_v1_0.75_224/frozen.pb';
+const MODEL_FILE_URL = 'mobilenet_v1_0.75_224/optimized_graph.pb';
 export class MobileNet extends PredictionModel {
   // yolo variables
   private PREPROCESS_DIVISOR = Scalar.new(255.0 / 2);

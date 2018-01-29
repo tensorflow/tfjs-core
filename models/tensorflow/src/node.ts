@@ -80,6 +80,8 @@ export function performMathOp(
     }
     case 'Placeholder':
       return feedDict[node.name];
+    case 'PlaceholderWithDefault':
+      return !!feedDict[node.name] ? feedDict[node.name] : input as NDArray;
     case 'Floor': {
       return math.floor(input as NDArray);
     }

@@ -57,6 +57,7 @@ export class TensorflowModel implements Model {
       this.nodes = this.nodesToDagNodes(model);
       this.edges = this.nodesToDagEdges(model);
       this.loadWeights();
+      console.log(`node size = ${this.nodes.length}`);
     });
   }
 

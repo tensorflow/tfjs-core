@@ -45,6 +45,10 @@ limitations under the License.
     const result = tfModel.predict(pixels);
     console.timeEnd('predict');
 
+    console.time('predict 2');
+    tfModel.predict(pixels).dataSync();
+    console.timeEnd('predict 2');
+
     resultElement.innerText = '';
 
     console.log(result.shape);
