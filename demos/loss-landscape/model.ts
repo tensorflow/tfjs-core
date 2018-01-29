@@ -26,7 +26,7 @@ export class Model {
   private IMAGE_SIZE = 784;
   private LABELS_SIZE = 10;
   private LANDSCAPE_STEPS_PER_DIR = 10;
-  private TRAIN_STEPS = 30;
+  private TRAIN_STEPS = 50;
 
   // dl.js state.
   private math = dl.ENV.math;

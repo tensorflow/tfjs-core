@@ -8,7 +8,7 @@ export default Vue.extend({
   props: {data: Object},
   mounted() {
     const data = [{
-      z: this.data.zData.map((x: number[]) => x.map(y => Math.log10(1 + y))),
+      z: this.data.zData,
       type: 'contour',
       // colorscale: [
       //   [0, 'rgb(245,147,34)'], [0.5, 'rgb(232, 234, 235)'],
