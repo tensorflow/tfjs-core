@@ -22,8 +22,6 @@ import * as dl from 'deeplearn';
  * 'NDArrayMath with WebGL backend' section of tutorial
  */
 async function intro() {
-  const math = dl.ENV.math;
-
   const a = dl.Array2D.new([2, 2], [1.0, 2.0, 3.0, 4.0]);
   const b = dl.Array2D.new([2, 2], [0.0, 2.0, 4.0, 6.0]);
 
@@ -94,7 +92,7 @@ async function intro() {
   for (let i = 0; i < NUM_BATCHES; i++) {
     // Wrap session.train in a scope so the cost gets cleaned up
     // automatically.
-    await math.scope(async () => {
+    await dl.ENV.math.scope(async () => {
       // Train takes a cost tensor to minimize. Trains one batch. Returns the
       // average cost as a dl.Scalar.
       const cost = session.train(
