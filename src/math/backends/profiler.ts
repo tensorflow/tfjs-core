@@ -9,7 +9,11 @@ export class Profiler {
   private pendingTimer: Promise<number>;
   private pendingKernel = false;
 
-  constructor(private backendTimer: BackendTimer) {}
+  constructor(private backendTimer: BackendTimer, private logger?: Logger) {
+    if (logger == null) {
+      this.logger = new Logger();
+    }
+  }
 
   profileKernel<T extends NDArray>(kernelName: Kernel, f: () => T): T {
     let result: NDArray;
@@ -24,15 +28,15 @@ export class Profiler {
 
     result = f();
 
+    const vals = result.dataSync();
+    util.checkForNaN(vals, result.dtype, name);
+
     if (shouldTimeKernel) {
       query = this.backendTimer.endTimer(query);
       this.pendingKernel = false;
 
-      const vals = result.dataSync();
-      util.checkForNaN(vals, result.dtype, name);
-
       const profile = (timeMs: number) => {
-        this.logKernelProfile(kernelName, result, vals, timeMs);
+        this.logger.logKernelProfile(kernelName, result, vals, timeMs);
       };
 
       if (this.pendingTimer == null) {
@@ -49,7 +53,9 @@ export class Profiler {
 
     return result as T;
   }
+}
 
+export class Logger {
   logKernelProfile(
       kernelName: Kernel, result: NDArray, vals: TypedArray, timeMs: number) {
     const time = util.rightPad(`${timeMs}ms`, 9);

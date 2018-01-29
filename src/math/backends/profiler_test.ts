@@ -15,17 +15,19 @@
  * =============================================================================
  */
 
-import * as test_util from '../../test_util';
-import {MathTests} from '../../test_util';
 import {NDArray, Scalar} from '../ndarray';
 
 import {BackendTimer} from './backend';
-import {Profiler} from './profiler';
+import {Kernel} from './kernel_registry';
+import {Logger, Profiler} from './profiler';
+import {TypedArray} from './webgl/tex_util';
 
 class TestBackendTimer implements BackendTimer {
+  constructor(private delayMs: number, private queryTimeMs: number) {}
+
   async time(query: () => NDArray): Promise<number> {
     query();
-    return 10;
+    return this.queryTimeMs;
   }
 
   startTimer(): {} {
@@ -35,20 +37,109 @@ class TestBackendTimer implements BackendTimer {
     return {};
   }
   async getQueryTime(query: {}): Promise<number> {
-    return 10;
+    return new Promise<number>(resolve => {
+      setTimeout(() => resolve(this.queryTimeMs), this.delayMs);
+    });
   }
 }
 
-const tests: MathTests = it => {
-  it('profiles simple function ', () => {
-    const profiler = new Profiler(new TestBackendTimer());
-    spyOn(profiler, 'logKernelProfile');
+class TestLogger extends Logger {
+  logKernelProfile(
+      kernelName: Kernel, result: NDArray, vals: TypedArray, timeMs: number) {}
+}
+
+describe('profiler.Profiler', () => {
+  it('profiles simple function', doneFn => {
+    const delayMs = 5;
+    const queryTimeMs = 10;
+    const timer = new TestBackendTimer(delayMs, queryTimeMs);
+    const logger = new TestLogger();
+    const profiler = new Profiler(timer, logger);
+
+    spyOn(timer, 'startTimer').and.callThrough();
+    spyOn(timer, 'endTimer').and.callThrough();
+    spyOn(timer, 'getQueryTime').and.callThrough();
+
+    spyOn(logger, 'logKernelProfile').and.callThrough();
+
+    const startTimerSpy = timer.startTimer as jasmine.Spy;
+    const endTimerSpy = timer.endTimer as jasmine.Spy;
+    const getQueryTimeSpy = timer.getQueryTime as jasmine.Spy;
+
+    const logKernelProfileSpy = logger.logKernelProfile as jasmine.Spy;
+
+    let kernelCalled = false;
+    const result = 1;
+    const resultScalar = Scalar.new(result);
 
     profiler.profileKernel('MatMul', () => {
-      return Scalar.new(1);
+      kernelCalled = true;
+      return resultScalar;
     });
 
-    console.log(profiler.logKernelProfile.calls.count);
+    setTimeout(() => {
+      expect(startTimerSpy.calls.count()).toBe(1);
+      expect(endTimerSpy.calls.count()).toBe(1);
+      expect(getQueryTimeSpy.calls.count()).toBe(1);
+
+      expect(logKernelProfileSpy.calls.count()).toBe(1);
+      expect(logKernelProfileSpy.calls.first().args).toEqual([
+        'MatMul', resultScalar, new Float32Array([result]), queryTimeMs
+      ]);
+
+      expect(kernelCalled).toBe(true);
+      doneFn();
+    }, delayMs * 2);
   });
-};
-test_util.describeMathCPU('profiler.Profiler', [tests]);
+
+  it('profiles nested kernel', doneFn => {
+    const delayMs = 5;
+    const queryTimeMs = 10;
+    const timer = new TestBackendTimer(delayMs, queryTimeMs);
+    const logger = new TestLogger();
+    const profiler = new Profiler(timer, logger);
+
+    spyOn(timer, 'startTimer').and.callThrough();
+    spyOn(timer, 'endTimer').and.callThrough();
+    spyOn(timer, 'getQueryTime').and.callThrough();
+
+    spyOn(logger, 'logKernelProfile').and.callThrough();
+
+    const startTimerSpy = timer.startTimer as jasmine.Spy;
+    const endTimerSpy = timer.endTimer as jasmine.Spy;
+    const getQueryTimeSpy = timer.getQueryTime as jasmine.Spy;
+
+    const logKernelProfileSpy = logger.logKernelProfile as jasmine.Spy;
+
+    let matmulKernelCalled = false;
+    let maxKernelCalled = false;
+    const result = 1;
+    const resultScalar = Scalar.new(result);
+
+    profiler.profileKernel('MatMul', () => {
+      const result = profiler.profileKernel('Max', () => {
+        maxKernelCalled = true;
+        return resultScalar;
+      });
+      matmulKernelCalled = true;
+      return result;
+    });
+
+    setTimeout(() => {
+      expect(startTimerSpy.calls.count()).toBe(1);
+      expect(endTimerSpy.calls.count()).toBe(1);
+      expect(getQueryTimeSpy.calls.count()).toBe(1);
+
+      // Only MatMul should have been logged, nested kernels will be ignored,
+      // however the function should be evaluated.
+      expect(logKernelProfileSpy.calls.count()).toBe(1);
+      expect(logKernelProfileSpy.calls.first().args).toEqual([
+        'MatMul', resultScalar, new Float32Array([result]), queryTimeMs
+      ]);
+
+      expect(matmulKernelCalled).toBe(true);
+      expect(maxKernelCalled).toBe(true);
+      doneFn();
+    }, delayMs * 2);
+  });
+});
