@@ -1342,6 +1342,45 @@ const testsGather: MathTests = it => {
   });
 };
 
+const testsOneHot: MathTests = it => {
+  it('Depth 1 throws error', math => {
+    const indices = Array1D.new([0, 0, 0]);
+    expect(() => math.oneHot(indices, 1)).toThrowError();
+  });
+
+  it('Depth 2, diagonal', math => {
+    const indices = Array1D.new([0, 1]);
+    const res = math.oneHot(indices, 2);
+
+    expect(res.shape).toEqual([2, 2]);
+    test_util.expectArraysClose(res, [1, 0, 0, 1]);
+  });
+
+  it('Depth 2, transposed diagonal', math => {
+    const indices = Array1D.new([1, 0]);
+    const res = math.oneHot(indices, 2);
+
+    expect(res.shape).toEqual([2, 2]);
+    test_util.expectArraysClose(res, [0, 1, 1, 0]);
+  });
+
+  it('Depth 3, 4 events', math => {
+    const indices = Array1D.new([2, 1, 2, 0]);
+    const res = math.oneHot(indices, 3);
+
+    expect(res.shape).toEqual([4, 3]);
+    test_util.expectArraysClose(res, [0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0]);
+  });
+
+  it('Depth 2 onValue=3, offValue=-2', math => {
+    const indices = Array1D.new([0, 1]);
+    const res = math.oneHot(indices, 2, 3, -2);
+
+    expect(res.shape).toEqual([2, 2]);
+    test_util.expectArraysClose(res, [3, -2, -2, 3]);
+  });
+};
+
 const allTests = [
   testsZeros,
   testsOnes,
@@ -1355,6 +1394,7 @@ const allTests = [
   testsFromPixels,
   testsTile,
   testsGather,
+  testsOneHot,
 ];
 
 test_util.describeMathCPU('array_ops', allTests);
