@@ -1005,6 +1005,41 @@ const testsFromPixels: MathTests = it => {
         new Int32Array(
             [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]));
   });
+
+  it('fromPixels, 3 channels', () => {
+    const pixels = new ImageData(1, 2);
+    pixels.data[0] = 2;
+    pixels.data[1] = 3;
+    pixels.data[2] = 4;
+    pixels.data[3] = 255;  // Not used.
+    pixels.data[4] = 5;
+    pixels.data[5] = 6;
+    pixels.data[6] = 7;
+    pixels.data[7] = 255;  // Not used.
+
+    const res = NDArray.fromPixels(pixels, 3);
+    expect(res.shape).toEqual([2, 1, 3]);
+    test_util.expectArraysClose(res, [2, 3, 4, 5, 6, 7]);
+  });
+
+  it('fromPixels, cast to float', () => {
+    const pixels = new ImageData(1, 2);
+    pixels.data[0] = 2;
+    pixels.data[1] = 3;
+    pixels.data[2] = 4;
+    pixels.data[3] = 255;  // Not used.
+    pixels.data[4] = 5;
+    pixels.data[5] = 6;
+    pixels.data[6] = 7;
+    pixels.data[7] = 255;  // Not used.
+
+    const res = NDArray.fromPixels(pixels, 3).toFloat();
+    expect(res.shape).toEqual([2, 1, 3]);
+    expect(res.dtype).toBe('float32');
+    console.log(res.dataSync());
+    console.log(res.dataSync());
+    test_util.expectArraysClose(res, new Float32Array([2, 3, 4, 5, 6, 7]));
+  });
 };
 const testsClone: MathTests = it => {
   it('1D default dtype', () => {
