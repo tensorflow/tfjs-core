@@ -413,9 +413,12 @@ async function generateStep(loopId: number) {
     return;
   }
   await dl.ENV.math.scope(async keep => {
-    const lstm1 = dl.basicLSTMCell.bind(forgetBias, lstmKernel1, lstmBias1);
-    const lstm2 = dl.basicLSTMCell.bind(forgetBias, lstmKernel2, lstmBias2);
-    const lstm3 = dl.basicLSTMCell.bind(forgetBias, lstmKernel3, lstmBias3);
+    const lstm1 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
+        dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);
+    const lstm2 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
+        dl.basicLSTMCell(forgetBias, lstmKernel2, lstmBias2, data, c, h);
+    const lstm3 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
+        dl.basicLSTMCell(forgetBias, lstmKernel3, lstmBias3, data, c, h);
 
     const outputs: dl.Scalar[] = [];
     // Generate some notes.
