@@ -40,10 +40,10 @@ reader.getAllVariables().then(async vars => {
 
   await math.scope(async () => {
     const forgetBias = dl.Scalar.new(1.0);
-    const lstm1 =
-        math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
-    const lstm2 =
-        math.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
+    const lstm1 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
+        dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);
+    const lstm2 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
+        dl.basicLSTMCell(forgetBias, lstmKernel2, lstmBias2, data, c, h);
 
     let c: dl.Array2D[] = [
       dl.zeros([1, lstmBias1.shape[0] / 4]),
