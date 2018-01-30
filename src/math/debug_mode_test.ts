@@ -48,7 +48,7 @@ import {Array1D, Array2D} from './ndarray';
       expect(f).toThrowError();
     });
 
-    it('A x B', math => {
+    it('nikhil A x B', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
       const b = Array2D.new([3, 2], [0, 1, -3, 2, 2, 1]);
 
@@ -59,8 +59,8 @@ import {Array1D, Array2D} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('debug mode', [tests], [{'DEBUG': true}]);
-  test_util.describeMathGPU('debug mode', [tests], [
+  test_util.describeMathCPU('debug mode on', [tests], [{'DEBUG': true}]);
+  test_util.describeMathGPU('debug mode on ', [tests], [
     {'DEBUG': true, 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'DEBUG': true, 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'DEBUG': true, 'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
@@ -77,8 +77,8 @@ import {Array1D, Array2D} from './ndarray';
     });
   };
 
-  test_util.describeMathCPU('debug mode', [gpuTests], [{'DEBUG': false}]);
-  test_util.describeMathGPU('debug mode', [gpuTests], [
+  test_util.describeMathCPU('debug mode off', [gpuTests], [{'DEBUG': false}]);
+  test_util.describeMathGPU('debug mode off', [gpuTests], [
     {'DEBUG': false, 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'DEBUG': false, 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2}, {
       'DEBUG': false,

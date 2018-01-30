@@ -377,8 +377,13 @@ export class GPGPUContext {
     }
   }
 
-  isQueryAvailable(query: WebGLQuery): boolean {
-    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
+  private isQueryAvailable(query: WebGLQuery, queryTimerVersion: number):
+      boolean {
+    if (queryTimerVersion === 0) {
+      return true;
+    }
+
+    if (queryTimerVersion === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
 
@@ -406,14 +411,20 @@ export class GPGPUContext {
         resolve(-1);
       };
 
-      util.repeatedTry(() => this.isQueryAvailable(query))
-          .then(() => resolve(this.getQueryTime(query)))
+      const queryTimerVersion =
+          ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
+      util.repeatedTry(() => this.isQueryAvailable(query, queryTimerVersion))
+          .then(() => resolve(this.getQueryTime(query, queryTimerVersion)))
           .catch(resolveWithWarning);
     });
   }
 
-  private getQueryTime(query: WebGLQuery): number {
-    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
+  private getQueryTime(query: WebGLQuery, queryTimerVersion: number): number {
+    if (queryTimerVersion === 0) {
+      return null;
+    }
+
+    if (queryTimerVersion === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
 
       const timeElapsedNanos = gl2.getQueryParameter(query, gl2.QUERY_RESULT);
