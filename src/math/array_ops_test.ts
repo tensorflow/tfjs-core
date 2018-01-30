@@ -19,7 +19,7 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import {Rank} from './types';
 
 const testsZeros: MathTests = it => {
@@ -1022,23 +1022,39 @@ const testsFromPixels: MathTests = it => {
     test_util.expectArraysClose(res, [2, 3, 4, 5, 6, 7]);
   });
 
-  it('fromPixels, cast to float', () => {
-    const pixels = new ImageData(1, 2);
+  it('fromPixels, reshape, then do dl.add()', () => {
+    const pixels = new ImageData(1, 1);
     pixels.data[0] = 2;
     pixels.data[1] = 3;
     pixels.data[2] = 4;
     pixels.data[3] = 255;  // Not used.
-    pixels.data[4] = 5;
-    pixels.data[5] = 6;
-    pixels.data[6] = 7;
-    pixels.data[7] = 255;  // Not used.
 
-    const res = NDArray.fromPixels(pixels, 3).toFloat();
-    expect(res.shape).toEqual([2, 1, 3]);
+    const a = NDArray.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
+    const res = a.add(Scalar.new(2, 'int32'));
+    expect(res.shape).toEqual([1, 1, 1, 3]);
+    expect(res.dtype).toBe('int32');
+    test_util.expectArraysClose(res, [4, 5, 6]);
+  });
+
+  it('fromPixels + fromPixels', () => {
+    const pixelsA = new ImageData(1, 1);
+    pixelsA.data[0] = 255;
+    pixelsA.data[1] = 3;
+    pixelsA.data[2] = 4;
+    pixelsA.data[3] = 255;  // Not used.
+
+    const pixelsB = new ImageData(1, 1);
+    pixelsB.data[0] = 5;
+    pixelsB.data[1] = 6;
+    pixelsB.data[2] = 7;
+    pixelsB.data[3] = 255;  // Not used.
+
+    const a = NDArray.fromPixels(pixelsA, 3).toFloat();
+    const b = NDArray.fromPixels(pixelsB, 3).toFloat();
+    const res = a.add(b);
+    expect(res.shape).toEqual([1, 1, 3]);
     expect(res.dtype).toBe('float32');
-    console.log(res.dataSync());
-    console.log(res.dataSync());
-    test_util.expectArraysClose(res, new Float32Array([2, 3, 4, 5, 6, 7]));
+    test_util.expectArraysClose(res, [260, 9, 11]);
   });
 };
 const testsClone: MathTests = it => {
