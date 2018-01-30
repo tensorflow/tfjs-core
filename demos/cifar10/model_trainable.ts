@@ -131,6 +131,8 @@ export class TrainableCifar10 {
       return softmaxRes;
     });
 
+
+
     const logits = finalRes;
     const prediction = math.argMax(finalRes, 1) as dl.Array1D<'int32'>;
 
