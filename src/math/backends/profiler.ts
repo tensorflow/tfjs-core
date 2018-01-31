@@ -31,10 +31,10 @@ export class Profiler {
 
   profileKernel<T extends NDArray>(kernelName: Kernel, f: () => T): T {
     let result: T;
-    const wrapperFn = () => {
+    const holdResultWrapperFn = () => {
       result = f();
     };
-    const timer = this.backendTimer.time(wrapperFn);
+    const timer = this.backendTimer.time(holdResultWrapperFn);
 
     const vals = result.dataSync();
     util.checkForNaN(vals, result.dtype, name);
