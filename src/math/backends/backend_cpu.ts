@@ -209,25 +209,13 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  concat1D(a: Array1D, b: Array1D): Array1D {
-    const outShape = concat_util.computeOutShape(a.shape, b.shape, 0);
-    const result = ops.zeros<Rank.R1>(outShape as [number]);
-
-    // Use built-in TypedArray.set() method for speed.
-    const aVals = a.dataSync();
-    const bVals = b.dataSync();
-    const vals = result.dataSync();
-    vals.set(aVals, 0);
-    vals.set(bVals, a.size);
-
-    return result;
-  }
-
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
+  // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
+  concat(a: Array2D, b: Array2D): Array2D {
+    const outShape =
+        concat_util.computeOutShape(a.shape, b.shape, 1 /* axis */);
     const result = ops.zeros<Rank.R2>(outShape as [number, number]);
 
-    if (axis === 0) {
+    if (a.shape[0] === 1 && b.shape[0] === 1) {
       // Use built-in TypedArray.set() method for speed.
       const aVals = a.dataSync();
       const bVals = b.dataSync();
@@ -238,96 +226,13 @@ export class MathBackendCPU implements MathBackend {
     }
 
     for (let i = 0; i < outShape[0]; ++i) {
-      for (let j = 0; j < outShape[1]; ++j) {
-        const index: [number, number] = [i, j];
-        let value: number;
-        if (index[axis] < a.shape[axis]) {
-          value = a.get(i, j);
-        } else {
-          index[axis] -= a.shape[axis];
-          const [i2, j2] = index;
-          value = b.get(i2, j2);
-        }
-
-        result.set(value, i, j);
+      for (let j = 0; j < a.shape[1]; ++j) {
+        result.set(a.get(i, j), i, j);
+      }
+      for (let j = 0; j < b.shape[1]; ++j) {
+        result.set(b.get(i, j), i, j + a.shape[1]);
       }
     }
-    return result;
-  }
-
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
-    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
-
-    const result = ops.zeros<Rank.R3>(outShape as [number, number, number]);
-
-    if (axis === 0) {
-      // Use built-in TypedArray.set() method for speed.
-      const aVals = a.dataSync();
-      const bVals = b.dataSync();
-      const vals = result.dataSync();
-      vals.set(aVals, 0);
-      vals.set(bVals, a.size);
-      return result;
-    }
-
-    for (let i = 0; i < outShape[0]; ++i) {
-      for (let j = 0; j < outShape[1]; ++j) {
-        for (let k = 0; k < outShape[2]; ++k) {
-          // Shader begins.
-          const index: [number, number, number] = [i, j, k];
-          let value: number;
-          if (index[axis] < a.shape[axis]) {
-            value = a.get(i, j, k);
-          } else {
-            index[axis] -= a.shape[axis];
-            const [i2, j2, k2] = index;
-            value = b.get(i2, j2, k2);
-          }
-
-          result.set(value, i, j, k);
-        }
-      }
-    }
-
-    return result;
-  }
-
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
-    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
-    const result =
-        ops.zeros<Rank.R4>(outShape as [number, number, number, number]);
-
-    if (axis === 0) {
-      // Use built-in TypedArray.set() method for speed.
-      const aVals = a.dataSync();
-      const bVals = b.dataSync();
-      const vals = result.dataSync();
-      vals.set(aVals, 0);
-      vals.set(bVals, a.size);
-      return result;
-    }
-
-    for (let i = 0; i < outShape[0]; ++i) {
-      for (let j = 0; j < outShape[1]; ++j) {
-        for (let k = 0; k < outShape[2]; ++k) {
-          for (let l = 0; l < outShape[3]; ++l) {
-            // Shader begins.
-            const index: [number, number, number, number] = [i, j, k, l];
-            let value: number;
-            if (index[axis] < a.shape[axis]) {
-              value = a.get(i, j, k, l);
-            } else {
-              index[axis] -= a.shape[axis];
-              const [i2, j2, k2, l2] = index;
-              value = b.get(i2, j2, k2, l2);
-            }
-
-            result.set(value, i, j, k, l);
-          }
-        }
-      }
-    }
-
     return result;
   }
 
@@ -1471,51 +1376,53 @@ export class MathBackendCPU implements MathBackend {
   }
 
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
-    return this.pool(x, convInfo, 'avg').asType('float32');
+    return this.pool(x, convInfo, 'avg').toFloat();
   }
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number],
-      alignCorners: boolean): Array3D {
+  resizeBilinear(
+      x: Array4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Array4D {
+    const [batch, oldHeight, oldWidth, numChannels] = x.shape;
     const output =
-        ops.zeros<Rank.R3>([newShape2D[0], newShape2D[1], x.shape[2]]);
+        ops.zeros<Rank.R4>([batch, newHeight, newWidth, numChannels]);
 
-    const effectiveInputSize =
-        alignCorners ? [x.shape[0] - 1, x.shape[1] - 1, x.shape[2]] : x.shape;
-    const effectiveOutputSize = alignCorners ?
-        [output.shape[0] - 1, output.shape[1] - 1, output.shape[2]] :
-        output.shape;
-    for (let r = 0; r < output.shape[0]; r++) {
-      for (let c = 0; c < output.shape[1]; c++) {
-        for (let d = 0; d < output.shape[2]; d++) {
-          // Begin shader.
+    const effectiveInputSize: [number, number] =
+        alignCorners ? [oldHeight - 1, oldWidth - 1] : [oldHeight, oldWidth];
+    const effectiveOutputSize: [number, number] =
+        alignCorners ? [newHeight - 1, newWidth - 1] : [newHeight, newWidth];
+    for (let b = 0; b < batch; b++) {
+      for (let r = 0; r < newHeight; r++) {
+        for (let c = 0; c < newWidth; c++) {
+          for (let d = 0; d < numChannels; d++) {
+            // Begin shader.
 
-          // Compute the fractional index of the source.
-          const sourceFracRow =
-              (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
-          const sourceFracCol =
-              (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
+            // Compute the fractional index of the source.
+            const sourceFracRow =
+                (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
+            const sourceFracCol =
+                (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
 
-          const sourceRowFloor = Math.floor(sourceFracRow);
-          const sourceRowCeil =
-              Math.min(x.shape[0] - 1, Math.ceil(sourceFracRow));
-          const sourceColFloor = Math.floor(sourceFracCol);
-          const sourceColCeil =
-              Math.min(x.shape[1] - 1, Math.ceil(sourceFracCol));
+            const sourceRowFloor = Math.floor(sourceFracRow);
+            const sourceRowCeil =
+                Math.min(oldHeight - 1, Math.ceil(sourceFracRow));
+            const sourceColFloor = Math.floor(sourceFracCol);
+            const sourceColCeil =
+                Math.min(oldWidth - 1, Math.ceil(sourceFracCol));
 
-          const topLeft = x.get(sourceRowFloor, sourceColFloor, d);
-          const bottomLeft = x.get(sourceRowCeil, sourceColFloor, d);
-          const topRight = x.get(sourceRowFloor, sourceColCeil, d);
-          const bottomRight = x.get(sourceRowCeil, sourceColCeil, d);
+            const topLeft = x.get(b, sourceRowFloor, sourceColFloor, d);
+            const bottomLeft = x.get(b, sourceRowCeil, sourceColFloor, d);
+            const topRight = x.get(b, sourceRowFloor, sourceColCeil, d);
+            const bottomRight = x.get(b, sourceRowCeil, sourceColCeil, d);
 
-          const rowFrac = sourceFracRow - sourceRowFloor;
-          const colFrac = sourceFracCol - sourceColFloor;
+            const rowFrac = sourceFracRow - sourceRowFloor;
+            const colFrac = sourceFracCol - sourceColFloor;
 
-          const top = topLeft + (topRight - topLeft) * colFrac;
-          const bottom = bottomLeft + (bottomRight - bottomLeft) * colFrac;
-          const newValue = top + (bottom - top) * rowFrac;
+            const top = topLeft + (topRight - topLeft) * colFrac;
+            const bottom = bottomLeft + (bottomRight - bottomLeft) * colFrac;
+            const newValue = top + (bottom - top) * rowFrac;
 
-          output.set(newValue, r, c, d);
+            output.set(newValue, b, r, c, d);
+          }
         }
       }
     }
