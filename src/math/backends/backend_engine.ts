@@ -16,7 +16,6 @@
  */
 
 import {ENV} from '../../environment';
-import * as util from '../../util';
 import {NDArray, Variable} from '../ndarray';
 import {NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
@@ -24,10 +23,9 @@ import {Rank} from '../types';
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
-// tslint:disable-next-line:max-line-length
-import {KernelNode, Tape, TapeNode, TapeNodeInputGradientArrays} from './tape_types';
+import {Profiler} from './profiler';
+import {KernelNode, Tape} from './tape_types';
 import * as tape_util from './tape_util';
-import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
 
 interface ScopeState {
   keep: NDArray[];
@@ -56,6 +54,7 @@ export class BackendEngine implements NDArrayManager {
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
+  private profiler: Profiler;
 
   constructor(
       private backend: MathBackend, private customBackend: boolean,
@@ -63,11 +62,12 @@ export class BackendEngine implements NDArrayManager {
     // Create a default outer scope.
     this.activeScope = {keep: [], track: []};
     this.scopeStack = [this.activeScope];
+    this.profiler = new Profiler(backend);
   }
 
   /**
-   * In debug mode, the output of every math call will be downloaded to the CPU
-   * and checked for NaNs. This significantly impacts performance.
+   * In debug mode, the output of every math call will be downloaded to the
+   * CPU and checked for NaNs. This significantly impacts performance.
    */
   enableDebugMode() {
     ENV.set('DEBUG', true);
@@ -81,26 +81,21 @@ export class BackendEngine implements NDArrayManager {
                     extends KernelConfigRegistry<R>[K]['inputAndArgs']>(
       kernelName: K, config: C, grad?: KernelConfigRegistry<R>[K]['gradient']):
       KernelConfigRegistry<R>[K]['output'] {
-    let start: number;
-    if (this.debugMode) {
-      start = performance.now();
-    }
-    const result =
-        kernel_registry.executeKernel(this.backend, kernelName, config);
-    if (this.debugMode) {
-      const vals = result.dataSync();
-      const time = util.rightPad(`${performance.now() - start}ms`, 9);
-      const paddedName = util.rightPad(kernelName, 25);
-      const rank = result.rank;
-      const size = result.size;
-      const shape = util.rightPad(result.shape.toString(), 14);
-      console.log(
-          `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-          'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      util.checkForNaN(vals, result.dtype, name);
+    let result: KernelConfigRegistry<R>[K]['output'];
+    if (!ENV.get('DEBUG')) {
+      // NOTE: This isn't pulled out into a separate function to so that we
+      // keep a shallow stack trace.
+      result = kernel_registry.executeKernel(this.backend, kernelName, config);
+    } else {
+      result = this.profiler.profileKernel(
+          kernelName,
+          () =>
+              kernel_registry.executeKernel(this.backend, kernelName, config));
     }
 
-    if (this.activeTape != null && this.customGradientDepth === 0) {
+    const recordKernel =
+        this.activeTape != null && this.customGradientDepth === 0;
+    if (recordKernel) {
       config = tape_util.stripUndefinedInputsFromInputConfig(config) as C;
 
       const evaluatedNode: KernelNode = {

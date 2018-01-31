@@ -50,8 +50,8 @@ export function gradientsScope<T extends ScopeResult>(
   return scope(nameOrScopeFn, scopeFn, gradientsMode);
 }
 
-export function time(query: () => NDArray): Promise<number> {
-  return ENV.backend.time(query);
+export function time(f: () => void): Promise<number> {
+  return this.backend.time(f);
 }
 
 export function fromPixels(
