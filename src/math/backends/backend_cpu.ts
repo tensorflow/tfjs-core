@@ -29,7 +29,7 @@ import * as ops from '../ops';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as axis_util from './../axis_util';
-import {MathBackend, TimerQuery} from './backend';
+import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
