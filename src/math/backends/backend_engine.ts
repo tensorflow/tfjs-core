@@ -16,16 +16,17 @@
  */
 
 import {ENV} from '../../environment';
+import * as util from '../../util';
 import {NDArray, Variable} from '../ndarray';
 import {NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
-
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
 import {Profiler} from './profiler';
 import {KernelNode, Tape} from './tape_types';
 import * as tape_util from './tape_util';
+import {ScopeResultImmediate} from './tape_util';
 
 interface ScopeState {
   keep: NDArray[];
@@ -63,18 +64,6 @@ export class BackendEngine implements NDArrayManager {
     this.activeScope = {keep: [], track: []};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
-  }
-
-  /**
-   * In debug mode, the output of every math call will be downloaded to the
-   * CPU and checked for NaNs. This significantly impacts performance.
-   */
-  enableDebugMode() {
-    ENV.set('DEBUG', true);
-    console.warn(
-        'Debugging mode is ON. The output of every math call will ' +
-        'be downloaded to CPU and checked for NaNs. ' +
-        'This significantly impacts performance.');
   }
 
   executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, C
@@ -119,7 +108,7 @@ export class BackendEngine implements NDArrayManager {
    *
    * @param result The NDArray to track in the current scope.
    */
-  track<T extends NDArray>(result: T): T {
+  private track<T extends NDArray>(result: T): T {
     if (this.scopeStack.length === 1) {
       if (this.safeMode) {
         throw new Error(
@@ -152,6 +141,67 @@ export class BackendEngine implements NDArrayManager {
     if (!(a instanceof Variable)) {
       this.track(a);
     }
+  }
+
+  /**
+   * Start a scope. Use this with endScope() to achieve the same functionality
+   * as scope() without the need for a function closure.
+   */
+  startScope(gradientsMode = false) {
+    if (gradientsMode && this.gradientScopeCount === 0) {
+      this.activeTape = [];
+    }
+    if (gradientsMode) {
+      this.gradientScopeCount++;
+    }
+
+    const newScopeArrays: ScopeState = {keep: [], track: []};
+    this.scopeStack.push(newScopeArrays);
+    this.activeScope = newScopeArrays;
+  }
+
+  /**
+   * End a scope. Use this with startScope() to achieve the same functionality
+   * as scope() without the need for a function closure.
+   */
+  endScope(result: ScopeResultImmediate, gradientsMode = false) {
+    if (gradientsMode) {
+      this.gradientScopeCount--;
+      if (this.gradientScopeCount === 0) {
+        this.activeTape = null;
+      }
+    }
+
+    let arraysToKeep = this.activeScope.keep;
+    const arraysToTrackInParent =
+        tape_util.extractNDArraysFromScopeResult(result);
+    arraysToKeep = arraysToKeep.concat(arraysToTrackInParent);
+
+    // Dispose the arrays tracked in this scope.
+    for (let i = 0; i < this.activeScope.track.length; i++) {
+      const ndarray = this.activeScope.track[i];
+      if (util.isNDArrayInList(ndarray, arraysToKeep)) {
+        continue;
+      }
+
+      if (this.activeTape != null) {
+        arraysToTrackInParent.push(ndarray);
+      } else {
+        ndarray.dispose();
+      }
+    }
+
+    this.scopeStack.pop();
+    this.activeScope = this.scopeStack.length === 0 ?
+        null :
+        this.scopeStack[this.scopeStack.length - 1];
+
+    // Track the current result in the parent scope.
+    arraysToTrackInParent.forEach(ndarray => {
+      if (!util.isNDArrayInList(ndarray, this.activeScope.keep)) {
+        this.track(ndarray);
+      }
+    });
   }
 
   registerVariable(v: Variable) {

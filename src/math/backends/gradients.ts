@@ -15,20 +15,11 @@
  * =============================================================================
  */
 
-/**
- * Computes and returns the vector jacobian product of f(x) with respect to x.
- * This method allows you to provide a non-scalar dy to backprop from.
- *
- * @param f The function to execute. f() should return an NDArray of the same
- * shape and dtype as dy.
- * @param x The input to compute dy/dx over. This can be a single value or
- * an object mapping a string to an NDArray. If using the object mode, this
- * method will return an object of the same shape.
- */
-
+import {ENV} from '../../environment';
 import * as util from '../../util';
 import {Array3D, NDArray, Scalar, Variable} from '../ndarray';
 import {NamedArrayMap, Rank} from '../types';
+
 import {TapeNode, TapeNodeInputGradientArrays} from './tape_types';
 import * as tape_util from './tape_util';
 import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
@@ -51,15 +42,25 @@ export function gradientsScope<T extends ScopeResult>(
 }
 
 export function time(f: () => void): Promise<number> {
-  return this.backend.time(f);
+  return ENV.engine.time(f);
 }
 
 export function fromPixels(
     pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
     numChannels: number): Array3D {
-  return this.backend.fromPixels(pixels, numChannels);
+  return ENV.backend.fromPixels(pixels, numChannels);
 }
 
+/**
+ * Computes and returns the vector jacobian product of f(x) with respect to x.
+ * This method allows you to provide a non-scalar dy to backprop from.
+ *
+ * @param f The function to execute. f() should return an NDArray of the same
+ * shape and dtype as dy.
+ * @param x The input to compute dy/dx over. This can be a single value or
+ * an object mapping a string to an NDArray. If using the object mode, this
+ * method will return an object of the same shape.
+ */
 export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
     f: () => NDArray<R>, x: T, dy: NDArray<R>): T {
   const keys = x instanceof NDArray ? null : Object.keys(x);
@@ -286,6 +287,7 @@ function gradientWrt<R extends Rank, T extends NDArray<R>>(
   });
   return gradients;
 }
+
 /**
  * Executes the provided function and after it is executed, cleans up all
  * intermediate NDArrays allocated by the function except those returned by
@@ -328,82 +330,21 @@ export function scope<T extends ScopeResult>(
     }
     // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
   }
-  this.startScope(gradientsMode);
+  ENV.engine.startScope(gradientsMode);
 
-  const keepFn = <T extends NDArray>(ndarray: T): T => this.keep(ndarray);
+  const keepFn = <T extends NDArray>(ndarray: T): T => keep(ndarray);
   // TODO(smilkov): trackFn is a no-op since we have global tracking.
   // Remove when we break backward compatibility.
   const trackFn = <T extends NDArray>(ndarray: T): T => ndarray;
   const result = scopeFn(keepFn, trackFn);
 
   if (result instanceof Promise) {
-    result.then(r => this.endScope(r, gradientsMode));
+    result.then(r => ENV.engine.endScope(r, gradientsMode));
     return result;
   } else {
     this.endScope(result as ScopeResultImmediate, gradientsMode);
     return result;
   }
-}
-
-/**
- * Start a scope. Use this with endScope() to achieve the same functionality
- * as scope() without the need for a function closure.
- */
-export function startScope(gradientsMode = false) {
-  if (gradientsMode && this.gradientScopeCount === 0) {
-    this.activeTape = [];
-  }
-  if (gradientsMode) {
-    this.gradientScopeCount++;
-  }
-
-  const newScopeArrays: ScopeState = {keep: [], track: []};
-  this.scopeStack.push(newScopeArrays);
-  this.activeScope = newScopeArrays;
-}
-
-/**
- * End a scope. Use this with startScope() to achieve the same functionality
- * as scope() without the need for a function closure.
- */
-export function endScope(result: ScopeResultImmediate, gradientsMode = false) {
-  if (gradientsMode) {
-    this.gradientScopeCount--;
-    if (this.gradientScopeCount === 0) {
-      this.activeTape = null;
-    }
-  }
-
-  let arraysToKeep = this.activeScope.keep;
-  const arraysToTrackInParent =
-      tape_util.extractNDArraysFromScopeResult(result);
-  arraysToKeep = arraysToKeep.concat(arraysToTrackInParent);
-
-  // Dispose the arrays tracked in this scope.
-  for (let i = 0; i < this.activeScope.track.length; i++) {
-    const ndarray = this.activeScope.track[i];
-    if (util.isNDArrayInList(ndarray, arraysToKeep)) {
-      continue;
-    }
-
-    if (this.activeTape != null) {
-      arraysToTrackInParent.push(ndarray);
-    } else {
-      ndarray.dispose();
-    }
-  }
-
-  this.scopeStack.pop();
-  this.activeScope = this.scopeStack.length === 0 ?
-      null :
-      this.scopeStack[this.scopeStack.length - 1];
-
-  // Track the current result in the parent scope.
-  arraysToTrackInParent.forEach(ndarray => {
-    if (!util.isNDArrayInList(ndarray, this.activeScope.keep)) {
-      this.track(ndarray);
-    }
-  });
 }
 
 /**
@@ -420,6 +361,6 @@ export function keep<T extends NDArray>(result: T): T {
           'leaks.');
     }
   }
-  this.activeScope.keep.push(result);
+  ENV.engine.activeScope.keep.push(result);
   return result;
 }

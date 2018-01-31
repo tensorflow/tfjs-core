@@ -17,10 +17,10 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
-
 import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
-import {BackendEngine} from './backends/backend_engine';
+// tslint:disable-next-line:max-line-length
+import {customGradient, fromPixels, gradients, gradientsScope, keep, scope, valueAndGradients, variableGradients, vjp} from './backends/gradients';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
 import * as compare from './compare';
@@ -30,8 +30,7 @@ import * as image_ops from './image_ops';
 import * as logical from './logical_ops';
 import * as lstm_ops from './lstm';
 import * as matmul from './matmul';
-// tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, NDArray, Scalar, Variable} from './ndarray';
+import {Array1D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import * as norm from './norm';
 import * as ops from './ops';
 import * as pool from './pool';
@@ -42,9 +41,6 @@ import * as softmax_ops from './softmax';
 import * as transpose from './transpose';
 import {Rank} from './types';
 import * as unary_ops from './unary_ops';
-
-// tslint:disable-next-line:no-unused-expression
-[Variable, BackendEngine];  // Helps ts compiler to infer typings.
 
 export class NDArrayMath {
   // Ops.
@@ -198,10 +194,20 @@ export class NDArrayMath {
 
   // Engine ops.
 
-  scope: typeof ENV.engine.scope;
-  keep: typeof ENV.engine.keep;
-  vjp: typeof ENV.engine.vjp;
+  scope = scope;
+  keep = keep;
+  vjp = vjp;
+
+  variableGradients = variableGradients;
+  customGradient = customGradient;
+
+  gradients = gradients;
+  valueAndGradients = valueAndGradients;
+  fromPixels = fromPixels;
+  gradientsScope = gradientsScope;
+
   register: typeof ENV.engine.register;
+  engine: typeof ENV.engine;
   getNumArrays: typeof ENV.engine.getNumArrays;
   dispose: typeof ENV.engine.dispose;
   registeredVariables: typeof ENV.engine.registeredVariables;
@@ -210,16 +216,8 @@ export class NDArrayMath {
   readSync: typeof ENV.engine.readSync;
   disposeData: typeof ENV.engine.disposeData;
   registerVariable: typeof ENV.engine.registerVariable;
-  variableGradients: typeof ENV.engine.variableGradients;
-  customGradient: typeof ENV.engine.customGradient;
   startScope: typeof ENV.engine.startScope;
   endScope: typeof ENV.engine.endScope;
-  enableDebugMode: typeof ENV.engine.enableDebugMode;
-  gradients: typeof ENV.engine.gradients;
-  valueAndGradients: typeof ENV.engine.valueAndGradients;
-  fromPixels: typeof ENV.engine.fromPixels;
-  engine = ENV.engine;
-  gradientsScope: typeof ENV.engine.gradientsScope;
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
@@ -228,11 +226,8 @@ export class NDArrayMath {
    */
   constructor(backend: BackendType|MathBackend, safeMode: boolean) {
     ENV.setMath(this, backend, safeMode);
-
-    this.scope = ENV.engine.scope.bind(ENV.engine);
-    this.keep = ENV.engine.keep.bind(ENV.engine);
-    this.vjp = ENV.engine.vjp.bind(ENV.engine);
     this.register = ENV.engine.register.bind(ENV.engine);
+    this.engine = ENV.engine;
     this.getNumArrays = ENV.engine.getNumArrays.bind(ENV.engine);
     this.dispose = ENV.engine.dispose.bind(ENV.engine);
     this.registeredVariables = ENV.engine.registeredVariables;
@@ -241,16 +236,8 @@ export class NDArrayMath {
     this.readSync = ENV.engine.readSync.bind(ENV.engine);
     this.disposeData = ENV.engine.disposeData.bind(ENV.engine);
     this.registerVariable = ENV.engine.registerVariable.bind(ENV.engine);
-    this.variableGradients = ENV.engine.variableGradients.bind(ENV.engine);
-    this.customGradient = ENV.engine.customGradient.bind(ENV.engine);
     this.startScope = ENV.engine.startScope.bind(ENV.engine);
     this.endScope = ENV.engine.endScope.bind(ENV.engine);
-    this.enableDebugMode = ENV.engine.enableDebugMode.bind(ENV.engine);
-    this.gradients = ENV.engine.gradients.bind(ENV.engine);
-    this.valueAndGradients = ENV.engine.valueAndGradients.bind(ENV.engine);
-    this.fromPixels = ENV.engine.fromPixels.bind(ENV.engine);
-    this.engine = ENV.engine;
-    this.gradientsScope = ENV.engine.gradientsScope.bind(ENV.engine);
   }
 
   /** @deprecated This is a no-op. */
@@ -270,7 +257,7 @@ export class NDArrayMath {
             `ndarray, got shape ${x.shape}.`);
     let values: Array1D;
     let indices: Array1D;
-    ENV.engine.scope('topK', () => {
+    scope('topK', () => {
       values = ENV.engine.executeKernel('TopKValues', {inputs: {x}, args: {k}});
       indices =
           ENV.engine.executeKernel('TopKIndices', {inputs: {x}, args: {k}});
@@ -330,7 +317,7 @@ export class NDArrayMath {
             `NDArray of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
-    return ENV.engine.scope('scaledArrayAdd', () => {
+    return scope('scaledArrayAdd', () => {
       // TODO(nsthorat): Add an SGEMM kernel and then update this.
       return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
     });
