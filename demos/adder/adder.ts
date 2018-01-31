@@ -17,26 +17,18 @@
 
 import * as dl from 'deeplearn';
 
-// const outputElement = document.getElementById('output');
-// const inA: HTMLInputElement = document.getElementById('A') as
-// HTMLInputElement; const inB: HTMLInputElement = document.getElementById('B')
-// as HTMLInputElement;
+const outputElement = document.getElementById('output');
+const inA: HTMLInputElement = document.getElementById('A') as HTMLInputElement;
+const inB: HTMLInputElement = document.getElementById('B') as HTMLInputElement;
 
-// export async function execute(event?: Event) {
-//   const a = dl.Scalar.new(+inA.value);
-//   const b = dl.Scalar.new(+inB.value);
-//   const result = await a.add(b).data();
-//   outputElement.innerText = result.toString();
-// }
-
-// inA.addEventListener('keyup', execute);
-// inB.addEventListener('keyup', execute);
-
-// execute();
-
-async function go() {
-  const a = dl.randNormal([100, 100]);
-  a.logSumExp([0]);
+export async function execute(event?: Event) {
+  const a = dl.Scalar.new(+inA.value);
+  const b = dl.Scalar.new(+inB.value);
+  const result = await a.add(b).data();
+  outputElement.innerText = result.toString();
 }
 
-go();
+inA.addEventListener('keyup', execute);
+inB.addEventListener('keyup', execute);
+
+execute();
