@@ -37,9 +37,20 @@ import * as dl from 'deeplearn';
 async function go() {
   const time = await dl.ENV.math.time(() => {
     dl.square(dl.square(dl.Scalar.new(1)));
-    dl.ENV.math.time(() => {
-      dl.square(dl.square(dl.Scalar.new(1)));
-    });
+    dl.ENV.math
+        .time(() => {
+          dl.square(dl.square(dl.Scalar.new(1)));
+          dl.ENV.math
+              .time(() => {
+                dl.sqrt(dl.Scalar.new(1));
+              })
+              .then((mostinner: number) => {
+                console.log('mostinner time', mostinner);
+              });
+        })
+        .then((inner: number) => {
+          console.log('inner time', inner);
+        });
   });
   console.log(time);
 }

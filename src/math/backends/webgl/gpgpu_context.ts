@@ -20,9 +20,9 @@ import * as util from '../../../util';
 
 import * as gpgpu_util from './gpgpu_util';
 import * as tex_util from './tex_util';
-import * as webgl_util from './webgl_util';
 // tslint:disable-next-line:max-line-length
-import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension, WebGL2RenderingContext, WebGLLoseContextExtension, WebGLQuery} from './webgl_util';
+import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension, WebGL2RenderingContext, WebGLLoseContextExtension, WebGLQuery} from './webgl_types';
+import * as webgl_util from './webgl_util';
 
 export class GPGPUContext {
   gl: WebGLRenderingContext;
@@ -391,8 +391,6 @@ export class GPGPUContext {
           gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
 
       const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
-      console.log('quer', available, !disjoint);
-
       return available && !disjoint;
     } else {
       const ext = this.getQueryTimerExtensionWebGL1();

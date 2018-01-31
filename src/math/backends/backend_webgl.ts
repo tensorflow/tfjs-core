@@ -62,17 +62,14 @@ import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
+import {WebGLQuery} from './webgl/webgl_types';
 import * as webgl_util from './webgl/webgl_util';
-import {WebGLQuery} from './webgl/webgl_util';
 
 type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
 
 export class MathBackendWebGL implements MathBackend {
   private texData: {[dataId: number]: TextureData} = {};
   private canvas: HTMLCanvasElement;
-
-  // private pendingQueryTimerPoll: Promise<number>;
-  //  private pendingTimer = false;
 
   private programTimersStack: TimerNode[];
   private activeTimers: TimerNode[];
@@ -201,6 +198,10 @@ export class MathBackendWebGL implements MathBackend {
     //   query = this.startTimer();
     // }
 
+    console.log(
+        '-------------time--------', this.activeTimers,
+        this.programTimersStack);
+
     const oldActiveTimers = this.activeTimers;
     this.activeTimers = [];
 
@@ -215,19 +216,23 @@ export class MathBackendWebGL implements MathBackend {
     f();
 
     const flattenedActiveTimers = util.flatten(this.activeTimers);
-
+    console.log('flat', flattenedActiveTimers);
     this.activeTimers = oldActiveTimers;
 
-    const timer = new Promise<number>((resolve, reject) => {
+    if (outerMostTime) {
+      this.programTimersStack = null;
+    } else {
+      // this.programTimersStack.pop();
+    }
+
+    console.log(
+        '____________________***_______________', this.activeTimers,
+        this.programTimersStack);
+
+    return new Promise<number>((resolve, reject) => {
       Promise.all(flattenedActiveTimers).then(results => {
         let sum = 0;
         results.forEach(result => sum += result);
-
-        if (outerMostTime) {
-          this.programTimersStack = null;
-        } else {
-          this.programTimersStack.pop();
-        }
 
         resolve(sum);
       });
@@ -257,8 +262,6 @@ export class MathBackendWebGL implements MathBackend {
     //   timer = new Promise<number>(resolve => resolve(null));
     // }
     // util.flatten();
-
-    return timer;
   }
 
   startTimer(): WebGLQuery|TimerQuery {
