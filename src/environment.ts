@@ -166,6 +166,8 @@ export class Environment {
   private BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
   private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
 
+  engine: BackendEngine;
+
   constructor(features?: Features) {
     if (features != null) {
       this.features = features;
@@ -242,7 +244,16 @@ export class Environment {
     }
   }
 
-  setMath(math: NDArrayMath) {
+  setMath(
+      math: NDArrayMath, backend?: BackendType|MathBackend, safeMode = false) {
+    let customBackend = false;
+    if (typeof backend === 'string') {
+      this.backend = ENV.getBackend(backend);
+    } else {
+      customBackend = true;
+      this.backend = backend;
+    }
+    this.engine = new BackendEngine(this.backend, customBackend, safeMode);
     this.globalMath = math;
   }
 
@@ -293,17 +304,14 @@ export class Environment {
     }
   }
 
+  private backend: MathBackend;
+
   get math(): NDArrayMath {
     if (this.globalMath == null) {
-      const bestBackend = this.getBestBackendType();
       const safeMode = false;
-      this.setMath(new NDArrayMath(bestBackend, safeMode));
+      this.globalMath = new NDArrayMath(this.getBestBackendType(), safeMode);
     }
     return this.globalMath;
-  }
-
-  get engine(): BackendEngine {
-    return this.globalMath.engine;
   }
 }
 
