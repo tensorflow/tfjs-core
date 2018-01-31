@@ -89,9 +89,9 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
   });
 
   if (shouldUploadNaNUniform()) {
-    const doNotThrowIfNaNUniformIsNotUsed = true;
+    const throwIfNaNUniformIsNotUsed = false;
     uniformLocations[NAN_UNIFORM_NAME] = gpgpu.getUniformLocation(
-        webGLProgram, NAN_UNIFORM_NAME, doNotThrowIfNaNUniformIsNotUsed);
+        webGLProgram, NAN_UNIFORM_NAME, throwIfNaNUniformIsNotUsed);
   }
 
   return {
