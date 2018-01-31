@@ -1019,6 +1019,7 @@ const testsFromPixels: MathTests = it => {
 
     const res = NDArray.fromPixels(pixels, 3);
     expect(res.shape).toEqual([2, 1, 3]);
+    expect(res.dtype).toBe('int32');
     test_util.expectArraysClose(res, [2, 3, 4, 5, 6, 7]);
   });
 
@@ -1030,7 +1031,9 @@ const testsFromPixels: MathTests = it => {
     pixels.data[3] = 255;  // Not used.
 
     const a = NDArray.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
-    const res = a.add(Scalar.new(2, 'int32'));
+    const b = Scalar.new(2, 'int32');
+    const res = a.add(b);
+    console.log(b.dataSync());
     expect(res.shape).toEqual([1, 1, 1, 3]);
     expect(res.dtype).toBe('int32');
     test_util.expectArraysClose(res, [4, 5, 6]);

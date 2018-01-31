@@ -39,6 +39,7 @@ import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} fro
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {Copy2DProgram} from './webgl/copy_gpu';
+import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
@@ -55,7 +56,7 @@ import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
-import {TextureData, TextureType} from './webgl/tex_util';
+import {TextureData} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
@@ -71,37 +72,18 @@ export class MathBackendWebGL implements MathBackend {
     if (dataId in this.texData) {
       throw new Error(`data id ${dataId} already registered`);
     }
-    this.texData[dataId] = {
-      shape,
-      dtype,
-      values: null,
-      texture: null,
-      texShape: null,
-      textureType: null
-    };
+    this.texData[dataId] =
+        {shape, dtype, values: null, texture: null, texShape: null};
   }
-  writePixels(
-      dataId: number,
+  fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void {
+      numChannels: number): Array3D {
     if (pixels == null) {
       throw new Error('MathBackendWebGL.writePixels(): pixels can not be null');
     }
-    this.throwIfNoData(dataId);
     const texShape: [number, number] = [pixels.height, pixels.width];
-    const texture = this.texData[dataId].texture ||
-        this.textureManager.acquireTexture(texShape);
-    const {shape} = this.texData[dataId];
+    const outShape = [pixels.height, pixels.width, numChannels];
 
-    this.texData[dataId] = {
-      shape,
-      values: null,
-      texture,
-      textureType: TextureType.RGBA_COLOR,
-      texShape,
-      numChannels,
-      dtype: 'int32'
-    };
     if (pixels instanceof HTMLVideoElement) {
       if (this.canvas == null) {
         throw new Error(
@@ -114,8 +96,12 @@ export class MathBackendWebGL implements MathBackend {
           pixels, 0, 0, pixels.width, pixels.height);
       pixels = this.canvas;
     }
-    // Pixel data is immediate storage since it already lives on gpu.
-    this.gpgpu.uploadPixelDataToTexture(texture, pixels);
+    const x = NDArray.make(texShape, {}, 'int32');
+    this.gpgpu.uploadPixelDataToTexture(this.getTexture(x.dataId), pixels);
+    const program = new FromPixelsProgram(outShape);
+    const res = this.compileAndRun(program, [x]);
+    x.dispose();
+    return res as Array3D;
   }
   write(dataId: number, values: TypedArray): void {
     if (values == null) {
@@ -129,7 +115,6 @@ export class MathBackendWebGL implements MathBackend {
       this.textureManager.releaseTexture(texture, texShape);
       this.texData[dataId].texture = null;
       this.texData[dataId].texShape = null;
-      this.texData[dataId].textureType = null;
     }
     this.texData[dataId].values = values;
 
@@ -140,32 +125,25 @@ export class MathBackendWebGL implements MathBackend {
 
   readSync(dataId: number): TypedArray {
     this.throwIfNoData(dataId);
-    const {texture, values, textureType, texShape, numChannels} =
-        this.texData[dataId];
+    const {texture, values, texShape} = this.texData[dataId];
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
     }
     let float32Values: Float32Array;
-    if (textureType === TextureType.DEFAULT) {
-      float32Values = this.gpgpu.downloadMatrixFromTexture(
-          texture, texShape[0], texShape[1]);
-    } else {
-      float32Values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
-          texture, texShape[0], texShape[1], numChannels);
-    }
+    float32Values =
+        this.gpgpu.downloadMatrixFromTexture(texture, texShape[0], texShape[1]);
     this.cacheOnCPU(dataId, float32Values);
     return this.texData[dataId].values;
   }
   async read(dataId: number): Promise<TypedArray> {
     this.throwIfNoData(dataId);
-    const {texture, values, textureType, texShape} = this.texData[dataId];
+    const {texture, values, texShape} = this.texData[dataId];
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
     }
-    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
-        textureType === TextureType.DEFAULT) {
+    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) {
       const float32Values = await this.gpgpu.downloadMatrixFromTextureAsync(
           texture, texShape[0], texShape[1]);
       this.cacheOnCPU(dataId, float32Values);
@@ -894,6 +872,9 @@ export class MathBackendWebGL implements MathBackend {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
+    if (program instanceof BinaryOpProgram) {
+      console.log(binary.source);
+    }
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
     return output;
   }
@@ -946,7 +927,6 @@ export class MathBackendWebGL implements MathBackend {
     }
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
-    this.texData[dataId].textureType = TextureType.DEFAULT;
     this.texData[dataId].texShape = texShape;
     const newTexture = this.textureManager.acquireTexture(texShape);
     this.texData[dataId].texture = newTexture;
@@ -968,7 +948,6 @@ export class MathBackendWebGL implements MathBackend {
       this.textureManager.releaseTexture(texture, texShape);
       this.texData[dataId].texture = null;
       this.texData[dataId].texShape = null;
-      this.texData[dataId].textureType = null;
     }
     if (float32Values != null) {
       this.texData[dataId].values = float32ToTypedArray(float32Values, dtype);

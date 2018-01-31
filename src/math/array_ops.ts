@@ -18,7 +18,7 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import {operation} from './decorators';
-import {Array3D, NDArray, NDArrayData} from './ndarray';
+import {Array3D, NDArray} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 import {DataType, DataTypeMap, Rank} from './types';
 
@@ -121,12 +121,7 @@ export class Ops {
       throw new Error(
           'Cannot construct NDArray with more than 4 channels from pixels.');
     }
-    const ndarrayData: NDArrayData = {};
-    const shape: [number, number, number] =
-        [pixels.height, pixels.width, numChannels];
-    const res = NDArray.make(shape, ndarrayData, 'int32') as Array3D;
-    ENV.math.writePixels(res.dataId, pixels, numChannels);
-    return res;
+    return ENV.math.fromPixels(pixels, numChannels);
   }
 }
 

@@ -61,16 +61,14 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
   const inputInfos = inputs.map((input, i) => {
     const shapeInfo = {
       logicalShape: input.array.shape,
-      texShape: input.texData.texShape,
-      textureType: input.texData.textureType
+      texShape: input.texData.texShape
     };
     return {name: program.variableNames[i], shapeInfo};
   });
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
   const outShapeInfo = {
     logicalShape: output.array.shape,
-    texShape: output.texData.texShape,
-    textureType: output.texData.textureType
+    texShape: output.texData.texShape
   };
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode,
@@ -168,8 +166,7 @@ export function makeShaderKey(
     output: ArrayData<NDArray>): string {
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
-    keyInputs +=
-        `${x.array.shape}_${x.texData.texShape}_${x.texData.textureType}`;
+    keyInputs += `${x.array.shape}_${x.texData.texShape}`;
   });
   const keyUserCode = program.userCode;
   const keyBroadcast = (program.supportsBroadcasting === true).toString();

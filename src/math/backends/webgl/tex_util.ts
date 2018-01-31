@@ -17,20 +17,12 @@
 
 import {DataType, DataTypeMap} from '../../types';
 
-export enum TextureType {
-  DEFAULT,
-  // When using a standard RGBA-packed color image.
-  RGBA_COLOR
-}
-
 export interface TextureData {
   texture: WebGLTexture;
   shape: number[];
   /** [rows, columns] shape of the texture. */
   texShape: [number, number];
-  textureType: TextureType;
   dtype: DataType;
-  numChannels?: number;
   values: DataTypeMap[DataType];
 }
 
