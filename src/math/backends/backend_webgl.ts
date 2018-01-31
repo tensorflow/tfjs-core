@@ -872,9 +872,6 @@ export class MathBackendWebGL implements MathBackend {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
-    if (program instanceof BinaryOpProgram) {
-      console.log(binary.source);
-    }
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
     return output;
   }
@@ -935,6 +932,8 @@ export class MathBackendWebGL implements MathBackend {
           newTexture, texShape[0],
           // TODO(smilkov): Propagate the original typed array to gpgpu.
           texShape[1], typedArrayToFloat32(values, dtype));
+      // Once uploaded, don't store the values on cpu.
+      this.texData[dataId].values = null;
     }
   }
 
