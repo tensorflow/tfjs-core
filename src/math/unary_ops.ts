@@ -167,7 +167,7 @@ export class Ops {
       return {
         x: () => {
           // Currently, Scalars are not supported by ops.where
-          util.assert(x.rank !== 0, 'Error in ceil gradient: ');
+          util.assert(x.rank !== 0, 'Error in selu gradient: ');
           const mask = x.greater(Scalar.new(0));
 
           const scaleAlpha = Scalar.new(1.7580993408473768599402175208123);
