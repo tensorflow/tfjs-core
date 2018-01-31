@@ -1229,6 +1229,9 @@ const testsRange: MathTests = it => {
 
     const h = NDArray.range(3, 3, 4);
     test_util.expectArraysEqual(h, new Float32Array(0));
+
+    const i = NDArray.range(-18, -2, 5);
+    test_util.expectArraysEqual(i, [-18, -13, -8, -3]);
   });
 
   it('range start stop large step', () => {
@@ -1254,6 +1257,9 @@ const testsRange: MathTests = it => {
 
     const c = NDArray.range(3, -4, -2);
     test_util.expectArraysEqual(c, [3, 1, -1, -3]);
+
+    const d = NDArray.range(-3, -18, -5);
+    test_util.expectArraysEqual(d, [-3, -8, -13]);
   });
 
   it('range start stop incompatible step', () => {
