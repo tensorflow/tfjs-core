@@ -16,11 +16,7 @@
  */
 
 import {GPGPUContext} from './gpgpu_context';
-
-export enum TextureType {
-  FLOAT,
-  UNSIGNED_BYTE
-}
+import {TextureType} from './tex_util';
 
 export class TextureManager {
   private numUsedTextures = 0;

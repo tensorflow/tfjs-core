@@ -17,6 +17,11 @@
 
 import {DataType, DataTypeMap} from '../../types';
 
+export enum TextureType {
+  FLOAT,
+  UNSIGNED_BYTE
+}
+
 export interface TextureData {
   texture: WebGLTexture;
   shape: number[];
