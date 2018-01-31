@@ -20,7 +20,7 @@ import * as util from '../util';
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, NDArray} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
-import {DataType, DataTypeMap, DType, Rank, ShapeMap} from './types';
+import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
 export class Ops {
   /** Creates a ndarray of ones with the specified shape. */
@@ -301,20 +301,21 @@ export class Ops {
   }
 
   /**
-   * Creates a new Array1D filled with the numbers in the range
-   * start - stop.
+   * Creates a new Array1D filled with the numbers in the range provided.
    *
-   * The array will include start, but exclude stop. Decrementing ranges and
-   * negative step values are supported.
+   * The array is a is half-open interval meaning it includes start, but
+   * excludes stop. Decrementing ranges and negative step values are also
+   * supported.
    *
-   * @param start an integer start value
-   * @param stop an integer stop value
-   * @param step an optional integer increment (will default to 1 or -1)
-   * @param dtype an optional dtype
+   * @param start An integer start value
+   * @param stop An integer stop value
+   * @param step An optional integer increment (will default to 1 or -1)
+   * @param dtype An optional dtype
    */
+  @operation
   static range(
       start: number, stop: number, step = 1,
-      dtype: DType.float32|DType.int32 = DType.float32): Array1D {
+      dtype: 'float32'|'int32' = 'float32'): Array1D {
     if (step === 0) {
       throw new Error('Cannot have a step of zero');
     }
@@ -325,7 +326,7 @@ export class Ops {
 
     if (sameStartStop || increasingRangeNegativeStep ||
         decreasingRangePositiveStep) {
-      return Array1D.new(makeZerosTypedArray(0, dtype), dtype);
+      return Ops.zeros([0], dtype);
     }
 
     const numElements = Math.abs(Math.ceil((stop - start) / step));
