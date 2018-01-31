@@ -31,7 +31,7 @@ export interface NDArrayStorage {
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Array3D;
-  time(query: () => NDArray): Promise<number>;
+  time(query: () => void): Promise<number>;
   register(dataId: number, shape: number[], dtype: DataType): void;
 }
 
