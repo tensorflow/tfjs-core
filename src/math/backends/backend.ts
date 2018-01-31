@@ -37,11 +37,6 @@ export interface NDArrayStorage {
 
 export interface BackendTimer { time(f: () => void): Promise<number>; }
 
-export interface TimerQuery {
-  startMs: number;
-  endMs?: number;
-}
-
 /**
  * The interface that defines the kernels that should be implemented when
  * adding a new backend. New backends don't need to implement every one of the

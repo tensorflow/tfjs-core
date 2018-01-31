@@ -26,7 +26,7 @@ import * as types from '../types';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, Rank, RecursiveArray, TypedArray} from '../types';
 
-import {MathBackend, TimerQuery} from './backend';
+import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
@@ -66,6 +66,10 @@ import {WebGLQuery} from './webgl/webgl_types';
 import * as webgl_util from './webgl/webgl_util';
 
 type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
+export interface CPUTimerQuery {
+  startMs: number;
+  endMs?: number;
+}
 
 export class MathBackendWebGL implements MathBackend {
   private texData: {[dataId: number]: TextureData} = {};
@@ -221,28 +225,28 @@ export class MathBackendWebGL implements MathBackend {
     });
   }
 
-  private startTimer(): WebGLQuery|TimerQuery {
+  private startTimer(): WebGLQuery|CPUTimerQuery {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       return this.gpgpu.beginQuery();
     }
     return {startMs: performance.now(), endMs: null};
   }
 
-  private endTimer(query: WebGLQuery|TimerQuery): WebGLQuery|
+  private endTimer(query: WebGLQuery|CPUTimerQuery): WebGLQuery|
       {startMs: number, endMs: number} {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       this.gpgpu.endQuery();
       return query;
     }
-    (query as TimerQuery).endMs = performance.now();
+    (query as CPUTimerQuery).endMs = performance.now();
     return query;
   }
 
-  private async getQueryTime(query: WebGLQuery|TimerQuery): Promise<number> {
+  private async getQueryTime(query: WebGLQuery|CPUTimerQuery): Promise<number> {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       return this.gpgpu.pollQueryTime(query);
     }
-    const timerQuery = query as TimerQuery;
+    const timerQuery = query as CPUTimerQuery;
     return timerQuery.endMs - timerQuery.startMs;
   }
 
@@ -936,7 +940,7 @@ export class MathBackendWebGL implements MathBackend {
     });
 
     const shouldTimeProgram = this.activeTimers != null;
-    let query: WebGLQuery|TimerQuery;
+    let query: WebGLQuery|CPUTimerQuery;
     if (shouldTimeProgram) {
       query = this.startTimer();
     }

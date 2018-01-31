@@ -113,23 +113,10 @@ export class MathBackendCPU implements MathBackend {
     delete this.data[dataId];
   }
 
-  time(f: () => void): Promise<number> {
-    const query = this.startTimer();
+  async time(f: () => void): Promise<number> {
+    const start = performance.now();
     f();
-    this.endTimer(query);
-    return this.getQueryTime(query);
-  }
-
-  startTimer(): TimerQuery {
-    return {startMs: performance.now(), endMs: null};
-  }
-
-  endTimer(query: TimerQuery): TimerQuery {
-    query.endMs = performance.now();
-    return query;
-  }
-  async getQueryTime(query: TimerQuery): Promise<number> {
-    return query.endMs - query.startMs;
+    return performance.now() - start;
   }
 
   private throwIfNoData(dataId: number) {
