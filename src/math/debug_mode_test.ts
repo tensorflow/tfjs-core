@@ -48,7 +48,7 @@ import {Array1D, Array2D} from './ndarray';
       expect(f).toThrowError();
     });
 
-    it('nikhil A x B', math => {
+    it('A x B', math => {
       const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
       const b = Array2D.new([3, 2], [0, 1, -3, 2, 2, 1]);
 

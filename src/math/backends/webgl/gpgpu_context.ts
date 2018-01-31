@@ -391,6 +391,8 @@ export class GPGPUContext {
           gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
 
       const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+      console.log('quer', available, !disjoint);
+
       return available && !disjoint;
     } else {
       const ext = this.getQueryTimerExtensionWebGL1();

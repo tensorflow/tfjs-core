@@ -17,18 +17,31 @@
 
 import * as dl from 'deeplearn';
 
-const outputElement = document.getElementById('output');
-const inA: HTMLInputElement = document.getElementById('A') as HTMLInputElement;
-const inB: HTMLInputElement = document.getElementById('B') as HTMLInputElement;
+// const outputElement = document.getElementById('output');
+// const inA: HTMLInputElement = document.getElementById('A') as
+// HTMLInputElement; const inB: HTMLInputElement = document.getElementById('B')
+// as HTMLInputElement;
 
-export async function execute(event?: Event) {
-  const a = dl.Scalar.new(+inA.value);
-  const b = dl.Scalar.new(+inB.value);
-  const result = await a.add(b).data();
-  outputElement.innerText = result.toString();
+// export async function execute(event?: Event) {
+//   const a = dl.Scalar.new(+inA.value);
+//   const b = dl.Scalar.new(+inB.value);
+//   const result = await a.add(b).data();
+//   outputElement.innerText = result.toString();
+// }
+
+// inA.addEventListener('keyup', execute);
+// inB.addEventListener('keyup', execute);
+
+// execute();
+
+async function go() {
+  const time = await dl.ENV.math.time(() => {
+    dl.square(dl.square(dl.Scalar.new(1)));
+    dl.ENV.math.time(() => {
+      dl.square(dl.square(dl.Scalar.new(1)));
+    });
+  });
+  console.log(time);
 }
 
-inA.addEventListener('keyup', execute);
-inB.addEventListener('keyup', execute);
-
-execute();
+go();

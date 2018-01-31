@@ -113,24 +113,26 @@ export class MathBackendCPU implements MathBackend {
     delete this.data[dataId];
   }
 
-  time(f: () => NDArray): Promise<number> {
+  time(f: () => void): Promise<number> {
     const query = this.startTimer();
     f();
     this.endTimer(query);
     return this.getQueryTime(query);
   }
-   startTimer(): TimerQuery {
+
+  startTimer(): TimerQuery {
     return {startMs: performance.now(), endMs: null};
   }
-   endTimer(query: TimerQuery): TimerQuery {
+
+  endTimer(query: TimerQuery): TimerQuery {
     query.endMs = performance.now();
     return query;
   }
-   async getQueryTime(query: TimerQuery): Promise<number> {
+  async getQueryTime(query: TimerQuery): Promise<number> {
     return query.endMs - query.startMs;
   }
 
-   private throwIfNoData(dataId: number) {
+  private throwIfNoData(dataId: number) {
     if (!(dataId in this.data)) {
       throw new Error(
           `No data found for NDArray with data id ${dataId}. ` +

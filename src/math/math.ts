@@ -210,7 +210,7 @@ export class NDArrayMath implements NDArrayManager {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
-  time(f: () => NDArray): Promise<number> {
+  time(f: () => void): Promise<number> {
     return this.backend.time(f);
   }
 

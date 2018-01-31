@@ -290,8 +290,8 @@ export class Environment {
    * Adds a custom backend. Usually used in tests to simulate different
    * environments.
    *
-   * @param factory: The backend factory function. When called, it should
-   * return an instance of the backend.
+   * @param factory: The backend factory function. When called, it should return
+   *     an instance of the backend.
    * @return False if the creation/registration failed. True otherwise.
    */
   addCustomBackend(name: BackendType, factory: () => MathBackend): boolean {
