@@ -29,6 +29,7 @@ export interface TextureData {
   texShape: [number, number];
   dtype: DataType;
   values: DataTypeMap[DataType];
+  texType: TextureType;
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(

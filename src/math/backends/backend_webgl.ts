@@ -72,8 +72,14 @@ export class MathBackendWebGL implements MathBackend {
     if (dataId in this.texData) {
       throw new Error(`data id ${dataId} already registered`);
     }
-    this.texData[dataId] =
-        {shape, dtype, values: null, texture: null, texShape: null};
+    this.texData[dataId] = {
+      shape,
+      dtype,
+      values: null,
+      texture: null,
+      texShape: null,
+      texType: TextureType.FLOAT
+    };
   }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
@@ -96,23 +102,16 @@ export class MathBackendWebGL implements MathBackend {
           pixels, 0, 0, pixels.width, pixels.height);
       pixels = this.canvas;
     }
-    const x = NDArray.make(texShape, {}, 'int32');
+    const tempPixelArray = NDArray.make(texShape, {}, 'int32');
 
-    // Manual upload since this is a byte texture with pixels.
-    this.texData[x.dataId].texShape = texShape;
-    const byteTexture =
-        this.textureManager.acquireTexture(texShape, TextureType.UNSIGNED_BYTE);
-    this.texData[x.dataId].texture = byteTexture;
-    this.gpgpu.uploadPixelDataToTexture(byteTexture, pixels);
-
+    // This is a byte texture with pixels.
+    this.texData[tempPixelArray.dataId].texType = TextureType.UNSIGNED_BYTE;
+    this.gpgpu.uploadPixelDataToTexture(
+        this.getTexture(tempPixelArray.dataId), pixels);
     const program = new FromPixelsProgram(outShape);
-    const res = this.compileAndRun(program, [x]);
+    const res = this.compileAndRun(program, [tempPixelArray]);
 
-    // Manual dispose since this is a byte texture.
-    this.textureManager.releaseTexture(
-        byteTexture, texShape, TextureType.UNSIGNED_BYTE);
-    this.texData[x.dataId].texture = null;
-    x.dispose();
+    tempPixelArray.dispose();
 
     return res as Array3D;
   }
@@ -122,10 +121,10 @@ export class MathBackendWebGL implements MathBackend {
     }
     this.throwIfNoData(dataId);
 
-    const {texture, texShape} = this.texData[dataId];
+    const {texture, texShape, texType} = this.texData[dataId];
     if (texture != null) {
       // Release the old texture.
-      this.textureManager.releaseTexture(texture, texShape);
+      this.textureManager.releaseTexture(texture, texShape, texType);
       this.texData[dataId].texture = null;
       this.texData[dataId].texShape = null;
     }
@@ -143,8 +142,7 @@ export class MathBackendWebGL implements MathBackend {
       this.cacheOnCPU(dataId);
       return values;
     }
-    let float32Values: Float32Array;
-    float32Values =
+    const float32Values =
         this.gpgpu.downloadMatrixFromTexture(texture, texShape[0], texShape[1]);
     this.cacheOnCPU(dataId, float32Values);
     return this.texData[dataId].values;
@@ -183,9 +181,9 @@ export class MathBackendWebGL implements MathBackend {
   }
   disposeData(dataId: number): void {
     if (dataId in this.texData) {
-      const {texture, texShape} = this.texData[dataId];
+      const {texture, texShape, texType} = this.texData[dataId];
       if (texture != null) {
-        this.textureManager.releaseTexture(texture, texShape);
+        this.textureManager.releaseTexture(texture, texShape, texType);
       }
       delete this.texData[dataId];
     }
@@ -930,7 +928,7 @@ export class MathBackendWebGL implements MathBackend {
 
   private uploadToGPU(dataId: number): void {
     this.throwIfNoData(dataId);
-    const {shape, values, texture, dtype} = this.texData[dataId];
+    const {shape, values, texture, dtype, texType} = this.texData[dataId];
     if (texture != null) {
       // Array is already on GPU. No-op.
       return;
@@ -938,7 +936,7 @@ export class MathBackendWebGL implements MathBackend {
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     this.texData[dataId].texShape = texShape;
-    const newTexture = this.textureManager.acquireTexture(texShape);
+    const newTexture = this.textureManager.acquireTexture(texShape, texType);
     this.texData[dataId].texture = newTexture;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
@@ -955,9 +953,9 @@ export class MathBackendWebGL implements MathBackend {
     // on the gpu, to minimize likelihood of memory leak. We re-upload to gpu
     // the next time a gpgpu program needs the texture.
     const dontKeepCopyOnGPU = this.delayedStorage;
-    const {texture, texShape, dtype} = this.texData[dataId];
+    const {texture, texShape, dtype, texType} = this.texData[dataId];
     if (dontKeepCopyOnGPU && texture != null) {
-      this.textureManager.releaseTexture(texture, texShape);
+      this.textureManager.releaseTexture(texture, texShape, texType);
       this.texData[dataId].texture = null;
       this.texData[dataId].texShape = null;
     }
