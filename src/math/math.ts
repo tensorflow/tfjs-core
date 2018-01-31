@@ -198,28 +198,28 @@ export class NDArrayMath {
 
   // Engine ops.
 
-  scope = ENV.engine.scope;
-  keep = ENV.engine.keep;
-  vjp = ENV.engine.vjp;
-  register = ENV.engine.register;
-  getNumArrays = ENV.engine.getNumArrays;
-  dispose = ENV.engine.dispose;
-  registeredVariables = ENV.engine.registeredVariables;
-  write = ENV.engine.write;
-  read = ENV.engine.read;
-  readSync = ENV.engine.readSync;
-  disposeData = ENV.engine.disposeData;
-  registerVariable = ENV.engine.registerVariable;
-  variableGradients = ENV.engine.variableGradients;
-  customGradient = ENV.engine.customGradient;
-  startScope = ENV.engine.startScope;
-  endScope = ENV.engine.endScope;
-  enableDebugMode = ENV.engine.enableDebugMode;
-  gradients = ENV.engine.gradients;
-  valueAndGradients = ENV.engine.valueAndGradients;
-  fromPixels = ENV.engine.fromPixels;
+  scope: typeof ENV.engine.scope;
+  keep: typeof ENV.engine.keep;
+  vjp: typeof ENV.engine.vjp;
+  register: typeof ENV.engine.register;
+  getNumArrays: typeof ENV.engine.getNumArrays;
+  dispose: typeof ENV.engine.dispose;
+  registeredVariables: typeof ENV.engine.registeredVariables;
+  write: typeof ENV.engine.write;
+  read: typeof ENV.engine.read;
+  readSync: typeof ENV.engine.readSync;
+  disposeData: typeof ENV.engine.disposeData;
+  registerVariable: typeof ENV.engine.registerVariable;
+  variableGradients: typeof ENV.engine.variableGradients;
+  customGradient: typeof ENV.engine.customGradient;
+  startScope: typeof ENV.engine.startScope;
+  endScope: typeof ENV.engine.endScope;
+  enableDebugMode: typeof ENV.engine.enableDebugMode;
+  gradients: typeof ENV.engine.gradients;
+  valueAndGradients: typeof ENV.engine.valueAndGradients;
+  fromPixels: typeof ENV.engine.fromPixels;
   engine = ENV.engine;
-  gradientsScope = ENV.engine.gradientsScope;
+  gradientsScope: typeof ENV.engine.gradientsScope;
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
@@ -228,6 +228,29 @@ export class NDArrayMath {
    */
   constructor(backend: BackendType|MathBackend, safeMode: boolean) {
     ENV.setMath(this, backend, safeMode);
+
+    this.scope = ENV.engine.scope.bind(ENV.engine);
+    this.keep = ENV.engine.keep.bind(ENV.engine);
+    this.vjp = ENV.engine.vjp.bind(ENV.engine);
+    this.register = ENV.engine.register.bind(ENV.engine);
+    this.getNumArrays = ENV.engine.getNumArrays.bind(ENV.engine);
+    this.dispose = ENV.engine.dispose.bind(ENV.engine);
+    this.registeredVariables = ENV.engine.registeredVariables;
+    this.write = ENV.engine.write.bind(ENV.engine);
+    this.read = ENV.engine.read.bind(ENV.engine);
+    this.readSync = ENV.engine.readSync.bind(ENV.engine);
+    this.disposeData = ENV.engine.disposeData.bind(ENV.engine);
+    this.registerVariable = ENV.engine.registerVariable.bind(ENV.engine);
+    this.variableGradients = ENV.engine.variableGradients.bind(ENV.engine);
+    this.customGradient = ENV.engine.customGradient.bind(ENV.engine);
+    this.startScope = ENV.engine.startScope.bind(ENV.engine);
+    this.endScope = ENV.engine.endScope.bind(ENV.engine);
+    this.enableDebugMode = ENV.engine.enableDebugMode.bind(ENV.engine);
+    this.gradients = ENV.engine.gradients.bind(ENV.engine);
+    this.valueAndGradients = ENV.engine.valueAndGradients.bind(ENV.engine);
+    this.fromPixels = ENV.engine.fromPixels.bind(ENV.engine);
+    this.engine = ENV.engine;
+    this.gradientsScope = ENV.engine.gradientsScope.bind(ENV.engine);
   }
 
   /** @deprecated This is a no-op. */

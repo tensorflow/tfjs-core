@@ -246,6 +246,9 @@ export class Environment {
 
   setMath(
       math: NDArrayMath, backend?: BackendType|MathBackend, safeMode = false) {
+    if (this.globalMath === math) {
+      return;
+    }
     let customBackend = false;
     if (typeof backend === 'string') {
       this.backend = ENV.getBackend(backend);
