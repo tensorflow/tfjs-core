@@ -190,44 +190,26 @@ export class MathBackendWebGL implements MathBackend {
   }
 
   time(f: () => void): Promise<number> {
-    // const shouldTime = this.pendingTimer === false;
-
-    // let query: WebGLQuery|TimerQuery;
-    // if (shouldTime) {
-    //   this.pendingTimer = true;
-    //   query = this.startTimer();
-    // }
-
-    console.log(
-        '-------------time--------', this.activeTimers,
-        this.programTimersStack);
-
     const oldActiveTimers = this.activeTimers;
-    this.activeTimers = [];
+    const newActiveTimers: TimerNode[] = [];
 
     let outerMostTime = false;
     if (this.programTimersStack == null) {
-      this.programTimersStack = this.activeTimers;
+      this.programTimersStack = newActiveTimers;
       outerMostTime = true;
     } else {
-      this.programTimersStack.push(this.activeTimers);
+      this.activeTimers.push(newActiveTimers);
     }
+    this.activeTimers = newActiveTimers;
 
     f();
 
     const flattenedActiveTimers = util.flatten(this.activeTimers);
-    console.log('flat', flattenedActiveTimers);
     this.activeTimers = oldActiveTimers;
 
     if (outerMostTime) {
       this.programTimersStack = null;
-    } else {
-      // this.programTimersStack.pop();
     }
-
-    console.log(
-        '____________________***_______________', this.activeTimers,
-        this.programTimersStack);
 
     return new Promise<number>((resolve, reject) => {
       Promise.all(flattenedActiveTimers).then(results => {
@@ -237,41 +219,16 @@ export class MathBackendWebGL implements MathBackend {
         resolve(sum);
       });
     });
-
-    //    util.flatten()
-
-    // let timer: Promise<number>;
-    // if (shouldTime) {
-    //   query = this.endTimer(query);
-    //   this.pendingTimer = false;
-
-    //   timer = new Promise<number>((resolve, reject) => {
-    //     if (this.pendingQueryTimerPoll == null) {
-    //       this.pendingQueryTimerPoll = this.getQueryTime(query);
-    //       this.pendingQueryTimerPoll.then(timeMs => {
-    //         resolve(timeMs);
-    //         this.pendingQueryTimerPoll = null;
-    //       });
-    //     } else {
-    //       this.pendingQueryTimerPoll.then(
-    //           () => this.getQueryTime(query).then(timeMs =>
-    //           resolve(timeMs)));
-    //     }
-    //   });
-    // } else {
-    //   timer = new Promise<number>(resolve => resolve(null));
-    // }
-    // util.flatten();
   }
 
-  startTimer(): WebGLQuery|TimerQuery {
+  private startTimer(): WebGLQuery|TimerQuery {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       return this.gpgpu.beginQuery();
     }
     return {startMs: performance.now(), endMs: null};
   }
 
-  endTimer(query: WebGLQuery|TimerQuery): WebGLQuery|
+  private endTimer(query: WebGLQuery|TimerQuery): WebGLQuery|
       {startMs: number, endMs: number} {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       this.gpgpu.endQuery();
@@ -281,7 +238,7 @@ export class MathBackendWebGL implements MathBackend {
     return query;
   }
 
-  async getQueryTime(query: WebGLQuery|TimerQuery): Promise<number> {
+  private async getQueryTime(query: WebGLQuery|TimerQuery): Promise<number> {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       return this.gpgpu.pollQueryTime(query);
     }
@@ -534,8 +491,7 @@ export class MathBackendWebGL implements MathBackend {
     const reduceInfo = {windowSize, inSize, batchSize};
     const program = new ReduceProgram(reduceInfo, reduceType);
     const [rows, cols] = program.outputShape;
-    const output =
-        this.makeOutputArray(program.outputShape, dtype).as2D(rows, cols);
+    const output = this.makeOutputArray<Array2D>([rows, cols], dtype);
     this.compileAndRun(program, [x], output);
     // No need to run another GPGPU program.
     if (output.shape[1] === 1) {
@@ -558,8 +514,7 @@ export class MathBackendWebGL implements MathBackend {
     const program =
         new ArgMinMaxProgram(reduceInfo, reduceType, bestIndicesA == null);
     const [rows, cols] = program.outputShape;
-    const output =
-        this.makeOutputArray(program.outputShape, 'int32').as2D(rows, cols);
+    const output = this.makeOutputArray<Array2D>([rows, cols], 'int32');
     const inputs = [x];
     if (bestIndicesA != null) {
       inputs.push(bestIndicesA);

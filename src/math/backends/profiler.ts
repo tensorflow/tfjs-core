@@ -23,9 +23,6 @@ import {BackendTimer} from './backend';
 import {Kernel} from './kernel_registry';
 
 export class Profiler {
-  // private pendingTimer: Promise<number>;
-  // private pendingKernel = false;
-
   constructor(private backendTimer: BackendTimer, private logger?: Logger) {
     if (logger == null) {
       this.logger = new Logger();
@@ -47,45 +44,6 @@ export class Profiler {
     });
 
     return result as T;
-
-    // let result: NDArray;
-
-    // const shouldTimeKernel = this.pendingKernel === false;
-
-    // let query: {};
-    // if (shouldTimeKernel) {
-    //   query = this.backendTimer.startTimer();
-    //   this.pendingKernel = true;
-    // }
-
-    // result = f();
-
-    // if (shouldTimeKernel) {
-    //   query = this.backendTimer.endTimer(query);
-    //   this.pendingKernel = false;
-    // }
-
-    // if (shouldTimeKernel) {
-    //   const vals = result.dataSync();
-    //   util.checkForNaN(vals, result.dtype, name);
-
-    //   const profile = (timeMs: number) => {
-    //     this.logger.logKernelProfile(kernelName, result, vals, timeMs);
-    //   };
-
-    //   if (this.pendingTimer == null) {
-    //     this.pendingTimer = this.backendTimer.getQueryTime(query);
-    //     this.pendingTimer.then(timeMs => {
-    //       profile(timeMs);
-    //       this.pendingTimer = null;
-    //     });
-    //   } else {
-    //     this.pendingTimer.then(
-    //         () => this.backendTimer.getQueryTime(query).then(profile));
-    //   }
-    // }
-
-    // return result as T;
   }
 }
 

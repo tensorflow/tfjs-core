@@ -35,24 +35,8 @@ import * as dl from 'deeplearn';
 // execute();
 
 async function go() {
-  const time = await dl.ENV.math.time(() => {
-    dl.square(dl.square(dl.Scalar.new(1)));
-    dl.ENV.math
-        .time(() => {
-          dl.square(dl.square(dl.Scalar.new(1)));
-          dl.ENV.math
-              .time(() => {
-                dl.sqrt(dl.Scalar.new(1));
-              })
-              .then((mostinner: number) => {
-                console.log('mostinner time', mostinner);
-              });
-        })
-        .then((inner: number) => {
-          console.log('inner time', inner);
-        });
-  });
-  console.log(time);
+  const a = dl.randNormal([100, 100]);
+  a.logSumExp([0]);
 }
 
 go();
