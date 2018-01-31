@@ -956,7 +956,7 @@ const testsFromPixels: MathTests = it => {
     pixels.data[2] = 160;
     pixels.data[3] = 240;
 
-    const array = NDArray.fromPixels(pixels, 3);
+    const array = dl.fromPixels(pixels, 3);
 
     test_util.expectArraysEqual(array, [0, 80, 160]);
   });
@@ -968,7 +968,7 @@ const testsFromPixels: MathTests = it => {
     pixels.data[2] = 160;
     pixels.data[3] = 240;
 
-    const array = NDArray.fromPixels(pixels, 4);
+    const array = dl.fromPixels(pixels, 4);
 
     test_util.expectArraysEqual(array, [0, 80, 160, 240]);
   });
@@ -983,7 +983,7 @@ const testsFromPixels: MathTests = it => {
       pixels.data[i] = i * 2;
     }
 
-    const array = NDArray.fromPixels(pixels, 3);
+    const array = dl.fromPixels(pixels, 3);
 
     test_util.expectArraysEqual(
         array, [0, 2, 4, 8, 10, 12, 16, 18, 20, 24, 26, 28]);
@@ -998,7 +998,7 @@ const testsFromPixels: MathTests = it => {
       pixels.data[i] = i * 2;
     }
 
-    const array = NDArray.fromPixels(pixels, 4);
+    const array = dl.fromPixels(pixels, 4);
 
     test_util.expectArraysClose(
         array,
@@ -1017,7 +1017,7 @@ const testsFromPixels: MathTests = it => {
     pixels.data[6] = 7;
     pixels.data[7] = 255;  // Not used.
 
-    const res = NDArray.fromPixels(pixels, 3);
+    const res = dl.fromPixels(pixels, 3);
     expect(res.shape).toEqual([2, 1, 3]);
     expect(res.dtype).toBe('int32');
     test_util.expectArraysClose(res, [2, 3, 4, 5, 6, 7]);
@@ -1030,7 +1030,7 @@ const testsFromPixels: MathTests = it => {
     pixels.data[2] = 4;
     pixels.data[3] = 255;  // Not used.
 
-    const a = NDArray.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
+    const a = dl.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
     const res = a.add(Scalar.new(2, 'int32'));
     expect(res.shape).toEqual([1, 1, 1, 3]);
     expect(res.dtype).toBe('int32');
@@ -1050,8 +1050,8 @@ const testsFromPixels: MathTests = it => {
     pixelsB.data[2] = 7;
     pixelsB.data[3] = 255;  // Not used.
 
-    const a = NDArray.fromPixels(pixelsA, 3).toFloat();
-    const b = NDArray.fromPixels(pixelsB, 3).toFloat();
+    const a = dl.fromPixels(pixelsA, 3).toFloat();
+    const b = dl.fromPixels(pixelsB, 3).toFloat();
     const res = a.add(b);
     expect(res.shape).toEqual([1, 1, 3]);
     expect(res.dtype).toBe('float32');
