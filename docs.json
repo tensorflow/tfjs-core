@@ -1,0 +1,337 @@
+{
+  "Operations": {
+    "Arithmetic": [
+      {
+        "name": "add",
+        "docstring": "Adds two NDArrays element-wise, A + B. Supports broadcasting.\nFor a stricter version without broadcasting use addStrict().",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "NDArray<Rank>",
+            "documentation": "The first `NDArray` to add."
+          },
+          {
+            "name": "b",
+            "type": "NDArray<Rank>",
+            "documentation": "The second `NDArray` to add. Must have the same type as `a`."
+          }
+        ]
+      },
+      {
+        "name": "addStrict",
+        "docstring": "Adds two NDArrays element-wise, A + B. Inputs must\nbe the same shape. For broadcasting support, use add() instead.",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "T",
+            "documentation": "The first NDArray to multiply element-wise."
+          },
+          {
+            "name": "b",
+            "type": "T",
+            "documentation": "The second NDArray to multiply element-wise."
+          }
+        ]
+      },
+      {
+        "name": "sub",
+        "docstring": "Subtracts two NDArrays element-wise, A - B. Supports broadcasting.\nFor a stricter version without broadcasting use subStrict().",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "NDArray<Rank>",
+            "documentation": "The first `NDArray`."
+          },
+          {
+            "name": "b",
+            "type": "NDArray<Rank>",
+            "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+          }
+        ]
+      },
+      {
+        "name": "subStrict",
+        "docstring": "Subtracts two NDArrays element-wise, A - B. Inputs must\nbe the same shape. For broadcasting support, use sub() instead.",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "T",
+            "documentation": "The first NDArray to multiply element-wise."
+          },
+          {
+            "name": "b",
+            "type": "T",
+            "documentation": "The second NDArray to multiply element-wise."
+          }
+        ]
+      },
+      {
+        "name": "pow",
+        "docstring": "Computes the power of one value to another. Supports broadcasting.\nGiven a tensor x and a tensor y, this operation computes x^y for\ncorresponding elements in x and y. For example:\nx = tf.constant([[2, 2], [3, 3]])\ny = tf.constant([[8, 16], [2, 3]])\npow(x, y)  # [[256, 65536], [9, 27]]",
+        "parameters": [
+          {
+            "name": "base",
+            "type": "NDArray<Rank>",
+            "documentation": "The base NDArray to pow element-wise."
+          },
+          {
+            "name": "exp",
+            "type": "NDArray<Rank>",
+            "documentation": "The exponent NDArray to pow element-wise."
+          }
+        ]
+      },
+      {
+        "name": "powStrict",
+        "docstring": "Computes the power of one value to another. Inputs must\nbe the same shape. For broadcasting support, use pow() instead.",
+        "parameters": [
+          {
+            "name": "base",
+            "type": "T",
+            "documentation": "The base NDArray to pow element-wise."
+          },
+          {
+            "name": "exp",
+            "type": "NDArray<Rank>",
+            "documentation": "The exponent NDArray to pow element-wise."
+          }
+        ]
+      },
+      {
+        "name": "mul",
+        "docstring": "Multiplies two NDArrays element-wise, A * B. Supports broadcasting.\nFor a stricter version without broadcasting use mulStrict().",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "NDArray<Rank>",
+            "documentation": "The first `NDArray`."
+          },
+          {
+            "name": "b",
+            "type": "NDArray<Rank>",
+            "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+          }
+        ]
+      },
+      {
+        "name": "elementWiseMul",
+        "docstring": "",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "T",
+            "documentation": ""
+          },
+          {
+            "name": "b",
+            "type": "T",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "mulStrict",
+        "docstring": "Multiplies two NDArrays element-wise, A * B. Inputs must\nbe the same shape. For broadcasting support, use mul().",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "T",
+            "documentation": "The first `NDArray`."
+          },
+          {
+            "name": "b",
+            "type": "T",
+            "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+          }
+        ]
+      },
+      {
+        "name": "div",
+        "docstring": "Divides two NDArrays element-wise, A / B. Supports broadcasting.\nFor a stricter version without broadcasting use divStrict().",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "NDArray<Rank>",
+            "documentation": "The first `NDArray`."
+          },
+          {
+            "name": "b",
+            "type": "NDArray<Rank>",
+            "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+          }
+        ]
+      },
+      {
+        "name": "divStrict",
+        "docstring": "Divides two NDArrays element-wise, A / B. Inputs must\nbe the same shape. For broadcasting support, use div() instead.",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "T",
+            "documentation": "The first NDArray to multiply element-wise."
+          },
+          {
+            "name": "b",
+            "type": "T",
+            "documentation": "The second NDArray to multiply element-wise."
+          }
+        ]
+      },
+      {
+        "name": "minimum",
+        "docstring": "Returns the min of a and b (`a < b ? a : b`) element-wise.\nSupports broadcasting.",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "NDArray<Rank>",
+            "documentation": "The first ndarray."
+          },
+          {
+            "name": "b",
+            "type": "NDArray<Rank>",
+            "documentation": "The second ndarray. Must have the same type as `a`."
+          }
+        ]
+      },
+      {
+        "name": "minimumStrict",
+        "docstring": "Returns the min of a and b (`a < b ? a : b`) element-wise. Inputs must\nbe the same shape. For broadcasting support, use minimum().",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "T",
+            "documentation": "The first `NDArray`."
+          },
+          {
+            "name": "b",
+            "type": "T",
+            "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+          }
+        ]
+      },
+      {
+        "name": "maximum",
+        "docstring": "Returns the max of a and b (`a > b ? a : b`) element-wise.\nSupports broadcasting.",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "NDArray<Rank>",
+            "documentation": "The first ndarray."
+          },
+          {
+            "name": "b",
+            "type": "NDArray<Rank>",
+            "documentation": "The second ndarray. Must have the same type as `a`."
+          }
+        ]
+      },
+      {
+        "name": "maximumStrict",
+        "docstring": "Returns the max of a and b (`a > b ? a : b`) element-wise. Inputs must\nbe the same shape. For broadcasting support, use maximum().",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "T",
+            "documentation": "The first `NDArray`."
+          },
+          {
+            "name": "b",
+            "type": "T",
+            "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+          }
+        ]
+      },
+      {
+        "name": "matMul",
+        "docstring": "Computes the dot product of two matrices, A * B. These must be matrices,\nuse matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct\nin other cases.",
+        "parameters": [
+          {
+            "name": "a",
+            "type": "Array2D",
+            "documentation": "First matrix in dot product operation."
+          },
+          {
+            "name": "b",
+            "type": "Array2D",
+            "documentation": "Second matrix in dot product operation."
+          },
+          {
+            "name": "aOrientation",
+            "type": "MatrixOrientation",
+            "documentation": "The MatrixOrientation of A. If using TRANSPOSED, will\ncompute A^T * B."
+          },
+          {
+            "name": "bOrientation",
+            "type": "MatrixOrientation",
+            "documentation": "The MatrixOrientation of B. If using TRANSPOSED, will\ncompute A * B^T."
+          }
+        ]
+      },
+      {
+        "name": "vectorTimesMatrix",
+        "docstring": "Computes the dot product of a vector and a matrix, v * B.",
+        "parameters": [
+          {
+            "name": "v",
+            "type": "Array1D",
+            "documentation": "The vector in dot product operation."
+          },
+          {
+            "name": "matrix",
+            "type": "Array2D",
+            "documentation": "The matrix in dot product operation."
+          }
+        ]
+      },
+      {
+        "name": "matrixTimesVector",
+        "docstring": "Computes the dot product of a matrix and vector, A * v.",
+        "parameters": [
+          {
+            "name": "matrix",
+            "type": "Array2D",
+            "documentation": "The matrix in dot product operation."
+          },
+          {
+            "name": "v",
+            "type": "Array1D",
+            "documentation": "The vector in dot product operation."
+          }
+        ]
+      },
+      {
+        "name": "dotProduct",
+        "docstring": "Computes the dot product of two vectors, v1 * v2.",
+        "parameters": [
+          {
+            "name": "v1",
+            "type": "Array1D",
+            "documentation": "The first vector in the dot product operation."
+          },
+          {
+            "name": "v2",
+            "type": "Array1D",
+            "documentation": "The second vector in the dot product operation."
+          }
+        ]
+      },
+      {
+        "name": "outerProduct",
+        "docstring": "Computes the outer product of two vectors, v1 and v2.",
+        "parameters": [
+          {
+            "name": "v1",
+            "type": "Array1D",
+            "documentation": "The first vector in the outer product operation."
+          },
+          {
+            "name": "v2",
+            "type": "Array1D",
+            "documentation": "The second vector in the dot product operation."
+          }
+        ]
+      }
+    ],
+    "Matrices": []
+  }
+}

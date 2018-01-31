@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Nikhil",
+        "documentation": "a nikhil.",
+        "type": "typeof Nikhil",
+        "constructors": [
+            {
+                "parameters": [],
+                "returnType": "Nikhil",
+                "documentation": ""
+            }
+        ]
+    }
+]

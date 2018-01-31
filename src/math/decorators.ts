@@ -31,3 +31,14 @@ export function operation(
   };
   return descriptor;
 }
+
+export interface HeadingMap {
+  'Tensors': 'Creation';
+  'Operations': 'Arithmetic'|'Matrices';
+}
+export type Heading = keyof HeadingMap;
+
+export function doc<H extends Heading>(heading: H, subheading: HeadingMap[H]) {
+  // tslint:disable-next-line:no-any
+  return (...args: any[]) => {};
+}
