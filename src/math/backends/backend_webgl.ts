@@ -57,7 +57,7 @@ import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {TextureData} from './webgl/tex_util';
-import {TextureManager} from './webgl/texture_manager';
+import {TextureManager, TextureType} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
@@ -97,10 +97,23 @@ export class MathBackendWebGL implements MathBackend {
       pixels = this.canvas;
     }
     const x = NDArray.make(texShape, {}, 'int32');
-    this.gpgpu.uploadPixelDataToTexture(this.getTexture(x.dataId), pixels);
+
+    // Manual upload since this is a byte texture with pixels.
+    this.texData[x.dataId].texShape = texShape;
+    const byteTexture =
+        this.textureManager.acquireTexture(texShape, TextureType.UNSIGNED_BYTE);
+    this.texData[x.dataId].texture = byteTexture;
+    this.gpgpu.uploadPixelDataToTexture(byteTexture, pixels);
+
     const program = new FromPixelsProgram(outShape);
     const res = this.compileAndRun(program, [x]);
+
+    // Manual dispose since this is a byte texture.
+    this.textureManager.releaseTexture(
+        byteTexture, texShape, TextureType.UNSIGNED_BYTE);
+    this.texData[x.dataId].texture = null;
     x.dispose();
+
     return res as Array3D;
   }
   write(dataId: number, values: TypedArray): void {

@@ -85,7 +85,7 @@ export class BinaryOpProgram implements GPGPUProgram {
       void main() {
         float a = getAAtOutCoords();
         float b = getBAtOutCoords();
-        setOutput(b);
+        setOutput(binaryOperation(a, b));
       }
     `;
   }

@@ -1031,9 +1031,7 @@ const testsFromPixels: MathTests = it => {
     pixels.data[3] = 255;  // Not used.
 
     const a = NDArray.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
-    const b = Scalar.new(2, 'int32');
-    const res = a.add(b);
-    console.log('ERROR this gives 0 instead of 2', b.dataSync());
+    const res = a.add(Scalar.new(2, 'int32'));
     expect(res.shape).toEqual([1, 1, 1, 3]);
     expect(res.dtype).toBe('int32');
     test_util.expectArraysClose(res, [4, 5, 6]);
