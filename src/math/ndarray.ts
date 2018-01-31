@@ -21,7 +21,7 @@ import {MatrixOrientation} from './backends/types/matmul';
 import * as ops from './ops';
 import {RandNormalDataTypes} from './rand';
 // tslint:disable-next-line:max-line-length
-import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
+import {ArrayData, DataType, DataTypeMap, DType, Rank, ShapeMap, TypedArray} from './types';
 
 /** @hidden */
 export interface NDArrayData {
@@ -159,6 +159,12 @@ export class NDArray<R extends Rank = Rank> {
   static randUniform<R extends Rank>(
       shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
     return ops.randUniform(shape, a, b, dtype);
+  }
+
+  static range(
+      start: number, stop: number, step = 1,
+      dtype: DType.float32|DType.int32 = DType.float32) {
+    return ops.range(start, stop, step, dtype);
   }
 
   /**

@@ -17,11 +17,10 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-
 import {operation} from './decorators';
 import {Array1D, Array2D, Array3D, NDArray, NDArrayData} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
-import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
+import {DataType, DataTypeMap, DType, Rank, ShapeMap} from './types';
 
 export class Ops {
   /** Creates a ndarray of ones with the specified shape. */
@@ -304,6 +303,51 @@ export class Ops {
         'Invalid number of paddings. Must be length of 2 each.');
     return ENV.engine.executeKernel(
         'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
+  }
+
+  /**
+   * Creates a new Array1D filled with the numbers in the range
+   * start - stop.
+   *
+   * The array will include start, but exclude stop. Decrementing ranges and
+   * negative step values are supported.
+   *
+   * @param start an integer start value
+   * @param stop an integer stop value
+   * @param step an optional integer increment (will default to 1 or -1)
+   * @param dtype an optional dtype
+   */
+  static range(
+      start: number, stop: number, step = 1,
+      dtype: DType.float32|DType.int32 = DType.float32): Array1D {
+    if (step === 0) {
+      throw new Error('Cannot have a step of zero');
+    }
+
+    const sameStartStop = start === stop;
+    const increasingRangeNegativeStep = start < stop && step < 0;
+    const decreasingRangePositiveStep = stop < start && step > 1;
+
+    if (sameStartStop || increasingRangeNegativeStep ||
+        decreasingRangePositiveStep) {
+      return Array1D.new(makeZerosTypedArray(0, dtype), dtype);
+    }
+
+    const numElements = Math.abs(Math.ceil((stop - start) / step));
+    const values = makeZerosTypedArray(numElements, dtype);
+
+    if (stop < start && step === 1) {
+      // Auto adjust the step's sign if it hasn't been set
+      // (or was set to 1)
+      step = -1;
+    }
+
+    values[0] = start;
+    for (let i = 1; i < values.length; i++) {
+      values[i] = values[i - 1] + step;
+    }
+
+    return Array1D.new(values, dtype);
   }
 }
 

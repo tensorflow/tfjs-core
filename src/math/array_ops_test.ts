@@ -20,7 +20,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
-import {Rank} from './types';
+import {DType, Rank} from './types';
 
 const testsZeros: MathTests = it => {
   it('1D default dtype', () => {
@@ -1136,17 +1136,110 @@ const testsClone: MathTests = it => {
   });
 };
 
+const testsRange: MathTests = it => {
+  it('range start stop', () => {
+    const a = NDArray.range(0, 3);
+    test_util.expectArraysEqual(a, [0, 1, 2]);
+
+    const b = NDArray.range(3, 8);
+    test_util.expectArraysEqual(b, [3, 4, 5, 6, 7]);
+  });
+
+  it('range start stop negative', () => {
+    const a = NDArray.range(-2, 3);
+    test_util.expectArraysEqual(a, [-2, -1, 0, 1, 2]);
+
+    const b = NDArray.range(4, -2);
+    test_util.expectArraysEqual(b, [4, 3, 2, 1, 0, -1]);
+  });
+
+  it('range start stop step', () => {
+    const a = NDArray.range(4, 15, 4);
+    test_util.expectArraysEqual(a, [4, 8, 12]);
+
+    const b = NDArray.range(4, 11, 4);
+    test_util.expectArraysEqual(b, [4, 8]);
+
+    const c = NDArray.range(4, 17, 4);
+    test_util.expectArraysEqual(c, [4, 8, 12, 16]);
+
+    const d = NDArray.range(0, 30, 5);
+    test_util.expectArraysEqual(d, [0, 5, 10, 15, 20, 25]);
+
+    const e = NDArray.range(-3, 9, 2);
+    test_util.expectArraysEqual(e, [-3, -1, 1, 3, 5, 7]);
+
+    const f = NDArray.range(3, 3);
+    test_util.expectArraysEqual(f, new Float32Array(0));
+
+    const g = NDArray.range(3, 3, 1);
+    test_util.expectArraysEqual(g, new Float32Array(0));
+
+    const h = NDArray.range(3, 3, 4);
+    test_util.expectArraysEqual(h, new Float32Array(0));
+  });
+
+  it('range start stop large step', () => {
+    const a = NDArray.range(3, 10, 150);
+    test_util.expectArraysEqual(a, [3]);
+
+    const b = NDArray.range(10, 500, 205);
+    test_util.expectArraysEqual(b, [10, 215, 420]);
+
+    const c = NDArray.range(3, -10, -150);
+    test_util.expectArraysEqual(c, [3]);
+
+    const d = NDArray.range(-10, -500, -205);
+    test_util.expectArraysEqual(d, [-10, -215, -420]);
+  });
+
+  it('range start stop negative step', () => {
+    const a = NDArray.range(0, -10, -1);
+    test_util.expectArraysEqual(a, [0, -1, -2, -3, -4, -5, -6, -7, -8, -9]);
+
+    const b = NDArray.range(0, -10);
+    test_util.expectArraysEqual(b, [0, -1, -2, -3, -4, -5, -6, -7, -8, -9]);
+
+    const c = NDArray.range(3, -4, -2);
+    test_util.expectArraysEqual(c, [3, 1, -1, -3]);
+  });
+
+  it('range start stop incompatible step', () => {
+    const a = NDArray.range(3, 10, -2);
+    test_util.expectArraysEqual(a, new Float32Array(0));
+
+    const b = NDArray.range(40, 3, 2);
+    test_util.expectArraysEqual(b, new Float32Array(0));
+  });
+
+  it('range zero step', () => {
+    expect(() => NDArray.range(2, 10, 0))
+        .toThrow(new Error('Cannot have a step of zero'));
+  });
+
+  it('range default dtype', () => {
+    const a = NDArray.range(1, 4);
+    test_util.expectArraysEqual(a, [1, 2, 3]);
+    expect(a.dtype).toEqual('float32');
+  });
+
+  it('range float32 dtype', () => {
+    const a = NDArray.range(1, 4, undefined, DType.float32);
+    test_util.expectArraysEqual(a, [1, 2, 3]);
+    expect(a.dtype).toEqual('float32');
+  });
+
+  it('range int32 dtype', () => {
+    const a = NDArray.range(1, 4, undefined, DType.int32);
+    test_util.expectArraysEqual(a, [1, 2, 3]);
+    expect(a.dtype).toEqual('int32');
+  });
+};
+
 const allTests = [
-  testsZeros,
-  testsOnes,
-  testsZerosLike,
-  testsOnesLike,
-  testsClone,
-  testsRand,
-  testsRandNormal,
-  testsRandTruncNormal,
-  testsRandUniform,
-  testsFromPixels,
+  testsZeros, testsOnes, testsZerosLike, testsOnesLike, testsClone, testsRand,
+  testsRandNormal, testsRandTruncNormal, testsRandUniform, testsFromPixels,
+  testsRange
 ];
 
 test_util.describeMathCPU('array_ops', allTests);
