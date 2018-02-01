@@ -108,14 +108,17 @@ export class MathBackendCPU implements MathBackend {
     this.throwIfNoData(dataId);
     return this.data[dataId];
   }
+
   disposeData(dataId: number): void {
     delete this.data[dataId];
   }
-  async time(query: () => NDArray): Promise<number> {
+
+  async time(f: () => void): Promise<number> {
     const start = performance.now();
-    query();
+    f();
     return performance.now() - start;
   }
+
   private throwIfNoData(dataId: number) {
     if (!(dataId in this.data)) {
       throw new Error(
@@ -124,10 +127,6 @@ export class MathBackendCPU implements MathBackend {
           `If you need to construct your own math, make sure this array is ` +
           `allocated after the math construction`);
     }
-  }
-
-  clone<T extends NDArray>(x: T): T {
-    return NDArray.make(x.shape, {values: new Float32Array(x.dataSync())}) as T;
   }
 
   slice1D(x: Array1D, begin: number, size: number): Array1D {
