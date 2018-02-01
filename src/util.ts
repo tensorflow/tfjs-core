@@ -17,7 +17,7 @@
 
 import {NDArray} from './math/ndarray';
 // tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, FlatVector, NamedArrayMap, RegularArray} from './math/types';
+import {DataType, DataTypeMap, FlatVector, NamedArrayMap, RecursiveArray, RegularArray} from './math/types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -79,16 +79,17 @@ export function assertTypesMatch(a: NDArray, b: NDArray): void {
           `second (${b.dtype}) input must match`);
 }
 
-// tslint:disable-next-line:no-any
-export function flatten(
-    arr: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    ret: Array<number|boolean> = []): Array<number|boolean> {
+// NOTE: We explicitly type out what T extends instead of any so that
+// util.flatten on a nested array of number doesn't try to infer T as a
+// number[][], causing us to explicitly type util.flatten<number>().
+export function flatten<T extends number|boolean|NDArray|Promise<number>>(
+    arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
   if (Array.isArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
       flatten(arr[i], ret);
     }
   } else {
-    ret.push(arr);
+    ret.push(arr as T);
   }
   return ret;
 }
