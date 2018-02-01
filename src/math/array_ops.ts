@@ -299,6 +299,50 @@ export class Ops {
     return ENV.engine.executeKernel(
         'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
   }
+
+  /**
+   * Return an evenly spaced sequence of numbers over the given interval as an
+   * Array1D.
+   *
+   * The stop value can be optionally excluded by passing setting endpoint to
+   * true. [TK explain what happens in this case]
+   *
+   *
+   * @param start the start value of the sequence
+   * @param stop the end value of the sequence
+   * @param num the number of values to generate
+   * @param endpoint optional, determines whether stop is included in the
+   * sequence. Defaults to true.
+   */
+  static linspace(start: number, stop: number, num: number, endpoint = true) {
+    if (num === 0) {
+      throw new Error('Cannot request zero samples');
+    }
+
+    // const sameStartStop = start === stop;
+    // const increasingRangeNegativeStep = start < stop && step < 0;
+    // const decreasingRangePositiveStep = stop < start && step > 1;
+
+    // if (sameStartStop || increasingRangeNegativeStep ||
+    //     decreasingRangePositiveStep) {
+    //   return Array1D.new(makeZerosTypedArray(0, dtype), dtype);
+    // }
+
+    let step: number;
+    if (endpoint) {
+      step = Math.abs(Math.ceil((stop - start) / (num - 1)));
+    } else {
+      step = Math.abs(Math.ceil((stop - start) / (num)));
+    }
+
+    const values = makeZerosTypedArray(num, 'float32');
+    values[0] = start;
+    for (let i = 1; i < values.length; i++) {
+      values[i] = values[i - 1] + step;
+    }
+
+    return Array1D.new(values, 'float32');
+  }
 }
 
 function makeZerosTypedArray<D extends DataType>(

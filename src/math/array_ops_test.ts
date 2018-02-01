@@ -1188,17 +1188,22 @@ const testsClone: MathTests = it => {
   });
 };
 
+const testsLinspace: MathTests = it => {
+  it('linspace start stop', () => {
+    const a = dl.linspace(0, 10, 10);
+    test_util.expectArraysEqual(a, [1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]);
+    expect(a.shape).toEqual([10]);
+
+    // const b = dl.range(3, 8);
+    // test_util.expectArraysEqual(b, [3, 4, 5, 6, 7]);
+    // expect(b.shape).toEqual([5]);
+  });
+};
+
 const allTests = [
-  testsZeros,
-  testsOnes,
-  testsZerosLike,
-  testsOnesLike,
-  testsClone,
-  testsRand,
-  testsRandNormal,
-  testsRandTruncNormal,
-  testsRandUniform,
-  testsFromPixels,
+  testsZeros, testsOnes, testsZerosLike, testsOnesLike, testsClone, testsRand,
+  testsRandNormal, testsRandTruncNormal, testsRandUniform, testsFromPixels,
+  testsLinspace
 ];
 
 test_util.describeMathCPU('array_ops', allTests);
