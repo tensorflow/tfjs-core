@@ -210,8 +210,8 @@ export class NDArrayMath implements NDArrayManager {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
-  time(query: () => NDArray): Promise<number> {
-    return this.backend.time(query);
+  time(f: () => void): Promise<number> {
+    return this.backend.time(f);
   }
 
   getNumArrays() {
@@ -238,11 +238,10 @@ export class NDArrayMath implements NDArrayManager {
     this.registeredVariables[v.name] = v;
   }
 
-  writePixels(
-      dataId: number,
+  fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void {
-    this.backend.writePixels(dataId, pixels, numChannels);
+      numChannels: number): Array3D {
+    return this.backend.fromPixels(pixels, numChannels);
   }
   write(dataId: number, values: TypedArray): void {
     this.backend.write(dataId, values);
@@ -274,7 +273,8 @@ export class NDArrayMath implements NDArrayManager {
    * and checked for NaNs. This significantly impacts performance.
    */
   enableDebugMode() {
-    this.engine.enableDebugMode();
+    ENV.set('DEBUG', true);
+
     console.warn(
         'Debugging mode is ON. The output of every math call will ' +
         'be downloaded to CPU and checked for NaNs. ' +

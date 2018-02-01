@@ -28,13 +28,14 @@ export interface NDArrayStorage {
   readSync(dataId: number): TypedArray;
   disposeData(dataId: number): void;
   write(dataId: number, values: TypedArray): void;
-  writePixels(
-      dataId: number,
+  fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void;
-  time(query: () => NDArray): Promise<number>;
+      numChannels: number): Array3D;
+  time(query: () => void): Promise<number>;
   register(dataId: number, shape: number[], dtype: DataType): void;
 }
+
+export interface BackendTimer { time(f: () => void): Promise<number>; }
 
 /**
  * The interface that defines the kernels that should be implemented when
@@ -42,12 +43,10 @@ export interface NDArrayStorage {
  * methods, this can be done gradually (throw an error for unimplemented
  * methods).
  */
-export interface MathBackend extends NDArrayStorage {
+export interface MathBackend extends NDArrayStorage, BackendTimer {
   matMul(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D;
-
-  clone<T extends NDArray>(ndarray: T): T;
 
   slice1D(x: Array1D, begin: number, size: number): Array1D;
   slice2D(x: Array2D, begin: [number, number], size: [number, number]): Array2D;
