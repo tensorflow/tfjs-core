@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../math/backends/tracking';
 import * as concat_util from '../../math/concat_util';
 import {NDArrayMath} from '../../math/math';
 import {Array1D, Array2D, Array3D, Array4D} from '../../math/ndarray';
 import * as util from '../../util';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {Operation} from './op';
 
 /**
@@ -43,7 +43,7 @@ export class Concat1D extends Operation {
     const x1 = inferecenArrays.get(this.x1Tensor) as Array1D;
     const x2 = inferecenArrays.get(this.x2Tensor) as Array1D;
 
-    math.tidy((keep) => {
+    tidy(() => {
       const concatResult = math.concat1D(x1, x2);
       inferecenArrays.set(this.yTensor, keep(concatResult));
     });
@@ -80,7 +80,7 @@ export class Concat2D extends Operation {
     const x1 = inferecenArrays.get(this.x1Tensor) as Array2D;
     const x2 = inferecenArrays.get(this.x2Tensor) as Array2D;
 
-    math.tidy((keep) => {
+    tidy(() => {
       const concatResult = math.concat2D(x1, x2, this.axis);
       inferecenArrays.set(this.yTensor, keep(concatResult));
     });
@@ -116,7 +116,7 @@ export class Concat3D extends Operation {
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x1 = inferenceArrays.get(this.x1Tensor) as Array3D;
     const x2 = inferenceArrays.get(this.x2Tensor) as Array3D;
-    math.tidy((keep) => {
+    tidy(() => {
       const concatResult = math.concat3D(x1, x2, this.axis);
       inferenceArrays.set(this.yTensor, keep(concatResult));
     });
@@ -153,7 +153,7 @@ export class Concat4D extends Operation {
     const x1 = inferecenArrays.get(this.x1Tensor) as Array4D;
     const x2 = inferecenArrays.get(this.x2Tensor) as Array4D;
 
-    math.tidy((keep) => {
+    tidy(() => {
       const concatResult = math.concat4D(x1, x2, this.axis);
       inferecenArrays.set(this.yTensor, keep(concatResult));
     });

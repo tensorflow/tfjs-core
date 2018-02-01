@@ -17,10 +17,12 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
+
 import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
 // tslint:disable-next-line:max-line-length
 import {customGradient, gradients, gradientsScope, valueAndGradients, variableGradients, vjp} from './backends/gradients';
+import {TidyResult} from './backends/tape_util';
 import {keep, tidy} from './backends/tracking';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
@@ -195,8 +197,6 @@ export class NDArrayMath {
 
   // Engine ops.
 
-  /** @deprecated Use dl.tidy() */
-  scope = tidy;
   tidy = tidy;
   keep = keep;
   vjp = vjp;
@@ -240,6 +240,13 @@ export class NDArrayMath {
     this.registerVariable = ENV.engine.registerVariable.bind(ENV.engine);
     this.startScope = ENV.engine.startScope.bind(ENV.engine);
     this.endScope = ENV.engine.endScope.bind(ENV.engine);
+  }
+
+  /** @deprecated Use dl.tidy() */
+  scope<T extends TidyResult>(scopeFn?: ScopeFn<T>): T {
+    const keepFn = <T extends NDArray>(ndarray: T): T => keep(ndarray);
+    const trackFn = <T extends NDArray>(ndarray: T): T => ndarray;
+    return tidy(() => scopeFn(keepFn, trackFn));
   }
 
   /** @deprecated This is a no-op. */
@@ -398,3 +405,7 @@ export class NDArrayMath {
         'LRN4D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
   }
 }
+
+export type ScopeFn<T extends TidyResult> =
+    (keep: <T1 extends NDArray>(ndarray: T1) => T1,
+     track: <T2 extends NDArray>(ndarray: T2) => T2) => T;

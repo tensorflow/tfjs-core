@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../math/backends/tracking';
 import {NDArrayMath} from '../../math/math';
 // tslint:disable-next-line:max-line-length
 import {ActivationFunction, EluFunc, LeakyReluFunc, ReLUFunc, SigmoidFunc, SquareFunc, TanHFunc} from '../activation_functions';
 import {Tensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {Operation} from './op';
 
 /**
@@ -36,7 +36,7 @@ export class ElementWiseActivation extends Operation {
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x = inferenceArrays.get(this.xTensor);
 
-    math.tidy((keep) => {
+    tidy(() => {
       inferenceArrays.set(this.yTensor, keep(this.func.output(math, x)));
     });
   }
@@ -128,7 +128,7 @@ export class PReLU extends Operation {
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x = inferenceArrays.get(this.xTensor);
     const alpha = inferenceArrays.get(this.alphaTensor);
-      math.tidy((keep) => {
+      tidy(() => {
       inferenceArrays.set(this.yTensor, keep(math.prelu(x, alpha)));
     });
   }

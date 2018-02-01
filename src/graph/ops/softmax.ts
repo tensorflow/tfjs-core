@@ -16,12 +16,14 @@
  */
 
 import {ENV} from '../../environment';
+import {keep, tidy} from '../../math/backends/tracking';
 import {NDArrayMath} from '../../math/math';
 import {Array1D, Scalar} from '../../math/ndarray';
 import * as util from '../../util';
 import {Tensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
+
 import {Operation} from './op';
 
 export class Softmax extends Operation {
@@ -31,7 +33,7 @@ export class Softmax extends Operation {
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const logits = inferenceArrays.get(this.logitsTensor) as Array1D;
-    return math.tidy((keep) => {
+    return tidy(() => {
       inferenceArrays.set(this.output, keep(math.softmax(logits)));
     });
   }
@@ -65,7 +67,7 @@ export class SoftmaxCrossEntropyCost extends Operation {
     const logits = inferenceArrays.get(this.logitsTensor) as Array1D;
     const label = inferenceArrays.get(this.labelTensor) as Array1D;
 
-    math.tidy((keep) => {
+    tidy(() => {
       const softmaxResult = math.softmax(logits);
 
       inferenceArrays.set(this.softmaxTensor, keep(softmaxResult));
@@ -100,8 +102,7 @@ export class SoftmaxCrossEntropyCost extends Operation {
 }
 
 export function crossEntropyCost(
-    math: NDArrayMath, y: Array1D, target: Array1D,
-    epsilon: Scalar): Scalar {
+    math: NDArrayMath, y: Array1D, target: Array1D, epsilon: Scalar): Scalar {
   util.assert(
       y.size === target.size, 'The output and target must be the same size');
 

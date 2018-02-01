@@ -17,7 +17,7 @@
 
 import {ENV} from '../../environment';
 import {NDArray} from '../ndarray';
-import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
+import {TidyFn, TidyResult, TidyResultImmediate} from './tape_util';
 
 /**
  * Executes the provided function and after it is executed, cleans up all
@@ -36,8 +36,8 @@ import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
  * @param gradientsMode If true, enables gradients mode.
  *     See math.gradientsScope for details.
  */
-export function tidy<T extends ScopeResult>(
-    nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradientsMode = false): T {
+export function tidy<T extends TidyResult>(
+    nameOrFn: string|TidyFn<T>, fn?: TidyFn<T>, gradientsMode = false): T {
   if (fn == null) {
     // Called with only 1 argument.
     if (typeof nameOrFn !== 'function') {
@@ -61,17 +61,12 @@ export function tidy<T extends ScopeResult>(
   }
   ENV.engine.startScope(gradientsMode);
 
-  const keepFn = <T extends NDArray>(ndarray: T): T => keep(ndarray);
-  // TODO(smilkov): trackFn is a no-op since we have global tracking.
-  // Remove when we break backward compatibility.
-  const trackFn = <T extends NDArray>(ndarray: T): T => ndarray;
-  const result = fn(keepFn, trackFn);
-
+  const result = fn();
   if (result instanceof Promise) {
     result.then(r => ENV.engine.endScope(r, gradientsMode));
     return result;
   } else {
-    ENV.engine.endScope(result as ScopeResultImmediate, gradientsMode);
+    ENV.engine.endScope(result as TidyResultImmediate, gradientsMode);
     return result;
   }
 }

@@ -27,7 +27,7 @@ import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
 import {KernelNode, Tape, TapeNode, TapeNodeInputGradientArrays} from './tape_types';
 import * as tape_util from './tape_util';
-import {ScopeResultImmediate} from './tape_util';
+import {TidyResultImmediate} from './tape_util';
 import {tidy} from './tracking';
 
 interface ScopeState {
@@ -204,7 +204,7 @@ export class BackendEngine implements NDArrayManager {
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  endScope(result: ScopeResultImmediate, gradientsMode = false) {
+  endScope(result: TidyResultImmediate, gradientsMode = false) {
     if (gradientsMode) {
       this.gradientScopeCount--;
       if (this.gradientScopeCount === 0) {
