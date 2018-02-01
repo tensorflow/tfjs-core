@@ -21,7 +21,7 @@ import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
 // tslint:disable-next-line:max-line-length
 import {customGradient, gradients, gradientsScope, valueAndGradients, variableGradients, vjp} from './backends/gradients';
-import {keep, scope} from './backends/tracking';
+import {keep, tidy} from './backends/tracking';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
 import * as compare from './compare';
@@ -195,7 +195,9 @@ export class NDArrayMath {
 
   // Engine ops.
 
-  scope = scope;
+  /** @deprecated Use dl.tidy() */
+  scope = tidy;
+  tidy = tidy;
   keep = keep;
   vjp = vjp;
 
@@ -221,7 +223,7 @@ export class NDArrayMath {
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
-   *     a math.scope() which will automatically clean up intermediate
+   *     a math.tidy() which will automatically clean up intermediate
    * NDArrays.
    */
   constructor(backend: BackendType|MathBackend, safeMode: boolean) {
@@ -257,7 +259,7 @@ export class NDArrayMath {
             `ndarray, got shape ${x.shape}.`);
     let values: Array1D;
     let indices: Array1D;
-    scope('topK', () => {
+    tidy('topK', () => {
       values = ENV.engine.executeKernel('TopKValues', {inputs: {x}, args: {k}});
       indices =
           ENV.engine.executeKernel('TopKIndices', {inputs: {x}, args: {k}});
@@ -317,7 +319,7 @@ export class NDArrayMath {
             `NDArray of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
-    return scope('scaledArrayAdd', () => {
+    return tidy('scaledArrayAdd', () => {
       // TODO(nsthorat): Add an SGEMM kernel and then update this.
       return this.add(this.multiply(c1, a), this.multiply(c2, b)) as T;
     });

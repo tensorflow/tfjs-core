@@ -46,7 +46,7 @@ export class Subtract extends Operation {
     const t1 = inferenceArrays.get(this.t1) as Scalar;
     const t2 = inferenceArrays.get(this.t2) as Scalar;
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       let result: NDArray;
       if (util.isScalarShape(t1.shape)) {
         result = math.scalarMinusArray(t1, t2);
@@ -64,7 +64,7 @@ export class Subtract extends Operation {
       gradientArrays: SummedTensorArrayMap) {
     const dy = gradientArrays.get(this.outTensor);
 
-    math.scope(() => {
+    math.tidy(() => {
       if (graph_util.shouldBackProp(this.t1)) {
         if (util.isScalarShape(this.t1.shape)) {
           const sum = math.sum(dy);

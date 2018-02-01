@@ -63,7 +63,7 @@ export class TransformNet implements dl.Model {
    * @return dl.Array3D containing pixels of output img
    */
   predict(preprocessedInput: dl.Array3D): dl.Array3D {
-    const img = this.math.scope((keep, track) => {
+    const img = this.math.tidy((keep, track) => {
       const conv1 = this.convLayer(preprocessedInput.toFloat(), 1, true, 0);
       const conv2 = this.convLayer(conv1, 2, true, 3);
       const conv3 = this.convLayer(conv2, 2, true, 6);

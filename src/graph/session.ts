@@ -102,14 +102,14 @@ export class Session {
    * Evaluate a list of tensors, using the provided feed entries to provide
    * upstream NDArray input.
    * When using a `NDArrayMath` object in safe mode this must be used in a
-   * math.scope().
+   * math.tidy().
    * @param tensors The list of tensors to evaluate.
    * @param feedEntries List of `FeedEntry` to read when replacing graph
    * tensors with NDArrays.
    * @return The computed values of the tensors.
    */
   evalAll(tensors: Tensor[], feedEntries: FeedEntry[]): NDArray[] {
-    return this.math.scope(() => {
+    return this.math.tidy(() => {
       const feed = new FeedDictionary(feedEntries);
       const runtime = this.getOrCreateRuntime(tensors, feed);
 
@@ -154,7 +154,7 @@ export class Session {
    * Trains a batch.
    * Returns a reduced cost if the costReduction parameter is set.
    * When using a `NDArrayMath` object in safe mode this must be used in a
-   * math.scope().
+   * math.tidy().
    * @param costTensor A tensor representing the cost to optimize. Should be a
    * scalar.
    * @param feedEntries Feed entries for this train run. Provides inputs.
@@ -197,7 +197,7 @@ export class Session {
     optimizer.beforeBatch(
         this.math, batchSize, runtime, activations, gradients);
 
-    return this.math.scope(() => {
+    return this.math.tidy(() => {
       let cost = Scalar.new(0);
 
       for (let i = 0; i < batchSize; ++i) {

@@ -22,7 +22,7 @@ We plan on building a way to port models directly from TensorFlow to
 Currently, `NDArray`s are tightly coupled to their underlying storage. We will
 be decoupling the `NDArray` object from where it is actually stored, and add
 global tracking to all `NDArray`s so that we don't need to explicitly `track` them
-inside of a `math.scope()`.
+inside of a `math.tidy()`.
 
 This also means `scope` will become a top level method.
 

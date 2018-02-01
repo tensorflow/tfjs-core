@@ -38,7 +38,7 @@ export class Reshape<T1 extends NDArray, T2 extends NDArray> extends Operation {
 
     const clone = math.clone(x);
 
-    math.scope(keep => {
+    math.tidy(keep => {
       inferenceArrays.set(
           this.yTensor, keep(clone.reshape(this.yTensor.shape)));
     });
@@ -51,7 +51,7 @@ export class Reshape<T1 extends NDArray, T2 extends NDArray> extends Operation {
 
     const clone = math.clone(dy);
 
-    math.scope(() => {
+    math.tidy(() => {
       gradientArrays.add(this.xTensor, clone.reshape(this.xTensor.shape));
     });
   }

@@ -55,7 +55,7 @@ export class YoloMobileNetDetection implements Model {
    */
   predict(input: Array3D): Array4D {
     // Keep a map of named activations for rendering purposes.
-    const netout = this.math.scope((keep) => {
+    const netout = this.math.tidy((keep) => {
       // Preprocess the input.
       const preprocessedInput =
           this.math.subtract(

@@ -75,7 +75,7 @@ export class FontModel {
       throw (new Error('Invalid character id'));
     }
 
-    const adjusted = this.math.scope(keep => {
+    const adjusted = this.math.tidy(keep => {
       const idx = dl.Array1D.new([charId]);
       const onehotVector = dl.oneHot(idx, this.numberOfValidChars).as1D();
 

@@ -180,7 +180,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
     const isWebcam = this.selectedInputName === 'webcam';
 
-    await this.math.scope(async () => {
+    await this.math.tidy(async () => {
       if (!this.isMediaLoaded) {
         return;
       }

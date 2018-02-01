@@ -38,7 +38,7 @@ reader.getAllVariables().then(async vars => {
 
   const results: number[] = [];
 
-  await math.scope(async () => {
+  await math.tidy(async () => {
     const forgetBias = dl.Scalar.new(1.0);
     const lstm1 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
         dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);

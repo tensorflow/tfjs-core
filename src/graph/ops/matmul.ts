@@ -38,7 +38,7 @@ export class MatMul extends Operation {
     const x1 = inferenceArrays.get(this.x1Tensor);
     const x2 = inferenceArrays.get(this.x2Tensor);
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       if (x1.shape.length === 2 && x2.shape.length === 2) {
         inferenceArrays.set(
             this.yTensor, keep(math.matMul(x1 as Array2D, x2 as Array2D)));
@@ -70,7 +70,7 @@ export class MatMul extends Operation {
       dy = dy.reshape([dy.size, 1]);
     }
 
-    math.scope(() => {
+    math.tidy(() => {
       // y = x1 * x2
       // dx1 = dy * x2T
       // dx2 = x1T * dy

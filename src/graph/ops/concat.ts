@@ -43,7 +43,7 @@ export class Concat1D extends Operation {
     const x1 = inferecenArrays.get(this.x1Tensor) as Array1D;
     const x2 = inferecenArrays.get(this.x2Tensor) as Array1D;
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       const concatResult = math.concat1D(x1, x2);
       inferecenArrays.set(this.yTensor, keep(concatResult));
     });
@@ -52,7 +52,7 @@ export class Concat1D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    math.scope(() => {
+    math.tidy(() => {
       concatBackProp(
           math, this.x1Tensor, this.x2Tensor, this.yTensor, 0, gradientArrays,
           inferenceArrays);
@@ -80,7 +80,7 @@ export class Concat2D extends Operation {
     const x1 = inferecenArrays.get(this.x1Tensor) as Array2D;
     const x2 = inferecenArrays.get(this.x2Tensor) as Array2D;
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       const concatResult = math.concat2D(x1, x2, this.axis);
       inferecenArrays.set(this.yTensor, keep(concatResult));
     });
@@ -89,7 +89,7 @@ export class Concat2D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    math.scope(() => {
+    math.tidy(() => {
       concatBackProp(
           math, this.x1Tensor, this.x2Tensor, this.yTensor, this.axis,
           gradientArrays, inferenceArrays);
@@ -116,7 +116,7 @@ export class Concat3D extends Operation {
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x1 = inferenceArrays.get(this.x1Tensor) as Array3D;
     const x2 = inferenceArrays.get(this.x2Tensor) as Array3D;
-    math.scope((keep) => {
+    math.tidy((keep) => {
       const concatResult = math.concat3D(x1, x2, this.axis);
       inferenceArrays.set(this.yTensor, keep(concatResult));
     });
@@ -125,7 +125,7 @@ export class Concat3D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    math.scope(() => {
+    math.tidy(() => {
       concatBackProp(
           math, this.x1Tensor, this.x2Tensor, this.yTensor, this.axis,
           gradientArrays, inferenceArrays);
@@ -153,7 +153,7 @@ export class Concat4D extends Operation {
     const x1 = inferecenArrays.get(this.x1Tensor) as Array4D;
     const x2 = inferecenArrays.get(this.x2Tensor) as Array4D;
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       const concatResult = math.concat4D(x1, x2, this.axis);
       inferecenArrays.set(this.yTensor, keep(concatResult));
     });
@@ -162,7 +162,7 @@ export class Concat4D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    math.scope(() => {
+    math.tidy(() => {
       concatBackProp(
           math, this.x1Tensor, this.x2Tensor, this.yTensor, this.axis,
           gradientArrays, inferenceArrays);

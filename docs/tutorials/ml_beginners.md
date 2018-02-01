@@ -250,7 +250,7 @@ const math = dl.ENV.math;
 const session = new dl.Session(graph, math);
 
 // For more information on scope, check out the [tutorial on performance](performance.md).
-await math.scope(async () => {
+await math.tidy(async () => {
   /**
    * Inference
    */

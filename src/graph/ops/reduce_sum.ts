@@ -40,7 +40,7 @@ export class ReduceSum extends Operation {
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x = inferenceArrays.get(this.x);
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       inferenceArrays.set(this.outTensor, keep(math.sum(x)));
     });
   }
@@ -52,7 +52,7 @@ export class ReduceSum extends Operation {
       return;
     }
 
-    math.scope(() => {
+    math.tidy(() => {
       const dy = gradientArrays.get(this.outTensor) as Scalar;
       gradientArrays.add(this.x, math.scalarTimesArray(dy, this.ones));
     });

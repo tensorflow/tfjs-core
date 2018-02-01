@@ -57,11 +57,11 @@ const tests: MathTests = it => {
     test_util.expectArraysClose(res, [6]);
   });
 
-  it('variables are not affected by scopes', math => {
+  it('variables are not affected by tidy', math => {
     let v: Variable<Rank.R1>;
     expect(math.getNumArrays()).toBe(0);
 
-    math.scope(() => {
+    math.tidy(() => {
       const value = Array1D.new([1, 2, 3], 'float32');
       expect(math.getNumArrays()).toBe(1);
 

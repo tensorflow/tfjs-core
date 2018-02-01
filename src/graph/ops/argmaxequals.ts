@@ -37,7 +37,7 @@ export class ArgMaxEquals extends Operation {
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x1 = inferenceArrays.get(this.x1Tensor);
     const x2 = inferenceArrays.get(this.x2Tensor);
-    math.scope((keep) => {
+    math.tidy((keep) => {
       inferenceArrays.set(this.yTensor, keep(math.argMaxEquals(x1, x2)));
     });
   }

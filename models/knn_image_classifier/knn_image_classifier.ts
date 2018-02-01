@@ -85,7 +85,7 @@ export class KNNImageClassifier implements Model {
     }
     this.clearTrainLogitsMatrix();
 
-    this.math.scope((keep, track) => {
+    this.math.tidy((keep, track) => {
       // Add the squeezenet logits for the image to the appropriate class
       // logits matrix.
       const logits = this.squeezeNet.predict(image);
@@ -128,7 +128,7 @@ export class KNNImageClassifier implements Model {
       throw new Error('Cannot predict until vars have been loaded.');
     }
 
-    return this.math.scope((keep) => {
+    return this.math.tidy((keep) => {
       const logits = this.squeezeNet.predict(image);
       const imageLogits = this.normalizeVector(logits);
       const logitsSize = imageLogits.shape[0];

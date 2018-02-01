@@ -21,7 +21,7 @@ import {NDArray, Scalar, Variable} from '../ndarray';
 import {NamedArrayMap, Rank} from '../types';
 import {TapeNodeInputGradientArrays} from './tape_types';
 import {ScopeFn, ScopeResult} from './tape_util';
-import {scope} from './tracking';
+import {tidy} from './tracking';
 
 /**
  * Create a new gradients scope. Similar to scope, but forces all inner scopes
@@ -37,7 +37,7 @@ import {scope} from './tracking';
 export function gradientsScope<T extends ScopeResult>(
     nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
   const gradientsMode = true;
-  return scope(nameOrScopeFn, scopeFn, gradientsMode);
+  return tidy(nameOrScopeFn, scopeFn, gradientsMode);
 }
 
 /**
@@ -56,7 +56,7 @@ export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
   const xs = util.flattenNameArrayMap(x, keys);
 
   const gradientsMode = true;
-  const vjp = scope('vjp', () => {
+  const vjp = tidy('vjp', () => {
     const y = f();
     if (!util.arraysEqual(y.shape, dy.shape)) {
       throw new Error(
@@ -124,7 +124,7 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
 
   const gradientsMode = true;
   let variableNames: string[];
-  const result = scope('gradients', () => {
+  const result = tidy('gradients', () => {
     const y = f();
     if (y.rank !== 0) {
       throw new Error(
@@ -200,7 +200,7 @@ export function customGradient<R extends Rank, T extends NDArray<R>>(
 
   let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
   const gradientsMode = true;
-  const result = scope('customGradient', () => {
+  const result = tidy('customGradient', () => {
     const {value, gradients} = f();
     gradientsFunc = gradients;
     return value;

@@ -48,7 +48,7 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
     const op = getReductionOp(option);
     const start = performance.now();
 
-    math.scope(() => {
+    math.tidy(() => {
       op(input).get();
     });
 

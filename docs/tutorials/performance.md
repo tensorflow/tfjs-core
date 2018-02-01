@@ -74,7 +74,7 @@ Preventing memory leaks in applications that may have an infinite loop
 (for example, reading from the webcam and making a prediction) is critical for
 performance.
 
-When math operations are used, you should wrap them in a math.scope() function
+When math operations are used, you should wrap them in a math.tidy() function
 closure as shown in the example below. The results of math operations in this
 scope will get disposed at the end of the scope, unless they are the value
 returned in the scope.
@@ -89,7 +89,7 @@ const math = dl.ENV.math;
 
 let output;
 
-math.scope(keep => {
+math.tidy(keep => {
   // CORRECT: By default, math tracks all NDArrays that are constructed.
   const a = dl.Scalar.new(2);
 
@@ -97,7 +97,7 @@ math.scope(keep => {
   const c = math.neg(math.exp(a));
 
   // CORRECT: d is tracked by the parent scope.
-  const d = math.scope(() => {
+  const d = math.tidy(() => {
     // CORRECT: e will get cleaned up when this inner scope ends.
     const e = dl.Scalar.new(3);
 
@@ -124,12 +124,12 @@ mechanism. This means when you are done with an NDArray that is GPU-resident,
 it must manually be disposed some time later. If you forget to manually call
 `ndarray.dispose()` when you are done with an NDArray, you will introduce
 a texture memory leak, which will cause serious performance issues.
-If you use `math.scope()`, any NDArrays created by `math.method()` and
+If you use `math.tidy()`, any NDArrays created by `math.method()` and
 any other method that returns the result through a scope will automatically
 get cleaned up.
 
 
-> If you want to do manual memory management and not use math.scope(), you can.
+> If you want to do manual memory management and not use math.tidy(), you can.
 This is not recommended, but is useful for `NDArrayMathCPU` since CPU-resident
 memory will get cleaned up automatically by the JavaScript garbage collector.
 

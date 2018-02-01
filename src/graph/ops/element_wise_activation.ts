@@ -36,7 +36,7 @@ export class ElementWiseActivation extends Operation {
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x = inferenceArrays.get(this.xTensor);
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       inferenceArrays.set(this.yTensor, keep(this.func.output(math, x)));
     });
   }
@@ -50,7 +50,7 @@ export class ElementWiseActivation extends Operation {
     const y = inferenceArrays.get(this.yTensor);
     const dy = gradientArrays.get(this.yTensor);
 
-    math.scope(() => {
+    math.tidy(() => {
       const dydx = this.func.der(math, x, y);
       gradientArrays.add(this.xTensor, math.elementWiseMul(dy, dydx));
       dydx.dispose();
@@ -128,7 +128,7 @@ export class PReLU extends Operation {
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x = inferenceArrays.get(this.xTensor);
     const alpha = inferenceArrays.get(this.alphaTensor);
-      math.scope((keep) => {
+      math.tidy((keep) => {
       inferenceArrays.set(this.yTensor, keep(math.prelu(x, alpha)));
     });
   }

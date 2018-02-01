@@ -76,7 +76,7 @@ export const learnXOR = async () => {
   /**
    * Train the model
    */
-  await math.scope(async () => {
+  await math.tidy(async () => {
     for (let i = 0; i < iterations; i += 1) {
       cost = session.train(
           costTensor, feedEntries, 4, optimizer, CostReduction.MEAN);

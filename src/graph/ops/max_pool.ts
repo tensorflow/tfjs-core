@@ -51,7 +51,7 @@ export class MaxPool extends Operation {
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x = inferenceArrays.get(this.xTensor) as Array3D;
-    math.scope((keep) => {
+    math.tidy((keep) => {
       inferenceArrays.set(
           this.yTensor,
           keep(math.maxPool(x, this.fieldSize, this.stride, this.pad)));
@@ -64,7 +64,7 @@ export class MaxPool extends Operation {
     const x = inferenceArrays.get(this.xTensor) as Array3D;
     const dy = gradientArrays.get(this.yTensor) as Array3D;
 
-    math.scope(() => {
+    math.tidy(() => {
       gradientArrays.add(
           this.xTensor,
           math.maxPoolBackprop(dy, x, this.fieldSize, this.stride, this.pad));

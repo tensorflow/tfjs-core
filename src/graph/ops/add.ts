@@ -52,7 +52,7 @@ export class Add extends Operation {
     const x1 = inferenceArrays.get(this.x1Tensor) as Scalar;
     const x2 = inferenceArrays.get(this.x2Tensor) as Scalar;
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       let result: NDArray;
       if (util.isScalarShape(x1.shape)) {
         result = math.scalarPlusArray(x1, x2);
@@ -70,7 +70,7 @@ export class Add extends Operation {
       gradientArrays: SummedTensorArrayMap) {
     const dy = gradientArrays.get(this.yTensor);
 
-    math.scope(() => {
+    math.tidy(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         if (this.x1Tensor.shape.length === 1 &&
             this.x2Tensor.shape.length === 2 &&

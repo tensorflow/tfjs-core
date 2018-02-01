@@ -63,7 +63,7 @@ export class SqueezeNet implements Model {
    */
   predictWithActivation(input: Array3D, activationName?: ActivationName):
       {logits: Array1D, activation: Array3D} {
-    const [logits, activation] = this.math.scope(() => {
+    const [logits, activation] = this.math.tidy(() => {
       let activation: Array3D;
       // Preprocess the input.
       const preprocessedInput =
@@ -172,7 +172,7 @@ export class SqueezeNet implements Model {
    */
   async getTopKClasses(logits: Array1D, topK: number):
       Promise<{[className: string]: number}> {
-    const predictions = this.math.scope(() => {
+    const predictions = this.math.tidy(() => {
       return this.math.softmax(logits).asType('float32');
     });
     const topk = model_util.topK(await predictions.data(), topK);

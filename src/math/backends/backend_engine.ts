@@ -28,7 +28,7 @@ import {Profiler} from './profiler';
 import {KernelNode, Tape, TapeNode, TapeNodeInputGradientArrays} from './tape_types';
 import * as tape_util from './tape_util';
 import {ScopeResultImmediate} from './tape_util';
-import {scope} from './tracking';
+import {tidy} from './tracking';
 
 interface ScopeState {
   keep: NDArray[];
@@ -115,7 +115,7 @@ export class BackendEngine implements NDArrayManager {
         throw new Error(
             'You are using math in safe mode. Enclose all ' +
             'math.method() calls inside a scope: ' +
-            'math.scope(() => {math.method();...}) to avoid memory ' +
+            'math.tidy(() => {math.method();...}) to avoid memory ' +
             'leaks.');
       }
     }
@@ -276,7 +276,7 @@ export class BackendEngine implements NDArrayManager {
   gradients(f: () => Scalar, xs: NDArray[], returnValue: boolean): NDArray[]|
       {value: Scalar, gradients: NDArray[]} {
     const gradientsMode = true;
-    const result = scope('gradients', () => {
+    const result = tidy('gradients', () => {
       const y = f();
       if (y.rank !== 0) {
         throw new Error(

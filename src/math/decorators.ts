@@ -27,7 +27,7 @@ export function operation(
   const fn = descriptor.value;
   // tslint:disable-next-line:no-any
   descriptor.value = (...args: any[]) => {
-    return ENV.math.scope(name, () => fn(...args));
+    return ENV.math.tidy(name, () => fn(...args));
   };
   return descriptor;
 }

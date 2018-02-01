@@ -112,7 +112,7 @@ export abstract class Optimizer {
       math: NDArrayMath, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
-    math.scope((keep) => {
+    math.tidy((keep) => {
       this.variableNodes.forEach(node => {
         const gradient = gradientArrayMap.get(node.output);
         const accumulatedGradient = this.variableGradients.get(node.output);

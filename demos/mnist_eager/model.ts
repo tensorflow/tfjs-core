@@ -41,7 +41,7 @@ export async function train(data: MnistData, log: (message: string) => void) {
 
 // Predict the digit number from a batch of input images.
 export function predict(x: dl.Array2D): number[] {
-  const pred = math.scope(() => {
+  const pred = math.tidy(() => {
     const axis = 1;
     return model(x).argMax(axis);
   });

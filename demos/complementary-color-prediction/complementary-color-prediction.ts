@@ -98,7 +98,7 @@ class ComplementaryColorModel {
 
     // Train 1 batch.
     let costValue = -1;
-    this.math.scope(() => {
+    this.math.tidy(() => {
       const cost = this.session.train(
           this.costTensor, this.feedEntries, this.batchSize, this.optimizer,
           shouldFetchCost ? dl.CostReduction.MEAN : dl.CostReduction.NONE);
@@ -125,7 +125,7 @@ class ComplementaryColorModel {
 
   predict(rgbColor: number[]): number[] {
     let complementColor: number[] = [];
-    this.math.scope(() => {
+    this.math.tidy(() => {
       const mapping = [{
         tensor: this.inputTensor,
         data: dl.Array1D.new(this.normalizeColor(rgbColor)),

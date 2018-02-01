@@ -165,7 +165,7 @@ export class GraphRunner {
     const costReduction =
         shouldComputeCost ? CostReduction.MEAN : CostReduction.NONE;
 
-    this.math.scope((keep) => {
+    this.math.tidy((keep) => {
       const avgCost = this.session.train(
           this.costTensor, this.trainFeedEntries, this.batchSize,
           this.optimizer, costReduction);
@@ -248,7 +248,7 @@ export class GraphRunner {
       return;
     }
 
-    this.math.scope(keep => {
+    this.math.tidy(keep => {
       const feeds: FeedEntry[][] = [];
       const inferenceValues: NDArray[] = [];
 
@@ -306,7 +306,7 @@ export class GraphRunner {
 
     let metric = this.zeroScalar;
 
-    return this.math.scope((keep) => {
+    return this.math.tidy((keep) => {
       for (let i = 0; i < this.metricBatchSize; i++) {
         const metricValue =
             this.session.eval(this.metricTensor, this.metricFeedEntries) as

@@ -115,7 +115,7 @@ export class CPPN {
     this.z1Counter += 1 / this.z1Scale;
     this.z2Counter += 1 / this.z2Scale;
 
-    const lastOutput = math.scope(() => {
+    const lastOutput = math.tidy(() => {
       const z1 = dl.Scalar.new(Math.sin(this.z1Counter));
       const z2 = dl.Scalar.new(Math.cos(this.z2Counter));
       const z1Mat = z1.mul(this.ones) as dl.Array2D;

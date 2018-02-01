@@ -66,7 +66,7 @@ export class Convolution2D extends Operation {
     const biases = inferenceArrays.get(this.bTensor) as Array1D;
     const x = inferenceArrays.get(this.xTensor) as Array3D;
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       inferenceArrays.set(
           this.yTensor,
           keep(math.conv2d(x, weights, biases, this.stride, this.zeroPad)));
@@ -80,7 +80,7 @@ export class Convolution2D extends Operation {
     const x = inferenceArrays.get(this.xTensor) as Array3D;
     const dy = gradientArrays.get(this.yTensor) as Array3D;
 
-    math.scope(() => {
+    math.tidy(() => {
       const dw =
           math.conv2dDerFilter(x, dy, filter.shape, this.stride, this.zeroPad);
       const db = math.conv2dDerBias(dy);

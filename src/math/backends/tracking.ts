@@ -25,39 +25,37 @@ import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
  * the function.
  *
  * When in safe mode, you must enclose all `NDArray` creation and math ops
- * inside a `math.scope()` to prevent memory leaks.
+ * inside a `math.tidy()` to prevent memory leaks.
  *
- * @param nameOrScopeFn The name of the scope, or the function to execute.
+ * @param nameOrFn The name of the closure, or the function to execute.
  *     If a name is provided, the 2nd argument should be the function.
  *     If a name is provided, and debug mode is on, the timing and the memory
  *     usage of the function will be tracked and displayed on the console
  *     using the provided name.
- * @param scopeFn The function to execute.
+ * @param fn The function to execute.
  * @param gradientsMode If true, enables gradients mode.
  *     See math.gradientsScope for details.
  */
-export function scope<T extends ScopeResult>(
-    nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>,
-    gradientsMode = false): T {
-  if (scopeFn == null) {
+export function tidy<T extends ScopeResult>(
+    nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradientsMode = false): T {
+  if (fn == null) {
     // Called with only 1 argument.
-    if (typeof nameOrScopeFn !== 'function') {
-      throw new Error('Please provide a function to math.scope()');
+    if (typeof nameOrFn !== 'function') {
+      throw new Error('Please provide a function to math.tidy()');
     }
-    scopeFn = nameOrScopeFn;
-    nameOrScopeFn = 'scope';
+    fn = nameOrFn;
+    nameOrFn = '';
   } else {
     // Called with 2 arguments.
-    if (typeof nameOrScopeFn !== 'string' &&
-        !(nameOrScopeFn instanceof String)) {
+    if (typeof nameOrFn !== 'string' && !(nameOrFn instanceof String)) {
       throw new Error(
           'When calling with two arguments, the first argument ' +
-          'to math.scope() must be a string');
+          'to math.tidy() must be a string');
     }
-    if (typeof scopeFn !== 'function') {
+    if (typeof fn !== 'function') {
       throw new Error(
           'When calling with two arguments, the 2nd argument ' +
-          'to math.scope() must be a function');
+          'to math.tidy() must be a function');
     }
     // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
   }
@@ -67,7 +65,7 @@ export function scope<T extends ScopeResult>(
   // TODO(smilkov): trackFn is a no-op since we have global tracking.
   // Remove when we break backward compatibility.
   const trackFn = <T extends NDArray>(ndarray: T): T => ndarray;
-  const result = scopeFn(keepFn, trackFn);
+  const result = fn(keepFn, trackFn);
 
   if (result instanceof Promise) {
     result.then(r => ENV.engine.endScope(r, gradientsMode));
@@ -86,10 +84,8 @@ export function keep<T extends NDArray>(result: T): T {
   if (ENV.engine.noUserScopes()) {
     if (ENV.engine.safeMode) {
       throw new Error(
-          'You are using math in safe mode. Enclose all ' +
-          'math.method() calls inside a scope: ' +
-          'math.scope(() => {math.method();...}) to avoid memory ' +
-          'leaks.');
+          'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +
+          'dl.tidy(() => {...}) to avoid memory leaks.');
     }
   }
   ENV.engine.keep(result);

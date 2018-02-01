@@ -31,7 +31,7 @@ export class Softmax extends Operation {
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const logits = inferenceArrays.get(this.logitsTensor) as Array1D;
-    return math.scope((keep) => {
+    return math.tidy((keep) => {
       inferenceArrays.set(this.output, keep(math.softmax(logits)));
     });
   }
@@ -42,7 +42,7 @@ export class Softmax extends Operation {
     // grad_x = grad_softmax * softmax - sum(grad_softmax * softmax) * softmax
     const y = inferenceArrays.get(this.output);
     const dy = gradientArrays.get(this.output);
-    math.scope(() => {
+    math.tidy(() => {
       if (graph_util.shouldBackProp(this.logitsTensor)) {
         const dlogits = math.elementWiseMul(
             math.subtract(dy, math.sum(math.elementWiseMul(dy, y))), y);
@@ -65,7 +65,7 @@ export class SoftmaxCrossEntropyCost extends Operation {
     const logits = inferenceArrays.get(this.logitsTensor) as Array1D;
     const label = inferenceArrays.get(this.labelTensor) as Array1D;
 
-    math.scope((keep) => {
+    math.tidy((keep) => {
       const softmaxResult = math.softmax(logits);
 
       inferenceArrays.set(this.softmaxTensor, keep(softmaxResult));
@@ -81,7 +81,7 @@ export class SoftmaxCrossEntropyCost extends Operation {
     const softmax = inferenceArrays.get(this.softmaxTensor);
     const label = inferenceArrays.get(this.labelTensor);
 
-    math.scope(() => {
+    math.tidy(() => {
       gradientArrays.add(this.logitsTensor, math.subtract(softmax, label));
     });
   }
@@ -105,7 +105,7 @@ export function crossEntropyCost(
   util.assert(
       y.size === target.size, 'The output and target must be the same size');
 
-  return math.scope(() => {
+  return math.tidy(() => {
     const yPlusEps = math.scalarPlusArray(epsilon, y);
     const logOutput = math.log(yPlusEps);
     const tarLogOutput = math.elementWiseMul(target, logOutput);
