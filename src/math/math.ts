@@ -20,7 +20,8 @@ import * as util from '../util';
 import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
 // tslint:disable-next-line:max-line-length
-import {customGradient, fromPixels, gradients, gradientsScope, keep, scope, valueAndGradients, variableGradients, vjp} from './backends/gradients';
+import {customGradient, gradients, gradientsScope, valueAndGradients, variableGradients, vjp} from './backends/gradients';
+import {keep, scope} from './backends/tracking';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
 import * as compare from './compare';
@@ -203,7 +204,6 @@ export class NDArrayMath {
 
   gradients = gradients;
   valueAndGradients = valueAndGradients;
-  fromPixels = fromPixels;
   gradientsScope = gradientsScope;
 
   register: typeof ENV.engine.register;

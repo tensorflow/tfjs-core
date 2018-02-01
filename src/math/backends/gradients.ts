@@ -17,12 +17,11 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {Array3D, NDArray, Scalar, Variable} from '../ndarray';
+import {NDArray, Scalar, Variable} from '../ndarray';
 import {NamedArrayMap, Rank} from '../types';
-
-import {TapeNode, TapeNodeInputGradientArrays} from './tape_types';
-import * as tape_util from './tape_util';
-import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
+import {TapeNodeInputGradientArrays} from './tape_types';
+import {ScopeFn, ScopeResult} from './tape_util';
+import {scope} from './tracking';
 
 /**
  * Create a new gradients scope. Similar to scope, but forces all inner scopes
@@ -39,16 +38,6 @@ export function gradientsScope<T extends ScopeResult>(
     nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
   const gradientsMode = true;
   return scope(nameOrScopeFn, scopeFn, gradientsMode);
-}
-
-export function time(f: () => void): Promise<number> {
-  return ENV.engine.time(f);
-}
-
-export function fromPixels(
-    pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-    numChannels: number): Array3D {
-  return ENV.backend.fromPixels(pixels, numChannels);
 }
 
 /**
@@ -74,7 +63,7 @@ export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
           `Cannot compute vector jacobian product, ` +
           `y shape (${y.shape}) does not match dy shape (${dy.shape}).`);
     }
-    return this.gradientWrt(y, xs, dy);
+    return ENV.engine.gradientWrt(y, xs, dy);
   }, gradientsMode);
 
   if (x instanceof NDArray) {
@@ -99,7 +88,7 @@ export function gradients<T extends NDArray|NamedArrayMap>(
   const xs = util.flattenNameArrayMap(x, keys);
 
   const returnValue = false;
-  const gradients = this.gradientsInternal(f, xs, returnValue) as NDArray[];
+  const gradients = ENV.engine.gradients(f, xs, returnValue) as NDArray[];
 
   if (x instanceof NDArray) {
     return gradients[0] as T;
@@ -121,9 +110,9 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
   if (varList == null) {
     // Get all of the trainable variables.
     varList = [];
-    const varNames = Object.keys(this.registeredVariables);
+    const varNames = Object.keys(ENV.engine.registeredVariables);
     for (let i = 0; i < varNames.length; i++) {
-      const variable = this.registeredVariables[varNames[i]];
+      const variable = ENV.engine.registeredVariables[varNames[i]];
       if (variable.trainable) {
         varList.push(variable);
       }
@@ -135,7 +124,7 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
 
   const gradientsMode = true;
   let variableNames: string[];
-  const result = this.scope('gradients', () => {
+  const result = scope('gradients', () => {
     const y = f();
     if (y.rank !== 0) {
       throw new Error(
@@ -143,12 +132,12 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
           `Got y with rank ${y.rank} and shape ${y.shape}.`);
     }
 
-    const inputVariables =
-        tape_util.computeVariableInputs(this.activeTape, varList);
+    const inputVariables = ENV.engine.computeVariableInputs(varList);
     variableNames = inputVariables.map(variable => variable.name);
 
-    const gradients =
-        inputVariables.length === 0 ? [] : this.gradientWrt(y, inputVariables);
+    const gradients = inputVariables.length === 0 ?
+        [] :
+        ENV.engine.gradientWrt(y, inputVariables);
     return [y, ...gradients];
   }, gradientsMode);
 
@@ -176,7 +165,7 @@ export function valueAndGradients<T extends NDArray|NamedArrayMap>(
   const xs = util.flattenNameArrayMap(x, keys);
 
   const returnValue = true;
-  const valueAndGradients = this.gradientsInternal(f, xs, returnValue) as
+  const valueAndGradients = ENV.engine.gradients(f, xs, returnValue) as
       {value: Scalar, gradients: NDArray[]};
 
   let gradients: T;
@@ -207,160 +196,21 @@ export function customGradient<R extends Rank, T extends NDArray<R>>(
     },
     inputs: NamedArrayMap): T {
   name = name || '';
-  this.customGradientDepth++;
+  ENV.engine.startCustomGradient();
 
   let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
   const gradientsMode = true;
-  const result = this.scope('customGradient', () => {
+  const result = scope('customGradient', () => {
     const {value, gradients} = f();
     gradientsFunc = gradients;
     return value;
   }, gradientsMode);
 
-  this.customGradientDepth--;
+  ENV.engine.endCustomGradient();
 
-  if (this.activeTape != null && this.customGradientDepth === 0) {
-    const evaluatedNode: TapeNode<NDArray<R>> = {
-      id: this.nextTapeNodeId++,
-      type: 'customGradient',
-      name,
-      inputAndArgs: {inputs},
-      output: result,
-      gradient: gradientsFunc
-    };
-
-    this.activeTape.push(evaluatedNode);
+  if (ENV.engine.shouldRecord()) {
+    ENV.engine.addTapeNode(inputs, result, gradientsFunc);
   }
 
-  return result;
-}
-
-function gradientsInternal(
-    f: () => Scalar, xs: NDArray[], returnValue: boolean): NDArray[]|
-    {value: Scalar, gradients: NDArray[]} {
-  const gradientsMode = true;
-  const result = this.scope('gradients', () => {
-    const y = f();
-    if (y.rank !== 0) {
-      throw new Error(
-          `Cannot compute gradient of non-scalar y output of f(). ` +
-          `Got y with rank ${y.rank} and shape ${y.shape}.`);
-    }
-    const gradients = this.gradientWrt(y, xs);
-    if (returnValue) {
-      return [y, ...gradients];
-    } else {
-      return gradients;
-    }
-  }, gradientsMode);
-
-  if (returnValue) {
-    return {value: result[0] as Scalar, gradients: result.slice(1)};
-  } else {
-    return result;
-  }
-}
-
-function gradientWrt<R extends Rank, T extends NDArray<R>>(
-    y: T, xs: NDArray[], dy?: T): NDArray[] {
-  // Filter out the nodes that don't connect x => y.
-  const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
-  if (filteredTape.length === 0) {
-    throw new Error(
-        `Cannot compute gradient: y is not a function of xs.` +
-        `Make sure the xs you are computing gradients with respect ` +
-        `to are used inside the gradient function.`);
-  }
-
-  const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-  arrayAccumulatedGradientMap[y.id] =
-      dy == null ? Scalar.new(1, 'float32') : dy;
-
-  // Backprop gradients through the filtered nodes.
-  tape_util.backpropagateGradients(arrayAccumulatedGradientMap, filteredTape);
-
-  const gradients = xs.map(x => arrayAccumulatedGradientMap[x.id]);
-  gradients.forEach((grad, i) => {
-    if (grad == null) {
-      throw new Error(`Gradient error: y was not a function of xs[${i}]`);
-    }
-  });
-  return gradients;
-}
-
-/**
- * Executes the provided function and after it is executed, cleans up all
- * intermediate NDArrays allocated by the function except those returned by
- * the function.
- *
- * When in safe mode, you must enclose all `NDArray` creation and math ops
- * inside a `math.scope()` to prevent memory leaks.
- *
- * @param nameOrScopeFn The name of the scope, or the function to execute.
- *     If a name is provided, the 2nd argument should be the function.
- *     If a name is provided, and debug mode is on, the timing and the memory
- *     usage of the function will be tracked and displayed on the console
- *     using the provided name.
- * @param scopeFn The function to execute.
- * @param gradientsMode If true, enables gradients mode.
- *     See math.gradientsScope for details.
- */
-export function scope<T extends ScopeResult>(
-    nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>,
-    gradientsMode = false): T {
-  if (scopeFn == null) {
-    // Called with only 1 argument.
-    if (typeof nameOrScopeFn !== 'function') {
-      throw new Error('Please provide a function to math.scope()');
-    }
-    scopeFn = nameOrScopeFn;
-    nameOrScopeFn = 'scope';
-  } else {
-    // Called with 2 arguments.
-    if (typeof nameOrScopeFn !== 'string' &&
-        !(nameOrScopeFn instanceof String)) {
-      throw new Error(
-          'When calling with two arguments, the first argument ' +
-          'to math.scope() must be a string');
-    }
-    if (typeof scopeFn !== 'function') {
-      throw new Error(
-          'When calling with two arguments, the 2nd argument ' +
-          'to math.scope() must be a function');
-    }
-    // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
-  }
-  ENV.engine.startScope(gradientsMode);
-
-  const keepFn = <T extends NDArray>(ndarray: T): T => keep(ndarray);
-  // TODO(smilkov): trackFn is a no-op since we have global tracking.
-  // Remove when we break backward compatibility.
-  const trackFn = <T extends NDArray>(ndarray: T): T => ndarray;
-  const result = scopeFn(keepFn, trackFn);
-
-  if (result instanceof Promise) {
-    result.then(r => ENV.engine.endScope(r, gradientsMode));
-    return result;
-  } else {
-    this.endScope(result as ScopeResultImmediate, gradientsMode);
-    return result;
-  }
-}
-
-/**
- * Keeps an NDArray in the current scope from being disposed automatically.
- * @param result The NDArray to keep from being disposed.
- */
-export function keep<T extends NDArray>(result: T): T {
-  if (this.scopeStack.length === 1) {
-    if (this.safeMode) {
-      throw new Error(
-          'You are using math in safe mode. Enclose all ' +
-          'math.method() calls inside a scope: ' +
-          'math.scope(() => {math.method();...}) to avoid memory ' +
-          'leaks.');
-    }
-  }
-  ENV.engine.activeScope.keep.push(result);
   return result;
 }

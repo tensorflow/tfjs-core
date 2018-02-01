@@ -17,16 +17,19 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {NDArray, Variable} from '../ndarray';
-import {NamedVariableMap, TypedArray} from '../types';
+import {NDArray, Scalar, Variable} from '../ndarray';
+import {NamedArrayMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
+
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
 import {Profiler} from './profiler';
-import {KernelNode, Tape} from './tape_types';
+// tslint:disable-next-line:max-line-length
+import {KernelNode, Tape, TapeNode, TapeNodeInputGradientArrays} from './tape_types';
 import * as tape_util from './tape_util';
 import {ScopeResultImmediate} from './tape_util';
+import {scope} from './tracking';
 
 interface ScopeState {
   keep: NDArray[];
@@ -45,8 +48,7 @@ export class BackendEngine implements NDArrayManager {
   private nextTapeNodeId = 0;
 
   private activeTape: Tape;
-  gradientScopeCount = 0;
-
+  private gradientScopeCount = 0;
   private customGradientDepth = 0;
 
   // Keep NDArrays that parallel the tapes.
@@ -59,7 +61,7 @@ export class BackendEngine implements NDArrayManager {
 
   constructor(
       private backend: MathBackend, private customBackend: boolean,
-      private safeMode: boolean) {
+      public safeMode: boolean) {
     // Create a default outer scope.
     this.activeScope = {keep: [], track: []};
     this.scopeStack = [this.activeScope];
@@ -141,6 +143,45 @@ export class BackendEngine implements NDArrayManager {
     if (!(a instanceof Variable)) {
       this.track(a);
     }
+  }
+
+  startCustomGradient() {
+    this.customGradientDepth++;
+  }
+
+  endCustomGradient() {
+    this.customGradientDepth--;
+  }
+
+  shouldRecord(): boolean {
+    return this.activeTape != null && this.customGradientDepth === 0;
+  }
+
+  addTapeNode(
+      inputs: NamedArrayMap, result: NDArray,
+      gradientsFunc: (dy: NDArray, y: NDArray) => TapeNodeInputGradientArrays):
+      void {
+    const evaluatedNode: TapeNode<NDArray> = {
+      id: this.nextTapeNodeId++,
+      type: 'customGradient',
+      name,
+      inputAndArgs: {inputs},
+      output: result,
+      gradient: gradientsFunc
+    };
+    this.activeTape.push(evaluatedNode);
+  }
+
+  noUserScopes(): boolean {
+    return ENV.engine.scopeStack.length === 1;
+  }
+
+  keep(result: NDArray): void {
+    ENV.engine.activeScope.keep.push(result);
+  }
+
+  computeVariableInputs(varList: Variable[]) {
+    return tape_util.computeVariableInputs(ENV.engine.activeTape, varList);
   }
 
   /**
@@ -231,6 +272,59 @@ export class BackendEngine implements NDArrayManager {
     // TODO(nsthorat): Construct an error and save the stack trace for
     // debugging when in debug mode. Creating a stack trace is too expensive
     // to do unconditionally.
+  }
+
+  gradients(f: () => Scalar, xs: NDArray[], returnValue: boolean): NDArray[]|
+      {value: Scalar, gradients: NDArray[]} {
+    const gradientsMode = true;
+    const result = scope('gradients', () => {
+      const y = f();
+      if (y.rank !== 0) {
+        throw new Error(
+            `Cannot compute gradient of non-scalar y output of f(). ` +
+            `Got y with rank ${y.rank} and shape ${y.shape}.`);
+      }
+      const gradients = this.gradientWrt(y, xs);
+      if (returnValue) {
+        return [y, ...gradients];
+      } else {
+        return gradients;
+      }
+    }, gradientsMode);
+
+    if (returnValue) {
+      return {value: result[0] as Scalar, gradients: result.slice(1)};
+    } else {
+      return result;
+    }
+  }
+
+  gradientWrt<R extends Rank, T extends NDArray<R>>(
+      y: T, xs: NDArray[], dy?: T): NDArray[] {
+    // Filter out the nodes that don't connect x => y.
+    const filteredTape =
+        tape_util.getFilteredNodesXToY(ENV.engine.activeTape, xs, y);
+    if (filteredTape.length === 0) {
+      throw new Error(
+          `Cannot compute gradient: y is not a function of xs.` +
+          `Make sure the xs you are computing gradients with respect ` +
+          `to are used inside the gradient function.`);
+    }
+
+    const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
+    arrayAccumulatedGradientMap[y.id] =
+        dy == null ? Scalar.new(1, 'float32') : dy;
+
+    // Backprop gradients through the filtered nodes.
+    tape_util.backpropagateGradients(arrayAccumulatedGradientMap, filteredTape);
+
+    const gradients = xs.map(x => arrayAccumulatedGradientMap[x.id]);
+    gradients.forEach((grad, i) => {
+      if (grad == null) {
+        throw new Error(`Gradient error: y was not a function of xs[${i}]`);
+      }
+    });
+    return gradients;
   }
 
   write(dataId: number, values: TypedArray): void {

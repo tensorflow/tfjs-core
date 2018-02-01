@@ -70,3 +70,5 @@ export {
 };
 
 export * from './math/ops';
+export * from './math/backends/tracking';
+export * from './math/backends/gradients';

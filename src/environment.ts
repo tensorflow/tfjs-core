@@ -343,7 +343,7 @@ export class Environment {
     }
   }
 
-  private backend: MathBackend;
+  backend: MathBackend;
 
   get math(): NDArrayMath {
     if (this.globalMath == null) {
