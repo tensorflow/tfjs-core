@@ -1295,7 +1295,7 @@ const testsRange: MathTests = it => {
 
   it('range zero step', () => {
     expect(() => dl.range(2, 10, 0))
-        .toThrow(new Error('Cannot have a step of zero'));
+        .toThrow();
   });
 
   it('range default dtype', () => {
