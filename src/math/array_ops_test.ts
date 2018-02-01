@@ -1190,13 +1190,72 @@ const testsClone: MathTests = it => {
 
 const testsLinspace: MathTests = it => {
   it('linspace start stop', () => {
-    const a = dl.linspace(0, 10, 10);
+    const a = dl.linspace(1, 10, 10);
     test_util.expectArraysEqual(a, [1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]);
     expect(a.shape).toEqual([10]);
 
-    // const b = dl.range(3, 8);
-    // test_util.expectArraysEqual(b, [3, 4, 5, 6, 7]);
-    // expect(b.shape).toEqual([5]);
+    const b = dl.linspace(1, 10, 10, false);
+    test_util.expectArraysClose(
+        b, [1., 1.9, 2.8, 3.7, 4.6, 5.5, 6.4, 7.3, 8.2, 9.1]);
+    expect(b.shape).toEqual([10]);
+
+    const c = dl.linspace(12, 17, 8);
+    test_util.expectArraysClose(c, [
+      12., 12.71428571, 13.42857143, 14.14285714, 14.85714286, 15.57142857,
+      16.28571429, 17.
+    ]);
+    expect(c.shape).toEqual([8]);
+
+    const d = dl.linspace(0, 9, 5, false);
+    test_util.expectArraysClose(d, [0., 1.8, 3.6, 5.4, 7.2]);
+    expect(d.shape).toEqual([5]);
+
+    const e = dl.linspace(9, 0, 6);
+    test_util.expectArraysClose(e, [9., 7.2, 5.4, 3.6, 1.8, 0.]);
+    expect(e.shape).toEqual([6]);
+  });
+
+  it('linspace negative start stop', () => {
+    const a = dl.linspace(-4, 5, 6);
+    test_util.expectArraysClose(a, [-4., -2.2, -0.4, 1.4, 3.2, 5.]);
+    expect(a.shape).toEqual([6]);
+
+    const b = dl.linspace(-4, 5, 6, false);
+    test_util.expectArraysClose(b, [-4., -2.5, -1., 0.5, 2., 3.5]);
+    expect(b.shape).toEqual([6]);
+  });
+
+  it('linspace start negative stop', () => {
+    const a = dl.linspace(4, -5, 6);
+    test_util.expectArraysClose(a, [4., 2.2, 0.4, -1.4, -3.2, -5.]);
+    expect(a.shape).toEqual([6]);
+
+    const b = dl.linspace(4, -5, 6, false);
+    test_util.expectArraysClose(b, [4., 2.5, 1., -0.5, -2., -3.5]);
+    expect(b.shape).toEqual([6]);
+  });
+
+  it('linspace negative start negative stop', () => {
+    const a = dl.linspace(-4, -5, 6);
+    test_util.expectArraysClose(a, [-4., -4.2, -4.4, -4.6, -4.8, -5.]);
+    expect(a.shape).toEqual([6]);
+
+    const b = dl.linspace(-4, -5, 6, false);
+    test_util.expectArraysClose(
+        b, [-4., -4.16666667, -4.33333333, -4.5, -4.66666667, -4.83333333]);
+    expect(b.shape).toEqual([6]);
+
+    const c = dl.linspace(-9, -4, 5);
+    test_util.expectArraysClose(c, [-9., -7.75, -6.5, -5.25, -4.]);
+    expect(c.shape).toEqual([5]);
+
+    const d = dl.linspace(-9, -4, 5, false);
+    test_util.expectArraysClose(d, [-9., -8., -7., -6., -5.]);
+    expect(d.shape).toEqual([5]);
+  });
+
+  it('linspace should throw with no samples', () => {
+    expect(() => dl.linspace(2, 10, 0)).toThrow();
   });
 };
 

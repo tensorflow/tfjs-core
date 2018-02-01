@@ -301,39 +301,24 @@ export class Ops {
   }
 
   /**
-   * Return an evenly spaced sequence of numbers over the given interval as an
-   * Array1D.
+   * Return an evenly spaced sequence of numbers over the given interval.
    *
-   * The stop value can be optionally excluded by passing setting endpoint to
-   * true. [TK explain what happens in this case]
+   * The stop value can be optionally excluded by passing setting [endpoint] to
+   * true.
    *
-   *
-   * @param start the start value of the sequence
-   * @param stop the end value of the sequence
-   * @param num the number of values to generate
-   * @param endpoint optional, determines whether stop is included in the
+   * @param start The start value of the sequence
+   * @param stop The end value of the sequence
+   * @param num The number of values to generate
+   * @param endpoint Optional, determines whether stop is included in the
    * sequence. Defaults to true.
    */
+  @operation
   static linspace(start: number, stop: number, num: number, endpoint = true) {
     if (num === 0) {
       throw new Error('Cannot request zero samples');
     }
 
-    // const sameStartStop = start === stop;
-    // const increasingRangeNegativeStep = start < stop && step < 0;
-    // const decreasingRangePositiveStep = stop < start && step > 1;
-
-    // if (sameStartStop || increasingRangeNegativeStep ||
-    //     decreasingRangePositiveStep) {
-    //   return Array1D.new(makeZerosTypedArray(0, dtype), dtype);
-    // }
-
-    let step: number;
-    if (endpoint) {
-      step = Math.abs(Math.ceil((stop - start) / (num - 1)));
-    } else {
-      step = Math.abs(Math.ceil((stop - start) / (num)));
-    }
+    const step = endpoint ? (stop - start) / (num - 1) : (stop - start) / (num);
 
     const values = makeZerosTypedArray(num, 'float32');
     values[0] = start;
