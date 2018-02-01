@@ -20,7 +20,6 @@ import * as util from '../../util';
 import {NDArray, Scalar, Variable} from '../ndarray';
 import {NamedArrayMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
-
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
