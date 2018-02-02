@@ -19,7 +19,7 @@ import {ENV} from '../../environment';
 import * as util from '../../util';
 import {NDArray, Scalar, Variable} from '../ndarray';
 import {NamedArrayMap, Rank} from '../types';
-import {TapeNodeInputGradientArrays} from './tape_types';
+import {CustomGradientFunc} from './backend_engine';
 import {ScopeFn, ScopeResult} from './tape_util';
 import {tidy} from './tracking';
 
@@ -189,28 +189,8 @@ export function valueAndGradients<T extends NDArray|NamedArrayMap>(
  * @param name An optional name for the customGradient method. Used for
  *    debugging.
  */
-export function customGradient<R extends Rank, T extends NDArray<R>>(
-    name: string, f: () => {
-      value: T,
-      gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
-    },
-    inputs: NamedArrayMap): T {
+export function customGradient<T extends NDArray>(
+    name: string, f: CustomGradientFunc<T>, inputs: NamedArrayMap): T {
   name = name || '';
-  ENV.engine.startCustomGradient();
-
-  let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
-  const gradientsMode = true;
-  const result = tidy('customGradient', () => {
-    const {value, gradients} = f();
-    gradientsFunc = gradients;
-    return value;
-  }, gradientsMode);
-
-  ENV.engine.endCustomGradient();
-
-  if (ENV.engine.shouldRecord()) {
-    ENV.engine.addTapeNode(inputs, result, gradientsFunc);
-  }
-
-  return result;
+  return ENV.engine.customGradient(name, f, inputs);
 }

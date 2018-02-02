@@ -128,7 +128,7 @@ export class KNNImageClassifier implements Model {
       throw new Error('Cannot predict until vars have been loaded.');
     }
 
-    return this.math.tidy((keep) => {
+    return this.math.scope((keep) => {
       const logits = this.squeezeNet.predict(image);
       const imageLogits = this.normalizeVector(logits);
       const logitsSize = imageLogits.shape[0];

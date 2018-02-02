@@ -195,15 +195,15 @@ export class NDArrayMath {
   /** @deprecated Use dl.image.resizeBilinear() */
   resizeBilinear3D = image_ops.Ops.resizeBilinear;
 
-  // Engine ops.
+  // Tracking methods.
   keep = keep;
-  vjp = vjp;
 
-  variableGradients = variableGradients;
+  // Gradient methods.
   customGradient = customGradient;
-
   gradients = gradients;
   valueAndGradients = valueAndGradients;
+  variableGradients = variableGradients;
+  vjp = vjp;
 
   register: typeof ENV.engine.register;
   engine: typeof ENV.engine;

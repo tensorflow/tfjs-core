@@ -35,6 +35,10 @@ interface ScopeState {
   track: NDArray[];
 }
 
+export type CustomGradientFunc<T extends NDArray> = () => {
+  value: T, gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
+};
+
 export interface NDArrayManager {
   getNumArrays(): number;
   register(a: NDArray): void;
@@ -124,19 +128,11 @@ export class BackendEngine implements NDArrayManager {
     }
   }
 
-  startCustomGradient() {
-    this.customGradientDepth++;
-  }
-
-  endCustomGradient() {
-    this.customGradientDepth--;
-  }
-
-  shouldRecord(): boolean {
+  private shouldRecord(): boolean {
     return this.activeTape != null && this.customGradientDepth === 0;
   }
 
-  addTapeNode(
+  private addTapeNode(
       inputs: NamedArrayMap, result: NDArray,
       gradientsFunc: (dy: NDArray, y: NDArray) => TapeNodeInputGradientArrays):
       void {
@@ -152,15 +148,15 @@ export class BackendEngine implements NDArrayManager {
   }
 
   noUserScopes(): boolean {
-    return ENV.engine.scopeStack.length === 1;
+    return this.scopeStack.length === 1;
   }
 
   keep(result: NDArray): void {
-    ENV.engine.activeScope.keep.push(result);
+    this.activeScope.keep.push(result);
   }
 
   computeVariableInputs(varList: Variable[]) {
-    return tape_util.computeVariableInputs(ENV.engine.activeTape, varList);
+    return tape_util.computeVariableInputs(this.activeTape, varList);
   }
 
   /**
@@ -213,7 +209,7 @@ export class BackendEngine implements NDArrayManager {
 
     this.scopeStack.pop();
     this.activeScope = this.scopeStack.length === 0 ?
-        null :
+        {keep: [], track: []} :
         this.scopeStack[this.scopeStack.length - 1];
 
     // Track the current result in the parent scope.
@@ -281,8 +277,7 @@ export class BackendEngine implements NDArrayManager {
   gradientWrt<R extends Rank, T extends NDArray<R>>(
       y: T, xs: NDArray[], dy?: T): NDArray[] {
     // Filter out the nodes that don't connect x => y.
-    const filteredTape =
-        tape_util.getFilteredNodesXToY(ENV.engine.activeTape, xs, y);
+    const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {
       throw new Error(
           `Cannot compute gradient: y is not a function of xs.` +
@@ -304,6 +299,26 @@ export class BackendEngine implements NDArrayManager {
       }
     });
     return gradients;
+  }
+  customGradient<T extends NDArray>(
+      name: string, f: CustomGradientFunc<T>, inputs: NamedArrayMap): T {
+    this.customGradientDepth++;
+
+    let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
+    const gradientsMode = true;
+    const result = tidy('customGradient', () => {
+      const {value, gradients} = f();
+      gradientsFunc = gradients;
+      return value;
+    }, gradientsMode);
+
+    this.customGradientDepth--;
+
+    if (this.shouldRecord()) {
+      this.addTapeNode(inputs, result, gradientsFunc);
+    }
+
+    return result;
   }
 
   write(dataId: number, values: TypedArray): void {
