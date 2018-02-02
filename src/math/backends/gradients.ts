@@ -20,7 +20,7 @@ import * as util from '../../util';
 import {NDArray, Scalar, Variable} from '../ndarray';
 import {NamedArrayMap, Rank} from '../types';
 import {TapeNodeInputGradientArrays} from './tape_types';
-import {TidyFn, TidyResult} from './tape_util';
+import {ScopeFn, ScopeResult} from './tape_util';
 import {tidy} from './tracking';
 
 /**
@@ -34,8 +34,8 @@ import {tidy} from './tracking';
  *     using the provided name.
  * @param scopeFn The function to execute.
  */
-export function gradientsScope<T extends TidyResult>(
-    nameOrScopeFn: string|TidyFn<T>, scopeFn?: TidyFn<T>): T {
+export function gradientsScope<T extends ScopeResult>(
+    nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
   const gradientsMode = true;
   return tidy(nameOrScopeFn, scopeFn, gradientsMode);
 }

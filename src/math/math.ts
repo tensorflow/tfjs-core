@@ -21,8 +21,8 @@ import * as util from '../util';
 import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
 // tslint:disable-next-line:max-line-length
-import {customGradient, gradients, gradientsScope, valueAndGradients, variableGradients, vjp} from './backends/gradients';
-import {TidyResult} from './backends/tape_util';
+import {customGradient, gradients, valueAndGradients, variableGradients, vjp} from './backends/gradients';
+import {ScopeResult} from './backends/tape_util';
 import {keep, tidy} from './backends/tracking';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
@@ -239,7 +239,7 @@ export class NDArrayMath {
   }
 
   /** @deprecated Use dl.tidy() */
-  scope<T extends TidyResult>(scopeFn?: ScopeFn<T>): T {
+  scope<T extends ScopeResult>(scopeFn?: ScopeFn<T>): T {
     const keepFn = <T extends NDArray>(ndarray: T): T => keep(ndarray);
     const trackFn = <T extends NDArray>(ndarray: T): T => ndarray;
     return tidy(() => scopeFn(keepFn, trackFn));
@@ -402,6 +402,6 @@ export class NDArrayMath {
   }
 }
 
-export type ScopeFn<T extends TidyResult> =
+export type ScopeFn<T extends ScopeResult> =
     (keep: <T1 extends NDArray>(ndarray: T1) => T1,
      track: <T2 extends NDArray>(ndarray: T2) => T2) => T;

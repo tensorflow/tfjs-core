@@ -236,12 +236,12 @@ export function computeVariableInputs(
   return trainableVariables;
 }
 
-export type TidyResultImmediate =
+export type ScopeResultImmediate =
     void|NDArray|RegularArray<NDArray>|{[key: string]: NDArray};
-export type TidyResult = TidyResultImmediate|Promise<TidyResultImmediate>;
-export type TidyFn<T extends TidyResult> = () => T;
+export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
+export type ScopeFn<T extends ScopeResult> = () => T;
 
-export function extractNDArraysFromScopeResult(result: TidyResultImmediate):
+export function extractNDArraysFromScopeResult(result: ScopeResultImmediate):
     NDArray[] {
   if (result == null) {
     return [];
