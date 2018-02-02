@@ -251,30 +251,25 @@ export class BackendEngine implements NDArrayManager {
       {value: T, gradients: NDArray[]} {
     return tidy('gradients', () => {
       const value = f();
-      const gradients = this.gradientWrt(value, xs, dy);
+      // Filter out the nodes that don't connect x => y.
+      const filteredTape =
+          tape_util.getFilteredNodesXToY(this.activeTape, xs, value);
+      if (filteredTape.length === 0 && xs.length > 0) {
+        throw new Error(
+            `Cannot compute gradient: y is not a function of xs.` +
+            `Make sure the xs you are computing gradients with respect ` +
+            `to are used inside the gradient function.`);
+      }
+
+      const accumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
+      accumulatedGradientMap[value.id] = (dy == null) ? Scalar.new(1) : dy;
+
+      // Backprop gradients through the filtered nodes.
+      tape_util.backpropagateGradients(accumulatedGradientMap, filteredTape);
+
+      const gradients = xs.map(x => accumulatedGradientMap[x.id]);
       return {value, gradients};
     }, true /* gradientsMode */);
-  }
-
-  private gradientWrt<T extends NDArray>(y: T, xs: NDArray[], dy?: T):
-      NDArray[] {
-    // Filter out the nodes that don't connect x => y.
-    const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
-    if (filteredTape.length === 0 && xs.length > 0) {
-      throw new Error(
-          `Cannot compute gradient: y is not a function of xs.` +
-          `Make sure the xs you are computing gradients with respect ` +
-          `to are used inside the gradient function.`);
-    }
-
-    const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-    arrayAccumulatedGradientMap[y.id] = (dy == null) ? Scalar.new(1) : dy;
-
-    // Backprop gradients through the filtered nodes.
-    tape_util.backpropagateGradients(arrayAccumulatedGradientMap, filteredTape);
-
-    const gradients = xs.map(x => arrayAccumulatedGradientMap[x.id]);
-    return gradients;
   }
 
   customGradient<T extends NDArray>(
