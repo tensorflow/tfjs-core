@@ -1,21 +1,30 @@
 "use strict";
 exports.__esModule = true;
 var fs = require("fs");
+var mustache = require("mustache");
 var ts = require("typescript");
 var DOCUMENTATION_DECORATOR = 'doc';
+var API_TEMPLATE_PATH = './docs/api/';
+var API_TEMPLATE_FILENAME = 'index.mustache';
+var API_HTML_FILENAME = 'index.html';
 /** Generate documentation for all classes in a set of .ts files */
 function generateDocumentation(fileNames, options) {
     var program = ts.createProgram(fileNames, options);
     var checker = program.getTypeChecker();
-    var docs = {};
+    var docHeadings = [];
     for (var _i = 0, _a = program.getSourceFiles(); _i < _a.length; _i++) {
         var sourceFile = _a[_i];
         if (!sourceFile.isDeclarationFile) {
             ts.forEachChild(sourceFile, visit);
         }
     }
+    var template = fs.readFileSync(API_TEMPLATE_PATH + API_TEMPLATE_FILENAME, 'utf8');
+    // console.log(html);
+    var docs = { headings: docHeadings };
     var json = JSON.stringify(docs, undefined, 2);
     fs.writeFileSync('docs.json', json);
+    var html = mustache.render(template, docs);
+    fs.writeFileSync(API_TEMPLATE_PATH + API_HTML_FILENAME, html);
     console.log(json);
     return;
     /** visit nodes finding exported classes */
@@ -23,7 +32,7 @@ function generateDocumentation(fileNames, options) {
         if (ts.isMethodDeclaration(node)) {
             if (node.decorators != null) {
                 var hasOpdoc_1 = false;
-                var headings_1;
+                var headingNames_1;
                 node.decorators.map(function (decorator) {
                     if (startsWith(decorator.getText(), '@' + DOCUMENTATION_DECORATOR)) {
                         // console.log(decorator.getText());
@@ -31,7 +40,7 @@ function generateDocumentation(fileNames, options) {
                             //  console.log('child: ' + child.getText());
                             // TODO: Maybe don't use a regex.
                             var re = /doc\('([a-zA-Z ]+)', '([a-zA-Z ]+)'\)/i;
-                            headings_1 = child.getText().match(re).slice(1, 3);
+                            headingNames_1 = child.getText().match(re).slice(1, 3);
                         });
                         hasOpdoc_1 = true;
                         return;
@@ -55,14 +64,30 @@ function generateDocumentation(fileNames, options) {
                         docstring: callSignatures.documentation,
                         parameters: parameters
                     };
-                    var heading = headings_1[0], subheading = headings_1[1];
-                    if (docs[headings_1[0]] == null) {
-                        docs[heading] = {};
+                    var headingName = headingNames_1[0], subheadingName = headingNames_1[1];
+                    // Find the heading.
+                    var heading = void 0;
+                    for (var i = 0; i < docHeadings.length; i++) {
+                        if (docHeadings[i].name === headingName) {
+                            heading = docHeadings[i];
+                        }
                     }
-                    if (docs[heading][subheading] == null) {
-                        docs[heading][subheading] = [];
+                    if (heading == null) {
+                        heading = { name: headingName, subheadings: [] };
+                        docHeadings.push(heading);
                     }
-                    docs[heading][subheading].push(method);
+                    // Find the subheading.
+                    var subheading = void 0;
+                    for (var i = 0; i < heading.subheadings.length; i++) {
+                        if (heading.subheadings[i].name === subheadingName) {
+                            subheading = heading.subheadings[i];
+                        }
+                    }
+                    if (subheading == null) {
+                        subheading = { name: subheadingName, methods: [] };
+                        heading.subheadings.push(subheading);
+                    }
+                    subheading.methods.push(method);
                 }
             }
         }

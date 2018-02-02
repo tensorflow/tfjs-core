@@ -1,0 +1,41 @@
+<style>
+.heading {
+
+}
+.subheading {
+
+}
+.method {
+
+}
+.parameter {
+
+}
+</style>
+
+API Reference
+
+
+{{#headings}}
+  <div class="heading">
+    <h1>{{name}}</h1>
+    {{#subheadings}}
+      <div class="subheading">
+        <h2>{{name}}</h2>
+        {{#methods}}
+          <div class="method">
+            <h3>{{name}}</h3>
+            <div class="docstring">{{docstring}}</div>
+            <ul>
+              {{#parameters}}
+                <li class="parameter">
+                  {{name}} {{type}} {{documentation}}
+                </li>
+              {{/parameters}}
+            </ul>
+          </div>
+        {{/methods}}
+      </div>
+    {{/subheadings}}
+  </div>
+{{/headings}}

@@ -26,6 +26,7 @@
     "karma-firefox-launcher": "~1.0.1",
     "karma-jasmine": "~1.1.0",
     "karma-typescript": "~3.0.8",
+    "mustache": "^2.3.0",
     "opn": "~5.1.0",
     "shelljs": "~0.7.8",
     "tsify": "~3.0.1",

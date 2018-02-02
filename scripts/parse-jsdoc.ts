@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as mustache from 'mustache';
 import * as ts from 'typescript';
 
 interface DocEntry {
@@ -9,6 +10,20 @@ interface DocEntry {
   constructors?: DocEntry[];
   parameters?: DocEntry[];
   returnType?: string;
+}
+
+interface Docs {
+  headings: DocHeading[];
+}
+
+interface DocHeading {
+  name: string;
+  subheadings: DocSubheading[];
+}
+
+interface DocSubheading {
+  name: string;
+  methods: DocMethod[];
 }
 
 interface DocMethod {
@@ -24,6 +39,9 @@ interface DocMethodParam {
 }
 
 const DOCUMENTATION_DECORATOR = 'doc';
+const API_TEMPLATE_PATH = './docs/api/';
+const API_TEMPLATE_FILENAME = 'index.mustache';
+const API_HTML_FILENAME = 'index.html';
 
 /** Generate documentation for all classes in a set of .ts files */
 function generateDocumentation(
@@ -31,7 +49,7 @@ function generateDocumentation(
   const program = ts.createProgram(fileNames, options);
   const checker = program.getTypeChecker();
 
-  const docs = {};
+  const docHeadings = [];
 
   for (const sourceFile of program.getSourceFiles()) {
     if (!sourceFile.isDeclarationFile) {
@@ -39,10 +57,18 @@ function generateDocumentation(
     }
   }
 
+  const template =
+      fs.readFileSync(API_TEMPLATE_PATH + API_TEMPLATE_FILENAME, 'utf8');
+  // console.log(html);
+
+  const docs: Docs = {headings: docHeadings};
   const json = JSON.stringify(docs, undefined, 2);
   fs.writeFileSync('docs.json', json);
-  console.log(json);
 
+  const html = mustache.render(template, docs);
+  fs.writeFileSync(API_TEMPLATE_PATH + API_HTML_FILENAME, html);
+
+  console.log(json);
   return;
 
   /** visit nodes finding exported classes */
@@ -50,7 +76,7 @@ function generateDocumentation(
     if (ts.isMethodDeclaration(node)) {
       if (node.decorators != null) {
         let hasOpdoc = false;
-        let headings: string[];
+        let headingNames: string[];
         node.decorators.map(decorator => {
           if (startsWith(decorator.getText(), '@' + DOCUMENTATION_DECORATOR)) {
             // console.log(decorator.getText());
@@ -58,7 +84,7 @@ function generateDocumentation(
               //  console.log('child: ' + child.getText());
               // TODO: Maybe don't use a regex.
               const re = /doc\('([a-zA-Z ]+)', '([a-zA-Z ]+)'\)/i;
-              headings = child.getText().match(re).slice(1, 3);
+              headingNames = child.getText().match(re).slice(1, 3);
             });
 
             hasOpdoc = true;
@@ -91,16 +117,33 @@ function generateDocumentation(
             parameters
           };
 
-          const [heading, subheading] = headings;
+          const [headingName, subheadingName] = headingNames;
 
-          if (docs[headings[0]] == null) {
-            docs[heading] = {};
+          // Find the heading.
+          let heading: DocHeading;
+          for (let i = 0; i < docHeadings.length; i++) {
+            if (docHeadings[i].name === headingName) {
+              heading = docHeadings[i];
+            }
           }
-          if (docs[heading][subheading] == null) {
-            docs[heading][subheading] = [];
+          if (heading == null) {
+            heading = {name: headingName, subheadings: []};
+            docHeadings.push(heading);
           }
 
-          docs[heading][subheading].push(method);
+          // Find the subheading.
+          let subheading: DocSubheading;
+          for (let i = 0; i < heading.subheadings.length; i++) {
+            if (heading.subheadings[i].name === subheadingName) {
+              subheading = heading.subheadings[i];
+            }
+          }
+          if (subheading == null) {
+            subheading = {name: subheadingName, methods: []};
+            heading.subheadings.push(subheading);
+          }
+
+          subheading.methods.push(method);
         }
       }
     }
