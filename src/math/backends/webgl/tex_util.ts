@@ -1,5 +1,3 @@
-import {DataType, DataTypeMap} from '../../ndarray';
-
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -17,10 +15,11 @@ import {DataType, DataTypeMap} from '../../ndarray';
  * =============================================================================
  */
 
+import {DataType, DataTypeMap} from '../../types';
+
 export enum TextureType {
-  DEFAULT,
-  // When using a standard RGBA-packed color image.
-  RGBA_COLOR
+  FLOAT,
+  UNSIGNED_BYTE
 }
 
 export interface TextureData {
@@ -28,10 +27,9 @@ export interface TextureData {
   shape: number[];
   /** [rows, columns] shape of the texture. */
   texShape: [number, number];
-  textureType: TextureType;
   dtype: DataType;
-  numChannels?: number;
   values: DataTypeMap[DataType];
+  texType: TextureType;
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(

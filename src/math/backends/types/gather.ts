@@ -15,30 +15,16 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../../util';
-import {NDArray, Array1D} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
+import {Array1D, NDArray} from '../../ndarray';
+import {Rank} from '../../types';
+import {KernelNode} from '../tape_types';
 
-export interface GatherNode<T extends NDArray> extends KernelNode {
-  inputAndArgs: GatherInputConfig<T>;
+export interface GatherNode<R extends Rank, T extends NDArray<R> = NDArray<R>>
+    extends KernelNode {
+  inputAndArgs: {inputs: {x: T; indices: Array1D;}; args: {axis: number};};
   output: T;
-  gradient: (dy: T, y: T) => GatherGradientInputArrays<T>;
-}
-
-export interface GatherInputConfig<T extends NDArray> extends 
-    KernelInputConfig {
-  inputs: GatherInputArrays<T>;
-  args: {axis: number};
-}
-
-export interface GatherInputArrays<T extends NDArray> extends NamedArrayMap {
-  x: T;
-  indices: Array1D<'int32'>;
-}
-
-export interface GatherGradientInputArrays<T extends NDArray> extends 
-    TapeNodeInputGradientArrays {
-  x: () => T;
-  indices: () => Array1D;
+  gradient: (dy: NDArray<R>, y: T) => {
+    x: () => NDArray<R>;
+    indices: () => Array1D;
+  };
 }

@@ -17,15 +17,14 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {TypedArray} from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
-// tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
-import {SumTypes, SumTypesMap} from '../types';
+// tslint:disable-next-line:max-line-length
+import {DataType, DataTypeMap, Rank, RecursiveArray, TypedArray} from '../types';
 
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
@@ -40,11 +39,12 @@ import {ConcatProgram} from './webgl/concat_gpu';
 import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
-import {Copy2DProgram} from './webgl/copy_gpu';
+import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {ArrayData, GPGPUBinary, GPGPUProgram} from './webgl/gpgpu_math';
+import {WhereProgram} from './webgl/logical_gpu';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
@@ -53,7 +53,7 @@ import {OneHotProgram} from './webgl/onehot_gpu';
 import {Pad1DProgram, Pad2DProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
-import {ResizeBilinear3DProgram} from './webgl/resize_bilinear_gpu';
+import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {TextureData, TextureType} from './webgl/tex_util';
@@ -62,11 +62,21 @@ import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
+import {WebGLQuery} from './webgl/webgl_types';
 import * as webgl_util from './webgl/webgl_util';
+
+type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
+export interface CPUTimerQuery {
+  startMs: number;
+  endMs?: number;
+}
 
 export class MathBackendWebGL implements MathBackend {
   private texData: {[dataId: number]: TextureData} = {};
   private canvas: HTMLCanvasElement;
+
+  private programTimersStack: TimerNode[];
+  private activeTimers: TimerNode[];
 
   register(dataId: number, shape: number[], dtype: DataType): void {
     if (dataId in this.texData) {
@@ -78,31 +88,18 @@ export class MathBackendWebGL implements MathBackend {
       values: null,
       texture: null,
       texShape: null,
-      textureType: null
+      texType: TextureType.FLOAT
     };
   }
-  writePixels(
-      dataId: number,
+  fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void {
+      numChannels: number): Array3D {
     if (pixels == null) {
       throw new Error('MathBackendWebGL.writePixels(): pixels can not be null');
     }
-    this.throwIfNoData(dataId);
     const texShape: [number, number] = [pixels.height, pixels.width];
-    const texture = this.texData[dataId].texture ||
-        this.textureManager.acquireTexture(texShape);
-    const {shape} = this.texData[dataId];
+    const outShape = [pixels.height, pixels.width, numChannels];
 
-    this.texData[dataId] = {
-      shape,
-      values: null,
-      texture,
-      textureType: TextureType.RGBA_COLOR,
-      texShape,
-      numChannels,
-      dtype: 'int32'
-    };
     if (pixels instanceof HTMLVideoElement) {
       if (this.canvas == null) {
         throw new Error(
@@ -115,22 +112,31 @@ export class MathBackendWebGL implements MathBackend {
           pixels, 0, 0, pixels.width, pixels.height);
       pixels = this.canvas;
     }
-    // Pixel data is immediate storage since it already lives on gpu.
-    this.gpgpu.uploadPixelDataToTexture(texture, pixels);
+    const tempPixelArray = NDArray.make(texShape, {}, 'int32');
+
+    // This is a byte texture with pixels.
+    this.texData[tempPixelArray.dataId].texType = TextureType.UNSIGNED_BYTE;
+    this.gpgpu.uploadPixelDataToTexture(
+        this.getTexture(tempPixelArray.dataId), pixels);
+    const program = new FromPixelsProgram(outShape);
+    const res = this.compileAndRun(program, [tempPixelArray]);
+
+    tempPixelArray.dispose();
+
+    return res as Array3D;
   }
-  write<D extends DataType>(dataId: number, values: DataTypeMap[D]): void {
+  write(dataId: number, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
     this.throwIfNoData(dataId);
 
-    const {texture, texShape} = this.texData[dataId];
+    const {texture, texShape, texType} = this.texData[dataId];
     if (texture != null) {
       // Release the old texture.
-      this.textureManager.releaseTexture(texture, texShape);
+      this.textureManager.releaseTexture(texture, texShape, texType);
       this.texData[dataId].texture = null;
       this.texData[dataId].texShape = null;
-      this.texData[dataId].textureType = null;
     }
     this.texData[dataId].values = values;
 
@@ -139,41 +145,33 @@ export class MathBackendWebGL implements MathBackend {
     }
   }
 
-  readSync<D extends DataType>(dataId: number): DataTypeMap[D] {
+  readSync(dataId: number): TypedArray {
     this.throwIfNoData(dataId);
-    const {texture, values, textureType, texShape, numChannels} =
-        this.texData[dataId];
+    const {texture, values, texShape} = this.texData[dataId];
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
     }
-    let float32Values: Float32Array;
-    if (textureType === TextureType.DEFAULT) {
-      float32Values = this.gpgpu.downloadMatrixFromTexture(
-          texture, texShape[0], texShape[1]);
-    } else {
-      float32Values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
-          texture, texShape[0], texShape[1], numChannels);
-    }
+    const float32Values =
+        this.gpgpu.downloadMatrixFromTexture(texture, texShape[0], texShape[1]);
     this.cacheOnCPU(dataId, float32Values);
     return this.texData[dataId].values;
   }
-  async read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]> {
+  async read(dataId: number): Promise<TypedArray> {
     this.throwIfNoData(dataId);
-    const {texture, values, textureType, texShape} = this.texData[dataId];
+    const {texture, values, texShape} = this.texData[dataId];
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
     }
-    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
-        textureType === TextureType.DEFAULT) {
+    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) {
       const float32Values = await this.gpgpu.downloadMatrixFromTextureAsync(
           texture, texShape[0], texShape[1]);
       this.cacheOnCPU(dataId, float32Values);
       return this.texData[dataId].values;
     }
 
-    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0) {
       return this.readSync(dataId);
     }
 
@@ -182,20 +180,69 @@ export class MathBackendWebGL implements MathBackend {
     await this.gpgpu.runQuery(() => {});
     return this.readSync(dataId);
   }
-  async time(query: () => NDArray): Promise<number> {
-    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-      const start = performance.now();
-      const a = query();
-      await a.data();
-      return performance.now() - start;
+
+  time(f: () => void): Promise<number> {
+    const oldActiveTimers = this.activeTimers;
+    const newActiveTimers: TimerNode[] = [];
+
+    let outerMostTime = false;
+    if (this.programTimersStack == null) {
+      this.programTimersStack = newActiveTimers;
+      outerMostTime = true;
+    } else {
+      this.activeTimers.push(newActiveTimers);
     }
-    return this.gpgpu.runQuery(query);
+    this.activeTimers = newActiveTimers;
+
+    f();
+
+    const flattenedActiveTimers = util.flatten(this.activeTimers);
+    this.activeTimers = oldActiveTimers;
+
+    if (outerMostTime) {
+      this.programTimersStack = null;
+    }
+
+    return new Promise<number>((resolve, reject) => {
+      Promise.all(flattenedActiveTimers).then(results => {
+        let sum = 0;
+        results.forEach(result => sum += result);
+
+        resolve(sum);
+      });
+    });
   }
+
+  private startTimer(): WebGLQuery|CPUTimerQuery {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
+      return this.gpgpu.beginQuery();
+    }
+    return {startMs: performance.now(), endMs: null};
+  }
+
+  private endTimer(query: WebGLQuery|CPUTimerQuery): WebGLQuery|
+      {startMs: number, endMs: number} {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
+      this.gpgpu.endQuery();
+      return query;
+    }
+    (query as CPUTimerQuery).endMs = performance.now();
+    return query;
+  }
+
+  private async getQueryTime(query: WebGLQuery|CPUTimerQuery): Promise<number> {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
+      return this.gpgpu.pollQueryTime(query);
+    }
+    const timerQuery = query as CPUTimerQuery;
+    return timerQuery.endMs - timerQuery.startMs;
+  }
+
   disposeData(dataId: number): void {
     if (dataId in this.texData) {
-      const {texture, texShape} = this.texData[dataId];
+      const {texture, texShape, texType} = this.texData[dataId];
       if (texture != null) {
-        this.textureManager.releaseTexture(texture, texShape);
+        this.textureManager.releaseTexture(texture, texShape, texType);
       }
       delete this.texData[dataId];
     }
@@ -235,19 +282,6 @@ export class MathBackendWebGL implements MathBackend {
     return this.gpgpu;
   }
 
-  clone<D extends DataType, T extends NDArray<D>>(x: T): T {
-    this.throwIfNoData(x.dataId);
-    this.uploadToGPU(x.dataId);
-    const {texShape} = this.texData[x.dataId];
-    // Pretend the source was in logical shape that matches the texture shape.
-    const source = x.as2D(texShape[0], texShape[1]);
-    // Do the same for output.
-    const output = this.makeOutputArray<D, Array2D<D>>(texShape, x.dtype);
-    this.copy2D(source, [0, 0], texShape, output, [0, 0], texShape);
-    // Get back to the original logical shape.
-    return output.reshape(x.shape) as T;
-  }
-
   slice1D(x: Array1D, begin: number, size: number): Array1D {
     const program = new SliceProgram([size]);
     const customSetup = program.getCustomSetupFunc([begin]);
@@ -282,34 +316,9 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  private copy2D(
-      source: Array2D, sourceBeginRowCol: [number, number],
-      sourceSizeRowCol: [number, number], dest: Array2D,
-      destBeginRowCol: [number, number],
-      destSizeRowCol: [number, number]): void {
-    const program = new Copy2DProgram(sourceSizeRowCol[1], destSizeRowCol[1]);
-    const customSetup = program.getCustomSetupFunc(
-        sourceBeginRowCol, destBeginRowCol, destSizeRowCol);
-    this.compileAndRun(program, [source], dest, customSetup);
-  }
-
-  concat1D(a: Array1D, b: Array1D): Array1D {
-    const program = new ConcatProgram(a.shape, b.shape, 0);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
+  // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
+  concat(a: Array2D, b: Array2D): Array2D {
+    const program = new ConcatProgram(a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
@@ -326,12 +335,12 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun<Array2D, Array2D>(program, [a, b]);
   }
 
-  multiply<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  multiply(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.MUL, a.shape, b.shape);
-    const output = this.makeOutputArray(
-                       program.outputShape,
-                       types.upcastType(a.dtype, b.dtype)) as NDArray<D>;
-    return this.compileAndRun(program, [a, b], output) as NDArray<D>;
+    const output =
+        this.makeOutputArray(
+            program.outputShape, types.upcastType(a.dtype, b.dtype)) as NDArray;
+    return this.compileAndRun(program, [a, b], output) as NDArray;
   }
 
   batchNormalization2D(
@@ -414,7 +423,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T {
+  tile<T extends NDArray>(x: T, reps: number[]): T {
     const program = new TileProgram(x.shape, reps);
     return this.compileAndRun(program, [x]);
   }
@@ -432,27 +441,25 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T {
+  transpose<T extends NDArray>(x: T, perm: number[]): T {
     const program = new TransposeProgram(x.shape, perm);
     return this.compileAndRun(program, [x]);
   }
 
-  gather<D extends DataType, T extends NDArray<D>>(
-      x: T, indices: Array1D<'int32'>, axis: number): T {
+  gather<T extends NDArray>(x: T, indices: Array1D, axis: number): T {
     const program = new GatherProgram(x.shape, indices.size, axis);
     return this.compileAndRun(program, [x, indices]);
   }
 
-  private reduce<D extends DataType>(
-      x: Array2D, reduceType: 'max'|'min'|'sum', dtype: D): Array2D<D> {
+  private reduce(x: Array2D, reduceType: 'max'|'min'|'sum', dtype: DataType):
+      Array2D {
     const batchSize = x.shape[0];
     const inSize = x.shape[1];
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
     const reduceInfo = {windowSize, inSize, batchSize};
     const program = new ReduceProgram(reduceInfo, reduceType);
     const [rows, cols] = program.outputShape;
-    const output =
-        this.makeOutputArray(program.outputShape, dtype).as2D(rows, cols);
+    const output = this.makeOutputArray<Array2D>([rows, cols], dtype);
     this.compileAndRun(program, [x], output);
     // No need to run another GPGPU program.
     if (output.shape[1] === 1) {
@@ -463,7 +470,7 @@ export class MathBackendWebGL implements MathBackend {
 
   private argReduce(
       x: Array2D, reduceType: 'max'|'min',
-      bestIndicesA: Array2D = null): Array2D<'int32'> {
+      bestIndicesA: Array2D = null): Array2D {
     let batchSize = x.shape[0];
     let inSize = x.shape[1];
     if (bestIndicesA != null) {
@@ -475,8 +482,7 @@ export class MathBackendWebGL implements MathBackend {
     const program =
         new ArgMinMaxProgram(reduceInfo, reduceType, bestIndicesA == null);
     const [rows, cols] = program.outputShape;
-    const output =
-        this.makeOutputArray(program.outputShape, 'int32').as2D(rows, cols);
+    const output = this.makeOutputArray<Array2D>([rows, cols], 'int32');
     const inputs = [x];
     if (bestIndicesA != null) {
       inputs.push(bestIndicesA);
@@ -489,17 +495,17 @@ export class MathBackendWebGL implements MathBackend {
     return this.argReduce(x, reduceType, output);
   }
 
-  sum<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<SumTypes[D]> {
+  sum(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
     const a2D = x.as2D(-1, inSize);
-    const outputDType = SumTypesMap[x.dtype];
+    const outputDType = types.sumOutType(x.dtype);
     return this.reduce(a2D, 'sum', outputDType).reshape(outShape);
   }
 
-  argMin(x: NDArray, axes: number[]): NDArray<'int32'> {
+  argMin(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('argMin', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -508,7 +514,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.argReduce(a2D, 'min').reshape(outShape);
   }
 
-  argMax(x: NDArray, axes: number[]): NDArray<'int32'> {
+  argMax(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('argMax', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -517,74 +523,74 @@ export class MathBackendWebGL implements MathBackend {
     return this.argReduce(a2D, 'max').reshape(outShape);
   }
 
-  equal(a: NDArray, b: NDArray): NDArray<'bool'> {
+  equal(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  notEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
+  notEqual(a: NDArray, b: NDArray): NDArray {
     const program =
         new BinaryOpProgram(binaryop_gpu.NOT_EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  less(a: NDArray, b: NDArray): NDArray<'bool'> {
+  less(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.LESS, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  lessEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
+  lessEqual(a: NDArray, b: NDArray): NDArray {
     const program =
         new BinaryOpProgram(binaryop_gpu.LESS_EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  greater(a: NDArray, b: NDArray): NDArray<'bool'> {
+  greater(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.GREATER, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  greaterEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
+  greaterEqual(a: NDArray, b: NDArray): NDArray {
     const program =
         new BinaryOpProgram(binaryop_gpu.GREATER_EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  logicalNot<T extends NDArray>(x: T): T {
-    const program = new UnaryOpProgram(x.shape, unary_op.LOGICAL_NOT);
-    return this.compileAndRun(program, [x]) as T;
-  }
-
-  logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'> {
+  logicalAnd(a: NDArray, b: NDArray): NDArray {
     const program =
         new BinaryOpProgram(binaryop_gpu.LOGICAL_AND, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
+  logicalOr(a: NDArray, b: NDArray): NDArray {
     const program =
         new BinaryOpProgram(binaryop_gpu.LOGICAL_OR, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
-  topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
-      Array1D<D> {
+  where(condition: NDArray, a: NDArray, b: NDArray, dtype: DataType): NDArray {
+    const program = new WhereProgram(condition.rank, a.shape, a.rank);
+    const output = this.makeOutputArray(program.outputShape, dtype);
+    return this.compileAndRun(program, [condition, a, b], output);
+  }
+
+  topKValues<T extends NDArray>(x: T, k: number): Array1D {
     throw new Error('topKValues GPU not yet implemented!');
   }
 
-  topKIndices(x: NDArray, k: number): Array1D<'int32'> {
+  topKIndices(x: NDArray, k: number): Array1D {
     throw new Error('topKIndices GPU not yet implemented!');
   }
 
-  min<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D> {
+  min(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -593,12 +599,12 @@ export class MathBackendWebGL implements MathBackend {
     return this.reduce(a2D, 'min', a2D.dtype).reshape(outShape);
   }
 
-  minimum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  minimum(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.MIN, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
-  max<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D> {
+  max(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -607,35 +613,34 @@ export class MathBackendWebGL implements MathBackend {
     return this.reduce(a2D, 'max', a2D.dtype).reshape(outShape);
   }
 
-  maximum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  maximum(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.MAX, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
-  divide(a: NDArray, b: NDArray): NDArray<'float32'> {
+  divide(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.DIV, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'float32');
-    return this.compileAndRun<NDArray, NDArray<'float32'>>(
-        program, [a, b], output);
+    return this.compileAndRun<NDArray, NDArray>(program, [a, b], output);
   }
 
-  add<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  add(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
-    const output = this.makeOutputArray(
-                       program.outputShape,
-                       types.upcastType(a.dtype, b.dtype)) as NDArray<D>;
-    return this.compileAndRun<NDArray, NDArray<D>>(program, [a, b], output);
+    const output =
+        this.makeOutputArray(
+            program.outputShape, types.upcastType(a.dtype, b.dtype)) as NDArray;
+    return this.compileAndRun<NDArray, NDArray>(program, [a, b], output);
   }
 
-  subtract<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  subtract(a: NDArray, b: NDArray): NDArray {
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
-    const output = this.makeOutputArray(
-                       program.outputShape,
-                       types.upcastType(a.dtype, b.dtype)) as NDArray<D>;
-    return this.compileAndRun<NDArray, NDArray<D>>(program, [a, b], output);
+    const output =
+        this.makeOutputArray(
+            program.outputShape, types.upcastType(a.dtype, b.dtype)) as NDArray;
+    return this.compileAndRun<NDArray, NDArray>(program, [a, b], output);
   }
 
-  pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T {
+  pow<T extends NDArray>(a: T, b: NDArray): T {
     const program = new BinaryOpProgram(binaryop_gpu.POW, a.shape, b.shape);
     const output =
         this.makeOutputArray(
@@ -709,10 +714,10 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a, b]) as T;
   }
 
-  int<R extends Rank>(x: NDArray<DataType, R>): NDArray<'int32', R> {
+  int<R extends Rank>(x: NDArray<R>): NDArray<R> {
     const program = new UnaryOpProgram(x.shape, unary_op.TO_INT);
     const output = this.makeOutputArray(program.outputShape, 'int32');
-    return this.compileAndRun(program, [x], output) as NDArray<'int32', R>;
+    return this.compileAndRun(program, [x], output) as NDArray<R>;
   }
 
   clip<T extends NDArray>(x: T, min: number, max: number): T {
@@ -821,10 +826,10 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x], output);
   }
 
-  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D<'float32'> {
+  avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
     const program = new Pool2DProgram(convInfo, 'avg', false);
     const output = this.makeOutputArray(program.outputShape, 'float32');
-    return this.compileAndRun(program, [x], output) as Array4D<'float32'>;
+    return this.compileAndRun(program, [x], output) as Array4D;
   }
 
   maxPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D {
@@ -850,21 +855,20 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(avgPoolBackpropProgram, [dy], output) as Array4D;
   }
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number],
-      alignCorners: boolean): Array3D {
+  resizeBilinear(
+      x: Array4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Array4D {
     const program =
-        new ResizeBilinear3DProgram(x.shape, newShape2D, alignCorners);
+        new ResizeBilinearProgram(x.shape, newHeight, newWidth, alignCorners);
     return this.compileAndRun(program, [x]);
   }
 
-  multinomial(probs: Array2D, numSamples: number, seed: number):
-      Array2D<'int32'> {
+  multinomial(probs: Array2D, numSamples: number, seed: number): Array2D {
     const batchSize = probs.shape[0];
     const numOutcomes = probs.shape[1];
     const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);
     const output =
-        this.makeOutputArray(program.outputShape, 'int32') as Array2D<'int32'>;
+        this.makeOutputArray(program.outputShape, 'int32') as Array2D;
     const customSetup = program.getCustomSetupFunc(seed);
     return this.compileAndRun(program, [probs], output, customSetup);
   }
@@ -875,8 +879,8 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [indices]);
   }
 
-  private makeOutputArray<D extends DataType, T extends NDArray<D>>(
-      shape: number[], dtype: D): T {
+  private makeOutputArray<T extends NDArray>(shape: number[], dtype: DataType):
+      T {
     return NDArray.make(shape, {}, dtype) as T;
   }
 
@@ -898,7 +902,19 @@ export class MathBackendWebGL implements MathBackend {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
+
+    const shouldTimeProgram = this.activeTimers != null;
+    let query: WebGLQuery|CPUTimerQuery;
+    if (shouldTimeProgram) {
+      query = this.startTimer();
+    }
+
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
+
+    if (shouldTimeProgram) {
+      query = this.endTimer(query);
+      this.activeTimers.push(this.getQueryTime(query));
+    }
     return output;
   }
 
@@ -943,22 +959,23 @@ export class MathBackendWebGL implements MathBackend {
 
   private uploadToGPU(dataId: number): void {
     this.throwIfNoData(dataId);
-    const {shape, values, texture, dtype} = this.texData[dataId];
+    const {shape, values, texture, dtype, texType} = this.texData[dataId];
     if (texture != null) {
       // Array is already on GPU. No-op.
       return;
     }
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
-    this.texData[dataId].textureType = TextureType.DEFAULT;
     this.texData[dataId].texShape = texShape;
-    const newTexture = this.textureManager.acquireTexture(texShape);
+    const newTexture = this.textureManager.acquireTexture(texShape, texType);
     this.texData[dataId].texture = newTexture;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
           newTexture, texShape[0],
           // TODO(smilkov): Propagate the original typed array to gpgpu.
           texShape[1], typedArrayToFloat32(values, dtype));
+      // Once uploaded, don't store the values on cpu.
+      this.texData[dataId].values = null;
     }
   }
 
@@ -967,12 +984,11 @@ export class MathBackendWebGL implements MathBackend {
     // on the gpu, to minimize likelihood of memory leak. We re-upload to gpu
     // the next time a gpgpu program needs the texture.
     const dontKeepCopyOnGPU = this.delayedStorage;
-    const {texture, texShape, dtype} = this.texData[dataId];
+    const {texture, texShape, dtype, texType} = this.texData[dataId];
     if (dontKeepCopyOnGPU && texture != null) {
-      this.textureManager.releaseTexture(texture, texShape);
+      this.textureManager.releaseTexture(texture, texShape, texType);
       this.texData[dataId].texture = null;
       this.texData[dataId].texShape = null;
-      this.texData[dataId].textureType = null;
     }
     if (float32Values != null) {
       this.texData[dataId].values = float32ToTypedArray(float32Values, dtype);
@@ -995,13 +1011,11 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   getGPGPUContext(): GPGPUContext {
-    return (this.backendEngine.getBackend() as MathBackendWebGL)
-        .getGPGPUContext();
+    return (this.engine.getBackend() as MathBackendWebGL).getGPGPUContext();
   }
 
   getTextureManager(): TextureManager {
-    return (this.backendEngine.getBackend() as MathBackendWebGL)
-        .getTextureManager();
+    return (this.engine.getBackend() as MathBackendWebGL).getTextureManager();
   }
 }
 
@@ -1023,7 +1037,8 @@ function float32ToTypedArray<D extends DataType>(
   }
 }
 
-function typedArrayToFloat32(a: TypedArray, dtype: DataType): Float32Array {
+function typedArrayToFloat32<D extends DataType>(
+    a: DataTypeMap[D], dtype: D): Float32Array {
   if (a instanceof Float32Array) {
     return a;
   } else {

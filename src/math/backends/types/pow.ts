@@ -15,28 +15,16 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../../util';
 import {NDArray} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
+import {Rank} from '../../types';
+import {KernelNode} from '../tape_types';
 
-export interface PowNode<T extends NDArray> extends KernelNode {
-  inputAndArgs: PowInputConfig<T>;
+export interface PowNode<R extends Rank, T extends NDArray<R> = NDArray<R>>
+    extends KernelNode {
+  inputAndArgs: {inputs: {base: T; exp: NDArray;};};
   output: T;
-  gradient: (dy: T, y: T) => PowGradientInputArrays<T>;
-}
-
-export interface PowInputConfig<T extends NDArray> extends KernelInputConfig {
-  inputs: PowInputArrays<T>;
-}
-
-export interface PowInputArrays<T extends NDArray> extends NamedArrayMap {
-  a: T;
-  b: NDArray<'int32'>;
-}
-
-export interface PowGradientInputArrays<T extends NDArray> extends
-    TapeNodeInputGradientArrays {
-  a: () => T;
-  b: () => NDArray<'int32'>;
+  gradient: (dy: NDArray<R>, y: T) => {
+    base: () => NDArray<R>;
+    exp: () => NDArray;
+  };
 }

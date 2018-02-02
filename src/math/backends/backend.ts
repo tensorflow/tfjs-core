@@ -18,22 +18,24 @@
 
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank} from '../ndarray';
-import {SumTypes} from '../types';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
+import {DataType, Rank, TypedArray} from '../types';
+
 import {MatrixOrientation} from './types/matmul';
 
 export interface NDArrayStorage {
-  read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]>;
-  readSync<D extends DataType>(dataId: number): DataTypeMap[D];
+  read(dataId: number): Promise<TypedArray>;
+  readSync(dataId: number): TypedArray;
   disposeData(dataId: number): void;
-  write<D extends DataType>(dataId: number, values: DataTypeMap[D]): void;
-  writePixels(
-      dataId: number,
+  write(dataId: number, values: TypedArray): void;
+  fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void;
-  time(query: () => NDArray): Promise<number>;
+      numChannels: number): Array3D;
+  time(query: () => void): Promise<number>;
   register(dataId: number, shape: number[], dtype: DataType): void;
 }
+
+export interface BackendTimer { time(f: () => void): Promise<number>; }
 
 /**
  * The interface that defines the kernels that should be implemented when
@@ -41,12 +43,10 @@ export interface NDArrayStorage {
  * methods, this can be done gradually (throw an error for unimplemented
  * methods).
  */
-export interface MathBackend extends NDArrayStorage {
+export interface MathBackend extends NDArrayStorage, BackendTimer {
   matMul(
       a: Array2D, b: Array2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Array2D;
-
-  clone<T extends NDArray>(ndarray: T): T;
 
   slice1D(x: Array1D, begin: number, size: number): Array1D;
   slice2D(x: Array2D, begin: [number, number], size: [number, number]): Array2D;
@@ -59,50 +59,57 @@ export interface MathBackend extends NDArrayStorage {
 
   reverse4D(a: Array4D, axis: number[]): Array4D;
 
-  concat1D(a: Array1D, b: Array1D): Array1D;
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D;
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D;
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D;
+  // Any concat of n-dimensional tensors across any axis can be reduced to
+  // a concatenation of two-dimensional tensors across the axis 1 by first
+  // partitioning the axes of the original tensors into those less than the axis
+  // to be concatenated across and the rest. Then reshape the tensors into a
+  // two-dimensional tensor by collapsing these two sets of axes and concatenate
+  // the resulting matrices across the axis 1, finally reshaping the result to
+  // have the proper shape.
+  // This method always take a rank-2 tensor (i.e a matrix) and concatenate it
+  // along the axis 1 ("putting them next to each other" as opposed to
+  // "putting them on top of one another").
+  concat(a: Array2D, b: Array2D): Array2D;
 
   neg<T extends NDArray>(a: T): T;
 
-  add<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
-  subtract<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
-  multiply<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
-  divide<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<'float32'>;
+  add(a: NDArray, b: NDArray): NDArray;
+  subtract(a: NDArray, b: NDArray): NDArray;
+  multiply(a: NDArray, b: NDArray): NDArray;
+  divide(a: NDArray, b: NDArray): NDArray;
 
-  sum<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<SumTypes[D]>;
+  sum(x: NDArray, axes: number[]): NDArray;
 
-  argMin(x: NDArray, axes: number[]): NDArray<'int32'>;
-  argMax(x: NDArray, axes: number[]): NDArray<'int32'>;
+  argMin(x: NDArray, axes: number[]): NDArray;
+  argMax(x: NDArray, axes: number[]): NDArray;
 
-  equal(a: NDArray, b: NDArray): NDArray<'bool'>;
-  notEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+  equal(a: NDArray, b: NDArray): NDArray;
+  notEqual(a: NDArray, b: NDArray): NDArray;
 
-  less(a: NDArray, b: NDArray): NDArray<'bool'>;
-  lessEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+  less(a: NDArray, b: NDArray): NDArray;
+  lessEqual(a: NDArray, b: NDArray): NDArray;
 
-  greater(a: NDArray, b: NDArray): NDArray<'bool'>;
-  greaterEqual(a: NDArray, b: NDArray): NDArray<'bool'>;
+  greater(a: NDArray, b: NDArray): NDArray;
+  greaterEqual(a: NDArray, b: NDArray): NDArray;
 
-  logicalNot(a: NDArray): NDArray<'bool'>;
-  logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'>;
-  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'>;
+  logicalAnd(a: NDArray, b: NDArray): NDArray;
+  logicalOr(a: NDArray, b: NDArray): NDArray;
 
-  topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
-      Array1D<D>;
-  topKIndices(x: NDArray, k: number): Array1D<'int32'>;
+  where(condition: NDArray, a: NDArray, b: NDArray, dtype: DataType): NDArray;
 
-  min<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D>;
-  minimum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
+  topKValues<T extends NDArray>(x: T, k: number): Array1D;
+  topKIndices(x: NDArray, k: number): Array1D;
 
-  max<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D>;
-  maximum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D>;
+  min(x: NDArray, axes: number[]): NDArray;
+  minimum(a: NDArray, b: NDArray): NDArray;
+
+  max(x: NDArray, axes: number[]): NDArray;
+  maximum(a: NDArray, b: NDArray): NDArray;
 
   ceil<T extends NDArray>(x: T): T;
   floor<T extends NDArray>(x: T): T;
 
-  pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T;
+  pow<T extends NDArray>(a: T, b: NDArray): T;
   exp<T extends NDArray>(x: T): T;
   log<T extends NDArray>(x: T): T;
   sqrt<T extends NDArray>(x: T): T;
@@ -116,7 +123,7 @@ export interface MathBackend extends NDArrayStorage {
   leakyRelu<T extends NDArray>(x: T, alpha: number): T;
   prelu<T extends NDArray>(x: T, alpha: T): T;
   preluDer<T extends NDArray>(x: T, alpha: T): T;
-  int<R extends Rank>(x: NDArray<DataType, R>): NDArray<'int32', R>;
+  int<R extends Rank>(x: NDArray<R>): NDArray<R>;
 
   clip<T extends NDArray>(x: T, min: number, max: number): T;
 
@@ -154,20 +161,20 @@ export interface MathBackend extends NDArrayStorage {
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D;
   avgPoolBackprop(dy: Array4D, x: Array4D, convInfo: Conv2DInfo): Array4D;
 
-  tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T;
+  tile<T extends NDArray>(x: T, reps: number[]): T;
 
   pad1D(x: Array1D, paddings: [number, number], constantValue: number): Array1D;
   pad2D(
       x: Array2D, paddings: [[number, number], [number, number]],
       constantValue: number): Array2D;
 
-  transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T;
+  transpose<T extends NDArray>(x: T, perm: number[]): T;
 
-  gather<D extends DataType, T extends NDArray<D>>(
-      x: T, indices: Array1D<'int32'>, axis: number): T;
+  gather<T extends NDArray>(x: T, indices: Array1D, axis: number): T;
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number], alignCorners: boolean): Array3D;
+  resizeBilinear(
+      x: Array4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Array4D;
 
   batchNormalization2D(
       x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
@@ -187,7 +194,7 @@ export interface MathBackend extends NDArrayStorage {
       normRegion: 'acrossChannels'|'withinChannel'): Array4D;
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
-      Array2D<'int32'>;
+      Array2D;
 
   oneHot(indices: Array1D, depth: number, onValue: number, offValue: number):
       Array2D;

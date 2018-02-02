@@ -17,52 +17,19 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-import {ArrayData} from '../util';
-import {NDArrayMath} from './math';
+import {MatrixOrientation} from './backends/types/matmul';
+import * as ops from './ops';
 import {RandNormalDataTypes} from './rand';
-import {MPRandGauss} from './rand';
-
-export enum DType {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'bool'
-}
+// tslint:disable-next-line:max-line-length
+import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
 
 /** @hidden */
-export interface DataTypeMap {
-  float32: Float32Array;
-  int32: Int32Array;
-  bool: Uint8Array;
-}
-export type DataType = keyof DataTypeMap;
-
-/** @hidden */
-export interface RankMap<D extends DataType> {
-  0: Scalar<D>;
-  1: Array1D<D>;
-  2: Array2D<D>;
-  3: Array3D<D>;
-  4: Array4D<D>;
-  higher: NDArray<D, 'higher'>;
-}
-export type Rank = keyof RankMap<DataType>;
-
-/** @hidden */
-export interface NDArrayData<D extends DataType> {
+export interface NDArrayData {
   dataId?: number;
-  values?: DataTypeMap[D];
+  values?: TypedArray;
 }
 
-export interface ShapeMap {
-  0: number[];
-  1: [number];
-  2: [number, number];
-  3: [number, number, number];
-  4: [number, number, number, number];
-  higher: number[];
-}
-
-export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
+export class NDArray<R extends Rank = Rank> {
   private static nextId = 0;
   private static nextDataId = 0;
 
@@ -78,8 +45,8 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   /** Number of elements in the ndarray. */
   size: number;
   /** The data type for the array. */
-  dtype: D;
-  /** The rank type for the array ('0','1','2','3','4','higher'). */
+  dtype: DataType;
+  /** The rank type for the array (see `Rank` enum). */
   rankType: R;
 
   /**
@@ -89,12 +56,9 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
    */
   strides: number[];
 
-  protected math: NDArrayMath;
-
   protected constructor(
-      shape: number[], dtype: D, values?: DataTypeMap[D], dataId?: number,
-      math?: NDArrayMath) {
-    this.math = math || ENV.math;
+      shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
+      dataId?: number) {
     this.size = util.sizeFromShape(shape);
     if (values != null) {
       util.assert(
@@ -103,7 +67,7 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
               `length of values (${values.length})`);
     }
     this.shape = shape;
-    this.dtype = dtype || ('float32' as D);
+    this.dtype = dtype || 'float32';
     const dim = this.shape.length;
 
     if (dim < 2) {
@@ -120,98 +84,81 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     this.dataId = dataId != null ? dataId : NDArray.nextDataId++;
     this.id = NDArray.nextId++;
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
-    this.math.register(this);
+    ENV.math.register(this);
     if (values != null) {
-      this.math.write(this.dataId, values);
+      ENV.math.write(this.dataId, values);
     }
   }
 
-  /** Creates a ndarray of ones with the specified shape. */
-  static ones<D extends DataType = DataType, R extends Rank = Rank>(
-      shape: number[], dtype?: D): RankMap<D>[R] {
-    const values = makeOnesTypedArray(util.sizeFromShape(shape), dtype);
-    return NDArray.make(shape, {values}, dtype);
+  /** @deprecated Please use dl.ones() */
+  static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
+      NDArray<R> {
+    return ops.ones(shape, dtype);
   }
 
-  /** Creates a ndarray of zeros with the specified shape. */
-  static zeros<D extends DataType = DataType, R extends Rank = Rank>(
-      shape: number[], dtype?: D): RankMap<D>[R] {
-    const values = makeZerosTypedArray(util.sizeFromShape(shape), dtype);
-    return NDArray.make(shape, {values}, dtype);
+  /** @deprecated Please use dl.zeros() */
+  static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
+      NDArray<R> {
+    return ops.zeros(shape, dtype);
   }
 
-  /**
-   * Creates a ndarray of ones with the same shape as the specified ndarray.
-   */
-  static onesLike<T extends NDArray>(another: T): T {
-    return NDArray.ones(another.shape, another.dtype) as T;
+  /** @deprecated Please use dl.onesLike() */
+  static onesLike<T extends NDArray>(x: T): T {
+    return ops.onesLike(x);
   }
 
-  /**
-   * Creates a ndarray of zeros with the same shape as the specified ndarray.
-   */
-  static zerosLike<T extends NDArray>(another: T): T {
-    return NDArray.zeros(another.shape, another.dtype) as T;
+  /** @deprecated Please use dl.zerosLike() */
+  static zerosLike<T extends NDArray>(x: T): T {
+    return ops.zerosLike(x);
   }
 
-  /** Creates a ndarray with the same values/shape as the specified ndarray. */
-  static like<T extends NDArray>(another: T): T {
-    const newValues = copyTypedArray(another.dataSync(), another.dtype);
-    return NDArray.make(
-               another.shape, {values: newValues}, another.dtype,
-               another.math) as T;
+  /** @deprecated Please use dl.clone() */
+  static like<T extends NDArray>(x: T): T {
+    return ops.clone(x);
   }
 
   /**
    * Makes a new ndarray with the provided shape and values. Values should be in
    * a flat array.
    */
-  static make<D extends DataType = 'float32', R extends Rank = Rank>(
-      shape: number[], data: NDArrayData<D>, dtype?: D,
-      math?: NDArrayMath): RankMap<D>[R] {
-    switch (shape.length) {
-      case 0:
-        return new Scalar(shape, dtype, data.values, data.dataId, math);
-      case 1:
-        return new Array1D(shape, dtype, data.values, data.dataId, math);
-      case 2:
-        return new Array2D(
-            shape as [number, number], dtype, data.values, data.dataId, math);
-      case 3:
-        return new Array3D(
-            shape as [number, number, number], dtype, data.values, data.dataId,
-            math);
-      case 4:
-        return new Array4D(
-            shape as [number, number, number, number], dtype, data.values,
-            data.dataId, math);
-      default:
-        return new NDArray(shape, dtype, data.values, data.dataId, math) as
-            RankMap<D>[R];
-    }
+  static make<T extends NDArray<R>, D extends DataType = 'float32',
+                                              R extends Rank = Rank>(
+      shape: ShapeMap[R], data: NDArrayData, dtype?: D): T {
+    return new NDArray(shape, dtype, data.values, data.dataId) as T;
   }
 
+  /** @deprecated Please use dl.fromPixels() */
   static fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels = 3, math?: NDArrayMath): Array3D<'int32'> {
-    if (numChannels > 4) {
-      throw new Error(
-          'Cannot construct NDArray with more than 4 channels from pixels.');
-    }
-    const ndarrayData: NDArrayData<'int32'> = {};
-    const shape: [number, number, number] =
-        [pixels.height, pixels.width, numChannels];
-    math = math || ENV.math;
-    const res =
-        NDArray.make(shape, ndarrayData, 'int32', math) as Array3D<'int32'>;
-    math.writePixels(res.dataId, pixels, numChannels);
-    return res;
+      numChannels = 3): Array3D {
+    return ops.fromPixels(pixels, numChannels);
   }
 
-  /** Reshapes the current ndarray into the provided shape. */
-  reshape<R2 extends Rank>(newShape: number[]): RankMap<D>[R2] {
-    this.throwIfDisposed();
-    return this.math.reshape(this, newShape);
+  /** @deprecated Please use dl.rand() */
+  static rand<R extends Rank>(
+      shape: ShapeMap[R], randFunction: () => number,
+      dtype?: DataType): NDArray<R> {
+    return ops.rand(shape, randFunction, dtype);
+  }
+
+  /** @deprecated Please use dl.randNormal() */
+  static randNormal<R extends Rank>(
+      shape: ShapeMap[R], mean = 0, stdDev = 1,
+      dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
+    return ops.randNormal(shape, mean, stdDev, dtype, seed);
+  }
+
+  /** @deprecated Please use dl.truncatedNormal() */
+  static randTruncatedNormal<R extends Rank>(
+      shape: ShapeMap[R], mean = 0, stdDev = 1,
+      dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
+    return ops.truncatedNormal(shape, mean, stdDev, dtype, seed);
+  }
+
+  /** @deprecated Please use dl.randUniform() */
+  static randUniform<R extends Rank>(
+      shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
+    return ops.randUniform(shape, a, b, dtype);
   }
 
   /**
@@ -219,49 +166,46 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
    * squeezes the dimensions listed. The dimension index starts at 0. It is an
    * error to squeeze a dimension that is not 1.
    */
-  squeeze<T extends NDArray<D>>(axis?: number[]): T {
+  squeeze<T extends NDArray>(axis?: number[]): T {
+    this.throwIfDisposed();
     return this.reshape(util.squeezeShape(this.shape, axis).newShape) as T;
   }
 
   /** Flatten a NDArray to a 1D array. */
-  flatten(): Array1D<D> {
+  flatten(): Array1D {
     this.throwIfDisposed();
-    if (this instanceof Array1D) {
-      return this;
-    }
     return this.as1D();
   }
 
-  asScalar(): Scalar<D> {
+  asScalar(): Scalar {
     this.throwIfDisposed();
     util.assert(this.size === 1, 'The array must have only 1 element.');
-    return this.reshape<'0'>([]);
+    return this.reshape<Rank.R0>([]);
   }
 
-  as1D(): Array1D<D> {
+  as1D(): Array1D {
     this.throwIfDisposed();
-    return this.reshape<'1'>([this.size]);
+    return this.reshape<Rank.R1>([this.size]);
   }
 
-  as2D(rows: number, columns: number): Array2D<D> {
+  as2D(rows: number, columns: number): Array2D {
     this.throwIfDisposed();
-    return this.reshape<'2'>([rows, columns]);
+    return this.reshape<Rank.R2>([rows, columns]);
   }
 
-  as3D(rows: number, columns: number, depth: number): Array3D<D> {
+  as3D(rows: number, columns: number, depth: number): Array3D {
     this.throwIfDisposed();
-    return this.reshape<'3'>([rows, columns, depth]);
+    return this.reshape<Rank.R3>([rows, columns, depth]);
   }
 
-  as4D(rows: number, columns: number, depth: number, depth2: number):
-      Array4D<D> {
+  as4D(rows: number, columns: number, depth: number, depth2: number): Array4D {
     this.throwIfDisposed();
-    return this.reshape<'4'>([rows, columns, depth, depth2]);
+    return this.reshape<Rank.R4>([rows, columns, depth, depth2]);
   }
 
-  asType<D2 extends DataType>(dtype: D2): NDArray<D2, R> {
+  asType<T extends this>(this: T, dtype: DataType): T {
     this.throwIfDisposed();
-    return this.math.cast(this, dtype) as NDArray<D2, R>;
+    return ops.cast(this, dtype);
   }
 
   get rank(): number {
@@ -269,6 +213,10 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
   }
 
   get(...locs: number[]) {
+    this.throwIfDisposed();
+    if (locs.length === 0) {
+      locs = [0];
+    }
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
@@ -276,11 +224,10 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return this.dataSync()[index];
   }
 
-  add(value: number, ...locs: number[]) {
-    this.set(this.get(...locs) + value, ...locs);
-  }
-
   set(value: number, ...locs: number[]) {
+    if (locs.length === 0) {
+      locs = [0];
+    }
     this.throwIfDisposed();
     util.assert(
         locs.length === this.rank,
@@ -292,19 +239,24 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     }
     const vals = this.dataSync();
     vals[index] = value;
-    this.math.write(this.dataId, vals);
+    ENV.math.write(this.dataId, vals);
   }
 
   async val(...locs: number[]): Promise<number> {
+    if (locs.length === 0) {
+      locs = [0];
+    }
     this.throwIfDisposed();
     await this.data();
     return this.get(...locs);
   }
 
-  locToIndex(locs: ShapeMap[R]): number {
+  locToIndex(locs: number[]): number {
     this.throwIfDisposed();
-    if (locs.length === 0) {
+    if (this.rank === 0) {
       return 0;
+    } else if (this.rank === 1) {
+      return locs[0];
     }
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
@@ -313,8 +265,13 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     return index;
   }
 
-  indexToLoc(index: number): ShapeMap[R] {
+  indexToLoc(index: number): number[] {
     this.throwIfDisposed();
+    if (this.rank === 0) {
+      return [];
+    } else if (this.rank === 1) {
+      return [index];
+    }
     const locs: number[] = new Array(this.shape.length);
     for (let i = 0; i < locs.length - 1; ++i) {
       locs[i] = Math.floor(index / this.strides[i]);
@@ -328,16 +285,16 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
     this.throwIfDisposed();
     const vals = this.dataSync();
     vals.fill(value);
-    this.math.write(this.dataId, vals);
+    ENV.math.write(this.dataId, vals);
   }
 
   /** @deprecated Use dataSync() instead. */
-  getValues(): DataTypeMap[D] {
+  getValues(): TypedArray {
     return this.dataSync();
   }
 
   /** @deprecated Use data() instead. */
-  getValuesAsync(): Promise<DataTypeMap[D]> {
+  getValuesAsync(): Promise<TypedArray> {
     return this.data();
   }
 
@@ -345,18 +302,18 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
    * Asynchronously downloads the values from the NDArray. Returns a promise
    * that resolves when the data is ready.
    */
-  async data(): Promise<DataTypeMap[D]> {
+  async data(): Promise<TypedArray> {
     this.throwIfDisposed();
-    return this.math.read(this.dataId);
+    return ENV.math.read(this.dataId);
   }
 
   /**
    * Synchronously downloads the values from the NDArray. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
-  dataSync(): DataTypeMap[D] {
+  dataSync(): TypedArray {
     this.throwIfDisposed();
-    return this.math.readSync(this.dataId);
+    return ENV.math.readSync(this.dataId);
   }
 
   dispose(): void {
@@ -364,108 +321,429 @@ export class NDArray<D extends DataType = DataType, R extends Rank = Rank> {
       return;
     }
     this.isDisposed = true;
-    this.math.disposeData(this.dataId);
-  }
-
-  equals(t: NDArray<D, R>): boolean {
-    this.throwIfDisposed();
-    return this.dtype === t.dtype && util.arraysEqual(this.shape, t.shape) &&
-        util.arraysEqual(this.dataSync(), t.dataSync());
-  }
-
-  static rand<D extends DataType, R extends Rank>(
-      shape: number[], randFunction: () => number, dtype?: D): RankMap<D>[R] {
-    const size = util.sizeFromShape(shape);
-
-    let values = null;
-    if (dtype == null || dtype === 'float32') {
-      values = new Float32Array(size);
-    } else if (dtype === 'int32') {
-      values = new Int32Array(size);
-    } else if (dtype === 'bool') {
-      values = new Uint8Array(size);
-    } else {
-      throw new Error(`Unknown data type ${dtype}`);
-    }
-
-    for (let i = 0; i < size; i++) {
-      values[i] = randFunction();
-    }
-    return NDArray.make(shape, {values}, dtype);
-  }
-
-  static randNormal<D extends keyof RandNormalDataTypes, R extends Rank>(
-      shape: number[], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): RankMap<D>[R] {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, false /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype);
-  }
-
-  static randTruncatedNormal<D extends keyof RandNormalDataTypes,
-                                       R extends Rank>(
-      shape: number[], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): RankMap<D>[R] {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, true /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype);
-  }
-
-  static randUniform<D extends DataType, R extends Rank>(
-      shape: number[], a: number, b: number, dtype?: D): RankMap<D>[R] {
-    return NDArray.rand(shape, () => util.randUniform(a, b), dtype);
+    ENV.math.disposeData(this.dataId);
   }
 
   private isDisposed = false;
-  private throwIfDisposed() {
+  protected throwIfDisposed() {
     if (this.isDisposed) {
       throw new Error(`NDArray is disposed.`);
     }
   }
+
+  /** Casts the array to type `float32` */
+  toFloat<T extends this>(this: T): T {
+    return this.asType('float32');
+  }
+
+  /** Casts the array to type `int32` */
+  toInt() {
+    return this.asType('int32');
+  }
+
+  /** Casts the array to type `bool` */
+  toBool() {
+    return this.asType('bool');
+  }
+
+  // Chain API.
+
+  /** Reshapes the current ndarray into the provided shape. */
+  reshape<R2 extends Rank>(newShape: ShapeMap[R2]): NDArray<R2> {
+    this.throwIfDisposed();
+    return ops.reshape(this, newShape);
+  }
+
+  reshapeAs<T extends NDArray>(x: T): T {
+    this.throwIfDisposed();
+    return this.reshape(x.shape) as T;
+  }
+
+  tile<T extends this>(this: T, reps: number[]): T {
+    this.throwIfDisposed();
+    return ops.tile(this, reps);
+  }
+
+  gather<T extends this>(this: T, indices: Array1D, axis = 0): T {
+    this.throwIfDisposed();
+    return ops.gather(this, indices);
+  }
+
+  matMul(
+      b: Array2D, aOrientation = MatrixOrientation.REGULAR,
+      bOrientation = MatrixOrientation.REGULAR): Array2D {
+    this.throwIfDisposed();
+    return ops.matMul(this as Array2D, b, aOrientation, bOrientation);
+  }
+  slice(begin: ShapeMap[R], size: ShapeMap[R]): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.slice(this, begin, size);
+  }
+  reverse(axis: number|number[]): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.reverse(this, axis);
+  }
+  concat(x: NDArray<R>, axis: number): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.concat(this, x, axis);
+  }
+  batchNormalization(
+      mean: NDArray<R>|Array1D, variance: NDArray<R>|Array1D,
+      varianceEpsilon = .001, scale?: NDArray<R>|Array1D,
+      offset?: NDArray<R>|Array1D): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.batchNormalization(
+        this, mean, variance, varianceEpsilon, scale, offset);
+  }
+
+  clone(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.clone(this);
+  }
+
+  // Reduction ops.
+
+  logSumExp<T extends NDArray>(axis: number|number[] = null, keepDims = false):
+      T {
+    this.throwIfDisposed();
+    return ops.logSumExp(this, axis, keepDims);
+  }
+  sum<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return ops.sum(this, axis, keepDims);
+  }
+  mean<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return ops.mean(this, axis, keepDims);
+  }
+  min<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return ops.min(this, axis, keepDims);
+  }
+  max<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return ops.max(this, axis, keepDims);
+  }
+  argMin<T extends NDArray>(axis: number = null): T {
+    this.throwIfDisposed();
+    return ops.argMin(this, axis);
+  }
+  argMax<T extends NDArray>(axis: number = null): T {
+    this.throwIfDisposed();
+    return ops.argMax(this, axis);
+  }
+  argMaxEquals(x: NDArray): Scalar {
+    this.throwIfDisposed();
+    return ops.argMaxEquals(this, x);
+  }
+
+  // Binary ops.
+
+  add<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.add(this, x);
+  }
+  addStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.addStrict(this, x);
+  }
+  sub<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.sub(this, x);
+  }
+  subStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.subStrict(this, x);
+  }
+  pow<T extends NDArray>(exp: NDArray): T {
+    this.throwIfDisposed();
+    return ops.pow(this, exp);
+  }
+  powStrict(exp: NDArray): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.powStrict(this, exp);
+  }
+  mul<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.mul(this, x);
+  }
+  mulStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.mulStrict(this, x);
+  }
+  div<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.div(this, x);
+  }
+  divStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.divStrict(this, x);
+  }
+  minimum<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.minimum(this, x);
+  }
+  minimumStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.minimumStrict(this, x);
+  }
+  maximum<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.maximum(this, x);
+  }
+  maximumStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.maximumStrict(this, x);
+  }
+  transpose(perm?: number[]): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.transpose(this, perm);
+  }
+
+  // Compare ops.
+
+  notEqual<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.notEqual(this, x);
+  }
+  notEqualStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.notEqualStrict(this, x);
+  }
+  less<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.less(this, x);
+  }
+  lessStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.lessStrict(this, x);
+  }
+  equal<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.equal(this, x);
+  }
+  equalStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.equalStrict(this, x);
+  }
+  lessEqual<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.lessEqual(this, x);
+  }
+  lessEqualStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.lessEqualStrict(this, x);
+  }
+  greater<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.greater(this, x);
+  }
+  greaterStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.greaterStrict(this, x);
+  }
+  greaterEqual<T extends NDArray>(x: NDArray): T {
+    this.throwIfDisposed();
+    return ops.greaterEqual(this, x);
+  }
+  greaterEqualStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.greaterEqualStrict(this, x);
+  }
+
+  // Compare ops.
+  logicalAnd(x: NDArray): NDArray {
+    this.throwIfDisposed();
+    return ops.logicalAnd(this, x);
+  }
+  logicalOr(x: NDArray): NDArray {
+    this.throwIfDisposed();
+    return ops.logicalOr(this, x);
+  }
+  where(condition: NDArray, x: NDArray): NDArray {
+    this.throwIfDisposed();
+    return ops.where(condition, this, x);
+  }
+
+  // Unary ops.
+  neg(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.neg(this);
+  }
+  ceil(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.ceil(this);
+  }
+  floor(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.floor(this);
+  }
+  exp(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.exp(this);
+  }
+  log(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.log(this);
+  }
+  sqrt(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.sqrt(this);
+  }
+  square(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.square(this);
+  }
+  abs(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.abs(this);
+  }
+  clip(min: number, max: number): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.clip(this, min, max);
+  }
+  relu(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.relu(this);
+  }
+  elu(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.elu(this);
+  }
+  selu(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.selu(this);
+  }
+  leakyRelu(alpha = 0.2): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.leakyRelu(this, alpha);
+  }
+  prelu(alpha: NDArray<R>): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.prelu(this, alpha);
+  }
+  sigmoid(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.sigmoid(this);
+  }
+  sin(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.sin(this);
+  }
+  cos(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.cos(this);
+  }
+  tan(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.tan(this);
+  }
+  asin(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.asin(this);
+  }
+  acos(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.acos(this);
+  }
+  atan(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.atan(this);
+  }
+  sinh(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.sinh(this);
+  }
+  cosh(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.cosh(this);
+  }
+  tanh(): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.tanh(this);
+  }
+  step(alpha = 0.0): NDArray<R> {
+    this.throwIfDisposed();
+    return ops.step(this, alpha);
+  }
+  softmax<T extends this>(this: T, dim = -1): T {
+    this.throwIfDisposed();
+    return ops.softmax(this, dim);
+  }
+
+  // Image ops.
+  resizeBilinear<T extends Array3D|Array4D>(
+      this: T, newShape2D: [number, number], alignCorners = false): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.image.resizeBilinear(this, newShape2D, alignCorners);
+  }
+
+  // Convolutions.
+  conv1d<T extends Array2D|Array3D>(
+      this: T, filter: Array3D, bias: Array1D|null, stride: number,
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.conv1d(this, filter, bias, stride, pad, dimRoundingMode);
+  }
+  conv2d<T extends Array3D|Array4D>(
+      this: T, filter: Array4D, bias: Array1D|null,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.conv2d(this, filter, bias, strides, pad, dimRoundingMode);
+  }
+  conv2dTranspose<T extends Array3D|Array4D>(
+      this: T, filter: Array4D,
+      outputShape: [number, number, number, number]|[number, number, number],
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.conv2dTranspose(
+        this, filter, outputShape, strides, pad, dimRoundingMode);
+  }
+  depthwiseConv2D<T extends Array3D|Array4D>(
+      this: T, filter: Array4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.depthwiseConv2D(
+        this, filter, strides, pad, rates, dimRoundingMode);
+  }
+
+  // Pooling.
+  avgPool<T extends Array3D|Array4D>(
+      this: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.avgPool(this, filterSize, strides, pad, dimRoundingMode);
+  }
+  maxPool<T extends Array3D|Array4D>(
+      this: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.maxPool(this, filterSize, strides, pad, dimRoundingMode);
+  }
+  minPool<T extends Array3D|Array4D>(
+      this: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    (this as NDArray).throwIfDisposed();
+    return ops.minPool(this, filterSize, strides, pad, dimRoundingMode);
+  }
 }
 
-export class Scalar<D extends DataType = DataType> extends NDArray<D, '0'> {
-  static new<D extends DataType = 'float32'>(value: number|boolean, dtype?: D):
-      Scalar<D> {
+export class Scalar extends NDArray<Rank.R0> {
+  static new(value: number|boolean, dtype?: DataType): Scalar {
     const values = [value] as number[] | boolean[];
     return new Scalar([], dtype, toTypedArray(values, dtype));
   }
-
-  get(): number {
-    return this.dataSync()[0];
-  }
-
-  async val(): Promise<number> {
-    await this.data();
-    return this.get();
-  }
-
-  add(value: number) {
-    this.dataSync()[0] += value;
-  }
-
-  asType<D2 extends DataType>(dtype: D2): Scalar<D2> {
-    return super.asType(dtype);
-  }
-
-  locToIndex(loc: number[]): number {
-    return 0;
-  }
-
-  indexToLoc(index: number): number[] {
-    return [];
-  }
 }
 
-export class Array1D<D extends DataType = DataType> extends NDArray<D, '1'> {
+export class Array1D extends NDArray<Rank.R1> {
   static new<D extends DataType = 'float32'>(
-      values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Array1D<D> {
+      values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Array1D {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       util.assert(
@@ -475,85 +753,13 @@ export class Array1D<D extends DataType = DataType> extends NDArray<D, '1'> {
     }
     return new Array1D([values.length], dtype, toTypedArray(values, dtype));
   }
-
-  get(i: number): number {
-    return this.dataSync()[i];
-  }
-
-  async val(i: number): Promise<number> {
-    await this.data();
-    return this.get(i);
-  }
-
-  add(value: number, i: number) {
-    this.dataSync()[i] += value;
-  }
-
-  locToIndex(loc: [number]): number {
-    return loc[0];
-  }
-
-  indexToLoc(index: number): [number] {
-    return [index];
-  }
-
-  asType<D2 extends DataType>(dtype: D2): Array1D<D2> {
-    return super.asType(dtype) as Array1D<D2>;
-  }
-
-  static ones<D extends DataType = DataType>(shape: [number], dtype?: D):
-      Array1D<D> {
-    return NDArray.ones<D, '1'>(shape, dtype);
-  }
-
-  static zeros<D extends DataType = DataType>(shape: [number], dtype?: D):
-      Array1D<D> {
-    return NDArray.zeros<D, '1'>(shape, dtype);
-  }
-
-  static randNormal<D extends keyof RandNormalDataTypes>(
-      shape: [number], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): Array1D<D> {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, false /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array1D<D>;
-  }
-
-  static randTruncatedNormal<D extends keyof RandNormalDataTypes>(
-      shape: [number], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): Array1D<D> {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, true /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array1D<D>;
-  }
-
-  static randUniform<D extends DataType>(
-      shape: [number], a: number, b: number, dtype?: D): Array1D<D> {
-    return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
-        Array1D<D>;
-  }
 }
 
-export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
-  constructor(
-      shape: [number, number], dtype: D, values?: DataTypeMap[D],
-      dataId?: number, math?: NDArrayMath) {
-    util.assert(shape.length === 2, 'Shape should be of length 2');
-    super(shape, dtype, values, dataId, math);
-  }
-
+export class Array2D extends NDArray<Rank.R2> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number],
       values: DataTypeMap[D]|number[]|number[][]|boolean[]|boolean[][],
-      dtype?: D): Array2D<D> {
+      dtype?: D): Array2D {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
@@ -566,85 +772,13 @@ export class Array2D<D extends DataType = DataType> extends NDArray<D, '2'> {
     }
     return new Array2D(shape, dtype, toTypedArray(values, dtype));
   }
-
-  get(i: number, j: number) {
-    return this.dataSync()[this.strides[0] * i + j];
-  }
-
-  add(value: number, i: number, j: number) {
-    this.dataSync()[this.strides[0] * i + j] += value;
-  }
-
-  async val(i: number, j: number): Promise<number> {
-    await this.data();
-    return this.get(i, j);
-  }
-
-  locToIndex(locs: [number, number]): number {
-    return this.strides[0] * locs[0] + locs[1];
-  }
-
-  indexToLoc(index: number): [number, number] {
-    return [Math.floor(index / this.strides[0]), index % this.strides[0]];
-  }
-
-  asType<D2 extends DataType>(dtype: D2): Array2D<D2> {
-    return super.asType(dtype) as Array2D<D2>;
-  }
-
-  static ones<D extends DataType = DataType>(
-      shape: [number, number], dtype?: D): Array2D<D> {
-    return NDArray.ones<D, '2'>(shape, dtype);
-  }
-
-  static zeros<D extends DataType = DataType>(
-      shape: [number, number], dtype?: D): Array2D<D> {
-    return NDArray.zeros<D, '2'>(shape, dtype);
-  }
-
-  static randNormal<D extends keyof RandNormalDataTypes>(
-      shape: [number, number], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): Array2D<D> {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, false /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array2D<D>;
-  }
-
-  static randTruncatedNormal<D extends keyof RandNormalDataTypes>(
-      shape: [number, number], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): Array2D<D> {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, true /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array2D<D>;
-  }
-
-  static randUniform<D extends DataType>(
-      shape: [number, number], a: number, b: number, dtype?: D): Array2D<D> {
-    return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
-        Array2D<D>;
-  }
 }
 
-export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
-  constructor(
-      shape: [number, number, number], dtype: D, values?: DataTypeMap[D],
-      dataId?: number, math?: NDArrayMath) {
-    util.assert(shape.length === 3, 'Shape should be of length 3');
-    super(shape, dtype, values, dataId, math);
-  }
-
+export class Array3D extends NDArray<Rank.R3> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number],
       values: DataTypeMap[D]|number[]|number[][][]|boolean[]|boolean[][][],
-      dtype?: D): Array3D<D> {
+      dtype?: D): Array3D {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
@@ -657,87 +791,13 @@ export class Array3D<D extends DataType = DataType> extends NDArray<D, '3'> {
     }
     return new Array3D(shape, dtype, toTypedArray(values, dtype));
   }
-
-  get(i: number, j: number, k: number) {
-    return this.dataSync()[this.strides[0] * i + this.strides[1] * j + k];
-  }
-
-  async val(i: number, j: number, k: number): Promise<number> {
-    await this.data();
-    return this.get(i, j, k);
-  }
-
-  add(value: number, i: number, j: number, k: number) {
-    this.dataSync()[this.strides[0] * i + this.strides[1] * j + k] += value;
-  }
-
-  locToIndex(locs: [number, number, number]): number {
-    return this.strides[0] * locs[0] + this.strides[1] * locs[1] + locs[2];
-  }
-
-  indexToLoc(index: number): [number, number, number] {
-    const i = Math.floor(index / this.strides[0]);
-    index -= i * this.strides[0];
-    return [i, Math.floor(index / this.strides[1]), index % this.strides[1]];
-  }
-  static ones<D extends DataType = DataType>(
-      shape: [number, number, number], dtype?: D): Array3D<D> {
-    return NDArray.ones<D, '3'>(shape, dtype);
-  }
-
-  asType<D2 extends DataType>(dtype: D2): Array3D<D2> {
-    return super.asType(dtype) as Array3D<D2>;
-  }
-
-  static zeros<D extends DataType = DataType>(
-      shape: [number, number, number], dtype?: D): Array3D<D> {
-    return NDArray.zeros<D, '3'>(shape, dtype);
-  }
-
-  static randNormal<D extends keyof RandNormalDataTypes>(
-      shape: [number, number, number], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): Array3D<D> {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, false /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array3D<D>;
-  }
-
-  static randTruncatedNormal<D extends keyof RandNormalDataTypes>(
-      shape: [number, number, number], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): Array3D<D> {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, true /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array3D<D>;
-  }
-
-  static randUniform<D extends DataType>(
-      shape: [number, number, number], a: number, b: number,
-      dtype?: D): Array3D<D> {
-    return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
-        Array3D<D>;
-  }
 }
 
-export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
-  constructor(
-      shape: [number, number, number, number], dtype: D,
-      values?: DataTypeMap[D], dataId?: number, math?: NDArrayMath) {
-    util.assert(shape.length === 4, 'Shape should be of length 4');
-    super(shape, dtype, values, dataId, math);
-  }
-
+export class Array4D extends NDArray<Rank.R4> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number, number],
       values: DataTypeMap[D]|number[]|number[][][][]|boolean[]|boolean[][][][],
-      dtype?: D): Array4D<D> {
+      dtype?: D): Array4D {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
@@ -750,84 +810,9 @@ export class Array4D<D extends DataType = DataType> extends NDArray<D, '4'> {
     }
     return new Array4D(shape, dtype, toTypedArray(values, dtype));
   }
-
-  get(i: number, j: number, k: number, l: number) {
-    return this.dataSync()
-        [this.strides[0] * i + this.strides[1] * j + this.strides[2] * k + l];
-  }
-
-  async val(i: number, j: number, k: number, l: number): Promise<number> {
-    await this.data();
-    return this.get(i, j, k, l);
-  }
-
-  add(value: number, i: number, j: number, k: number, l: number) {
-    this.dataSync()
-        [this.strides[0] * i + this.strides[1] * j + this.strides[2] * k + l] +=
-        value;
-  }
-
-  locToIndex(locs: [number, number, number, number]): number {
-    return this.strides[0] * locs[0] + this.strides[1] * locs[1] +
-        this.strides[2] * locs[2] + locs[3];
-  }
-
-  indexToLoc(index: number): [number, number, number, number] {
-    const i = Math.floor(index / this.strides[0]);
-    index -= i * this.strides[0];
-    const j = Math.floor(index / this.strides[1]);
-    index -= j * this.strides[1];
-    return [i, j, Math.floor(index / this.strides[2]), index % this.strides[2]];
-  }
-
-  asType<D2 extends DataType>(dtype: D2): Array4D<D2> {
-    return super.asType(dtype) as Array4D<D2>;
-  }
-
-  static ones<D extends DataType = DataType>(
-      shape: [number, number, number, number], dtype?: D): Array4D<D> {
-    return NDArray.ones<D, '4'>(shape, dtype);
-  }
-
-  static zeros<D extends DataType = DataType>(
-      shape: [number, number, number, number], dtype?: D): Array4D<D> {
-    return NDArray.zeros<D, '4'>(shape, dtype);
-  }
-
-  static randNormal<D extends keyof RandNormalDataTypes>(
-      shape: [number, number, number, number], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): Array4D<D> {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, false /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array4D<D>;
-  }
-
-  static randTruncatedNormal<D extends keyof RandNormalDataTypes>(
-      shape: [number, number, number, number], mean = 0, stdDev = 1, dtype?: D,
-      seed?: number): Array4D<D> {
-    if (dtype != null && dtype === 'bool') {
-      throw new Error(`Unsupported data type ${dtype}`);
-    }
-    const randGauss =
-        new MPRandGauss(mean, stdDev, dtype, true /* truncated */, seed);
-    return NDArray.rand(shape, () => randGauss.nextValue(), dtype) as
-        Array4D<D>;
-  }
-
-  static randUniform<D extends DataType>(
-      shape: [number, number, number, number], a: number, b: number,
-      dtype?: D): Array4D<D> {
-    return NDArray.rand(shape, () => util.randUniform(a, b), dtype) as
-        Array4D<D>;
-  }
 }
 
-export class Variable<D extends DataType = DataType, R extends Rank = Rank>
-    extends NDArray<D, R> {
+export class Variable<R extends Rank = Rank> extends NDArray<R> {
   private static nextVarId = 0;
   name: string;
 
@@ -837,7 +822,7 @@ export class Variable<D extends DataType = DataType, R extends Rank = Rank>
    * added to global namespace.
    */
   private constructor(
-      initialValue: NDArray<D, R>, public trainable = true, name?: string) {
+      initialValue: NDArray<R>, public trainable = true, name?: string) {
     super(
         initialValue.shape, initialValue.dtype, null /* values */,
         initialValue.dataId);
@@ -847,7 +832,7 @@ export class Variable<D extends DataType = DataType, R extends Rank = Rank>
       this.name = Variable.nextVarId.toString();
       Variable.nextVarId++;
     }
-    this.math.registerVariable(this);
+    ENV.math.registerVariable(this);
   }
 
   /**
@@ -858,17 +843,17 @@ export class Variable<D extends DataType = DataType, R extends Rank = Rank>
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.
    */
-  static variable<D extends DataType, R extends Rank>(
-      initialValue: NDArray<D, R>, trainable = true, name?: string,
-      dtype?: D): Variable<D, R> {
+  static variable<R extends Rank>(
+      initialValue: NDArray<R>, trainable = true, name?: string,
+      dtype?: DataType): Variable<R> {
     if (dtype != null && dtype !== initialValue.dtype) {
-      initialValue = initialValue.asType(dtype);
+      initialValue = initialValue.asType(dtype) as NDArray<R>;
     }
     return new Variable(initialValue, trainable, name);
   }
 
   /** Assign a new array to this variable. The old array will be disposed. */
-  assign(newValue: NDArray<D, R>): void {
+  assign(newValue: NDArray<R>): void {
     if (newValue.dtype !== this.dtype) {
       throw new Error(
           `dtype of the new value (${newValue.dtype}) and ` +
@@ -879,9 +864,9 @@ export class Variable<D extends DataType = DataType, R extends Rank = Rank>
           `shape of the new value (${newValue.shape}) and ` +
           `previous value (${this.shape}) must match`);
     }
-    this.math.disposeData(this.dataId);
+    ENV.math.disposeData(this.dataId);
     this.dataId = newValue.dataId;
-    this.math.register(this);
+    ENV.math.register(this);
     newValue.dispose();
   }
 }
@@ -889,77 +874,25 @@ export class Variable<D extends DataType = DataType, R extends Rank = Rank>
 const variable = Variable.variable;
 export {variable};
 
-function copyTypedArray<D extends DataType>(
-    array: DataTypeMap[D]|number[]|boolean[], dtype: D): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
-    return new Float32Array(array as number[]);
-  } else if (dtype === 'int32') {
-    const vals = new Int32Array(array.length);
-    for (let i = 0; i < vals.length; ++i) {
-      const val = array[i] as number;
-      if (util.isValNaN(val, 'int32')) {
-        vals[i] = util.getNaN('int32');
-      } else {
-        vals[i] = val;
-      }
-    }
-    return vals;
-  } else if (dtype === 'bool') {
-    const bool = new Uint8Array(array.length);
-    for (let i = 0; i < bool.length; ++i) {
-      const val = array[i] as number;
-      if (util.isValNaN(val as number, 'bool')) {
-        bool[i] = util.getNaN('bool');
-      } else if (Math.round(val) !== 0) {
-        bool[i] = 1;
-      }
-    }
-    return bool;
-  } else {
-    throw new Error(`Unknown data type ${dtype}`);
-  }
-}
-
-function instanceofTypedArray(a: ArrayData): boolean {
+function instanceofTypedArray(a: ArrayData<DataType>): boolean {
   return a instanceof Float32Array || a instanceof Int32Array ||
       a instanceof Uint8Array;
 }
 
-function noConversionNeeded(a: ArrayData, dtype: DataType): boolean {
+function noConversionNeeded<D extends DataType>(
+    a: ArrayData<D>, dtype: D): boolean {
   return (a instanceof Float32Array && dtype === 'float32') ||
       (a instanceof Int32Array && dtype === 'int32') ||
       (a instanceof Uint8Array && dtype === 'bool');
 }
 
 function toTypedArray<D extends DataType>(
-    a: ArrayData, dtype: D): DataTypeMap[D] {
+    a: ArrayData<D>, dtype: D): DataTypeMap[D] {
   if (noConversionNeeded(a, dtype)) {
     return a as DataTypeMap[D];
   }
   if (Array.isArray(a)) {
-    a = util.flatten(a) as number[];
+    a = util.flatten(a as number[]);
   }
-  return copyTypedArray(a, dtype);
-}
-
-function makeZerosTypedArray<D extends DataType>(
-    size: number, dtype: D): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
-    return new Float32Array(size);
-  } else if (dtype === 'int32') {
-    return new Int32Array(size);
-  } else if (dtype === 'bool') {
-    return new Uint8Array(size);
-  } else {
-    throw new Error(`Unknown data type ${dtype}`);
-  }
-}
-
-function makeOnesTypedArray<D extends DataType>(
-    size: number, dtype: D): DataTypeMap[D] {
-  const array = makeZerosTypedArray(size, dtype);
-  for (let i = 0; i < array.length; i++) {
-    array[i] = 1;
-  }
-  return array;
+  return util.copyTypedArray(a, dtype);
 }

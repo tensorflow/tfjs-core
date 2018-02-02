@@ -15,119 +15,61 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../../util';
 import {Conv2DInfo} from '../../conv_util';
 import {Array1D, Array4D} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
+import {KernelNode} from '../tape_types';
 
-// Conv2D
 export interface Conv2DNode extends KernelNode {
-  inputAndArgs: Conv2DInputConfig;
+  inputAndArgs: {
+    inputs: {x: Array4D; filter: Array4D; bias?: Array1D;};
+    args: {convInfo: Conv2DInfo;};
+  };
   output: Array4D;
-  gradient: (dy: Array4D, y: Array4D) => Conv2DGradientInputArrays;
+  gradient: (dy: Array4D, y: Array4D) => {
+    x: () => Array4D;
+    filter: () => Array4D;
+    bias?: () => Array1D;
+  };
 }
 
-export interface Conv2DInputConfig extends KernelInputConfig {
-  inputs: Conv2DInputArrays;
-  args: {convInfo: Conv2DInfo;};
-}
-
-export interface Conv2DInputArrays extends NamedArrayMap {
-  x: Array4D;
-  filter: Array4D;
-  bias?: Array1D;
-}
-
-export interface Conv2DGradientInputArrays extends TapeNodeInputGradientArrays {
-  x: () => Array4D;
-  filter: () => Array4D;
-  bias?: () => Array1D;
-}
-
-// Conv2DDerInput
 export interface Conv2DDerInputNode extends KernelNode {
-  inputAndArgs: Conv2DDerInputInputConfig;
+  inputAndArgs: {
+    inputs: {dy: Array4D; filter: Array4D;};
+    args: {convInfo: Conv2DInfo;};
+  };
   output: Array4D;
-  gradient: (dy: Array4D, y: Array4D) => Conv2DDerInputGradientInputArrays;
+  gradient: (dy: Array4D, y: Array4D) => {
+    dy: () => Array4D;
+    filter: () => Array4D;
+  };
 }
 
-export interface Conv2DDerInputInputConfig extends KernelInputConfig {
-  inputs: Conv2DDerInputInputArrays;
-  args: {convInfo: Conv2DInfo;};
-}
-
-export interface Conv2DDerInputInputArrays extends NamedArrayMap {
-  dy: Array4D;
-  filter: Array4D;
-}
-
-export interface Conv2DDerInputGradientInputArrays extends
-    TapeNodeInputGradientArrays {
-  dy: () => Array4D;
-  filter: () => Array4D;
-}
-
-// Conv2DDerFilter
 export interface Conv2DDerFilterNode extends KernelNode {
-  inputAndArgs: Conv2DDerFilterInputConfig;
+  inputAndArgs: {
+    inputs: {x: Array4D; dy: Array4D;};
+    args: {convInfo: Conv2DInfo;};
+  };
   output: Array4D;
-  gradient: (dy: Array4D, y: Array4D) => Conv2DDerFilterGradientInputArrays;
+  gradient: (dy: Array4D, y: Array4D) => {
+    x: () => Array4D;
+    dy: () => Array4D;
+  };
 }
 
-export interface Conv2DDerFilterInputConfig extends KernelInputConfig {
-  inputs: Conv2DDerFilterInputArrays;
-  args: {convInfo: Conv2DInfo;};
-}
-
-export interface Conv2DDerFilterInputArrays extends NamedArrayMap {
-  x: Array4D;
-  dy: Array4D;
-}
-
-export interface Conv2DDerFilterGradientInputArrays extends
-    TapeNodeInputGradientArrays {
-  x: () => Array4D;
-  dy: () => Array4D;
-}
-
-// Conv2DDerBias
 export interface Conv2DDerBiasNode extends KernelNode {
-  inputAndArgs: Conv2DDerBiasInputConfig;
+  inputAndArgs: {inputs: {dy: Array4D;};};
   output: Array1D;
-  gradient: (dy: Array1D, y: Array1D) => Conv2DDerBiasGradientInputArrays;
+  gradient: (dy: Array1D, y: Array1D) => {
+    dy: () => Array4D;
+  };
 }
 
-export interface Conv2DDerBiasInputConfig extends KernelInputConfig {
-  inputs: Conv2DDerBiasInputArrays;
-}
-
-export interface Conv2DDerBiasInputArrays extends NamedArrayMap { dy: Array4D; }
-
-export interface Conv2DDerBiasGradientInputArrays extends
-    TapeNodeInputGradientArrays {
-  dy: () => Array4D;
-}
-
-// DepthwiseConv2D
 export interface DepthwiseConv2DNode extends KernelNode {
-  inputAndArgs: DepthwiseConv2DInputConfig;
+  inputAndArgs:
+      {inputs: {x: Array4D; filter: Array4D;}; args: {convInfo: Conv2DInfo;};};
   output: Array4D;
-  gradient: (dy: Array4D, y: Array4D) => DepthwiseConv2DGradientInputArrays;
-}
-
-export interface DepthwiseConv2DInputConfig extends KernelInputConfig {
-  inputs: DepthwiseConv2DInputArrays;
-  args: {convInfo: Conv2DInfo;};
-}
-
-export interface DepthwiseConv2DInputArrays extends NamedArrayMap {
-  x: Array4D;
-  filter: Array4D;
-}
-
-export interface DepthwiseConv2DGradientInputArrays extends
-    TapeNodeInputGradientArrays {
-  x: () => Array4D;
-  filter: () => Array4D;
+  gradient: (dy: Array4D, y: Array4D) => {
+    x: () => Array4D;
+    filter: () => Array4D;
+  };
 }

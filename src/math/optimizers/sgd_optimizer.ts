@@ -21,9 +21,8 @@ import {SessionRuntime} from '../../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {NamedVariableMap} from '../../util';
 import {Scalar} from '../ndarray';
-
+import {NamedArrayMap} from '../types';
 import {Optimizer} from './optimizer';
 
 export class SGDOptimizer extends Optimizer {
@@ -35,7 +34,7 @@ export class SGDOptimizer extends Optimizer {
   }
 
   // Eager mode
-  applyGradients(variableGradients: NamedVariableMap) {
+  applyGradients(variableGradients: NamedArrayMap) {
     const math = ENV.math;
 
     const varNames = Object.keys(variableGradients);

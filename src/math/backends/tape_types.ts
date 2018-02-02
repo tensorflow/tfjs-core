@@ -15,15 +15,13 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../util';
+import {NamedArrayMap} from '../../math/types';
 import {NDArray} from '../ndarray';
-
+import {Rank} from '../types';
 import {KernelConfigRegistry} from './kernel_registry';
 
 export type Tape = Array<TapeNode<TapeNodeOutput>>;
-
 export type TapeNodeOutput = NDArray|NamedArrayMap;
-
 export type TapeNodeType = 'kernel'|'customGradient';
 
 export interface TapeNode<T extends TapeNodeOutput> {
@@ -44,7 +42,7 @@ export type TapeNodeInputGradientArrays = {
 
 // Kernel nodes
 export interface KernelNode extends TapeNode<NDArray> {
-  kernel: keyof KernelConfigRegistry;
+  kernel: keyof KernelConfigRegistry<Rank>;
   inputAndArgs: KernelInputConfig;
   output: NDArray;
 }

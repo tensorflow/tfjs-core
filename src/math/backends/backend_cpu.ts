@@ -24,10 +24,10 @@ import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../ndarray';
+import * as ops from '../ops';
 import * as types from '../types';
-import {SumTypes, SumTypesMap} from '../types';
-
+import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
@@ -45,21 +45,19 @@ export class MathBackendCPU implements MathBackend {
   register(dataId: number, shape: number[], dtype: DataType): void {
     this.data[dataId] = null;
   }
-  write<D extends DataType>(dataId: number, values: DataTypeMap[D]): void {
+  write(dataId: number, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
     this.throwIfNoData(dataId);
     this.data[dataId] = values;
   }
-  writePixels(
-      dataId: number,
+  fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void {
+      numChannels: number): Array3D {
     if (pixels == null) {
       throw new Error('MathBackendCPU.writePixels(): pixels can not be null');
     }
-    this.throwIfNoData(dataId);
     let vals: Uint8ClampedArray;
     if (pixels instanceof ImageData) {
       vals = pixels.data;
@@ -98,24 +96,29 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    this.data[dataId] = values;
+    const outShape: [number, number, number] =
+        [pixels.height, pixels.width, numChannels];
+    return Array3D.new(outShape, values, 'int32');
   }
-  async read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]> {
+  async read(dataId: number): Promise<TypedArray> {
     this.throwIfNoData(dataId);
     return this.data[dataId];
   }
-  readSync<D extends DataType>(dataId: number): DataTypeMap[D] {
+  readSync(dataId: number): TypedArray {
     this.throwIfNoData(dataId);
     return this.data[dataId];
   }
+
   disposeData(dataId: number): void {
     delete this.data[dataId];
   }
-  async time(query: () => NDArray): Promise<number> {
+
+  async time(f: () => void): Promise<number> {
     const start = performance.now();
-    query();
+    f();
     return performance.now() - start;
   }
+
   private throwIfNoData(dataId: number) {
     if (!(dataId in this.data)) {
       throw new Error(
@@ -126,18 +129,14 @@ export class MathBackendCPU implements MathBackend {
     }
   }
 
-  clone<T extends NDArray>(x: T): T {
-    return NDArray.make(x.shape, {values: new Float32Array(x.dataSync())}) as T;
-  }
-
   slice1D(x: Array1D, begin: number, size: number): Array1D {
     const newVals = x.dataSync().slice(begin, begin + size);
-    return Array1D.new(newVals);
+    return Array1D.new(newVals, x.dtype);
   }
 
   slice2D(x: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    const result = Array2D.zeros(size);
+    const result = ops.zeros<Rank.R2>(size, x.dtype);
     const [startI, startJ] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -152,7 +151,7 @@ export class MathBackendCPU implements MathBackend {
   slice3D(x: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
-    const result = Array3D.zeros(size);
+    const result = ops.zeros<Rank.R3>(size, x.dtype);
     const [startI, startJ, startK] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -168,7 +167,7 @@ export class MathBackendCPU implements MathBackend {
   slice4D(x: Array4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Array4D {
-    const result = Array4D.zeros(size);
+    const result = ops.zeros<Rank.R4>(size, x.dtype);
     const [startI, startJ, startK, startL] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -185,7 +184,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   reverse4D(x: Array4D, axis: number[]): Array4D {
-    const result = NDArray.like(x);
+    const result = ops.clone(x);
 
     // Reverse axis only if the axis has dim != 1
     const revAxis = (i: number) => axis.indexOf(i) !== -1 && x.shape[i] !== 1;
@@ -209,25 +208,13 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  concat1D(a: Array1D, b: Array1D): Array1D {
-    const outShape = concat_util.computeOutShape(a.shape, b.shape, 0);
-    const result = Array1D.zeros(outShape as [number]);
+  // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
+  concat(a: Array2D, b: Array2D): Array2D {
+    const outShape =
+        concat_util.computeOutShape(a.shape, b.shape, 1 /* axis */);
+    const result = ops.zeros<Rank.R2>(outShape as [number, number]);
 
-    // Use built-in TypedArray.set() method for speed.
-    const aVals = a.dataSync();
-    const bVals = b.dataSync();
-    const vals = result.dataSync();
-    vals.set(aVals, 0);
-    vals.set(bVals, a.size);
-
-    return result;
-  }
-
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
-    const result = Array2D.zeros(outShape as [number, number]);
-
-    if (axis === 0) {
+    if (a.shape[0] === 1 && b.shape[0] === 1) {
       // Use built-in TypedArray.set() method for speed.
       const aVals = a.dataSync();
       const bVals = b.dataSync();
@@ -238,95 +225,13 @@ export class MathBackendCPU implements MathBackend {
     }
 
     for (let i = 0; i < outShape[0]; ++i) {
-      for (let j = 0; j < outShape[1]; ++j) {
-        const index: [number, number] = [i, j];
-        let value: number;
-        if (index[axis] < a.shape[axis]) {
-          value = a.get(i, j);
-        } else {
-          index[axis] -= a.shape[axis];
-          const [i2, j2] = index;
-          value = b.get(i2, j2);
-        }
-
-        result.set(value, i, j);
+      for (let j = 0; j < a.shape[1]; ++j) {
+        result.set(a.get(i, j), i, j);
+      }
+      for (let j = 0; j < b.shape[1]; ++j) {
+        result.set(b.get(i, j), i, j + a.shape[1]);
       }
     }
-    return result;
-  }
-
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
-    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
-
-    const result = Array3D.zeros(outShape as [number, number, number]);
-
-    if (axis === 0) {
-      // Use built-in TypedArray.set() method for speed.
-      const aVals = a.dataSync();
-      const bVals = b.dataSync();
-      const vals = result.dataSync();
-      vals.set(aVals, 0);
-      vals.set(bVals, a.size);
-      return result;
-    }
-
-    for (let i = 0; i < outShape[0]; ++i) {
-      for (let j = 0; j < outShape[1]; ++j) {
-        for (let k = 0; k < outShape[2]; ++k) {
-          // Shader begins.
-          const index: [number, number, number] = [i, j, k];
-          let value: number;
-          if (index[axis] < a.shape[axis]) {
-            value = a.get(i, j, k);
-          } else {
-            index[axis] -= a.shape[axis];
-            const [i2, j2, k2] = index;
-            value = b.get(i2, j2, k2);
-          }
-
-          result.set(value, i, j, k);
-        }
-      }
-    }
-
-    return result;
-  }
-
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
-    const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
-    const result = Array4D.zeros(outShape as [number, number, number, number]);
-
-    if (axis === 0) {
-      // Use built-in TypedArray.set() method for speed.
-      const aVals = a.dataSync();
-      const bVals = b.dataSync();
-      const vals = result.dataSync();
-      vals.set(aVals, 0);
-      vals.set(bVals, a.size);
-      return result;
-    }
-
-    for (let i = 0; i < outShape[0]; ++i) {
-      for (let j = 0; j < outShape[1]; ++j) {
-        for (let k = 0; k < outShape[2]; ++k) {
-          for (let l = 0; l < outShape[3]; ++l) {
-            // Shader begins.
-            const index: [number, number, number, number] = [i, j, k, l];
-            let value: number;
-            if (index[axis] < a.shape[axis]) {
-              value = a.get(i, j, k, l);
-            } else {
-              index[axis] -= a.shape[axis];
-              const [i2, j2, k2, l2] = index;
-              value = b.get(i2, j2, k2, l2);
-            }
-
-            result.set(value, i, j, k, l);
-          }
-        }
-      }
-    }
-
     return result;
   }
 
@@ -334,19 +239,19 @@ export class MathBackendCPU implements MathBackend {
     return this.multiply(Scalar.new(-1), x) as T;
   }
 
-  add<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  add(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(
                a, b, types.upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue + bValue) as NDArray<D>;
+               (aValue, bValue) => aValue + bValue) as NDArray;
   }
 
-  subtract<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  subtract(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(
                a, b, types.upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue - bValue) as NDArray<D>;
+               (aValue, bValue) => aValue - bValue) as NDArray;
   }
 
-  pow<T extends NDArray>(a: T, b: NDArray<'int32'>): T {
+  pow<T extends NDArray>(a: T, b: NDArray): T {
     return this.broadcastedBinaryOp(
                a, b, a.dtype, (aValue, bValue) => Math.pow(aValue, bValue)) as
         T;
@@ -389,24 +294,23 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new([leftDim, rightDim], values);
   }
 
-  multiply<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  multiply(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(
                a, b, types.upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue * bValue) as NDArray<D>;
+               (aValue, bValue) => aValue * bValue) as NDArray;
   }
 
-  divide(a: NDArray, b: NDArray): NDArray<'float32'> {
+  divide(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(
-               a, b, 'float32', (aValue, bValue) => aValue / bValue) as
-        NDArray<'float32'>;
+               a, b, 'float32', (aValue, bValue) => aValue / bValue) as NDArray;
   }
 
-  sum<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<SumTypes[D]> {
+  sum(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const resultDtype = SumTypesMap[x.dtype] as keyof SumTypes;
-    const result = NDArray.zeros(outShape, resultDtype);
+    const resultDtype = types.upcastType(x.dtype, 'int32');
+    const result = ops.zeros(outShape, resultDtype);
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.dataSync();
 
@@ -419,14 +323,14 @@ export class MathBackendCPU implements MathBackend {
       }
       vals[i] = sum;
     }
-    return result as NDArray<SumTypes[D]>;
+    return result;
   }
 
-  argMin(x: NDArray, axes: number[]): NDArray<'int32'> {
+  argMin(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('argMin', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const result = NDArray.zeros(outShape, 'int32');
+    const result = ops.zeros(outShape, 'int32');
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.dataSync();
 
@@ -451,11 +355,11 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  argMax(x: NDArray, axes: number[]): NDArray<'int32'> {
+  argMax(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('argMax', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const result = NDArray.zeros(outShape, 'int32');
+    const result = ops.zeros(outShape, 'int32');
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.dataSync();
 
@@ -480,7 +384,7 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  equal(a: NDArray, b: NDArray): NDArray<'bool'> {
+  equal(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -490,7 +394,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  notEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
+  notEqual(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -500,7 +404,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  less(a: NDArray, b: NDArray): NDArray<'bool'> {
+  less(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -510,7 +414,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  lessEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
+  lessEqual(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -520,7 +424,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  greater(a: NDArray, b: NDArray): NDArray<'bool'> {
+  greater(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -530,7 +434,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  greaterEqual(a: NDArray, b: NDArray): NDArray<'bool'> {
+  greaterEqual(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -540,16 +444,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  logicalNot<T extends NDArray>(x: T): T {
-    const values = x.dataSync();
-    const newValues = new Int32Array(values.length);
-    for (let i = 0; i < values.length; ++i) {
-      newValues[i] = values[i] ? 0 : 1;
-    }
-    return NDArray.make(x.shape, {values: newValues}, 'bool') as T;
-  }
-
-  logicalAnd(a: NDArray, b: NDArray): NDArray<'bool'> {
+  logicalAnd(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -559,7 +454,7 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  logicalOr(a: NDArray, b: NDArray): NDArray<'bool'> {
+  logicalOr(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
         return util.getNaN('bool');
@@ -569,17 +464,36 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
-  topKValues<D extends DataType, T extends NDArray<D>>(x: T, k: number):
-      Array1D<D> {
-    return this.topK(x, k).values as Array1D<D>;
+  where(condition: NDArray, a: NDArray, b: NDArray, dtype: DataType): NDArray {
+    const values = condition.dataSync();
+    const aValues = a.dataSync();
+    const bValues = b.dataSync();
+    const result = ops.zeros(a.shape, dtype);
+    const newValues = result.dataSync();
+    let index = 0;
+    const offset = condition.rank > 1 || a.rank === 1 ? 1 : a.shape[1];
+    for (let i = 0; i < values.length; i++) {
+      for (let j = 0; j < offset; j++) {
+        if (values[i] === 1) {
+          newValues[index++] = aValues[i];
+        } else {
+          newValues[index++] = bValues[i];
+        }
+      }
+    }
+    return result;
   }
 
-  topKIndices(x: NDArray, k: number): Array1D<'int32'> {
+  topKValues<T extends NDArray>(x: T, k: number): Array1D {
+    return this.topK(x, k).values as Array1D;
+  }
+
+  topKIndices(x: NDArray, k: number): Array1D {
     return this.topK(x, k).indices;
   }
 
-  private topK<D extends DataType, T extends NDArray<D>>(x: T, k: number):
-      {values: Array1D<D>, indices: Array1D<'int32'>} {
+  private topK<T extends NDArray>(x: T, k: number):
+      {values: Array1D, indices: Array1D} {
     const values = x.dataSync();
     const valuesAndIndices: Array<{value: number, index: number}> = [];
     for (let i = 0; i < values.length; i++) {
@@ -596,16 +510,16 @@ export class MathBackendCPU implements MathBackend {
       topkIndices[i] = valuesAndIndices[i].index;
     }
     return {
-      values: Array1D.new<D>(topkValues),
+      values: Array1D.new(topkValues, x.dtype),
       indices: Array1D.new<'int32'>(topkIndices)
     };
   }
 
-  min<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D> {
+  min(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const result = NDArray.zeros(outShape, x.dtype);
+    const result = ops.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.dataSync();
 
@@ -628,16 +542,16 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  minimum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  minimum(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(
         a, b, a.dtype, (aVal, bVal) => Math.min(aVal, bVal));
   }
 
-  max<D extends DataType>(x: NDArray<D>, axes: number[]): NDArray<D> {
+  max(x: NDArray, axes: number[]): NDArray {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const result = NDArray.zeros(outShape, x.dtype);
+    const result = ops.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.dataSync();
 
@@ -660,7 +574,7 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  maximum<D extends DataType>(a: NDArray<D>, b: NDArray<D>): NDArray<D> {
+  maximum(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(
         a, b, a.dtype, (aVal, bVal) => Math.max(aVal, bVal));
   }
@@ -723,7 +637,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   relu<T extends NDArray>(x: T): T {
-    const res = NDArray.zeros(x.shape, x.dtype);
+    const res = ops.zeros(x.shape, x.dtype);
     const resVals = res.dataSync();
     const inVals = x.dataSync();
     for (let i = 0; i < inVals.length; ++i) {
@@ -848,14 +762,13 @@ export class MathBackendCPU implements MathBackend {
     return NDArray.make(x.shape, {values: resultValues}) as T;
   }
 
-  int<R extends Rank>(x: NDArray<DataType, R>): NDArray<'int32', R> {
+  int<R extends Rank>(x: NDArray<R>): NDArray<R> {
     const resultValues = new Int32Array(x.size);
     const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = values[i];
     }
-    return NDArray.make(x.shape, {values: resultValues}, 'int32') as
-        NDArray<'int32', R>;
+    return NDArray.make(x.shape, {values: resultValues}, 'int32') as NDArray<R>;
   }
 
   sigmoid<T extends NDArray>(x: T): T {
@@ -968,7 +881,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const y = Array4D.zeros(convInfo.outShape);
+    const y = ops.zeros<Rank.R4>(convInfo.outShape);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
@@ -1008,7 +921,7 @@ export class MathBackendCPU implements MathBackend {
     const leftPad = filterWidth - 1 - convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-    const dx = Array4D.zeros(convInfo.inShape);
+    const dx = ops.zeros<Rank.R4>(convInfo.inShape);
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
         for (let xR = 0; xR < convInfo.inHeight; ++xR) {
@@ -1051,7 +964,7 @@ export class MathBackendCPU implements MathBackend {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const dW = Array4D.zeros(convInfo.filterShape);
+    const dW = ops.zeros<Rank.R4>(convInfo.filterShape);
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
@@ -1110,7 +1023,7 @@ export class MathBackendCPU implements MathBackend {
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
-    const y = Array4D.zeros(convInfo.outShape);
+    const y = ops.zeros<Rank.R4>(convInfo.outShape);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
@@ -1142,23 +1055,13 @@ export class MathBackendCPU implements MathBackend {
     return y;
   }
 
-  tile<D extends DataType, T extends NDArray<D>>(x: T, reps: number[]): T {
+  tile<T extends NDArray>(x: T, reps: number[]): T {
     const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = x.shape[i] * reps[i];
     }
-    let dtype;
-    if (x.dtype === 'float32') {
-      dtype = Float32Array;
-    } else if (x.dtype === 'int32') {
-      dtype = Int32Array;
-    } else if (x.dtype === 'bool') {
-      dtype = Uint8Array;
-    } else {
-      throw new Error(`Dtype ${x.dtype} not supported for tile`);
-    }
-    const resultValues = new dtype(util.sizeFromShape(newShape));
-    const result = NDArray.make(newShape, {values: resultValues}, x.dtype) as T;
+    const result = ops.zeros(newShape, x.dtype);
+    const newValues = result.dataSync();
     const values = x.dataSync();
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
@@ -1170,9 +1073,9 @@ export class MathBackendCPU implements MathBackend {
 
       const originalIndex = x.locToIndex(originalLoc);
 
-      resultValues[i] = values[originalIndex];
+      newValues[i] = values[originalIndex];
     }
-    return result;
+    return result as T;
   }
 
   pad1D(x: Array1D, paddings: [number, number], constantValue: number):
@@ -1180,19 +1083,10 @@ export class MathBackendCPU implements MathBackend {
     const leftPadding = paddings[0];
     const rightPadding = paddings[1];
 
-    let dtype;
-    if (x.dtype === 'float32') {
-      dtype = Float32Array;
-    } else if (x.dtype === 'int32') {
-      dtype = Int32Array;
-    } else if (x.dtype === 'bool') {
-      dtype = Uint8Array;
-    } else {
-      throw new Error(`Dtype ${x.dtype} not supported for tile`);
-    }
-
     const values = x.dataSync();
-    const newValues = new dtype(leftPadding + values.length + rightPadding);
+    const result = ops.zeros<Rank.R1>(
+        [leftPadding + values.length + rightPadding], x.dtype);
+    const newValues = result.dataSync();
 
     let z = 0;
     for (let i = 0; i < newValues.length; i++) {
@@ -1202,7 +1096,7 @@ export class MathBackendCPU implements MathBackend {
         newValues[i] = constantValue;
       }
     }
-    return Array1D.new(newValues);
+    return result;
   }
 
   pad2D(
@@ -1213,24 +1107,15 @@ export class MathBackendCPU implements MathBackend {
     const leftPadding = paddings[1][0];
     const rightPadding = paddings[1][1];
 
-    const newShape = [
+    const newShape: [number, number] = [
       topPadding + x.shape[0] + bottomPadding,
       leftPadding + x.shape[1] + rightPadding
     ];
 
-    let dtype;
-    if (x.dtype === 'float32') {
-      dtype = Float32Array;
-    } else if (x.dtype === 'int32') {
-      dtype = Int32Array;
-    } else if (x.dtype === 'bool') {
-      dtype = Uint8Array;
-    } else {
-      throw new Error(`Dtype ${x.dtype} not supported for tile`);
-    }
+    const result = ops.zeros<Rank.R2>(newShape, x.dtype);
+    const newValues = result.dataSync();
 
     const values = x.dataSync();
-    const newValues = new dtype(util.sizeFromShape(newShape));
 
     let z = 0;
     for (let i = 0; i < newShape[0]; i++) {
@@ -1251,10 +1136,10 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    return Array2D.new(newShape as [number, number], newValues);
+    return result;
   }
 
-  transpose<D extends DataType, T extends NDArray<D>>(x: T, perm: number[]): T {
+  transpose<T extends NDArray>(x: T, perm: number[]): T {
     const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = x.shape[perm[i]];
@@ -1277,12 +1162,11 @@ export class MathBackendCPU implements MathBackend {
     return result;
   }
 
-  gather<D extends DataType, T extends NDArray<D>>(
-      x: T, indices: Array1D<'int32'>, axis: number): T {
+  gather<T extends NDArray>(x: T, indices: Array1D, axis: number): T {
     const newShape: number[] = x.shape.slice();
     const indicesValues = indices.dataSync();
     newShape[axis] = indicesValues.length;
-    const result = NDArray.zeros(newShape, x.dtype) as T;
+    const result = ops.zeros(newShape, x.dtype) as T;
     const values = x.dataSync();
     const resultValues = result.dataSync();
     for (let i = 0; i < result.size; ++i) {
@@ -1302,7 +1186,7 @@ export class MathBackendCPU implements MathBackend {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const y = Array4D.zeros(convInfo.outShape);
+    const y = ops.zeros<Rank.R4>(convInfo.outShape);
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
     for (let b = 0; b < convInfo.batchSize; ++b) {
@@ -1352,7 +1236,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   maxPoolPositions(x: Array4D, convInfo: Conv2DInfo) {
-    const maxPositions = Array4D.zeros(convInfo.outShape);
+    const maxPositions = ops.zeros<Rank.R4>(convInfo.outShape);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -1399,7 +1283,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
-    const dx = Array4D.zeros(x.shape);
+    const dx = ops.zeros<Rank.R4>(x.shape);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -1449,7 +1333,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
-    const dx = Array4D.zeros(x.shape);
+    const dx = ops.zeros<Rank.R4>(x.shape);
 
     const avgMultiplier = 1 / (filterHeight * filterWidth);
 
@@ -1491,50 +1375,53 @@ export class MathBackendCPU implements MathBackend {
   }
 
   avgPool(x: Array4D, convInfo: Conv2DInfo): Array4D {
-    return this.pool(x, convInfo, 'avg').asType('float32');
+    return this.pool(x, convInfo, 'avg').toFloat();
   }
 
-  resizeBilinear3D(
-      x: Array3D, newShape2D: [number, number],
-      alignCorners: boolean): Array3D {
-    const output = Array3D.zeros([newShape2D[0], newShape2D[1], x.shape[2]]);
+  resizeBilinear(
+      x: Array4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Array4D {
+    const [batch, oldHeight, oldWidth, numChannels] = x.shape;
+    const output =
+        ops.zeros<Rank.R4>([batch, newHeight, newWidth, numChannels]);
 
-    const effectiveInputSize =
-        alignCorners ? [x.shape[0] - 1, x.shape[1] - 1, x.shape[2]] : x.shape;
-    const effectiveOutputSize = alignCorners ?
-        [output.shape[0] - 1, output.shape[1] - 1, output.shape[2]] :
-        output.shape;
-    for (let r = 0; r < output.shape[0]; r++) {
-      for (let c = 0; c < output.shape[1]; c++) {
-        for (let d = 0; d < output.shape[2]; d++) {
-          // Begin shader.
+    const effectiveInputSize: [number, number] =
+        alignCorners ? [oldHeight - 1, oldWidth - 1] : [oldHeight, oldWidth];
+    const effectiveOutputSize: [number, number] =
+        alignCorners ? [newHeight - 1, newWidth - 1] : [newHeight, newWidth];
+    for (let b = 0; b < batch; b++) {
+      for (let r = 0; r < newHeight; r++) {
+        for (let c = 0; c < newWidth; c++) {
+          for (let d = 0; d < numChannels; d++) {
+            // Begin shader.
 
-          // Compute the fractional index of the source.
-          const sourceFracRow =
-              (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
-          const sourceFracCol =
-              (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
+            // Compute the fractional index of the source.
+            const sourceFracRow =
+                (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
+            const sourceFracCol =
+                (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
 
-          const sourceRowFloor = Math.floor(sourceFracRow);
-          const sourceRowCeil =
-              Math.min(x.shape[0] - 1, Math.ceil(sourceFracRow));
-          const sourceColFloor = Math.floor(sourceFracCol);
-          const sourceColCeil =
-              Math.min(x.shape[1] - 1, Math.ceil(sourceFracCol));
+            const sourceRowFloor = Math.floor(sourceFracRow);
+            const sourceRowCeil =
+                Math.min(oldHeight - 1, Math.ceil(sourceFracRow));
+            const sourceColFloor = Math.floor(sourceFracCol);
+            const sourceColCeil =
+                Math.min(oldWidth - 1, Math.ceil(sourceFracCol));
 
-          const topLeft = x.get(sourceRowFloor, sourceColFloor, d);
-          const bottomLeft = x.get(sourceRowCeil, sourceColFloor, d);
-          const topRight = x.get(sourceRowFloor, sourceColCeil, d);
-          const bottomRight = x.get(sourceRowCeil, sourceColCeil, d);
+            const topLeft = x.get(b, sourceRowFloor, sourceColFloor, d);
+            const bottomLeft = x.get(b, sourceRowCeil, sourceColFloor, d);
+            const topRight = x.get(b, sourceRowFloor, sourceColCeil, d);
+            const bottomRight = x.get(b, sourceRowCeil, sourceColCeil, d);
 
-          const rowFrac = sourceFracRow - sourceRowFloor;
-          const colFrac = sourceFracCol - sourceColFloor;
+            const rowFrac = sourceFracRow - sourceRowFloor;
+            const colFrac = sourceFracCol - sourceColFloor;
 
-          const top = topLeft + (topRight - topLeft) * colFrac;
-          const bottom = bottomLeft + (bottomRight - bottomLeft) * colFrac;
-          const newValue = top + (bottom - top) * rowFrac;
+            const top = topLeft + (topRight - topLeft) * colFrac;
+            const bottom = bottomLeft + (bottomRight - bottomLeft) * colFrac;
+            const newValue = top + (bottom - top) * rowFrac;
 
-          output.set(newValue, r, c, d);
+            output.set(newValue, b, r, c, d);
+          }
         }
       }
     }
@@ -1608,7 +1495,7 @@ export class MathBackendCPU implements MathBackend {
   localResponseNormalization4D(
       x: Array4D, radius: number, bias: number, alpha: number, beta: number,
       normRegion: 'acrossChannels'|'withinChannel'): Array4D {
-    const output = Array4D.zeros(x.shape);
+    const output = ops.zeros<Rank.R4>(x.shape);
     const rad = radius;
     const maxW = output.shape[1] - 1;
     const maxH = output.shape[2] - 1;
@@ -1656,10 +1543,10 @@ export class MathBackendCPU implements MathBackend {
   }
 
   multinomial(probabilities: Array2D, numSamples: number, seed: number):
-      Array2D<'int32'> {
+      Array2D {
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
-    const res = Array2D.zeros([batchSize, numSamples], 'int32');
+    const res = ops.zeros<Rank.R2>([batchSize, numSamples], 'int32');
     const resVals = res.dataSync();
     const probVals = probabilities.dataSync();
 
@@ -1703,12 +1590,12 @@ export class MathBackendCPU implements MathBackend {
     return Array2D.new([indices.size, depth], res);
   }
 
-  private broadcastedBinaryOp<D extends DataType>(
-      a: NDArray, b: NDArray, dtype: D,
-      op: (a: number, b: number) => number): NDArray<D> {
+  private broadcastedBinaryOp(
+      a: NDArray, b: NDArray, dtype: DataType,
+      op: (a: number, b: number) => number): NDArray {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const result = NDArray.zeros(newShape, dtype);
+    const result = ops.zeros(newShape, dtype);
     const newValues = result.dataSync();
     const aValues = a.dataSync();
     const bValues = b.dataSync();

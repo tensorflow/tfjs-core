@@ -15,41 +15,40 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../../util';
 import {NDArray} from '../../ndarray';
-// tslint:disable-next-line:max-line-length
-import {KernelInputConfig, KernelNode, TapeNodeInputGradientArrays} from '../tape_types';
-
-export interface DualInputArrays extends NamedArrayMap {
-  a: NDArray;
-  b: NDArray;
-}
-
-export interface DualGradientInputArrays extends TapeNodeInputGradientArrays {
-  a: () => NDArray;
-  b: () => NDArray;
-}
+import {DataType} from '../../types';
+import {KernelNode} from '../tape_types';
 
 // Equal/NotEqual/Less/LessEqual/Greater/GreaterEqual
 export interface EqualNode extends KernelNode {
-  inputAndArgs: EqualInputConfig;
-  output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
-}
-
-export interface EqualInputConfig extends KernelInputConfig {
-  inputs: DualInputArrays;
+  inputAndArgs: {inputs: {a: NDArray; b: NDArray;};};
+  output: NDArray;
+  gradient: (dy: NDArray, y: NDArray) => {
+    a: () => NDArray;
+    b: () => NDArray;
+  };
 }
 
 // LogicalAnd/LogicalOr
 export interface LogicalNode extends KernelNode {
-  inputAndArgs: LogicalInputConfig;
-  output: NDArray<'bool'>;
-  gradient:
-      (dy: NDArray<'bool'>, y: NDArray<'bool'>) => DualGradientInputArrays;
+  inputAndArgs: {inputs: {a: NDArray; b: NDArray;};};
+  output: NDArray;
+  gradient: (dy: NDArray, y: NDArray) => {
+    a: () => NDArray;
+    b: () => NDArray;
+  };
 }
 
-export interface LogicalInputConfig extends KernelInputConfig {
-  inputs: DualInputArrays;
+// Where
+export interface WhereNode extends KernelNode {
+  inputAndArgs: {
+    inputs: {condition: NDArray; a: NDArray; b: NDArray;};
+    args: {dtype: DataType};
+  };
+  output: NDArray;
+  gradient: (dy: NDArray, y: NDArray) => {
+    condition: () => NDArray;
+    a: () => NDArray;
+    b: () => NDArray;
+  };
 }

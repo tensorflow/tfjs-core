@@ -1,5 +1,3 @@
-import {DataType, DataTypeMap, NDArray, Variable} from './math/ndarray';
-
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -17,18 +15,9 @@ import {DataType, DataTypeMap, NDArray, Variable} from './math/ndarray';
  * =============================================================================
  */
 
-export type TypedArray = Float32Array|Int32Array|Uint8Array;
-export type FlatVector = boolean[]|number[]|TypedArray;
-export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
-export type ArrayData = TypedArray|RegularArray<number>|RegularArray<boolean>;
-
-export type NamedArrayMap = {
-  [name: string]: NDArray
-};
-
-export type NamedVariableMap = {
-  [name: string]: Variable;
-};
+import {NDArray} from './math/ndarray';
+// tslint:disable-next-line:max-line-length
+import {DataType, DataTypeMap, FlatVector, NamedArrayMap, RecursiveArray, RegularArray} from './math/types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -90,16 +79,17 @@ export function assertTypesMatch(a: NDArray, b: NDArray): void {
           `second (${b.dtype}) input must match`);
 }
 
-// tslint:disable-next-line:no-any
-export function flatten(
-    arr: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    ret: Array<number|boolean> = []): Array<number|boolean> {
+// NOTE: We explicitly type out what T extends instead of any so that
+// util.flatten on a nested array of number doesn't try to infer T as a
+// number[][], causing us to explicitly type util.flatten<number>().
+export function flatten<T extends number|boolean|NDArray|Promise<number>>(
+    arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
   if (Array.isArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
       flatten(arr[i], ret);
     }
   } else {
-    ret.push(arr);
+    ret.push(arr as T);
   }
   return ret;
 }
@@ -356,8 +346,8 @@ export function isNDArrayInList(
   return false;
 }
 
-export function checkForNaN(
-    vals: TypedArray, dtype: DataType, name: string): void {
+export function checkForNaN<D extends DataType>(
+    vals: DataTypeMap[D], dtype: D, name: string): void {
   for (let i = 0; i < vals.length; i++) {
     if (isValNaN(vals[i], dtype)) {
       throw Error(`The result of the last math.${name} has NaNs.`);
@@ -416,4 +406,35 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
  */
 export function nextFrame(): Promise<void> {
   return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+}
+
+export function copyTypedArray<D extends DataType>(
+    array: DataTypeMap[D]|number[]|boolean[], dtype: D): DataTypeMap[D] {
+  if (dtype == null || dtype === 'float32') {
+    return new Float32Array(array as number[]);
+  } else if (dtype === 'int32') {
+    const vals = new Int32Array(array.length);
+    for (let i = 0; i < vals.length; ++i) {
+      const val = array[i] as number;
+      if (isValNaN(val, 'int32')) {
+        vals[i] = getNaN('int32');
+      } else {
+        vals[i] = val;
+      }
+    }
+    return vals;
+  } else if (dtype === 'bool') {
+    const bool = new Uint8Array(array.length);
+    for (let i = 0; i < bool.length; ++i) {
+      const val = array[i] as number;
+      if (isValNaN(val as number, 'bool')) {
+        bool[i] = getNaN('bool');
+      } else if (Math.round(val) !== 0) {
+        bool[i] = 1;
+      }
+    }
+    return bool;
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
 }

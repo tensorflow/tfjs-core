@@ -15,12 +15,16 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
+import {NamedArrayMap} from '../../math/types';
 import * as util from '../../util';
-import {NamedArrayMap} from '../../util';
-import {DataType, NDArray, Rank, Scalar} from '../ndarray';
+import {NDArray, Scalar, Variable} from '../ndarray';
+import {Rank} from '../types';
+
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
+import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
 import {KernelNode, Tape, TapeNode, TapeNodeInputGradientArrays} from './tape_types';
 import * as tape_util from './tape_util';
@@ -43,44 +47,35 @@ export class BackendEngine {
   private activeScope: ScopeState;
   private scopeStack: ScopeState[];
 
-  private debugMode = false;
+  private profiler: Profiler;
 
   constructor(private backend: MathBackend, private safeMode: boolean) {
     // Create a default outer scope.
     this.activeScope = {keep: [], track: []};
     this.scopeStack = [this.activeScope];
+
+    this.profiler = new Profiler(backend);
   }
 
-  enableDebugMode() {
-    this.debugMode = true;
-  }
-
-  executeKernel<K extends keyof KernelConfigRegistry,
-                          C extends KernelConfigRegistry[K]['inputAndArgs']>(
-      kernelName: K, config: C, grad?: KernelConfigRegistry[K]['gradient']):
-      KernelConfigRegistry[K]['output'] {
-    const kernelFn = () =>
-        kernel_registry.executeKernel(this.backend, kernelName, config);
-
-    let start: number;
-    if (this.debugMode) {
-      start = performance.now();
-    }
-    const result = kernelFn();
-    if (this.debugMode) {
-      const vals = result.dataSync();
-      const time = util.rightPad(`${performance.now() - start}ms`, 9);
-      const paddedName = util.rightPad(kernelName, 25);
-      const rank = result.rank;
-      const size = result.size;
-      const shape = util.rightPad(result.shape.toString(), 14);
-      console.log(
-          `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-          'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
-      util.checkForNaN(vals, result.dtype, name);
+  executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, C
+                    extends KernelConfigRegistry<R>[K]['inputAndArgs']>(
+      kernelName: K, config: C, grad?: KernelConfigRegistry<R>[K]['gradient']):
+      KernelConfigRegistry<R>[K]['output'] {
+    let result: KernelConfigRegistry<R>[K]['output'];
+    if (!ENV.get('DEBUG')) {
+      // NOTE: This isn't pulled out into a separate function to so that we keep
+      // a shallow stack trace.
+      result = kernel_registry.executeKernel(this.backend, kernelName, config);
+    } else {
+      result = this.profiler.profileKernel(
+          kernelName,
+          () =>
+              kernel_registry.executeKernel(this.backend, kernelName, config));
     }
 
-    if (this.activeTape != null && this.customGradientDepth === 0) {
+    const recordKernel =
+        this.activeTape != null && this.customGradientDepth === 0;
+    if (recordKernel) {
       config = tape_util.stripUndefinedInputsFromInputConfig(config) as C;
 
       const evaluatedNode: KernelNode = {
@@ -98,17 +93,15 @@ export class BackendEngine {
     return result;
   }
 
-  customGradient<D extends DataType, R extends Rank>(
+  customGradient<R extends Rank, T extends NDArray<R>>(
       f: () => {
-        value: NDArray<D, R>,
-        gradients: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
-            TapeNodeInputGradientArrays
+        value: T,
+        gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
       },
-      inputs: NamedArrayMap, name: string): NDArray<D, R> {
+      inputs: NamedArrayMap, name: string): T {
     this.customGradientDepth++;
 
-    let gradientsFunc: (dy: NDArray<'float32', R>, y: NDArray<D, R>) =>
-        TapeNodeInputGradientArrays;
+    let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
     const gradientsMode = true;
     const result = this.scope('customGradient', () => {
       const {value, gradients} = f();
@@ -119,7 +112,7 @@ export class BackendEngine {
     this.customGradientDepth--;
 
     if (this.activeTape != null && this.customGradientDepth === 0) {
-      const evaluatedNode: TapeNode<NDArray<D, R>> = {
+      const evaluatedNode: TapeNode<NDArray<R>> = {
         id: this.nextTapeNodeId++,
         type: 'customGradient',
         name,
@@ -141,8 +134,8 @@ export class BackendEngine {
       const y = f();
       if (y.rank !== 0) {
         throw new Error(
-            `Cannot compute gradient of non-scalar y output. ` +
-            `Got y with rank ${y.rank}`);
+            `Cannot compute gradient of non-scalar y output of f(). ` +
+            `Got y with rank ${y.rank} and shape ${y.shape}.`);
       }
       const gradients = this.gradientWrt(y, xs);
       if (returnValue) {
@@ -159,7 +152,8 @@ export class BackendEngine {
     }
   }
 
-  vjp<T extends NDArray>(f: () => T, xs: NDArray[], dy: T): NDArray[] {
+  vjp<R extends Rank, T extends NDArray<R>>(f: () => T, xs: NDArray[], dy: T):
+      NDArray[] {
     const gradientsMode = true;
     return this.scope('vjp', () => {
       const y = f();
@@ -172,8 +166,38 @@ export class BackendEngine {
     }, gradientsMode);
   }
 
-  private gradientWrt<T extends NDArray>(y: T, xs: NDArray[], dy?: T):
-      NDArray[] {
+  variableGradientsAndValue(f: () => Scalar, varList: Variable[]):
+      {value: Scalar, gradients: NamedArrayMap} {
+    const gradientsMode = true;
+    let variableNames: string[];
+    const result = this.scope('gradients', () => {
+      const y = f();
+      if (y.rank !== 0) {
+        throw new Error(
+            `Cannot compute gradient of non-scalar y output of f(). ` +
+            `Got y with rank ${y.rank} and shape ${y.shape}.`);
+      }
+
+      const inputVariables =
+          tape_util.computeVariableInputs(this.activeTape, varList);
+      variableNames = inputVariables.map(variable => variable.name);
+
+      const gradients = inputVariables.length === 0 ?
+          [] :
+          this.gradientWrt(y, inputVariables);
+      return [y, ...gradients];
+    }, gradientsMode);
+
+    const gradients: NamedArrayMap = {};
+    for (let i = 0; i < variableNames.length; i++) {
+      gradients[variableNames[i]] = result[i + 1];
+    }
+
+    return {value: result[0] as Scalar, gradients};
+  }
+
+  private gradientWrt<R extends Rank, T extends NDArray<R>>(
+      y: T, xs: NDArray[], dy?: T): NDArray[] {
     // Filter out the nodes that don't connect x => y.
     const filteredTape = tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
     if (filteredTape.length === 0) {
@@ -184,7 +208,8 @@ export class BackendEngine {
     }
 
     const arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-    arrayAccumulatedGradientMap[y.id] = dy == null ? Scalar.new(1) : dy;
+    arrayAccumulatedGradientMap[y.id] =
+        dy == null ? Scalar.new(1, 'float32') : dy;
 
     // Backprop gradients through the filtered nodes.
     tape_util.backpropagateGradients(arrayAccumulatedGradientMap, filteredTape);
@@ -210,10 +235,8 @@ export class BackendEngine {
   scope<T extends ScopeResult>(
       name: string,
       scopeFn:
-          (keep:
-               <D1 extends DataType, T1 extends NDArray<D1>>(ndarray: T1) => T1,
-           track: <D2 extends DataType, T2 extends NDArray<D2>>(ndarray: T2) =>
-               T2) => T,
+          (keep: <T1 extends NDArray>(ndarray: T1) => T1,
+           track: <T2 extends NDArray>(ndarray: T2) => T2) => T,
       gradientsMode: boolean): T {
     this.startScope(gradientsMode);
 
@@ -317,7 +340,7 @@ export class BackendEngine {
    *
    * @param result The NDArray to track in the current scope.
    */
-  track<D extends DataType, T extends NDArray<D>>(result: T): T {
+  track<T extends NDArray>(result: T): T {
     if (this.scopeStack.length === 1) {
       if (this.safeMode) {
         throw new Error(
