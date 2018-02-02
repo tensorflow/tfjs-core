@@ -29,6 +29,63 @@ export interface NDArrayData {
   values?: TypedArray;
 }
 
+export class TensorBuffer<D extends DataType> {
+  buffer: DataTypeMap[D];
+  shape: number[];
+
+  private strides: number[];
+
+  constructor(public dtype: D, shape: number[]) {
+    this.shape = shape;
+    this.buffer = util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
+    this.strides = computeStrides(shape);
+  }
+
+  set(value: number, ...locs: number[]) {
+    if (locs.length === 0) {
+      locs = [0];
+    }
+    util.assert(
+        locs.length === this.rank,
+        `The number of provided coordinates (${locs.length}) must ` +
+            `match the rank (${this.rank})`);
+    const index = this.locToIndex(locs);
+    this.buffer[index] = value;
+  }
+
+  locToIndex(locs: number[]): number {
+    if (this.rank === 0) {
+      return 0;
+    } else if (this.rank === 1) {
+      return locs[0];
+    }
+    let index = locs[locs.length - 1];
+    for (let i = 0; i < locs.length - 1; ++i) {
+      index += this.strides[i] * locs[i];
+    }
+    return index;
+  }
+
+  indexToLoc(index: number): number[] {
+    if (this.rank === 0) {
+      return [];
+    } else if (this.rank === 1) {
+      return [index];
+    }
+    const locs: number[] = new Array(this.shape.length);
+    for (let i = 0; i < locs.length - 1; ++i) {
+      locs[i] = Math.floor(index / this.strides[i]);
+      index -= locs[i] * this.strides[i];
+    }
+    locs[locs.length - 1] = index;
+    return locs;
+  }
+
+  get rank() {
+    return this.shape.length;
+  }
+}
+
 export class NDArray<R extends Rank = Rank> {
   private static nextId = 0;
   private static nextDataId = 0;
@@ -68,19 +125,7 @@ export class NDArray<R extends Rank = Rank> {
     }
     this.shape = shape;
     this.dtype = dtype || 'float32';
-    const dim = this.shape.length;
-
-    if (dim < 2) {
-      this.strides = [];
-    } else {
-      // Last dimension has implicit stride of 1, thus having D-1 (instead of D)
-      // strides.
-      this.strides = new Array(dim - 1);
-      this.strides[dim - 2] = this.shape[dim - 1];
-      for (let i = dim - 3; i >= 0; --i) {
-        this.strides[i] = this.strides[i + 1] * this.shape[i + 1];
-      }
-    }
+    this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : NDArray.nextDataId++;
     this.id = NDArray.nextId++;
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
@@ -224,24 +269,6 @@ export class NDArray<R extends Rank = Rank> {
     return this.dataSync()[index];
   }
 
-  set(value: number, ...locs: number[]) {
-    if (locs.length === 0) {
-      locs = [0];
-    }
-    this.throwIfDisposed();
-    util.assert(
-        locs.length === this.rank,
-        `The number of provided coordinates (${locs.length}) must ` +
-            `match the rank (${this.rank})`);
-    let index = locs.length > 0 ? locs[locs.length - 1] : 0;
-    for (let i = 0; i < locs.length - 1; ++i) {
-      index += this.strides[i] * locs[i];
-    }
-    const vals = this.dataSync();
-    vals[index] = value;
-    ENV.math.write(this.dataId, vals);
-  }
-
   async val(...locs: number[]): Promise<number> {
     if (locs.length === 0) {
       locs = [0];
@@ -249,36 +276,6 @@ export class NDArray<R extends Rank = Rank> {
     this.throwIfDisposed();
     await this.data();
     return this.get(...locs);
-  }
-
-  locToIndex(locs: number[]): number {
-    this.throwIfDisposed();
-    if (this.rank === 0) {
-      return 0;
-    } else if (this.rank === 1) {
-      return locs[0];
-    }
-    let index = locs[locs.length - 1];
-    for (let i = 0; i < locs.length - 1; ++i) {
-      index += this.strides[i] * locs[i];
-    }
-    return index;
-  }
-
-  indexToLoc(index: number): number[] {
-    this.throwIfDisposed();
-    if (this.rank === 0) {
-      return [];
-    } else if (this.rank === 1) {
-      return [index];
-    }
-    const locs: number[] = new Array(this.shape.length);
-    for (let i = 0; i < locs.length - 1; ++i) {
-      locs[i] = Math.floor(index / this.strides[i]);
-      index -= locs[i] * this.strides[i];
-    }
-    locs[locs.length - 1] = index;
-    return locs;
   }
 
   fill(value: number) {
@@ -895,4 +892,20 @@ function toTypedArray<D extends DataType>(
     a = util.flatten(a as number[]);
   }
   return util.copyTypedArray(a, dtype);
+}
+
+function computeStrides(shape: number[]): number[] {
+  const rank = shape.length;
+  if (rank < 2) {
+    return [];
+  }
+
+  // Last dimension has implicit stride of 1, thus having D-1 (instead of D)
+  // strides.
+  const strides = new Array(rank - 1);
+  strides[rank - 2] = shape[rank - 1];
+  for (let i = rank - 3; i >= 0; --i) {
+    strides[i] = strides[i + 1] * shape[i + 1];
+  }
+  return strides;
 }
