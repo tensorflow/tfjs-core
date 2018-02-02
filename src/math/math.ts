@@ -204,7 +204,6 @@ export class NDArrayMath {
 
   gradients = gradients;
   valueAndGradients = valueAndGradients;
-  gradientsScope = gradientsScope;
 
   register: typeof ENV.engine.register;
   engine: typeof ENV.engine;

@@ -43,6 +43,9 @@ export interface NDArrayManager {
 }
 
 export class BackendEngine implements NDArrayManager {
+  // Public since optimizers will use it.
+  registeredVariables: NamedVariableMap = {};
+
   private registeredArrays = new Map<number, number>();
   private nextTapeNodeId = 0;
 
@@ -53,9 +56,6 @@ export class BackendEngine implements NDArrayManager {
   // Keep NDArrays that parallel the tapes.
   private activeScope: ScopeState;
   private scopeStack: ScopeState[];
-
-  // Public since optimizers will use it.
-  registeredVariables: NamedVariableMap = {};
   private profiler: Profiler;
 
   constructor(
@@ -100,24 +100,6 @@ export class BackendEngine implements NDArrayManager {
       this.activeTape.push(evaluatedNode);
     }
 
-    return result;
-  }
-
-  /**
-   * Tracks an NDArray in the current scope to be automatically cleaned up
-   * when the current scope ends, and returns the value.
-   *
-   * @param result The NDArray to track in the current scope.
-   */
-  private track<T extends NDArray>(result: T): T {
-    if (this.scopeStack.length === 1) {
-      if (this.safeMode) {
-        throw new Error(
-            'Safe mode is ON. Enclose all dl operations inside ' +
-            'dl.tidy(() => {op();...}); to avoid memory leaks.');
-      }
-    }
-    this.activeScope.track.push(result);
     return result;
   }
 
@@ -332,5 +314,21 @@ export class BackendEngine implements NDArrayManager {
   }
   read(dataId: number): Promise<TypedArray> {
     return this.backend.read(dataId);
+  }
+
+  /**
+   * Tracks an NDArray in the current scope to be automatically cleaned up
+   * when the current scope ends, and returns the value.
+   *
+   * @param result The NDArray to track in the current scope.
+   */
+  private track<T extends NDArray>(result: T): T {
+    if (this.scopeStack.length === 1 && this.safeMode) {
+      throw new Error(
+          'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +
+          'dl.tidy(() => {op();...}); to avoid memory leaks.');
+    }
+    this.activeScope.track.push(result);
+    return result;
   }
 }

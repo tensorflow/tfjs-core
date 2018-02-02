@@ -71,4 +71,5 @@ export {
 
 export * from './math/ops';
 export * from './math/backends/tracking';
-export * from './math/backends/gradients';
+// tslint:disable-next-line:max-line-length
+export {customGradient, gradients, valueAndGradients, variableGradients, vjp} from './math/backends/gradients';

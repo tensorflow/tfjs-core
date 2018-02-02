@@ -18,6 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
+import {gradientsScope} from './backends/gradients';
 import {MatrixOrientation} from './backends/types/matmul';
 import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
@@ -547,7 +548,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       const a = Scalar.new(2);
       expect(math.getNumArrays()).toBe(1);
 
-      const gradients = math.gradientsScope(() => {
+      const gradients = gradientsScope(() => {
         const der = math.gradients(() => {
           const result = math.pow(a, Scalar.new(3, 'int32'));
           expect(math.getNumArrays()).toBe(3);
