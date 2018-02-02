@@ -64,7 +64,7 @@ export class MaxPool extends Operation {
     const x = inferenceArrays.get(this.xTensor) as Array3D;
     const dy = gradientArrays.get(this.yTensor) as Array3D;
 
-    math.tidy(() => {
+    tidy(() => {
       gradientArrays.add(
           this.xTensor,
           math.maxPoolBackprop(dy, x, this.fieldSize, this.stride, this.pad));

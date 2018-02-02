@@ -68,7 +68,7 @@ export class Multiply extends Operation {
     const x2 = inferenceArrays.get(this.x2Tensor) as Scalar;
     const dy = gradientArrays.get(this.yTensor);
 
-    math.tidy(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         if (util.isScalarShape(this.x1Tensor.shape)) {
           const mul = math.elementWiseMul(dy, x2);

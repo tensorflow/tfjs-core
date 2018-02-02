@@ -50,7 +50,7 @@ export class ElementWiseActivation extends Operation {
     const y = inferenceArrays.get(this.yTensor);
     const dy = gradientArrays.get(this.yTensor);
 
-    math.tidy(() => {
+    tidy(() => {
       const dydx = this.func.der(math, x, y);
       gradientArrays.add(this.xTensor, math.elementWiseMul(dy, dydx));
       dydx.dispose();

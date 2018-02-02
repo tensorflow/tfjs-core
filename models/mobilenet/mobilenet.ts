@@ -50,7 +50,7 @@ export class MobileNet implements Model {
    */
   predict(input: Array3D): Array1D {
     // Keep a map of named activations for rendering purposes.
-    const netout = this.math.tidy((keep) => {
+    const netout = this.math.scope((keep) => {
       // Preprocess the input.
       const preprocessedInput =
           this.math.subtract(

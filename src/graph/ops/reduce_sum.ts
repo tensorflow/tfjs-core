@@ -53,7 +53,7 @@ export class ReduceSum extends Operation {
       return;
     }
 
-    math.tidy(() => {
+    tidy(() => {
       const dy = gradientArrays.get(this.outTensor) as Scalar;
       gradientArrays.add(this.x, math.scalarTimesArray(dy, this.ones));
     });

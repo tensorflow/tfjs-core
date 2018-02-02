@@ -61,7 +61,7 @@ export class LinearCombination extends Operation {
     const c2 = inferenceArrays.get(this.c2Tensor) as Scalar;
     const dy = gradientArrays.get(this.outTensor);
 
-    math.tidy(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         gradientArrays.add(this.x1Tensor, math.scalarTimesArray(c1, dy));
       }

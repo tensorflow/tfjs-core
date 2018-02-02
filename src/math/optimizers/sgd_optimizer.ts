@@ -43,7 +43,7 @@ export class SGDOptimizer extends Optimizer {
       const gradient = variableGradients[varName];
       const value = math.registeredVariables[varName];
 
-      const newValue = math.tidy(() => {
+      const newValue = tidy(() => {
         return math.add(math.multiply(this.c, gradient), value);
       });
 

@@ -44,7 +44,7 @@ export class Softmax extends Operation {
     // grad_x = grad_softmax * softmax - sum(grad_softmax * softmax) * softmax
     const y = inferenceArrays.get(this.output);
     const dy = gradientArrays.get(this.output);
-    math.tidy(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.logitsTensor)) {
         const dlogits = math.elementWiseMul(
             math.subtract(dy, math.sum(math.elementWiseMul(dy, y))), y);
@@ -83,7 +83,7 @@ export class SoftmaxCrossEntropyCost extends Operation {
     const softmax = inferenceArrays.get(this.softmaxTensor);
     const label = inferenceArrays.get(this.labelTensor);
 
-    math.tidy(() => {
+    tidy(() => {
       gradientArrays.add(this.logitsTensor, math.subtract(softmax, label));
     });
   }
@@ -106,7 +106,7 @@ export function crossEntropyCost(
   util.assert(
       y.size === target.size, 'The output and target must be the same size');
 
-  return math.tidy(() => {
+  return tidy(() => {
     const yPlusEps = math.scalarPlusArray(epsilon, y);
     const logOutput = math.log(yPlusEps);
     const tarLogOutput = math.elementWiseMul(target, logOutput);

@@ -71,7 +71,7 @@ export class Divide extends Operation {
     const x1IsScalar = util.isScalarShape(x1.shape);
     const x2IsScalar = util.isScalarShape(x2.shape);
 
-    math.tidy(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         if (x1IsScalar) {
           const div = math.divide(dy, x2);

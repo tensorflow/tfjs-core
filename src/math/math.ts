@@ -196,8 +196,6 @@ export class NDArrayMath {
   resizeBilinear3D = image_ops.Ops.resizeBilinear;
 
   // Engine ops.
-
-  tidy = tidy;
   keep = keep;
   vjp = vjp;
 

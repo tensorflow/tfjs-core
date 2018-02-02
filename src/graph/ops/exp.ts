@@ -47,7 +47,7 @@ export class Exp extends Operation {
     const y = inferenceArrays.get(this.yTensor);
     const dy = gradientArrays.get(this.yTensor);
 
-    math.tidy(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.xTensor)) {
         gradientArrays.add(this.xTensor, math.elementWiseMul(y, dy));
       }

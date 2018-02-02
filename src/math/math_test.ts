@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {MatrixOrientation} from './backends/types/matmul';
@@ -24,13 +25,13 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 {
   const gpuTests: MathTests = it => {
     it('scope returns NDArray', async math => {
-      await math.tidy(async () => {
+      await dl.tidy(async () => {
         const a = Array1D.new([1, 2, 3]);
         let b = Array1D.new([0, 0, 0]);
 
         expect(math.getNumArrays()).toBe(2);
-        await math.tidy(async () => {
-          const result = math.tidy(() => {
+        await dl.tidy(async () => {
+          const result = dl.tidy(() => {
             b = math.addStrict(a, b);
             b = math.addStrict(a, b);
             b = math.addStrict(a, b);
@@ -66,8 +67,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       const b = Array1D.new([0, -1, 1]);
       expect(math.getNumArrays()).toBe(2);
 
-      await math.tidy(async () => {
-        const result = math.tidy(() => {
+      await dl.tidy(async () => {
+        const result = dl.tidy(() => {
           math.add(a, b);
           return [math.add(a, b), math.subtract(a, b)];
         });
@@ -92,7 +93,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
       expect(math.getNumArrays()).toBe(2);
 
-      math.tidy(() => {
+      dl.tidy(() => {
         b = math.addStrict(a, b);
         b = math.addStrict(a, b);
         b = math.addStrict(a, b);
@@ -109,8 +110,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
       expect(math.getNumArrays()).toBe(2);
 
-      await math.tidy(async () => {
-        const result = math.tidy(() => {
+      await dl.tidy(async () => {
+        const result = dl.tidy(() => {
           let c = math.add(a, b);
           c = math.add(a, c);
           c = math.add(a, c);
@@ -135,17 +136,17 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
       expect(math.getNumArrays()).toBe(2);
 
-      await math.tidy(async () => {
-        const result = math.tidy(() => {
+      await dl.tidy(async () => {
+        const result = dl.tidy(() => {
           b = math.addStrict(a, b);
-          b = math.tidy(() => {
-            b = math.tidy(() => {
+          b = dl.tidy(() => {
+            b = dl.tidy(() => {
               return math.addStrict(a, b);
             });
             // original a, b, and two intermediates.
             expect(math.getNumArrays()).toBe(4);
 
-            math.tidy(() => {
+            dl.tidy(() => {
               math.addStrict(a, b);
             });
             // All the intermediates should be cleaned up.
@@ -166,7 +167,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
     it('single argument', math => {
       let hasRan = false;
-      math.tidy(() => {
+      dl.tidy(() => {
         hasRan = true;
       });
       expect(hasRan).toBe(true);
@@ -174,13 +175,13 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
 
     it('single argument, but not a function throws error', math => {
       expect(() => {
-        math.tidy('asdf');
+        dl.tidy('asdf');
       }).toThrowError();
     });
 
     it('2 arguments, first is string', math => {
       let hasRan = false;
-      math.tidy('name', () => {
+      dl.tidy('name', () => {
         hasRan = true;
       });
       expect(hasRan).toBe(true);
@@ -189,14 +190,14 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
     it('2 arguments, but first is not string throws error', math => {
       expect(() => {
         // tslint:disable-next-line:no-any
-        math.tidy(4 as any, () => {});
+        dl.tidy(4 as any, () => {});
       }).toThrowError();
     });
 
     it('2 arguments, but second is not a function throws error', math => {
       expect(() => {
         // tslint:disable-next-line:no-any
-        math.tidy('name', 'another name' as any);
+        dl.tidy('name', 'another name' as any);
       }).toThrowError();
     });
   };
@@ -503,7 +504,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
         // y = relu(m)
         // e = sum(y)
         const m = math.matMul(a, b);
-        return math.tidy(() => {
+        return dl.tidy(() => {
           const y = math.relu(m);
           return math.sum(y);
         });

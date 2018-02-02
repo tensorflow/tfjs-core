@@ -85,7 +85,7 @@ export class KNNImageClassifier implements Model {
     }
     this.clearTrainLogitsMatrix();
 
-    this.math.tidy((keep, track) => {
+    this.math.scope((keep, track) => {
       // Add the squeezenet logits for the image to the appropriate class
       // logits matrix.
       const logits = this.squeezeNet.predict(image);

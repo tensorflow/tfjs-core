@@ -34,7 +34,7 @@ describe('adadelta optimizer', () => {
       disposeCopy(math, example) {}
     };
 
-    math.tidy(() => {
+    dl.tidy(() => {
       const g = new Graph();
       const x = g.placeholder('x', [2]);
       const w = g.variable('w', dl.zeros([1, 2]));

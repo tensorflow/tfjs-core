@@ -70,7 +70,7 @@ export class Add extends Operation {
       gradientArrays: SummedTensorArrayMap) {
     const dy = gradientArrays.get(this.yTensor);
 
-    math.tidy(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         if (this.x1Tensor.shape.length === 1 &&
             this.x2Tensor.shape.length === 2 &&

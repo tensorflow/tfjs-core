@@ -70,7 +70,7 @@ export class MatMul extends Operation {
       dy = dy.reshape([dy.size, 1]);
     }
 
-    math.tidy(() => {
+    tidy(() => {
       // y = x1 * x2
       // dx1 = dy * x2T
       // dx2 = x1T * dy

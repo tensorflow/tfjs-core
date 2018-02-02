@@ -16,11 +16,11 @@
  */
 
 import {InputProvider} from '../data/input_provider';
+import {tidy} from '../math/backends/tracking';
 import {NDArrayMath} from '../math/math';
 import {NDArray, Scalar} from '../math/ndarray';
 import {Optimizer} from '../math/optimizers/optimizer';
 import * as util from '../util';
-
 import {Graph, Node, Tensor} from './graph';
 import * as operation_emitter from './operation_emitter';
 import {Operation} from './ops/op';
@@ -109,7 +109,7 @@ export class Session {
    * @return The computed values of the tensors.
    */
   evalAll(tensors: Tensor[], feedEntries: FeedEntry[]): NDArray[] {
-    return this.math.tidy(() => {
+    return tidy(() => {
       const feed = new FeedDictionary(feedEntries);
       const runtime = this.getOrCreateRuntime(tensors, feed);
 
@@ -197,7 +197,7 @@ export class Session {
     optimizer.beforeBatch(
         this.math, batchSize, runtime, activations, gradients);
 
-    return this.math.tidy(() => {
+    return tidy(() => {
       let cost = Scalar.new(0);
 
       for (let i = 0; i < batchSize; ++i) {
@@ -222,8 +222,7 @@ export class Session {
             feed, activations, this.math);
 
         cost = this.updateCostForExample(
-            cost, activations.get(costTensor) as Scalar,
-            costReduction);
+            cost, activations.get(costTensor) as Scalar, costReduction);
       }
 
       optimizer.afterBatch(
@@ -243,9 +242,8 @@ export class Session {
     return totalCost;
   }
 
-  private updateCostForBatch(
-      totalCost: Scalar,
-      costReduction: CostReduction): Scalar {
+  private updateCostForBatch(totalCost: Scalar, costReduction: CostReduction):
+      Scalar {
     if (costReduction === CostReduction.MEAN) {
       return this.math.divide(totalCost, this.batchSizeScalar);
     }

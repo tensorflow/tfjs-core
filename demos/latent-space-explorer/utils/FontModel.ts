@@ -59,8 +59,6 @@ export class FontModel {
     });
   }
 
-  init() {}
-
   infer(args: Array<{}>) {
     const embedding = args[0] as dl.NDArray;
     const ctx = args[1] as CanvasRenderingContext2D;

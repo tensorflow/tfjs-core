@@ -80,7 +80,7 @@ export class Convolution2D extends Operation {
     const x = inferenceArrays.get(this.xTensor) as Array3D;
     const dy = gradientArrays.get(this.yTensor) as Array3D;
 
-    math.tidy(() => {
+    tidy(() => {
       const dw =
           math.conv2dDerFilter(x, dy, filter.shape, this.stride, this.zeroPad);
       const db = math.conv2dDerBias(dy);

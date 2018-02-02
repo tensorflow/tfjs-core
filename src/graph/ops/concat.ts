@@ -52,7 +52,7 @@ export class Concat1D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    math.tidy(() => {
+    tidy(() => {
       concatBackProp(
           math, this.x1Tensor, this.x2Tensor, this.yTensor, 0, gradientArrays,
           inferenceArrays);
@@ -89,7 +89,7 @@ export class Concat2D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    math.tidy(() => {
+    tidy(() => {
       concatBackProp(
           math, this.x1Tensor, this.x2Tensor, this.yTensor, this.axis,
           gradientArrays, inferenceArrays);
@@ -125,7 +125,7 @@ export class Concat3D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    math.tidy(() => {
+    tidy(() => {
       concatBackProp(
           math, this.x1Tensor, this.x2Tensor, this.yTensor, this.axis,
           gradientArrays, inferenceArrays);
@@ -162,7 +162,7 @@ export class Concat4D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    math.tidy(() => {
+    tidy(() => {
       concatBackProp(
           math, this.x1Tensor, this.x2Tensor, this.yTensor, this.axis,
           gradientArrays, inferenceArrays);
