@@ -102,7 +102,7 @@ export class Session {
    * Evaluate a list of tensors, using the provided feed entries to provide
    * upstream NDArray input.
    * When using a `NDArrayMath` object in safe mode this must be used in a
-   * math.tidy().
+   * dl.tidy().
    * @param tensors The list of tensors to evaluate.
    * @param feedEntries List of `FeedEntry` to read when replacing graph
    * tensors with NDArrays.
@@ -154,7 +154,7 @@ export class Session {
    * Trains a batch.
    * Returns a reduced cost if the costReduction parameter is set.
    * When using a `NDArrayMath` object in safe mode this must be used in a
-   * math.tidy().
+   * dl.tidy().
    * @param costTensor A tensor representing the cost to optimize. Should be a
    * scalar.
    * @param feedEntries Feed entries for this train run. Provides inputs.

@@ -24,8 +24,8 @@ import {TidyFn, TidyResult, TidyResultImmediate} from './tape_util';
  * intermediate NDArrays allocated by the function except those returned by
  * the function.
  *
- * When in safe mode, you must enclose all `NDArray` creation and math ops
- * inside a `math.tidy()` to prevent memory leaks.
+ * When in safe mode, you must enclose all `NDArray` creation and ops
+ * inside a `dl.tidy()` to prevent memory leaks.
  *
  * @param nameOrFn The name of the closure, or the function to execute.
  *     If a name is provided, the 2nd argument should be the function.
@@ -41,7 +41,7 @@ export function tidy<T extends TidyResult>(
   if (fn == null) {
     // Called with only 1 argument.
     if (typeof nameOrFn !== 'function') {
-      throw new Error('Please provide a function to math.tidy()');
+      throw new Error('Please provide a function to dl.tidy()');
     }
     fn = nameOrFn;
     nameOrFn = '';
@@ -50,12 +50,12 @@ export function tidy<T extends TidyResult>(
     if (typeof nameOrFn !== 'string' && !(nameOrFn instanceof String)) {
       throw new Error(
           'When calling with two arguments, the first argument ' +
-          'to math.tidy() must be a string');
+          'to dl.tidy() must be a string');
     }
     if (typeof fn !== 'function') {
       throw new Error(
           'When calling with two arguments, the 2nd argument ' +
-          'to math.tidy() must be a function');
+          'to dl.tidy() must be a function');
     }
     // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
   }

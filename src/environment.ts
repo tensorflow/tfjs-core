@@ -190,6 +190,7 @@ export class Environment {
   private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
 
   engine: BackendEngine;
+  backend: MathBackend;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -342,8 +343,6 @@ export class Environment {
       return false;
     }
   }
-
-  backend: MathBackend;
 
   get math(): NDArrayMath {
     if (this.globalMath == null) {

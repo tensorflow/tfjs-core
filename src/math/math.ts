@@ -221,8 +221,7 @@ export class NDArrayMath {
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
-   *     a math.tidy() which will automatically clean up intermediate
-   * NDArrays.
+   *     a dl.tidy() which will automatically clean up intermediate NDArrays.
    */
   constructor(backend: BackendType|MathBackend, safeMode: boolean) {
     ENV.setMath(this, backend, safeMode);

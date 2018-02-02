@@ -113,10 +113,8 @@ export class BackendEngine implements NDArrayManager {
     if (this.scopeStack.length === 1) {
       if (this.safeMode) {
         throw new Error(
-            'You are using math in safe mode. Enclose all ' +
-            'math.method() calls inside a scope: ' +
-            'math.tidy(() => {math.method();...}) to avoid memory ' +
-            'leaks.');
+            'Safe mode is ON. Enclose all dl operations inside ' +
+            'dl.tidy(() => {op();...}); to avoid memory leaks.');
       }
     }
     this.activeScope.track.push(result);
