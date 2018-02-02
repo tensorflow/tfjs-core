@@ -11,10 +11,6 @@ interface DocEntry {
   returnType?: string;
 }
 
-interface Docs {
-  'Operations': {'Arithmetic': DocMethod[]; 'Matrices': DocMethod[]};
-}
-
 interface DocMethod {
   name: string;
   docstring: string;
@@ -35,7 +31,7 @@ function generateDocumentation(
   const program = ts.createProgram(fileNames, options);
   const checker = program.getTypeChecker();
 
-  const docs: Docs = {'Operations': {'Arithmetic': [], 'Matrices': []}};
+  const docs = {};
 
   for (const sourceFile of program.getSourceFiles()) {
     if (!sourceFile.isDeclarationFile) {
@@ -54,8 +50,17 @@ function generateDocumentation(
     if (ts.isMethodDeclaration(node)) {
       if (node.decorators != null) {
         let hasOpdoc = false;
+        let headings: string[];
         node.decorators.map(decorator => {
           if (startsWith(decorator.getText(), '@' + DOCUMENTATION_DECORATOR)) {
+            // console.log(decorator.getText());
+            ts.forEachChild(decorator, child => {
+              //  console.log('child: ' + child.getText());
+              // TODO: Maybe don't use a regex.
+              const re = /doc\('([a-zA-Z ]+)', '([a-zA-Z ]+)'\)/i;
+              headings = child.getText().match(re).slice(1, 3);
+            });
+
             hasOpdoc = true;
             return;
           }
@@ -86,7 +91,16 @@ function generateDocumentation(
             parameters
           };
 
-          docs['Operations']['Arithmetic'].push(method);
+          const [heading, subheading] = headings;
+
+          if (docs[headings[0]] == null) {
+            docs[heading] = {};
+          }
+          if (docs[heading][subheading] == null) {
+            docs[heading][subheading] = [];
+          }
+
+          docs[heading][subheading].push(method);
         }
       }
     }

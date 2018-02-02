@@ -1,4 +1,360 @@
 {
+  "Tensors": {
+    "Creation": [
+      {
+        "name": "ones",
+        "docstring": "Creates a ndarray of ones with the specified shape. ",
+        "parameters": [
+          {
+            "name": "shape",
+            "type": "ShapeMap[R]",
+            "documentation": ""
+          },
+          {
+            "name": "dtype",
+            "type": "\"float32\" | \"int32\" | \"bool\"",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "zeros",
+        "docstring": "Creates a ndarray of zeros with the specified shape. ",
+        "parameters": [
+          {
+            "name": "shape",
+            "type": "ShapeMap[R]",
+            "documentation": ""
+          },
+          {
+            "name": "dtype",
+            "type": "\"float32\" | \"int32\" | \"bool\"",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "onesLike",
+        "docstring": "Creates a ndarray of ones with the same shape as the specified ndarray.",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "T",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "zerosLike",
+        "docstring": "Creates a ndarray of zeros with the same shape as the specified ndarray.",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "T",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "clone",
+        "docstring": "Creates a ndarray with the same values/shape as the specified ndarray. ",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "T",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "randNormal",
+        "docstring": "",
+        "parameters": [
+          {
+            "name": "shape",
+            "type": "ShapeMap[R]",
+            "documentation": ""
+          },
+          {
+            "name": "mean",
+            "type": "number",
+            "documentation": ""
+          },
+          {
+            "name": "stdDev",
+            "type": "number",
+            "documentation": ""
+          },
+          {
+            "name": "dtype",
+            "type": "\"float32\" | \"int32\"",
+            "documentation": ""
+          },
+          {
+            "name": "seed",
+            "type": "number",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "truncatedNormal",
+        "docstring": "",
+        "parameters": [
+          {
+            "name": "shape",
+            "type": "ShapeMap[R]",
+            "documentation": ""
+          },
+          {
+            "name": "mean",
+            "type": "number",
+            "documentation": ""
+          },
+          {
+            "name": "stdDev",
+            "type": "number",
+            "documentation": ""
+          },
+          {
+            "name": "dtype",
+            "type": "\"float32\" | \"int32\"",
+            "documentation": ""
+          },
+          {
+            "name": "seed",
+            "type": "number",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "randUniform",
+        "docstring": "",
+        "parameters": [
+          {
+            "name": "shape",
+            "type": "ShapeMap[R]",
+            "documentation": ""
+          },
+          {
+            "name": "a",
+            "type": "number",
+            "documentation": ""
+          },
+          {
+            "name": "b",
+            "type": "number",
+            "documentation": ""
+          },
+          {
+            "name": "dtype",
+            "type": "\"float32\" | \"int32\" | \"bool\"",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "rand",
+        "docstring": "",
+        "parameters": [
+          {
+            "name": "shape",
+            "type": "ShapeMap[R]",
+            "documentation": ""
+          },
+          {
+            "name": "randFunction",
+            "type": "() => number",
+            "documentation": ""
+          },
+          {
+            "name": "dtype",
+            "type": "\"float32\" | \"int32\" | \"bool\"",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "multinomial",
+        "docstring": "Draws samples from a multinomial distribution.",
+        "parameters": [
+          {
+            "name": "probabilities",
+            "type": "Array1D | Array2D",
+            "documentation": "1D array with normalized outcome probabilities, or\n2D array of shape `[batchSize, numOutcomes]`."
+          },
+          {
+            "name": "numSamples",
+            "type": "number",
+            "documentation": "Number of samples to draw for each row slice."
+          },
+          {
+            "name": "seed",
+            "type": "number",
+            "documentation": "Optional. The seed number."
+          }
+        ]
+      },
+      {
+        "name": "oneHot",
+        "docstring": "Returns a one-hot array. The locations represented by `indices` take\nvalue `onValue` (defaults to 1), while all other locations take value\n`offValue` (defaults to 0).",
+        "parameters": [
+          {
+            "name": "indices",
+            "type": "Array1D",
+            "documentation": "1D Array of indices."
+          },
+          {
+            "name": "depth",
+            "type": "number",
+            "documentation": "The depth of the one hot dimension."
+          },
+          {
+            "name": "onValue",
+            "type": "number",
+            "documentation": "A number used to fill in output when the index matches the\nlocation."
+          },
+          {
+            "name": "offValue",
+            "type": "number",
+            "documentation": "A number used to fill in the output when the index does\nnot match the location."
+          }
+        ]
+      },
+      {
+        "name": "fromPixels",
+        "docstring": "",
+        "parameters": [
+          {
+            "name": "pixels",
+            "type": "any",
+            "documentation": ""
+          },
+          {
+            "name": "numChannels",
+            "type": "number",
+            "documentation": ""
+          }
+        ]
+      }
+    ],
+    "Transformations": [
+      {
+        "name": "reshape",
+        "docstring": "Reshapes the array. ",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "NDArray<Rank>",
+            "documentation": ""
+          },
+          {
+            "name": "newShape",
+            "type": "ShapeMap[R2]",
+            "documentation": ""
+          }
+        ]
+      },
+      {
+        "name": "cast",
+        "docstring": "Casts a tensor to a new type. If the new type matches the old type,\nthis is a no-op.",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "T",
+            "documentation": ""
+          },
+          {
+            "name": "newDType",
+            "type": "\"float32\" | \"int32\" | \"bool\"",
+            "documentation": ""
+          }
+        ]
+      }
+    ],
+    "Slicing and Joining": [
+      {
+        "name": "tile",
+        "docstring": "Construct an array by repeating it the number of times given by reps.\n\nThis operation creates a new array by replicating `input` `reps`\ntimes. The output tensor's i'th dimension has `input.shape[i] *\nreps[i]` elements, and the values of `input` are replicated\n`reps[i]` times along the i'th dimension. For example, tiling\n`[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "T",
+            "documentation": "The array to transpose."
+          },
+          {
+            "name": "reps",
+            "type": "{}",
+            "documentation": "Determines the number of replications per dimension."
+          }
+        ]
+      },
+      {
+        "name": "gather",
+        "docstring": "Gather slices from array `x`'s axis `axis` according to `indices`",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "T",
+            "documentation": "The array to transpose."
+          },
+          {
+            "name": "indices",
+            "type": "Array1D",
+            "documentation": "The indices of the values to extract."
+          },
+          {
+            "name": "axis",
+            "type": "number",
+            "documentation": "Optional. The axis over which to select values. Defaults to 0."
+          }
+        ]
+      },
+      {
+        "name": "pad1D",
+        "docstring": "Pads a Array1D.\n\nThis operation will pad an array according to the `paddings` you specify.\n\nThis operation currently only implements the `CONSTANT` mode from\nTensorflow's `pad` operation.",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "Array1D",
+            "documentation": "The array to pad."
+          },
+          {
+            "name": "paddings",
+            "type": "[number, number]",
+            "documentation": "A tuple of ints [padLeft, padRight], how much to pad on the\nleft and right side of the array."
+          },
+          {
+            "name": "constantValue",
+            "type": "number",
+            "documentation": "The scalar pad value to use. Defaults to 0."
+          }
+        ]
+      },
+      {
+        "name": "pad2D",
+        "docstring": "Pads a Array2D.\n\nThis operation will pad an array according to the `paddings` you specify.\n\nThis operation currently only implements the `CONSTANT` mode from\nTensorflow's `pad` operation.",
+        "parameters": [
+          {
+            "name": "x",
+            "type": "Array2D",
+            "documentation": "The array to pad."
+          },
+          {
+            "name": "paddings",
+            "type": "[[number, number], [number, number]]",
+            "documentation": "A pair of tuple ints\n[[padTop, padBottom], [padLeft, padRight]], how much to pad on the\narray."
+          },
+          {
+            "name": "constantValue",
+            "type": "number",
+            "documentation": "The scalar pad value to use. Defaults to 0."
+          }
+        ]
+      }
+    ]
+  },
   "Operations": {
     "Arithmetic": [
       {
@@ -240,7 +596,9 @@
             "documentation": "The second `NDArray`. Must have the same dtype as `a`."
           }
         ]
-      },
+      }
+    ],
+    "Matrices": [
       {
         "name": "matMul",
         "docstring": "Computes the dot product of two matrices, A * B. These must be matrices,\nuse matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct\nin other cases.",
@@ -331,7 +689,6 @@
           }
         ]
       }
-    ],
-    "Matrices": []
+    ]
   }
 }

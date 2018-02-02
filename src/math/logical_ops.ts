@@ -17,8 +17,9 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
+
 import * as broadcast_util from './broadcast_util';
-import {operation} from './decorators';
+import {doc, operation} from './decorators';
 import {NDArray} from './ndarray';
 import * as types from './types';
 import {DataType} from './types';
@@ -30,6 +31,7 @@ export class Ops {
    * @param a The first input `NDArray`.
    * @param b The second input `NDArray`.
    */
+  @doc('Operations', 'Logical')
   @operation
   static logicalAnd<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assert(
@@ -45,6 +47,7 @@ export class Ops {
    * @param a The first input `NDArray`.
    * @param b The second input `NDArray`.
    */
+  @doc('Operations', 'Logical')
   @operation
   static logicalOr<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assert(
@@ -64,6 +67,7 @@ export class Ops {
    * @param b Input as `NDArray` with the same shape and type as `a`.
    * @return An `NDArray` with the same type and shape as `a` and `b`.
    */
+  @doc('Operations', 'Logical')
   @operation
   static where<T extends NDArray>(condition: NDArray, a: T, b: T): T {
     util.assert(

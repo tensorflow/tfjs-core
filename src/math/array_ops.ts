@@ -18,13 +18,14 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 
-import {operation} from './decorators';
+import {doc, operation} from './decorators';
 import {Array1D, Array2D, Array3D, NDArray, NDArrayData} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
 export class Ops {
   /** Creates a ndarray of ones with the specified shape. */
+  @doc('Tensors', 'Creation')
   @operation
   static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
       NDArray<R> {
@@ -33,6 +34,7 @@ export class Ops {
   }
 
   /** Creates a ndarray of zeros with the specified shape. */
+  @doc('Tensors', 'Creation')
   @operation
   static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
       NDArray<R> {
@@ -43,6 +45,7 @@ export class Ops {
   /**
    * Creates a ndarray of ones with the same shape as the specified ndarray.
    */
+  @doc('Tensors', 'Creation')
   @operation
   static onesLike<T extends NDArray>(x: T): T {
     return Ops.ones(x.shape, x.dtype) as T;
@@ -51,18 +54,21 @@ export class Ops {
   /**
    * Creates a ndarray of zeros with the same shape as the specified ndarray.
    */
+  @doc('Tensors', 'Creation')
   @operation
   static zerosLike<T extends NDArray>(x: T): T {
     return Ops.zeros(x.shape, x.dtype) as T;
   }
 
   /** Creates a ndarray with the same values/shape as the specified ndarray. */
+  @doc('Tensors', 'Creation')
   @operation
   static clone<T extends NDArray>(x: T): T {
     const newValues = util.copyTypedArray(x.dataSync(), x.dtype);
     return NDArray.make(x.shape, {values: newValues}, x.dtype) as T;
   }
 
+  @doc('Tensors', 'Creation')
   @operation
   static randNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
@@ -75,6 +81,7 @@ export class Ops {
     return NDArray.rand(shape, () => randGauss.nextValue(), dtype);
   }
 
+  @doc('Tensors', 'Creation')
   @operation
   static truncatedNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
@@ -87,12 +94,14 @@ export class Ops {
     return NDArray.rand(shape, () => randGauss.nextValue(), dtype);
   }
 
+  @doc('Tensors', 'Creation')
   @operation
   static randUniform<R extends Rank>(
       shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
     return NDArray.rand(shape, () => util.randUniform(a, b), dtype);
   }
 
+  @doc('Tensors', 'Creation')
   @operation
   static rand<R extends Rank>(
       shape: ShapeMap[R], randFunction: () => number, dtype?: DataType):
@@ -126,6 +135,7 @@ export class Ops {
    * @return 1D array of shape `[numSamples]`, or 2D array of shape
    *     `[batchSize, numSamples]`, depending on the rank of the input.
    */
+  @doc('Tensors', 'Creation')
   @operation
   static multinomial(
       probabilities: Array1D|Array2D, numSamples: number, seed?: number):
@@ -168,6 +178,7 @@ export class Ops {
    * @param offValue A number used to fill in the output when the index does
    *     not match the location.
    */
+  @doc('Tensors', 'Creation')
   @operation
   static oneHot(indices: Array1D, depth: number, onValue = 1, offValue = 0):
       Array2D {
@@ -178,6 +189,7 @@ export class Ops {
         'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
   }
 
+  @doc('Tensors', 'Creation')
   @operation
   static fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
@@ -195,6 +207,7 @@ export class Ops {
   }
 
   /** Reshapes the array. */
+  @doc('Tensors', 'Transformations')
   @operation
   static reshape<R2 extends Rank>(x: NDArray, newShape: ShapeMap[R2]):
       NDArray<R2> {
@@ -214,6 +227,7 @@ export class Ops {
    * Casts a tensor to a new type. If the new type matches the old type,
    * this is a no-op.
    */
+  @doc('Tensors', 'Transformations')
   @operation
   static cast<T extends NDArray>(x: T, newDType: DataType): T {
     const grad = (dy: T, y: T) => {
@@ -235,6 +249,7 @@ export class Ops {
    * @param x The array to transpose.
    * @param reps Determines the number of replications per dimension.
    */
+  @doc('Tensors', 'Slicing and Joining')
   @operation
   static tile<T extends NDArray>(x: T, reps: number[]): T {
     util.assert(
@@ -251,6 +266,7 @@ export class Ops {
    * @param indices The indices of the values to extract.
    * @param axis Optional. The axis over which to select values. Defaults to 0.
    */
+  @doc('Tensors', 'Slicing and Joining')
   @operation
   static gather<T extends NDArray>(x: T, indices: Array1D, axis = 0): T {
     return ENV.engine.executeKernel(
@@ -270,6 +286,7 @@ export class Ops {
    *     left and right side of the array.
    * @param constantValue The scalar pad value to use. Defaults to 0.
    */
+  @doc('Tensors', 'Slicing and Joining')
   @operation
   static pad1D(x: Array1D, paddings: [number, number], constantValue = 0):
       Array1D {
@@ -294,6 +311,7 @@ export class Ops {
    *     array.
    * @param constantValue The scalar pad value to use. Defaults to 0.
    */
+  @doc('Tensors', 'Slicing and Joining')
   @operation
   static pad2D(
       x: Array2D, paddings: [[number, number], [number, number]],

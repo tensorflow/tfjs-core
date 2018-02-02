@@ -7,7 +7,7 @@ var DOCUMENTATION_DECORATOR = 'doc';
 function generateDocumentation(fileNames, options) {
     var program = ts.createProgram(fileNames, options);
     var checker = program.getTypeChecker();
-    var docs = { 'Operations': { 'Arithmetic': [], 'Matrices': [] } };
+    var docs = {};
     for (var _i = 0, _a = program.getSourceFiles(); _i < _a.length; _i++) {
         var sourceFile = _a[_i];
         if (!sourceFile.isDeclarationFile) {
@@ -23,8 +23,17 @@ function generateDocumentation(fileNames, options) {
         if (ts.isMethodDeclaration(node)) {
             if (node.decorators != null) {
                 var hasOpdoc_1 = false;
+                var headings_1;
                 node.decorators.map(function (decorator) {
                     if (startsWith(decorator.getText(), '@' + DOCUMENTATION_DECORATOR)) {
+                        // console.log(decorator.getText());
+                        ts.forEachChild(decorator, function (child) {
+                            //  console.log('child: ' + child.getText());
+                            // TODO: Maybe don't use a regex.
+                            var re = /doc\('([a-zA-Z ]+)', '([a-zA-Z ]+)'\)/i;
+                            console.log(child.getText());
+                            headings_1 = child.getText().match(re).slice(1, 3);
+                        });
                         hasOpdoc_1 = true;
                         return;
                     }
@@ -47,7 +56,14 @@ function generateDocumentation(fileNames, options) {
                         docstring: callSignatures.documentation,
                         parameters: parameters
                     };
-                    docs['Operations']['Arithmetic'].push(method);
+                    var heading = headings_1[0], subheading = headings_1[1];
+                    if (docs[headings_1[0]] == null) {
+                        docs[heading] = {};
+                    }
+                    if (docs[heading][subheading] == null) {
+                        docs[heading][subheading] = [];
+                    }
+                    docs[heading][subheading].push(method);
                 }
             }
         }

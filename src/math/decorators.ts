@@ -33,11 +33,13 @@ export function operation(
 }
 
 export interface HeadingMap {
-  'Tensors': 'Creation';
-  'Operations': 'Arithmetic'|'Matrices';
+  'Tensors': 'Creation'|'Transformations'|'Slicing and Joining';
+  'Operations': 'Arithmetic'|'Basic math'|'Matrices'|'Convolution'|
+      'Normalization'|'Images'|'Logical'|'RNN'|'Reduction'|'Classification';
 }
 export type Heading = keyof HeadingMap;
 
+// Pass through function that does nothing. Only used for documentation.
 export function doc<H extends Heading>(heading: H, subheading: HeadingMap[H]) {
   // tslint:disable-next-line:no-any
   return (...args: any[]) => {};
