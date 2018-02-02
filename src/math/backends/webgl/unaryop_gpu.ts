@@ -150,8 +150,8 @@ export const SQUARE = `
   return x * x;
 `;
 
-export const LOGICAL_NOT = `
-  return float(!x);
+export const LOGICAL_NOT = CHECK_NAN_SNIPPET + `
+  return float(!(x >= 1.0));
 `;
 
 export const TO_INT = `

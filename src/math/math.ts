@@ -141,6 +141,7 @@ export class NDArrayMath implements NDArrayManager {
   subtract = this.sub;  // Alias.
   subStrict = binary_ops.Ops.subStrict;
 
+  logicalNot = logical.Ops.logicalNot;
   logicalAnd = logical.Ops.logicalAnd;
   logicalOr = logical.Ops.logicalOr;
   where = logical.Ops.where;

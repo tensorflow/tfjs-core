@@ -1284,20 +1284,13 @@ import {Array1D, Array2D, Array3D, Array4D, Scalar} from './ndarray';
     // Array1D:
     it('Array1D.', math => {
       let a = Array1D.new([1, 0, 0], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, 0, 1]);
+      test_util.expectArraysClose(math.logicalNot(a), [0, 1, 1]);
 
       a = Array1D.new([0, 0, 0], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [1, 1, 1]);
 
       a = Array1D.new([1, 1], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, 0]);
-    });
-    it('mismatched Array1D shapes', math => {
-      const a = Array1D.new([1, 0], 'bool');
-      const f = () => {
-        math.logicalNot(a);
-      };
-      expect(f).toThrowError();
     });
     it('NaNs in Array1D', math => {
       const a = Array1D.new([1, NaN, 0], 'bool');
@@ -1335,7 +1328,7 @@ import {Array1D, Array2D, Array3D, Array4D, Scalar} from './ndarray';
     // Array4D:
     it('Array4D', math => {
       let a = Array4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, 1, 0, 0]);
+      test_util.expectArraysClose(math.logicalNot(a), [0, 1, 0, 1]);
 
       a = Array4D.new([2, 2, 1, 1], [0, 0, 0, 0], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [1, 1, 1, 1]);

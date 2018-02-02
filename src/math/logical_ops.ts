@@ -25,6 +25,16 @@ import {DataType} from './types';
 
 export class Ops {
   /**
+   * Returns the truth value of NOT a element-wise.
+   *
+   * @param a x The input NDArray.
+   */
+  @operation
+  static logicalNot<T extends NDArray>(x: T): T {
+    return ENV.engine.executeKernel('LogicalNot', {inputs: {x}}) as T;
+  }
+
+  /**
    * Returns the truth value of a AND b element-wise. Supports broadcasting.
    *
    * @param a The first input `NDArray`.
