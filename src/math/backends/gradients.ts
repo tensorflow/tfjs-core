@@ -36,8 +36,7 @@ import {tidy} from './tracking';
  */
 export function gradientsScope<T extends ScopeResult>(
     nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
-  const gradientsMode = true;
-  return tidy(nameOrScopeFn, scopeFn, gradientsMode);
+  return tidy(nameOrScopeFn, scopeFn, true /* gradientsScope */);
 }
 
 /**
@@ -55,29 +54,24 @@ export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
   const keys = x instanceof NDArray ? null : Object.keys(x);
   const xs = util.flattenNameArrayMap(x, keys);
 
-  const gradientsMode = true;
-  const vjp = tidy('vjp', () => {
-    const y = f();
-    if (!util.arraysEqual(y.shape, dy.shape)) {
-      throw new Error(
-          `Cannot compute vector jacobian product, ` +
-          `y shape (${y.shape}) does not match dy shape (${dy.shape}).`);
-    }
-    return ENV.engine.gradientWrt(y, xs, dy);
-  }, gradientsMode);
-
+  const {gradients} = ENV.engine.gradients(f, xs, dy);
+  if (gradients.filter(g => g == null).length > 0) {
+    throw new Error(
+        `Cannot compute gradient: y is not a function of xs.` +
+        `Make sure the xs you are computing gradients with respect ` +
+        `to are used inside the gradient function.`);
+  }
   if (x instanceof NDArray) {
-    return vjp[0] as T;
+    return gradients[0] as T;
   } else {
-    return util.unflattenToNameArrayMap(keys, vjp) as T;
+    return util.unflattenToNameArrayMap(keys, gradients) as T;
   }
 }
 
 /**
  * Computes and returns the gradient of f(x) with respect to x.
  *
- * @param f The function to execute. f() should return a scalar.
- *          TODO(nsthorat): Accept non-scalars.
+ * @param f The function to execute. f() should return an NDArray.
  * @param x The input to compute de/dx over. This can be a single value or
  * an object mapping a string to an NDArray. If using the object mode, this
  * method will return an object of the same shape.
@@ -87,9 +81,13 @@ export function gradients<T extends NDArray|NamedArrayMap>(
   const keys = x instanceof NDArray ? null : Object.keys(x);
   const xs = util.flattenNameArrayMap(x, keys);
 
-  const returnValue = false;
-  const gradients = ENV.engine.gradients(f, xs, returnValue) as NDArray[];
-
+  const {gradients} = ENV.engine.gradients(f, xs);
+  if (gradients.filter(g => g == null).length > 0) {
+    throw new Error(
+        `Cannot compute gradient: y is not a function of xs.` +
+        `Make sure the xs you are computing gradients with respect ` +
+        `to are used inside the gradient function.`);
+  }
   if (x instanceof NDArray) {
     return gradients[0] as T;
   } else {
@@ -110,43 +108,21 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
   if (varList == null) {
     // Get all of the trainable variables.
     varList = [];
-    const varNames = Object.keys(ENV.engine.registeredVariables);
-    for (let i = 0; i < varNames.length; i++) {
-      const variable = ENV.engine.registeredVariables[varNames[i]];
-      if (variable.trainable) {
-        varList.push(variable);
-      }
+    for (const varName in ENV.engine.registeredVariables) {
+      varList.push(ENV.engine.registeredVariables[varName]);
     }
-  } else {
-    // Prune non-trainable variables.
-    varList = varList.filter(variable => variable.trainable);
   }
+  // Prune non-trainable variables.
+  varList = varList.filter(variable => variable.trainable);
+  const {value, gradients} = ENV.engine.gradients(f, varList);
 
-  const gradientsMode = true;
-  let variableNames: string[];
-  const result = tidy('gradients', () => {
-    const y = f();
-    if (y.rank !== 0) {
-      throw new Error(
-          `Cannot compute gradient of non-scalar y output of f(). ` +
-          `Got y with rank ${y.rank} and shape ${y.shape}.`);
+  const namedGrads: NamedArrayMap = {};
+  varList.forEach((v, i) => {
+    if (gradients[i] != null) {
+      namedGrads[v.name] = gradients[i];
     }
-
-    const inputVariables = ENV.engine.computeVariableInputs(varList);
-    variableNames = inputVariables.map(variable => variable.name);
-
-    const gradients = inputVariables.length === 0 ?
-        [] :
-        ENV.engine.gradientWrt(y, inputVariables);
-    return [y, ...gradients];
-  }, gradientsMode);
-
-  const gradients: NamedArrayMap = {};
-  for (let i = 0; i < variableNames.length; i++) {
-    gradients[variableNames[i]] = result[i + 1];
-  }
-
-  return {value: result[0] as Scalar, gradients};
+  });
+  return {value, gradients: namedGrads};
 }
 
 /**
@@ -164,18 +140,17 @@ export function valueAndGradients<T extends NDArray|NamedArrayMap>(
   const keys = x instanceof NDArray ? null : Object.keys(x);
   const xs = util.flattenNameArrayMap(x, keys);
 
-  const returnValue = true;
-  const valueAndGradients = ENV.engine.gradients(f, xs, returnValue) as
-      {value: Scalar, gradients: NDArray[]};
-
-  let gradients: T;
-  if (x instanceof NDArray) {
-    gradients = valueAndGradients.gradients[0] as T;
-  } else {
-    gradients =
-        util.unflattenToNameArrayMap(keys, valueAndGradients.gradients) as T;
+  const {value, gradients} = ENV.engine.gradients(f, xs);
+  if (gradients.filter(g => g == null).length > 0) {
+    throw new Error(
+        `Cannot compute gradient: y is not a function of xs.` +
+        `Make sure the xs you are computing gradients with respect ` +
+        `to are used inside the gradient function.`);
   }
-  return {value: valueAndGradients.value, gradients};
+  const resGradients = (x instanceof NDArray) ?
+      gradients[0] as T :
+      util.unflattenToNameArrayMap(keys, gradients) as T;
+  return {value, gradients: resGradients};
 }
 
 /**

@@ -76,15 +76,7 @@ export function tidy<T extends ScopeResult>(
  * @param result The NDArray to keep from being disposed.
  */
 export function keep<T extends NDArray>(result: T): T {
-  if (ENV.engine.noUserScopes()) {
-    if (ENV.engine.safeMode) {
-      throw new Error(
-          'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +
-          'dl.tidy(() => {...}) to avoid memory leaks.');
-    }
-  }
-  ENV.engine.keep(result);
-  return result;
+  return ENV.engine.keep(result);
 }
 
 export function time(f: () => void): Promise<number> {
