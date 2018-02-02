@@ -31,7 +31,6 @@ function generateDocumentation(fileNames, options) {
                             //  console.log('child: ' + child.getText());
                             // TODO: Maybe don't use a regex.
                             var re = /doc\('([a-zA-Z ]+)', '([a-zA-Z ]+)'\)/i;
-                            console.log(child.getText());
                             headings_1 = child.getText().match(re).slice(1, 3);
                         });
                         hasOpdoc_1 = true;
