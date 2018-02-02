@@ -78,21 +78,7 @@ export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
  */
 export function gradients<T extends NDArray|NamedArrayMap>(
     f: () => Scalar, x: T): T {
-  const keys = x instanceof NDArray ? null : Object.keys(x);
-  const xs = util.flattenNameArrayMap(x, keys);
-
-  const {gradients} = ENV.engine.gradients(f, xs);
-  if (gradients.filter(g => g == null).length > 0) {
-    throw new Error(
-        `Cannot compute gradient: y is not a function of xs.` +
-        `Make sure the xs you are computing gradients with respect ` +
-        `to are used inside the gradient function.`);
-  }
-  if (x instanceof NDArray) {
-    return gradients[0] as T;
-  } else {
-    return util.unflattenToNameArrayMap(keys, gradients) as T;
-  }
+  return valueAndGradients(f, x).gradients;
 }
 
 /**
