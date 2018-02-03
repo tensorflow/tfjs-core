@@ -17,9 +17,8 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-
 import {operation} from './decorators';
-import {Array1D, Array2D, Array3D, NDArray, NDArrayData} from './ndarray';
+import {Array1D, Array2D, Array3D, NDArray} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
@@ -59,8 +58,7 @@ export class Ops {
   /** Creates a ndarray with the same values/shape as the specified ndarray. */
   @operation
   static clone<T extends NDArray>(x: T): T {
-    const newValues = util.copyTypedArray(x.dataSync(), x.dtype);
-    return NDArray.make(x.shape, {values: newValues}, x.dtype) as T;
+    return NDArray.make(x.shape, {dataId: x.dataId}, x.dtype) as T;
   }
 
   @operation
@@ -186,12 +184,7 @@ export class Ops {
       throw new Error(
           'Cannot construct NDArray with more than 4 channels from pixels.');
     }
-    const ndarrayData: NDArrayData = {};
-    const shape: [number, number, number] =
-        [pixels.height, pixels.width, numChannels];
-    const res = NDArray.make(shape, ndarrayData, 'int32') as Array3D;
-    ENV.math.writePixels(res.dataId, pixels, numChannels);
-    return res;
+    return ENV.math.fromPixels(pixels, numChannels);
   }
 
   /** Reshapes the array. */
