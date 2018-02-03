@@ -8,240 +8,252 @@
           "methods": [
             {
               "name": "ones",
-              "docstring": "Creates a ndarray of ones with the specified shape. ",
               "parameters": [
                 {
                   "name": "shape",
-                  "type": "ShapeMap[R]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R]"
                 },
                 {
                   "name": "dtype",
-                  "type": "\"float32\" | \"int32\" | \"bool\"",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "\"float32\" | \"int32\" | \"bool\""
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": "Creates a ndarray of ones with the specified shape. "
             },
             {
               "name": "zeros",
-              "docstring": "Creates a ndarray of zeros with the specified shape. ",
               "parameters": [
                 {
                   "name": "shape",
-                  "type": "ShapeMap[R]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R]"
                 },
                 {
                   "name": "dtype",
-                  "type": "\"float32\" | \"int32\" | \"bool\"",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "\"float32\" | \"int32\" | \"bool\""
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": "Creates a ndarray of zeros with the specified shape. "
             },
             {
               "name": "onesLike",
-              "docstring": "Creates a ndarray of ones with the same shape as the specified ndarray.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Creates a ndarray of ones with the same shape as the specified ndarray."
             },
             {
               "name": "zerosLike",
-              "docstring": "Creates a ndarray of zeros with the same shape as the specified ndarray.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Creates a ndarray of zeros with the same shape as the specified ndarray."
             },
             {
               "name": "clone",
-              "docstring": "Creates a ndarray with the same values/shape as the specified ndarray. ",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Creates a ndarray with the same values/shape as the specified ndarray. "
             },
             {
               "name": "randNormal",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "shape",
-                  "type": "ShapeMap[R]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R]"
                 },
                 {
                   "name": "mean",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 },
                 {
                   "name": "stdDev",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 },
                 {
                   "name": "dtype",
-                  "type": "\"float32\" | \"int32\"",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "\"float32\" | \"int32\""
                 },
                 {
                   "name": "seed",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": ""
             },
             {
               "name": "truncatedNormal",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "shape",
-                  "type": "ShapeMap[R]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R]"
                 },
                 {
                   "name": "mean",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 },
                 {
                   "name": "stdDev",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 },
                 {
                   "name": "dtype",
-                  "type": "\"float32\" | \"int32\"",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "\"float32\" | \"int32\""
                 },
                 {
                   "name": "seed",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": ""
             },
             {
               "name": "randUniform",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "shape",
-                  "type": "ShapeMap[R]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R]"
                 },
                 {
                   "name": "a",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 },
                 {
                   "name": "b",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 },
                 {
                   "name": "dtype",
-                  "type": "\"float32\" | \"int32\" | \"bool\"",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "\"float32\" | \"int32\" | \"bool\""
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": ""
             },
             {
               "name": "rand",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "shape",
-                  "type": "ShapeMap[R]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R]"
                 },
                 {
                   "name": "randFunction",
-                  "type": "() => number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "() => number"
                 },
                 {
                   "name": "dtype",
-                  "type": "\"float32\" | \"int32\" | \"bool\"",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "\"float32\" | \"int32\" | \"bool\""
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": ""
             },
             {
               "name": "multinomial",
-              "docstring": "Draws samples from a multinomial distribution.",
               "parameters": [
                 {
                   "name": "probabilities",
-                  "type": "Array1D | Array2D",
-                  "documentation": "1D array with normalized outcome probabilities, or\n2D array of shape `[batchSize, numOutcomes]`."
+                  "documentation": "1D array with normalized outcome probabilities, or\n2D array of shape `[batchSize, numOutcomes]`.",
+                  "type": "Array1D | Array2D"
                 },
                 {
                   "name": "numSamples",
-                  "type": "number",
-                  "documentation": "Number of samples to draw for each row slice."
+                  "documentation": "Number of samples to draw for each row slice.",
+                  "type": "number"
                 },
                 {
                   "name": "seed",
-                  "type": "number",
-                  "documentation": "Optional. The seed number."
+                  "documentation": "Optional. The seed number.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array1D | Array2D",
+              "documentation": "Draws samples from a multinomial distribution."
             },
             {
               "name": "oneHot",
-              "docstring": "Returns a one-hot array. The locations represented by `indices` take\nvalue `onValue` (defaults to 1), while all other locations take value\n`offValue` (defaults to 0).",
               "parameters": [
                 {
                   "name": "indices",
-                  "type": "Array1D",
-                  "documentation": "1D Array of indices."
+                  "documentation": "1D Array of indices.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "depth",
-                  "type": "number",
-                  "documentation": "The depth of the one hot dimension."
+                  "documentation": "The depth of the one hot dimension.",
+                  "type": "number"
                 },
                 {
                   "name": "onValue",
-                  "type": "number",
-                  "documentation": "A number used to fill in output when the index matches the\nlocation."
+                  "documentation": "A number used to fill in output when the index matches the\nlocation.",
+                  "type": "number"
                 },
                 {
                   "name": "offValue",
-                  "type": "number",
-                  "documentation": "A number used to fill in the output when the index does\nnot match the location."
+                  "documentation": "A number used to fill in the output when the index does\nnot match the location.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array2D",
+              "documentation": "Returns a one-hot array. The locations represented by `indices` take\nvalue `onValue` (defaults to 1), while all other locations take value\n`offValue` (defaults to 0)."
             },
             {
               "name": "fromPixels",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "pixels",
-                  "type": "any",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "any"
                 },
                 {
                   "name": "numChannels",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array3D",
+              "documentation": ""
             }
           ]
         },
@@ -250,35 +262,37 @@
           "methods": [
             {
               "name": "reshape",
-              "docstring": "Reshapes the array. ",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "newShape",
-                  "type": "ShapeMap[R2]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R2]"
                 }
-              ]
+              ],
+              "returnType": "NDArray<R2>",
+              "documentation": "Reshapes the array. "
             },
             {
               "name": "cast",
-              "docstring": "Casts a tensor to a new type. If the new type matches the old type,\nthis is a no-op.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "newDType",
-                  "type": "\"float32\" | \"int32\" | \"bool\"",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "\"float32\" | \"int32\" | \"bool\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Casts a tensor to a new type. If the new type matches the old type,\nthis is a no-op."
             }
           ]
         },
@@ -287,362 +301,381 @@
           "methods": [
             {
               "name": "tile",
-              "docstring": "Construct an array by repeating it the number of times given by reps.\n\nThis operation creates a new array by replicating `input` `reps`\ntimes. The output tensor's i'th dimension has `input.shape[i] *\nreps[i]` elements, and the values of `input` are replicated\n`reps[i]` times along the i'th dimension. For example, tiling\n`[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The array to transpose."
+                  "documentation": "The array to transpose.",
+                  "type": "T"
                 },
                 {
                   "name": "reps",
-                  "type": "{}",
-                  "documentation": "Determines the number of replications per dimension."
+                  "documentation": "Determines the number of replications per dimension.",
+                  "type": "{}"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Construct an array by repeating it the number of times given by reps.\n\nThis operation creates a new array by replicating `input` `reps`\ntimes. The output tensor's i'th dimension has `input.shape[i] *\nreps[i]` elements, and the values of `input` are replicated\n`reps[i]` times along the i'th dimension. For example, tiling\n`[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`."
             },
             {
               "name": "gather",
-              "docstring": "Gather slices from array `x`'s axis `axis` according to `indices`",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The array to transpose."
+                  "documentation": "The array to transpose.",
+                  "type": "T"
                 },
                 {
                   "name": "indices",
-                  "type": "Array1D",
-                  "documentation": "The indices of the values to extract."
+                  "documentation": "The indices of the values to extract.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "axis",
-                  "type": "number",
-                  "documentation": "Optional. The axis over which to select values. Defaults to 0."
+                  "documentation": "Optional. The axis over which to select values. Defaults to 0.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Gather slices from array `x`'s axis `axis` according to `indices`"
             },
             {
               "name": "pad1D",
-              "docstring": "Pads a Array1D.\n\nThis operation will pad an array according to the `paddings` you specify.\n\nThis operation currently only implements the `CONSTANT` mode from\nTensorflow's `pad` operation.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array1D",
-                  "documentation": "The array to pad."
+                  "documentation": "The array to pad.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "paddings",
-                  "type": "[number, number]",
-                  "documentation": "A tuple of ints [padLeft, padRight], how much to pad on the\nleft and right side of the array."
+                  "documentation": "A tuple of ints [padLeft, padRight], how much to pad on the\nleft and right side of the array.",
+                  "type": "[number, number]"
                 },
                 {
                   "name": "constantValue",
-                  "type": "number",
-                  "documentation": "The scalar pad value to use. Defaults to 0."
+                  "documentation": "The scalar pad value to use. Defaults to 0.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array1D",
+              "documentation": "Pads a Array1D.\n\nThis operation will pad an array according to the `paddings` you specify.\n\nThis operation currently only implements the `CONSTANT` mode from\nTensorflow's `pad` operation."
             },
             {
               "name": "pad2D",
-              "docstring": "Pads a Array2D.\n\nThis operation will pad an array according to the `paddings` you specify.\n\nThis operation currently only implements the `CONSTANT` mode from\nTensorflow's `pad` operation.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array2D",
-                  "documentation": "The array to pad."
+                  "documentation": "The array to pad.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "paddings",
-                  "type": "[[number, number], [number, number]]",
-                  "documentation": "A pair of tuple ints\n[[padTop, padBottom], [padLeft, padRight]], how much to pad on the\narray."
+                  "documentation": "A pair of tuple ints\n[[padTop, padBottom], [padLeft, padRight]], how much to pad on the\narray.",
+                  "type": "[[number, number], [number, number]]"
                 },
                 {
                   "name": "constantValue",
-                  "type": "number",
-                  "documentation": "The scalar pad value to use. Defaults to 0."
+                  "documentation": "The scalar pad value to use. Defaults to 0.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array2D",
+              "documentation": "Pads a Array2D.\n\nThis operation will pad an array according to the `paddings` you specify.\n\nThis operation currently only implements the `CONSTANT` mode from\nTensorflow's `pad` operation."
             },
             {
               "name": "concat1D",
-              "docstring": "Concatenates two 1D arrays.\n\nFor example, if:\nA: shape(3) = |r1, g1, b1|\nB: shape(2) = |r2, g2|\nC = concat1D(A, B) == |r1, g1, b1, r2, g2|",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "Array1D",
-                  "documentation": "The first array."
+                  "documentation": "The first array.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "b",
-                  "type": "Array1D",
-                  "documentation": "The second array."
+                  "documentation": "The second array.",
+                  "type": "Array1D"
                 }
-              ]
+              ],
+              "returnType": "Array1D",
+              "documentation": "Concatenates two 1D arrays.\n\nFor example, if:\nA: shape(3) = |r1, g1, b1|\nB: shape(2) = |r2, g2|\nC = concat1D(A, B) == |r1, g1, b1, r2, g2|"
             },
             {
               "name": "concat2D",
-              "docstring": "Concatenates two 2D arrays along a given axis.\n\nFor example, if:\nA: shape(2, 3) = | r1, g1, b1 |\n                  | r2, g2, b2 |\n\nB: shape(2, 3) = | r3, g3, b3 |\n                  | r4, g4, b4 |\n\nC = concat2D(A, B, axis)\n\nif axis = 0:\nC: shape(4, 3) = | r1, g1, b1 |\n                  | r2, g2, b2 |\n                  | r3, g3, b3 |\n                  | r4, g4, b4 |\n\nif axis = 1:\nC = shape(2, 6) = | r1, g1, b1, r3, g3, b3 |\n                   | r2, g2, b2, r4, g4, b4 |",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "Array2D",
-                  "documentation": "The first array."
+                  "documentation": "The first array.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "b",
-                  "type": "Array2D",
-                  "documentation": "The second array."
+                  "documentation": "The second array.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "axis",
-                  "type": "number",
-                  "documentation": "The axis to concatenate along."
+                  "documentation": "The axis to concatenate along.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array2D",
+              "documentation": "Concatenates two 2D arrays along a given axis.\n\nFor example, if:\nA: shape(2, 3) = | r1, g1, b1 |\n                  | r2, g2, b2 |\n\nB: shape(2, 3) = | r3, g3, b3 |\n                  | r4, g4, b4 |\n\nC = concat2D(A, B, axis)\n\nif axis = 0:\nC: shape(4, 3) = | r1, g1, b1 |\n                  | r2, g2, b2 |\n                  | r3, g3, b3 |\n                  | r4, g4, b4 |\n\nif axis = 1:\nC = shape(2, 6) = | r1, g1, b1, r3, g3, b3 |\n                   | r2, g2, b2, r4, g4, b4 |"
             },
             {
               "name": "concat3D",
-              "docstring": "Concatenates two 3D ndarrays along a given axis.\n\nFor example, if:\nA: shape(2, 1, 3) = | r1, g1, b1 |\n                     | r2, g2, b2 |\n\nB: shape(2, 1, 3) = | r3, g3, b3 |\n                     | r4, g4, b4 |\n\nC = concat3D(A, B, axis)\n\nif axis = 0:\nC: shape(4, 1, 3) = | r1, g1, b1 |\n                     | r2, g2, b2 |\n                     | r3, g3, b3 |\n                     | r4, g4, b4 |\n\nif axis = 1:\nC: shape(2, 2, 3) = | r1, g1, b1, r3, g3, b3 |\n                     | r2, g2, b2, r4, g4, b4 |\n\nif axis = 2:\nC = shape(2, 1, 6) = | r1, g1, b1, r3, g3, b3 |\n                      | r2, g2, b2, r4, g4, b4 |",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "Array3D",
-                  "documentation": "The first array to concat."
+                  "documentation": "The first array to concat.",
+                  "type": "Array3D"
                 },
                 {
                   "name": "b",
-                  "type": "Array3D",
-                  "documentation": "The second array to conat."
+                  "documentation": "The second array to conat.",
+                  "type": "Array3D"
                 },
                 {
                   "name": "axis",
-                  "type": "number",
-                  "documentation": "The axis to concate along."
+                  "documentation": "The axis to concate along.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array3D",
+              "documentation": "Concatenates two 3D ndarrays along a given axis.\n\nFor example, if:\nA: shape(2, 1, 3) = | r1, g1, b1 |\n                     | r2, g2, b2 |\n\nB: shape(2, 1, 3) = | r3, g3, b3 |\n                     | r4, g4, b4 |\n\nC = concat3D(A, B, axis)\n\nif axis = 0:\nC: shape(4, 1, 3) = | r1, g1, b1 |\n                     | r2, g2, b2 |\n                     | r3, g3, b3 |\n                     | r4, g4, b4 |\n\nif axis = 1:\nC: shape(2, 2, 3) = | r1, g1, b1, r3, g3, b3 |\n                     | r2, g2, b2, r4, g4, b4 |\n\nif axis = 2:\nC = shape(2, 1, 6) = | r1, g1, b1, r3, g3, b3 |\n                      | r2, g2, b2, r4, g4, b4 |"
             },
             {
               "name": "concat4D",
-              "docstring": "Concatenates two 4D ndarrays along a given axis. See math.concat2D() for\ndocumentation.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "Array4D",
-                  "documentation": "The first array to concat."
+                  "documentation": "The first array to concat.",
+                  "type": "Array4D"
                 },
                 {
                   "name": "b",
-                  "type": "Array4D",
-                  "documentation": "The second array to conat."
+                  "documentation": "The second array to conat.",
+                  "type": "Array4D"
                 },
                 {
                   "name": "axis",
-                  "type": "number",
-                  "documentation": "The axis to concate along."
+                  "documentation": "The axis to concate along.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array4D",
+              "documentation": "Concatenates two 4D ndarrays along a given axis. See math.concat2D() for\ndocumentation."
             },
             {
               "name": "concat",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "axis",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": ""
             },
             {
               "name": "reverse1D",
-              "docstring": "Reverses a 1D array",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array1D",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "Array1D"
                 }
-              ]
+              ],
+              "returnType": "Array1D",
+              "documentation": "Reverses a 1D array"
             },
             {
               "name": "reverse2D",
-              "docstring": "Reverses a 2D array along a specified axis",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array2D",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "The set of dimensions to reverse. Must be in the\nrange [-rank(x), rank(x))."
+                  "documentation": "The set of dimensions to reverse. Must be in the\nrange [-rank(x), rank(x)).",
+                  "type": "number | {}"
                 }
-              ]
+              ],
+              "returnType": "Array2D",
+              "documentation": "Reverses a 2D array along a specified axis"
             },
             {
               "name": "reverse3D",
-              "docstring": "Reverses a 3D array along a specified axis",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array3D",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "Array3D"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "The set of dimensions to reverse. Must be in the\nrange [-rank(x), rank(x))."
+                  "documentation": "The set of dimensions to reverse. Must be in the\nrange [-rank(x), rank(x)).",
+                  "type": "number | {}"
                 }
-              ]
+              ],
+              "returnType": "Array3D",
+              "documentation": "Reverses a 3D array along a specified axis"
             },
             {
               "name": "reverse4D",
-              "docstring": "Reverses a 4D array along a specified axis",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array4D",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "Array4D"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "The set of dimensions to reverse. Must be in the\nrange [-rank(x), rank(x))."
+                  "documentation": "The set of dimensions to reverse. Must be in the\nrange [-rank(x), rank(x)).",
+                  "type": "number | {}"
                 }
-              ]
+              ],
+              "returnType": "Array4D",
+              "documentation": "Reverses a 4D array along a specified axis"
             },
             {
               "name": "reverse",
-              "docstring": "Reverses an NDArray along a specified axis.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<R>",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "NDArray<R>"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "The set of dimensions to reverse. Must be in the\nrange [-rank(x), rank(x))."
+                  "documentation": "The set of dimensions to reverse. Must be in the\nrange [-rank(x), rank(x)).",
+                  "type": "number | {}"
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": "Reverses an NDArray along a specified axis."
             },
             {
               "name": "slice1D",
-              "docstring": "Extracts a 1D slice from 1D array starting at coordinates `begin` and is\nof length `size`.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array1D",
-                  "documentation": "The input array to slice from."
+                  "documentation": "The input array to slice from.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "begin",
-                  "type": "number",
-                  "documentation": "The offset to start the slice from."
+                  "documentation": "The offset to start the slice from.",
+                  "type": "number"
                 },
                 {
                   "name": "size",
-                  "type": "number",
-                  "documentation": "The size of the slice."
+                  "documentation": "The size of the slice.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "Array1D",
+              "documentation": "Extracts a 1D slice from 1D array starting at coordinates `begin` and is\nof length `size`."
             },
             {
               "name": "slice2D",
-              "docstring": "Extracts a 2D slice from a 2D array starting at coordinates `begin` and\nis of size `size`.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array2D",
-                  "documentation": "The input array to slice from."
+                  "documentation": "The input array to slice from.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "begin",
-                  "type": "[number, number]",
-                  "documentation": "The [row, col] 2d coordinates to start the slice from."
+                  "documentation": "The [row, col] 2d coordinates to start the slice from.",
+                  "type": "[number, number]"
                 },
                 {
                   "name": "size",
-                  "type": "[number, number]",
-                  "documentation": "The size of the slice."
+                  "documentation": "The size of the slice.",
+                  "type": "[number, number]"
                 }
-              ]
+              ],
+              "returnType": "Array2D",
+              "documentation": "Extracts a 2D slice from a 2D array starting at coordinates `begin` and\nis of size `size`."
             },
             {
               "name": "slice3D",
-              "docstring": "Extracts a 3D slice from a 3D array starting at coordinates `begin` and\nis of size `size`.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array3D",
-                  "documentation": "The input array to slice from."
+                  "documentation": "The input array to slice from.",
+                  "type": "Array3D"
                 },
                 {
                   "name": "begin",
-                  "type": "[number, number, number]",
-                  "documentation": "The [row, col, depth] 3d coordinates to start the slice from."
+                  "documentation": "The [row, col, depth] 3d coordinates to start the slice from.",
+                  "type": "[number, number, number]"
                 },
                 {
                   "name": "size",
-                  "type": "[number, number, number]",
-                  "documentation": "The size of the slice."
+                  "documentation": "The size of the slice.",
+                  "type": "[number, number, number]"
                 }
-              ]
+              ],
+              "returnType": "Array3D",
+              "documentation": "Extracts a 3D slice from a 3D array starting at coordinates `begin` and\nis of size `size`."
             },
             {
               "name": "slice4D",
-              "docstring": "Extracts a 4D slice from a 4D array starting at coordinates `begin` and\nis of size `size`.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array4D",
-                  "documentation": "The input array to slice from."
+                  "documentation": "The input array to slice from.",
+                  "type": "Array4D"
                 },
                 {
                   "name": "begin",
-                  "type": "[number, number, number, number]",
-                  "documentation": "The [row, col, depth, depth2] 4d coordinates to start the\nslice from."
+                  "documentation": "The [row, col, depth, depth2] 4d coordinates to start the\nslice from.",
+                  "type": "[number, number, number, number]"
                 },
                 {
                   "name": "size",
-                  "type": "[number, number, number, number]",
-                  "documentation": "The size of the slice."
+                  "documentation": "The size of the slice.",
+                  "type": "[number, number, number, number]"
                 }
-              ]
+              ],
+              "returnType": "Array4D",
+              "documentation": "Extracts a 4D slice from a 4D array starting at coordinates `begin` and\nis of size `size`."
             },
             {
               "name": "slice",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<R>",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "NDArray<R>"
                 },
                 {
                   "name": "begin",
-                  "type": "ShapeMap[R]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R]"
                 },
                 {
                   "name": "size",
-                  "type": "ShapeMap[R]",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "ShapeMap[R]"
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": ""
             }
           ]
         }
@@ -656,184 +689,190 @@
           "methods": [
             {
               "name": "batchNormalization2D",
-              "docstring": "Batch normalization 2D. Mean, variance, scale, and offset can be of two\nshapes: 1) The same shape as the input: an Array2D. 2) In the common\ncase, the depth dimension is the last dimension of x, so the values would\nbe an Array1D of shape [depth].",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array2D",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "mean",
-                  "type": "Array1D | Array2D",
-                  "documentation": "A mean NDArray."
+                  "documentation": "A mean NDArray.",
+                  "type": "Array1D | Array2D"
                 },
                 {
                   "name": "variance",
-                  "type": "Array1D | Array2D",
-                  "documentation": "A variance NDArray."
+                  "documentation": "A variance NDArray.",
+                  "type": "Array1D | Array2D"
                 },
                 {
                   "name": "varianceEpsilon",
-                  "type": "number",
-                  "documentation": "A small float number to avoid dividing by 0."
+                  "documentation": "A small float number to avoid dividing by 0.",
+                  "type": "number"
                 },
                 {
                   "name": "scale",
-                  "type": "Array1D | Array2D",
-                  "documentation": "A scale NDArray."
+                  "documentation": "A scale NDArray.",
+                  "type": "Array1D | Array2D"
                 },
                 {
                   "name": "offset",
-                  "type": "Array1D | Array2D",
-                  "documentation": "An offset NDArray."
+                  "documentation": "An offset NDArray.",
+                  "type": "Array1D | Array2D"
                 }
-              ]
+              ],
+              "returnType": "Array2D",
+              "documentation": "Batch normalization 2D. Mean, variance, scale, and offset can be of two\nshapes: 1) The same shape as the input: an Array2D. 2) In the common\ncase, the depth dimension is the last dimension of x, so the values would\nbe an Array1D of shape [depth]."
             },
             {
               "name": "batchNormalization3D",
-              "docstring": "Batch normalization 3D. Mean, variance, scale, and offset can be of two\nshapes: 1) The same shape as the input: an Array3D. 2) In the common\ncase, the depth dimension is the last dimension of x, so the values would\nbe an Array1D of shape [depth].",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array3D",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "Array3D"
                 },
                 {
                   "name": "mean",
-                  "type": "Array1D | Array3D",
-                  "documentation": "A mean NDArray."
+                  "documentation": "A mean NDArray.",
+                  "type": "Array1D | Array3D"
                 },
                 {
                   "name": "variance",
-                  "type": "Array1D | Array3D",
-                  "documentation": "A variance NDArray."
+                  "documentation": "A variance NDArray.",
+                  "type": "Array1D | Array3D"
                 },
                 {
                   "name": "varianceEpsilon",
-                  "type": "number",
-                  "documentation": "A small float number to avoid dividing by 0."
+                  "documentation": "A small float number to avoid dividing by 0.",
+                  "type": "number"
                 },
                 {
                   "name": "scale",
-                  "type": "Array1D | Array3D",
-                  "documentation": "A scale NDArray."
+                  "documentation": "A scale NDArray.",
+                  "type": "Array1D | Array3D"
                 },
                 {
                   "name": "offset",
-                  "type": "Array1D | Array3D",
-                  "documentation": "An offset NDArray."
+                  "documentation": "An offset NDArray.",
+                  "type": "Array1D | Array3D"
                 }
-              ]
+              ],
+              "returnType": "Array3D",
+              "documentation": "Batch normalization 3D. Mean, variance, scale, and offset can be of two\nshapes: 1) The same shape as the input: an Array3D. 2) In the common\ncase, the depth dimension is the last dimension of x, so the values would\nbe an Array1D of shape [depth]."
             },
             {
               "name": "batchNormalization4D",
-              "docstring": "Batch normalization 4D. Mean, variance, scale, and offset can be of two\nshapes: 1) The same shape as the input: an Array4D. 2) In the common\ncase, the depth dimension is the last dimension of x, so the values would\nbe an Array1D of shape [depth].",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "Array4D",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "Array4D"
                 },
                 {
                   "name": "mean",
-                  "type": "Array1D | Array4D",
-                  "documentation": "A mean NDArray."
+                  "documentation": "A mean NDArray.",
+                  "type": "Array1D | Array4D"
                 },
                 {
                   "name": "variance",
-                  "type": "Array1D | Array4D",
-                  "documentation": "A variance NDArray."
+                  "documentation": "A variance NDArray.",
+                  "type": "Array1D | Array4D"
                 },
                 {
                   "name": "varianceEpsilon",
-                  "type": "number",
-                  "documentation": "A small float number to avoid dividing by 0."
+                  "documentation": "A small float number to avoid dividing by 0.",
+                  "type": "number"
                 },
                 {
                   "name": "scale",
-                  "type": "Array1D | Array4D",
-                  "documentation": "A scale NDArray."
+                  "documentation": "A scale NDArray.",
+                  "type": "Array1D | Array4D"
                 },
                 {
                   "name": "offset",
-                  "type": "Array1D | Array4D",
-                  "documentation": "An offset NDArray."
+                  "documentation": "An offset NDArray.",
+                  "type": "Array1D | Array4D"
                 }
-              ]
+              ],
+              "returnType": "Array4D",
+              "documentation": "Batch normalization 4D. Mean, variance, scale, and offset can be of two\nshapes: 1) The same shape as the input: an Array4D. 2) In the common\ncase, the depth dimension is the last dimension of x, so the values would\nbe an Array1D of shape [depth]."
             },
             {
               "name": "batchNormalization",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<R>",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "NDArray<R>"
                 },
                 {
                   "name": "mean",
-                  "type": "Array1D | NDArray<R>",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "Array1D | NDArray<R>"
                 },
                 {
                   "name": "variance",
-                  "type": "Array1D | NDArray<R>",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "Array1D | NDArray<R>"
                 },
                 {
                   "name": "varianceEpsilon",
-                  "type": "number",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "number"
                 },
                 {
                   "name": "scale",
-                  "type": "Array1D | NDArray<R>",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "Array1D | NDArray<R>"
                 },
                 {
                   "name": "offset",
-                  "type": "Array1D | NDArray<R>",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "Array1D | NDArray<R>"
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": ""
             },
             {
               "name": "moments",
-              "docstring": "Calculates the mean and variance of `x`. The mean and variance are\ncalculated by aggregating the contents of `x` across `axes`. If `x` is\n1-D and `axes = [0]` this is just the mean and variance of a vector.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "Optional. The dimension(s) along with to compute mean and\nvariance. By default it reduces all dimensions."
+                  "documentation": "Optional. The dimension(s) along with to compute mean and\nvariance. By default it reduces all dimensions.",
+                  "type": "number | {}"
                 },
                 {
                   "name": "keepDims",
-                  "type": "boolean",
-                  "documentation": "If true, the moments have the same dimensionality as the\ninput."
+                  "documentation": "If true, the moments have the same dimensionality as the\ninput.",
+                  "type": "boolean"
                 }
-              ]
+              ],
+              "returnType": "{ mean: NDArray<Rank>; variance: NDArray<Rank>; }",
+              "documentation": "Calculates the mean and variance of `x`. The mean and variance are\ncalculated by aggregating the contents of `x` across `axes`. If `x` is\n1-D and `axes = [0]` this is just the mean and variance of a vector."
             },
             {
               "name": "softmax",
-              "docstring": "Computes the softmax normalized vector given the logits.",
               "parameters": [
                 {
                   "name": "logits",
-                  "type": "T",
-                  "documentation": "The logits array."
+                  "documentation": "The logits array.",
+                  "type": "T"
                 },
                 {
                   "name": "dim",
-                  "type": "number",
-                  "documentation": "The dimension softmax would be performed on. Defaults to -1\nwhich indicates the last dimension."
+                  "documentation": "The dimension softmax would be performed on. Defaults to -1\nwhich indicates the last dimension.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the softmax normalized vector given the logits."
             }
           ]
         },
@@ -842,243 +881,258 @@
           "methods": [
             {
               "name": "add",
-              "docstring": "Adds two NDArrays element-wise, A + B. Supports broadcasting.\nFor a stricter version without broadcasting use addStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first `NDArray` to add."
+                  "documentation": "The first `NDArray` to add.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second `NDArray` to add. Must have the same type as `a`."
+                  "documentation": "The second `NDArray` to add. Must have the same type as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Adds two NDArrays element-wise, A + B. Supports broadcasting.\nFor a stricter version without broadcasting use addStrict()."
             },
             {
               "name": "addStrict",
-              "docstring": "Adds two NDArrays element-wise, A + B. Inputs must\nbe the same shape. For broadcasting support, use add() instead.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": "The first NDArray to multiply element-wise."
+                  "documentation": "The first NDArray to multiply element-wise.",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": "The second NDArray to multiply element-wise."
+                  "documentation": "The second NDArray to multiply element-wise.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Adds two NDArrays element-wise, A + B. Inputs must\nbe the same shape. For broadcasting support, use add() instead."
             },
             {
               "name": "sub",
-              "docstring": "Subtracts two NDArrays element-wise, A - B. Supports broadcasting.\nFor a stricter version without broadcasting use subStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first `NDArray`."
+                  "documentation": "The first `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Subtracts two NDArrays element-wise, A - B. Supports broadcasting.\nFor a stricter version without broadcasting use subStrict()."
             },
             {
               "name": "subStrict",
-              "docstring": "Subtracts two NDArrays element-wise, A - B. Inputs must\nbe the same shape. For broadcasting support, use sub() instead.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": "The first NDArray to multiply element-wise."
+                  "documentation": "The first NDArray to multiply element-wise.",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": "The second NDArray to multiply element-wise."
+                  "documentation": "The second NDArray to multiply element-wise.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Subtracts two NDArrays element-wise, A - B. Inputs must\nbe the same shape. For broadcasting support, use sub() instead."
             },
             {
               "name": "pow",
-              "docstring": "Computes the power of one value to another. Supports broadcasting.\nGiven a tensor x and a tensor y, this operation computes x^y for\ncorresponding elements in x and y. For example:\nx = tf.constant([[2, 2], [3, 3]])\ny = tf.constant([[8, 16], [2, 3]])\npow(x, y)  # [[256, 65536], [9, 27]]",
               "parameters": [
                 {
                   "name": "base",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The base NDArray to pow element-wise."
+                  "documentation": "The base NDArray to pow element-wise.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "exp",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The exponent NDArray to pow element-wise."
+                  "documentation": "The exponent NDArray to pow element-wise.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the power of one value to another. Supports broadcasting.\nGiven a tensor x and a tensor y, this operation computes x^y for\ncorresponding elements in x and y. For example:\nx = tf.constant([[2, 2], [3, 3]])\ny = tf.constant([[8, 16], [2, 3]])\npow(x, y)  # [[256, 65536], [9, 27]]"
             },
             {
               "name": "powStrict",
-              "docstring": "Computes the power of one value to another. Inputs must\nbe the same shape. For broadcasting support, use pow() instead.",
               "parameters": [
                 {
                   "name": "base",
-                  "type": "T",
-                  "documentation": "The base NDArray to pow element-wise."
+                  "documentation": "The base NDArray to pow element-wise.",
+                  "type": "T"
                 },
                 {
                   "name": "exp",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The exponent NDArray to pow element-wise."
+                  "documentation": "The exponent NDArray to pow element-wise.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the power of one value to another. Inputs must\nbe the same shape. For broadcasting support, use pow() instead."
             },
             {
               "name": "mul",
-              "docstring": "Multiplies two NDArrays element-wise, A * B. Supports broadcasting.\nFor a stricter version without broadcasting use mulStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first `NDArray`."
+                  "documentation": "The first `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Multiplies two NDArrays element-wise, A * B. Supports broadcasting.\nFor a stricter version without broadcasting use mulStrict()."
             },
             {
               "name": "elementWiseMul",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": ""
             },
             {
               "name": "mulStrict",
-              "docstring": "Multiplies two NDArrays element-wise, A * B. Inputs must\nbe the same shape. For broadcasting support, use mul().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": "The first `NDArray`."
+                  "documentation": "The first `NDArray`.",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second `NDArray`. Must have the same dtype as `a`.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Multiplies two NDArrays element-wise, A * B. Inputs must\nbe the same shape. For broadcasting support, use mul()."
             },
             {
               "name": "div",
-              "docstring": "Divides two NDArrays element-wise, A / B. Supports broadcasting.\nFor a stricter version without broadcasting use divStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first `NDArray`."
+                  "documentation": "The first `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Divides two NDArrays element-wise, A / B. Supports broadcasting.\nFor a stricter version without broadcasting use divStrict()."
             },
             {
               "name": "divStrict",
-              "docstring": "Divides two NDArrays element-wise, A / B. Inputs must\nbe the same shape. For broadcasting support, use div() instead.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": "The first NDArray to multiply element-wise."
+                  "documentation": "The first NDArray to multiply element-wise.",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": "The second NDArray to multiply element-wise."
+                  "documentation": "The second NDArray to multiply element-wise.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Divides two NDArrays element-wise, A / B. Inputs must\nbe the same shape. For broadcasting support, use div() instead."
             },
             {
               "name": "minimum",
-              "docstring": "Returns the min of a and b (`a < b ? a : b`) element-wise.\nSupports broadcasting.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first ndarray."
+                  "documentation": "The first ndarray.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second ndarray. Must have the same type as `a`."
+                  "documentation": "The second ndarray. Must have the same type as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the min of a and b (`a < b ? a : b`) element-wise.\nSupports broadcasting."
             },
             {
               "name": "minimumStrict",
-              "docstring": "Returns the min of a and b (`a < b ? a : b`) element-wise. Inputs must\nbe the same shape. For broadcasting support, use minimum().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": "The first `NDArray`."
+                  "documentation": "The first `NDArray`.",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second `NDArray`. Must have the same dtype as `a`.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the min of a and b (`a < b ? a : b`) element-wise. Inputs must\nbe the same shape. For broadcasting support, use minimum()."
             },
             {
               "name": "maximum",
-              "docstring": "Returns the max of a and b (`a > b ? a : b`) element-wise.\nSupports broadcasting.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first ndarray."
+                  "documentation": "The first ndarray.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second ndarray. Must have the same type as `a`."
+                  "documentation": "The second ndarray. Must have the same type as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the max of a and b (`a > b ? a : b`) element-wise.\nSupports broadcasting."
             },
             {
               "name": "maximumStrict",
-              "docstring": "Returns the max of a and b (`a > b ? a : b`) element-wise. Inputs must\nbe the same shape. For broadcasting support, use maximum().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": "The first `NDArray`."
+                  "documentation": "The first `NDArray`.",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": "The second `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second `NDArray`. Must have the same dtype as `a`.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the max of a and b (`a > b ? a : b`) element-wise. Inputs must\nbe the same shape. For broadcasting support, use maximum()."
             }
           ]
         },
@@ -1087,248 +1141,263 @@
           "methods": [
             {
               "name": "notEqual",
-              "docstring": "Returns the truth value of (a != b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.notEqualStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input `NDArray`."
+                  "documentation": "The first input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the truth value of (a != b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.notEqualStrict()."
             },
             {
               "name": "notEqualStrict",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": ""
             },
             {
               "name": "less",
-              "docstring": "Returns the truth value of (a < b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.lessStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input `NDArray`."
+                  "documentation": "The first input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the truth value of (a < b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.lessStrict()."
             },
             {
               "name": "lessStrict",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": ""
             },
             {
               "name": "equal",
-              "docstring": "Returns the truth value of (a == b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.equalStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input `NDArray`."
+                  "documentation": "The first input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the truth value of (a == b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.equalStrict()."
             },
             {
               "name": "equalStrict",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": ""
             },
             {
               "name": "lessEqual",
-              "docstring": "Returns the truth value of (a <= b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.lessEqualStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input `NDArray`."
+                  "documentation": "The first input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the truth value of (a <= b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.lessEqualStrict()."
             },
             {
               "name": "lessEqualStrict",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": ""
             },
             {
               "name": "greater",
-              "docstring": "Returns the truth value of (a > b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.greaterStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input `NDArray`."
+                  "documentation": "The first input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the truth value of (a > b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.greaterStrict()."
             },
             {
               "name": "greaterStrict",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": ""
             },
             {
               "name": "greaterEqual",
-              "docstring": "Returns the truth value of (a >= b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.greaterEqualStrict().",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input `NDArray`."
+                  "documentation": "The first input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`."
+                  "documentation": "The second input `NDArray`. Must have the same dtype as `a`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the truth value of (a >= b) element-wise. Supports broadcasting.\nFor a stricter version without broadcasting use math.greaterEqualStrict()."
             },
             {
               "name": "greaterEqualStrict",
-              "docstring": "",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": ""
             },
             {
               "name": "logicalAnd",
-              "docstring": "Returns the truth value of a AND b element-wise. Supports broadcasting.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input `NDArray`."
+                  "documentation": "The first input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input `NDArray`."
+                  "documentation": "The second input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the truth value of a AND b element-wise. Supports broadcasting."
             },
             {
               "name": "logicalOr",
-              "docstring": "Returns the truth value of a OR b element-wise. Supports broadcasting.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input `NDArray`."
+                  "documentation": "The first input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "b",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input `NDArray`."
+                  "documentation": "The second input `NDArray`.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the truth value of a OR b element-wise. Supports broadcasting."
             },
             {
               "name": "where",
-              "docstring": "Returns the elements, either `a` or `b` depending on the `condition`.",
               "parameters": [
                 {
                   "name": "condition",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input as `NDAray<'bool'>."
+                  "documentation": "The input as `NDAray<'bool'>.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "a",
-                  "type": "T",
-                  "documentation": "Input as `NDArray` which may have the same shape as\n`condition`. If `condition` is rank 1, `a` may have a higher rank but\nits first dimension must match the size of `condition`."
+                  "documentation": "Input as `NDArray` which may have the same shape as\n`condition`. If `condition` is rank 1, `a` may have a higher rank but\nits first dimension must match the size of `condition`.",
+                  "type": "T"
                 },
                 {
                   "name": "b",
-                  "type": "T",
-                  "documentation": "Input as `NDArray` with the same shape and type as `a`."
+                  "documentation": "Input as `NDArray` with the same shape and type as `a`.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the elements, either `a` or `b` depending on the `condition`."
             }
           ]
         },
@@ -1337,276 +1406,284 @@
           "methods": [
             {
               "name": "conv1d",
-              "docstring": "Computes a 1D convolution over the input x.",
               "parameters": [
                 {
                   "name": "input",
-                  "type": "T",
-                  "documentation": "The input ndarray, of rank 3 or rank 2, of shape\n`[batch, width, inChannels]`. If rank 2, batch of 1 is assumed."
+                  "documentation": "The input ndarray, of rank 3 or rank 2, of shape\n`[batch, width, inChannels]`. If rank 2, batch of 1 is assumed.",
+                  "type": "T"
                 },
                 {
                   "name": "filter",
-                  "type": "Array3D",
-                  "documentation": "The filter, rank 3, of shape\n[filterWidth, inDepth, outDepth]."
+                  "documentation": "The filter, rank 3, of shape\n[filterWidth, inDepth, outDepth].",
+                  "type": "Array3D"
                 },
                 {
                   "name": "bias",
-                  "type": "Array1D",
-                  "documentation": "Optional bias, rank 1 of shape [outDepth]."
+                  "documentation": "Optional bias, rank 1 of shape [outDepth].",
+                  "type": "Array1D"
                 },
                 {
                   "name": "stride",
-                  "type": "number",
-                  "documentation": "The number of entries by which the filter is moved right at\neach step."
+                  "documentation": "The number of entries by which the filter is moved right at\neach step.",
+                  "type": "number"
                 },
                 {
                   "name": "pad",
-                  "type": "number | \"valid\" | \"same\"",
-                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution"
+                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution",
+                  "type": "number | \"valid\" | \"same\""
                 },
                 {
                   "name": "dimRoundingMode",
-                  "type": "\"floor\" | \"round\" | \"ceil\"",
-                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size."
+                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size.",
+                  "type": "\"floor\" | \"round\" | \"ceil\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes a 1D convolution over the input x."
             },
             {
               "name": "conv2d",
-              "docstring": "Computes a 2D convolution over the input x.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input ndarray, of rank 4 or rank 3, of shape\n`[batch, height, width, inChannels]`. If rank 3, batch of 1 is\nassumed."
+                  "documentation": "The input ndarray, of rank 4 or rank 3, of shape\n`[batch, height, width, inChannels]`. If rank 3, batch of 1 is\nassumed.",
+                  "type": "T"
                 },
                 {
                   "name": "filter",
-                  "type": "Array4D",
-                  "documentation": "The filter, rank 4, of shape\n[filterHeight, filterWidth, inDepth, outDepth]."
+                  "documentation": "The filter, rank 4, of shape\n[filterHeight, filterWidth, inDepth, outDepth].",
+                  "type": "Array4D"
                 },
                 {
                   "name": "bias",
-                  "type": "Array1D",
-                  "documentation": "Optional bias, rank 1 of shape [outDepth]."
+                  "documentation": "Optional bias, rank 1 of shape [outDepth].",
+                  "type": "Array1D"
                 },
                 {
                   "name": "strides",
-                  "type": "number | [number, number]",
-                  "documentation": "The strides of the convolution: [strideHeight,\nstrideWidth]."
+                  "documentation": "The strides of the convolution: [strideHeight,\nstrideWidth].",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "pad",
-                  "type": "number | \"valid\" | \"same\"",
-                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution"
+                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution",
+                  "type": "number | \"valid\" | \"same\""
                 },
                 {
                   "name": "dimRoundingMode",
-                  "type": "\"floor\" | \"round\" | \"ceil\"",
-                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size."
+                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size.",
+                  "type": "\"floor\" | \"round\" | \"ceil\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes a 2D convolution over the input x."
             },
             {
               "name": "conv2dDerInput",
-              "docstring": "Computes the derivative of the input of a 2D convolution.",
               "parameters": [
                 {
                   "name": "xShape",
-                  "type": "[number, number, number, number] | [number, number, number]",
-                  "documentation": "The shape of the input: [batch, height, width, inDepth].\nIf length of 3, batch of 1 is assumed."
+                  "documentation": "The shape of the input: [batch, height, width, inDepth].\nIf length of 3, batch of 1 is assumed.",
+                  "type": "[number, number, number, number] | [number, number, number]"
                 },
                 {
                   "name": "dy",
-                  "type": "T",
-                  "documentation": "The derivative of the output, of rank 4 or rank 3 of shape\n[batch, outHeight, outWidth, outDepth]. If rank 3, batch of 1 is\nassumed."
+                  "documentation": "The derivative of the output, of rank 4 or rank 3 of shape\n[batch, outHeight, outWidth, outDepth]. If rank 3, batch of 1 is\nassumed.",
+                  "type": "T"
                 },
                 {
                   "name": "filter",
-                  "type": "Array4D",
-                  "documentation": "The filter, rank 4, of shape\n[filterHeight, filterWidth, inDepth, outDepth]."
+                  "documentation": "The filter, rank 4, of shape\n[filterHeight, filterWidth, inDepth, outDepth].",
+                  "type": "Array4D"
                 },
                 {
                   "name": "strides",
-                  "type": "number | [number, number]",
-                  "documentation": "The strides of the convolution: [strideHeight,\nstrideWidth]."
+                  "documentation": "The strides of the convolution: [strideHeight,\nstrideWidth].",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "pad",
-                  "type": "number | \"valid\" | \"same\"",
-                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm\nused in the forward prop of the op."
+                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm\nused in the forward prop of the op.",
+                  "type": "number | \"valid\" | \"same\""
                 },
                 {
                   "name": "dimRoundingMode",
-                  "type": "\"floor\" | \"round\" | \"ceil\"",
-                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size."
+                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size.",
+                  "type": "\"floor\" | \"round\" | \"ceil\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the derivative of the input of a 2D convolution."
             },
             {
               "name": "conv2dTranspose",
-              "docstring": "Computes the transposed 2D convolution of an image, also known as a\ndeconvolution.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input image, of rank 4 or rank 3, of shape\n[batch, height, width, inDepth]. If rank 3, batch of 1 is assumed."
+                  "documentation": "The input image, of rank 4 or rank 3, of shape\n[batch, height, width, inDepth]. If rank 3, batch of 1 is assumed.",
+                  "type": "T"
                 },
                 {
                   "name": "filter",
-                  "type": "Array4D",
-                  "documentation": "The filter, rank 4, of shape\n`[filterHeight, filterWidth, outDepth, inDepth]`.\n`inDepth` must match `inDepth` in `x`."
+                  "documentation": "The filter, rank 4, of shape\n`[filterHeight, filterWidth, outDepth, inDepth]`.\n`inDepth` must match `inDepth` in `x`.",
+                  "type": "Array4D"
                 },
                 {
                   "name": "outputShape",
-                  "type": "[number, number, number, number] | [number, number, number]",
-                  "documentation": "Output shape, of rank 4 or rank 3:\n[batch, height, width, outDepth]. If rank 3, batch of 1 is assumed."
+                  "documentation": "Output shape, of rank 4 or rank 3:\n[batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.",
+                  "type": "[number, number, number, number] | [number, number, number]"
                 },
                 {
                   "name": "strides",
-                  "type": "number | [number, number]",
-                  "documentation": "The strides of the original convolution:\n`[strideHeight, strideWidth]`."
+                  "documentation": "The strides of the original convolution:\n`[strideHeight, strideWidth]`.",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "pad",
-                  "type": "number | \"valid\" | \"same\"",
-                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm\nused in the non-transpose version of the op."
+                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm\nused in the non-transpose version of the op.",
+                  "type": "number | \"valid\" | \"same\""
                 },
                 {
                   "name": "dimRoundingMode",
-                  "type": "\"floor\" | \"round\" | \"ceil\"",
-                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size."
+                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size.",
+                  "type": "\"floor\" | \"round\" | \"ceil\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the transposed 2D convolution of an image, also known as a\ndeconvolution."
             },
             {
               "name": "depthwiseConv2D",
-              "docstring": "Depthwise 2D convolution.\n\nGiven a 4D `input` array and a `filter` array of shape\n`[filterHeight, filterWidth, inChannels, channelMultiplier]` containing\n`inChannels` convolutional filters of depth 1, this op applies a\ndifferent filter to each input channel (expanding from 1 channel to\n`channelMultiplier` channels for each), then concatenates the results\ntogether. The output has `inChannels * channelMultiplier` channels.\n\nSee https://www.tensorflow.org/api_docs/python/tf/nn/depthwise_conv2d for\nmore details.",
               "parameters": [
                 {
                   "name": "input",
-                  "type": "T",
-                  "documentation": "The input ndarray, of rank 4 or rank 3, of shape\n`[batch, height, width, inChannels]`. If rank 3, batch of 1 is\nassumed."
+                  "documentation": "The input ndarray, of rank 4 or rank 3, of shape\n`[batch, height, width, inChannels]`. If rank 3, batch of 1 is\nassumed.",
+                  "type": "T"
                 },
                 {
                   "name": "filter",
-                  "type": "Array4D",
-                  "documentation": "The filter ndarray, rank 4, of shape\n`[filterHeight, filterWidth, inChannels, channelMultiplier]`."
+                  "documentation": "The filter ndarray, rank 4, of shape\n`[filterHeight, filterWidth, inChannels, channelMultiplier]`.",
+                  "type": "Array4D"
                 },
                 {
                   "name": "strides",
-                  "type": "number | [number, number]",
-                  "documentation": "The strides of the convolution: [strideHeight,\nstrideWidth]. If strides is a single number, then `strideHeight ==\nstrideWidth`."
+                  "documentation": "The strides of the convolution: [strideHeight,\nstrideWidth]. If strides is a single number, then `strideHeight ==\nstrideWidth`.",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "pad",
-                  "type": "number | \"valid\" | \"same\"",
-                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution"
+                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution",
+                  "type": "number | \"valid\" | \"same\""
                 },
                 {
                   "name": "rates",
-                  "type": "number | [number, number]",
-                  "documentation": "The dilation rates: `[rateHeight, rateWidth]` in which we\nsample input values across the height and width dimensions in atrous\nconvolution. Defaults to `[1, 1]`. If `rate` is a single number, then\n`rateHeight == rateWidth`. If it is greater than 1, then all values\nof `strides` must be 1."
+                  "documentation": "The dilation rates: `[rateHeight, rateWidth]` in which we\nsample input values across the height and width dimensions in atrous\nconvolution. Defaults to `[1, 1]`. If `rate` is a single number, then\n`rateHeight == rateWidth`. If it is greater than 1, then all values\nof `strides` must be 1.",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "dimRoundingMode",
-                  "type": "\"floor\" | \"round\" | \"ceil\"",
-                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size."
+                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size.",
+                  "type": "\"floor\" | \"round\" | \"ceil\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Depthwise 2D convolution.\n\nGiven a 4D `input` array and a `filter` array of shape\n`[filterHeight, filterWidth, inChannels, channelMultiplier]` containing\n`inChannels` convolutional filters of depth 1, this op applies a\ndifferent filter to each input channel (expanding from 1 channel to\n`channelMultiplier` channels for each), then concatenates the results\ntogether. The output has `inChannels * channelMultiplier` channels.\n\nSee https://www.tensorflow.org/api_docs/python/tf/nn/depthwise_conv2d for\nmore details."
             },
             {
               "name": "maxPool",
-              "docstring": "Computes the 2D max pooling of an image.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input ndarray, of rank 4 or rank 3 of shape\n[batch, height, width, inChannels]. If rank 3, batch of 1 is assumed."
+                  "documentation": "The input ndarray, of rank 4 or rank 3 of shape\n[batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.",
+                  "type": "T"
                 },
                 {
                   "name": "filterSize",
-                  "type": "number | [number, number]",
-                  "documentation": "The filter size, a tuple [filterHeight, filterWidth]."
+                  "documentation": "The filter size, a tuple [filterHeight, filterWidth].",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "strides",
-                  "type": "number | [number, number]",
-                  "documentation": "The strides of the pooling: [strideHeight, strideWidth]."
+                  "documentation": "The strides of the pooling: [strideHeight, strideWidth].",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "pad",
-                  "type": "number | \"valid\" | \"same\"",
-                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution"
+                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution",
+                  "type": "number | \"valid\" | \"same\""
                 },
                 {
                   "name": "dimRoundingMode",
-                  "type": "\"floor\" | \"round\" | \"ceil\"",
-                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size."
+                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size.",
+                  "type": "\"floor\" | \"round\" | \"ceil\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the 2D max pooling of an image."
             },
             {
               "name": "minPool",
-              "docstring": "Computes the 2D min pooling of an image.",
               "parameters": [
                 {
                   "name": "input",
-                  "type": "T",
-                  "documentation": "The input ndarray, of rank 4 or rank 3 of shape\n[batch, height, width, inChannels]. If rank 3, batch of 1 is assumed."
+                  "documentation": "The input ndarray, of rank 4 or rank 3 of shape\n[batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.",
+                  "type": "T"
                 },
                 {
                   "name": "filterSize",
-                  "type": "number | [number, number]",
-                  "documentation": "The filter size, a tuple [filterHeight, filterWidth]."
+                  "documentation": "The filter size, a tuple [filterHeight, filterWidth].",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "strides",
-                  "type": "number | [number, number]",
-                  "documentation": "The strides of the pooling: [strideHeight, strideWidth]."
+                  "documentation": "The strides of the pooling: [strideHeight, strideWidth].",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "pad",
-                  "type": "number | \"valid\" | \"same\"",
-                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution"
+                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution",
+                  "type": "number | \"valid\" | \"same\""
                 },
                 {
                   "name": "dimRoundingMode",
-                  "type": "\"floor\" | \"round\" | \"ceil\"",
-                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size."
+                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size.",
+                  "type": "\"floor\" | \"round\" | \"ceil\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the 2D min pooling of an image."
             },
             {
               "name": "avgPool",
-              "docstring": "Computes the 2D average pooling of an image.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input ndarray, of rank 4 or rank 3 of shape\n[batch, height, width, inChannels]. If rank 3, batch of 1 is assumed."
+                  "documentation": "The input ndarray, of rank 4 or rank 3 of shape\n[batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.",
+                  "type": "T"
                 },
                 {
                   "name": "filterSize",
-                  "type": "number | [number, number]",
-                  "documentation": "The filter size, a tuple [filterHeight, filterWidth]."
+                  "documentation": "The filter size, a tuple [filterHeight, filterWidth].",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "strides",
-                  "type": "number | [number, number]",
-                  "documentation": "The strides of the pooling: [strideHeight, strideWidth]."
+                  "documentation": "The strides of the pooling: [strideHeight, strideWidth].",
+                  "type": "number | [number, number]"
                 },
                 {
                   "name": "pad",
-                  "type": "number | \"valid\" | \"same\"",
-                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution"
+                  "documentation": "A string from: 'same', 'valid'. The type of padding algorithm.\n- 'same' pad and stride 1: output will be of same size as input,\nregardless of filter size.\n- 'valid' pad: output will be smaller than input if filter is larger\nthan 1x1.\n- For more info, see this guide:\nhttps://www.tensorflow.org/api_guides/python/nn#Convolution",
+                  "type": "number | \"valid\" | \"same\""
                 },
                 {
                   "name": "dimRoundingMode",
-                  "type": "\"floor\" | \"round\" | \"ceil\"",
-                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size."
+                  "documentation": "A string from: 'ceil', 'round', 'floor'. The\nrounding mode used when computing output dimensions if pad is a\nnumber. If none is provided, it will not round and error if the output\nis of fractional size.",
+                  "type": "\"floor\" | \"round\" | \"ceil\""
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the 2D average pooling of an image."
             }
           ]
         },
@@ -1615,24 +1692,25 @@
           "methods": [
             {
               "name": "resizeBilinear",
-              "docstring": "Bilinear resize a batch of 3D images to a new shape.",
               "parameters": [
                 {
                   "name": "images",
-                  "type": "T",
-                  "documentation": "The images, of rank 4 or rank 3, of shape\n`[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed."
+                  "documentation": "The images, of rank 4 or rank 3, of shape\n`[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.",
+                  "type": "T"
                 },
                 {
                   "name": "size",
-                  "type": "[number, number]",
-                  "documentation": "The new shape `[newHeight, newWidth]` to resize the\nimages to. Each channel is resized individually."
+                  "documentation": "The new shape `[newHeight, newWidth]` to resize the\nimages to. Each channel is resized individually.",
+                  "type": "[number, number]"
                 },
                 {
                   "name": "alignCorners",
-                  "type": "boolean",
-                  "documentation": "An optional bool. Defaults to False. If true, rescale\ninput by (new_height - 1) / (height - 1), which exactly aligns the 4\ncorners of images and resized images. If false, rescale by\nnew_height/height. Treat similarly the width dimension."
+                  "documentation": "An optional bool. Defaults to False. If true, rescale\ninput by (new_height - 1) / (height - 1), which exactly aligns the 4\ncorners of images and resized images. If false, rescale by\nnew_height/height. Treat similarly the width dimension.",
+                  "type": "boolean"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Bilinear resize a batch of 3D images to a new shape."
             }
           ]
         },
@@ -1641,65 +1719,67 @@
           "methods": [
             {
               "name": "multiRNNCell",
-              "docstring": "Computes the next states and outputs of a stack of LSTMCells.\nEach cell output is used as input to the next cell.\nThis is only the forward mode.\nDerived from tf.contrib.rn.MultiRNNCell.",
               "parameters": [
                 {
                   "name": "lstmCells",
-                  "type": "{}",
-                  "documentation": "Array of LSTMCell functions."
+                  "documentation": "Array of LSTMCell functions.",
+                  "type": "{}"
                 },
                 {
                   "name": "data",
-                  "type": "Array2D",
-                  "documentation": "The input to the cell."
+                  "documentation": "The input to the cell.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "c",
-                  "type": "{}",
-                  "documentation": "Array of previous cell states."
+                  "documentation": "Array of previous cell states.",
+                  "type": "{}"
                 },
                 {
                   "name": "h",
-                  "type": "{}",
-                  "documentation": "Array of previous cell outputs."
+                  "documentation": "Array of previous cell outputs.",
+                  "type": "{}"
                 }
-              ]
+              ],
+              "returnType": "[{}, {}]",
+              "documentation": "Computes the next states and outputs of a stack of LSTMCells.\nEach cell output is used as input to the next cell.\nThis is only the forward mode.\nDerived from tf.contrib.rn.MultiRNNCell."
             },
             {
               "name": "basicLSTMCell",
-              "docstring": "Computes the next state and output of a BasicLSTMCell.\nThis is only the forward mode.\nDerived from tf.contrib.rnn.BasicLSTMCell.",
               "parameters": [
                 {
                   "name": "forgetBias",
-                  "type": "Scalar",
-                  "documentation": "Forget bias for the cell."
+                  "documentation": "Forget bias for the cell.",
+                  "type": "Scalar"
                 },
                 {
                   "name": "lstmKernel",
-                  "type": "Array2D",
-                  "documentation": "The weights for the cell."
+                  "documentation": "The weights for the cell.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "lstmBias",
-                  "type": "Array1D",
-                  "documentation": "The bias for the cell."
+                  "documentation": "The bias for the cell.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "data",
-                  "type": "Array2D",
-                  "documentation": "The input to the cell."
+                  "documentation": "The input to the cell.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "c",
-                  "type": "Array2D",
-                  "documentation": "Previous cell state."
+                  "documentation": "Previous cell state.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "h",
-                  "type": "Array2D",
-                  "documentation": "Previous cell output."
+                  "documentation": "Previous cell output.",
+                  "type": "Array2D"
                 }
-              ]
+              ],
+              "returnType": "[Array2D, Array2D]",
+              "documentation": "Computes the next state and output of a BasicLSTMCell.\nThis is only the forward mode.\nDerived from tf.contrib.rnn.BasicLSTMCell."
             }
           ]
         },
@@ -1708,135 +1788,142 @@
           "methods": [
             {
               "name": "matMul",
-              "docstring": "Computes the dot product of two matrices, A * B. These must be matrices,\nuse matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct\nin other cases.",
               "parameters": [
                 {
                   "name": "a",
-                  "type": "Array2D",
-                  "documentation": "First matrix in dot product operation."
+                  "documentation": "First matrix in dot product operation.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "b",
-                  "type": "Array2D",
-                  "documentation": "Second matrix in dot product operation."
+                  "documentation": "Second matrix in dot product operation.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "aOrientation",
-                  "type": "MatrixOrientation",
-                  "documentation": "The MatrixOrientation of A. If using TRANSPOSED, will\ncompute A^T * B."
+                  "documentation": "The MatrixOrientation of A. If using TRANSPOSED, will\ncompute A^T * B.",
+                  "type": "MatrixOrientation"
                 },
                 {
                   "name": "bOrientation",
-                  "type": "MatrixOrientation",
-                  "documentation": "The MatrixOrientation of B. If using TRANSPOSED, will\ncompute A * B^T."
+                  "documentation": "The MatrixOrientation of B. If using TRANSPOSED, will\ncompute A * B^T.",
+                  "type": "MatrixOrientation"
                 }
-              ]
+              ],
+              "returnType": "Array2D",
+              "documentation": "Computes the dot product of two matrices, A * B. These must be matrices,\nuse matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct\nin other cases."
             },
             {
               "name": "vectorTimesMatrix",
-              "docstring": "Computes the dot product of a vector and a matrix, v * B.",
               "parameters": [
                 {
                   "name": "v",
-                  "type": "Array1D",
-                  "documentation": "The vector in dot product operation."
+                  "documentation": "The vector in dot product operation.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "matrix",
-                  "type": "Array2D",
-                  "documentation": "The matrix in dot product operation."
+                  "documentation": "The matrix in dot product operation.",
+                  "type": "Array2D"
                 }
-              ]
+              ],
+              "returnType": "Array1D",
+              "documentation": "Computes the dot product of a vector and a matrix, v * B."
             },
             {
               "name": "matrixTimesVector",
-              "docstring": "Computes the dot product of a matrix and vector, A * v.",
               "parameters": [
                 {
                   "name": "matrix",
-                  "type": "Array2D",
-                  "documentation": "The matrix in dot product operation."
+                  "documentation": "The matrix in dot product operation.",
+                  "type": "Array2D"
                 },
                 {
                   "name": "v",
-                  "type": "Array1D",
-                  "documentation": "The vector in dot product operation."
+                  "documentation": "The vector in dot product operation.",
+                  "type": "Array1D"
                 }
-              ]
+              ],
+              "returnType": "Array1D",
+              "documentation": "Computes the dot product of a matrix and vector, A * v."
             },
             {
               "name": "dotProduct",
-              "docstring": "Computes the dot product of two vectors, v1 * v2.",
               "parameters": [
                 {
                   "name": "v1",
-                  "type": "Array1D",
-                  "documentation": "The first vector in the dot product operation."
+                  "documentation": "The first vector in the dot product operation.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "v2",
-                  "type": "Array1D",
-                  "documentation": "The second vector in the dot product operation."
+                  "documentation": "The second vector in the dot product operation.",
+                  "type": "Array1D"
                 }
-              ]
+              ],
+              "returnType": "Scalar",
+              "documentation": "Computes the dot product of two vectors, v1 * v2."
             },
             {
               "name": "outerProduct",
-              "docstring": "Computes the outer product of two vectors, v1 and v2.",
               "parameters": [
                 {
                   "name": "v1",
-                  "type": "Array1D",
-                  "documentation": "The first vector in the outer product operation."
+                  "documentation": "The first vector in the outer product operation.",
+                  "type": "Array1D"
                 },
                 {
                   "name": "v2",
-                  "type": "Array1D",
-                  "documentation": "The second vector in the dot product operation."
+                  "documentation": "The second vector in the dot product operation.",
+                  "type": "Array1D"
                 }
-              ]
+              ],
+              "returnType": "Array2D",
+              "documentation": "Computes the outer product of two vectors, v1 and v2."
             },
             {
               "name": "norm",
-              "docstring": "Computes the norm of scalar, vectors, and matrices.\nThis function can compute several different vector norms (the 1-norm, the\nEuclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0)\nand matrix norms (Frobenius, 1-norm, and inf-norm).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "ord",
-                  "type": "number | \"euclidean\" | \"fro\"",
-                  "documentation": "Optional. Order of the norm. Supported norm types are\nfollowing: ord         norm for matrices          norm for vectors\n-------------------------------------------------------\n'euclidean' Frobenius norm             2-norm\n‘fro’       Frobenius norm\t            –\nInfinity    max(sum(abs(x), axis=1))   max(abs(x))\n-Infinity   min(sum(abs(x), axis=1))   min(abs(x))\n1           max(sum(abs(x), axis=0))   sum(abs(x))\n2           -                          sum(abs(x)^2)^1/2*"
+                  "documentation": "Optional. Order of the norm. Supported norm types are\nfollowing: ord         norm for matrices          norm for vectors\n-------------------------------------------------------\n'euclidean' Frobenius norm             2-norm\n‘fro’       Frobenius norm\t            –\nInfinity    max(sum(abs(x), axis=1))   max(abs(x))\n-Infinity   min(sum(abs(x), axis=1))   min(abs(x))\n1           max(sum(abs(x), axis=0))   sum(abs(x))\n2           -                          sum(abs(x)^2)^1/2*",
+                  "type": "number | \"euclidean\" | \"fro\""
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "Optional. If axis is null (the default), the input is\nconsidered a vector and a single vector norm is computed over the entire\nset of values in the NDArray, i.e. norm(x, ord) is equivalent\nto norm(x.reshape([-1]), ord). If axis is a integer, the input\nis considered a batch of vectors, and axis determines the axis in x\nover which to compute vector norms. If axis is a 2-tuple of integer it is\nconsidered a batch of matrices and axis determines the axes in NDArray\nover which to compute a matrix norm."
+                  "documentation": "Optional. If axis is null (the default), the input is\nconsidered a vector and a single vector norm is computed over the entire\nset of values in the NDArray, i.e. norm(x, ord) is equivalent\nto norm(x.reshape([-1]), ord). If axis is a integer, the input\nis considered a batch of vectors, and axis determines the axis in x\nover which to compute vector norms. If axis is a 2-tuple of integer it is\nconsidered a batch of matrices and axis determines the axes in NDArray\nover which to compute a matrix norm.",
+                  "type": "number | {}"
                 },
                 {
                   "name": "keepDims",
-                  "type": "boolean",
-                  "documentation": "Optional. If true, the norm have the same dimensionality\nas the input."
+                  "documentation": "Optional. If true, the norm have the same dimensionality\nas the input.",
+                  "type": "boolean"
                 }
-              ]
+              ],
+              "returnType": "NDArray<Rank>",
+              "documentation": "Computes the norm of scalar, vectors, and matrices.\nThis function can compute several different vector norms (the 1-norm, the\nEuclidean or 2-norm, the inf-norm, and in general the p-norm for p > 0)\nand matrix norms (Frobenius, 1-norm, and inf-norm)."
             },
             {
               "name": "transpose",
-              "docstring": "Transposes the array. Permutes the dimensions according to `perm`.\n\nThe returned array's dimension `i` will correspond to the input dimension\n`perm[i]`. If `perm` is not given, it is set to `[n-1...0]`, where `n` is\nthe rank of the input array. Hence by default, this operation performs a\nregular matrix transpose on 2-D input arrays.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<R>",
-                  "documentation": "The array to transpose."
+                  "documentation": "The array to transpose.",
+                  "type": "NDArray<R>"
                 },
                 {
                   "name": "perm",
-                  "type": "{}",
-                  "documentation": "Optional. The permutation of the dimensions of a."
+                  "documentation": "Optional. The permutation of the dimensions of a.",
+                  "type": "{}"
                 }
-              ]
+              ],
+              "returnType": "NDArray<R>",
+              "documentation": "Transposes the array. Permutes the dimensions according to `perm`.\n\nThe returned array's dimension `i` will correspond to the input dimension\n`perm[i]`. If `perm` is not given, it is set to `[n-1...0]`, where `n` is\nthe rank of the input array. Hence by default, this operation performs a\nregular matrix transpose on 2-D input arrays."
             }
           ]
         },
@@ -1845,156 +1932,164 @@
           "methods": [
             {
               "name": "logSumExp",
-              "docstring": "Computes the log(sum(exp(elements across the reduction dimensions)).\n\nReduces the input along the dimensions given in `axis`. Unless `keepDims`\nis true, the rank of the array is reduced by 1 for each entry in `axis`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf `axis` has no entries, all dimensions are reduced, and an array with a\nsingle element is returned.",
               "parameters": [
                 {
                   "name": "input",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "Optional. The dimension(s) to reduce. If null (the default),\nreduces all dimensions."
+                  "documentation": "Optional. The dimension(s) to reduce. If null (the default),\nreduces all dimensions.",
+                  "type": "number | {}"
                 },
                 {
                   "name": "keepDims",
-                  "type": "boolean",
-                  "documentation": "Optional. If true, retains reduced dimensions with length\nof 1. Defaults to false."
+                  "documentation": "Optional. If true, retains reduced dimensions with length\nof 1. Defaults to false.",
+                  "type": "boolean"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the log(sum(exp(elements across the reduction dimensions)).\n\nReduces the input along the dimensions given in `axis`. Unless `keepDims`\nis true, the rank of the array is reduced by 1 for each entry in `axis`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf `axis` has no entries, all dimensions are reduced, and an array with a\nsingle element is returned."
             },
             {
               "name": "sum",
-              "docstring": "Computes the sum of elements across dimensions of an array.\n\nReduces the input along the dimensions given in `axes`. Unless `keepDims`\nis true, the rank of the array is reduced by 1 for each entry in `axes`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf axes has no entries, all dimensions are reduced, and an array with a\nsingle element is returned.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input array to compute the sum over."
+                  "documentation": "The input array to compute the sum over.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "Optional. The dimension(s) to reduce. By default it reduces\nall dimensions."
+                  "documentation": "Optional. The dimension(s) to reduce. By default it reduces\nall dimensions.",
+                  "type": "number | {}"
                 },
                 {
                   "name": "keepDims",
-                  "type": "boolean",
-                  "documentation": "Optional. If true, retains reduced dimensions with size 1."
+                  "documentation": "Optional. If true, retains reduced dimensions with size 1.",
+                  "type": "boolean"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the sum of elements across dimensions of an array.\n\nReduces the input along the dimensions given in `axes`. Unless `keepDims`\nis true, the rank of the array is reduced by 1 for each entry in `axes`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf axes has no entries, all dimensions are reduced, and an array with a\nsingle element is returned."
             },
             {
               "name": "mean",
-              "docstring": "Computes the mean of elements across dimensions of an array.\n\nReduces `x` along the dimensions given in `axis`. Unless `keepDims` is\ntrue, the rank of the array is reduced by 1 for each entry in `axis`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf `axis` has no entries, all dimensions are reduced, and an array with a\nsingle element is returned.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "Optional. The dimension(s) to reduce. By default it reduces\nall dimensions."
+                  "documentation": "Optional. The dimension(s) to reduce. By default it reduces\nall dimensions.",
+                  "type": "number | {}"
                 },
                 {
                   "name": "keepDims",
-                  "type": "boolean",
-                  "documentation": "Optional. If true, retains reduced dimensions with size 1."
+                  "documentation": "Optional. If true, retains reduced dimensions with size 1.",
+                  "type": "boolean"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the mean of elements across dimensions of an array.\n\nReduces `x` along the dimensions given in `axis`. Unless `keepDims` is\ntrue, the rank of the array is reduced by 1 for each entry in `axis`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf `axis` has no entries, all dimensions are reduced, and an array with a\nsingle element is returned."
             },
             {
               "name": "min",
-              "docstring": "Computes the minimum value from the input.\n\nReduces the input along the dimensions given in `axes`. Unless `keepDims`\nis true, the rank of the array is reduced by 1 for each entry in `axes`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf `axes` has no entries, all dimensions are reduced, and an array with a\nsingle element is returned.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "Optional. The dimension(s) to reduce. By default it reduces\nall dimensions."
+                  "documentation": "Optional. The dimension(s) to reduce. By default it reduces\nall dimensions.",
+                  "type": "number | {}"
                 },
                 {
                   "name": "keepDims",
-                  "type": "boolean",
-                  "documentation": "Optional. If true, retains reduced dimensions with size 1."
+                  "documentation": "Optional. If true, retains reduced dimensions with size 1.",
+                  "type": "boolean"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the minimum value from the input.\n\nReduces the input along the dimensions given in `axes`. Unless `keepDims`\nis true, the rank of the array is reduced by 1 for each entry in `axes`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf `axes` has no entries, all dimensions are reduced, and an array with a\nsingle element is returned."
             },
             {
               "name": "max",
-              "docstring": "Computes the maximum of elements across dimensions of an array.\n\nReduces the input along the dimensions given in `axes`. Unless `keepDims`\nis true, the rank of the array is reduced by 1 for each entry in `axes`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf `axes` has no entries, all dimensions are reduced, and an array with a\nsingle element is returned.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "axis",
-                  "type": "number | {}",
-                  "documentation": "Optional. The dimension(s) to reduce. By default it reduces\nall dimensions."
+                  "documentation": "Optional. The dimension(s) to reduce. By default it reduces\nall dimensions.",
+                  "type": "number | {}"
                 },
                 {
                   "name": "keepDims",
-                  "type": "boolean",
-                  "documentation": "Optional. If true, retains reduced dimensions with size 1."
+                  "documentation": "Optional. If true, retains reduced dimensions with size 1.",
+                  "type": "boolean"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes the maximum of elements across dimensions of an array.\n\nReduces the input along the dimensions given in `axes`. Unless `keepDims`\nis true, the rank of the array is reduced by 1 for each entry in `axes`.\nIf `keepDims` is true, the reduced dimensions are retained with length 1.\nIf `axes` has no entries, all dimensions are reduced, and an array with a\nsingle element is returned."
             },
             {
               "name": "argMin",
-              "docstring": "Returns the indices of the minimum values along an `axis`. The result has\nthe same shape as `input` with the dimension along `axis` removed.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "axis",
-                  "type": "number",
-                  "documentation": "Optional. The dimension to reduce. By default it reduces\nacross all axes and returns the flat index."
+                  "documentation": "Optional. The dimension to reduce. By default it reduces\nacross all axes and returns the flat index.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the indices of the minimum values along an `axis`. The result has\nthe same shape as `input` with the dimension along `axis` removed."
             },
             {
               "name": "argMax",
-              "docstring": "Returns the indices of the maximum values along an `axis`. The result has\nthe same shape as `input` with the dimension along `axis` removed.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "axis",
-                  "type": "number",
-                  "documentation": "Optional. The dimension to reduce. By default it reduces\nacross all axes and returns the flat index"
+                  "documentation": "Optional. The dimension to reduce. By default it reduces\nacross all axes and returns the flat index",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Returns the indices of the maximum values along an `axis`. The result has\nthe same shape as `input` with the dimension along `axis` removed."
             },
             {
               "name": "argMaxEquals",
-              "docstring": "Returns a 1 if the argMax of x1 and x2 are the same, otherwise 0.",
               "parameters": [
                 {
                   "name": "x1",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The first input NDArray."
+                  "documentation": "The first input NDArray.",
+                  "type": "NDArray<Rank>"
                 },
                 {
                   "name": "x2",
-                  "type": "NDArray<Rank>",
-                  "documentation": "The second input NDArray."
+                  "documentation": "The second input NDArray.",
+                  "type": "NDArray<Rank>"
                 }
-              ]
+              ],
+              "returnType": "Scalar",
+              "documentation": "Returns a 1 if the argMax of x1 and x2 are the same, otherwise 0."
             }
           ]
         },
@@ -2003,24 +2098,25 @@
           "methods": [
             {
               "name": "softmaxCrossEntropy",
-              "docstring": "Computes softmax cross entropy between logits and labels.\n\nMeasures the probability error in discrete classification tasks in which\nthe classes are mutually exclusive (each entry is in exactly one class).\nFor example, each CIFAR-10 image is labeled with one and only one label: an\nimage can be a dog or a truck, but not both.\n\nNOTE: While the classes are mutually exclusive, their probabilities need\nnot be. All that is required is that each row of labels is a valid\nprobability distribution. If they are not, the computation of the gradient\nwill be incorrect.\n\nWARNING: This op expects unscaled logits, since it performs a softmax on\nlogits internally for efficiency. Do not call this op with the output of\nsoftmax, as it will produce incorrect results.\n\nlogits and labels must have the same shape, e.g. [batch_size, num_classes]\nand the same dtype.",
               "parameters": [
                 {
                   "name": "labels",
-                  "type": "T",
-                  "documentation": "The labels array."
+                  "documentation": "The labels array.",
+                  "type": "T"
                 },
                 {
                   "name": "logits",
-                  "type": "T",
-                  "documentation": "The logits array."
+                  "documentation": "The logits array.",
+                  "type": "T"
                 },
                 {
                   "name": "dim",
-                  "type": "number",
-                  "documentation": "The dimension softmax would be performed on. Defaults to -1\nwhich indicates the last dimension."
+                  "documentation": "The dimension softmax would be performed on. Defaults to -1\nwhich indicates the last dimension.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "O",
+              "documentation": "Computes softmax cross entropy between logits and labels.\n\nMeasures the probability error in discrete classification tasks in which\nthe classes are mutually exclusive (each entry is in exactly one class).\nFor example, each CIFAR-10 image is labeled with one and only one label: an\nimage can be a dog or a truck, but not both.\n\nNOTE: While the classes are mutually exclusive, their probabilities need\nnot be. All that is required is that each row of labels is a valid\nprobability distribution. If they are not, the computation of the gradient\nwill be incorrect.\n\nWARNING: This op expects unscaled logits, since it performs a softmax on\nlogits internally for efficiency. Do not call this op with the output of\nsoftmax, as it will produce incorrect results.\n\nlogits and labels must have the same shape, e.g. [batch_size, num_classes]\nand the same dtype."
             }
           ]
         },
@@ -2029,303 +2125,328 @@
           "methods": [
             {
               "name": "neg",
-              "docstring": "Computes -1 * A element-wise.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes -1 * A element-wise."
             },
             {
               "name": "ceil",
-              "docstring": "Computes ceiling of input NDArray element-wise. y = ceil(x)\nTODO(nsthorat): Make this return an int32 when we add rank as a\ngeneric.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes ceiling of input NDArray element-wise. y = ceil(x)\nTODO(nsthorat): Make this return an int32 when we add rank as a\ngeneric."
             },
             {
               "name": "floor",
-              "docstring": "Computes floor of input NDArray element-wise. y = floor(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes floor of input NDArray element-wise. y = floor(x)."
             },
             {
               "name": "exp",
-              "docstring": "Computes exponential of the input NDArray element-wise. y = e ^ x",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes exponential of the input NDArray element-wise. y = e ^ x"
             },
             {
               "name": "log",
-              "docstring": "Computes natural logarithm of the input NDArray element-wise. y = ln(x)",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes natural logarithm of the input NDArray element-wise. y = ln(x)"
             },
             {
               "name": "sqrt",
-              "docstring": "Computes square root of the input NDArray element-wise. y = sqrt(x)",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes square root of the input NDArray element-wise. y = sqrt(x)"
             },
             {
               "name": "square",
-              "docstring": "Computes square of `x` element-wise.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input array."
+                  "documentation": "The input array.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes square of `x` element-wise."
             },
             {
               "name": "abs",
-              "docstring": "Computes absolute value element-wise.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes absolute value element-wise."
             },
             {
               "name": "clip",
-              "docstring": "Clips values element-wise.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 },
                 {
                   "name": "min",
-                  "type": "number",
-                  "documentation": "Lower-bound of range to be clipped to."
+                  "documentation": "Lower-bound of range to be clipped to.",
+                  "type": "number"
                 },
                 {
                   "name": "max",
-                  "type": "number",
-                  "documentation": "Upper-bound of range to be clipped to."
+                  "documentation": "Upper-bound of range to be clipped to.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Clips values element-wise."
             },
             {
               "name": "relu",
-              "docstring": "Computes rectified linear element-wise, max(x, 0).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes rectified linear element-wise, max(x, 0)."
             },
             {
               "name": "elu",
-              "docstring": "Computes exponential linear element-wise",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "the input NDArray"
+                  "documentation": "the input NDArray",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes exponential linear element-wise"
             },
             {
               "name": "selu",
-              "docstring": "Computes scaled exponential linear element-wise.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": ""
+                  "documentation": "",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes scaled exponential linear element-wise."
             },
             {
               "name": "leakyRelu",
-              "docstring": "Computes leaky rectified linear element-wise",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "the input NDArray"
+                  "documentation": "the input NDArray",
+                  "type": "T"
                 },
                 {
                   "name": "alpha",
-                  "type": "number",
-                  "documentation": "scaling factor for negative values, defaults to 0.2"
+                  "documentation": "scaling factor for negative values, defaults to 0.2",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes leaky rectified linear element-wise"
             },
             {
               "name": "prelu",
-              "docstring": "Computes leaky rectified linear element-wise with parametric alphas",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "the input NDArray"
+                  "documentation": "the input NDArray",
+                  "type": "T"
                 },
                 {
                   "name": "alpha",
-                  "type": "T",
-                  "documentation": "scaling factor NDArray for negative values"
+                  "documentation": "scaling factor NDArray for negative values",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes leaky rectified linear element-wise with parametric alphas"
             },
             {
               "name": "sigmoid",
-              "docstring": "Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes sigmoid element-wise, y = 1 / (1 + exp(-x))."
             },
             {
               "name": "sin",
-              "docstring": "Computes sin of the input NDArray element-wise, y = sin(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray.\n\nTODO(smilkov): Fix dl.cos() and other ops that should return a float."
+                  "documentation": "The input NDArray.\n\nTODO(smilkov): Fix dl.cos() and other ops that should return a float.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes sin of the input NDArray element-wise, y = sin(x)."
             },
             {
               "name": "cos",
-              "docstring": "Computes cos of the input NDArray element-wise, y = cos(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes cos of the input NDArray element-wise, y = cos(x)."
             },
             {
               "name": "tan",
-              "docstring": "Computes tan of the input NDArray element-wise, y = tan(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes tan of the input NDArray element-wise, y = tan(x)."
             },
             {
               "name": "asin",
-              "docstring": "Computes asin of the input NDArray element-wise, y = asin(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes asin of the input NDArray element-wise, y = asin(x)."
             },
             {
               "name": "acos",
-              "docstring": "Computes acos of the input NDArray element-wise, y = acos(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes acos of the input NDArray element-wise, y = acos(x)."
             },
             {
               "name": "atan",
-              "docstring": "Computes atan of the input NDArray element-wise, y = atan(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes atan of the input NDArray element-wise, y = atan(x)."
             },
             {
               "name": "sinh",
-              "docstring": "Computes hyperbolic sin of the input NDArray element-wise, y = sinh(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes hyperbolic sin of the input NDArray element-wise, y = sinh(x)."
             },
             {
               "name": "cosh",
-              "docstring": "Computes hyperbolic cos of the input NDArray element-wise, y = cosh(x).",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes hyperbolic cos of the input NDArray element-wise, y = cosh(x)."
             },
             {
               "name": "tanh",
-              "docstring": "Computes hyperbolic tangent of the input NDArray element-wise.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes hyperbolic tangent of the input NDArray element-wise."
             },
             {
               "name": "step",
-              "docstring": "Computes step of the input NDArray element-wise,\ny=1 if x>0|alpha*x if x<=0.",
               "parameters": [
                 {
                   "name": "x",
-                  "type": "T",
-                  "documentation": "The input NDArray."
+                  "documentation": "The input NDArray.",
+                  "type": "T"
                 },
                 {
                   "name": "alpha",
-                  "type": "number",
-                  "documentation": "The gradient when input is negative."
+                  "documentation": "The gradient when input is negative.",
+                  "type": "number"
                 }
-              ]
+              ],
+              "returnType": "T",
+              "documentation": "Computes step of the input NDArray element-wise,\ny=1 if x>0|alpha*x if x<=0."
             }
           ]
         }
