@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
-import {Array1D, Array2D, Array3D, NDArray, NDArrayData} from './ndarray';
+import {Array1D, Array2D, Array3D, NDArray} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
@@ -64,8 +64,7 @@ export class Ops {
   @doc('Tensors', 'Creation')
   @operation
   static clone<T extends NDArray>(x: T): T {
-    const newValues = util.copyTypedArray(x.dataSync(), x.dtype);
-    return NDArray.make(x.shape, {values: newValues}, x.dtype) as T;
+    return NDArray.make(x.shape, {dataId: x.dataId}, x.dtype) as T;
   }
 
   @doc('Tensors', 'Creation')
@@ -198,12 +197,7 @@ export class Ops {
       throw new Error(
           'Cannot construct NDArray with more than 4 channels from pixels.');
     }
-    const ndarrayData: NDArrayData = {};
-    const shape: [number, number, number] =
-        [pixels.height, pixels.width, numChannels];
-    const res = NDArray.make(shape, ndarrayData, 'int32') as Array3D;
-    ENV.math.writePixels(res.dataId, pixels, numChannels);
-    return res;
+    return ENV.backend.fromPixels(pixels, numChannels);
   }
 
   /** Reshapes the array. */
@@ -322,6 +316,52 @@ export class Ops {
         'Invalid number of paddings. Must be length of 2 each.');
     return ENV.engine.executeKernel(
         'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
+  }
+
+  /**
+   * Creates a new Array1D filled with the numbers in the range provided.
+   *
+   * The array is a is half-open interval meaning it includes start, but
+   * excludes stop. Decrementing ranges and negative step values are also
+   * supported.
+   *
+   * @param start An integer start value
+   * @param stop An integer stop value
+   * @param step An optional integer increment (will default to 1 or -1)
+   * @param dtype An optional dtype
+   */
+  @operation
+  static range(
+      start: number, stop: number, step = 1,
+      dtype: 'float32'|'int32' = 'float32'): Array1D {
+    if (step === 0) {
+      throw new Error('Cannot have a step of zero');
+    }
+
+    const sameStartStop = start === stop;
+    const increasingRangeNegativeStep = start < stop && step < 0;
+    const decreasingRangePositiveStep = stop < start && step > 1;
+
+    if (sameStartStop || increasingRangeNegativeStep ||
+        decreasingRangePositiveStep) {
+      return Ops.zeros([0], dtype);
+    }
+
+    const numElements = Math.abs(Math.ceil((stop - start) / step));
+    const values = makeZerosTypedArray(numElements, dtype);
+
+    if (stop < start && step === 1) {
+      // Auto adjust the step's sign if it hasn't been set
+      // (or was set to 1)
+      step = -1;
+    }
+
+    values[0] = start;
+    for (let i = 1; i < values.length; i++) {
+      values[i] = values[i - 1] + step;
+    }
+
+    return Array1D.new(values, dtype);
   }
 }
 
