@@ -52,14 +52,12 @@ export class MathBackendCPU implements MathBackend {
     this.throwIfNoData(dataId);
     this.data[dataId] = values;
   }
-  writePixels(
-      dataId: number,
+  fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void {
+      numChannels: number): Array3D {
     if (pixels == null) {
       throw new Error('MathBackendCPU.writePixels(): pixels can not be null');
     }
-    this.throwIfNoData(dataId);
     let vals: Uint8ClampedArray;
     if (pixels instanceof ImageData) {
       vals = pixels.data;
@@ -98,7 +96,9 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    this.data[dataId] = values;
+    const outShape: [number, number, number] =
+        [pixels.height, pixels.width, numChannels];
+    return Array3D.new(outShape, values, 'int32');
   }
   async read(dataId: number): Promise<TypedArray> {
     this.throwIfNoData(dataId);
@@ -108,14 +108,17 @@ export class MathBackendCPU implements MathBackend {
     this.throwIfNoData(dataId);
     return this.data[dataId];
   }
+
   disposeData(dataId: number): void {
     delete this.data[dataId];
   }
-  async time(query: () => NDArray): Promise<number> {
+
+  async time(f: () => void): Promise<number> {
     const start = performance.now();
-    query();
+    f();
     return performance.now() - start;
   }
+
   private throwIfNoData(dataId: number) {
     if (!(dataId in this.data)) {
       throw new Error(
@@ -124,10 +127,6 @@ export class MathBackendCPU implements MathBackend {
           `If you need to construct your own math, make sure this array is ` +
           `allocated after the math construction`);
     }
-  }
-
-  clone<T extends NDArray>(x: T): T {
-    return NDArray.make(x.shape, {values: new Float32Array(x.dataSync())}) as T;
   }
 
   slice1D(x: Array1D, begin: number, size: number): Array1D {
