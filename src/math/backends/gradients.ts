@@ -51,7 +51,9 @@ export function gradientsScope<T extends ScopeResult>(
  */
 export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
     f: () => NDArray<R>, x: T, dy: NDArray<R>): T {
-  return valueAndGradients(f, x, dy).gradients;
+  const res = valueAndGradients(f, x, dy);
+  res.value.dispose();
+  return res.gradients;
 }
 
 /**
@@ -64,7 +66,9 @@ export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
  */
 export function gradients<R extends Rank, T extends NDArray|NamedArrayMap>(
     f: () => NDArray<R>, x: T): T {
-  return valueAndGradients(f, x).gradients;
+  const res = valueAndGradients(f, x);
+  res.value.dispose();
+  return res.gradients;
 }
 
 /**
