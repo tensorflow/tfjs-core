@@ -87,7 +87,11 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
   // Prune non-trainable variables.
   varList = varList.filter(variable => variable.trainable);
   const {value, gradients} = ENV.engine.gradients(f, varList);
-
+  if (value.rank > 0) {
+    throw new Error(
+        `The user-provided function must return a Scalar, but it returned a ` +
+        `rank-${value.rank} tensor`);
+  }
   const namedGrads: NamedArrayMap = {};
   varList.forEach((v, i) => {
     if (gradients[i] != null) {
