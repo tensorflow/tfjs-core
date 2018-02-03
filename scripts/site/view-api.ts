@@ -24,7 +24,7 @@ export interface DocHeading {
 
 export interface DocSubheading {
   name: string;
-  methods: DocMethod[];
+  methods?: DocMethod[];
 }
 
 export interface DocMethod {

@@ -32,14 +32,32 @@ if (argv.htmlOutPath == null) {
 }
 const htmlOutPath = argv.htmlOutPath;
 
+// Initialize the doc headings so we control sort order.
+const docHeadings: DocHeading[] = [
+  {
+    name: 'Tensors',
+    subheadings: [
+      {name: 'Creation'}, {name: 'Transformations'},
+      {name: 'Slicing and Joining'}
+    ]
+  },
+  {
+    name: 'Operations',
+    subheadings: [
+      {name: 'Arithmetic'}, {name: 'Basic math'}, {name: 'Matrices'},
+      {name: 'Convolution'}, {name: 'Reduction'}, {name: 'Normalization'},
+      {name: 'Images'}, {name: 'RNN'}, {name: 'Classification'},
+      {name: 'Logical'}
+    ]
+  }
+];
+
 // Use the same compiler options that we use to compile the library here.
 const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
 
 console.log(`Parsing AST from src root ${SRC_ROOT}`);
 const program = ts.createProgram([SRC_ROOT], tsconfig.compilerOptions);
 const checker = program.getTypeChecker();
-
-const docHeadings: DocHeading[] = [];
 
 // Visit all the nodes that are transitively linked from the source root.
 for (const sourceFile of program.getSourceFiles()) {
@@ -118,6 +136,9 @@ function visitNode(node: ts.Node) {
         if (subheading == null) {
           subheading = {name: subheadingName, methods: []};
           heading.subheadings.push(subheading);
+        }
+        if (subheading.methods == null) {
+          subheading.methods = [];
         }
 
         subheading.methods.push(docMethod);
