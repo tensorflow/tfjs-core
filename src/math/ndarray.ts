@@ -29,13 +29,13 @@ export interface NDArrayData {
   values?: TypedArray;
 }
 
-export class TensorBuffer<D extends DataType> {
-  buffer: DataTypeMap[D];
+export class TensorBuffer<R extends Rank> {
+  buffer: TypedArray;
   shape: number[];
 
   private strides: number[];
 
-  constructor(public dtype: D, shape: number[]) {
+  constructor(public dtype: DataType, shape: ShapeMap[R]) {
     this.shape = shape;
     this.buffer = util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
     this.strides = computeStrides(shape);
@@ -83,6 +83,10 @@ export class TensorBuffer<D extends DataType> {
 
   get rank() {
     return this.shape.length;
+  }
+
+  toTensor(): NDArray<R> {
+    return NDArray.make(this.shape, {values: this.buffer}, this.dtype);
   }
 }
 

@@ -24,7 +24,7 @@ import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, TensorBuffer} from '../ndarray';
 import * as ops from '../ops';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
@@ -136,38 +136,38 @@ export class MathBackendCPU implements MathBackend {
 
   slice2D(x: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    const result = ops.zeros<Rank.R2>(size, x.dtype);
+    const buffer = new TensorBuffer<Rank.R2>(x.dtype, size);
     const [startI, startJ] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
       for (let j = 0; j < size[1]; ++j) {
         const val = x.get(i + startI, j + startJ);
-        result.set(val, i, j);
+        buffer.set(val, i, j);
       }
     }
-    return result;
+    return buffer.toTensor();
   }
 
   slice3D(x: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
-    const result = ops.zeros<Rank.R3>(size, x.dtype);
+    const buffer = new TensorBuffer<Rank.R3>(x.dtype, size);
     const [startI, startJ, startK] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
       for (let j = 0; j < size[1]; ++j) {
         for (let k = 0; k < size[2]; ++k) {
           const val = x.get(i + startI, j + startJ, k + startK);
-          result.set(val, i, j, k);
+          buffer.set(val, i, j, k);
         }
       }
     }
-    return result;
+    return buffer.toTensor();
   }
   slice4D(x: Array4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Array4D {
-    const result = ops.zeros<Rank.R4>(size, x.dtype);
+    const buffer = new TensorBuffer<Rank.R4>(x.dtype, size);
     const [startI, startJ, startK, startL] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -175,16 +175,16 @@ export class MathBackendCPU implements MathBackend {
         for (let k = 0; k < size[2]; ++k) {
           for (let l = 0; l < size[3]; ++l) {
             const val = x.get(i + startI, j + startJ, k + startK, l + startL);
-            result.set(val, i, j, k, l);
+            buffer.set(val, i, j, k, l);
           }
         }
       }
     }
-    return result;
+    return buffer.toTensor();
   }
 
   reverse4D(x: Array4D, axis: number[]): Array4D {
-    const result = ops.zerosLike(x);
+    const buffer = new TensorBuffer<Rank.R4>(x.dtype, x.shape);
 
     // Reverse axis only if the axis has dim != 1
     const revAxis = (i: number) => axis.indexOf(i) !== -1 && x.shape[i] !== 1;
@@ -199,13 +199,13 @@ export class MathBackendCPU implements MathBackend {
             const c0 = revAxis(2) ? x.shape[2] - c - 1 : c;
             const d0 = revAxis(3) ? x.shape[3] - d - 1 : d;
             const val = x.get(b0, r0, c0, d0);
-            result.set(val, b, r, c, d);
+            buffer.set(val, b, r, c, d);
           }
         }
       }
     }
 
-    return result;
+    return buffer.toTensor();
   }
 
   // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
