@@ -25,12 +25,13 @@ import {DataType} from './types';
 
 export class Ops {
   /**
-   * Returns the truth value of NOT a element-wise.
+   * Returns the truth value of NOT element-wise.
    *
-   * @param a x The input NDArray.
+   * @param x The input NDArray.
    */
   @operation
-  static logicalNot<T extends NDArray>(x: T): T {
+  static logicalNot<T extends NDArray>(x: NDArray): T {
+    util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
     return ENV.engine.executeKernel('LogicalNot', {inputs: {x}}) as T;
   }
 

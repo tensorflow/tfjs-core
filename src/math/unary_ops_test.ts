@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 
-import {Array1D, Array2D, Array3D, Array4D, Scalar} from './ndarray';
+import {Array1D, Array2D, Scalar} from './ndarray';
 
 // math.relu
 {
@@ -1270,80 +1270,6 @@ import {Array1D, Array2D, Array3D, Array4D, Scalar} from './ndarray';
   };
   test_util.describeMathCPU('selu', [tests]);
   test_util.describeMathGPU('selu', [tests], [
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-  ]);
-}
-
-// LogicalNot:
-{
-  const boolNaN = util.getNaN('bool');
-
-  const tests: MathTests = it => {
-    // Array1D:
-    it('Array1D.', math => {
-      let a = Array1D.new([1, 0, 0], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, 1, 1]);
-
-      a = Array1D.new([0, 0, 0], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [1, 1, 1]);
-
-      a = Array1D.new([1, 1], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, 0]);
-    });
-    it('NaNs in Array1D', math => {
-      const a = Array1D.new([1, NaN, 0], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, boolNaN, 1]);
-    });
-
-    // Array2D:
-    it('Array2D', math => {
-      let a = Array2D.new([2, 3], [[1, 0, 1], [0, 0, 0]], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, 1, 0, 1, 1, 1]);
-
-      a = Array2D.new([2, 3], [[0, 0, 0], [1, 1, 1]], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [1, 1, 1, 0, 0, 0]);
-    });
-    it('NaNs in Array2D', math => {
-      const a = Array2D.new([2, 2], [[1, NaN], [0, NaN]], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, boolNaN, 1, boolNaN]);
-    });
-
-    // Array3D:
-    it('Array3D', math => {
-      let a =
-          Array3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [0]]], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, 1, 0, 1, 1, 1]);
-
-      a = Array3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [1, 1, 1, 0, 0, 0]);
-    });
-    it('NaNs in Array3D', math => {
-      const a =
-          Array3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, boolNaN, 0, 1, 1, 1]);
-    });
-
-    // Array4D:
-    it('Array4D', math => {
-      let a = Array4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, 1, 0, 1]);
-
-      a = Array4D.new([2, 2, 1, 1], [0, 0, 0, 0], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [1, 1, 1, 1]);
-
-      a = Array4D.new([2, 2, 1, 1], [1, 1, 1, 1], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, 0, 0, 0]);
-    });
-    it('NaNs in Array4D', math => {
-      const a = Array4D.new([2, 2, 1, 1], [1, NaN, 1, 0], 'bool');
-      test_util.expectArraysClose(math.logicalNot(a), [0, boolNaN, 0, 1]);
-    });
-  };
-
-  test_util.describeMathCPU('logicalNot', [tests]);
-  test_util.describeMathGPU('logicalNot', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
