@@ -14,9 +14,12 @@
 # limitations under the License.
 # =============================================================================
 
+# Note: This should be run from the root of the repository.
+
 # TODO(nsthorat): Remove "new".
 OUT_PATH="/tmp/deeplearn-new-website/api"
 node_modules/.bin/mkdirp $OUT_PATH
 
 ./node_modules/.bin/tsc ./scripts/site/make-api.ts --target es6 --module commonjs
-node ./scripts/site/make-api.js --htmlOutPath "$OUT_PATH/index.html"
+node ./scripts/site/make-api.js --htmlOutPath "$OUT_PATH/index.html" --rootPath=`pwd`
+

@@ -31,6 +31,8 @@ export interface DocMethod {
   name: string;
   documentation: string;
   returnType: string;
+  fileName: string;
+  githubUrl: string;
   parameters: DocMethodParam[];
 }
 

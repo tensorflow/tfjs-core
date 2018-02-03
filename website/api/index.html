@@ -6,7 +6,7 @@
   .documentation {
     white-space: pre;
   }
-  .method-link {
+  a {
     color: inherit;
   }
 </style>
@@ -21,7 +21,8 @@
         <h4>{{name}}</h4>
         {{#methods}}
           <div class="method">
-            <h5># <a class="method-link" name="dl.{{name}}" href="#dl.{{name}}">dl.{{name}}</a></h5>
+            <h5># <a name="dl.{{name}}" href="#dl.{{name}}">dl.{{name}}</a></h5>
+            Defined in <a href="{{githubUrl}}" target=_blank>{{fileName}}</a><br>
             <div class="documentation">{{documentation}}</div>
             <ul>
               {{#parameters}}

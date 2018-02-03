@@ -217,7 +217,6 @@ export class Ops {
   /**
    * @deprecated Use mulStrict() instead.
    */
-  @doc('Operations', 'Arithmetic')
   @operation
   static elementWiseMul<T extends NDArray>(a: T, b: T): T {
     return a.mulStrict(b);

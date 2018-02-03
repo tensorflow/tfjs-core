@@ -24,13 +24,20 @@ var argv = require('minimist')(process.argv.slice(2));
 
 const DOCUMENTATION_DECORATOR = 'doc';
 const API_TEMPLATE_PATH = './website/api/index.html';
-const SRC_ROOT = './src/index.ts';
+const SRC_ROOT = 'src/';
+const PROGRAM_ROOT = SRC_ROOT + 'index.ts';
+const GITHUB_ROOT = 'https://github.com/PAIR-code/deeplearnjs/';
 
 if (argv.htmlOutPath == null) {
   throw new Error(
       `No htmlOutPath provided. Please provide an output path with --htmlOutPath.`);
 }
+if (argv.rootPath == null) {
+  throw new Error(
+      `No rootPath provided. Please provide a github root path with --rootPath.`);
+}
 const htmlOutPath = argv.htmlOutPath;
+const rootPath = argv.rootPath;
 
 // Initialize the doc headings so we control sort order.
 const docHeadings: DocHeading[] = [
@@ -55,14 +62,14 @@ const docHeadings: DocHeading[] = [
 // Use the same compiler options that we use to compile the library here.
 const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
 
-console.log(`Parsing AST from src root ${SRC_ROOT}`);
-const program = ts.createProgram([SRC_ROOT], tsconfig.compilerOptions);
+console.log(`Parsing AST from program root ${PROGRAM_ROOT}`);
+const program = ts.createProgram([PROGRAM_ROOT], tsconfig.compilerOptions);
 const checker = program.getTypeChecker();
 
 // Visit all the nodes that are transitively linked from the source root.
 for (const sourceFile of program.getSourceFiles()) {
   if (!sourceFile.isDeclarationFile) {
-    ts.forEachChild(sourceFile, visitNode);
+    ts.forEachChild(sourceFile, node => visitNode(node, sourceFile));
   }
 }
 
@@ -83,7 +90,7 @@ console.log(
     `  ${subheadingsCount} subheadings\n` +
     `  ${methodCount} methods`);
 
-function visitNode(node: ts.Node) {
+function visitNode(node: ts.Node, sourceFile: ts.SourceFile) {
   if (ts.isMethodDeclaration(node)) {
     if (node.decorators != null) {
       let hasOpdoc = false;
@@ -107,12 +114,7 @@ function visitNode(node: ts.Node) {
         const methodName = node.name.getText();
         const [headingName, subheadingName] = headingNames;
 
-        const symbol = checker.getSymbolAtLocation(node.name);
-        const type =
-            checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
-
-        const docMethod =
-            serializeMethod(methodName, type.getCallSignatures()[0]);
+        const docMethod = serializeMethod(methodName, node, sourceFile);
 
         // Find the heading.
         let heading: DocHeading;
@@ -146,7 +148,7 @@ function visitNode(node: ts.Node) {
     }
   }
 
-  ts.forEachChild(node, visitNode);
+  ts.forEachChild(node, node => visitNode(node, sourceFile));
 }
 
 function serializeParameter(symbol: ts.Symbol): DocMethodParam {
@@ -158,12 +160,32 @@ function serializeParameter(symbol: ts.Symbol): DocMethodParam {
   };
 }
 
-function serializeMethod(name: string, signature: ts.Signature): DocMethod {
+function serializeMethod(
+    name: string, node: ts.MethodDeclaration,
+    sourceFile: ts.SourceFile): DocMethod {
+  const symbol = checker.getSymbolAtLocation(node.name);
+  const type =
+      checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
+  const signature = type.getCallSignatures()[0];
+
+  if (!sourceFile.fileName.startsWith(rootPath)) {
+    throw new Error(
+        `Error: source file ${sourceFile.fileName} ` +
+        `does not start with srcPath provided ${rootPath}.`);
+  }
+  const fileName = sourceFile.fileName.substring(rootPath.length);
+  // Line numbers are 0-indexed.
+  const lineNumber =
+      sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
+
+  const githubUrl = `${GITHUB_ROOT}blob/master${fileName}#L${lineNumber}`;
   return {
     name,
     parameters: signature.parameters.map(serializeParameter),
     returnType: checker.typeToString(signature.getReturnType()),
-    documentation: ts.displayPartsToString(signature.getDocumentationComment())
+    documentation: ts.displayPartsToString(signature.getDocumentationComment()),
+    fileName,
+    githubUrl
   };
 }
 
