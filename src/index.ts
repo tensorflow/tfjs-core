@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as contrib from './contrib';
 import * as xhr_dataset from './data/xhr-dataset';
 import * as environment from './environment';
 import * as gpgpu_util from './math/backends/webgl/gpgpu_util';
@@ -59,6 +60,7 @@ export {Model} from './model';
 export {version};
 // Second level exports.
 export {
+  contrib,
   conv_util,
   environment,
   gpgpu_util,

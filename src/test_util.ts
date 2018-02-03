@@ -284,6 +284,11 @@ export function describeMathGPU(
       }, features), featuresList);
 }
 
+export function describeMathCPUAndGPU(testName: string, tests: MathTests[]) {
+  describeMathCPU(testName, tests);
+  describeMathGPU(testName, tests);
+}
+
 export function describeCustom(
     name: string, tests: Tests, featuresList?: Features[],
     customBeforeEach?: () => void, customAfterEach?: () => void) {
