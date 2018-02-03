@@ -22,7 +22,7 @@ import * as ts from 'typescript';
 import {DocHeading, DocMethod, DocMethodParam, Docs, DocSubheading} from './view-api';
 var argv = require('minimist')(process.argv.slice(2));
 
-const DOCUMENTATION_DECORATOR = '@doc';
+const DOCUMENTATION_DECORATOR = 'doc';
 const API_TEMPLATE_PATH = './website/api/index.html';
 const SRC_ROOT = './src/index.ts';
 
@@ -71,7 +71,7 @@ function visitNode(node: ts.Node) {
       let hasOpdoc = false;
       let headingNames: string[];
       node.decorators.map(decorator => {
-        if (decorator.getText().startsWith(DOCUMENTATION_DECORATOR)) {
+        if (decorator.getText().startsWith('@' + DOCUMENTATION_DECORATOR)) {
           ts.forEachChild(decorator, child => {
             // Parse out the parameters to the decorator.
             // TODO: Don't use a regex.
