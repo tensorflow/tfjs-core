@@ -64,7 +64,7 @@ class Utf8Stream extends QueueStream<string> {
     }
 
     // decode most of the chunk without copying it first
-    const bulk = utf8.decode(String.fromCharCode.apply(
+    const bulk: string = utf8.decode(String.fromCharCode.apply(
         null, chunk.slice(partialBytesRemaining, okUpToIndex)));
 
     if (partialBytesRemaining > 0) {
@@ -72,8 +72,9 @@ class Utf8Stream extends QueueStream<string> {
       this.partial.set(
           chunk.slice(0, partialBytesRemaining), this.partialBytesValid);
       // Too bad about the string concat.
-      this.outputQueue.push(
-          utf8.decode(String.fromCharCode.apply(null, this.partial)) + bulk);
+      const reassembled: string =
+          utf8.decode(String.fromCharCode.apply(null, this.partial));
+      this.outputQueue.push(reassembled + bulk);
     } else {
       this.outputQueue.push(bulk);
     }

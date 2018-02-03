@@ -72,7 +72,6 @@ describe('PrefetchStream', () => {
      });
 });
 
-
 describe('ShuffleStream', () => {
   it('shuffles a stream without replacement', (done) => {
     const baseStream = new TestIntegerStream();

@@ -131,7 +131,6 @@ export class CSVDataset extends Dataset {
   }
 }
 
-
 // TODO(soergel): add more basic datasets for parity with tf.data
 // tf.data.FixedLengthRecordDataset()
 // tf.data.TFRecordDataset()

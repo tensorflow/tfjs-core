@@ -1,6 +1,7 @@
+import * as seedrandom from 'seedrandom';
+
 import {NDArray} from '../../math/ndarray';
 import * as util from '../../util';
-import * as seedrandom from 'seedrandom';
 
 import {PrefetchStream, ShuffleStream} from './ring_streams';
 import {DataStream} from './stream';

@@ -6,7 +6,6 @@ import {describeMathCPUAndGPU, expectArraysClose} from '../../test_util';
 import {Dataset, DatasetElement} from './dataset';
 import {DataStream} from './stream';
 
-
 class TestDatasetElementStream extends DataStream<DatasetElement> {
   data = Array.from({length: 100}, (v, k) => k);
   currentIndex = 0;
