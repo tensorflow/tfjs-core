@@ -61,12 +61,12 @@ export class Ops {
    * @param b The second input `NDArray`. Must be of dtype bool.
    */
   @operation
-  static logicalXor(a: NDArray, b: NDArray): NDArray {
+  static logicalXor<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('LogicalXor', {inputs: {a, b}});
+    return ENV.engine.executeKernel('LogicalXor', {inputs: {a, b}}) as T;
   }
 
   /**
