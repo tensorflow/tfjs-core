@@ -51,7 +51,7 @@ export function gradientsScope<T extends ScopeResult>(
  */
 export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
     f: () => NDArray<R>, x: T, dy: NDArray<R>): T {
-  return gradients(f, x, dy);
+  return valueAndGradients(f, x, dy).gradients;
 }
 
 /**
@@ -63,8 +63,8 @@ export function vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
  * method will return an object of the same shape.
  */
 export function gradients<R extends Rank, T extends NDArray|NamedArrayMap>(
-    f: () => NDArray<R>, x: T, dy?: NDArray<R>): T {
-  return valueAndGradients(f, x, dy).gradients;
+    f: () => NDArray<R>, x: T): T {
+  return valueAndGradients(f, x).gradients;
 }
 
 /**
@@ -114,7 +114,8 @@ valueAndGradients<R extends Rank, T extends NDArray|NamedArrayMap>(
   const xs = util.flattenNameArrayMap(x, keys);
 
   const {value, gradients} = ENV.engine.gradients(f, xs, dy);
-  if (gradients.filter(g => g == null).length > 0) {
+  const numNullGradients = gradients.filter(g => g == null).length;
+  if (numNullGradients > 0) {
     throw new Error(
         `Cannot compute gradient: y is not a function of xs.` +
         `Make sure the xs you are computing gradients with respect ` +

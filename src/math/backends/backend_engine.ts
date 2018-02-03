@@ -17,7 +17,8 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {NDArray, Scalar, Variable} from '../ndarray';
+import {NDArray, Variable} from '../ndarray';
+import * as ops from '../ops';
 import {NamedArrayMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
 import {MathBackend} from './backend';
@@ -247,13 +248,19 @@ export class BackendEngine implements NDArrayManager {
     // to do unconditionally.
   }
 
+  /**
+   * Returns gradients of `f` w.r.t. each of the `xs`. The gradients returned
+   * are of the same length as `xs`, but some might be null if `f` was not
+   * a function of that `x`. It also takes optional dy to multiply the gradient,
+   * which defaults to `1`.
+   */
   gradients<T extends NDArray>(f: () => T, xs: NDArray[], dy?: T):
       {value: T, gradients: NDArray[]} {
     return tidy('gradients', () => {
-      const value = f();
+      const y = f();
       // Filter out the nodes that don't connect x => y.
       const filteredTape =
-          tape_util.getFilteredNodesXToY(this.activeTape, xs, value);
+          tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
       if (filteredTape.length === 0 && xs.length > 0) {
         throw new Error(
             `Cannot compute gradient: y is not a function of xs.` +
@@ -262,13 +269,13 @@ export class BackendEngine implements NDArrayManager {
       }
 
       const accumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
-      accumulatedGradientMap[value.id] = (dy == null) ? Scalar.new(1) : dy;
+      accumulatedGradientMap[y.id] = (dy == null) ? ops.onesLike(y) : dy;
 
       // Backprop gradients through the filtered nodes.
       tape_util.backpropagateGradients(accumulatedGradientMap, filteredTape);
 
       const gradients = xs.map(x => accumulatedGradientMap[x.id]);
-      return {value, gradients};
+      return {value: y, gradients};
     }, true /* gradientsMode */);
   }
 

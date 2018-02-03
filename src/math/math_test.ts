@@ -372,16 +372,6 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
       test_util.expectNumbersClose(gradients.get(), 6 * a.get(), 1e-1);
     });
 
-    it('Throws if y is not a scalar', math => {
-      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
-
-      expect(
-          // tslint:disable-next-line:no-any
-          () => math.gradients(() => math.matMul(a, b) as any, {a, b}))
-          .toThrowError();
-    });
-
     it('works with reshape', math => {
       const a = Array2D.new([2, 2], [1, 2, 3, 4]);
       const exponent = Array1D.new([2, 2, 2, 2], 'int32');
@@ -484,16 +474,6 @@ import {Array1D, Array2D, NDArray, Scalar} from './ndarray';
           math.matMul(
               a, dedm, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR),
           1e-1);
-    });
-
-    it('Throws is y is not a scalar', math => {
-      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
-
-      expect(
-          // tslint:disable-next-line:no-any
-          () => math.valueAndGradients(() => math.matMul(a, b) as any, {a, b}))
-          .toThrowError();
     });
 
     it('matmul + relu + inner scope', math => {
