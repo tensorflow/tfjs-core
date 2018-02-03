@@ -148,7 +148,6 @@ function serializeMethod(name: string, signature: ts.Signature): DocMethod {
 
 function computeStatistics(docs: Docs):
     {headingsCount: number, subheadingsCount: number, methodCount: number} {
-  // Compute statistics.
   let subheadingsCount = 0;
   let methodCount = 0;
   for (let i = 0; i < docs.headings.length; i++) {
