@@ -22,7 +22,7 @@ import '../demo-header';
 import '../demo-footer';
 
 // tslint:disable-next-line:max-line-length
-import {AdadeltaOptimizer, AdagradOptimizer, AdamaxOptimizer, AdamOptimizer, Array1D, Array3D, DataStats, ENV, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, NDArray, NDArrayMath, Optimizer, RMSPropOptimizer, Scalar, Session, SGDOptimizer, Tensor, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from 'deeplearn';
+import {AdadeltaOptimizer, AdagradOptimizer, AdamaxOptimizer, AdamOptimizer, DataStats, ENV, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, NDArrayMath, Optimizer, RMSPropOptimizer, Scalar, Session, SGDOptimizer, SymbolicTensor, Tensor, Tensor1D, Tensor3D, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from 'deeplearn';
 
 import {NDArrayImageVisualizer} from '../ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from '../ndarray-logits-visualizer';
@@ -141,11 +141,11 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private graph: Graph;
   private session: Session;
   private optimizer: Optimizer;
-  private xTensor: Tensor;
-  private labelTensor: Tensor;
-  private costTensor: Tensor;
-  private accuracyTensor: Tensor;
-  private predictionTensor: Tensor;
+  private xTensor: SymbolicTensor;
+  private labelTensor: SymbolicTensor;
+  private costTensor: SymbolicTensor;
+  private accuracyTensor: SymbolicTensor;
+  private predictionTensor: SymbolicTensor;
 
   private datasetNames: string[];
   private selectedDatasetName: string;
@@ -174,8 +174,8 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private trainButton: HTMLButtonElement;
 
   // Visualizers.
-  private inputNDArrayVisualizers: NDArrayImageVisualizer[];
-  private outputNDArrayVisualizers: NDArrayLogitsVisualizer[];
+  private inputTensorVisualizers: NDArrayImageVisualizer[];
+  private outputTensorVisualizers: NDArrayLogitsVisualizer[];
 
   private inputShape: number[];
   private labelShape: number[];
@@ -300,7 +300,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
       avgCostCallback: (avgCost: Scalar) => this.displayCost(avgCost),
       metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
       inferenceExamplesCallback:
-          (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) =>
+          (inputFeeds: FeedEntry[][], inferenceOutputs: Tensor[]) =>
               this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
       inferenceExamplesPerSecCallback: (examplesPerSec: number) =>
           this.displayInferenceExamplesPerSec(examplesPerSec),
@@ -320,20 +320,20 @@ export class ModelBuilder extends ModelBuilderPolymer {
     return applicationState === ApplicationState.IDLE;
   }
 
-  private getTestData(): NDArray[][] {
+  private getTestData(): Tensor[][] {
     const data = this.dataSet.getData();
     if (data == null) {
       return null;
     }
-    const [images, labels] = this.dataSet.getData() as [NDArray[], NDArray[]];
+    const [images, labels] = this.dataSet.getData() as [Tensor[], Tensor[]];
 
     const start = Math.floor(TRAIN_TEST_RATIO * images.length);
 
     return [images.slice(start), labels.slice(start)];
   }
 
-  private getTrainingData(): NDArray[][] {
-    const [images, labels] = this.dataSet.getData() as [NDArray[], NDArray[]];
+  private getTrainingData(): Tensor[][] {
+    const [images, labels] = this.dataSet.getData() as [Tensor[], Tensor[]];
 
     const end = Math.floor(TRAIN_TEST_RATIO * images.length);
 
@@ -598,30 +598,30 @@ export class ModelBuilder extends ModelBuilderPolymer {
     const inferenceContainer =
         this.querySelector('#inference-container') as HTMLElement;
     inferenceContainer.innerHTML = '';
-    this.inputNDArrayVisualizers = [];
-    this.outputNDArrayVisualizers = [];
+    this.inputTensorVisualizers = [];
+    this.outputTensorVisualizers = [];
     for (let i = 0; i < INFERENCE_EXAMPLE_COUNT; i++) {
       const inferenceExampleElement = document.createElement('div');
       inferenceExampleElement.className = 'inference-example';
 
       // Set up the input visualizer.
-      const ndarrayImageVisualizer =
+      const tensorImageVisualizer =
           document.createElement('ndarray-image-visualizer') as
           NDArrayImageVisualizer;
-      ndarrayImageVisualizer.setShape(this.inputShape);
-      ndarrayImageVisualizer.setSize(
+      tensorImageVisualizer.setShape(this.inputShape);
+      tensorImageVisualizer.setSize(
           INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
-      this.inputNDArrayVisualizers.push(ndarrayImageVisualizer);
-      inferenceExampleElement.appendChild(ndarrayImageVisualizer);
+      this.inputTensorVisualizers.push(tensorImageVisualizer);
+      inferenceExampleElement.appendChild(tensorImageVisualizer);
 
       // Set up the output ndarray visualizer.
-      const ndarrayLogitsVisualizer =
+      const tensorLogitsVisualizer =
           document.createElement('ndarray-logits-visualizer') as
           NDArrayLogitsVisualizer;
-      ndarrayLogitsVisualizer.initialize(
+      tensorLogitsVisualizer.initialize(
           INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
-      this.outputNDArrayVisualizers.push(ndarrayLogitsVisualizer);
-      inferenceExampleElement.appendChild(ndarrayLogitsVisualizer);
+      this.outputTensorVisualizers.push(tensorLogitsVisualizer);
+      inferenceExampleElement.appendChild(tensorLogitsVisualizer);
 
       inferenceContainer.appendChild(inferenceExampleElement);
     }
@@ -798,32 +798,32 @@ export class ModelBuilder extends ModelBuilderPolymer {
   }
 
   displayInferenceExamplesOutput(
-      inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) {
-    let images: Array3D[] = [];
-    const logits: Array1D[] = [];
-    const labels: Array1D[] = [];
+      inputFeeds: FeedEntry[][], inferenceOutputs: Tensor[]) {
+    let images: Tensor3D[] = [];
+    const logits: Tensor1D[] = [];
+    const labels: Tensor1D[] = [];
     for (let i = 0; i < inputFeeds.length; i++) {
-      images.push(inputFeeds[i][IMAGE_DATA_INDEX].data as Array3D);
-      labels.push(inputFeeds[i][LABEL_DATA_INDEX].data as Array1D);
-      logits.push(inferenceOutputs[i] as Array1D);
+      images.push(inputFeeds[i][IMAGE_DATA_INDEX].data as Tensor3D);
+      labels.push(inputFeeds[i][LABEL_DATA_INDEX].data as Tensor1D);
+      logits.push(inferenceOutputs[i] as Tensor1D);
     }
 
-    images =
-        this.dataSet.unnormalizeExamples(images, IMAGE_DATA_INDEX) as Array3D[];
+    images = this.dataSet.unnormalizeExamples(images, IMAGE_DATA_INDEX) as
+        Tensor3D[];
 
     // Draw the images.
     for (let i = 0; i < inputFeeds.length; i++) {
-      this.inputNDArrayVisualizers[i].saveImageDataFromNDArray(images[i]);
+      this.inputTensorVisualizers[i].saveImageDataFromNDArray(images[i]);
     }
 
     // Draw the logits.
     for (let i = 0; i < inputFeeds.length; i++) {
       const softmaxLogits = this.math.softmax(logits[i]).asType('float32');
 
-      this.outputNDArrayVisualizers[i].drawLogits(
+      this.outputTensorVisualizers[i].drawLogits(
           softmaxLogits, labels[i],
           this.xhrDatasetConfigs[this.selectedDatasetName].labelClassNames);
-      this.inputNDArrayVisualizers[i].draw();
+      this.inputTensorVisualizers[i].draw();
 
       softmaxLogits.dispose();
     }

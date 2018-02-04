@@ -936,3 +936,12 @@ function computeStrides(shape: number[]): number[] {
   }
   return strides;
 }
+
+// Aliases for backwards compatibility.
+export {
+  Tensor as NDArray,
+  Tensor1D as Array1D,
+  Tensor2D as Array2D,
+  Tensor3D as Array3D,
+  Tensor4D as Array4D
+};

@@ -68,7 +68,7 @@ export class NDArrayLogitsVisualizer extends NDArrayLogitsVisualizerPolymer {
   }
 
   drawLogits(
-      predictedLogits: dl.Array1D, labelLogits: dl.Array1D,
+      predictedLogits: dl.Tensor1D, labelLogits: dl.Tensor1D,
       labelClassNames?: string[]) {
     const labelClass = labelLogits.argMax().get();
 
