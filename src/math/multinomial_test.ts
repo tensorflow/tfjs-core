@@ -95,7 +95,7 @@ const tests: MathTests = it => {
     test_util.expectArraysClose(outcomeProbs, [1, 0, 0], EPSILON);
   });
 
-  it('passing Array3D throws error', math => {
+  it('passing Tensor3D throws error', math => {
     const probs = dl.zeros([3, 2, 2]) as Tensor1D;
     expect(() => math.multinomial(probs, 3)).toThrowError();
   });

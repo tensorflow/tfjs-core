@@ -26,7 +26,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
   const boolNaN = util.getNaN('bool');
 
   const tests: MathTests = it => {
-    it('Array1D.', math => {
+    it('Tensor1D.', math => {
       let a = Tensor1D.new([1, 0, 0], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, 1, 1]);
 
@@ -36,24 +36,24 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       a = Tensor1D.new([1, 1], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, 0]);
     });
-    it('NaNs in Array1D', math => {
+    it('NaNs in Tensor1D', math => {
       const a = Tensor1D.new([1, NaN, 0], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, boolNaN, 1]);
     });
 
-    it('Array2D', math => {
+    it('Tensor2D', math => {
       let a = Tensor2D.new([2, 3], [[1, 0, 1], [0, 0, 0]], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, 1, 0, 1, 1, 1]);
 
       a = Tensor2D.new([2, 3], [[0, 0, 0], [1, 1, 1]], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [1, 1, 1, 0, 0, 0]);
     });
-    it('NaNs in Array2D', math => {
+    it('NaNs in Tensor2D', math => {
       const a = Tensor2D.new([2, 2], [[1, NaN], [0, NaN]], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, boolNaN, 1, boolNaN]);
     });
 
-    it('Array3D', math => {
+    it('Tensor3D', math => {
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [0]]], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, 1, 0, 1, 1, 1]);
@@ -61,13 +61,13 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       a = Tensor3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [1, 1, 1, 0, 0, 0]);
     });
-    it('NaNs in Array3D', math => {
+    it('NaNs in Tensor3D', math => {
       const a =
           Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, boolNaN, 0, 1, 1, 1]);
     });
 
-    it('Array4D', math => {
+    it('Tensor4D', math => {
       let a = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, 1, 0, 1]);
 
@@ -77,7 +77,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       a = Tensor4D.new([2, 2, 1, 1], [1, 1, 1, 1], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, 0, 0, 0]);
     });
-    it('NaNs in Array4D', math => {
+    it('NaNs in Tensor4D', math => {
       const a = Tensor4D.new([2, 2, 1, 1], [1, NaN, 1, 0], 'bool');
       test_util.expectArraysClose(math.logicalNot(a), [0, boolNaN, 0, 1]);
     });
@@ -96,7 +96,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
   const boolNaN = util.getNaN('bool');
 
   const tests: MathTests = it => {
-    it('Array1D.', math => {
+    it('Tensor1D.', math => {
       let a = Tensor1D.new([1, 0, 0], 'bool');
       let b = Tensor1D.new([0, 1, 0], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [0, 0, 0]);
@@ -109,7 +109,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor1D.new([1, 1], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [1, 1]);
     });
-    it('mismatched Array1D shapes', math => {
+    it('mismatched Tensor1D shapes', math => {
       const a = Tensor1D.new([1, 0], 'bool');
       const b = Tensor1D.new([0, 1, 0], 'bool');
       const f = () => {
@@ -117,13 +117,13 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       };
       expect(f).toThrowError();
     });
-    it('NaNs in Array1D', math => {
+    it('NaNs in Tensor1D', math => {
       const a = Tensor1D.new([1, NaN, 0], 'bool');
       const b = Tensor1D.new([0, 0, NaN], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [0, boolNaN, boolNaN]);
     });
 
-    it('Array2D', math => {
+    it('Tensor2D', math => {
       let a = Tensor2D.new([2, 3], [[1, 0, 1], [0, 0, 0]], 'bool');
       let b = Tensor2D.new([2, 3], [[0, 0, 0], [0, 1, 0]], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [0, 0, 0, 0, 0, 0]);
@@ -132,19 +132,19 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor2D.new([2, 3], [[0, 0, 0], [1, 1, 1]], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [0, 0, 0, 1, 1, 1]);
     });
-    it('broadcasting Array2D shapes', math => {
+    it('broadcasting Tensor2D shapes', math => {
       const a = Tensor2D.new([2, 1], [[1], [0]], 'bool');
       const b = Tensor2D.new([2, 3], [[0, 1, 0], [0, 1, 0]], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [0, 1, 0, 0, 0, 0]);
     });
-    it('NaNs in Array2D', math => {
+    it('NaNs in Tensor2D', math => {
       const a = Tensor2D.new([2, 2], [[1, NaN], [0, NaN]], 'bool');
       const b = Tensor2D.new([2, 2], [[0, NaN], [1, NaN]], 'bool');
       test_util.expectArraysClose(
           math.logicalAnd(a, b), [0, boolNaN, 0, boolNaN]);
     });
 
-    it('Array3D', math => {
+    it('Tensor3D', math => {
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [1]]], 'bool');
       let b =
@@ -155,7 +155,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [0, 0, 0, 1, 1, 1]);
     });
-    it('broadcasting Array3D shapes', math => {
+    it('broadcasting Tensor3D shapes', math => {
       const a = Tensor3D.new(
           [2, 3, 2], [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
           'bool');
@@ -164,7 +164,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       test_util.expectArraysClose(
           math.logicalAnd(a, b), [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0]);
     });
-    it('NaNs in Array3D', math => {
+    it('NaNs in Tensor3D', math => {
       const a =
           Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'bool');
       const b =
@@ -173,7 +173,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
           math.logicalAnd(a, b), [0, boolNaN, 1, 0, 0, boolNaN]);
     });
 
-    it('Array4D', math => {
+    it('Tensor4D', math => {
       let a = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       let b = Tensor4D.new([2, 2, 1, 1], [0, 1, 1, 0], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [0, 0, 1, 0]);
@@ -186,14 +186,14 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor4D.new([2, 2, 1, 1], [1, 1, 1, 1], 'bool');
       test_util.expectArraysClose(math.logicalAnd(a, b), [1, 1, 1, 1]);
     });
-    it('broadcasting Array4D shapes', math => {
+    it('broadcasting Tensor4D shapes', math => {
       const a = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       const b = Tensor4D.new(
           [2, 2, 1, 2], [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], 'bool');
       test_util.expectArraysClose(
           math.logicalAnd(a, b), [1, 0, 0, 0, 0, 0, 0, 0]);
     });
-    it('NaNs in Array4D', math => {
+    it('NaNs in Tensor4D', math => {
       const a = Tensor4D.new([2, 2, 1, 1], [1, NaN, 1, 0], 'bool');
       const b = Tensor4D.new([2, 2, 1, 1], [0, 1, 0, NaN], 'bool');
       test_util.expectArraysClose(
@@ -214,7 +214,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
   const boolNaN = util.getNaN('bool');
 
   const tests: MathTests = it => {
-    it('Array1D.', math => {
+    it('Tensor1D.', math => {
       let a = Tensor1D.new([1, 0, 0], 'bool');
       let b = Tensor1D.new([0, 1, 0], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1, 0]);
@@ -227,7 +227,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor1D.new([1, 1], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1]);
     });
-    it('mismatched Array1D shapes', math => {
+    it('mismatched Tensor1D shapes', math => {
       const a = Tensor1D.new([1, 0], 'bool');
       const b = Tensor1D.new([0, 1, 0], 'bool');
       const f = () => {
@@ -235,13 +235,13 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       };
       expect(f).toThrowError();
     });
-    it('NaNs in Array1D', math => {
+    it('NaNs in Tensor1D', math => {
       const a = Tensor1D.new([1, NaN, 0], 'bool');
       const b = Tensor1D.new([0, 0, NaN], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, boolNaN, boolNaN]);
     });
 
-    it('Array2D', math => {
+    it('Tensor2D', math => {
       let a = Tensor2D.new([2, 3], [[1, 0, 1], [0, 0, 0]], 'bool');
       let b = Tensor2D.new([2, 3], [[0, 0, 0], [0, 1, 0]], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 0, 1, 0, 1, 0]);
@@ -250,19 +250,19 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor2D.new([2, 3], [[0, 0, 0], [1, 1, 1]], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [0, 0, 0, 1, 1, 1]);
     });
-    it('broadcasting Array2D shapes', math => {
+    it('broadcasting Tensor2D shapes', math => {
       const a = Tensor2D.new([2, 1], [[1], [0]], 'bool');
       const b = Tensor2D.new([2, 3], [[0, 0, 0], [0, 1, 0]], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1, 1, 0, 1, 0]);
     });
-    it('NaNs in Array2D', math => {
+    it('NaNs in Tensor2D', math => {
       const a = Tensor2D.new([2, 2], [[1, NaN], [0, NaN]], 'bool');
       const b = Tensor2D.new([2, 2], [[0, NaN], [1, NaN]], 'bool');
       test_util.expectArraysClose(
           math.logicalOr(a, b), [1, boolNaN, 1, boolNaN]);
     });
 
-    it('Array3D', math => {
+    it('Tensor3D', math => {
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [0]]], 'bool');
       let b =
@@ -273,7 +273,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [0, 0, 0, 1, 1, 1]);
     });
-    it('broadcasting Array3D shapes', math => {
+    it('broadcasting Tensor3D shapes', math => {
       const a = Tensor3D.new(
           [2, 3, 2], [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
           'bool');
@@ -282,7 +282,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       test_util.expectArraysClose(
           math.logicalOr(a, b), [1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0]);
     });
-    it('NaNs in Array3D', math => {
+    it('NaNs in Tensor3D', math => {
       const a =
           Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'bool');
       const b =
@@ -291,7 +291,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
           math.logicalOr(a, b), [1, boolNaN, 1, 1, 0, boolNaN]);
     });
 
-    it('Array4D', math => {
+    it('Tensor4D', math => {
       let a = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       let b = Tensor4D.new([2, 2, 1, 1], [0, 1, 0, 0], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1, 1, 0]);
@@ -304,14 +304,14 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor4D.new([2, 2, 1, 1], [1, 1, 1, 1], 'bool');
       test_util.expectArraysClose(math.logicalOr(a, b), [1, 1, 1, 1]);
     });
-    it('broadcasting Array4D shapes', math => {
+    it('broadcasting Tensor4D shapes', math => {
       const a = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       const b = Tensor4D.new(
           [2, 2, 1, 2], [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], 'bool');
       test_util.expectArraysClose(
           math.logicalOr(a, b), [1, 1, 0, 0, 1, 1, 1, 1]);
     });
-    it('NaNs in Array4D', math => {
+    it('NaNs in Tensor4D', math => {
       const a = Tensor4D.new([2, 2, 1, 1], [1, NaN, 1, 0], 'bool');
       const b = Tensor4D.new([2, 2, 1, 1], [0, 1, 0, NaN], 'bool');
       test_util.expectArraysClose(
@@ -332,8 +332,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
   const boolNaN = util.getNaN('bool');
 
   const tests: MathTests = it => {
-    // Array1D:
-    it('Array1D.', math => {
+    // Tensor1D:
+    it('Tensor1D.', math => {
       let a = Tensor1D.new([1, 0, 0], 'bool');
       let b = Tensor1D.new([0, 1, 0], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [1, 1, 0]);
@@ -346,7 +346,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor1D.new([1, 1], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [0, 0]);
     });
-    it('mismatched Array1D shapes', math => {
+    it('mismatched Tensor1D shapes', math => {
       const a = Tensor1D.new([1, 0], 'bool');
       const b = Tensor1D.new([0, 1, 0], 'bool');
       const f = () => {
@@ -354,14 +354,14 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       };
       expect(f).toThrowError();
     });
-    it('NaNs in Array1D', math => {
+    it('NaNs in Tensor1D', math => {
       const a = Tensor1D.new([1, NaN, 0], 'bool');
       const b = Tensor1D.new([0, 0, NaN], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [1, boolNaN, boolNaN]);
     });
 
-    // Array2D:
-    it('Array2D', math => {
+    // Tensor2D:
+    it('Tensor2D', math => {
       let a = Tensor2D.new([2, 3], [[1, 0, 1], [0, 0, 0]], 'bool');
       let b = Tensor2D.new([2, 3], [[0, 0, 0], [0, 1, 0]], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [1, 0, 1, 0, 1, 0]);
@@ -370,20 +370,20 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor2D.new([2, 3], [[0, 0, 0], [1, 1, 1]], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [0, 0, 0, 0, 0, 0]);
     });
-    it('broadcasting Array2D shapes', math => {
+    it('broadcasting Tensor2D shapes', math => {
       const a = Tensor2D.new([2, 1], [[1], [0]], 'bool');
       const b = Tensor2D.new([2, 3], [[0, 0, 0], [0, 1, 0]], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [1, 1, 1, 0, 1, 0]);
     });
-    it('NaNs in Array2D', math => {
+    it('NaNs in Tensor2D', math => {
       const a = Tensor2D.new([2, 2], [[1, NaN], [0, NaN]], 'bool');
       const b = Tensor2D.new([2, 2], [[0, NaN], [1, NaN]], 'bool');
       test_util.expectArraysClose(
           math.logicalXor(a, b), [1, boolNaN, 1, boolNaN]);
     });
 
-    // Array3D:
-    it('Array3D', math => {
+    // Tensor3D:
+    it('Tensor3D', math => {
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [0]]], 'bool');
       let b =
@@ -394,7 +394,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [0, 0, 0, 0, 0, 0]);
     });
-    it('broadcasting Array3D shapes', math => {
+    it('broadcasting Tensor3D shapes', math => {
       const a = Tensor3D.new(
           [2, 3, 2], [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
           'bool');
@@ -403,7 +403,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       test_util.expectArraysClose(
           math.logicalXor(a, b), [1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0]);
     });
-    it('NaNs in Array3D', math => {
+    it('NaNs in Tensor3D', math => {
       const a =
           Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'bool');
       const b =
@@ -412,8 +412,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
           math.logicalXor(a, b), [1, boolNaN, 0, 1, 0, boolNaN]);
     });
 
-    // Array4D:
-    it('Array4D', math => {
+    // Tensor4D:
+    it('Tensor4D', math => {
       let a = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       let b = Tensor4D.new([2, 2, 1, 1], [0, 1, 1, 0], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [1, 1, 0, 0]);
@@ -426,14 +426,14 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       b = Tensor4D.new([2, 2, 1, 1], [1, 1, 1, 1], 'bool');
       test_util.expectArraysClose(math.logicalXor(a, b), [0, 0, 0, 0]);
     });
-    it('broadcasting Array4D shapes', math => {
+    it('broadcasting Tensor4D shapes', math => {
       const a = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 0], 'bool');
       const b = Tensor4D.new(
           [2, 2, 1, 2], [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], 'bool');
       test_util.expectArraysClose(
           math.logicalXor(a, b), [0, 1, 0, 0, 1, 1, 1, 1]);
     });
-    it('NaNs in Array4D', math => {
+    it('NaNs in Tensor4D', math => {
       const a = Tensor4D.new([2, 2, 1, 1], [1, NaN, 1, 0], 'bool');
       const b = Tensor4D.new([2, 2, 1, 1], [0, 1, 0, NaN], 'bool');
       test_util.expectArraysClose(
@@ -452,14 +452,14 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 // Where
 {
   const tests: MathTests = it => {
-    it('Array1D', math => {
+    it('Tensor1D', math => {
       const c = Tensor1D.new([1, 0, 1, 0], 'bool');
       const a = Tensor1D.new([10, 10, 10, 10]);
       const b = Tensor1D.new([20, 20, 20, 20]);
       test_util.expectArraysClose(math.where(c, a, b), [10, 20, 10, 20]);
     });
 
-    it('Array1D different a/b shapes', math => {
+    it('Tensor1D different a/b shapes', math => {
       let c = Tensor1D.new([1, 0, 1, 0], 'bool');
       let a = Tensor1D.new([10, 10, 10]);
       let b = Tensor1D.new([20, 20, 20, 20]);
@@ -476,7 +476,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       };
     });
 
-    it('Array1D different condition/a shapes', math => {
+    it('Tensor1D different condition/a shapes', math => {
       const c = Tensor1D.new([1, 0, 1, 0], 'bool');
       const a = Tensor1D.new([10, 10, 10]);
       const b = Tensor1D.new([20, 20, 20]);
@@ -486,14 +486,14 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       expect(f).toThrowError();
     });
 
-    it('Array2D', math => {
+    it('Tensor2D', math => {
       const c = Tensor2D.new([2, 2], [[1, 0], [0, 1]], 'bool');
       const a = Tensor2D.new([2, 2], [[10, 10], [10, 10]]);
       const b = Tensor2D.new([2, 2], [[5, 5], [5, 5]]);
       test_util.expectArraysClose(math.where(c, a, b), [10, 5, 5, 10]);
     });
 
-    it('Array2D different a/b shapes', math => {
+    it('Tensor2D different a/b shapes', math => {
       let c = Tensor2D.new([2, 2], [[1, 1], [0, 0]], 'bool');
       let a = Tensor2D.new([2, 3], [[5, 5, 5], [5, 5, 5]]);
       let b = Tensor2D.new([2, 2], [[4, 4], [4, 4]]);
@@ -511,7 +511,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       expect(f).toThrowError();
     });
 
-    it('Array2D different condition/a shapes', math => {
+    it('Tensor2D different condition/a shapes', math => {
       const c = Tensor2D.new([2, 2], [[1, 0], [0, 1]], 'bool');
       const a = Tensor2D.new([2, 3], [[10, 10, 10], [10, 10, 10]]);
       const b = Tensor2D.new([2, 3], [[5, 5, 5], [5, 5, 5]]);
@@ -521,7 +521,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       expect(f).toThrowError();
     });
 
-    it('Array2D different `a` dimension w/ condition rank=1', math => {
+    it('Tensor2D different `a` dimension w/ condition rank=1', math => {
       const c = Tensor1D.new([1, 0, 1, 0], 'bool');
       let a = Tensor2D.new([2, 2], [[10, 10], [10, 10]]);
       let b = Tensor2D.new([2, 2], [[5, 5], [5, 5]]);
@@ -540,7 +540,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
           math.where(c, a, b), [10, 10, 5, 5, 10, 10, 5, 5]);
     });
 
-    it('Array3D', math => {
+    it('Tensor3D', math => {
       const c =
           Tensor3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [0]]], 'bool');
       const a = Tensor3D.new([2, 3, 1], [[[5], [5], [5]], [[5], [5], [5]]]);
@@ -548,7 +548,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       test_util.expectArraysClose(math.where(c, a, b), [5, 3, 5, 3, 3, 3]);
     });
 
-    it('Array3D different a/b shapes', math => {
+    it('Tensor3D different a/b shapes', math => {
       const c =
           Tensor3D.new([2, 3, 1], [[[1], [0], [1]], [[0], [0], [0]]], 'bool');
       let a = Tensor3D.new([2, 2, 1], [[[5], [5]], [[5], [5]]]);
@@ -566,7 +566,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       expect(f).toThrowError();
     });
 
-    it('Array3D different condition/a shapes', math => {
+    it('Tensor3D different condition/a shapes', math => {
       const c = Tensor3D.new([2, 2, 1], [[[1], [0]], [[0], [0]]], 'bool');
       const a = Tensor3D.new([2, 3, 1], [[[5], [5], [5]], [[5], [5], [5]]]);
       const b = Tensor3D.new([2, 3, 1], [[[3], [3], [3]], [[3], [3], [3]]]);
@@ -576,7 +576,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       expect(f).toThrowError();
     });
 
-    it('Array3D different `a` dimension w/ condition rank=1', math => {
+    it('Tensor3D different `a` dimension w/ condition rank=1', math => {
       const c = Tensor1D.new([1, 0, 1, 0], 'bool');
       let a = Tensor3D.new([2, 2, 2], [[[9, 9], [9, 9]], [[9, 9], [9, 9]]]);
       let b = Tensor3D.new([2, 2, 2], [[[8, 8], [8, 8]], [[8, 8], [8, 8]]]);
@@ -597,14 +597,14 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
           math.where(c, a, b), [9, 9, 8, 8, 9, 9, 8, 8]);
     });
 
-    it('Array4D', math => {
+    it('Tensor4D', math => {
       const c = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 1], 'bool');
       const a = Tensor4D.new([2, 2, 1, 1], [7, 7, 7, 7]);
       const b = Tensor4D.new([2, 2, 1, 1], [3, 3, 3, 3]);
       test_util.expectArraysClose(math.where(c, a, b), [7, 3, 7, 7]);
     });
 
-    it('Array4D different a/b shapes', math => {
+    it('Tensor4D different a/b shapes', math => {
       const c = Tensor4D.new([2, 2, 1, 1], [1, 0, 1, 1], 'bool');
       let a = Tensor4D.new([2, 2, 2, 1], [7, 7, 7, 7, 7, 7, 7, 7]);
       let b = Tensor4D.new([2, 2, 1, 1], [3, 3, 3, 3]);
@@ -621,7 +621,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       expect(f).toThrowError();
     });
 
-    it('Array4D different condition/a shapes', math => {
+    it('Tensor4D different condition/a shapes', math => {
       const c = Tensor4D.new([2, 2, 2, 1], [1, 0, 1, 1, 1, 0, 1, 1], 'bool');
       const a = Tensor4D.new([2, 2, 1, 1], [7, 7, 7, 7]);
       const b = Tensor4D.new([2, 2, 1, 1], [3, 3, 3, 3]);
@@ -631,7 +631,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
       expect(f).toThrowError();
     });
 
-    it('Array4D different `a` dimension w/ condition rank=1', math => {
+    it('Tensor4D different `a` dimension w/ condition rank=1', math => {
       const c = Tensor1D.new([1, 0, 1, 0], 'bool');
       let a = Tensor4D.new([2, 2, 2, 1], [7, 7, 7, 7, 7, 7, 7, 7]);
       let b = Tensor4D.new([2, 2, 2, 1], [3, 3, 3, 3, 3, 3, 3, 3]);

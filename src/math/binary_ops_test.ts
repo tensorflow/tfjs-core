@@ -18,7 +18,8 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor1D, Tensor2D, Scalar} from './tensor';
+
+import {Scalar, Tensor1D, Tensor2D} from './tensor';
 
 // dl.prelu
 {
@@ -122,7 +123,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [0.5, 0.3, NaN]);
     });
 
-    it('broadcasts array1d and scalar', () => {
+    it('broadcasts Tensor1D and scalar', () => {
       const a = Tensor1D.new([0.5, 3, -0.1, -4]);
       const b = Scalar.new(0.6);
       const result = dl.maximum(a, b);
@@ -131,7 +132,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [0.6, 3, 0.6, 0.6]);
     });
 
-    it('broadcasts scalar and array1d', () => {
+    it('broadcasts scalar and Tensor1D', () => {
       const a = Scalar.new(0.6);
       const b = Tensor1D.new([0.5, 3, -0.1, -4]);
       const result = dl.maximum(a, b);
@@ -140,7 +141,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [0.6, 3, 0.6, 0.6]);
     });
 
-    it('broadcasts array1d and array2d', () => {
+    it('broadcasts Tensor1D and Tensor2D', () => {
       const a = Tensor1D.new([0.5, 0.3]);
       const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
       const result = dl.maximum(a, b);
@@ -149,7 +150,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [0.5, 0.4, 0.6, 0.3]);
     });
 
-    it('broadcasts 2x1 array2d and 2x2 array2d', () => {
+    it('broadcasts 2x1 Tensor2D and 2x2 Tensor2D', () => {
       const a = Tensor2D.new([2, 1], [0.5, 0.3]);
       const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
       const result = dl.maximum(a, b);
@@ -174,7 +175,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(gradients.b, [3 * 0], 1e-1);
     });
 
-    it('gradients: Array1D', math => {
+    it('gradients: Tensor1D', math => {
       const a = Tensor1D.new([1.1, 2.6, 3, 5.9]);
       const b = Tensor1D.new([1.0, 2.7, 3, 5.8]);
       const dy = Tensor1D.new([1, 2, 3, 4]);
@@ -192,7 +193,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
           gradients.b, [1 * 0, 2 * 1, 3 * 0, 4 * 0], 1e-1);
     });
 
-    it('gradients: Array2D', math => {
+    it('gradients: Tensor2D', math => {
       const a = Tensor2D.new([2, 2], [0.5, 0.3, 0.7, 0.9]);
       const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.7, 0.15]);
       const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
@@ -267,7 +268,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [0.2, -0.1, NaN]);
     });
 
-    it('broadcasts array1d and scalar', () => {
+    it('broadcasts Tensor1D and scalar', () => {
       const a = Tensor1D.new([0.5, 3, -0.1, -4]);
       const b = Scalar.new(0.6);
       const result = dl.minimum(a, b);
@@ -276,7 +277,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [0.5, 0.6, -0.1, -4]);
     });
 
-    it('broadcasts scalar and array1d', () => {
+    it('broadcasts scalar and Tensor1D', () => {
       const a = Scalar.new(0.6);
       const b = Tensor1D.new([0.5, 3, -0.1, -4]);
       const result = dl.minimum(a, b);
@@ -285,7 +286,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [0.5, 0.6, -0.1, -4]);
     });
 
-    it('broadcasts array1d and array2d', () => {
+    it('broadcasts Tensor1D and Tensor2D', () => {
       const a = Tensor1D.new([0.5, 0.3]);
       const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
       const result = dl.minimum(a, b);
@@ -294,7 +295,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [0.2, 0.3, 0.5, 0.15]);
     });
 
-    it('broadcasts 2x1 array2d and 2x2 array2d', () => {
+    it('broadcasts 2x1 Tensor2D and 2x2 Tensor2D', () => {
       const a = Tensor2D.new([2, 1], [0.5, 0.3]);
       const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
       const result = dl.minimum(a, b);
@@ -319,7 +320,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       test_util.expectArraysClose(gradients.b, [3 * 1], 1e-1);
     });
 
-    it('gradients: Array1D', math => {
+    it('gradients: Tensor1D', math => {
       const a = Tensor1D.new([1.1, 2.6, 3, 5.9]);
       const b = Tensor1D.new([1.0, 2.7, 3, 5.8]);
       const dy = Tensor1D.new([1, 2, 3, 4]);
@@ -337,7 +338,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
           gradients.b, [1 * 1, 2 * 0, 3 * 0, 4 * 1], 1e-1);
     });
 
-    it('gradients: Array2D', math => {
+    it('gradients: Tensor2D', math => {
       const a = Tensor2D.new([2, 2], [0.5, 0.3, 0.7, 0.9]);
       const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.7, 0.15]);
       const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);

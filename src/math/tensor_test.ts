@@ -130,7 +130,7 @@ const tests: MathTests = it => {
     expect(b.indexToLoc(0)).toEqual([]);
   });
 
-  it('indexToLoc Array1D', () => {
+  it('indexToLoc Tensor1D', () => {
     const a = dl.zeros([3]);
     expect(a.indexToLoc(0)).toEqual([0]);
     expect(a.indexToLoc(1)).toEqual([1]);
@@ -142,7 +142,7 @@ const tests: MathTests = it => {
     expect(b.indexToLoc(2)).toEqual([2]);
   });
 
-  it('indexToLoc Array2D', () => {
+  it('indexToLoc Tensor2D', () => {
     const a = dl.zeros([3, 2]);
     expect(a.indexToLoc(0)).toEqual([0, 0]);
     expect(a.indexToLoc(1)).toEqual([0, 1]);
@@ -160,7 +160,7 @@ const tests: MathTests = it => {
     expect(b.indexToLoc(5)).toEqual([2, 1]);
   });
 
-  it('indexToLoc Array3D', () => {
+  it('indexToLoc Tensor3D', () => {
     const a = dl.zeros([3, 2, 2]);
     expect(a.indexToLoc(0)).toEqual([0, 0, 0]);
     expect(a.indexToLoc(1)).toEqual([0, 0, 1]);
@@ -197,7 +197,7 @@ const tests: MathTests = it => {
     expect(b.locToIndex([])).toEqual(0);
   });
 
-  it('locToIndex Array1D', () => {
+  it('locToIndex Tensor1D', () => {
     const a = dl.zeros<Rank.R1>([3]);
     expect(a.locToIndex([0])).toEqual(0);
     expect(a.locToIndex([1])).toEqual(1);
@@ -209,7 +209,7 @@ const tests: MathTests = it => {
     expect(b.locToIndex([2])).toEqual(2);
   });
 
-  it('locToIndex Array2D', () => {
+  it('locToIndex Tensor2D', () => {
     const a = dl.zeros<Rank.R2>([3, 2]);
     expect(a.locToIndex([0, 0])).toEqual(0);
     expect(a.locToIndex([0, 1])).toEqual(1);
@@ -227,7 +227,7 @@ const tests: MathTests = it => {
     expect(b.locToIndex([2, 1])).toEqual(5);
   });
 
-  it('locToIndex Array3D', () => {
+  it('locToIndex Tensor3D', () => {
     const a = dl.zeros<Rank.R3>([3, 2, 2]);
     expect(a.locToIndex([0, 0, 0])).toEqual(0);
     expect(a.locToIndex([0, 0, 1])).toEqual(1);
@@ -271,43 +271,43 @@ const tests: MathTests = it => {
   });
 };
 const testsNew: MathTests = it => {
-  it('Array1D.new() from number[]', () => {
+  it('Tensor1D.new() from number[]', () => {
     const a = Tensor1D.new([1, 2, 3]);
     test_util.expectArraysClose(a, [1, 2, 3]);
   });
 
-  it('Array1D.new() from number[][], shape mismatch', () => {
+  it('Tensor1D.new() from number[][], shape mismatch', () => {
     // tslint:disable-next-line:no-any
     expect(() => Tensor1D.new([[1], [2], [3]] as any)).toThrowError();
   });
 
-  it('Array2D.new() from number[][]', () => {
+  it('Tensor2D.new() from number[][]', () => {
     const a = Tensor2D.new([2, 3], [[1, 2, 3], [4, 5, 6]]);
     test_util.expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
   });
 
-  it('Array2D.new() from number[][], but shape does not match', () => {
+  it('Tensor2D.new() from number[][], but shape does not match', () => {
     // Actual shape is [2, 3].
     expect(() => Tensor2D.new([3, 2], [[1, 2, 3], [4, 5, 6]])).toThrowError();
   });
 
-  it('Array3D.new() from number[][][]', () => {
+  it('Tensor3D.new() from number[][][]', () => {
     const a = Tensor3D.new([2, 3, 1], [[[1], [2], [3]], [[4], [5], [6]]]);
     test_util.expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
   });
 
-  it('Array3D.new() from number[][][], but shape does not match', () => {
+  it('Tensor3D.new() from number[][][], but shape does not match', () => {
     const values = [[[1], [2], [3]], [[4], [5], [6]]];
     // Actual shape is [2, 3, 1].
     expect(() => Tensor3D.new([3, 2, 1], values)).toThrowError();
   });
 
-  it('Array4D.new() from number[][][][]', () => {
+  it('Tensor4D.new() from number[][][][]', () => {
     const a = Tensor4D.new([2, 2, 1, 1], [[[[1]], [[2]]], [[[4]], [[5]]]]);
     test_util.expectArraysClose(a, [1, 2, 4, 5]);
   });
 
-  it('Array4D.new() from number[][][][], but shape does not match', () => {
+  it('Tensor4D.new() from number[][][][], but shape does not match', () => {
     const f = () => {
       // Actual shape is [2, 2, 1, 1].
       Tensor4D.new([2, 1, 2, 1], [[[[1]], [[2]]], [[[4]], [[5]]]]);
@@ -387,7 +387,7 @@ const testsScalarNew: MathTests = it => {
     expect(a.dtype).toBe('float32');
   });
 };
-const testsArray1DNew: MathTests = it => {
+const testsTensor1DNew: MathTests = it => {
   it('default dtype', () => {
     const a = Tensor1D.new([1, 2, 3]);
     expect(a.dtype).toBe('float32');
@@ -451,7 +451,7 @@ const testsArray1DNew: MathTests = it => {
     test_util.expectArraysEqual(a, [0, 0, 1]);
   });
 };
-const testsArray2DNew: MathTests = it => {
+const testsTensor2DNew: MathTests = it => {
   it('default dtype', () => {
     const a = Tensor2D.new([2, 2], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
@@ -515,7 +515,7 @@ const testsArray2DNew: MathTests = it => {
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });
 };
-const testsArray3DNew: MathTests = it => {
+const testsTensor3DNew: MathTests = it => {
   it('default dtype', () => {
     const a = Tensor3D.new([2, 2, 1], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
@@ -581,7 +581,7 @@ const testsArray3DNew: MathTests = it => {
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });
 };
-const testsArray4DNew: MathTests = it => {
+const testsTensor4DNew: MathTests = it => {
   it('default dtype', () => {
     const a = Tensor4D.new([2, 2, 1, 1], [1, 2, 3, 4]);
     expect(a.dtype).toBe('float32');
@@ -664,56 +664,56 @@ const testsReshape: MathTests = it => {
     expect(b.shape).toEqual([1, 1, 1]);
   });
 
-  it('Array1D default dtype', () => {
+  it('Tensor1D default dtype', () => {
     const a = Tensor1D.new([1, 2, 3, 4]);
     const b = a.reshape([2, 2]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2]);
   });
 
-  it('Array1D int32 dtype', () => {
+  it('Tensor1D int32 dtype', () => {
     const a = Tensor1D.new([1, 2, 3, 4], 'int32');
     const b = a.reshape([2, 2]);
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([2, 2]);
   });
 
-  it('Array2D default dtype', () => {
+  it('Tensor2D default dtype', () => {
     const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     const b = a.reshape([6]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([6]);
   });
 
-  it('Array2D bool dtype', () => {
+  it('Tensor2D bool dtype', () => {
     const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6], 'bool');
     const b = a.reshape([6]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([6]);
   });
 
-  it('Array3D default dtype', () => {
+  it('Tensor3D default dtype', () => {
     const a = Tensor3D.new([2, 3, 1], [1, 2, 3, 4, 5, 6]);
     const b = a.reshape([6]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([6]);
   });
 
-  it('Array3D bool dtype', () => {
+  it('Tensor3D bool dtype', () => {
     const a = Tensor3D.new([2, 3, 1], [1, 2, 3, 4, 5, 6], 'bool');
     const b = a.reshape([6]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([6]);
   });
 
-  it('Array4D default dtype', () => {
+  it('Tensor4D default dtype', () => {
     const a = Tensor4D.new([2, 3, 1, 1], [1, 2, 3, 4, 5, 6]);
     const b = a.reshape([2, 3]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 3]);
   });
 
-  it('Array4D int32 dtype', () => {
+  it('Tensor4D int32 dtype', () => {
     const a = Tensor4D.new([2, 3, 1, 1], [1, 2, 3, 4, 5, 6], 'int32');
     const b = a.reshape([3, 2]);
     expect(b.dtype).toBe('int32');
@@ -735,13 +735,13 @@ const testsAsType: MathTests = it => {
     expect(a.get()).toBe(1);
   });
 
-  it('array1d float32 -> int32', () => {
+  it('Tensor1D float32 -> int32', () => {
     const a = Tensor1D.new([1.1, 3.9, -2.9, 0]).toInt();
     expect(a.dtype).toBe('int32');
     test_util.expectArraysEqual(a, [1, 3, -2, 0]);
   });
 
-  it('array2d float32 -> bool', () => {
+  it('Tensor2D float32 -> bool', () => {
     const a = Tensor2D.new([2, 2], [1.1, 3.9, -2.9, 0]).asType(DType.bool);
     expect(a.dtype).toBe('bool');
     expect(a.get(0, 0)).toBe(1);
@@ -750,7 +750,7 @@ const testsAsType: MathTests = it => {
     expect(a.get(1, 1)).toBe(0);
   });
 
-  it('array2d int32 -> bool', () => {
+  it('Tensor2D int32 -> bool', () => {
     const a = Tensor2D.new([2, 2], [1, 3, 0, -1], 'int32').toBool();
     expect(a.dtype).toBe('bool');
     expect(a.get(0, 0)).toBe(1);
@@ -759,7 +759,7 @@ const testsAsType: MathTests = it => {
     expect(a.get(1, 1)).toBe(1);
   });
 
-  it('array3d bool -> float32', () => {
+  it('Tensor3D bool -> float32', () => {
     const a =
         Tensor3D.new([2, 2, 1], [true, false, false, true], 'bool').toFloat();
     expect(a.dtype).toBe('float32');
@@ -841,8 +841,8 @@ const testsAsXD: MathTests = it => {
 };
 
 const allTests = [
-  tests, testsNew, testsScalarNew, testsArray1DNew, testsArray2DNew,
-  testsArray3DNew, testsArray4DNew, testsReshape, testsAsType, testsAsXD,
+  tests, testsNew, testsScalarNew, testsTensor1DNew, testsTensor2DNew,
+  testsTensor3DNew, testsTensor4DNew, testsReshape, testsAsType, testsAsXD,
   testSqueeze
 ];
 

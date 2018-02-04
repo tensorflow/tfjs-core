@@ -18,13 +18,13 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
 import * as reduce_util from './reduce_util';
+import {Scalar, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
 // math.min
 {
   const tests: MathTests = it => {
-    it('Array1D', math => {
+    it('Tensor1D', math => {
       const a = Tensor1D.new([3, -1, 0, 100, -7, 2]);
       test_util.expectNumbersClose(math.min(a).get(), -7);
     });
@@ -162,7 +162,7 @@ import * as reduce_util from './reduce_util';
 // math.argmax
 {
   const tests: MathTests = it => {
-    it('Array1D', math => {
+    it('Tensor1D', math => {
       const a = Tensor1D.new([1, 0, 3, 2]);
       const result = math.argMax(a);
       expect(result.dtype).toBe('int32');
@@ -235,7 +235,7 @@ import * as reduce_util from './reduce_util';
 // math.argmin
 {
   const tests: MathTests = it => {
-    it('Array1D', math => {
+    it('Tensor1D', math => {
       const a = Tensor1D.new([1, 0, 3, 2]);
       const result = math.argMin(a);
       expect(result.get()).toBe(1);

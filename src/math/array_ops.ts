@@ -42,7 +42,7 @@ export class Ops {
   }
 
   @operation
-  /** Creates an Tensor filled with a value. */
+  /** Creates a Tensor filled with a value. */
   static fill<R extends Rank>(
       shape: ShapeMap[R], value: number, dtype: DataType = 'float32'):
       Tensor<R> {
@@ -278,7 +278,7 @@ export class Ops {
   }
 
   /**
-   * Pads a Array1D.
+   * Pads a Tensor1D.
    *
    * This operation will pad an array according to the `paddings` you specify.
    *
@@ -302,7 +302,7 @@ export class Ops {
   }
 
   /**
-   * Pads a Array2D.
+   * Pads a Tensor2D.
    *
    * This operation will pad an array according to the `paddings` you specify.
    *
@@ -329,7 +329,7 @@ export class Ops {
   }
 
   /**
-   * Creates a new Array1D filled with the numbers in the range provided.
+   * Creates a new Tensor1D filled with the numbers in the range provided.
    *
    * The array is a is half-open interval meaning it includes start, but
    * excludes stop. Decrementing ranges and negative step values are also

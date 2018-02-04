@@ -46,7 +46,7 @@ describe('add operation', () => {
     gradients.disposeArray(y);
   });
 
-  it('matmul two NDArray2Ds', () => {
+  it('matmul two Tensor2Ds', () => {
     const x1 = Tensor2D.new([2, 3], [1, 2, 3, 10, 20, 30]);
     const x2 = Tensor2D.new([3, 2], [2, 3, 4, 1, 2, 3]);
 

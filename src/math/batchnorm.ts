@@ -25,9 +25,9 @@ import {Rank} from './types';
 export class Ops {
   /**
    * Batch normalization 2D. Mean, variance, scale, and offset can be of two
-   * shapes: 1) The same shape as the input: an Array2D. 2) In the common
+   * shapes: 1) The same shape as the input: an Tensor2D. 2) In the common
    * case, the depth dimension is the last dimension of x, so the values would
-   * be an Array1D of shape [depth].
+   * be an Tensor1D of shape [depth].
    * @param x The input Tensor.
    * @param mean A mean Tensor.
    * @param variance A variance Tensor.
@@ -74,9 +74,9 @@ export class Ops {
 
   /**
    * Batch normalization 3D. Mean, variance, scale, and offset can be of two
-   * shapes: 1) The same shape as the input: an Array3D. 2) In the common
+   * shapes: 1) The same shape as the input: an Tensor3D. 2) In the common
    * case, the depth dimension is the last dimension of x, so the values would
-   * be an Array1D of shape [depth].
+   * be an Tensor1D of shape [depth].
    * @param x The input Tensor.
    * @param mean A mean Tensor.
    * @param variance A variance Tensor.
@@ -123,9 +123,9 @@ export class Ops {
 
   /**
    * Batch normalization 4D. Mean, variance, scale, and offset can be of two
-   * shapes: 1) The same shape as the input: an Array4D. 2) In the common
+   * shapes: 1) The same shape as the input: an Tensor4D. 2) In the common
    * case, the depth dimension is the last dimension of x, so the values would
-   * be an Array1D of shape [depth].
+   * be an Tensor1D of shape [depth].
    * @param x The input Tensor.
    * @param mean A mean Tensor.
    * @param variance A variance Tensor.

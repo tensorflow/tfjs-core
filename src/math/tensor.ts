@@ -772,7 +772,7 @@ export class Tensor1D extends Tensor<Rank.R1> {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       util.assert(
           inferredShape.length === 1,
-          `Error constructing Array1D. Shape of values ${inferredShape} is ` +
+          `Error constructing Tensor1D. Shape of values ${inferredShape} is ` +
               `not 1 dimensional.`);
     }
     return new Tensor1D([values.length], dtype, toTypedArray(values, dtype));
@@ -789,7 +789,7 @@ export class Tensor2D extends Tensor<Rank.R2> {
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
-            `Error when constructing Array2D. Shape of values ` +
+            `Error when constructing Tensor2D. Shape of values ` +
                 `${inferredShape} does not match the provided shape ` +
                 `${shape}. `);
       }
@@ -808,7 +808,7 @@ export class Tensor3D extends Tensor<Rank.R3> {
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
-            `Error when constructing Array3D. Shape of values ` +
+            `Error when constructing Tensor3D. Shape of values ` +
                 `${inferredShape} does not match the provided shape ` +
                 `${shape}. `);
       }
@@ -827,7 +827,7 @@ export class Tensor4D extends Tensor<Rank.R4> {
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
-            `Error when constructing Array4D. Shape of values ` +
+            `Error when constructing Tensor4D. Shape of values ` +
                 `${inferredShape} does not match the provided shape ` +
                 `${shape}. `);
       }
@@ -862,7 +862,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   /**
    * Creates a new variable with the provided initial value.
    *
-   * @param initialValue An tensor.
+   * @param initialValue A tensor.
    * @param trainable If true, optimizers are allowed to update it.
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.

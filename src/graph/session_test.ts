@@ -19,9 +19,10 @@ import {InputProvider} from '../data/input_provider';
 import {ENV} from '../environment';
 import * as dl from '../index';
 import {NDArrayMath} from '../math/math';
-import {Tensor1D, Scalar} from '../math/tensor';
 import {SGDOptimizer} from '../math/optimizers/sgd_optimizer';
+import {Scalar, Tensor1D} from '../math/tensor';
 import * as test_util from '../test_util';
+
 import {Graph, SymbolicTensor} from './graph';
 import {FeedDictionary, FeedEntry, Session} from './session';
 
@@ -153,11 +154,13 @@ describe('Session', () => {
     const session = new Session(g, math);
 
     dl.tidy(() => {
-      const result1 = session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
+      const result1 =
+          session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expectedY = new Float32Array([30, 20]);
       test_util.expectArraysClose(result1.dataSync(), expectedY);
 
-      const result2 = session.eval(z, [{tensor: x, data: Tensor1D.new([5, 4])}]);
+      const result2 =
+          session.eval(z, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expectedZ = new Float32Array([31, 21]);
       test_util.expectArraysClose(result2.dataSync(), expectedZ);
     });
@@ -200,7 +203,7 @@ describe('Session', () => {
     expect(dwdx).toBe(-1);
   });
 
-  it('Backprop through a node with 2 outputs, input is Array1D', () => {
+  it('Backprop through a node with 2 outputs, input is Tensor1D', () => {
     const math = ENV.math;
     const x = g.placeholder('x', [2]);
     const y = g.square(x);

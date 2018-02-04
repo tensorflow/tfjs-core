@@ -142,7 +142,7 @@ import {Rank} from './types';
       test_util.expectArraysClose(result, expected);
     });
 
-    it('Array3D is allowed', math => {
+    it('Tensor3D is allowed', math => {
       const fSize = 2;
       const pad = 'same';
       const stride = 1;

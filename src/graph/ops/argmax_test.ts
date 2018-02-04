@@ -39,7 +39,7 @@ describe('Argmax oper', () => {
     tensorArrayMap.disposeArray(y);
   });
 
-  it('argmax of Array1D', () => {
+  it('argmax of Tensor1D', () => {
     const vals = Tensor1D.new([0, 2, 1]);
     x = new SymbolicTensor(vals.shape);
     y = new SymbolicTensor([]);
@@ -53,7 +53,7 @@ describe('Argmax oper', () => {
     test_util.expectNumbersClose(yVal.get(), 1);
   });
 
-  it('argmax of Array2D', () => {
+  it('argmax of Tensor2D', () => {
     const vals = Tensor2D.new([2, 3], [[0, 2, 1], [2, 3, 0]]);
     x = new SymbolicTensor(vals.shape);
     y = new SymbolicTensor([]);

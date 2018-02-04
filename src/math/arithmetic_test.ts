@@ -127,7 +127,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(vjp.b, [-4 * 5 / (2 * 2)]);
     });
 
-    it('gradient: Array1D', () => {
+    it('gradient: Tensor1D', () => {
       const a = Tensor1D.new([1, 2, 3]);
       const b = Tensor1D.new([3, 4, 5]);
       const dy = Tensor1D.new([1, 10, 20]);
@@ -143,7 +143,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
           vjp.b, [-1 * 1 / 9, -10 * 2 / 16, -20 * 3 / 25]);
     });
 
-    it('gradient: Array1D with int32', () => {
+    it('gradient: Tensor1D with int32', () => {
       const a = Tensor1D.new([1, 2, 3], 'int32');
       const b = Tensor1D.new([3, 4, 5], 'int32');
       const dy = Tensor1D.new([1, 10, 20]);
@@ -174,7 +174,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(vjp.b, [-1 / 1, 0, -20 / 9]);
     });
 
-    it('gradient: Array2D', () => {
+    it('gradient: Tensor2D', () => {
       const a = Tensor2D.new([2, 2], [3, 1, 2, 3]);
       const b = Tensor2D.new([2, 2], [1, 3, 4, 5]);
       const dy = Tensor2D.new([2, 2], [1, 10, 15, 20]);
@@ -191,7 +191,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
           vjp.b, [-1 * 3 / 1, -10 * 1 / 9, -15 * 2 / 16, -20 * 3 / 25], 1e-1);
     });
 
-    it('gradient: scalar / Array1D', () => {
+    it('gradient: scalar / Tensor1D', () => {
       const a = Scalar.new(2);
       const b = Tensor1D.new([3, 4, 5]);
       const dy = Tensor1D.new([6, 7, 8]);
@@ -208,7 +208,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
           vjp.b, [-6 * 2 / 9, -7 * 2 / 16, -8 * 2 / 25]);
     });
 
-    it('gradient: Array2D / scalar', () => {
+    it('gradient: Tensor2D / scalar', () => {
       const a = Tensor2D.new([2, 2], [[2, 3], [4, 5]]);
       const b = Scalar.new(2);
       const dy = Tensor2D.new([2, 2], [[6, 7], [8, 9]]);
@@ -225,7 +225,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
           vjp.b, [-6 * 2 / 4 + -7 * 3 / 4 + -8 * 4 / 4 + -9 * 5 / 4], 1e-1);
     });
 
-    it('gradient: Array2D / Array2D w/ broadcast', () => {
+    it('gradient: Tensor2D / Tensor2D w/ broadcast', () => {
       const a = Tensor2D.new([2, 1], [3, 4]);
       const b = Tensor2D.new([2, 2], [[2, 3], [4, 5]]);
       const dy = Tensor2D.new([2, 2], [[6, 7], [8, 9]]);
@@ -360,7 +360,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(vjp.b, [a.get() * dy.get()]);
     });
 
-    it('gradient: Array1D', () => {
+    it('gradient: Tensor1D', () => {
       const a = Tensor1D.new([1, 2, 3]);
       const b = Tensor1D.new([3, 4, 5]);
       const dy = Tensor1D.new([1, 10, 20]);
@@ -375,7 +375,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(vjp.b, [1 * 1, 2 * 10, 3 * 20]);
     });
 
-    it('gradient: Array1D with dtype int32', () => {
+    it('gradient: Tensor1D with dtype int32', () => {
       const a = Tensor1D.new([1, 2, 3], 'int32');
       const b = Tensor1D.new([3, 4, 5], 'int32');
       const dy = Tensor1D.new([1, 10, 20]);
@@ -390,7 +390,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(vjp.b, [1 * 1, 2 * 10, 3 * 20]);
     });
 
-    it('gradient: Array2D', () => {
+    it('gradient: Tensor2D', () => {
       const a = Tensor2D.new([2, 2], [3, 1, 2, 3]);
       const b = Tensor2D.new([2, 2], [1, 3, 4, 5]);
       const dy = Tensor2D.new([2, 2], [1, 10, 15, 20]);
@@ -406,7 +406,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(vjp.b, [3 * 1, 1 * 10, 2 * 15, 3 * 20], 1e-1);
     });
 
-    it('gradient: scalar * Array1D', () => {
+    it('gradient: scalar * Tensor1D', () => {
       const a = Scalar.new(2);
       const b = Tensor1D.new([3, 4, 5]);
       const dy = Tensor1D.new([6, 7, 8]);
@@ -422,7 +422,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(vjp.b, [2 * 6, 2 * 7, 2 * 8]);
     });
 
-    it('gradient: Array2D * scalar', () => {
+    it('gradient: Tensor2D * scalar', () => {
       const a = Tensor2D.new([2, 2], [[2, 3], [4, 5]]);
       const b = Scalar.new(2);
       const dy = Tensor2D.new([2, 2], [[6, 7], [8, 9]]);
@@ -438,7 +438,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(vjp.b, [2 * 6 + 3 * 7 + 4 * 8 + 5 * 9], 1e-1);
     });
 
-    it('gradient: Array2D * Array2D w/ broadcast', () => {
+    it('gradient: Tensor2D * Tensor2D w/ broadcast', () => {
       const a = Tensor2D.new([2, 1], [3, 4]);
       const b = Tensor2D.new([2, 2], [[2, 3], [4, 5]]);
       const dy = Tensor2D.new([2, 2], [[6, 7], [8, 9]]);
