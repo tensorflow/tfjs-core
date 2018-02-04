@@ -118,15 +118,6 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile) {
               decoratorStr.substring(DOCUMENTATION_DECORATOR.length);
           docInfo = eval(decoratorConfigStr);
 
-          // ts.forEachChild(decorator, child => {
-          //   console.log(child.getText());
-          //   // Parse out the parameters to the decorator.
-          //   // TODO: Don't use a regex.
-          //   headingNames = child.getText()
-          //                      .match(/doc\('([a-zA-Z ]+)', '([a-zA-Z
-          //                      ]+)'\)/i) .slice(1, 3);
-          // });
-
           hasOpdoc = true;
           return;
         }
