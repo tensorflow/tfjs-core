@@ -133,6 +133,9 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
   } else if (kernelName === 'LogicalOr') {
     const config = inputAndArgs as LogicalNode['inputAndArgs'];
     return backend.logicalOr(config.inputs.a, config.inputs.b) as O;
+  } else if (kernelName === 'LogicalXor') {
+    const config = inputAndArgs as LogicalNode['inputAndArgs'];
+    return backend.logicalXor(config.inputs.a, config.inputs.b) as O;
   } else if (kernelName === 'Where') {
     const config = inputAndArgs as WhereNode['inputAndArgs'];
     return backend.where(
@@ -386,6 +389,7 @@ export interface KernelConfigRegistry<R extends Rank> {
   LogicalNot: UnaryNode<R>;
   LogicalAnd: LogicalNode;
   LogicalOr: LogicalNode;
+  LogicalXor: LogicalNode;
   Where: WhereNode;
   TopKValues: TopKValuesNode<R>;
   TopKIndices: TopKIndicesNode;

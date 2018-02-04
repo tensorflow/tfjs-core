@@ -184,7 +184,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   reverse4D(x: Array4D, axis: number[]): Array4D {
-    const result = ops.clone(x);
+    const result = ops.zerosLike(x);
 
     // Reverse axis only if the axis has dim != 1
     const revAxis = (i: number) => axis.indexOf(i) !== -1 && x.shape[i] !== 1;
@@ -473,6 +473,16 @@ export class MathBackendCPU implements MathBackend {
         return util.getNaN('bool');
       } else {
         return aVal || bVal;
+      }
+    });
+  }
+
+  logicalXor(a: NDArray, b: NDArray): NDArray {
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        return util.getNaN('bool');
+      } else {
+        return aVal ^ bVal;
       }
     });
   }
