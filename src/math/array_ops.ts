@@ -358,9 +358,9 @@ export class Ops {
 
   /**
    * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
-   * Fill the buffer using `buffer.set()`, or by modifying directly
-   * `buffer.values`. Once the buffer is complete, call `buffer.toTensor()` to
-   * get an immutable `Tensor` with the values from the buffer.
+   * The values are stored in cpu as a `TypedArray`. Fill the buffer using
+   * `buffer.set()`, or by modifying directly `buffer.values`. When done,
+   * call `buffer.toTensor()` to get an immutable `Tensor` with those values.
    */
   static buffer<R extends Rank>(shape: ShapeMap[R], dtype: DataType):
       TensorBuffer<R> {
