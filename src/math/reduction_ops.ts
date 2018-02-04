@@ -38,7 +38,7 @@ export class Ops {
    * @param keepDims Optional. If true, retains reduced dimensions with length
    *     of 1. Defaults to false.
    */
-  @doc('Operations', 'Reduction')
+  @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static logSumExp<T extends NDArray>(
       input: NDArray, axis: number|number[] = null, keepDims = false): T {
@@ -71,7 +71,7 @@ export class Ops {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  @doc('Operations', 'Reduction')
+  @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static sum<T extends NDArray>(
       x: NDArray, axis: number|number[] = null, keepDims = false): T {
@@ -121,7 +121,7 @@ export class Ops {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  @doc('Operations', 'Reduction')
+  @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static mean<T extends NDArray>(
       x: NDArray, axis: number|number[] = null, keepDims = false): T {
@@ -164,7 +164,7 @@ export class Ops {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  @doc('Operations', 'Reduction')
+  @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static min<T extends NDArray>(
       x: NDArray, axis: number|number[] = null, keepDims = false): T {
@@ -198,7 +198,7 @@ export class Ops {
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
    */
-  @doc('Operations', 'Reduction')
+  @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static max<T extends NDArray>(
       x: NDArray, axis: number|number[] = null, keepDims = false): T {
@@ -227,7 +227,7 @@ export class Ops {
    * across all axes and returns the flat index.
    *
    */
-  @doc('Operations', 'Reduction')
+  @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMin<T extends NDArray>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
@@ -247,7 +247,7 @@ export class Ops {
    * @param axis Optional. The dimension to reduce. By default it reduces
    *     across all axes and returns the flat index
    */
-  @doc('Operations', 'Reduction')
+  @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMax<T extends NDArray>(x: NDArray, axis: number = null): T {
     let axes = axis_util.parseAxisParam(axis, x.shape);
@@ -265,7 +265,7 @@ export class Ops {
    * @param x1 The first input NDArray.
    * @param x2 The second input NDArray.
    */
-  @doc('Operations', 'Reduction')
+  @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMaxEquals(x1: NDArray, x2: NDArray): Scalar {
     util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
@@ -284,7 +284,7 @@ export class Ops {
    *     input.
    * @return An object with two keys: `mean` and `variance`.
    */
-  @doc('Operations', 'Normalization')
+  @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
   static moments(x: NDArray, axis: number|number[] = null, keepDims = false):
       {mean: NDArray, variance: NDArray} {

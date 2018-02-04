@@ -35,7 +35,7 @@ export class Ops {
    * @param scale A scale NDArray.
    * @param offset An offset NDArray.
    */
-  @doc('Operations', 'Normalization')
+  @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
   static batchNormalization2D(
       x: Array2D, mean: Array2D|Array1D, variance: Array2D|Array1D,
@@ -84,7 +84,7 @@ export class Ops {
    * @param scale A scale NDArray.
    * @param offset An offset NDArray.
    */
-  @doc('Operations', 'Normalization')
+  @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
   static batchNormalization3D(
       x: Array3D, mean: Array3D|Array1D, variance: Array3D|Array1D,
@@ -133,7 +133,7 @@ export class Ops {
    * @param scale A scale NDArray.
    * @param offset An offset NDArray.
    */
-  @doc('Operations', 'Normalization')
+  @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
   static batchNormalization4D(
       x: Array4D, mean: Array4D|Array1D, variance: Array4D|Array1D,
@@ -170,7 +170,7 @@ export class Ops {
     }) as Array4D;
   }
 
-  @doc('Operations', 'Normalization')
+  @doc({heading: 'Operations', subheading: 'Normalization'})
   static batchNormalization<R extends Rank>(
       x: NDArray<R>, mean: NDArray<R>|Array1D, variance: NDArray<R>|Array1D,
       varianceEpsilon = .001, scale?: NDArray<R>|Array1D,

@@ -15,29 +15,44 @@
  * =============================================================================
  */
 
-// To run this script, use make-api.sh.
-import * as fs from 'fs';
-import * as mustache from 'mustache';
-import * as ts from 'typescript';
-import {DocHeading, DocMethod, DocMethodParam, Docs, DocSubheading} from './view-api';
-var argv = require('minimist')(process.argv.slice(2));
+/*
+ *  To run this file, run this command from the root of repo:
+ *      ./node_modules/.bin/ts-node ./website/scripts/make-api.ts
+ */
 
-const DOCUMENTATION_DECORATOR = 'doc';
+import * as fs from 'fs';
+import * as minimist from 'minimist';
+import * as mkdirp from 'mkdirp';
+import * as mustache from 'mustache';
+import * as shell from 'shelljs';
+import * as ts from 'typescript';
+// tslint:disable-next-line:max-line-length
+import {DocHeading, DocMethod, DocMethodParam, Docs, DocSubheading} from './view-api';
+
+const DOCUMENTATION_DECORATOR = '@doc';
+// Mirrors the info argument to @doc in decorators.ts.
+interface DocInfo {
+  heading: string;
+  subheading: string;
+  namespace?: string;
+}
+
+const LIB_TOPLEVEL_NAMESPACE = 'dl';
 const API_TEMPLATE_PATH = './website/api/index.html';
 const SRC_ROOT = 'src/';
 const PROGRAM_ROOT = SRC_ROOT + 'index.ts';
 const GITHUB_ROOT = 'https://github.com/PAIR-code/deeplearnjs/';
+const HTML_OUT_DIR = '/tmp/deeplearn-new-website/api/';
 
-if (argv.htmlOutPath == null) {
+mkdirp(HTML_OUT_DIR);
+
+if (!fs.existsSync(PROGRAM_ROOT)) {
   throw new Error(
-      `No htmlOutPath provided. Please provide an output path with --htmlOutPath.`);
+      `Program root ${PROGRAM_ROOT} does not exist. Please run this script ` +
+      `from the root of repository.`);
 }
-if (argv.rootPath == null) {
-  throw new Error(
-      `No rootPath provided. Please provide a github root path with --rootPath.`);
-}
-const htmlOutPath = argv.htmlOutPath;
-const rootPath = argv.rootPath;
+
+const repoPath = process.cwd();
 
 // Initialize the doc headings so we control sort order.
 const docHeadings: DocHeading[] = [
@@ -58,6 +73,9 @@ const docHeadings: DocHeading[] = [
     ]
   }
 ];
+const docs: Docs = {
+  headings: docHeadings
+};
 
 // Use the same compiler options that we use to compile the library here.
 const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
@@ -73,18 +91,15 @@ for (const sourceFile of program.getSourceFiles()) {
   }
 }
 
-const docs: Docs = {
-  headings: docHeadings
-};
-
 // Write the HTML.
+const htmlFilePath = HTML_OUT_DIR + 'index.html';
 const mustacheTemplate = fs.readFileSync(API_TEMPLATE_PATH, 'utf8');
 const html = mustache.render(mustacheTemplate, docs);
-fs.writeFileSync(htmlOutPath, html);
+fs.writeFileSync(htmlFilePath, html);
 
 const {headingsCount, subheadingsCount, methodCount} = computeStatistics(docs);
 console.log(
-    `API reference written to ${htmlOutPath}\n` +
+    `API reference written to ${htmlFilePath}\n` +
     `Found: \n` +
     `  ${docHeadings.length} headings\n` +
     `  ${subheadingsCount} subheadings\n` +
@@ -95,15 +110,22 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile) {
     if (node.decorators != null) {
       let hasOpdoc = false;
       let headingNames: string[];
+      let docInfo: DocInfo;
       node.decorators.map(decorator => {
-        if (decorator.getText().startsWith('@' + DOCUMENTATION_DECORATOR)) {
-          ts.forEachChild(decorator, child => {
-            // Parse out the parameters to the decorator.
-            // TODO: Don't use a regex.
-            headingNames = child.getText()
-                               .match(/doc\('([a-zA-Z ]+)', '([a-zA-Z ]+)'\)/i)
-                               .slice(1, 3);
-          });
+        const decoratorStr = decorator.getText();
+        if (decoratorStr.startsWith(DOCUMENTATION_DECORATOR)) {
+          const decoratorConfigStr =
+              decoratorStr.substring(DOCUMENTATION_DECORATOR.length);
+          docInfo = eval(decoratorConfigStr);
+
+          // ts.forEachChild(decorator, child => {
+          //   console.log(child.getText());
+          //   // Parse out the parameters to the decorator.
+          //   // TODO: Don't use a regex.
+          //   headingNames = child.getText()
+          //                      .match(/doc\('([a-zA-Z ]+)', '([a-zA-Z
+          //                      ]+)'\)/i) .slice(1, 3);
+          // });
 
           hasOpdoc = true;
           return;
@@ -112,31 +134,31 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile) {
 
       if (hasOpdoc) {
         const methodName = node.name.getText();
-        const [headingName, subheadingName] = headingNames;
 
-        const docMethod = serializeMethod(methodName, node, sourceFile);
+        const docMethod =
+            serializeMethod(node, methodName, docInfo, sourceFile);
 
         // Find the heading.
         let heading: DocHeading;
         for (let i = 0; i < docHeadings.length; i++) {
-          if (docHeadings[i].name === headingName) {
+          if (docHeadings[i].name === docInfo.heading) {
             heading = docHeadings[i];
           }
         }
         if (heading == null) {
-          heading = {name: headingName, subheadings: []};
+          heading = {name: docInfo.heading, subheadings: []};
           docHeadings.push(heading);
         }
 
         // Find the subheading.
         let subheading: DocSubheading;
         for (let i = 0; i < heading.subheadings.length; i++) {
-          if (heading.subheadings[i].name === subheadingName) {
+          if (heading.subheadings[i].name === docInfo.subheading) {
             subheading = heading.subheadings[i];
           }
         }
         if (subheading == null) {
-          subheading = {name: subheadingName, methods: []};
+          subheading = {name: docInfo.subheading, methods: []};
           heading.subheadings.push(subheading);
         }
         if (subheading.methods == null) {
@@ -161,30 +183,36 @@ function serializeParameter(symbol: ts.Symbol): DocMethodParam {
 }
 
 function serializeMethod(
-    name: string, node: ts.MethodDeclaration,
+    node: ts.MethodDeclaration, name: string, docInfo: DocInfo,
     sourceFile: ts.SourceFile): DocMethod {
   const symbol = checker.getSymbolAtLocation(node.name);
   const type =
       checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
   const signature = type.getCallSignatures()[0];
 
-  if (!sourceFile.fileName.startsWith(rootPath)) {
+  if (!sourceFile.fileName.startsWith(repoPath)) {
     throw new Error(
         `Error: source file ${sourceFile.fileName} ` +
-        `does not start with srcPath provided ${rootPath}.`);
+        `does not start with srcPath provided ${repoPath}.`);
   }
-  const fileName = sourceFile.fileName.substring(rootPath.length);
   // Line numbers are 0-indexed.
   const lineNumber =
       sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
+  const fileName = sourceFile.fileName.substring(repoPath.length + '/'.length);
+  const displayFilename =
+      fileName.substring(SRC_ROOT.length) + '#' + lineNumber;
 
-  const githubUrl = `${GITHUB_ROOT}blob/master${fileName}#L${lineNumber}`;
+  const githubUrl = `${GITHUB_ROOT}blob/master/${fileName}#L${lineNumber}`;
+
+  const path = LIB_TOPLEVEL_NAMESPACE + '.' +
+      (docInfo.namespace != null ? docInfo.namespace + '.' : '') + name;
+
   return {
-    name,
+    path,
     parameters: signature.parameters.map(serializeParameter),
     returnType: checker.typeToString(signature.getReturnType()),
     documentation: ts.displayPartsToString(signature.getDocumentationComment()),
-    fileName,
+    fileName: displayFilename,
     githubUrl
   };
 }

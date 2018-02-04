@@ -34,7 +34,7 @@ export class Ops {
    * @param bOrientation The MatrixOrientation of B. If using TRANSPOSED, will
    * compute A * B^T.
    */
-  @doc('Operations', 'Matrices')
+  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static matMul(
       a: Array2D, b: Array2D, aOrientation = MatrixOrientation.REGULAR,
@@ -80,7 +80,7 @@ export class Ops {
    * @param v The vector in dot product operation.
    * @param matrix The matrix in dot product operation.
    */
-  @doc('Operations', 'Matrices')
+  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static vectorTimesMatrix(v: Array1D, matrix: Array2D): Array1D {
     util.assert(
@@ -103,7 +103,7 @@ export class Ops {
    * @param matrix The matrix in dot product operation.
    * @param v The vector in dot product operation.
    */
-  @doc('Operations', 'Matrices')
+  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static matrixTimesVector(matrix: Array2D, v: Array1D): Array1D {
     util.assert(
@@ -128,7 +128,7 @@ export class Ops {
    * @param v1 The first vector in the dot product operation.
    * @param v2 The second vector in the dot product operation.
    */
-  @doc('Operations', 'Matrices')
+  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static dotProduct(v1: Array1D, v2: Array1D): Scalar {
     util.assert(
@@ -147,7 +147,7 @@ export class Ops {
    * @param v1 The first vector in the outer product operation.
    * @param v2 The second vector in the dot product operation.
    */
-  @doc('Operations', 'Matrices')
+  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static outerProduct(v1: Array1D, v2: Array1D): Array2D {
     util.assert(

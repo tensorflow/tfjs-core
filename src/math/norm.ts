@@ -48,7 +48,7 @@ export class Ops {
    * @param keepDims Optional. If true, the norm have the same dimensionality
    * as the input.
    */
-  @doc('Operations', 'Matrices')
+  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static norm(
       x: NDArray, ord: number|'euclidean'|'fro' = 'euclidean',

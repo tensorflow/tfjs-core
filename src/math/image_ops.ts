@@ -34,7 +34,7 @@ export class Ops {
    *     corners of images and resized images. If false, rescale by
    *     new_height/height. Treat similarly the width dimension.
    */
-  @doc('Operations', 'Images')
+  @doc({heading: 'Operations', subheading: 'Images', namespace: 'image'})
   @operation
   static resizeBilinear<T extends Array3D|Array4D>(
       images: T, size: [number, number], alignCorners = false): T {

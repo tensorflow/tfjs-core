@@ -14,7 +14,6 @@
  * limitations under the License.
  * =============================================================================
  */
-
 export interface Docs { headings: DocHeading[]; }
 
 export interface DocHeading {
@@ -28,7 +27,7 @@ export interface DocSubheading {
 }
 
 export interface DocMethod {
-  name: string;
+  path: string;
   documentation: string;
   returnType: string;
   fileName: string;

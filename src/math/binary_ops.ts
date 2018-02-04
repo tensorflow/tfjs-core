@@ -30,7 +30,7 @@ export class Ops {
    * @param a The first `NDArray` to add.
    * @param b The second `NDArray` to add. Must have the same type as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static add<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
@@ -66,7 +66,7 @@ export class Ops {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static addStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
@@ -80,7 +80,7 @@ export class Ops {
    * @param a The first `NDArray`.
    * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static sub<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
@@ -116,7 +116,7 @@ export class Ops {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static subStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
@@ -134,7 +134,7 @@ export class Ops {
    * @param base The base NDArray to pow element-wise.
    * @param exp The exponent NDArray to pow element-wise.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static pow<T extends NDArray>(base: NDArray, exp: NDArray): T {
     util.assert(
@@ -171,7 +171,7 @@ export class Ops {
    * @param base The base NDArray to pow element-wise.
    * @param exp The exponent NDArray to pow element-wise.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static powStrict<T extends NDArray>(base: T, exp: NDArray): T {
     util.assertShapesMatch(base.shape, exp.shape, 'Error in powStrict: ');
@@ -185,7 +185,7 @@ export class Ops {
    * @param a The first `NDArray`.
    * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static mul<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
@@ -229,7 +229,7 @@ export class Ops {
    * @param a The first `NDArray`.
    * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static mulStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in multiplyStrict: ');
@@ -243,7 +243,7 @@ export class Ops {
    * @param a The first `NDArray`.
    * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static div<T extends NDArray>(a: NDArray, b: NDArray): T {
     const outShape =
@@ -278,7 +278,7 @@ export class Ops {
    * @param a The first NDArray to multiply element-wise.
    * @param b The second NDArray to multiply element-wise.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static divStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
@@ -312,7 +312,7 @@ export class Ops {
    * @param a The first ndarray.
    * @param b The second ndarray. Must have the same type as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static minimum<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
@@ -327,7 +327,7 @@ export class Ops {
    * @param a The first `NDArray`.
    * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static minimumStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');
@@ -341,7 +341,7 @@ export class Ops {
    * @param a The first ndarray.
    * @param b The second ndarray. Must have the same type as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static maximum<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assertTypesMatch(a, b);
@@ -356,7 +356,7 @@ export class Ops {
    * @param a The first `NDArray`.
    * @param b The second `NDArray`. Must have the same dtype as `a`.
    */
-  @doc('Operations', 'Arithmetic')
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static maximumStrict<T extends NDArray>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');

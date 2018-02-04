@@ -31,7 +31,7 @@ export class Ops {
    * @param a The first input `NDArray`.
    * @param b The second input `NDArray`.
    */
-  @doc('Operations', 'Logical')
+  @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalAnd<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assert(
@@ -47,7 +47,7 @@ export class Ops {
    * @param a The first input `NDArray`.
    * @param b The second input `NDArray`.
    */
-  @doc('Operations', 'Logical')
+  @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalOr<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assert(
@@ -67,7 +67,7 @@ export class Ops {
    * @param b Input as `NDArray` with the same shape and type as `a`.
    * @return An `NDArray` with the same type and shape as `a` and `b`.
    */
-  @doc('Operations', 'Logical')
+  @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static where<T extends NDArray>(condition: NDArray, a: T, b: T): T {
     util.assert(

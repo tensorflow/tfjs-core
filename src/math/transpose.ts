@@ -35,7 +35,7 @@ export class Ops {
    * @param x The array to transpose.
    * @param perm Optional. The permutation of the dimensions of a.
    */
-  @doc('Operations', 'Matrices')
+  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static transpose<R extends Rank>(x: NDArray<R>, perm?: number[]): NDArray<R> {
     if (perm == null) {

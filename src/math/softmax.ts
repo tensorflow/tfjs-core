@@ -29,7 +29,7 @@ export class Ops {
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
-  @doc('Operations', 'Normalization')
+  @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
   static softmax<T extends NDArray>(logits: T, dim = -1): T {
     if (dim === -1) {
@@ -86,7 +86,11 @@ export class Ops {
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
-  @doc('Operations', 'Classification')
+  @doc({
+    heading: 'Operations',
+    subheading: 'Classification',
+    namespace: 'losses'
+  })
   @operation
   static softmaxCrossEntropy<T extends NDArray, O extends NDArray>(
       labels: T, logits: T, dim = -1): O {

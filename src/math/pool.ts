@@ -42,7 +42,7 @@ export class Ops {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  @doc('Operations', 'Convolution')
+  @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
   static maxPool<T extends Array3D|Array4D>(
       x: T, filterSize: [number, number]|number,
@@ -157,7 +157,7 @@ export class Ops {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  @doc('Operations', 'Convolution')
+  @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
   static minPool<T extends Array3D|Array4D>(
       input: T, filterSize: [number, number]|number,
@@ -207,7 +207,7 @@ export class Ops {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
-  @doc('Operations', 'Convolution')
+  @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
   static avgPool<T extends Array3D|Array4D>(
       x: T, filterSize: [number, number]|number,

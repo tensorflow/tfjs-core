@@ -28,7 +28,7 @@ export class Ops {
    * Reverses a 1D array
    * @param x The input array.
    */
-  @doc('Tensors', 'Slicing and Joining')
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static reverse1D(x: Array1D): Array1D {
     util.assert(x.rank === 1, `Error in reverse1D: x must be rank 1 but got
@@ -44,7 +44,7 @@ export class Ops {
    * @param axis The set of dimensions to reverse. Must be in the
    *     range [-rank(x), rank(x)).
    */
-  @doc('Tensors', 'Slicing and Joining')
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static reverse2D(x: Array2D, axis: number|number[]): Array2D {
     util.assert(x.rank === 2, `Error in reverse2D: x must be rank 2 but got
@@ -61,7 +61,7 @@ export class Ops {
    * @param axis The set of dimensions to reverse. Must be in the
    *     range [-rank(x), rank(x)).
    */
-  @doc('Tensors', 'Slicing and Joining')
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static reverse3D(x: Array3D, axis: number|number[]): Array3D {
     util.assert(x.rank === 3, `Error in reverse3D: x must be rank 3 but got
@@ -78,7 +78,7 @@ export class Ops {
    * @param axis The set of dimensions to reverse. Must be in the
    *     range [-rank(x), rank(x)).
    */
-  @doc('Tensors', 'Slicing and Joining')
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static reverse4D(x: Array4D, axis: number|number[]): Array4D {
     util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
@@ -96,7 +96,7 @@ export class Ops {
    * @param axis The set of dimensions to reverse. Must be in the
    *     range [-rank(x), rank(x)).
    */
-  @doc('Tensors', 'Slicing and Joining')
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static reverse<R extends Rank>(x: NDArray<R>, axis: number|number[]):
       NDArray<R> {
