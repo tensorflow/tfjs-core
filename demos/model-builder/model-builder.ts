@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import '../ndarray-image-visualizer';
-import '../ndarray-logits-visualizer';
+import '../tensor-image-visualizer';
+import '../tensor-logits-visualizer';
 import './model-layer';
 import '../demo-header';
 import '../demo-footer';
@@ -24,9 +24,9 @@ import '../demo-footer';
 // tslint:disable-next-line:max-line-length
 import {AdadeltaOptimizer, AdagradOptimizer, AdamaxOptimizer, AdamOptimizer, DataStats, ENV, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, NDArrayMath, Optimizer, RMSPropOptimizer, Scalar, Session, SGDOptimizer, SymbolicTensor, Tensor, Tensor1D, Tensor3D, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from 'deeplearn';
 
-import {NDArrayImageVisualizer} from '../ndarray-image-visualizer';
-import {NDArrayLogitsVisualizer} from '../ndarray-logits-visualizer';
 import {PolymerElement, PolymerHTMLElement} from '../polymer-spec';
+import {TensorImageVisualizer} from '../tensor-image-visualizer';
+import {TensorLogitsVisualizer} from '../tensor-logits-visualizer';
 
 import {LayerBuilder, LayerWeightsDict} from './layer_builder';
 import {ModelLayer} from './model-layer';
@@ -174,8 +174,8 @@ export class ModelBuilder extends ModelBuilderPolymer {
   private trainButton: HTMLButtonElement;
 
   // Visualizers.
-  private inputTensorVisualizers: NDArrayImageVisualizer[];
-  private outputTensorVisualizers: NDArrayLogitsVisualizer[];
+  private inputTensorVisualizers: TensorImageVisualizer[];
+  private outputTensorVisualizers: TensorLogitsVisualizer[];
 
   private inputShape: number[];
   private labelShape: number[];
@@ -606,18 +606,18 @@ export class ModelBuilder extends ModelBuilderPolymer {
 
       // Set up the input visualizer.
       const tensorImageVisualizer =
-          document.createElement('ndarray-image-visualizer') as
-          NDArrayImageVisualizer;
+          document.createElement('tensor-image-visualizer') as
+          TensorImageVisualizer;
       tensorImageVisualizer.setShape(this.inputShape);
       tensorImageVisualizer.setSize(
           INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
       this.inputTensorVisualizers.push(tensorImageVisualizer);
       inferenceExampleElement.appendChild(tensorImageVisualizer);
 
-      // Set up the output ndarray visualizer.
+      // Set up the output tensor visualizer.
       const tensorLogitsVisualizer =
-          document.createElement('ndarray-logits-visualizer') as
-          NDArrayLogitsVisualizer;
+          document.createElement('tensor-logits-visualizer') as
+          TensorLogitsVisualizer;
       tensorLogitsVisualizer.initialize(
           INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
       this.outputTensorVisualizers.push(tensorLogitsVisualizer);
@@ -813,7 +813,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
 
     // Draw the images.
     for (let i = 0; i < inputFeeds.length; i++) {
-      this.inputTensorVisualizers[i].saveImageDataFromNDArray(images[i]);
+      this.inputTensorVisualizers[i].saveImageDataFromTensor(images[i]);
     }
 
     // Draw the logits.
