@@ -191,7 +191,7 @@ export class NDArray<R extends Rank = Rank> {
   static randNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
       dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
-    return ops.randNormal(shape, mean, stdDev, dtype, seed);
+    return ops.randomNormal(shape, mean, stdDev, dtype, seed);
   }
 
   /** @deprecated Please use dl.truncatedNormal() */

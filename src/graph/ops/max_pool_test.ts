@@ -140,7 +140,7 @@ describe('Max pool', () => {
     const stride = 2;
     const pad = 0;
 
-    const x = dl.randNormal<Rank.R3>([6, 6, 5]);
+    const x = dl.randomNormal<Rank.R3>([6, 6, 5]);
 
     xTensor = new Tensor(x.shape);
     yTensor = new Tensor(conv_util.computeOutputShape3D(

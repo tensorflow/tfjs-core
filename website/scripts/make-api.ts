@@ -188,7 +188,9 @@ function serializeParameter(symbol: ts.Symbol): DocMethodParam {
     name: symbol.getName(),
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
     type: checker.typeToString(
-        checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!))
+        checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!)),
+    optional: checker.isOptionalParameter(
+        symbol.valueDeclaration as ts.ParameterDeclaration)
   };
 }
 

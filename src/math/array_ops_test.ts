@@ -679,13 +679,13 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
       const SAMPLES = 10000;
 
       // Ensure defaults to float32.
-      let result = dl.randNormal([SAMPLES], 0, 0.5, null, SEED);
+      let result = dl.randomNormal([SAMPLES], 0, 0.5, null, SEED);
       expect(result.dtype).toBe('float32');
       expect(result.shape).toEqual([SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
       test_util.expectArrayInMeanStdRange(result, 0, 0.5, EPSILON);
 
-      result = dl.randNormal([SAMPLES], 0, 1.5, 'float32', SEED);
+      result = dl.randomNormal([SAMPLES], 0, 1.5, 'float32', SEED);
       expect(result.dtype).toBe('float32');
       expect(result.shape).toEqual([SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
@@ -694,7 +694,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
     it('should return a int32 1D of random normal values', () => {
       const SAMPLES = 10000;
-      const result = dl.randNormal([SAMPLES], 0, 2, 'int32', SEED);
+      const result = dl.randomNormal([SAMPLES], 0, 2, 'int32', SEED);
       expect(result.dtype).toBe('int32');
       expect(result.shape).toEqual([SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
@@ -705,13 +705,13 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
       const SAMPLES = 250;
 
       // Ensure defaults to float32.
-      let result = dl.randNormal([SAMPLES, SAMPLES], 0, 2.5, null, SEED);
+      let result = dl.randomNormal([SAMPLES, SAMPLES], 0, 2.5, null, SEED);
       expect(result.dtype).toBe('float32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
       test_util.expectArrayInMeanStdRange(result, 0, 2.5, EPSILON);
 
-      result = dl.randNormal([SAMPLES, SAMPLES], 0, 3.5, 'float32', SEED);
+      result = dl.randomNormal([SAMPLES, SAMPLES], 0, 3.5, 'float32', SEED);
       expect(result.dtype).toBe('float32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
@@ -720,7 +720,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
     it('should return a int32 2D of random normal values', () => {
       const SAMPLES = 100;
-      const result = dl.randNormal([SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
+      const result = dl.randomNormal([SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
       expect(result.dtype).toBe('int32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
@@ -732,14 +732,14 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 
       // Ensure defaults to float32.
       let result =
-          dl.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 0.5, null, SEED);
+          dl.randomNormal([SAMPLES, SAMPLES, SAMPLES], 0, 0.5, null, SEED);
       expect(result.dtype).toBe('float32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
       test_util.expectArrayInMeanStdRange(result, 0, 0.5, EPSILON);
 
       result =
-          dl.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 1.5, 'float32', SEED);
+          dl.randomNormal([SAMPLES, SAMPLES, SAMPLES], 0, 1.5, 'float32', SEED);
       expect(result.dtype).toBe('float32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
@@ -749,7 +749,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
     it('should return a int32 3D of random normal values', () => {
       const SAMPLES = 50;
       const result =
-          dl.randNormal([SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
+          dl.randomNormal([SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
       expect(result.dtype).toBe('int32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
@@ -760,14 +760,14 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
       const SAMPLES = 25;
 
       // Ensure defaults to float32.
-      let result = dl.randNormal(
+      let result = dl.randomNormal(
           [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 0.5, null, SEED);
       expect(result.dtype).toBe('float32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
       test_util.jarqueBeraNormalityTest(result);
       test_util.expectArrayInMeanStdRange(result, 0, 0.5, EPSILON);
 
-      result = dl.randNormal(
+      result = dl.randomNormal(
           [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 1.5, 'float32', SEED);
       expect(result.dtype).toBe('float32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
@@ -778,7 +778,7 @@ import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
     it('should return a int32 4D of random normal values', () => {
       const SAMPLES = 25;
 
-      const result = dl.randNormal(
+      const result = dl.randomNormal(
           [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
       expect(result.dtype).toBe('int32');
       expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);

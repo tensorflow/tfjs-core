@@ -135,7 +135,7 @@ import {Rank} from './types';
 
       const x = Array3D.new(inputShape, [1, 2, 3, 4]);
       const w =
-          dl.randNormal<Rank.R4>([fSize, fSize, wrongInputDepth, outputDepth]);
+          dl.randomNormal<Rank.R4>([fSize, fSize, wrongInputDepth, outputDepth]);
       const bias = Array1D.new([-1]);
 
       expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();
@@ -151,7 +151,7 @@ import {Rank} from './types';
       const dimRoundingMode = 'round';
 
       const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w = dl.randNormal<Rank.R4>([fSize, fSize, inputDepth, outputDepth]);
+      const w = dl.randomNormal<Rank.R4>([fSize, fSize, inputDepth, outputDepth]);
       const bias = Array1D.new([-1]);
 
       expect(() => math.conv2d(x, w, bias, stride, pad, dimRoundingMode))

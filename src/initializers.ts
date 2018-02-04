@@ -99,7 +99,7 @@ export class RandomNormalInitializer implements Initializer {
 
   initialize(weightsShape: number[], inputUnits: number, outputUnits: number):
       NDArray {
-    return ops.randNormal(weightsShape, this.mean, this.stdev);
+    return ops.randomNormal(weightsShape, this.mean, this.stdev);
   }
 }
 

@@ -27,7 +27,7 @@
             <ul>
               {{#parameters}}
                 <li class="parameter">
-                  {{name}}: {{documentation}}
+                  {{#optional}}(Optional){{/optional}} {{name}}: {{documentation}}
                 </li>
               {{/parameters}}
             </ul>

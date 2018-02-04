@@ -24,26 +24,51 @@ import {MPRandGauss, RandNormalDataTypes} from './rand';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
 export class Ops {
-  /** Creates a ndarray of ones with the specified shape. */
+  /**
+   * Creates a tensor with all elements set to 1.
+   *
+   * This operation returns a tensor of type `dtype` with shape `shape` and all
+   * elements set to 1.
+   * @param shape A list of integers defining the output tensor shape.
+   * @param dtype The type of an element in the resulting tensor. Can
+   *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
-  static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
+  static ones<R extends Rank>(shape: ShapeMap[R], dtype: DataType = 'float32'):
       NDArray<R> {
     const values = makeOnesTypedArray(util.sizeFromShape(shape), dtype);
     return NDArray.make(shape, {values}, dtype);
   }
 
-  /** Creates a ndarray of zeros with the specified shape. */
+  /**
+   * Creates a tensor with all elements set to 0.
+   *
+   * This operation returns a tensor of type `dtype` with shape `shape` and all
+   * elements set to 0.
+   * @param shape A list of integers defining the output tensor shape.
+   * @param dtype The type of an element in the resulting tensor. Can
+   *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
-  static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
+  static zeros<R extends Rank>(shape: ShapeMap[R], dtype: DataType = 'float32'):
       NDArray<R> {
     const values = makeZerosTypedArray(util.sizeFromShape(shape), dtype);
     return NDArray.make(shape, {values}, dtype);
   }
 
+  /**
+   * Creates a tensor filled with a scalar value.
+   *
+   * This operation creates a tensor of shape `shape` and fills it with `value`.
+   * @param shape A list of integers defining the output tensor shape.
+   * @param value The scalar value to fill the tensor with.
+   * @param dtype The type of an element in the resulting tensor. Can
+   *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
-  /** Creates an NDArray filled with a value. */
   static fill<R extends Rank>(
       shape: ShapeMap[R], value: number, dtype: DataType = 'float32'):
       NDArray<R> {
@@ -54,7 +79,9 @@ export class Ops {
   }
 
   /**
-   * Creates a ndarray of ones with the same shape as the specified ndarray.
+   * Creates a tensor with all elements set to 1 with the same shape as the
+   * given tensor.
+   * @param x A tensor.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
@@ -63,7 +90,9 @@ export class Ops {
   }
 
   /**
-   * Creates a ndarray of zeros with the same shape as the specified ndarray.
+   * Creates a tensor with all elements set to 0 with the same shape as the
+   * given tensor.
+   * @param x A tensor.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
@@ -71,16 +100,29 @@ export class Ops {
     return Ops.zeros(x.shape, x.dtype) as T;
   }
 
-  /** Creates a ndarray with the same values/shape as the specified ndarray. */
+  /**
+   * Creates a new tensor with the same values and shape as the specified
+   * tensor.
+   * @param x The tensor to clone.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static clone<T extends NDArray>(x: T): T {
     return NDArray.make(x.shape, {dataId: x.dataId}, x.dtype) as T;
   }
 
+  /**
+   * Creates a tensor with values sampled from a normal distribution.
+   *
+   * @param shape A list of integers defining the output tensor shape.
+   * @param mean The mean of the normal distribution.
+   * @param stdDev The standard deviation of the normal distribution.
+   * @param dtype The data type of the output.
+   * @param seed The seed for the random number generator.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
-  static randNormal<R extends Rank>(
+  static randomNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
       dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
@@ -141,7 +183,7 @@ export class Ops {
    * @param probabilities 1D array with normalized outcome probabilities, or
    *     2D array of shape `[batchSize, numOutcomes]`.
    * @param numSamples Number of samples to draw for each row slice.
-   * @param seed Optional. The seed number.
+   * @param seed The seed number.
    * @return 1D array of shape `[numSamples]`, or 2D array of shape
    *     `[batchSize, numSamples]`, depending on the rank of the input.
    */
@@ -269,7 +311,7 @@ export class Ops {
    *
    * @param x The array to transpose.
    * @param indices The indices of the values to extract.
-   * @param axis Optional. The axis over which to select values. Defaults to 0.
+   * @param axis The axis over which to select values. Defaults to 0.
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
