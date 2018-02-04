@@ -109,8 +109,8 @@ export class Tensor<R extends Rank = Rank> {
 
   /**
    * Number of elements to skip in each dimension when indexing. See
-   * https://docs.scipy.org/doc/numpy/reference/generated
-   *     /numpy.tensor.strides.html
+   * https://docs.scipy.org/doc/numpy/reference/generated/\
+   * numpy.ndarray.strides.html
    */
   readonly strides: number[];
 

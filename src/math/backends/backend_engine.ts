@@ -19,7 +19,7 @@ import {ENV} from '../../environment';
 import * as util from '../../util';
 import * as ops from '../ops';
 import {Tensor, Variable} from '../tensor';
-import {NamedArrayMap, NamedVariableMap, TypedArray} from '../types';
+import {NamedTensorMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
 
 import {MathBackend} from './backend';
@@ -27,7 +27,7 @@ import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
 import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
-import {KernelNode, Tape, TapeNode, TapeNodeInputGradientArrays} from './tape_types';
+import {KernelNode, Tape, TapeNode, TapeNodeInputGradientTensors} from './tape_types';
 import * as tape_util from './tape_util';
 import {ScopeResultImmediate} from './tape_util';
 import {tidy} from './tracking';
@@ -38,21 +38,21 @@ interface ScopeState {
 }
 
 export type CustomGradientFunc<T extends Tensor> = () => {
-  value: T, gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
+  value: T, gradients: (dy: T, y: T) => TapeNodeInputGradientTensors
 };
 
-export interface NDArrayManager {
+export interface TensorManager {
   getNumArrays(): number;
   register(a: Tensor): void;
   registerVariable(v: Variable): void;
   disposeData(dataId: number): void;
 }
 
-export class BackendEngine implements NDArrayManager {
+export class BackendEngine implements TensorManager {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
-  private registeredArrays = new Map<number, number>();
+  private registeredTensors = new Map<number, number>();
   private nextTapeNodeId = 0;
 
   private activeTape: Tape;
@@ -114,17 +114,17 @@ export class BackendEngine implements NDArrayManager {
   }
 
   getNumArrays() {
-    return this.registeredArrays.size;
+    return this.registeredTensors.size;
   }
 
   register(a: Tensor|Variable): void {
-    const refCount = this.registeredArrays.has(a.dataId) ?
-        this.registeredArrays.get(a.dataId) :
+    const refCount = this.registeredTensors.has(a.dataId) ?
+        this.registeredTensors.get(a.dataId) :
         0;
     if (refCount === 0) {
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
-    this.registeredArrays.set(a.dataId, refCount + 1);
+    this.registeredTensors.set(a.dataId, refCount + 1);
     if (!(a instanceof Variable)) {
       this.track(a);
     }
@@ -135,8 +135,8 @@ export class BackendEngine implements NDArrayManager {
   }
 
   private addTapeNode(
-      inputs: NamedArrayMap, result: Tensor,
-      gradientsFunc: (dy: Tensor, y: Tensor) => TapeNodeInputGradientArrays):
+      inputs: NamedTensorMap, result: Tensor,
+      gradientsFunc: (dy: Tensor, y: Tensor) => TapeNodeInputGradientTensors):
       void {
     const evaluatedNode: TapeNode<Tensor> = {
       id: this.nextTapeNodeId++,
@@ -188,20 +188,20 @@ export class BackendEngine implements NDArrayManager {
       }
     }
 
-    let arraysToKeep = this.activeScope.keep;
-    const arraysToTrackInParent =
+    let tensorsToKeep = this.activeScope.keep;
+    const tensorsToTrackInParent =
         tape_util.extractTensorsFromScopeResult(result);
-    arraysToKeep = arraysToKeep.concat(arraysToTrackInParent);
+    tensorsToKeep = tensorsToKeep.concat(tensorsToTrackInParent);
 
     // Dispose the arrays tracked in this scope.
     for (let i = 0; i < this.activeScope.track.length; i++) {
       const tensor = this.activeScope.track[i];
-      if (util.isTensorInList(tensor, arraysToKeep)) {
+      if (util.isTensorInList(tensor, tensorsToKeep)) {
         continue;
       }
 
       if (this.activeTape != null) {
-        arraysToTrackInParent.push(tensor);
+        tensorsToTrackInParent.push(tensor);
       } else {
         tensor.dispose();
       }
@@ -213,7 +213,7 @@ export class BackendEngine implements NDArrayManager {
         this.scopeStack[this.scopeStack.length - 1];
 
     // Track the current result in the parent scope.
-    arraysToTrackInParent.forEach(tensor => {
+    tensorsToTrackInParent.forEach(tensor => {
       if (!util.isTensorInList(tensor, this.activeScope.keep)) {
         this.track(tensor);
       }
@@ -234,15 +234,15 @@ export class BackendEngine implements NDArrayManager {
   }
 
   disposeData(dataId: number): void {
-    if (!this.registeredArrays.has(dataId)) {
+    if (!this.registeredTensors.has(dataId)) {
       return;
     }
-    const refCount = this.registeredArrays.get(dataId);
+    const refCount = this.registeredTensors.get(dataId);
     if (refCount <= 1) {
-      this.registeredArrays.delete(dataId);
+      this.registeredTensors.delete(dataId);
       this.backend.disposeData(dataId);
     } else {
-      this.registeredArrays.set(dataId, refCount - 1);
+      this.registeredTensors.set(dataId, refCount - 1);
     }
     // TODO(nsthorat): Construct an error and save the stack trace for
     // debugging when in debug mode. Creating a stack trace is too expensive
@@ -281,10 +281,10 @@ export class BackendEngine implements NDArrayManager {
   }
 
   customGradient<T extends Tensor>(
-      name: string, f: CustomGradientFunc<T>, inputs: NamedArrayMap): T {
+      name: string, f: CustomGradientFunc<T>, inputs: NamedTensorMap): T {
     this.customGradientDepth++;
 
-    let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientArrays;
+    let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientTensors;
     const gradientsMode = true;
     const result = tidy('customGradient', () => {
       const {value, gradients} = f();

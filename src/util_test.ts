@@ -16,7 +16,7 @@
  */
 
 import {Scalar, Tensor, Tensor1D} from './math/tensor';
-import {NamedArrayMap} from './math/types';
+import {NamedTensorMap} from './math/types';
 import * as test_util from './test_util';
 import {MathTests} from './test_util';
 import * as util from './util';
@@ -340,7 +340,7 @@ describe('util.checkForNaN', () => {
       const b = Scalar.new(3);
       const c = Tensor1D.new([1, 2, 3]);
 
-      const map: NamedArrayMap = {a, b, c};
+      const map: NamedTensorMap = {a, b, c};
       expect(util.flattenNameArrayMap(map, Object.keys(map))).toEqual([
         a, b, c
       ]);

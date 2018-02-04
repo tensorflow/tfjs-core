@@ -23,7 +23,7 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map
 import {NDArrayMath} from '../../math/math';
 import {keep, tidy} from '../backends/tracking';
 import {Scalar} from '../tensor';
-import {NamedArrayMap} from '../types';
+import {NamedTensorMap} from '../types';
 import {Optimizer} from './optimizer';
 
 export class SGDOptimizer extends Optimizer {
@@ -35,7 +35,7 @@ export class SGDOptimizer extends Optimizer {
   }
 
   // Eager mode
-  applyGradients(variableGradients: NamedArrayMap) {
+  applyGradients(variableGradients: NamedTensorMap) {
     const math = ENV.math;
 
     const varNames = Object.keys(variableGradients);

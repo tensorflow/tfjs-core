@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../math/types';
+import {NamedTensorMap} from '../../math/types';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 import {Scalar, Tensor} from '../tensor';
@@ -603,7 +603,7 @@ import * as tape_util from './tape_util';
                inputs: {x},
              },
              output: {intermediate1, intermediate2},
-             gradient: (dy: NamedArrayMap, y: NamedArrayMap) => {
+             gradient: (dy: NamedTensorMap, y: NamedTensorMap) => {
                return {
                  x: () =>
                      math.multiply(dy['intermediate1'], dy['intermediate2'])
@@ -640,20 +640,20 @@ import * as tape_util from './tape_util';
 // extractTensorsFromScopeResult
 {
   const tests: MathTests = it => {
-    it('null input returns empty array', math => {
+    it('null input returns empty tensor', math => {
       const results = tape_util.extractTensorsFromScopeResult(null);
 
       expect(results).toEqual([]);
     });
 
-    it('tensor input returns one element array', math => {
+    it('tensor input returns one element tensor', math => {
       const x = Scalar.new(1);
       const results = tape_util.extractTensorsFromScopeResult(x);
 
       expect(results).toEqual([x]);
     });
 
-    it('name array map returns flattened array', math => {
+    it('name tensor map returns flattened tensor', math => {
       const x1 = Scalar.new(1);
       const x2 = Scalar.new(3);
       const x3 = Scalar.new(4);

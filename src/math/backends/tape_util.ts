@@ -17,7 +17,7 @@
 
 import * as util from '../../util';
 import {Tensor} from '../tensor';
-import {NamedArrayMap, RegularArray} from '../types';
+import {NamedTensorMap, RegularArray} from '../types';
 
 // tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
@@ -33,10 +33,10 @@ export function getFilteredNodesXToY(
     tape: Tape, xs: Tensor[], y: Tensor): Tape {
   // Forward pass to compute all the nodes and Tensors that are transitively a
   // function of x.
-  const arraysFromX: {[tensorId: number]: boolean} = {};
+  const tensorsFromX: {[tensorId: number]: boolean} = {};
   const nodesFromX: {[nodeId: number]: boolean} = {};
   for (let i = 0; i < xs.length; i++) {
-    arraysFromX[xs[i].id] = true;
+    tensorsFromX[xs[i].id] = true;
   }
 
   for (let i = 0; i < tape.length; i++) {
@@ -48,13 +48,13 @@ export function getFilteredNodesXToY(
 
       let anyInputFromX = false;
       for (let j = 0; j < xs.length; j++) {
-        if (arraysFromX[input.id]) {
+        if (tensorsFromX[input.id]) {
           if (node.output instanceof Tensor) {
-            arraysFromX[node.output.id] = true;
+            tensorsFromX[node.output.id] = true;
           } else {
             const keys = Object.keys(node.output);
             for (const key of keys) {
-              arraysFromX[node.output[key].id] = true;
+              tensorsFromX[node.output[key].id] = true;
             }
           }
           anyInputFromX = true;
@@ -70,8 +70,8 @@ export function getFilteredNodesXToY(
   }
 
   // Backwards pass to find all of the nodes and Tensors that lead to y.
-  const arraysLeadToY: {[tensorId: number]: boolean} = {};
-  arraysLeadToY[y.id] = true;
+  const tensorsLeadToY: {[tensorId: number]: boolean} = {};
+  tensorsLeadToY[y.id] = true;
   const nodesToY: {[nodeId: number]: boolean} = {};
 
   for (let i = tape.length - 1; i >= 0; i--) {
@@ -90,9 +90,9 @@ export function getFilteredNodesXToY(
 
     // If any of the outputs lead to y, mark all of the inputs as leading to y.
     for (let j = 0; j < outputs.length; j++) {
-      if (arraysLeadToY[outputs[j].id]) {
+      if (tensorsLeadToY[outputs[j].id]) {
         for (const inputName in nodeInputs) {
-          arraysLeadToY[nodeInputs[inputName].id] = true;
+          tensorsLeadToY[nodeInputs[inputName].id] = true;
           nodesToY[node.id] = true;
         }
         break;
@@ -110,7 +110,7 @@ export function getFilteredNodesXToY(
       const prunedInputs: {[inputName: string]: Tensor} = {};
       for (const inputName in node.inputAndArgs.inputs) {
         const nodeInput = node.inputAndArgs.inputs[inputName];
-        if (arraysFromX[nodeInput.id]) {
+        if (tensorsFromX[nodeInput.id]) {
           prunedInputs[inputName] = nodeInput;
         }
       }
@@ -125,7 +125,7 @@ export function getFilteredNodesXToY(
         prunedOutputs = {};
         for (const outputName in node.output) {
           const output = node.output[outputName];
-          if (arraysLeadToY[output.id]) {
+          if (tensorsLeadToY[output.id]) {
             prunedOutputs[outputName] = node.output[outputName];
           }
         }
@@ -145,25 +145,25 @@ export function getFilteredNodesXToY(
 
 /**
  * Backpropagate gradients through the filtered TapeNodes.
- * @param arrayAccumulatedGradientMap A map of Tensor to its gradient. This map
+ * @param tensorAccumulatedGradientMap A map of Tensor to its gradient. This map
  * is mutated by this method.
  * @param filteredTape The filtered TapeNodes to backprop through.
  */
 export function backpropagateGradients(
-    arrayAccumulatedGradientMap: {[tensorId: number]: Tensor},
+    tensorAccumulatedGradientMap: {[tensorId: number]: Tensor},
     filteredTape: Tape) {
   // Walk the tape backwards and keep a map of Tensor to its gradient.
   for (let i = filteredTape.length - 1; i >= 0; i--) {
     const node = filteredTape[i];
 
-    let dy: Tensor|NamedArrayMap;
+    let dy: Tensor|NamedTensorMap;
     if (node.output instanceof Tensor) {
-      dy = arrayAccumulatedGradientMap[node.output.id];
+      dy = tensorAccumulatedGradientMap[node.output.id];
     } else {
       dy = {};
       const keys = Object.keys(node.output);
       for (const key of keys) {
-        dy[key] = arrayAccumulatedGradientMap[node.output[key].id];
+        dy[key] = tensorAccumulatedGradientMap[node.output[key].id];
       }
     }
 
@@ -192,11 +192,11 @@ export function backpropagateGradients(
             `the shape of the input '${x.shape}'`);
       }
 
-      if (arrayAccumulatedGradientMap[x.id] == null) {
-        arrayAccumulatedGradientMap[x.id] = dx;
+      if (tensorAccumulatedGradientMap[x.id] == null) {
+        tensorAccumulatedGradientMap[x.id] = dx;
       } else {
-        const curGradient = arrayAccumulatedGradientMap[x.id];
-        arrayAccumulatedGradientMap[x.id] = curGradient.add(dx);
+        const curGradient = tensorAccumulatedGradientMap[x.id];
+        tensorAccumulatedGradientMap[x.id] = curGradient.add(dx);
         curGradient.dispose();
       }
     }

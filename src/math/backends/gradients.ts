@@ -18,7 +18,7 @@
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import {Scalar, Tensor, Variable} from '../tensor';
-import {NamedArrayMap, Rank} from '../types';
+import {NamedTensorMap, Rank} from '../types';
 
 import {CustomGradientFunc} from './backend_engine';
 import {ScopeFn, ScopeResult} from './tape_util';
@@ -50,7 +50,7 @@ export function gradientsScope<T extends ScopeResult>(
  * an object mapping a string to a Tensor. If using the object mode, this
  * method will return an object of the same shape.
  */
-export function vjp<T extends Tensor|NamedArrayMap, R extends Rank>(
+export function vjp<T extends Tensor|NamedTensorMap, R extends Rank>(
     f: () => Tensor<R>, x: T, dy: Tensor<R>): T {
   const res = valueAndGradients(f, x, dy);
   res.value.dispose();
@@ -65,7 +65,7 @@ export function vjp<T extends Tensor|NamedArrayMap, R extends Rank>(
  * an object mapping a string to a Tensor. If using the object mode, this
  * method will return an object of the same shape.
  */
-export function gradients<R extends Rank, T extends Tensor|NamedArrayMap>(
+export function gradients<R extends Rank, T extends Tensor|NamedTensorMap>(
     f: () => Tensor<R>, x: T): T {
   const res = valueAndGradients(f, x);
   res.value.dispose();
@@ -81,7 +81,7 @@ export function gradients<R extends Rank, T extends Tensor|NamedArrayMap>(
  * respect to. Defaults to all trainable variables.
  */
 export function variableGradients(f: () => Scalar, varList?: Variable[]):
-    {value: Scalar, gradients: NamedArrayMap} {
+    {value: Scalar, gradients: NamedTensorMap} {
   if (varList == null) {
     // Get all of the trainable variables.
     varList = [];
@@ -97,7 +97,7 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
         `The user-provided function must return a Scalar, but it returned a ` +
         `rank-${value.rank} tensor`);
   }
-  const namedGrads: NamedArrayMap = {};
+  const namedGrads: NamedTensorMap = {};
   varList.forEach((v, i) => {
     if (gradients[i] != null) {
       namedGrads[v.name] = gradients[i];
@@ -116,7 +116,7 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
  * this method will return an object of the same shape.
  */
 export function
-valueAndGradients<R extends Rank, T extends Tensor|NamedArrayMap>(
+valueAndGradients<R extends Rank, T extends Tensor|NamedTensorMap>(
     f: () => Tensor<R>, x: T, dy?: Tensor<R>):
     {value: Tensor<R>, gradients: T} {
   const keys = x instanceof Tensor ? null : Object.keys(x);
@@ -148,7 +148,7 @@ valueAndGradients<R extends Rank, T extends Tensor|NamedArrayMap>(
  *    debugging.
  */
 export function customGradient<T extends Tensor>(
-    name: string, f: CustomGradientFunc<T>, inputs: NamedArrayMap): T {
+    name: string, f: CustomGradientFunc<T>, inputs: NamedTensorMap): T {
   name = name || '';
   return ENV.engine.customGradient(name, f, inputs);
 }

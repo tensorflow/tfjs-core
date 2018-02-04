@@ -58,7 +58,7 @@ export interface RecursiveArray<T extends any> {
   [index: number]: T|RecursiveArray<T>;
 }
 
-export type NamedArrayMap = {
+export type NamedTensorMap = {
   [name: string]: Tensor
 };
 

@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../math/types';
+import {NamedTensorMap} from '../../math/types';
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
 import {KernelConfigRegistry} from './kernel_registry';
 
 export type Tape = Array<TapeNode<TapeNodeOutput>>;
-export type TapeNodeOutput = Tensor|NamedArrayMap;
+export type TapeNodeOutput = Tensor|NamedTensorMap;
 export type TapeNodeType = 'kernel'|'customGradient';
 
 export interface TapeNode<T extends TapeNodeOutput> {
@@ -31,12 +31,12 @@ export interface TapeNode<T extends TapeNodeOutput> {
   inputAndArgs: TapeNodeInputConfig;
 
   output: T;
-  gradient: (dy: Tensor|NamedArrayMap, y: T) => TapeNodeInputGradientArrays;
+  gradient: (dy: Tensor|NamedTensorMap, y: T) => TapeNodeInputGradientTensors;
 }
 
-export interface TapeNodeInputConfig { inputs: NamedArrayMap; }
+export interface TapeNodeInputConfig { inputs: NamedTensorMap; }
 
-export type TapeNodeInputGradientArrays = {
+export type TapeNodeInputGradientTensors = {
   [inputName: string]: () => Tensor;
 };
 
@@ -48,7 +48,7 @@ export interface KernelNode extends TapeNode<Tensor> {
 }
 
 export interface KernelInputConfig extends TapeNodeInputConfig {
-  inputs: NamedArrayMap;
+  inputs: NamedTensorMap;
   // tslint:disable-next-line:no-any
   args?: {[argName: string]: any};
 }

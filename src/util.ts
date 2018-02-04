@@ -17,7 +17,7 @@
 
 import {Tensor} from './math/tensor';
 // tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, FlatVector, NamedArrayMap, RecursiveArray, RegularArray} from './math/types';
+import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray} from './math/types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -355,7 +355,7 @@ export function checkForNaN<D extends DataType>(
 }
 
 export function flattenNameArrayMap(
-    nameArrayMap: Tensor|NamedArrayMap, keys?: string[]): Tensor[] {
+    nameArrayMap: Tensor|NamedTensorMap, keys?: string[]): Tensor[] {
   const xs: Tensor[] = [];
   if (nameArrayMap instanceof Tensor) {
     xs.push(nameArrayMap);
@@ -369,12 +369,12 @@ export function flattenNameArrayMap(
 }
 
 export function unflattenToNameArrayMap(
-    keys: string[], flatArrays: Tensor[]): NamedArrayMap {
+    keys: string[], flatArrays: Tensor[]): NamedTensorMap {
   if (keys.length !== flatArrays.length) {
     throw new Error(
         `Cannot unflatten Tensor[], keys and arrays are not of same length.`);
   }
-  const result: NamedArrayMap = {};
+  const result: NamedTensorMap = {};
   for (let i = 0; i < keys.length; i++) {
     result[keys[i]] = flatArrays[i];
   }
