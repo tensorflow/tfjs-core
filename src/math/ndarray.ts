@@ -30,14 +30,14 @@ export interface NDArrayData {
 }
 
 export class TensorBuffer<R extends Rank> {
-  buffer: TypedArray;
+  values: TypedArray;
   shape: number[];
 
   private strides: number[];
 
   constructor(public dtype: DataType, shape: ShapeMap[R]) {
     this.shape = shape;
-    this.buffer = util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
+    this.values = util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
     this.strides = computeStrides(shape);
   }
 
@@ -50,7 +50,7 @@ export class TensorBuffer<R extends Rank> {
         `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
     const index = this.locToIndex(locs);
-    this.buffer[index] = value;
+    this.values[index] = value;
   }
 
   locToIndex(locs: number[]): number {
@@ -86,7 +86,7 @@ export class TensorBuffer<R extends Rank> {
   }
 
   toTensor(): NDArray<R> {
-    return NDArray.make(this.shape, {values: this.buffer}, this.dtype);
+    return NDArray.make(this.shape, {values: this.values}, this.dtype);
   }
 }
 
@@ -280,6 +280,34 @@ export class NDArray<R extends Rank = Rank> {
     this.throwIfDisposed();
     await this.data();
     return this.get(...locs);
+  }
+
+  locToIndex(locs: number[]): number {
+    if (this.rank === 0) {
+      return 0;
+    } else if (this.rank === 1) {
+      return locs[0];
+    }
+    let index = locs[locs.length - 1];
+    for (let i = 0; i < locs.length - 1; ++i) {
+      index += this.strides[i] * locs[i];
+    }
+    return index;
+  }
+
+  indexToLoc(index: number): number[] {
+    if (this.rank === 0) {
+      return [];
+    } else if (this.rank === 1) {
+      return [index];
+    }
+    const locs: number[] = new Array(this.shape.length);
+    for (let i = 0; i < locs.length - 1; ++i) {
+      locs[i] = Math.floor(index / this.strides[i]);
+      index -= locs[i] * this.strides[i];
+    }
+    locs[locs.length - 1] = index;
+    return locs;
   }
 
   fill(value: number) {
