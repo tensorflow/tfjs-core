@@ -133,6 +133,19 @@ export class Ops {
     return NDArray.rand(shape, () => randGauss.nextValue(), dtype);
   }
 
+  /**
+   * Creates a tensor with values sampled from a truncated normal distribution.
+   *
+   * The generated values follow a normal distribution with specified mean and
+   * standard deviation, except that values whose magnitude is more than 2
+   * standard deviations from the mean are dropped and re-picked.
+   *
+   * @param shape A list of integers defining the output tensor shape.
+   * @param mean The mean of the normal distribution.
+   * @param stdDev The standard deviation of the normal distribution.
+   * @param dtype The data type of the output.
+   * @param seed The seed for the random number generator.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static truncatedNormal<R extends Rank>(
@@ -146,13 +159,37 @@ export class Ops {
     return NDArray.rand(shape, () => randGauss.nextValue(), dtype);
   }
 
+  /**
+   * Creates a tensor with values sampled from a uniform distribution.
+   *
+   * The generated values follow a uniform distribution in the range [minval,
+   * maxval). The lower bound minval is included in the range, while the upper
+   * bound maxval is excluded.
+   *
+   * @param shape A list of integers defining the output tensor shape.
+   * @param minval The lower bound on the range of random values to generate.
+   *   Defaults to 0.
+   * @param maxval The upper bound on the range of random values to generate.
+   *   Defaults to 1.
+   * @param dtype The data type of the output tensor. Defaults to 'float32'.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
-  static randUniform<R extends Rank>(
-      shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
-    return NDArray.rand(shape, () => util.randUniform(a, b), dtype);
+  static randomUniform<R extends Rank>(
+      shape: ShapeMap[R], minval = 0, maxval = 1, dtype: DataType = 'float32'):
+      NDArray<R> {
+    return NDArray.rand(shape, () => util.randUniform(minval, maxval), dtype);
   }
 
+  /**
+   * Creates a tensor with values sampled from a random number generator
+   * function defined by the user.
+   *
+   * @param shape A list of integers defining the output tensor shape.
+   * @param randFunction A random number generator function which is called for
+   * each element in the output tensor.
+   * @param dtype The data type of the output tensor. Defaults to 'float32'.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static rand<R extends Rank>(
@@ -253,21 +290,39 @@ export class Ops {
     return ENV.backend.fromPixels(pixels, numChannels);
   }
 
-  /** Reshapes the array. */
+  /**
+   * Reshapes a tensor.
+   *
+   * Given a input tensor, returns a new tensor with the same values as the
+   * input tensor with shape `shape`.
+   *
+   * If one component of shape is the special value -1, the size of that
+   * dimension is computed so that the total size remains constant. In
+   * particular, a shape of [-1] flattens into 1-D. At most one component of
+   * shape can be -1.
+   *
+   * If shape is 1-D or higher, then the operation returns a tensor with shape
+   * shape filled with the values of tensor. In this case, the number of
+   * elements implied by shape must be the same as the number of elements in
+   * tensor.
+   * @param x A tensor.
+   * @param shape A list of integers defining the output tensor shape.
+   */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
-  static reshape<R2 extends Rank>(x: NDArray, newShape: ShapeMap[R2]):
+  static reshape<R2 extends Rank>(x: NDArray, shape: ShapeMap[R2]):
       NDArray<R2> {
-    newShape = util.inferFromImplicitShape(newShape, x.size);
+    shape = util.inferFromImplicitShape(shape, x.size);
     util.assert(
-        x.size === util.sizeFromShape(newShape),
+        x.size === util.sizeFromShape(shape),
         'new shape and old shape must have the same number of elements.');
 
     const grad = (dy: NDArray<R2>, y: NDArray<R2>) => {
       return {x: () => dy.reshape(x.shape)};
     };
     return ENV.engine.executeKernel(
-               'Reshape', {inputs: {x}, args: {newShape}}, grad) as NDArray<R2>;
+               'Reshape', {inputs: {x}, args: {newShape: shape}}, grad) as
+        NDArray<R2>;
   }
 
   /**

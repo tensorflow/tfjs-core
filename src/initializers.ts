@@ -49,7 +49,8 @@ export class VarianceScalingInitializer implements Initializer {
     if (this.distribution === 'normal') {
       return ops.truncatedNormal(weightsShape, 0.0, Math.sqrt(this.scale / n));
     } else if (this.distribution === 'uniform') {
-      return ops.randUniform(weightsShape, 0.0, Math.sqrt(3 * this.scale / n));
+      return ops.randomUniform(
+          weightsShape, 0.0, Math.sqrt(3 * this.scale / n));
     } else {
       throw new Error(
           `Unexpected distribution for variance scaling initializer: ` +
@@ -117,6 +118,6 @@ export class RandomUniformInitializer implements Initializer {
 
   initialize(weightsShape: number[], inputUnits: number, outputUnits: number):
       NDArray {
-    return ops.randUniform(weightsShape, this.minval, this.maxval);
+    return ops.randomUniform(weightsShape, this.minval, this.maxval);
   }
 }

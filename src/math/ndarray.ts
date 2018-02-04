@@ -204,7 +204,7 @@ export class NDArray<R extends Rank = Rank> {
   /** @deprecated Please use dl.randUniform() */
   static randUniform<R extends Rank>(
       shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
-    return ops.randUniform(shape, a, b, dtype);
+    return ops.randomUniform(shape, a, b, dtype);
   }
 
   /**
