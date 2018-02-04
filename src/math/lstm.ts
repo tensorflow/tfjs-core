@@ -16,7 +16,7 @@
  */
 
 import {doc, operation} from './decorators';
-import {Tensor1D, Tensor2D, Scalar} from './tensor';
+import {Scalar, Tensor1D, Tensor2D} from './tensor';
 
 export interface LSTMCell {
   (data: Tensor2D, c: Tensor2D, h: Tensor2D): [Tensor2D, Tensor2D];
@@ -71,8 +71,8 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'RNN'})
   @operation
   static basicLSTMCell(
-      forgetBias: Scalar, lstmKernel: Tensor2D, lstmBias: Tensor1D, data: Tensor2D,
-      c: Tensor2D, h: Tensor2D): [Tensor2D, Tensor2D] {
+      forgetBias: Scalar, lstmKernel: Tensor2D, lstmBias: Tensor1D,
+      data: Tensor2D, c: Tensor2D, h: Tensor2D): [Tensor2D, Tensor2D] {
     const combined = data.concat(h, 1);
     const weighted = combined.matMul(lstmKernel);
     const res = weighted.add(lstmBias) as Tensor2D;

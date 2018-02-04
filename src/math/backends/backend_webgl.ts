@@ -908,10 +908,10 @@ export class MathBackendWebGL implements MathBackend {
     }
     const inputsData: Array<TensorData<T>> = inputs.map(input => {
       this.uploadToGPU(input.dataId);
-      return {array: input, texData: this.texData[input.dataId]};
+      return {tensor: input, texData: this.texData[input.dataId]};
     });
     this.uploadToGPU(output.dataId);
-    const outputData = {array: output, texData: this.texData[output.dataId]};
+    const outputData = {tensor: output, texData: this.texData[output.dataId]};
     const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
     const binary = this.getAndSaveBinary(key, () => {
       return gpgpu_math.compileProgram(

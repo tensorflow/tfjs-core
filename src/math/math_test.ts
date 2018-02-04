@@ -31,7 +31,7 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
         const a = Tensor1D.new([1, 2, 3]);
         let b = Tensor1D.new([0, 0, 0]);
 
-        expect(math.getNumArrays()).toBe(2);
+        expect(math.getNumTensors()).toBe(2);
         await dl.tidy(async () => {
           const result = dl.tidy(() => {
             b = math.addStrict(a, b);
@@ -41,33 +41,33 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
           });
 
           // result is new. All intermediates should be disposed.
-          expect(math.getNumArrays()).toBe(2 + 1);
+          expect(math.getNumTensors()).toBe(2 + 1);
           test_util.expectArraysClose(result, [4, 8, 12]);
         });
 
         // a, b are still here, result should be disposed.
-        expect(math.getNumArrays()).toBe(2);
+        expect(math.getNumTensors()).toBe(2);
       });
 
-      expect(math.getNumArrays()).toBe(0);
+      expect(math.getNumTensors()).toBe(0);
     });
 
     it('multiple disposes does not affect num arrays', math => {
-      expect(math.getNumArrays()).toBe(0);
+      expect(math.getNumTensors()).toBe(0);
       const a = Tensor1D.new([1, 2, 3]);
       const b = Tensor1D.new([1, 2, 3]);
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
       a.dispose();
       a.dispose();
-      expect(math.getNumArrays()).toBe(1);
+      expect(math.getNumTensors()).toBe(1);
       b.dispose();
-      expect(math.getNumArrays()).toBe(0);
+      expect(math.getNumTensors()).toBe(0);
     });
 
     it('scope returns Tensor[]', async math => {
       const a = Tensor1D.new([1, 2, 3]);
       const b = Tensor1D.new([0, -1, 1]);
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
 
       await dl.tidy(async () => {
         const result = dl.tidy(() => {
@@ -76,24 +76,24 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
         });
 
         // the 2 results are new. All intermediates should be disposed.
-        expect(math.getNumArrays()).toBe(4);
+        expect(math.getNumTensors()).toBe(4);
         test_util.expectArraysClose(result[0], [1, 1, 4]);
         test_util.expectArraysClose(result[1], [1, 3, 2]);
-        expect(math.getNumArrays()).toBe(4);
+        expect(math.getNumTensors()).toBe(4);
       });
 
       // the 2 results should be disposed.
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
       a.dispose();
       b.dispose();
-      expect(math.getNumArrays()).toBe(0);
+      expect(math.getNumTensors()).toBe(0);
     });
 
     it('basic scope usage without return', math => {
       const a = Tensor1D.new([1, 2, 3]);
       let b = Tensor1D.new([0, 0, 0]);
 
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
 
       dl.tidy(() => {
         b = math.addStrict(a, b);
@@ -103,14 +103,14 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
       });
 
       // all intermediates should be disposed.
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
     });
 
     it('scope returns Promise<Tensor>', async math => {
       const a = Tensor1D.new([1, 2, 3]);
       const b = Tensor1D.new([0, 0, 0]);
 
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
 
       await dl.tidy(async () => {
         const result = dl.tidy(() => {
@@ -121,22 +121,22 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
         });
 
         // result is new. All intermediates should be disposed.
-        expect(math.getNumArrays()).toBe(3);
+        expect(math.getNumTensors()).toBe(3);
         test_util.expectArraysClose(result, [4, 8, 12]);
       });
 
       // result should be disposed. a and b are still allocated.
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
       a.dispose();
       b.dispose();
-      expect(math.getNumArrays()).toBe(0);
+      expect(math.getNumTensors()).toBe(0);
     });
 
     it('nested scope usage', async math => {
       const a = Tensor1D.new([1, 2, 3]);
       let b = Tensor1D.new([0, 0, 0]);
 
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
 
       await dl.tidy(async () => {
         const result = dl.tidy(() => {
@@ -146,25 +146,25 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
               return math.addStrict(a, b);
             });
             // original a, b, and two intermediates.
-            expect(math.getNumArrays()).toBe(4);
+            expect(math.getNumTensors()).toBe(4);
 
             dl.tidy(() => {
               math.addStrict(a, b);
             });
             // All the intermediates should be cleaned up.
-            expect(math.getNumArrays()).toBe(4);
+            expect(math.getNumTensors()).toBe(4);
 
             return math.addStrict(a, b);
           });
-          expect(math.getNumArrays()).toBe(4);
+          expect(math.getNumTensors()).toBe(4);
 
           return math.addStrict(a, b);
         });
 
-        expect(math.getNumArrays()).toBe(3);
+        expect(math.getNumTensors()).toBe(3);
         test_util.expectArraysClose(result, [4, 8, 12]);
       });
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
     });
 
     it('single argument', math => {
@@ -527,29 +527,29 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
   const tests: MathTests = it => {
     it('second order gradients with gradientsScope', math => {
       const a = Scalar.new(2);
-      expect(math.getNumArrays()).toBe(1);
+      expect(math.getNumTensors()).toBe(1);
 
       const gradients = gradientsScope(() => {
         const der = math.gradients(() => {
           const result = math.pow(a, Scalar.new(3, 'int32'));
-          expect(math.getNumArrays()).toBe(3);
+          expect(math.getNumTensors()).toBe(3);
 
           return result as Scalar;
         }, a);
 
         // Gradients shouldn't be disposed.
-        const numArrays = math.getNumArrays();
+        const numArrays = math.getNumTensors();
         expect(numArrays).toBeGreaterThan(3);
 
         const result = math.gradients(() => der, a);
 
         // New gradients shouldn't be disposed.
-        expect(math.getNumArrays()).toBeGreaterThan(numArrays + 1);
+        expect(math.getNumTensors()).toBeGreaterThan(numArrays + 1);
         return result;
       });
 
       // a and gradients are the only remaining arrays.
-      expect(math.getNumArrays()).toBe(2);
+      expect(math.getNumTensors()).toBe(2);
 
       expect(gradients.shape).toEqual(a.shape);
       test_util.expectArraysClose(gradients, [2 * 3 * a.get()], 1e-1);

@@ -29,14 +29,14 @@ const tests: MathTests = it => {
     const bias = variable(Scalar.new(1));
     const strayVariable = variable(Scalar.new(-1));
 
-    let numArrays = math.getNumArrays();
+    let numArrays = math.getNumTensors();
 
     const f = () => math.addStrict(math.square(x), bias);
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
     // Cost should be the only additional array.
-    expect(math.getNumArrays()).toBe(numArrays + 1);
+    expect(math.getNumTensors()).toBe(numArrays + 1);
 
     // de/dx = 2x
     const expectedX1 = -2 * 4 * learningRate + 4;
@@ -49,11 +49,11 @@ const tests: MathTests = it => {
     test_util.expectArraysClose(strayVariable, [-1]);
 
     cost.dispose();
-    numArrays = math.getNumArrays();
+    numArrays = math.getNumTensors();
 
     cost = optimizer.minimize(f, /* returnCost */ false);
     // There should be no new additional Tensors.
-    expect(math.getNumArrays()).toBe(numArrays);
+    expect(math.getNumTensors()).toBe(numArrays);
 
     const expectedX2 = -2 * expectedX1 * learningRate + expectedX1;
     const expectedBias2 = -learningRate + expectedBias1;
@@ -68,7 +68,7 @@ const tests: MathTests = it => {
     bias.dispose();
     strayVariable.dispose();
     // There should be no more Tensors.
-    expect(math.getNumArrays()).toBe(0);
+    expect(math.getNumTensors()).toBe(0);
   });
 
   it('varList array of all variables', math => {

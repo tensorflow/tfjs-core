@@ -209,7 +209,7 @@ export class NDArrayMath {
 
   register: typeof ENV.engine.register;
   engine: typeof ENV.engine;
-  getNumArrays: typeof ENV.engine.getNumArrays;
+  getNumTensors: typeof ENV.engine.getNumTensors;
   dispose: typeof ENV.engine.dispose;
   registeredVariables: typeof ENV.engine.registeredVariables;
   write: typeof ENV.engine.write;
@@ -228,7 +228,7 @@ export class NDArrayMath {
     ENV.setMath(this, backend, safeMode);
     this.register = ENV.engine.register.bind(ENV.engine);
     this.engine = ENV.engine;
-    this.getNumArrays = ENV.engine.getNumArrays.bind(ENV.engine);
+    this.getNumTensors = ENV.engine.getNumTensors.bind(ENV.engine);
     this.dispose = ENV.engine.dispose.bind(ENV.engine);
     this.registeredVariables = ENV.engine.registeredVariables;
     this.write = ENV.engine.write.bind(ENV.engine);

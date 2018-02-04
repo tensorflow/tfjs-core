@@ -42,7 +42,7 @@ export type CustomGradientFunc<T extends Tensor> = () => {
 };
 
 export interface TensorManager {
-  getNumArrays(): number;
+  getNumTensors(): number;
   register(a: Tensor): void;
   registerVariable(v: Variable): void;
   disposeData(dataId: number): void;
@@ -113,7 +113,7 @@ export class BackendEngine implements TensorManager {
     return this.backend;
   }
 
-  getNumArrays() {
+  getNumTensors() {
     return this.registeredTensors.size;
   }
 

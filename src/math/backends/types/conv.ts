@@ -34,8 +34,7 @@ export interface Conv2DNode extends KernelNode {
 
 export interface Conv2DDerInputNode extends KernelNode {
   inputAndArgs: {
-    inputs: {dy: Tensor4D; filter: Tensor4D;};
-    args: {convInfo: Conv2DInfo;};
+    inputs: {dy: Tensor4D; filter: Tensor4D;}; args: {convInfo: Conv2DInfo;};
   };
   output: Tensor4D;
   gradient: (dy: Tensor4D, y: Tensor4D) => {
@@ -45,10 +44,8 @@ export interface Conv2DDerInputNode extends KernelNode {
 }
 
 export interface Conv2DDerFilterNode extends KernelNode {
-  inputAndArgs: {
-    inputs: {x: Tensor4D; dy: Tensor4D;};
-    args: {convInfo: Conv2DInfo;};
-  };
+  inputAndArgs:
+      {inputs: {x: Tensor4D; dy: Tensor4D;}; args: {convInfo: Conv2DInfo;};};
   output: Tensor4D;
   gradient: (dy: Tensor4D, y: Tensor4D) => {
     x: () => Tensor4D;
@@ -65,8 +62,9 @@ export interface Conv2DDerBiasNode extends KernelNode {
 }
 
 export interface DepthwiseConv2DNode extends KernelNode {
-  inputAndArgs:
-      {inputs: {x: Tensor4D; filter: Tensor4D;}; args: {convInfo: Conv2DInfo;};};
+  inputAndArgs: {
+    inputs: {x: Tensor4D; filter: Tensor4D;}; args: {convInfo: Conv2DInfo;};
+  };
   output: Tensor4D;
   gradient: (dy: Tensor4D, y: Tensor4D) => {
     x: () => Tensor4D;
