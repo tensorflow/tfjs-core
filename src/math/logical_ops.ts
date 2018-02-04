@@ -17,19 +17,32 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
+
 import * as broadcast_util from './broadcast_util';
-import {operation} from './decorators';
+import {doc, operation} from './decorators';
 import {NDArray} from './ndarray';
 import * as types from './types';
 import {DataType} from './types';
 
 export class Ops {
   /**
+   * Returns the truth value of NOT element-wise.
+   *
+   * @param x The input NDArray.
+   */
+  @operation
+  static logicalNot<T extends NDArray>(x: NDArray): T {
+    util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
+    return ENV.engine.executeKernel('LogicalNot', {inputs: {x}}) as T;
+  }
+
+  /**
    * Returns the truth value of a AND b element-wise. Supports broadcasting.
    *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`.
+   * @param a The first input `NDArray`. Must be of dtype bool.
+   * @param b The second input `NDArray`. Must be of dtype bool.
    */
+  @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalAnd<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assert(
@@ -42,9 +55,10 @@ export class Ops {
   /**
    * Returns the truth value of a OR b element-wise. Supports broadcasting.
    *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`.
+   * @param a The first input `NDArray`. Must be of dtype bool.
+   * @param b The second input `NDArray`. Must be of dtype bool.
    */
+  @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalOr<T extends NDArray>(a: NDArray, b: NDArray): T {
     util.assert(
@@ -55,15 +69,31 @@ export class Ops {
   }
 
   /**
+   * Returns the truth value of a XOR b element-wise. Supports broadcasting.
+   *
+   * @param a The first input `NDArray`. Must be of dtype bool.
+   * @param b The second input `NDArray`. Must be of dtype bool.
+   */
+  @operation
+  static logicalXor<T extends NDArray>(a: NDArray, b: NDArray): T {
+    util.assert(
+        a.dtype === 'bool' && b.dtype === 'bool',
+        'Error Array must be of type bool.');
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    return ENV.engine.executeKernel('LogicalXor', {inputs: {a, b}}) as T;
+  }
+
+  /**
    * Returns the elements, either `a` or `b` depending on the `condition`.
    *
-   * @param condition The input as `NDAray<'bool'>.
+   * @param condition The input as `NDArray. Must be of dtype bool.
    * @param a Input as `NDArray` which may have the same shape as
    *     `condition`. If `condition` is rank 1, `a` may have a higher rank but
    *     its first dimension must match the size of `condition`.
    * @param b Input as `NDArray` with the same shape and type as `a`.
    * @return An `NDArray` with the same type and shape as `a` and `b`.
    */
+  @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static where<T extends NDArray>(condition: NDArray, a: T, b: T): T {
     util.assert(

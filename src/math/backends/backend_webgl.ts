@@ -23,7 +23,8 @@ import {NDArrayMath} from '../math';
 import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
-import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
+// tslint:disable-next-line:max-line-length
+import {DataType, DataTypeMap, Rank, RecursiveArray, TypedArray} from '../types';
 
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
@@ -38,7 +39,7 @@ import {ConcatProgram} from './webgl/concat_gpu';
 import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
-import {Copy2DProgram} from './webgl/copy_gpu';
+import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
@@ -61,11 +62,21 @@ import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
+import {WebGLQuery} from './webgl/webgl_types';
 import * as webgl_util from './webgl/webgl_util';
+
+type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
+export interface CPUTimerQuery {
+  startMs: number;
+  endMs?: number;
+}
 
 export class MathBackendWebGL implements MathBackend {
   private texData: {[dataId: number]: TextureData} = {};
   private canvas: HTMLCanvasElement;
+
+  private programTimersStack: TimerNode[];
+  private activeTimers: TimerNode[];
 
   register(dataId: number, shape: number[], dtype: DataType): void {
     if (dataId in this.texData) {
@@ -77,31 +88,18 @@ export class MathBackendWebGL implements MathBackend {
       values: null,
       texture: null,
       texShape: null,
-      textureType: null
+      texType: TextureType.FLOAT
     };
   }
-  writePixels(
-      dataId: number,
+  fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): void {
+      numChannels: number): Array3D {
     if (pixels == null) {
       throw new Error('MathBackendWebGL.writePixels(): pixels can not be null');
     }
-    this.throwIfNoData(dataId);
     const texShape: [number, number] = [pixels.height, pixels.width];
-    const texture = this.texData[dataId].texture ||
-        this.textureManager.acquireTexture(texShape);
-    const {shape} = this.texData[dataId];
+    const outShape = [pixels.height, pixels.width, numChannels];
 
-    this.texData[dataId] = {
-      shape,
-      values: null,
-      texture,
-      textureType: TextureType.RGBA_COLOR,
-      texShape,
-      numChannels,
-      dtype: 'int32'
-    };
     if (pixels instanceof HTMLVideoElement) {
       if (this.canvas == null) {
         throw new Error(
@@ -114,8 +112,18 @@ export class MathBackendWebGL implements MathBackend {
           pixels, 0, 0, pixels.width, pixels.height);
       pixels = this.canvas;
     }
-    // Pixel data is immediate storage since it already lives on gpu.
-    this.gpgpu.uploadPixelDataToTexture(texture, pixels);
+    const tempPixelArray = NDArray.make(texShape, {}, 'int32');
+
+    // This is a byte texture with pixels.
+    this.texData[tempPixelArray.dataId].texType = TextureType.UNSIGNED_BYTE;
+    this.gpgpu.uploadPixelDataToTexture(
+        this.getTexture(tempPixelArray.dataId), pixels);
+    const program = new FromPixelsProgram(outShape);
+    const res = this.compileAndRun(program, [tempPixelArray]);
+
+    tempPixelArray.dispose();
+
+    return res as Array3D;
   }
   write(dataId: number, values: TypedArray): void {
     if (values == null) {
@@ -123,13 +131,12 @@ export class MathBackendWebGL implements MathBackend {
     }
     this.throwIfNoData(dataId);
 
-    const {texture, texShape} = this.texData[dataId];
+    const {texture, texShape, texType} = this.texData[dataId];
     if (texture != null) {
       // Release the old texture.
-      this.textureManager.releaseTexture(texture, texShape);
+      this.textureManager.releaseTexture(texture, texShape, texType);
       this.texData[dataId].texture = null;
       this.texData[dataId].texShape = null;
-      this.texData[dataId].textureType = null;
     }
     this.texData[dataId].values = values;
 
@@ -140,39 +147,31 @@ export class MathBackendWebGL implements MathBackend {
 
   readSync(dataId: number): TypedArray {
     this.throwIfNoData(dataId);
-    const {texture, values, textureType, texShape, numChannels} =
-        this.texData[dataId];
+    const {texture, values, texShape} = this.texData[dataId];
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
     }
-    let float32Values: Float32Array;
-    if (textureType === TextureType.DEFAULT) {
-      float32Values = this.gpgpu.downloadMatrixFromTexture(
-          texture, texShape[0], texShape[1]);
-    } else {
-      float32Values = this.gpgpu.downloadMatrixFromRGBAColorTexture(
-          texture, texShape[0], texShape[1], numChannels);
-    }
+    const float32Values =
+        this.gpgpu.downloadMatrixFromTexture(texture, texShape[0], texShape[1]);
     this.cacheOnCPU(dataId, float32Values);
     return this.texData[dataId].values;
   }
   async read(dataId: number): Promise<TypedArray> {
     this.throwIfNoData(dataId);
-    const {texture, values, textureType, texShape} = this.texData[dataId];
+    const {texture, values, texShape} = this.texData[dataId];
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
     }
-    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') &&
-        textureType === TextureType.DEFAULT) {
+    if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) {
       const float32Values = await this.gpgpu.downloadMatrixFromTextureAsync(
           texture, texShape[0], texShape[1]);
       this.cacheOnCPU(dataId, float32Values);
       return this.texData[dataId].values;
     }
 
-    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0) {
       return this.readSync(dataId);
     }
 
@@ -181,20 +180,69 @@ export class MathBackendWebGL implements MathBackend {
     await this.gpgpu.runQuery(() => {});
     return this.readSync(dataId);
   }
-  async time(query: () => NDArray): Promise<number> {
-    if (!ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_ENABLED')) {
-      const start = performance.now();
-      const a = query();
-      await a.data();
-      return performance.now() - start;
+
+  time(f: () => void): Promise<number> {
+    const oldActiveTimers = this.activeTimers;
+    const newActiveTimers: TimerNode[] = [];
+
+    let outerMostTime = false;
+    if (this.programTimersStack == null) {
+      this.programTimersStack = newActiveTimers;
+      outerMostTime = true;
+    } else {
+      this.activeTimers.push(newActiveTimers);
     }
-    return this.gpgpu.runQuery(query);
+    this.activeTimers = newActiveTimers;
+
+    f();
+
+    const flattenedActiveTimers = util.flatten(this.activeTimers);
+    this.activeTimers = oldActiveTimers;
+
+    if (outerMostTime) {
+      this.programTimersStack = null;
+    }
+
+    return new Promise<number>((resolve, reject) => {
+      Promise.all(flattenedActiveTimers).then(results => {
+        let sum = 0;
+        results.forEach(result => sum += result);
+
+        resolve(sum);
+      });
+    });
   }
+
+  private startTimer(): WebGLQuery|CPUTimerQuery {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
+      return this.gpgpu.beginQuery();
+    }
+    return {startMs: performance.now(), endMs: null};
+  }
+
+  private endTimer(query: WebGLQuery|CPUTimerQuery): WebGLQuery|
+      {startMs: number, endMs: number} {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
+      this.gpgpu.endQuery();
+      return query;
+    }
+    (query as CPUTimerQuery).endMs = performance.now();
+    return query;
+  }
+
+  private async getQueryTime(query: WebGLQuery|CPUTimerQuery): Promise<number> {
+    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
+      return this.gpgpu.pollQueryTime(query);
+    }
+    const timerQuery = query as CPUTimerQuery;
+    return timerQuery.endMs - timerQuery.startMs;
+  }
+
   disposeData(dataId: number): void {
     if (dataId in this.texData) {
-      const {texture, texShape} = this.texData[dataId];
+      const {texture, texShape, texType} = this.texData[dataId];
       if (texture != null) {
-        this.textureManager.releaseTexture(texture, texShape);
+        this.textureManager.releaseTexture(texture, texShape, texType);
       }
       delete this.texData[dataId];
     }
@@ -234,19 +282,6 @@ export class MathBackendWebGL implements MathBackend {
     return this.gpgpu;
   }
 
-  clone<T extends NDArray>(x: T): T {
-    this.throwIfNoData(x.dataId);
-    this.uploadToGPU(x.dataId);
-    const {texShape} = this.texData[x.dataId];
-    // Pretend the source was in logical shape that matches the texture shape.
-    const source = x.as2D(texShape[0], texShape[1]);
-    // Do the same for output.
-    const output = this.makeOutputArray<Array2D>(texShape, x.dtype);
-    this.copy2D(source, [0, 0], texShape, output, [0, 0], texShape);
-    // Get back to the original logical shape.
-    return output.reshape(x.shape) as T;
-  }
-
   slice1D(x: Array1D, begin: number, size: number): Array1D {
     const program = new SliceProgram([size]);
     const customSetup = program.getCustomSetupFunc([begin]);
@@ -281,34 +316,9 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  private copy2D(
-      source: Array2D, sourceBeginRowCol: [number, number],
-      sourceSizeRowCol: [number, number], dest: Array2D,
-      destBeginRowCol: [number, number],
-      destSizeRowCol: [number, number]): void {
-    const program = new Copy2DProgram(sourceSizeRowCol[1], destSizeRowCol[1]);
-    const customSetup = program.getCustomSetupFunc(
-        sourceBeginRowCol, destBeginRowCol, destSizeRowCol);
-    this.compileAndRun(program, [source], dest, customSetup);
-  }
-
-  concat1D(a: Array1D, b: Array1D): Array1D {
-    const program = new ConcatProgram(a.shape, b.shape, 0);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat2D(a: Array2D, b: Array2D, axis: number): Array2D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat3D(a: Array3D, b: Array3D, axis: number): Array3D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
-    return this.compileAndRun(program, [a, b]);
-  }
-
-  concat4D(a: Array4D, b: Array4D, axis: number): Array4D {
-    const program = new ConcatProgram(a.shape, b.shape, axis);
+  // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
+  concat(a: Array2D, b: Array2D): Array2D {
+    const program = new ConcatProgram(a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
@@ -449,8 +459,7 @@ export class MathBackendWebGL implements MathBackend {
     const reduceInfo = {windowSize, inSize, batchSize};
     const program = new ReduceProgram(reduceInfo, reduceType);
     const [rows, cols] = program.outputShape;
-    const output =
-        this.makeOutputArray(program.outputShape, dtype).as2D(rows, cols);
+    const output = this.makeOutputArray<Array2D>([rows, cols], dtype);
     this.compileAndRun(program, [x], output);
     // No need to run another GPGPU program.
     if (output.shape[1] === 1) {
@@ -473,8 +482,7 @@ export class MathBackendWebGL implements MathBackend {
     const program =
         new ArgMinMaxProgram(reduceInfo, reduceType, bestIndicesA == null);
     const [rows, cols] = program.outputShape;
-    const output =
-        this.makeOutputArray(program.outputShape, 'int32').as2D(rows, cols);
+    const output = this.makeOutputArray<Array2D>([rows, cols], 'int32');
     const inputs = [x];
     if (bestIndicesA != null) {
       inputs.push(bestIndicesA);
@@ -554,6 +562,11 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
+  logicalNot<T extends NDArray>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.LOGICAL_NOT);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   logicalAnd(a: NDArray, b: NDArray): NDArray {
     const program =
         new BinaryOpProgram(binaryop_gpu.LOGICAL_AND, a.shape, b.shape);
@@ -564,6 +577,13 @@ export class MathBackendWebGL implements MathBackend {
   logicalOr(a: NDArray, b: NDArray): NDArray {
     const program =
         new BinaryOpProgram(binaryop_gpu.LOGICAL_OR, a.shape, b.shape);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [a, b], output);
+  }
+
+  logicalXor(a: NDArray, b: NDArray): NDArray {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.LOGICAL_XOR, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
@@ -894,7 +914,19 @@ export class MathBackendWebGL implements MathBackend {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
+
+    const shouldTimeProgram = this.activeTimers != null;
+    let query: WebGLQuery|CPUTimerQuery;
+    if (shouldTimeProgram) {
+      query = this.startTimer();
+    }
+
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
+
+    if (shouldTimeProgram) {
+      query = this.endTimer(query);
+      this.activeTimers.push(this.getQueryTime(query));
+    }
     return output;
   }
 
@@ -939,22 +971,23 @@ export class MathBackendWebGL implements MathBackend {
 
   private uploadToGPU(dataId: number): void {
     this.throwIfNoData(dataId);
-    const {shape, values, texture, dtype} = this.texData[dataId];
+    const {shape, values, texture, dtype, texType} = this.texData[dataId];
     if (texture != null) {
       // Array is already on GPU. No-op.
       return;
     }
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
-    this.texData[dataId].textureType = TextureType.DEFAULT;
     this.texData[dataId].texShape = texShape;
-    const newTexture = this.textureManager.acquireTexture(texShape);
+    const newTexture = this.textureManager.acquireTexture(texShape, texType);
     this.texData[dataId].texture = newTexture;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
           newTexture, texShape[0],
           // TODO(smilkov): Propagate the original typed array to gpgpu.
           texShape[1], typedArrayToFloat32(values, dtype));
+      // Once uploaded, don't store the values on cpu.
+      this.texData[dataId].values = null;
     }
   }
 
@@ -963,12 +996,11 @@ export class MathBackendWebGL implements MathBackend {
     // on the gpu, to minimize likelihood of memory leak. We re-upload to gpu
     // the next time a gpgpu program needs the texture.
     const dontKeepCopyOnGPU = this.delayedStorage;
-    const {texture, texShape, dtype} = this.texData[dataId];
+    const {texture, texShape, dtype, texType} = this.texData[dataId];
     if (dontKeepCopyOnGPU && texture != null) {
-      this.textureManager.releaseTexture(texture, texShape);
+      this.textureManager.releaseTexture(texture, texShape, texType);
       this.texData[dataId].texture = null;
       this.texData[dataId].texShape = null;
-      this.texData[dataId].textureType = null;
     }
     if (float32Values != null) {
       this.texData[dataId].values = float32ToTypedArray(float32Values, dtype);

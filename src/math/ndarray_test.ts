@@ -71,13 +71,6 @@ const tests: MathTests = it => {
     test_util.expectNumbersClose(t4.get(0, 1, 0, 0), 3);
     test_util.expectNumbersClose(t4.get(0, 1, 0, 1), 4);
 
-    const t4Like = dl.clone(t4);
-    // Change t4.
-    t4.set(10, 0, 0, 0, 1);
-    test_util.expectNumbersClose(t4.get(0, 0, 0, 1), 10);
-    // Make suree t4_like hasn't changed.
-    test_util.expectNumbersClose(t4Like.get(0, 0, 0, 1), 2);
-
     // NDArray of ones.
     const x = dl.ones<Rank.R3>([3, 4, 2]);
     expect(x.rank).toBe(3);
@@ -104,13 +97,7 @@ const tests: MathTests = it => {
 
     // Reshaping ndarrays.
     const a = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-    const b = a.reshape([3, 2, 1]);
     test_util.expectNumbersClose(a.get(1, 2), 6);
-
-    // Modify the reshaped ndarray.
-    b.set(10, 2, 1, 0);
-    // Make sure the original ndarray is also modified.
-    test_util.expectNumbersClose(a.get(1, 2), 10);
   });
 
   it('NDArray dataSync CPU --> GPU', () => {
@@ -327,43 +314,7 @@ const testsNew: MathTests = it => {
     expect(f).toThrowError();
   });
 };
-const testsFill: MathTests = it => {
-  it('1D fill', () => {
-    const a = dl.zeros<Rank.R1>([3]);
-    a.fill(2);
 
-    expect(a.dtype).toBe('float32');
-    expect(a.shape).toEqual([3]);
-    test_util.expectArraysClose(a, [2, 2, 2]);
-  });
-
-  it('2D fill', () => {
-    const a = dl.zeros<Rank.R1>([3, 2]);
-    a.fill(2);
-
-    expect(a.dtype).toBe('float32');
-    expect(a.shape).toEqual([3, 2]);
-    test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2]);
-  });
-
-  it('3D fill', () => {
-    const a = dl.zeros<Rank.R1>([3, 2, 1]);
-    a.fill(2);
-
-    expect(a.dtype).toBe('float32');
-    expect(a.shape).toEqual([3, 2, 1]);
-    test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2]);
-  });
-
-  it('4D fill', () => {
-    const a = dl.zeros<Rank.R1>([3, 2, 1, 2]);
-    a.fill(2);
-
-    expect(a.dtype).toBe('float32');
-    expect(a.shape).toEqual([3, 2, 1, 2]);
-    test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
-  });
-};
 const testsScalarNew: MathTests = it => {
   it('default dtype', () => {
     const a = Scalar.new(3);
@@ -889,7 +840,7 @@ const testsAsXD: MathTests = it => {
 };
 
 const allTests = [
-  tests, testsNew, testsFill, testsScalarNew, testsArray1DNew, testsArray2DNew,
+  tests, testsNew, testsScalarNew, testsArray1DNew, testsArray2DNew,
   testsArray3DNew, testsArray4DNew, testsReshape, testsAsType, testsAsXD,
   testSqueeze
 ];

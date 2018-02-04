@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {tidy} from './backends/tracking';
 
 /**
  * Decorator for wrapping functions that perform math operations on
@@ -27,7 +27,29 @@ export function operation(
   const fn = descriptor.value;
   // tslint:disable-next-line:no-any
   descriptor.value = (...args: any[]) => {
-    return ENV.math.scope(name, () => fn(...args));
+    return tidy(name, () => fn(...args));
   };
   return descriptor;
+}
+
+// Documentation
+
+export interface HeadingMap {
+  'Tensors': 'Creation'|'Transformations'|'Slicing and Joining';
+  'Operations': 'Arithmetic'|'Basic math'|'Matrices'|'Convolution'|
+      'Normalization'|'Images'|'Logical'|'RNN'|'Reduction'|'Classification';
+}
+export type Heading = keyof HeadingMap;
+export type Namespace = 'losses'|'image';
+
+export interface DocInfo<H extends Heading> {
+  heading: H;
+  subheading: HeadingMap[H];
+  namespace?: Namespace;
+}
+
+// Pass through function that does nothing. Only used for documentation.
+export function doc<H extends Heading>(info: DocInfo<H>) {
+  // tslint:disable-next-line:no-any
+  return (...args: any[]) => {};
 }
