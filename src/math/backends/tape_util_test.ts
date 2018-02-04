@@ -19,7 +19,7 @@
 import {NamedArrayMap} from '../../math/types';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
-import {NDArray, Scalar} from '../tensor';
+import {Tensor, Scalar} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
@@ -432,7 +432,7 @@ import * as tape_util from './tape_util';
 
       const dy = Scalar.new(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [{
@@ -457,7 +457,7 @@ import * as tape_util from './tape_util';
 
       const dy = Scalar.new(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [{
@@ -485,7 +485,7 @@ import * as tape_util from './tape_util';
 
       const dy = Scalar.new(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [
@@ -529,7 +529,7 @@ import * as tape_util from './tape_util';
 
       const dy = Scalar.new(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [
@@ -590,7 +590,7 @@ import * as tape_util from './tape_util';
 
          const dy = Scalar.new(1);
 
-         const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+         const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
          accumulatedGradientsMap[y.id] = dy;
 
          const tape: Array<TapeNode<TapeNodeOutput>> = [

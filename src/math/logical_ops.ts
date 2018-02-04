@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import * as broadcast_util from './broadcast_util';
 import {doc, operation} from './decorators';
-import {NDArray} from './tensor';
+import {Tensor} from './tensor';
 import * as types from './types';
 import {DataType} from './types';
 
@@ -31,7 +31,7 @@ export class Ops {
    * @param x The input NDArray.
    */
   @operation
-  static logicalNot<T extends NDArray>(x: NDArray): T {
+  static logicalNot<T extends Tensor>(x: Tensor): T {
     util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
     return ENV.engine.executeKernel('LogicalNot', {inputs: {x}}) as T;
   }
@@ -44,7 +44,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
-  static logicalAnd<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static logicalAnd<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
@@ -60,7 +60,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
-  static logicalOr<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static logicalOr<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
@@ -75,7 +75,7 @@ export class Ops {
    * @param b The second input `NDArray`. Must be of dtype bool.
    */
   @operation
-  static logicalXor<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static logicalXor<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
@@ -95,7 +95,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
-  static where<T extends NDArray>(condition: NDArray, a: T, b: T): T {
+  static where<T extends Tensor>(condition: Tensor, a: T, b: T): T {
     util.assert(
         condition.dtype === 'bool' || a.dtype === 'bool' || b.dtype === 'bool',
         'Error Array must be of type bool.');

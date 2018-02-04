@@ -17,7 +17,7 @@
 
 import * as dl from '../index';
 // tslint:disable-next-line:max-line-length
-import {NDArray, Scalar} from '../math/tensor';
+import {Tensor, Scalar} from '../math/tensor';
 // tslint:disable-next-line:max-line-length
 import {ConstantNode, Graph, Node, PlaceholderNode, ReLUNode, SquareNode, SymbolicTensor, VariableNode} from './graph';
 import * as graph_util from './graph_util';
@@ -169,7 +169,7 @@ describe('graph_util.getOrderedEvaluationSet', () => {
 
 describe('graph_util.isInputNode', () => {
   let g: Graph;
-  let nda: NDArray;
+  let nda: Tensor;
 
   beforeEach(() => {
     g = new Graph();

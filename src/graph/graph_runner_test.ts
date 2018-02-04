@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import {NDArrayMath} from '../math/math';
-import {Array1D, NDArray, Scalar} from '../math/tensor';
+import {Tensor1D, Tensor, Scalar} from '../math/tensor';
 import {Optimizer} from '../math/optimizers/optimizer';
 import {SGDOptimizer} from '../math/optimizers/sgd_optimizer';
 
@@ -57,7 +57,7 @@ describe('Model runner', () => {
     avgCostCallback: (avgCost: Scalar) => avgCostCallback(avgCost),
     metricCallback: (metric: Scalar) => metricCallback(metric),
     inferenceExamplesCallback:
-        (feeds: FeedEntry[][], inferenceValues: NDArray[]) => null,
+        (feeds: FeedEntry[][], inferenceValues: Tensor[]) => null,
     trainExamplesPerSecCallback: (examplesPerSec: number) => null,
     totalTimeCallback: (totalTime: number) => null
   };
@@ -71,7 +71,7 @@ describe('Model runner', () => {
 
     inputTensor = g.placeholder('input', [2]);
 
-    predictionTensor = g.add(inputTensor, g.constant(Array1D.new([1, 1])));
+    predictionTensor = g.add(inputTensor, g.constant(Tensor1D.new([1, 1])));
 
     labelTensor = g.placeholder('label', [2]);
 
@@ -85,7 +85,7 @@ describe('Model runner', () => {
     let counter = 0;
     spyOn(session, 'eval').and.callFake((evalTensor: SymbolicTensor) => {
       if (evalTensor === predictionTensor) {
-        return Array1D.new([1, 0]);
+        return Tensor1D.new([1, 0]);
       } else if (evalTensor === metricTensor) {
         return Scalar.new(counter++ % 2);
       } else {
@@ -177,7 +177,7 @@ describe('Model runner', () => {
 
     fakeUserEvents.inferenceExamplesCallback =
         (inputInferenceExamples: FeedEntry[][],
-         inferenceOutputs: NDArray[]) => {
+         inferenceOutputs: Tensor[]) => {
           expect(inputInferenceExamples.length).toEqual(exampleCount);
           expect(inferenceOutputs.length).toEqual(exampleCount);
           expect((session.eval as jasmine.Spy).calls.count())

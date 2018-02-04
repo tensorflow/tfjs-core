@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D} from '../../math/tensor';
+import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -44,7 +44,7 @@ describe('log operation', () => {
   });
 
   it('simple log', () => {
-    const x = Array1D.new([1, 2, 3]);
+    const x = Tensor1D.new([1, 2, 3]);
 
     xTensor = new SymbolicTensor(x.shape);
     yTensor = new SymbolicTensor(x.shape);
@@ -60,7 +60,7 @@ describe('log operation', () => {
     test_util.expectNumbersClose(y.get(1), Math.log(x.get(1)));
     test_util.expectNumbersClose(y.get(2), Math.log(x.get(2)));
 
-    const dy = Array1D.new([1, 2, 3]);
+    const dy = Tensor1D.new([1, 2, 3]);
     gradients.add(yTensor, dy);
 
     logOp.backProp(math, activations, gradients);

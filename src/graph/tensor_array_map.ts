@@ -16,7 +16,7 @@
  */
 
 import {NDArrayMath} from '../math/math';
-import {NDArray} from '../math/tensor';
+import {Tensor} from '../math/tensor';
 
 import {SymbolicTensor} from './graph';
 
@@ -34,7 +34,7 @@ export abstract class TensorArrayMapBase {
    * @param skipChecks False by default. If true will skip all checks.
    * @return The NDArray associated with the tensor.
    */
-  get(tensor: SymbolicTensor, skipChecks = false): NDArray {
+  get(tensor: SymbolicTensor, skipChecks = false): Tensor {
     if (!skipChecks && this.dict[tensor.id] === undefined) {
       throw new Error(`tensor ${tensor.id} not in array map.`);
     }
@@ -106,7 +106,7 @@ export abstract class TensorArrayMapBase {
     return this.dict[tensor.id] === null;
   }
 
-  protected dict: {[tensorID: number]: NDArray | null} = {};
+  protected dict: {[tensorID: number]: Tensor | null} = {};
 }
 
 export class TensorArrayMap extends TensorArrayMapBase {
@@ -115,7 +115,7 @@ export class TensorArrayMap extends TensorArrayMapBase {
    * @param tensor The tensor key.
    * @param array The NDArray value, can be null.
    */
-  set(tensor: SymbolicTensor, array: NDArray|null) {
+  set(tensor: SymbolicTensor, array: Tensor|null) {
     this.dict[tensor.id] = array;
   }
 }
@@ -130,7 +130,7 @@ export class SummedTensorArrayMap extends TensorArrayMapBase {
    * @param tensor The tensor key.
    * @param array The NDArray value.
    */
-  add(tensor: SymbolicTensor, array: NDArray) {
+  add(tensor: SymbolicTensor, array: Tensor) {
     if (this.dict[tensor.id] == null) {
       this.dict[tensor.id] = this.math.keep(array);
     } else {

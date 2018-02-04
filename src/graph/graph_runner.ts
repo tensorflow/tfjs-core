@@ -18,7 +18,7 @@
 import {InputProvider} from '../data/input_provider';
 import {tidy} from '../math/backends/tracking';
 import {NDArrayMath} from '../math/math';
-import {NDArray, Scalar} from '../math/tensor';
+import {Tensor, Scalar} from '../math/tensor';
 import {Optimizer} from '../math/optimizers/optimizer';
 import {SymbolicTensor} from './graph';
 import {CostReduction, FeedEntry, Session} from './session';
@@ -30,9 +30,9 @@ const DEFAULT_INFERENCE_EXAMPLE_INTERVAL_MS = 3000;
 export interface GraphRunnerEventObserver {
   batchesTrainedCallback?: (totalBatchesTrained: number) => void;
   avgCostCallback?: (avgCost: Scalar) => void;
-  metricCallback?: (metric: NDArray) => void;
+  metricCallback?: (metric: Tensor) => void;
   inferenceExamplesCallback?:
-      (feeds: FeedEntry[][], inferenceValues: NDArray[]) => void;
+      (feeds: FeedEntry[][], inferenceValues: Tensor[]) => void;
   inferenceExamplesPerSecCallback?: (examplesPerSec: number) => void;
   trainExamplesPerSecCallback?: (examplesPerSec: number) => void;
   totalTimeCallback?: (totalTimeSec: number) => void;
@@ -223,7 +223,7 @@ export class GraphRunner {
     for (let i = 0; i < inferenceFeedEntries.length; i++) {
       const feedEntry = inferenceFeedEntries[i];
 
-      if (feedEntry.data instanceof NDArray) {
+      if (feedEntry.data instanceof Tensor) {
         throw new Error(
             'Cannot start inference on the model runner with feed entries of ' +
             'type NDArray. Please use InputProviders.');
@@ -250,7 +250,7 @@ export class GraphRunner {
 
     tidy(() => {
       const feeds: FeedEntry[][] = [];
-      const inferenceValues: NDArray[] = [];
+      const inferenceValues: Tensor[] = [];
 
       const start = performance.now();
       for (let i = 0; i < this.inferenceExampleCount; i++) {
@@ -310,7 +310,7 @@ export class GraphRunner {
       for (let i = 0; i < this.metricBatchSize; i++) {
         const metricValue =
             this.session.eval(this.metricTensor, this.metricFeedEntries) as
-            NDArray;
+            Tensor;
 
         metric = this.math.add(metric, metricValue.toFloat());
       }

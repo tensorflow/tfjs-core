@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArray} from '../math/tensor';
+import {Tensor} from '../math/tensor';
 import * as util from '../util';
 
 import {InMemoryDataset} from './dataset';
@@ -66,7 +66,7 @@ export class XhrDataset extends InMemoryDataset {
     this.xhrDatasetConfig = xhrDatasetConfig;
   }
 
-  protected getNDArray<T extends NDArray>(info: NDArrayInfo): Promise<T[]> {
+  protected getNDArray<T extends Tensor>(info: NDArrayInfo): Promise<T[]> {
     const dataPromise = info.dataType === 'png' ?
         parseTypedArrayFromPng(info, info.shape as [number, number, number]) :
         parseTypedArrayFromBinary(info);
@@ -77,7 +77,7 @@ export class XhrDataset extends InMemoryDataset {
       for (let i = 0; i < data.length / inputSize; i++) {
         const values = data.subarray(i * inputSize, (i + 1) * inputSize);
         const ndarray =
-            NDArray.make(
+            Tensor.make(
                 info.shape, {values: new Float32Array(values)}, 'float32') as T;
         ndarrays.push(ndarray);
       }
@@ -88,7 +88,7 @@ export class XhrDataset extends InMemoryDataset {
   fetchData(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const promises = this.xhrDatasetConfig.data.map(x => this.getNDArray(x));
-      Promise.all(promises).then((data: NDArray[][]) => {
+      Promise.all(promises).then((data: Tensor[][]) => {
         this.dataset = data;
         resolve();
       });

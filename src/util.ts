@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArray} from './math/tensor';
+import {Tensor} from './math/tensor';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, FlatVector, NamedArrayMap, RecursiveArray, RegularArray} from './math/types';
 
@@ -72,7 +72,7 @@ export function assertShapesMatch(
       errorMessagePrefix + `Shapes ${shapeA} and ${shapeB} must match`);
 }
 
-export function assertTypesMatch(a: NDArray, b: NDArray): void {
+export function assertTypesMatch(a: Tensor, b: Tensor): void {
   assert(
       a.dtype === b.dtype,
       `The dtypes of the first (${a.dtype}) and ` +
@@ -82,7 +82,7 @@ export function assertTypesMatch(a: NDArray, b: NDArray): void {
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
-export function flatten<T extends number|boolean|NDArray|Promise<number>>(
+export function flatten<T extends number|boolean|Tensor|Promise<number>>(
     arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
   if (Array.isArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
@@ -337,7 +337,7 @@ export function getTypedArrayFromDType<D extends DataType>(
 }
 
 export function isNDArrayInList(
-    ndarray: NDArray, ndarrayList: NDArray[]): boolean {
+    ndarray: Tensor, ndarrayList: Tensor[]): boolean {
   for (let i = 0; i < ndarrayList.length; i++) {
     if (ndarrayList[i].id === ndarray.id) {
       return true;
@@ -356,12 +356,12 @@ export function checkForNaN<D extends DataType>(
 }
 
 export function flattenNameArrayMap(
-    nameArrayMap: NDArray|NamedArrayMap, keys?: string[]): NDArray[] {
-  const xs: NDArray[] = [];
-  if (nameArrayMap instanceof NDArray) {
+    nameArrayMap: Tensor|NamedArrayMap, keys?: string[]): Tensor[] {
+  const xs: Tensor[] = [];
+  if (nameArrayMap instanceof Tensor) {
     xs.push(nameArrayMap);
   } else {
-    const xMap = nameArrayMap as {[xName: string]: NDArray};
+    const xMap = nameArrayMap as {[xName: string]: Tensor};
     for (let i = 0; i < keys.length; i++) {
       xs.push(xMap[keys[i]]);
     }
@@ -370,7 +370,7 @@ export function flattenNameArrayMap(
 }
 
 export function unflattenToNameArrayMap(
-    keys: string[], flatArrays: NDArray[]): NamedArrayMap {
+    keys: string[], flatArrays: Tensor[]): NamedArrayMap {
   if (keys.length !== flatArrays.length) {
     throw new Error(
         `Cannot unflatten NDArray[], keys and arrays are not of same length.`);

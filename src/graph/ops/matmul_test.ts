@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D, Array2D} from '../../math/tensor';
+import {Tensor1D, Tensor2D} from '../../math/tensor';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
@@ -47,8 +47,8 @@ describe('add operation', () => {
   });
 
   it('matmul two NDArray2Ds', () => {
-    const x1 = Array2D.new([2, 3], [1, 2, 3, 10, 20, 30]);
-    const x2 = Array2D.new([3, 2], [2, 3, 4, 1, 2, 3]);
+    const x1 = Tensor2D.new([2, 3], [1, 2, 3, 10, 20, 30]);
+    const x2 = Tensor2D.new([3, 2], [2, 3, 4, 1, 2, 3]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);
@@ -59,7 +59,7 @@ describe('add operation', () => {
 
     matmulOp = new MatMul(t1, t2, y);
     matmulOp.feedForward(math, activations);
-    const yVal = activations.get(y) as Array2D;
+    const yVal = activations.get(y) as Tensor2D;
 
     expect(yVal.shape).toEqual([x1.shape[0], x2.shape[1]]);
     expect(yVal.get(0, 0))
@@ -79,12 +79,12 @@ describe('add operation', () => {
             x1.get(1, 0) * x2.get(0, 1) + x1.get(1, 1) * x2.get(1, 1) +
             x1.get(1, 2) * x2.get(2, 1));
 
-    const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+    const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
     gradients.add(y, dy);
 
     matmulOp.backProp(math, activations, gradients);
 
-    const dx1 = gradients.get(t1) as Array2D;
+    const dx1 = gradients.get(t1) as Tensor2D;
 
     // dx1 = dy * x2T
     expect(dx1.shape).toEqual(x1.shape);
@@ -101,7 +101,7 @@ describe('add operation', () => {
     expect(dx1.get(1, 2))
         .toEqual(dy.get(1, 0) * x2.get(2, 0) + dy.get(1, 1) * x2.get(2, 1));
 
-    const dx2 = gradients.get(t2) as Array2D;
+    const dx2 = gradients.get(t2) as Tensor2D;
 
     // dx2 = x1T * dy
     expect(dx2.shape).toEqual(x2.shape);
@@ -122,8 +122,8 @@ describe('add operation', () => {
   it('matrix times vector', () => {
     const inputSize = 3;
     const outputSize = 2;
-    const x1 = Array2D.new([outputSize, inputSize], [1, 2, 0, 4, 3, 2]);
-    const x2 = Array1D.new([1, 2, 3]);
+    const x1 = Tensor2D.new([outputSize, inputSize], [1, 2, 0, 4, 3, 2]);
+    const x2 = Tensor1D.new([1, 2, 3]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);
@@ -140,7 +140,7 @@ describe('add operation', () => {
     expect(yVal.get(1)).toBe(16);
 
     // Back prop.
-    const dy = Array1D.new([2, 3]);
+    const dy = Tensor1D.new([2, 3]);
     gradients.add(y, dy);
 
     op.backProp(math, activations, gradients);
@@ -163,8 +163,8 @@ describe('add operation', () => {
   });
 
   it('vector times matrix', () => {
-    const x1 = Array1D.new([1, 2, 3]);
-    const x2 = Array2D.new([3, 2], [1, 2, 0, 4, 3, 2]);
+    const x1 = Tensor1D.new([1, 2, 3]);
+    const x2 = Tensor2D.new([3, 2], [1, 2, 0, 4, 3, 2]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);
@@ -181,7 +181,7 @@ describe('add operation', () => {
     expect(yVal.get(1)).toBe(16);
 
     // Back prop.
-    const dy = Array1D.new([2, 3]);
+    const dy = Tensor1D.new([2, 3]);
     gradients.add(y, dy);
 
     op.backProp(math, activations, gradients);

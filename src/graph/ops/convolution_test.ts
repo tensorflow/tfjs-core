@@ -18,7 +18,7 @@
 import {ENV} from '../../environment';
 import * as dl from '../../index';
 import * as conv_util from '../../math/conv_util';
-import {Array1D, Array2D, NDArray} from '../../math/tensor';
+import {Tensor1D, Tensor2D, Tensor} from '../../math/tensor';
 import {Rank} from '../../math/types';
 import * as test_util from '../../test_util';
 import {SymbolicTensor} from '../graph';
@@ -26,7 +26,7 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
 import {Convolution2D} from './convolution';
 
-function assertNoNaNs(t: NDArray) {
+function assertNoNaNs(t: Tensor) {
   const values = t.dataSync();
   for (let i = 0; i < values.length; ++i) {
     expect(isNaN(values[i])).toBe(false);
@@ -65,7 +65,7 @@ describe('Convolution', () => {
     const stride = 2;
     const zeroPad = 1;
     const weights2D =
-        Array2D.new([fieldSize * fieldSize * inputDepth, outputDepth], [
+        Tensor2D.new([fieldSize * fieldSize * inputDepth, outputDepth], [
           1,  -1, 1, 0, -1, 1, -1, 0,  -1, 0,  0, 1,  -1, 1, 1, 1,  1, 1,
           0,  1,  0, 0, 0,  1, -1, -1, 1,  0,  1, -1, 1,  1, 1, 1,  1, -1,
           -1, 0,  1, 0, 0,  0, 1,  -1, -1, -1, 1, 0,  -1, 1, 0, -1, 0, 1
@@ -73,8 +73,8 @@ describe('Convolution', () => {
 
     const weights =
         weights2D.as4D(fieldSize, fieldSize, inputDepth, outputDepth);
-    const biases = Array1D.new([1, 0]);
-    const x2D = Array2D.new([25, inputDepth], [
+    const biases = Tensor1D.new([1, 0]);
+    const x2D = Tensor2D.new([25, inputDepth], [
       1, 2, 2, 0, 0, 2, 2, 2, 1, 1, 2, 1, 1, 1, 2, 1, 2, 2, 0,
       2, 2, 1, 1, 0, 0, 2, 1, 1, 0, 1, 2, 2, 0, 0, 2, 2, 1, 2,
       2, 2, 1, 2, 2, 2, 1, 1, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 1,

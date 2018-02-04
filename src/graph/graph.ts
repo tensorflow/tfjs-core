@@ -19,7 +19,7 @@
 import {Initializer, VarianceScalingInitializer, ZerosInitializer} from '../initializers';
 import * as concat_util from '../math/concat_util';
 import * as conv_util from '../math/conv_util';
-import {NDArray, Scalar} from '../math/tensor';
+import {Tensor, Scalar} from '../math/tensor';
 import * as util from '../util';
 
 /**
@@ -75,7 +75,7 @@ export class Graph {
    * @param data The NDArray to associate with this variable tensor.
    * @return The tensor representing the variable.
    */
-  variable(name: string, data: NDArray): SymbolicTensor {
+  variable(name: string, data: Tensor): SymbolicTensor {
     return this.addNodeAndReturnOutput(new VariableNode(this, name, data));
   }
 
@@ -98,15 +98,15 @@ export class Graph {
    * @return A node outputing the constant value.
    */
   constant(value: ArrayData): SymbolicTensor {
-    let finalValue: NDArray;
+    let finalValue: Tensor;
     if (typeof value === 'number') {
       finalValue = Scalar.new(value);
-    } else if (value instanceof NDArray) {
+    } else if (value instanceof Tensor) {
       finalValue = value;
     } else if (value instanceof Array) {
       const flatValues = util.flatten(value as number[]);
       const vals = new Float32Array(flatValues as number[]);
-      finalValue = NDArray.make(util.inferShape(value), {values: vals});
+      finalValue = Tensor.make(util.inferShape(value), {values: vals});
     } else {
       throw new Error('unimplemented constant type.');
     }
@@ -479,7 +479,7 @@ export abstract class Node {
  * @hidden
  */
 export class VariableNode extends Node {
-  constructor(graph: Graph, name: string, public data: NDArray) {
+  constructor(graph: Graph, name: string, public data: Tensor) {
     super(graph, name, {}, new SymbolicTensor(data.shape));
   }
   validate() {
@@ -509,7 +509,7 @@ export class PlaceholderNode extends Node {
  * @hidden
  */
 export class ConstantNode extends Node {
-  constructor(graph: Graph, public data: NDArray) {
+  constructor(graph: Graph, public data: Tensor) {
     super(graph, 'Constant', {}, new SymbolicTensor(data.shape));
   }
   validate() {
@@ -1104,4 +1104,4 @@ export class ArgMaxEqualsNode extends Node {
  * @hidden
  */
 export type ArrayData =
-    NDArray|number|number[]|number[][]|number[][][]|number[][][][];
+    Tensor|number|number[]|number[][]|number[][][]|number[][][][];

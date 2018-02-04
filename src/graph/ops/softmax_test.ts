@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D, Scalar} from '../../math/tensor';
+import {Tensor1D, Scalar} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -46,8 +46,8 @@ describe('softmax cross entropy cost', () => {
   it('matches theory', () => {
     // Verify that when having softmax + cross entropy,
     // dE/dx = y - t, which is the theoretical result.
-    const logits = Array1D.new([1, 2, 3]);
-    const label = Array1D.new([0.3, 0.6, 0.1]);
+    const logits = Tensor1D.new([1, 2, 3]);
+    const label = Tensor1D.new([0.3, 0.6, 0.1]);
     const softmaxLogits = math.softmax(logits);
 
     logitsTensor = new SymbolicTensor(logits.shape);
@@ -104,7 +104,7 @@ describe('softmax operation', () => {
   });
 
   it('matches theory', () => {
-    const logits = Array1D.new([10, 0, -1]);
+    const logits = Tensor1D.new([10, 0, -1]);
     const softmaxLogits = math.softmax(logits);
 
     logitsTensor = new SymbolicTensor(logits.shape);
@@ -119,7 +119,7 @@ describe('softmax operation', () => {
 
     test_util.expectArraysClose(y.dataSync(), softmaxLogits.dataSync());
 
-    const dy = Array1D.new([1, 10, 100]);
+    const dy = Tensor1D.new([1, 10, 100]);
     gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);

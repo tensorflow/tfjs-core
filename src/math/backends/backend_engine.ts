@@ -17,7 +17,7 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {NDArray, Variable} from '../tensor';
+import {Tensor, Variable} from '../tensor';
 import * as ops from '../ops';
 import {NamedArrayMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
@@ -32,17 +32,17 @@ import {ScopeResultImmediate} from './tape_util';
 import {tidy} from './tracking';
 
 interface ScopeState {
-  keep: NDArray[];
-  track: NDArray[];
+  keep: Tensor[];
+  track: Tensor[];
 }
 
-export type CustomGradientFunc<T extends NDArray> = () => {
+export type CustomGradientFunc<T extends Tensor> = () => {
   value: T, gradients: (dy: T, y: T) => TapeNodeInputGradientArrays
 };
 
 export interface NDArrayManager {
   getNumArrays(): number;
-  register(a: NDArray): void;
+  register(a: Tensor): void;
   registerVariable(v: Variable): void;
   disposeData(dataId: number): void;
 }
@@ -116,7 +116,7 @@ export class BackendEngine implements NDArrayManager {
     return this.registeredArrays.size;
   }
 
-  register(a: NDArray|Variable): void {
+  register(a: Tensor|Variable): void {
     const refCount = this.registeredArrays.has(a.dataId) ?
         this.registeredArrays.get(a.dataId) :
         0;
@@ -134,10 +134,10 @@ export class BackendEngine implements NDArrayManager {
   }
 
   private addTapeNode(
-      inputs: NamedArrayMap, result: NDArray,
-      gradientsFunc: (dy: NDArray, y: NDArray) => TapeNodeInputGradientArrays):
+      inputs: NamedArrayMap, result: Tensor,
+      gradientsFunc: (dy: Tensor, y: Tensor) => TapeNodeInputGradientArrays):
       void {
-    const evaluatedNode: TapeNode<NDArray> = {
+    const evaluatedNode: TapeNode<Tensor> = {
       id: this.nextTapeNodeId++,
       type: 'customGradient',
       name,
@@ -148,7 +148,7 @@ export class BackendEngine implements NDArrayManager {
     this.activeTape.push(evaluatedNode);
   }
 
-  keep<T extends NDArray>(result: T): T {
+  keep<T extends Tensor>(result: T): T {
     if (this.scopeStack.length === 1 && ENV.engine.safeMode) {
       throw new Error(
           'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +
@@ -254,8 +254,8 @@ export class BackendEngine implements NDArrayManager {
    * a function of that `x`. It also takes optional dy to multiply the gradient,
    * which defaults to `1`.
    */
-  gradients<T extends NDArray>(f: () => T, xs: NDArray[], dy?: T):
-      {value: T, gradients: NDArray[]} {
+  gradients<T extends Tensor>(f: () => T, xs: Tensor[], dy?: T):
+      {value: T, gradients: Tensor[]} {
     return tidy('gradients', () => {
       const y = f();
       // Filter out the nodes that don't connect x => y.
@@ -268,7 +268,7 @@ export class BackendEngine implements NDArrayManager {
             `to are used inside the gradient function.`);
       }
 
-      const accumulatedGradientMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientMap: {[ndarrayId: number]: Tensor} = {};
       accumulatedGradientMap[y.id] = (dy == null) ? ops.onesLike(y) : dy;
 
       // Backprop gradients through the filtered nodes.
@@ -279,7 +279,7 @@ export class BackendEngine implements NDArrayManager {
     }, true /* gradientsMode */);
   }
 
-  customGradient<T extends NDArray>(
+  customGradient<T extends Tensor>(
       name: string, f: CustomGradientFunc<T>, inputs: NamedArrayMap): T {
     this.customGradientDepth++;
 
@@ -316,7 +316,7 @@ export class BackendEngine implements NDArrayManager {
    *
    * @param result The NDArray to track in the current scope.
    */
-  private track<T extends NDArray>(result: T): T {
+  private track<T extends Tensor>(result: T): T {
     if (this.scopeStack.length === 1 && this.safeMode) {
       throw new Error(
           'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +

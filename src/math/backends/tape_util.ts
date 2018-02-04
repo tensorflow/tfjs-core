@@ -16,7 +16,7 @@
  */
 
 import * as util from '../../util';
-import {NDArray} from '../tensor';
+import {Tensor} from '../tensor';
 import {NamedArrayMap, RegularArray} from '../types';
 
 // tslint:disable-next-line:max-line-length
@@ -30,7 +30,7 @@ import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types'
  * @param y The output NDArray.
  */
 export function getFilteredNodesXToY(
-    tape: Tape, xs: NDArray[], y: NDArray): Tape {
+    tape: Tape, xs: Tensor[], y: Tensor): Tape {
   // Forward pass to compute all the nodes and NDArrays that are transitively a
   // function of x.
   const arraysFromX: {[ndarrayId: number]: boolean} = {};
@@ -49,7 +49,7 @@ export function getFilteredNodesXToY(
       let anyInputFromX = false;
       for (let j = 0; j < xs.length; j++) {
         if (arraysFromX[input.id]) {
-          if (node.output instanceof NDArray) {
+          if (node.output instanceof Tensor) {
             arraysFromX[node.output.id] = true;
           } else {
             const keys = Object.keys(node.output);
@@ -78,8 +78,8 @@ export function getFilteredNodesXToY(
     const node = tape[i];
     const nodeInputs = node.inputAndArgs.inputs;
 
-    const outputs: NDArray[] = [];
-    if (node.output instanceof NDArray) {
+    const outputs: Tensor[] = [];
+    if (node.output instanceof Tensor) {
       outputs.push(node.output);
     } else {
       const keys = Object.keys(node.output);
@@ -107,7 +107,7 @@ export function getFilteredNodesXToY(
 
     if (nodesFromX[node.id] && nodesToY[node.id]) {
       // Prune the inputs from the node that aren't a function of x.
-      const prunedInputs: {[inputName: string]: NDArray} = {};
+      const prunedInputs: {[inputName: string]: Tensor} = {};
       for (const inputName in node.inputAndArgs.inputs) {
         const nodeInput = node.inputAndArgs.inputs[inputName];
         if (arraysFromX[nodeInput.id]) {
@@ -115,8 +115,8 @@ export function getFilteredNodesXToY(
         }
       }
 
-      let prunedOutputs: NDArray|{[outputName: string]: NDArray};
-      if (node.output instanceof NDArray) {
+      let prunedOutputs: Tensor|{[outputName: string]: Tensor};
+      if (node.output instanceof Tensor) {
         // Nothing to prune if the output is just a single NDArray since the
         // node would have been pruned.
         prunedOutputs = node.output;
@@ -150,14 +150,14 @@ export function getFilteredNodesXToY(
  * @param filteredTape The filtered TapeNodes to backprop through.
  */
 export function backpropagateGradients(
-    arrayAccumulatedGradientMap: {[ndarrayId: number]: NDArray},
+    arrayAccumulatedGradientMap: {[ndarrayId: number]: Tensor},
     filteredTape: Tape) {
   // Walk the tape backwards and keep a map of NDArray to its gradient.
   for (let i = filteredTape.length - 1; i >= 0; i--) {
     const node = filteredTape[i];
 
-    let dy: NDArray|NamedArrayMap;
-    if (node.output instanceof NDArray) {
+    let dy: Tensor|NamedArrayMap;
+    if (node.output instanceof Tensor) {
       dy = arrayAccumulatedGradientMap[node.output.id];
     } else {
       dy = {};
@@ -204,25 +204,25 @@ export function backpropagateGradients(
 }
 
 export type ScopeResultImmediate =
-    void|NDArray|RegularArray<NDArray>|{[key: string]: NDArray | NDArray[]};
+    void|Tensor|RegularArray<Tensor>|{[key: string]: Tensor | Tensor[]};
 export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
 export type ScopeFn<T extends ScopeResult> = () => T;
 
 export function extractNDArraysFromScopeResult(result: ScopeResultImmediate):
-    NDArray[] {
+    Tensor[] {
   if (result == null) {
     return [];
   }
-  if (result instanceof NDArray) {
+  if (result instanceof Tensor) {
     return [result];
   }
 
-  const list: NDArray[] = [];
-  const resultObj = result as {[key: string]: NDArray};
+  const list: Tensor[] = [];
+  const resultObj = result as {[key: string]: Tensor};
   // Iteration over keys works also for arrays.
   for (const k in resultObj) {
     const sublist =
-        util.flatten(resultObj[k]).filter(x => x instanceof NDArray);
+        util.flatten(resultObj[k]).filter(x => x instanceof Tensor);
     list.push(...sublist);
   }
   return list;

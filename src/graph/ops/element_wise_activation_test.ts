@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import {ENV} from '../../environment';
-import {Array1D, Array2D} from '../../math/tensor';
+import {Tensor1D, Tensor2D} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {expectArraysClose} from '../../test_util';
 import {SymbolicTensor} from '../graph';
@@ -43,7 +43,7 @@ describe('Element wise activation', () => {
   });
 
   it('ReLU', () => {
-    const x = Array2D.new([2, 3], [3, 0, -1, 2, 9, -5]);
+    const x = Tensor2D.new([2, 3], [3, 0, -1, 2, 9, -5]);
 
     xTensor = new SymbolicTensor(x.shape);
     yTensor = new SymbolicTensor(x.shape);
@@ -56,7 +56,7 @@ describe('Element wise activation', () => {
     expect(y.dataSync()).toEqual(new Float32Array([3, 0, 0, 2, 9, 0]));
 
     // Backprop.
-    const dy = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    const dy = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
@@ -67,7 +67,7 @@ describe('Element wise activation', () => {
   });
 
   it('LeakyReLU', () => {
-    const x = Array2D.new([2, 3], [3, 0.1, -1, 2, 9, -5]);
+    const x = Tensor2D.new([2, 3], [3, 0.1, -1, 2, 9, -5]);
 
     xTensor = new SymbolicTensor(x.shape);
     yTensor = new SymbolicTensor(x.shape);
@@ -81,7 +81,7 @@ describe('Element wise activation', () => {
         y.dataSync(), new Float32Array([3, 0.1, -0.2, 2, 9, -1.0]));
 
     // Backprop.
-    const dy = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    const dy = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
@@ -92,7 +92,7 @@ describe('Element wise activation', () => {
   });
 
   it('TanH', () => {
-    const x = Array1D.new([3, 0, -3]);
+    const x = Tensor1D.new([3, 0, -3]);
 
     xTensor = new SymbolicTensor(x.shape);
     yTensor = new SymbolicTensor(x.shape);
@@ -108,7 +108,7 @@ describe('Element wise activation', () => {
     test_util.expectNumbersClose(y.get(2), -0.99505475);
 
     // Backprop.
-    const dy = Array1D.new([2, 4, 3]);
+    const dy = Tensor1D.new([2, 4, 3]);
     gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
@@ -120,7 +120,7 @@ describe('Element wise activation', () => {
   });
 
   it('Sigmoid', () => {
-    const x = Array1D.new([3, 0, -3]);
+    const x = Tensor1D.new([3, 0, -3]);
 
     xTensor = new SymbolicTensor(x.shape);
     yTensor = new SymbolicTensor(x.shape);
@@ -135,7 +135,7 @@ describe('Element wise activation', () => {
     test_util.expectNumbersClose(y.get(2), 0.0474258731);
 
     // Backprop.
-    const dy = Array1D.new([2, 4, 3]);
+    const dy = Tensor1D.new([2, 4, 3]);
     gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
@@ -149,7 +149,7 @@ describe('Element wise activation', () => {
   });
 
   it('Square', () => {
-    const x = Array1D.new([2, 0, -3]);
+    const x = Tensor1D.new([2, 0, -3]);
 
     xTensor = new SymbolicTensor(x.shape);
     yTensor = new SymbolicTensor(x.shape);
@@ -162,7 +162,7 @@ describe('Element wise activation', () => {
     expect(y.dataSync()).toEqual(new Float32Array([4, 0, 9]));
 
     // Backprop.
-    const dy = Array1D.new([1, 2, 3]);
+    const dy = Tensor1D.new([1, 2, 3]);
     gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);

@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import * as dl from '../index';
-import {Array1D} from '../math/tensor';
+import {Tensor1D} from '../math/tensor';
 import {SymbolicTensor} from './graph';
 import {SummedTensorArrayMap, TensorArrayMap} from './tensor_array_map';
 
@@ -121,10 +121,10 @@ describe('SummedTensorArrayMap.add', () => {
   });
 
   it('add sums gradients', () => {
-    map.add(t, Array1D.new([1, 2, 3]));
+    map.add(t, Tensor1D.new([1, 2, 3]));
     expect(map.get(t).dataSync()).toEqual(new Float32Array([1, 2, 3]));
 
-    map.add(t, Array1D.new([30, 20, 10]));
+    map.add(t, Tensor1D.new([30, 20, 10]));
     expect(map.get(t).dataSync()).toEqual(new Float32Array([31, 22, 13]));
   });
 });

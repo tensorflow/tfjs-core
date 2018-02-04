@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D} from '../../math/tensor';
+import {Tensor1D} from '../../math/tensor';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {MeanSquaredCost} from './element_wise_cost';
@@ -43,8 +43,8 @@ describe('MeanSquaredCost', () => {
   });
 
   it('mean squared cost, forward & backward', () => {
-    const x1 = Array1D.new([1, 2, 3, 4]);
-    const x2 = Array1D.new([2, 4, 6, 8]);
+    const x1 = Tensor1D.new([1, 2, 3, 4]);
+    const x2 = Tensor1D.new([2, 4, 6, 8]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);

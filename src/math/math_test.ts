@@ -20,15 +20,15 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {gradientsScope} from './backends/gradients';
 import {MatrixOrientation} from './backends/types/matmul';
-import {Array1D, Array2D, NDArray, Scalar} from './tensor';
+import {Tensor1D, Tensor2D, Tensor, Scalar} from './tensor';
 
 // math.scope
 {
   const gpuTests: MathTests = it => {
     it('scope returns NDArray', async math => {
       await dl.tidy(async () => {
-        const a = Array1D.new([1, 2, 3]);
-        let b = Array1D.new([0, 0, 0]);
+        const a = Tensor1D.new([1, 2, 3]);
+        let b = Tensor1D.new([0, 0, 0]);
 
         expect(math.getNumArrays()).toBe(2);
         await dl.tidy(async () => {
@@ -53,8 +53,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
 
     it('multiple disposes does not affect num arrays', math => {
       expect(math.getNumArrays()).toBe(0);
-      const a = Array1D.new([1, 2, 3]);
-      const b = Array1D.new([1, 2, 3]);
+      const a = Tensor1D.new([1, 2, 3]);
+      const b = Tensor1D.new([1, 2, 3]);
       expect(math.getNumArrays()).toBe(2);
       a.dispose();
       a.dispose();
@@ -64,8 +64,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('scope returns NDArray[]', async math => {
-      const a = Array1D.new([1, 2, 3]);
-      const b = Array1D.new([0, -1, 1]);
+      const a = Tensor1D.new([1, 2, 3]);
+      const b = Tensor1D.new([0, -1, 1]);
       expect(math.getNumArrays()).toBe(2);
 
       await dl.tidy(async () => {
@@ -89,8 +89,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('basic scope usage without return', math => {
-      const a = Array1D.new([1, 2, 3]);
-      let b = Array1D.new([0, 0, 0]);
+      const a = Tensor1D.new([1, 2, 3]);
+      let b = Tensor1D.new([0, 0, 0]);
 
       expect(math.getNumArrays()).toBe(2);
 
@@ -106,8 +106,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('scope returns Promise<NDArray>', async math => {
-      const a = Array1D.new([1, 2, 3]);
-      const b = Array1D.new([0, 0, 0]);
+      const a = Tensor1D.new([1, 2, 3]);
+      const b = Tensor1D.new([0, 0, 0]);
 
       expect(math.getNumArrays()).toBe(2);
 
@@ -132,8 +132,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('nested scope usage', async math => {
-      const a = Array1D.new([1, 2, 3]);
-      let b = Array1D.new([0, 0, 0]);
+      const a = Tensor1D.new([1, 2, 3]);
+      let b = Tensor1D.new([0, 0, 0]);
 
       expect(math.getNumArrays()).toBe(2);
 
@@ -222,7 +222,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
         pixels.data[i] = 250;
       }
 
-      const a = NDArray.fromPixels(pixels, 4);
+      const a = Tensor.fromPixels(pixels, 4);
       const b = Scalar.new(20, 'int32');
 
       const res = math.add(a, b);
@@ -245,9 +245,9 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
 {
   const tests: MathTests = it => {
     it('matmul + relu', math => {
-      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
-      const dy = Array2D.new([2, 2], [1, 10, 20, 30]);
+      const a = Tensor2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
+      const b = Tensor2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+      const dy = Tensor2D.new([2, 2], [1, 10, 20, 30]);
 
       const gradients = math.vjp(() => {
         // m = dot(a, b)
@@ -326,8 +326,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
 {
   const tests: MathTests = it => {
     it('matmul + relu', math => {
-      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+      const a = Tensor2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
+      const b = Tensor2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
 
       const gradients = math.gradients(() => {
         // m = dot(a, b)
@@ -373,8 +373,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('works with reshape', math => {
-      const a = Array2D.new([2, 2], [1, 2, 3, 4]);
-      const exponent = Array1D.new([2, 2, 2, 2], 'int32');
+      const a = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const exponent = Tensor1D.new([2, 2, 2, 2], 'int32');
 
       const gradients = math.gradients(() => {
         const b = a.flatten();
@@ -387,9 +387,9 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('reshape outside math.gradients() throws error', math => {
-      const a = Array2D.new([2, 2], [1, 2, 3, 4]);
+      const a = Tensor2D.new([2, 2], [1, 2, 3, 4]);
       const b = a.flatten();
-      const exponent = Array1D.new([2, 2, 2, 2], 'int32');
+      const exponent = Tensor1D.new([2, 2, 2, 2], 'int32');
 
       const f = () => {
         return math.gradients(() => {
@@ -401,8 +401,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('works with asType', math => {
-      const a = Array2D.new([2, 2], [1, 2, 3, 4], 'int32');
-      const exponent = Array2D.new([2, 2], [2, 2, 2, 2], 'int32');
+      const a = Tensor2D.new([2, 2], [1, 2, 3, 4], 'int32');
+      const exponent = Tensor2D.new([2, 2], [2, 2, 2, 2], 'int32');
 
       const gradients = math.gradients(() => {
         const b = a.toFloat();
@@ -416,9 +416,9 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('asType outside of math.gradients() throws error', math => {
-      const a = Array2D.new([2, 2], [1, 2, 3, 4], 'int32');
+      const a = Tensor2D.new([2, 2], [1, 2, 3, 4], 'int32');
       const b = a.toFloat();
-      const exponent = Array2D.new([2, 2], [2, 2, 2, 2], 'int32');
+      const exponent = Tensor2D.new([2, 2], [2, 2, 2, 2], 'int32');
 
       const f = () => {
         return math.gradients(() => {
@@ -442,8 +442,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
 {
   const tests: MathTests = it => {
     it('matmul + relu', math => {
-      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+      const a = Tensor2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
+      const b = Tensor2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
 
       const {value, gradients} = math.valueAndGradients(() => {
         // m = dot(a, b)
@@ -477,8 +477,8 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
     });
 
     it('matmul + relu + inner scope', math => {
-      const a = Array2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Array2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+      const a = Tensor2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
+      const b = Tensor2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
 
       const {value, gradients} = math.valueAndGradients(() => {
         // m = dot(a, b)
@@ -575,7 +575,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
         return math.customGradient('test', () => {
           const value = math.pow(a, b);
 
-          const gradients = (dy: NDArray, y: NDArray) => {
+          const gradients = (dy: Tensor, y: Tensor) => {
             return {a: () => math.multiply(dy, Scalar.new(3))};
           };
 
@@ -598,7 +598,7 @@ import {Array1D, Array2D, NDArray, Scalar} from './tensor';
         return math.vjp(() => {
           return math.customGradient('test', () => {
             const value = math.pow(a, b);
-            const gradients = (dy: NDArray, y: NDArray) => {
+            const gradients = (dy: Tensor, y: Tensor) => {
               return {a: () => math.multiply(dy, a)};
             };
 

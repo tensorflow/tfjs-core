@@ -18,7 +18,7 @@
 import {keep, tidy} from '../../math/backends/tracking';
 import * as conv_util from '../../math/conv_util';
 import {NDArrayMath} from '../../math/math';
-import {Array3D} from '../../math/tensor';
+import {Tensor3D} from '../../math/tensor';
 import * as util from '../../util';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -50,7 +50,7 @@ export class MaxPool extends Operation {
   }
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
-    const x = inferenceArrays.get(this.xTensor) as Array3D;
+    const x = inferenceArrays.get(this.xTensor) as Tensor3D;
     tidy(() => {
       inferenceArrays.set(
           this.yTensor,
@@ -61,8 +61,8 @@ export class MaxPool extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    const x = inferenceArrays.get(this.xTensor) as Array3D;
-    const dy = gradientArrays.get(this.yTensor) as Array3D;
+    const x = inferenceArrays.get(this.xTensor) as Tensor3D;
+    const dy = gradientArrays.get(this.yTensor) as Tensor3D;
 
     tidy(() => {
       gradientArrays.add(

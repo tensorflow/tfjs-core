@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D, Scalar} from '../../math/tensor';
+import {Tensor1D, Scalar} from '../../math/tensor';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
@@ -51,8 +51,8 @@ describe('Linear combination', () => {
   });
 
   it('Simple linear combination', () => {
-    const x1 = Array1D.new([1, 2, 3]);
-    const x2 = Array1D.new([10, 20, 30]);
+    const x1 = Tensor1D.new([1, 2, 3]);
+    const x2 = Tensor1D.new([10, 20, 30]);
     const c1 = Scalar.new(3);
     const c2 = Scalar.new(2);
 
@@ -76,7 +76,7 @@ describe('Linear combination', () => {
     expect(y.get(1)).toBe(x1.get(1) * c1.get() + x2.get(1) * c2.get());
     expect(y.get(2)).toBe(x1.get(2) * c1.get() + x2.get(2) * c2.get());
 
-    const dy = Array1D.new([2, 4, 6]);
+    const dy = Tensor1D.new([2, 4, 6]);
     gradients.add(yTensor, dy);
     op.backProp(math, activations, gradients);
 

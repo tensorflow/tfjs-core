@@ -18,7 +18,7 @@
 import {InputProvider} from '../data/input_provider';
 import {tidy} from '../math/backends/tracking';
 import {NDArrayMath} from '../math/math';
-import {NDArray, Scalar} from '../math/tensor';
+import {Tensor, Scalar} from '../math/tensor';
 import {Optimizer} from '../math/optimizers/optimizer';
 import * as util from '../util';
 import {Graph, Node, SymbolicTensor} from './graph';
@@ -32,7 +32,7 @@ import {SummedTensorArrayMap, TensorArrayMap} from './tensor_array_map';
  */
 export type FeedEntry = {
   tensor: SymbolicTensor,
-  data: NDArray|InputProvider
+  data: Tensor|InputProvider
 };
 
 /**
@@ -108,7 +108,7 @@ export class Session {
    * tensors with NDArrays.
    * @return The computed values of the tensors.
    */
-  evalAll(tensors: SymbolicTensor[], feedEntries: FeedEntry[]): NDArray[] {
+  evalAll(tensors: SymbolicTensor[], feedEntries: FeedEntry[]): Tensor[] {
     return tidy(() => {
       const feed = new FeedDictionary(feedEntries);
       const runtime = this.getOrCreateRuntime(tensors, feed);
@@ -146,7 +146,7 @@ export class Session {
    * tensors with NDArrays.
    * @return The computed value of the tensor.
    */
-  eval(tensor: SymbolicTensor, feedEntries: FeedEntry[]): NDArray {
+  eval(tensor: SymbolicTensor, feedEntries: FeedEntry[]): Tensor {
     return this.evalAll([tensor], feedEntries)[0];
   }
 

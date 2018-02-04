@@ -50,10 +50,10 @@ export {MatrixOrientation} from './math/backends/types/matmul';
 export {GPGPUContext} from './math/backends/webgl/gpgpu_context';
 export {LSTMCell} from './math/lstm';
 export {NDArrayMath} from './math/math';
-// tslint:disable-next-line:max-line-length
-export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, variable, Variable} from './math/tensor';
 export {Optimizer} from './math/optimizers/optimizer';
 export {SGDOptimizer} from './math/optimizers/sgd_optimizer';
+// tslint:disable-next-line:max-line-length
+export {Tensor4D, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, variable, Variable} from './math/tensor';
 export {Rank} from './math/types';
 export {Model} from './model';
 export {version};

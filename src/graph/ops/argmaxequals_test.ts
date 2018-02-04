@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D} from '../../math/tensor';
+import {Tensor1D} from '../../math/tensor';
 import {SymbolicTensor} from '../graph';
 import {TensorArrayMap} from '../tensor_array_map';
 import {ArgMaxEquals} from './argmaxequals';
@@ -41,8 +41,8 @@ describe('Argmax equals oper', () => {
   });
 
   it('argmax equals', () => {
-    const x1 = Array1D.new([0, 2, 1]);
-    const x2 = Array1D.new([2, 4, 3]);
+    const x1 = Tensor1D.new([0, 2, 1]);
+    const x2 = Tensor1D.new([2, 4, 3]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);
@@ -60,8 +60,8 @@ describe('Argmax equals oper', () => {
   });
 
   it('argmax not equals', () => {
-    const x1 = Array1D.new([0, 2, 1]);
-    const x2 = Array1D.new([5, 4, 3]);
+    const x1 = Tensor1D.new([0, 2, 1]);
+    const x2 = Tensor1D.new([5, 4, 3]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);

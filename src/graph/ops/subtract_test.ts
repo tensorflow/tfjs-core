@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D, Array2D, Scalar} from '../../math/tensor';
+import {Tensor1D, Tensor2D, Scalar} from '../../math/tensor';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Subtract} from './subtract';
@@ -46,8 +46,8 @@ describe('add operation', () => {
   });
 
   it('subtracts two 1-D tensors', () => {
-    const x1 = Array1D.new([1, 2, 3]);
-    const x2 = Array1D.new([3, 0, 3]);
+    const x1 = Tensor1D.new([1, 2, 3]);
+    const x2 = Tensor1D.new([3, 0, 3]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);
@@ -63,7 +63,7 @@ describe('add operation', () => {
     expect(yVal.shape).toEqual([3]);
     expect(yVal.dataSync()).toEqual(new Float32Array([-2, 2, 0]));
 
-    const dy = Array1D.new([6, 7, 8]);
+    const dy = Tensor1D.new([6, 7, 8]);
     gradients.add(y, dy);
 
     subOp.backProp(math, activations, gradients);
@@ -79,8 +79,8 @@ describe('add operation', () => {
   });
 
   it('subtracts two 2-D tensors', () => {
-    const x1 = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-    const x2 = Array2D.new([2, 3], [9, 8, 7, 6, 5, 4]);
+    const x1 = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    const x2 = Tensor2D.new([2, 3], [9, 8, 7, 6, 5, 4]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);
@@ -96,7 +96,7 @@ describe('add operation', () => {
     expect(yVal.shape).toEqual([2, 3]);
     expect(yVal.dataSync()).toEqual(new Float32Array([-8, -6, -4, -2, 0, 2]));
 
-    const dy = Array2D.new([2, 3], [10, 11, 12, 13, 14, 15]);
+    const dy = Tensor2D.new([2, 3], [10, 11, 12, 13, 14, 15]);
     gradients.add(y, dy);
 
     subOp.backProp(math, activations, gradients);
@@ -114,7 +114,7 @@ describe('add operation', () => {
   });
 
   it('ndarray - scalar', () => {
-    const x1 = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    const x1 = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     const x2 = Scalar.new(2);
 
     t1 = new SymbolicTensor(x1.shape);
@@ -131,7 +131,7 @@ describe('add operation', () => {
     expect(yVal.shape).toEqual([2, 3]);
     expect(yVal.dataSync()).toEqual(new Float32Array([-1, 0, 1, 2, 3, 4]));
 
-    const dy = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
+    const dy = Tensor2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
     gradients.add(y, dy);
 
     subOp.backProp(math, activations, gradients);
@@ -148,7 +148,7 @@ describe('add operation', () => {
 
   it('scalar - ndarray', () => {
     const x1 = Scalar.new(2);
-    const x2 = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    const x2 = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);
@@ -164,7 +164,7 @@ describe('add operation', () => {
     expect(yVal.shape).toEqual([2, 3]);
     expect(yVal.dataSync()).toEqual(new Float32Array([1, 0, -1, -2, -3, -4]));
 
-    const dy = Array2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
+    const dy = Tensor2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
     gradients.add(y, dy);
 
     subOp.backProp(math, activations, gradients);
@@ -182,8 +182,8 @@ describe('add operation', () => {
   });
 
   it('throws when shapes of X1 and X2 do not match', () => {
-    const x1 = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-    const x2 = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
+    const x1 = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+    const x2 = Tensor2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
 
     t1 = new SymbolicTensor(x1.shape);
     t2 = new SymbolicTensor(x2.shape);

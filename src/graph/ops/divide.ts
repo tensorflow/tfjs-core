@@ -17,7 +17,7 @@
 
 import {keep, tidy} from '../../math/backends/tracking';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/tensor';
+import {Tensor, Scalar} from '../../math/tensor';
 import * as util from '../../util';
 import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
@@ -49,7 +49,7 @@ export class Divide extends Operation {
     const t2 = inferenceArrays.get(this.x2Tensor) as Scalar;
 
     tidy(() => {
-      let result: NDArray;
+      let result: Tensor;
       if (util.isScalarShape(t1.shape)) {
         result = math.scalarDividedByArray(t1, t2);
       } else if (util.isScalarShape(t2.shape)) {
@@ -90,7 +90,7 @@ export class Divide extends Operation {
         // dx2 = -1 * x1 * x2 ^ -2.
         const x2Squared = math.elementWiseMul(x2, x2);
 
-        let x1OverX2Squared: NDArray;
+        let x1OverX2Squared: Tensor;
         if (x2IsScalar) {
           x1OverX2Squared = math.arrayDividedByScalar(x1, x2Squared);
         } else if (x1IsScalar) {

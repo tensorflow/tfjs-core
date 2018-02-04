@@ -18,7 +18,7 @@
 import {ENV} from '../../environment';
 import * as dl from '../../index';
 import * as conv_util from '../../math/conv_util';
-import {Array3D} from '../../math/tensor';
+import {Tensor3D} from '../../math/tensor';
 import {Rank} from '../../math/types';
 import * as test_util from '../../test_util';
 import {SymbolicTensor} from '../graph';
@@ -51,7 +51,7 @@ describe('Max pool', () => {
     const pad = 0;
     const depth = 1;
 
-    const x = Array3D.new([3, 3, depth], [1, 2, 3, 4, 5, 6, 7, 9, 8]);
+    const x = Tensor3D.new([3, 3, depth], [1, 2, 3, 4, 5, 6, 7, 9, 8]);
 
     xTensor = new SymbolicTensor(x.shape);
     yTensor = new SymbolicTensor(conv_util.computeOutputShape3D(
@@ -64,19 +64,19 @@ describe('Max pool', () => {
     op.feedForward(math, activations);
 
     // Feed forward.
-    const y = activations.get(yTensor) as Array3D;
-    const expectedResult = Array3D.new([2, 2, depth], [5, 6, 9, 9]);
+    const y = activations.get(yTensor) as Tensor3D;
+    const expectedResult = Tensor3D.new([2, 2, depth], [5, 6, 9, 9]);
     test_util.expectArraysClose(y, expectedResult);
 
     // Backprop.
-    const dy = Array3D.new([2, 2, depth], [50, 60, 90, 80]);
+    const dy = Tensor3D.new([2, 2, depth], [50, 60, 90, 80]);
     gradients.add(yTensor, dy);
 
     op.backProp(math, activations, gradients);
 
-    const dx = gradients.get(xTensor) as Array3D;
+    const dx = gradients.get(xTensor) as Tensor3D;
     const expectedBackprop =
-        Array3D.new([3, 3, depth], [0, 0, 0, 0, 50, 60, 0, 170, 0]);
+        Tensor3D.new([3, 3, depth], [0, 0, 0, 0, 50, 60, 0, 170, 0]);
     test_util.expectArraysClose(dx, expectedBackprop);
   });
 
@@ -86,7 +86,7 @@ describe('Max pool', () => {
     const pad = 0;
     const depth = 2;
 
-    const x = Array3D.new([4, 4, depth], [
+    const x = Tensor3D.new([4, 4, depth], [
       1, 11, 2,  22,  3,  33,  4,  44,  5,  55,  6,  66,  7,  77,  8,  88,
       9, 99, 10, 100, 11, 110, 12, 120, 13, 130, 14, 140, 15, 150, 16, 160
     ]);
@@ -104,7 +104,7 @@ describe('Max pool', () => {
     // Feed forward.
     const y = activations.get(yTensor);
     const expectedResult =
-        Array3D.new([2, 2, 2], [6, 66, 8, 88, 14, 140, 16, 160]);
+        Tensor3D.new([2, 2, 2], [6, 66, 8, 88, 14, 140, 16, 160]);
     test_util.expectArraysClose(y.dataSync(), expectedResult.dataSync());
   });
 
@@ -113,7 +113,7 @@ describe('Max pool', () => {
     const stride = 2;
     const pad = 0;
 
-    const x = Array3D.new([4, 4, 2], [
+    const x = Tensor3D.new([4, 4, 2], [
       -1, 11, 2,  22,  3,   33,  4,  44,  5,  55,  6,  -66, 7,  -77, 8,  88,
       9,  99, 10, 100, -11, 110, 12, 120, 13, 130, 14, 140, 15, 150, 16, -160
     ]);
@@ -130,7 +130,7 @@ describe('Max pool', () => {
     // Feed forward.
     const y = activations.get(yTensor);
     const expectedResult =
-        Array3D.new([2, 2, 2], [6, 55, 8, 88, 14, 140, 16, 150]);
+        Tensor3D.new([2, 2, 2], [6, 55, 8, 88, 14, 140, 16, 150]);
 
     test_util.expectArraysClose(y.dataSync(), expectedResult.dataSync());
   });

@@ -19,7 +19,7 @@ import {InputProvider} from '../data/input_provider';
 import {ENV} from '../environment';
 import * as dl from '../index';
 import {NDArrayMath} from '../math/math';
-import {Array1D, Scalar} from '../math/tensor';
+import {Tensor1D, Scalar} from '../math/tensor';
 import {SGDOptimizer} from '../math/optimizers/sgd_optimizer';
 import * as test_util from '../test_util';
 import {Graph, SymbolicTensor} from './graph';
@@ -93,7 +93,7 @@ describe('Session', () => {
     const x = g.placeholder('x', [2]);
     const y = g.add(g.square(x), g.constant(3));
     const session = new Session(g, ENV.math);
-    const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+    const yVal = session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
     const expected = new Float32Array([28, 19]);
     test_util.expectArraysClose(yVal.dataSync(), expected);
   });
@@ -105,7 +105,7 @@ describe('Session', () => {
     const session = new Session(g, math);
 
     dl.tidy(() => {
-      const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const yVal = session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expected = new Float32Array([28, 19]);
       test_util.expectArraysClose(yVal.dataSync(), expected);
     });
@@ -120,7 +120,7 @@ describe('Session', () => {
 
     dl.tidy(() => {
       const yVal =
-          session.eval(y, [{tensor: xSquared, data: Array1D.new([25, 16])}]);
+          session.eval(y, [{tensor: xSquared, data: Tensor1D.new([25, 16])}]);
       const expected = new Float32Array([28, 19]);
       test_util.expectArraysClose(yVal.dataSync(), expected);
     });
@@ -136,7 +136,7 @@ describe('Session', () => {
 
     dl.tidy(() => {
       const result =
-          session.evalAll([y, z], [{tensor: x, data: Array1D.new([5, 4])}]);
+          session.evalAll([y, z], [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expectedY = new Float32Array([28, 19]);
       const expectedZ = new Float32Array([27, 18]);
       test_util.expectArraysClose(result[0].dataSync(), expectedY);
@@ -153,11 +153,11 @@ describe('Session', () => {
     const session = new Session(g, math);
 
     dl.tidy(() => {
-      const result1 = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const result1 = session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expectedY = new Float32Array([30, 20]);
       test_util.expectArraysClose(result1.dataSync(), expectedY);
 
-      const result2 = session.eval(z, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const result2 = session.eval(z, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expectedZ = new Float32Array([31, 21]);
       test_util.expectArraysClose(result2.dataSync(), expectedZ);
     });
@@ -211,7 +211,7 @@ describe('Session', () => {
     const session = new Session(g, math);
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([2, 4]);
+        return Tensor1D.new([2, 4]);
       },
       disposeCopy(math, example) {}
     };
@@ -238,7 +238,7 @@ describe('Session', () => {
     const session = new Session(g, math);
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([1, 2]);
+        return Tensor1D.new([1, 2]);
       },
       disposeCopy(math, example) {}
     };
@@ -278,7 +278,7 @@ describe('Session', () => {
       const x = g.placeholder('x', [2]);
       const y = g.square(x);
       const session = new Session(g, math);
-      session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+      session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
     }).toThrowError();
     ENV.reset();
   });
@@ -292,7 +292,7 @@ describe('Session', () => {
       const x = g.placeholder('x', [2]);
       const y = g.square(x);
       const session = new Session(g, math);
-      const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const yVal = session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expected = new Float32Array([25, 16]);
       test_util.expectArraysClose(yVal.dataSync(), expected);
     });
@@ -306,7 +306,7 @@ describe('Session', () => {
 
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([2, 4]);
+        return Tensor1D.new([2, 4]);
       },
       disposeCopy(math, example) {}
     };
@@ -334,7 +334,7 @@ describe('Session', () => {
 
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([2, 4]);
+        return Tensor1D.new([2, 4]);
       },
       disposeCopy(math, example) {}
     };

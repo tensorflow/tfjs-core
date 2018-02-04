@@ -22,7 +22,7 @@ import * as session_util from '../../graph/session_util';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar, Variable} from '../../math/tensor';
+import {Tensor, Scalar, Variable} from '../../math/tensor';
 import {keep, tidy} from '../backends/tracking';
 import {NamedArrayMap} from '../types';
 
@@ -106,7 +106,7 @@ export abstract class Optimizer {
     }
     this.variableNodes.forEach(
         node => this.variableGradients.set(
-            node.output, math.keep(NDArray.zeros(node.output.shape))));
+            node.output, math.keep(Tensor.zeros(node.output.shape))));
   }
 
   afterExample(

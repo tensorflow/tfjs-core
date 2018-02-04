@@ -16,12 +16,12 @@
  */
 
 import {NamedArrayMap} from '../../math/types';
-import {NDArray} from '../tensor';
+import {Tensor} from '../tensor';
 import {Rank} from '../types';
 import {KernelConfigRegistry} from './kernel_registry';
 
 export type Tape = Array<TapeNode<TapeNodeOutput>>;
-export type TapeNodeOutput = NDArray|NamedArrayMap;
+export type TapeNodeOutput = Tensor|NamedArrayMap;
 export type TapeNodeType = 'kernel'|'customGradient';
 
 export interface TapeNode<T extends TapeNodeOutput> {
@@ -31,20 +31,20 @@ export interface TapeNode<T extends TapeNodeOutput> {
   inputAndArgs: TapeNodeInputConfig;
 
   output: T;
-  gradient: (dy: NDArray|NamedArrayMap, y: T) => TapeNodeInputGradientArrays;
+  gradient: (dy: Tensor|NamedArrayMap, y: T) => TapeNodeInputGradientArrays;
 }
 
 export interface TapeNodeInputConfig { inputs: NamedArrayMap; }
 
 export type TapeNodeInputGradientArrays = {
-  [inputName: string]: () => NDArray;
+  [inputName: string]: () => Tensor;
 };
 
 // Kernel nodes
-export interface KernelNode extends TapeNode<NDArray> {
+export interface KernelNode extends TapeNode<Tensor> {
   kernel: keyof KernelConfigRegistry<Rank>;
   inputAndArgs: KernelInputConfig;
-  output: NDArray;
+  output: Tensor;
 }
 
 export interface KernelInputConfig extends TapeNodeInputConfig {

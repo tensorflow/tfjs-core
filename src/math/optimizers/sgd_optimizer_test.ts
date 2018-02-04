@@ -17,7 +17,7 @@
 import {InputProvider} from '../../data/input_provider';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
-import {Array1D, Scalar, variable} from '../../math/tensor';
+import {Tensor1D, Scalar, variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 
@@ -62,7 +62,7 @@ const tests: MathTests = it => {
   it('graph', math => {
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([2, 4]);
+        return Tensor1D.new([2, 4]);
       },
       disposeCopy(math, example) {}
     };

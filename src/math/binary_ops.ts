@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import * as broadcast_util from './broadcast_util';
 import {doc, operation} from './decorators';
-import {NDArray, Scalar} from './tensor';
+import {Tensor, Scalar} from './tensor';
 
 export class Ops {
   /**
@@ -32,12 +32,12 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static add<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static add<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
-    const der = (dy: NDArray, y: NDArray) => {
+    const der = (dy: Tensor, y: Tensor) => {
       const derA = () => {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
@@ -68,7 +68,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static addStrict<T extends NDArray>(a: T, b: T): T {
+  static addStrict<T extends Tensor>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
     return a.add(b);
   }
@@ -82,12 +82,12 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static sub<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static sub<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
-    const der = (dy: NDArray, y: NDArray) => {
+    const der = (dy: Tensor, y: Tensor) => {
       const derA = () => {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
@@ -118,7 +118,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static subStrict<T extends NDArray>(a: T, b: T): T {
+  static subStrict<T extends Tensor>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
     return a.sub(b);
   }
@@ -136,13 +136,13 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static pow<T extends NDArray>(base: NDArray, exp: NDArray): T {
+  static pow<T extends Tensor>(base: Tensor, exp: Tensor): T {
     util.assert(
         exp.dtype === 'int32',
         'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(base.shape, exp.shape);
 
-    const gradient = (dy: NDArray, y: NDArray) => {
+    const gradient = (dy: Tensor, y: Tensor) => {
       if (!util.arraysEqual(base.shape, exp.shape)) {
         throw new Error(
             `Gradient of pow not yet supported for broadcasted shapes.`);
@@ -173,7 +173,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static powStrict<T extends NDArray>(base: T, exp: NDArray): T {
+  static powStrict<T extends Tensor>(base: T, exp: Tensor): T {
     util.assertShapesMatch(base.shape, exp.shape, 'Error in powStrict: ');
     return base.pow(exp);
   }
@@ -187,12 +187,12 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static mul<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static mul<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
-    const der = (dy: NDArray, y: NDArray) => {
+    const der = (dy: Tensor, y: Tensor) => {
       const derA = () => {
         const res = dy.mul(b.toFloat());
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
@@ -218,7 +218,7 @@ export class Ops {
    * @deprecated Use mulStrict() instead.
    */
   @operation
-  static elementWiseMul<T extends NDArray>(a: T, b: T): T {
+  static elementWiseMul<T extends Tensor>(a: T, b: T): T {
     return a.mulStrict(b);
   }
 
@@ -231,7 +231,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static mulStrict<T extends NDArray>(a: T, b: T): T {
+  static mulStrict<T extends Tensor>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in multiplyStrict: ');
     return a.mul(b) as T;
   }
@@ -245,10 +245,10 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static div<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static div<T extends Tensor>(a: Tensor, b: Tensor): T {
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const der = (dy: NDArray, y: NDArray) => {
+    const der = (dy: Tensor, y: Tensor) => {
       const derA = () => {
         const res = dy.div(b.toFloat());
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
@@ -263,8 +263,8 @@ export class Ops {
         if (reduceAxes.length > 0) {
           res = res.sum(reduceAxes).reshape(b.shape);
         }
-        const tmp = b.square() as NDArray;
-        return res.div(tmp.toFloat()).neg() as NDArray;
+        const tmp = b.square() as Tensor;
+        return res.div(tmp.toFloat()).neg() as Tensor;
       };
       return {a: derA, b: derB};
     };
@@ -280,14 +280,14 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static divStrict<T extends NDArray>(a: T, b: T): T {
+  static divStrict<T extends Tensor>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
     return a.div(b) as T;
   }
 
   /** @deprecated Use div() instead. */
   @operation
-  static scalarDividedByArray<T extends NDArray>(c: Scalar, a: T): T {
+  static scalarDividedByArray<T extends Tensor>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
         `Error in scalarDividedByArray: first argument must be rank 0, but ` +
@@ -297,7 +297,7 @@ export class Ops {
 
   /** @deprecated Use div(A, c) instead. */
   @operation
-  static arrayDividedByScalar<T extends NDArray>(a: T, c: Scalar): T {
+  static arrayDividedByScalar<T extends Tensor>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
         `Error in arrayDividedByScalar: second argument must be rank 0, ` +
@@ -314,10 +314,10 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static minimum<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static minimum<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const der = (dy: NDArray, y: NDArray) => {
+    const der = (dy: Tensor, y: Tensor) => {
       const derA = () => dy.mul(a.lessEqual(b).toFloat());
       const derB = () => dy.mul(a.greater(b).toFloat());
       return {a: derA, b: derB};
@@ -334,7 +334,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static minimumStrict<T extends NDArray>(a: T, b: T): T {
+  static minimumStrict<T extends Tensor>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');
     return a.minimum(b);
   }
@@ -348,10 +348,10 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static maximum<T extends NDArray>(a: NDArray, b: NDArray): T {
+  static maximum<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const der = (dy: NDArray, y: NDArray) => {
+    const der = (dy: Tensor, y: Tensor) => {
       const derA = () => dy.mul(a.greaterEqual(b).toFloat());
       const derB = () => dy.mul(a.less(b).toFloat());
       return {a: derA, b: derB};
@@ -368,7 +368,7 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static maximumStrict<T extends NDArray>(a: T, b: T): T {
+  static maximumStrict<T extends Tensor>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');
     return a.maximum(b);
   }

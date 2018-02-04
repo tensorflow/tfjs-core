@@ -19,7 +19,7 @@
 import {InputProvider} from '../data/input_provider';
 import {ENV} from '../environment';
 import * as dl from '../index';
-import {NDArray} from '../math/tensor';
+import {Tensor} from '../math/tensor';
 // tslint:disable-next-line:max-line-length
 import {ConstantNode, Graph, Node, PlaceholderNode, SymbolicTensor, VariableNode} from './graph';
 import {FeedDictionary, FeedEntry} from './session';
@@ -167,7 +167,7 @@ describe('loadInputsFromFeedDictionaryToTensorArrayMap', () => {
     const fd = new FeedDictionary([{tensor, data: dl.zeros([1])}]);
     session_util.loadInputsFromFeedDictionaryToTensorArrayMap(fd, map, math);
     expect(map.size()).toEqual(1);
-    expect(map.get(tensor)).toBe(fd.dict[tensor.id].data as NDArray);
+    expect(map.get(tensor)).toBe(fd.dict[tensor.id].data as Tensor);
   });
 
   it('adds the only provider feed dict entry to the map', () => {
@@ -175,7 +175,7 @@ describe('loadInputsFromFeedDictionaryToTensorArrayMap', () => {
     const ndarray = dl.zeros([2]);
     const provider: InputProvider = {
       getNextCopy():
-          NDArray {  // Don't return a copy in this case so we can test
+          Tensor {  // Don't return a copy in this case so we can test
             // that we returned the
             // right value.
             return ndarray;
@@ -202,7 +202,7 @@ describe('loadInputsFromFeedDictionaryToTensorArrayMap', () => {
     expect(map.size()).toEqual(tensors.length);
     tensors.forEach(
         tensor =>
-            expect(map.get(tensor)).toBe(fd.dict[tensor.id].data as NDArray));
+            expect(map.get(tensor)).toBe(fd.dict[tensor.id].data as Tensor));
   });
 
   it('adds every provider feed dict entry to the map', () => {
@@ -210,13 +210,13 @@ describe('loadInputsFromFeedDictionaryToTensorArrayMap', () => {
       new SymbolicTensor([1]), new SymbolicTensor([1]), new SymbolicTensor([1]),
       new SymbolicTensor([1]), new SymbolicTensor([1])
     ];
-    const ndarrays: NDArray[] = [];
+    const ndarrays: Tensor[] = [];
     for (let i = 0; i < tensors.length; i++) {
       ndarrays.push(dl.zeros([1]));
     }
     let idx = 0;
     const provider: InputProvider = {
-      getNextCopy(): NDArray {
+      getNextCopy(): Tensor {
         const ndarray = ndarrays[idx];
         idx++;
         return ndarray;
@@ -292,7 +292,7 @@ describe('releaseFeedDictionaryInputsFromTensorArrayMap', () => {
     });
     const fd = new FeedDictionary(feeds);
     tensors.forEach(
-        tensor => map.set(tensor, fd.dict[tensor.id].data as NDArray));
+        tensor => map.set(tensor, fd.dict[tensor.id].data as Tensor));
     session_util.releaseFeedDictionaryInputsFromTensorArrayMap(fd, map, math);
     expect(map.size()).toEqual(0);
   });

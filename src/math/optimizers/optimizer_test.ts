@@ -14,7 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {Array1D, Scalar, variable, Variable} from '../../math/tensor';
+import {Tensor1D, Scalar, variable, Variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 
@@ -240,7 +240,7 @@ const tests: MathTests = it => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
-    const x = variable(Array1D.new([1, 2]));
+    const x = variable(Tensor1D.new([1, 2]));
     const f = () => x.square();
 
     // tslint:disable-next-line:no-any

@@ -18,7 +18,7 @@
 import {keep, tidy} from '../../math/backends/tracking';
 import * as concat_util from '../../math/concat_util';
 import {NDArrayMath} from '../../math/math';
-import {Array1D, Array2D, Array3D, Array4D} from '../../math/tensor';
+import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../../math/tensor';
 import * as util from '../../util';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -40,8 +40,8 @@ export class Concat1D extends Operation {
   }
 
   feedForward(math: NDArrayMath, inferecenArrays: TensorArrayMap) {
-    const x1 = inferecenArrays.get(this.x1Tensor) as Array1D;
-    const x2 = inferecenArrays.get(this.x2Tensor) as Array1D;
+    const x1 = inferecenArrays.get(this.x1Tensor) as Tensor1D;
+    const x2 = inferecenArrays.get(this.x2Tensor) as Tensor1D;
 
     tidy(() => {
       const concatResult = math.concat1D(x1, x2);
@@ -77,8 +77,8 @@ export class Concat2D extends Operation {
   }
 
   feedForward(math: NDArrayMath, inferecenArrays: TensorArrayMap) {
-    const x1 = inferecenArrays.get(this.x1Tensor) as Array2D;
-    const x2 = inferecenArrays.get(this.x2Tensor) as Array2D;
+    const x1 = inferecenArrays.get(this.x1Tensor) as Tensor2D;
+    const x2 = inferecenArrays.get(this.x2Tensor) as Tensor2D;
 
     tidy(() => {
       const concatResult = math.concat2D(x1, x2, this.axis);
@@ -114,8 +114,8 @@ export class Concat3D extends Operation {
   }
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
-    const x1 = inferenceArrays.get(this.x1Tensor) as Array3D;
-    const x2 = inferenceArrays.get(this.x2Tensor) as Array3D;
+    const x1 = inferenceArrays.get(this.x1Tensor) as Tensor3D;
+    const x2 = inferenceArrays.get(this.x2Tensor) as Tensor3D;
     tidy(() => {
       const concatResult = math.concat3D(x1, x2, this.axis);
       inferenceArrays.set(this.yTensor, keep(concatResult));
@@ -150,8 +150,8 @@ export class Concat4D extends Operation {
   }
 
   feedForward(math: NDArrayMath, inferecenArrays: TensorArrayMap) {
-    const x1 = inferecenArrays.get(this.x1Tensor) as Array4D;
-    const x2 = inferecenArrays.get(this.x2Tensor) as Array4D;
+    const x1 = inferecenArrays.get(this.x1Tensor) as Tensor4D;
+    const x2 = inferecenArrays.get(this.x2Tensor) as Tensor4D;
 
     tidy(() => {
       const concatResult = math.concat4D(x1, x2, this.axis);

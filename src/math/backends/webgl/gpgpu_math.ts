@@ -17,7 +17,7 @@
 
 import {ENV} from '../../../environment';
 import * as util from '../../../util';
-import {NDArray} from '../../tensor';
+import {Tensor} from '../../tensor';
 import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import {ShapeInfo} from './shader_compiler';
@@ -49,12 +49,12 @@ function shouldUploadNaNUniform(): boolean {
   return !ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED');
 }
 
-export interface ArrayData<T extends NDArray> {
+export interface ArrayData<T extends Tensor> {
   array: T;
   texData: TextureData;
 }
 
-export function compileProgram<T extends NDArray, K extends NDArray>(
+export function compileProgram<T extends Tensor, K extends Tensor>(
     gpgpu: GPGPUContext, program: GPGPUProgram, inputs: Array<ArrayData<T>>,
     output: ArrayData<K>): GPGPUBinary {
   const userCode = program.userCode;
@@ -107,7 +107,7 @@ export function compileProgram<T extends NDArray, K extends NDArray>(
 }
 
 function validateBinaryAndProgram(
-    shapeInfos: ShapeInfo[], inputs: Array<ArrayData<NDArray>>) {
+    shapeInfos: ShapeInfo[], inputs: Array<ArrayData<Tensor>>) {
   if (shapeInfos.length !== inputs.length) {
     throw Error(
         `Binary was compiled with ${shapeInfos.length} inputs, but ` +
@@ -133,7 +133,7 @@ function validateBinaryAndProgram(
   });
 }
 
-export function runProgram<T extends NDArray, K extends NDArray>(
+export function runProgram<T extends Tensor, K extends Tensor>(
     binary: GPGPUBinary, inputs: Array<ArrayData<T>>, output: ArrayData<K>,
     customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) =>
         void): void {
@@ -163,8 +163,8 @@ export function runProgram<T extends NDArray, K extends NDArray>(
 }
 
 export function makeShaderKey(
-    program: GPGPUProgram, inputs: Array<ArrayData<NDArray>>,
-    output: ArrayData<NDArray>): string {
+    program: GPGPUProgram, inputs: Array<ArrayData<Tensor>>,
+    output: ArrayData<Tensor>): string {
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
     keyInputs += `${x.array.shape}_${x.texData.texShape}`;

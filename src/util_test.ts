@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array1D, NDArray, Scalar} from './math/tensor';
+import {Tensor1D, Tensor, Scalar} from './math/tensor';
 import {NamedArrayMap} from './math/types';
 import * as test_util from './test_util';
 import {MathTests} from './test_util';
@@ -270,14 +270,14 @@ describe('util.squeezeShape', () => {
   const tests: MathTests = it => {
     it('not in list', math => {
       const a = Scalar.new(1);
-      const list: NDArray[] = [Scalar.new(1), Array1D.new([1, 2, 3])];
+      const list: Tensor[] = [Scalar.new(1), Tensor1D.new([1, 2, 3])];
 
       expect(util.isNDArrayInList(a, list)).toBe(false);
     });
 
     it('in list', math => {
       const a = Scalar.new(1);
-      const list: NDArray[] = [Scalar.new(2), Array1D.new([1, 2, 3]), a];
+      const list: Tensor[] = [Scalar.new(2), Tensor1D.new([1, 2, 3]), a];
 
       expect(util.isNDArrayInList(a, list)).toBe(true);
     });
@@ -338,7 +338,7 @@ describe('util.checkForNaN', () => {
     it('basic', math => {
       const a = Scalar.new(1);
       const b = Scalar.new(3);
-      const c = Array1D.new([1, 2, 3]);
+      const c = Tensor1D.new([1, 2, 3]);
 
       const map: NamedArrayMap = {a, b, c};
       expect(util.flattenNameArrayMap(map, Object.keys(map))).toEqual([
@@ -355,7 +355,7 @@ describe('util.checkForNaN', () => {
     it('basic', math => {
       const a = Scalar.new(1);
       const b = Scalar.new(3);
-      const c = Array1D.new([1, 2, 3]);
+      const c = Tensor1D.new([1, 2, 3]);
 
       expect(util.unflattenToNameArrayMap(['a', 'b', 'c'], [
         a, b, c

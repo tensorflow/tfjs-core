@@ -17,7 +17,7 @@
 
 import {ENV} from '../../environment';
 import * as concat_util from '../../math/concat_util';
-import {Array1D, Array2D, Array3D, Array4D} from '../../math/tensor';
+import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../../math/tensor';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
@@ -46,8 +46,8 @@ describe('concat operation', () => {
   });
 
   it('concats 1d tensors', () => {
-    const x1 = Array1D.new([1, 1, 3]);
-    const x2 = Array1D.new([2, 2]);
+    const x1 = Tensor1D.new([1, 1, 3]);
+    const x2 = Tensor1D.new([2, 2]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -65,7 +65,7 @@ describe('concat operation', () => {
     expect(y.shape).toEqual([5]);
     expect(y.getValues()).toEqual(new Float32Array([1, 1, 3, 2, 2]));
 
-    gradientArrays.add(yTensor, Array1D.new([1, 2, 3, 4, 5]));
+    gradientArrays.add(yTensor, Tensor1D.new([1, 2, 3, 4, 5]));
     concatOperation.backProp(math, tensorArrayMap, gradientArrays);
     const dx1 = gradientArrays.get(x1Tensor);
     const dx2 = gradientArrays.get(x2Tensor);
@@ -76,8 +76,8 @@ describe('concat operation', () => {
   });
 
   it('concats 2d tensors, axis=0', () => {
-    const x1 = Array2D.new([2, 3], [[1, 1, 3], [2, 2, 3]]);
-    const x2 = Array2D.new([1, 3], [[3, 3, 4]]);
+    const x1 = Tensor2D.new([2, 3], [[1, 1, 3], [2, 2, 3]]);
+    const x2 = Tensor2D.new([1, 3], [[3, 3, 4]]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -98,7 +98,7 @@ describe('concat operation', () => {
     ]));
 
     gradientArrays.add(
-        yTensor, Array2D.new([3, 3], [[1, 2, 3], [4, 5, 6], [7, 8, 9]]));
+        yTensor, Tensor2D.new([3, 3], [[1, 2, 3], [4, 5, 6], [7, 8, 9]]));
     concatOperation.backProp(math, tensorArrayMap, gradientArrays);
     const dx1 = gradientArrays.get(x1Tensor);
     const dx2 = gradientArrays.get(x2Tensor);
@@ -109,8 +109,8 @@ describe('concat operation', () => {
   });
 
   it('concats 2d tensors, axis=1', () => {
-    const x1 = Array2D.new([2, 3], [[1, 1, 3], [2, 2, 3]]);
-    const x2 = Array2D.new([2, 1], [[3], [4]]);
+    const x1 = Tensor2D.new([2, 3], [[1, 1, 3], [2, 2, 3]]);
+    const x2 = Tensor2D.new([2, 1], [[3], [4]]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -129,7 +129,7 @@ describe('concat operation', () => {
     expect(y.getValues()).toEqual(new Float32Array([1, 1, 3, 3, 2, 2, 3, 4]));
 
     gradientArrays.add(
-        yTensor, Array2D.new([2, 4], [[1, 2, 3, 4], [4, 5, 6, 7]]));
+        yTensor, Tensor2D.new([2, 4], [[1, 2, 3, 4], [4, 5, 6, 7]]));
     concatOperation.backProp(math, tensorArrayMap, gradientArrays);
     const dx1 = gradientArrays.get(x1Tensor);
     const dx2 = gradientArrays.get(x2Tensor);
@@ -142,8 +142,8 @@ describe('concat operation', () => {
   it('concats tensors, axis=0', () => {
     const axis = 0;
 
-    const x1 = Array3D.new([1, 1, 3], [1, 2, 3]);
-    const x2 = Array3D.new([1, 1, 3], [4, 5, 6]);
+    const x1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
+    const x2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -162,7 +162,7 @@ describe('concat operation', () => {
     expect(y.shape).toEqual([2, 1, 3]);
     expect(y.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
 
-    gradientArrays.add(yTensor, Array3D.new([2, 1, 3], [1, 2, 3, 4, 5, 6]));
+    gradientArrays.add(yTensor, Tensor3D.new([2, 1, 3], [1, 2, 3, 4, 5, 6]));
     concatOperation.backProp(math, tensorArrayMap, gradientArrays);
     const dx1 = gradientArrays.get(x1Tensor);
     const dx2 = gradientArrays.get(x2Tensor);
@@ -175,8 +175,8 @@ describe('concat operation', () => {
   it('concats tensors, axis=1', () => {
     const axis = 1;
 
-    const x1 = Array3D.new([1, 1, 3], [1, 2, 3]);
-    const x2 = Array3D.new([1, 1, 3], [4, 5, 6]);
+    const x1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
+    const x2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -195,7 +195,7 @@ describe('concat operation', () => {
     expect(y.shape).toEqual([1, 2, 3]);
     expect(y.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
 
-    gradientArrays.add(yTensor, Array3D.new([1, 2, 3], [1, 2, 3, 4, 5, 6]));
+    gradientArrays.add(yTensor, Tensor3D.new([1, 2, 3], [1, 2, 3, 4, 5, 6]));
     concatOperation.backProp(math, tensorArrayMap, gradientArrays);
     const dx1 = gradientArrays.get(x1Tensor);
     const dx2 = gradientArrays.get(x2Tensor);
@@ -208,8 +208,8 @@ describe('concat operation', () => {
   it('concats tensors, axis=2', () => {
     const axis = 2;
 
-    const x1 = Array3D.new([1, 1, 3], [1, 2, 3]);
-    const x2 = Array3D.new([1, 1, 3], [4, 5, 6]);
+    const x1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
+    const x2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -228,7 +228,7 @@ describe('concat operation', () => {
     expect(y.shape).toEqual([1, 1, 6]);
     expect(y.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
 
-    gradientArrays.add(yTensor, Array3D.new([1, 1, 6], [1, 2, 3, 4, 5, 6]));
+    gradientArrays.add(yTensor, Tensor3D.new([1, 1, 6], [1, 2, 3, 4, 5, 6]));
     concatOperation.backProp(math, tensorArrayMap, gradientArrays);
     const dx1 = gradientArrays.get(x1Tensor);
     const dx2 = gradientArrays.get(x2Tensor);
@@ -239,8 +239,8 @@ describe('concat operation', () => {
   });
 
   it('concats 4d tensors, axis=0', () => {
-    const x1 = Array4D.new([1, 1, 1, 3], [1, 2, 3]);
-    const x2 = Array4D.new([1, 1, 1, 3], [4, 5, 6]);
+    const x1 = Tensor4D.new([1, 1, 1, 3], [1, 2, 3]);
+    const x2 = Tensor4D.new([1, 1, 1, 3], [4, 5, 6]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -258,7 +258,7 @@ describe('concat operation', () => {
     expect(y.shape).toEqual([2, 1, 1, 3]);
     expect(y.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
 
-    gradientArrays.add(yTensor, Array4D.new([2, 1, 1, 3], [1, 2, 3, 4, 5, 6]));
+    gradientArrays.add(yTensor, Tensor4D.new([2, 1, 1, 3], [1, 2, 3, 4, 5, 6]));
     concatOperation.backProp(math, tensorArrayMap, gradientArrays);
     const dx1 = gradientArrays.get(x1Tensor);
     const dx2 = gradientArrays.get(x2Tensor);
@@ -269,8 +269,8 @@ describe('concat operation', () => {
   });
 
   it('concats 4d tensors, axis=1', () => {
-    const x1 = Array4D.new([1, 1, 1, 3], [1, 2, 3]);
-    const x2 = Array4D.new([1, 1, 1, 3], [4, 5, 6]);
+    const x1 = Tensor4D.new([1, 1, 1, 3], [1, 2, 3]);
+    const x2 = Tensor4D.new([1, 1, 1, 3], [4, 5, 6]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -288,7 +288,7 @@ describe('concat operation', () => {
     expect(y.shape).toEqual([1, 2, 1, 3]);
     expect(y.getValues()).toEqual(new Float32Array([1, 2, 3, 4, 5, 6]));
 
-    gradientArrays.add(yTensor, Array4D.new([1, 2, 1, 3], [1, 2, 3, 4, 5, 6]));
+    gradientArrays.add(yTensor, Tensor4D.new([1, 2, 1, 3], [1, 2, 3, 4, 5, 6]));
     concatOperation.backProp(math, tensorArrayMap, gradientArrays);
     const dx1 = gradientArrays.get(x1Tensor);
     const dx2 = gradientArrays.get(x2Tensor);

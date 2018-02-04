@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {NDArray} from '../tensor';
+import {Tensor} from '../tensor';
 import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
 
 /**
@@ -75,7 +75,7 @@ export function tidy<T extends ScopeResult>(
  * Keeps an NDArray in the current scope from being disposed automatically.
  * @param result The NDArray to keep from being disposed.
  */
-export function keep<T extends NDArray>(result: T): T {
+export function keep<T extends Tensor>(result: T): T {
   return ENV.engine.keep(result);
 }
 

@@ -17,7 +17,7 @@
 
 import {keep, tidy} from '../../math/backends/tracking';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/tensor';
+import {Tensor, Scalar} from '../../math/tensor';
 import * as util from '../../util';
 import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
@@ -49,7 +49,7 @@ export class Multiply extends Operation {
     const t2 = inferenceArrays.get(this.x2Tensor) as Scalar;
 
     tidy(() => {
-      let result: NDArray;
+      let result: Tensor;
       if (util.isScalarShape(t1.shape)) {
         result = math.scalarTimesArray(t1, t2);
       } else if (util.isScalarShape(t2.shape)) {

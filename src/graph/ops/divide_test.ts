@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D, Scalar} from '../../math/tensor';
+import {Tensor1D, Scalar} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -47,8 +47,8 @@ describe('divide operation', () => {
   });
 
   it('element wise divide', () => {
-    const x1 = Array1D.new([1, 2, 3]);
-    const x2 = Array1D.new([2, 4, 6]);
+    const x1 = Tensor1D.new([1, 2, 3]);
+    const x2 = Tensor1D.new([2, 4, 6]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -66,7 +66,7 @@ describe('divide operation', () => {
     test_util.expectNumbersClose(y.get(1), 2 / 4);
     test_util.expectNumbersClose(y.get(2), 3 / 6);
 
-    const dy = Array1D.new([3, 4, 5]);
+    const dy = Tensor1D.new([3, 4, 5]);
     gradients.add(yTensor, dy);
 
     divideOp.backProp(math, activations, gradients);
@@ -87,7 +87,7 @@ describe('divide operation', () => {
 
   it('scalar divided by ndarray', () => {
     const x1 = Scalar.new(2);
-    const x2 = Array1D.new([2, 4, 6]);
+    const x2 = Tensor1D.new([2, 4, 6]);
 
     x1Tensor = new SymbolicTensor(x1.shape);
     x2Tensor = new SymbolicTensor(x2.shape);
@@ -104,7 +104,7 @@ describe('divide operation', () => {
     test_util.expectNumbersClose(y.get(1), 2 / 4);
     test_util.expectNumbersClose(y.get(2), 2 / 6);
 
-    const dy = Array1D.new([3, 4, 5]);
+    const dy = Tensor1D.new([3, 4, 5]);
     gradients.add(yTensor, dy);
 
     divideOp.backProp(math, activations, gradients);
@@ -124,7 +124,7 @@ describe('divide operation', () => {
   });
 
   it('ndarray divided by scalar', () => {
-    const x1 = Array1D.new([2, 4, 6]);
+    const x1 = Tensor1D.new([2, 4, 6]);
     const x2 = Scalar.new(2);
 
     x1Tensor = new SymbolicTensor(x1.shape);
@@ -142,7 +142,7 @@ describe('divide operation', () => {
     test_util.expectNumbersClose(y.get(1), 4 / 2);
     test_util.expectNumbersClose(y.get(2), 6 / 2);
 
-    const dy = Array1D.new([3, 4, 5]);
+    const dy = Tensor1D.new([3, 4, 5]);
     gradients.add(yTensor, dy);
 
     divideOp.backProp(math, activations, gradients);
