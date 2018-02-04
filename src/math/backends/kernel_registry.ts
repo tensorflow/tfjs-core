@@ -124,12 +124,18 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
   } else if (kernelName === 'GreaterEqual') {
     const config = inputAndArgs as EqualNode['inputAndArgs'];
     return backend.greaterEqual(config.inputs.a, config.inputs.b) as O;
+  } else if (kernelName === 'LogicalNot') {
+    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
+    return backend.logicalNot(config.inputs.x) as O;
   } else if (kernelName === 'LogicalAnd') {
     const config = inputAndArgs as LogicalNode['inputAndArgs'];
     return backend.logicalAnd(config.inputs.a, config.inputs.b) as O;
   } else if (kernelName === 'LogicalOr') {
     const config = inputAndArgs as LogicalNode['inputAndArgs'];
     return backend.logicalOr(config.inputs.a, config.inputs.b) as O;
+  } else if (kernelName === 'LogicalXor') {
+    const config = inputAndArgs as LogicalNode['inputAndArgs'];
+    return backend.logicalXor(config.inputs.a, config.inputs.b) as O;
   } else if (kernelName === 'Where') {
     const config = inputAndArgs as WhereNode['inputAndArgs'];
     return backend.where(
@@ -380,8 +386,10 @@ export interface KernelConfigRegistry<R extends Rank> {
   LessEqual: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
+  LogicalNot: UnaryNode<R>;
   LogicalAnd: LogicalNode;
   LogicalOr: LogicalNode;
+  LogicalXor: LogicalNode;
   Where: WhereNode;
   TopKValues: TopKValuesNode<R>;
   TopKIndices: TopKIndicesNode;
