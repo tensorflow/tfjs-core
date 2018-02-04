@@ -19,6 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
+import * as ops from './ops';
 
 export class Ops {
   /**
@@ -162,7 +163,26 @@ export class Ops {
    */
   @operation
   static selu<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Selu', {inputs: {x}}) as T;
+    const gradient = (dy: T, y: T) => {
+      return {
+        x: () => {
+          // Currently, Scalars are not supported by ops.where
+          util.assert(x.rank !== 0, 'Error in selu gradient: ');
+          const mask = x.greater(Scalar.new(0));
+
+          const scaleAlpha = Scalar.new(1.7580993408473768599402175208123);
+          const scale = Scalar.new(1.0507009873554804934193349852946);
+
+          const greaterThanZeroDer = dy.mul(scale);
+          const lessEqualZeroDer = dy.mul(scaleAlpha).mul(x.toFloat().exp());
+
+          const res = ops.where(mask, greaterThanZeroDer, lessEqualZeroDer);
+
+          return res;
+        }
+      };
+    };
+    return ENV.engine.executeKernel('Selu', {inputs: {x}}, gradient) as T;
   }
 
   /**
@@ -204,10 +224,9 @@ export class Ops {
    */
   @operation
   static sigmoid<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel(
-      'Sigmoid', {inputs: {x}}, (dy: T, y: T) => {
-          return {x: () => dy.mul(y.mul(Scalar.new(1).sub(y)))};
-      }) as T;
+    return ENV.engine.executeKernel('Sigmoid', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => dy.mul(y.mul(Scalar.new(1).sub(y)))};
+    }) as T;
   }
 
   /**
@@ -288,7 +307,9 @@ export class Ops {
    */
   @operation
   static sinh<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Sinh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Sinh', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => x.toFloat().cosh().mul(dy)};
+    }) as T;
   }
 
   /**
@@ -297,7 +318,9 @@ export class Ops {
    */
   @operation
   static cosh<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Cosh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Cosh', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => x.toFloat().sinh().mul(dy)};
+    }) as T;
   }
 
   /**
@@ -306,7 +329,9 @@ export class Ops {
    */
   @operation
   static tanh<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Tanh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Tanh', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => Scalar.new(1).sub(y.square()).mul(dy)};
+    }) as T;
   }
 
   /**

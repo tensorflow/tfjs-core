@@ -444,6 +444,19 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
+  logicalNot<T extends NDArray>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Int32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (util.isValNaN(values[i], x.dtype)) {
+        newValues[i] = util.getNaN('bool');
+      } else {
+        newValues[i] = values[i] ? 0 : 1;
+      }
+    }
+    return NDArray.make(x.shape, {values: newValues}, 'bool') as T;
+  }
+
   logicalAnd(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
@@ -460,6 +473,16 @@ export class MathBackendCPU implements MathBackend {
         return util.getNaN('bool');
       } else {
         return aVal || bVal;
+      }
+    });
+  }
+
+  logicalXor(a: NDArray, b: NDArray): NDArray {
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        return util.getNaN('bool');
+      } else {
+        return aVal ^ bVal;
       }
     });
   }
