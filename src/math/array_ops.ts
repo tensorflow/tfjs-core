@@ -326,17 +326,18 @@ export class Ops {
   }
 
   /**
-   * Casts a tensor to a new type. If the new type matches the old type,
-   * this is a no-op.
+   * Casts a tensor to a new dtype.
+   * @param x A tensor.
+   * @param dtype The dtype to cast the input tensor to.
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
-  static cast<T extends NDArray>(x: T, newDType: DataType): T {
+  static cast<T extends NDArray>(x: T, dtype: DataType): T {
     const grad = (dy: T, y: T) => {
       return {x: () => dy.reshape(dy.shape)};
     };
     return ENV.engine.executeKernel(
-               'Cast', {inputs: {x}, args: {newDType}}, grad) as T;
+               'Cast', {inputs: {x}, args: {newDType: dtype}}, grad) as T;
   }
 
   /**

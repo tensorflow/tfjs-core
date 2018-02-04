@@ -26,8 +26,9 @@ import * as mkdirp from 'mkdirp';
 import * as mustache from 'mustache';
 import * as shell from 'shelljs';
 import * as ts from 'typescript';
+
 // tslint:disable-next-line:max-line-length
-import {DocHeading, DocMethod, DocMethodParam, Docs, DocSubheading} from './view-api';
+import {DocHeading, DocMethod, DocMethodParam, Docs, DocSubheading} from '../api/view';
 
 const DOCUMENTATION_DECORATOR = '@doc';
 // Mirrors the info argument to @doc in decorators.ts.
@@ -138,7 +139,6 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile) {
           docInfo = eval(decoratorConfigStr);
 
           hasOpdoc = true;
-          return;
         }
       });
 
