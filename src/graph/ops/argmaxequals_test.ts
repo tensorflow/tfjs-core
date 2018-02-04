@@ -16,17 +16,17 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D} from '../../math/ndarray';
-import {Tensor} from '../graph';
+import {Array1D} from '../../math/tensor';
+import {SymbolicTensor} from '../graph';
 import {TensorArrayMap} from '../tensor_array_map';
 import {ArgMaxEquals} from './argmaxequals';
 
 describe('Argmax equals oper', () => {
   const math = ENV.math;
 
-  let t1: Tensor;
-  let t2: Tensor;
-  let y: Tensor;
+  let t1: SymbolicTensor;
+  let t2: SymbolicTensor;
+  let y: SymbolicTensor;
   let argmaxEqualsOp: ArgMaxEquals;
   let tensorArrayMap: TensorArrayMap;
 
@@ -44,9 +44,9 @@ describe('Argmax equals oper', () => {
     const x1 = Array1D.new([0, 2, 1]);
     const x2 = Array1D.new([2, 4, 3]);
 
-    t1 = new Tensor(x1.shape);
-    t2 = new Tensor(x2.shape);
-    y = new Tensor(x1.shape);
+    t1 = new SymbolicTensor(x1.shape);
+    t2 = new SymbolicTensor(x2.shape);
+    y = new SymbolicTensor(x1.shape);
 
     tensorArrayMap.set(t1, x1);
     tensorArrayMap.set(t2, x2);
@@ -63,9 +63,9 @@ describe('Argmax equals oper', () => {
     const x1 = Array1D.new([0, 2, 1]);
     const x2 = Array1D.new([5, 4, 3]);
 
-    t1 = new Tensor(x1.shape);
-    t2 = new Tensor(x2.shape);
-    y = new Tensor(x1.shape);
+    t1 = new SymbolicTensor(x1.shape);
+    t2 = new SymbolicTensor(x2.shape);
+    y = new SymbolicTensor(x1.shape);
 
     tensorArrayMap.set(t1, x1);
     tensorArrayMap.set(t2, x2);

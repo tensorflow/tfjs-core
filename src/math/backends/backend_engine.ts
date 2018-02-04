@@ -17,7 +17,7 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {NDArray, Variable} from '../ndarray';
+import {NDArray, Variable} from '../tensor';
 import * as ops from '../ops';
 import {NamedArrayMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';

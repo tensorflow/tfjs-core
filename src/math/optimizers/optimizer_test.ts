@@ -14,7 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {Array1D, Scalar, variable, Variable} from '../../math/ndarray';
+import {Array1D, Scalar, variable, Variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 

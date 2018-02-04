@@ -17,7 +17,7 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {NDArray, Scalar, Variable} from '../ndarray';
+import {NDArray, Scalar, Variable} from '../tensor';
 import {NamedArrayMap, Rank} from '../types';
 import {CustomGradientFunc} from './backend_engine';
 import {ScopeFn, ScopeResult} from './tape_util';

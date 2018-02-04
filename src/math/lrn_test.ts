@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array2D, Array3D, Array4D} from './ndarray';
+import {Array2D, Array3D, Array4D} from './tensor';
 
 const sqArr = (arr: number[]) => arr.map(d => d*d);
 const sumArr = (arr: number[]) => arr.reduce((prev, curr) => prev + curr, 0);

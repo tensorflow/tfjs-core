@@ -16,7 +16,7 @@
  */
 
 import {NDArrayMath} from '../math/math';
-import {NDArray} from '../math/ndarray';
+import {NDArray} from '../math/tensor';
 import * as util from '../util';
 
 /**

@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D, Array3D} from './ndarray';
+import {Array1D, Array2D, Array3D} from './tensor';
 
 // math.concat1D
 {

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArray, Variable} from './ndarray';
+import {NDArray, Variable} from './tensor';
 
 export enum DType {
   float32 = 'float32',

@@ -16,7 +16,7 @@
  */
 
 import * as util from '../../util';
-import {NDArray} from '../ndarray';
+import {NDArray} from '../tensor';
 import {NamedArrayMap, RegularArray} from '../types';
 
 // tslint:disable-next-line:max-line-length

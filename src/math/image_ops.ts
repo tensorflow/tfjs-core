@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
-import {Array3D, Array4D} from './ndarray';
+import {Array3D, Array4D} from './tensor';
 
 export class Ops {
   /**

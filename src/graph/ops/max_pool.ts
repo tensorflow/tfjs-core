@@ -18,9 +18,9 @@
 import {keep, tidy} from '../../math/backends/tracking';
 import * as conv_util from '../../math/conv_util';
 import {NDArrayMath} from '../../math/math';
-import {Array3D} from '../../math/ndarray';
+import {Array3D} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Operation} from './op';
 
@@ -31,7 +31,7 @@ export class MaxPool extends Operation {
   private pad: number;
 
   constructor(
-      private xTensor: Tensor, private yTensor: Tensor,
+      private xTensor: SymbolicTensor, private yTensor: SymbolicTensor,
       private fieldSize: number, private stride = 1, pad?: number) {
     super();
 

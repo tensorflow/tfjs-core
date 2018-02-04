@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array2D} from '../../ndarray';
+import {Array2D} from '../../tensor';
 import {KernelNode} from '../tape_types';
 
 export interface ConcatNode extends KernelNode {

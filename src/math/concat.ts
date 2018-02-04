@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import * as concat_util from './concat_util';
 import {doc, operation} from './decorators';
-import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from './tensor';
 
 export class Ops {
   /**

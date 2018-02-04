@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array4D} from '../../ndarray';
+import {Array4D} from '../../tensor';
 import {KernelNode} from '../tape_types';
 
 export interface ResizeBilinearNode extends KernelNode {

@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {SquareCostFunc} from './cost_functions';
-import {Array1D} from './ndarray';
+import {Array1D} from './tensor';
 
 const tests: MathTests = it => {
   it('Square cost', math => {

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import {ENV} from '../environment';
-import {Array1D} from '../math/ndarray';
+import {Array1D} from '../math/tensor';
 import * as test_util from '../test_util';
 import * as util from '../util';
 // tslint:disable-next-line:max-line-length

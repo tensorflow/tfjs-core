@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import {NDArrayMath} from '../math/math';
-import {Array1D, Scalar} from '../math/ndarray';
+import {Array1D, Scalar} from '../math/tensor';
 import {InCPUMemoryShuffledInputProviderBuilder} from './input_provider';
 
 describe('InCPUMemoryShuffledInputProviderBuilder', () => {

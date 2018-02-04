@@ -16,18 +16,18 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D, Scalar} from '../../math/ndarray';
+import {Array1D, Scalar} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Divide} from './divide';
 
 describe('divide operation', () => {
   const math = ENV.math;
 
-  let x1Tensor: Tensor;
-  let x2Tensor: Tensor;
-  let yTensor: Tensor;
+  let x1Tensor: SymbolicTensor;
+  let x2Tensor: SymbolicTensor;
+  let yTensor: SymbolicTensor;
   let divideOp: Divide;
   let activations: TensorArrayMap;
   let gradients: SummedTensorArrayMap;
@@ -50,9 +50,9 @@ describe('divide operation', () => {
     const x1 = Array1D.new([1, 2, 3]);
     const x2 = Array1D.new([2, 4, 6]);
 
-    x1Tensor = new Tensor(x1.shape);
-    x2Tensor = new Tensor(x2.shape);
-    yTensor = new Tensor(x2.shape);
+    x1Tensor = new SymbolicTensor(x1.shape);
+    x2Tensor = new SymbolicTensor(x2.shape);
+    yTensor = new SymbolicTensor(x2.shape);
 
     activations.set(x1Tensor, x1);
     activations.set(x2Tensor, x2);
@@ -89,9 +89,9 @@ describe('divide operation', () => {
     const x1 = Scalar.new(2);
     const x2 = Array1D.new([2, 4, 6]);
 
-    x1Tensor = new Tensor(x1.shape);
-    x2Tensor = new Tensor(x2.shape);
-    yTensor = new Tensor(x2.shape);
+    x1Tensor = new SymbolicTensor(x1.shape);
+    x2Tensor = new SymbolicTensor(x2.shape);
+    yTensor = new SymbolicTensor(x2.shape);
 
     activations.set(x1Tensor, x1);
     activations.set(x2Tensor, x2);
@@ -127,9 +127,9 @@ describe('divide operation', () => {
     const x1 = Array1D.new([2, 4, 6]);
     const x2 = Scalar.new(2);
 
-    x1Tensor = new Tensor(x1.shape);
-    x2Tensor = new Tensor(x2.shape);
-    yTensor = new Tensor(x2.shape);
+    x1Tensor = new SymbolicTensor(x1.shape);
+    x2Tensor = new SymbolicTensor(x2.shape);
+    yTensor = new SymbolicTensor(x2.shape);
 
     activations.set(x1Tensor, x1);
     activations.set(x2Tensor, x2);

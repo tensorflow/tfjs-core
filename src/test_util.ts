@@ -19,7 +19,7 @@ import {ENV, Features} from './environment';
 import {MathBackendCPU} from './math/backends/backend_cpu';
 import {MathBackendWebGL} from './math/backends/backend_webgl';
 import {NDArrayMath} from './math/math';
-import {NDArray} from './math/ndarray';
+import {NDArray} from './math/tensor';
 import {DataType, TypedArray} from './math/types';
 import * as util from './util';
 

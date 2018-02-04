@@ -16,7 +16,7 @@
  */
 
 import {doc, operation} from './decorators';
-import {Array1D, Array2D, Scalar} from './ndarray';
+import {Array1D, Array2D, Scalar} from './tensor';
 
 export interface LSTMCell {
   (data: Array2D, c: Array2D, h: Array2D): [Array2D, Array2D];

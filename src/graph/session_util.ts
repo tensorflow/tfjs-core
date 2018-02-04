@@ -18,11 +18,11 @@
 // tslint:disable-next-line:max-line-length
 import {InputProvider} from '../data/input_provider';
 import {NDArrayMath} from '../math/math';
-import {NDArray} from '../math/ndarray';
+import {NDArray} from '../math/tensor';
 import * as util from '../util';
 
 // tslint:disable-next-line:max-line-length
-import {ConstantNode, Node, PlaceholderNode, Tensor, VariableNode} from './graph';
+import {ConstantNode, Node, PlaceholderNode, SymbolicTensor, VariableNode} from './graph';
 import * as graph_util from './graph_util';
 import {Operation} from './ops/op';
 import {FeedDictionary} from './session';
@@ -53,7 +53,7 @@ export function getTerminatingNodesFromFeedDictionary(
  * @return The set of nodes to evaluate, in evaluation order.
  */
 export function getOrderedEvaluationSetFromEvalTensor(
-    evalTensors: Tensor[], feedDictionary: FeedDictionary): Node[] {
+    evalTensors: SymbolicTensor[], feedDictionary: FeedDictionary): Node[] {
   const terminatingNodes =
       getTerminatingNodesFromFeedDictionary(feedDictionary);
   const evalNodes = evalTensors.map(x => x.node);

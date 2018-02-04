@@ -15,18 +15,18 @@
  * =============================================================================
  */
 import {ENV} from '../../environment';
-import {Array1D, Array2D} from '../../math/ndarray';
+import {Array1D, Array2D} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {expectArraysClose} from '../../test_util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 // tslint:disable-next-line:max-line-length
 import {LeakyReLU, ReLU, Sigmoid, Square, TanH} from './element_wise_activation';
 
 describe('Element wise activation', () => {
   const math = ENV.math;
-  let xTensor: Tensor;
-  let yTensor: Tensor;
+  let xTensor: SymbolicTensor;
+  let yTensor: SymbolicTensor;
   let activations: TensorArrayMap;
   let gradients: SummedTensorArrayMap;
 
@@ -45,8 +45,8 @@ describe('Element wise activation', () => {
   it('ReLU', () => {
     const x = Array2D.new([2, 3], [3, 0, -1, 2, 9, -5]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(x.shape);
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(x.shape);
     activations.set(xTensor, x);
 
     const op = new ReLU(xTensor, yTensor);
@@ -69,8 +69,8 @@ describe('Element wise activation', () => {
   it('LeakyReLU', () => {
     const x = Array2D.new([2, 3], [3, 0.1, -1, 2, 9, -5]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(x.shape);
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(x.shape);
     activations.set(xTensor, x);
 
     const op = new LeakyReLU(xTensor, yTensor, 0.2);
@@ -94,8 +94,8 @@ describe('Element wise activation', () => {
   it('TanH', () => {
     const x = Array1D.new([3, 0, -3]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(x.shape);
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(x.shape);
     activations.set(xTensor, x);
 
     const op = new TanH(xTensor, yTensor);
@@ -122,8 +122,8 @@ describe('Element wise activation', () => {
   it('Sigmoid', () => {
     const x = Array1D.new([3, 0, -3]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(x.shape);
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(x.shape);
     activations.set(xTensor, x);
 
     const op = new Sigmoid(xTensor, yTensor);
@@ -151,8 +151,8 @@ describe('Element wise activation', () => {
   it('Square', () => {
     const x = Array1D.new([2, 0, -3]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(x.shape);
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(x.shape);
     activations.set(xTensor, x);
 
     const op = new Square(xTensor, yTensor);

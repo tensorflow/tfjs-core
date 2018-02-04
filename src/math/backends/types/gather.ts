@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array1D, NDArray} from '../../ndarray';
+import {Array1D, NDArray} from '../../tensor';
 import {Rank} from '../../types';
 import {KernelNode} from '../tape_types';
 

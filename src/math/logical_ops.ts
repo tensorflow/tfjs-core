@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import * as broadcast_util from './broadcast_util';
 import {doc, operation} from './decorators';
-import {NDArray} from './ndarray';
+import {NDArray} from './tensor';
 import * as types from './types';
 import {DataType} from './types';
 

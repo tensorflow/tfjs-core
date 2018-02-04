@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArray, Scalar} from '../ndarray';
+import {NDArray, Scalar} from '../tensor';
 
 import {BackendTimer} from './backend';
 import {Kernel} from './kernel_registry';

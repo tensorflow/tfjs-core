@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array1D, Array2D, Array3D, Array4D} from '../../ndarray';
+import {Array1D, Array2D, Array3D, Array4D} from '../../tensor';
 import {KernelNode} from '../tape_types';
 
 export interface Slice1DNode extends KernelNode {

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArray} from '../math/ndarray';
+import {NDArray} from '../math/tensor';
 import * as util from '../util';
 
 import {InMemoryDataset} from './dataset';

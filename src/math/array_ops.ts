@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
-import {Array1D, Array2D, Array3D, NDArray, TensorBuffer} from './ndarray';
+import {Array1D, Array2D, Array3D, NDArray, TensorBuffer} from './tensor';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 

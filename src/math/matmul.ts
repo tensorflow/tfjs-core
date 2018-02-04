@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import {MatrixOrientation} from './backends/types/matmul';
 import {doc, operation} from './decorators';
-import {Array1D, Array2D, Scalar} from './ndarray';
+import {Array1D, Array2D, Scalar} from './tensor';
 
 export class Ops {
   /**

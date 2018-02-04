@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArray} from '../../ndarray';
+import {NDArray} from '../../tensor';
 import {DataType} from '../../types';
 import {KernelNode} from '../tape_types';
 

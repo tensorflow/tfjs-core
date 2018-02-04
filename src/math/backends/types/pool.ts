@@ -16,7 +16,7 @@
  */
 
 import {Conv2DInfo} from '../../conv_util';
-import {Array4D} from '../../ndarray';
+import {Array4D} from '../../tensor';
 import {KernelNode} from '../tape_types';
 
 // Pool

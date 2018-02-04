@@ -18,9 +18,9 @@
 import {keep, tidy} from '../../math/backends/tracking';
 import * as concat_util from '../../math/concat_util';
 import {NDArrayMath} from '../../math/math';
-import {Array1D, Array2D, Array3D, Array4D} from '../../math/ndarray';
+import {Array1D, Array2D, Array3D, Array4D} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Operation} from './op';
 
@@ -34,8 +34,8 @@ export class Concat1D extends Operation {
    * Concats two 1D tensors along an axis.
    */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
   }
 
@@ -70,8 +70,8 @@ export class Concat2D extends Operation {
    * Concats two 2D tensors along an axis.
    */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor, private axis: number,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private axis: number, private yTensor: SymbolicTensor) {
     super();
     concat_util.assertParams(x1Tensor.shape, x2Tensor.shape, axis);
   }
@@ -107,8 +107,8 @@ export class Concat3D extends Operation {
    * Concats two 3D tensors along an axis.
    */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor, private axis: number,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private axis: number, private yTensor: SymbolicTensor) {
     super();
     concat_util.assertParams(x1Tensor.shape, x2Tensor.shape, axis);
   }
@@ -143,8 +143,8 @@ export class Concat4D extends Operation {
    * Concats two 4D tensors along an axis.
    */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor, private axis: number,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private axis: number, private yTensor: SymbolicTensor) {
     super();
     concat_util.assertParams(x1Tensor.shape, x2Tensor.shape, axis);
   }
@@ -171,8 +171,9 @@ export class Concat4D extends Operation {
 }
 
 function concatBackProp(
-    math: NDArrayMath, aTensor: Tensor, bTensor: Tensor, yTensor: Tensor,
-    axis: number, gradArrays: SummedTensorArrayMap, infArrays: TensorArrayMap) {
+    math: NDArrayMath, aTensor: SymbolicTensor, bTensor: SymbolicTensor,
+    yTensor: SymbolicTensor, axis: number, gradArrays: SummedTensorArrayMap,
+    infArrays: TensorArrayMap) {
   const dy = gradArrays.get(yTensor);
   const a = infArrays.get(aTensor);
   const b = infArrays.get(bTensor);

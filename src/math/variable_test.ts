@@ -19,7 +19,7 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, variable, Variable} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, variable, Variable} from './tensor';
 import {Rank} from './types';
 
 const tests: MathTests = it => {

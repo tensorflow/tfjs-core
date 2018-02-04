@@ -17,7 +17,7 @@
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
 import * as dl from '../../index';
-import {Array1D} from '../../math/ndarray';
+import {Array1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {Graph} from '../graph';
 import {Session} from '../session';

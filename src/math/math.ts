@@ -33,7 +33,7 @@ import * as image_ops from './image_ops';
 import * as logical from './logical_ops';
 import * as lstm_ops from './lstm';
 import * as matmul from './matmul';
-import {Array1D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+import {Array1D, Array3D, Array4D, NDArray, Scalar} from './tensor';
 import * as norm from './norm';
 import * as ops from './ops';
 import * as pool from './pool';

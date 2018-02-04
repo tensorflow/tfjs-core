@@ -17,9 +17,9 @@
 
 import {keep, tidy} from '../../math/backends/tracking';
 import {NDArrayMath} from '../../math/math';
-import {Array2D, NDArray, Scalar} from '../../math/ndarray';
+import {Array2D, NDArray, Scalar} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Operation} from './op';
@@ -32,8 +32,8 @@ export class Add extends Operation {
 
   /** Element-wise add operation. Broadcasts if one of the tensors is scalar. */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
     util.assert(
         util.sizeFromShape(x1Tensor.shape) === 1 ||

@@ -18,7 +18,7 @@
 import {ENV} from '../environment';
 
 import {doc, operation} from './decorators';
-import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from './tensor';
 import * as slice_util from './slice_util';
 import {Rank, ShapeMap} from './types';
 

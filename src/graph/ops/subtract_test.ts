@@ -16,17 +16,17 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D, Array2D, Scalar} from '../../math/ndarray';
-import {Tensor} from '../graph';
+import {Array1D, Array2D, Scalar} from '../../math/tensor';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Subtract} from './subtract';
 
 describe('add operation', () => {
   const math = ENV.math;
 
-  let t1: Tensor;
-  let t2: Tensor;
-  let y: Tensor;
+  let t1: SymbolicTensor;
+  let t2: SymbolicTensor;
+  let y: SymbolicTensor;
   let subOp: Subtract;
   let activations: TensorArrayMap;
   let gradients: SummedTensorArrayMap;
@@ -49,9 +49,9 @@ describe('add operation', () => {
     const x1 = Array1D.new([1, 2, 3]);
     const x2 = Array1D.new([3, 0, 3]);
 
-    t1 = new Tensor(x1.shape);
-    t2 = new Tensor(x2.shape);
-    y = new Tensor(x1.shape);
+    t1 = new SymbolicTensor(x1.shape);
+    t2 = new SymbolicTensor(x2.shape);
+    y = new SymbolicTensor(x1.shape);
 
     activations.set(t1, x1);
     activations.set(t2, x2);
@@ -82,9 +82,9 @@ describe('add operation', () => {
     const x1 = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     const x2 = Array2D.new([2, 3], [9, 8, 7, 6, 5, 4]);
 
-    t1 = new Tensor(x1.shape);
-    t2 = new Tensor(x2.shape);
-    y = new Tensor(x1.shape);
+    t1 = new SymbolicTensor(x1.shape);
+    t2 = new SymbolicTensor(x2.shape);
+    y = new SymbolicTensor(x1.shape);
 
     activations.set(t1, x1);
     activations.set(t2, x2);
@@ -117,9 +117,9 @@ describe('add operation', () => {
     const x1 = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     const x2 = Scalar.new(2);
 
-    t1 = new Tensor(x1.shape);
-    t2 = new Tensor(x2.shape);
-    y = new Tensor(x1.shape);
+    t1 = new SymbolicTensor(x1.shape);
+    t2 = new SymbolicTensor(x2.shape);
+    y = new SymbolicTensor(x1.shape);
 
     activations.set(t1, x1);
     activations.set(t2, x2);
@@ -150,9 +150,9 @@ describe('add operation', () => {
     const x1 = Scalar.new(2);
     const x2 = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
 
-    t1 = new Tensor(x1.shape);
-    t2 = new Tensor(x2.shape);
-    y = new Tensor(x1.shape);
+    t1 = new SymbolicTensor(x1.shape);
+    t2 = new SymbolicTensor(x2.shape);
+    y = new SymbolicTensor(x1.shape);
 
     activations.set(t1, x1);
     activations.set(t2, x2);
@@ -185,9 +185,9 @@ describe('add operation', () => {
     const x1 = Array2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     const x2 = Array2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
 
-    t1 = new Tensor(x1.shape);
-    t2 = new Tensor(x2.shape);
-    y = new Tensor(x1.shape);
+    t1 = new SymbolicTensor(x1.shape);
+    t2 = new SymbolicTensor(x2.shape);
+    y = new SymbolicTensor(x1.shape);
 
     activations.set(t1, x1);
     activations.set(t2, x2);

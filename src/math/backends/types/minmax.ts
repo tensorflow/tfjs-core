@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArray} from '../../ndarray';
+import {NDArray} from '../../tensor';
 import {KernelNode} from '../tape_types';
 
 // Reduction min.

@@ -16,17 +16,17 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D} from '../../math/ndarray';
+import {Array1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Log} from './log';
 
 describe('log operation', () => {
   const math = ENV.math;
 
-  let xTensor: Tensor;
-  let yTensor: Tensor;
+  let xTensor: SymbolicTensor;
+  let yTensor: SymbolicTensor;
   let logOp: Log;
   let activations: TensorArrayMap;
   let gradients: SummedTensorArrayMap;
@@ -46,8 +46,8 @@ describe('log operation', () => {
   it('simple log', () => {
     const x = Array1D.new([1, 2, 3]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(x.shape);
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(x.shape);
 
     activations.set(xTensor, x);
 

@@ -18,7 +18,7 @@
 
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../tensor';
 import {DataType, Rank, TypedArray} from '../types';
 
 import {MatrixOrientation} from './types/matmul';

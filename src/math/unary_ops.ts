@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
-import {NDArray, Scalar} from './ndarray';
+import {NDArray, Scalar} from './tensor';
 import * as ops from './ops';
 
 export class Ops {

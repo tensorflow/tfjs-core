@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D} from './tensor';
 
 // math.reverse1D
 {

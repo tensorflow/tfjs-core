@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import {NDArrayMath} from './math';
-import {NDArray, Scalar} from './ndarray';
+import {NDArray, Scalar} from './tensor';
 
 /**
  * An error function and its derivative.

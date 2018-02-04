@@ -14,7 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {NDArray} from './math/ndarray';
+import {NDArray} from './math/tensor';
 
 export interface Model {
   load(): Promise<void|void[]>;

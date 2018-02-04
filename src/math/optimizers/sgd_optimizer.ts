@@ -22,7 +22,7 @@ import {SessionRuntime} from '../../graph/session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {keep, tidy} from '../backends/tracking';
-import {Scalar} from '../ndarray';
+import {Scalar} from '../tensor';
 import {NamedArrayMap} from '../types';
 import {Optimizer} from './optimizer';
 

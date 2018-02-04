@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array1D, Array2D} from '../../ndarray';
+import {Array1D, Array2D} from '../../tensor';
 import {KernelNode} from '../tape_types';
 
 export interface Pad1DNode extends KernelNode {

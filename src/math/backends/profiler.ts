@@ -16,7 +16,7 @@
  */
 
 import * as util from '../../util';
-import {NDArray} from '../ndarray';
+import {NDArray} from '../tensor';
 import {TypedArray} from '../types';
 
 import {BackendTimer} from './backend';

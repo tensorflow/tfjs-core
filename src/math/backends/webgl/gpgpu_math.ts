@@ -17,7 +17,7 @@
 
 import {ENV} from '../../../environment';
 import * as util from '../../../util';
-import {NDArray} from '../../ndarray';
+import {NDArray} from '../../tensor';
 import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import {ShapeInfo} from './shader_compiler';

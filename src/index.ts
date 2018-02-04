@@ -32,7 +32,7 @@ export {DataStats, InMemoryDataset} from './data/dataset';
 export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider} from './data/input_provider';
 export {XhrDataset, XhrDatasetConfig, XhrModelConfig} from './data/xhr-dataset';
 export {ENV, Environment, Features} from './environment';
-export {Graph, Tensor} from './graph/graph';
+export {Graph, SymbolicTensor} from './graph/graph';
 // tslint:disable-next-line:max-line-length
 export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
 export {AdadeltaOptimizer} from './graph/optimizers/adadelta_optimizer';
@@ -51,7 +51,7 @@ export {GPGPUContext} from './math/backends/webgl/gpgpu_context';
 export {LSTMCell} from './math/lstm';
 export {NDArrayMath} from './math/math';
 // tslint:disable-next-line:max-line-length
-export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, variable, Variable} from './math/ndarray';
+export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, variable, Variable} from './math/tensor';
 export {Optimizer} from './math/optimizers/optimizer';
 export {SGDOptimizer} from './math/optimizers/sgd_optimizer';
 export {Rank} from './math/types';

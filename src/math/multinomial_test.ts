@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D, Array2D} from './ndarray';
+import {Array1D, Array2D} from './tensor';
 import {Rank} from './types';
 
 const tests: MathTests = it => {

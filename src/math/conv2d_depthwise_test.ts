@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array4D} from './ndarray';
+import {Array4D} from './tensor';
 import {Rank} from './types';
 
 // math.depthwiseConv2D

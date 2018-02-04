@@ -17,7 +17,7 @@
 
 import {keep, tidy} from '../../math/backends/tracking';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/ndarray';
+import {NDArray, Scalar} from '../../math/tensor';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {NamedVariableMap} from '../../math/types';
 import {Node} from '../graph';

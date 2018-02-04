@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {NDArray} from '../ndarray';
+import {NDArray} from '../tensor';
 import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
 
 /**

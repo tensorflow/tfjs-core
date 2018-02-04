@@ -16,7 +16,7 @@
  */
 
 import {NamedArrayMap} from '../../math/types';
-import {NDArray} from '../ndarray';
+import {NDArray} from '../tensor';
 import {Rank} from '../types';
 import {KernelConfigRegistry} from './kernel_registry';
 

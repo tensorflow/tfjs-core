@@ -18,16 +18,17 @@
 import {ENV} from '../../environment';
 import {keep, tidy} from '../../math/backends/tracking';
 import {NDArrayMath} from '../../math/math';
-import {Array1D, Scalar} from '../../math/ndarray';
+import {Array1D, Scalar} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
 import {Operation} from './op';
 
 export class Softmax extends Operation {
-  constructor(private logitsTensor: Tensor, private output: Tensor) {
+  constructor(
+      private logitsTensor: SymbolicTensor, private output: SymbolicTensor) {
     super();
   }
 
@@ -56,10 +57,10 @@ export class Softmax extends Operation {
 
 export class SoftmaxCrossEntropyCost extends Operation {
   constructor(
-      private logitsTensor: Tensor, private labelTensor: Tensor,
-      private yTensor: Tensor) {
+      private logitsTensor: SymbolicTensor, private labelTensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
-    this.softmaxTensor = new Tensor(logitsTensor.shape);
+    this.softmaxTensor = new SymbolicTensor(logitsTensor.shape);
     this.epsilon = ENV.math.keep(Scalar.new(1e-5));
   }
 
@@ -97,7 +98,7 @@ export class SoftmaxCrossEntropyCost extends Operation {
     this.epsilon.dispose();
   }
 
-  private softmaxTensor: Tensor;
+  private softmaxTensor: SymbolicTensor;
   private epsilon: Scalar;
 }
 

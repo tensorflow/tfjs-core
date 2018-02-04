@@ -23,7 +23,7 @@ import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../tensor';
 import * as ops from '../ops';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';

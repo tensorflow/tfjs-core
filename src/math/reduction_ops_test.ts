@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array1D, Array2D, Array3D, Array4D, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, Scalar} from './tensor';
 import * as reduce_util from './reduce_util';
 
 // math.min

@@ -18,9 +18,9 @@
 import {keep, tidy} from '../../math/backends/tracking';
 import * as conv_util from '../../math/conv_util';
 import {NDArrayMath} from '../../math/math';
-import {Array1D, Array3D, Array4D} from '../../math/ndarray';
+import {Array1D, Array3D, Array4D} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Operation} from './op';
 
@@ -45,9 +45,10 @@ export class Convolution2D extends Operation {
    * @param biases Optional. The bias terms of the filters.
    */
   constructor(
-      private wTensor: Tensor, private xTensor: Tensor, private bTensor: Tensor,
-      private yTensor: Tensor, private fieldSize: number,
-      private outputDepth: number, private stride = 1, zeroPad?: number) {
+      private wTensor: SymbolicTensor, private xTensor: SymbolicTensor,
+      private bTensor: SymbolicTensor, private yTensor: SymbolicTensor,
+      private fieldSize: number, private outputDepth: number,
+      private stride = 1, zeroPad?: number) {
     super();
     this.assertWeightsShape(wTensor.shape);
     this.zeroPad = zeroPad != null ?

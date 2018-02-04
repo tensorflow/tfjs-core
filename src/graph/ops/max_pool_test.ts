@@ -18,18 +18,18 @@
 import {ENV} from '../../environment';
 import * as dl from '../../index';
 import * as conv_util from '../../math/conv_util';
-import {Array3D} from '../../math/ndarray';
+import {Array3D} from '../../math/tensor';
 import {Rank} from '../../math/types';
 import * as test_util from '../../test_util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
 import {MaxPool} from './max_pool';
 
 describe('Max pool', () => {
   const math = ENV.math;
-  let xTensor: Tensor;
-  let yTensor: Tensor;
+  let xTensor: SymbolicTensor;
+  let yTensor: SymbolicTensor;
   let activations: TensorArrayMap;
   let gradients: SummedTensorArrayMap;
 
@@ -53,8 +53,8 @@ describe('Max pool', () => {
 
     const x = Array3D.new([3, 3, depth], [1, 2, 3, 4, 5, 6, 7, 9, 8]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(conv_util.computeOutputShape3D(
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(conv_util.computeOutputShape3D(
         x.shape, fSize, x.shape[2], stride, pad));
 
     activations.set(xTensor, x);
@@ -91,8 +91,8 @@ describe('Max pool', () => {
       9, 99, 10, 100, 11, 110, 12, 120, 13, 130, 14, 140, 15, 150, 16, 160
     ]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(conv_util.computeOutputShape3D(
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(conv_util.computeOutputShape3D(
         x.shape, fSize, x.shape[2], stride, pad));
 
     activations.set(xTensor, x);
@@ -118,8 +118,8 @@ describe('Max pool', () => {
       9,  99, 10, 100, -11, 110, 12, 120, 13, 130, 14, 140, 15, 150, 16, -160
     ]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(conv_util.computeOutputShape3D(
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(conv_util.computeOutputShape3D(
         x.shape, fSize, x.shape[2], stride, pad));
 
     activations.set(xTensor, x);
@@ -142,8 +142,8 @@ describe('Max pool', () => {
 
     const x = dl.randNormal<Rank.R3>([6, 6, 5]);
 
-    xTensor = new Tensor(x.shape);
-    yTensor = new Tensor(conv_util.computeOutputShape3D(
+    xTensor = new SymbolicTensor(x.shape);
+    yTensor = new SymbolicTensor(conv_util.computeOutputShape3D(
         x.shape, fSize, x.shape[2], stride, pad));
 
     activations.set(xTensor, x);

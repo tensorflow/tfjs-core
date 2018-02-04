@@ -20,7 +20,7 @@ import * as util from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
-import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray} from '../tensor';
 import * as reduce_util from '../reduce_util';
 import * as types from '../types';
 // tslint:disable-next-line:max-line-length

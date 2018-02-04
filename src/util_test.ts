@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array1D, NDArray, Scalar} from './math/ndarray';
+import {Array1D, NDArray, Scalar} from './math/tensor';
 import {NamedArrayMap} from './math/types';
 import * as test_util from './test_util';
 import {MathTests} from './test_util';

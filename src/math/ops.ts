@@ -174,7 +174,7 @@ export const multiRNNCell = lstm_ops.Ops.multiRNNCell;
 export const softmax = softmax_ops.Ops.softmax;
 
 // So typings can propagate.
-import {NDArray, Array3D, Array4D} from './ndarray';
+import {NDArray, Array3D, Array4D} from './tensor';
 import {Rank} from './types';
 // tslint:disable-next-line:no-unused-expression
 [NDArray, Rank, Array3D, Array4D];

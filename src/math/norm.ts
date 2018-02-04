@@ -17,7 +17,7 @@
 
 import * as axis_util from './axis_util';
 import {doc, operation} from './decorators';
-import {NDArray, Scalar} from './ndarray';
+import {NDArray, Scalar} from './tensor';
 
 export class Ops {
   /**

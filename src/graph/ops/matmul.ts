@@ -18,8 +18,8 @@
 import {keep, tidy} from '../../math/backends/tracking';
 import {MatrixOrientation} from '../../math/backends/types/matmul';
 import {NDArrayMath} from '../../math/math';
-import {Array1D, Array2D} from '../../math/ndarray';
-import {Tensor} from '../graph';
+import {Array1D, Array2D} from '../../math/tensor';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Operation} from './op';
@@ -29,8 +29,8 @@ import {Operation} from './op';
  */
 export class MatMul extends Operation {
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
   }
 

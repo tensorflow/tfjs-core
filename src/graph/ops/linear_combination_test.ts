@@ -16,19 +16,19 @@
  */
 
 import {ENV} from '../../environment';
-import {Array1D, Scalar} from '../../math/ndarray';
-import {Tensor} from '../graph';
+import {Array1D, Scalar} from '../../math/tensor';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
 import {LinearCombination} from './linear_combination';
 
 describe('Linear combination', () => {
   const math = ENV.math;
-  let x1Tensor: Tensor;
-  let x2Tensor: Tensor;
-  let c1Tensor: Tensor;
-  let c2Tensor: Tensor;
-  let yTensor: Tensor;
+  let x1Tensor: SymbolicTensor;
+  let x2Tensor: SymbolicTensor;
+  let c1Tensor: SymbolicTensor;
+  let c2Tensor: SymbolicTensor;
+  let yTensor: SymbolicTensor;
   let activations: TensorArrayMap;
   let gradients: SummedTensorArrayMap;
 
@@ -56,11 +56,11 @@ describe('Linear combination', () => {
     const c1 = Scalar.new(3);
     const c2 = Scalar.new(2);
 
-    x1Tensor = new Tensor(x1.shape);
-    x2Tensor = new Tensor(x2.shape);
-    c1Tensor = new Tensor(c1.shape);
-    c2Tensor = new Tensor(c2.shape);
-    yTensor = new Tensor([]);
+    x1Tensor = new SymbolicTensor(x1.shape);
+    x2Tensor = new SymbolicTensor(x2.shape);
+    c1Tensor = new SymbolicTensor(c1.shape);
+    c2Tensor = new SymbolicTensor(c2.shape);
+    yTensor = new SymbolicTensor([]);
 
     activations.set(x1Tensor, x1);
     activations.set(x2Tensor, x2);

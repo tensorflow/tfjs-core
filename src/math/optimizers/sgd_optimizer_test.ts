@@ -17,7 +17,7 @@
 import {InputProvider} from '../../data/input_provider';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
-import {Array1D, Scalar, variable} from '../../math/ndarray';
+import {Array1D, Scalar, variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 

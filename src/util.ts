@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NDArray} from './math/ndarray';
+import {NDArray} from './math/tensor';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, FlatVector, NamedArrayMap, RecursiveArray, RegularArray} from './math/types';
 

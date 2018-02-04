@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Array2D, Array3D} from './ndarray';
+import {Array2D, Array3D} from './tensor';
 
 // math.transpose
 {

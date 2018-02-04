@@ -17,11 +17,11 @@
 
 import {ENV} from '../environment';
 import {NDArrayMath} from '../math/math';
-import {Array1D, NDArray, Scalar} from '../math/ndarray';
+import {Array1D, NDArray, Scalar} from '../math/tensor';
 import {Optimizer} from '../math/optimizers/optimizer';
 import {SGDOptimizer} from '../math/optimizers/sgd_optimizer';
 
-import {Graph, Tensor} from './graph';
+import {Graph, SymbolicTensor} from './graph';
 // tslint:disable-next-line:max-line-length
 import {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph_runner';
 import {CostReduction, FeedEntry, Session} from './session';
@@ -40,11 +40,11 @@ describe('Model runner', () => {
   let g: Graph;
   let session: Session;
   let optimizer: SGDOptimizer;
-  let inputTensor: Tensor;
-  let labelTensor: Tensor;
-  let costTensor: Tensor;
-  let predictionTensor: Tensor;
-  let metricTensor: Tensor;
+  let inputTensor: SymbolicTensor;
+  let labelTensor: SymbolicTensor;
+  let costTensor: SymbolicTensor;
+  let predictionTensor: SymbolicTensor;
+  let metricTensor: SymbolicTensor;
 
   let graphRunner: GraphRunner;
 
@@ -83,7 +83,7 @@ describe('Model runner', () => {
 
     spyOn(session, 'train').and.callFake(fakeTrainBatch);
     let counter = 0;
-    spyOn(session, 'eval').and.callFake((evalTensor: Tensor) => {
+    spyOn(session, 'eval').and.callFake((evalTensor: SymbolicTensor) => {
       if (evalTensor === predictionTensor) {
         return Array1D.new([1, 0]);
       } else if (evalTensor === metricTensor) {

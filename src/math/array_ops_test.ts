@@ -19,7 +19,7 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './tensor';
 
 // dl.zeros
 {

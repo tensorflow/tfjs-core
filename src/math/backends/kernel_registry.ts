@@ -16,7 +16,7 @@
  */
 
 import * as util from '../../util';
-import {NDArray, Scalar} from '../ndarray';
+import {NDArray, Scalar} from '../tensor';
 import {Rank} from '../types';
 import {MathBackend} from './backend';
 import {ArgMaxNode, ArgMinNode} from './types/argminmax';

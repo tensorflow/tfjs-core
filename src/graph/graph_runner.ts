@@ -18,9 +18,9 @@
 import {InputProvider} from '../data/input_provider';
 import {tidy} from '../math/backends/tracking';
 import {NDArrayMath} from '../math/math';
-import {NDArray, Scalar} from '../math/ndarray';
+import {NDArray, Scalar} from '../math/tensor';
 import {Optimizer} from '../math/optimizers/optimizer';
-import {Tensor} from './graph';
+import {SymbolicTensor} from './graph';
 import {CostReduction, FeedEntry, Session} from './session';
 
 const DEFAULT_EVAL_INTERVAL_MS = 1500;
@@ -50,20 +50,20 @@ export enum MetricReduction {
  * and speed of training.
  */
 export class GraphRunner {
-  private costTensor: Tensor;
+  private costTensor: SymbolicTensor;
   private trainFeedEntries: FeedEntry[];
   private batchSize: number;
   private optimizer: Optimizer;
   private currentTrainLoopNumBatches: number|undefined;
   private costIntervalMs: number;
 
-  private metricTensor: Tensor|undefined;
+  private metricTensor: SymbolicTensor|undefined;
   private metricFeedEntries: FeedEntry[]|undefined;
   private metricBatchSize: number|undefined;
   private metricReduction: MetricReduction;
   private metricIntervalMs: number;
 
-  private inferenceTensor: Tensor;
+  private inferenceTensor: SymbolicTensor;
   private inferenceFeedEntries: FeedEntry[]|undefined;
   private inferenceExampleIntervalMs: number;
   private inferenceExampleCount: number;
@@ -103,10 +103,10 @@ export class GraphRunner {
    * This can be used for computing accuracy, or a similar metric.
    */
   train(
-      costTensor: Tensor, trainFeedEntries: FeedEntry[], batchSize: number,
-      optimizer: Optimizer, numBatches?: number, metricTensor?: Tensor,
-      metricFeedEntries?: FeedEntry[], metricBatchSize?: number,
-      metricReduction = MetricReduction.MEAN,
+      costTensor: SymbolicTensor, trainFeedEntries: FeedEntry[],
+      batchSize: number, optimizer: Optimizer, numBatches?: number,
+      metricTensor?: SymbolicTensor, metricFeedEntries?: FeedEntry[],
+      metricBatchSize?: number, metricReduction = MetricReduction.MEAN,
       evalIntervalMs = DEFAULT_EVAL_INTERVAL_MS,
       costIntervalMs = DEFAULT_COST_INTERVAL_MS) {
     this.costTensor = costTensor;
@@ -209,7 +209,7 @@ export class GraphRunner {
   }
 
   infer(
-      inferenceTensor: Tensor, inferenceFeedEntries: FeedEntry[],
+      inferenceTensor: SymbolicTensor, inferenceFeedEntries: FeedEntry[],
       inferenceExampleIntervalMs = DEFAULT_INFERENCE_EXAMPLE_INTERVAL_MS,
       inferenceExampleCount = 5, numPasses?: number) {
     if (this.eventObserver.inferenceExamplesCallback == null &&
@@ -339,7 +339,7 @@ export class GraphRunner {
     this.session = session;
   }
 
-  setInferenceTensor(inferenceTensor: Tensor) {
+  setInferenceTensor(inferenceTensor: SymbolicTensor) {
     this.inferenceTensor = inferenceTensor;
   }
 

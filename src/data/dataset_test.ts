@@ -16,7 +16,7 @@
  */
 
 import * as dl from '../index';
-import {Array2D, NDArray} from '../math/ndarray';
+import {Array2D, NDArray} from '../math/tensor';
 import * as test_util from '../test_util';
 
 import {InMemoryDataset} from './dataset';

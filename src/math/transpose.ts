@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import * as axis_util from './axis_util';
 import {doc, operation} from './decorators';
-import {NDArray} from './ndarray';
+import {NDArray} from './tensor';
 import {Rank} from './types';
 
 export class Ops {

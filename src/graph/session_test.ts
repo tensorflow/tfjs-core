@@ -19,10 +19,10 @@ import {InputProvider} from '../data/input_provider';
 import {ENV} from '../environment';
 import * as dl from '../index';
 import {NDArrayMath} from '../math/math';
-import {Array1D, Scalar} from '../math/ndarray';
+import {Array1D, Scalar} from '../math/tensor';
 import {SGDOptimizer} from '../math/optimizers/sgd_optimizer';
 import * as test_util from '../test_util';
-import {Graph, Tensor} from './graph';
+import {Graph, SymbolicTensor} from './graph';
 import {FeedDictionary, FeedEntry, Session} from './session';
 
 describe('FeedDictionary', () => {
@@ -32,7 +32,8 @@ describe('FeedDictionary', () => {
 
   it('ctor populates dict from only feed entry', () => {
     dl.tidy(() => {
-      const e: FeedEntry = {tensor: new Tensor([]), data: dl.zeros([1])};
+      const e:
+          FeedEntry = {tensor: new SymbolicTensor([]), data: dl.zeros([1])};
       const d = new FeedDictionary([e]);
       expect(Object.keys(d.dict).length).toEqual(1);
       expect(d.dict[e.tensor.id]).toBe(e);
@@ -41,10 +42,10 @@ describe('FeedDictionary', () => {
 
   it('ctor populates dict from many entries', () => {
     const entries: FeedEntry[] = [
-      {tensor: new Tensor([]), data: dl.zeros([1])},
-      {tensor: new Tensor([]), data: dl.zeros([1])},
-      {tensor: new Tensor([]), data: dl.zeros([1])},
-      {tensor: new Tensor([]), data: dl.zeros([1])}
+      {tensor: new SymbolicTensor([]), data: dl.zeros([1])},
+      {tensor: new SymbolicTensor([]), data: dl.zeros([1])},
+      {tensor: new SymbolicTensor([]), data: dl.zeros([1])},
+      {tensor: new SymbolicTensor([]), data: dl.zeros([1])}
     ];
     const d = new FeedDictionary(entries);
     expect(Object.keys(d.dict).length).toEqual(entries.length);
@@ -52,7 +53,7 @@ describe('FeedDictionary', () => {
   });
 
   it('add adds entry to map keyed on tensor id', () => {
-    const t = new Tensor([]);
+    const t = new SymbolicTensor([]);
     const nda = dl.zeros([1]);
     const fd = new FeedDictionary([{tensor: t, data: nda}]);
     expect(fd.dict[t.id].tensor).toBe(t);
