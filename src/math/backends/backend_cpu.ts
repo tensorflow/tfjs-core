@@ -184,7 +184,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   reverse4D(x: Array4D, axis: number[]): Array4D {
-    const result = ops.clone(x);
+    const result = ops.zerosLike(x);
 
     // Reverse axis only if the axis has dim != 1
     const revAxis = (i: number) => axis.indexOf(i) !== -1 && x.shape[i] !== 1;
@@ -444,6 +444,19 @@ export class MathBackendCPU implements MathBackend {
     });
   }
 
+  logicalNot<T extends NDArray>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Int32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (util.isValNaN(values[i], x.dtype)) {
+        newValues[i] = util.getNaN('bool');
+      } else {
+        newValues[i] = values[i] ? 0 : 1;
+      }
+    }
+    return NDArray.make(x.shape, {values: newValues}, 'bool') as T;
+  }
+
   logicalAnd(a: NDArray, b: NDArray): NDArray {
     return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
       if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
@@ -460,6 +473,16 @@ export class MathBackendCPU implements MathBackend {
         return util.getNaN('bool');
       } else {
         return aVal || bVal;
+      }
+    });
+  }
+
+  logicalXor(a: NDArray, b: NDArray): NDArray {
+    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
+      if (util.isValNaN(aVal, a.dtype) || util.isValNaN(bVal, b.dtype)) {
+        return util.getNaN('bool');
+      } else {
+        return aVal ^ bVal;
       }
     });
   }
