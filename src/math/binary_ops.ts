@@ -309,8 +309,8 @@ export class Ops {
    * Returns the min of a and b (`a < b ? a : b`) element-wise.
    * Supports broadcasting.
    *
-   * @param a The first ndarray.
-   * @param b The second ndarray. Must have the same type as `a`.
+   * @param a The first tensor.
+   * @param b The second tensor. Must have the same type as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -343,8 +343,8 @@ export class Ops {
    * Returns the max of a and b (`a > b ? a : b`) element-wise.
    * Supports broadcasting.
    *
-   * @param a The first ndarray.
-   * @param b The second ndarray. Must have the same type as `a`.
+   * @param a The first tensor.
+   * @param b The second tensor. Must have the same type as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation

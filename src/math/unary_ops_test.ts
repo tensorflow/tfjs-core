@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 
-import {Tensor1D, Tensor2D, Scalar} from './tensor';
+import {Scalar, Tensor1D, Tensor2D} from './tensor';
 
 // math.relu
 {
@@ -174,13 +174,13 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
 // math.step
 {
   const tests: MathTests = it => {
-    it('with 1d ndarray', math => {
+    it('with 1d tensor', math => {
       const a = Tensor1D.new([1, -2, -.01, 3, -0.1]);
       const result = math.step(a);
       test_util.expectArraysClose(result, [1, 0, 0, 1, 0]);
     });
 
-    it('with 2d ndarray', math => {
+    it('with 2d tensor', math => {
       const a = Tensor2D.new([2, 2], [1, -5, -3, 4]);
       const result = math.step(a);
       expect(result.shape).toEqual([2, 2]);

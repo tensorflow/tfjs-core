@@ -73,15 +73,15 @@ export class XhrDataset extends InMemoryDataset {
 
     const inputSize = util.sizeFromShape(info.shape);
     return dataPromise.then(data => {
-      const ndarrays: T[] = [];
+      const tensors: T[] = [];
       for (let i = 0; i < data.length / inputSize; i++) {
         const values = data.subarray(i * inputSize, (i + 1) * inputSize);
-        const ndarray =
+        const tensor =
             Tensor.make(
                 info.shape, {values: new Float32Array(values)}, 'float32') as T;
-        ndarrays.push(ndarray);
+        tensors.push(tensor);
       }
-      return ndarrays;
+      return tensors;
     });
   }
 
@@ -144,7 +144,7 @@ function parseImage(
   if (img.width !== shape[0] * shape[1]) {
     throw new Error(
         `Image width (${img.width}) must be multiple of ` +
-        `rows*columns (${shape[0]}*${shape[1]}) of the ndarray`);
+        `rows*columns (${shape[0]}*${shape[1]}) of the tensor`);
   }
   // TODO(smilkov): Canvas has max width of 32,767px. This approach
   // (canvas.width = shape[0] * shape[1]) works with examples up to 181x181px.

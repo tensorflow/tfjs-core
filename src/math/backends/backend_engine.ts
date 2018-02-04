@@ -195,15 +195,15 @@ export class BackendEngine implements NDArrayManager {
 
     // Dispose the arrays tracked in this scope.
     for (let i = 0; i < this.activeScope.track.length; i++) {
-      const ndarray = this.activeScope.track[i];
-      if (util.isTensorInList(ndarray, arraysToKeep)) {
+      const tensor = this.activeScope.track[i];
+      if (util.isTensorInList(tensor, arraysToKeep)) {
         continue;
       }
 
       if (this.activeTape != null) {
-        arraysToTrackInParent.push(ndarray);
+        arraysToTrackInParent.push(tensor);
       } else {
-        ndarray.dispose();
+        tensor.dispose();
       }
     }
 
@@ -213,9 +213,9 @@ export class BackendEngine implements NDArrayManager {
         this.scopeStack[this.scopeStack.length - 1];
 
     // Track the current result in the parent scope.
-    arraysToTrackInParent.forEach(ndarray => {
-      if (!util.isTensorInList(ndarray, this.activeScope.keep)) {
-        this.track(ndarray);
+    arraysToTrackInParent.forEach(tensor => {
+      if (!util.isTensorInList(tensor, this.activeScope.keep)) {
+        this.track(tensor);
       }
     });
   }
@@ -269,7 +269,7 @@ export class BackendEngine implements NDArrayManager {
             `to are used inside the gradient function.`);
       }
 
-      const accumulatedGradientMap: {[ndarrayId: number]: Tensor} = {};
+      const accumulatedGradientMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientMap[y.id] = (dy == null) ? ops.onesLike(y) : dy;
 
       // Backprop gradients through the filtered nodes.

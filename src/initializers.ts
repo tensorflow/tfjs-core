@@ -86,11 +86,11 @@ export class ConstantInitializer implements Initializer {
 }
 
 export class TensorInitializer implements Initializer {
-  constructor(private ndarray: Tensor) {}
+  constructor(private tensor: Tensor) {}
 
   initialize(weightsShape: number[], inputUnits: number, outputUnits: number):
       Tensor {
-    return this.ndarray;
+    return this.tensor;
   }
 }
 

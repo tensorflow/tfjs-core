@@ -108,7 +108,7 @@ export class CheckpointLoader {
     }
 
     const variableRequestPromiseMethod =
-        (resolve: (ndarray: Tensor) => void, reject: () => void) => {
+        (resolve: (tensor: Tensor) => void, reject: () => void) => {
           const xhr = new XMLHttpRequest();
           xhr.responseType = 'arraybuffer';
           const fname = this.checkpointManifest[varName].filename;
@@ -119,9 +119,9 @@ export class CheckpointLoader {
               throw new Error(`Not found variable ${varName}`);
             }
             const values = new Float32Array(xhr.response);
-            const ndarray =
+            const tensor =
                 Tensor.make(this.checkpointManifest[varName].shape, {values});
-            resolve(ndarray);
+            resolve(tensor);
           };
           xhr.onerror = (error) => {
             throw new Error(`Could not fetch variable ${varName}: ${error}`);

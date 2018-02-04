@@ -24,7 +24,7 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, TensorBuffer} from './tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
 export class Ops {
-  /** Creates a ndarray of ones with the specified shape. */
+  /** Creates a tensor of ones with the specified shape. */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType): Tensor<R> {
@@ -32,7 +32,7 @@ export class Ops {
     return Tensor.make(shape, {values}, dtype);
   }
 
-  /** Creates a ndarray of zeros with the specified shape. */
+  /** Creates a tensor of zeros with the specified shape. */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
@@ -53,7 +53,7 @@ export class Ops {
   }
 
   /**
-   * Creates a ndarray of ones with the same shape as the specified ndarray.
+   * Creates a tensor of ones with the same shape as the specified tensor.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
@@ -62,7 +62,7 @@ export class Ops {
   }
 
   /**
-   * Creates a ndarray of zeros with the same shape as the specified ndarray.
+   * Creates a tensor of zeros with the same shape as the specified tensor.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
@@ -70,7 +70,7 @@ export class Ops {
     return Ops.zeros(x.shape, x.dtype) as T;
   }
 
-  /** Creates a ndarray with the same values/shape as the specified ndarray. */
+  /** Creates a tensor with the same values/shape as the specified tensor. */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static clone<T extends Tensor>(x: T): T {

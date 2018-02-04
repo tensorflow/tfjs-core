@@ -91,16 +91,16 @@ export class Tensor<R extends Rank = Rank> {
   private static nextId = 0;
   private static nextDataId = 0;
 
-  /** Unique id of this ndarray. */
+  /** Unique id of this tensor. */
   readonly id: number;
   /**
-   * Id of the bucket holding the data for this ndarray. Multiple arrays can
+   * Id of the bucket holding the data for this tensor. Multiple arrays can
    * point to the same bucket (e.g. when calling array.reshape()).
    */
   dataId: number;
-  /** The shape of the ndarray. */
+  /** The shape of the tensor. */
   readonly shape: ShapeMap[R];
-  /** Number of elements in the ndarray. */
+  /** Number of elements in the tensor. */
   readonly size: number;
   /** The data type for the array. */
   readonly dtype: DataType;
@@ -110,7 +110,7 @@ export class Tensor<R extends Rank = Rank> {
   /**
    * Number of elements to skip in each dimension when indexing. See
    * https://docs.scipy.org/doc/numpy/reference/generated
-   *     /numpy.ndarray.strides.html
+   *     /numpy.tensor.strides.html
    */
   readonly strides: number[];
 
@@ -121,7 +121,7 @@ export class Tensor<R extends Rank = Rank> {
     if (values != null) {
       util.assert(
           this.size === values.length,
-          `Constructing ndarray of shape (${this.size}) should match the ` +
+          `Constructing tensor of shape (${this.size}) should match the ` +
               `length of values (${values.length})`);
     }
     this.shape = shape;
@@ -163,7 +163,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Makes a new ndarray with the provided shape and values. Values should be in
+   * Makes a new tensor with the provided shape and values. Values should be in
    * a flat array.
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
@@ -368,7 +368,7 @@ export class Tensor<R extends Rank = Rank> {
 
   // Chain API.
 
-  /** Reshapes the current ndarray into the provided shape. */
+  /** Reshapes the current tensor into the provided shape. */
   reshape<R2 extends Rank>(newShape: ShapeMap[R2]): Tensor<R2> {
     this.throwIfDisposed();
     return ops.reshape(this, newShape);
@@ -862,7 +862,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   /**
    * Creates a new variable with the provided initial value.
    *
-   * @param initialValue An ndarray.
+   * @param initialValue An tensor.
    * @param trainable If true, optimizers are allowed to update it.
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.

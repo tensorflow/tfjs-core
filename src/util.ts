@@ -336,10 +336,9 @@ export function getTypedArrayFromDType<D extends DataType>(
   return values;
 }
 
-export function isTensorInList(
-    ndarray: Tensor, ndarrayList: Tensor[]): boolean {
-  for (let i = 0; i < ndarrayList.length; i++) {
-    if (ndarrayList[i].id === ndarray.id) {
+export function isTensorInList(tensor: Tensor, tensorList: Tensor[]): boolean {
+  for (let i = 0; i < tensorList.length; i++) {
+    if (tensorList[i].id === tensor.id) {
       return true;
     }
   }

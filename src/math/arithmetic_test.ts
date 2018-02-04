@@ -66,7 +66,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(result, expected);
     });
 
-    it('div throws when passed ndarrays of different shapes', () => {
+    it('div throws when passed tensors of different shapes', () => {
       const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
       const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
 
@@ -254,7 +254,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
 // multiply
 {
   const tests: MathTests = it => {
-    it('multiplyStrict same-shaped ndarrays', () => {
+    it('multiplyStrict same-shaped tensors', () => {
       const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
       const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
       const expected = [5, 6, -12, 28];
@@ -275,7 +275,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(result, [NaN, 9, NaN, 0]);
     });
 
-    it('multiplyStrict throws when passed ndarrays of different shapes', () => {
+    it('multiplyStrict throws when passed tensors of different shapes', () => {
       const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
       const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
 
@@ -300,7 +300,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(res, [2, 2, -9, 16]);
     });
 
-    it('same-shaped ndarrays', () => {
+    it('same-shaped tensors', () => {
       const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
       const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
       const expected = [5, 6, -12, 28];
@@ -310,7 +310,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(result, expected);
     });
 
-    it('broadcasting ndarrays', () => {
+    it('broadcasting tensors', () => {
       const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
       const b = Scalar.new(2);
       const expected = [2, 4, -6, -8];
@@ -466,7 +466,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
 // pow
 {
   const tests: MathTests = it => {
-    it('same-shaped ndarrays', () => {
+    it('same-shaped tensors', () => {
       const a = Tensor2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
       const b = Tensor2D.new([2, 3], [5, 3, 4, 5, 2, -3], 'int32');
       const expected = [1, -8, 81, 0, 49, 1];
@@ -487,7 +487,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysEqual(result, [1, 4, 9]);
     });
 
-    it('different-shaped ndarrays', () => {
+    it('different-shaped tensors', () => {
       const a = Tensor2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
       const b = Scalar.new(2, 'int32');
       const expected = [1, 4, 9, 0, 49, 1];
@@ -537,7 +537,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(result, expected);
     });
 
-    it('powStrict same-shaped ndarrays', () => {
+    it('powStrict same-shaped tensors', () => {
       const a = Tensor2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
       const b = Tensor2D.new([2, 3], [5, 3, 4, 5, 2, -3], 'int32');
       const expected = [1, -8, 81, 0, 49, 1];
@@ -547,7 +547,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(result, expected, 0.01);
     });
 
-    it('powStrict throws when passed ndarrays of different shapes', () => {
+    it('powStrict throws when passed tensors of different shapes', () => {
       const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
       const b = Tensor2D.new([2, 2], [5, 3, 4, -7], 'int32');
 
@@ -664,7 +664,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(res, [6, 7, NaN]);
     });
 
-    it('A + B throws when passed ndarrays with different shape', () => {
+    it('A + B throws when passed tensors with different shape', () => {
       const a = Tensor1D.new([2, 5, 1, 5]);
       const b = Tensor1D.new([4, 2, -1]);
 
@@ -800,7 +800,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(res, [-2, NaN, 2]);
     });
 
-    it('A - B throws when passed ndarrays with different shape', () => {
+    it('A - B throws when passed tensors with different shape', () => {
       const a = Tensor1D.new([2, 5, 1, 5]);
       const b = Tensor1D.new([4, 2, -1]);
 
@@ -961,7 +961,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
 // math.scaledArrayAdd
 {
   const tests: MathTests = it => {
-    it('Scaled ndarray add', math => {
+    it('Scaled tensor add', math => {
       const a = Tensor2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
       const b = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
       const c1 = Scalar.new(3);

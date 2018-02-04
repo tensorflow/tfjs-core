@@ -96,7 +96,7 @@ const tests: MathTests = it => {
       }
     }
 
-    // Reshaping ndarrays.
+    // Reshaping tensors.
     const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
     test_util.expectNumbersClose(a.get(1, 2), 6);
   });

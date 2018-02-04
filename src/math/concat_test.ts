@@ -131,18 +131,18 @@ import {Tensor1D, Tensor2D, Tensor3D} from './tensor';
 {
   const tests: MathTests = it => {
     it('shapes correct concat axis=0', math => {
-      const ndarray1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
-      const ndarray2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
-      const values = math.concat3D(ndarray1, ndarray2, 0);
+      const tensor1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
+      const tensor2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
+      const values = math.concat3D(tensor1, tensor2, 0);
       expect(values.shape).toEqual([2, 1, 3]);
       test_util.expectArraysClose(values, [1, 2, 3, 4, 5, 6]);
     });
 
     it('concat axis=0', math => {
-      const ndarray1 = Tensor3D.new([1, 2, 3], [1, 11, 111, 2, 22, 222]);
-      const ndarray2 = Tensor3D.new(
+      const tensor1 = Tensor3D.new([1, 2, 3], [1, 11, 111, 2, 22, 222]);
+      const tensor2 = Tensor3D.new(
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
-      const values = math.concat3D(ndarray1, ndarray2, 0);
+      const values = math.concat3D(tensor1, tensor2, 0);
       expect(values.shape).toEqual([3, 2, 3]);
       test_util.expectArraysClose(values, [
         1, 11, 111, 2, 22, 222, 5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888
@@ -150,18 +150,18 @@ import {Tensor1D, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('shapes correct concat axis=1', math => {
-      const ndarray1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
-      const ndarray2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
-      const values = math.concat3D(ndarray1, ndarray2, 1);
+      const tensor1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
+      const tensor2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
+      const values = math.concat3D(tensor1, tensor2, 1);
       expect(values.shape).toEqual([1, 2, 3]);
       test_util.expectArraysClose(values, [1, 2, 3, 4, 5, 6]);
     });
 
     it('concat axis=1', math => {
-      const ndarray1 = Tensor3D.new([2, 1, 3], [1, 11, 111, 3, 33, 333]);
-      const ndarray2 = Tensor3D.new(
+      const tensor1 = Tensor3D.new([2, 1, 3], [1, 11, 111, 3, 33, 333]);
+      const tensor2 = Tensor3D.new(
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
-      const values = math.concat3D(ndarray1, ndarray2, 1);
+      const values = math.concat3D(tensor1, tensor2, 1);
       expect(values.shape).toEqual([2, 3, 3]);
       test_util.expectArraysClose(values, [
         1, 11, 111, 5, 55, 555, 6, 66, 666, 3, 33, 333, 7, 77, 777, 8, 88, 888
@@ -169,18 +169,18 @@ import {Tensor1D, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('shapes correct concat axis=2', math => {
-      const ndarray1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
-      const ndarray2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
-      const values = math.concat3D(ndarray1, ndarray2, 2);
+      const tensor1 = Tensor3D.new([1, 1, 3], [1, 2, 3]);
+      const tensor2 = Tensor3D.new([1, 1, 3], [4, 5, 6]);
+      const values = math.concat3D(tensor1, tensor2, 2);
       expect(values.shape).toEqual([1, 1, 6]);
       test_util.expectArraysClose(values, [1, 2, 3, 4, 5, 6]);
     });
 
     it('concat axis=2', math => {
-      const ndarray1 = Tensor3D.new([2, 2, 2], [1, 11, 2, 22, 3, 33, 4, 44]);
-      const ndarray2 = Tensor3D.new(
+      const tensor1 = Tensor3D.new([2, 2, 2], [1, 11, 2, 22, 3, 33, 4, 44]);
+      const tensor2 = Tensor3D.new(
           [2, 2, 3], [5, 55, 555, 6, 66, 666, 7, 77, 777, 8, 88, 888]);
-      const values = math.concat3D(ndarray1, ndarray2, 2);
+      const values = math.concat3D(tensor1, tensor2, 2);
       expect(values.shape).toEqual([2, 2, 5]);
       test_util.expectArraysClose(values, [
         1, 11, 5, 55, 555, 2, 22, 6, 66, 666,

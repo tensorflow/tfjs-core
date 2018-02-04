@@ -26,7 +26,7 @@ export class Ops {
   /**
    * Computes the 2D max pooling of an image.
    *
-   * @param x The input ndarray, of rank 4 or rank 3 of shape
+   * @param x The input tensor, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
@@ -141,7 +141,7 @@ export class Ops {
   /**
    * Computes the 2D min pooling of an image.
    *
-   * @param input The input ndarray, of rank 4 or rank 3 of shape
+   * @param input The input tensor, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
@@ -191,7 +191,7 @@ export class Ops {
   /**
    * Computes the 2D average pooling of an image.
    *
-   * @param x The input ndarray, of rank 4 or rank 3 of shape
+   * @param x The input tensor, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].

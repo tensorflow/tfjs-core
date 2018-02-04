@@ -433,7 +433,7 @@ import * as tape_util from './tape_util';
 
       const dy = Scalar.new(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
+      const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [{
@@ -458,7 +458,7 @@ import * as tape_util from './tape_util';
 
       const dy = Scalar.new(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
+      const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [{
@@ -486,7 +486,7 @@ import * as tape_util from './tape_util';
 
       const dy = Scalar.new(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
+      const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [
@@ -530,7 +530,7 @@ import * as tape_util from './tape_util';
 
       const dy = Scalar.new(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
+      const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [
@@ -591,7 +591,7 @@ import * as tape_util from './tape_util';
 
          const dy = Scalar.new(1);
 
-         const accumulatedGradientsMap: {[ndarrayId: number]: Tensor} = {};
+         const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
          accumulatedGradientsMap[y.id] = dy;
 
          const tape: Array<TapeNode<TapeNodeOutput>> = [
@@ -646,7 +646,7 @@ import * as tape_util from './tape_util';
       expect(results).toEqual([]);
     });
 
-    it('ndarray input returns one element array', math => {
+    it('tensor input returns one element array', math => {
       const x = Scalar.new(1);
       const results = tape_util.extractTensorsFromScopeResult(x);
 

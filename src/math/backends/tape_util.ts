@@ -33,7 +33,7 @@ export function getFilteredNodesXToY(
     tape: Tape, xs: Tensor[], y: Tensor): Tape {
   // Forward pass to compute all the nodes and Tensors that are transitively a
   // function of x.
-  const arraysFromX: {[ndarrayId: number]: boolean} = {};
+  const arraysFromX: {[tensorId: number]: boolean} = {};
   const nodesFromX: {[nodeId: number]: boolean} = {};
   for (let i = 0; i < xs.length; i++) {
     arraysFromX[xs[i].id] = true;
@@ -70,7 +70,7 @@ export function getFilteredNodesXToY(
   }
 
   // Backwards pass to find all of the nodes and Tensors that lead to y.
-  const arraysLeadToY: {[ndarrayId: number]: boolean} = {};
+  const arraysLeadToY: {[tensorId: number]: boolean} = {};
   arraysLeadToY[y.id] = true;
   const nodesToY: {[nodeId: number]: boolean} = {};
 
@@ -150,7 +150,7 @@ export function getFilteredNodesXToY(
  * @param filteredTape The filtered TapeNodes to backprop through.
  */
 export function backpropagateGradients(
-    arrayAccumulatedGradientMap: {[ndarrayId: number]: Tensor},
+    arrayAccumulatedGradientMap: {[tensorId: number]: Tensor},
     filteredTape: Tape) {
   // Walk the tape backwards and keep a map of Tensor to its gradient.
   for (let i = filteredTape.length - 1; i >= 0; i--) {

@@ -18,8 +18,6 @@
 import * as xhr_dataset from './data/xhr-dataset';
 import * as environment from './environment';
 import * as gpgpu_util from './math/backends/webgl/gpgpu_util';
-// tslint:disable-next-line:max-line-length
-import * as render_ndarray_gpu_util from './math/backends/webgl/render_ndarray_gpu_util';
 import * as webgl_util from './math/backends/webgl/webgl_util';
 import * as conv_util from './math/conv_util';
 import * as test_util from './test_util';
@@ -62,7 +60,6 @@ export {
   conv_util,
   environment,
   gpgpu_util,
-  render_ndarray_gpu_util,
   test_util,
   util,
   webgl_util,

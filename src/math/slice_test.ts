@@ -66,7 +66,7 @@ import {Rank} from './types';
       expect(b.shape).toEqual([1, 1]);
     });
 
-    it('returns a ndarray of slice size', math => {
+    it('returns a tensor of slice size', math => {
       const a = dl.zeros<Rank.R2>([100, 100]);
       const b = math.slice2D(a, [0, 0], [12, 34]);
       expect(b.shape).toEqual([12, 34]);

@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import * as concat_util from './concat_util';
 import {doc, operation} from './decorators';
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor} from './tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
 export class Ops {
   /**
@@ -76,7 +76,7 @@ export class Ops {
   }
 
   /**
-   * Concatenates two 3D ndarrays along a given axis.
+   * Concatenates two 3D tensors along a given axis.
    *
    * For example, if:
    * A: shape(2, 1, 3) = | r1, g1, b1 |
@@ -113,7 +113,7 @@ export class Ops {
   }
 
   /**
-   * Concatenates two 4D ndarrays along a given axis. See math.concat2D() for
+   * Concatenates two 4D tensors along a given axis. See math.concat2D() for
    * documentation.
    *
    * @param a The first array to concat.

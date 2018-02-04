@@ -242,8 +242,8 @@ export class NDArrayMath {
 
   /** @deprecated Use dl.tidy() */
   scope<T extends ScopeResult>(scopeFn?: ScopeFn<T>): T {
-    const keepFn = <T extends Tensor>(ndarray: T): T => keep(ndarray);
-    const trackFn = <T extends Tensor>(ndarray: T): T => ndarray;
+    const keepFn = <T extends Tensor>(tensor: T): T => keep(tensor);
+    const trackFn = <T extends Tensor>(tensor: T): T => tensor;
     return tidy(() => scopeFn(keepFn, trackFn));
   }
 
@@ -261,7 +261,7 @@ export class NDArrayMath {
     util.assert(
         k <= x.size,
         `Error in topK: k value (${k}) must be less than size of input ` +
-            `ndarray, got shape ${x.shape}.`);
+            `tensor, got shape ${x.shape}.`);
     let values: Tensor1D;
     let indices: Tensor1D;
     tidy('topK', () => {
@@ -405,5 +405,5 @@ export class NDArrayMath {
 }
 
 export type ScopeFn<T extends ScopeResult> =
-    (keep: <T1 extends Tensor>(ndarray: T1) => T1,
-     track: <T2 extends Tensor>(ndarray: T2) => T2) => T;
+    (keep: <T1 extends Tensor>(tensor: T1) => T1,
+     track: <T2 extends Tensor>(tensor: T2) => T2) => T;

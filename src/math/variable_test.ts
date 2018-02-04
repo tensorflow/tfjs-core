@@ -18,8 +18,9 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
+
 // tslint:disable-next-line:max-line-length
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor, Scalar, variable, Variable} from './tensor';
+import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
 import {Rank} from './types';
 
 const tests: MathTests = it => {
@@ -77,7 +78,7 @@ const tests: MathTests = it => {
     expect(math.getNumArrays()).toBe(0);
   });
 
-  it('variables are assignable to ndarrays', () => {
+  it('variables are assignable to tensors', () => {
     // This test asserts compilation, not doing any run-time assertion.
     const x0: Variable<Rank.R0> = null;
     const y0: Scalar = x0;

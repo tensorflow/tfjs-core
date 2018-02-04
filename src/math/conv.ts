@@ -25,7 +25,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 export class Ops {
   /**
    * Computes a 1D convolution over the input x.
-   * @param input The input ndarray, of rank 3 or rank 2, of shape
+   * @param input The input tensor, of rank 3 or rank 2, of shape
    *     `[batch, width, inChannels]`. If rank 2, batch of 1 is assumed.
    * @param filter The filter, rank 3, of shape
    *     [filterWidth, inDepth, outDepth].
@@ -98,7 +98,7 @@ export class Ops {
   /**
    * Computes a 2D convolution over the input x.
    *
-   * @param x The input ndarray, of rank 4 or rank 3, of shape
+   * @param x The input tensor, of rank 4 or rank 3, of shape
    *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
    * assumed.
    * @param filter The filter, rank 4, of shape
@@ -272,7 +272,7 @@ export class Ops {
   /**
    * Computes the derivative of the filter of a 2D convolution.
    *
-   * @param x The input ndarray, of rank 4 or rank 3 of shape
+   * @param x The input tensor, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param dy The dy image, of rank 4 or rank 3, of shape
    *     [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
@@ -377,10 +377,10 @@ export class Ops {
    * See https://www.tensorflow.org/api_docs/python/tf/nn/depthwise_conv2d for
    * more details.
    *
-   * @param input The input ndarray, of rank 4 or rank 3, of shape
+   * @param input The input tensor, of rank 4 or rank 3, of shape
    *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
    * assumed.
-   * @param filter The filter ndarray, rank 4, of shape
+   * @param filter The filter tensor, rank 4, of shape
    *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`.
    * @param strides The strides of the convolution: [strideHeight,
    * strideWidth]. If strides is a single number, then `strideHeight ==
