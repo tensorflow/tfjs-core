@@ -39,6 +39,17 @@ export class Ops {
     return NDArray.make(shape, {values}, dtype);
   }
 
+  @operation
+  /** Creates an NDArray filled with a value. */
+  static fill<R extends Rank>(
+      shape: ShapeMap[R], value: number, dtype: DataType = 'float32'):
+      NDArray<R> {
+    const values =
+        util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
+    values.fill(value);
+    return NDArray.make(shape, {values}, dtype);
+  }
+
   /**
    * Creates a ndarray of ones with the same shape as the specified ndarray.
    */

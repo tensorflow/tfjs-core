@@ -92,27 +92,27 @@ export class NDArray<R extends Rank = Rank> {
   private static nextDataId = 0;
 
   /** Unique id of this ndarray. */
-  id: number;
+  readonly id: number;
   /**
    * Id of the bucket holding the data for this ndarray. Multiple arrays can
    * point to the same bucket (e.g. when calling array.reshape()).
    */
   dataId: number;
   /** The shape of the ndarray. */
-  shape: ShapeMap[R];
+  readonly shape: ShapeMap[R];
   /** Number of elements in the ndarray. */
-  size: number;
+  readonly size: number;
   /** The data type for the array. */
-  dtype: DataType;
+  readonly dtype: DataType;
   /** The rank type for the array (see `Rank` enum). */
-  rankType: R;
+  readonly rankType: R;
 
   /**
    * Number of elements to skip in each dimension when indexing. See
    * https://docs.scipy.org/doc/numpy/reference/generated
    *     /numpy.ndarray.strides.html
    */
-  strides: number[];
+  readonly strides: number[];
 
   protected constructor(
       shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
@@ -307,13 +307,6 @@ export class NDArray<R extends Rank = Rank> {
     }
     locs[locs.length - 1] = index;
     return locs;
-  }
-
-  fill(value: number) {
-    this.throwIfDisposed();
-    const vals = this.dataSync();
-    vals.fill(value);
-    ENV.math.write(this.dataId, vals);
   }
 
   /** @deprecated Use dataSync() instead. */

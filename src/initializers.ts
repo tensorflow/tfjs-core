@@ -16,6 +16,7 @@
  */
 
 import {NDArray} from './math/ndarray';
+import * as ops from './math/ops';
 
 /**
  * Initializer interface, all initializer implement this interface.
@@ -73,9 +74,7 @@ export class OnesInitializer implements Initializer {
 
   initialize(weightsShape: number[], inputUnits: number, outputUnits: number):
       NDArray {
-    const values = NDArray.zeros(weightsShape);
-    values.fill(1);
-    return values;
+    return NDArray.ones(weightsShape);
   }
 }
 
@@ -84,9 +83,7 @@ export class ConstantInitializer implements Initializer {
 
   initialize(weightsShape: number[], inputUnits: number, outputUnits: number):
       NDArray {
-    const values = NDArray.zeros(weightsShape);
-    values.fill(this.value);
-    return values;
+    return ops.fill(weightsShape, this.value);
   }
 }
 

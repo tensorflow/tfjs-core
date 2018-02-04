@@ -1704,3 +1704,43 @@ import {Rank} from './types';
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
+
+// dl.fill
+{
+  const testsFill: MathTests = it => {
+    it('1D fill', () => {
+      const a = dl.fill<Rank.R1>([3], 2);
+      expect(a.dtype).toBe('float32');
+      expect(a.shape).toEqual([3]);
+      test_util.expectArraysClose(a, [2, 2, 2]);
+    });
+
+    it('2D fill', () => {
+      const a = dl.fill<Rank.R2>([3, 2], 2);
+      expect(a.dtype).toBe('float32');
+      expect(a.shape).toEqual([3, 2]);
+      test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2]);
+    });
+
+    it('3D fill', () => {
+      const a = dl.fill<Rank.R3>([3, 2, 1], 2);
+      expect(a.dtype).toBe('float32');
+      expect(a.shape).toEqual([3, 2, 1]);
+      test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2]);
+    });
+
+    it('4D fill', () => {
+      const a = dl.fill<Rank.R4>([3, 2, 1, 2], 2);
+      expect(a.dtype).toBe('float32');
+      expect(a.shape).toEqual([3, 2, 1, 2]);
+      test_util.expectArraysClose(a, [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
+    });
+  };
+
+  test_util.describeMathCPU('fill', [testsFill]);
+  test_util.describeMathGPU('fill', [testsFill], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
