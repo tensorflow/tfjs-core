@@ -283,6 +283,7 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   locToIndex(locs: number[]): number {
+    this.throwIfDisposed();
     if (this.rank === 0) {
       return 0;
     } else if (this.rank === 1) {
@@ -296,6 +297,7 @@ export class NDArray<R extends Rank = Rank> {
   }
 
   indexToLoc(index: number): number[] {
+    this.throwIfDisposed();
     if (this.rank === 0) {
       return [];
     } else if (this.rank === 1) {

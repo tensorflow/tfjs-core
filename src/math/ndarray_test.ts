@@ -18,8 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-// tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, TensorBuffer} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import {DType, Rank} from './types';
 
 const tests: MathTests = it => {
@@ -120,6 +119,131 @@ const tests: MathTests = it => {
     expect(a.rank).toBe(0);
     expect(a.size).toBe(1);
     expect(a.shape).toEqual([]);
+  });
+
+  it('indexToLoc Scalar', () => {
+    const a = Scalar.new(0);
+    expect(a.indexToLoc(0)).toEqual([]);
+
+    const b = dl.zeros<Rank.R0>([]);
+    expect(b.indexToLoc(0)).toEqual([]);
+  });
+
+  it('indexToLoc Array1D', () => {
+    const a = dl.zeros([3]);
+    expect(a.indexToLoc(0)).toEqual([0]);
+    expect(a.indexToLoc(1)).toEqual([1]);
+    expect(a.indexToLoc(2)).toEqual([2]);
+
+    const b = dl.zeros<Rank.R1>([3]);
+    expect(b.indexToLoc(0)).toEqual([0]);
+    expect(b.indexToLoc(1)).toEqual([1]);
+    expect(b.indexToLoc(2)).toEqual([2]);
+  });
+
+  it('indexToLoc Array2D', () => {
+    const a = dl.zeros([3, 2]);
+    expect(a.indexToLoc(0)).toEqual([0, 0]);
+    expect(a.indexToLoc(1)).toEqual([0, 1]);
+    expect(a.indexToLoc(2)).toEqual([1, 0]);
+    expect(a.indexToLoc(3)).toEqual([1, 1]);
+    expect(a.indexToLoc(4)).toEqual([2, 0]);
+    expect(a.indexToLoc(5)).toEqual([2, 1]);
+
+    const b = dl.zeros<Rank.R2>([3, 2]);
+    expect(b.indexToLoc(0)).toEqual([0, 0]);
+    expect(b.indexToLoc(1)).toEqual([0, 1]);
+    expect(b.indexToLoc(2)).toEqual([1, 0]);
+    expect(b.indexToLoc(3)).toEqual([1, 1]);
+    expect(b.indexToLoc(4)).toEqual([2, 0]);
+    expect(b.indexToLoc(5)).toEqual([2, 1]);
+  });
+
+  it('indexToLoc Array3D', () => {
+    const a = dl.zeros([3, 2, 2]);
+    expect(a.indexToLoc(0)).toEqual([0, 0, 0]);
+    expect(a.indexToLoc(1)).toEqual([0, 0, 1]);
+    expect(a.indexToLoc(2)).toEqual([0, 1, 0]);
+    expect(a.indexToLoc(3)).toEqual([0, 1, 1]);
+    expect(a.indexToLoc(4)).toEqual([1, 0, 0]);
+    expect(a.indexToLoc(5)).toEqual([1, 0, 1]);
+    expect(a.indexToLoc(11)).toEqual([2, 1, 1]);
+
+    const b = dl.zeros<Rank.R3>([3, 2, 2]);
+    expect(b.indexToLoc(0)).toEqual([0, 0, 0]);
+    expect(b.indexToLoc(1)).toEqual([0, 0, 1]);
+    expect(b.indexToLoc(2)).toEqual([0, 1, 0]);
+    expect(b.indexToLoc(3)).toEqual([0, 1, 1]);
+    expect(b.indexToLoc(4)).toEqual([1, 0, 0]);
+    expect(b.indexToLoc(5)).toEqual([1, 0, 1]);
+    expect(b.indexToLoc(11)).toEqual([2, 1, 1]);
+  });
+
+  it('indexToLoc NDArray 5D', () => {
+    const values = new Float32Array([1, 2, 3, 4]);
+    const a = NDArray.make([2, 1, 1, 1, 2], {values});
+    expect(a.indexToLoc(0)).toEqual([0, 0, 0, 0, 0]);
+    expect(a.indexToLoc(1)).toEqual([0, 0, 0, 0, 1]);
+    expect(a.indexToLoc(2)).toEqual([1, 0, 0, 0, 0]);
+    expect(a.indexToLoc(3)).toEqual([1, 0, 0, 0, 1]);
+  });
+
+  it('locToIndex Scalar', () => {
+    const a = Scalar.new(0);
+    expect(a.locToIndex([])).toEqual(0);
+
+    const b = dl.zeros<Rank.R0>([]);
+    expect(b.locToIndex([])).toEqual(0);
+  });
+
+  it('locToIndex Array1D', () => {
+    const a = dl.zeros<Rank.R1>([3]);
+    expect(a.locToIndex([0])).toEqual(0);
+    expect(a.locToIndex([1])).toEqual(1);
+    expect(a.locToIndex([2])).toEqual(2);
+
+    const b = dl.zeros<Rank.R1>([3]);
+    expect(b.locToIndex([0])).toEqual(0);
+    expect(b.locToIndex([1])).toEqual(1);
+    expect(b.locToIndex([2])).toEqual(2);
+  });
+
+  it('locToIndex Array2D', () => {
+    const a = dl.zeros<Rank.R2>([3, 2]);
+    expect(a.locToIndex([0, 0])).toEqual(0);
+    expect(a.locToIndex([0, 1])).toEqual(1);
+    expect(a.locToIndex([1, 0])).toEqual(2);
+    expect(a.locToIndex([1, 1])).toEqual(3);
+    expect(a.locToIndex([2, 0])).toEqual(4);
+    expect(a.locToIndex([2, 1])).toEqual(5);
+
+    const b = dl.zeros<Rank.R2>([3, 2]);
+    expect(b.locToIndex([0, 0])).toEqual(0);
+    expect(b.locToIndex([0, 1])).toEqual(1);
+    expect(b.locToIndex([1, 0])).toEqual(2);
+    expect(b.locToIndex([1, 1])).toEqual(3);
+    expect(b.locToIndex([2, 0])).toEqual(4);
+    expect(b.locToIndex([2, 1])).toEqual(5);
+  });
+
+  it('locToIndex Array3D', () => {
+    const a = dl.zeros<Rank.R3>([3, 2, 2]);
+    expect(a.locToIndex([0, 0, 0])).toEqual(0);
+    expect(a.locToIndex([0, 0, 1])).toEqual(1);
+    expect(a.locToIndex([0, 1, 0])).toEqual(2);
+    expect(a.locToIndex([0, 1, 1])).toEqual(3);
+    expect(a.locToIndex([1, 0, 0])).toEqual(4);
+    expect(a.locToIndex([1, 0, 1])).toEqual(5);
+    expect(a.locToIndex([2, 1, 1])).toEqual(11);
+
+    const b = dl.zeros<Rank.R3>([3, 2, 2]);
+    expect(b.locToIndex([0, 0, 0])).toEqual(0);
+    expect(b.locToIndex([0, 0, 1])).toEqual(1);
+    expect(b.locToIndex([0, 1, 0])).toEqual(2);
+    expect(b.locToIndex([0, 1, 1])).toEqual(3);
+    expect(b.locToIndex([1, 0, 0])).toEqual(4);
+    expect(b.locToIndex([1, 0, 1])).toEqual(5);
+    expect(b.locToIndex([2, 1, 1])).toEqual(11);
   });
 
   it('NDArray<math>', () => {
@@ -751,86 +875,10 @@ const testsAsXD: MathTests = it => {
   });
 };
 
-const testsTensorBuffer: MathTests = it => {
-  it('indexToLoc Scalar', () => {
-    const a = new TensorBuffer('float32', []);
-    expect(a.indexToLoc(0)).toEqual([]);
-  });
-
-  it('indexToLoc Array1D', () => {
-    const a = new TensorBuffer('float32', [3]);
-    expect(a.indexToLoc(0)).toEqual([0]);
-    expect(a.indexToLoc(1)).toEqual([1]);
-    expect(a.indexToLoc(2)).toEqual([2]);
-  });
-
-  it('indexToLoc Array2D', () => {
-    const a = new TensorBuffer('float32', [3, 2]);
-    expect(a.indexToLoc(0)).toEqual([0, 0]);
-    expect(a.indexToLoc(1)).toEqual([0, 1]);
-    expect(a.indexToLoc(2)).toEqual([1, 0]);
-    expect(a.indexToLoc(3)).toEqual([1, 1]);
-    expect(a.indexToLoc(4)).toEqual([2, 0]);
-    expect(a.indexToLoc(5)).toEqual([2, 1]);
-  });
-
-  it('indexToLoc Array3D', () => {
-    const a = new TensorBuffer('float32', [3, 2, 2]);
-    expect(a.indexToLoc(0)).toEqual([0, 0, 0]);
-    expect(a.indexToLoc(1)).toEqual([0, 0, 1]);
-    expect(a.indexToLoc(2)).toEqual([0, 1, 0]);
-    expect(a.indexToLoc(3)).toEqual([0, 1, 1]);
-    expect(a.indexToLoc(4)).toEqual([1, 0, 0]);
-    expect(a.indexToLoc(5)).toEqual([1, 0, 1]);
-    expect(a.indexToLoc(11)).toEqual([2, 1, 1]);
-  });
-
-  it('indexToLoc NDArray 5D', () => {
-    const a = new TensorBuffer('float32', [2, 1, 1, 1, 2]);
-    expect(a.indexToLoc(0)).toEqual([0, 0, 0, 0, 0]);
-    expect(a.indexToLoc(1)).toEqual([0, 0, 0, 0, 1]);
-    expect(a.indexToLoc(2)).toEqual([1, 0, 0, 0, 0]);
-    expect(a.indexToLoc(3)).toEqual([1, 0, 0, 0, 1]);
-  });
-
-  it('locToIndex Scalar', () => {
-    const a = new TensorBuffer('float32', []);
-    expect(a.locToIndex([])).toEqual(0);
-  });
-
-  it('locToIndex Array1D', () => {
-    const a = new TensorBuffer('float32', [3]);
-    expect(a.locToIndex([0])).toEqual(0);
-    expect(a.locToIndex([1])).toEqual(1);
-    expect(a.locToIndex([2])).toEqual(2);
-  });
-
-  it('locToIndex Array2D', () => {
-    const a = new TensorBuffer('float32', [3, 2]);
-    expect(a.locToIndex([0, 0])).toEqual(0);
-    expect(a.locToIndex([0, 1])).toEqual(1);
-    expect(a.locToIndex([1, 0])).toEqual(2);
-    expect(a.locToIndex([1, 1])).toEqual(3);
-    expect(a.locToIndex([2, 0])).toEqual(4);
-    expect(a.locToIndex([2, 1])).toEqual(5);
-  });
-
-  it('locToIndex Array3D', () => {
-    const a = new TensorBuffer('float32', [3, 2, 2]);
-    expect(a.locToIndex([0, 0, 0])).toEqual(0);
-    expect(a.locToIndex([0, 0, 1])).toEqual(1);
-    expect(a.locToIndex([0, 1, 0])).toEqual(2);
-    expect(a.locToIndex([0, 1, 1])).toEqual(3);
-    expect(a.locToIndex([1, 0, 0])).toEqual(4);
-    expect(a.locToIndex([1, 0, 1])).toEqual(5);
-    expect(a.locToIndex([2, 1, 1])).toEqual(11);
-  });
-};
-
 const allTests = [
   tests, testsNew, testsFill, testsScalarNew, testsArray1DNew, testsArray2DNew,
   testsArray3DNew, testsArray4DNew, testsReshape, testsAsType, testsAsXD,
-  testSqueeze, testsTensorBuffer
+  testSqueeze
 ];
 
 test_util.describeMathCPU('NDArray', allTests);
