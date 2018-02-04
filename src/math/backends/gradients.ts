@@ -37,7 +37,7 @@ export class Gradients {
    *     using the provided name.
    * @param scopeFn The function to execute.
    */
-  @doc({heading: 'Training', 'subheading': 'Gradients'})
+  @doc({heading: 'Training', subheading: 'Gradients'})
   static gradientsScope<T extends ScopeResult>(
       nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
     return tidy(nameOrScopeFn, scopeFn, true /* gradientsScope */);
@@ -69,7 +69,7 @@ export class Gradients {
    * an object mapping a string to an NDArray. If using the object mode, this
    * method will return an object of the same shape.
    */
-  @doc({heading: 'Training', 'subheading': 'Gradients'})
+  @doc({heading: 'Training', subheading: 'Gradients'})
   static gradients<R extends Rank, T extends NDArray|NamedArrayMap>(
       f: () => NDArray<R>, x: T): T {
     const res = Gradients.valueAndGradients(f, x);
@@ -85,7 +85,7 @@ export class Gradients {
    * @param varList An optional list of variables to provide gradients with
    * respect to. Defaults to all trainable variables.
    */
-  @doc({heading: 'Training', 'subheading': 'Gradients'})
+  @doc({heading: 'Training', subheading: 'Gradients'})
   static variableGradients(f: () => Scalar, varList?: Variable[]):
       {value: Scalar, gradients: NamedArrayMap} {
     if (varList == null) {
@@ -121,7 +121,7 @@ export class Gradients {
    * an object mapping a string to an NDArray. If using the object mode,
    * this method will return an object of the same shape.
    */
-  @doc({heading: 'Training', 'subheading': 'Gradients'})
+  @doc({heading: 'Training', subheading: 'Gradients'})
   static valueAndGradients<R extends Rank, T extends NDArray|NamedArrayMap>(
       f: () => NDArray<R>, x: T, dy?: NDArray<R>):
       {value: NDArray<R>, gradients: T} {
@@ -153,7 +153,7 @@ export class Gradients {
    * @param name An optional name for the customGradient method. Used for
    *    debugging.
    */
-  @doc({heading: 'Training', 'subheading': 'Gradients'})
+  @doc({heading: 'Training', subheading: 'Gradients'})
   static customGradient<T extends NDArray>(
       name: string, f: CustomGradientFunc<T>, inputs: NamedArrayMap): T {
     name = name || '';
