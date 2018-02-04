@@ -362,7 +362,6 @@ export class Ops {
    * `buffer.values`. Once the buffer is complete, call `buffer.toTensor()` to
    * get an immutable `Tensor` with the values from the buffer.
    */
-  @operation
   static buffer<R extends Rank>(shape: ShapeMap[R], dtype: DataType):
       TensorBuffer<R> {
     return new TensorBuffer<R>(shape, dtype);
