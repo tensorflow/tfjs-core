@@ -19,7 +19,6 @@ import {ENV} from '../environment';
 import * as util from '../util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
-import * as ops from './ops';
 
 export class Ops {
   /**
@@ -37,53 +36,26 @@ export class Ops {
    * Computes ceiling of input NDArray element-wise. y = ceil(x)
    * TODO(nsthorat): Make this return an int32 when we add rank as a
    * generic.
+   * TODO(manrajgrover): Fix gradient once backprop handles nulls
    * @param x The input NDArray.
    */
   @operation
   static ceil<T extends NDArray>(x: T): T {
     const gradient = (dy: T, y: T) => {
-      return {
-        x: () => {
-          // Currently, Scalars are not supported by ops.where
-          util.assert(x.rank !== 0, 'Error in ceil gradient: ');
-          const mask = x.less(x.ceil());
-
-          const zeros = NDArray.zeros(mask.shape);
-          const nans = NDArray.zeros(mask.shape);
-          nans.fill(NaN);
-
-          const res = ops.where(mask, zeros, nans);
-
-          return dy.mul(res);
-        }
-      };
+      return {x: () => NDArray.zeros(y.shape)};
     };
     return ENV.engine.executeKernel('Ceil', {inputs: {x}}, gradient) as T;
   }
 
   /**
    * Computes floor of input NDArray element-wise. y = floor(x).
-   *
+   * TODO(manrajgrover): Fix gradient once backprop handles nulls
    * @param x The input NDArray.
    */
   @operation
   static floor<T extends NDArray>(x: T): T {
     const gradient = (dy: T, y: T) => {
-      return {
-        x: () => {
-          // Currently, Scalars are not supported by ops.where
-          util.assert(x.rank !== 0, 'Error in floor gradient: ');
-          const mask = x.greater(x.floor());
-
-          const zeros = NDArray.zeros(mask.shape);
-          const nans = NDArray.zeros(mask.shape);
-          nans.fill(NaN);
-
-          const res = ops.where(mask, zeros, nans);
-
-          return dy.mul(res);
-        }
-      };
+      return {x: () => NDArray.zeros(y.shape)};
     };
     return ENV.engine.executeKernel('Floor', {inputs: {x}}, gradient) as T;
   }

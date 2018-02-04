@@ -509,7 +509,11 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Scalar.new(5.2);
       const dy = Scalar.new(3);
 
-      expect(() => math.vjp(() => math.ceil(a), a, dy)).toThrowError();
+      const gradients = math.vjp(() => math.ceil(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [0], 1e-1);
     });
 
     it('gradients: Array1D', math => {
@@ -520,7 +524,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [0, 0, NaN, 0], 1e-1);
+      test_util.expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
     });
 
     it('gradients: Array2D', math => {
@@ -531,15 +535,15 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [NaN, NaN, 0, NaN], 1e-1);
+      test_util.expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
     });
   };
 
-  // TODO(manrajgrover): Add Float texture disabled check for WebGL V1
   test_util.describeMathCPU('ceil', [tests]);
   test_util.describeMathGPU('ceil', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2}
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
 
@@ -565,7 +569,11 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       const a = Scalar.new(5.2);
       const dy = Scalar.new(3);
 
-      expect(() => math.vjp(() => math.floor(a), a, dy)).toThrowError();
+      const gradients = math.vjp(() => math.ceil(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [0], 1e-1);
     });
 
     it('gradients: Array1D', math => {
@@ -576,7 +584,7 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [0, 0, NaN, 0], 1e-1);
+      test_util.expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
     });
 
     it('gradients: Array2D', math => {
@@ -587,15 +595,15 @@ import {Array1D, Array2D, Scalar} from './ndarray';
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [NaN, NaN, 0, NaN], 1e-1);
+      test_util.expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
     });
   };
 
-  // TODO(manrajgrover): Add Float texture disabled check for WebGL V1
   test_util.describeMathCPU('floor', [tests]);
   test_util.describeMathGPU('floor', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2}
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
 
