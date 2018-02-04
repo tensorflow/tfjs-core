@@ -307,7 +307,9 @@ export class Ops {
    */
   @operation
   static sinh<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Sinh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Sinh', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => x.toFloat().cosh().mul(dy)};
+    }) as T;
   }
 
   /**
@@ -316,7 +318,9 @@ export class Ops {
    */
   @operation
   static cosh<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Cosh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Cosh', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => x.toFloat().sinh().mul(dy)};
+    }) as T;
   }
 
   /**
@@ -325,7 +329,9 @@ export class Ops {
    */
   @operation
   static tanh<T extends NDArray>(x: T): T {
-    return ENV.engine.executeKernel('Tanh', {inputs: {x}}) as T;
+    return ENV.engine.executeKernel('Tanh', {inputs: {x}}, (dy: T, y: T) => {
+      return {x: () => Scalar.new(1).sub(y.square()).mul(dy)};
+    }) as T;
   }
 
   /**
