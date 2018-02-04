@@ -18,7 +18,7 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import {operation} from './decorators';
-import {Array1D, Array2D, Array3D, NDArray} from './ndarray';
+import {Array1D, Array2D, Array3D, NDArray, TensorBuffer} from './ndarray';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
@@ -343,6 +343,12 @@ export class Ops {
     }
 
     return Array1D.new(values, dtype);
+  }
+
+  @operation
+  static buffer<R extends Rank>(shape: ShapeMap[R], dtype: DataType):
+      TensorBuffer<R> {
+    return new TensorBuffer<R>(shape, dtype);
   }
 }
 

@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D, Array2D, Scalar, TensorBuffer} from './ndarray';
+import {Array1D, Array2D, Scalar} from './ndarray';
 import {Rank} from './types';
 
 // math.basicLSTMCell
@@ -56,7 +56,7 @@ import {Rank} from './types';
         dl.zeros<Rank.R2>([1, lstmBias2.shape[0] / 4])
       ];
 
-      const onehot = new TensorBuffer<Rank.R2>('float32', [1, 2]);
+      const onehot = dl.buffer<Rank.R2>([1, 2], 'float32');
       onehot.set(1.0, 0, 0);
 
       const output = math.multiRNNCell([lstm1, lstm2], onehot.toTensor(), c, h);

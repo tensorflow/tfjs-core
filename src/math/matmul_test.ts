@@ -19,7 +19,7 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {MatrixOrientation} from './backends/types/matmul';
-import {Array1D, Array2D, Array3D, TensorBuffer} from './ndarray';
+import {Array1D, Array2D, Array3D} from './ndarray';
 import {Rank} from './types';
 
 const commonTests: MathTests = it => {
@@ -272,11 +272,11 @@ const gpuTests: MathTests = it => {
   it('Matrix times vector, large matrix', math => {
     const maxTexSize = 16000;
     const sharedDim = maxTexSize + 4;
-    const matrix = new TensorBuffer<Rank.R2>('float32', [2, sharedDim]);
+    const matrix = dl.buffer<Rank.R2>([2, sharedDim], 'float32');
     matrix.set(1, 0, sharedDim - 3);
     matrix.set(1, 0, sharedDim - 2);
 
-    const v = new TensorBuffer<Rank.R1>('float32', [sharedDim]);
+    const v = dl.buffer<Rank.R1>([sharedDim], 'float32');
     v.set(1, sharedDim - 3);
     v.set(1, sharedDim - 2);
 

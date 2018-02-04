@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D, Array2D, TensorBuffer} from './ndarray';
+import {Array1D, Array2D} from './ndarray';
 import {Rank} from './types';
 
 const tests: MathTests = it => {
@@ -60,7 +60,7 @@ const tests: MathTests = it => {
 
   it('Flip a ten-sided coin and check bounds', math => {
     const numOutcomes = 10;
-    const probs = new TensorBuffer<Rank.R1>('float32', [numOutcomes]);
+    const probs = dl.buffer<Rank.R1>([numOutcomes], 'float32');
     for (let i = 0; i < numOutcomes; ++i) {
       probs.set(1 / numOutcomes, i);
     }

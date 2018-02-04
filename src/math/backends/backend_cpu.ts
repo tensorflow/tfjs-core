@@ -24,10 +24,11 @@ import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, TensorBuffer} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar} from '../ndarray';
 import * as ops from '../ops';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
+
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
@@ -136,7 +137,7 @@ export class MathBackendCPU implements MathBackend {
 
   slice2D(x: Array2D, begin: [number, number], size: [number, number]):
       Array2D {
-    const buffer = new TensorBuffer<Rank.R2>(x.dtype, size);
+    const buffer = ops.buffer<Rank.R2>(size, x.dtype);
     const [startI, startJ] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -151,7 +152,7 @@ export class MathBackendCPU implements MathBackend {
   slice3D(x: Array3D, begin: [number, number, number], size: [
     number, number, number
   ]): Array3D {
-    const buffer = new TensorBuffer<Rank.R3>(x.dtype, size);
+    const buffer = ops.buffer<Rank.R3>(size, x.dtype);
     const [startI, startJ, startK] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -167,7 +168,7 @@ export class MathBackendCPU implements MathBackend {
   slice4D(x: Array4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Array4D {
-    const buffer = new TensorBuffer<Rank.R4>(x.dtype, size);
+    const buffer = ops.buffer<Rank.R4>(size, x.dtype);
     const [startI, startJ, startK, startL] = begin;
 
     for (let i = 0; i < size[0]; ++i) {
@@ -184,7 +185,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   reverse4D(x: Array4D, axis: number[]): Array4D {
-    const buffer = new TensorBuffer<Rank.R4>(x.dtype, x.shape);
+    const buffer = ops.buffer<Rank.R4>(x.shape, x.dtype);
 
     // Reverse axis only if the axis has dim != 1
     const revAxis = (i: number) => axis.indexOf(i) !== -1 && x.shape[i] !== 1;
@@ -212,7 +213,7 @@ export class MathBackendCPU implements MathBackend {
   concat(a: Array2D, b: Array2D): Array2D {
     const outShape = concat_util.computeOutShape(
                          a.shape, b.shape, 1 /* axis */) as [number, number];
-    const buffer = new TensorBuffer<Rank.R2>(a.dtype, outShape);
+    const buffer = ops.buffer<Rank.R2>(outShape, a.dtype);
 
     if (a.shape[0] === 1 && b.shape[0] === 1) {
       // Use built-in TypedArray.set() method for speed.
@@ -881,7 +882,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const y = new TensorBuffer<Rank.R4>(x.dtype, convInfo.outShape);
+    const y = ops.buffer<Rank.R4>(convInfo.outShape, x.dtype);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
@@ -921,7 +922,7 @@ export class MathBackendCPU implements MathBackend {
     const leftPad = filterWidth - 1 - convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-    const dx = new TensorBuffer<Rank.R4>('float32', convInfo.inShape);
+    const dx = ops.buffer<Rank.R4>(convInfo.inShape, 'float32');
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
@@ -965,7 +966,7 @@ export class MathBackendCPU implements MathBackend {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const dW = new TensorBuffer<Rank.R4>('float32', convInfo.filterShape);
+    const dW = ops.buffer<Rank.R4>(convInfo.filterShape, 'float32');
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
@@ -1024,7 +1025,7 @@ export class MathBackendCPU implements MathBackend {
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
-    const y = new TensorBuffer<Rank.R4>(x.dtype, convInfo.outShape);
+    const y = ops.buffer<Rank.R4>(convInfo.outShape, x.dtype);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
@@ -1061,7 +1062,7 @@ export class MathBackendCPU implements MathBackend {
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = x.shape[i] * reps[i];
     }
-    const result = new TensorBuffer(x.dtype, newShape);
+    const result = ops.buffer(newShape, x.dtype);
     const values = x.dataSync();
     for (let i = 0; i < result.values.length; ++i) {
       const newLoc = result.indexToLoc(i);
@@ -1187,7 +1188,7 @@ export class MathBackendCPU implements MathBackend {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const y = new TensorBuffer<Rank.R4>('float32', convInfo.outShape);
+    const y = ops.buffer<Rank.R4>(convInfo.outShape, 'float32');
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
     for (let b = 0; b < convInfo.batchSize; ++b) {
@@ -1237,7 +1238,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   private maxPoolPositions(x: Array4D, convInfo: Conv2DInfo): Array4D {
-    const maxPositions = new TensorBuffer<Rank.R4>('int32', convInfo.outShape);
+    const maxPositions = ops.buffer<Rank.R4>(convInfo.outShape, 'int32');
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
@@ -1284,7 +1285,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
-    const dx = new TensorBuffer<Rank.R4>('float32', x.shape);
+    const dx = ops.buffer<Rank.R4>(x.shape, 'float32');
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -1334,7 +1335,7 @@ export class MathBackendCPU implements MathBackend {
     const filterWidth = convInfo.filterWidth;
     const padLeft = filterWidth - 1 - convInfo.padInfo.left;
     const padTop = filterHeight - 1 - convInfo.padInfo.top;
-    const dx = new TensorBuffer<Rank.R4>('float32', x.shape);
+    const dx = ops.buffer<Rank.R4>(x.shape, 'float32');
 
     const avgMultiplier = 1 / (filterHeight * filterWidth);
 
@@ -1383,8 +1384,8 @@ export class MathBackendCPU implements MathBackend {
       x: Array4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Array4D {
     const [batch, oldHeight, oldWidth, numChannels] = x.shape;
-    const output = new TensorBuffer<Rank.R4>(
-        x.dtype, [batch, newHeight, newWidth, numChannels]);
+    const output =
+        ops.buffer<Rank.R4>([batch, newHeight, newWidth, numChannels], x.dtype);
 
     const effectiveInputSize: [number, number] =
         alignCorners ? [oldHeight - 1, oldWidth - 1] : [oldHeight, oldWidth];
@@ -1496,7 +1497,7 @@ export class MathBackendCPU implements MathBackend {
   localResponseNormalization4D(
       x: Array4D, radius: number, bias: number, alpha: number, beta: number,
       normRegion: 'acrossChannels'|'withinChannel'): Array4D {
-    const output = new TensorBuffer<Rank.R4>('float32', x.shape);
+    const output = ops.buffer<Rank.R4>(x.shape, 'float32');
     const rad = radius;
     const maxW = output.shape[1] - 1;
     const maxH = output.shape[2] - 1;
@@ -1596,7 +1597,7 @@ export class MathBackendCPU implements MathBackend {
       op: (a: number, b: number) => number): NDArray {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const result = new TensorBuffer(dtype, newShape);
+    const result = ops.buffer(newShape, dtype);
     const aValues = a.dataSync();
     const bValues = b.dataSync();
 
