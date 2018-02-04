@@ -71,7 +71,9 @@ const docHeadings: DocHeading[] = [
       {name: 'Images'}, {name: 'RNN'}, {name: 'Classification'},
       {name: 'Logical'}
     ]
-  }
+  },
+  {name: 'Training', subheadings: [{name: 'Gradients'}]},
+  {name: 'Performance', subheadings: [{name: 'Memory'}, {name: 'Timing'}]}
 ];
 const docs: Docs = {
   headings: docHeadings
@@ -88,6 +90,23 @@ const checker = program.getTypeChecker();
 for (const sourceFile of program.getSourceFiles()) {
   if (!sourceFile.isDeclarationFile) {
     ts.forEachChild(sourceFile, node => visitNode(node, sourceFile));
+  }
+}
+
+// Sort the methods by name.
+for (let i = 0; i < docHeadings.length; i++) {
+  const heading = docHeadings[i];
+  for (let j = 0; j < heading.subheadings.length; j++) {
+    const subheading = heading.subheadings[j];
+
+    subheading.methods.sort((a, b) => {
+      if (a.path < b.path) {
+        return -1;
+      } else if (a.path > b.path) {
+        return 1;
+      }
+      return 0;
+    });
   }
 }
 
@@ -187,13 +206,15 @@ function serializeMethod(
         `does not start with srcPath provided ${repoPath}.`);
   }
   // Line numbers are 0-indexed.
-  const lineNumber =
+  const startLine =
       sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
+  const endLine =
+      sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1;
   const fileName = sourceFile.fileName.substring(repoPath.length + '/'.length);
-  const displayFilename =
-      fileName.substring(SRC_ROOT.length) + '#' + lineNumber;
+  const displayFilename = fileName.substring(SRC_ROOT.length) + '#' + startLine;
 
-  const githubUrl = `${GITHUB_ROOT}blob/master/${fileName}#L${lineNumber}`;
+  const githubUrl =
+      `${GITHUB_ROOT}blob/master/${fileName}#L${startLine}-L${endLine}`;
 
   const path = LIB_TOPLEVEL_NAMESPACE + '.' +
       (docInfo.namespace != null ? docInfo.namespace + '.' : '') + name;

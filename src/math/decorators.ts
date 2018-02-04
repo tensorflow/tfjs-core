@@ -38,6 +38,8 @@ export interface HeadingMap {
   'Tensors': 'Creation'|'Transformations'|'Slicing and Joining';
   'Operations': 'Arithmetic'|'Basic math'|'Matrices'|'Convolution'|
       'Normalization'|'Images'|'Logical'|'RNN'|'Reduction'|'Classification';
+  'Training': 'Gradients';
+  'Performance': 'Memory'|'Timing';
 }
 export type Heading = keyof HeadingMap;
 export type Namespace = 'losses'|'image';
