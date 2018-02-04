@@ -18,12 +18,12 @@
 
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Tensor4D, Tensor, Tensor1D, Tensor2D, Tensor3D} from '../tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, Rank, TypedArray} from '../types';
 
 import {MatrixOrientation} from './types/matmul';
 
-export interface NDArrayStorage {
+export interface TensorStorage {
   read(dataId: number): Promise<TypedArray>;
   readSync(dataId: number): TypedArray;
   disposeData(dataId: number): void;
@@ -43,7 +43,7 @@ export interface BackendTimer { time(f: () => void): Promise<number>; }
  * methods, this can be done gradually (throw an error for unimplemented
  * methods).
  */
-export interface MathBackend extends NDArrayStorage, BackendTimer {
+export interface MathBackend extends TensorStorage, BackendTimer {
   matMul(
       a: Tensor2D, b: Tensor2D, aOrientation: MatrixOrientation,
       bOrientation: MatrixOrientation): Tensor2D;
@@ -151,7 +151,8 @@ export interface MathBackend extends NDArrayStorage, BackendTimer {
   conv2d(
       x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null,
       convInfo: Conv2DInfo): Tensor4D;
-  conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+  conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D;
   conv2dDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   conv2dDerBias(dY: Tensor4D): Tensor1D;
 

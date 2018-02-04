@@ -22,7 +22,7 @@ import {InMemoryDataset} from './dataset';
 
 const PARSING_IMAGE_CANVAS_HEIGHT_PX = 1000;
 
-export interface NDArrayInfo {
+export interface TensorInfo {
   path: string;
   name: string;
   dataType: 'uint8'|'float32'|'png';
@@ -30,7 +30,7 @@ export interface NDArrayInfo {
 }
 
 export interface XhrDatasetConfig {
-  data: NDArrayInfo[];
+  data: TensorInfo[];
 
   labelClassNames?: string[];
   // Paths to pre-built models.
@@ -66,7 +66,7 @@ export class XhrDataset extends InMemoryDataset {
     this.xhrDatasetConfig = xhrDatasetConfig;
   }
 
-  protected getNDArray<T extends Tensor>(info: NDArrayInfo): Promise<T[]> {
+  protected getTensor<T extends Tensor>(info: TensorInfo): Promise<T[]> {
     const dataPromise = info.dataType === 'png' ?
         parseTypedArrayFromPng(info, info.shape as [number, number, number]) :
         parseTypedArrayFromBinary(info);
@@ -87,7 +87,7 @@ export class XhrDataset extends InMemoryDataset {
 
   fetchData(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const promises = this.xhrDatasetConfig.data.map(x => this.getNDArray(x));
+      const promises = this.xhrDatasetConfig.data.map(x => this.getTensor(x));
       Promise.all(promises).then((data: Tensor[][]) => {
         this.dataset = data;
         resolve();
@@ -96,7 +96,7 @@ export class XhrDataset extends InMemoryDataset {
   }
 }
 
-function parseTypedArrayFromBinary(info: NDArrayInfo):
+function parseTypedArrayFromBinary(info: TensorInfo):
     Promise<Float32Array|Uint8Array> {
   return new Promise<Float32Array|Uint8Array>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -183,7 +183,7 @@ function parseImage(
 }
 
 function parseTypedArrayFromPng(
-    info: NDArrayInfo, shape: [number, number, number]): Promise<Uint8Array> {
+    info: TensorInfo, shape: [number, number, number]): Promise<Uint8Array> {
   return new Promise<Uint8Array>((resolve, reject) => {
     let img = new Image();
     img.setAttribute('crossOrigin', '');

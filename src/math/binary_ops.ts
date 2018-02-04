@@ -20,15 +20,15 @@ import * as util from '../util';
 
 import * as broadcast_util from './broadcast_util';
 import {doc, operation} from './decorators';
-import {Tensor, Scalar} from './tensor';
+import {Scalar, Tensor} from './tensor';
 
 export class Ops {
   /**
-   * Adds two NDArrays element-wise, A + B. Supports broadcasting.
+   * Adds two Tensors element-wise, A + B. Supports broadcasting.
    * For a stricter version without broadcasting use addStrict().
    *
-   * @param a The first `NDArray` to add.
-   * @param b The second `NDArray` to add. Must have the same type as `a`.
+   * @param a The first `Tensor` to add.
+   * @param b The second `Tensor` to add. Must have the same type as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -60,11 +60,11 @@ export class Ops {
   }
 
   /**
-   * Adds two NDArrays element-wise, A + B. Inputs must
+   * Adds two Tensors element-wise, A + B. Inputs must
    * be the same shape. For broadcasting support, use add() instead.
    *
-   * @param a The first NDArray to multiply element-wise.
-   * @param b The second NDArray to multiply element-wise.
+   * @param a The first Tensor to multiply element-wise.
+   * @param b The second Tensor to multiply element-wise.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -74,11 +74,11 @@ export class Ops {
   }
 
   /**
-   * Subtracts two NDArrays element-wise, A - B. Supports broadcasting.
+   * Subtracts two Tensors element-wise, A - B. Supports broadcasting.
    * For a stricter version without broadcasting use subStrict().
    *
-   * @param a The first `NDArray`.
-   * @param b The second `NDArray`. Must have the same dtype as `a`.
+   * @param a The first `Tensor`.
+   * @param b The second `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -110,11 +110,11 @@ export class Ops {
   }
 
   /**
-   * Subtracts two NDArrays element-wise, A - B. Inputs must
+   * Subtracts two Tensors element-wise, A - B. Inputs must
    * be the same shape. For broadcasting support, use sub() instead.
    *
-   * @param a The first NDArray to multiply element-wise.
-   * @param b The second NDArray to multiply element-wise.
+   * @param a The first Tensor to multiply element-wise.
+   * @param b The second Tensor to multiply element-wise.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -131,8 +131,8 @@ export class Ops {
    * y = tf.constant([[8, 16], [2, 3]])
    * pow(x, y)  # [[256, 65536], [9, 27]]
    *
-   * @param base The base NDArray to pow element-wise.
-   * @param exp The exponent NDArray to pow element-wise.
+   * @param base The base Tensor to pow element-wise.
+   * @param exp The exponent Tensor to pow element-wise.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -168,8 +168,8 @@ export class Ops {
    * Computes the power of one value to another. Inputs must
    * be the same shape. For broadcasting support, use pow() instead.
    *
-   * @param base The base NDArray to pow element-wise.
-   * @param exp The exponent NDArray to pow element-wise.
+   * @param base The base Tensor to pow element-wise.
+   * @param exp The exponent Tensor to pow element-wise.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -179,11 +179,11 @@ export class Ops {
   }
 
   /**
-   * Multiplies two NDArrays element-wise, A * B. Supports broadcasting.
+   * Multiplies two Tensors element-wise, A * B. Supports broadcasting.
    * For a stricter version without broadcasting use mulStrict().
    *
-   * @param a The first `NDArray`.
-   * @param b The second `NDArray`. Must have the same dtype as `a`.
+   * @param a The first `Tensor`.
+   * @param b The second `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -223,11 +223,11 @@ export class Ops {
   }
 
   /**
-   * Multiplies two NDArrays element-wise, A * B. Inputs must
+   * Multiplies two Tensors element-wise, A * B. Inputs must
    * be the same shape. For broadcasting support, use mul().
    *
-   * @param a The first `NDArray`.
-   * @param b The second `NDArray`. Must have the same dtype as `a`.
+   * @param a The first `Tensor`.
+   * @param b The second `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -237,11 +237,11 @@ export class Ops {
   }
 
   /**
-   * Divides two NDArrays element-wise, A / B. Supports broadcasting.
+   * Divides two Tensors element-wise, A / B. Supports broadcasting.
    * For a stricter version without broadcasting use divStrict().
    *
-   * @param a The first `NDArray`.
-   * @param b The second `NDArray`. Must have the same dtype as `a`.
+   * @param a The first `Tensor`.
+   * @param b The second `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -272,11 +272,11 @@ export class Ops {
   }
 
   /**
-   * Divides two NDArrays element-wise, A / B. Inputs must
+   * Divides two Tensors element-wise, A / B. Inputs must
    * be the same shape. For broadcasting support, use div() instead.
    *
-   * @param a The first NDArray to multiply element-wise.
-   * @param b The second NDArray to multiply element-wise.
+   * @param a The first Tensor to multiply element-wise.
+   * @param b The second Tensor to multiply element-wise.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -291,7 +291,7 @@ export class Ops {
     util.assert(
         c.size === 1,
         `Error in scalarDividedByArray: first argument must be rank 0, but ` +
-            `got NDArray of rank ${c.rank}.`);
+            `got Tensor of rank ${c.rank}.`);
     return c.div(a) as T;
   }
 
@@ -301,7 +301,7 @@ export class Ops {
     util.assert(
         c.size === 1,
         `Error in arrayDividedByScalar: second argument must be rank 0, ` +
-            `but got NDArray of rank ${c.rank}.`);
+            `but got Tensor of rank ${c.rank}.`);
     return a.div(c) as T;
   }
 
@@ -329,8 +329,8 @@ export class Ops {
    * Returns the min of a and b (`a < b ? a : b`) element-wise. Inputs must
    * be the same shape. For broadcasting support, use minimum().
    *
-   * @param a The first `NDArray`.
-   * @param b The second `NDArray`. Must have the same dtype as `a`.
+   * @param a The first `Tensor`.
+   * @param b The second `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
@@ -363,8 +363,8 @@ export class Ops {
    * Returns the max of a and b (`a > b ? a : b`) element-wise. Inputs must
    * be the same shape. For broadcasting support, use maximum().
    *
-   * @param a The first `NDArray`.
-   * @param b The second `NDArray`. Must have the same dtype as `a`.
+   * @param a The first `Tensor`.
+   * @param b The second `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation

@@ -129,7 +129,7 @@ export abstract class InMemoryShuffledInputProviderBuilder implements
 }
 
 /**
- * An in CPU memory ShuffledInputProviderBuilder that shuffles NDArrays on the
+ * An in CPU memory ShuffledInputProviderBuilder that shuffles Tensors on the
  * CPU and keeps them mutually in sync.
  */
 export class InCPUMemoryShuffledInputProviderBuilder extends
@@ -149,7 +149,7 @@ export class InCPUMemoryShuffledInputProviderBuilder extends
 }
 
 /**
- * An in GPU memory ShuffledInputProviderBuilder that shuffles NDArrays on the
+ * An in GPU memory ShuffledInputProviderBuilder that shuffles Tensors on the
  * GPU and keeps them mutually in sync. This is more performant than the CPU
  * version as textures will stay in memory, however this is more GPU memory
  * intensive as it keeps textures resident in GPU memory.

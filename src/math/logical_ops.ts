@@ -28,7 +28,7 @@ export class Ops {
   /**
    * Returns the truth value of NOT element-wise.
    *
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    */
   @operation
   static logicalNot<T extends Tensor>(x: Tensor): T {
@@ -39,8 +39,8 @@ export class Ops {
   /**
    * Returns the truth value of a AND b element-wise. Supports broadcasting.
    *
-   * @param a The first input `NDArray`. Must be of dtype bool.
-   * @param b The second input `NDArray`. Must be of dtype bool.
+   * @param a The first input `Tensor`. Must be of dtype bool.
+   * @param b The second input `Tensor`. Must be of dtype bool.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
@@ -55,8 +55,8 @@ export class Ops {
   /**
    * Returns the truth value of a OR b element-wise. Supports broadcasting.
    *
-   * @param a The first input `NDArray`. Must be of dtype bool.
-   * @param b The second input `NDArray`. Must be of dtype bool.
+   * @param a The first input `Tensor`. Must be of dtype bool.
+   * @param b The second input `Tensor`. Must be of dtype bool.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
@@ -71,8 +71,8 @@ export class Ops {
   /**
    * Returns the truth value of a XOR b element-wise. Supports broadcasting.
    *
-   * @param a The first input `NDArray`. Must be of dtype bool.
-   * @param b The second input `NDArray`. Must be of dtype bool.
+   * @param a The first input `Tensor`. Must be of dtype bool.
+   * @param b The second input `Tensor`. Must be of dtype bool.
    */
   @operation
   static logicalXor<T extends Tensor>(a: Tensor, b: Tensor): T {
@@ -86,12 +86,12 @@ export class Ops {
   /**
    * Returns the elements, either `a` or `b` depending on the `condition`.
    *
-   * @param condition The input as `NDArray. Must be of dtype bool.
-   * @param a Input as `NDArray` which may have the same shape as
+   * @param condition The input as `Tensor. Must be of dtype bool.
+   * @param a Input as `Tensor` which may have the same shape as
    *     `condition`. If `condition` is rank 1, `a` may have a higher rank but
    *     its first dimension must match the size of `condition`.
-   * @param b Input as `NDArray` with the same shape and type as `a`.
-   * @return An `NDArray` with the same type and shape as `a` and `b`.
+   * @param b Input as `Tensor` with the same shape and type as `a`.
+   * @return A `Tensor` with the same type and shape as `a` and `b`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation

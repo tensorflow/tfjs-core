@@ -17,7 +17,7 @@
 
 import * as axis_util from './axis_util';
 import {doc, operation} from './decorators';
-import {Tensor, Scalar} from './tensor';
+import {Scalar, Tensor} from './tensor';
 
 export class Ops {
   /**
@@ -39,7 +39,7 @@ export class Ops {
    *
    * @param axis Optional. If axis is null (the default), the input is
    * considered a vector and a single vector norm is computed over the entire
-   * set of values in the NDArray, i.e. norm(x, ord) is equivalent
+   * set of values in the Tensor, i.e. norm(x, ord) is equivalent
    * to norm(x.reshape([-1]), ord). If axis is a integer, the input
    * is considered a batch of vectors, and axis determines the axis in x
    * over which to compute vector norms. If axis is a 2-tuple of integer it is

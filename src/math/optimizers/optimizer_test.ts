@@ -14,7 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {Tensor1D, Scalar, variable, Variable} from '../../math/tensor';
+import {Scalar, Tensor1D, variable, Variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 
@@ -52,7 +52,7 @@ const tests: MathTests = it => {
     numArrays = math.getNumArrays();
 
     cost = optimizer.minimize(f, /* returnCost */ false);
-    // There should be no new additional NDArrays.
+    // There should be no new additional Tensors.
     expect(math.getNumArrays()).toBe(numArrays);
 
     const expectedX2 = -2 * expectedX1 * learningRate + expectedX1;
@@ -67,7 +67,7 @@ const tests: MathTests = it => {
     x.dispose();
     bias.dispose();
     strayVariable.dispose();
-    // There should be no more NDArrays.
+    // There should be no more Tensors.
     expect(math.getNumArrays()).toBe(0);
   });
 

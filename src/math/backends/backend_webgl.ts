@@ -20,8 +20,8 @@ import * as util from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor} from '../tensor';
 import * as reduce_util from '../reduce_util';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, Rank, RecursiveArray, TypedArray} from '../types';
@@ -797,14 +797,16 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  conv2d(x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null, convInfo: Conv2DInfo):
-      Tensor4D {
+  conv2d(
+      x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null,
+      convInfo: Conv2DInfo): Tensor4D {
     const program = new Conv2DProgram(convInfo, bias != null);
     const inputs = bias != null ? [x, filter, bias] : [x, filter];
     return this.compileAndRun(program, inputs);
   }
 
-  conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
     const program = new Conv2DDerInputProgram(convInfo);
     return this.compileAndRun(program, [dy, filter]);
   }
@@ -819,7 +821,8 @@ export class MathBackendWebGL implements MathBackend {
     return this.compileAndRun(program, [dy]);
   }
 
-  depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
     const program = new DepthwiseConv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
   }
@@ -962,7 +965,7 @@ export class MathBackendWebGL implements MathBackend {
   private throwIfNoData(dataId: number) {
     if (!(dataId in this.texData)) {
       throw new Error(
-          `No data found for NDArray with data id ${dataId}. ` +
+          `No data found for Tensor with data id ${dataId}. ` +
           `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
           `If you need to construct your own math, make sure this array is ` +
           `allocated after the math construction`);

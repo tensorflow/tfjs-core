@@ -18,7 +18,8 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
+
+import {Scalar, Tensor1D, Tensor2D, Tensor3D} from './tensor';
 
 // divide
 {
@@ -41,7 +42,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
       test_util.expectArraysClose(r, [1 / 3, NaN]);
     });
 
-    it('divide broadcasting same rank NDArrays different shape', () => {
+    it('divide broadcasting same rank Tensors different shape', () => {
       const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
       const b = Tensor2D.new([2, 1], [2, 3]);
 
@@ -274,23 +275,20 @@ import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
       test_util.expectArraysClose(result, [NaN, 9, NaN, 0]);
     });
 
-    it('multiplyStrict throws when passed ndarrays of different shapes',
-       () => {
-         const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-         const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
+    it('multiplyStrict throws when passed ndarrays of different shapes', () => {
+      const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
+      const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
 
-         expect(() => dl.mulStrict(a, b)).toThrowError();
-         expect(() => dl.mulStrict(b, a)).toThrowError();
-       });
+      expect(() => dl.mulStrict(a, b)).toThrowError();
+      expect(() => dl.mulStrict(b, a)).toThrowError();
+    });
 
     it('multiplyStrict throws when dtypes do not match', () => {
       const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6], 'float32');
       const b = Tensor2D.new([2, 2], [5, 3, 4, -7], 'int32');
 
-      expect(() => dl.mulStrict(a, b as Tensor2D as Tensor2D))
-          .toThrowError();
-      expect(() => dl.mulStrict(b, a as Tensor2D as Tensor2D))
-          .toThrowError();
+      expect(() => dl.mulStrict(a, b as Tensor2D as Tensor2D)).toThrowError();
+      expect(() => dl.mulStrict(b, a as Tensor2D as Tensor2D)).toThrowError();
     });
 
     it('multiplyStrict int32 * int32', () => {
@@ -322,7 +320,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
       test_util.expectArraysClose(result, expected);
     });
 
-    it('broadcasting same rank NDArrays different shape', () => {
+    it('broadcasting same rank Tensors different shape', () => {
       const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
       const b = Tensor2D.new([2, 1], [2, 3]);
 
@@ -515,7 +513,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
       expect(() => dl.pow(a, b as any)).toThrowError();
     });
 
-    it('broadcasting same rank NDArrays different shape', () => {
+    it('broadcasting same rank Tensors different shape', () => {
       const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
       const b = Tensor2D.new([2, 1], [2, 1], 'int32');
 
@@ -576,7 +574,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
       test_util.expectArraysClose(gradients, [2 * 5 * 3], 1e-1);
     });
 
-    it('gradients: NDArray ^ NDArray', () => {
+    it('gradients: Tensor ^ Tensor', () => {
       const a = Tensor1D.new([-1, .5, 2]);
       const b = Tensor1D.new([3, 2, -1], 'int32');
       const dy = Tensor1D.new([1, 5, 10]);
@@ -624,7 +622,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
       test_util.expectArraysEqual(res, [NaN, NaN, NaN]);
     });
 
-    it('A + B broadcasting same rank NDArrays different shape', () => {
+    it('A + B broadcasting same rank Tensors different shape', () => {
       const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
       const b = Tensor2D.new([2, 1], [2, 3]);
 
@@ -810,7 +808,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
       expect(() => dl.sub(b, a)).toThrowError();
     });
 
-    it('A - B broadcasting same rank NDArrays different shape', () => {
+    it('A - B broadcasting same rank Tensors different shape', () => {
       const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
       const b = Tensor2D.new([2, 1], [2, 3]);
 
@@ -991,7 +989,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Scalar} from './tensor';
       expect(() => math.scaledArrayAdd(c2, a, c1 as Scalar, b)).toThrowError();
     });
 
-    it('throws when NDArrays are different shape', math => {
+    it('throws when Tensors are different shape', math => {
       const a = Tensor2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
       const b = Tensor2D.new([2, 4], [1, 2, 3, 4, 5, 6, 7, 8]);
       const c1 = Scalar.new(3);

@@ -16,17 +16,19 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import * as broadcast_util from '../broadcast_util';
 import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
-// tslint:disable-next-line:max-line-length
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor, Scalar} from '../tensor';
 import * as ops from '../ops';
+// tslint:disable-next-line:max-line-length
+import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
+
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
@@ -121,7 +123,7 @@ export class MathBackendCPU implements MathBackend {
   private throwIfNoData(dataId: number) {
     if (!(dataId in this.data)) {
       throw new Error(
-          `No data found for NDArray with data id ${dataId}. ` +
+          `No data found for Tensor with data id ${dataId}. ` +
           `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
           `If you need to construct your own math, make sure this array is ` +
           `allocated after the math construction`);
@@ -897,8 +899,9 @@ export class MathBackendCPU implements MathBackend {
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
-  conv2d(x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null, convInfo: Conv2DInfo):
-      Tensor4D {
+  conv2d(
+      x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null,
+      convInfo: Conv2DInfo): Tensor4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
@@ -936,7 +939,8 @@ export class MathBackendCPU implements MathBackend {
     return y.toTensor();
   }
 
-  conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const topPad = filterHeight - 1 - convInfo.padInfo.top;
@@ -1040,7 +1044,8 @@ export class MathBackendCPU implements MathBackend {
     return Tensor1D.new(values);
   }
 
-  depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;

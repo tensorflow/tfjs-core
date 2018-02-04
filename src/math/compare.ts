@@ -27,8 +27,8 @@ export class Ops {
    * Returns the truth value of (a != b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.notEqualStrict().
    *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   * @param a The first input `Tensor`.
+   * @param b The second input `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
@@ -49,8 +49,8 @@ export class Ops {
    * Returns the truth value of (a < b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.lessStrict().
    *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   * @param a The first input `Tensor`.
+   * @param b The second input `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
@@ -71,8 +71,8 @@ export class Ops {
    * Returns the truth value of (a == b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.equalStrict().
    *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   * @param a The first input `Tensor`.
+   * @param b The second input `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
@@ -93,8 +93,8 @@ export class Ops {
    * Returns the truth value of (a <= b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.lessEqualStrict().
    *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   * @param a The first input `Tensor`.
+   * @param b The second input `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
@@ -115,8 +115,8 @@ export class Ops {
    * Returns the truth value of (a > b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.greaterStrict().
    *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   * @param a The first input `Tensor`.
+   * @param b The second input `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
@@ -137,8 +137,8 @@ export class Ops {
    * Returns the truth value of (a >= b) element-wise. Supports broadcasting.
    * For a stricter version without broadcasting use math.greaterEqualStrict().
    *
-   * @param a The first input `NDArray`.
-   * @param b The second input `NDArray`. Must have the same dtype as `a`.
+   * @param a The first input `Tensor`.
+   * @param b The second input `Tensor`. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation

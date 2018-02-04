@@ -19,16 +19,15 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
-import {Tensor1D, Tensor2D, Tensor3D, Tensor, TensorBuffer} from './tensor';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, TensorBuffer} from './tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
 export class Ops {
   /** Creates a ndarray of ones with the specified shape. */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
-  static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
-      Tensor<R> {
+  static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType): Tensor<R> {
     const values = makeOnesTypedArray(util.sizeFromShape(shape), dtype);
     return Tensor.make(shape, {values}, dtype);
   }
@@ -43,7 +42,7 @@ export class Ops {
   }
 
   @operation
-  /** Creates an NDArray filled with a value. */
+  /** Creates an Tensor filled with a value. */
   static fill<R extends Rank>(
       shape: ShapeMap[R], value: number, dtype: DataType = 'float32'):
       Tensor<R> {
@@ -206,7 +205,7 @@ export class Ops {
       numChannels = 3): Tensor3D {
     if (numChannels > 4) {
       throw new Error(
-          'Cannot construct NDArray with more than 4 channels from pixels.');
+          'Cannot construct Tensor with more than 4 channels from pixels.');
     }
     return ENV.backend.fromPixels(pixels, numChannels);
   }

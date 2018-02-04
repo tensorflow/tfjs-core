@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Tensor1D, Tensor, Scalar} from './math/tensor';
+import {Scalar, Tensor, Tensor1D} from './math/tensor';
 import {NamedArrayMap} from './math/types';
 import * as test_util from './test_util';
 import {MathTests} from './test_util';
@@ -272,18 +272,18 @@ describe('util.squeezeShape', () => {
       const a = Scalar.new(1);
       const list: Tensor[] = [Scalar.new(1), Tensor1D.new([1, 2, 3])];
 
-      expect(util.isNDArrayInList(a, list)).toBe(false);
+      expect(util.isTensorInList(a, list)).toBe(false);
     });
 
     it('in list', math => {
       const a = Scalar.new(1);
       const list: Tensor[] = [Scalar.new(2), Tensor1D.new([1, 2, 3]), a];
 
-      expect(util.isNDArrayInList(a, list)).toBe(true);
+      expect(util.isTensorInList(a, list)).toBe(true);
     });
   };
 
-  test_util.describeMathCPU('util.isNDArrayInList', [tests]);
+  test_util.describeMathCPU('util.isTensorInList', [tests]);
 }
 
 describe('util.checkForNaN', () => {

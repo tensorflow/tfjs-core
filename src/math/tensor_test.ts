@@ -18,11 +18,12 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor, Scalar} from './tensor';
+
+import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {DType, Rank} from './types';
 
 const tests: MathTests = it => {
-  it('NDArrays of arbitrary size', () => {
+  it('Tensors of arbitrary size', () => {
     // [1, 2, 3]
     let t: Tensor = Tensor1D.new([1, 2, 3]);
     expect(t instanceof Tensor1D).toBe(true);
@@ -57,7 +58,7 @@ const tests: MathTests = it => {
     expect(() => Tensor2D.new([1, 2], [1])).toThrowError();
   });
 
-  it('NDArrays of explicit size', () => {
+  it('Tensors of explicit size', () => {
     const t = Tensor1D.new([5, 3, 2]);
     expect(t.rank).toBe(1);
     expect(t.shape).toEqual([3]);
@@ -71,7 +72,7 @@ const tests: MathTests = it => {
     test_util.expectNumbersClose(t4.get(0, 1, 0, 0), 3);
     test_util.expectNumbersClose(t4.get(0, 1, 0, 1), 4);
 
-    // NDArray of ones.
+    // Tensor of ones.
     const x = dl.ones<Rank.R3>([3, 4, 2]);
     expect(x.rank).toBe(3);
     expect(x.size).toBe(24);
@@ -83,7 +84,7 @@ const tests: MathTests = it => {
       }
     }
 
-    // NDArray of zeros.
+    // Tensor of zeros.
     const z = dl.zeros<Rank.R3>([3, 4, 2]);
     expect(z.rank).toBe(3);
     expect(z.size).toBe(24);
@@ -100,13 +101,13 @@ const tests: MathTests = it => {
     test_util.expectNumbersClose(a.get(1, 2), 6);
   });
 
-  it('NDArray dataSync CPU --> GPU', () => {
+  it('Tensor dataSync CPU --> GPU', () => {
     const a = Tensor2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
     test_util.expectArraysClose(
         a.dataSync(), new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
-  it('NDArray.data() CPU --> GPU', async () => {
+  it('Tensor.data() CPU --> GPU', async () => {
     const a = Tensor2D.new([3, 2], [1, 2, 3, 4, 5, 6]);
     test_util.expectArraysClose(
         await a.data(), new Float32Array([1, 2, 3, 4, 5, 6]));
@@ -179,7 +180,7 @@ const tests: MathTests = it => {
     expect(b.indexToLoc(11)).toEqual([2, 1, 1]);
   });
 
-  it('indexToLoc NDArray 5D', () => {
+  it('indexToLoc Tensor 5D', () => {
     const values = new Float32Array([1, 2, 3, 4]);
     const a = Tensor.make([2, 1, 1, 1, 2], {values});
     expect(a.indexToLoc(0)).toEqual([0, 0, 0, 0, 0]);
@@ -246,7 +247,7 @@ const tests: MathTests = it => {
     expect(b.locToIndex([2, 1, 1])).toEqual(11);
   });
 
-  it('NDArray<math>', () => {
+  it('Tensor assignability (asserts compiler)', () => {
     // This test asserts compilation, not doing any run-time assertion.
     const a: Tensor<Rank.R0> = null;
     const b: Scalar = a;
@@ -574,8 +575,8 @@ const testsArray3DNew: MathTests = it => {
   });
 
   it('bool dtype from boolean[]', () => {
-    const a =
-        Tensor3D.new([2, 2, 1], [[[false], [false]], [[true], [false]]], 'bool');
+    const a = Tensor3D.new(
+        [2, 2, 1], [[[false], [false]], [[true], [false]]], 'bool');
     expect(a.dtype).toBe('bool');
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });
@@ -845,8 +846,8 @@ const allTests = [
   testSqueeze
 ];
 
-test_util.describeMathCPU('NDArray', allTests);
-test_util.describeMathGPU('NDArray', allTests, [
+test_util.describeMathCPU('Tensor', allTests);
+test_util.describeMathGPU('Tensor', allTests, [
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

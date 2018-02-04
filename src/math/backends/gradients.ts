@@ -17,8 +17,9 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {Tensor, Scalar, Variable} from '../tensor';
+import {Scalar, Tensor, Variable} from '../tensor';
 import {NamedArrayMap, Rank} from '../types';
+
 import {CustomGradientFunc} from './backend_engine';
 import {ScopeFn, ScopeResult} from './tape_util';
 import {tidy} from './tracking';
@@ -43,10 +44,10 @@ export function gradientsScope<T extends ScopeResult>(
  * Computes and returns the vector jacobian product of f(x) with respect to x.
  * This method allows you to provide a non-scalar dy to backprop from.
  *
- * @param f The function to execute. f() should return an NDArray of the same
+ * @param f The function to execute. f() should return an Tensor of the same
  * shape and dtype as dy.
  * @param x The input to compute dy/dx over. This can be a single value or
- * an object mapping a string to an NDArray. If using the object mode, this
+ * an object mapping a string to an Tensor. If using the object mode, this
  * method will return an object of the same shape.
  */
 export function vjp<T extends Tensor|NamedArrayMap, R extends Rank>(
@@ -59,9 +60,9 @@ export function vjp<T extends Tensor|NamedArrayMap, R extends Rank>(
 /**
  * Computes and returns the gradient of f(x) with respect to x.
  *
- * @param f The function to execute. f() should return an NDArray.
+ * @param f The function to execute. f() should return an Tensor.
  * @param x The input to compute de/dx over. This can be a single value or
- * an object mapping a string to an NDArray. If using the object mode, this
+ * an object mapping a string to an Tensor. If using the object mode, this
  * method will return an object of the same shape.
  */
 export function gradients<R extends Rank, T extends Tensor|NamedArrayMap>(
@@ -109,9 +110,9 @@ export function variableGradients(f: () => Scalar, varList?: Variable[]):
  * Computes and returns the gradient of f(x) with respect to x. Returns
  * both f(x) and f'(x).
  *
- * @param f The function to execute. f() should return an NDArray.
+ * @param f The function to execute. f() should return an Tensor.
  * @param x The input to compute de/dx over. This can be a single value or
- * an object mapping a string to an NDArray. If using the object mode,
+ * an object mapping a string to an Tensor. If using the object mode,
  * this method will return an object of the same shape.
  */
 export function
@@ -142,7 +143,7 @@ valueAndGradients<R extends Rank, T extends Tensor|NamedArrayMap>(
  * @param f The function to evaluate in forward mode. Returns a value NDArray
  *    and a gradient function closure.
  * @param inputs The inputs to compute the gradient with respect to. These
- *    NDArrays should be used in f().
+ *    Tensors should be used in f().
  * @param name An optional name for the customGradient method. Used for
  *    debugging.
  */

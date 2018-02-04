@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import * as axis_util from './axis_util';
 import {doc, operation} from './decorators';
-import {Tensor, Scalar} from './tensor';
+import {Scalar, Tensor} from './tensor';
 
 export class Ops {
   /**
@@ -32,7 +32,7 @@ export class Ops {
    * If `axis` has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
    *
-   * @param input The input NDArray.
+   * @param input The input Tensor.
    * @param axis Optional. The dimension(s) to reduce. If null (the default),
    *     reduces all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with length
@@ -159,7 +159,7 @@ export class Ops {
    * If `axes` has no entries, all dimensions are reduced, and an array with a
    * single element is returned.
    *
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    * @param axis Optional. The dimension(s) to reduce. By default it reduces
    *     all dimensions.
    * @param keepDims Optional. If true, retains reduced dimensions with size 1.
@@ -262,8 +262,8 @@ export class Ops {
 
   /**
    * Returns a 1 if the argMax of x1 and x2 are the same, otherwise 0.
-   * @param x1 The first input NDArray.
-   * @param x2 The second input NDArray.
+   * @param x1 The first input Tensor.
+   * @param x2 The second input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation

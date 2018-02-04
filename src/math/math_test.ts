@@ -18,14 +18,15 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
+
 import {gradientsScope} from './backends/gradients';
 import {MatrixOrientation} from './backends/types/matmul';
-import {Tensor1D, Tensor2D, Tensor, Scalar} from './tensor';
+import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
 
 // math.scope
 {
   const gpuTests: MathTests = it => {
-    it('scope returns NDArray', async math => {
+    it('scope returns Tensor', async math => {
       await dl.tidy(async () => {
         const a = Tensor1D.new([1, 2, 3]);
         let b = Tensor1D.new([0, 0, 0]);
@@ -63,7 +64,7 @@ import {Tensor1D, Tensor2D, Tensor, Scalar} from './tensor';
       expect(math.getNumArrays()).toBe(0);
     });
 
-    it('scope returns NDArray[]', async math => {
+    it('scope returns Tensor[]', async math => {
       const a = Tensor1D.new([1, 2, 3]);
       const b = Tensor1D.new([0, -1, 1]);
       expect(math.getNumArrays()).toBe(2);
@@ -105,7 +106,7 @@ import {Tensor1D, Tensor2D, Tensor, Scalar} from './tensor';
       expect(math.getNumArrays()).toBe(2);
     });
 
-    it('scope returns Promise<NDArray>', async math => {
+    it('scope returns Promise<Tensor>', async math => {
       const a = Tensor1D.new([1, 2, 3]);
       const b = Tensor1D.new([0, 0, 0]);
 

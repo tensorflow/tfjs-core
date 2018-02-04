@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor} from './tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {Rank} from './types';
 
 export class Ops {
@@ -28,12 +28,12 @@ export class Ops {
    * shapes: 1) The same shape as the input: an Array2D. 2) In the common
    * case, the depth dimension is the last dimension of x, so the values would
    * be an Array1D of shape [depth].
-   * @param x The input NDArray.
-   * @param mean A mean NDArray.
-   * @param variance A variance NDArray.
+   * @param x The input Tensor.
+   * @param mean A mean Tensor.
+   * @param variance A variance Tensor.
    * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param scale A scale NDArray.
-   * @param offset An offset NDArray.
+   * @param scale A scale Tensor.
+   * @param offset An offset Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
@@ -77,12 +77,12 @@ export class Ops {
    * shapes: 1) The same shape as the input: an Array3D. 2) In the common
    * case, the depth dimension is the last dimension of x, so the values would
    * be an Array1D of shape [depth].
-   * @param x The input NDArray.
-   * @param mean A mean NDArray.
-   * @param variance A variance NDArray.
+   * @param x The input Tensor.
+   * @param mean A mean Tensor.
+   * @param variance A variance Tensor.
    * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param scale A scale NDArray.
-   * @param offset An offset NDArray.
+   * @param scale A scale Tensor.
+   * @param offset An offset Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
@@ -126,12 +126,12 @@ export class Ops {
    * shapes: 1) The same shape as the input: an Array4D. 2) In the common
    * case, the depth dimension is the last dimension of x, so the values would
    * be an Array1D of shape [depth].
-   * @param x The input NDArray.
-   * @param mean A mean NDArray.
-   * @param variance A variance NDArray.
+   * @param x The input Tensor.
+   * @param mean A mean Tensor.
+   * @param variance A variance Tensor.
    * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param scale A scale NDArray.
-   * @param offset An offset NDArray.
+   * @param scale A scale Tensor.
+   * @param offset An offset Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation

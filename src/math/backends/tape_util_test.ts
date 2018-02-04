@@ -19,7 +19,8 @@
 import {NamedArrayMap} from '../../math/types';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
-import {Tensor, Scalar} from '../tensor';
+import {Scalar, Tensor} from '../tensor';
+
 // tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
@@ -636,18 +637,18 @@ import * as tape_util from './tape_util';
   test_util.describeMathCPU('tape_util.backpropagateGradients', [tests]);
 }
 
-// extractNDArraysFromScopeResult
+// extractTensorsFromScopeResult
 {
   const tests: MathTests = it => {
     it('null input returns empty array', math => {
-      const results = tape_util.extractNDArraysFromScopeResult(null);
+      const results = tape_util.extractTensorsFromScopeResult(null);
 
       expect(results).toEqual([]);
     });
 
     it('ndarray input returns one element array', math => {
       const x = Scalar.new(1);
-      const results = tape_util.extractNDArraysFromScopeResult(x);
+      const results = tape_util.extractTensorsFromScopeResult(x);
 
       expect(results).toEqual([x]);
     });
@@ -656,14 +657,13 @@ import * as tape_util from './tape_util';
       const x1 = Scalar.new(1);
       const x2 = Scalar.new(3);
       const x3 = Scalar.new(4);
-      const results = tape_util.extractNDArraysFromScopeResult({x1, x2, x3});
+      const results = tape_util.extractTensorsFromScopeResult({x1, x2, x3});
 
       expect(results).toEqual([x1, x2, x3]);
     });
   };
 
-  test_util.describeMathCPU(
-      'tape_util.extractNDArraysFromScopeResult', [tests]);
+  test_util.describeMathCPU('tape_util.extractTensorsFromScopeResult', [tests]);
 }
 
 {
@@ -690,6 +690,6 @@ import * as tape_util from './tape_util';
       });
     });
     test_util.describeMathCPU(
-        'tape_util.extractNDArraysFromScopeResult', [tests]);
+        'tape_util.extractTensorsFromScopeResult', [tests]);
   };
 }

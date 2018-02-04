@@ -17,10 +17,11 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {Tensor, Variable} from '../tensor';
 import * as ops from '../ops';
+import {Tensor, Variable} from '../tensor';
 import {NamedArrayMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
+
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {KernelConfigRegistry} from './kernel_registry';
@@ -58,7 +59,7 @@ export class BackendEngine implements NDArrayManager {
   private gradientScopeCount = 0;
   private customGradientDepth = 0;
 
-  // Keep NDArrays that parallel the tapes.
+  // Keep Tensors that parallel the tapes.
   private activeScope: ScopeState;
   private scopeStack: ScopeState[];
   private profiler: Profiler;
@@ -189,13 +190,13 @@ export class BackendEngine implements NDArrayManager {
 
     let arraysToKeep = this.activeScope.keep;
     const arraysToTrackInParent =
-        tape_util.extractNDArraysFromScopeResult(result);
+        tape_util.extractTensorsFromScopeResult(result);
     arraysToKeep = arraysToKeep.concat(arraysToTrackInParent);
 
     // Dispose the arrays tracked in this scope.
     for (let i = 0; i < this.activeScope.track.length; i++) {
       const ndarray = this.activeScope.track[i];
-      if (util.isNDArrayInList(ndarray, arraysToKeep)) {
+      if (util.isTensorInList(ndarray, arraysToKeep)) {
         continue;
       }
 
@@ -213,7 +214,7 @@ export class BackendEngine implements NDArrayManager {
 
     // Track the current result in the parent scope.
     arraysToTrackInParent.forEach(ndarray => {
-      if (!util.isNDArrayInList(ndarray, this.activeScope.keep)) {
+      if (!util.isTensorInList(ndarray, this.activeScope.keep)) {
         this.track(ndarray);
       }
     });
@@ -311,10 +312,10 @@ export class BackendEngine implements NDArrayManager {
   }
 
   /**
-   * Tracks an NDArray in the current scope to be automatically cleaned up
+   * Tracks an Tensor in the current scope to be automatically cleaned up
    * when the current scope ends, and returns the value.
    *
-   * @param result The NDArray to track in the current scope.
+   * @param result The Tensor to track in the current scope.
    */
   private track<T extends Tensor>(result: T): T {
     if (this.scopeStack.length === 1 && this.safeMode) {

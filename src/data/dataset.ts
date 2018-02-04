@@ -96,7 +96,7 @@ export abstract class InMemoryDataset {
   }
 
   /**
-   * @param examples NDArrays to be normalized.
+   * @param examples Tensors to be normalized.
    * @param curLowerBounds An array containing the minimum value for each
    * dimension or a fixed minimum value.
    * @param curUpperBounds An array containing the maximum value for each

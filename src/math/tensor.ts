@@ -216,7 +216,7 @@ export class Tensor<R extends Rank = Rank> {
     return this.reshape(util.squeezeShape(this.shape, axis).newShape) as T;
   }
 
-  /** Flatten a NDArray to a 1D array. */
+  /** Flatten a Tensor to a 1D array. */
   flatten(): Tensor1D {
     this.throwIfDisposed();
     return this.as1D();
@@ -319,7 +319,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Asynchronously downloads the values from the NDArray. Returns a promise
+   * Asynchronously downloads the values from the Tensor. Returns a promise
    * that resolves when the data is ready.
    */
   async data(): Promise<TypedArray> {
@@ -328,7 +328,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Synchronously downloads the values from the NDArray. This blocks the UI
+   * Synchronously downloads the values from the Tensor. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
   dataSync(): TypedArray {
@@ -347,7 +347,7 @@ export class Tensor<R extends Rank = Rank> {
   private isDisposed = false;
   protected throwIfDisposed() {
     if (this.isDisposed) {
-      throw new Error(`NDArray is disposed.`);
+      throw new Error(`Tensor is disposed.`);
     }
   }
 

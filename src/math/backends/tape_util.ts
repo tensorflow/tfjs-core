@@ -26,12 +26,12 @@ import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types'
  * Computes a list of TapeNodes that connect x to y, filtering everything else
  * out and preserving the order of the original tape elements.
  * @param tape The tape elements to filter.
- * @param xx The input NDArrays.
- * @param y The output NDArray.
+ * @param xx The input Tensors.
+ * @param y The output Tensor.
  */
 export function getFilteredNodesXToY(
     tape: Tape, xs: Tensor[], y: Tensor): Tape {
-  // Forward pass to compute all the nodes and NDArrays that are transitively a
+  // Forward pass to compute all the nodes and Tensors that are transitively a
   // function of x.
   const arraysFromX: {[ndarrayId: number]: boolean} = {};
   const nodesFromX: {[nodeId: number]: boolean} = {};
@@ -69,7 +69,7 @@ export function getFilteredNodesXToY(
     }
   }
 
-  // Backwards pass to find all of the nodes and NDArrays that lead to y.
+  // Backwards pass to find all of the nodes and Tensors that lead to y.
   const arraysLeadToY: {[ndarrayId: number]: boolean} = {};
   arraysLeadToY[y.id] = true;
   const nodesToY: {[nodeId: number]: boolean} = {};
@@ -117,7 +117,7 @@ export function getFilteredNodesXToY(
 
       let prunedOutputs: Tensor|{[outputName: string]: Tensor};
       if (node.output instanceof Tensor) {
-        // Nothing to prune if the output is just a single NDArray since the
+        // Nothing to prune if the output is just a single Tensor since the
         // node would have been pruned.
         prunedOutputs = node.output;
       } else {
@@ -145,14 +145,14 @@ export function getFilteredNodesXToY(
 
 /**
  * Backpropagate gradients through the filtered TapeNodes.
- * @param arrayAccumulatedGradientMap A map of NDArray to its gradient. This map
+ * @param arrayAccumulatedGradientMap A map of Tensor to its gradient. This map
  * is mutated by this method.
  * @param filteredTape The filtered TapeNodes to backprop through.
  */
 export function backpropagateGradients(
     arrayAccumulatedGradientMap: {[ndarrayId: number]: Tensor},
     filteredTape: Tape) {
-  // Walk the tape backwards and keep a map of NDArray to its gradient.
+  // Walk the tape backwards and keep a map of Tensor to its gradient.
   for (let i = filteredTape.length - 1; i >= 0; i--) {
     const node = filteredTape[i];
 
@@ -208,7 +208,7 @@ export type ScopeResultImmediate =
 export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
 export type ScopeFn<T extends ScopeResult> = () => T;
 
-export function extractNDArraysFromScopeResult(result: ScopeResultImmediate):
+export function extractTensorsFromScopeResult(result: ScopeResultImmediate):
     Tensor[] {
   if (result == null) {
     return [];
@@ -221,8 +221,7 @@ export function extractNDArraysFromScopeResult(result: ScopeResultImmediate):
   const resultObj = result as {[key: string]: Tensor};
   // Iteration over keys works also for arrays.
   for (const k in resultObj) {
-    const sublist =
-        util.flatten(resultObj[k]).filter(x => x instanceof Tensor);
+    const sublist = util.flatten(resultObj[k]).filter(x => x instanceof Tensor);
     list.push(...sublist);
   }
   return list;

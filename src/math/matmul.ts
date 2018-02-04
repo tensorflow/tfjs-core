@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import {MatrixOrientation} from './backends/types/matmul';
 import {doc, operation} from './decorators';
-import {Tensor1D, Tensor2D, Scalar} from './tensor';
+import {Scalar, Tensor1D, Tensor2D} from './tensor';
 
 export class Ops {
   /**
@@ -52,7 +52,7 @@ export class Ops {
     util.assert(
         innerShapeA === innerShapeB,
         `Error in matMul: inner shapes (${innerShapeA}) and (` +
-            `${innerShapeB}) of NDArrays with shapes ${a.shape} and ` +
+            `${innerShapeB}) of Tensors with shapes ${a.shape} and ` +
             `${b.shape} and orientations ${MatrixOrientation[aOrientation]}` +
             ` and ${MatrixOrientation[bOrientation]} must match.`);
 

@@ -43,7 +43,7 @@ export {MomentumOptimizer} from './graph/optimizers/momentum_optimizer';
 export {RMSPropOptimizer} from './graph/optimizers/rmsprop_optimizer';
 export {CostReduction, FeedEntry, Session} from './graph/session';
 // tslint:disable-next-line:max-line-length
-export {ConstantInitializer, Initializer, NDArrayInitializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, VarianceScalingInitializer, ZerosInitializer} from './initializers';
+export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './initializers';
 export {MathBackendCPU, NDArrayMathCPU} from './math/backends/backend_cpu';
 export {MathBackendWebGL, NDArrayMathGPU} from './math/backends/backend_webgl';
 export {MatrixOrientation} from './math/backends/types/matmul';
@@ -53,7 +53,7 @@ export {NDArrayMath} from './math/math';
 export {Optimizer} from './math/optimizers/optimizer';
 export {SGDOptimizer} from './math/optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
-export {Tensor4D, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, variable, Variable} from './math/tensor';
+export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './math/tensor';
 export {Rank} from './math/types';
 export {Model} from './model';
 export {version};

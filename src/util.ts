@@ -336,7 +336,7 @@ export function getTypedArrayFromDType<D extends DataType>(
   return values;
 }
 
-export function isNDArrayInList(
+export function isTensorInList(
     ndarray: Tensor, ndarrayList: Tensor[]): boolean {
   for (let i = 0; i < ndarrayList.length; i++) {
     if (ndarrayList[i].id === ndarray.id) {
@@ -373,7 +373,7 @@ export function unflattenToNameArrayMap(
     keys: string[], flatArrays: Tensor[]): NamedArrayMap {
   if (keys.length !== flatArrays.length) {
     throw new Error(
-        `Cannot unflatten NDArray[], keys and arrays are not of same length.`);
+        `Cannot unflatten Tensor[], keys and arrays are not of same length.`);
   }
   const result: NamedArrayMap = {};
   for (let i = 0; i < keys.length; i++) {

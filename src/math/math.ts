@@ -33,7 +33,6 @@ import * as image_ops from './image_ops';
 import * as logical from './logical_ops';
 import * as lstm_ops from './lstm';
 import * as matmul from './matmul';
-import {Tensor1D, Tensor3D, Tensor4D, Tensor, Scalar} from './tensor';
 import * as norm from './norm';
 import * as ops from './ops';
 import * as pool from './pool';
@@ -41,6 +40,7 @@ import * as reduction_ops from './reduction_ops';
 import * as reverse from './reverse';
 import * as slice from './slice';
 import * as softmax_ops from './softmax';
+import {Scalar, Tensor, Tensor1D, Tensor3D, Tensor4D} from './tensor';
 import * as transpose from './transpose';
 import {Rank} from './types';
 import * as unary_ops from './unary_ops';
@@ -222,7 +222,7 @@ export class NDArrayMath {
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
-   *     a dl.tidy() which will automatically clean up intermediate NDArrays.
+   *     a dl.tidy() which will automatically clean up intermediate Tensors.
    */
   constructor(backend: BackendType|MathBackend, safeMode: boolean) {
     ENV.setMath(this, backend, safeMode);
@@ -254,7 +254,7 @@ export class NDArrayMath {
 
   /**
    * Computes the top K values and flattened indices.
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    * @param k How many top values to compute.
    */
   topK(x: Tensor, k: number): {values: Tensor1D, indices: Tensor1D} {
@@ -309,9 +309,9 @@ export class NDArrayMath {
   /**
    * Computes a scaled array add operation, c1 * A + c2 * B.
    * @param c1 The first scalar in the scaled array add computation.
-   * @param a The first NDArray in the scaled array add computation.
+   * @param a The first Tensor in the scaled array add computation.
    * @param c2 The second scalar in the scaled array add computation.
-   * @param cb The second NDArray in the scaled array add computation.
+   * @param cb The second Tensor in the scaled array add computation.
    */
   scaledArrayAdd<T extends Tensor>(c1: Scalar, a: T, c2: Scalar, b: T): T {
     util.assert(
@@ -321,7 +321,7 @@ export class NDArrayMath {
     util.assert(
         c2.size === 1,
         `Error in scaledArrayAdd: third argument must be rank 0, but got ` +
-            `NDArray of rank ${c2.rank}.`);
+            `Tensor of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
     return tidy('scaledArrayAdd', () => {
@@ -342,7 +342,7 @@ export class NDArrayMath {
   /**
    * Normalizes the activation of a local neighborhood across or within
    * channels.
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    * @param radius The number of adjacent channels or spatial locations of the
    *     1D normalization window. In Tensorflow this param is called
    *     'depth_radius' because only 'acrossChannels' mode is supported.
@@ -374,7 +374,7 @@ export class NDArrayMath {
   /**
    * Normalizes the activation of a local neighborhood across or within
    * channels.
-   * @param x The input NDArray. The 4-D input tensor is treated as a 3-D array
+   * @param x The input Tensor. The 4-D input tensor is treated as a 3-D array
    *     of 1D vectors (along the last dimension), and each vector is
    * normalized independently.
    * @param radius The number of adjacent channels or spatial locations of the

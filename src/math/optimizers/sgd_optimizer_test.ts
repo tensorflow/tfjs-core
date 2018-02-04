@@ -17,7 +17,7 @@
 import {InputProvider} from '../../data/input_provider';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
-import {Tensor1D, Scalar, variable} from '../../math/tensor';
+import {Scalar, Tensor1D, variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 
@@ -46,7 +46,7 @@ const tests: MathTests = it => {
     numArrays = math.getNumArrays();
 
     cost = optimizer.minimize(() => math.square(x), /* returnCost */ false);
-    // There should be no new additional NDArrays.
+    // There should be no new additional Tensors.
     expect(math.getNumArrays()).toBe(numArrays);
 
     const expectedValue2 = -2 * expectedValue1 * learningRate + expectedValue1;
@@ -55,7 +55,7 @@ const tests: MathTests = it => {
 
     optimizer.dispose();
     x.dispose();
-    // There should be no more NDArrays.
+    // There should be no more Tensors.
     expect(math.getNumArrays()).toBe(0);
   });
 

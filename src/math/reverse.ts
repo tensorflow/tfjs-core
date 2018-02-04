@@ -20,7 +20,7 @@ import * as util from '../util';
 
 import * as axis_util from './axis_util';
 import {doc, operation} from './decorators';
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor} from './tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {Rank} from './types';
 
 export class Ops {
@@ -90,7 +90,7 @@ export class Ops {
   }
 
   /**
-   * Reverses an NDArray along a specified axis.
+   * Reverses a Tensor along a specified axis.
    *
    * @param x The input array.
    * @param axis The set of dimensions to reverse. Must be in the

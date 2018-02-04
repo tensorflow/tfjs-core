@@ -19,8 +19,8 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
-import {Tensor, Scalar} from './tensor';
 import * as ops from './ops';
+import {Scalar, Tensor} from './tensor';
 
 export class Ops {
   /**
@@ -36,10 +36,10 @@ export class Ops {
   }
 
   /**
-   * Computes ceiling of input NDArray element-wise. y = ceil(x)
+   * Computes ceiling of input Tensor element-wise. y = ceil(x)
    * TODO(nsthorat): Make this return an int32 when we add rank as a
    * generic.
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -48,9 +48,9 @@ export class Ops {
   }
 
   /**
-   * Computes floor of input NDArray element-wise. y = floor(x).
+   * Computes floor of input Tensor element-wise. y = floor(x).
    *
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -59,8 +59,8 @@ export class Ops {
   }
 
   /**
-   * Computes exponential of the input NDArray element-wise. y = e ^ x
-   * @param x The input NDArray.
+   * Computes exponential of the input Tensor element-wise. y = e ^ x
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -71,8 +71,8 @@ export class Ops {
   }
 
   /**
-   * Computes natural logarithm of the input NDArray element-wise. y = ln(x)
-   * @param x The input NDArray.
+   * Computes natural logarithm of the input Tensor element-wise. y = ln(x)
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -83,8 +83,8 @@ export class Ops {
   }
 
   /**
-   * Computes square root of the input NDArray element-wise. y = sqrt(x)
-   * @param x The input NDArray.
+   * Computes square root of the input Tensor element-wise. y = sqrt(x)
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -109,7 +109,7 @@ export class Ops {
 
   /**
    * Computes absolute value element-wise.
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -121,7 +121,7 @@ export class Ops {
 
   /**
    * Clips values element-wise.
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    * @param min Lower-bound of range to be clipped to.
    * @param max Upper-bound of range to be clipped to.
    */
@@ -138,7 +138,7 @@ export class Ops {
 
   /**
    * Computes rectified linear element-wise, max(x, 0).
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -151,7 +151,7 @@ export class Ops {
 
   /**
    * Computes exponential linear element-wise
-   * @param x the input NDArray
+   * @param x the input Tensor
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -200,7 +200,7 @@ export class Ops {
 
   /**
    * Computes leaky rectified linear element-wise
-   * @param x the input NDArray
+   * @param x the input Tensor
    * @param alpha scaling factor for negative values, defaults to 0.2
    * @return {Tensor}
    */
@@ -213,8 +213,8 @@ export class Ops {
 
   /**
    * Computes leaky rectified linear element-wise with parametric alphas
-   * @param x the input NDArray
-   * @param alpha scaling factor NDArray for negative values
+   * @param x the input Tensor
+   * @param alpha scaling factor Tensor for negative values
    * @return {Tensor}
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -235,7 +235,7 @@ export class Ops {
 
   /**
    * Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -246,8 +246,8 @@ export class Ops {
   }
 
   /**
-   * Computes sin of the input NDArray element-wise, y = sin(x).
-   * @param x The input NDArray.
+   * Computes sin of the input Tensor element-wise, y = sin(x).
+   * @param x The input Tensor.
    *
    * TODO(smilkov): Fix dl.cos() and other ops that should return a float.
    */
@@ -260,8 +260,8 @@ export class Ops {
   }
 
   /**
-   * Computes cos of the input NDArray element-wise, y = cos(x).
-   * @param x The input NDArray.
+   * Computes cos of the input Tensor element-wise, y = cos(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -272,8 +272,8 @@ export class Ops {
   }
 
   /**
-   * Computes tan of the input NDArray element-wise, y = tan(x).
-   * @param x The input NDArray.
+   * Computes tan of the input Tensor element-wise, y = tan(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -284,8 +284,8 @@ export class Ops {
   }
 
   /**
-   * Computes asin of the input NDArray element-wise, y = asin(x).
-   * @param x The input NDArray.
+   * Computes asin of the input Tensor element-wise, y = asin(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -298,8 +298,8 @@ export class Ops {
   }
 
   /**
-   * Computes acos of the input NDArray element-wise, y = acos(x).
-   * @param x The input NDArray.
+   * Computes acos of the input Tensor element-wise, y = acos(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -312,8 +312,8 @@ export class Ops {
   }
 
   /**
-   * Computes atan of the input NDArray element-wise, y = atan(x).
-   * @param x The input NDArray.
+   * Computes atan of the input Tensor element-wise, y = atan(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -324,8 +324,8 @@ export class Ops {
   }
 
   /**
-   * Computes hyperbolic sin of the input NDArray element-wise, y = sinh(x).
-   * @param x The input NDArray.
+   * Computes hyperbolic sin of the input Tensor element-wise, y = sinh(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -336,8 +336,8 @@ export class Ops {
   }
 
   /**
-   * Computes hyperbolic cos of the input NDArray element-wise, y = cosh(x).
-   * @param x The input NDArray.
+   * Computes hyperbolic cos of the input Tensor element-wise, y = cosh(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -348,8 +348,8 @@ export class Ops {
   }
 
   /**
-   * Computes hyperbolic tangent of the input NDArray element-wise.
-   * @param x The input NDArray.
+   * Computes hyperbolic tangent of the input Tensor element-wise.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -360,10 +360,10 @@ export class Ops {
   }
 
   /**
-   * Computes step of the input NDArray element-wise,
+   * Computes step of the input Tensor element-wise,
    * y=1 if x>0|alpha*x if x<=0.
    *
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    * @param alpha The gradient when input is negative.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
