@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {MatrixOrientation} from '../../math/backends/types/matmul';
 import {NDArrayMath} from '../../math/math';
-import {Array1D, Array2D} from '../../math/ndarray';
-import {Tensor} from '../graph';
+import {Tensor1D, Tensor2D} from '../../math/tensor';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {Operation} from './op';
 
 /**
@@ -29,8 +29,8 @@ import {Operation} from './op';
  */
 export class MatMul extends Operation {
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
   }
 
@@ -38,18 +38,18 @@ export class MatMul extends Operation {
     const x1 = inferenceArrays.get(this.x1Tensor);
     const x2 = inferenceArrays.get(this.x2Tensor);
 
-    math.scope((keep) => {
+    tidy(() => {
       if (x1.shape.length === 2 && x2.shape.length === 2) {
         inferenceArrays.set(
-            this.yTensor, keep(math.matMul(x1 as Array2D, x2 as Array2D)));
+            this.yTensor, keep(math.matMul(x1 as Tensor2D, x2 as Tensor2D)));
       } else if (x1.shape.length === 2 && x2.shape.length === 1) {
         inferenceArrays.set(
             this.yTensor,
-            keep(math.matrixTimesVector(x1 as Array2D, x2 as Array1D)));
+            keep(math.matrixTimesVector(x1 as Tensor2D, x2 as Tensor1D)));
       } else if (x1.shape.length === 1 && x2.shape.length === 2) {
         inferenceArrays.set(
             this.yTensor,
-            keep(math.vectorTimesMatrix(x1 as Array1D, x2 as Array2D)));
+            keep(math.vectorTimesMatrix(x1 as Tensor1D, x2 as Tensor2D)));
       }
     });
   }
@@ -70,20 +70,20 @@ export class MatMul extends Operation {
       dy = dy.reshape([dy.size, 1]);
     }
 
-    math.scope(() => {
+    tidy(() => {
       // y = x1 * x2
       // dx1 = dy * x2T
       // dx2 = x1T * dy
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         const dx1 = math.matMul(
-            dy as Array2D, x2 as Array2D, MatrixOrientation.REGULAR,
+            dy as Tensor2D, x2 as Tensor2D, MatrixOrientation.REGULAR,
             MatrixOrientation.TRANSPOSED);
         gradientArrays.add(
             this.x1Tensor, this.x1Tensor.shape.length === 1 ? dx1.as1D() : dx1);
       }
       if (graph_util.shouldBackProp(this.x2Tensor)) {
         const dx2 = math.matMul(
-            x1 as Array2D, dy as Array2D, MatrixOrientation.TRANSPOSED,
+            x1 as Tensor2D, dy as Tensor2D, MatrixOrientation.TRANSPOSED,
             MatrixOrientation.REGULAR);
         gradientArrays.add(
             this.x2Tensor, this.x2Tensor.shape.length === 1 ? dx2.as1D() : dx2);

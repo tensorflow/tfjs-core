@@ -22,8 +22,8 @@ async function mlBeginners() {
   // This file parallels (some of) the code in the ML Beginners tutorial.
   {
     const matrixShape: [number, number] = [2, 3];  // 2 rows, 3 columns.
-    const matrix = dl.Array2D.new(matrixShape, [10, 20, 30, 40, 50, 60]);
-    const vector = dl.Array1D.new([0, 1, 2]);
+    const matrix = dl.Tensor2D.new(matrixShape, [10, 20, 30, 40, 50, 60]);
+    const vector = dl.Tensor1D.new([0, 1, 2]);
     const result = dl.matrixTimesVector(matrix, vector);
 
     console.log('result shape:', result.shape);
@@ -55,7 +55,7 @@ async function mlBeginners() {
     // **deeplearn.js** needs a dl.Session object to evaluate a dl.Graph.
     const session = new dl.Session(g, math);
 
-    await math.scope(async () => {
+    await dl.tidy(async () => {
       /**
        * Inference
        */

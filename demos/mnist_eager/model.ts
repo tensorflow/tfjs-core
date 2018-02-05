@@ -10,17 +10,15 @@ const TRAIN_STEPS = 100;
 const IMAGE_SIZE = 784;
 const LABELS_SIZE = 10;
 
-const math = dl.ENV.math;
-
 const optimizer = new dl.SGDOptimizer(LEARNING_RATE);
 
 // Set up the model and loss function.
-const weights: dl.Array2D = dl.variable(
-    dl.randNormal([IMAGE_SIZE, LABELS_SIZE], 0, 1 / Math.sqrt(IMAGE_SIZE)));
+const weights: dl.Tensor2D = dl.variable(
+    dl.randomNormal([IMAGE_SIZE, LABELS_SIZE], 0, 1 / Math.sqrt(IMAGE_SIZE)));
 
-const model = (xs: dl.Array2D) => xs.matMul(weights);
+const model = (xs: dl.Tensor2D) => xs.matMul(weights);
 
-const loss = (labels: dl.Array2D, ys: dl.Array2D) =>
+const loss = (labels: dl.Tensor2D, ys: dl.Tensor2D) =>
     dl.losses.softmaxCrossEntropy(labels, ys).mean() as dl.Scalar;
 
 // Train the model.
@@ -40,8 +38,8 @@ export async function train(data: MnistData, log: (message: string) => void) {
 }
 
 // Predict the digit number from a batch of input images.
-export function predict(x: dl.Array2D): number[] {
-  const pred = math.scope(() => {
+export function predict(x: dl.Tensor2D): number[] {
+  const pred = dl.tidy(() => {
     const axis = 1;
     return model(x).argMax(axis);
   });
@@ -49,7 +47,7 @@ export function predict(x: dl.Array2D): number[] {
 }
 
 // Given a logits or label vector, return the class indices.
-export function classesFromLabel(y: dl.Array2D): number[] {
+export function classesFromLabel(y: dl.Tensor2D): number[] {
   const axis = 1;
   const pred = y.argMax(axis);
 

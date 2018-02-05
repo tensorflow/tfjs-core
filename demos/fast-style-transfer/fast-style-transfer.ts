@@ -241,7 +241,7 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
   }
 
   async runInference() {
-    await dl.ENV.math.scope(async () => {
+    await dl.tidy(async () => {
       const preprocessed = dl.fromPixels(this.contentImgElement);
       const inferenceResult = await this.transformNet.predict(preprocessed);
       this.setCanvasShape(inferenceResult.shape);
@@ -262,7 +262,7 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
   }
 }
 
-function renderToCanvas(a: dl.Array3D, canvas: HTMLCanvasElement) {
+function renderToCanvas(a: dl.Tensor3D, canvas: HTMLCanvasElement) {
   const [height, width, ] = a.shape;
   const ctx = canvas.getContext('2d');
   const imageData = new ImageData(width, height);
