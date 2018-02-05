@@ -53,7 +53,7 @@ export class Gradients {
    * an object mapping a string to a Tensor. If using the object mode, this
    * method will return an object of the same shape.
    */
-  @doc({heading: 'Training', 'subheading': 'Gradients'})
+  @doc({heading: 'Training', subheading: 'Gradients'})
   static vjp<T extends Tensor|NamedTensorMap, R extends Rank>(
       f: () => Tensor<R>, x: T, dy: Tensor<R>): T {
     const res = Gradients.valueAndGradients(f, x, dy);
