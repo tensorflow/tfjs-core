@@ -16,6 +16,7 @@
  */
 
 import {ENV} from '../environment';
+import {zerosLike} from './ops';
 import * as util from '../util';
 import {operation} from './decorators';
 import {NDArray, Scalar} from './ndarray';
@@ -121,8 +122,14 @@ export class Ops {
         (min <= max),
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
-    return ENV.engine.executeKernel('Clip', {inputs: {x}, args: {min, max}}) as
-        T;
+    return ENV.engine.executeKernel(
+        'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
+      return {
+          x: () => dy.where(
+              x.greater(Scalar.new(min)).logicalAnd(x.less(Scalar.new(max))),
+              zerosLike(dy)),
+      };
+    }) as T;
   }
 
   /**

@@ -1309,6 +1309,18 @@ import {Array1D, Array2D, Scalar} from './ndarray';
       };
       expect(f).toThrowError();
     });
+
+    it('derivative', math => {
+      const min = -1;
+      const max = 2;
+      const x = Array1D.new([3, -2, 1]);  // Only 1 is not clipped.
+      const dy = Array1D.new([5, 50, 500]);
+      const gradients = math.vjp(() => math.clip(x, min, max), x, dy);
+
+      expect(gradients.shape).toEqual(x.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [0, 0, 500], 1e-1);
+    });
   };
 
   test_util.describeMathCPU('clip', [tests]);
