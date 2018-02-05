@@ -167,6 +167,12 @@ export const pad2D = array_ops.Ops.pad2D;
 export const range = array_ops.Ops.range;
 export const buffer = array_ops.Ops.buffer;
 export const fill = array_ops.Ops.fill;
+export const tensor = array_ops.Ops.tensor;
+export const scalar = array_ops.Ops.scalar;
+export const tensor1d = array_ops.Ops.tensor1d;
+export const tensor2d = array_ops.Ops.tensor2d;
+export const tensor3d = array_ops.Ops.tensor3d;
+export const tensor4d = array_ops.Ops.tensor4d;
 
 export const basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
 export const multiRNNCell = lstm_ops.Ops.multiRNNCell;

@@ -18,8 +18,8 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-
-import {Scalar, Tensor1D, Tensor2D} from './tensor';
+import {scalar} from './ops';
+import {Tensor1D, Tensor2D} from './tensor';
 
 // math.relu
 {
@@ -31,19 +31,19 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('does nothing to positive values', math => {
-      const a = Scalar.new(1);
+      const a = scalar(1);
       const result = math.relu(a);
       test_util.expectNumbersClose(result.get(), 1);
     });
 
     it('sets negative values to 0', math => {
-      const a = Scalar.new(-1);
+      const a = scalar(-1);
       const result = math.relu(a);
       test_util.expectNumbersClose(result.get(), 0);
     });
 
     it('preserves zero values', math => {
-      const a = Scalar.new(0);
+      const a = scalar(0);
       const result = math.relu(a);
       test_util.expectNumbersClose(result.get(), 0);
     });
@@ -70,8 +70,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: positive scalar', math => {
-      const a = Scalar.new(3);
-      const dy = Scalar.new(5);
+      const a = scalar(3);
+      const dy = scalar(5);
 
       const gradients = math.vjp(() => math.relu(a), a, dy);
 
@@ -81,8 +81,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: negative scalar', math => {
-      const a = Scalar.new(-3);
-      const dy = Scalar.new(5);
+      const a = scalar(-3);
+      const dy = scalar(5);
 
       const gradients = math.vjp(() => math.relu(a), a, dy);
 
@@ -128,8 +128,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(4);
-      const dy = Scalar.new(8);
+      const a = scalar(4);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.abs(a), a, dy);
 
@@ -219,8 +219,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(4);
-      const dy = Scalar.new(8);
+      const a = scalar(4);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.neg(a), a, dy);
 
@@ -325,8 +325,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(4);
-      const dy = Scalar.new(8);
+      const a = scalar(4);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.sqrt(a), a, dy);
 
@@ -401,8 +401,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(5);
-      const dy = Scalar.new(8);
+      const a = scalar(5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.square(a), a, dy);
 
@@ -460,8 +460,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(5);
-      const dy = Scalar.new(3);
+      const a = scalar(5);
+      const dy = scalar(3);
 
       const gradients = math.vjp(() => math.log(a), a, dy);
 
@@ -575,8 +575,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(0.5);
-      const dy = Scalar.new(3);
+      const a = scalar(0.5);
+      const dy = scalar(3);
 
       const gradients = math.vjp(() => math.exp(a), a, dy);
 
@@ -646,8 +646,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(5);
-      const dy = Scalar.new(8);
+      const a = scalar(5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.sin(a), a, dy);
 
@@ -717,8 +717,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(5);
-      const dy = Scalar.new(8);
+      const a = scalar(5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.cos(a), a, dy);
 
@@ -792,8 +792,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(0.5);
-      const dy = Scalar.new(8);
+      const a = scalar(0.5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.tan(a), a, dy);
 
@@ -872,8 +872,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(0.5);
-      const dy = Scalar.new(8);
+      const a = scalar(0.5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.asin(a), a, dy);
 
@@ -951,8 +951,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(0.5);
-      const dy = Scalar.new(8);
+      const a = scalar(0.5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.acos(a), a, dy);
 
@@ -1031,8 +1031,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(0.5);
-      const dy = Scalar.new(8);
+      const a = scalar(0.5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.atan(a), a, dy);
 
@@ -1112,8 +1112,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(0.5);
-      const dy = Scalar.new(8);
+      const a = scalar(0.5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.sinh(a), a, dy);
 
@@ -1195,8 +1195,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(0.5);
-      const dy = Scalar.new(8);
+      const a = scalar(0.5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.cosh(a), a, dy);
 
@@ -1272,8 +1272,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(0.5);
-      const dy = Scalar.new(8);
+      const a = scalar(0.5);
+      const dy = scalar(8);
 
       const gradients = math.vjp(() => math.tanh(a), a, dy);
 
