@@ -92,6 +92,11 @@ describe('Util', () => {
     ];
     expect(util.inferShape(a)).toEqual([2, 3, 2, 1]);
   });
+
+  it('infer shape of typed array', () => {
+    const a = new Float32Array([1, 2, 3, 4, 5]);
+    expect(util.inferShape(a)).toEqual([5]);
+  });
 });
 
 describe('util.repeatedTry', () => {

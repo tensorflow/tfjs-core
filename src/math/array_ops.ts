@@ -25,7 +25,15 @@ import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} fr
 import {ArrayData, DataType, DataTypeMap, Rank, RegularArray, ShapeMap, TypedArray} from './types';
 
 export class Ops {
-  /** Creates a tensor with the provided values, shape and dtype. */
+  /**
+   * Creates a tensor with the provided values, shape and dtype.
+   *
+   * @param values The values of the tensor. Can be nested array of numbers,
+   *     or a flat array, or a `TypedArray`.
+   * @param shape The shape of the tensor. Optional. If not provided,
+   *   it is inferred from `values`.
+   * @param dtype The data type.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor<R extends Rank>(
       values: TypedArray|number|boolean|RegularArray<number>|
@@ -48,7 +56,12 @@ export class Ops {
         dtype);
   }
 
-  /** Creates rank-0 tensor with the provided values, shape and dtype. */
+  /**
+   * Creates rank-0 tensor (scalar) with the provided value and dtype.
+   *
+   * @param value The value of the scalar.
+   * @param dtype The data type.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static scalar(value: number|boolean, dtype: DataType = 'float32'): Scalar {
     if (util.isTypedArray(value) || Array.isArray(value)) {
@@ -59,7 +72,13 @@ export class Ops {
     return Ops.tensor(value, [], dtype);
   }
 
-  /** Creates rank-1 tensor with the provided values, shape and dtype. */
+  /**
+   * Creates rank-1 tensor with the provided values, shape and dtype.
+   *
+   * @param values The values of the tensor. Can be array of numbers,
+   *     or a `TypedArray`.
+   * @param dtype The data type.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor1d(
       values: TypedArray|number[]|boolean[], dtype: DataType = 'float32'):
@@ -72,7 +91,15 @@ export class Ops {
     return Ops.tensor(values, inferredShape as [number], dtype);
   }
 
-  /** Creates rank-2 tensor with the provided values, shape and dtype. */
+  /**
+   * Creates rank-2 tensor with the provided values, shape and dtype.
+   *
+   * @param values The values of the tensor. Can be nested array of numbers,
+   *     or a flat array, or a `TypedArray`.
+   * @param shape The shape of the tensor. Optional. If not provided,
+   *   it is inferred from `values`.
+   * @param dtype The data type.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor2d(
       values: TypedArray|number[]|number[][]|boolean[]|boolean[][],
@@ -87,7 +114,15 @@ export class Ops {
     return Ops.tensor(values, shape, dtype);
   }
 
-  /** Creates rank-3 tensor with the provided values, shape and dtype. */
+  /**
+   * Creates rank-3 tensor with the provided values, shape and dtype.
+   *
+   * @param values The values of the tensor. Can be nested array of numbers,
+   *     or a flat array, or a `TypedArray`.
+   * @param shape The shape of the tensor. Optional. If not provided,
+   *   it is inferred from `values`.
+   * @param dtype The data type.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor3d(
       values: TypedArray|number[]|number[][][]|boolean[]|boolean[][][],
@@ -102,7 +137,15 @@ export class Ops {
     return Ops.tensor(values, shape, dtype);
   }
 
-  /** Creates rank-4 tensor with the provided values, shape and dtype. */
+  /**
+   * Creates rank-4 tensor with the provided values, shape and dtype.
+   *
+   * @param values The values of the tensor. Can be nested array of numbers,
+   *     or a flat array, or a `TypedArray`.
+   * @param shape The shape of the tensor. Optional. If not provided,
+   *   it is inferred from `values`.
+   * @param dtype The data type.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor4d(
       values: TypedArray|number[]|number[][][][]|boolean[]|boolean[][][][],
@@ -120,6 +163,7 @@ export class Ops {
 
   /**
    * Creates a tensor with all elements set to 1.
+   *
    * @param shape An array of integers defining the output tensor shape.
    * @param dtype The type of an element in the resulting tensor. Can
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
