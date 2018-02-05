@@ -160,10 +160,3 @@ export class Gradients {
     return ENV.engine.customGradient(name, f, inputs);
   }
 }
-
-export const gradientsScope = Gradients.gradientsScope;
-export const vjp = Gradients.vjp;
-export const gradients = Gradients.gradients;
-export const variableGradients = Gradients.variableGradients;
-export const valueAndGradients = Gradients.valueAndGradients;
-export const customGradient = Gradients.customGradient;
