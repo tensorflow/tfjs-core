@@ -45,7 +45,7 @@ const PROGRAM_ROOT = SRC_ROOT + 'index.ts';
 const GITHUB_ROOT = 'https://github.com/PAIR-code/deeplearnjs/';
 const HTML_OUT_DIR = '/tmp/deeplearn-new-website/api/';
 
-mkdirp(HTML_OUT_DIR);
+shell.mkdir('-p', HTML_OUT_DIR);
 
 if (!fs.existsSync(PROGRAM_ROOT)) {
   throw new Error(
@@ -100,7 +100,7 @@ for (let i = 0; i < docHeadings.length; i++) {
   for (let j = 0; j < heading.subheadings.length; j++) {
     const subheading = heading.subheadings[j];
 
-    subheading.methods.sort((a, b) => {
+    subheading.symbols.sort((a, b) => {
       if (a.path < b.path) {
         return -1;
       } else if (a.path > b.path) {
@@ -129,7 +129,6 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile) {
   if (ts.isMethodDeclaration(node)) {
     if (node.decorators != null) {
       let hasOpdoc = false;
-      let headingNames: string[];
       let docInfo: DocInfo;
       node.decorators.map(decorator => {
         const decoratorStr = decorator.getText();
@@ -168,15 +167,38 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile) {
           }
         }
         if (subheading == null) {
-          subheading = {name: docInfo.subheading, methods: []};
+          subheading = {name: docInfo.subheading, symbols: []};
           heading.subheadings.push(subheading);
         }
-        if (subheading.methods == null) {
-          subheading.methods = [];
+        if (subheading.symbols == null) {
+          subheading.symbols = [];
         }
 
-        subheading.methods.push(docMethod);
+        subheading.symbols.push(docMethod);
       }
+    }
+  } else if (ts.isClassDeclaration(node)) {
+    if (node.decorators != null) {
+      // console.log('CLASS ', node.getText());
+      const symbol = checker.getSymbolAtLocation(node.name);
+
+      // console.log('parent', node.parent.getText());
+
+      // console.log(ts.SyntaxKind);
+
+      const details = {
+        name: symbol.getName(),
+        documentation:
+            ts.displayPartsToString(symbol.getDocumentationComment()),
+        type: checker.typeToString(
+            checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!))
+      };
+
+      // Get the construct signatures
+      const constructorType =
+          checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
+
+      console.log(details);
     }
   }
 
@@ -243,4 +265,14 @@ function computeStatistics(docs: Docs):
     }
   }
   return {headingsCount: docs.headings.length, subheadingsCount, methodCount};
+}
+
+function kind(node: ts.Node): string {
+  const keys = Object.keys(ts.SyntaxKind);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    if (node.kind === ts.SyntaxKind[key]) {
+      return key;
+    }
+  }
 }

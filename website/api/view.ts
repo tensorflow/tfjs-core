@@ -23,7 +23,20 @@ export interface DocHeading {
 
 export interface DocSubheading {
   name: string;
-  methods?: DocMethod[];
+  symbols?: DocSymbol[];
+  // methods?: DocMethod[];
+}
+
+export type DocSymbol = DocMethod|DocClass;
+
+export interface DocClass {
+  path: string;
+  documentation: string;
+  fileName: string;
+  githubUrl: string;
+  methods: DocMethod[];
+
+  isClass: true;
 }
 
 export interface DocMethod {
@@ -33,6 +46,8 @@ export interface DocMethod {
   fileName: string;
   githubUrl: string;
   parameters: DocMethodParam[];
+
+  isMethod: true;
 }
 
 export interface DocMethodParam {
