@@ -21,6 +21,7 @@ import {MathTests} from '../test_util';
 import * as util from '../util';
 
 import {Scalar, Tensor1D, Tensor2D} from './tensor';
+import * as unary_utils from './unary_utils';
 
 // dl.relu
 {
@@ -1463,8 +1464,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
 
 // dl.selu
 {
-  const scaleAlpha = 1.7580993408473768599402175208123;
-  const scale = 1.0507009873554804934193349852946;
+  const scaleAlpha = unary_utils.SELU_SCALEALPHA;
+  const scale = unary_utils.SELU_SCALE;
 
   const tests: MathTests = it => {
     it('calculate selu', () => {
