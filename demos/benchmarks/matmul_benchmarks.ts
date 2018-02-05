@@ -50,8 +50,8 @@ export class MatmulGPUBenchmark implements BenchmarkTest {
     const math = new dl.NDArrayMath('webgl', safeMode);
     dl.ENV.setMath(math);
 
-    const a: dl.Tensor2D = dl.randNormal([size, size]);
-    const b: dl.Tensor2D = dl.randNormal([size, size]);
+    const a: dl.Tensor2D = dl.randomNormal([size, size]);
+    const b: dl.Tensor2D = dl.randomNormal([size, size]);
 
     const benchmark = () => math.matMul(a, b);
 

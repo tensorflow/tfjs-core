@@ -186,7 +186,7 @@ export class Tensor<R extends Rank = Rank> {
     return ops.rand(shape, randFunction, dtype);
   }
 
-  /** @deprecated Please use dl.randNormal() */
+  /** @deprecated Please use dl.randomNormal() */
   static randNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
       dtype?: keyof RandNormalDataTypes, seed?: number): Tensor<R> {

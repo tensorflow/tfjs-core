@@ -19,7 +19,8 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor, Scalar} from './tensor';
+
+import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
 // dl.zeros
 {
@@ -669,7 +670,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor, Scalar} from './tensor';
   ]);
 }
 
-// dl.randNormal
+// dl.randomNormal
 {
   const tests: MathTests = it => {
     const SEED = 2002;
