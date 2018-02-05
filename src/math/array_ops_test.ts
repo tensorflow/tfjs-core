@@ -20,7 +20,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 
-import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
 // dl.zeros
 {
