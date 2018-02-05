@@ -20,9 +20,9 @@ import * as util from '../util';
 
 import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
-// tslint:disable-next-line:max-line-length
-import {customGradient, gradients, valueAndGradients, variableGradients, vjp} from './backends/gradients';
+import * as gradients from './backends/gradients';
 import {ScopeResult} from './backends/tape_util';
+import * as tracking from './backends/tracking';
 import {keep, tidy} from './backends/tracking';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
@@ -198,14 +198,14 @@ export class NDArrayMath {
   resizeBilinear3D = image_ops.Ops.resizeBilinear;
 
   // Tracking methods.
-  keep = keep;
+  keep = tracking.keep;
 
   // Gradient methods.
-  customGradient = customGradient;
-  gradients = gradients;
-  valueAndGradients = valueAndGradients;
-  variableGradients = variableGradients;
-  vjp = vjp;
+  customGradient = gradients.customGradient;
+  gradients = gradients.gradients;
+  valueAndGradients = gradients.valueAndGradients;
+  variableGradients = gradients.variableGradients;
+  vjp = gradients.vjp;
 
   register: typeof ENV.engine.register;
   engine: typeof ENV.engine;
