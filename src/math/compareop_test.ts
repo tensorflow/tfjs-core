@@ -156,7 +156,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [4], [5]], [[8], [9], [12]]], 'int32');
       let b =
-          Tensor3D.new([2, 3, 1], [[[2], [3], [6]], [[7], [10], [12]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[2], [3], [6]], [[7], [10], [12]]], 'int32');
       test_util.expectArraysClose(math.equal(a, b), [0, 0, 0, 0, 0, 1]);
 
       a = Tensor3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'int32');
@@ -203,9 +204,11 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('NaNs in Tensor3D - int32', math => {
       const a =
-          Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
       const b =
-          Tensor3D.new([2, 3, 1], [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
       test_util.expectArraysClose(
           math.equal(a, b), [0, boolNaN, 1, 0, 1, boolNaN]);
     });
@@ -405,7 +408,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [4], [5]], [[8], [9], [12]]], 'int32');
       let b =
-          Tensor3D.new([2, 3, 1], [[[2], [3], [6]], [[7], [10], [12]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[2], [3], [6]], [[7], [10], [12]]], 'int32');
       test_util.expectArraysClose(math.equalStrict(a, b), [0, 0, 0, 0, 0, 1]);
 
       a = Tensor3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'int32');
@@ -458,9 +462,11 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('NaNs in Tensor3D - int32', math => {
       const a =
-          Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
       const b =
-          Tensor3D.new([2, 3, 1], [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
       test_util.expectArraysClose(
           math.equalStrict(a, b), [0, boolNaN, 1, 0, 1, boolNaN]);
     });
@@ -688,7 +694,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [4], [5]], [[8], [9], [12]]], 'int32');
       let b =
-          Tensor3D.new([2, 3, 1], [[[2], [3], [6]], [[7], [10], [12]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[2], [3], [6]], [[7], [10], [12]]], 'int32');
       test_util.expectArraysClose(math.notEqual(a, b), [1, 1, 1, 1, 1, 0]);
 
       a = Tensor3D.new([2, 3, 1], [[[0], [0], [0]], [[1], [1], [1]]], 'int32');
@@ -735,9 +742,11 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('NaNs in Tensor3D - int32', math => {
       const a =
-          Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
       const b =
-          Tensor3D.new([2, 3, 1], [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
       test_util.expectArraysClose(
           math.notEqual(a, b), [1, boolNaN, 0, 1, 0, boolNaN]);
     });
@@ -951,7 +960,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [4], [5]], [[8], [9], [12]]], 'int32');
       let b =
-          Tensor3D.new([2, 3, 1], [[[2], [3], [6]], [[7], [10], [12]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[2], [3], [6]], [[7], [10], [12]]], 'int32');
       test_util.expectArraysClose(
           math.notEqualStrict(a, b), [1, 1, 1, 1, 1, 0]);
 
@@ -1008,9 +1018,11 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('NaNs in Tensor3D - int32', math => {
       const a =
-          Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
       const b =
-          Tensor3D.new([2, 3, 1], [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
       test_util.expectArraysClose(
           math.notEqualStrict(a, b), [1, boolNaN, 0, 1, 0, boolNaN]);
     });
@@ -1250,7 +1262,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [4], [5]], [[8], [9], [12]]], 'int32');
       let b =
-          Tensor3D.new([2, 3, 1], [[[2], [3], [6]], [[7], [10], [11]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[2], [3], [6]], [[7], [10], [11]]], 'int32');
       let res = math.less(a, b);
 
       expect(res.dtype).toBe('bool');
@@ -1313,9 +1326,11 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('NaNs in Tensor3D - int32', math => {
       const a =
-          Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
       const b =
-          Tensor3D.new([2, 3, 1], [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
       const res = math.less(a, b);
 
       expect(res.dtype).toBe('bool');
@@ -1442,7 +1457,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
        math => {
          const a = Tensor2D.new([2, 1], [[1.1], [7.1]], 'float32');
          const b =
-             Tensor2D.new([2, 3], [[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], 'float32');
+             Tensor2D.new([2, 3],
+              [[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], 'float32');
 
          expect(() => math.lessStrict(a, b)).toThrowError();
          expect(() => math.lessStrict(b, a)).toThrowError();
@@ -1644,7 +1660,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [4], [5]], [[8], [9], [12]]], 'int32');
       let b =
-          Tensor3D.new([2, 3, 1], [[[2], [3], [6]], [[7], [10], [11]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[2], [3], [6]], [[7], [10], [11]]], 'int32');
       let res = math.lessEqual(a, b);
 
       expect(res.dtype).toBe('bool');
@@ -1707,9 +1724,11 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('NaNs in Tensor3D - int32', math => {
       const a =
-          Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
       const b =
-          Tensor3D.new([2, 3, 1], [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
       const res = math.lessEqual(a, b);
 
       expect(res.dtype).toBe('bool');
@@ -1835,7 +1854,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
        math => {
          const a = Tensor2D.new([2, 1], [[1.1], [7.1]], 'float32');
          const b =
-             Tensor2D.new([2, 3], [[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], 'float32');
+             Tensor2D.new([2, 3],
+              [[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], 'float32');
 
          expect(() => math.lessEqualStrict(a, b)).toThrowError();
          expect(() => math.lessEqualStrict(b, a)).toThrowError();
@@ -2037,7 +2057,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [4], [5]], [[8], [9], [11]]], 'int32');
       let b =
-          Tensor3D.new([2, 3, 1], [[[2], [3], [6]], [[7], [10], [11]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[2], [3], [6]], [[7], [10], [11]]], 'int32');
       let res = math.greater(a, b);
 
       expect(res.dtype).toBe('bool');
@@ -2100,9 +2121,11 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('NaNs in Tensor3D - int32', math => {
       const a =
-          Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
       const b =
-          Tensor3D.new([2, 3, 1], [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
       const res = math.greater(a, b);
 
       expect(res.dtype).toBe('bool');
@@ -2228,7 +2251,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
        math => {
          const a = Tensor2D.new([2, 1], [[1.1], [7.1]], 'float32');
          const b =
-             Tensor2D.new([2, 3], [[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], 'float32');
+             Tensor2D.new([2, 3],
+              [[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], 'float32');
 
          expect(() => math.greaterStrict(a, b)).toThrowError();
          expect(() => math.greaterStrict(b, a)).toThrowError();
@@ -2430,7 +2454,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       let a =
           Tensor3D.new([2, 3, 1], [[[1], [4], [5]], [[8], [9], [12]]], 'int32');
       let b =
-          Tensor3D.new([2, 3, 1], [[[2], [3], [6]], [[7], [10], [11]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[2], [3], [6]], [[7], [10], [11]]], 'int32');
       let res = math.greaterEqual(a, b);
 
       expect(res.dtype).toBe('bool');
@@ -2493,9 +2518,11 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('NaNs in Tensor3D - int32', math => {
       const a =
-          Tensor3D.new([2, 3, 1], [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[1], [NaN], [1]], [[0], [0], [0]]], 'int32');
       const b =
-          Tensor3D.new([2, 3, 1], [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
+          Tensor3D.new([2, 3, 1],
+            [[[0], [0], [1]], [[1], [0], [NaN]]], 'int32');
       const res = math.greaterEqual(a, b);
 
       expect(res.dtype).toBe('bool');
@@ -2621,7 +2648,8 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
        math => {
          const a = Tensor2D.new([2, 1], [[1.1], [7.1]], 'float32');
          const b =
-             Tensor2D.new([2, 3], [[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], 'float32');
+             Tensor2D.new([2, 3],
+              [[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], 'float32');
 
          expect(() => math.greaterEqualStrict(a, b)).toThrowError();
          expect(() => math.greaterEqualStrict(b, a)).toThrowError();
