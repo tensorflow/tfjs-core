@@ -730,7 +730,7 @@ export class Tensor<R extends Rank = Rank> {
       pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
-    return ops.depthwiseConv2D(
+    return ops.depthwiseConv2d(
         this, filter, strides, pad, rates, dimRoundingMode);
   }
 

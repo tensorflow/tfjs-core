@@ -31,7 +31,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       const variance = dl.tensor1d([2, 3]);
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization4D(
+      const result = dl.batchNormalization4d(
           x, mean, variance, varianceEpsilon, undefined, undefined);
 
       test_util.expectArraysClose(
@@ -56,7 +56,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       const scale = dl.tensor1d([4, 5]);
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization4D(
+      const result = dl.batchNormalization4d(
           x, mean, variance, varianceEpsilon, scale, undefined);
 
       test_util.expectArraysClose(
@@ -82,7 +82,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization4D(
+      const result = dl.batchNormalization4d(
           x, mean, variance, varianceEpsilon, undefined, offset);
 
       test_util.expectArraysClose(
@@ -113,7 +113,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization4D(
+      const result = dl.batchNormalization4d(
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(
@@ -155,7 +155,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       const variance = dl.tensor1d([2, 3]);
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization3D(
+      const result = dl.batchNormalization3d(
           x, mean, variance, varianceEpsilon, undefined, undefined);
 
       test_util.expectArraysClose(
@@ -180,7 +180,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       const scale = dl.tensor1d([4, 5]);
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization3D(
+      const result = dl.batchNormalization3d(
           x, mean, variance, varianceEpsilon, scale, undefined);
 
       test_util.expectArraysClose(
@@ -206,7 +206,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization3D(
+      const result = dl.batchNormalization3d(
           x, mean, variance, varianceEpsilon, undefined, offset);
 
       test_util.expectArraysClose(
@@ -237,7 +237,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization3D(
+      const result = dl.batchNormalization3d(
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(
@@ -272,7 +272,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       const scale = dl.tensor1d([-0.5607271, 0.9878457, 0.25181573]);
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization3D(
+      const result = dl.batchNormalization3d(
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(result, [
@@ -303,7 +303,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       const variance = dl.tensor1d([2, 3]);
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization2D(
+      const result = dl.batchNormalization2d(
           x, mean, variance, varianceEpsilon, undefined, undefined);
 
       test_util.expectArraysClose(
@@ -327,7 +327,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       const scale = dl.tensor1d([4, 5]);
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization2D(
+      const result = dl.batchNormalization2d(
           x, mean, variance, varianceEpsilon, scale, undefined);
 
       test_util.expectArraysClose(
@@ -353,7 +353,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization2D(
+      const result = dl.batchNormalization2d(
           x, mean, variance, varianceEpsilon, undefined, offset);
 
       test_util.expectArraysClose(
@@ -384,7 +384,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization2D(
+      const result = dl.batchNormalization2d(
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(
@@ -417,7 +417,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       const scale = dl.tensor1d([0.62186907, 0.85673736, 0.19201061]);
       const varianceEpsilon = .001;
 
-      const result = dl.batchNormalization2D(
+      const result = dl.batchNormalization2d(
           x, mean, variance, varianceEpsilon, scale, offset);
 
       test_util.expectArraysClose(result, [

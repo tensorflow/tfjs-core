@@ -24,15 +24,13 @@ import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} fr
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, Rank, RegularArray, ShapeMap, TypedArray} from './types';
 
-export type AllowedValues =
-    TypedArray|number|boolean|RegularArray<number>|RegularArray<boolean>;
-
 export class Ops {
   /** Creates a tensor with the provided values, shape and dtype. */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor<R extends Rank>(
-      values: AllowedValues, shape?: ShapeMap[R], dtype: DataType = 'float32'):
-      Tensor<R> {
+      values: TypedArray|number|boolean|RegularArray<number>|
+      RegularArray<boolean>,
+      shape?: ShapeMap[R], dtype: DataType = 'float32'): Tensor<R> {
     const inferredShape = util.inferShape(values);
     if (shape != null && inferredShape.length !== 1) {
       util.assertShapesMatch(
@@ -487,7 +485,7 @@ export class Ops {
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static pad1D(x: Tensor1D, paddings: [number, number], constantValue = 0):
+  static pad1d(x: Tensor1D, paddings: [number, number], constantValue = 0):
       Tensor1D {
     util.assert(
         paddings.length === 2,
@@ -512,7 +510,7 @@ export class Ops {
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static pad2D(
+  static pad2d(
       x: Tensor2D, paddings: [[number, number], [number, number]],
       constantValue = 0): Tensor2D {
     util.assert(
