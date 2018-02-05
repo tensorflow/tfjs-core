@@ -24,6 +24,12 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, TensorBuffer} from './tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 
 export class Ops {
+  static tensor<R extends Rank>(
+      values: number, shape?: ShapeMap[R],
+      dtype: DataType = 'float32'): Tensor<R> {
+    return null;
+  }
+
   /** Creates a tensor of ones with the specified shape. */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
