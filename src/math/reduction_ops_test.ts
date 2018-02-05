@@ -19,7 +19,7 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as reduce_util from './reduce_util';
-import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D, Tensor4D} from './tensor';
 
 // math.min
 {
@@ -35,17 +35,17 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       test_util.expectNumbersClose(math.min(a).get(), -7);
     });
 
     it('2D axis=[0,1]', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       test_util.expectNumbersClose(math.min(a, [0, 1]).get(), -7);
     });
 
     it('2D, axis=0', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       const r = math.min(a, 0);
 
       expect(r.shape).toEqual([3]);
@@ -53,7 +53,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=0, keepDims', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       const r = math.min(a, 0, true /* keepDims */);
 
       expect(r.shape).toEqual([1, 3]);
@@ -61,19 +61,19 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=1 provided as a number', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
       const r = math.min(a, 1);
       test_util.expectArraysClose(r, [2, -7]);
     });
 
     it('2D, axis = -1 provided as a number', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
       const r = math.min(a, -1);
       test_util.expectArraysClose(r, [2, -7]);
     });
 
     it('2D, axis=[1]', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
       const r = math.min(a, [1]);
       test_util.expectArraysClose(r, [2, -7]);
     });
@@ -107,17 +107,17 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       test_util.expectNumbersClose(math.max(a).get(), 100);
     });
 
     it('2D axis=[0,1]', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       test_util.expectNumbersClose(math.max(a, [0, 1]).get(), 100);
     });
 
     it('2D, axis=0', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       const r = math.max(a, [0]);
 
       expect(r.shape).toEqual([3]);
@@ -125,7 +125,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=0, keepDims', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       const r = math.max(a, [0], true /* keepDims */);
 
       expect(r.shape).toEqual([1, 3]);
@@ -133,19 +133,19 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=1 provided as a number', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
       const r = math.max(a, 1);
       test_util.expectArraysClose(r, [5, 100]);
     });
 
     it('2D, axis = -1 provided as a number', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
       const r = math.max(a, -1);
       test_util.expectArraysClose(r, [5, 100]);
     });
 
     it('2D, axis=[1]', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
       const r = math.max(a, [1]);
       test_util.expectArraysClose(r, [5, 100]);
     });
@@ -196,12 +196,12 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, no axis specified', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       expect(math.argMax(a).get()).toBe(3);
     });
 
     it('2D, axis=0', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       const r = math.argMax(a, 0);
 
       expect(r.shape).toEqual([3]);
@@ -210,14 +210,14 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=1', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
       const r = math.argMax(a, 1);
       expect(r.dtype).toBe('int32');
       test_util.expectArraysEqual(r, [2, 0]);
     });
 
     it('2D, axis = -1', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, 2]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
       const r = math.argMax(a, -1);
       expect(r.dtype).toBe('int32');
       test_util.expectArraysEqual(r, [2, 0]);
@@ -266,12 +266,12 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, no axis specified', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       expect(math.argMin(a).get()).toBe(4);
     });
 
     it('2D, axis=0', math => {
-      const a = Tensor2D.new([2, 3], [3, -1, 0, 100, -7, 2]);
+      const a = dl.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
       const r = math.argMin(a, 0);
 
       expect(r.shape).toEqual([3]);
@@ -280,13 +280,13 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=1', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, -8]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, -8], [2, 3]);
       const r = math.argMin(a, 1);
       test_util.expectArraysEqual(r, [1, 2]);
     });
 
     it('2D, axis = -1', math => {
-      const a = Tensor2D.new([2, 3], [3, 2, 5, 100, -7, -8]);
+      const a = dl.tensor2d([3, 2, 5, 100, -7, -8], [2, 3]);
       const r = math.argMin(a, -1);
       test_util.expectArraysEqual(r, [1, 2]);
     });
@@ -363,7 +363,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axes=0 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const r = math.logSumExp(a, [0]);
 
       expect(r.shape).toEqual([2]);
@@ -375,7 +375,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axes=0 in 2D array, keepDims', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const r = math.logSumExp(a, [0], true /* keepDims */);
 
       expect(r.shape).toEqual([1, 2]);
@@ -387,7 +387,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axes=1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.logSumExp(a, [1]);
 
       expect(res.shape).toEqual([3]);
@@ -400,7 +400,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axes = -1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.logSumExp(a, -1);
 
       expect(res.shape).toEqual([3]);
@@ -413,7 +413,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axes=1 provided as a single digit', math => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [2, 3]);
       const res = math.logSumExp(a, 1);
 
       expect(res.shape).toEqual([2]);
@@ -425,7 +425,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axes=0,1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.logSumExp(a, [0, 1]);
 
       expect(res.shape).toEqual([]);
@@ -448,13 +448,13 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 {
   const tests: MathTests = it => {
     it('basic', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const result = math.sum(a);
       test_util.expectNumbersClose(result.get(), 7);
     });
 
     it('propagates NaNs', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, NaN, 0, 1], [3, 2]);
       expect(math.sum(a).get()).toEqual(NaN);
     });
 
@@ -471,7 +471,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('sums all values in 2D array with keep dim', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.sum(a, null, true /* keepDims */);
 
       expect(res.shape).toEqual([1, 1]);
@@ -479,7 +479,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('sums across axis=0 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.sum(a, [0]);
 
       expect(res.shape).toEqual([2]);
@@ -487,7 +487,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('sums across axis=0 in 2D array, keepDims', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.sum(a, [0], true /* keepDims */);
 
       expect(res.shape).toEqual([1, 2]);
@@ -495,7 +495,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('sums across axis=1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.sum(a, [1]);
 
       expect(res.shape).toEqual([3]);
@@ -503,7 +503,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=1 provided as number', math => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [2, 3]);
       const res = math.sum(a, 1);
 
       expect(res.shape).toEqual([2]);
@@ -511,7 +511,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis = -1 provided as number', math => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [2, 3]);
       const res = math.sum(a, -1);
 
       expect(res.shape).toEqual([2]);
@@ -519,7 +519,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('sums across axis=0,1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.sum(a, [0, 1]);
 
       expect(res.shape).toEqual([]);
@@ -527,7 +527,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=[-1,-2] in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.sum(a, [-1, -2]);
 
       expect(res.shape).toEqual([]);
@@ -535,7 +535,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('gradients: sum(2d)', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const dy = dl.scalar(10);
 
       const gradients = math.vjp(() => math.sum(a), a, dy);
@@ -546,7 +546,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('gradients: sum(2d, axis=0)', math => {
-      const a = Tensor2D.new([3, 2], [[1, 2], [3, 0], [0, 1]]);
+      const a = dl.tensor2d([[1, 2], [3, 0], [0, 1]], [3, 2]);
       const dy = dl.tensor1d([10, 20]);
       const axis = 0;
 
@@ -558,7 +558,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('gradients: sum(2d, axis=1)', math => {
-      const a = Tensor2D.new([3, 2], [[1, 2], [3, 0], [0, 1]]);
+      const a = dl.tensor2d([[1, 2], [3, 0], [0, 1]], [3, 2]);
       const dy = dl.tensor1d([10, 20, 30]);
       const axis = 1;
 
@@ -582,7 +582,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 {
   const tests: MathTests = it => {
     it('basic', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const r = math.mean(a);
 
       expect(r.dtype).toBe('float32');
@@ -590,7 +590,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('propagates NaNs', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, NaN, 0, 1], [3, 2]);
       const r = math.mean(a);
 
       expect(r.dtype).toBe('float32');
@@ -614,7 +614,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D array with keep dim', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.mean(a, null, true /* keepDims */);
 
       expect(res.shape).toEqual([1, 1]);
@@ -623,7 +623,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=0 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.mean(a, [0]);
 
       expect(res.shape).toEqual([2]);
@@ -632,7 +632,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=0 in 2D array, keepDims', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.mean(a, [0], true /* keepDims */);
 
       expect(res.shape).toEqual([1, 2]);
@@ -641,7 +641,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.mean(a, [1]);
 
       expect(res.dtype).toBe('float32');
@@ -650,7 +650,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis = -1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.mean(a, [-1]);
 
       expect(res.dtype).toBe('float32');
@@ -659,7 +659,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=1 provided as number', math => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [2, 3]);
       const res = math.mean(a, 1);
 
       expect(res.shape).toEqual([2]);
@@ -668,7 +668,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=0,1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const res = math.mean(a, [0, 1]);
 
       expect(res.shape).toEqual([]);
@@ -677,7 +677,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('gradients', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const dy = dl.scalar(1.5);
 
       const vjp = math.vjp(() => math.mean(a), a, dy);
@@ -690,7 +690,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('gradients throws for defined axis', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const dy = dl.scalar(1.5);
 
       expect(() => math.vjp(() => math.mean(a, 1), a, dy)).toThrowError();
@@ -709,7 +709,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 {
   const tests: MathTests = it => {
     it('basic', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const {mean, variance} = math.moments(a);
 
       expect(mean.dtype).toBe('float32');
@@ -719,7 +719,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('propagates NaNs', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, NaN, 0, 1], [3, 2]);
       const {mean, variance} = math.moments(a);
 
       expect(mean.dtype).toBe('float32');
@@ -749,7 +749,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D array with keep dim', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const {mean, variance} = math.moments(a, null, true /* keepDims */);
 
       expect(mean.shape).toEqual([1, 1]);
@@ -761,7 +761,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=0 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const {mean, variance} = math.moments(a, [0]);
 
       expect(mean.shape).toEqual([2]);
@@ -773,7 +773,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const {mean, variance} = math.moments(a, [1]);
 
       expect(mean.dtype).toBe('float32');
@@ -785,7 +785,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=1 provided as number', math => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [2, 3]);
       const {mean, variance} = math.moments(a, 1);
 
       expect(mean.shape).toEqual([2]);
@@ -797,7 +797,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D, axis=-1 provided as number', math => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [2, 3]);
       const {mean, variance} = math.moments(a, -1);
 
       expect(mean.shape).toEqual([2]);
@@ -809,7 +809,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=0,1 in 2D array', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const {mean, variance} = math.moments(a, [0, 1]);
 
       expect(mean.shape).toEqual([]);
@@ -886,7 +886,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('matrix inf norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, -3, 1, 0, 1]);
+      const a = dl.tensor2d([1, 2, -3, 1, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity, [0, 1]);
 
       expect(norm.dtype).toBe('float32');
@@ -894,7 +894,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('matrix -inf norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, -3, 1, 0, 1]);
+      const a = dl.tensor2d([1, 2, -3, 1, 0, 1], [3, 2]);
       const norm = math.norm(a, -Infinity, [0, 1]);
 
       expect(norm.dtype).toBe('float32');
@@ -902,7 +902,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('matrix 1 norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, -3, 1, 1, 1]);
+      const a = dl.tensor2d([1, 2, -3, 1, 1, 1], [3, 2]);
       const norm = math.norm(a, 1, [0, 1]);
 
       expect(norm.dtype).toBe('float32');
@@ -910,7 +910,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('matrix euclidean norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, -3, 1, 1, 1]);
+      const a = dl.tensor2d([1, 2, -3, 1, 1, 1], [3, 2]);
       const norm = math.norm(a, 'euclidean', [0, 1]);
 
       expect(norm.dtype).toBe('float32');
@@ -918,7 +918,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('matrix fro norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, -3, 1, 1, 1]);
+      const a = dl.tensor2d([1, 2, -3, 1, 1, 1], [3, 2]);
       const norm = math.norm(a, 'fro', [0, 1]);
 
       expect(norm.dtype).toBe('float32');
@@ -926,12 +926,12 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('matrix other norm to throw error', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, -3, 1, 1, 1]);
+      const a = dl.tensor2d([1, 2, -3, 1, 1, 1], [3, 2]);
       expect(() => math.norm(a, 2, [0, 1])).toThrowError();
     });
 
     it('propagates NaNs for norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, NaN, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, NaN, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity, [0, 1]);
 
       expect(norm.dtype).toBe('float32');
@@ -939,7 +939,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=null in 2D array norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity);
 
       expect(norm.shape).toEqual([]);
@@ -948,7 +948,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D array norm with keep dim', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity, null, true /* keepDims */);
 
       expect(norm.shape).toEqual([1, 1]);
@@ -957,7 +957,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=0 in 2D array norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity, [0]);
 
       expect(norm.shape).toEqual([2]);
@@ -966,7 +966,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=1 in 2D array norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity, [1]);
 
       expect(norm.dtype).toBe('float32');
@@ -975,7 +975,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=1 keepDims in 2D array norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity, [1], true);
 
       expect(norm.dtype).toBe('float32');
@@ -984,7 +984,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('2D norm with axis=1 provided as number', math => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [2, 3]);
       const norm = math.norm(a, Infinity, 1);
 
       expect(norm.shape).toEqual([2]);
@@ -993,7 +993,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=0,1 in 2D array norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity, [0, 1]);
 
       expect(norm.shape).toEqual([]);
@@ -1002,7 +1002,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('axis=0,1 keepDims in 2D array norm', math => {
-      const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
+      const a = dl.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
       const norm = math.norm(a, Infinity, [0, 1], true);
 
       expect(norm.shape).toEqual([1, 1]);

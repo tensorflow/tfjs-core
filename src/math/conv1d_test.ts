@@ -70,7 +70,7 @@ import {Rank} from './types';
       const stride = 1;
 
       // tslint:disable-next-line:no-any
-      const x: any = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const x: any = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       const w = Tensor3D.new([fSize, inputDepth, outputDepth], [3, 1]);
       const bias = dl.tensor1d([-1]);
 
@@ -102,7 +102,7 @@ import {Rank} from './types';
       const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
       const w = Tensor3D.new([fSize, inputDepth, outputDepth], [3, 1]);
       // tslint:disable-next-line:no-any
-      const bias: any = Tensor2D.new([2, 2], [2, 2, 2, 2]);
+      const bias: any = dl.tensor2d([2, 2, 2, 2], [2, 2]);
 
       expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();
     });

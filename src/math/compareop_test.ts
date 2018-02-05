@@ -135,15 +135,15 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       test_util.expectArraysClose(dl.equal(a, b), [0, boolNaN, 1, boolNaN]);
     });
     it('2D and 2D broadcast each with 1 dim', () => {
-      const a = Tensor2D.new([1, 3], [1, 2, 5]);
-      const b = Tensor2D.new([2, 1], [5, 1]);
+      const a = dl.tensor2d([1, 2, 5], [1, 3]);
+      const b = dl.tensor2d([5, 1], [2, 1]);
       const res = dl.equal(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysEqual(res, [0, 0, 1, 1, 0, 0]);
     });
     it('2D and scalar broadcast', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 2, 5, 6]);
+      const a = dl.tensor2d([1, 2, 3, 2, 5, 6], [2, 3]);
       const b = dl.scalar(2);
       const res = dl.equal(a, b);
       expect(res.dtype).toBe('bool');
@@ -673,7 +673,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
           dl.notEqual(a, b), [1, boolNaN, 0, boolNaN]);
     });
     it('2D and scalar broadcast', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 2, 5, 6]);
+      const a = dl.tensor2d([1, 2, 3, 2, 5, 6], [2, 3]);
       const b = dl.scalar(2);
       const res = dl.notEqual(a, b);
       expect(res.dtype).toBe('bool');
@@ -681,8 +681,8 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
       test_util.expectArraysEqual(res, [1, 0, 1, 0, 1, 1]);
     });
     it('2D and 2D broadcast each with 1 dim', () => {
-      const a = Tensor2D.new([1, 3], [1, 2, 5]);
-      const b = Tensor2D.new([2, 1], [5, 1]);
+      const a = dl.tensor2d([1, 2, 5], [1, 3]);
+      const b = dl.tensor2d([5, 1], [2, 1]);
       const res = dl.notEqual(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3]);

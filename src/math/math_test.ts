@@ -20,7 +20,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {Gradients} from './backends/gradients';
 import {MatrixOrientation} from './backends/types/matmul';
-import {Scalar, Tensor, Tensor2D} from './tensor';
+import {Scalar, Tensor} from './tensor';
 
 const gradientsScope = Gradients.gradientsScope;
 
@@ -247,9 +247,9 @@ const gradientsScope = Gradients.gradientsScope;
 {
   const tests: MathTests = it => {
     it('matmul + relu', math => {
-      const a = Tensor2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Tensor2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
-      const dy = Tensor2D.new([2, 2], [1, 10, 20, 30]);
+      const a = dl.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
+      const b = dl.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
+      const dy = dl.tensor2d([1, 10, 20, 30], [2, 2]);
 
       const gradients = math.vjp(() => {
         // m = dot(a, b)
@@ -328,8 +328,8 @@ const gradientsScope = Gradients.gradientsScope;
 {
   const tests: MathTests = it => {
     it('matmul + relu', math => {
-      const a = Tensor2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Tensor2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+      const a = dl.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
+      const b = dl.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
 
       const gradients = math.gradients(() => {
         // m = dot(a, b)
@@ -375,7 +375,7 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('works with reshape', math => {
-      const a = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       const exponent = dl.tensor1d([2, 2, 2, 2], 'int32');
 
       const gradients = math.gradients(() => {
@@ -389,7 +389,7 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('reshape outside math.gradients() throws error', math => {
-      const a = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       const b = a.flatten();
       const exponent = dl.tensor1d([2, 2, 2, 2], 'int32');
 
@@ -444,8 +444,8 @@ const gradientsScope = Gradients.gradientsScope;
 {
   const tests: MathTests = it => {
     it('matmul + relu', math => {
-      const a = Tensor2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Tensor2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+      const a = dl.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
+      const b = dl.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
 
       const {value, gradients} = math.valueAndGradients(() => {
         // m = dot(a, b)
@@ -479,8 +479,8 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('matmul + relu + inner scope', math => {
-      const a = Tensor2D.new([2, 3], [-1, 2, -3, 10, -20, 30]);
-      const b = Tensor2D.new([3, 2], [2, -3, 4, -1, 2, -3]);
+      const a = dl.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
+      const b = dl.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
 
       const {value, gradients} = math.valueAndGradients(() => {
         // m = dot(a, b)

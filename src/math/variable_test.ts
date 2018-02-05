@@ -127,7 +127,7 @@ const tests: MathTests = it => {
     const v = variable(dl.tensor1d([1, 2, 3]));
     expect(() => v.assign(dl.tensor1d([1, 2]))).toThrowError();
     // tslint:disable-next-line:no-any
-    expect(() => v.assign(Tensor2D.new([1, 2], [3, 4]) as any)).toThrowError();
+    expect(() => v.assign(dl.tensor2d([3, 4], [1, 2]) as any)).toThrowError();
   });
 
   it('dtype must match', math => {

@@ -19,7 +19,6 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import {Tensor2D} from './tensor';
 
 // // debug mode
 {
@@ -49,8 +48,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('A x B', math => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const b = Tensor2D.new([3, 2], [0, 1, -3, 2, 2, 1]);
+      const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const b = dl.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
       const c = math.matMul(a, b);
 

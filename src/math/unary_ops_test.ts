@@ -19,7 +19,6 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import {Tensor2D} from './tensor';
 
 // dl.relu
 {
@@ -93,8 +92,8 @@ import {Tensor2D} from './tensor';
 
     it('gradients: array', () => {
       // TODO(nsthorat): Use 0 instead of -.001 when we fix the precision
-      const a = Tensor2D.new([2, 2], [1, -1, -.001, .1]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([1, -1, -.001, .1], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.relu(a), a, dy);
 
@@ -151,8 +150,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [3, -1, -2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([3, -1, -2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.abs(a), a, dy);
 
@@ -181,7 +180,7 @@ import {Tensor2D} from './tensor';
     });
 
     it('with 2d tensor', () => {
-      const a = Tensor2D.new([2, 2], [1, -5, -3, 4]);
+      const a = dl.tensor2d([1, -5, -3, 4], [2, 2]);
       const result = dl.step(a);
       expect(result.shape).toEqual([2, 2]);
       test_util.expectArraysClose(result, [1, 0, 0, 1]);
@@ -242,8 +241,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [3, -1, -2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([3, -1, -2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.neg(a), a, dy);
 
@@ -353,8 +352,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [3, 1, 2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([3, 1, 2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.sqrt(a), a, dy);
 
@@ -388,7 +387,7 @@ import {Tensor2D} from './tensor';
     });
 
     it('2D array', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, Math.sqrt(2), Math.sqrt(3)]);
+      const a = dl.tensor2d([1, 2, Math.sqrt(2), Math.sqrt(3)], [2, 2]);
       const r = dl.square(a);
       expect(r.shape).toEqual([2, 2]);
       test_util.expectArraysClose(r, [1, 4, 2, 3]);
@@ -423,8 +422,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [-3, 1, 2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([-3, 1, 2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.square(a), a, dy);
 
@@ -483,8 +482,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [-3, 1, 2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([-3, 1, 2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.log(a), a, dy);
 
@@ -543,8 +542,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', math => {
-      const a = Tensor2D.new([2, 2], [-3, 1, 2.2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([-3, 1, 2.2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = math.vjp(() => math.ceil(a), a, dy);
 
@@ -603,8 +602,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', math => {
-      const a = Tensor2D.new([2, 2], [-3, 1, 2.2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([-3, 1, 2.2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = math.vjp(() => math.floor(a), a, dy);
 
@@ -668,8 +667,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [-3, 1, 2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([-3, 1, 2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.exp(a), a, dy);
 
@@ -739,8 +738,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [-3, 1, 2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([-3, 1, 2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.sin(a), a, dy);
 
@@ -811,8 +810,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [-3, 1, 2, 3]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([-3, 1, 2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.cos(a), a, dy);
 
@@ -891,8 +890,8 @@ import {Tensor2D} from './tensor';
     it('gradients: Tensor2D', () => {
       const aValues = [-3, 1, 2, 3];
       const dyValues = [1, 2, 3, 4];
-      const a = Tensor2D.new([2, 2], aValues);
-      const dy = Tensor2D.new([2, 2], dyValues);
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
 
       const gradients = dl.vjp(() => dl.tan(a), a, dy);
 
@@ -970,8 +969,8 @@ import {Tensor2D} from './tensor';
     it('gradients: Tensor2D', () => {
       const aValues = [-0.3, 0.1, 0.2, 0.3];
       const dyValues = [1, 2, 3, 4];
-      const a = Tensor2D.new([2, 2], aValues);
-      const dy = Tensor2D.new([2, 2], dyValues);
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
 
       const gradients = dl.vjp(() => dl.asin(a), a, dy);
 
@@ -1050,8 +1049,8 @@ import {Tensor2D} from './tensor';
     it('gradients: Tensor2D', () => {
       const aValues = [-0.3, 0.1, 0.2, 0.3];
       const dyValues = [1, 2, 3, 4];
-      const a = Tensor2D.new([2, 2], aValues);
-      const dy = Tensor2D.new([2, 2], dyValues);
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
 
       const gradients = dl.vjp(() => dl.acos(a), a, dy);
 
@@ -1128,8 +1127,8 @@ import {Tensor2D} from './tensor';
     it('gradients: Tensor2D', () => {
       const aValues = [-0.3, 0.1, 0.2, 0.3];
       const dyValues = [1, 2, 3, 4];
-      const a = Tensor2D.new([2, 2], aValues);
-      const dy = Tensor2D.new([2, 2], dyValues);
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
 
       const gradients = dl.vjp(() => dl.atan(a), a, dy);
 
@@ -1209,8 +1208,8 @@ import {Tensor2D} from './tensor';
     it('gradients: Tensor2D', () => {
       const aValues = [-3, 1, 2, 3];
       const dyValues = [1, 2, 3, 4];
-      const a = Tensor2D.new([2, 2], aValues);
-      const dy = Tensor2D.new([2, 2], dyValues);
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
 
       const gradients = dl.vjp(() => dl.sinh(a), a, dy);
 
@@ -1292,8 +1291,8 @@ import {Tensor2D} from './tensor';
     it('gradients: Tensor2D', () => {
       const aValues = [-3, 1, 2, 3];
       const dyValues = [1, 2, 3, 4];
-      const a = Tensor2D.new([2, 2], aValues);
-      const dy = Tensor2D.new([2, 2], dyValues);
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
 
       const gradients = dl.vjp(() => dl.cosh(a), a, dy);
 
@@ -1371,8 +1370,8 @@ import {Tensor2D} from './tensor';
     it('gradients: Tensor2D', () => {
       const aValues = [-3, 1, 2, 3];
       const dyValues = [1, 2, 3, 4];
-      const a = Tensor2D.new([2, 2], aValues);
-      const dy = Tensor2D.new([2, 2], dyValues);
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
 
       const gradients = dl.vjp(() => dl.tanh(a), a, dy);
 
@@ -1506,8 +1505,8 @@ import {Tensor2D} from './tensor';
     it('gradients: Tensor2D', () => {
       const aValues = [1, -1, 0, 0.5];
       const dyValues = [1, 2, 3, 4];
-      const a = Tensor2D.new([2, 2], aValues);
-      const dy = Tensor2D.new([2, 2], dyValues);
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
 
       const gradients = dl.vjp(() => dl.selu(a), a, dy);
 

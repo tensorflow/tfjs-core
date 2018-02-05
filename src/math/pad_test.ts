@@ -18,7 +18,6 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor2D} from './tensor';
 
 // math.pad1D
 {
@@ -112,20 +111,20 @@ import {Tensor2D} from './tensor';
         10, 4,  5,  6,  10, 10, 10, 10, 10, 10
       ]);
 
-      a = Tensor2D.new([2, 1], [[1], [1]]);
+      a = dl.tensor2d([[1], [1]], [2, 1]);
       b = math.pad2D(a, [[1, 1], [1, 1]], -2.1);
       test_util.expectArraysClose(
           b,
           [-2.1, -2.1, -2.1, -2.1, 1, -2.1, -2.1, 1, -2.1, -2.1, -2.1, -2.1]);
 
-      a = Tensor2D.new([2, 1], [[1], [1]]);
+      a = dl.tensor2d([[1], [1]], [2, 1]);
       b = math.pad2D(a, [[1, 1], [1, 1]], -2);
       test_util.expectArraysClose(
           b, [-2, -2, -2, -2, 1, -2, -2, 1, -2, -2, -2, -2]);
     });
 
     it('Should handle NaNs with 2D arrays', math => {
-      const a = Tensor2D.new([2, 2], [[1, NaN], [1, NaN]]);
+      const a = dl.tensor2d([[1, NaN], [1, NaN]], [2, 2]);
       const b = math.pad2D(a, [[1, 1], [1, 1]]);
       // 0, 0, 0,   0
       // 0, 1, NaN, 0

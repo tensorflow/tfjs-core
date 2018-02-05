@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 import * as dl from '../index';
-import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D, Tensor4D} from './tensor';
 
 // LogicalNot:
 {
@@ -488,23 +488,23 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
     it('Tensor2D', math => {
       const c = dl.tensor2d([[1, 0], [0, 1]], [2, 2], 'bool');
-      const a = Tensor2D.new([2, 2], [[10, 10], [10, 10]]);
-      const b = Tensor2D.new([2, 2], [[5, 5], [5, 5]]);
+      const a = dl.tensor2d([[10, 10], [10, 10]], [2, 2]);
+      const b = dl.tensor2d([[5, 5], [5, 5]], [2, 2]);
       test_util.expectArraysClose(math.where(c, a, b), [10, 5, 5, 10]);
     });
 
     it('Tensor2D different a/b shapes', math => {
       let c = dl.tensor2d([[1, 1], [0, 0]], [2, 2], 'bool');
-      let a = Tensor2D.new([2, 3], [[5, 5, 5], [5, 5, 5]]);
-      let b = Tensor2D.new([2, 2], [[4, 4], [4, 4]]);
+      let a = dl.tensor2d([[5, 5, 5], [5, 5, 5]], [2, 3]);
+      let b = dl.tensor2d([[4, 4], [4, 4]], [2, 2]);
       let f = () => {
         math.where(c, a, b);
       };
       expect(f).toThrowError();
 
       c = dl.tensor2d([[1, 1], [0, 0]], [2, 2], 'bool');
-      a = Tensor2D.new([2, 2], [[5, 5], [5, 5]]);
-      b = Tensor2D.new([2, 3], [[4, 4, 4], [4, 4, 4]]);
+      a = dl.tensor2d([[5, 5], [5, 5]], [2, 2]);
+      b = dl.tensor2d([[4, 4, 4], [4, 4, 4]], [2, 3]);
       f = () => {
         math.where(c, a, b);
       };
@@ -513,8 +513,8 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
     it('Tensor2D different condition/a shapes', math => {
       const c = dl.tensor2d([[1, 0], [0, 1]], [2, 2], 'bool');
-      const a = Tensor2D.new([2, 3], [[10, 10, 10], [10, 10, 10]]);
-      const b = Tensor2D.new([2, 3], [[5, 5, 5], [5, 5, 5]]);
+      const a = dl.tensor2d([[10, 10, 10], [10, 10, 10]], [2, 3]);
+      const b = dl.tensor2d([[5, 5, 5], [5, 5, 5]], [2, 3]);
       const f = () => {
         math.where(c, a, b);
       };
@@ -523,19 +523,19 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
     it('Tensor2D different `a` dimension w/ condition rank=1', math => {
       const c = dl.tensor1d([1, 0, 1, 0], 'bool');
-      let a = Tensor2D.new([2, 2], [[10, 10], [10, 10]]);
-      let b = Tensor2D.new([2, 2], [[5, 5], [5, 5]]);
+      let a = dl.tensor2d([[10, 10], [10, 10]], [2, 2]);
+      let b = dl.tensor2d([[5, 5], [5, 5]], [2, 2]);
       const f = () => {
         math.where(c, a, b);
       };
       expect(f).toThrowError();
 
-      a = Tensor2D.new([4, 1], [[10], [10], [10], [10]]);
-      b = Tensor2D.new([4, 1], [[5], [5], [5], [5]]);
+      a = dl.tensor2d([[10], [10], [10], [10]], [4, 1]);
+      b = dl.tensor2d([[5], [5], [5], [5]], [4, 1]);
       test_util.expectArraysClose(math.where(c, a, b), [10, 5, 10, 5]);
 
-      a = Tensor2D.new([4, 2], [[10, 10], [10, 10], [10, 10], [10, 10]]);
-      b = Tensor2D.new([4, 2], [[5, 5], [5, 5], [5, 5], [5, 5]]);
+      a = dl.tensor2d([[10, 10], [10, 10], [10, 10], [10, 10]], [4, 2]);
+      b = dl.tensor2d([[5, 5], [5, 5], [5, 5], [5, 5]], [4, 2]);
       test_util.expectArraysClose(
           math.where(c, a, b), [10, 10, 5, 5, 10, 10, 5, 5]);
     });

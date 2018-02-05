@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor1D, Tensor2D} from './tensor';
+import {Tensor1D} from './tensor';
 import {Rank} from './types';
 
 const tests: MathTests = it => {
@@ -74,7 +74,7 @@ const tests: MathTests = it => {
   it('Flip 3 three-sided coins, each coin is 100% biases', math => {
     const numOutcomes = 3;
     const probs =
-        Tensor2D.new([3, numOutcomes], [[0, 0, 1], [0, 1, 0], [1, 0, 0]]);
+        dl.tensor2d([[0, 0, 1], [0, 1, 0], [1, 0, 0]], [3, numOutcomes]);
     const result = math.multinomial(probs, NUM_SAMPLES);
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([3, NUM_SAMPLES]);

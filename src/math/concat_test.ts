@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor2D, Tensor3D} from './tensor';
+import {Tensor3D} from './tensor';
 
 // dl.concat1D
 {
@@ -64,8 +64,8 @@ import {Tensor2D, Tensor3D} from './tensor';
   const tests: MathTests = it => {
     it('[[3]] + [[5]], axis=0', () => {
       const axis = 0;
-      const a = Tensor2D.new([1, 1], [3]);
-      const b = Tensor2D.new([1, 1], [5]);
+      const a = dl.tensor2d([3], [1, 1]);
+      const b = dl.tensor2d([5], [1, 1]);
 
       const result = dl.concat2D(a, b, axis);
       const expected = [3, 5];
@@ -76,8 +76,8 @@ import {Tensor2D, Tensor3D} from './tensor';
 
     it('[[3]] + [[5]], axis=1', () => {
       const axis = 1;
-      const a = Tensor2D.new([1, 1], [3]);
-      const b = Tensor2D.new([1, 1], [5]);
+      const a = dl.tensor2d([3], [1, 1]);
+      const b = dl.tensor2d([5], [1, 1]);
 
       const result = dl.concat2D(a, b, axis);
       const expected = [3, 5];
@@ -88,8 +88,8 @@ import {Tensor2D, Tensor3D} from './tensor';
 
     it('[[1, 2], [3, 4]] + [[5, 6]], axis=0', () => {
       const axis = 0;
-      const a = Tensor2D.new([2, 2], [[1, 2], [3, 4]]);
-      const b = Tensor2D.new([1, 2], [[5, 6]]);
+      const a = dl.tensor2d([[1, 2], [3, 4]], [2, 2]);
+      const b = dl.tensor2d([[5, 6]], [1, 2]);
 
       const result = dl.concat2D(a, b, axis);
       const expected = [1, 2, 3, 4, 5, 6];
@@ -100,16 +100,16 @@ import {Tensor2D, Tensor3D} from './tensor';
 
     it('[[1, 2], [3, 4]] + [[5, 6]], axis=1 throws error', () => {
       const axis = 1;
-      const a = Tensor2D.new([2, 2], [[1, 2], [3, 4]]);
-      const b = Tensor2D.new([1, 2], [[5, 6]]);
+      const a = dl.tensor2d([[1, 2], [3, 4]], [2, 2]);
+      const b = dl.tensor2d([[5, 6]], [1, 2]);
 
       expect(() => dl.concat2D(a, b, axis)).toThrowError();
     });
 
     it('[[1, 2], [3, 4]] + [[5, 6], [7, 8]], axis=1', () => {
       const axis = 1;
-      const a = Tensor2D.new([2, 2], [[1, 2], [3, 4]]);
-      const b = Tensor2D.new([2, 2], [[5, 6], [7, 8]]);
+      const a = dl.tensor2d([[1, 2], [3, 4]], [2, 2]);
+      const b = dl.tensor2d([[5, 6], [7, 8]], [2, 2]);
 
       const result = dl.concat2D(a, b, axis);
       const expected = [1, 2, 5, 6, 3, 4, 7, 8];

@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D, Tensor4D} from './tensor';
 import {Rank} from './types';
 
 // math.slice1D
@@ -61,7 +61,7 @@ import {Rank} from './types';
 {
   const tests: MathTests = it => {
     it('slicing a 1x1 from a 1x1 returns a 1x1', math => {
-      const a = Tensor2D.new([1, 1], [0]);
+      const a = dl.tensor2d([0], [1, 1]);
       const b = math.slice2D(a, [0, 0], [1, 1]);
       expect(b.shape).toEqual([1, 1]);
     });
@@ -82,14 +82,14 @@ import {Rank} from './types';
     });
 
     it('returns the rectangle specified', math => {
-      const a = Tensor2D.new([4, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+      const a = dl.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [4, 3]);
       const b = math.slice2D(a, [1, 1], [3, 2]);
 
       test_util.expectArraysClose(b, [5, 6, 8, 9, 11, 12]);
     });
 
     it('throws when requesting out of bounds slice', math => {
-      const a = Tensor2D.new([4, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+      const a = dl.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [4, 3]);
       expect(() => math.slice2D(a, [1, 1], [10, 10])).toThrowError();
     });
   };

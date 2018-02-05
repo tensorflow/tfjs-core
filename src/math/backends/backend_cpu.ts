@@ -289,7 +289,7 @@ export class MathBackendCPU implements MathBackend {
         values[index++] = sum;
       }
     }
-    return Tensor2D.new([leftDim, rightDim], values);
+    return ops.tensor2d(values, [leftDim, rightDim]);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
@@ -1612,7 +1612,7 @@ export class MathBackendCPU implements MathBackend {
     for (let event = 0; event < indices.size; ++event) {
       res[event * depth + indices.get(event)] = onValue;
     }
-    return Tensor2D.new([indices.size, depth], res);
+    return ops.tensor2d(res, [indices.size, depth]);
   }
 
   private broadcastedBinaryOp(

@@ -18,7 +18,6 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor2D} from './tensor';
 
 // softmax
 {
@@ -55,7 +54,7 @@ import {Tensor2D} from './tensor';
     });
 
     it('2D, dim=1', math => {
-      const y = math.softmax(Tensor2D.new([2, 3], [[2, 1, 3], [1, 3, 2]]), 1);
+      const y = math.softmax(dl.tensor2d([[2, 1, 3], [1, 3, 2]], [2, 3]), 1);
       const expected = [
         0.24472847, 0.09003057, 0.66524095, 0.09003057, 0.66524095, 0.24472847
       ];
@@ -64,7 +63,7 @@ import {Tensor2D} from './tensor';
     });
 
     it('2D, implicit dim=1', math => {
-      const y = math.softmax(Tensor2D.new([2, 3], [[2, 1, 3], [1, 3, 2]]));
+      const y = math.softmax(dl.tensor2d([[2, 1, 3], [1, 3, 2]], [2, 3]));
       const expected = [
         0.24472847, 0.09003057, 0.66524095, 0.09003057, 0.66524095, 0.24472847
       ];
@@ -74,7 +73,7 @@ import {Tensor2D} from './tensor';
 
     it('2D, dim=0 throws error', math => {
       const f = () => {
-        math.softmax(Tensor2D.new([2, 3], [[2, 1, 3], [1, 3, 2]]), 0);
+        math.softmax(dl.tensor2d([[2, 1, 3], [1, 3, 2]], [2, 3]), 0);
       };
       expect(f).toThrowError();
     });
@@ -96,9 +95,9 @@ import {Tensor2D} from './tensor';
     });
 
     it('2D gradient', math => {
-      const x = Tensor2D.new([2, 3], [10, 0, -1, 5, 4, 3]);
+      const x = dl.tensor2d([10, 0, -1, 5, 4, 3], [2, 3]);
       const y = math.softmax(x);
-      const dy = Tensor2D.new([2, 3], [3, 2, 1, 1, 2, 3]);
+      const dy = dl.tensor2d([3, 2, 1, 1, 2, 3], [2, 3]);
       const vjp = math.vjp(() => math.softmax(x), {x}, dy);
 
       const axis = -1;
@@ -141,8 +140,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('2D implicit dim', math => {
-      const logits = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const label = Tensor2D.new([2, 3], [0.3, 0.6, 0.1, 0.2, 0.3, 0.5]);
+      const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
       const softmaxLogits = math.softmax(logits);
 
       const y = math.softmaxCrossEntropy(label, logits);
@@ -159,8 +158,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('2D, dim=1', math => {
-      const logits = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const label = Tensor2D.new([2, 3], [0.3, 0.6, 0.1, 0.2, 0.3, 0.5]);
+      const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
       const dim = 1;
       const softmaxLogits = math.softmax(logits, dim);
 
@@ -178,8 +177,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('2D, dim=0 throws error', math => {
-      const logits = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const label = Tensor2D.new([2, 3], [0.3, 0.6, 0.1, 0.2, 0.3, 0.5]);
+      const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
       const dim = 0;
 
       expect(() => math.softmaxCrossEntropy(label, logits, dim)).toThrowError();
@@ -221,8 +220,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('2D gradient', math => {
-      const logits = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const labels = Tensor2D.new([2, 3], [0.3, 0.6, 0.1, .2, .3, .5]);
+      const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const labels = dl.tensor2d([0.3, 0.6, 0.1, .2, .3, .5], [2, 3]);
       const softmaxLogits = math.softmax(logits);
       const dy = dl.tensor1d([2, 4]);
 
