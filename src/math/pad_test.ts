@@ -15,47 +15,48 @@
  * =============================================================================
  */
 
+import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor1D, Tensor2D} from './tensor';
+import {Tensor2D} from './tensor';
 
 // math.pad1D
 {
   const tests: MathTests = it => {
     it('Should pad 1D arrays', math => {
-      const a = Tensor1D.new([1, 2, 3, 4, 5, 6], 'int32');
+      const a = dl.tensor1d([1, 2, 3, 4, 5, 6], 'int32');
       const b = math.pad1D(a, [2, 3]);
       test_util.expectArraysClose(b, [0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]);
     });
 
     it('Should not pad 1D arrays with 0s', math => {
-      const a = Tensor1D.new([1, 2, 3, 4], 'int32');
+      const a = dl.tensor1d([1, 2, 3, 4], 'int32');
       const b = math.pad1D(a, [0, 0]);
       test_util.expectArraysClose(b, [1, 2, 3, 4]);
     });
 
     it('Should handle padding with custom value', math => {
-      let a = Tensor1D.new([1, 2, 3, 4], 'int32');
+      let a = dl.tensor1d([1, 2, 3, 4], 'int32');
       let b = math.pad1D(a, [2, 3], 9);
       test_util.expectArraysClose(b, [9, 9, 1, 2, 3, 4, 9, 9, 9]);
 
-      a = Tensor1D.new([1, 2, 3, 4]);
+      a = dl.tensor1d([1, 2, 3, 4]);
       b = math.pad1D(a, [2, 1], 1.1);
       test_util.expectArraysClose(b, [1.1, 1.1, 1, 2, 3, 4, 1.1]);
 
-      a = Tensor1D.new([1, 2, 3, 4]);
+      a = dl.tensor1d([1, 2, 3, 4]);
       b = math.pad1D(a, [2, 1], 1);
       test_util.expectArraysClose(b, [1, 1, 1, 2, 3, 4, 1]);
     });
 
     it('Should handle NaNs with 1D arrays', math => {
-      const a = Tensor1D.new([1, NaN, 2, NaN]);
+      const a = dl.tensor1d([1, NaN, 2, NaN]);
       const b = math.pad1D(a, [1, 1]);
       test_util.expectArraysClose(b, [0, 1, NaN, 2, NaN, 0]);
     });
 
     it('Should handle invalid paddings', math => {
-      const a = Tensor1D.new([1, 2, 3, 4], 'int32');
+      const a = dl.tensor1d([1, 2, 3, 4], 'int32');
       const f = () => {
         math.pad1D(a, [2, 2, 2]);
       };

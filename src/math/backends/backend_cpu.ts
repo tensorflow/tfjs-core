@@ -16,7 +16,6 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import * as broadcast_util from '../broadcast_util';
@@ -130,7 +129,7 @@ export class MathBackendCPU implements MathBackend {
 
   slice1D(x: Tensor1D, begin: number, size: number): Tensor1D {
     const newVals = x.dataSync().slice(begin, begin + size);
-    return Tensor1D.new(newVals, x.dtype);
+    return ops.tensor1d(newVals, x.dtype);
   }
 
   slice2D(x: Tensor2D, begin: [number, number], size: [number, number]):
@@ -532,7 +531,7 @@ export class MathBackendCPU implements MathBackend {
       topkIndices[i] = valuesAndIndices[i].index;
     }
     return {
-      values: Tensor1D.new(topkValues, x.dtype),
+      values: ops.tensor1d(topkValues, x.dtype),
       indices: Tensor1D.new<'int32'>(topkIndices)
     };
   }
@@ -1039,7 +1038,7 @@ export class MathBackendCPU implements MathBackend {
       }
       values[d2] = sum;
     }
-    return Tensor1D.new(values);
+    return ops.tensor1d(values);
   }
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):

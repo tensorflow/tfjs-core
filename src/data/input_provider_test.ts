@@ -18,7 +18,6 @@
 import {ENV} from '../environment';
 import * as dl from '../index';
 import {NDArrayMath} from '../math/math';
-import {Tensor1D} from '../math/tensor';
 
 import {InCPUMemoryShuffledInputProviderBuilder} from './input_provider';
 
@@ -71,7 +70,7 @@ describe('InCPUMemoryShuffledInputProviderBuilder', () => {
   });
 
   it('different shapes within input', () => {
-    const x1s = [dl.scalar(1), Tensor1D.new([1, 2])];
+    const x1s = [dl.scalar(1), dl.tensor1d([1, 2])];
     const x2s = [dl.scalar(10), dl.scalar(20), dl.scalar(30)];
 
     expect(() => new InCPUMemoryShuffledInputProviderBuilder([x1s, x2s]))
@@ -138,7 +137,7 @@ describe('InGPUMemoryShuffledInputProviderBuilder', () => {
   });
 
   it('different shapes within input', () => {
-    const x1s = [dl.scalar(1), Tensor1D.new([1, 2])];
+    const x1s = [dl.scalar(1), dl.tensor1d([1, 2])];
     const x2s = [dl.scalar(10), dl.scalar(20), dl.scalar(30)];
 
     expect(() => new InCPUMemoryShuffledInputProviderBuilder([x1s, x2s]))

@@ -18,14 +18,13 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
 // dl.reverse1D
 {
   const tests: MathTests = it => {
     it('reverse a 1D array', () => {
-      const input = Tensor1D.new([1, 2, 3, 4, 5]);
+      const input = dl.tensor1d([1, 2, 3, 4, 5]);
       const result = dl.reverse1D(input);
       expect(result.shape).toEqual(input.shape);
       test_util.expectArraysClose(result, [5, 4, 3, 2, 1]);
@@ -63,7 +62,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
     it('throws error with invalid input', () => {
       // tslint:disable-next-line:no-any
-      const x: any = Tensor1D.new([1, 20, 300, 4]);
+      const x: any = dl.tensor1d([1, 20, 300, 4]);
       expect(() => dl.reverse2D(x, [0])).toThrowError();
     });
 

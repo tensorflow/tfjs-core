@@ -27,7 +27,7 @@ const tests: MathTests = it => {
   const EPSILON = 0.05;
 
   it('Flip a fair coin and check bounds', math => {
-    const probs = Tensor1D.new([0.5, 0.5]);
+    const probs = dl.tensor1d([0.5, 0.5]);
     const result = math.multinomial(probs, NUM_SAMPLES);
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([NUM_SAMPLES]);
@@ -36,7 +36,7 @@ const tests: MathTests = it => {
   });
 
   it('Flip a two-sided coin with 100% of heads', math => {
-    const probs = Tensor1D.new([1, 0]);
+    const probs = dl.tensor1d([1, 0]);
     const result = math.multinomial(probs, NUM_SAMPLES);
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([NUM_SAMPLES]);
@@ -45,7 +45,7 @@ const tests: MathTests = it => {
   });
 
   it('Flip a two-sided coin with 100% of tails', math => {
-    const probs = Tensor1D.new([0, 1]);
+    const probs = dl.tensor1d([0, 1]);
     const result = math.multinomial(probs, NUM_SAMPLES);
     expect(result.dtype).toBe('int32');
     expect(result.shape).toEqual([NUM_SAMPLES]);
@@ -54,7 +54,7 @@ const tests: MathTests = it => {
   });
 
   it('Flip a single-sided coin throws error', math => {
-    const probs = Tensor1D.new([1]);
+    const probs = dl.tensor1d([1]);
     expect(() => math.multinomial(probs, NUM_SAMPLES)).toThrowError();
   });
 

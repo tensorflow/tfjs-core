@@ -17,7 +17,6 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-
 import {doc, operation} from './decorators';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 // tslint:disable-next-line:max-line-length
@@ -568,7 +567,7 @@ export class Ops {
       values[i] = values[i - 1] + step;
     }
 
-    return Tensor1D.new(values, dtype);
+    return Ops.tensor1d(values, dtype);
   }
 
   /**

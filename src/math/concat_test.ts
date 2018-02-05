@@ -18,15 +18,14 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
-import {Tensor1D, Tensor2D, Tensor3D} from './tensor';
+import {Tensor2D, Tensor3D} from './tensor';
 
 // dl.concat1D
 {
   const tests: MathTests = it => {
     it('3 + 5', () => {
-      const a = Tensor1D.new([3]);
-      const b = Tensor1D.new([5]);
+      const a = dl.tensor1d([3]);
+      const b = dl.tensor1d([5]);
 
       const result = dl.concat1D(a, b);
       const expected = [3, 5];
@@ -34,8 +33,8 @@ import {Tensor1D, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('3 + [5,7]', () => {
-      const a = Tensor1D.new([3]);
-      const b = Tensor1D.new([5, 7]);
+      const a = dl.tensor1d([3]);
+      const b = dl.tensor1d([5, 7]);
 
       const result = dl.concat1D(a, b);
       const expected = [3, 5, 7];
@@ -43,8 +42,8 @@ import {Tensor1D, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('[3,5] + 7', () => {
-      const a = Tensor1D.new([3, 5]);
-      const b = Tensor1D.new([7]);
+      const a = dl.tensor1d([3, 5]);
+      const b = dl.tensor1d([7]);
 
       const result = dl.concat1D(a, b);
       const expected = [3, 5, 7];

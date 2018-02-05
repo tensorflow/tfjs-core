@@ -19,7 +19,7 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {MatrixOrientation} from './backends/types/matmul';
-import {Tensor1D, Tensor2D, Tensor3D} from './tensor';
+import {Tensor2D, Tensor3D} from './tensor';
 import {Rank} from './types';
 
 const commonTests: MathTests = it => {
@@ -117,7 +117,7 @@ const commonTests: MathTests = it => {
   });
 
   it('Vector times matrix', math => {
-    const v = Tensor1D.new([2, 3]);
+    const v = dl.tensor1d([2, 3]);
     const matrix = Tensor2D.new([2, 2], [1, 2, 3, 4]);
     const result = math.vectorTimesMatrix(v, matrix);
 
@@ -126,7 +126,7 @@ const commonTests: MathTests = it => {
   });
 
   it('Vector times matrix with implicit reshape', math => {
-    const v = Tensor1D.new([2, 3]);
+    const v = dl.tensor1d([2, 3]);
 
     const matrix = Tensor2D.new([2, 2], [1, 2, 3, 4]);
     const result = math.vectorTimesMatrix(v, matrix);
@@ -144,7 +144,7 @@ const commonTests: MathTests = it => {
   });
 
   it('Vector times matrix throws when not passed a matrix', math => {
-    const v = Tensor1D.new([2, 3]);
+    const v = dl.tensor1d([2, 3]);
     // tslint:disable-next-line:no-any
     const matrix: any = Tensor3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
 
@@ -153,7 +153,7 @@ const commonTests: MathTests = it => {
 
   it('Matrix times vector', math => {
     const matrix = Tensor2D.new([2, 2], [1, 2, 3, 4]);
-    const v = Tensor1D.new([2, 3]);
+    const v = dl.tensor1d([2, 3]);
     const result = math.matrixTimesVector(matrix, v);
 
     const expected = [8, 18];
@@ -162,7 +162,7 @@ const commonTests: MathTests = it => {
 
   it('Matrix * vector propagates NaNs', math => {
     const matrix = Tensor2D.new([2, 2], [1, 2, 3, 4]);
-    const v = Tensor1D.new([2, NaN]);
+    const v = dl.tensor1d([2, NaN]);
     const result = math.matrixTimesVector(matrix, v);
 
     const expected = [NaN, NaN];
@@ -178,7 +178,7 @@ const commonTests: MathTests = it => {
   });
 
   it('matrix times vector throws when not passed a matrix', math => {
-    const v = Tensor1D.new([2, 3]);
+    const v = dl.tensor1d([2, 3]);
 
     // tslint:disable-next-line:no-any
     const matrix: any = Tensor3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
@@ -187,23 +187,23 @@ const commonTests: MathTests = it => {
   });
 
   it('Dot product', math => {
-    const v1 = Tensor1D.new([2, 3]);
-    const v2 = Tensor1D.new([2, 1]);
+    const v1 = dl.tensor1d([2, 3]);
+    const v2 = dl.tensor1d([2, 1]);
     const result = math.dotProduct(v1, v2);
 
     test_util.expectNumbersClose(result.get(), 7);
   });
 
   it('Dot product propagates NaNs', math => {
-    const v1 = Tensor1D.new([2, NaN]);
-    const v2 = Tensor1D.new([2, 1]);
+    const v1 = dl.tensor1d([2, NaN]);
+    const v2 = dl.tensor1d([2, 1]);
     const result = math.dotProduct(v1, v2);
     expect(result.get()).toEqual(NaN);
   });
 
   it('Dot product throws when vectors are different size', math => {
-    const v1 = Tensor1D.new([2, 3, 3]);
-    const v2 = Tensor1D.new([2, 1]);
+    const v1 = dl.tensor1d([2, 3, 3]);
+    const v2 = dl.tensor1d([2, 1]);
 
     expect(() => math.dotProduct(v1, v2)).toThrowError();
     expect(() => math.dotProduct(v2, v1)).toThrowError();
@@ -212,15 +212,15 @@ const commonTests: MathTests = it => {
   it('Dot product throws when passed non vectors', math => {
     // tslint:disable-next-line:no-any
     const v1: any = Tensor2D.new([2, 2], [1, 2, 3, 3]);
-    const v2 = Tensor1D.new([2, 1]);
+    const v2 = dl.tensor1d([2, 1]);
 
     expect(() => math.dotProduct(v1, v2)).toThrowError();
     expect(() => math.dotProduct(v2, v1)).toThrowError();
   });
 
   it('Outer product', math => {
-    const v1 = Tensor1D.new([2, 3]);
-    const v2 = Tensor1D.new([2, 1]);
+    const v1 = dl.tensor1d([2, 3]);
+    const v2 = dl.tensor1d([2, 1]);
     const result = math.outerProduct(v1, v2);
 
     const expected = [4, 2, 6, 3];

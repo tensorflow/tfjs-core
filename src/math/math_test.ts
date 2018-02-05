@@ -20,7 +20,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {Gradients} from './backends/gradients';
 import {MatrixOrientation} from './backends/types/matmul';
-import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
+import {Scalar, Tensor, Tensor2D} from './tensor';
 
 const gradientsScope = Gradients.gradientsScope;
 
@@ -29,8 +29,8 @@ const gradientsScope = Gradients.gradientsScope;
   const gpuTests: MathTests = it => {
     it('scope returns Tensor', async math => {
       await dl.tidy(async () => {
-        const a = Tensor1D.new([1, 2, 3]);
-        let b = Tensor1D.new([0, 0, 0]);
+        const a = dl.tensor1d([1, 2, 3]);
+        let b = dl.tensor1d([0, 0, 0]);
 
         expect(math.getNumTensors()).toBe(2);
         await dl.tidy(async () => {
@@ -55,8 +55,8 @@ const gradientsScope = Gradients.gradientsScope;
 
     it('multiple disposes does not affect num arrays', math => {
       expect(math.getNumTensors()).toBe(0);
-      const a = Tensor1D.new([1, 2, 3]);
-      const b = Tensor1D.new([1, 2, 3]);
+      const a = dl.tensor1d([1, 2, 3]);
+      const b = dl.tensor1d([1, 2, 3]);
       expect(math.getNumTensors()).toBe(2);
       a.dispose();
       a.dispose();
@@ -66,8 +66,8 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('scope returns Tensor[]', async math => {
-      const a = Tensor1D.new([1, 2, 3]);
-      const b = Tensor1D.new([0, -1, 1]);
+      const a = dl.tensor1d([1, 2, 3]);
+      const b = dl.tensor1d([0, -1, 1]);
       expect(math.getNumTensors()).toBe(2);
 
       await dl.tidy(async () => {
@@ -91,8 +91,8 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('basic scope usage without return', math => {
-      const a = Tensor1D.new([1, 2, 3]);
-      let b = Tensor1D.new([0, 0, 0]);
+      const a = dl.tensor1d([1, 2, 3]);
+      let b = dl.tensor1d([0, 0, 0]);
 
       expect(math.getNumTensors()).toBe(2);
 
@@ -108,8 +108,8 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('scope returns Promise<Tensor>', async math => {
-      const a = Tensor1D.new([1, 2, 3]);
-      const b = Tensor1D.new([0, 0, 0]);
+      const a = dl.tensor1d([1, 2, 3]);
+      const b = dl.tensor1d([0, 0, 0]);
 
       expect(math.getNumTensors()).toBe(2);
 
@@ -134,8 +134,8 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('nested scope usage', async math => {
-      const a = Tensor1D.new([1, 2, 3]);
-      let b = Tensor1D.new([0, 0, 0]);
+      const a = dl.tensor1d([1, 2, 3]);
+      let b = dl.tensor1d([0, 0, 0]);
 
       expect(math.getNumTensors()).toBe(2);
 
@@ -376,7 +376,7 @@ const gradientsScope = Gradients.gradientsScope;
 
     it('works with reshape', math => {
       const a = Tensor2D.new([2, 2], [1, 2, 3, 4]);
-      const exponent = Tensor1D.new([2, 2, 2, 2], 'int32');
+      const exponent = dl.tensor1d([2, 2, 2, 2], 'int32');
 
       const gradients = math.gradients(() => {
         const b = a.flatten();
@@ -391,7 +391,7 @@ const gradientsScope = Gradients.gradientsScope;
     it('reshape outside math.gradients() throws error', math => {
       const a = Tensor2D.new([2, 2], [1, 2, 3, 4]);
       const b = a.flatten();
-      const exponent = Tensor1D.new([2, 2, 2, 2], 'int32');
+      const exponent = dl.tensor1d([2, 2, 2, 2], 'int32');
 
       const f = () => {
         return math.gradients(() => {

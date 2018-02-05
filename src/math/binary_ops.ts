@@ -17,9 +17,9 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-
 import * as broadcast_util from './broadcast_util';
 import {doc, operation} from './decorators';
+import * as ops from './ops';
 import {Scalar, Tensor} from './tensor';
 
 export class Ops {
@@ -149,7 +149,7 @@ export class Ops {
       }
       const derBase = () => {
         const dx = exp.toFloat().mul(
-            base.pow(exp.sub(Scalar.new(1, 'int32'))).toFloat());
+            base.pow(exp.sub(ops.scalar(1, 'int32'))).toFloat());
         return dy.mul(dx);
       };
       const derExp = () => {

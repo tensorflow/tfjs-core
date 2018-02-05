@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
+import * as dl from './index';
 import {scalar} from './math/ops';
-import {Tensor, Tensor1D} from './math/tensor';
+import {Tensor} from './math/tensor';
 import {NamedTensorMap} from './math/types';
 import * as test_util from './test_util';
 import {MathTests} from './test_util';
@@ -271,14 +272,14 @@ describe('util.squeezeShape', () => {
   const tests: MathTests = it => {
     it('not in list', math => {
       const a = scalar(1);
-      const list: Tensor[] = [scalar(1), Tensor1D.new([1, 2, 3])];
+      const list: Tensor[] = [scalar(1), dl.tensor1d([1, 2, 3])];
 
       expect(util.isTensorInList(a, list)).toBe(false);
     });
 
     it('in list', math => {
       const a = scalar(1);
-      const list: Tensor[] = [scalar(2), Tensor1D.new([1, 2, 3]), a];
+      const list: Tensor[] = [scalar(2), dl.tensor1d([1, 2, 3]), a];
 
       expect(util.isTensorInList(a, list)).toBe(true);
     });
@@ -339,7 +340,7 @@ describe('util.checkForNaN', () => {
     it('basic', math => {
       const a = scalar(1);
       const b = scalar(3);
-      const c = Tensor1D.new([1, 2, 3]);
+      const c = dl.tensor1d([1, 2, 3]);
 
       const map: NamedTensorMap = {a, b, c};
       expect(util.flattenNameArrayMap(map, Object.keys(map))).toEqual([
@@ -356,7 +357,7 @@ describe('util.checkForNaN', () => {
     it('basic', math => {
       const a = scalar(1);
       const b = scalar(3);
-      const c = Tensor1D.new([1, 2, 3]);
+      const c = dl.tensor1d([1, 2, 3]);
 
       expect(util.unflattenToNameArrayMap(['a', 'b', 'c'], [
         a, b, c

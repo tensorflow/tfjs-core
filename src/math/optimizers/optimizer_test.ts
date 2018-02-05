@@ -16,7 +16,7 @@
  */
 
 import * as dl from '../../index';
-import {Tensor1D, variable, Variable} from '../../math/tensor';
+import {variable, Variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 import {SGDOptimizer} from './sgd_optimizer';
@@ -241,7 +241,7 @@ const tests: MathTests = it => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
-    const x = variable(Tensor1D.new([1, 2]));
+    const x = variable(dl.tensor1d([1, 2]));
     const f = () => x.square();
 
     // tslint:disable-next-line:no-any
