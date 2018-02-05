@@ -440,6 +440,7 @@ export class Ops {
    * @param dtype An optional dtype
    */
   @operation
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   static range(
       start: number, stop: number, step = 1,
       dtype: 'float32'|'int32' = 'float32'): Array1D {
@@ -475,10 +476,14 @@ export class Ops {
 
   /**
    * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
+   *
    * The values are stored in cpu as a `TypedArray`. Fill the buffer using
-   * `buffer.set()`, or by modifying directly `buffer.values`. When done,
-   * call `buffer.toTensor()` to get an immutable `Tensor` with those values.
+   * `buffer.set()`, or by modifying directly `buffer.values`.
+   *
+   * When done, call `buffer.toTensor()` to get an immutable `Tensor` with those
+   * values.
    */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   static buffer<R extends Rank>(shape: ShapeMap[R], dtype: DataType):
       TensorBuffer<R> {
     return new TensorBuffer<R>(shape, dtype);
