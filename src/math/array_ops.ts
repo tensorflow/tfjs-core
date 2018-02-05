@@ -26,10 +26,7 @@ import {DataType, DataTypeMap, Rank, ShapeMap} from './types';
 export class Ops {
   /**
    * Creates a tensor with all elements set to 1.
-   *
-   * This operation returns a tensor of type `dtype` with shape `shape` and all
-   * elements set to 1.
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    * @param dtype The type of an element in the resulting tensor. Can
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
    */
@@ -43,10 +40,7 @@ export class Ops {
 
   /**
    * Creates a tensor with all elements set to 0.
-   *
-   * This operation returns a tensor of type `dtype` with shape `shape` and all
-   * elements set to 0.
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    * @param dtype The type of an element in the resulting tensor. Can
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
    */
@@ -60,9 +54,7 @@ export class Ops {
 
   /**
    * Creates a tensor filled with a scalar value.
-   *
-   * This operation creates a tensor of shape `shape` and fills it with `value`.
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    * @param value The scalar value to fill the tensor with.
    * @param dtype The type of an element in the resulting tensor. Can
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
@@ -113,8 +105,7 @@ export class Ops {
 
   /**
    * Creates a tensor with values sampled from a normal distribution.
-   *
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    * @param mean The mean of the normal distribution.
    * @param stdDev The standard deviation of the normal distribution.
    * @param dtype The data type of the output.
@@ -140,7 +131,7 @@ export class Ops {
    * standard deviation, except that values whose magnitude is more than 2
    * standard deviations from the mean are dropped and re-picked.
    *
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    * @param mean The mean of the normal distribution.
    * @param stdDev The standard deviation of the normal distribution.
    * @param dtype The data type of the output.
@@ -166,7 +157,7 @@ export class Ops {
    * maxval). The lower bound minval is included in the range, while the upper
    * bound maxval is excluded.
    *
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    * @param minval The lower bound on the range of random values to generate.
    *   Defaults to 0.
    * @param maxval The upper bound on the range of random values to generate.
@@ -185,7 +176,7 @@ export class Ops {
    * Creates a tensor with values sampled from a random number generator
    * function defined by the user.
    *
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    * @param randFunction A random number generator function which is called for
    * each element in the output tensor.
    * @param dtype The data type of the output tensor. Defaults to 'float32'.
@@ -256,7 +247,7 @@ export class Ops {
   }
 
   /**
-   * Creates a one-hot array. The locations represented by `indices` take
+   * Creates a one-hot tensor. The locations represented by `indices` take
    * value `onValue` (defaults to 1), while all other locations take value
    * `offValue` (defaults to 0).
    *
@@ -316,7 +307,7 @@ export class Ops {
    * elements implied by shape must be the same as the number of elements in
    * tensor.
    * @param x A tensor.
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
@@ -350,15 +341,15 @@ export class Ops {
   }
 
   /**
-   * Construct an array by repeating it the number of times given by reps.
+   * Construct an tensor by repeating it the number of times given by reps.
    *
-   * This operation creates a new array by replicating `input` `reps`
+   * This operation creates a new tensor by replicating `input` `reps`
    * times. The output tensor's i'th dimension has `input.shape[i] *
    * reps[i]` elements, and the values of `input` are replicated
    * `reps[i]` times along the i'th dimension. For example, tiling
    * `[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.
    *
-   * @param x The array to transpose.
+   * @param x The tensor to transpose.
    * @param reps Determines the number of replications per dimension.
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
@@ -372,9 +363,9 @@ export class Ops {
   }
 
   /**
-   * Gather slices from array `x`'s axis `axis` according to `indices`
+   * Gather slices from tensor `x`'s axis `axis` according to `indices`
    *
-   * @param x The array to transpose.
+   * @param x The tensor to transpose.
    * @param indices The indices of the values to extract.
    * @param axis The axis over which to select values. Defaults to 0.
    */
@@ -388,14 +379,14 @@ export class Ops {
   /**
    * Pads a Tensor1D.
    *
-   * This operation will pad an array according to the `paddings` you specify.
+   * This operation will pad a tensor according to the `paddings` you specify.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
    *
-   * @param x The array to pad.
+   * @param x The tensor to pad.
    * @param paddings A tuple of ints [padLeft, padRight], how much to pad on the
-   *     left and right side of the array.
+   *     left and right side of the tensor.
    * @param constantValue The scalar pad value to use. Defaults to 0.
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
@@ -412,15 +403,15 @@ export class Ops {
   /**
    * Pads a Tensor2D.
    *
-   * This operation will pad an array according to the `paddings` you specify.
+   * This operation will pad a tensor according to the `paddings` you specify.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
    *
-   * @param x The array to pad.
+   * @param x The tensor to pad.
    * @param paddings A pair of tuple ints
    *     [[padTop, padBottom], [padLeft, padRight]], how much to pad on the
-   *     array.
+   *     tensor.
    * @param constantValue The scalar pad value to use. Defaults to 0.
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
@@ -439,7 +430,7 @@ export class Ops {
   /**
    * Creates a new Tensor1D filled with the numbers in the range provided.
    *
-   * The array is a is half-open interval meaning it includes start, but
+   * The tensor is a is half-open interval meaning it includes start, but
    * excludes stop. Decrementing ranges and negative step values are also
    * supported.
    *
@@ -491,7 +482,7 @@ export class Ops {
    *
    * When done, call `buffer.toTensor()` to get an immutable `Tensor` with those
    * values.
-   * @param shape A array of integers defining the output tensor shape.
+   * @param shape An array of integers defining the output tensor shape.
    * @param dtype The dtype of the buffer. Defaults to 'float32'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
