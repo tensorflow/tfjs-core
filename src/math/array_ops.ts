@@ -281,7 +281,9 @@ export class Ops {
   /**
    * Creates a tensor from an image.
    *
-   * @param pixels The input image to construct the tensor from.
+   * @param pixels The input image to construct the tensor from. Accepts image
+   * of type `ImageData`, `HTMLImageElement`, `HTMLCanvasElement`, or
+   * `HTMLVideoElement`.
    * @param numChannels The number of channels of the output tensor. The
    * supported image types are all 4-channel by default, a numChannels value
    * less than 4 allows you to ignore channels.
