@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {Operation} from './op';
 
 /**
@@ -29,15 +29,15 @@ export class ArgMaxEquals extends Operation {
    * An ArgMaxEquals operation.
    */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
   }
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x1 = inferenceArrays.get(this.x1Tensor);
     const x2 = inferenceArrays.get(this.x2Tensor);
-    math.scope((keep) => {
+    tidy(() => {
       inferenceArrays.set(this.yTensor, keep(math.argMaxEquals(x1, x2)));
     });
   }

@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/ndarray';
+import {Scalar, Tensor} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
@@ -32,7 +33,8 @@ export class Subtract extends Operation {
    * scalar.
    */
   constructor(
-      private t1: Tensor, private t2: Tensor, private outTensor: Tensor) {
+      private t1: SymbolicTensor, private t2: SymbolicTensor,
+      private outTensor: SymbolicTensor) {
     super();
     util.assert(
         util.sizeFromShape(t1.shape) === 1 ||
@@ -46,8 +48,8 @@ export class Subtract extends Operation {
     const t1 = inferenceArrays.get(this.t1) as Scalar;
     const t2 = inferenceArrays.get(this.t2) as Scalar;
 
-    math.scope((keep) => {
-      let result: NDArray;
+    tidy(() => {
+      let result: Tensor;
       if (util.isScalarShape(t1.shape)) {
         result = math.scalarMinusArray(t1, t2);
       } else if (util.isScalarShape(t2.shape)) {
@@ -64,7 +66,7 @@ export class Subtract extends Operation {
       gradientArrays: SummedTensorArrayMap) {
     const dy = gradientArrays.get(this.outTensor);
 
-    math.scope(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.t1)) {
         if (util.isScalarShape(this.t1.shape)) {
           const sum = math.sum(dy);

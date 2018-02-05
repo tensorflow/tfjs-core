@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import * as conv_util from '../../math/conv_util';
 import {NDArrayMath} from '../../math/math';
-import {Array1D, Array3D, Array4D} from '../../math/ndarray';
+import {Tensor1D, Tensor3D, Tensor4D} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {Operation} from './op';
 
 /**
@@ -45,9 +45,10 @@ export class Convolution2D extends Operation {
    * @param biases Optional. The bias terms of the filters.
    */
   constructor(
-      private wTensor: Tensor, private xTensor: Tensor, private bTensor: Tensor,
-      private yTensor: Tensor, private fieldSize: number,
-      private outputDepth: number, private stride = 1, zeroPad?: number) {
+      private wTensor: SymbolicTensor, private xTensor: SymbolicTensor,
+      private bTensor: SymbolicTensor, private yTensor: SymbolicTensor,
+      private fieldSize: number, private outputDepth: number,
+      private stride = 1, zeroPad?: number) {
     super();
     this.assertWeightsShape(wTensor.shape);
     this.zeroPad = zeroPad != null ?
@@ -62,11 +63,11 @@ export class Convolution2D extends Operation {
   }
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
-    const weights = inferenceArrays.get(this.wTensor) as Array4D;
-    const biases = inferenceArrays.get(this.bTensor) as Array1D;
-    const x = inferenceArrays.get(this.xTensor) as Array3D;
+    const weights = inferenceArrays.get(this.wTensor) as Tensor4D;
+    const biases = inferenceArrays.get(this.bTensor) as Tensor1D;
+    const x = inferenceArrays.get(this.xTensor) as Tensor3D;
 
-    math.scope((keep) => {
+    tidy(() => {
       inferenceArrays.set(
           this.yTensor,
           keep(math.conv2d(x, weights, biases, this.stride, this.zeroPad)));
@@ -76,11 +77,11 @@ export class Convolution2D extends Operation {
   backProp(
       math: NDArrayMath, inferenceArrays: TensorArrayMap,
       gradientArrays: SummedTensorArrayMap) {
-    const filter = inferenceArrays.get(this.wTensor) as Array4D;
-    const x = inferenceArrays.get(this.xTensor) as Array3D;
-    const dy = gradientArrays.get(this.yTensor) as Array3D;
+    const filter = inferenceArrays.get(this.wTensor) as Tensor4D;
+    const x = inferenceArrays.get(this.xTensor) as Tensor3D;
+    const dy = gradientArrays.get(this.yTensor) as Tensor3D;
 
-    math.scope(() => {
+    tidy(() => {
       const dw =
           math.conv2dDerFilter(x, dy, filter.shape, this.stride, this.zeroPad);
       const db = math.conv2dDerBias(dy);

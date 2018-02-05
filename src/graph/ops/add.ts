@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {Array2D, NDArray, Scalar} from '../../math/ndarray';
+import {Scalar, Tensor, Tensor2D} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
@@ -32,8 +33,8 @@ export class Add extends Operation {
 
   /** Element-wise add operation. Broadcasts if one of the tensors is scalar. */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
     util.assert(
         util.sizeFromShape(x1Tensor.shape) === 1 ||
@@ -52,8 +53,8 @@ export class Add extends Operation {
     const x1 = inferenceArrays.get(this.x1Tensor) as Scalar;
     const x2 = inferenceArrays.get(this.x2Tensor) as Scalar;
 
-    math.scope((keep) => {
-      let result: NDArray;
+    tidy(() => {
+      let result: Tensor;
       if (util.isScalarShape(x1.shape)) {
         result = math.scalarPlusArray(x1, x2);
       } else if (util.isScalarShape(x2.shape)) {
@@ -70,12 +71,12 @@ export class Add extends Operation {
       gradientArrays: SummedTensorArrayMap) {
     const dy = gradientArrays.get(this.yTensor);
 
-    math.scope(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         if (this.x1Tensor.shape.length === 1 &&
             this.x2Tensor.shape.length === 2 &&
             this.x1Tensor.shape[0] === this.x2Tensor.shape[1]) {
-          const sum = math.sum(dy as Array2D, 0);
+          const sum = math.sum(dy as Tensor2D, 0);
           gradientArrays.add(this.x1Tensor, sum);
         } else if (util.isScalarShape(this.x1Tensor.shape)) {
           const sum = math.sum(dy);
@@ -89,7 +90,7 @@ export class Add extends Operation {
         if (this.x1Tensor.shape.length === 2 &&
             this.x2Tensor.shape.length === 1 &&
             this.x1Tensor.shape[1] === this.x2Tensor.shape[0]) {
-          const sum = math.sum(dy as Array2D, 0);
+          const sum = math.sum(dy as Tensor2D, 0);
           gradientArrays.add(this.x2Tensor, sum);
         } else if (util.isScalarShape(this.x2Tensor.shape)) {
           const sum = math.sum(dy);

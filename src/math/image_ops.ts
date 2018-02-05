@@ -17,8 +17,9 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-import {operation} from './decorators';
-import {Array3D, Array4D} from './ndarray';
+
+import {doc, operation} from './decorators';
+import {Tensor3D, Tensor4D} from './tensor';
 
 export class Ops {
   /**
@@ -33,8 +34,9 @@ export class Ops {
    *     corners of images and resized images. If false, rescale by
    *     new_height/height. Treat similarly the width dimension.
    */
+  @doc({heading: 'Operations', subheading: 'Images', namespace: 'image'})
   @operation
-  static resizeBilinear<T extends Array3D|Array4D>(
+  static resizeBilinear<T extends Tensor3D|Tensor4D>(
       images: T, size: [number, number], alignCorners = false): T {
     util.assert(
         images.rank === 3 || images.rank === 4,
@@ -44,7 +46,7 @@ export class Ops {
         size.length === 2,
         `Error in resizeBilinear: new shape must 2D, but got shape ` +
             `${size}.`);
-    let batchImages = images as Array4D;
+    let batchImages = images as Tensor4D;
     let reshapedTo4D = false;
     if (images.rank === 3) {
       reshapedTo4D = true;

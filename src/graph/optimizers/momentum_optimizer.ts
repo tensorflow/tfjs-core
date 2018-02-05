@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/ndarray';
 import {SGDOptimizer} from '../../math/optimizers/sgd_optimizer';
+import {Scalar, Tensor} from '../../math/tensor';
 import {NamedVariableMap} from '../../math/types';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
@@ -45,7 +46,7 @@ export class MomentumOptimizer extends SGDOptimizer {
     if (this.variableVelocities.size() === 0) {
       this.variableNodes.forEach(node => {
         this.variableVelocities.set(
-            node.output, NDArray.zeros(node.output.shape));
+            node.output, Tensor.zeros(node.output.shape));
       });
     }
   }
@@ -54,7 +55,7 @@ export class MomentumOptimizer extends SGDOptimizer {
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
-    math.scope((keep) => {
+    tidy(() => {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);

@@ -16,7 +16,7 @@
  */
 
 import * as util from '../../util';
-import {NDArray, Scalar} from '../ndarray';
+import {Tensor, Scalar} from '../tensor';
 import {Rank} from '../types';
 import {MathBackend} from './backend';
 import {ArgMaxNode, ArgMinNode} from './types/argminmax';
@@ -124,12 +124,18 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
   } else if (kernelName === 'GreaterEqual') {
     const config = inputAndArgs as EqualNode['inputAndArgs'];
     return backend.greaterEqual(config.inputs.a, config.inputs.b) as O;
+  } else if (kernelName === 'LogicalNot') {
+    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
+    return backend.logicalNot(config.inputs.x) as O;
   } else if (kernelName === 'LogicalAnd') {
     const config = inputAndArgs as LogicalNode['inputAndArgs'];
     return backend.logicalAnd(config.inputs.a, config.inputs.b) as O;
   } else if (kernelName === 'LogicalOr') {
     const config = inputAndArgs as LogicalNode['inputAndArgs'];
     return backend.logicalOr(config.inputs.a, config.inputs.b) as O;
+  } else if (kernelName === 'LogicalXor') {
+    const config = inputAndArgs as LogicalNode['inputAndArgs'];
+    return backend.logicalXor(config.inputs.a, config.inputs.b) as O;
   } else if (kernelName === 'Where') {
     const config = inputAndArgs as WhereNode['inputAndArgs'];
     return backend.where(
@@ -181,7 +187,7 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
     const config = inputAndArgs as ReshapeNode['inputAndArgs'];
     const x = config.inputs.x;
     const newShape = config.args.newShape;
-    return NDArray.make(newShape, {dataId: x.dataId}, x.dtype) as O;
+    return Tensor.make(newShape, {dataId: x.dataId}, x.dtype) as O;
   } else if (kernelName === 'Cast') {
     const config = inputAndArgs as CastNode['inputAndArgs'];
     const x = config.inputs.x;
@@ -190,7 +196,7 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
     if (!util.hasEncodingLoss(x.dtype, newDType)) {
       // We don't change the underlying data, since we cast to higher
       // precision.
-      return NDArray.make(x.shape, {dataId: x.dataId}, newDType) as O;
+      return Tensor.make(x.shape, {dataId: x.dataId}, newDType) as O;
     }
     if (newDType === 'int32') {
       return backend.int(x) as O;
@@ -380,8 +386,10 @@ export interface KernelConfigRegistry<R extends Rank> {
   LessEqual: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
+  LogicalNot: UnaryNode<R>;
   LogicalAnd: LogicalNode;
   LogicalOr: LogicalNode;
+  LogicalXor: LogicalNode;
   Where: WhereNode;
   TopKValues: TopKValuesNode<R>;
   TopKIndices: TopKIndicesNode;

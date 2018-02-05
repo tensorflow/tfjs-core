@@ -97,8 +97,10 @@ export const lessEqualStrict = compare_ops.Ops.lessEqualStrict;
 export const notEqual = compare_ops.Ops.notEqual;
 export const notEqualStrict = compare_ops.Ops.notEqualStrict;
 
+export const logicalNot = logical_ops.Ops.logicalNot;
 export const logicalAnd = logical_ops.Ops.logicalAnd;
 export const logicalOr = logical_ops.Ops.logicalOr;
+export const logicalXor = logical_ops.Ops.logicalXor;
 export const where = logical_ops.Ops.where;
 
 export const abs = unary_ops.Ops.abs;
@@ -152,9 +154,9 @@ export const onesLike = array_ops.Ops.onesLike;
 export const zeros = array_ops.Ops.zeros;
 export const zerosLike = array_ops.Ops.zerosLike;
 export const rand = array_ops.Ops.rand;
-export const randNormal = array_ops.Ops.randNormal;
+export const randomNormal = array_ops.Ops.randomNormal;
 export const truncatedNormal = array_ops.Ops.truncatedNormal;
-export const randUniform = array_ops.Ops.randUniform;
+export const randomUniform = array_ops.Ops.randomUniform;
 export const reshape = array_ops.Ops.reshape;
 export const tile = array_ops.Ops.tile;
 export const gather = array_ops.Ops.gather;
@@ -162,6 +164,9 @@ export const multinomial = array_ops.Ops.multinomial;
 export const oneHot = array_ops.Ops.oneHot;
 export const pad1D = array_ops.Ops.pad1D;
 export const pad2D = array_ops.Ops.pad2D;
+export const range = array_ops.Ops.range;
+export const buffer = array_ops.Ops.buffer;
+export const fill = array_ops.Ops.fill;
 
 export const basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
 export const multiRNNCell = lstm_ops.Ops.multiRNNCell;
@@ -169,10 +174,10 @@ export const multiRNNCell = lstm_ops.Ops.multiRNNCell;
 export const softmax = softmax_ops.Ops.softmax;
 
 // So typings can propagate.
-import {NDArray, Array3D, Array4D} from './ndarray';
+import {Tensor, Tensor3D, Tensor4D} from './tensor';
 import {Rank} from './types';
 // tslint:disable-next-line:no-unused-expression
-[NDArray, Rank, Array3D, Array4D];
+[Tensor, Rank, Tensor3D, Tensor4D];
 
 export const losses = {
   softmaxCrossEntropy: softmax_ops.Ops.softmaxCrossEntropy
