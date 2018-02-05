@@ -23,6 +23,7 @@ import {SessionRuntime} from '../../graph/session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {doc} from '../decorators';
+import * as ops from '../ops';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../types';
 
@@ -87,6 +88,6 @@ export class SGDOptimizer extends Optimizer {
     if (this.c != null) {
       this.c.dispose();
     }
-    this.c = ENV.math.keep(Scalar.new(-learningRate));
+    this.c = ENV.math.keep(ops.scalar(-learningRate));
   }
 }
