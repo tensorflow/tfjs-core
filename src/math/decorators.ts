@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {tidy} from './backends/tracking';
+import {tidy} from '../globals';
 
 /**
  * Decorator for wrapping functions that perform math operations on

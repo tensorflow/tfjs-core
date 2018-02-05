@@ -14,16 +14,15 @@
  * limitations under the License.
  * =============================================================================
  */
-import * as gradients from './math/backends/gradients';
-import * as tracking from './math/backends/tracking';
+import {Gradients} from './math/backends/gradients';
+import {Tracking} from './math/backends/tracking';
 
-export const tidy = tracking.Tracking.tidy;
-export const keep = tracking.Tracking.keep;
-export const time = tracking.Tracking.time;
+export const tidy = Tracking.tidy;
+export const keep = Tracking.keep;
+export const time = Tracking.time;
 
-export const gradientsScope = gradients.Gradients.gradientsScope;
-export const vjp = gradients.Gradients.vjp;
-export const gradients = gradients.Gradients.gradients;
-export const variableGradients = gradients.Gradients.variableGradients;
-export const valueAndGradients = gradients.Gradients.valueAndGradients;
-export const customGradient = gradients.Gradients.customGradient;
+export const vjp = Gradients.vjp;
+export const gradients = Gradients.gradients;
+export const variableGradients = Gradients.variableGradients;
+export const valueAndGradients = Gradients.valueAndGradients;
+export const customGradient = Gradients.customGradient;
