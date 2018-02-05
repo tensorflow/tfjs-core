@@ -441,12 +441,12 @@ export class Ops {
    */
   @operation
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  static linspace(start: number, stop: number, num: number, endpoint = true) {
+  static linspace(start: number, stop: number, num: number) {
     if (num === 0) {
       throw new Error('Cannot request zero samples');
     }
 
-    const step = endpoint ? (stop - start) / (num - 1) : (stop - start) / (num);
+    const step = (stop - start) / (num - 1);
 
     const values = makeZerosTypedArray(num, 'float32');
     values[0] = start;
