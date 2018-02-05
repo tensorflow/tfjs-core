@@ -24,11 +24,9 @@ import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 import * as ops from '../ops';
-// tslint:disable-next-line:max-line-length
-import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
-
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
@@ -237,7 +235,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   neg<T extends Tensor>(x: T): T {
-    return this.multiply(Scalar.new(-1), x) as T;
+    return this.multiply(ops.scalar(-1), x) as T;
   }
 
   add(a: Tensor, b: Tensor): Tensor {

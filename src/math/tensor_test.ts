@@ -114,7 +114,7 @@ const tests: MathTests = it => {
   });
 
   it('Scalar basic methods', () => {
-    const a = Scalar.new(5);
+    const a = dl.scalar(5);
     test_util.expectNumbersClose(a.get(), 5);
     test_util.expectArraysClose(a, [5]);
     expect(a.rank).toBe(0);
@@ -123,7 +123,7 @@ const tests: MathTests = it => {
   });
 
   it('indexToLoc Scalar', () => {
-    const a = Scalar.new(0);
+    const a = dl.scalar(0);
     expect(a.indexToLoc(0)).toEqual([]);
 
     const b = dl.zeros<Rank.R0>([]);
@@ -190,7 +190,7 @@ const tests: MathTests = it => {
   });
 
   it('locToIndex Scalar', () => {
-    const a = Scalar.new(0);
+    const a = dl.scalar(0);
     expect(a.locToIndex([])).toEqual(0);
 
     const b = dl.zeros<Rank.R0>([]);
@@ -318,71 +318,71 @@ const testsNew: MathTests = it => {
 
 const testsScalarNew: MathTests = it => {
   it('default dtype', () => {
-    const a = Scalar.new(3);
+    const a = dl.scalar(3);
     expect(a.dtype).toBe('float32');
     test_util.expectArraysClose(a, [3]);
   });
 
   it('float32 dtype', () => {
-    const a = Scalar.new(3, 'float32');
+    const a = dl.scalar(3, 'float32');
     expect(a.dtype).toBe('float32');
     test_util.expectArraysClose(a, [3]);
   });
 
   it('int32 dtype', () => {
-    const a = Scalar.new(3, 'int32');
+    const a = dl.scalar(3, 'int32');
     expect(a.dtype).toBe('int32');
     test_util.expectArraysEqual(a, [3]);
   });
 
   it('int32 dtype, 3.9 => 3, like numpy', () => {
-    const a = Scalar.new(3.9, 'int32');
+    const a = dl.scalar(3.9, 'int32');
     expect(a.dtype).toBe('int32');
     test_util.expectArraysEqual(a, [3]);
   });
 
   it('int32 dtype, -3.9 => -3, like numpy', () => {
-    const a = Scalar.new(-3.9, 'int32');
+    const a = dl.scalar(-3.9, 'int32');
     expect(a.dtype).toBe('int32');
     test_util.expectArraysEqual(a, [-3]);
   });
 
   it('bool dtype, 3 => true, like numpy', () => {
-    const a = Scalar.new(3, 'bool');
+    const a = dl.scalar(3, 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.get()).toBe(1);
   });
 
   it('bool dtype, -2 => true, like numpy', () => {
-    const a = Scalar.new(-2, 'bool');
+    const a = dl.scalar(-2, 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.get()).toBe(1);
   });
 
   it('bool dtype, 0 => false, like numpy', () => {
-    const a = Scalar.new(0, 'bool');
+    const a = dl.scalar(0, 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.get()).toBe(0);
   });
 
   it('bool dtype from boolean', () => {
-    const a = Scalar.new(false, 'bool');
+    const a = dl.scalar(false, 'bool');
     expect(a.get()).toBe(0);
     expect(a.dtype).toBe('bool');
 
-    const b = Scalar.new(true, 'bool');
+    const b = dl.scalar(true, 'bool');
     expect(b.get()).toBe(1);
     expect(b.dtype).toBe('bool');
   });
 
   it('int32 dtype from boolean', () => {
-    const a = Scalar.new(true, 'int32');
+    const a = dl.scalar(true, 'int32');
     expect(a.get()).toBe(1);
     expect(a.dtype).toBe('int32');
   });
 
   it('default dtype from boolean', () => {
-    const a = Scalar.new(false);
+    const a = dl.scalar(false);
     test_util.expectNumbersClose(a.get(), 0);
     expect(a.dtype).toBe('float32');
   });
@@ -651,14 +651,14 @@ const testsTensor4DNew: MathTests = it => {
 };
 const testsReshape: MathTests = it => {
   it('Scalar default dtype', () => {
-    const a = Scalar.new(4);
+    const a = dl.scalar(4);
     const b = a.reshape([1, 1]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([1, 1]);
   });
 
   it('Scalar bool dtype', () => {
-    const a = Scalar.new(4, 'bool');
+    const a = dl.scalar(4, 'bool');
     const b = a.reshape([1, 1, 1]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([1, 1, 1]);
@@ -721,7 +721,7 @@ const testsReshape: MathTests = it => {
   });
 
   it('reshape is functional', math => {
-    const a = Scalar.new(2.4);
+    const a = dl.scalar(2.4);
     const b = a.reshape([]);
     expect(a.id).not.toBe(b.id);
     b.dispose();
@@ -730,7 +730,7 @@ const testsReshape: MathTests = it => {
 };
 const testsAsType: MathTests = it => {
   it('scalar bool -> int32', () => {
-    const a = Scalar.new(true, 'bool').toInt();
+    const a = dl.scalar(true, 'bool').toInt();
     expect(a.dtype).toBe('int32');
     expect(a.get()).toBe(1);
   });
@@ -777,7 +777,7 @@ const testsAsType: MathTests = it => {
   });
 
   it('asType is functional', math => {
-    const a = Scalar.new(2.4, 'float32');
+    const a = dl.scalar(2.4, 'float32');
     const b = a.toFloat();
     expect(a.id).not.toBe(b.id);
     b.dispose();
@@ -805,7 +805,7 @@ const testSqueeze: MathTests = it => {
 };
 const testsAsXD: MathTests = it => {
   it('scalar -> 2d', () => {
-    const a = Scalar.new(4, 'int32');
+    const a = dl.scalar(4, 'int32');
     const b = a.as2D(1, 1);
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([1, 1]);

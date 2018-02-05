@@ -19,7 +19,8 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor, Scalar} from './tensor';
+
+import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
 // dl.zeros
 {
@@ -1114,7 +1115,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor, Scalar} from './tensor';
       pixels.data[2] = 4;
       pixels.data[3] = 255;  // Not used.
       const a = dl.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
-      const res = a.add(Scalar.new(2, 'int32'));
+      const res = a.add(dl.scalar(2, 'int32'));
       expect(res.shape).toEqual([1, 1, 1, 3]);
       expect(res.dtype).toBe('int32');
       test_util.expectArraysClose(res, [4, 5, 6]);

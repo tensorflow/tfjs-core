@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
+import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
-import {Tensor1D, Tensor2D, Scalar} from './tensor';
+import {Tensor1D, Tensor2D} from './tensor';
 
 // softmax
 {
@@ -199,7 +199,7 @@ import {Tensor1D, Tensor2D, Scalar} from './tensor';
       const logits = Tensor1D.new([1, 2, 3]);
       const labels = Tensor1D.new([0.3, 0.6, 0.1]);
       const softmaxLogits = math.softmax(logits);
-      const dy = Scalar.new(2);
+      const dy = dl.scalar(2);
 
       const vjp = math.vjp(
           () => math.softmaxCrossEntropy(labels, logits), {labels, logits}, dy);

@@ -224,7 +224,7 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
       }
 
       const a = Tensor.fromPixels(pixels, 4);
-      const b = Scalar.new(20, 'int32');
+      const b = dl.scalar(20, 'int32');
 
       const res = math.add(a, b);
 
@@ -279,10 +279,10 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('second order nested gradient vjp & gradients', math => {
-      const a = Scalar.new(2);
-      const b = Scalar.new(3, 'int32');
+      const a = dl.scalar(2);
+      const b = dl.scalar(3, 'int32');
 
-      const dy = Scalar.new(4);
+      const dy = dl.scalar(4);
 
       const gradients = math.vjp(() => {
         return math.gradients(() => math.pow(a, b), a);
@@ -296,11 +296,11 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('second order nested gradient', math => {
-      const a = Scalar.new(2);
-      const b = Scalar.new(3, 'int32');
+      const a = dl.scalar(2);
+      const b = dl.scalar(3, 'int32');
 
-      const dy1 = Scalar.new(3);
-      const dy2 = Scalar.new(4);
+      const dy1 = dl.scalar(3);
+      const dy2 = dl.scalar(4);
 
       const gradients = math.vjp(() => {
         return math.vjp(() => math.pow(a, b), a, dy1);
@@ -362,10 +362,10 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('second order nested gradient', math => {
-      const a = Scalar.new(2);
+      const a = dl.scalar(2);
       const gradients = math.gradients(() => {
         return math.gradients(() => {
-          return math.pow(a, Scalar.new(3, 'int32'));
+          return math.pow(a, dl.scalar(3, 'int32'));
         }, a);
       }, a);
 
@@ -526,12 +526,12 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
 {
   const tests: MathTests = it => {
     it('second order gradients with gradientsScope', math => {
-      const a = Scalar.new(2);
+      const a = dl.scalar(2);
       expect(math.getNumTensors()).toBe(1);
 
       const gradients = gradientsScope(() => {
         const der = math.gradients(() => {
-          const result = math.pow(a, Scalar.new(3, 'int32'));
+          const result = math.pow(a, dl.scalar(3, 'int32'));
           expect(math.getNumTensors()).toBe(3);
 
           return result as Scalar;
@@ -568,16 +568,16 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
 {
   const tests: MathTests = it => {
     it('basic', math => {
-      const a = Scalar.new(3);
-      const b = Scalar.new(2, 'int32');
-      const dy = Scalar.new(4);
+      const a = dl.scalar(3);
+      const b = dl.scalar(2, 'int32');
+      const dy = dl.scalar(4);
 
       const vjp = math.vjp(() => {
         return math.customGradient('test', () => {
           const value = math.pow(a, b);
 
           const gradients = (dy: Tensor, y: Tensor) => {
-            return {a: () => math.multiply(dy, Scalar.new(3))};
+            return {a: () => math.multiply(dy, dl.scalar(3))};
           };
 
           return {value, gradients};
@@ -589,11 +589,11 @@ import {Scalar, Tensor, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('second order derivative through customGradient', math => {
-      const a = Scalar.new(3);
-      const b = Scalar.new(2, 'int32');
+      const a = dl.scalar(3);
+      const b = dl.scalar(2, 'int32');
 
-      const dy1 = Scalar.new(5);
-      const dy2 = Scalar.new(4);
+      const dy1 = dl.scalar(5);
+      const dy2 = dl.scalar(4);
 
       const vjp = math.vjp(() => {
         return math.vjp(() => {

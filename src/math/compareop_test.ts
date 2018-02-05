@@ -18,8 +18,8 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
-
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
+import * as dl from '../index';
+import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
 // Equal:
 {
@@ -83,7 +83,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       test_util.expectArraysClose(math.equal(a, b), [0, boolNaN, boolNaN]);
     });
     it('scalar and 1D broadcast', math => {
-      const a = Scalar.new(2);
+      const a = dl.scalar(2);
       const b = Tensor1D.new([1, 2, 3, 4, 5, 2]);
       const res = math.equal(a, b);
       expect(res.dtype).toBe('bool');
@@ -144,7 +144,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('2D and scalar broadcast', math => {
       const a = Tensor2D.new([2, 3], [1, 2, 3, 2, 5, 6]);
-      const b = Scalar.new(2);
+      const b = dl.scalar(2);
       const res = math.equal(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3]);
@@ -222,7 +222,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('3D and scalar', math => {
       const a = Tensor3D.new([2, 3, 1], [1, 2, 3, 4, 5, -1]);
-      const b = Scalar.new(-1);
+      const b = dl.scalar(-1);
       const res = math.equal(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3, 1]);
@@ -620,7 +620,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
       test_util.expectArraysEqual(res, [1, 0, util.NAN_BOOL]);
     });
     it('scalar and 1D broadcast', math => {
-      const a = Scalar.new(2);
+      const a = dl.scalar(2);
       const b = Tensor1D.new([1, 2, 3, 4, 5, 2]);
       const res = math.notEqual(a, b);
       expect(res.dtype).toBe('bool');
@@ -674,7 +674,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('2D and scalar broadcast', math => {
       const a = Tensor2D.new([2, 3], [1, 2, 3, 2, 5, 6]);
-      const b = Scalar.new(2);
+      const b = dl.scalar(2);
       const res = math.notEqual(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3]);
@@ -760,7 +760,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Scalar} from './tensor';
     });
     it('3D and scalar', math => {
       const a = Tensor3D.new([2, 3, 1], [1, 2, 3, 4, 5, -1]);
-      const b = Scalar.new(-1);
+      const b = dl.scalar(-1);
       const res = math.notEqual(a, b);
       expect(res.dtype).toBe('bool');
       expect(res.shape).toEqual([2, 3, 1]);

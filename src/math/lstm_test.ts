@@ -18,7 +18,8 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor1D, Tensor2D, Scalar} from './tensor';
+
+import {Tensor1D, Tensor2D} from './tensor';
 import {Rank} from './types';
 
 // math.basicLSTMCell
@@ -41,7 +42,7 @@ import {Rank} from './types';
       const lstmBias2 = Tensor1D.new(
           [0.9906240105628967, 0.6248329877853394, 0, 1.0224634408950806]);
 
-      const forgetBias = Scalar.new(1.0);
+      const forgetBias = dl.scalar(1.0);
       const lstm1 =
           math.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
       const lstm2 =
@@ -70,7 +71,7 @@ import {Rank} from './types';
     it('basicLSTMCell with batch=2', math => {
       const lstmKernel = dl.randNormal<Rank.R2>([3, 4]);
       const lstmBias = dl.randNormal<Rank.R1>([4]);
-      const forgetBias = Scalar.new(1.0);
+      const forgetBias = dl.scalar(1.0);
 
       const data = dl.randNormal<Rank.R2>([1, 2]);
       const batchedData = math.concat2D(data, data, 0);  // 2x2

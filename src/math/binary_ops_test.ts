@@ -18,8 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
-import {Scalar, Tensor1D, Tensor2D} from './tensor';
+import {Tensor1D, Tensor2D} from './tensor';
 
 // dl.prelu
 {
@@ -125,7 +124,7 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
 
     it('broadcasts Tensor1D and scalar', () => {
       const a = Tensor1D.new([0.5, 3, -0.1, -4]);
-      const b = Scalar.new(0.6);
+      const b = dl.scalar(0.6);
       const result = dl.maximum(a, b);
 
       expect(result.shape).toEqual(a.shape);
@@ -133,7 +132,7 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('broadcasts scalar and Tensor1D', () => {
-      const a = Scalar.new(0.6);
+      const a = dl.scalar(0.6);
       const b = Tensor1D.new([0.5, 3, -0.1, -4]);
       const result = dl.maximum(a, b);
 
@@ -160,9 +159,9 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(5.2);
-      const b = Scalar.new(0.6);
-      const dy = Scalar.new(3);
+      const a = dl.scalar(5.2);
+      const b = dl.scalar(0.6);
+      const dy = dl.scalar(3);
 
       const gradients = math.vjp(() => math.maximum(a, b), {a, b}, dy);
 
@@ -270,7 +269,7 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
 
     it('broadcasts Tensor1D and scalar', () => {
       const a = Tensor1D.new([0.5, 3, -0.1, -4]);
-      const b = Scalar.new(0.6);
+      const b = dl.scalar(0.6);
       const result = dl.minimum(a, b);
 
       expect(result.shape).toEqual(a.shape);
@@ -278,7 +277,7 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('broadcasts scalar and Tensor1D', () => {
-      const a = Scalar.new(0.6);
+      const a = dl.scalar(0.6);
       const b = Tensor1D.new([0.5, 3, -0.1, -4]);
       const result = dl.minimum(a, b);
 
@@ -305,9 +304,9 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('gradients: Scalar', math => {
-      const a = Scalar.new(5.2);
-      const b = Scalar.new(0.6);
-      const dy = Scalar.new(3);
+      const a = dl.scalar(5.2);
+      const b = dl.scalar(0.6);
+      const dy = dl.scalar(3);
 
       const gradients = math.vjp(() => math.minimum(a, b), {a, b}, dy);
 

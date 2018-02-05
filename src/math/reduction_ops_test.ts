@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
+import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-
 import * as reduce_util from './reduce_util';
-import {Scalar, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
 // math.min
 {
@@ -343,7 +343,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 {
   const tests: MathTests = it => {
     it('0', math => {
-      const a = Scalar.new(0);
+      const a = dl.scalar(0);
       const result = math.logSumExp(a);
       test_util.expectNumbersClose(result.get(), 0);
     });
@@ -536,7 +536,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
     it('gradients: sum(2d)', math => {
       const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const dy = Scalar.new(10);
+      const dy = dl.scalar(10);
 
       const gradients = math.vjp(() => math.sum(a), a, dy);
 
@@ -678,7 +678,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
     it('gradients', math => {
       const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const dy = Scalar.new(1.5);
+      const dy = dl.scalar(1.5);
 
       const vjp = math.vjp(() => math.mean(a), a, dy);
 
@@ -691,7 +691,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 
     it('gradients throws for defined axis', math => {
       const a = Tensor2D.new([3, 2], [1, 2, 3, 0, 0, 1]);
-      const dy = Scalar.new(1.5);
+      const dy = dl.scalar(1.5);
 
       expect(() => math.vjp(() => math.mean(a, 1), a, dy)).toThrowError();
     });
@@ -833,7 +833,7 @@ import {Scalar, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 {
   const tests: MathTests = it => {
     it('scalar norm', math => {
-      const a = Scalar.new(-22.0);
+      const a = dl.scalar(-22.0);
       const norm = math.norm(a);
 
       expect(norm.dtype).toBe('float32');
