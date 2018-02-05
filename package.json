@@ -26,8 +26,10 @@
     "karma-firefox-launcher": "~1.0.1",
     "karma-jasmine": "~1.1.0",
     "karma-typescript": "~3.0.8",
+    "mustache": "~2.3.0",
     "opn": "~5.1.0",
     "shelljs": "~0.7.8",
+    "ts-node": "~4.1.0",
     "tsify": "~3.0.1",
     "tslint": "~5.8.0",
     "tslint-no-circular-imports": "~0.2.0",
@@ -37,7 +39,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "prep": "yarn && mkdirp dist && cd demos/ && yarn prep && cd ..",
+    "prep": "yarn && mkdirp dist && yarn build && cd demos/ && yarn prep && cd ..",
     "build": "tsc",
     "test": "karma start",
     "test-travis": "karma start --browsers='bs_firefox_mac,bs_chrome_mac' --singleRun",

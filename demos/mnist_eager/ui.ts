@@ -1,7 +1,5 @@
 import * as dl from 'deeplearn';
 
-const math = dl.ENV.math;
-
 const statusElement = document.getElementById('status');
 const messageElement = document.getElementById('message');
 const imagesElement = document.getElementById('images');
@@ -15,15 +13,14 @@ export function trainingLog(message: string) {
 }
 
 export function showTestResults(
-    batch: {xs: dl.Array2D<'float32'>, labels: dl.Array2D<'float32'>},
-    predictions: number[], labels: number[]) {
+    batch: {xs: dl.Tensor2D, labels: dl.Tensor2D}, predictions: number[],
+    labels: number[]) {
   statusElement.innerText = 'Testing...';
 
   const testExamples = batch.xs.shape[0];
   let totalCorrect = 0;
   for (let i = 0; i < testExamples; i++) {
-    const image = math.slice2D(batch.xs, [i, 0], [1, batch.xs.shape[1]]) as
-        dl.Array2D<'float32'>;
+    const image = batch.xs.slice([i, 0], [1, batch.xs.shape[1]]);
 
     const div = document.createElement('div');
     div.className = 'pred-container';
@@ -56,7 +53,7 @@ export function showTestResults(
   console.log(displayStr);
 }
 
-export function draw(image: dl.Array1D, canvas: HTMLCanvasElement) {
+export function draw(image: dl.Tensor1D, canvas: HTMLCanvasElement) {
   const [width, height] = [28, 28];
   canvas.width = width;
   canvas.height = height;

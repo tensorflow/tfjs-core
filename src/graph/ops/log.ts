@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
-
 import {Operation} from './op';
 
 /**
@@ -29,14 +29,15 @@ export class Log extends Operation {
   /**
    * Natural log operation - ln(x)
    */
-  constructor(private xTensor: Tensor, private yTensor: Tensor) {
+  constructor(
+      private xTensor: SymbolicTensor, private yTensor: SymbolicTensor) {
     super();
   }
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
     const x = inferenceArrays.get(this.xTensor);
 
-    math.scope((keep) => {
+    tidy(() => {
       inferenceArrays.set(this.yTensor, keep(math.log(x)));
     });
   }
@@ -47,7 +48,7 @@ export class Log extends Operation {
     const x = inferenceArrays.get(this.xTensor);
     const dy = gradientArrays.get(this.yTensor);
 
-    math.scope(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.xTensor)) {
         gradientArrays.add(this.xTensor, math.divide(dy, x));
       }

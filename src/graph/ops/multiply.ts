@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/ndarray';
+import {Scalar, Tensor} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
@@ -33,8 +34,8 @@ export class Multiply extends Operation {
    * scalar.
    */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor,
-      private yTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
     util.assert(
         util.sizeFromShape(x1Tensor.shape) === 1 ||
@@ -48,8 +49,8 @@ export class Multiply extends Operation {
     const t1 = inferenceArrays.get(this.x1Tensor) as Scalar;
     const t2 = inferenceArrays.get(this.x2Tensor) as Scalar;
 
-    math.scope((keep) => {
-      let result: NDArray;
+    tidy(() => {
+      let result: Tensor;
       if (util.isScalarShape(t1.shape)) {
         result = math.scalarTimesArray(t1, t2);
       } else if (util.isScalarShape(t2.shape)) {
@@ -68,7 +69,7 @@ export class Multiply extends Operation {
     const x2 = inferenceArrays.get(this.x2Tensor) as Scalar;
     const dy = gradientArrays.get(this.yTensor);
 
-    math.scope(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         if (util.isScalarShape(this.x1Tensor.shape)) {
           const mul = math.elementWiseMul(dy, x2);

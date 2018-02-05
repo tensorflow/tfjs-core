@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import * as axis_util from './axis_util';
@@ -194,13 +193,13 @@ describe('axis_util parseAxisParam', () => {
     expect(axis_util.parseAxisParam(axis, shape)).toEqual([]);
   });
 
-  it('axis=null returns 0 axis for array1d', () => {
+  it('axis=null returns 0 axis for Tensor1D', () => {
     const axis: number = null;
     const shape = [4];
     expect(axis_util.parseAxisParam(axis, shape)).toEqual([0]);
   });
 
-  it('axis=null returns all axes for array3d', () => {
+  it('axis=null returns all axes for Tensor3D', () => {
     const axis: number[] = null;
     const shape = [3, 1, 2];
     expect(axis_util.parseAxisParam(axis, shape)).toEqual([0, 1, 2]);
@@ -284,9 +283,9 @@ describe('axis_util getUndoAxesPermutation', () => {
     const axes = [2, 0, 1, 3];
     const undoPermutation = axis_util.getUndoAxesPermutation(axes);
 
-    const a = dl.randNormal([2, 3, 4, 5]);
-    const aT = ENV.math.transpose(a, axes);
-    const aTT = ENV.math.transpose(aT, undoPermutation);
+    const a = dl.randomNormal([2, 3, 4, 5]);
+    const aT = dl.transpose(a, axes);
+    const aTT = dl.transpose(aT, undoPermutation);
     test_util.expectArraysClose(a, aTT);
   });
 });
