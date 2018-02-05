@@ -256,7 +256,7 @@ export class Ops {
   }
 
   /**
-   * Returns a one-hot array. The locations represented by `indices` take
+   * Creates a one-hot array. The locations represented by `indices` take
    * value `onValue` (defaults to 1), while all other locations take value
    * `offValue` (defaults to 0).
    *
@@ -278,6 +278,14 @@ export class Ops {
         'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
   }
 
+  /**
+   * Creates a tensor from an image.
+   *
+   * @param pixels The input image to construct the tensor from.
+   * @param numChannels The number of channels of the output tensor. The
+   * supported image types are all 4-channel by default, a numChannels value
+   * less than 4 allows you to ignore channels.
+   */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static fromPixels(
