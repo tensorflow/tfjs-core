@@ -466,28 +466,28 @@ const testsTensor2DNew: MathTests = it => {
   });
 
   it('int32 dtype', () => {
-    const a = Tensor2D.new([2, 2], [[1, 2], [3, 4]], 'int32');
+    const a = dl.tensor2d([[1, 2], [3, 4]], [2, 2], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2]);
     test_util.expectArraysEqual(a, [1, 2, 3, 4]);
   });
 
   it('int32 dtype, non-ints get floored, like numpy', () => {
-    const a = Tensor2D.new([2, 2], [1.1, 2.5, 3.9, 4.0], 'int32');
+    const a = dl.tensor2d([1.1, 2.5, 3.9, 4.0], [2, 2], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2]);
     test_util.expectArraysEqual(a, [1, 2, 3, 4]);
   });
 
   it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
-    const a = Tensor2D.new([2, 2], [-1.1, -2.5, -3.9, -4.0], 'int32');
+    const a = dl.tensor2d([-1.1, -2.5, -3.9, -4.0], [2, 2], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2]);
     test_util.expectArraysEqual(a, [-1, -2, -3, -4]);
   });
 
   it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
-    const a = Tensor2D.new([2, 2], [1, -2, 0, 3], 'bool');
+    const a = dl.tensor2d([1, -2, 0, 3], [2, 2], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([2, 2]);
     expect(a.get(0, 0)).toBe(1);
@@ -503,13 +503,13 @@ const testsTensor2DNew: MathTests = it => {
   });
 
   it('int32 dtype from boolean[]', () => {
-    const a = Tensor2D.new([2, 2], [[false, false], [true, false]], 'int32');
+    const a = dl.tensor2d([[false, false], [true, false]], [2, 2], 'int32');
     expect(a.dtype).toBe('int32');
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });
 
   it('bool dtype from boolean[]', () => {
-    const a = Tensor2D.new([2, 2], [[false, false], [true, false]], 'bool');
+    const a = dl.tensor2d([[false, false], [true, false]], [2, 2], 'bool');
     expect(a.dtype).toBe('bool');
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });
@@ -685,7 +685,7 @@ const testsReshape: MathTests = it => {
   });
 
   it('Tensor2D bool dtype', () => {
-    const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6], 'bool');
+    const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3], 'bool');
     const b = a.reshape([6]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([6]);
@@ -786,7 +786,7 @@ const testsAsType: MathTests = it => {
 
 const testSqueeze: MathTests = it => {
   it('squeeze no axis', () => {
-    const a = Tensor2D.new([3, 1], [4, 2, 1], 'bool');
+    const a = dl.tensor2d([4, 2, 1], [3, 1], 'bool');
     const b = a.squeeze();
     expect(b.shape).toEqual([3]);
   });

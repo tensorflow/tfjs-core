@@ -18,7 +18,6 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor2D} from './tensor';
 
 // dl.prelu
 {
@@ -142,7 +141,7 @@ import {Tensor2D} from './tensor';
 
     it('broadcasts Tensor1D and Tensor2D', () => {
       const a = dl.tensor1d([0.5, 0.3]);
-      const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
+      const b = dl.tensor2d([0.2, 0.4, 0.6, 0.15], [2, 2]);
       const result = dl.maximum(a, b);
 
       expect(result.shape).toEqual(b.shape);
@@ -150,8 +149,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('broadcasts 2x1 Tensor2D and 2x2 Tensor2D', () => {
-      const a = Tensor2D.new([2, 1], [0.5, 0.3]);
-      const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
+      const a = dl.tensor2d([0.5, 0.3], [2, 1]);
+      const b = dl.tensor2d([0.2, 0.4, 0.6, 0.15], [2, 2]);
       const result = dl.maximum(a, b);
 
       expect(result.shape).toEqual(b.shape);
@@ -193,9 +192,9 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [0.5, 0.3, 0.7, 0.9]);
-      const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.7, 0.15]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([0.5, 0.3, 0.7, 0.9], [2, 2]);
+      const b = dl.tensor2d([0.2, 0.4, 0.7, 0.15], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.maximum(a, b), {a, b}, dy);
 
@@ -287,7 +286,7 @@ import {Tensor2D} from './tensor';
 
     it('broadcasts Tensor1D and Tensor2D', () => {
       const a = dl.tensor1d([0.5, 0.3]);
-      const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
+      const b = dl.tensor2d([0.2, 0.4, 0.6, 0.15], [2, 2]);
       const result = dl.minimum(a, b);
 
       expect(result.shape).toEqual(b.shape);
@@ -295,8 +294,8 @@ import {Tensor2D} from './tensor';
     });
 
     it('broadcasts 2x1 Tensor2D and 2x2 Tensor2D', () => {
-      const a = Tensor2D.new([2, 1], [0.5, 0.3]);
-      const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.6, 0.15]);
+      const a = dl.tensor2d([0.5, 0.3], [2, 1]);
+      const b = dl.tensor2d([0.2, 0.4, 0.6, 0.15], [2, 2]);
       const result = dl.minimum(a, b);
 
       expect(result.shape).toEqual(b.shape);
@@ -338,9 +337,9 @@ import {Tensor2D} from './tensor';
     });
 
     it('gradients: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [0.5, 0.3, 0.7, 0.9]);
-      const b = Tensor2D.new([2, 2], [0.2, 0.4, 0.7, 0.15]);
-      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([0.5, 0.3, 0.7, 0.9], [2, 2]);
+      const b = dl.tensor2d([0.2, 0.4, 0.7, 0.15], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
       const gradients = dl.vjp(() => dl.minimum(a, b), {a, b}, dy);
 

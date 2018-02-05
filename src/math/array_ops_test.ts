@@ -304,7 +304,7 @@ import * as util from '../util';
     });
 
     it('2D default dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       const b = dl.zerosLike(a);
       expect(b.dtype).toBe('float32');
       expect(b.shape).toEqual([2, 2]);
@@ -312,7 +312,7 @@ import * as util from '../util';
     });
 
     it('2D float32 dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'float32');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'float32');
       const b = dl.zerosLike(a);
       expect(b.dtype).toBe('float32');
       expect(b.shape).toEqual([2, 2]);
@@ -320,7 +320,7 @@ import * as util from '../util';
     });
 
     it('2D int32 dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'int32');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
       const b = dl.zerosLike(a);
       expect(b.dtype).toBe('int32');
       expect(b.shape).toEqual([2, 2]);
@@ -328,7 +328,7 @@ import * as util from '../util';
     });
 
     it('2D bool dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'bool');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'bool');
       const b = dl.zerosLike(a);
       expect(b.dtype).toBe('bool');
       expect(b.shape).toEqual([2, 2]);
@@ -444,7 +444,7 @@ import * as util from '../util';
     });
 
     it('2D default dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       const b = dl.onesLike(a);
       expect(b.dtype).toBe('float32');
       expect(b.shape).toEqual([2, 2]);
@@ -452,7 +452,7 @@ import * as util from '../util';
     });
 
     it('2D float32 dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'float32');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'float32');
       const b = dl.onesLike(a);
       expect(b.dtype).toBe('float32');
       expect(b.shape).toEqual([2, 2]);
@@ -460,7 +460,7 @@ import * as util from '../util';
     });
 
     it('2D int32 dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'int32');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
       const b = dl.onesLike(a);
       expect(b.dtype).toBe('int32');
       expect(b.shape).toEqual([2, 2]);
@@ -468,7 +468,7 @@ import * as util from '../util';
     });
 
     it('2D bool dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'bool');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'bool');
       const b = dl.onesLike(a);
       expect(b.dtype).toBe('bool');
       expect(b.shape).toEqual([2, 2]);
@@ -1184,7 +1184,7 @@ import * as util from '../util';
     });
 
     it('2D default dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       const b = dl.clone(a);
       expect(b.dtype).toBe('float32');
       expect(b.shape).toEqual([2, 2]);
@@ -1192,7 +1192,7 @@ import * as util from '../util';
     });
 
     it('2D float32 dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'float32');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'float32');
       const b = dl.clone(a);
       expect(b.dtype).toBe('float32');
       expect(b.shape).toEqual([2, 2]);
@@ -1200,7 +1200,7 @@ import * as util from '../util';
     });
 
     it('2D int32 dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'int32');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
       const b = dl.clone(a);
       expect(b.dtype).toBe('int32');
       expect(b.shape).toEqual([2, 2]);
@@ -1208,7 +1208,7 @@ import * as util from '../util';
     });
 
     it('2D bool dtype', () => {
-      const a = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'bool');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'bool');
       const b = dl.clone(a);
       expect(b.dtype).toBe('bool');
       expect(b.shape).toEqual([2, 2]);
@@ -1300,7 +1300,7 @@ import * as util from '../util';
     });
 
     it('2D (tile)', () => {
-      const t = dl.Tensor2D.new([2, 2], [1, 11, 2, 22]);
+      const t = dl.tensor2d([1, 11, 2, 22], [2, 2]);
       let t2 = dl.tile(t, [1, 2]);
 
       expect(t2.shape).toEqual([2, 4]);
@@ -1344,7 +1344,7 @@ import * as util from '../util';
     });
 
     it('2D bool (tile)', () => {
-      const t = dl.Tensor2D.new([2, 2], [true, false, true, true], 'bool');
+      const t = dl.tensor2d([true, false, true, true], [2, 2], 'bool');
       let t2 = dl.tile(t, [1, 2]);
 
       expect(t2.shape).toEqual([2, 4]);
@@ -1395,7 +1395,7 @@ import * as util from '../util';
     });
 
     it('2D int32 (tile)', () => {
-      const t = dl.Tensor2D.new([2, 2], [1, 2, 3, 4], 'int32');
+      const t = dl.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
       let t2 = dl.tile(t, [1, 2]);
 
       expect(t2.shape).toEqual([2, 4]);
@@ -1456,7 +1456,7 @@ import * as util from '../util';
     });
 
     it('2D (gather)', () => {
-      const t = dl.Tensor2D.new([2, 2], [1, 11, 2, 22]);
+      const t = dl.tensor2d([1, 11, 2, 22], [2, 2]);
       let t2 = dl.gather(t, dl.tensor1d([1, 0, 0, 1], 'int32'), 0);
       expect(t2.shape).toEqual([4, 2]);
       test_util.expectArraysClose(t2, [2, 22, 1, 11, 1, 11, 2, 22]);

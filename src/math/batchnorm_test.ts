@@ -298,7 +298,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
   const epsilon = 1e-1;
   const tests: MathTests = it => {
     it('simple batchnorm2D, no offset or scale, 2x2', () => {
-      const x = Tensor2D.new([2, 2], [2, 100, 4, 400]);
+      const x = dl.tensor2d([2, 100, 4, 400], [2, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const varianceEpsilon = .001;
@@ -321,7 +321,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
           epsilon);
     });
     it('simple batchnorm2D, no offset, 2x2', () => {
-      const x = Tensor2D.new([2, 2], [2, 100, 4, 400]);
+      const x = dl.tensor2d([2, 100, 4, 400], [2, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const scale = dl.tensor1d([4, 5]);
@@ -346,7 +346,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('simple batchnorm2D, no scale, 2x2', () => {
-      const x = Tensor2D.new([2, 2], [2, 100, 4, 400]);
+      const x = dl.tensor2d([2, 100, 4, 400], [2, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const offset = dl.tensor1d([4, 5]);
@@ -376,7 +376,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('simple batchnorm2D, 2x2', () => {
-      const x = Tensor2D.new([2, 2], [2, 100, 4, 400]);
+      const x = dl.tensor2d([2, 100, 4, 400], [2, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const offset = dl.tensor1d([3, 4]);

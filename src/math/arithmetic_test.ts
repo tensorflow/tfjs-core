@@ -24,8 +24,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
 {
   const tests: MathTests = it => {
     it('divide', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const c = Tensor2D.new([2, 3], [1, 2, 3, 4, 2, 5]);
+      const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const c = dl.tensor2d([1, 2, 3, 4, 2, 5], [2, 3]);
 
       const r = dl.div(a, c);
 
@@ -33,8 +33,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('divide propagates NaNs', () => {
-      const a = Tensor2D.new([2, 1], [1, 2]);
-      const c = Tensor2D.new([2, 1], [3, NaN]);
+      const a = dl.tensor2d([1, 2], [2, 1]);
+      const c = dl.tensor2d([3, NaN], [2, 1]);
 
       const r = dl.div(a, c);
 
@@ -42,8 +42,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('divide broadcasting same rank Tensors different shape', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
-      const b = Tensor2D.new([2, 1], [2, 3]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
+      const b = dl.tensor2d([2, 3], [2, 1]);
 
       const result = dl.div(a, b);
 
@@ -54,7 +54,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('divide broadcast 2D + 1D', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
       const b = dl.tensor1d([1, 2]);
 
       const result = dl.div(a, b);
@@ -66,8 +66,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('div throws when passed tensors of different shapes', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-      const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
+      const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3]);
+      const b = dl.tensor2d([5, 3, 4, -7], [2, 2]);
 
       expect(() => dl.div(a, b)).toThrowError();
       expect(() => dl.div(b, a)).toThrowError();
@@ -75,7 +75,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
 
     it('scalar divided by array', () => {
       const c = dl.scalar(2);
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+      const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
 
       const r = dl.div(c, a);
 
@@ -85,7 +85,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
 
     it('scalar divided by array propagates NaNs', () => {
       const c = dl.scalar(NaN);
-      const a = Tensor2D.new([1, 3], [1, 2, 3]);
+      const a = dl.tensor2d([1, 2, 3], [1, 3]);
 
       const r = dl.div(c, a);
 
@@ -93,7 +93,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('array divided by scalar', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+      const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
       const c = dl.scalar(2);
 
       const r = dl.div(a, c);
@@ -103,7 +103,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('array divided by scalar propagates NaNs', () => {
-      const a = Tensor2D.new([1, 3], [1, 2, NaN]);
+      const a = dl.tensor2d([1, 2, NaN], [1, 3]);
       const c = dl.scalar(2);
 
       const r = dl.div(a, c);
@@ -174,9 +174,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [3, 1, 2, 3]);
-      const b = Tensor2D.new([2, 2], [1, 3, 4, 5]);
-      const dy = Tensor2D.new([2, 2], [1, 10, 15, 20]);
+      const a = dl.tensor2d([3, 1, 2, 3], [2, 2]);
+      const b = dl.tensor2d([1, 3, 4, 5], [2, 2]);
+      const dy = dl.tensor2d([1, 10, 15, 20], [2, 2]);
 
       const vjp = dl.vjp(() => dl.div(a, b), {a, b}, dy);
 
@@ -208,9 +208,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient: Tensor2D / scalar', () => {
-      const a = Tensor2D.new([2, 2], [[2, 3], [4, 5]]);
+      const a = dl.tensor2d([[2, 3], [4, 5]], [2, 2]);
       const b = dl.scalar(2);
-      const dy = Tensor2D.new([2, 2], [[6, 7], [8, 9]]);
+      const dy = dl.tensor2d([[6, 7], [8, 9]], [2, 2]);
 
       const vjp = dl.vjp(() => dl.div(a, b), {a, b}, dy);
 
@@ -225,9 +225,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient: Tensor2D / Tensor2D w/ broadcast', () => {
-      const a = Tensor2D.new([2, 1], [3, 4]);
-      const b = Tensor2D.new([2, 2], [[2, 3], [4, 5]]);
-      const dy = Tensor2D.new([2, 2], [[6, 7], [8, 9]]);
+      const a = dl.tensor2d([3, 4], [2, 1]);
+      const b = dl.tensor2d([[2, 3], [4, 5]], [2, 2]);
+      const dy = dl.tensor2d([[6, 7], [8, 9]], [2, 2]);
 
       const vjp = dl.vjp(() => dl.div(a, b), {a, b}, dy);
 
@@ -254,8 +254,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
 {
   const tests: MathTests = it => {
     it('multiplyStrict same-shaped tensors', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
-      const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
+      const b = dl.tensor2d([5, 3, 4, -7], [2, 2]);
       const expected = [5, 6, -12, 28];
       const result = dl.mulStrict(a, b);
 
@@ -265,8 +265,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('multiplyStrict propagates NaNs', () => {
-      const a = Tensor2D.new([2, 2], [1, 3, 4, 0]);
-      const b = Tensor2D.new([2, 2], [NaN, 3, NaN, 3]);
+      const a = dl.tensor2d([1, 3, 4, 0], [2, 2]);
+      const b = dl.tensor2d([NaN, 3, NaN, 3], [2, 2]);
 
       const result = dl.mulStrict(a, b);
 
@@ -275,24 +275,24 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('multiplyStrict throws when passed tensors of different shapes', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-      const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
+      const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3]);
+      const b = dl.tensor2d([5, 3, 4, -7], [2, 2]);
 
       expect(() => dl.mulStrict(a, b)).toThrowError();
       expect(() => dl.mulStrict(b, a)).toThrowError();
     });
 
     it('multiplyStrict throws when dtypes do not match', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6], 'float32');
-      const b = Tensor2D.new([2, 2], [5, 3, 4, -7], 'int32');
+      const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3], 'float32');
+      const b = dl.tensor2d([5, 3, 4, -7], [2, 2], 'int32');
 
       expect(() => dl.mulStrict(a, b as Tensor2D as Tensor2D)).toThrowError();
       expect(() => dl.mulStrict(b, a as Tensor2D as Tensor2D)).toThrowError();
     });
 
     it('multiplyStrict int32 * int32', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4], 'int32');
-      const b = Tensor2D.new([2, 2], [2, 1, 3, -4], 'int32');
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2], 'int32');
+      const b = dl.tensor2d([2, 1, 3, -4], [2, 2], 'int32');
       const res = dl.mulStrict(a, b);
 
       expect(res.dtype).toBe('int32');
@@ -300,8 +300,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('same-shaped tensors', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
-      const b = Tensor2D.new([2, 2], [5, 3, 4, -7]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
+      const b = dl.tensor2d([5, 3, 4, -7], [2, 2]);
       const expected = [5, 6, -12, 28];
       const result = dl.mul(a, b);
 
@@ -310,7 +310,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('broadcasting tensors', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
       const b = dl.scalar(2);
       const expected = [2, 4, -6, -8];
       const result = dl.mul(a, b);
@@ -320,8 +320,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('broadcasting same rank Tensors different shape', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
-      const b = Tensor2D.new([2, 1], [2, 3]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
+      const b = dl.tensor2d([2, 3], [2, 1]);
 
       const result = dl.mul(a, b);
 
@@ -332,7 +332,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('broadcast 2D + 1D', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
       const b = dl.tensor1d([1, 2]);
 
       const result = dl.mul(a, b);
@@ -390,9 +390,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient: Tensor2D', () => {
-      const a = Tensor2D.new([2, 2], [3, 1, 2, 3]);
-      const b = Tensor2D.new([2, 2], [1, 3, 4, 5]);
-      const dy = Tensor2D.new([2, 2], [1, 10, 15, 20]);
+      const a = dl.tensor2d([3, 1, 2, 3], [2, 2]);
+      const b = dl.tensor2d([1, 3, 4, 5], [2, 2]);
+      const dy = dl.tensor2d([1, 10, 15, 20], [2, 2]);
 
       const vjp = dl.vjp(() => dl.mul(a, b), {a, b}, dy);
 
@@ -422,9 +422,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient: Tensor2D * scalar', () => {
-      const a = Tensor2D.new([2, 2], [[2, 3], [4, 5]]);
+      const a = dl.tensor2d([[2, 3], [4, 5]], [2, 2]);
       const b = dl.scalar(2);
-      const dy = Tensor2D.new([2, 2], [[6, 7], [8, 9]]);
+      const dy = dl.tensor2d([[6, 7], [8, 9]], [2, 2]);
 
       const vjp = dl.vjp(() => dl.mul(a, b), {a, b}, dy);
 
@@ -438,9 +438,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient: Tensor2D * Tensor2D w/ broadcast', () => {
-      const a = Tensor2D.new([2, 1], [3, 4]);
-      const b = Tensor2D.new([2, 2], [[2, 3], [4, 5]]);
-      const dy = Tensor2D.new([2, 2], [[6, 7], [8, 9]]);
+      const a = dl.tensor2d([3, 4], [2, 1]);
+      const b = dl.tensor2d([[2, 3], [4, 5]], [2, 2]);
+      const dy = dl.tensor2d([[6, 7], [8, 9]], [2, 2]);
 
       const vjp = dl.vjp(() => dl.mul(a, b), {a, b}, dy);
 
@@ -466,8 +466,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
 {
   const tests: MathTests = it => {
     it('same-shaped tensors', () => {
-      const a = Tensor2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
-      const b = Tensor2D.new([2, 3], [5, 3, 4, 5, 2, -3], 'int32');
+      const a = dl.tensor2d([1, -2, -3, 0, 7, 1], [2, 3]);
+      const b = dl.tensor2d([5, 3, 4, 5, 2, -3], [2, 3], 'int32');
       const expected = [1, -8, 81, 0, 49, 1];
       const result = dl.pow(a, b);
 
@@ -487,7 +487,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('different-shaped tensors', () => {
-      const a = Tensor2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
+      const a = dl.tensor2d([1, -2, -3, 0, 7, 1], [2, 3]);
       const b = dl.scalar(2, 'int32');
       const expected = [1, 4, 9, 0, 49, 1];
       const result = dl.pow(a, b);
@@ -497,24 +497,24 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('propagates NaNs', () => {
-      const a = Tensor2D.new([2, 2], [NaN, 3, NaN, 0]);
-      const b = Tensor2D.new([2, 2], [1, 3, 2, 3], 'int32');
+      const a = dl.tensor2d([NaN, 3, NaN, 0], [2, 2]);
+      const b = dl.tensor2d([1, 3, 2, 3], [2, 2], 'int32');
 
       const result = dl.pow(a, b);
       test_util.expectArraysClose(result, [NaN, 27, NaN, 0], 0.05);
     });
 
     it('throws when passed non int32 exponent param', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-      const b = Tensor2D.new([2, 2], [5, 3, 4, -7], 'float32');
+      const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3]);
+      const b = dl.tensor2d([5, 3, 4, -7], [2, 2], 'float32');
 
       // tslint:disable-next-line
       expect(() => dl.pow(a, b as any)).toThrowError();
     });
 
     it('broadcasting same rank Tensors different shape', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
-      const b = Tensor2D.new([2, 1], [2, 1], 'int32');
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
+      const b = dl.tensor2d([2, 1], [2, 1], 'int32');
 
       const result = dl.pow(a, b);
 
@@ -525,7 +525,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('broadcast 2D + 1D', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
       const b = dl.tensor1d([1, 2], 'int32');
 
       const result = dl.pow(a, b);
@@ -537,8 +537,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('powStrict same-shaped tensors', () => {
-      const a = Tensor2D.new([2, 3], [1, -2, -3, 0, 7, 1]);
-      const b = Tensor2D.new([2, 3], [5, 3, 4, 5, 2, -3], 'int32');
+      const a = dl.tensor2d([1, -2, -3, 0, 7, 1], [2, 3]);
+      const b = dl.tensor2d([5, 3, 4, 5, 2, -3], [2, 3], 'int32');
       const expected = [1, -8, 81, 0, 49, 1];
       const result = dl.powStrict(a, b);
 
@@ -547,15 +547,15 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('powStrict throws when passed tensors of different shapes', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-      const b = Tensor2D.new([2, 2], [5, 3, 4, -7], 'int32');
+      const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3]);
+      const b = dl.tensor2d([5, 3, 4, -7], [2, 2], 'int32');
 
       expect(() => dl.powStrict(a, b)).toThrowError();
     });
 
     it('powStrict throws when passed non int32 exponent param', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, -3, -4, 5, 6]);
-      const b = Tensor2D.new([2, 2], [5, 3, 4, -7], 'float32');
+      const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3]);
+      const b = dl.tensor2d([5, 3, 4, -7], [2, 2], 'float32');
 
       // tslint:disable-next-line
       expect(() => dl.powStrict(a, b as any)).toThrowError();
@@ -622,8 +622,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('A + B broadcasting same rank Tensors different shape', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
-      const b = Tensor2D.new([2, 1], [2, 3]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
+      const b = dl.tensor2d([2, 3], [2, 1]);
 
       const result = dl.add(a, b);
 
@@ -634,7 +634,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('A + B broadcast 2D + 1D', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
       const b = dl.tensor1d([1, 2]);
 
       const result = dl.add(a, b);
@@ -672,7 +672,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('2D+scalar broadcast', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+      const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
       const b = dl.scalar(2);
       const res = dl.add(a, b);
       expect(res.shape).toEqual([2, 3]);
@@ -688,16 +688,16 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('2D+2D broadcast each with 1 dim', () => {
-      const a = Tensor2D.new([1, 3], [1, 2, 5]);
-      const b = Tensor2D.new([2, 1], [7, 3]);
+      const a = dl.tensor2d([1, 2, 5], [1, 3]);
+      const b = dl.tensor2d([7, 3], [2, 1]);
       const res = dl.add(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(res, [8, 9, 12, 4, 5, 8]);
     });
 
     it('2D+2D broadcast inner dim of b', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, 5, 4, 5, 6]);
-      const b = Tensor2D.new([2, 1], [7, 3]);
+      const a = dl.tensor2d([1, 2, 5, 4, 5, 6], [2, 3]);
+      const b = dl.tensor2d([7, 3], [2, 1]);
       const res = dl.add(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(res, [8, 9, 12, 7, 8, 9]);
@@ -727,9 +727,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient: 2D + 2D broadcast', () => {
-      const a = Tensor2D.new([2, 1], [2, 3]);
-      const b = Tensor2D.new([2, 2], [4, 5, 6, 7]);
-      const dy = Tensor2D.new([2, 2], [5, 4, 3, 2]);
+      const a = dl.tensor2d([2, 3], [2, 1]);
+      const b = dl.tensor2d([4, 5, 6, 7], [2, 2]);
+      const dy = dl.tensor2d([5, 4, 3, 2], [2, 2]);
       const gradients = dl.vjp(() => dl.add(a, b), {a, b}, dy);
 
       expect(gradients.a.shape).toEqual(a.shape);
@@ -808,8 +808,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('A - B broadcasting same rank Tensors different shape', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
-      const b = Tensor2D.new([2, 1], [2, 3]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
+      const b = dl.tensor2d([2, 3], [2, 1]);
 
       const result = dl.sub(a, b);
 
@@ -820,7 +820,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('A - B broadcast 2D + 1D', () => {
-      const a = Tensor2D.new([2, 2], [1, 2, -3, -4]);
+      const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
       const b = dl.tensor1d([1, 2]);
 
       const result = dl.sub(a, b);
@@ -832,7 +832,7 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('2D-scalar broadcast', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+      const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
       const b = dl.scalar(2);
       const res = dl.sub(a, b);
       expect(res.shape).toEqual([2, 3]);
@@ -848,16 +848,16 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('2D-2D broadcast each with 1 dim', () => {
-      const a = Tensor2D.new([1, 3], [1, 2, 5]);
-      const b = Tensor2D.new([2, 1], [7, 3]);
+      const a = dl.tensor2d([1, 2, 5], [1, 3]);
+      const b = dl.tensor2d([7, 3], [2, 1]);
       const res = dl.sub(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(res, [-6, -5, -2, -2, -1, 2]);
     });
 
     it('2D-2D broadcast inner dim of b', () => {
-      const a = Tensor2D.new([2, 3], [1, 2, 5, 4, 5, 6]);
-      const b = Tensor2D.new([2, 1], [7, 3]);
+      const a = dl.tensor2d([1, 2, 5, 4, 5, 6], [2, 3]);
+      const b = dl.tensor2d([7, 3], [2, 1]);
       const res = dl.sub(a, b);
       expect(res.shape).toEqual([2, 3]);
       test_util.expectArraysClose(res, [-6, -5, -2, 1, 2, 3]);
@@ -888,9 +888,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradients: basic 2D arrays', () => {
-      const a = Tensor2D.new([2, 2], [0, 1, 2, 3]);
-      const b = Tensor2D.new([2, 2], [3, 2, 1, 0]);
-      const dy = Tensor2D.new([2, 2], [1, 10, 15, 20]);
+      const a = dl.tensor2d([0, 1, 2, 3], [2, 2]);
+      const b = dl.tensor2d([3, 2, 1, 0], [2, 2]);
+      const dy = dl.tensor2d([1, 10, 15, 20], [2, 2]);
 
       const gradients = dl.vjp(() => dl.sub(a, b), {a, b}, dy);
 
@@ -934,9 +934,9 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient: 2D - 2D broadcast', () => {
-      const a = Tensor2D.new([2, 2], [4, 5, 6, 7]);
-      const b = Tensor2D.new([2, 1], [2, 3]);
-      const dy = Tensor2D.new([2, 2], [5, 4, 3, 2]);
+      const a = dl.tensor2d([4, 5, 6, 7], [2, 2]);
+      const b = dl.tensor2d([2, 3], [2, 1]);
+      const dy = dl.tensor2d([5, 4, 3, 2], [2, 2]);
       const gradients = dl.vjp(() => dl.sub(a, b), {a, b}, dy);
 
       expect(gradients.a.shape).toEqual(a.shape);
@@ -961,8 +961,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
 {
   const tests: MathTests = it => {
     it('Scaled tensor add', math => {
-      const a = Tensor2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
-      const b = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+      const a = dl.tensor2d([2, 4, 6, 8, 10, 12], [2, 3]);
+      const b = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
       const c1 = dl.scalar(3);
       const c2 = dl.scalar(2);
 
@@ -972,14 +972,14 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
       test_util.expectArraysClose(result, [8, 16, 24, 32, 40, 48]);
 
       // Different sizes throws an error.
-      const wrongSizeMat = Tensor2D.new([2, 2], [1, 2, 3, 4]);
+      const wrongSizeMat = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       expect(() => math.scaledArrayAdd<Tensor2D>(c1, wrongSizeMat, c2, b))
           .toThrowError();
     });
 
     it('throws when passed non-scalars', math => {
-      const a = Tensor2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
-      const b = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
+      const a = dl.tensor2d([2, 4, 6, 8, 10, 12], [2, 3]);
+      const b = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
       // tslint:disable-next-line:no-any
       const c1: any = dl.randomNormal([10]);
       const c2 = dl.scalar(2);
@@ -989,8 +989,8 @@ import {Scalar, Tensor2D, Tensor3D} from './tensor';
     });
 
     it('throws when Tensors are different shape', math => {
-      const a = Tensor2D.new([2, 3], [2, 4, 6, 8, 10, 12]);
-      const b = Tensor2D.new([2, 4], [1, 2, 3, 4, 5, 6, 7, 8]);
+      const a = dl.tensor2d([2, 4, 6, 8, 10, 12], [2, 3]);
+      const b = dl.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
       const c1 = dl.scalar(3);
       const c2 = dl.scalar(2);
 

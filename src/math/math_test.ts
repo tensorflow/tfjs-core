@@ -403,8 +403,8 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('works with asType', math => {
-      const a = Tensor2D.new([2, 2], [1, 2, 3, 4], 'int32');
-      const exponent = Tensor2D.new([2, 2], [2, 2, 2, 2], 'int32');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
+      const exponent = dl.tensor2d([2, 2, 2, 2], [2, 2], 'int32');
 
       const gradients = math.gradients(() => {
         const b = a.toFloat();
@@ -418,9 +418,9 @@ const gradientsScope = Gradients.gradientsScope;
     });
 
     it('asType outside of math.gradients() throws error', math => {
-      const a = Tensor2D.new([2, 2], [1, 2, 3, 4], 'int32');
+      const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
       const b = a.toFloat();
-      const exponent = Tensor2D.new([2, 2], [2, 2, 2, 2], 'int32');
+      const exponent = dl.tensor2d([2, 2, 2, 2], [2, 2], 'int32');
 
       const f = () => {
         return math.gradients(() => {

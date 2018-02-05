@@ -76,7 +76,7 @@ import {Tensor2D} from './tensor';
 {
   const tests: MathTests = it => {
     it('Should pad 2D arrays', math => {
-      let a = Tensor2D.new([2, 1], [[1], [2]], 'int32');
+      let a = dl.tensor2d([[1], [2]], [2, 1], 'int32');
       let b = math.pad2D(a, [[1, 1], [1, 1]]);
       // 0, 0, 0
       // 0, 1, 0
@@ -84,7 +84,7 @@ import {Tensor2D} from './tensor';
       // 0, 0, 0
       test_util.expectArraysClose(b, [0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0]);
 
-      a = Tensor2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
+      a = dl.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
       b = math.pad2D(a, [[2, 2], [1, 1]]);
       // 0, 0, 0, 0, 0
       // 0, 0, 0, 0, 0
@@ -99,13 +99,13 @@ import {Tensor2D} from './tensor';
     });
 
     it('Should not pad 2D arrays with 0s', math => {
-      const a = Tensor2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
+      const a = dl.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
       const b = math.pad2D(a, [[0, 0], [0, 0]]);
       test_util.expectArraysClose(b, [1, 2, 3, 4, 5, 6]);
     });
 
     it('Should handle padding with custom value', math => {
-      let a = Tensor2D.new([2, 3], [[1, 2, 3], [4, 5, 6]], 'int32');
+      let a = dl.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
       let b = math.pad2D(a, [[1, 1], [1, 1]], 10);
       test_util.expectArraysClose(b, [
         10, 10, 10, 10, 10, 10, 1,  2,  3,  10,
@@ -136,7 +136,7 @@ import {Tensor2D} from './tensor';
     });
 
     it('Should handle invalid paddings', math => {
-      const a = Tensor2D.new([2, 1], [[1], [2]], 'int32');
+      const a = dl.tensor2d([[1], [2]], [2, 1], 'int32');
       const f = () => {
         math.pad2D(a, [[2, 2, 2], [1, 1, 1]]);
       };
