@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {Scalar} from '../../math/ndarray';
-import {Tensor} from '../graph';
+import {Scalar} from '../../math/tensor';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Operation} from './op';
@@ -33,9 +34,9 @@ export class LinearCombination extends Operation {
    * Computes c1*x1 + c2*x2.
    */
   constructor(
-      private x1Tensor: Tensor, private x2Tensor: Tensor,
-      private c1Tensor: Tensor, private c2Tensor: Tensor,
-      private outTensor: Tensor) {
+      private x1Tensor: SymbolicTensor, private x2Tensor: SymbolicTensor,
+      private c1Tensor: SymbolicTensor, private c2Tensor: SymbolicTensor,
+      private outTensor: SymbolicTensor) {
     super();
   }
 
@@ -45,7 +46,7 @@ export class LinearCombination extends Operation {
     const c1 = inferenceArrays.get(this.c1Tensor).asScalar();
     const c2 = inferenceArrays.get(this.c2Tensor).asScalar();
 
-    math.scope((keep) => {
+    tidy(() => {
       inferenceArrays.set(
           this.outTensor, keep(math.scaledArrayAdd(c1, x1, c2, x2)));
     });
@@ -60,7 +61,7 @@ export class LinearCombination extends Operation {
     const c2 = inferenceArrays.get(this.c2Tensor) as Scalar;
     const dy = gradientArrays.get(this.outTensor);
 
-    math.scope(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.x1Tensor)) {
         gradientArrays.add(this.x1Tensor, math.scalarTimesArray(c1, dy));
       }

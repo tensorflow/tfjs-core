@@ -16,22 +16,25 @@
  */
 
 import {ENV} from '../../environment';
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {Array1D, Scalar} from '../../math/ndarray';
+import {Scalar, Tensor1D} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
+
 import {Operation} from './op';
 
 export class Softmax extends Operation {
-  constructor(private logitsTensor: Tensor, private output: Tensor) {
+  constructor(
+      private logitsTensor: SymbolicTensor, private output: SymbolicTensor) {
     super();
   }
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
-    const logits = inferenceArrays.get(this.logitsTensor) as Array1D;
-    return math.scope((keep) => {
+    const logits = inferenceArrays.get(this.logitsTensor) as Tensor1D;
+    return tidy(() => {
       inferenceArrays.set(this.output, keep(math.softmax(logits)));
     });
   }
@@ -42,7 +45,7 @@ export class Softmax extends Operation {
     // grad_x = grad_softmax * softmax - sum(grad_softmax * softmax) * softmax
     const y = inferenceArrays.get(this.output);
     const dy = gradientArrays.get(this.output);
-    math.scope(() => {
+    tidy(() => {
       if (graph_util.shouldBackProp(this.logitsTensor)) {
         const dlogits = math.elementWiseMul(
             math.subtract(dy, math.sum(math.elementWiseMul(dy, y))), y);
@@ -54,18 +57,18 @@ export class Softmax extends Operation {
 
 export class SoftmaxCrossEntropyCost extends Operation {
   constructor(
-      private logitsTensor: Tensor, private labelTensor: Tensor,
-      private yTensor: Tensor) {
+      private logitsTensor: SymbolicTensor, private labelTensor: SymbolicTensor,
+      private yTensor: SymbolicTensor) {
     super();
-    this.softmaxTensor = new Tensor(logitsTensor.shape);
+    this.softmaxTensor = new SymbolicTensor(logitsTensor.shape);
     this.epsilon = ENV.math.keep(Scalar.new(1e-5));
   }
 
   feedForward(math: NDArrayMath, inferenceArrays: TensorArrayMap) {
-    const logits = inferenceArrays.get(this.logitsTensor) as Array1D;
-    const label = inferenceArrays.get(this.labelTensor) as Array1D;
+    const logits = inferenceArrays.get(this.logitsTensor) as Tensor1D;
+    const label = inferenceArrays.get(this.labelTensor) as Tensor1D;
 
-    math.scope((keep) => {
+    tidy(() => {
       const softmaxResult = math.softmax(logits);
 
       inferenceArrays.set(this.softmaxTensor, keep(softmaxResult));
@@ -81,7 +84,7 @@ export class SoftmaxCrossEntropyCost extends Operation {
     const softmax = inferenceArrays.get(this.softmaxTensor);
     const label = inferenceArrays.get(this.labelTensor);
 
-    math.scope(() => {
+    tidy(() => {
       gradientArrays.add(this.logitsTensor, math.subtract(softmax, label));
     });
   }
@@ -95,17 +98,16 @@ export class SoftmaxCrossEntropyCost extends Operation {
     this.epsilon.dispose();
   }
 
-  private softmaxTensor: Tensor;
+  private softmaxTensor: SymbolicTensor;
   private epsilon: Scalar;
 }
 
 export function crossEntropyCost(
-    math: NDArrayMath, y: Array1D, target: Array1D,
-    epsilon: Scalar): Scalar {
+    math: NDArrayMath, y: Tensor1D, target: Tensor1D, epsilon: Scalar): Scalar {
   util.assert(
       y.size === target.size, 'The output and target must be the same size');
 
-  return math.scope(() => {
+  return tidy(() => {
     const yPlusEps = math.scalarPlusArray(epsilon, y);
     const logOutput = math.log(yPlusEps);
     const tarLogOutput = math.elementWiseMul(target, logOutput);

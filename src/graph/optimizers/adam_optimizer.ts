@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/ndarray';
 import {Optimizer} from '../../math/optimizers/optimizer';
+import {Scalar, Tensor} from '../../math/tensor';
 import {NamedVariableMap} from '../../math/types';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
@@ -50,13 +51,13 @@ export class AdamOptimizer extends Optimizer {
 
     if (this.firstMoment.size() === 0) {
       this.variableNodes.forEach(node => {
-        this.firstMoment.set(node.output, NDArray.zeros(node.output.shape));
+        this.firstMoment.set(node.output, Tensor.zeros(node.output.shape));
       });
     }
 
     if (this.secondMoment.size() === 0) {
       this.variableNodes.forEach(node => {
-        this.secondMoment.set(node.output, NDArray.zeros(node.output.shape));
+        this.secondMoment.set(node.output, Tensor.zeros(node.output.shape));
       });
     }
   }
@@ -65,7 +66,7 @@ export class AdamOptimizer extends Optimizer {
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
-    math.scope((keep) => {
+    tidy(() => {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);

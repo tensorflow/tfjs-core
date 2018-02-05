@@ -23,8 +23,7 @@ export class FontModel {
   dimensions = 40;
   range = 0.4;
   charIdMap: {[id: string]: number};
-  private variables: {[varName: string]: dl.NDArray};
-  private math: dl.NDArrayMath;
+  private variables: {[varName: string]: dl.Tensor};
   private inferCache = new Cache(this, this.infer);
   private numberOfValidChars = 62;
   private multiplierScalar = dl.Scalar.new(255);
@@ -60,12 +59,8 @@ export class FontModel {
     });
   }
 
-  init() {
-    this.math = dl.ENV.math;
-  }
-
   infer(args: Array<{}>) {
-    const embedding = args[0] as dl.NDArray;
+    const embedding = args[0] as dl.Tensor;
     const ctx = args[1] as CanvasRenderingContext2D;
     const char = args[2] as string;
     const cb = args[3] as () => void;
@@ -75,8 +70,8 @@ export class FontModel {
       throw (new Error('Invalid character id'));
     }
 
-    const adjusted = this.math.scope(keep => {
-      const idx = dl.Array1D.new([charId]);
+    const adjusted = dl.tidy(() => {
+      const idx = dl.Tensor1D.new([charId]);
       const onehotVector = dl.oneHot(idx, this.numberOfValidChars).as1D();
 
       const axis = 0;
@@ -87,19 +82,19 @@ export class FontModel {
       for (let i = 0; i < NUM_LAYERS; i++) {
         const weights =
             this.variables[`Stack/fully_connected_${i + 1}/weights`] as
-            dl.Array2D;
+            dl.Tensor2D;
         const biases = this.variables[`Stack/fully_connected_${i + 1}/biases`];
 
         lastOutput = lastOutput.as2D(-1, weights.shape[0])
                          .matMul(weights)
                          .add(biases)
-                         .relu() as dl.Array1D;
+                         .relu() as dl.Tensor1D;
       }
 
       const finalWeights =
-          this.variables['fully_connected/weights'] as dl.Array2D;
+          this.variables['fully_connected/weights'] as dl.Tensor2D;
       const finalBiases =
-          this.variables['fully_connected/biases'] as dl.Array2D;
+          this.variables['fully_connected/biases'] as dl.Tensor2D;
 
       const finalOutput = lastOutput.as2D(-1, finalWeights.shape[0])
                               .matMul(finalWeights)
