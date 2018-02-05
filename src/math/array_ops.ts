@@ -29,7 +29,7 @@ export class Ops {
    *
    * This operation returns a tensor of type `dtype` with shape `shape` and all
    * elements set to 1.
-   * @param shape A list of integers defining the output tensor shape.
+   * @param shape A array of integers defining the output tensor shape.
    * @param dtype The type of an element in the resulting tensor. Can
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
    */
@@ -46,7 +46,7 @@ export class Ops {
    *
    * This operation returns a tensor of type `dtype` with shape `shape` and all
    * elements set to 0.
-   * @param shape A list of integers defining the output tensor shape.
+   * @param shape A array of integers defining the output tensor shape.
    * @param dtype The type of an element in the resulting tensor. Can
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
    */
@@ -62,7 +62,7 @@ export class Ops {
    * Creates a tensor filled with a scalar value.
    *
    * This operation creates a tensor of shape `shape` and fills it with `value`.
-   * @param shape A list of integers defining the output tensor shape.
+   * @param shape A array of integers defining the output tensor shape.
    * @param value The scalar value to fill the tensor with.
    * @param dtype The type of an element in the resulting tensor. Can
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
@@ -114,7 +114,7 @@ export class Ops {
   /**
    * Creates a tensor with values sampled from a normal distribution.
    *
-   * @param shape A list of integers defining the output tensor shape.
+   * @param shape A array of integers defining the output tensor shape.
    * @param mean The mean of the normal distribution.
    * @param stdDev The standard deviation of the normal distribution.
    * @param dtype The data type of the output.
@@ -140,7 +140,7 @@ export class Ops {
    * standard deviation, except that values whose magnitude is more than 2
    * standard deviations from the mean are dropped and re-picked.
    *
-   * @param shape A list of integers defining the output tensor shape.
+   * @param shape A array of integers defining the output tensor shape.
    * @param mean The mean of the normal distribution.
    * @param stdDev The standard deviation of the normal distribution.
    * @param dtype The data type of the output.
@@ -166,7 +166,7 @@ export class Ops {
    * maxval). The lower bound minval is included in the range, while the upper
    * bound maxval is excluded.
    *
-   * @param shape A list of integers defining the output tensor shape.
+   * @param shape A array of integers defining the output tensor shape.
    * @param minval The lower bound on the range of random values to generate.
    *   Defaults to 0.
    * @param maxval The upper bound on the range of random values to generate.
@@ -185,7 +185,7 @@ export class Ops {
    * Creates a tensor with values sampled from a random number generator
    * function defined by the user.
    *
-   * @param shape A list of integers defining the output tensor shape.
+   * @param shape A array of integers defining the output tensor shape.
    * @param randFunction A random number generator function which is called for
    * each element in the output tensor.
    * @param dtype The data type of the output tensor. Defaults to 'float32'.
@@ -306,7 +306,7 @@ export class Ops {
    * elements implied by shape must be the same as the number of elements in
    * tensor.
    * @param x A tensor.
-   * @param shape A list of integers defining the output tensor shape.
+   * @param shape A array of integers defining the output tensor shape.
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
@@ -482,10 +482,12 @@ export class Ops {
    *
    * When done, call `buffer.toTensor()` to get an immutable `Tensor` with those
    * values.
+   * @param shape A array of integers defining the output tensor shape.
+   * @param dtype The dtype of the buffer. Defaults to 'float32'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  static buffer<R extends Rank>(shape: ShapeMap[R], dtype: DataType):
-      TensorBuffer<R> {
+  static buffer<R extends Rank>(
+      shape: ShapeMap[R], dtype: DataType = 'float32'): TensorBuffer<R> {
     return new TensorBuffer<R>(shape, dtype);
   }
 }
