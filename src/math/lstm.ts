@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+
 import {doc, operation} from './decorators';
 import {Scalar, Tensor1D, Tensor2D} from './tensor';
 

@@ -32,8 +32,6 @@ export function operation(
   return descriptor;
 }
 
-// Documentation
-
 export interface HeadingMap {
   'Tensors': 'Creation'|'Transformations'|'Slicing and Joining';
   'Operations': 'Arithmetic'|'Basic math'|'Matrices'|'Convolution'|

@@ -22,8 +22,8 @@ import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
 import * as gradients from './backends/gradients';
 import {ScopeResult} from './backends/tape_util';
-import * as tracking from './backends/tracking';
 import {keep, tidy} from './backends/tracking';
+import * as tracking_functions from './backends/tracking_functions';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
 import * as compare from './compare';
@@ -198,7 +198,7 @@ export class NDArrayMath {
   resizeBilinear3D = image_ops.Ops.resizeBilinear;
 
   // Tracking methods.
-  keep = tracking.keep;
+  keep = tracking_functions.Tracking.keep;
 
   // Gradient methods.
   customGradient = gradients.customGradient;
