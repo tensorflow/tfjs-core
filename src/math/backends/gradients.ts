@@ -18,8 +18,8 @@
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import {doc} from '../decorators';
-import {NDArray, Scalar, Variable} from '../ndarray';
-import {NamedArrayMap, Rank} from '../types';
+import {Scalar, Tensor, Variable} from '../tensor';
+import {NamedTensorMap, Rank} from '../types';
 
 import {CustomGradientFunc} from './backend_engine';
 import {ScopeFn, ScopeResult} from './tape_util';
@@ -54,8 +54,8 @@ export class Gradients {
    * method will return an object of the same shape.
    */
   @doc({heading: 'Training', 'subheading': 'Gradients'})
-  static vjp<T extends NDArray|NamedArrayMap, R extends Rank>(
-      f: () => NDArray<R>, x: T, dy: NDArray<R>): T {
+  static vjp<T extends Tensor|NamedTensorMap, R extends Rank>(
+      f: () => Tensor<R>, x: T, dy: Tensor<R>): T {
     const res = Gradients.valueAndGradients(f, x, dy);
     res.value.dispose();
     return res.gradients;
@@ -70,8 +70,8 @@ export class Gradients {
    * method will return an object of the same shape.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
-  static gradients<R extends Rank, T extends NDArray|NamedArrayMap>(
-      f: () => NDArray<R>, x: T): T {
+  static gradients<R extends Rank, T extends Tensor|NamedTensorMap>(
+      f: () => Tensor<R>, x: T): T {
     const res = Gradients.valueAndGradients(f, x);
     res.value.dispose();
     return res.gradients;
@@ -87,7 +87,7 @@ export class Gradients {
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
   static variableGradients(f: () => Scalar, varList?: Variable[]):
-      {value: Scalar, gradients: NamedArrayMap} {
+      {value: Scalar, gradients: NamedTensorMap} {
     if (varList == null) {
       // Get all of the trainable variables.
       varList = [];
@@ -103,7 +103,7 @@ export class Gradients {
           `The user-provided function must return a Scalar, but it returned a ` +
           `rank-${value.rank} tensor`);
     }
-    const namedGrads: NamedArrayMap = {};
+    const namedGrads: NamedTensorMap = {};
     varList.forEach((v, i) => {
       if (gradients[i] != null) {
         namedGrads[v.name] = gradients[i];
@@ -122,10 +122,10 @@ export class Gradients {
    * this method will return an object of the same shape.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
-  static valueAndGradients<R extends Rank, T extends NDArray|NamedArrayMap>(
-      f: () => NDArray<R>, x: T, dy?: NDArray<R>):
-      {value: NDArray<R>, gradients: T} {
-    const keys = x instanceof NDArray ? null : Object.keys(x);
+  static valueAndGradients<R extends Rank, T extends Tensor|NamedTensorMap>(
+      f: () => Tensor<R>, x: T, dy?: Tensor<R>):
+      {value: Tensor<R>, gradients: T} {
+    const keys = x instanceof Tensor ? null : Object.keys(x);
     const xs = util.flattenNameArrayMap(x, keys);
 
     const {value, gradients} = ENV.engine.gradients(f, xs, dy);
@@ -136,7 +136,7 @@ export class Gradients {
           `Make sure the xs you are computing gradients with respect ` +
           `to are used inside the gradient function.`);
     }
-    const resGradients = (x instanceof NDArray) ?
+    const resGradients = (x instanceof Tensor) ?
         gradients[0] as T :
         util.unflattenToNameArrayMap(keys, gradients) as T;
     return {value, gradients: resGradients};
@@ -154,8 +154,8 @@ export class Gradients {
    *    debugging.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
-  static customGradient<T extends NDArray>(
-      name: string, f: CustomGradientFunc<T>, inputs: NamedArrayMap): T {
+  static customGradient<T extends Tensor>(
+      name: string, f: CustomGradientFunc<T>, inputs: NamedTensorMap): T {
     name = name || '';
     return ENV.engine.customGradient(name, f, inputs);
   }

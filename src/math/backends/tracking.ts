@@ -17,20 +17,20 @@
 
 import {ENV} from '../../environment';
 import {doc} from '../decorators';
-import {NDArray} from '../ndarray';
+import {Tensor} from '../tensor';
 
 import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
 
 export class Tracking {
   /**
    * Executes the provided function and after it is executed, cleans up all
-   * intermediate NDArrays allocated by the function except those returned by
+   * intermediate tensors allocated by the function except those returned by
    * the function.
    *
    * Using this method helps avoid memory leaks. In general, wrap calls to
    * operations in dl.tidy() for automatic memory cleanup.
    *
-   * When in safe mode, you must enclose all `NDArray` creation and ops
+   * When in safe mode, you must enclose all `Tensor` creation and ops
    * inside a `dl.tidy()` to prevent memory leaks.
    *
    * @param nameOrFn The name of the closure, or the function to execute.
@@ -79,12 +79,12 @@ export class Tracking {
   }
 
   /**
-   * Keeps an NDArray generated inside a dl.tidy() from being disposed
+   * Keeps a tensor generated inside a dl.tidy() from being disposed
    * automatically.
-   * @param result The NDArray to keep from being disposed.
+   * @param result The Tensor to keep from being disposed.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
-  static keep<T extends NDArray>(result: T): T {
+  static keep<T extends Tensor>(result: T): T {
     return ENV.engine.keep(result);
   }
 
