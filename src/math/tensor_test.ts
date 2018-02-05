@@ -25,7 +25,6 @@ const tests: MathTests = it => {
   it('Tensors of arbitrary size', () => {
     // [1, 2, 3]
     let t: Tensor = dl.tensor1d([1, 2, 3]);
-    expect(t instanceof Tensor1D).toBe(true);
     expect(t.rank).toBe(1);
     expect(t.size).toBe(3);
     test_util.expectArraysClose(t, [1, 2, 3]);
@@ -34,7 +33,6 @@ const tests: MathTests = it => {
 
     // [[1, 2, 3]]
     t = dl.tensor2d([1, 2, 3], [1, 3]);
-    expect(t instanceof Tensor2D).toBe(true);
     expect(t.rank).toBe(2);
     expect(t.size).toBe(3);
     test_util.expectArraysClose(t, [1, 2, 3]);
@@ -44,7 +42,6 @@ const tests: MathTests = it => {
     // [[1, 2, 3],
     //  [4, 5, 6]]
     t = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    expect(t instanceof Tensor2D).toBe(true);
     expect(t.rank).toBe(2);
     expect(t.size).toBe(6);
 
