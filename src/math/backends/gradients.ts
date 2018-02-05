@@ -16,6 +16,7 @@
  */
 
 import {ENV} from '../../environment';
+import {tidy} from '../../globals';
 import * as util from '../../util';
 import {doc} from '../decorators';
 import {Scalar, Tensor, Variable} from '../tensor';
@@ -23,7 +24,6 @@ import {NamedTensorMap, Rank} from '../types';
 
 import {CustomGradientFunc} from './backend_engine';
 import {ScopeFn, ScopeResult} from './tape_util';
-import {tidy} from './tracking';
 
 export class Gradients {
   /**

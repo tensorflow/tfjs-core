@@ -16,6 +16,7 @@
  */
 
 import {ENV} from '../../environment';
+import {tidy} from '../../globals';
 import * as util from '../../util';
 import * as ops from '../ops';
 import {Tensor, Variable} from '../tensor';
@@ -30,7 +31,6 @@ import {Profiler} from './profiler';
 import {KernelNode, Tape, TapeNode, TapeNodeInputGradientTensors} from './tape_types';
 import * as tape_util from './tape_util';
 import {ScopeResultImmediate} from './tape_util';
-import {tidy} from './tracking';
 
 interface ScopeState {
   keep: Tensor[];

@@ -16,13 +16,13 @@
  */
 
 import {BackendType, ENV} from '../environment';
+import {keep, tidy} from '../globals';
 import * as util from '../util';
 
 import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
 import * as gradients from './backends/gradients';
 import {ScopeResult} from './backends/tape_util';
-import {keep, tidy} from './backends/tracking';
 import * as tracking_functions from './backends/tracking_functions';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
