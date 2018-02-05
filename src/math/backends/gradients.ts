@@ -100,8 +100,8 @@ export class Gradients {
     const {value, gradients} = ENV.engine.gradients(f, varList);
     if (value.rank > 0) {
       throw new Error(
-          `The user-provided function must return a Scalar, but it returned a ` +
-          `rank-${value.rank} tensor`);
+          `The user-provided function must return a Scalar, but it ` +
+          `returned a rank-${value.rank} tensor`);
     }
     const namedGrads: NamedTensorMap = {};
     varList.forEach((v, i) => {
