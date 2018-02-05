@@ -79,7 +79,7 @@ export class Tracking {
   }
 
   /**
-   * Keeps a tensor generated inside a dl.tidy() from being disposed
+   * Keeps a Tensor generated inside a dl.tidy() from being disposed
    * automatically.
    * @param result The Tensor to keep from being disposed.
    */
