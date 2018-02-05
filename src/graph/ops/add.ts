@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {keep, tidy} from '../.././globals';
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
 import {Scalar, Tensor, Tensor2D} from '../../math/tensor';
 import * as util from '../../util';

@@ -24,6 +24,7 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map
 import {NDArrayMath} from '../../math/math';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../types';
+
 import {Optimizer} from './optimizer';
 
 export class SGDOptimizer extends Optimizer {
