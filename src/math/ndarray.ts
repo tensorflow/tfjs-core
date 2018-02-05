@@ -24,7 +24,7 @@ import {RandNormalDataTypes} from './rand';
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
 
 /** @hidden */
-export interface TensorData {
+export interface NDArrayData {
   dataId?: number;
   values?: TypedArray;
 }
@@ -82,25 +82,25 @@ export class TensorBuffer<R extends Rank> {
     return this.shape.length;
   }
 
-  toTensor(): Tensor<R> {
-    return Tensor.make(this.shape, {values: this.values}, this.dtype);
+  toTensor(): NDArray<R> {
+    return NDArray.make(this.shape, {values: this.values}, this.dtype);
   }
 }
 
-export class Tensor<R extends Rank = Rank> {
+export class NDArray<R extends Rank = Rank> {
   private static nextId = 0;
   private static nextDataId = 0;
 
-  /** Unique id of this tensor. */
+  /** Unique id of this ndarray. */
   readonly id: number;
   /**
-   * Id of the bucket holding the data for this tensor. Multiple arrays can
+   * Id of the bucket holding the data for this ndarray. Multiple arrays can
    * point to the same bucket (e.g. when calling array.reshape()).
    */
   dataId: number;
-  /** The shape of the tensor. */
+  /** The shape of the ndarray. */
   readonly shape: ShapeMap[R];
-  /** Number of elements in the tensor. */
+  /** Number of elements in the ndarray. */
   readonly size: number;
   /** The data type for the array. */
   readonly dtype: DataType;
@@ -109,8 +109,8 @@ export class Tensor<R extends Rank = Rank> {
 
   /**
    * Number of elements to skip in each dimension when indexing. See
-   * https://docs.scipy.org/doc/numpy/reference/generated/\
-   * numpy.ndarray.strides.html
+   * https://docs.scipy.org/doc/numpy/reference/generated
+   *     /numpy.ndarray.strides.html
    */
   readonly strides: number[];
 
@@ -121,14 +121,14 @@ export class Tensor<R extends Rank = Rank> {
     if (values != null) {
       util.assert(
           this.size === values.length,
-          `Constructing tensor of shape (${this.size}) should match the ` +
+          `Constructing ndarray of shape (${this.size}) should match the ` +
               `length of values (${values.length})`);
     }
     this.shape = shape;
     this.dtype = dtype || 'float32';
     this.strides = computeStrides(shape);
-    this.dataId = dataId != null ? dataId : Tensor.nextDataId++;
-    this.id = Tensor.nextId++;
+    this.dataId = dataId != null ? dataId : NDArray.nextDataId++;
+    this.id = NDArray.nextId++;
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     ENV.math.register(this);
     if (values != null) {
@@ -137,72 +137,73 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /** @deprecated Please use dl.ones() */
-  static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType): Tensor<R> {
+  static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
+      NDArray<R> {
     return ops.ones(shape, dtype);
   }
 
   /** @deprecated Please use dl.zeros() */
   static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
-      Tensor<R> {
+      NDArray<R> {
     return ops.zeros(shape, dtype);
   }
 
   /** @deprecated Please use dl.onesLike() */
-  static onesLike<T extends Tensor>(x: T): T {
+  static onesLike<T extends NDArray>(x: T): T {
     return ops.onesLike(x);
   }
 
   /** @deprecated Please use dl.zerosLike() */
-  static zerosLike<T extends Tensor>(x: T): T {
+  static zerosLike<T extends NDArray>(x: T): T {
     return ops.zerosLike(x);
   }
 
   /** @deprecated Please use dl.clone() */
-  static like<T extends Tensor>(x: T): T {
+  static like<T extends NDArray>(x: T): T {
     return ops.clone(x);
   }
 
   /**
-   * Makes a new tensor with the provided shape and values. Values should be in
+   * Makes a new ndarray with the provided shape and values. Values should be in
    * a flat array.
    */
-  static make<T extends Tensor<R>, D extends DataType = 'float32',
-                                             R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData, dtype?: D): T {
-    return new Tensor(shape, dtype, data.values, data.dataId) as T;
+  static make<T extends NDArray<R>, D extends DataType = 'float32',
+                                              R extends Rank = Rank>(
+      shape: ShapeMap[R], data: NDArrayData, dtype?: D): T {
+    return new NDArray(shape, dtype, data.values, data.dataId) as T;
   }
 
   /** @deprecated Please use dl.fromPixels() */
   static fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels = 3): Tensor3D {
+      numChannels = 3): Array3D {
     return ops.fromPixels(pixels, numChannels);
   }
 
   /** @deprecated Please use dl.rand() */
   static rand<R extends Rank>(
       shape: ShapeMap[R], randFunction: () => number,
-      dtype?: DataType): Tensor<R> {
+      dtype?: DataType): NDArray<R> {
     return ops.rand(shape, randFunction, dtype);
   }
 
   /** @deprecated Please use dl.randNormal() */
   static randNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
-      dtype?: keyof RandNormalDataTypes, seed?: number): Tensor<R> {
+      dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
     return ops.randomNormal(shape, mean, stdDev, dtype, seed);
   }
 
   /** @deprecated Please use dl.truncatedNormal() */
   static randTruncatedNormal<R extends Rank>(
       shape: ShapeMap[R], mean = 0, stdDev = 1,
-      dtype?: keyof RandNormalDataTypes, seed?: number): Tensor<R> {
+      dtype?: keyof RandNormalDataTypes, seed?: number): NDArray<R> {
     return ops.truncatedNormal(shape, mean, stdDev, dtype, seed);
   }
 
   /** @deprecated Please use dl.randomUniform() */
   static randUniform<R extends Rank>(
-      shape: ShapeMap[R], a: number, b: number, dtype?: DataType): Tensor<R> {
+      shape: ShapeMap[R], a: number, b: number, dtype?: DataType): NDArray<R> {
     return ops.randomUniform(shape, a, b, dtype);
   }
 
@@ -211,13 +212,13 @@ export class Tensor<R extends Rank = Rank> {
    * squeezes the dimensions listed. The dimension index starts at 0. It is an
    * error to squeeze a dimension that is not 1.
    */
-  squeeze<T extends Tensor>(axis?: number[]): T {
+  squeeze<T extends NDArray>(axis?: number[]): T {
     this.throwIfDisposed();
     return this.reshape(util.squeezeShape(this.shape, axis).newShape) as T;
   }
 
-  /** Flatten a Tensor to a 1D array. */
-  flatten(): Tensor1D {
+  /** Flatten a NDArray to a 1D array. */
+  flatten(): Array1D {
     this.throwIfDisposed();
     return this.as1D();
   }
@@ -228,22 +229,22 @@ export class Tensor<R extends Rank = Rank> {
     return this.reshape<Rank.R0>([]);
   }
 
-  as1D(): Tensor1D {
+  as1D(): Array1D {
     this.throwIfDisposed();
     return this.reshape<Rank.R1>([this.size]);
   }
 
-  as2D(rows: number, columns: number): Tensor2D {
+  as2D(rows: number, columns: number): Array2D {
     this.throwIfDisposed();
     return this.reshape<Rank.R2>([rows, columns]);
   }
 
-  as3D(rows: number, columns: number, depth: number): Tensor3D {
+  as3D(rows: number, columns: number, depth: number): Array3D {
     this.throwIfDisposed();
     return this.reshape<Rank.R3>([rows, columns, depth]);
   }
 
-  as4D(rows: number, columns: number, depth: number, depth2: number): Tensor4D {
+  as4D(rows: number, columns: number, depth: number, depth2: number): Array4D {
     this.throwIfDisposed();
     return this.reshape<Rank.R4>([rows, columns, depth, depth2]);
   }
@@ -319,7 +320,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Asynchronously downloads the values from the Tensor. Returns a promise
+   * Asynchronously downloads the values from the NDArray. Returns a promise
    * that resolves when the data is ready.
    */
   async data(): Promise<TypedArray> {
@@ -328,7 +329,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Synchronously downloads the values from the Tensor. This blocks the UI
+   * Synchronously downloads the values from the NDArray. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
   dataSync(): TypedArray {
@@ -347,7 +348,7 @@ export class Tensor<R extends Rank = Rank> {
   private isDisposed = false;
   protected throwIfDisposed() {
     if (this.isDisposed) {
-      throw new Error(`Tensor is disposed.`);
+      throw new Error(`NDArray is disposed.`);
     }
   }
 
@@ -368,13 +369,13 @@ export class Tensor<R extends Rank = Rank> {
 
   // Chain API.
 
-  /** Reshapes the current tensor into the provided shape. */
-  reshape<R2 extends Rank>(newShape: ShapeMap[R2]): Tensor<R2> {
+  /** Reshapes the current ndarray into the provided shape. */
+  reshape<R2 extends Rank>(newShape: ShapeMap[R2]): NDArray<R2> {
     this.throwIfDisposed();
     return ops.reshape(this, newShape);
   }
 
-  reshapeAs<T extends Tensor>(x: T): T {
+  reshapeAs<T extends NDArray>(x: T): T {
     this.throwIfDisposed();
     return this.reshape(x.shape) as T;
   }
@@ -384,82 +385,82 @@ export class Tensor<R extends Rank = Rank> {
     return ops.tile(this, reps);
   }
 
-  gather<T extends this>(this: T, indices: Tensor1D, axis = 0): T {
+  gather<T extends this>(this: T, indices: Array1D, axis = 0): T {
     this.throwIfDisposed();
     return ops.gather(this, indices);
   }
 
   matMul(
-      b: Tensor2D, aOrientation = MatrixOrientation.REGULAR,
-      bOrientation = MatrixOrientation.REGULAR): Tensor2D {
+      b: Array2D, aOrientation = MatrixOrientation.REGULAR,
+      bOrientation = MatrixOrientation.REGULAR): Array2D {
     this.throwIfDisposed();
-    return ops.matMul(this as Tensor2D, b, aOrientation, bOrientation);
+    return ops.matMul(this as Array2D, b, aOrientation, bOrientation);
   }
-  slice(begin: ShapeMap[R], size: ShapeMap[R]): Tensor<R> {
+  slice(begin: ShapeMap[R], size: ShapeMap[R]): NDArray<R> {
     this.throwIfDisposed();
     return ops.slice(this, begin, size);
   }
-  reverse(axis: number|number[]): Tensor<R> {
+  reverse(axis: number|number[]): NDArray<R> {
     this.throwIfDisposed();
     return ops.reverse(this, axis);
   }
-  concat(x: Tensor<R>, axis: number): Tensor<R> {
+  concat(x: NDArray<R>, axis: number): NDArray<R> {
     this.throwIfDisposed();
     return ops.concat(this, x, axis);
   }
   batchNormalization(
-      mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
-      varianceEpsilon = .001, scale?: Tensor<R>|Tensor1D,
-      offset?: Tensor<R>|Tensor1D): Tensor<R> {
+      mean: NDArray<R>|Array1D, variance: NDArray<R>|Array1D,
+      varianceEpsilon = .001, scale?: NDArray<R>|Array1D,
+      offset?: NDArray<R>|Array1D): NDArray<R> {
     this.throwIfDisposed();
     return ops.batchNormalization(
         this, mean, variance, varianceEpsilon, scale, offset);
   }
 
-  clone(): Tensor<R> {
+  clone(): NDArray<R> {
     this.throwIfDisposed();
     return ops.clone(this);
   }
 
   // Reduction ops.
 
-  logSumExp<T extends Tensor>(axis: number|number[] = null, keepDims = false):
+  logSumExp<T extends NDArray>(axis: number|number[] = null, keepDims = false):
       T {
     this.throwIfDisposed();
     return ops.logSumExp(this, axis, keepDims);
   }
-  sum<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+  sum<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return ops.sum(this, axis, keepDims);
   }
-  mean<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+  mean<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return ops.mean(this, axis, keepDims);
   }
-  min<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+  min<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return ops.min(this, axis, keepDims);
   }
-  max<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+  max<T extends NDArray>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return ops.max(this, axis, keepDims);
   }
-  argMin<T extends Tensor>(axis: number = null): T {
+  argMin<T extends NDArray>(axis: number = null): T {
     this.throwIfDisposed();
     return ops.argMin(this, axis);
   }
-  argMax<T extends Tensor>(axis: number = null): T {
+  argMax<T extends NDArray>(axis: number = null): T {
     this.throwIfDisposed();
     return ops.argMax(this, axis);
   }
-  argMaxEquals(x: Tensor): Scalar {
+  argMaxEquals(x: NDArray): Scalar {
     this.throwIfDisposed();
     return ops.argMaxEquals(this, x);
   }
 
   // Binary ops.
 
-  add<T extends Tensor>(x: Tensor): T {
+  add<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.add(this, x);
   }
@@ -467,7 +468,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.addStrict(this, x);
   }
-  sub<T extends Tensor>(x: Tensor): T {
+  sub<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.sub(this, x);
   }
@@ -475,15 +476,15 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.subStrict(this, x);
   }
-  pow<T extends Tensor>(exp: Tensor): T {
+  pow<T extends NDArray>(exp: NDArray): T {
     this.throwIfDisposed();
     return ops.pow(this, exp);
   }
-  powStrict(exp: Tensor): Tensor<R> {
+  powStrict(exp: NDArray): NDArray<R> {
     this.throwIfDisposed();
     return ops.powStrict(this, exp);
   }
-  mul<T extends Tensor>(x: Tensor): T {
+  mul<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.mul(this, x);
   }
@@ -491,7 +492,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.mulStrict(this, x);
   }
-  div<T extends Tensor>(x: Tensor): T {
+  div<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.div(this, x);
   }
@@ -499,7 +500,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.divStrict(this, x);
   }
-  minimum<T extends Tensor>(x: Tensor): T {
+  minimum<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.minimum(this, x);
   }
@@ -507,7 +508,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.minimumStrict(this, x);
   }
-  maximum<T extends Tensor>(x: Tensor): T {
+  maximum<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.maximum(this, x);
   }
@@ -515,14 +516,14 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.maximumStrict(this, x);
   }
-  transpose(perm?: number[]): Tensor<R> {
+  transpose(perm?: number[]): NDArray<R> {
     this.throwIfDisposed();
     return ops.transpose(this, perm);
   }
 
   // Compare ops.
 
-  notEqual<T extends Tensor>(x: Tensor): T {
+  notEqual<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.notEqual(this, x);
   }
@@ -530,7 +531,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.notEqualStrict(this, x);
   }
-  less<T extends Tensor>(x: Tensor): T {
+  less<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.less(this, x);
   }
@@ -538,7 +539,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.lessStrict(this, x);
   }
-  equal<T extends Tensor>(x: Tensor): T {
+  equal<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.equal(this, x);
   }
@@ -546,7 +547,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.equalStrict(this, x);
   }
-  lessEqual<T extends Tensor>(x: Tensor): T {
+  lessEqual<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.lessEqual(this, x);
   }
@@ -554,7 +555,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.lessEqualStrict(this, x);
   }
-  greater<T extends Tensor>(x: Tensor): T {
+  greater<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.greater(this, x);
   }
@@ -562,7 +563,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.greaterStrict(this, x);
   }
-  greaterEqual<T extends Tensor>(x: Tensor): T {
+  greaterEqual<T extends NDArray>(x: NDArray): T {
     this.throwIfDisposed();
     return ops.greaterEqual(this, x);
   }
@@ -572,121 +573,121 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   // Compare ops.
-  logicalAnd(x: Tensor): Tensor {
+  logicalAnd(x: NDArray): NDArray {
     this.throwIfDisposed();
     return ops.logicalAnd(this, x);
   }
-  logicalOr(x: Tensor): Tensor {
+  logicalOr(x: NDArray): NDArray {
     this.throwIfDisposed();
     return ops.logicalOr(this, x);
   }
-  logicalXor(x: Tensor): Tensor {
+  logicalXor(x: NDArray): NDArray {
     this.throwIfDisposed();
     return ops.logicalXor(this, x);
   }
-  where(condition: Tensor, x: Tensor): Tensor {
+  where(condition: NDArray, x: NDArray): NDArray {
     this.throwIfDisposed();
     return ops.where(condition, this, x);
   }
 
   // Unary ops.
-  neg(): Tensor<R> {
+  neg(): NDArray<R> {
     this.throwIfDisposed();
     return ops.neg(this);
   }
-  ceil(): Tensor<R> {
+  ceil(): NDArray<R> {
     this.throwIfDisposed();
     return ops.ceil(this);
   }
-  floor(): Tensor<R> {
+  floor(): NDArray<R> {
     this.throwIfDisposed();
     return ops.floor(this);
   }
-  exp(): Tensor<R> {
+  exp(): NDArray<R> {
     this.throwIfDisposed();
     return ops.exp(this);
   }
-  log(): Tensor<R> {
+  log(): NDArray<R> {
     this.throwIfDisposed();
     return ops.log(this);
   }
-  sqrt(): Tensor<R> {
+  sqrt(): NDArray<R> {
     this.throwIfDisposed();
     return ops.sqrt(this);
   }
-  square(): Tensor<R> {
+  square(): NDArray<R> {
     this.throwIfDisposed();
     return ops.square(this);
   }
-  abs(): Tensor<R> {
+  abs(): NDArray<R> {
     this.throwIfDisposed();
     return ops.abs(this);
   }
-  clip(min: number, max: number): Tensor<R> {
+  clip(min: number, max: number): NDArray<R> {
     this.throwIfDisposed();
     return ops.clip(this, min, max);
   }
-  relu(): Tensor<R> {
+  relu(): NDArray<R> {
     this.throwIfDisposed();
     return ops.relu(this);
   }
-  elu(): Tensor<R> {
+  elu(): NDArray<R> {
     this.throwIfDisposed();
     return ops.elu(this);
   }
-  selu(): Tensor<R> {
+  selu(): NDArray<R> {
     this.throwIfDisposed();
     return ops.selu(this);
   }
-  leakyRelu(alpha = 0.2): Tensor<R> {
+  leakyRelu(alpha = 0.2): NDArray<R> {
     this.throwIfDisposed();
     return ops.leakyRelu(this, alpha);
   }
-  prelu(alpha: Tensor<R>): Tensor<R> {
+  prelu(alpha: NDArray<R>): NDArray<R> {
     this.throwIfDisposed();
     return ops.prelu(this, alpha);
   }
-  sigmoid(): Tensor<R> {
+  sigmoid(): NDArray<R> {
     this.throwIfDisposed();
     return ops.sigmoid(this);
   }
-  sin(): Tensor<R> {
+  sin(): NDArray<R> {
     this.throwIfDisposed();
     return ops.sin(this);
   }
-  cos(): Tensor<R> {
+  cos(): NDArray<R> {
     this.throwIfDisposed();
     return ops.cos(this);
   }
-  tan(): Tensor<R> {
+  tan(): NDArray<R> {
     this.throwIfDisposed();
     return ops.tan(this);
   }
-  asin(): Tensor<R> {
+  asin(): NDArray<R> {
     this.throwIfDisposed();
     return ops.asin(this);
   }
-  acos(): Tensor<R> {
+  acos(): NDArray<R> {
     this.throwIfDisposed();
     return ops.acos(this);
   }
-  atan(): Tensor<R> {
+  atan(): NDArray<R> {
     this.throwIfDisposed();
     return ops.atan(this);
   }
-  sinh(): Tensor<R> {
+  sinh(): NDArray<R> {
     this.throwIfDisposed();
     return ops.sinh(this);
   }
-  cosh(): Tensor<R> {
+  cosh(): NDArray<R> {
     this.throwIfDisposed();
     return ops.cosh(this);
   }
-  tanh(): Tensor<R> {
+  tanh(): NDArray<R> {
     this.throwIfDisposed();
     return ops.tanh(this);
   }
-  step(alpha = 0.0): Tensor<R> {
+  step(alpha = 0.0): NDArray<R> {
     this.throwIfDisposed();
     return ops.step(this, alpha);
   }
@@ -696,147 +697,147 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   // Image ops.
-  resizeBilinear<T extends Tensor3D|Tensor4D>(
+  resizeBilinear<T extends Array3D|Array4D>(
       this: T, newShape2D: [number, number], alignCorners = false): T {
-    (this as Tensor).throwIfDisposed();
+    (this as NDArray).throwIfDisposed();
     return ops.image.resizeBilinear(this, newShape2D, alignCorners);
   }
 
   // Convolutions.
-  conv1d<T extends Tensor2D|Tensor3D>(
-      this: T, filter: Tensor3D, bias: Tensor1D|null, stride: number,
+  conv1d<T extends Array2D|Array3D>(
+      this: T, filter: Array3D, bias: Array1D|null, stride: number,
       pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    (this as Tensor).throwIfDisposed();
+    (this as NDArray).throwIfDisposed();
     return ops.conv1d(this, filter, bias, stride, pad, dimRoundingMode);
   }
-  conv2d<T extends Tensor3D|Tensor4D>(
-      this: T, filter: Tensor4D, bias: Tensor1D|null,
+  conv2d<T extends Array3D|Array4D>(
+      this: T, filter: Array4D, bias: Array1D|null,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    (this as Tensor).throwIfDisposed();
+    (this as NDArray).throwIfDisposed();
     return ops.conv2d(this, filter, bias, strides, pad, dimRoundingMode);
   }
-  conv2dTranspose<T extends Tensor3D|Tensor4D>(
-      this: T, filter: Tensor4D,
+  conv2dTranspose<T extends Array3D|Array4D>(
+      this: T, filter: Array4D,
       outputShape: [number, number, number, number]|[number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    (this as Tensor).throwIfDisposed();
+    (this as NDArray).throwIfDisposed();
     return ops.conv2dTranspose(
         this, filter, outputShape, strides, pad, dimRoundingMode);
   }
-  depthwiseConv2D<T extends Tensor3D|Tensor4D>(
-      this: T, filter: Tensor4D, strides: [number, number]|number,
+  depthwiseConv2D<T extends Array3D|Array4D>(
+      this: T, filter: Array4D, strides: [number, number]|number,
       pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    (this as Tensor).throwIfDisposed();
+    (this as NDArray).throwIfDisposed();
     return ops.depthwiseConv2D(
         this, filter, strides, pad, rates, dimRoundingMode);
   }
 
   // Pooling.
-  avgPool<T extends Tensor3D|Tensor4D>(
+  avgPool<T extends Array3D|Array4D>(
       this: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    (this as Tensor).throwIfDisposed();
+    (this as NDArray).throwIfDisposed();
     return ops.avgPool(this, filterSize, strides, pad, dimRoundingMode);
   }
-  maxPool<T extends Tensor3D|Tensor4D>(
+  maxPool<T extends Array3D|Array4D>(
       this: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    (this as Tensor).throwIfDisposed();
+    (this as NDArray).throwIfDisposed();
     return ops.maxPool(this, filterSize, strides, pad, dimRoundingMode);
   }
-  minPool<T extends Tensor3D|Tensor4D>(
+  minPool<T extends Array3D|Array4D>(
       this: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    (this as Tensor).throwIfDisposed();
+    (this as NDArray).throwIfDisposed();
     return ops.minPool(this, filterSize, strides, pad, dimRoundingMode);
   }
 }
 
-export class Scalar extends Tensor<Rank.R0> {
+export class Scalar extends NDArray<Rank.R0> {
   static new(value: number|boolean, dtype?: DataType): Scalar {
     const values = [value] as number[] | boolean[];
     return new Scalar([], dtype, toTypedArray(values, dtype));
   }
 }
 
-export class Tensor1D extends Tensor<Rank.R1> {
+export class Array1D extends NDArray<Rank.R1> {
   static new<D extends DataType = 'float32'>(
-      values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Tensor1D {
+      values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Array1D {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       util.assert(
           inferredShape.length === 1,
-          `Error constructing Tensor1D. Shape of values ${inferredShape} is ` +
+          `Error constructing Array1D. Shape of values ${inferredShape} is ` +
               `not 1 dimensional.`);
     }
-    return new Tensor1D([values.length], dtype, toTypedArray(values, dtype));
+    return new Array1D([values.length], dtype, toTypedArray(values, dtype));
   }
 }
 
-export class Tensor2D extends Tensor<Rank.R2> {
+export class Array2D extends NDArray<Rank.R2> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number],
       values: DataTypeMap[D]|number[]|number[][]|boolean[]|boolean[][],
-      dtype?: D): Tensor2D {
+      dtype?: D): Array2D {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
-            `Error when constructing Tensor2D. Shape of values ` +
+            `Error when constructing Array2D. Shape of values ` +
                 `${inferredShape} does not match the provided shape ` +
                 `${shape}. `);
       }
     }
-    return new Tensor2D(shape, dtype, toTypedArray(values, dtype));
+    return new Array2D(shape, dtype, toTypedArray(values, dtype));
   }
 }
 
-export class Tensor3D extends Tensor<Rank.R3> {
+export class Array3D extends NDArray<Rank.R3> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number],
       values: DataTypeMap[D]|number[]|number[][][]|boolean[]|boolean[][][],
-      dtype?: D): Tensor3D {
+      dtype?: D): Array3D {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
-            `Error when constructing Tensor3D. Shape of values ` +
+            `Error when constructing Array3D. Shape of values ` +
                 `${inferredShape} does not match the provided shape ` +
                 `${shape}. `);
       }
     }
-    return new Tensor3D(shape, dtype, toTypedArray(values, dtype));
+    return new Array3D(shape, dtype, toTypedArray(values, dtype));
   }
 }
 
-export class Tensor4D extends Tensor<Rank.R4> {
+export class Array4D extends NDArray<Rank.R4> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number, number],
       values: DataTypeMap[D]|number[]|number[][][][]|boolean[]|boolean[][][][],
-      dtype?: D): Tensor4D {
+      dtype?: D): Array4D {
     if (!instanceofTypedArray(values)) {
       const inferredShape = util.inferShape(values as number[] | boolean[]);
       if (inferredShape.length > 1) {
         util.assertShapesMatch(
             shape, inferredShape,
-            `Error when constructing Tensor4D. Shape of values ` +
+            `Error when constructing Array4D. Shape of values ` +
                 `${inferredShape} does not match the provided shape ` +
                 `${shape}. `);
       }
     }
-    return new Tensor4D(shape, dtype, toTypedArray(values, dtype));
+    return new Array4D(shape, dtype, toTypedArray(values, dtype));
   }
 }
 
-export class Variable<R extends Rank = Rank> extends Tensor<R> {
+export class Variable<R extends Rank = Rank> extends NDArray<R> {
   private static nextVarId = 0;
   name: string;
 
@@ -846,7 +847,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
    * added to global namespace.
    */
   private constructor(
-      initialValue: Tensor<R>, public trainable = true, name?: string) {
+      initialValue: NDArray<R>, public trainable = true, name?: string) {
     super(
         initialValue.shape, initialValue.dtype, null /* values */,
         initialValue.dataId);
@@ -862,22 +863,22 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   /**
    * Creates a new variable with the provided initial value.
    *
-   * @param initialValue A tensor.
+   * @param initialValue An ndarray.
    * @param trainable If true, optimizers are allowed to update it.
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.
    */
   static variable<R extends Rank>(
-      initialValue: Tensor<R>, trainable = true, name?: string,
+      initialValue: NDArray<R>, trainable = true, name?: string,
       dtype?: DataType): Variable<R> {
     if (dtype != null && dtype !== initialValue.dtype) {
-      initialValue = initialValue.asType(dtype) as Tensor<R>;
+      initialValue = initialValue.asType(dtype) as NDArray<R>;
     }
     return new Variable(initialValue, trainable, name);
   }
 
   /** Assign a new array to this variable. The old array will be disposed. */
-  assign(newValue: Tensor<R>): void {
+  assign(newValue: NDArray<R>): void {
     if (newValue.dtype !== this.dtype) {
       throw new Error(
           `dtype of the new value (${newValue.dtype}) and ` +
@@ -936,12 +937,3 @@ function computeStrides(shape: number[]): number[] {
   }
   return strides;
 }
-
-// Aliases for backwards compatibility.
-export {
-  Tensor as NDArray,
-  Tensor1D as Array1D,
-  Tensor2D as Array2D,
-  Tensor3D as Array3D,
-  Tensor4D as Array4D
-};

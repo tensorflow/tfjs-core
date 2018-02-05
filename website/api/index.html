@@ -51,8 +51,6 @@
         {{#methods}}
           <div class="method">
             <h5># <a name="{{path}}" href="#{{path}}">{{path}}</a></h5>
-            Defined in <code><a href="{{githubUrl}}" target=_blank>{{fileName}}</a></code>
-            <br><br>
             <div class="documentation">{{documentation}}</div>
             <h6>Parameters:</h6>
             {{#parameters}}
@@ -63,6 +61,8 @@
                 </div>
               </div>
             {{/parameters}}
+            <br>
+            Defined in <code><a href="{{githubUrl}}" target=_blank>{{fileName}}</a></code>
           </div>
         {{/methods}}
       </div>

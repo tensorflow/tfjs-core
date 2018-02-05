@@ -911,7 +911,7 @@ import {Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor, Scalar} from './tensor';
   ]);
 }
 
-// dl.randUniform
+// dl.randomUniform
 {
   const tests: MathTests = it => {
     it('should return a random 1D float32 array', () => {

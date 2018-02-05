@@ -31,8 +31,8 @@ export class MatmulCPUBenchmark implements BenchmarkTest {
     const math = new dl.NDArrayMath('cpu', safeMode);
     dl.ENV.setMath(math);
 
-    const a: dl.Tensor2D = dl.randUniform([size, size], -1, 1);
-    const b: dl.Tensor2D = dl.randUniform([size, size], -1, 1);
+    const a: dl.Tensor2D = dl.randomUniform([size, size], -1, 1);
+    const b: dl.Tensor2D = dl.randomUniform([size, size], -1, 1);
     const start = performance.now();
     math.matMul(a, b);
     const end = performance.now();
