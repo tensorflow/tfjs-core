@@ -531,9 +531,9 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
       test_util.expectArraysClose(gradients, [0], 1e-1);
     });
 
-    it('gradients: Array1D', math => {
-      const a = Array1D.new([-1.1, 2.6, 3, -5.9]);
-      const dy = Array1D.new([1, 2, 3, 4]);
+    it('gradients: Tensor1D', math => {
+      const a = Tensor1D.new([-1.1, 2.6, 3, -5.9]);
+      const dy = Tensor1D.new([1, 2, 3, 4]);
 
       const gradients = math.vjp(() => math.ceil(a), a, dy);
 
@@ -542,9 +542,9 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
       test_util.expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
     });
 
-    it('gradients: Array2D', math => {
-      const a = Array2D.new([2, 2], [-3, 1, 2.2, 3]);
-      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+    it('gradients: Tensor2D', math => {
+      const a = Tensor2D.new([2, 2], [-3, 1, 2.2, 3]);
+      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
 
       const gradients = math.vjp(() => math.ceil(a), a, dy);
 
@@ -591,9 +591,9 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
       test_util.expectArraysClose(gradients, [0], 1e-1);
     });
 
-    it('gradients: Array1D', math => {
-      const a = Array1D.new([-1.1, 2.6, 3, -5.9]);
-      const dy = Array1D.new([1, 2, 3, 4]);
+    it('gradients: Tensor1D', math => {
+      const a = Tensor1D.new([-1.1, 2.6, 3, -5.9]);
+      const dy = Tensor1D.new([1, 2, 3, 4]);
 
       const gradients = math.vjp(() => math.floor(a), a, dy);
 
@@ -602,9 +602,9 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
       test_util.expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
     });
 
-    it('gradients: Array2D', math => {
-      const a = Array2D.new([2, 2], [-3, 1, 2.2, 3]);
-      const dy = Array2D.new([2, 2], [1, 2, 3, 4]);
+    it('gradients: Tensor2D', math => {
+      const a = Tensor2D.new([2, 2], [-3, 1, 2.2, 3]);
+      const dy = Tensor2D.new([2, 2], [1, 2, 3, 4]);
 
       const gradients = math.vjp(() => math.floor(a), a, dy);
 
