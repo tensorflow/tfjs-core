@@ -15,16 +15,17 @@
  * =============================================================================
  */
 
-import {keep, tidy} from '../../math/backends/tracking';
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {NDArray} from '../../math/ndarray';
+import {Tensor} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Operation} from './op';
 
-export class Reshape<T1 extends NDArray, T2 extends NDArray> extends Operation {
-  constructor(private xTensor: Tensor, private yTensor: Tensor) {
+export class Reshape<T1 extends Tensor, T2 extends Tensor> extends Operation {
+  constructor(
+      private xTensor: SymbolicTensor, private yTensor: SymbolicTensor) {
     super();
     const xSize = util.sizeFromShape(xTensor.shape);
     const ySize = util.sizeFromShape(yTensor.shape);

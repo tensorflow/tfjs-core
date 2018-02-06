@@ -18,8 +18,9 @@
 import {ENV} from '../environment';
 import * as util from '../util';
 import * as axis_util from './axis_util';
-import {operation} from './decorators';
-import {NDArray, Scalar} from './ndarray';
+import {doc, operation} from './decorators';
+import * as ops from './ops';
+import {Tensor} from './tensor';
 
 export class Ops {
   /**
@@ -28,8 +29,9 @@ export class Ops {
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
+  @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
-  static softmax<T extends NDArray>(logits: T, dim = -1): T {
+  static softmax<T extends Tensor>(logits: T, dim = -1): T {
     if (dim === -1) {
       dim = logits.rank - 1;
     }
@@ -84,8 +86,13 @@ export class Ops {
    * @param dim The dimension softmax would be performed on. Defaults to -1
    *     which indicates the last dimension.
    */
+  @doc({
+    heading: 'Operations',
+    subheading: 'Classification',
+    namespace: 'losses'
+  })
   @operation
-  static softmaxCrossEntropy<T extends NDArray, O extends NDArray>(
+  static softmaxCrossEntropy<T extends Tensor, O extends Tensor>(
       labels: T, logits: T, dim = -1): O {
     util.assertShapesMatch(
         labels.shape, logits.shape, 'Error in softmaxCrossEntropy: ');
@@ -102,7 +109,7 @@ export class Ops {
     return ENV.math.customGradient('softmaxCrossEntropy', () => {
       const softmaxLogits = logits.softmax(dim);
       const costVector =
-          Scalar.new(1e-5).add(softmaxLogits).log().mul(labels).neg();
+          ops.scalar(1e-5).add(softmaxLogits).log().mul(labels).neg();
       const value = costVector.sum([dim]) as O;
 
       const gradients = (dy: O, y: O) => {

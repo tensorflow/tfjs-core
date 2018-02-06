@@ -21,17 +21,17 @@ import {KeyboardElement} from './keyboard_element';
 // tslint:disable-next-line:no-require-imports
 const Piano = require('tone-piano').Piano;
 
-let lstmKernel1: dl.Array2D;
-let lstmBias1: dl.Array1D;
-let lstmKernel2: dl.Array2D;
-let lstmBias2: dl.Array1D;
-let lstmKernel3: dl.Array2D;
-let lstmBias3: dl.Array1D;
-let c: dl.Array2D[];
-let h: dl.Array2D[];
-let fcB: dl.Array1D;
-let fcW: dl.Array2D;
-const forgetBias = dl.Scalar.new(1.0);
+let lstmKernel1: dl.Tensor2D;
+let lstmBias1: dl.Tensor1D;
+let lstmKernel2: dl.Tensor2D;
+let lstmBias2: dl.Tensor1D;
+let lstmKernel3: dl.Tensor2D;
+let lstmBias3: dl.Tensor1D;
+let c: dl.Tensor2D[];
+let h: dl.Tensor2D[];
+let fcB: dl.Tensor1D;
+let fcW: dl.Tensor2D;
+const forgetBias = dl.scalar(1.0);
 const activeNotes = new Map<number, number>();
 
 // How many steps to generate per generateStep call.
@@ -53,8 +53,8 @@ const PITCH_HISTOGRAM_SIZE = NOTES_PER_OCTAVE;
 
 const RESET_RNN_FREQUENCY_MS = 30000;
 
-let pitchHistogramEncoding: dl.Array1D;
-let noteDensityEncoding: dl.Array1D;
+let pitchHistogramEncoding: dl.Tensor1D;
+let noteDensityEncoding: dl.Tensor1D;
 let conditioned = false;
 
 let currentPianoTimeSec = 0;
@@ -98,7 +98,7 @@ function calculateEventSize(): number {
 
 const EVENT_SIZE = calculateEventSize();
 const PRIMER_IDX = 355;  // shift 1s.
-let lastSample = dl.Scalar.new(PRIMER_IDX, 'int32');
+let lastSample = dl.scalar(PRIMER_IDX, 'int32');
 
 const container = document.querySelector('#keyboard');
 const keyboardInterface = new KeyboardElement(container);
@@ -128,31 +128,31 @@ function start() {
         const reader = new dl.CheckpointLoader(CHECKPOINT_URL);
         return reader.getAllVariables();
       })
-      .then((vars: {[varName: string]: dl.NDArray}) => {
+      .then((vars: {[varName: string]: dl.Tensor}) => {
         document.querySelector('#status').classList.add('hidden');
         document.querySelector('#controls').classList.remove('hidden');
         document.querySelector('#keyboard').classList.remove('hidden');
 
         lstmKernel1 =
             vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/kernel'] as
-            dl.Array2D;
+            dl.Tensor2D;
         lstmBias1 = vars['rnn/multi_rnn_cell/cell_0/basic_lstm_cell/bias'] as
-            dl.Array1D;
+            dl.Tensor1D;
 
         lstmKernel2 =
             vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/kernel'] as
-            dl.Array2D;
+            dl.Tensor2D;
         lstmBias2 = vars['rnn/multi_rnn_cell/cell_1/basic_lstm_cell/bias'] as
-            dl.Array1D;
+            dl.Tensor1D;
 
         lstmKernel3 =
             vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/kernel'] as
-            dl.Array2D;
+            dl.Tensor2D;
         lstmBias3 = vars['rnn/multi_rnn_cell/cell_2/basic_lstm_cell/bias'] as
-            dl.Array1D;
+            dl.Tensor1D;
 
-        fcB = vars['fully_connected/biases'] as dl.Array1D;
-        fcW = vars['fully_connected/weights'] as dl.Array2D;
+        fcB = vars['fully_connected/biases'] as dl.Tensor1D;
+        fcW = vars['fully_connected/weights'] as dl.Tensor2D;
         modelReady = true;
         resetRnn();
       });
@@ -172,7 +172,7 @@ function resetRnn() {
   if (lastSample != null) {
     lastSample.dispose();
   }
-  lastSample = dl.Scalar.new(PRIMER_IDX);
+  lastSample = dl.scalar(PRIMER_IDX);
   currentPianoTimeSec = piano.now();
   pianoStartTimestampMs = performance.now() - currentPianoTimeSec * 1000;
   currentLoopId++;
@@ -294,20 +294,23 @@ function updateConditioningParams() {
   const noteDensityIdx = parseInt(densityControl.value, 10) || 0;
   const noteDensity = DENSITY_BIN_RANGES[noteDensityIdx];
   densityDisplay.innerHTML = noteDensity.toString();
-  noteDensityEncoding = dl.Array1D.zeros([DENSITY_BIN_RANGES.length + 1]);
-  noteDensityEncoding.set(1.0, noteDensityIdx + 1);
+  noteDensityEncoding =
+      dl.oneHot(
+            dl.tensor1d([noteDensityIdx + 1]), DENSITY_BIN_RANGES.length + 1)
+          .as1D();
 
   if (pitchHistogramEncoding != null) {
     pitchHistogramEncoding.dispose();
     pitchHistogramEncoding = null;
   }
-  pitchHistogramEncoding = dl.Array1D.zeros([PITCH_HISTOGRAM_SIZE]);
+  const buffer = dl.buffer<dl.Rank.R1>([PITCH_HISTOGRAM_SIZE], 'float32');
   const pitchHistogramTotal = pitchHistogram.reduce((prev, val) => {
     return prev + val;
   });
   for (let i = 0; i < PITCH_HISTOGRAM_SIZE; i++) {
-    pitchHistogramEncoding.set(pitchHistogram[i] / pitchHistogramTotal, i);
+    buffer.set(pitchHistogram[i] / pitchHistogramTotal, i);
   }
+  pitchHistogramEncoding = buffer.toTensor();
 }
 
 document.getElementById('note-density').oninput = updateConditioningParams;
@@ -388,21 +391,21 @@ document.getElementById('save-2').onclick = () => {
   updateConditioningParams();
 };
 
-function getConditioning(): dl.Array1D {
+function getConditioning(): dl.Tensor1D {
   return dl.tidy(() => {
     if (!conditioned) {
       // TODO(nsthorat): figure out why we have to cast these shapes to numbers.
       // The linter is complaining, though VSCode can infer the types.
       const size = 1 + (noteDensityEncoding.shape[0] as number) +
           (pitchHistogramEncoding.shape[0] as number);
-      const conditioning: dl.Array1D = dl.zeros([size]);
-      conditioning.set(1.0, 0);
+      const conditioning: dl.Tensor1D =
+          dl.oneHot(dl.tensor1d([0]), size).as1D();
       return conditioning;
     } else {
       const axis = 0;
       const conditioningValues =
           noteDensityEncoding.concat(pitchHistogramEncoding, axis);
-      return dl.Array1D.new([0]).concat(conditioningValues, axis);
+      return dl.tensor1d([0]).concat(conditioningValues, axis);
     }
   });
 }
@@ -413,11 +416,11 @@ async function generateStep(loopId: number) {
     return;
   }
   await dl.tidy(async () => {
-    const lstm1 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
+    const lstm1 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
         dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);
-    const lstm2 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
+    const lstm2 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
         dl.basicLSTMCell(forgetBias, lstmKernel2, lstmBias2, data, c, h);
-    const lstm3 = (data: dl.Array2D, c: dl.Array2D, h: dl.Array2D) =>
+    const lstm3 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
         dl.basicLSTMCell(forgetBias, lstmKernel3, lstmBias3, data, c, h);
 
     const outputs: dl.Scalar[] = [];

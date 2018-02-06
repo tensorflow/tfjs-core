@@ -16,10 +16,11 @@
  * =============================================================================
  */
 
-import {NamedArrayMap} from '../../math/types';
+import * as dl from '../../index';
+import {NamedTensorMap} from '../../math/types';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
-import {NDArray, Scalar} from '../ndarray';
+import {Scalar, Tensor} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
 import * as tape_util from './tape_util';
@@ -28,11 +29,11 @@ import * as tape_util from './tape_util';
 {
   const tests: MathTests = it => {
     it('getFilteredNodesXToY no paths from x to y', math => {
-      const x = Scalar.new(1);
-      const intermediate1 = Scalar.new(0);
+      const x = dl.scalar(1);
+      const intermediate1 = dl.scalar(0);
 
-      const intermediate2 = Scalar.new(0);
-      const y = Scalar.new(2);
+      const intermediate2 = dl.scalar(0);
+      const y = dl.scalar(2);
 
       const tape: Tape = [
         {
@@ -64,8 +65,8 @@ import * as tape_util from './tape_util';
     });
 
     it('getFilteredNodesXToY one operation x => y', math => {
-      const x = Scalar.new(1);
-      const y = Scalar.new(2);
+      const x = dl.scalar(1);
+      const y = dl.scalar(2);
 
       const tape: Tape = [{
         id: 0,
@@ -86,9 +87,9 @@ import * as tape_util from './tape_util';
 
     it('getFilteredNodesXToY 1 operation [x0, x1] => y, all input paths',
        math => {
-         const x0 = Scalar.new(0);
-         const x1 = Scalar.new(1);
-         const y = Scalar.new(2);
+         const x0 = dl.scalar(0);
+         const x1 = dl.scalar(1);
+         const y = dl.scalar(2);
 
          const tape: Tape = [{
            id: 0,
@@ -110,9 +111,9 @@ import * as tape_util from './tape_util';
 
     it('getFilteredNodesXToY one operation [x0, x1] => y, one input paths',
        math => {
-         const x0 = Scalar.new(0);
-         const x1 = Scalar.new(1);
-         const y = Scalar.new(2);
+         const x0 = dl.scalar(0);
+         const x1 = dl.scalar(1);
+         const y = dl.scalar(2);
 
          const tape: Tape = [{
            id: 0,
@@ -143,9 +144,9 @@ import * as tape_util from './tape_util';
        });
 
     it('getFilteredNodesXToY two operations x => intermediate => y', math => {
-      const x = Scalar.new(1);
-      const intermediate = Scalar.new(0);
-      const y = Scalar.new(2);
+      const x = dl.scalar(1);
+      const intermediate = dl.scalar(0);
+      const y = dl.scalar(2);
 
       const tape: Tape = [
         {
@@ -179,11 +180,11 @@ import * as tape_util from './tape_util';
     it('getFilteredNodesXToY two operations [x0, x1], [x2] => ' +
            'intermediate => y',
        math => {
-         const x0 = Scalar.new(1);
-         const x1 = Scalar.new(2);
-         const x2 = Scalar.new(3);
-         const intermediate = Scalar.new(4);
-         const y = Scalar.new(2);
+         const x0 = dl.scalar(1);
+         const x1 = dl.scalar(2);
+         const x2 = dl.scalar(3);
+         const intermediate = dl.scalar(4);
+         const y = dl.scalar(2);
 
          const tape: Tape = [
            {
@@ -216,9 +217,9 @@ import * as tape_util from './tape_util';
        });
 
     it('getFilteredNodesXToY x => y and x => orphan', math => {
-      const x = Scalar.new(1);
-      const orphan = Scalar.new(0);
-      const y = Scalar.new(2);
+      const x = dl.scalar(1);
+      const orphan = dl.scalar(0);
+      const y = dl.scalar(2);
 
       const tape: Tape = [
         {
@@ -251,9 +252,9 @@ import * as tape_util from './tape_util';
     });
 
     it('getFilteredNodesXToY x => y and orphan => y', math => {
-      const x = Scalar.new(1);
-      const orphan = Scalar.new(0);
-      const y = Scalar.new(2);
+      const x = dl.scalar(1);
+      const orphan = dl.scalar(0);
+      const y = dl.scalar(2);
 
       const tape: Tape = [{
         id: 0,
@@ -285,12 +286,12 @@ import * as tape_util from './tape_util';
     it('getFilteredNodesXToY x => {intermediate, orphan1} and ' +
            '{orphan2, intermediate} => {y, orphan3}',
        math => {
-         const x = Scalar.new(1);
-         const intermediate = Scalar.new(5);
-         const orphan1 = Scalar.new(1);
-         const orphan2 = Scalar.new(2);
-         const orphan3 = Scalar.new(3);
-         const y = Scalar.new(2);
+         const x = dl.scalar(1);
+         const intermediate = dl.scalar(5);
+         const orphan1 = dl.scalar(1);
+         const orphan2 = dl.scalar(2);
+         const orphan3 = dl.scalar(3);
+         const y = dl.scalar(2);
 
          const tape: Array<TapeNode<TapeNodeOutput>> = [
            {
@@ -345,16 +346,16 @@ import * as tape_util from './tape_util';
            'x0 => intermediate0, x0 => intermediate1, ' +
            '[intermediate0, intermediate1, x1, orphan1] => {y, orphan2}',
        math => {
-         const x0 = Scalar.new(1);
-         const orphan0 = Scalar.new(2);
+         const x0 = dl.scalar(1);
+         const orphan0 = dl.scalar(2);
 
-         const intermediate0 = Scalar.new(3);
-         const intermediate1 = Scalar.new(4);
+         const intermediate0 = dl.scalar(3);
+         const intermediate1 = dl.scalar(4);
 
-         const x1 = Scalar.new(5);
-         const orphan1 = Scalar.new(6);
-         const y = Scalar.new(7);
-         const orphan2 = Scalar.new(8);
+         const x1 = dl.scalar(5);
+         const orphan1 = dl.scalar(6);
+         const y = dl.scalar(7);
+         const orphan2 = dl.scalar(8);
 
          const tape: Tape = [
            {
@@ -427,12 +428,12 @@ import * as tape_util from './tape_util';
 {
   const tests: MathTests = it => {
     it('Throws if gradient is not defined', math => {
-      const x = Scalar.new(0);
-      const y = Scalar.new(1);
+      const x = dl.scalar(0);
+      const y = dl.scalar(1);
 
-      const dy = Scalar.new(1);
+      const dy = dl.scalar(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [{
@@ -452,12 +453,12 @@ import * as tape_util from './tape_util';
     });
 
     it('basic backprop with 1 node', math => {
-      const x = Scalar.new(0);
-      const y = Scalar.new(1);
+      const x = dl.scalar(0);
+      const y = dl.scalar(1);
 
-      const dy = Scalar.new(1);
+      const dy = dl.scalar(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [{
@@ -469,7 +470,7 @@ import * as tape_util from './tape_util';
         },
         output: y,
         gradient: (dy: Scalar, y: Scalar) => {
-          return {x: () => math.add(dy, Scalar.new(1))};
+          return {x: () => math.add(dy, dl.scalar(1))};
         }
       }];
 
@@ -479,13 +480,13 @@ import * as tape_util from './tape_util';
     });
 
     it('basic backprop with 2 nodes', math => {
-      const x = Scalar.new(0);
-      const intermediate = Scalar.new(1);
-      const y = Scalar.new(2);
+      const x = dl.scalar(0);
+      const intermediate = dl.scalar(1);
+      const y = dl.scalar(2);
 
-      const dy = Scalar.new(1);
+      const dy = dl.scalar(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [
@@ -498,7 +499,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => math.add(dy, Scalar.new(1))};
+            return {x: () => math.add(dy, dl.scalar(1))};
           }
         },
         {
@@ -510,7 +511,7 @@ import * as tape_util from './tape_util';
           },
           output: y,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {intermediate: () => math.add(dy, Scalar.new(1))};
+            return {intermediate: () => math.add(dy, dl.scalar(1))};
           }
         }
       ];
@@ -522,14 +523,14 @@ import * as tape_util from './tape_util';
     });
 
     it('basic backprop with a split node accumulates gradients', math => {
-      const x = Scalar.new(0);
-      const intermediate1 = Scalar.new(1);
-      const intermediate2 = Scalar.new(2);
-      const y = Scalar.new(3);
+      const x = dl.scalar(0);
+      const intermediate1 = dl.scalar(1);
+      const intermediate2 = dl.scalar(2);
+      const y = dl.scalar(3);
 
-      const dy = Scalar.new(1);
+      const dy = dl.scalar(1);
 
-      const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+      const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientsMap[y.id] = dy;
 
       const tape: Tape = [
@@ -542,7 +543,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate1,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => math.add(dy, Scalar.new(1))};
+            return {x: () => math.add(dy, dl.scalar(1))};
           }
         },
         {
@@ -554,7 +555,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate2,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => math.add(dy, Scalar.new(1))};
+            return {x: () => math.add(dy, dl.scalar(1))};
           }
         },
         {
@@ -567,8 +568,8 @@ import * as tape_util from './tape_util';
           output: y,
           gradient: (dy: Scalar, y: Scalar) => {
             return {
-              intermediate1: () => math.add(dy, Scalar.new(1)),
-              intermediate2: () => math.add(dy, Scalar.new(1))
+              intermediate1: () => math.add(dy, dl.scalar(1)),
+              intermediate2: () => math.add(dy, dl.scalar(1))
             };
           }
         }
@@ -583,14 +584,14 @@ import * as tape_util from './tape_util';
 
     it('basic backprop with a multi-output split node accumulates gradients',
        math => {
-         const x = Scalar.new(0);
-         const intermediate1 = Scalar.new(1);
-         const intermediate2 = Scalar.new(2);
-         const y = Scalar.new(3);
+         const x = dl.scalar(0);
+         const intermediate1 = dl.scalar(1);
+         const intermediate2 = dl.scalar(2);
+         const y = dl.scalar(3);
 
-         const dy = Scalar.new(1);
+         const dy = dl.scalar(1);
 
-         const accumulatedGradientsMap: {[ndarrayId: number]: NDArray} = {};
+         const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
          accumulatedGradientsMap[y.id] = dy;
 
          const tape: Array<TapeNode<TapeNodeOutput>> = [
@@ -602,7 +603,7 @@ import * as tape_util from './tape_util';
                inputs: {x},
              },
              output: {intermediate1, intermediate2},
-             gradient: (dy: NamedArrayMap, y: NamedArrayMap) => {
+             gradient: (dy: NamedTensorMap, y: NamedTensorMap) => {
                return {
                  x: () =>
                      math.multiply(dy['intermediate1'], dy['intermediate2'])
@@ -619,8 +620,8 @@ import * as tape_util from './tape_util';
              output: y,
              gradient: (dy: Scalar, y: Scalar) => {
                return {
-                 intermediate1: () => math.add(dy, Scalar.new(2)),
-                 intermediate2: () => math.add(dy, Scalar.new(3))
+                 intermediate1: () => math.add(dy, dl.scalar(2)),
+                 intermediate2: () => math.add(dy, dl.scalar(3))
                };
              }
            }
@@ -636,41 +637,40 @@ import * as tape_util from './tape_util';
   test_util.describeMathCPU('tape_util.backpropagateGradients', [tests]);
 }
 
-// extractNDArraysFromScopeResult
+// extractTensorsFromScopeResult
 {
   const tests: MathTests = it => {
-    it('null input returns empty array', math => {
-      const results = tape_util.extractNDArraysFromScopeResult(null);
+    it('null input returns empty tensor', math => {
+      const results = tape_util.extractTensorsFromScopeResult(null);
 
       expect(results).toEqual([]);
     });
 
-    it('ndarray input returns one element array', math => {
-      const x = Scalar.new(1);
-      const results = tape_util.extractNDArraysFromScopeResult(x);
+    it('tensor input returns one element tensor', math => {
+      const x = dl.scalar(1);
+      const results = tape_util.extractTensorsFromScopeResult(x);
 
       expect(results).toEqual([x]);
     });
 
-    it('name array map returns flattened array', math => {
-      const x1 = Scalar.new(1);
-      const x2 = Scalar.new(3);
-      const x3 = Scalar.new(4);
-      const results = tape_util.extractNDArraysFromScopeResult({x1, x2, x3});
+    it('name tensor map returns flattened tensor', math => {
+      const x1 = dl.scalar(1);
+      const x2 = dl.scalar(3);
+      const x3 = dl.scalar(4);
+      const results = tape_util.extractTensorsFromScopeResult({x1, x2, x3});
 
       expect(results).toEqual([x1, x2, x3]);
     });
   };
 
-  test_util.describeMathCPU(
-      'tape_util.extractNDArraysFromScopeResult', [tests]);
+  test_util.describeMathCPU('tape_util.extractTensorsFromScopeResult', [tests]);
 }
 
 {
   const tests: MathTests = it => {
     it('pass through when all inputs are defined', () => {
-      const x1 = Scalar.new(1);
-      const x2 = Scalar.new(2);
+      const x1 = dl.scalar(1);
+      const x2 = dl.scalar(2);
       const config: TapeNodeInputConfig = {
         inputs: {x1, x2},
       };
@@ -680,8 +680,8 @@ import * as tape_util from './tape_util';
     });
 
     it('strips undefined inputs', () => {
-      const x1 = Scalar.new(1);
-      const x4 = Scalar.new(2);
+      const x1 = dl.scalar(1);
+      const x4 = dl.scalar(2);
       const config: TapeNodeInputConfig = {
         inputs: {x1, x2: undefined, x3: undefined, x4},
       };
@@ -690,6 +690,6 @@ import * as tape_util from './tape_util';
       });
     });
     test_util.describeMathCPU(
-        'tape_util.extractNDArraysFromScopeResult', [tests]);
+        'tape_util.extractTensorsFromScopeResult', [tests]);
   };
 }

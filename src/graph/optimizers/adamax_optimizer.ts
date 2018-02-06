@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-import {keep, tidy} from '../../math/backends/tracking';
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/ndarray';
 import {Optimizer} from '../../math/optimizers/optimizer';
+import {Scalar, Tensor} from '../../math/tensor';
 import {NamedVariableMap} from '../../math/types';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
@@ -50,13 +50,13 @@ export class AdamaxOptimizer extends Optimizer {
 
     if (this.firstMoment.size() === 0) {
       this.variableNodes.forEach(node => {
-        this.firstMoment.set(node.output, NDArray.zeros(node.output.shape));
+        this.firstMoment.set(node.output, Tensor.zeros(node.output.shape));
       });
     }
 
     if (this.weightedInfNorm.size() === 0) {
       this.variableNodes.forEach(node => {
-        this.weightedInfNorm.set(node.output, NDArray.zeros(node.output.shape));
+        this.weightedInfNorm.set(node.output, Tensor.zeros(node.output.shape));
       });
     }
   }

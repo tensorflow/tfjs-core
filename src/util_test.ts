@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
-import {Array1D, NDArray, Scalar} from './math/ndarray';
-import {NamedArrayMap} from './math/types';
+import * as dl from './index';
+import {Tensor} from './math/tensor';
+import {NamedTensorMap} from './math/types';
 import * as test_util from './test_util';
 import {MathTests} from './test_util';
 import * as util from './util';
@@ -90,6 +91,11 @@ describe('Util', () => {
       [[[5], [6]], [[4], [5]], [[1], [2]]]
     ];
     expect(util.inferShape(a)).toEqual([2, 3, 2, 1]);
+  });
+
+  it('infer shape of typed array', () => {
+    const a = new Float32Array([1, 2, 3, 4, 5]);
+    expect(util.inferShape(a)).toEqual([5]);
   });
 });
 
@@ -269,21 +275,21 @@ describe('util.squeezeShape', () => {
 {
   const tests: MathTests = it => {
     it('not in list', math => {
-      const a = Scalar.new(1);
-      const list: NDArray[] = [Scalar.new(1), Array1D.new([1, 2, 3])];
+      const a = dl.scalar(1);
+      const list: Tensor[] = [dl.scalar(1), dl.tensor1d([1, 2, 3])];
 
-      expect(util.isNDArrayInList(a, list)).toBe(false);
+      expect(util.isTensorInList(a, list)).toBe(false);
     });
 
     it('in list', math => {
-      const a = Scalar.new(1);
-      const list: NDArray[] = [Scalar.new(2), Array1D.new([1, 2, 3]), a];
+      const a = dl.scalar(1);
+      const list: Tensor[] = [dl.scalar(2), dl.tensor1d([1, 2, 3]), a];
 
-      expect(util.isNDArrayInList(a, list)).toBe(true);
+      expect(util.isTensorInList(a, list)).toBe(true);
     });
   };
 
-  test_util.describeMathCPU('util.isNDArrayInList', [tests]);
+  test_util.describeMathCPU('util.isTensorInList', [tests]);
 }
 
 describe('util.checkForNaN', () => {
@@ -336,11 +342,11 @@ describe('util.checkForNaN', () => {
 {
   const tests: MathTests = it => {
     it('basic', math => {
-      const a = Scalar.new(1);
-      const b = Scalar.new(3);
-      const c = Array1D.new([1, 2, 3]);
+      const a = dl.scalar(1);
+      const b = dl.scalar(3);
+      const c = dl.tensor1d([1, 2, 3]);
 
-      const map: NamedArrayMap = {a, b, c};
+      const map: NamedTensorMap = {a, b, c};
       expect(util.flattenNameArrayMap(map, Object.keys(map))).toEqual([
         a, b, c
       ]);
@@ -353,9 +359,9 @@ describe('util.checkForNaN', () => {
 {
   const tests: MathTests = it => {
     it('basic', math => {
-      const a = Scalar.new(1);
-      const b = Scalar.new(3);
-      const c = Array1D.new([1, 2, 3]);
+      const a = dl.scalar(1);
+      const b = dl.scalar(3);
+      const c = dl.tensor1d([1, 2, 3]);
 
       expect(util.unflattenToNameArrayMap(['a', 'b', 'c'], [
         a, b, c

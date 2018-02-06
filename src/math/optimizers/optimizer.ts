@@ -16,15 +16,16 @@
  */
 
 import {ENV} from '../../environment';
+import {keep, tidy} from '../../globals';
 import {Node, VariableNode} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
 import * as session_util from '../../graph/session_util';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar, Variable} from '../../math/ndarray';
-import {keep, tidy} from '../backends/tracking';
-import {NamedArrayMap} from '../types';
+import {Scalar, Tensor, Variable} from '../../math/tensor';
+import * as ops from '../ops';
+import {NamedTensorMap} from '../types';
 
 export abstract class Optimizer {
   protected variableNodes: VariableNode[];
@@ -34,7 +35,7 @@ export abstract class Optimizer {
     if (specifiedVariableList != null) {
       this.specifiedVariableNodes = specifiedVariableList as VariableNode[];
     }
-    this.one = ENV.math.keep(Scalar.new(1));
+    this.one = ENV.math.keep(ops.scalar(1));
   }
 
   /**
@@ -77,7 +78,7 @@ export abstract class Optimizer {
    * gradients computed with respect to. Defaults to all trainable variables.
    */
   computeGradients(f: () => Scalar, varList?: Variable[]):
-      {value: Scalar, gradients: NamedArrayMap} {
+      {value: Scalar, gradients: NamedTensorMap} {
     return ENV.math.variableGradients(f, varList);
   }
 
@@ -85,7 +86,7 @@ export abstract class Optimizer {
    * Updates variables by using the computed gradients.
    * @param variableGradients A mapping of variable name to its gradient value.
    */
-  abstract applyGradients(variableGradients: NamedArrayMap): void;
+  abstract applyGradients(variableGradients: NamedTensorMap): void;
 
   /**
    * Graph mode methods.
@@ -102,11 +103,11 @@ export abstract class Optimizer {
         this.cGraph.dispose();
       }
       this.prevBatchSize = batchSize;
-      this.cGraph = math.keep(Scalar.new(-this.learningRate / batchSize));
+      this.cGraph = math.keep(ops.scalar(-this.learningRate / batchSize));
     }
     this.variableNodes.forEach(
         node => this.variableGradients.set(
-            node.output, math.keep(NDArray.zeros(node.output.shape))));
+            node.output, math.keep(Tensor.zeros(node.output.shape))));
   }
 
   afterExample(

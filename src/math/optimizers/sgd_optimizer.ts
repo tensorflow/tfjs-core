@@ -16,14 +16,15 @@
  */
 
 import {ENV} from '../../environment';
+import {keep, tidy} from '../../globals';
 import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {keep, tidy} from '../backends/tracking';
-import {Scalar} from '../ndarray';
-import {NamedArrayMap} from '../types';
+import * as ops from '../ops';
+import {Scalar} from '../tensor';
+import {NamedTensorMap} from '../types';
 import {Optimizer} from './optimizer';
 
 export class SGDOptimizer extends Optimizer {
@@ -35,7 +36,7 @@ export class SGDOptimizer extends Optimizer {
   }
 
   // Eager mode
-  applyGradients(variableGradients: NamedArrayMap) {
+  applyGradients(variableGradients: NamedTensorMap) {
     const math = ENV.math;
 
     const varNames = Object.keys(variableGradients);
@@ -83,6 +84,6 @@ export class SGDOptimizer extends Optimizer {
     if (this.c != null) {
       this.c.dispose();
     }
-    this.c = ENV.math.keep(Scalar.new(-learningRate));
+    this.c = ENV.math.keep(ops.scalar(-learningRate));
   }
 }

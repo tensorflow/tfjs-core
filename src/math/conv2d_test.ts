@@ -18,13 +18,12 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Array1D, Array2D, Array3D, Array4D} from './ndarray';
 import {Rank} from './types';
 
-// math.conv2d
+// dl.conv2d
 {
   const tests: MathTests = it => {
-    it('x=[2,2,1] f=[1,1,1,2] s=1 p=0', math => {
+    it('x=[2,2,1] f=[1,1,1,2] s=1 p=0', () => {
       const inputDepth = 1;
       const inputShape: [number, number, number] = [2, 2, inputDepth];
       const outputDepth = 1;
@@ -32,16 +31,16 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w = Array4D.new([fSize, fSize, inputDepth, outputDepth], [2]);
-      const bias = Array1D.new([-1]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
+      const w = dl.tensor4d([2], [fSize, fSize, inputDepth, outputDepth]);
+      const bias = dl.tensor1d([-1]);
 
-      const result = math.conv2d(x, w, bias, stride, pad);
+      const result = dl.conv2d(x, w, bias, stride, pad);
 
       test_util.expectArraysClose(result, [1, 3, 5, 7]);
     });
 
-    it('x=[2,2,2,1] f=[1,1,1,1] s=1 p=0', math => {
+    it('x=[2,2,2,1] f=[1,1,1,1] s=1 p=0', () => {
       const inputDepth = 1;
       const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
       const outputDepth = 1;
@@ -49,18 +48,18 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Array4D.new(inShape, [1, 2, 3, 4, 5, 6, 7, 8]);
-      const w = Array4D.new([fSize, fSize, inputDepth, outputDepth], [2]);
-      const bias = Array1D.new([-1]);
+      const x = dl.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], inShape);
+      const w = dl.tensor4d([2], [fSize, fSize, inputDepth, outputDepth]);
+      const bias = dl.tensor1d([-1]);
 
-      const result = math.conv2d(x, w, bias, stride, pad);
+      const result = dl.conv2d(x, w, bias, stride, pad);
       expect(result.shape).toEqual([2, 2, 2, 1]);
       const expected = [1, 3, 5, 7, 9, 11, 13, 15];
 
       test_util.expectArraysClose(result, expected);
     });
 
-    it('x=[2,2,1] f=[2,2,1,1] s=1 p=0', math => {
+    it('x=[2,2,1] f=[2,2,1,1] s=1 p=0', () => {
       const inputDepth = 1;
       const inputShape: [number, number, number] = [2, 2, inputDepth];
       const outputDepth = 1;
@@ -68,16 +67,16 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w =
-          Array4D.new([fSize, fSize, inputDepth, outputDepth], [3, 1, 5, 0]);
-      const bias = Array1D.new([-1]);
+          dl.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
+      const bias = dl.tensor1d([-1]);
 
-      const result = math.conv2d(x, w, bias, stride, pad);
+      const result = dl.conv2d(x, w, bias, stride, pad);
       test_util.expectArraysClose(result, [19]);
     });
 
-    it('throws when x is not rank 3', math => {
+    it('throws when x is not rank 3', () => {
       const inputDepth = 1;
       const outputDepth = 1;
       const fSize = 2;
@@ -85,29 +84,29 @@ import {Rank} from './types';
       const stride = 1;
 
       // tslint:disable-next-line:no-any
-      const x: any = Array2D.new([2, 2], [1, 2, 3, 4]);
+      const x: any = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       const w =
-          Array4D.new([fSize, fSize, inputDepth, outputDepth], [3, 1, 5, 0]);
-      const bias = Array1D.new([-1]);
+          dl.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
+      const bias = dl.tensor1d([-1]);
 
-      expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();
+      expect(() => dl.conv2d(x, w, bias, stride, pad)).toThrowError();
     });
 
-    it('throws when weights is not rank 4', math => {
+    it('throws when weights is not rank 4', () => {
       const inputDepth = 1;
       const inputShape: [number, number, number] = [2, 2, inputDepth];
       const pad = 0;
       const stride = 1;
 
-      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       // tslint:disable-next-line:no-any
-      const w: any = Array3D.new([2, 2, 1], [3, 1, 5, 0]);
-      const bias = Array1D.new([-1]);
+      const w: any = dl.tensor3d([3, 1, 5, 0], [2, 2, 1]);
+      const bias = dl.tensor1d([-1]);
 
-      expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();
+      expect(() => dl.conv2d(x, w, bias, stride, pad)).toThrowError();
     });
 
-    it('throws when biases is not rank 1', math => {
+    it('throws when biases is not rank 1', () => {
       const inputDepth = 1;
       const inputShape: [number, number, number] = [2, 2, inputDepth];
       const outputDepth = 1;
@@ -115,16 +114,16 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w =
-          Array4D.new([fSize, fSize, inputDepth, outputDepth], [3, 1, 5, 0]);
+          dl.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
       // tslint:disable-next-line:no-any
-      const bias: any = Array2D.new([2, 2], [2, 2, 2, 2]);
+      const bias: any = dl.tensor2d([2, 2, 2, 2], [2, 2]);
 
-      expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();
+      expect(() => dl.conv2d(x, w, bias, stride, pad)).toThrowError();
     });
 
-    it('throws when x depth does not match weight depth', math => {
+    it('throws when x depth does not match weight depth', () => {
       const inputDepth = 1;
       const wrongInputDepth = 5;
       const inputShape: [number, number, number] = [2, 2, inputDepth];
@@ -133,15 +132,15 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w =
-          dl.randNormal<Rank.R4>([fSize, fSize, wrongInputDepth, outputDepth]);
-      const bias = Array1D.new([-1]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
+      const w = dl.randomNormal<Rank.R4>(
+          [fSize, fSize, wrongInputDepth, outputDepth]);
+      const bias = dl.tensor1d([-1]);
 
-      expect(() => math.conv2d(x, w, bias, stride, pad)).toThrowError();
+      expect(() => dl.conv2d(x, w, bias, stride, pad)).toThrowError();
     });
 
-    it('throws when dimRoundingMode is set and pad is not a number', math => {
+    it('throws when dimRoundingMode is set and pad is not a number', () => {
       const inputDepth = 1;
       const inputShape: [number, number, number] = [2, 2, inputDepth];
       const outputDepth = 1;
@@ -150,15 +149,16 @@ import {Rank} from './types';
       const stride = 1;
       const dimRoundingMode = 'round';
 
-      const x = Array3D.new(inputShape, [1, 2, 3, 4]);
-      const w = dl.randNormal<Rank.R4>([fSize, fSize, inputDepth, outputDepth]);
-      const bias = Array1D.new([-1]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
+      const w =
+          dl.randomNormal<Rank.R4>([fSize, fSize, inputDepth, outputDepth]);
+      const bias = dl.tensor1d([-1]);
 
-      expect(() => math.conv2d(x, w, bias, stride, pad, dimRoundingMode))
+      expect(() => dl.conv2d(x, w, bias, stride, pad, dimRoundingMode))
           .toThrowError();
     });
 
-    it('gradient input=[3,3,1] f=[2,2,1,1] s=1 p=0', math => {
+    it('gradient input=[3,3,1] f=[2,2,1,1] s=1 p=0', () => {
       const inputDepth = 1;
       const outputDepth = 1;
       const inputShape: [number, number, number] = [3, 3, inputDepth];
@@ -169,14 +169,13 @@ import {Rank} from './types';
       const filterShape: [number, number, number, number] =
           [filterSize, filterSize, inputDepth, outputDepth];
       const filter = dl.ones<Rank.R4>(filterShape);
-      const bias = Array1D.new([-1]);
+      const bias = dl.tensor1d([-1]);
 
-      const x = Array3D.new(inputShape, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      const dy = Array3D.new([2, 2, 1], [3, 1, 2, 0]);
+      const x = dl.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
+      const dy = dl.tensor3d([3, 1, 2, 0], [2, 2, 1]);
 
-      const vjp = math.vjp(
-          () => math.conv2d(x, filter, bias, stride, pad), {x, filter, bias},
-          dy);
+      const vjp = dl.vjp(
+          () => dl.conv2d(x, filter, bias, stride, pad), {x, filter, bias}, dy);
 
       expect(vjp.x.shape).toEqual(x.shape);
       test_util.expectArraysClose(vjp.x, [3, 4, 1, 5, 6, 1, 2, 2, 0]);
@@ -189,7 +188,7 @@ import {Rank} from './types';
       test_util.expectArraysClose(vjp.bias, [6], 1e-1);
     });
 
-    it('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0', math => {
+    it('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0', () => {
       const inputDepth = 1;
       const outputDepth = 1;
       const inputShape: [number, number, number, number] =
@@ -202,15 +201,14 @@ import {Rank} from './types';
           [filterSize, filterSize, inputDepth, outputDepth];
       const filter = dl.ones<Rank.R4>(filterShape);
 
-      const bias = Array1D.new([-1]);
+      const bias = dl.tensor1d([-1]);
 
-      const x = Array4D.new(
-          inputShape, [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      const dy = Array4D.new([2, 2, 2, 1], [3, 1, 2, 0, 3, 1, 2, 0]);
+      const x = dl.tensor4d(
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
+      const dy = dl.tensor4d([3, 1, 2, 0, 3, 1, 2, 0], [2, 2, 2, 1]);
 
-      const vjp = math.vjp(
-          () => math.conv2d(x, filter, bias, stride, pad), {x, filter, bias},
-          dy);
+      const vjp = dl.vjp(
+          () => dl.conv2d(x, filter, bias, stride, pad), {x, filter, bias}, dy);
 
       expect(vjp.x.shape).toEqual(x.shape);
       test_util.expectArraysClose(

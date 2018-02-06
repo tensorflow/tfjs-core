@@ -14,12 +14,11 @@
  * limitations under the License.
  * =============================================================================
  */
-
-import {tidy} from './backends/tracking';
+import {tidy} from '../globals';
 
 /**
  * Decorator for wrapping functions that perform math operations on
- * NDArrays. The function will be wrapped in a named scope that cleans all
+ * Tensors. The function will be wrapped in a named scope that cleans all
  * memory usage after the function is done.
  */
 export function operation(
@@ -30,4 +29,26 @@ export function operation(
     return tidy(name, () => fn(...args));
   };
   return descriptor;
+}
+
+export interface HeadingMap {
+  'Tensors': 'Creation'|'Transformations'|'Slicing and Joining';
+  'Operations': 'Arithmetic'|'Basic math'|'Matrices'|'Convolution'|
+      'Normalization'|'Images'|'Logical'|'RNN'|'Reduction'|'Classification';
+  'Training': 'Gradients';
+  'Performance': 'Memory'|'Timing';
+}
+export type Heading = keyof HeadingMap;
+export type Namespace = 'losses'|'image';
+
+export interface DocInfo<H extends Heading> {
+  heading: H;
+  subheading: HeadingMap[H];
+  namespace?: Namespace;
+}
+
+// Pass through function that does nothing. Only used for documentation.
+export function doc<H extends Heading>(info: DocInfo<H>) {
+  // tslint:disable-next-line:no-any
+  return (...args: any[]) => {};
 }
