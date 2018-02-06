@@ -18,6 +18,7 @@
 import * as device_util from './device_util';
 import {MathBackend} from './math/backends/backend';
 import {BackendEngine} from './math/backends/backend_engine';
+import {doc} from './math/decorators';
 import {NDArrayMath} from './math/math';
 import * as util from './util';
 
@@ -201,6 +202,20 @@ export class Environment {
           'be downloaded to CPU and checked for NaNs. ' +
           'This significantly impacts performance.');
     }
+  }
+
+  /**
+   * Sets the backend that executes all operations (cpu, webgl etc).
+   *
+   * @param backendType The backend type. Currently supports 'webgl'|'cpu'.
+   * @param safeMode Defaults to false. In safe mode, you are forced to
+   *     construct tensors and call math operations inside a dl.tidy() which
+   *     will automatically clean up intermediate tensors.
+   */
+  @doc({heading: 'Environment', subheading: ''})
+  static setBackend(backendType: BackendType, safeMode = false) {
+    // tslint:disable-next-line:no-unused-expression
+    new NDArrayMath(backendType, safeMode);
   }
 
   get<K extends keyof Features>(feature: K): Features[K] {

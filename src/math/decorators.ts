@@ -37,6 +37,7 @@ export interface HeadingMap {
       'Normalization'|'Images'|'Logical'|'RNN'|'Reduction'|'Classification';
   'Training': 'Gradients';
   'Performance': 'Memory'|'Timing';
+  'Environment': '';
 }
 export type Heading = keyof HeadingMap;
 export type Namespace = 'losses'|'image';

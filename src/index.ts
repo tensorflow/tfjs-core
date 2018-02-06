@@ -17,6 +17,7 @@
 
 import * as xhr_dataset from './data/xhr-dataset';
 import * as environment from './environment';
+import {Environment} from './environment';
 import * as gpgpu_util from './math/backends/webgl/gpgpu_util';
 import * as webgl_util from './math/backends/webgl/webgl_util';
 import * as conv_util from './math/conv_util';
@@ -68,3 +69,5 @@ export {
 
 export * from './math/ops';
 export * from './globals';
+
+export const setBackend = Environment.setBackend;

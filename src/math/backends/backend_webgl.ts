@@ -965,10 +965,9 @@ export class MathBackendWebGL implements MathBackend {
   private throwIfNoData(dataId: number) {
     if (!(dataId in this.texData)) {
       throw new Error(
-          `No data found for Tensor with data id ${dataId}. ` +
-          `Use global dl.* API instead of constructing your own NDArrayMath. ` +
-          `If you need to construct your own math, make sure this array is ` +
-          `allocated after the math construction`);
+          `WebGL backend: No data found for Tensor with data id ${dataId}. ` +
+          `Did you change your backend in the middle of the program? ` +
+          `New backends can't use Tensors created with previous backends`);
     }
   }
 
@@ -1013,16 +1012,13 @@ export class MathBackendWebGL implements MathBackend {
 
 ENV.registerBackend('webgl', () => new MathBackendWebGL());
 
-// TODO(nsthorat): Deprecate this once we export non-abstract NDArrayMath.
+/** @deprecated Call dl.setBackend('webgl') instead. */
 export class NDArrayMathGPU extends NDArrayMath {
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
     console.warn(
-        'new NDArrayMathGPU() is deprecated. Please use the global ' +
-        'dl.* API. In rare cases, to construct your own NDArrayMath ' +
-        'that runs on GPU, use math = new NDArrayMath(\'webgl\', safeMode); ' +
-        'and make sure to set it as global: dl.ENV.setMath(math);');
+        'new NDArrayMathGPU() is deprecated. Please use ' +
+        'dl.setBackend(\'webgl\').');
     super(new MathBackendWebGL(gpgpu), safeMode);
-    ENV.setMath(this);
   }
 
   // TODO(smilkov): Remove these two methods (used only in tests), and make
