@@ -632,15 +632,15 @@ const testsTensor4DNew: MathTests = it => {
   });
 
   it('int32 dtype from boolean[]', () => {
-    const a = Tensor4D.new(
-        [1, 2, 2, 1], [[[[false], [false]], [[true], [false]]]], 'int32');
+    const a = dl.tensor4d(
+        [[[[false], [false]], [[true], [false]]]], [1, 2, 2, 1], 'int32');
     expect(a.dtype).toBe('int32');
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });
 
   it('bool dtype from boolean[]', () => {
-    const a = Tensor4D.new(
-        [1, 2, 2, 1], [[[[false], [false]], [[true], [false]]]], 'bool');
+    const a = dl.tensor4d(
+        [[[[false], [false]], [[true], [false]]]], [1, 2, 2, 1], 'bool');
     expect(a.dtype).toBe('bool');
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });
