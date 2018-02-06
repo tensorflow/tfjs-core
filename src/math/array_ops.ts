@@ -167,7 +167,6 @@ export class Ops {
    * @param shape An array of integers defining the output tensor shape.
    * @param dtype The type of an element in the resulting tensor. Can
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
-   * @returns 'float32'
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
