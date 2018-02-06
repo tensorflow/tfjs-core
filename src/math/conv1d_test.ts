@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D} from './tensor';
 import {Rank} from './types';
 
 // math.conv1d
@@ -33,7 +33,7 @@ import {Rank} from './types';
       const stride = 1;
 
       const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
-      const w = Tensor3D.new([fSize, inputDepth, outputDepth], [3]);
+      const w = dl.tensor3d([3], [fSize, inputDepth, outputDepth]);
 
       const bias = dl.tensor1d([0]);
 
@@ -51,8 +51,8 @@ import {Rank} from './types';
       const pad = 'valid';
       const stride = 1;
 
-      const x = Tensor2D.new(inputShape, [1, 2, 3, 4]);
-      const w = Tensor3D.new([fSize, inputDepth, outputDepth], [2, 1]);
+      const x = dl.tensor2d([1, 2, 3, 4], inputShape);
+      const w = dl.tensor3d([2, 1], [fSize, inputDepth, outputDepth]);
 
       const bias = dl.tensor1d([0]);
 
@@ -71,7 +71,7 @@ import {Rank} from './types';
 
       // tslint:disable-next-line:no-any
       const x: any = dl.tensor2d([1, 2, 3, 4], [2, 2]);
-      const w = Tensor3D.new([fSize, inputDepth, outputDepth], [3, 1]);
+      const w = dl.tensor3d([3, 1], [fSize, inputDepth, outputDepth]);
       const bias = dl.tensor1d([-1]);
 
       expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();
@@ -85,7 +85,7 @@ import {Rank} from './types';
 
       const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
       // tslint:disable-next-line:no-any
-      const w: any = Tensor4D.new([2, 2, 1, 1], [3, 1, 5, 0]);
+      const w: any = dl.tensor4d([3, 1, 5, 0], [2, 2, 1, 1]);
       const bias = dl.tensor1d([-1]);
 
       expect(() => math.conv1d(x, w, bias, stride, pad)).toThrowError();
@@ -100,7 +100,7 @@ import {Rank} from './types';
       const stride = 1;
 
       const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
-      const w = Tensor3D.new([fSize, inputDepth, outputDepth], [3, 1]);
+      const w = dl.tensor3d([3, 1], [fSize, inputDepth, outputDepth]);
       // tslint:disable-next-line:no-any
       const bias: any = dl.tensor2d([2, 2, 2, 2], [2, 2]);
 

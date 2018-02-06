@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D} from './tensor';
 
 // dl.batchNormalization4D
 {
@@ -26,7 +26,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
   const epsilon = 1e-1;
   const tests: MathTests = it => {
     it('simple batchnorm4D, no offset or scale, 2x1x1x2', () => {
-      const x = Tensor4D.new([2, 1, 1, 2], new Float32Array([2, 100, 4, 400]));
+      const x = dl.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const varianceEpsilon = .001;
@@ -50,7 +50,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('simple batchnorm4D, no offset, 2x1x1x2', () => {
-      const x = Tensor4D.new([2, 1, 1, 2], new Float32Array([2, 100, 4, 400]));
+      const x = dl.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const scale = dl.tensor1d([4, 5]);
@@ -75,7 +75,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('simple batchnorm4D, no scale, 2x1x1x2', () => {
-      const x = Tensor4D.new([2, 1, 1, 2], new Float32Array([2, 100, 4, 400]));
+      const x = dl.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const offset = dl.tensor1d([4, 5]);
@@ -105,7 +105,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('simple batchnorm4D, 2x1x1x2', () => {
-      const x = Tensor4D.new([2, 1, 1, 2], new Float32Array([2, 100, 4, 400]));
+      const x = dl.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const offset = dl.tensor1d([3, 4]);
@@ -150,7 +150,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
   const epsilon = 1e-1;
   const tests: MathTests = it => {
     it('simple batchnorm3D, no offset or scale, 2x1x2', () => {
-      const x = Tensor3D.new([2, 1, 2], [2, 100, 4, 400]);
+      const x = dl.tensor3d([2, 100, 4, 400], [2, 1, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const varianceEpsilon = .001;
@@ -174,7 +174,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('simple batchnorm3D, no offset, 2x1x2', () => {
-      const x = Tensor3D.new([2, 1, 2], [2, 100, 4, 400]);
+      const x = dl.tensor3d([2, 100, 4, 400], [2, 1, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const scale = dl.tensor1d([4, 5]);
@@ -199,7 +199,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('simple batchnorm3D, no scale, 2x1x2', () => {
-      const x = Tensor3D.new([2, 1, 2], [2, 100, 4, 400]);
+      const x = dl.tensor3d([2, 100, 4, 400], [2, 1, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const offset = dl.tensor1d([4, 5]);
@@ -229,7 +229,7 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('simple batchnorm3D, 2x1x2', () => {
-      const x = Tensor3D.new([2, 1, 2], [2, 100, 4, 400]);
+      const x = dl.tensor3d([2, 100, 4, 400], [2, 1, 2]);
       const mean = dl.tensor1d([1, 2]);
       const variance = dl.tensor1d([2, 3]);
       const offset = dl.tensor1d([3, 4]);
@@ -407,10 +407,12 @@ import {Tensor2D, Tensor3D, Tensor4D} from './tensor';
     });
 
     it('batchnorm2D matches tensorflow, 3x3', () => {
-      const x = Tensor2D.new([3, 3], [
-        0.3136892, 0.92389025, 0.594782, 0.05021042, 0.67545404, 0.93910035,
-        0.13277993, 0.96474269, 0.88608916
-      ]);
+      const x = dl.tensor2d(
+          [
+            0.3136892, 0.92389025, 0.594782, 0.05021042, 0.67545404, 0.93910035,
+            0.13277993, 0.96474269, 0.88608916
+          ],
+          [3, 3]);
       const mean = dl.tensor1d([0.19526312, 0.74857256, 0.45166398]);
       const variance = dl.tensor1d([0.22963001, 0.61521992, 0.46623685]);
       const offset = dl.tensor1d([0.43098484, 0.77712237, 0.47916298]);

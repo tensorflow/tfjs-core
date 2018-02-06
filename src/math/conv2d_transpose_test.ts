@@ -52,7 +52,7 @@ import {Rank} from './types';
       const origPad = 0;
       const origStride = 1;
 
-      const x = Tensor4D.new(inputShape, [2, 3]);
+      const x = dl.tensor4d([2, 3], inputShape);
       const w = Tensor4D.new(
           [fSize, fSize, origInputDepth, origOutputDepth], [3, 1, 5, 0]);
 
@@ -90,7 +90,7 @@ import {Rank} from './types';
 
       const x = Tensor3D.new(inputShape, [2]);
       // tslint:disable-next-line:no-any
-      const w: any = Tensor3D.new([fSize, fSize, origInputDepth], [3, 1, 5, 0]);
+      const w: any = dl.tensor3d([3, 1, 5, 0], [fSize, fSize, origInputDepth]);
 
       expect(() => math.conv2dTranspose(x, w, [2, 2, 1], origStride, origPad))
           .toThrowError();

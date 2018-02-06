@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor3D, Tensor4D} from './tensor';
+import {Tensor4D} from './tensor';
 import {Rank} from './types';
 
 // math.slice1D
@@ -106,7 +106,7 @@ import {Rank} from './types';
 {
   const tests: MathTests = it => {
     it('slices 1x1x1 into shape 1x1x1 (effectively a copy)', math => {
-      const a = Tensor3D.new([1, 1, 1], [[[5]]]);
+      const a = dl.tensor3d([[[5]]], [1, 1, 1]);
       const result = math.slice3D(a, [0, 0, 0], [1, 1, 1]);
 
       expect(result.shape).toEqual([1, 1, 1]);
@@ -114,7 +114,7 @@ import {Rank} from './types';
     });
 
     it('slices 2x2x2 array into 1x2x2 starting at [1, 0, 0]', math => {
-      const a = Tensor3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
+      const a = dl.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
       const result = math.slice3D(a, [1, 0, 0], [1, 2, 2]);
 
       expect(result.shape).toEqual([1, 2, 2]);
@@ -122,7 +122,7 @@ import {Rank} from './types';
     });
 
     it('slices 2x2x2 array into 2x1x1 starting at [0, 1, 1]', math => {
-      const a = Tensor3D.new([2, 2, 2], [1, 2, 3, 4, 5, 6, 7, 8]);
+      const a = dl.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
       const result = math.slice3D(a, [0, 1, 1], [2, 1, 1]);
 
       expect(result.shape).toEqual([2, 1, 1]);
@@ -142,7 +142,7 @@ import {Rank} from './types';
 {
   const tests: MathTests = it => {
     it('slices 1x1x1x1 into shape 1x1x1x1 (effectively a copy)', math => {
-      const a = Tensor4D.new([1, 1, 1, 1], [[[[5]]]]);
+      const a = dl.tensor4d([[[[5]]]], [1, 1, 1, 1]);
       const result = math.slice4D(a, [0, 0, 0, 0], [1, 1, 1, 1]);
 
       expect(result.shape).toEqual([1, 1, 1, 1]);
