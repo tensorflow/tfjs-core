@@ -22,7 +22,7 @@ import {MathTests} from '../test_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
 import {Rank} from './types';
 
-const tests: MathTests = () => {
+const tests: MathTests = it => {
   it('simple assign', math => {
     const v = variable(dl.tensor1d([1, 2, 3]));
     test_util.expectArraysClose(v, [1, 2, 3]);
