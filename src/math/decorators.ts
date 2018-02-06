@@ -37,6 +37,7 @@ export interface HeadingMap {
       'Normalization'|'Images'|'Logical'|'RNN'|'Reduction'|'Classification';
   'Training': 'Gradients';
   'Performance': 'Memory'|'Timing';
+  // TODO(nsthorat): Make subheading optional.
   'Environment': '';
 }
 export type Heading = keyof HeadingMap;

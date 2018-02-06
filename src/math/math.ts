@@ -212,6 +212,8 @@ export class NDArrayMath {
   getNumTensors: typeof ENV.engine.getNumTensors;
   dispose: typeof ENV.engine.dispose;
   registeredVariables: typeof ENV.engine.registeredVariables;
+  startScope: typeof ENV.engine.startScope;
+  endScope: typeof ENV.engine.endScope;
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
@@ -223,6 +225,8 @@ export class NDArrayMath {
     this.getNumTensors = ENV.engine.getNumTensors.bind(ENV.engine);
     this.dispose = ENV.engine.dispose.bind(ENV.engine);
     this.registeredVariables = ENV.engine.registeredVariables;
+    this.startScope = ENV.engine.startScope.bind(ENV.engine);
+    this.endScope = ENV.engine.endScope.bind(ENV.engine);
   }
 
   /** @deprecated Use dl.tidy() */

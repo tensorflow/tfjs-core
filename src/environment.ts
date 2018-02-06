@@ -209,7 +209,7 @@ export class Environment {
   }
 
   /**
-   * Sets the backend (cpu, webgl etc) responsible for creating Tensors and
+   * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
    * executing operations on those tensors.
    *
    * @param backendType The backend type. Currently supports 'webgl'|'cpu'.
@@ -222,10 +222,14 @@ export class Environment {
     if (!(backendType in ENV.backends)) {
       throw new Error(`Backend type '${backendType}' not found in registry`);
     }
-    // tslint:disable-next-line:no-unused-expression
-    new NDArrayMath(backendType, safeMode);
+    ENV.globalMath = new NDArrayMath(backendType, safeMode);
   }
 
+  /**
+   * Returns the current backend (cpu, webgl, etc). The backend is responsible
+   * for creating tensors and executing operations on those tensors.
+   */
+  @doc({heading: 'Environment', subheading: ''})
   static getBackend(): BackendType {
     ENV.initEngine();
     return ENV.currentBackendType;
