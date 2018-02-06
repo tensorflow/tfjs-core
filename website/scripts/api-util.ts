@@ -17,7 +17,7 @@
 import * as ts from 'typescript';
 
 // tslint:disable-next-line:max-line-length
-import {DocClass, DocHeading, DocMethod, Docs, DocSubheading} from '../api/view';
+import {DocClass, DocFunction, DocHeading, Docs, DocSubheading} from '../api/view';
 
 const GITHUB_ROOT = 'https://github.com/PAIR-code/deeplearnjs/';
 
@@ -27,7 +27,6 @@ export interface DocInfo {
   subheading: string;
   namespace?: string;
   subclasses?: string[];
-  type?: 'method'|'class'|'function';
 }
 
 export function getDocDecorator(node: ts.Node, decoratorName: string): DocInfo {
@@ -56,7 +55,7 @@ export function parseDocDecorators(
 
 export function addSubclassMethods(
     docHeadings: DocHeading[],
-    subclassMethodMap: {[subclass: string]: DocMethod[]}) {
+    subclassMethodMap: {[subclass: string]: DocFunction[]}) {
   const subclasses = Object.keys(subclassMethodMap);
   subclasses.forEach(subclass => {
     const methods = subclassMethodMap[subclass];
@@ -166,4 +165,23 @@ export function sortMethods(docHeadings: DocHeading[]) {
 // Returns display names like 'dl.train.Optimizer'.
 export function getDisplayName(docInfo: DocInfo, name: string) {
   return (docInfo.namespace != null ? docInfo.namespace + '.' : '') + name;
+}
+
+export function kind(node: ts.Node): string {
+  const keys = Object.keys(ts.SyntaxKind);
+  for (let i = 0; i < keys.length; i++) {
+    if (ts.SyntaxKind[keys[i]] === node.kind) {
+      return keys[i];
+    }
+  }
+}
+
+export function isStatic(node: ts.MethodDeclaration): boolean {
+  let isStatic = false;
+  node.forEachChild(child => {
+    if (child.kind === ts.SyntaxKind.StaticKeyword) {
+      isStatic = true;
+    }
+  });
+  return isStatic;
 }

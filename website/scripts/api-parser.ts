@@ -19,7 +19,7 @@ import * as fs from 'fs';
 import * as ts from 'typescript';
 
 // tslint:disable-next-line:max-line-length
-import {DocClass, DocHeading, DocMethod, DocMethodParam, Docs, DocSubheading} from '../api/view';
+import {DocClass, DocFunction, DocFunctionParam, DocHeading, Docs, DocSubheading} from '../api/view';
 
 import * as util from './api-util';
 
@@ -63,7 +63,7 @@ export function parse(): Docs {
 
   // We keep an auxillary map of explicitly marked "subclass" fields on @doc to
   // the method entries
-  const subclassMethodMap: {[subclass: string]: DocMethod[]} = {};
+  const subclassMethodMap: {[subclass: string]: DocFunction[]} = {};
 
   // Use the same compiler options that we use to compile the library here.
   const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
@@ -101,19 +101,20 @@ export function parse(): Docs {
 // Visits nodes of the AST, finding documentation annotated with @doc.
 function visitNode(
     docHeadings: DocHeading[],
-    subclassMethodMap: {[subclass: string]: DocMethod[]},
+    subclassMethodMap: {[subclass: string]: DocFunction[]},
     checker: ts.TypeChecker, node: ts.Node, sourceFile: ts.SourceFile) {
   if (ts.isMethodDeclaration(node)) {
     const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
 
-    // If this is a proper method, then we shouldn't display it as a
-    // standalone method, rather as a method part of a class.
-    if (docInfo != null && docInfo.type !== 'method') {
+    // Non-static methods are handled by the class serializer.
+    if (docInfo != null && util.isStatic(node)) {
       const subheading =
           util.fillHeadingsAndGetSubheading(docInfo, docHeadings);
 
-      subheading.symbols.push(serializeMethod(
-          checker, node, docInfo, sourceFile, subclassMethodMap));
+      const docMethod = serializeMethod(
+          checker, node, docInfo, sourceFile, subclassMethodMap);
+
+      subheading.symbols.push(docMethod);
     }
   } else if (ts.isClassDeclaration(node)) {
     const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
@@ -155,6 +156,7 @@ export function serializeClass(
 
   // Find method children of the class that are marked with @doc.
   node.forEachChild(node => {
+    console.log(node.getText());
     if (ts.isMethodDeclaration(node)) {
       const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
       if (docInfo != null) {
@@ -173,7 +175,7 @@ export function serializeClass(
 export function serializeMethod(
     checker: ts.TypeChecker, node: ts.MethodDeclaration, docInfo: util.DocInfo,
     sourceFile: ts.SourceFile,
-    subclassMethodMap?: {[subclass: string]: DocMethod[]}): DocMethod {
+    subclassMethodMap?: {[subclass: string]: DocFunction[]}): DocFunction {
   if (!sourceFile.fileName.startsWith(repoPath)) {
     throw new Error(
         `Error: source file ${sourceFile.fileName} ` +
@@ -198,7 +200,7 @@ export function serializeMethod(
   const {displayFilename, githubUrl} =
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
 
-  const method: DocMethod = {
+  const method: DocFunction = {
     displayName,
     paramStr,
     parameters,
@@ -206,7 +208,7 @@ export function serializeMethod(
     documentation: ts.displayPartsToString(signature.getDocumentationComment()),
     fileName: displayFilename,
     githubUrl,
-    isMethod: true
+    isFunction: true
   };
 
   if (docInfo.subclasses != null && subclassMethodMap != null) {
@@ -223,7 +225,7 @@ export function serializeMethod(
 }
 
 function serializeParameter(
-    checker: ts.TypeChecker, symbol: ts.Symbol): DocMethodParam {
+    checker: ts.TypeChecker, symbol: ts.Symbol): DocFunctionParam {
   return {
     name: symbol.getName(),
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),

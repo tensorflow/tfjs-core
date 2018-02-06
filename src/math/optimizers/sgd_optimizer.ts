@@ -31,6 +31,8 @@ import {Optimizer} from './optimizer';
 
 /**
  * Optimizer that implements stochastic gradient descent.
+ *
+ * Use `dl.train.sgd()` to create an SGD optimizer.
  */
 @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class SGDOptimizer extends Optimizer {

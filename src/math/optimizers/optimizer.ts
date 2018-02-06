@@ -53,8 +53,7 @@ export abstract class Optimizer {
   @doc({
     heading: 'Training',
     subheading: 'Optimizers',
-    subclasses: ['SGDOptimizer'],
-    type: 'method'
+    subclasses: ['SGDOptimizer']
   })
   minimize(f: () => Scalar, returnCost = false, varList?: Variable[]): Scalar
       |null {

@@ -26,10 +26,6 @@ import * as mkdirp from 'mkdirp';
 import * as mustache from 'mustache';
 import * as shell from 'shelljs';
 import * as ts from 'typescript';
-
-// tslint:disable-next-line:max-line-length
-import {DocClass, DocHeading, DocMethod, DocMethodParam, Docs, DocSubheading} from '../api/view';
-
 import * as parser from './api-parser';
 import * as util from './api-util';
 

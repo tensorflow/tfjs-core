@@ -26,31 +26,31 @@ export interface DocSubheading {
   symbols?: DocSymbol[];
 }
 
-export type DocSymbol = DocMethod|DocClass;
+export type DocSymbol = DocFunction|DocClass;
 
 export interface DocClass {
   displayName: string;
   documentation: string;
   fileName: string;
   githubUrl: string;
-  methods: DocMethod[];
+  methods: DocFunction[];
 
   isClass: true;
 }
 
-export interface DocMethod {
+export interface DocFunction {
   displayName: string;
   paramStr: string;
   documentation: string;
   returnType: string;
   fileName: string;
   githubUrl: string;
-  parameters: DocMethodParam[];
+  parameters: DocFunctionParam[];
 
-  isMethod: true;
+  isFunction: true;
 }
 
-export interface DocMethodParam {
+export interface DocFunctionParam {
   name: string;
   type: string;
   optional: boolean;

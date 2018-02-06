@@ -50,17 +50,28 @@
         {{#symbols}}
           <div class="method">
             <h5># <a name="{{dl.displayName}}" href="#dl.{{displayName}}">dl.{{displayName}}</a>{{paramStr}}</h5>
+
             <div class="documentation">{{documentation}}</div>
-            <h6>Parameters:</h6>
-            {{#parameters}}
-              <div class="parameter">
-                <div class="param-name"><code>{{name}}: {{type}}</code></div>
-                <div class="param-docs">
-                  {{#optional}}(Optional){{/optional}} {{documentation}}
+
+            {{#isFunction}}
+              <h6>Parameters:</h6>
+              {{#parameters}}
+                <div class="parameter">
+                  <div class="param-name"><code>{{name}}: {{type}}</code></div>
+                  <div class="param-docs">
+                    {{#optional}}(Optional){{/optional}} {{documentation}}
+                  </div>
                 </div>
-              </div>
-            {{/parameters}}
-            <h6>Returns: <code>{{returnType}}</code></h6>
+              {{/parameters}}
+              <h6>Returns: <code>{{returnType}}</code></h6>
+            {{/isFunction}}
+
+            {{#isClass}}
+              <h6>Methods:</h6>
+                {{#methods}}
+                  <h7>{{displayName}}</h7>
+                {{/methods}}
+            {{/isClass}}
             <br>
             Defined in <code><a href="{{githubUrl}}" target=_blank>{{fileName}}</a></code>
           </div>
