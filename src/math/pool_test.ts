@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D} from './tensor';
 
 // math.maxPool
 {
@@ -43,8 +43,8 @@ import {Tensor3D, Tensor4D} from './tensor';
 
     it('x=[2,3,3,1] f=[2,2] s=1', math => {
       // Feed forward.
-      const x = Tensor4D.new(
-          [2, 3, 3, 1], [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      const x = dl.tensor4d(
+          [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9], [2, 3, 3, 1]);
 
       const result = math.maxPool(x, 2, 1, 0);
 
@@ -135,9 +135,9 @@ import {Tensor3D, Tensor4D} from './tensor';
     it('gradients x=[2,3,3,1] f=[2,2] s=1 no duplicate max value', math => {
       // This test batches the [3,3,1] tests.
       const dy = dl.tensor4d([1, 2, 3, 4, 1, 2, 3, 4], [2, 2, 2, 1]);
-      const x = Tensor4D.new(
-          [2, 3, 3, 1],
-          [1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 5, 6, 6, 8, 4, 9, 5, 10]);
+      const x = dl.tensor4d(
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 5, 6, 6, 8, 4, 9, 5, 10],
+          [2, 3, 3, 1]);
       const expected = [0, 0, 0, 0, 1, 2, 0, 3, 4, 1, 0, 0, 0, 2, 0, 3, 0, 4];
 
       const vjp = math.vjp(() => math.maxPool(x, 2, 1, 0), {x}, dy);
@@ -170,8 +170,8 @@ import {Tensor3D, Tensor4D} from './tensor';
 
     it('gradient x=[2,3,3,1] f=[2,2] s=1 dup max value in 2nd input', math => {
       const dy = dl.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
-      const x = Tensor4D.new(
-          [2, 3, 3, 1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 9, 8]);
+      const x = dl.tensor4d(
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 9, 8], [2, 3, 3, 1]);
       const expected = new Float32Array(
           [0, 0, 0, 0, 1, 2, 0, 3, 4, 0, 0, 0, 0, 5, 6, 0, 15, 0]);
 
@@ -344,8 +344,8 @@ import {Tensor3D, Tensor4D} from './tensor';
 
     it('3x3x1 in, 2x2 filter, 1 stride, batch=2', math => {
       // Feed forward.
-      const a = Tensor4D.new(
-          [2, 3, 3, 1], [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 5, 4, 6, 7, 9, 8]);
+      const a = dl.tensor4d(
+          [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 5, 4, 6, 7, 9, 8], [2, 3, 3, 1]);
       const result = math.minPool(a, 2, 1, 0);
 
       expect(result.shape).toEqual([2, 2, 2, 1]);
@@ -439,8 +439,8 @@ import {Tensor3D, Tensor4D} from './tensor';
 
     it('x=[2,3,3,1] f=[2,2], s=1', math => {
       // Feed forward.
-      const a = Tensor4D.new(
-          [2, 3, 3, 1], [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      const a = dl.tensor4d(
+          [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9], [2, 3, 3, 1]);
       const result = math.avgPool(a, 2, 1, 0);
 
       expect(result.shape).toEqual([2, 2, 2, 1]);
@@ -515,8 +515,8 @@ import {Tensor3D, Tensor4D} from './tensor';
 
     it('gradient x=[2,3,3,1] f=[2,2], s=1', math => {
       // Feed forward.
-      const x = Tensor4D.new(
-          [2, 3, 3, 1], [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      const x = dl.tensor4d(
+          [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9], [2, 3, 3, 1]);
       const dy = dl.tensor4d([1, 2, 3, 4, 1, 2, 3, 4], [2, 2, 2, 1]);
       const avgMultiplier = 1 / (2 * 2);
 

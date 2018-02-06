@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D} from './tensor';
 import {Rank} from './types';
 
 // math.conv2d
@@ -205,8 +205,8 @@ import {Rank} from './types';
 
       const bias = dl.tensor1d([-1]);
 
-      const x = Tensor4D.new(
-          inputShape, [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      const x = dl.tensor4d(
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
       const dy = dl.tensor4d([3, 1, 2, 0, 3, 1, 2, 0], [2, 2, 2, 1]);
 
       const vjp = math.vjp(

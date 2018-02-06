@@ -19,7 +19,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 import * as dl from '../index';
-import {Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D} from './tensor';
 
 // LogicalNot:
 {
@@ -188,8 +188,8 @@ import {Tensor3D, Tensor4D} from './tensor';
     });
     it('broadcasting Tensor4D shapes', math => {
       const a = dl.tensor4d([1, 0, 1, 0], [2, 2, 1, 1], 'bool');
-      const b = Tensor4D.new(
-          [2, 2, 1, 2], [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], 'bool');
+      const b = dl.tensor4d(
+          [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], [2, 2, 1, 2], 'bool');
       test_util.expectArraysClose(
           math.logicalAnd(a, b), [1, 0, 0, 0, 0, 0, 0, 0]);
     });
@@ -306,8 +306,8 @@ import {Tensor3D, Tensor4D} from './tensor';
     });
     it('broadcasting Tensor4D shapes', math => {
       const a = dl.tensor4d([1, 0, 1, 0], [2, 2, 1, 1], 'bool');
-      const b = Tensor4D.new(
-          [2, 2, 1, 2], [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], 'bool');
+      const b = dl.tensor4d(
+          [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], [2, 2, 1, 2], 'bool');
       test_util.expectArraysClose(
           math.logicalOr(a, b), [1, 1, 0, 0, 1, 1, 1, 1]);
     });
@@ -428,8 +428,8 @@ import {Tensor3D, Tensor4D} from './tensor';
     });
     it('broadcasting Tensor4D shapes', math => {
       const a = dl.tensor4d([1, 0, 1, 0], [2, 2, 1, 1], 'bool');
-      const b = Tensor4D.new(
-          [2, 2, 1, 2], [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], 'bool');
+      const b = dl.tensor4d(
+          [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], [2, 2, 1, 2], 'bool');
       test_util.expectArraysClose(
           math.logicalXor(a, b), [0, 1, 0, 0, 1, 1, 1, 1]);
     });

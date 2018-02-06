@@ -18,7 +18,7 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as dl from '../index';
-import {Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D} from './tensor';
 
 const sqArr = (arr: number[]) => arr.map(d => d*d);
 const sumArr = (arr: number[]) => arr.reduce((prev, curr) => prev + curr, 0);
@@ -402,8 +402,7 @@ const flatten = (arr: any): number[] => {
     });
 
     it('computes simple normalization across channels', math => {
-      const x = Tensor4D.new([2, 1, 1, 4],
-        new Float32Array([1, 20, 300, 4, 1, 20, 300, 4]));
+      const x = dl.tensor4d([1, 20, 300, 4, 1, 20, 300, 4], [2, 1, 1, 4]);
       const radius = 1;
       const bias = 1;
       const alpha = 1;
@@ -439,8 +438,7 @@ const flatten = (arr: any): number[] => {
     });
 
     it('computes simple normalization within channel', math => {
-      const x = Tensor4D.new([2, 2, 2, 1],
-        new Float32Array([1, 20, 50, 4, 1, 20, 50, 4]));
+      const x = dl.tensor4d([1, 20, 50, 4, 1, 20, 50, 4], [2, 2, 2, 1]);
       const radius = 1;
       const bias = 1;
       const alpha = 1;
