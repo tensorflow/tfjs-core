@@ -1025,6 +1025,8 @@ export class NDArrayMathGPU extends NDArrayMath {
     ENV.setMath(this);
   }
 
+  // TODO(smilkov): Remove these two methods (used only in tests), and make
+  // engine.backend private.
   getGPGPUContext(): GPGPUContext {
     return (this.engine.backend as MathBackendWebGL).getGPGPUContext();
   }

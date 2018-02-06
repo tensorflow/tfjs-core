@@ -185,7 +185,7 @@ export type BackendType = 'webgl'|'cpu';
 
 export class Environment {
   private features: Features = {};
-  private globalMath: NDArrayMath = null;
+  private globalMath: NDArrayMath;
   private globalEngine: BackendEngine;
   private BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
   private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
@@ -270,6 +270,7 @@ export class Environment {
     if (this.globalMath != null) {
       this.globalMath.dispose();
       this.globalMath = null;
+      this.globalEngine = null;
     }
     if (this.backends !== this.BACKEND_REGISTRY) {
       for (const name in this.backends) {
@@ -341,15 +342,16 @@ export class Environment {
     }
   }
 
+  /** @deprecated. Use ENV.engine. */
   get math(): NDArrayMath {
-    if (this.globalMath == null) {
+    if (this.globalEngine == null) {
       this.initEngine();
     }
     return this.globalMath;
   }
 
   get engine(): BackendEngine {
-    if (this.globalMath == null) {
+    if (this.globalEngine == null) {
       this.initEngine();
     }
     return this.globalEngine;
