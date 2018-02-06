@@ -46,6 +46,7 @@ export interface DocInfo<H extends Heading> {
   subheading: HeadingMap[H];
   namespace?: Namespace;
   subclasses?: string[];
+  type?: 'method'|'class'|'function';
 }
 
 // Pass through function that does nothing. Only used for documentation.

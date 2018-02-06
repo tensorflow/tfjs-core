@@ -47,9 +47,9 @@
     {{#subheadings}}
       <div class="subheading">
         <h4>{{name}}</h4>
-        {{#methods}}
+        {{#symbols}}
           <div class="method">
-            <h5># <a name="{{path}}" href="#{{path}}">{{path}}</a></h5>
+            <h5># <a name="{{dl.displayName}}" href="#dl.{{displayName}}">dl.{{displayName}}</a>{{paramStr}}</h5>
             <div class="documentation">{{documentation}}</div>
             <h6>Parameters:</h6>
             {{#parameters}}
@@ -64,7 +64,7 @@
             <br>
             Defined in <code><a href="{{githubUrl}}" target=_blank>{{fileName}}</a></code>
           </div>
-        {{/methods}}
+        {{/symbols}}
       </div>
     {{/subheadings}}
   </div>
