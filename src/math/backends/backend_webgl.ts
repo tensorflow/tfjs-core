@@ -966,7 +966,7 @@ export class MathBackendWebGL implements MathBackend {
     if (!(dataId in this.texData)) {
       throw new Error(
           `No data found for Tensor with data id ${dataId}. ` +
-          `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
+          `Use global dl.* API instead of constructing your own NDArrayMath. ` +
           `If you need to construct your own math, make sure this array is ` +
           `allocated after the math construction`);
     }
@@ -1018,7 +1018,7 @@ export class NDArrayMathGPU extends NDArrayMath {
   constructor(gpgpu?: GPGPUContext, safeMode = false) {
     console.warn(
         'new NDArrayMathGPU() is deprecated. Please use the global ' +
-        'dl.ENV.math. In rare cases, to construct your own NDArrayMath ' +
+        'dl.* API. In rare cases, to construct your own NDArrayMath ' +
         'that runs on GPU, use math = new NDArrayMath(\'webgl\', safeMode); ' +
         'and make sure to set it as global: dl.ENV.setMath(math);');
     super(new MathBackendWebGL(gpgpu), safeMode);
@@ -1026,11 +1026,11 @@ export class NDArrayMathGPU extends NDArrayMath {
   }
 
   getGPGPUContext(): GPGPUContext {
-    return (this.engine.getBackend() as MathBackendWebGL).getGPGPUContext();
+    return (this.engine.backend as MathBackendWebGL).getGPGPUContext();
   }
 
   getTextureManager(): TextureManager {
-    return (this.engine.getBackend() as MathBackendWebGL).getTextureManager();
+    return (this.engine.backend as MathBackendWebGL).getTextureManager();
   }
 }
 

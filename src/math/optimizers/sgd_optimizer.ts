@@ -37,15 +37,13 @@ export class SGDOptimizer extends Optimizer {
 
   // Eager mode
   applyGradients(variableGradients: NamedTensorMap) {
-    const math = ENV.math;
-
     const varNames = Object.keys(variableGradients);
     varNames.forEach(varName => {
       const gradient = variableGradients[varName];
-      const value = math.registeredVariables[varName];
+      const value = ENV.engine.registeredVariables[varName];
 
       const newValue = tidy(() => {
-        return math.add(math.multiply(this.c, gradient), value);
+        return this.c.mul(gradient).add(value);
       });
 
       value.assign(newValue);
@@ -84,6 +82,6 @@ export class SGDOptimizer extends Optimizer {
     if (this.c != null) {
       this.c.dispose();
     }
-    this.c = ENV.math.keep(ops.scalar(-learningRate));
+    this.c = keep(ops.scalar(-learningRate));
   }
 }

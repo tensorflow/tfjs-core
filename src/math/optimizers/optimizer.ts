@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
-import {keep, tidy} from '../../globals';
+import {keep, tidy, variableGradients} from '../../globals';
 import {Node, VariableNode} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
 import * as session_util from '../../graph/session_util';
@@ -35,7 +34,7 @@ export abstract class Optimizer {
     if (specifiedVariableList != null) {
       this.specifiedVariableNodes = specifiedVariableList as VariableNode[];
     }
-    this.one = ENV.math.keep(ops.scalar(1));
+    this.one = keep(ops.scalar(1));
   }
 
   /**
@@ -79,7 +78,7 @@ export abstract class Optimizer {
    */
   computeGradients(f: () => Scalar, varList?: Variable[]):
       {value: Scalar, gradients: NamedTensorMap} {
-    return ENV.math.variableGradients(f, varList);
+    return variableGradients(f, varList);
   }
 
   /**

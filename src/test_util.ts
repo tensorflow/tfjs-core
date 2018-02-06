@@ -347,10 +347,10 @@ export function executeMathTests(
   const customBeforeEach = () => {
     math = mathFactory();
     ENV.setMath(math);
-    math.startScope();
+    ENV.engine.startScope();
   };
   const customAfterEach = () => {
-    math.endScope(null);
+    ENV.engine.endScope(null);
     math.dispose();
   };
   const customIt: It =
