@@ -24,8 +24,8 @@ import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 import * as ops from '../ops';
-// tslint:disable-next-line:max-line-length
-import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {tensor2d, tensor3d, tensor4d} from '../ops';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 
@@ -99,7 +99,7 @@ export class MathBackendCPU implements MathBackend {
     }
     const outShape: [number, number, number] =
         [pixels.height, pixels.width, numChannels];
-    return Tensor3D.new(outShape, values, 'int32');
+    return tensor3d(values, outShape, 'int32');
   }
   async read(dataId: number): Promise<TypedArray> {
     this.throwIfNoData(dataId);
@@ -132,7 +132,7 @@ export class MathBackendCPU implements MathBackend {
 
   slice1D(x: Tensor1D, begin: number, size: number): Tensor1D {
     const newVals = x.dataSync().slice(begin, begin + size);
-    return Tensor1D.new(newVals, x.dtype);
+    return ops.tensor1d(newVals, x.dtype);
   }
 
   slice2D(x: Tensor2D, begin: [number, number], size: [number, number]):
@@ -237,7 +237,7 @@ export class MathBackendCPU implements MathBackend {
   }
 
   neg<T extends Tensor>(x: T): T {
-    return this.multiply(Scalar.new(-1), x) as T;
+    return this.multiply(ops.scalar(-1), x) as T;
   }
 
   add(a: Tensor, b: Tensor): Tensor {
@@ -292,7 +292,7 @@ export class MathBackendCPU implements MathBackend {
         values[index++] = sum;
       }
     }
-    return Tensor2D.new([leftDim, rightDim], values);
+    return ops.tensor2d(values, [leftDim, rightDim]);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
@@ -534,7 +534,7 @@ export class MathBackendCPU implements MathBackend {
       topkIndices[i] = valuesAndIndices[i].index;
     }
     return {
-      values: Tensor1D.new(topkValues, x.dtype),
+      values: ops.tensor1d(topkValues, x.dtype),
       indices: Tensor1D.new<'int32'>(topkIndices)
     };
   }
@@ -1041,7 +1041,7 @@ export class MathBackendCPU implements MathBackend {
       }
       values[d2] = sum;
     }
-    return Tensor1D.new(values);
+    return ops.tensor1d(values);
   }
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
@@ -1475,7 +1475,7 @@ export class MathBackendCPU implements MathBackend {
               Math.sqrt(
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
-    return Tensor2D.new(x.shape, outValues);
+    return tensor2d(outValues, x.shape);
   }
 
   batchNormalization3D(
@@ -1496,7 +1496,7 @@ export class MathBackendCPU implements MathBackend {
               Math.sqrt(
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
-    return Tensor3D.new(x.shape, outValues);
+    return tensor3d(outValues, x.shape);
   }
 
   batchNormalization4D(
@@ -1517,7 +1517,7 @@ export class MathBackendCPU implements MathBackend {
               Math.sqrt(
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
-    return Tensor4D.new(x.shape, outValues);
+    return tensor4d(outValues, x.shape);
   }
 
   localResponseNormalization4D(
@@ -1615,7 +1615,7 @@ export class MathBackendCPU implements MathBackend {
     for (let event = 0; event < indices.size; ++event) {
       res[event * depth + indices.get(event)] = onValue;
     }
-    return Tensor2D.new([indices.size, depth], res);
+    return ops.tensor2d(res, [indices.size, depth]);
   }
 
   private broadcastedBinaryOp(
