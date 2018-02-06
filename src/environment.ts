@@ -184,6 +184,9 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
 
 export type BackendType = 'webgl'|'cpu';
 
+/** List of currently supported backends ordered by preference. */
+const SUPPORTED_BACKENDS: BackendType[] = ['webgl', 'cpu'];
+
 export class Environment {
   private features: Features = {};
   private globalMath: NDArrayMath;
@@ -205,7 +208,8 @@ export class Environment {
   }
 
   /**
-   * Sets the backend that executes all operations (cpu, webgl etc).
+   * Sets the backend (cpu, webgl etc) responsible for creating Tensors and
+   * executing operations on those tensors.
    *
    * @param backendType The backend type. Currently supports 'webgl'|'cpu'.
    * @param safeMode Defaults to false. In safe mode, you are forced to
@@ -214,6 +218,9 @@ export class Environment {
    */
   @doc({heading: 'Environment', subheading: ''})
   static setBackend(backendType: BackendType, safeMode = false) {
+    if (!(backendType in ENV.backends)) {
+      throw new Error(`Backend type '${backendType}' not found in registry`);
+    }
     // tslint:disable-next-line:no-unused-expression
     new NDArrayMath(backendType, safeMode);
   }
@@ -233,9 +240,8 @@ export class Environment {
   }
 
   getBestBackendType(): BackendType {
-    const orderedBackends: BackendType[] = ['webgl', 'cpu'];
-    for (let i = 0; i < orderedBackends.length; ++i) {
-      const backendId = orderedBackends[i];
+    for (let i = 0; i < SUPPORTED_BACKENDS.length; ++i) {
+      const backendId = SUPPORTED_BACKENDS[i];
       if (backendId in this.backends) {
         return backendId;
       }
