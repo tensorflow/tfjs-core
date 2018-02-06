@@ -16,7 +16,7 @@
  */
 import * as ts from 'typescript';
 
-import {DocHeading, DocMethod, Docs, DocSubheading} from '../api/view';
+import {DocClass, DocHeading, DocMethod, Docs, DocSubheading} from '../api/view';
 
 const GITHUB_ROOT = 'https://github.com/PAIR-code/deeplearnjs/';
 
@@ -67,6 +67,9 @@ export function addSubclassMethods(
           const symbol = subheading.symbols[k];
           if (symbol['isClass'] != null) {
             console.log('FOUND', symbol);
+            const classSymbol = symbol as DocClass;
+            methods.forEach(method => classSymbol.methods.push(method));
+            // classSymbol.methods.forEach(method => methods.push(method));
           }
         }
       }
