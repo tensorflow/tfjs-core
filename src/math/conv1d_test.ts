@@ -18,7 +18,6 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor3D} from './tensor';
 import {Rank} from './types';
 
 // math.conv1d
@@ -32,7 +31,7 @@ import {Rank} from './types';
       const pad = 'same';
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w = dl.tensor3d([3], [fSize, inputDepth, outputDepth]);
 
       const bias = dl.tensor1d([0]);
@@ -83,7 +82,7 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       // tslint:disable-next-line:no-any
       const w: any = dl.tensor4d([3, 1, 5, 0], [2, 2, 1, 1]);
       const bias = dl.tensor1d([-1]);
@@ -99,7 +98,7 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w = dl.tensor3d([3, 1], [fSize, inputDepth, outputDepth]);
       // tslint:disable-next-line:no-any
       const bias: any = dl.tensor2d([2, 2, 2, 2], [2, 2]);
@@ -116,7 +115,7 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w = dl.randomNormal<Rank.R3>([fSize, wrongInputDepth, outputDepth]);
       const bias = dl.tensor1d([-1]);
 

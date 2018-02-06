@@ -18,7 +18,6 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor3D} from './tensor';
 import {Rank} from './types';
 
 // math.conv2dTranspose
@@ -32,7 +31,7 @@ import {Rank} from './types';
       const origPad = 0;
       const origStride = 1;
 
-      const x = Tensor3D.new(inputShape, [2]);
+      const x = dl.tensor3d([2], inputShape);
       const w = dl.tensor4d(
           [3, 1, 5, 0], [fSize, fSize, origInputDepth, origOutputDepth]);
 
@@ -88,7 +87,7 @@ import {Rank} from './types';
       const origPad = 0;
       const origStride = 1;
 
-      const x = Tensor3D.new(inputShape, [2]);
+      const x = dl.tensor3d([2], inputShape);
       // tslint:disable-next-line:no-any
       const w: any = dl.tensor3d([3, 1, 5, 0], [fSize, fSize, origInputDepth]);
 
@@ -106,7 +105,7 @@ import {Rank} from './types';
          const origPad = 0;
          const origStride = 1;
 
-         const x = Tensor3D.new(inputShape, [2, 2]);
+         const x = dl.tensor3d([2, 2], inputShape);
          const w = dl.randomNormal<Rank.R4>(
              [fSize, fSize, origInputDepth, wrongOrigOutputDepth]);
 

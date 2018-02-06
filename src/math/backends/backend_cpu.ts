@@ -1496,7 +1496,7 @@ export class MathBackendCPU implements MathBackend {
               Math.sqrt(
                   varianceValues[i % varianceValues.length] + varianceEpsilon);
     }
-    return Tensor3D.new(x.shape, outValues);
+    return tensor3d(outValues, x.shape);
   }
 
   batchNormalization4D(

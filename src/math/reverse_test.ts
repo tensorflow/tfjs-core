@@ -18,7 +18,6 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor3D} from './tensor';
 
 // dl.reverse1D
 {
@@ -108,7 +107,7 @@ import {Tensor3D} from './tensor';
     ];
 
     it('reverse a 3D array at axis [0]', () => {
-      const input = Tensor3D.new(shape, data);
+      const input = dl.tensor3d(data, shape);
       const result = dl.reverse3d(input, [0]);
       expect(result.shape).toEqual(input.shape);
       test_util.expectArraysClose(result, [
@@ -118,7 +117,7 @@ import {Tensor3D} from './tensor';
     });
 
     it('reverse a 3D array at axis [1]', () => {
-      const input = Tensor3D.new(shape, data);
+      const input = dl.tensor3d(data, shape);
       const result = dl.reverse3d(input, [1]);
       expect(result.shape).toEqual(input.shape);
       test_util.expectArraysClose(result, [
@@ -128,7 +127,7 @@ import {Tensor3D} from './tensor';
     });
 
     it('reverse a 3D array at axis [2]', () => {
-      const input = Tensor3D.new(shape, data);
+      const input = dl.tensor3d(data, shape);
       const result = dl.reverse3d(input, [2]);
       expect(result.shape).toEqual(input.shape);
       test_util.expectArraysClose(result, [
@@ -138,7 +137,7 @@ import {Tensor3D} from './tensor';
     });
 
     it('reverse a 3D array at axis [0, 1]', () => {
-      const input = Tensor3D.new(shape, data);
+      const input = dl.tensor3d(data, shape);
       const result = dl.reverse3d(input, [0, 1]);
       expect(result.shape).toEqual(input.shape);
       test_util.expectArraysClose(result, [
@@ -148,7 +147,7 @@ import {Tensor3D} from './tensor';
     });
 
     it('reverse a 3D array at axis [0, 2]', () => {
-      const input = Tensor3D.new(shape, data);
+      const input = dl.tensor3d(data, shape);
       const result = dl.reverse3d(input, [0, 2]);
       expect(result.shape).toEqual(input.shape);
       test_util.expectArraysClose(result, [
@@ -158,7 +157,7 @@ import {Tensor3D} from './tensor';
     });
 
     it('reverse a 3D array at axis [1, 2]', () => {
-      const input = Tensor3D.new(shape, data);
+      const input = dl.tensor3d(data, shape);
       const result = dl.reverse3d(input, [1, 2]);
       expect(result.shape).toEqual(input.shape);
       test_util.expectArraysClose(result, [

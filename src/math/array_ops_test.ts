@@ -1364,8 +1364,8 @@ import * as util from '../util';
     });
 
     it('3D bool (tile)', () => {
-      const t = dl.Tensor3D.new(
-          [2, 2, 2], [true, false, true, false, true, false, true, false],
+      const t = dl.tensor3d(
+          [true, false, true, false, true, false, true, false], [2, 2, 2],
           'bool');
       const t2 = dl.tile(t, [1, 2, 1]);
 

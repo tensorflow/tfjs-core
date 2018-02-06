@@ -19,7 +19,6 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 import * as dl from '../index';
-import {Tensor3D} from './tensor';
 
 // LogicalNot:
 {
@@ -156,8 +155,9 @@ import {Tensor3D} from './tensor';
       test_util.expectArraysClose(math.logicalAnd(a, b), [0, 0, 0, 1, 1, 1]);
     });
     it('broadcasting Tensor3D shapes', math => {
-      const a = Tensor3D.new(
-          [2, 3, 2], [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
+      const a = dl.tensor3d(
+          [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
+          [2, 3, 2],
           'bool');
       const b =
           dl.tensor3d([[[0], [0], [1]], [[1], [0], [0]]], [2, 3, 1], 'bool');
@@ -274,8 +274,9 @@ import {Tensor3D} from './tensor';
       test_util.expectArraysClose(math.logicalOr(a, b), [0, 0, 0, 1, 1, 1]);
     });
     it('broadcasting Tensor3D shapes', math => {
-      const a = Tensor3D.new(
-          [2, 3, 2], [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
+      const a = dl.tensor3d(
+          [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
+          [2, 3, 2],
           'bool');
       const b =
           dl.tensor3d([[[0], [0], [1]], [[1], [0], [0]]], [2, 3, 1], 'bool');
@@ -395,8 +396,9 @@ import {Tensor3D} from './tensor';
       test_util.expectArraysClose(math.logicalXor(a, b), [0, 0, 0, 0, 0, 0]);
     });
     it('broadcasting Tensor3D shapes', math => {
-      const a = Tensor3D.new(
-          [2, 3, 2], [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
+      const a = dl.tensor3d(
+          [[[1, 0], [0, 0], [1, 1]], [[0, 0], [0, 1], [0, 0]]],
+          [2, 3, 2],
           'bool');
       const b =
           dl.tensor3d([[[0], [0], [1]], [[1], [0], [0]]], [2, 3, 1], 'bool');
@@ -589,10 +591,10 @@ import {Tensor3D} from './tensor';
       b = dl.tensor3d([[[8]], [[8]], [[8]], [[8]]], [4, 1, 1]);
       test_util.expectArraysClose(math.where(c, a, b), [9, 8, 9, 8]);
 
-      a = Tensor3D.new(
-          [4, 2, 1], [[[9], [9]], [[9], [9]], [[9], [9]], [[9], [9]]]);
-      b = Tensor3D.new(
-          [4, 2, 1], [[[8], [8]], [[8], [8]], [[8], [8]], [[8], [8]]]);
+      a = dl.tensor3d(
+          [[[9], [9]], [[9], [9]], [[9], [9]], [[9], [9]]], [4, 2, 1]);
+      b = dl.tensor3d(
+          [[[8], [8]], [[8], [8]], [[8], [8]], [[8], [8]]], [4, 2, 1]);
       test_util.expectArraysClose(
           math.where(c, a, b), [9, 9, 8, 8, 9, 9, 8, 8]);
     });

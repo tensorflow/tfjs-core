@@ -287,12 +287,12 @@ const testsNew: MathTests = it => {
     expect(() => dl.tensor2d([[1, 2, 3], [4, 5, 6]], [3, 2])).toThrowError();
   });
 
-  it('Tensor3D.new() from number[][][]', () => {
+  it('tensor3d() from number[][][]', () => {
     const a = dl.tensor3d([[[1], [2], [3]], [[4], [5], [6]]], [2, 3, 1]);
     test_util.expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
   });
 
-  it('Tensor3D.new() from number[][][], but shape does not match', () => {
+  it('tensor3d() from number[][][], but shape does not match', () => {
     const values = [[[1], [2], [3]], [[4], [5], [6]]];
     // Actual shape is [2, 3, 1].
     expect(() => dl.tensor3d(values, [3, 2, 1])).toThrowError();
@@ -564,15 +564,15 @@ const testsTensor3DNew: MathTests = it => {
   });
 
   it('int32 dtype from boolean[]', () => {
-    const a = Tensor3D.new(
-        [2, 2, 1], [[[false], [false]], [[true], [false]]], 'int32');
+    const a = dl.tensor3d(
+        [[[false], [false]], [[true], [false]]], [2, 2, 1], 'int32');
     expect(a.dtype).toBe('int32');
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });
 
   it('bool dtype from boolean[]', () => {
-    const a = Tensor3D.new(
-        [2, 2, 1], [[[false], [false]], [[true], [false]]], 'bool');
+    const a =
+        dl.tensor3d([[[false], [false]], [[true], [false]]], [2, 2, 1], 'bool');
     expect(a.dtype).toBe('bool');
     test_util.expectArraysEqual(a, [0, 0, 1, 0]);
   });

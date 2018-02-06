@@ -18,9 +18,8 @@
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as dl from '../index';
-import {Tensor3D} from './tensor';
 
-const sqArr = (arr: number[]) => arr.map(d => d*d);
+const sqArr = (arr: number[]) => arr.map(d => d * d);
 const sumArr = (arr: number[]) => arr.reduce((prev, curr) => prev + curr, 0);
 
 // tslint:disable-next-line:no-any
@@ -122,9 +121,9 @@ const flatten = (arr: any): number[] => {
     });
 
     it('computes complex normalization across channels', math => {
-      const x = Tensor3D.new([2, 2, 4], new Float32Array([
-        1, 20, 300, 4, 5, 15, 24, 200, 1, 20, 300, 4, 5, 15, 24, 200
-      ]));
+      const x = dl.tensor3d(
+        [1, 20, 300, 4, 5, 15, 24, 200, 1, 20, 300, 4, 5, 15, 24, 200],
+        [2, 2, 4]);
       const radius = 1;
       const bias = 1;
       const alpha = 1;
@@ -198,9 +197,9 @@ const flatten = (arr: any): number[] => {
     });
 
     it('computes complex normalization within channel', math => {
-      const x = Tensor3D.new([3, 3, 2], new Float32Array([
+      const x = dl.tensor3d([
         1, 20, 300, 4, 23, 25, 13, 156, 123, 5, 15, 24, 200, 12, 12, 13, 21, 3
-      ]));
+      ], [3, 3, 2]);
       const radius = 1;
       const bias = 1;
       const alpha = 1;

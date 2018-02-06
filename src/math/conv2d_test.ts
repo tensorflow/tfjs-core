@@ -18,7 +18,6 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Tensor3D} from './tensor';
 import {Rank} from './types';
 
 // math.conv2d
@@ -32,7 +31,7 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w = dl.tensor4d([2], [fSize, fSize, inputDepth, outputDepth]);
       const bias = dl.tensor1d([-1]);
 
@@ -68,7 +67,7 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w =
           dl.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
       const bias = dl.tensor1d([-1]);
@@ -99,7 +98,7 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       // tslint:disable-next-line:no-any
       const w: any = dl.tensor3d([3, 1, 5, 0], [2, 2, 1]);
       const bias = dl.tensor1d([-1]);
@@ -115,7 +114,7 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w =
           dl.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
       // tslint:disable-next-line:no-any
@@ -133,7 +132,7 @@ import {Rank} from './types';
       const pad = 0;
       const stride = 1;
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w = dl.randomNormal<Rank.R4>(
           [fSize, fSize, wrongInputDepth, outputDepth]);
       const bias = dl.tensor1d([-1]);
@@ -150,7 +149,7 @@ import {Rank} from './types';
       const stride = 1;
       const dimRoundingMode = 'round';
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4]);
+      const x = dl.tensor3d([1, 2, 3, 4], inputShape);
       const w =
           dl.randomNormal<Rank.R4>([fSize, fSize, inputDepth, outputDepth]);
       const bias = dl.tensor1d([-1]);
@@ -172,7 +171,7 @@ import {Rank} from './types';
       const filter = dl.ones<Rank.R4>(filterShape);
       const bias = dl.tensor1d([-1]);
 
-      const x = Tensor3D.new(inputShape, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      const x = dl.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
       const dy = dl.tensor3d([3, 1, 2, 0], [2, 2, 1]);
 
       const vjp = math.vjp(
