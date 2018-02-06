@@ -32,6 +32,7 @@ import {scalar, zerosLike} from '../ops';
  *
  * Use `dl.train.momentum` to create a momentum optimizer.
  */
+@doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class MomentumOptimizer extends SGDOptimizer {
   private m: Scalar;
   private variableVelocities: NamedTensorMap;

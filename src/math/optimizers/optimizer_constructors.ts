@@ -25,7 +25,7 @@ export class OptimizerConstructors {
    *
    * @param learningRate The learning rate to use for the SGD algorithm.
    */
-  @doc({heading: 'Training', subheading: 'Optimizers'})
+  @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static sgd(learningRate: number): SGDOptimizer {
     return new SGDOptimizer(learningRate);
   }
@@ -39,7 +39,7 @@ export class OptimizerConstructors {
    * @param momentum The momentum to use for the momentum gradient descent
    * algorithm.
    */
-  @doc({heading: 'Training', subheading: 'Optimizers'})
+  @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static momentum(learningRate: number, momentum: number): MomentumOptimizer {
     return new MomentumOptimizer(learningRate, momentum);
   }
