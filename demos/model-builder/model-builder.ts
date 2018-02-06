@@ -191,7 +191,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
   ready() {
     this.math = dl.ENV.math;
 
-    this.createdl.GraphRunner();
+    this.createGraphRunner();
     this.optimizer = new dl.MomentumOptimizer(this.learningRate, this.momentum);
 
     // Set up datasets.
