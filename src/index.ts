@@ -71,3 +71,4 @@ export * from './math/ops';
 export * from './globals';
 
 export const setBackend = Environment.setBackend;
+export const getBackend = Environment.getBackend;

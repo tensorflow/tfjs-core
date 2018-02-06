@@ -193,6 +193,7 @@ export class Environment {
   private globalEngine: BackendEngine;
   private BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
   private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
+  private currentBackendType: BackendType;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -223,6 +224,11 @@ export class Environment {
     }
     // tslint:disable-next-line:no-unused-expression
     new NDArrayMath(backendType, safeMode);
+  }
+
+  static getBackend(): BackendType {
+    ENV.initEngine();
+    return ENV.currentBackendType;
   }
 
   get<K extends keyof Features>(feature: K): Features[K] {
@@ -308,15 +314,17 @@ export class Environment {
     }
     let customBackend = false;
     if (typeof backend === 'string') {
-      backend = ENV.getBackend(backend);
+      this.currentBackendType = backend;
+      backend = ENV.findBackend(backend);
     } else {
       customBackend = true;
+      this.currentBackendType = 'custom' as BackendType;
     }
     this.globalEngine = new BackendEngine(backend, customBackend, safeMode);
     this.globalMath = math;
   }
 
-  getBackend(name: BackendType): MathBackend {
+  findBackend(name: BackendType): MathBackend {
     return this.backends[name];
   }
 
