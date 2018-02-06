@@ -22,13 +22,21 @@ import {SessionRuntime} from '../../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
+import {doc} from '../decorators';
 import * as ops from '../ops';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../types';
+
 import {Optimizer} from './optimizer';
 
+/**
+ * Optimizer that implements stochastic gradient descent.
+ *
+ * Use `dl.train.sgd` to create an SGD optimizer.
+ */
+@doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class SGDOptimizer extends Optimizer {
-  private c: Scalar;
+  protected c: Scalar;
 
   constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
@@ -42,9 +50,7 @@ export class SGDOptimizer extends Optimizer {
       const gradient = variableGradients[varName];
       const value = ENV.engine.registeredVariables[varName];
 
-      const newValue = tidy(() => {
-        return this.c.mul(gradient).add(value);
-      });
+      const newValue = tidy(() => this.c.mul(gradient).add(value));
 
       value.assign(newValue);
     });
