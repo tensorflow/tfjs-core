@@ -72,7 +72,7 @@ const gradientsScope = Gradients.gradientsScope;
 
       await dl.tidy(async () => {
         const result = dl.tidy(() => {
-          math.add(a, b);
+          dl.add(a, b);
           return [dl.add(a, b), dl.sub(a, b)];
         });
 
@@ -144,7 +144,7 @@ const gradientsScope = Gradients.gradientsScope;
           b = dl.addStrict(a, b);
           b = dl.tidy(() => {
             b = dl.tidy(() => {
-              return math.addStrict(a, b);
+              return dl.addStrict(a, b);
             });
             // original a, b, and two intermediates.
             expect(math.getNumTensors()).toBe(4);
