@@ -19,7 +19,7 @@ import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import {Tensor1D, variable} from '../../math/tensor';
+import {Scalar, Tensor1D, variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 
@@ -28,36 +28,50 @@ import {MomentumOptimizer} from './momentum_optimizer';
 const tests: MathTests = it => {
   it('basic', math => {
     const learningRate = .1;
-    const momentum = .1;
+    const momentum = .5;
     const optimizer = dl.train.momentum(learningRate, momentum);
 
-    const x = variable(dl.scalar(4));
+    const w = variable(dl.zeros([1, 2]));
+    const b = dl.zeros([1]);
+    const x = dl.tensor1d([2, 4]);
 
-    let numArrays = math.getNumTensors();
+    // TODO(nsthorat): Use tensordot() instead of reshapes when it's ready.
+    const f = () =>
+        w.reshape([1, 2]).matMul(x.reshape([2, 1])).add(b).sum() as Scalar;
 
-    let cost = optimizer.minimize(() => math.square(x), /* returnCost */ true);
+    let numTensors = math.getNumTensors();
 
-    // Cost should be the only additional array.
-    expect(math.getNumTensors()).toBe(numArrays + 1);
+    let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // de/dx = 2x
-    const expectedValue1 = -2 * 4 * learningRate + 4;
-    test_util.expectArraysClose(x, [expectedValue1]);
-    test_util.expectArraysClose(cost, [Math.pow(4, 2)]);
+    // Cost / velocity should be the only additional arrays.
+    expect(math.getNumTensors()).toBe(numTensors + 2);
+
+    // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
+    // velocity_w = [momentum* old_vel_w1 + x_1,
+    //                momentum* old_vel_w2 + x_2] = [2,4]
+    // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.2, -0.4]
+    test_util.expectArraysClose(w, [-0.2, -0.4]);
 
     cost.dispose();
-    numArrays = math.getNumTensors();
+    numTensors = math.getNumTensors();
 
-    cost = optimizer.minimize(() => math.square(x), /* returnCost */ false);
+    cost = optimizer.minimize(f, /* returnCost */ false);
+
+    // velocity_w = [momentum* old_vel_w1 + x_1,
+    //                momentum* old_vel_w2 + x_2] = [3,6]
+    // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.5, -1.0]
+    test_util.expectArraysClose(w, new Float32Array([-.5, -1.0]));
+
     // There should be no new additional Tensors.
-    expect(math.getNumTensors()).toBe(numArrays);
+    expect(math.getNumTensors()).toBe(numTensors);
 
-    const expectedValue2 = -2 * expectedValue1 * learningRate + expectedValue1;
-    test_util.expectArraysClose(x, [expectedValue2]);
     expect(cost).toBe(null);
 
-    optimizer.dispose();
     x.dispose();
+    b.dispose();
+    w.dispose();
+    optimizer.dispose();
+
     // There should be no more Tensors.
     expect(math.getNumTensors()).toBe(0);
   });
@@ -85,14 +99,14 @@ const tests: MathTests = it => {
       //                momentum* old_vel_w2 + x_2] = [2,4]
       // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.2, -0.4]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
-      const dydw = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw, new Float32Array([-.2, -0.4]));
+      let wValue = session.activationArrayMap.get(w).dataSync();
+      test_util.expectArraysClose(wValue, new Float32Array([-.2, -0.4]));
       // velocity_w = [momentum* old_vel_w1 + x_1,
       //                momentum* old_vel_w2 + x_2] = [3,6]
       // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.5, -1.0]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
-      const dydw2 = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw2, new Float32Array([-.5, -1.0]));
+      wValue = session.activationArrayMap.get(w).dataSync();
+      test_util.expectArraysClose(wValue, new Float32Array([-.5, -1.0]));
     });
   });
 };

@@ -33,6 +33,9 @@ import {scalar, zerosLike} from '../ops';
  * Use `dl.train.momentum` to create a momentum optimizer.
  */
 export class MomentumOptimizer extends SGDOptimizer {
+  private m: Scalar;
+  private variableVelocities: NamedTensorMap;
+
   constructor(
       protected learningRate: number, private momentum: number,
       specifiedVariableList?: Node[]) {
@@ -42,8 +45,7 @@ export class MomentumOptimizer extends SGDOptimizer {
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
-    const variableNames = Object.keys(variableGradients);
-    variableNames.forEach(variableName => {
+    for (const variableName in variableGradients) {
       const variable = ENV.engine.registeredVariables[variableName];
       // Initialize velocities to 0.
       if (this.variableVelocities[variableName] == null) {
@@ -54,8 +56,8 @@ export class MomentumOptimizer extends SGDOptimizer {
       const gradient = variableGradients[variableName];
 
       const [newVelocity, newVariableValue] = tidy(() => {
-        const newVelocity = this.m.mul(variable).add(gradient);
-        const newVariableValue = this.c.mul(oldVelocity).add(variable);
+        const newVelocity = this.m.mul(oldVelocity).add(gradient);
+        const newVariableValue = this.c.mul(newVelocity).add(variable);
 
         return [newVelocity, newVariableValue];
       });
@@ -64,7 +66,7 @@ export class MomentumOptimizer extends SGDOptimizer {
       this.variableVelocities[variableName] = keep(newVelocity);
 
       variable.assign(newVariableValue);
-    });
+    }
   }
 
   beforeBatch(
@@ -120,16 +122,22 @@ export class MomentumOptimizer extends SGDOptimizer {
     if (this.variableVelocitiesGraph != null) {
       this.variableVelocitiesGraph.dispose();
     }
+    if (this.variableVelocities != null) {
+      for (const variableName in this.variableVelocities) {
+        this.variableVelocities[variableName].dispose();
+      }
+    }
   }
 
+  /**
+   * Sets the momentum of the optimizer.
+   *
+   * @param momentum
+   */
   setMomentum(momentum: number) {
     this.momentum = momentum;
   }
 
-  // Eager
-  private m: Scalar;
-  private variableVelocities: NamedTensorMap;
-
   // Graph.
-  private variableVelocitiesGraph;
+  private variableVelocitiesGraph: TensorArrayMap;
 }
