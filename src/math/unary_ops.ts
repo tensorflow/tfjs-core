@@ -138,11 +138,15 @@ export class Ops {
         (min <= max),
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
+    if (x.shape.length === 0) {
+      throw new Error('clip operation does not support Scalars yet.');
+    }
     return ENV.engine.executeKernel(
         'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
       return {
+          // TODO(cais): Fix gradients for the case where x = min or x = max.
           x: () => dy.where(
-              x.greater(Scalar.new(min)).logicalAnd(x.less(Scalar.new(max))),
+              x.greater(ops.scalar(min)).logicalAnd(x.less(ops.scalar(max))),
               zerosLike(dy)),
       };
     }) as T;
