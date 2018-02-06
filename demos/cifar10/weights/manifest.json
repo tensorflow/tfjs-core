@@ -1,0 +1,168 @@
+{
+  "conv1/biases": {
+    "filename": "conv1_biases", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv1/biases/ExponentialMovingAverage": {
+    "filename": "conv1_biases_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv1/weight_loss/avg": {
+    "filename": "conv1_weight_loss_avg", 
+    "shape": []
+  }, 
+  "conv1/weights": {
+    "filename": "conv1_weights", 
+    "shape": [
+      5, 
+      5, 
+      3, 
+      64
+    ]
+  }, 
+  "conv1/weights/ExponentialMovingAverage": {
+    "filename": "conv1_weights_ExponentialMovingAverage", 
+    "shape": [
+      5, 
+      5, 
+      3, 
+      64
+    ]
+  }, 
+  "conv2/biases": {
+    "filename": "conv2_biases", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv2/biases/ExponentialMovingAverage": {
+    "filename": "conv2_biases_ExponentialMovingAverage", 
+    "shape": [
+      64
+    ]
+  }, 
+  "conv2/weight_loss/avg": {
+    "filename": "conv2_weight_loss_avg", 
+    "shape": []
+  }, 
+  "conv2/weights": {
+    "filename": "conv2_weights", 
+    "shape": [
+      5, 
+      5, 
+      64, 
+      64
+    ]
+  }, 
+  "conv2/weights/ExponentialMovingAverage": {
+    "filename": "conv2_weights_ExponentialMovingAverage", 
+    "shape": [
+      5, 
+      5, 
+      64, 
+      64
+    ]
+  }, 
+  "cross_entropy/avg": {
+    "filename": "cross_entropy_avg", 
+    "shape": []
+  }, 
+  "local3/biases": {
+    "filename": "local3_biases", 
+    "shape": [
+      384
+    ]
+  }, 
+  "local3/biases/ExponentialMovingAverage": {
+    "filename": "local3_biases_ExponentialMovingAverage", 
+    "shape": [
+      384
+    ]
+  }, 
+  "local3/weight_loss/avg": {
+    "filename": "local3_weight_loss_avg", 
+    "shape": []
+  }, 
+  "local3/weights": {
+    "filename": "local3_weights", 
+    "shape": [
+      2304, 
+      384
+    ]
+  }, 
+  "local3/weights/ExponentialMovingAverage": {
+    "filename": "local3_weights_ExponentialMovingAverage", 
+    "shape": [
+      2304, 
+      384
+    ]
+  }, 
+  "local4/biases": {
+    "filename": "local4_biases", 
+    "shape": [
+      192
+    ]
+  }, 
+  "local4/biases/ExponentialMovingAverage": {
+    "filename": "local4_biases_ExponentialMovingAverage", 
+    "shape": [
+      192
+    ]
+  }, 
+  "local4/weight_loss/avg": {
+    "filename": "local4_weight_loss_avg", 
+    "shape": []
+  }, 
+  "local4/weights": {
+    "filename": "local4_weights", 
+    "shape": [
+      384, 
+      192
+    ]
+  }, 
+  "local4/weights/ExponentialMovingAverage": {
+    "filename": "local4_weights_ExponentialMovingAverage", 
+    "shape": [
+      384, 
+      192
+    ]
+  }, 
+  "softmax_linear/biases": {
+    "filename": "softmax_linear_biases", 
+    "shape": [
+      10
+    ]
+  }, 
+  "softmax_linear/biases/ExponentialMovingAverage": {
+    "filename": "softmax_linear_biases_ExponentialMovingAverage", 
+    "shape": [
+      10
+    ]
+  }, 
+  "softmax_linear/weight_loss/avg": {
+    "filename": "softmax_linear_weight_loss_avg", 
+    "shape": []
+  }, 
+  "softmax_linear/weights": {
+    "filename": "softmax_linear_weights", 
+    "shape": [
+      192, 
+      10
+    ]
+  }, 
+  "softmax_linear/weights/ExponentialMovingAverage": {
+    "filename": "softmax_linear_weights_ExponentialMovingAverage", 
+    "shape": [
+      192, 
+      10
+    ]
+  }, 
+  "total_loss/avg": {
+    "filename": "total_loss_avg", 
+    "shape": []
+  }
+}
