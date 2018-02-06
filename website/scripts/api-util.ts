@@ -54,7 +54,25 @@ export function parseDocDecorators(
 
 export function addSubclassMethods(
     docHeadings: DocHeading[],
-    subclassMethodMap: {[subclass: string]: DocMethod[]}) {}
+    subclassMethodMap: {[subclass: string]: DocMethod[]}) {
+  const subclasses = Object.keys(subclassMethodMap);
+  subclasses.forEach(subclass => {
+    const methods = subclassMethodMap[subclass];
+    // Find the class.
+    for (let i = 0; i < docHeadings.length; i++) {
+      const heading = docHeadings[i];
+      for (let j = 0; j < heading.subheadings.length; j++) {
+        const subheading = heading.subheadings[j];
+        for (let k = 0; k < subheading.symbols.length; k++) {
+          const symbol = subheading.symbols[k];
+          if (symbol['isClass'] != null) {
+            console.log('FOUND', symbol);
+          }
+        }
+      }
+    }
+  });
+}
 
 // Parse the file info, github URL and filename from a node.
 export function getFileInfo(
