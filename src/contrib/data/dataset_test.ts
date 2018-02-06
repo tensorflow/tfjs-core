@@ -36,10 +36,10 @@ class TestDataset extends Dataset {
 
 describe('Dataset', () => {
   it('can be created by concatenating underlying datasets', (done) => {
-    const a = Dataset.ofElements([{'item': 1}, {'item': 2}]);
-    const b = Dataset.ofElements([{'item': 3}, {'item': 4}]);
-    const c = Dataset.ofElements([{'item': 5}, {'item': 6}]);
-    const readStreamPromise = Dataset.ofConcatenated([a, b, c]).getStream();
+    const a = Dataset.fromElements([{'item': 1}, {'item': 2}]);
+    const b = Dataset.fromElements([{'item': 3}, {'item': 4}]);
+    const c = Dataset.fromElements([{'item': 5}, {'item': 6}]);
+    const readStreamPromise = Dataset.fromConcatenated([a, b, c]).getStream();
     readStreamPromise
         .then(readStream => readStream.collectRemaining().then(result => {
           expect(result).toEqual([
@@ -52,8 +52,8 @@ describe('Dataset', () => {
   });
 
   it('can be concatenated', (done) => {
-    const a = Dataset.ofElements([{'item': 1}, {'item': 2}, {'item': 3}]);
-    const b = Dataset.ofElements([{'item': 4}, {'item': 5}, {'item': 6}]);
+    const a = Dataset.fromElements([{'item': 1}, {'item': 2}, {'item': 3}]);
+    const b = Dataset.fromElements([{'item': 4}, {'item': 5}, {'item': 6}]);
     const readStreamPromise = a.concatenate(b).getStream();
     readStreamPromise
         .then(readStream => readStream.collectRemaining().then(result => {
@@ -67,7 +67,7 @@ describe('Dataset', () => {
   });
 
   it('can be repeated a fixed number of times', (done) => {
-    const a = Dataset.ofElements([{'item': 1}, {'item': 2}, {'item': 3}]);
+    const a = Dataset.fromElements([{'item': 1}, {'item': 2}, {'item': 3}]);
     const readStreamPromise = a.repeat(4).getStream();
     readStreamPromise
         .then(readStream => readStream.collectRemaining().then(result => {
@@ -91,7 +91,7 @@ describe('Dataset', () => {
   });
 
   it('can be repeated indefinitely', (done) => {
-    const a = Dataset.ofElements([{'item': 1}, {'item': 2}, {'item': 3}]);
+    const a = Dataset.fromElements([{'item': 1}, {'item': 2}, {'item': 3}]);
     const readStreamPromise = a.repeat().getStream();
     readStreamPromise
         .then(readStream => readStream.take(1234).collectRemaining())
@@ -107,7 +107,7 @@ describe('Dataset', () => {
     class CustomDataset extends Dataset {
       state = {val: 1};
       async getStream() {
-        const result = DataStream.ofItems([
+        const result = DataStream.fromItems([
           {'item': this.state.val++}, {'item': this.state.val++},
           {'item': this.state.val++}
         ]);

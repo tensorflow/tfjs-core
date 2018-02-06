@@ -23,7 +23,7 @@ describe('PrefetchStream', () => {
 
   it('fetches a chained stream completely (stream size < buffer size)',
      (done) => {
-       const baseStreamPromise = DataStream.ofConcatenatedFunction(() => {
+       const baseStreamPromise = DataStream.fromConcatenatedFunction(() => {
          return new TestIntegerStream();
        }, 7);
 
@@ -48,7 +48,7 @@ describe('PrefetchStream', () => {
 
   it('fetches a chained stream completely (stream size > buffer size)',
      (done) => {
-       const baseStreamPromise = DataStream.ofConcatenatedFunction(() => {
+       const baseStreamPromise = DataStream.fromConcatenatedFunction(() => {
          return new TestIntegerStream();
        }, 7);
 
@@ -100,7 +100,7 @@ describe('ShuffleStream', () => {
 
   it('shuffles a single chained stream without replacement', (done) => {
     const baseStreamPromise =
-        ChainedStream.create(DataStream.ofItems([new TestIntegerStream()]));
+        ChainedStream.create(DataStream.fromItems([new TestIntegerStream()]));
     const shuffleStreamPromise = baseStreamPromise.then(
         baseStream => new ShuffleStream(baseStream, 1000));
     const notExpectedResult: number[] = [];
@@ -127,7 +127,7 @@ describe('ShuffleStream', () => {
 
   it('shuffles multiple chained streams without replacement', (done) => {
     const baseStreamPromise =
-        DataStream.ofConcatenatedFunction(() => new TestIntegerStream(), 6);
+        DataStream.fromConcatenatedFunction(() => new TestIntegerStream(), 6);
     const shuffleStreamPromise = baseStreamPromise.then(
         baseStream => new ShuffleStream(baseStream, 1000));
     const notExpectedResult: number[] = [];

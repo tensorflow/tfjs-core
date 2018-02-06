@@ -37,14 +37,14 @@ export abstract class DataStream<T> {
   /**
    * Create a `DataStream` from an array of items.
    */
-  static ofItems<T>(items: T[]): DataStream<T> {
+  static fromItems<T>(items: T[]): DataStream<T> {
     return new ArrayStream(items);
   }
 
   /**
    * Create a `DataStream` from a function.
    */
-  static ofFunction<T>(func: () => T | Promise<T>): DataStream<T> {
+  static fromFunction<T>(func: () => T | Promise<T>): DataStream<T> {
     return new FunctionCallStream(func);
   }
 
@@ -56,7 +56,7 @@ export abstract class DataStream<T> {
    *
    * @param baseStreams A stream of streams to be concatenated.
    */
-  static async ofConcatenated<T>(baseStreams: DataStream<DataStream<T>>):
+  static async fromConcatenated<T>(baseStreams: DataStream<DataStream<T>>):
       Promise<DataStream<T>> {
     return ChainedStream.create(baseStreams);
   }
@@ -73,10 +73,10 @@ export abstract class DataStream<T> {
    * @param streamFunc: A function that produces a new stream on each call.
    * @param count: The number of times to call the function.
    */
-  static async ofConcatenatedFunction<T>(
+  static async fromConcatenatedFunction<T>(
       streamFunc: () => DataStream<T>, count: number): Promise<DataStream<T>> {
-    return DataStream.ofConcatenated(
-        DataStream.ofFunction(streamFunc).take(count));
+    return DataStream.fromConcatenated(
+        DataStream.fromFunction(streamFunc).take(count));
   }
 
   /**

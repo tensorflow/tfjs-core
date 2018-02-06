@@ -142,7 +142,7 @@ describe('DataStream', () => {
   });
 
   it('can be created from an array', (done) => {
-    const readStream = DataStream.ofItems([1, 2, 3, 4, 5, 6]);
+    const readStream = DataStream.fromItems([1, 2, 3, 4, 5, 6]);
     readStream.collectRemaining()
         .then(result => {
           expect(result).toEqual([1, 2, 3, 4, 5, 6]);
@@ -155,7 +155,7 @@ describe('DataStream', () => {
     let i = -1;
     const func = () => ++i < 7 ? i : undefined;
 
-    const readStream = DataStream.ofFunction(func);
+    const readStream = DataStream.fromFunction(func);
     readStream.collectRemaining()
         .then(result => {
           expect(result).toEqual([0, 1, 2, 3, 4, 5, 6]);
@@ -165,8 +165,8 @@ describe('DataStream', () => {
   });
 
   it('can be concatenated', (done) => {
-    const a = DataStream.ofItems([1, 2, 3]);
-    const b = DataStream.ofItems([4, 5, 6]);
+    const a = DataStream.fromItems([1, 2, 3]);
+    const b = DataStream.fromItems([4, 5, 6]);
     const readStreamPromise = a.concatenate(b);
     readStreamPromise
         .then(readStream => readStream.collectRemaining().then(result => {
@@ -180,7 +180,7 @@ describe('DataStream', () => {
     const a = new TestIntegerStream();
     const b = new TestIntegerStream();
     const readStreamPromise =
-        DataStream.ofConcatenated(DataStream.ofItems([a, b]));
+        DataStream.fromConcatenated(DataStream.fromItems([a, b]));
     readStreamPromise
         .then(readStream => readStream.collectRemaining().then(result => {
           expect(result.length).toEqual(200);
@@ -191,7 +191,7 @@ describe('DataStream', () => {
 
   it('can be created by concatenating streams from a function', (done) => {
     const readStreamPromise =
-        DataStream.ofConcatenatedFunction(() => new TestIntegerStream(), 7);
+        DataStream.fromConcatenatedFunction(() => new TestIntegerStream(), 7);
     const expectedResult: number[] = [];
     for (let i = 0; i < 7; i++) {
       for (let j = 0; j < 100; j++) {
@@ -211,7 +211,7 @@ describe('DataStream', () => {
 describe('ChainedStream', () => {
   it('produces a single underlying stream as expected', (done) => {
     const chainedStreamPromise =
-        ChainedStream.create(DataStream.ofItems([new TestIntegerStream()]));
+        ChainedStream.create(DataStream.fromItems([new TestIntegerStream()]));
 
     const expectedResult: number[] = [];
     for (let i = 0; i < 1; i++) {
@@ -228,7 +228,7 @@ describe('ChainedStream', () => {
         .catch(done.fail);
   });
   it('produces multiple underlying streams as expected', (done) => {
-    const chainedStreamPromise = ChainedStream.create(DataStream.ofItems([
+    const chainedStreamPromise = ChainedStream.create(DataStream.fromItems([
       new TestIntegerStream(), new TestIntegerStream(), new TestIntegerStream(),
       new TestIntegerStream()
     ]));

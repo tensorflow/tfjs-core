@@ -12,26 +12,17 @@ import {DataStream} from './stream';
 /**
  * The value associated with a given key for a single element.
  *
- * Such a value may not have a batch dimension.  A value may be a scalar or a
- * 1-D, 2-D, or 3-D array.
- *
- * Arrays of higher rank are not currently supported.  Once these elements are
- * grouped into batches (represented as `BatchArray`), those batches are limited
- * to 4-D (the most that NDArray currently supports).  Thus the individual
- * elements can be at most 3-D.
+ * Such a value may not have a batch dimension.  A value may be a scalar or an
+ * n-dimensional array.
  */
 export type ElementArray = number|number[]|NDArray|string|undefined;
-// Valid NDArrays here are Scalar|Array1D|Array2D|Array3D.
 
 /**
  * The value associated with a given key for a batch of elements.
  *
  * Such a value must always have a batch dimension, even if it is of length 1.
- *
- * A batch value may be a 1-D, 2-D, 3-D, or 4-D array.  Arrays of higher rank
- * are not currently supported by the underlying NDArray.
  */
-export type BatchArray = NDArray|string[];  // Array1D|Array2D|Array3D|Array4D
+export type BatchArray = NDArray|string[];
 
 /**
  * A map from string keys (aka column names) to values for a single element.
@@ -58,7 +49,7 @@ export type DatasetBatch = {
  *
  * A `Dataset` provides a stream of unbatched examples, and its transformations
  * are applied one example at a time.  Batching produces a BatchDataset, and so
- * must come last in the pipeline because there are no batch-enabled
+ * must come last in the pipeline because there are (so far) no batch-enabled
  * transformations.
  */
 export abstract class Dataset {
@@ -71,10 +62,10 @@ export abstract class Dataset {
   /**
    * Create a `Dataset` from an array of elements.
    */
-  static ofElements(items: DatasetElement[]): Dataset {
+  static fromElements(items: DatasetElement[]): Dataset {
     return new (class ArrayDataset extends Dataset {
       async getStream(): Promise<DataStream<DatasetElement>> {
-        return Promise.resolve(DataStream.ofItems(items));
+        return Promise.resolve(DataStream.fromItems(items));
       }
     })();
   }
@@ -85,12 +76,12 @@ export abstract class Dataset {
    * Note that if the underlying `Dataset`s return elements in a
    * nondeterministic order, then this concatenated `Dataset` will do the same.
    */
-  static ofConcatenated(datasets: Dataset[]) {
+  static fromConcatenated(datasets: Dataset[]) {
     return new (class OfConcatenatedDataset extends Dataset {
       async getStream(): Promise<DataStream<DatasetElement>> {
         const streamStream =
             await Promise.all(datasets.map((d) => d.getStream()));
-        return DataStream.ofConcatenated(DataStream.ofItems(streamStream));
+        return DataStream.fromConcatenated(DataStream.fromItems(streamStream));
       }
     })();
   }
@@ -181,8 +172,8 @@ export abstract class Dataset {
     const base = this;
     return new (class RepeatDataset extends Dataset {
       async getStream(): Promise<DataStream<DatasetElement>> {
-        const streamStream = DataStream.ofFunction(() => base.getStream());
-        return (await DataStream.ofConcatenated(streamStream.take(count)));
+        const streamStream = DataStream.fromFunction(() => base.getStream());
+        return (await DataStream.fromConcatenated(streamStream.take(count)));
       }
     })();
   }
