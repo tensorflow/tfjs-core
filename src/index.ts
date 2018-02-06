@@ -67,4 +67,5 @@ export {
 };
 
 export * from './math/ops';
+export * from './train';
 export * from './globals';
