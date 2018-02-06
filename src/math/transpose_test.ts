@@ -19,13 +19,11 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Tensor2D, Tensor3D} from './tensor';
-
 // dl.transpose
 {
   const tests: MathTests = it => {
     it('2D (no change)', () => {
-      const t = Tensor2D.new([2, 4], [1, 11, 2, 22, 3, 33, 4, 44]);
+      const t = dl.tensor2d([1, 11, 2, 22, 3, 33, 4, 44], [2, 4]);
       const t2 = dl.transpose(t, [0, 1]);
 
       expect(t2.shape).toEqual(t.shape);
@@ -33,7 +31,7 @@ import {Tensor2D, Tensor3D} from './tensor';
     });
 
     it('2D (transpose)', () => {
-      const t = Tensor2D.new([2, 4], [1, 11, 2, 22, 3, 33, 4, 44]);
+      const t = dl.tensor2d([1, 11, 2, 22, 3, 33, 4, 44], [2, 4]);
       const t2 = dl.transpose(t, [1, 0]);
 
       expect(t2.shape).toEqual([4, 2]);
@@ -41,7 +39,7 @@ import {Tensor2D, Tensor3D} from './tensor';
     });
 
     it('3D [r, c, d] => [d, r, c]', () => {
-      const t = Tensor3D.new([2, 2, 2], [1, 11, 2, 22, 3, 33, 4, 44]);
+      const t = dl.tensor3d([1, 11, 2, 22, 3, 33, 4, 44], [2, 2, 2]);
       const t2 = dl.transpose(t, [2, 0, 1]);
 
       expect(t2.shape).toEqual([2, 2, 2]);
@@ -49,7 +47,7 @@ import {Tensor2D, Tensor3D} from './tensor';
     });
 
     it('3D [r, c, d] => [d, c, r]', () => {
-      const t = Tensor3D.new([2, 2, 2], [1, 11, 2, 22, 3, 33, 4, 44]);
+      const t = dl.tensor3d([1, 11, 2, 22, 3, 33, 4, 44], [2, 2, 2]);
       const t2 = dl.transpose(t, [2, 1, 0]);
 
       expect(t2.shape).toEqual([2, 2, 2]);
@@ -57,10 +55,10 @@ import {Tensor2D, Tensor3D} from './tensor';
     });
 
     it('gradient 3D [r, c, d] => [d, c, r]', () => {
-      const t = Tensor3D.new([2, 2, 2], [1, 11, 2, 22, 3, 33, 4, 44]);
+      const t = dl.tensor3d([1, 11, 2, 22, 3, 33, 4, 44], [2, 2, 2]);
       const perm = [2, 1, 0];
       const dy =
-          Tensor3D.new([2, 2, 2], [111, 211, 121, 221, 112, 212, 122, 222]);
+          dl.tensor3d([111, 211, 121, 221, 112, 212, 122, 222], [2, 2, 2]);
       const dt = dl.vjp(() => dl.transpose(t, perm), t, dy);
       expect(dt.shape).toEqual(t.shape);
       expect(dt.dtype).toEqual('float32');

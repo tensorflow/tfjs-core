@@ -19,44 +19,42 @@ import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 
-import {Scalar, Tensor1D, Tensor2D} from './tensor';
-
 // dl.softmax
 {
   const tests: MathTests = it => {
     it('regular test', () => {
-      const y = dl.softmax(Tensor1D.new([2, 1, 3]));
+      const y = dl.softmax(dl.tensor1d([2, 1, 3]));
 
       test_util.expectArraysClose(y, [0.24472847, 0.09003057, 0.66524095]);
       test_util.expectNumbersClose(y.get(0) + y.get(1) + y.get(2), 1);
     });
 
     it('overflow', () => {
-      const y = dl.softmax(Tensor1D.new([1000, 1000]));
+      const y = dl.softmax(dl.tensor1d([1000, 1000]));
 
       test_util.expectArraysClose(y, [0.5, 0.5]);
     });
 
     it('underflow', () => {
-      const y = dl.softmax(Tensor1D.new([-1000, -1000]));
+      const y = dl.softmax(dl.tensor1d([-1000, -1000]));
 
       test_util.expectArraysClose(y, [0.5, 0.5]);
     });
 
     it('Huge difference between probabilities', () => {
-      const y = dl.softmax(Tensor1D.new([-1000, +1000]));
+      const y = dl.softmax(dl.tensor1d([-1000, +1000]));
 
       test_util.expectArraysClose(y, [0, 1]);
     });
 
     it('Propagates NaNs', () => {
-      const a = Tensor1D.new([2, 1, NaN]);
+      const a = dl.tensor1d([2, 1, NaN]);
       const y = dl.softmax(a);
       test_util.expectArraysClose(y, [NaN, NaN, NaN]);
     });
 
     it('2D, dim=1', () => {
-      const y = dl.softmax(Tensor2D.new([2, 3], [[2, 1, 3], [1, 3, 2]]), 1);
+      const y = dl.softmax(dl.tensor2d([[2, 1, 3], [1, 3, 2]], [2, 3]), 1);
       const expected = [
         0.24472847, 0.09003057, 0.66524095, 0.09003057, 0.66524095, 0.24472847
       ];
@@ -65,7 +63,7 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('2D, implicit dim=1', () => {
-      const y = dl.softmax(Tensor2D.new([2, 3], [[2, 1, 3], [1, 3, 2]]));
+      const y = dl.softmax(dl.tensor2d([[2, 1, 3], [1, 3, 2]], [2, 3]));
       const expected = [
         0.24472847, 0.09003057, 0.66524095, 0.09003057, 0.66524095, 0.24472847
       ];
@@ -75,15 +73,15 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
 
     it('2D, dim=0 throws error', () => {
       const f = () => {
-        dl.softmax(Tensor2D.new([2, 3], [[2, 1, 3], [1, 3, 2]]), 0);
+        dl.softmax(dl.tensor2d([[2, 1, 3], [1, 3, 2]], [2, 3]), 0);
       };
       expect(f).toThrowError();
     });
 
     it('1D gradient', () => {
-      const x = Tensor1D.new([10, 0, -1]);
+      const x = dl.tensor1d([10, 0, -1]);
       const y = dl.softmax(x);
-      const dy = Tensor1D.new([1, 2, 3]);
+      const dy = dl.tensor1d([1, 2, 3]);
       const vjp = dl.vjp(() => dl.softmax(x), {x}, dy);
 
       const totalSum = dl.sum(dl.mul(dy, y));
@@ -97,9 +95,9 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('2D gradient', () => {
-      const x = Tensor2D.new([2, 3], [10, 0, -1, 5, 4, 3]);
+      const x = dl.tensor2d([10, 0, -1, 5, 4, 3], [2, 3]);
       const y = dl.softmax(x);
-      const dy = Tensor2D.new([2, 3], [3, 2, 1, 1, 2, 3]);
+      const dy = dl.tensor2d([3, 2, 1, 1, 2, 3], [2, 3]);
       const vjp = dl.vjp(() => dl.softmax(x), {x}, dy);
 
       const axis = -1;
@@ -129,8 +127,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
 {
   const tests: MathTests = it => {
     it('1D', () => {
-      const logits = Tensor1D.new([1, 2, 3]);
-      const label = Tensor1D.new([0.3, 0.6, 0.1]);
+      const logits = dl.tensor1d([1, 2, 3]);
+      const label = dl.tensor1d([0.3, 0.6, 0.1]);
       const softmaxLogits = dl.softmax(logits);
 
       const y = dl.losses.softmaxCrossEntropy(label, logits);
@@ -144,8 +142,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('2D implicit dim', () => {
-      const logits = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const label = Tensor2D.new([2, 3], [0.3, 0.6, 0.1, 0.2, 0.3, 0.5]);
+      const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
       const softmaxLogits = dl.softmax(logits);
 
       const y = dl.losses.softmaxCrossEntropy(label, logits);
@@ -162,8 +160,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('2D, dim=1', () => {
-      const logits = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const label = Tensor2D.new([2, 3], [0.3, 0.6, 0.1, 0.2, 0.3, 0.5]);
+      const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
       const dim = 1;
       const softmaxLogits = dl.softmax(logits, dim);
 
@@ -181,8 +179,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('2D, dim=0 throws error', () => {
-      const logits = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const label = Tensor2D.new([2, 3], [0.3, 0.6, 0.1, 0.2, 0.3, 0.5]);
+      const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
       const dim = 0;
 
       expect(() => dl.losses.softmaxCrossEntropy(label, logits, dim))
@@ -190,8 +188,8 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('Propagates NaNs', () => {
-      const logits = Tensor1D.new([1, 2, NaN]);
-      const label = Tensor1D.new([0.3, 0.6, 0.1]);
+      const logits = dl.tensor1d([1, 2, NaN]);
+      const label = dl.tensor1d([0.3, 0.6, 0.1]);
 
       const y = dl.losses.softmaxCrossEntropy(label, logits);
 
@@ -200,10 +198,10 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('1D gradient', () => {
-      const logits = Tensor1D.new([1, 2, 3]);
-      const labels = Tensor1D.new([0.3, 0.6, 0.1]);
+      const logits = dl.tensor1d([1, 2, 3]);
+      const labels = dl.tensor1d([0.3, 0.6, 0.1]);
       const softmaxLogits = dl.softmax(logits);
-      const dy = Scalar.new(2);
+      const dy = dl.scalar(2);
 
       const vjp = dl.vjp(
           () => dl.losses.softmaxCrossEntropy(labels, logits), {labels, logits},
@@ -226,10 +224,10 @@ import {Scalar, Tensor1D, Tensor2D} from './tensor';
     });
 
     it('2D gradient', () => {
-      const logits = Tensor2D.new([2, 3], [1, 2, 3, 4, 5, 6]);
-      const labels = Tensor2D.new([2, 3], [0.3, 0.6, 0.1, .2, .3, .5]);
+      const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+      const labels = dl.tensor2d([0.3, 0.6, 0.1, .2, .3, .5], [2, 3]);
       const softmaxLogits = dl.softmax(logits);
-      const dy = Tensor1D.new([2, 4]);
+      const dy = dl.tensor1d([2, 4]);
 
       const vjp = dl.vjp(
           () => dl.losses.softmaxCrossEntropy(labels, logits), {labels, logits},
