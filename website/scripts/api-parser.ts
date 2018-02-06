@@ -102,7 +102,9 @@ function visitNode(
   if (ts.isMethodDeclaration(node)) {
     const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
 
-    if (docInfo != null) {
+    // If this is a proper method, then we shouldn't display it as a
+    // standalone method, rather as a method part of a class.
+    if (docInfo != null && docInfo.type !== 'method') {
       const subheading =
           util.fillHeadingsAndGetSubheading(docInfo, docHeadings);
 

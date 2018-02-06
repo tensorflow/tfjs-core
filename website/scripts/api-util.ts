@@ -16,6 +16,7 @@
  */
 import * as ts from 'typescript';
 
+// tslint:disable-next-line:max-line-length
 import {DocClass, DocHeading, DocMethod, Docs, DocSubheading} from '../api/view';
 
 const GITHUB_ROOT = 'https://github.com/PAIR-code/deeplearnjs/';
@@ -26,6 +27,7 @@ export interface DocInfo {
   subheading: string;
   namespace?: string;
   subclasses?: string[];
+  type?: 'method'|'class'|'function';
 }
 
 export function getDocDecorator(node: ts.Node, decoratorName: string): DocInfo {
