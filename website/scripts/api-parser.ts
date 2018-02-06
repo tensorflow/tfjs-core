@@ -152,6 +152,7 @@ export function serializeClass(
   const {displayFilename, githubUrl} =
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
   const docClass: DocClass = {
+    symbolName: name,
     displayName,
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
     fileName: displayFilename,
@@ -191,6 +192,7 @@ export function serializeMethod(
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
 
   const method: DocFunction = {
+    symbolName: symbol.name,
     displayName,
     paramStr,
     parameters,

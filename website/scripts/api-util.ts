@@ -66,10 +66,11 @@ export function addSubclassMethods(
         const subheading = heading.subheadings[j];
         for (let k = 0; k < subheading.symbols.length; k++) {
           const symbol = subheading.symbols[k];
-          if (symbol['isClass'] != null) {
-            console.log(symbol);
+          if (symbol['isClass'] != null && symbol.symbolName === subclass) {
             const classSymbol = symbol as DocClass;
-            methods.forEach(method => classSymbol.methods.push(method));
+            methods.forEach(method => {
+              classSymbol.methods.push(method);
+            });
           }
         }
       }

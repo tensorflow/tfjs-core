@@ -29,6 +29,7 @@ export interface DocSubheading {
 export type DocSymbol = DocFunction|DocClass;
 
 export interface DocClass {
+  symbolName: string;
   displayName: string;
   documentation: string;
   fileName: string;
@@ -39,6 +40,7 @@ export interface DocClass {
 }
 
 export interface DocFunction {
+  symbolName: string;
   displayName: string;
   documentation: string;
   fileName: string;
