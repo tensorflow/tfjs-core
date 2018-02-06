@@ -25,6 +25,7 @@ import {NDArrayMath} from '../../math/math';
 import {SGDOptimizer} from '../../math/optimizers/sgd_optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
 import {NamedTensorMap, NamedVariableMap} from '../../math/types';
+import {doc} from '../decorators';
 import {scalar, zerosLike} from '../ops';
 
 /**
