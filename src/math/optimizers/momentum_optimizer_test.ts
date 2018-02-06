@@ -16,15 +16,53 @@
  */
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
+import {Graph} from '../../graph/graph';
+import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import {Tensor1D} from '../../math/tensor';
+import {Tensor1D, variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {Graph} from '../graph';
-import {Session} from '../session';
+import {MathTests} from '../../test_util';
+
 import {MomentumOptimizer} from './momentum_optimizer';
 
-describe('momentum optimizer', () => {
-  it('basic', () => {
+const tests: MathTests = it => {
+  it('basic', math => {
+    const learningRate = .1;
+    const momentum = .1;
+    const optimizer = dl.train.momentum(learningRate, momentum);
+
+    const x = variable(dl.scalar(4));
+
+    let numArrays = math.getNumTensors();
+
+    let cost = optimizer.minimize(() => math.square(x), /* returnCost */ true);
+
+    // Cost should be the only additional array.
+    expect(math.getNumTensors()).toBe(numArrays + 1);
+
+    // de/dx = 2x
+    const expectedValue1 = -2 * 4 * learningRate + 4;
+    test_util.expectArraysClose(x, [expectedValue1]);
+    test_util.expectArraysClose(cost, [Math.pow(4, 2)]);
+
+    cost.dispose();
+    numArrays = math.getNumTensors();
+
+    cost = optimizer.minimize(() => math.square(x), /* returnCost */ false);
+    // There should be no new additional Tensors.
+    expect(math.getNumTensors()).toBe(numArrays);
+
+    const expectedValue2 = -2 * expectedValue1 * learningRate + expectedValue1;
+    test_util.expectArraysClose(x, [expectedValue2]);
+    expect(cost).toBe(null);
+
+    optimizer.dispose();
+    x.dispose();
+    // There should be no more Tensors.
+    expect(math.getNumTensors()).toBe(0);
+  });
+
+  it('graph', () => {
     const math = ENV.math;
 
     const inputProvider: InputProvider = {
@@ -57,4 +95,11 @@ describe('momentum optimizer', () => {
       test_util.expectArraysClose(dydw2, new Float32Array([-.5, -1.0]));
     });
   });
-});
+};
+
+test_util.describeMathCPU('MomentumOptimizer', [tests]);
+test_util.describeMathGPU('MomentumOptimizer', [tests], [
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+]);

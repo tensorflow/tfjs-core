@@ -40,12 +40,13 @@ export interface DocClass {
 
 export interface DocFunction {
   displayName: string;
-  paramStr: string;
   documentation: string;
-  returnType: string;
   fileName: string;
   githubUrl: string;
   parameters: DocFunctionParam[];
+
+  paramStr: string;
+  returnType: string;
 
   isFunction: true;
 }

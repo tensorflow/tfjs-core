@@ -87,16 +87,10 @@ export function parse(): Docs {
   // Sort the documentation.
   util.sortMethods(docHeadings);
 
-  console.log(subclassMethodMap);
-
   const docs: Docs = {headings: docHeadings};
 
   return docs;
 }
-
-// TODO(nsthorat): Render the methods on a class signature. You should do this
-// as a big if statement, since methods on a class will be rendered
-// significantly differently than a function.
 
 // Visits nodes of the AST, finding documentation annotated with @doc.
 function visitNode(
@@ -106,15 +100,27 @@ function visitNode(
   if (ts.isMethodDeclaration(node)) {
     const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
 
-    // Non-static methods are handled by the class serializer.
-    if (docInfo != null && util.isStatic(node)) {
+    if (docInfo != null) {
       const subheading =
           util.fillHeadingsAndGetSubheading(docInfo, docHeadings);
 
-      const docMethod = serializeMethod(
-          checker, node, docInfo, sourceFile, subclassMethodMap);
+      const docFunction = serializeMethod(checker, node, docInfo, sourceFile);
 
-      subheading.symbols.push(docMethod);
+      // Static methods are top-level functions,
+      if (util.isStatic(node)) {
+        subheading.symbols.push(docFunction);
+      } else {
+        // Non-static methods are class-specific.
+        if (docInfo.subclasses != null) {
+          for (let i = 0; i < docInfo.subclasses.length; i++) {
+            const subclass = docInfo.subclasses[i];
+            if (subclassMethodMap[subclass] == null) {
+              subclassMethodMap[subclass] = [];
+            }
+            subclassMethodMap[subclass].push(docFunction);
+          }
+        }
+      }
     }
   } else if (ts.isClassDeclaration(node)) {
     const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
@@ -154,28 +160,12 @@ export function serializeClass(
     isClass: true
   };
 
-  // Find method children of the class that are marked with @doc.
-  node.forEachChild(node => {
-    console.log(node.getText());
-    if (ts.isMethodDeclaration(node)) {
-      const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
-      if (docInfo != null) {
-        const subheading =
-            util.fillHeadingsAndGetSubheading(docInfo, docHeadings);
-
-        docClass.methods.push(
-            serializeMethod(checker, node, docInfo, sourceFile));
-      }
-    }
-  });
-
   return docClass;
 }
 
 export function serializeMethod(
     checker: ts.TypeChecker, node: ts.MethodDeclaration, docInfo: util.DocInfo,
-    sourceFile: ts.SourceFile,
-    subclassMethodMap?: {[subclass: string]: DocFunction[]}): DocFunction {
+    sourceFile: ts.SourceFile): DocFunction {
   if (!sourceFile.fileName.startsWith(repoPath)) {
     throw new Error(
         `Error: source file ${sourceFile.fileName} ` +
@@ -210,16 +200,6 @@ export function serializeMethod(
     githubUrl,
     isFunction: true
   };
-
-  if (docInfo.subclasses != null && subclassMethodMap != null) {
-    for (let i = 0; i < docInfo.subclasses.length; i++) {
-      const subclass = docInfo.subclasses[i];
-      if (subclassMethodMap[subclass] == null) {
-        subclassMethodMap[subclass] = [];
-      }
-      subclassMethodMap[subclass].push(method);
-    }
-  }
 
   return method;
 }

@@ -16,6 +16,7 @@
  */
 import {Gradients} from './math/backends/gradients';
 import {Tracking} from './math/backends/tracking';
+import {OptimizerConstructors} from './math/optimizers/optimizer_constructors';
 
 export const tidy = Tracking.tidy;
 export const keep = Tracking.keep;
@@ -26,3 +27,14 @@ export const gradients = Gradients.gradients;
 export const variableGradients = Gradients.variableGradients;
 export const valueAndGradients = Gradients.valueAndGradients;
 export const customGradient = Gradients.customGradient;
+
+// So typings can propagate.
+import {MomentumOptimizer} from './math/optimizers/momentum_optimizer';
+import {SGDOptimizer} from './math/optimizers/sgd_optimizer';
+// tslint:disable-next-line:no-unused-expression
+[MomentumOptimizer, SGDOptimizer];
+
+export const train = {
+  sgd: OptimizerConstructors.sgd,
+  momentum: OptimizerConstructors.momentum
+};

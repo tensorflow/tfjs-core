@@ -32,11 +32,11 @@ import {Optimizer} from './optimizer';
 /**
  * Optimizer that implements stochastic gradient descent.
  *
- * Use `dl.train.sgd()` to create an SGD optimizer.
+ * Use `dl.train.sgd` to create an SGD optimizer.
  */
 @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class SGDOptimizer extends Optimizer {
-  private c: Scalar;
+  protected c: Scalar;
 
   constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
@@ -45,12 +45,10 @@ export class SGDOptimizer extends Optimizer {
 
   // Eager mode
   applyGradients(variableGradients: NamedTensorMap) {
-    const math = ENV.math;
-
     const varNames = Object.keys(variableGradients);
     varNames.forEach(varName => {
       const gradient = variableGradients[varName];
-      const value = math.registeredVariables[varName];
+      const value = ENV.engine.registeredVariables[varName];
 
       const newValue = tidy(() => this.c.mul(gradient).add(value));
 

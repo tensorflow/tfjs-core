@@ -36,7 +36,7 @@ export abstract class Optimizer {
     if (specifiedVariableList != null) {
       this.specifiedVariableNodes = specifiedVariableList as VariableNode[];
     }
-    this.one = ENV.math.keep(ops.scalar(1));
+    this.one = keep(ops.scalar(1));
   }
 
   /**
