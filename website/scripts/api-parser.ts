@@ -94,6 +94,10 @@ export function parse(): Docs {
   return docs;
 }
 
+// TODO(nsthorat): Render the methods on a class signature. You should do this
+// as a big if statement, since methods on a class will be rendered
+// significantly differently than a function.
+
 // Visits nodes of the AST, finding documentation annotated with @doc.
 function visitNode(
     docHeadings: DocHeading[],
