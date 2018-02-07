@@ -19,7 +19,7 @@ import {ENV} from '../../environment';
 import {tidy} from '../../globals';
 import * as util from '../../util';
 import * as ops from '../ops';
-import {Tensor, Tensor3D, Variable} from '../tensor';
+import {DataId, Tensor, Tensor3D, Variable} from '../tensor';
 import {NamedTensorMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
 
@@ -52,8 +52,9 @@ export class BackendEngine implements TensorManager {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
-  private refCounter = new Map<number, number>();
+  private refCounter = new WeakMap<DataId, number>();
   private numBytes = 0;
+  private numDataBuffers = 0;
   private nextTapeNodeId = 0;
 
   private activeTape: Tape;
@@ -116,6 +117,7 @@ export class BackendEngine implements TensorManager {
     const refCount =
         this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
     if (refCount === 0) {
+      this.numDataBuffers++;
       this.numBytes +=
           util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
       this.backend.register(a.dataId, a.shape, a.dtype);
@@ -141,6 +143,7 @@ export class BackendEngine implements TensorManager {
     if (refCount <= 1) {
       this.refCounter.delete(a.dataId);
       this.backend.disposeData(a.dataId);
+      this.numDataBuffers--;
       this.numBytes -=
           util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
     } else {
@@ -152,10 +155,7 @@ export class BackendEngine implements TensorManager {
   }
 
   memory(): {numDataBuffers: number; numBytes: number;} {
-    return {
-      numDataBuffers: Object.keys(this.refCounter).length,
-      numBytes: this.numBytes
-    };
+    return {numDataBuffers: this.numDataBuffers, numBytes: this.numBytes};
   }
 
   private shouldRecord(): boolean {
@@ -307,13 +307,13 @@ export class BackendEngine implements TensorManager {
   }
 
   // Forwarding to backend.
-  write(dataId: number, values: TypedArray): void {
+  write(dataId: DataId, values: TypedArray): void {
     this.backend.write(dataId, values);
   }
-  readSync(dataId: number): TypedArray {
+  readSync(dataId: DataId): TypedArray {
     return this.backend.readSync(dataId);
   }
-  read(dataId: number): Promise<TypedArray> {
+  read(dataId: DataId): Promise<TypedArray> {
     return this.backend.read(dataId);
   }
   fromPixels(

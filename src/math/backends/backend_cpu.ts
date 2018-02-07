@@ -25,7 +25,8 @@ import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
 import * as ops from '../ops';
 import {tensor2d, tensor3d, tensor4d} from '../ops';
-import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+// tslint:disable-next-line:max-line-length
+import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 
@@ -34,7 +35,7 @@ import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
-  private data: {[dataId: number]: DataTypeMap[DataType]} = {};
+  private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
 
   constructor() {
@@ -43,15 +44,15 @@ export class MathBackendCPU implements MathBackend {
     }
   }
 
-  register(dataId: number, shape: number[], dtype: DataType): void {
-    this.data[dataId] = null;
+  register(dataId: DataId, shape: number[], dtype: DataType): void {
+    this.data.set(dataId, null);
   }
-  write(dataId: number, values: TypedArray): void {
+  write(dataId: DataId, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
     this.throwIfNoData(dataId);
-    this.data[dataId] = values;
+    this.data.set(dataId, values);
   }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
@@ -101,17 +102,16 @@ export class MathBackendCPU implements MathBackend {
         [pixels.height, pixels.width, numChannels];
     return tensor3d(values, outShape, 'int32');
   }
-  async read(dataId: number): Promise<TypedArray> {
-    this.throwIfNoData(dataId);
-    return this.data[dataId];
+  async read(dataId: DataId): Promise<TypedArray> {
+    return this.readSync(dataId);
   }
-  readSync(dataId: number): TypedArray {
+  readSync(dataId: DataId): TypedArray {
     this.throwIfNoData(dataId);
-    return this.data[dataId];
+    return this.data.get(dataId);
   }
 
-  disposeData(dataId: number): void {
-    delete this.data[dataId];
+  disposeData(dataId: DataId): void {
+    this.data.delete(dataId);
   }
 
   async time(f: () => void): Promise<number> {
@@ -120,8 +120,8 @@ export class MathBackendCPU implements MathBackend {
     return performance.now() - start;
   }
 
-  private throwIfNoData(dataId: number) {
-    if (!(dataId in this.data)) {
+  private throwIfNoData(dataId: DataId) {
+    if (!this.data.has(dataId)) {
       throw new Error(
           `CPU backend: No data found for Tensor with data id ${dataId}. ` +
           `Did you change your backend in the middle of the program? ` +

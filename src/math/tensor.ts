@@ -25,7 +25,7 @@ import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
 
 /** @hidden */
 export interface TensorData {
-  dataId?: number;
+  dataId?: DataId;
   values?: TypedArray;
 }
 
@@ -87,9 +87,10 @@ export class TensorBuffer<R extends Rank> {
   }
 }
 
+/** We wrap data id since we use weak map to avoid memory leaks. */
+export interface DataId {}
 export class Tensor<R extends Rank = Rank> {
   private static nextId = 0;
-  private static nextDataId = 0;
 
   /** Unique id of this tensor. */
   readonly id: number;
@@ -97,7 +98,7 @@ export class Tensor<R extends Rank = Rank> {
    * Id of the bucket holding the data for this tensor. Multiple arrays can
    * point to the same bucket (e.g. when calling array.reshape()).
    */
-  dataId: number;
+  dataId: DataId;
   /** The shape of the tensor. */
   readonly shape: ShapeMap[R];
   /** Number of elements in the tensor. */
@@ -116,7 +117,7 @@ export class Tensor<R extends Rank = Rank> {
 
   protected constructor(
       shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
-      dataId?: number) {
+      dataId?: DataId) {
     this.size = util.sizeFromShape(shape);
     if (values != null) {
       util.assert(
@@ -127,7 +128,7 @@ export class Tensor<R extends Rank = Rank> {
     this.shape = shape;
     this.dtype = dtype || 'float32';
     this.strides = computeStrides(shape);
-    this.dataId = dataId != null ? dataId : Tensor.nextDataId++;
+    this.dataId = dataId != null ? dataId : {};
     this.id = Tensor.nextId++;
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     ENV.engine.registerTensor(this);
