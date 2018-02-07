@@ -89,6 +89,7 @@ export class TensorBuffer<R extends Rank> {
 
 /** We wrap data id since we use weak map to avoid memory leaks. */
 export interface DataId {}
+
 export class Tensor<R extends Rank = Rank> {
   private static nextId = 0;
 
