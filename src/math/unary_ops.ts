@@ -20,8 +20,8 @@ import * as util from '../util';
 
 import {doc, operation} from './decorators';
 import * as ops from './ops';
+import * as selu_util from './selu_util';
 import {Scalar, Tensor} from './tensor';
-import * as unary_utils from './unary_utils';
 
 export class Ops {
   /**
@@ -190,8 +190,8 @@ export class Ops {
           util.assert(x.rank !== 0, 'Error in selu gradient: ');
           const mask = x.greater(ops.scalar(0));
 
-          const scaleAlpha = Scalar.new(unary_utils.SELU_SCALEALPHA);
-          const scale = Scalar.new(unary_utils.SELU_SCALE);
+          const scaleAlpha = ops.scalar(selu_util.SELU_SCALEALPHA);
+          const scale = ops.scalar(selu_util.SELU_SCALE);
 
           const greaterThanZeroDer = dy.mul(scale);
           const lessEqualZeroDer = dy.mul(scaleAlpha).mul(x.toFloat().exp());
