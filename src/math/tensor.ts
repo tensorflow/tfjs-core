@@ -341,7 +341,7 @@ export class Tensor<R extends Rank = Rank> {
       return;
     }
     this.isDisposed = true;
-    ENV.engine.disposeData(this.dataId);
+    ENV.engine.disposeTensor(this);
   }
 
   private isDisposed = false;
@@ -850,7 +850,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
           `shape of the new value (${newValue.shape}) and ` +
           `previous value (${this.shape}) must match`);
     }
-    ENV.engine.disposeData(this.dataId);
+    ENV.engine.disposeTensor(this);
     this.dataId = newValue.dataId;
     ENV.engine.registerTensor(this);
     newValue.dispose();

@@ -235,6 +235,12 @@ export class Environment {
     return ENV.currentBackendType;
   }
 
+  /** Returns memory info at the current time in the program. */
+  @doc({heading: 'Performance', subheading: 'Memory'})
+  static memory(): {numDataBuffers: number; numBytes: number;} {
+    return ENV.engine.memory();
+  }
+
   get<K extends keyof Features>(feature: K): Features[K] {
     if (feature in this.features) {
       return this.features[feature];
