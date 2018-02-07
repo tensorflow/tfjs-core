@@ -138,9 +138,6 @@ export class Ops {
         (min <= max),
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
-    if (x.shape.length === 0) {
-      throw new Error('clip operation does not support Scalars yet.');
-    }
     return ENV.engine.executeKernel(
         'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
       return {
