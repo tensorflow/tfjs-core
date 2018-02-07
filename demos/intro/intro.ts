@@ -19,7 +19,7 @@ import * as dl from 'deeplearn';
 // This file parallels (some of) the code in the introduction tutorial.
 
 /**
- * 'NDArrayMath with WebGL backend' section of tutorial
+ * 'Math with WebGL backend' section of tutorial
  */
 async function intro() {
   const a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
@@ -66,7 +66,7 @@ async function intro() {
   const batchSize = 3;
 
   const session = new dl.Session(g, dl.ENV.math);
-  const optimizer = new dl.SGDOptimizer(learningRate);
+  const optimizer = dl.train.sgd(learningRate);
 
   const inputs: dl.Tensor1D[] = [
     dl.tensor1d([1.0, 2.0, 3.0]), dl.tensor1d([10.0, 20.0, 30.0]),
