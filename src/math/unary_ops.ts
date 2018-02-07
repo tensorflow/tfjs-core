@@ -16,10 +16,11 @@
  */
 
 import {ENV} from '../environment';
-import {zerosLike} from './ops';
 import * as util from '../util';
+
 import {doc, operation} from './decorators';
 import * as ops from './ops';
+import {zerosLike} from './ops';
 import {Tensor} from './tensor';
 
 export class Ops {
@@ -139,14 +140,16 @@ export class Ops {
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
     return ENV.engine.executeKernel(
-        'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
-      return {
-          // TODO(cais): Fix gradients for the case where x = min or x = max.
-          x: () => dy.where(
-              x.greater(ops.scalar(min)).logicalAnd(x.less(ops.scalar(max))),
-              zerosLike(dy)),
-      };
-    }) as T;
+               'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
+                 return {
+                   // TODO(cais): Fix gradients for the case where x = min or x
+                   // = max.
+                   x: () => dy.where(
+                       x.greater(ops.scalar(min))
+                           .logicalAnd(x.less(ops.scalar(max))),
+                       zerosLike(dy)),
+                 };
+               }) as T;
   }
 
   /**
@@ -192,8 +195,6 @@ export class Ops {
     const gradient = (dy: T, y: T) => {
       return {
         x: () => {
-          // Currently, Scalars are not supported by ops.where
-          util.assert(x.rank !== 0, 'Error in selu gradient: ');
           const mask = x.greater(ops.scalar(0));
 
           const scaleAlpha = ops.scalar(1.7580993408473768599402175208123);

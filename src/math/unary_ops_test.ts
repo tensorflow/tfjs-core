@@ -1480,6 +1480,26 @@ import * as util from '../util';
       test_util.expectArraysClose(result, [1.0507, NaN]);
     });
 
+    it('gradients: Scalar', () => {
+      const aValue = 1;
+      const dyValue = 1;
+      const a = dl.scalar(aValue);
+      const dy = dl.scalar(dyValue);
+
+      const gradients = dl.vjp(() => dl.selu(a), a, dy);
+
+      let expected;
+      if (aValue > 0) {
+        expected = dyValue * scale;
+      } else {
+        expected = dyValue * scaleAlpha * Math.exp(aValue);
+      }
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [expected], 1e-1);
+    });
+
     it('gradients: Tensor1D', () => {
       const aValues = [1, -1, 0];
       const dyValues = [1, 2, 3];
