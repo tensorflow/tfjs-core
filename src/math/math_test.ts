@@ -27,7 +27,7 @@ const gradientsScope = Gradients.gradientsScope;
 // math.tidy
 {
   const gpuTests: MathTests = it => {
-    it('tidy returns Tensor', math => {
+    it('returns Tensor', math => {
       dl.tidy(() => {
         const a = dl.tensor1d([1, 2, 3]);
         let b = dl.tensor1d([0, 0, 0]);
@@ -69,7 +69,7 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numDataBuffers).toBe(0);
     });
 
-    it('tidy returns Tensor[]', math => {
+    it('returns Tensor[]', math => {
       const a = dl.tensor1d([1, 2, 3]);
       const b = dl.tensor1d([0, -1, 1]);
       expect(dl.memory().numDataBuffers).toBe(2);
@@ -94,7 +94,7 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numDataBuffers).toBe(0);
     });
 
-    it('basic tidy usage without return', math => {
+    it('basic usage without return', math => {
       const a = dl.tensor1d([1, 2, 3]);
       let b = dl.tensor1d([0, 0, 0]);
 
@@ -111,7 +111,7 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numDataBuffers).toBe(2);
     });
 
-    it('nested tidy usage', math => {
+    it('nested usage', math => {
       const a = dl.tensor1d([1, 2, 3]);
       let b = dl.tensor1d([0, 0, 0]);
 

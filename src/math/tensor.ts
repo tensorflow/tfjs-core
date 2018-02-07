@@ -87,8 +87,15 @@ export class TensorBuffer<R extends Rank> {
   }
 }
 
-/** We wrap data id since we use weak map to avoid memory leaks. */
-export interface DataId {}
+/**
+ * We wrap data id since we use weak map to avoid memory leaks.
+ * Since we have our own memory management, we have a reference counter
+ * mapping a tensor to its data, so there is always a pointer (even if that
+ * data is otherwise garbage collectable).
+ * See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
+ * Global_Objects/WeakMap
+ */
+export type DataId = object;
 
 export class Tensor<R extends Rank = Rank> {
   private static nextId = 0;
