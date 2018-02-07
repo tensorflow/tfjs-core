@@ -24,17 +24,17 @@ import {Scalar, Tensor} from './tensor';
 
 const gradientsScope = Gradients.gradientsScope;
 
-// math.scope
+// math.tidy
 {
   const gpuTests: MathTests = it => {
-    it('scope returns Tensor', async math => {
-      await dl.tidy(async () => {
+    it('tidy returns Tensor', math => {
+      dl.tidy(() => {
         const a = dl.tensor1d([1, 2, 3]);
         let b = dl.tensor1d([0, 0, 0]);
 
         expect(dl.memory().numDataBuffers).toBe(2);
         expect(dl.memory().numBytes).toBe(2 * 3 * 4);
-        await dl.tidy(async () => {
+        dl.tidy(() => {
           const result = dl.tidy(() => {
             b = dl.addStrict(a, b);
             b = dl.addStrict(a, b);
@@ -50,6 +50,7 @@ const gradientsScope = Gradients.gradientsScope;
 
         // a, b are still here, result should be disposed.
         expect(dl.memory().numDataBuffers).toBe(2);
+        expect(dl.memory().numBytes).toBe(2 * 3 * 4);
       });
 
       expect(dl.memory().numDataBuffers).toBe(0);
@@ -68,12 +69,12 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numDataBuffers).toBe(0);
     });
 
-    it('scope returns Tensor[]', async math => {
+    it('tidy returns Tensor[]', math => {
       const a = dl.tensor1d([1, 2, 3]);
       const b = dl.tensor1d([0, -1, 1]);
       expect(dl.memory().numDataBuffers).toBe(2);
 
-      await dl.tidy(async () => {
+      dl.tidy(() => {
         const result = dl.tidy(() => {
           dl.add(a, b);
           return [dl.add(a, b), dl.sub(a, b)];
@@ -93,7 +94,7 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numDataBuffers).toBe(0);
     });
 
-    it('basic scope usage without return', math => {
+    it('basic tidy usage without return', math => {
       const a = dl.tensor1d([1, 2, 3]);
       let b = dl.tensor1d([0, 0, 0]);
 
@@ -110,39 +111,13 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numDataBuffers).toBe(2);
     });
 
-    it('scope returns Promise<Tensor>', async math => {
-      const a = dl.tensor1d([1, 2, 3]);
-      const b = dl.tensor1d([0, 0, 0]);
-
-      expect(dl.memory().numDataBuffers).toBe(2);
-
-      await dl.tidy(async () => {
-        const result = dl.tidy(() => {
-          let c = dl.add(a, b);
-          c = dl.add(a, c);
-          c = dl.add(a, c);
-          return dl.add(a, c);
-        });
-
-        // result is new. All intermediates should be disposed.
-        expect(dl.memory().numDataBuffers).toBe(3);
-        test_util.expectArraysClose(result, [4, 8, 12]);
-      });
-
-      // result should be disposed. a and b are still allocated.
-      expect(dl.memory().numDataBuffers).toBe(2);
-      a.dispose();
-      b.dispose();
-      expect(dl.memory().numDataBuffers).toBe(0);
-    });
-
-    it('nested scope usage', async math => {
+    it('nested tidy usage', math => {
       const a = dl.tensor1d([1, 2, 3]);
       let b = dl.tensor1d([0, 0, 0]);
 
       expect(dl.memory().numDataBuffers).toBe(2);
 
-      await dl.tidy(async () => {
+      dl.tidy(() => {
         const result = dl.tidy(() => {
           b = dl.addStrict(a, b);
           b = dl.tidy(() => {
@@ -208,7 +183,7 @@ const gradientsScope = Gradients.gradientsScope;
     });
   };
 
-  test_util.describeMathGPU('scope', [gpuTests], [
+  test_util.describeMathGPU('tidy', [gpuTests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
@@ -481,7 +456,7 @@ const gradientsScope = Gradients.gradientsScope;
           1e-1);
     });
 
-    it('matmul + relu + inner scope', () => {
+    it('matmul + relu + inner tidy', () => {
       const a = dl.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
       const b = dl.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
 
