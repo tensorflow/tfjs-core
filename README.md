@@ -17,38 +17,11 @@ for everything from education, to model understanding, to art projects.
 
 ## Usage
 
-`yarn add deeplearn` or `npm install deeplearn`
+You can install this library via yarn/npm: `yarn add deeplearn`
+or `npm install deeplearn`
 
-#### TypeScript / ES6 JavaScript
-See the [TypeScript starter project](https://github.com/PAIR-code/deeplearnjs/tree/master/starter/typescript/) and the
-[ES6 starter project](https://github.com/PAIR-code/deeplearnjs/tree/master/starter/es6/) to get you quickly started. They contain a
-short example that sums an array with a scalar (broadcasted):
-
-```ts
-import {Array1D, ENV, Scalar} from 'deeplearn';
-
-const math = ENV.math;
-const a = Array1D.new([1, 2, 3]);
-const b = Scalar.new(2);
-
-const result = math.add(a, b);
-
-// Option 1: With async/await.
-// Caveat: in non-Chrome browsers you need to put this in an async function.
-console.log(await result.data());  // Float32Array([3, 4, 5])
-
-// Option 2: With a Promise.
-result.data().then(data => console.log(data));
-
-// Option 3: Synchronous download of data.
-// This is simpler, but blocks the UI until the GPU is done.
-console.log(result.dataSync());
-```
-
-#### ES3/ES5 JavaScript
-
-You can also use **deeplearn.js** with plain JavaScript. Load the latest version
-of the library from [jsDelivr](https://www.jsdelivr.com/) or [unpkg](https://unpkg.com):
+Alternatively you can use a script tag. Here we load it from a CDN.
+In this case it will be available as a global variable named `dl`.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/deeplearn"></script>
@@ -56,26 +29,54 @@ of the library from [jsDelivr](https://www.jsdelivr.com/) or [unpkg](https://unp
 <script src="https://unpkg.com/deeplearn"></script>
 ```
 
-To use a specific version, add `@version` to the unpkg URL above
-(e.g. `https://unpkg.com/deeplearn@0.2.0`), which you can find in the
-[releases](https://github.com/PAIR-code/deeplearnjs/releases) page on GitHub.
-After importing the library, the API will be available as `dl` in the global
-namespace.
+You can also specify which version to load by appending an `@version` string
+to the url
 
-```js
-var math = dl.ENV.math;
-var a = dl.Array1D.new([1, 2, 3]);
-var b = dl.Scalar.new(2);
-
-var result = math.add(a, b);
-
-// Option 1: With a Promise.
-result.data().then(data => console.log(data)); // Float32Array([3, 4, 5])
-
-// Option 2: Synchronous download of data. This is simpler, but blocks the UI.
-console.log(result.dataSync());
+```html
+<script src="https://cdn.jsdelivr.net/npm/deeplearn@0.4.2"></script>
+<!-- or -->
+<script src="https://unpkg.com/deeplearn@0.4.2"></script>
 ```
 
+#### TypeScript / ES6 JavaScript
+
+Let's add a scalar value to a 1D Tensor. Deeplearn js supports _broadcasting_
+the value of scalar over all the elements in the tensor.
+
+```js
+import * as dl from 'deeplearn'; // If not loading the script as a global
+
+const a = dl.tensor1d([1, 2, 3]);
+const b = dl.scalar(2);
+
+const result = dl.add(a, b);
+result.data().then((data) => console.log(data)); // Float32Array([3, 4, 5]
+
+// Alternatively you can use a blocking call to get the final data.
+// However this might slow your program down if called repeatedly.
+console.log(result.dataSync()); // Float32Array([3, 4, 5]
+```
+
+See the [TypeScript starter project](https://github.com/PAIR-code/deeplearnjs/tree/master/starter/typescript/) and the
+[ES6 starter project](https://github.com/PAIR-code/deeplearnjs/tree/master/starter/es6/) to get you quickly started.
+
+#### ES5 JavaScript
+
+Let's do the same thing in ES5 Javascript. Remember to include the script tag to
+load deeplearn.js
+
+```js
+var a = dl.tensor1d([1, 2, 3]);
+var b = dl.scalar(2);
+
+var result = dl.add(a, b);
+
+// Option 1: With a Promise.
+result.data().then((data) => console.log(data)); // Float32Array([3, 4, 5])
+
+// Option 2: Synchronous download of data. Blocks the UI.
+console.log(result.dataSync());
+```
 
 ## Development
 
@@ -89,7 +90,7 @@ $ yarn prep # Installs dependencies.
 ```
 
 #### Yarn vs NPM
-It's up to you. Yarn is fully interoperable with npm.  You can either do `yarn` or `npm install`. To add package, you can do `yarn add pgk-name` or `npm install pkg-name`. We use yarn since it is better at caching and resolving dependencies.
+Generally speaking it's up to you. Yarn is fully interoperable with npm. You can either do `yarn` or `npm install`. However we use yarn, and if you are adding or removing dependencies you should use yarn to keep the `yarn.lock` file up to date.
 
 #### Code editor
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
