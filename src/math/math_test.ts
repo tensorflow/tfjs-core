@@ -33,6 +33,7 @@ const gradientsScope = Gradients.gradientsScope;
         let b = dl.tensor1d([0, 0, 0]);
 
         expect(dl.memory().numDataBuffers).toBe(2);
+        expect(dl.memory().numBytes).toBe(2 * 3 * 4);
         await dl.tidy(async () => {
           const result = dl.tidy(() => {
             b = dl.addStrict(a, b);
@@ -43,6 +44,7 @@ const gradientsScope = Gradients.gradientsScope;
 
           // result is new. All intermediates should be disposed.
           expect(dl.memory().numDataBuffers).toBe(2 + 1);
+          expect(dl.memory().numBytes).toBe(3 * 3 * 4);
           test_util.expectArraysClose(result, [4, 8, 12]);
         });
 
@@ -51,6 +53,7 @@ const gradientsScope = Gradients.gradientsScope;
       });
 
       expect(dl.memory().numDataBuffers).toBe(0);
+      expect(dl.memory().numBytes).toBe(0);
     });
 
     it('multiple disposes does not affect num arrays', math => {
@@ -619,6 +622,57 @@ const gradientsScope = Gradients.gradientsScope;
 
   test_util.describeMathCPU('customGradient', [tests]);
   test_util.describeMathGPU('customGradient', [tests], [
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+  ]);
+}
+
+// dl.memory
+{
+  const tests: MathTests = it => {
+    it('Sum(float)', () => {
+      expect(dl.memory().numDataBuffers).toBe(0);
+      expect(dl.memory().numBytes).toBe(0);
+      const sum = dl.tidy(() => {
+        const a = dl.tensor1d([1, 2, 3, 4]);
+        expect(dl.memory().numDataBuffers).toBe(1);
+        expect(dl.memory().numBytes).toBe(4 * 4);
+        return a.sum();
+      });
+      expect(dl.memory().numDataBuffers).toBe(1);
+      expect(dl.memory().numBytes).toBe(4);
+      test_util.expectArraysClose(sum, [1 + 2 + 3 + 4]);
+    });
+
+    it('Sum(bool)', () => {
+      const sum = dl.tidy(() => {
+        const a = dl.tensor1d([true, true, false, true], 'bool');
+        expect(dl.memory().numDataBuffers).toBe(1);
+        expect(dl.memory().numBytes).toBe(4);
+        return a.sum();
+      });
+      expect(dl.memory().numDataBuffers).toBe(1);
+      expect(dl.memory().numBytes).toBe(4);
+      expect(sum.dtype).toBe('int32');
+      test_util.expectArraysClose(sum, [1 + 1 + 0 + 1]);
+    });
+
+    it('Sum(int32)', () => {
+      const sum = dl.tidy(() => {
+        const a = dl.tensor1d([1, 1, 0, 1], 'int32');
+        expect(dl.memory().numDataBuffers).toBe(1);
+        expect(dl.memory().numBytes).toBe(4 * 4);
+        return a.sum();
+      });
+      expect(dl.memory().numDataBuffers).toBe(1);
+      expect(dl.memory().numBytes).toBe(4);
+      expect(sum.dtype).toBe('int32');
+      test_util.expectArraysClose(sum, [1 + 1 + 0 + 1]);
+    });
+  };
+  test_util.describeMathCPU('memory', [tests]);
+  test_util.describeMathGPU('memory', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
