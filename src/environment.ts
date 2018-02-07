@@ -235,7 +235,14 @@ export class Environment {
     return ENV.currentBackendType;
   }
 
-  /** Returns memory info at the current time in the program. */
+  /**
+   * Returns memory info at the current time in the program.
+   *
+   * - `result.numBytes` is number of bytes in the program.
+   * - `result.numDataBuffers` is the number of unique data buffers, which is
+   *     smaller than the number of tensors (e.g. `a.reshape(newShape)` makes a
+   *     new Tensor that shares the same data buffer with `a`).
+   */
   @doc({heading: 'Performance', subheading: 'Memory'})
   static memory(): {numDataBuffers: number; numBytes: number;} {
     return ENV.engine.memory();
