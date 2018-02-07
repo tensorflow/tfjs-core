@@ -16,11 +16,12 @@
  */
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
+import {Graph} from '../../graph/graph';
+import {Session} from '../../graph/session';
 import * as dl from '../../index';
 import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {Graph} from '../graph';
-import {Session} from '../session';
+
 import {AdagradOptimizer} from './adagrad_optimizer';
 
 describe('adagrad optimizer', () => {

@@ -16,25 +16,27 @@
  */
 
 import {keep, tidy} from '../../globals';
+import {Node} from '../../graph/graph';
+import {SessionRuntime} from '../../graph/session';
+import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
 import {NamedVariableMap} from '../../math/types';
-import {Node} from '../graph';
-import {SessionRuntime} from '../session';
-import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
+import {scalar} from '../ops';
 
 export class AdamaxOptimizer extends Optimizer {
   constructor(
       protected learningRate: number, private beta1: number,
-      private beta2: number, specifiedVariableList?: Node[]) {
+      private beta2: number,
+      /** @deprecated */ specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.eps = Scalar.new(1e-8);
     // b1, b2 keep initial value of beta* hyperparameters.
-    this.b1 = Scalar.new(this.beta1);
-    this.b2 = Scalar.new(this.beta2);
+    this.b1 = scalar(this.beta1);
+    this.b2 = scalar(this.beta2);
 
-    this.accB1 = Scalar.new(this.beta1);
+    this.accB1 = scalar(this.beta1);
   }
 
   applyGradients(variableGradients: NamedVariableMap) {

@@ -16,15 +16,16 @@
  */
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
+import {Graph} from '../../graph/graph';
+import {Session} from '../../graph/session';
 import * as dl from '../../index';
 import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {Graph} from '../graph';
-import {Session} from '../session';
-import {AdamOptimizer} from './adam_optimizer';
 
-describe('adam optimizer', () => {
-  it('basic', () => {
+import {AdamaxOptimizer} from './adamax_optimizer';
+
+describe('adamax optimizer', () => {
+  it('adamax', () => {
     const math = ENV.math;
 
     const inputProvider: InputProvider = {
@@ -40,41 +41,45 @@ describe('adam optimizer', () => {
       const w = g.variable('w', dl.zeros([1, 2]));
       const b = g.variable('b', dl.zeros([1]));
       const y = g.reduceSum(g.add(g.matmul(w, x), b));
-      const optimizer = new AdamOptimizer(0.1, 0.8, 0.9);
+      const optimizer = new AdamaxOptimizer(0.1, 0.8, 0.9);
       const session = new Session(g, math);
       // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
       // new_first_m = [beta1*old_first_m_w1 + (1-beta1)*grad_w1,
       //                beta1*old_first_m_w2 + (1-beta1)*grad_w2]
       //             = [.4, .8]
-      // new_second_m = [beta2*old_second_m_w1 + (1-beta2)*grad_w1**2,
-      //                 beta2*old_second_m_w2 + (1-beta2)*grad_w2**2]
-      //              = [.4, 1.6]
-      // m = [new_first_m/(1-acc_beta1)] = [2, 4]
-      // v = [new_second_m/(1-acc_beta2)] = [4, 16]
-      // updates = [m_1/(sqrt(v_1) + eps),
-      //            m_2/(sqrt(v_2) + eps)]
-      //            = [1.0, 1.0]
+      //
+      // ut_0 = beta2*old_weighted_inf_norm = [0, 0]
+      // u1_1 = [(1-beta2)*grad_w1, (1-beta2)*grad_w2] = [.2 .4]
+      // new_weighted_inf_norm = max(ut_0, ut_1 ) = [.2 .4]
+      //
+      // coefficient = alpha/(1-beta1) = 0.5
+      // updates = coefficient*[new_first_m1/new_weighted_inf_norm1,
+      //                        new_first_m2/new_weighted_inf_norm2]
+      //         = [1.0, 1.0]
       // w = [ w1_old - lr*updates_1, w2_old - lr*updates_2]
       //            = [-0.1, -0.1]
       //
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).dataSync();
       test_util.expectArraysClose(dydw, new Float32Array([-0.1, -0.1]), 1e-5);
+
+      // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
       // new_first_m = [beta1*old_first_m_w1 + (1-beta1)*grad_w1,
       //                beta1*old_first_m_w2 + (1-beta1)*grad_w2]
       //             = [0.8*0.4 + 0.2*2, 0.8*0.8 + 0.2*4]
       //             = [0.72, 1.44]
-      // new_second_m = [beta2*old_second_m_w1 + (1-beta2)*grad_w1**2,
-      //                 beta2*old_second_m_w2 + (1-beta2)*grad_w2**2]
-      //              = [0.9*0.4 + 0.1*4, 0.9*1.6+0.1*16]
-      //              = [0.76, 3.04]
-      // m = [new_first_m/(1-acc_beta1)] = [2, 4]
-      // v = [new_second_m/(1-acc_beta2)] = [4, 16]
-      // updates = [m_1/sqrt(v_1) + eps,
-      //            m_2/sqrt(v_2) + eps]
-      //            = [1.0, 1.0]
+      //
+      // ut_0 = beta2*old_weighted_inf_norm = [.18 .36]
+      // u1_1 = [(1-beta2)*grad_w1, (1-beta2)*grad_w2] = [.2 .4]
+      // new_weighted_inf_norm = max(ut_0, ut_1 ) = [.2 .4]
+      //
+      // coefficient = alpha/(1-(beta1*beta1) = 0.278
+      // updates = coefficient*[new_first_m1/new_weighted_inf_norm1,
+      //                        new_first_m2/new_weighted_inf_norm2]
+      //         = [1.0, 1.0]
       // w = [ w1_old - lr*updates_1, w2_old - lr*updates_2]
       //            = [-0.2, -0.2]
+
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).dataSync();
       test_util.expectArraysClose(dydw2, new Float32Array([-.2, -.2]), 2e-5);

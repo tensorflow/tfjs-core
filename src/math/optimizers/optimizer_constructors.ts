@@ -16,6 +16,7 @@
  */
 import {doc} from '../decorators';
 
+import {AdadeltaOptimizer} from './adadelta_optimizer';
 import {MomentumOptimizer} from './momentum_optimizer';
 import {SGDOptimizer} from './sgd_optimizer';
 
@@ -43,4 +44,32 @@ export class OptimizerConstructors {
   static momentum(learningRate: number, momentum: number): MomentumOptimizer {
     return new MomentumOptimizer(learningRate, momentum);
   }
+
+  /**
+   * Constructs a `dl.train.AdadeltaOptimizer` that uses the Adadelta algorithm.
+   * See https://arxiv.org/abs/1212.5701
+   *
+   * @param learningRate
+   * @param rho
+   * @param epsilon
+   */
+  @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
+  static adadelta(learningRate = .001, rho = .95, epsilon = 1e-8):
+      AdadeltaOptimizer {
+    return new AdadeltaOptimizer(learningRate, rho, undefined, epsilon);
+  }
+
+  /**
+   * Constructs a `dl.train.MomentumOptimizer` that uses momentum gradient
+   * descent.
+   *
+   * @param learningRate The learning rate to use for the momentum gradient
+   * descent algorithm.
+   * @param gamma The momentum to use for the momentum gradient descent
+   * algorithm.
+   */
+  // @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
+  // static rmsprop(learningRate: number, gamma: number): MomentumOptimizer {
+  //   return new MomentumOptimizer(learningRate, gamma);
+  // }
 }

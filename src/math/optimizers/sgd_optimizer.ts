@@ -23,7 +23,7 @@ import {SessionRuntime} from '../../graph/session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {doc} from '../decorators';
-import * as ops from '../ops';
+import {scalar} from '../ops';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../types';
 
@@ -38,12 +38,13 @@ import {Optimizer} from './optimizer';
 export class SGDOptimizer extends Optimizer {
   protected c: Scalar;
 
-  constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
+  constructor(
+      protected learningRate: number, /** @deprecated only for graph */
+      specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.setLearningRate(learningRate);
   }
 
-  // Eager mode
   applyGradients(variableGradients: NamedTensorMap) {
     const varNames = Object.keys(variableGradients);
     varNames.forEach(varName => {
@@ -56,7 +57,25 @@ export class SGDOptimizer extends Optimizer {
     });
   }
 
+  /**
+   * Sets the learning rate of the optimizer.
+   * @param learningRate A number
+   */
+  setLearningRate(learningRate: number) {
+    this.learningRate = learningRate;
+    if (this.c != null) {
+      this.c.dispose();
+    }
+    this.c = ENV.math.keep(scalar(-learningRate));
+  }
+
+  dispose() {
+    this.c.dispose();
+    super.dispose();
+  }
+
   // Graph
+  /** @deprecated only for graph */
   afterBatch(
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
@@ -76,18 +95,5 @@ export class SGDOptimizer extends Optimizer {
 
     this.variableGradients.dispose();
     this.variableGradients = new TensorArrayMap();
-  }
-
-  dispose() {
-    this.c.dispose();
-    super.dispose();
-  }
-
-  setLearningRate(learningRate: number) {
-    this.learningRate = learningRate;
-    if (this.c != null) {
-      this.c.dispose();
-    }
-    this.c = ENV.math.keep(ops.scalar(-learningRate));
   }
 }

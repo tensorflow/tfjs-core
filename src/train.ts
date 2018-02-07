@@ -16,14 +16,16 @@
  */
 
 // So typings can propagate.
+import {AdadeltaOptimizer} from './math/optimizers/adadelta_optimizer';
 import {MomentumOptimizer} from './math/optimizers/momentum_optimizer';
 import {OptimizerConstructors} from './math/optimizers/optimizer_constructors';
 import {SGDOptimizer} from './math/optimizers/sgd_optimizer';
 
 // tslint:disable-next-line:no-unused-expression
-[MomentumOptimizer, SGDOptimizer];
+[MomentumOptimizer, SGDOptimizer, AdadeltaOptimizer];
 
 export const train = {
   sgd: OptimizerConstructors.sgd,
-  momentum: OptimizerConstructors.momentum
+  momentum: OptimizerConstructors.momentum,
+  adadelta: OptimizerConstructors.adadelta
 };
