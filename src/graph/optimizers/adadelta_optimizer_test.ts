@@ -16,15 +16,14 @@
  */
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
-import {Graph} from '../../graph/graph';
-import {Session} from '../../graph/session';
 import * as dl from '../../index';
 import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
+import {Graph} from '../graph';
+import {Session} from '../session';
+import {AdadeltaOptimizer} from './adadelta_optimizer';
 
-import {RMSPropOptimizer} from './rmsprop_optimizer';
-
-describe('rmsprop optimizer', () => {
+describe('adadelta optimizer', () => {
   it('basic', () => {
     const math = ENV.math;
 
@@ -41,27 +40,37 @@ describe('rmsprop optimizer', () => {
       const w = g.variable('w', dl.zeros([1, 2]));
       const b = g.variable('b', dl.zeros([1]));
       const y = g.reduceSum(g.add(g.matmul(w, x), b));
-      const optimizer = new RMSPropOptimizer(0.1, 0.8);
       const session = new Session(g, math);
+      const optimizer = new AdadeltaOptimizer(0.1, 0.8);
       // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
       // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
       //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
-      //            = [.8, .3.2]
-      // w = [ w1_old - lr*grad_w1/sqrt(cahce_w1 + eps),
-      //            w2_old - lr*grad_w1/sqrt(cahce_w2 + eps)]
-      //            = [-0.2236, -0.2236]
+      //            = [.8, 3.2]
+      // updates = [sqrt(old_updates_w1 + eps)/sqrt(old_cache_w1 + eps)*grad_w1,
+      //            sqrt(old_updates_w2 + eps)/sqrT(old_cache_w2 + eps)*grad_w2]
+      //            = [2, 4]
+      // w = [ w1_old - lr*updates_w1,
+      //            w2_old - lr*updates_w2]
+      //            = [-0.2, -0.4]
+      // new_updates = [gamma * old_updates_w1 + (1 - gamma) * 2**2,
+      //                gamma * old_updates_w2 + (1 - gamma) * 4**2]
+      //             = [0.8, 3.2]
+      //
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw, new Float32Array([-.2236, -0.2236]));
+      test_util.expectArraysClose(dydw, new Float32Array([-0.2, -0.4]), 1e-5);
       // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
       //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
       //            = [1.44, 5.76]
-      // w = [ w1_old - lr*grad_w1/sqrt(cahce_w1 + eps),
-      //            w2_old - lr*grad_w1/sqrt(cahce_w2 + eps)]
-      //            = [-.39027, -.39027]
+      // updates = [sqrt(old_updates_w1 + eps)/sqrt(old_cache_w1 + eps)*grad_w1,
+      //            sqrt(old_updates_w2 + eps)/sqrT(old_cache_w2 + eps)*grad_w2]
+      //            = [2, 4]
+      // w = [ w1_old - lr*updates_w1,
+      //            w2_old - lr*updates_w2]
+      //            = [-0.4, -0.8]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw2, new Float32Array([-.39027, -.39027]));
+      test_util.expectArraysClose(dydw2, new Float32Array([-.4, -.8]), 2e-5);
     });
   });
 });

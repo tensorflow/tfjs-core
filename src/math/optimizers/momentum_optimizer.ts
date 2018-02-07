@@ -35,65 +35,42 @@ import {scalar, zerosLike} from '../ops';
  */
 @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class MomentumOptimizer extends SGDOptimizer {
-  private momentum: Scalar;
-  private velocities: NamedTensorMap;
+  private m: Scalar;
+  private variableVelocities: NamedTensorMap;
 
   constructor(
-      protected learningRate: number, momentum: number,
+      protected learningRate: number, private momentum: number,
       specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
-    this.momentum = scalar(momentum);
-    this.velocities = {};
+    this.m = scalar(this.momentum);
+    this.variableVelocities = {};
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
       const variable = ENV.engine.registeredVariables[variableName];
       // Initialize velocities to 0.
-      if (this.velocities[variableName] == null) {
-        this.velocities[variableName] = keep(zerosLike(variable));
+      if (this.variableVelocities[variableName] == null) {
+        this.variableVelocities[variableName] = keep(zerosLike(variable));
       }
 
-      const velocity = this.velocities[variableName];
+      const oldVelocity = this.variableVelocities[variableName];
       const gradient = variableGradients[variableName];
 
-      const newVariable = tidy(() => {
-        const newVelocity = this.momentum.mul(velocity).add(gradient);
-        velocity.dispose();
-        this.velocities[variableName] = keep(newVelocity);
+      const [newVelocity, newVariableValue] = tidy(() => {
+        const newVelocity = this.m.mul(oldVelocity).add(gradient);
+        const newVariableValue = this.c.mul(newVelocity).add(variable);
 
-        return this.c.mul(newVelocity).add(variable);
+        return [newVelocity, newVariableValue];
       });
 
-      variable.assign(newVariable);
+      this.variableVelocities[variableName].dispose();
+      this.variableVelocities[variableName] = keep(newVelocity);
+
+      variable.assign(newVariableValue);
     }
   }
 
-  dispose() {
-    super.dispose();
-    this.momentum.dispose();
-    if (this.variableVelocitiesGraph != null) {
-      this.variableVelocitiesGraph.dispose();
-    }
-    if (this.velocities != null) {
-      for (const variableName in this.velocities) {
-        this.velocities[variableName].dispose();
-      }
-    }
-  }
-
-  /**
-   * Sets the momentum of the optimizer.
-   *
-   * @param momentum
-   */
-  setMomentum(momentum: number) {
-    this.momentum.dispose();
-    this.momentum = scalar(momentum);
-  }
-
-  // Graph
-  /** @deprecated only for graph */
   beforeBatch(
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
@@ -124,7 +101,7 @@ export class MomentumOptimizer extends SGDOptimizer {
         const oldVelocity = this.variableVelocitiesGraph.get(node.output);
 
         const velocity =
-            math.scaledArrayAdd(this.momentum, oldVelocity, this.one, gradient);
+            math.scaledArrayAdd(this.m, oldVelocity, this.one, gradient);
         const variable =
             math.scaledArrayAdd(this.cGraph, velocity, this.one, oldVariable);
 
@@ -141,5 +118,28 @@ export class MomentumOptimizer extends SGDOptimizer {
     this.variableGradients = new TensorArrayMap();
   }
 
+  dispose() {
+    super.dispose();
+    this.m.dispose();
+    if (this.variableVelocitiesGraph != null) {
+      this.variableVelocitiesGraph.dispose();
+    }
+    if (this.variableVelocities != null) {
+      for (const variableName in this.variableVelocities) {
+        this.variableVelocities[variableName].dispose();
+      }
+    }
+  }
+
+  /**
+   * Sets the momentum of the optimizer.
+   *
+   * @param momentum
+   */
+  setMomentum(momentum: number) {
+    this.momentum = momentum;
+  }
+
+  // Graph.
   private variableVelocitiesGraph: TensorArrayMap;
 }
