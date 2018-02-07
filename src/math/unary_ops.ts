@@ -21,7 +21,7 @@ import * as util from '../util';
 import {doc, operation} from './decorators';
 import * as ops from './ops';
 import * as selu_util from './selu_util';
-import {Scalar, Tensor} from './tensor';
+import {Tensor} from './tensor';
 
 export class Ops {
   /**
