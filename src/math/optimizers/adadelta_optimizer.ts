@@ -92,7 +92,7 @@ export class AdadeltaOptimizer extends Optimizer {
         this.accumulatedUpdates[variableName] = keep(newAccumulatedUpdate);
 
         return this.c.mul(updates).add(variable);
-      })
+      });
 
       variable.assign(keep(newVariable));
     }
