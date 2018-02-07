@@ -16,10 +16,7 @@
  */
 import {doc} from '../decorators';
 
-<<<<<<< HEAD
 import {AdadeltaOptimizer} from './adadelta_optimizer';
-=======
->>>>>>> origin
 import {MomentumOptimizer} from './momentum_optimizer';
 import {SGDOptimizer} from './sgd_optimizer';
 

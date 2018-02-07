@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,7 +22,6 @@ import * as dl from '../../index';
 import {Scalar, Tensor1D, variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
-
 import {AdadeltaOptimizer} from './adadelta_optimizer';
 
 const tests: MathTests = it => {
@@ -101,7 +100,7 @@ const tests: MathTests = it => {
       getNextCopy() {
         return Tensor1D.new([2, 4]);
       },
-      disposeCopy(math, example) {}
+      disposeCopy(math) {}
     };
 
     dl.tidy(() => {

@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -71,11 +71,10 @@ export class AdadeltaOptimizer extends Optimizer {
                             .sqrt()
                             .div(accumulatedGrad.add(this.epsilon).sqrt())
                             .mul(gradient);
-        const updateSquare = updates.square();
 
         const newAccumulatedUpdate =
             this.rho.mul(accumulatedUpdate)
-                .add(this.oneMinusRho.mul(updateSquare));
+                .add(this.oneMinusRho.mul(updates.square()));
 
         accumulatedGrad.dispose();
         accumulatedUpdate.dispose();
