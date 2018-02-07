@@ -179,6 +179,12 @@ import * as util from '../util';
       test_util.expectArraysClose(result, [1, 0, 0, 1, 0]);
     });
 
+    it('with 1d tensor and alpha', () => {
+      const a = dl.tensor1d([1, -2, -.01, 3, NaN]);
+      const result = dl.step(a, 0.1);
+      test_util.expectArraysClose(result, [1, 0.1, 0.1, 1, NaN]);
+    });
+
     it('with 2d tensor', () => {
       const a = dl.tensor2d([1, -5, -3, 4], [2, 2]);
       const result = dl.step(a);
@@ -190,6 +196,39 @@ import * as util from '../util';
       const a = dl.tensor1d([1, -2, -.01, 3, NaN]);
       const result = dl.step(a);
       test_util.expectArraysClose(result, [1, 0, 0, 1, NaN]);
+    });
+
+    it('gradients: Scalar', () => {
+      const a = dl.scalar(-4);
+      const dy = dl.scalar(8);
+
+      const gradients = dl.vjp(() => dl.step(a, 0.1), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [0], 1e-1);
+    });
+
+    it('gradients: Tensor1D', () => {
+      const a = dl.tensor1d([1, 2, -3, 5]);
+      const dy = dl.tensor1d([1, 2, 3, 4]);
+
+      const gradients = dl.vjp(() => dl.step(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
+    });
+
+    it('gradients: Tensor2D', () => {
+      const a = dl.tensor2d([3, -1, -2, 3], [2, 2]);
+      const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+
+      const gradients = dl.vjp(() => dl.step(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
     });
   };
 

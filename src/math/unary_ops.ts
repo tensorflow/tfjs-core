@@ -16,16 +16,17 @@
  */
 
 import {ENV} from '../environment';
-import {zerosLike} from './ops';
 import * as util from '../util';
+
 import {doc, operation} from './decorators';
 import * as ops from './ops';
+import {zerosLike} from './ops';
 import {Tensor} from './tensor';
 
 export class Ops {
   /**
    * Computes -1 * A element-wise.
-   * @param x The input array.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -44,6 +45,7 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static ceil<T extends Tensor>(x: T): T {
+    // TODO(manrajgrover): Fix gradients for the case where x == ceil(x)
     const gradient = (dy: T, y: T) => {
       return {x: () => ops.zeros(y.shape)};
     };
@@ -51,13 +53,13 @@ export class Ops {
   }
 
   /**
-   * Computes floor of input NDArray element-wise. y = floor(x).
-   * TODO(manrajgrover): Fix gradient once backprop handles nulls
-   * @param x The input NDArray.
+   * Computes floor of input Tensor element-wise. y = floor(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static floor<T extends Tensor>(x: T): T {
+    // TODO(manrajgrover): Fix gradients for the case where x == floor(x)
     const gradient = (dy: T, y: T) => {
       return {x: () => ops.zeros(y.shape)};
     };
@@ -103,7 +105,7 @@ export class Ops {
   /**
    * Computes square of `x` element-wise.
    *
-   * @param x The input array.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -139,14 +141,16 @@ export class Ops {
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
     return ENV.engine.executeKernel(
-        'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
-      return {
-          // TODO(cais): Fix gradients for the case where x = min or x = max.
-          x: () => dy.where(
-              x.greater(ops.scalar(min)).logicalAnd(x.less(ops.scalar(max))),
-              zerosLike(dy)),
-      };
-    }) as T;
+               'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
+                 return {
+                   // TODO(cais): Fix gradients for the case where x = min or x
+                   // = max.
+                   x: () => dy.where(
+                       x.greater(ops.scalar(min))
+                           .logicalAnd(x.less(ops.scalar(max))),
+                       zerosLike(dy)),
+                 };
+               }) as T;
   }
 
   /**
@@ -164,7 +168,7 @@ export class Ops {
 
   /**
    * Computes exponential linear element-wise
-   * @param x the input Tensor
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -184,6 +188,7 @@ export class Ops {
 
   /**
    * Computes scaled exponential linear element-wise.
+   * @param x The input Tensor.
    * @hidden
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -213,8 +218,8 @@ export class Ops {
 
   /**
    * Computes leaky rectified linear element-wise
-   * @param x the input Tensor
-   * @param alpha scaling factor for negative values, defaults to 0.2
+   * @param x The input Tensor.
+   * @param alpha scaling factor for negative values, defaults to 0.2.
    * @return {Tensor}
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -226,8 +231,8 @@ export class Ops {
 
   /**
    * Computes leaky rectified linear element-wise with parametric alphas
-   * @param x the input Tensor
-   * @param alpha scaling factor Tensor for negative values
+   * @param x The input Tensor.
+   * @param alpha scaling factor Tensor for negative values.
    * @return {Tensor}
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -374,7 +379,7 @@ export class Ops {
 
   /**
    * Computes step of the input Tensor element-wise,
-   * y=1 if x>0|alpha*x if x<=0.
+   * y=1 if x>0|alpha if x<=0.
    *
    * @param x The input Tensor.
    * @param alpha The gradient when input is negative.
@@ -382,7 +387,11 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static step<T extends Tensor>(x: T, alpha = 0.0): T {
-    return ENV.engine.executeKernel('Step', {inputs: {x}, args: {alpha}}) as T;
+    // TODO(manrajgrover): Fix gradients for the case where x == 0
+    return ENV.engine.executeKernel(
+               'Step', {inputs: {x}, args: {alpha}}, (dy: T, y: T) => {
+                 return {x: () => ops.zeros(y.shape)};
+               }) as T;
   }
 }
 
