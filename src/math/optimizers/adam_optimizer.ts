@@ -18,6 +18,7 @@
 import {keep, tidy} from '../../globals';
 import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
+// tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {Optimizer} from '../../math/optimizers/optimizer';

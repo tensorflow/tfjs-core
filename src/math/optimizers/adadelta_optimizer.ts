@@ -19,13 +19,23 @@ import {ENV} from '../../environment';
 import {keep, tidy} from '../../globals';
 import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
+// tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
 import {NamedTensorMap, NamedVariableMap} from '../../math/types';
+import {doc} from '../decorators';
 import {scalar, zerosLike} from '../ops';
 
+/**
+ * Optimizer that implements the Adadelta algorithm.
+ *
+ * Use `dl.train.adadelta` to create an Adadelta optimizer.
+ *
+ * See: https://arxiv.org/abs/1212.5701
+ */
+@doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class AdadeltaOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;
