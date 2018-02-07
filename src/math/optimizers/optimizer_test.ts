@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,7 +32,7 @@ const tests: MathTests = it => {
 
     let numTensors = math.getNumTensors();
 
-    const f = () => math.addStrict(math.square(x), bias);
+    const f = () => dl.addStrict(dl.square(x), bias);
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
@@ -81,7 +81,7 @@ const tests: MathTests = it => {
     const strayVariable = variable(dl.scalar(-1));
     const varList = [x, bias];
 
-    const f = () => math.addStrict(math.square(x), bias);
+    const f = () => dl.addStrict(dl.square(x), bias);
 
     let cost = optimizer.minimize(f, /* returnCost */ true, varList);
 
@@ -115,7 +115,7 @@ const tests: MathTests = it => {
     const strayVariable = variable(dl.scalar(-1));
     const varList: Variable[] = [];
 
-    const f = () => math.addStrict(math.square(x), bias);
+    const f = () => dl.addStrict(dl.square(x), bias);
 
     let cost = optimizer.minimize(f, /* returnCost */ true, varList);
 
@@ -147,7 +147,7 @@ const tests: MathTests = it => {
     const strayVariable = variable(dl.scalar(-1));
     const varList = [x];
 
-    const f = () => math.addStrict(math.square(x), bias);
+    const f = () => dl.addStrict(dl.square(x), bias);
 
     let cost = optimizer.minimize(f, /* returnCost */ true, varList);
 
@@ -180,7 +180,7 @@ const tests: MathTests = it => {
     const bias = variable(dl.scalar(1));
     const strayVariable = variable(dl.scalar(-1));
 
-    const f = () => math.addStrict(math.square(x), bias);
+    const f = () => dl.addStrict(dl.square(x), bias);
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
@@ -214,7 +214,7 @@ const tests: MathTests = it => {
     const strayVariable = variable(dl.scalar(-1));
     const varList = [x];
 
-    const f = () => math.addStrict(math.square(x), bias);
+    const f = () => dl.addStrict(dl.square(x), bias);
 
     let cost = optimizer.minimize(f, /* returnCost */ true, varList);
 

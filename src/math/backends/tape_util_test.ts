@@ -1,7 +1,7 @@
 
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,7 +28,7 @@ import * as tape_util from './tape_util';
 // getFilteredNodesXToY
 {
   const tests: MathTests = it => {
-    it('getFilteredNodesXToY no paths from x to y', math => {
+    it('getFilteredNodesXToY no paths from x to y', () => {
       const x = dl.scalar(1);
       const intermediate1 = dl.scalar(0);
 
@@ -64,7 +64,7 @@ import * as tape_util from './tape_util';
       expect(filteredTapeNodes).toEqual([]);
     });
 
-    it('getFilteredNodesXToY one operation x => y', math => {
+    it('getFilteredNodesXToY one operation x => y', () => {
       const x = dl.scalar(1);
       const y = dl.scalar(2);
 
@@ -86,7 +86,7 @@ import * as tape_util from './tape_util';
     });
 
     it('getFilteredNodesXToY 1 operation [x0, x1] => y, all input paths',
-       math => {
+       () => {
          const x0 = dl.scalar(0);
          const x1 = dl.scalar(1);
          const y = dl.scalar(2);
@@ -110,7 +110,7 @@ import * as tape_util from './tape_util';
        });
 
     it('getFilteredNodesXToY one operation [x0, x1] => y, one input paths',
-       math => {
+       () => {
          const x0 = dl.scalar(0);
          const x1 = dl.scalar(1);
          const y = dl.scalar(2);
@@ -143,7 +143,7 @@ import * as tape_util from './tape_util';
          });
        });
 
-    it('getFilteredNodesXToY two operations x => intermediate => y', math => {
+    it('getFilteredNodesXToY two operations x => intermediate => y', () => {
       const x = dl.scalar(1);
       const intermediate = dl.scalar(0);
       const y = dl.scalar(2);
@@ -179,7 +179,7 @@ import * as tape_util from './tape_util';
 
     it('getFilteredNodesXToY two operations [x0, x1], [x2] => ' +
            'intermediate => y',
-       math => {
+       () => {
          const x0 = dl.scalar(1);
          const x1 = dl.scalar(2);
          const x2 = dl.scalar(3);
@@ -216,7 +216,7 @@ import * as tape_util from './tape_util';
          expect(filteredTapeNodes).toEqual(tape);
        });
 
-    it('getFilteredNodesXToY x => y and x => orphan', math => {
+    it('getFilteredNodesXToY x => y and x => orphan', () => {
       const x = dl.scalar(1);
       const orphan = dl.scalar(0);
       const y = dl.scalar(2);
@@ -251,7 +251,7 @@ import * as tape_util from './tape_util';
       expect(filteredTapeNodes[0]).toEqual(tape[1]);
     });
 
-    it('getFilteredNodesXToY x => y and orphan => y', math => {
+    it('getFilteredNodesXToY x => y and orphan => y', () => {
       const x = dl.scalar(1);
       const orphan = dl.scalar(0);
       const y = dl.scalar(2);
@@ -285,7 +285,7 @@ import * as tape_util from './tape_util';
 
     it('getFilteredNodesXToY x => {intermediate, orphan1} and ' +
            '{orphan2, intermediate} => {y, orphan3}',
-       math => {
+       () => {
          const x = dl.scalar(1);
          const intermediate = dl.scalar(5);
          const orphan1 = dl.scalar(1);
@@ -345,7 +345,7 @@ import * as tape_util from './tape_util';
     it('getFilteredNodesXToY x0 => orphan0, ' +
            'x0 => intermediate0, x0 => intermediate1, ' +
            '[intermediate0, intermediate1, x1, orphan1] => {y, orphan2}',
-       math => {
+       () => {
          const x0 = dl.scalar(1);
          const orphan0 = dl.scalar(2);
 
@@ -427,7 +427,7 @@ import * as tape_util from './tape_util';
 // backpropagateGradients
 {
   const tests: MathTests = it => {
-    it('Throws if gradient is not defined', math => {
+    it('Throws if gradient is not defined', () => {
       const x = dl.scalar(0);
       const y = dl.scalar(1);
 
@@ -452,7 +452,7 @@ import * as tape_util from './tape_util';
           .toThrowError();
     });
 
-    it('basic backprop with 1 node', math => {
+    it('basic backprop with 1 node', () => {
       const x = dl.scalar(0);
       const y = dl.scalar(1);
 
@@ -470,7 +470,7 @@ import * as tape_util from './tape_util';
         },
         output: y,
         gradient: (dy: Scalar, y: Scalar) => {
-          return {x: () => math.add(dy, dl.scalar(1))};
+          return {x: () => dl.add(dy, dl.scalar(1))};
         }
       }];
 
@@ -479,7 +479,7 @@ import * as tape_util from './tape_util';
       test_util.expectArraysClose(accumulatedGradientsMap[x.id], [2]);
     });
 
-    it('basic backprop with 2 nodes', math => {
+    it('basic backprop with 2 nodes', () => {
       const x = dl.scalar(0);
       const intermediate = dl.scalar(1);
       const y = dl.scalar(2);
@@ -499,7 +499,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => math.add(dy, dl.scalar(1))};
+            return {x: () => dl.add(dy, dl.scalar(1))};
           }
         },
         {
@@ -511,7 +511,7 @@ import * as tape_util from './tape_util';
           },
           output: y,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {intermediate: () => math.add(dy, dl.scalar(1))};
+            return {intermediate: () => dl.add(dy, dl.scalar(1))};
           }
         }
       ];
@@ -522,7 +522,7 @@ import * as tape_util from './tape_util';
       test_util.expectArraysClose(accumulatedGradientsMap[x.id], [3]);
     });
 
-    it('basic backprop with a split node accumulates gradients', math => {
+    it('basic backprop with a split node accumulates gradients', () => {
       const x = dl.scalar(0);
       const intermediate1 = dl.scalar(1);
       const intermediate2 = dl.scalar(2);
@@ -543,7 +543,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate1,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => math.add(dy, dl.scalar(1))};
+            return {x: () => dl.add(dy, dl.scalar(1))};
           }
         },
         {
@@ -555,7 +555,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate2,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => math.add(dy, dl.scalar(1))};
+            return {x: () => dl.add(dy, dl.scalar(1))};
           }
         },
         {
@@ -568,8 +568,8 @@ import * as tape_util from './tape_util';
           output: y,
           gradient: (dy: Scalar, y: Scalar) => {
             return {
-              intermediate1: () => math.add(dy, dl.scalar(1)),
-              intermediate2: () => math.add(dy, dl.scalar(1))
+              intermediate1: () => dl.add(dy, dl.scalar(1)),
+              intermediate2: () => dl.add(dy, dl.scalar(1))
             };
           }
         }
@@ -583,7 +583,7 @@ import * as tape_util from './tape_util';
     });
 
     it('basic backprop with a multi-output split node accumulates gradients',
-       math => {
+       () => {
          const x = dl.scalar(0);
          const intermediate1 = dl.scalar(1);
          const intermediate2 = dl.scalar(2);
@@ -606,7 +606,7 @@ import * as tape_util from './tape_util';
              gradient: (dy: NamedTensorMap, y: NamedTensorMap) => {
                return {
                  x: () =>
-                     math.multiply(dy['intermediate1'], dy['intermediate2'])
+                     dl.mul(dy['intermediate1'], dy['intermediate2'])
                };
              }
            },
@@ -620,8 +620,8 @@ import * as tape_util from './tape_util';
              output: y,
              gradient: (dy: Scalar, y: Scalar) => {
                return {
-                 intermediate1: () => math.add(dy, dl.scalar(2)),
-                 intermediate2: () => math.add(dy, dl.scalar(3))
+                 intermediate1: () => dl.add(dy, dl.scalar(2)),
+                 intermediate2: () => dl.add(dy, dl.scalar(3))
                };
              }
            }
@@ -640,20 +640,20 @@ import * as tape_util from './tape_util';
 // extractTensorsFromScopeResult
 {
   const tests: MathTests = it => {
-    it('null input returns empty tensor', math => {
+    it('null input returns empty tensor', () => {
       const results = tape_util.extractTensorsFromScopeResult(null);
 
       expect(results).toEqual([]);
     });
 
-    it('tensor input returns one element tensor', math => {
+    it('tensor input returns one element tensor', () => {
       const x = dl.scalar(1);
       const results = tape_util.extractTensorsFromScopeResult(x);
 
       expect(results).toEqual([x]);
     });
 
-    it('name tensor map returns flattened tensor', math => {
+    it('name tensor map returns flattened tensor', () => {
       const x1 = dl.scalar(1);
       const x2 = dl.scalar(3);
       const x3 = dl.scalar(4);
