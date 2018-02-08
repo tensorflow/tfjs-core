@@ -25,7 +25,7 @@ import {NDArrayMath} from '../../math/math';
 import {scalar} from '../../math/ops';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
-import {NamedTensorMap, NamedVariableMap} from '../../math/types';
+import {NamedVariableMap} from '../../math/types';
 
 export class RMSPropOptimizer extends Optimizer {
   private epsilon: Scalar;
@@ -100,11 +100,6 @@ export class RMSPropOptimizer extends Optimizer {
     this.gamma.dispose();
     if (this.accumulatedSquaredGradientsGraph != null) {
       this.accumulatedSquaredGradientsGraph.dispose();
-    }
-    if (this.cache != null) {
-      for (const variableName in this.cache) {
-        this.cache[variableName].dispose();
-      }
     }
   }
 
