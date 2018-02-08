@@ -426,7 +426,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
         return new dl.RMSPropOptimizer(+this.learningRate, +this.gamma);
       }
       case 'adagrad': {
-        return new dl.AdagradOptimizer(+this.learningRate);
+        return dl.train.adagrad(+this.learningRate);
       }
       case 'adadelta': {
         return dl.train.adadelta(+this.learningRate, +this.gamma);

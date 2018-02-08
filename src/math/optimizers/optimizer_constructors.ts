@@ -71,7 +71,7 @@ export class OptimizerConstructors {
    * @param initialAccumulatorValue
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
-  static adagrad(learningRate: number, initialAccumulatorValue: 0.1):
+  static adagrad(learningRate: number, initialAccumulatorValue = 0.1):
       AdagradOptimizer {
     return new AdagradOptimizer(
         learningRate, undefined /** @deprecated specifiedVariableList */,
