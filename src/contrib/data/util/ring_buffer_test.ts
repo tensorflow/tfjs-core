@@ -1,7 +1,25 @@
+/**
+ * @license
+ * Copyright 2018 Google LLC. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * =============================================================================
+ */
+
 import {RingBuffer} from './ring_buffer';
 
 describe('RingBuffer', () => {
-  it('Works as a stack (LIFO)', (done) => {
+  it('Works as a stack (LIFO)', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 
@@ -20,7 +38,7 @@ describe('RingBuffer', () => {
     done();
   });
 
-  it('Works as a queue (FIFO)', (done) => {
+  it('Works as a queue (FIFO)', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 
@@ -52,7 +70,7 @@ describe('RingBuffer', () => {
     done();
   });
 
-  it('Works as a reverse stack (LIFO)', (done) => {
+  it('Works as a reverse stack (LIFO)', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 
@@ -71,7 +89,7 @@ describe('RingBuffer', () => {
     done();
   });
 
-  it('Works as a reverse queue (FIFO)', (done) => {
+  it('Works as a reverse queue (FIFO)', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 
@@ -90,7 +108,7 @@ describe('RingBuffer', () => {
     done();
   });
 
-  it('Works as a shuffling queue', (done) => {
+  it('Works as a shuffling queue', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 
@@ -114,7 +132,7 @@ describe('RingBuffer', () => {
     done();
   });
 
-  it('Throws error on push over capacity', (done) => {
+  it('Throws error on push over capacity', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 
@@ -125,7 +143,7 @@ describe('RingBuffer', () => {
     done();
   });
 
-  it('Throws error on pop when empty', (done) => {
+  it('Throws error on pop when empty', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 
@@ -133,7 +151,7 @@ describe('RingBuffer', () => {
     done();
   });
 
-  it('Throws error on unshift over capacity', (done) => {
+  it('Throws error on unshift over capacity', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 
@@ -144,7 +162,7 @@ describe('RingBuffer', () => {
     done();
   });
 
-  it('Throws error on shift when empty', (done) => {
+  it('Throws error on shift when empty', done => {
     const ring = new RingBuffer<number>(10);
     expect(ring.length()).toEqual(0);
 

@@ -1,21 +1,39 @@
 /**
+ * @license
+ * Copyright 2018 Google LLC. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * =============================================================================
+ */
+
+/**
  * A ring buffer, providing O(1) FIFO, LIFO, and related operations.
  */
 export class RingBuffer<T> {
   // Note we store the indices in the range 0 <= index < 2*capacity.
   // This allows us to distinguish the full from the empty case.
   // See https://www.snellman.net/blog/archive/2016-12-13-ring-buffers/
-  private begin = 0;  // inclusive
-  private end = 0;    // exclusive
-  private readonly doubledCapacity: number;
+  protected begin = 0;  // inclusive
+  protected end = 0;    // exclusive
+  protected doubledCapacity: number;
 
-  private data: T[];
+  protected data: T[];
 
   /**
    * Constructs a `RingBuffer`.
    * @param capacity The number of items that the buffer can accomodate.
    */
-  constructor(public readonly capacity: number) {
+  constructor(public capacity: number) {
     if (capacity < 1) {
       throw new RangeError('Can\'t create ring buffer of capacity < 1.');
     }
@@ -23,7 +41,10 @@ export class RingBuffer<T> {
     this.doubledCapacity = 2 * capacity;
   }
 
-  private wrap(index: number) {
+  /**
+   * Map any index into the range 0 <= index < 2*capacity.
+   */
+  protected wrap(index: number) {
     // don't trust % on negative numbers
     while (index < 0) {
       index += this.doubledCapacity;
@@ -31,14 +52,14 @@ export class RingBuffer<T> {
     return index % this.doubledCapacity;
   }
 
-  private get(index: number) {
+  protected get(index: number) {
     if (index < 0) {
       throw new RangeError('Can\'t get item at a negative index.');
     }
     return this.data[index % this.capacity];
   }
 
-  private set(index: number, value: T) {
+  protected set(index: number, value: T) {
     if (index < 0) {
       throw new RangeError('Can\'t set item at a negative index.');
     }

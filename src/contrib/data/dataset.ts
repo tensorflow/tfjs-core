@@ -1,42 +1,29 @@
+/**
+ * @license
+ * Copyright 2018 Google LLC. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * =============================================================================
+ */
+
 import * as seedrandom from 'seedrandom';
 
-import {NDArray} from '../../math/ndarray';
-import * as util from '../../util';
-
-import {PrefetchStream, ShuffleStream} from './ring_streams';
-import {DataStream} from './stream';
-
-// TODO(soergel): clean up the |string union type throughout when NDArray
-// supports string.
-
-/**
- * The value associated with a given key for a single element.
- *
- * Such a value may not have a batch dimension.  A value may be a scalar or an
- * n-dimensional array.
- */
-export type ElementArray = number|number[]|NDArray|string|undefined;
-
-/**
- * The value associated with a given key for a batch of elements.
- *
- * Such a value must always have a batch dimension, even if it is of length 1.
- */
-export type BatchArray = NDArray|string[];
-
-/**
- * A map from string keys (aka column names) to values for a single element.
- */
-export type DatasetElement = {
-  [key: string]: ElementArray
-};
-
-/**
- * A map from string keys (aka column names) to values for a batch of elements.
- */
-export type DatasetBatch = {
-  [key: string]: BatchArray
-};
+import {BatchDataset} from './batch_dataset';
+import {DataStream} from './streams/data_stream';
+import {streamFromConcatenated} from './streams/data_stream';
+import {streamFromFunction} from './streams/data_stream';
+import {streamFromItems} from './streams/data_stream';
+import {DatasetElement} from './types';
 
 // TODO(soergel): consider vectorized operations within the pipeline.
 
@@ -60,33 +47,6 @@ export abstract class Dataset {
   abstract async getStream(): Promise<DataStream<DatasetElement>>;
 
   /**
-   * Create a `Dataset` from an array of elements.
-   */
-  static fromElements(items: DatasetElement[]): Dataset {
-    return new (class ArrayDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        return Promise.resolve(DataStream.fromItems(items));
-      }
-    })();
-  }
-
-  /**
-   * Create a `Dataset` by concatenating underlying `Dataset`s.
-   *
-   * Note that if the underlying `Dataset`s return elements in a
-   * nondeterministic order, then this concatenated `Dataset` will do the same.
-   */
-  static fromConcatenated(datasets: Dataset[]) {
-    return new (class OfConcatenatedDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        const streamStream =
-            await Promise.all(datasets.map((d) => d.getStream()));
-        return DataStream.fromConcatenated(DataStream.fromItems(streamStream));
-      }
-    })();
-  }
-
-  /**
    * Filters this dataset according to `predicate`.
    *
    * @param predicate A function mapping a `DatasetElement` to a boolean or a
@@ -97,11 +57,9 @@ export abstract class Dataset {
   filter(filterer: (value: DatasetElement) => boolean | Promise<boolean>):
       Dataset {
     const base = this;
-    return new (class FilterDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        return (await base.getStream()).filter(filterer);
-      }
-    })();
+    return new DatasetFromStreamFn(async () => {
+      return (await base.getStream()).filter(filterer);
+    });
   }
 
   /**
@@ -115,11 +73,9 @@ export abstract class Dataset {
   map(transform: (value: DatasetElement) => DatasetElement |
           Promise<DatasetElement>): Dataset {
     const base = this;
-    return new (class MapDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        return (await base.getStream()).map(transform);
-      }
-    })();
+    return new DatasetFromStreamFn(async () => {
+      return (await base.getStream()).map(transform);
+    });
   }
 
   /**
@@ -150,11 +106,9 @@ export abstract class Dataset {
    */
   concatenate(dataset: Dataset): Dataset {
     const base = this;
-    return new (class ConcatenateDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        return (await base.getStream()).concatenate(await dataset.getStream());
-      }
-    })();
+    return new DatasetFromStreamFn(async () => {
+      return (await base.getStream()).concatenate(await dataset.getStream());
+    });
   }
 
   /**
@@ -170,12 +124,10 @@ export abstract class Dataset {
    */
   repeat(count?: number): Dataset {
     const base = this;
-    return new (class RepeatDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        const streamStream = DataStream.fromFunction(() => base.getStream());
-        return (await DataStream.fromConcatenated(streamStream.take(count)));
-      }
-    })();
+    return new DatasetFromStreamFn(async () => {
+      const streamStream = streamFromFunction(() => base.getStream());
+      return (await streamFromConcatenated(streamStream.take(count)));
+    });
   }
 
   /**
@@ -189,11 +141,9 @@ export abstract class Dataset {
    */
   take(count: number): Dataset {
     const base = this;
-    return new (class TakeDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        return (await base.getStream()).take(count);
-      }
-    })();
+    return new DatasetFromStreamFn(async () => {
+      return (await base.getStream()).take(count);
+    });
   }
 
   /**
@@ -208,11 +158,9 @@ export abstract class Dataset {
    */
   skip(count: number): Dataset {
     const base = this;
-    return new (class SkipDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        return (await base.getStream()).skip(count);
-      }
-    })();
+    return new DatasetFromStreamFn(async () => {
+      return (await base.getStream()).skip(count);
+    });
   }
 
   /**
@@ -231,16 +179,13 @@ export abstract class Dataset {
       Dataset {
     const base = this;
     const random = seedrandom(seed);
-    return new (class ShuffleDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        let seed2 = random.int32();
-        if (reshuffleEachIteration) {
-          seed2 += random.int32();
-        }
-        return new ShuffleStream(
-            await base.getStream(), bufferSize, seed2.toString());
+    return new DatasetFromStreamFn(async () => {
+      let seed2 = random.int32();
+      if (reshuffleEachIteration) {
+        seed2 += random.int32();
       }
-    })();
+      return (await base.getStream()).shuffle(bufferSize, seed2.toString());
+    });
   }
 
   /**
@@ -252,11 +197,9 @@ export abstract class Dataset {
    */
   prefetch(bufferSize: number): Dataset {
     const base = this;
-    return new (class PrefetchDataset extends Dataset {
-      async getStream(): Promise<DataStream<DatasetElement>> {
-        return new PrefetchStream(await base.getStream(), bufferSize);
-      }
-    })();
+    return new DatasetFromStreamFn(async () => {
+      return (await base.getStream()).prefetch(bufferSize);
+    });
   }
 
   /* TODO(soergel): for parity with tf.data:
@@ -269,107 +212,43 @@ export abstract class Dataset {
 }
 
 /**
- * Represents a potentially large set of elements, grouped into batches.
- *
- * There are currently no batch-oriented data transformations.  Any desired
- * transformations should be applied to a `Dataset` so that they are
- * computed one example at a time.  The transformed data can then be batched
- * as the final step via `Dataset.batch()`.
- *
- * @param base: An underlying row-oriented `Dataset` to group into batches.
- * @param batchSize: The desired number of examples per batch.
- * @param smallLastBatch: Whether to emit a final batch with fewer than
- *   batchSize elements.  (Default true).
+ * A Dataset defined by a getStream() function given as a constructor argument.
  */
-export class BatchDataset {
-  constructor(
-      protected base: Dataset, protected batchSize: number,
-      protected smallLastBatch = true) {}
+export class DatasetFromStreamFn extends Dataset {
+  readonly _getStreamFn: () => Promise<DataStream<DatasetElement>>;
+
+  constructor(getStreamFn: () => Promise<DataStream<DatasetElement>>) {
+    super();
+    this._getStreamFn = getStreamFn;
+  }
 
   /*
-   * Provide a new stream of batches.  Note this will also start new streams
-   * from any underlying `Dataset`s or 'BatchDataset's.
+   * Provide a new stream of elements.  Note this will also start new streams
+   * from any underlying `Dataset`s.
    */
-  async getStream(): Promise<DataStream<DatasetBatch>> {
-    const batchesAsArrays = (await this.base.getStream())
-                                .batch(this.batchSize, this.smallLastBatch);
-    return batchesAsArrays.map(BatchDataset.makeDatasetBatch);
+  async getStream(): Promise<DataStream<DatasetElement>> {
+    return this._getStreamFn();
   }
+}
 
-  /**
-   * Constructs a DatasetBatch from a list of DatasetElements.
-   */
-  private static makeDatasetBatch(elements: DatasetElement[]): DatasetBatch {
-    const rotated: {[key: string]: (ElementArray[]|string[])} = {};
+/**
+ * Create a `Dataset` from an array of elements.
+ */
+export function datasetFromElements(items: DatasetElement[]): Dataset {
+  return new DatasetFromStreamFn(async () => {
+    return Promise.resolve(streamFromItems(items));
+  });
+}
 
-    // Assume that the first element is representative.
-    // We do end up enforcing NDArray shape consistency below, but not
-    // cleanly.
-    // TODO(soergel) validate against a schema, allow missing keys, etc.
-    // etc.
-    const firstElement: DatasetElement = elements[0];
-    const keys = Object.keys(firstElement);
-    keys.forEach(key => {
-      rotated[key] = [];
-    });
-
-    for (const e of elements) {
-      keys.forEach(key => {
-        const value = e[key];
-        (rotated[key] as ElementArray[]).push(value);
-      });
-    }
-
-    const result: {[key: string]: (BatchArray|string[])} = {};
-    for (const key of keys) {
-      // this sanity check should always pass
-      if (rotated[key].length !== elements.length) {
-        throw new Error(
-            `Batching failed to get a '${key}' value for each element.`);
-      }
-      if (typeof rotated[key][0] === 'string') {
-        result[key] = rotated[key] as string[];
-      } else {
-        result[key] = BatchDataset.batchConcat(
-            rotated[key] as Array<number|number[]|NDArray>);
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Assembles a list of same-shaped numbers, number arrays, or NDArrays
-   * into a single new NDArray where axis 0 is the batch dimension.
-   */
-  private static batchConcat(arrays: Array<number|number[]|NDArray>): NDArray {
-    // Should we use GPU-enabled concat ops in deeplearn's math.ts?
-    // Probably not; the GPU roundtrip is not worth it for a trivial
-    // operation.
-    const [elementShape, ] = BatchDataset.shapeAndValues(arrays[0]);
-    const batchShape = [arrays.length].concat(elementShape);
-    const resultVals = new Float32Array(batchShape.reduce((x, y) => x * y));
-
-    let offset = 0;
-    for (const a of arrays) {
-      const [aShape, aVals] = BatchDataset.shapeAndValues(a);
-      if (!util.arraysEqual(aShape, elementShape)) {
-        throw new Error('Elements must have the same shape to be batched');
-      }
-      resultVals.set(aVals, offset);
-      offset += aVals.length;
-    }
-    const result = NDArray.make(batchShape, {values: resultVals});
-    return result;
-  }
-
-  private static shapeAndValues(array: number|number[]|NDArray):
-      [number[], number[]|Float32Array|Int32Array|Uint8Array] {
-    if (array instanceof NDArray) {
-      return [array.shape, array.dataSync()];
-    } else if (Array.isArray(array)) {
-      return [[array.length], array];
-    } else {
-      return [[], [array]];
-    }
-  }
+/**
+ * Create a `Dataset` by concatenating underlying `Dataset`s.
+ *
+ * Note that if the underlying `Dataset`s return elements in a
+ * nondeterministic order, then this concatenated `Dataset` will do the same.
+ */
+export function datasetFromConcatenated(datasets: Dataset[]) {
+  return new DatasetFromStreamFn(async () => {
+    const streamStream = await Promise.all(datasets.map((d) => d.getStream()));
+    return streamFromConcatenated(streamFromItems(streamStream));
+  });
 }

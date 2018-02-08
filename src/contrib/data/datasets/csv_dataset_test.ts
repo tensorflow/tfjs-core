@@ -1,29 +1,24 @@
-import {FileDataSource} from './datasource';
-import {CSVDataset, TextLineDataset} from './readers';
+/**
+ * @license
+ * Copyright 2018 Google LLC. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * =============================================================================
+ */
 
-const runes = `ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ
-ᛋᚳᛖᚪᛚ᛫ᚦᛖᚪᚻ᛫ᛗᚪᚾᚾᚪ᛫ᚷᛖᚻᚹᛦᛚᚳ᛫ᛗᛁᚳᛚᚢᚾ᛫ᚻᛦᛏ᛫ᛞᚫᛚᚪᚾ
-ᚷᛁᚠ᛫ᚻᛖ᛫ᚹᛁᛚᛖ᛫ᚠᚩᚱ᛫ᛞᚱᛁᚻᛏᚾᛖ᛫ᛞᚩᛗᛖᛋ᛫ᚻᛚᛇᛏᚪᚾ᛬`;
+import {FileDataSource} from '../sources/file_data_source';
 
-const testBlob = new Blob([runes]);
-
-describe('TextLineDataset', () => {
-  it('Produces a stream of DatasetElements containing UTF8-decoded text lines',
-     (done) => {
-       const source = new FileDataSource(testBlob, {chunkSize: 10});
-       const dataset = new TextLineDataset(source);
-       dataset.getStream()
-           .then(stream => stream.collectRemaining().then(result => {
-             expect(result).toEqual([
-               {'line': 'ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ'},
-               {'line': 'ᛋᚳᛖᚪᛚ᛫ᚦᛖᚪᚻ᛫ᛗᚪᚾᚾᚪ᛫ᚷᛖᚻᚹᛦᛚᚳ᛫ᛗᛁᚳᛚᚢᚾ᛫ᚻᛦᛏ᛫ᛞᚫᛚᚪᚾ'},
-               {'line': 'ᚷᛁᚠ᛫ᚻᛖ᛫ᚹᛁᛚᛖ᛫ᚠᚩᚱ᛫ᛞᚱᛁᚻᛏᚾᛖ᛫ᛞᚩᛗᛖᛋ᛫ᚻᛚᛇᛏᚪᚾ᛬'},
-             ]);
-           }))
-           .then(done)
-           .catch(done.fail);
-     });
-});
+import {CSVDataset} from './csv_dataset';
 
 const csvData = `ab,cd,ef
 ghi,,jkl
@@ -42,7 +37,7 @@ const csvBlobWithHeaders = new Blob([csvDataWithHeaders]);
 
 describe('CSVDataset', () => {
   it('Produces a stream of DatasetElements containing UTF8-decoded csv data',
-     (done) => {
+     done => {
        const source = new FileDataSource(csvBlob, {chunkSize: 10});
        const datasetPromise = CSVDataset.create(source, ['foo', 'bar', 'baz']);
        datasetPromise.then(dataset => {
@@ -63,7 +58,7 @@ describe('CSVDataset', () => {
              .catch(done.fail);
        });
      });
-  it('Reads CSV column headers when none are provided', (done) => {
+  it('Reads CSV column headers when none are provided', done => {
     const source = new FileDataSource(csvBlobWithHeaders, {chunkSize: 10});
     const datasetPromise = CSVDataset.create(source);
     datasetPromise.then(dataset => {

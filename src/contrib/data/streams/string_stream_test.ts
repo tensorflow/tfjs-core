@@ -1,7 +1,22 @@
+/**
+ * @license
+ * Copyright 2018 Google LLC. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * =============================================================================
+ */
 
-import {decodeUTF8} from './decode_utf8';
 import {FileReaderStream} from './filereader_stream';
-import {split} from './split';
 
 const lorem = `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
@@ -12,11 +27,11 @@ sunt in culpa qui officia deserunt mollit anim id est laborum.`;
 
 const testBlob = new Blob([lorem]);
 
-describe('split', () => {
-  it('Correctly splits lines', (done) => {
+describe('StringStream.split()', () => {
+  it('Correctly splits lines', done => {
     const byteStream = new FileReaderStream(testBlob, {chunkSize: 50});
-    const utf8Stream = decodeUTF8(byteStream);
-    const lineStream = split(utf8Stream, '\n');
+    const utf8Stream = byteStream.decodeUTF8();
+    const lineStream = utf8Stream.split('\n');
     const expected = lorem.split('\n');
 
     lineStream.collectRemaining()
@@ -32,7 +47,7 @@ describe('split', () => {
         .catch(done.fail);
   });
   it('Correctly splits strings even when separators fall on chunk boundaries',
-     (done) => {
+     done => {
        const byteStream = new FileReaderStream(
            new Blob(['ab def hi      pq']), {chunkSize: 3});
        // Note the initial chunking will be
@@ -41,8 +56,8 @@ describe('split', () => {
        //   * a separator is the last character in a chunk (the first chunk),
        //   * it is the first character (the third chunk), and
        //   * when the entire chunk consists of separators (fourth and fifth).
-       const utf8Stream = decodeUTF8(byteStream);
-       const lineStream = split(utf8Stream, ' ');
+       const utf8Stream = byteStream.decodeUTF8();
+       const lineStream = utf8Stream.split(' ');
        const expected = ['ab', 'def', 'hi', '', '', '', '', '', 'pq'];
 
        lineStream.collectRemaining()

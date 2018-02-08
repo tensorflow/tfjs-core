@@ -1,16 +1,72 @@
-// TODO(michaelterry): Determine root cause of why this import is
-// not translating to a require during testing.
-// import * as utf8 from 'utf8';
-// tslint:disable:no-require-imports
-const utf8 = require('utf8');
-import {QueueStream, DataStream} from './stream';
+/**
+ * @license
+ * Copyright 2018 Google LLC. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * =============================================================================
+ */
+
+import * as utf8 from 'utf8';
+
+import {DataStream, QueueStream} from './data_stream';
+import {StringStream} from './string_stream';
+
+export abstract class ByteStream extends DataStream<Uint8Array> {
+  /**
+   * Decode a stream of UTF8-encoded byte arrays to a stream of strings.
+   *
+   * The byte arrays producetd from the ByteStream on which this is called will
+   * be interpreted as concatenated.  No assumptions are made about the
+   * boundaries of the incoming chunks, so a multi-byte UTF8 encoding of a
+   * character may span the boundary between chunks.  This naturally happens,
+   * for instance, when reading fixed-size byte arrays from a file.
+   */
+  decodeUTF8(): StringStream {
+    return new Utf8Stream(this);
+  }
+}
+
+// ============================================================================
+// The following private classes serve to implement the chainable methods
+// on ByteStream.  Unfortunately they can't be placed in separate files, due to
+// resulting trouble with circular imports.
+// ============================================================================
+
+// We wanted multiple inheritance, e.g.
+//   class Utf8Stream extends QueueStream<string>, StringStream
+// but the TypeScript mixin approach is a bit hacky, so we take this adapter
+// approach instead.
+
+class Utf8Stream extends StringStream {
+  private impl: Utf8StreamImpl;
+
+  constructor(upstream: DataStream<Uint8Array>) {
+    super();
+    this.impl = new Utf8StreamImpl(upstream);
+  }
+
+  async next() {
+    return this.impl.next();
+  }
+}
 
 /**
  * Decode a stream of UTF8-encoded byte arrays to a stream of strings.
  *
  * This is tricky because the incoming byte array boundaries may disrupt a
  * multi-byte UTF8 character. Thus any incomplete character data at the end of
- * a chunk must be carried over and prepended to the next chunk before decoding.
+ * a chunk must be carried over and prepended to the next chunk before
+ * decoding.
  *
  * In the context of an input pipeline for machine learning, UTF8 decoding is
  * needed to parse text files containing training examples or prediction
@@ -19,17 +75,13 @@ import {QueueStream, DataStream} from './stream';
  * streaming context, which FileReader does not support.
  *
  * @param upstream A `DataStream` of `Uint8Arrays` containing UTF8-encoded
- *   text, which should be interpreted as concatenated.  No assumptions are made
- *   about the boundaries of the incoming chunks, so a multi-byte UTF8 encoding
- *   of a character may span the boundary between chunks.  This naturally
- *   happens, for instance, when reading fixed-size byte arrays from a file.
+ *   text, which should be interpreted as concatenated.  No assumptions are
+ * made about the boundaries of the incoming chunks, so a multi-byte UTF8
+ * encoding of a character may span the boundary between chunks.  This
+ * naturally happens, for instance, when reading fixed-size byte arrays from a
+ * file.
  */
-export function decodeUTF8(upstream: DataStream<Uint8Array>):
-    QueueStream<string> {
-  return new Utf8Stream(upstream);
-}
-
-class Utf8Stream extends QueueStream<string> {
+class Utf8StreamImpl extends QueueStream<string> {
   // An array of the full required width of the split character, if any.
   partial: Uint8Array = new Uint8Array([]);
   // The number of bytes of that array that are populated so far.
@@ -41,7 +93,7 @@ class Utf8Stream extends QueueStream<string> {
 
   async pump(): Promise<boolean> {
     let chunk = await this.upstream.next();
-    if (chunk === undefined) {
+    if (chunk == null) {
       if (this.partial.length === 0) {
         return false;
       }

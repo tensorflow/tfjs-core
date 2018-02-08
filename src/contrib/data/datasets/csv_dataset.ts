@@ -1,38 +1,27 @@
-import {Dataset, DatasetElement, ElementArray} from './dataset';
-import {DataSource} from './datasource';
-import {decodeUTF8} from './decode_utf8';
-import {split} from './split';
-import {DataStream} from './stream';
-
 /**
- * Represents a potentially large collection of text lines.
+ * @license
+ * Copyright 2018 Google LLC. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * The produced `DatasetElement`s each contain a single string value, with the
- * key given by the `columnName` argument (default 'line').
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * The results are not batched.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * =============================================================================
  */
-export class TextLineDataset extends Dataset {
-  /**
-   * Create a `TextLineDataset`.
-   *
-   * @param input A `DataSource` providing a chunked, UTF8-encoded byte stream.
-   * @param columnName The key to use in the resulting `DatasetElement`s
-   *   (default 'line').
-   */
-  constructor(
-      protected readonly input: DataSource,
-      protected readonly columnName = 'line') {
-    super();
-  }
 
-  async getStream(): Promise<DataStream<DatasetElement>> {
-    const readStream = this.input.getStream();
-    const utf8Stream = decodeUTF8(readStream);
-    const lineStream = split(utf8Stream, '\n');
-    return lineStream.map(x => ({[this.columnName]: x}));
-  }
-}
+import {Dataset} from '../dataset';
+import {DataSource} from '../datasource';
+import {DataStream} from '../streams/data_stream';
+import {DatasetElement, ElementArray} from '../types';
+
+import {TextLineDataset} from './text_line_dataset';
 
 /**
  * Represents a potentially large collection of delimited text records.
@@ -112,7 +101,7 @@ export class CSVDataset extends Dataset {
     // TODO(soergel): proper CSV parsing with escaping, quotes, etc.
     // TODO(soergel): alternate separators, e.g. for TSV
     const values = line.split(',');
-    const result: {[key: string]: ElementArray|undefined} = {};
+    const result: {[key: string]: ElementArray} = {};
     for (let i = 0; i < this._csvColumnNames.length; i++) {
       const value = values[i];
       // TODO(soergel): specify data type using a schema
