@@ -24,8 +24,7 @@ import {DataType, TypedArray} from './math/types';
 import * as util from './util';
 
 // This is how the it(), fit() and xit() function look in your tests
-export type MathIt = (name: string, testFn: (math: NDArrayMath) => void) =>
-    void;
+export type MathIt = (name: string, testFn: () => void) => void;
 
 // This is the internal representation of the it(), fit() and xit() functions
 export type It = (name: string, testFn: () => void|Promise<void>) => void;
@@ -264,7 +263,7 @@ export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
 
 export function describeMathCPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
-  const testNameBase = 'CPU: math.' + name;
+  const testNameBase = 'CPU: ' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
       (testName, tests, features) =>
@@ -274,7 +273,7 @@ export function describeMathCPU(
 
 export function describeMathGPU(
     name: string, tests: MathTests[], featuresList?: Features[]) {
-  const testNameBase = 'WebGL: math.' + name;
+  const testNameBase = 'WebGL: ' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
       (testName, tests, features) =>
