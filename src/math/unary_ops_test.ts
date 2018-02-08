@@ -1483,23 +1483,28 @@ import * as selu_util from './selu_util';
     });
 
     it('gradients: Scalar', () => {
-      const aValue = 1;
-      const dyValue = 1;
-      const a = dl.scalar(aValue);
-      const dy = dl.scalar(dyValue);
+      let aValue = 1;
+      let dyValue = 1;
+      let a = dl.scalar(aValue);
+      let dy = dl.scalar(dyValue);
 
-      const gradients = dl.vjp(() => dl.selu(a), a, dy);
-
-      let expected;
-      if (aValue > 0) {
-        expected = dyValue * scale;
-      } else {
-        expected = dyValue * scaleAlpha * Math.exp(aValue);
-      }
+      let gradients = dl.vjp(() => dl.selu(a), a, dy);
 
       expect(gradients.shape).toEqual(a.shape);
       expect(gradients.dtype).toEqual('float32');
-      test_util.expectArraysClose(gradients, [expected], 1e-1);
+      test_util.expectArraysClose(gradients, [dyValue * scale], 1e-1);
+
+      aValue = -1;
+      dyValue = 2;
+      a = dl.scalar(aValue);
+      dy = dl.scalar(dyValue);
+
+      gradients = dl.vjp(() => dl.selu(a), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(
+          gradients, [dyValue * scaleAlpha * Math.exp(aValue)], 1e-1);
     });
 
     it('gradients: Tensor1D', () => {
