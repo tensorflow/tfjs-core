@@ -19,7 +19,7 @@ import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import {Scalar, Tensor1D, variable} from '../../math/tensor';
+import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 import {AdadeltaOptimizer} from './adadelta_optimizer';
@@ -30,13 +30,13 @@ const tests: MathTests = it => {
     const momentum = .5;
     const optimizer = dl.train.adadelta(learningRate, momentum);
 
-    const w = variable(dl.zeros([1, 2]));
+    const w = dl.variable(dl.zeros([1, 2]));
     const b = dl.zeros([1]);
     const x = dl.tensor1d([2, 4]);
 
     // TODO(nsthorat): Use tensordot() instead of reshapes when it's ready.
     const f = () =>
-        w.reshape([1, 2]).matMul(x.reshape([2, 1])).add(b).sum() as Scalar;
+        w.reshape([1, 2]).matMul(x.reshape([2, 1])).add(b).sum() as dl.Scalar;
 
     let numTensors = math.getNumTensors();
 

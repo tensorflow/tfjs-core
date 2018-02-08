@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import {keep, tidy} from '../../globals';
 import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
@@ -23,18 +24,50 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map
 import {NDArrayMath} from '../../math/math';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
-import {NamedVariableMap} from '../../math/types';
+import {NamedTensorMap, NamedVariableMap} from '../../math/types';
+import {fill, scalar} from '../ops';
 
 export class AdagradOptimizer extends Optimizer {
-  constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
+  private c: Scalar;
+
+  private accumulatedGrads: NamedTensorMap = {};
+
+  constructor(
+      protected learningRate: number, specifiedVariableList?: Node[],
+      private initialAccumulatorValue = 0.1) {
     super(learningRate, specifiedVariableList);
-    this.eps = Scalar.new(1e-6);
+
+    this.c = scalar(-learningRate);
+    this.epsilon = scalar(1e-8);
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
-    throw new Error(`Adagrad optimizer not yet implemented for eager mode.`);
+    for (const variableName in variableGradients) {
+      const variable = ENV.engine.registeredVariables[variableName];
+      if (this.accumulatedGrads[variableName] == null) {
+        this.accumulatedGrads[variableName] =
+            keep(fill(variable.shape, this.initialAccumulatorValue));
+      }
+
+      const gradient = variableGradients[variableName];
+      const accumulatedGrad = this.accumulatedGrads[variableName];
+
+      const newVariable = tidy(() => {
+        const newAccumulatedGrad = accumulatedGrad.add(gradient.square());
+
+        accumulatedGrad.dispose();
+        this.accumulatedGrads[variableName] = keep(newAccumulatedGrad);
+
+        return this.c
+            .mul(gradient.div(newAccumulatedGrad.add(this.epsilon).sqrt()))
+            .add(variable);
+      });
+
+      variable.assign(keep(newVariable));
+    }
   }
 
+  /** @deprecated */
   beforeBatch(
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
@@ -50,6 +83,7 @@ export class AdagradOptimizer extends Optimizer {
     }
   }
 
+  /** @deprecated */
   afterBatch(
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
@@ -59,11 +93,12 @@ export class AdagradOptimizer extends Optimizer {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
         const oldCache = this.accumulatedSquaredGradients.get(node.output);
+
         const gradientSquare = math.multiply(gradient, gradient);
         const cache = math.add(oldCache, gradientSquare);
         const variable = math.scaledArrayAdd(
             this.cGraph,
-            math.divide(gradient, math.add(math.sqrt(cache), this.eps)),
+            math.divide(gradient, math.add(math.sqrt(cache), this.epsilon)),
             this.one, oldVariable);
         this.accumulatedSquaredGradients.set(node.output, keep(cache));
         activationArrayMap.set(node.output, keep(variable));
@@ -79,10 +114,17 @@ export class AdagradOptimizer extends Optimizer {
 
   dispose() {
     super.dispose();
-    this.eps.dispose();
-    this.accumulatedSquaredGradients.dispose();
+    this.epsilon.dispose();
+    this.c.dispose();
+    if (this.accumulatedSquaredGradients != null) {
+      this.accumulatedSquaredGradients.dispose();
+    }
+    if (this.accumulatedGrads != null) {
+      Object.keys(this.accumulatedGrads)
+          .forEach(name => this.accumulatedGrads[name].dispose());
+    }
   }
 
   private accumulatedSquaredGradients = new TensorArrayMap();
-  private eps: Scalar;
+  private epsilon: Scalar;
 }

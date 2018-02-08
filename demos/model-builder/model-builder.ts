@@ -429,7 +429,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
         return new dl.AdagradOptimizer(+this.learningRate);
       }
       case 'adadelta': {
-        return new dl.AdadeltaOptimizer(+this.learningRate, +this.gamma);
+        return dl.train.adadelta(+this.learningRate, +this.gamma);
       }
       case 'adam': {
         return new dl.AdamOptimizer(

@@ -60,19 +60,18 @@ export class AdadeltaOptimizer extends Optimizer {
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
       const variable = ENV.engine.registeredVariables[variableName];
-      // Initialize accumulated values to 0.
       if (this.accumulatedGrads[variableName] == null) {
         this.accumulatedGrads[variableName] = keep(zerosLike(variable));
       }
       if (this.accumulatedUpdates[variableName] == null) {
         this.accumulatedUpdates[variableName] = keep(zerosLike(variable));
       }
+
       const gradient = variableGradients[variableName];
       const accumulatedGrad = this.accumulatedGrads[variableName];
       const accumulatedUpdate = this.accumulatedUpdates[variableName];
 
       const newVariable = tidy(() => {
-        // Exponential decay of average squared gradients.
         const newAccumulatedGrad =
             this.rho.mul(accumulatedGrad)
                 .add(this.oneMinusRho.mul(gradient.square()));
