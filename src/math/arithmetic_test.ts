@@ -18,7 +18,6 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {Scalar, Tensor2D} from './tensor';
 
 // divide
 {
@@ -286,8 +285,8 @@ import {Scalar, Tensor2D} from './tensor';
       const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3], 'float32');
       const b = dl.tensor2d([5, 3, 4, -7], [2, 2], 'int32');
 
-      expect(() => dl.mulStrict(a, b as Tensor2D as Tensor2D)).toThrowError();
-      expect(() => dl.mulStrict(b, a as Tensor2D as Tensor2D)).toThrowError();
+      expect(() => dl.mulStrict(a, b)).toThrowError();
+      expect(() => dl.mulStrict(b, a)).toThrowError();
     });
 
     it('multiplyStrict int32 * int32', () => {

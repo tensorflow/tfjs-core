@@ -34,31 +34,31 @@ const flatten = (arr: any): number[] => {
 {
   const tests: MathTests = it => {
 
-    it('throws error with invalid input', math => {
+    it('throws error with invalid input', () => {
       // tslint:disable-next-line:no-any
       const x: any = dl.tensor2d([1, 20, 300, 4], [1, 4]);
       const radius = 3;
 
-      expect(() => math.localResponseNormalization3D(x, radius))
+      expect(() => x.localResponseNormalization(radius))
         .toThrowError();
     });
 
-    it('throws error with invalid radius', math => {
+    it('throws error with invalid radius', () => {
       const x = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
       const radius = 0.5;
 
-      expect(() => math.localResponseNormalization3D(x, radius))
+      expect(() => x.localResponseNormalization(radius))
         .toThrowError();
     });
 
-    it('computes simple normalization across channels', math => {
+    it('computes simple normalization across channels', () => {
       const x = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
       const radius = 1;
       const bias = 1;
       const alpha = 1;
       const beta = 0.5;
 
-      const result = math.localResponseNormalization3D(x, radius, bias, alpha,
+      const result = x.localResponseNormalization3D(radius, bias, alpha,
         beta);
 
       const f = (...vals: number[]) =>
@@ -74,14 +74,14 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('uses beta = 1.0 to test GPU optimization', math => {
+    it('uses beta = 1.0 to test GPU optimization', () => {
       const x = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
       const radius = 1;
       const bias = 1;
       const alpha = 1;
       const beta = 1.0;
 
-      const result = math.localResponseNormalization3D(x, radius, bias, alpha,
+      const result = x.localResponseNormalization(radius, bias, alpha,
         beta);
 
       const f = (...vals: number[]) =>
@@ -97,14 +97,14 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('uses beta = 0.75 to test GPU optimization', math => {
+    it('uses beta = 0.75 to test GPU optimization', () => {
       const x = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
       const radius = 1;
       const bias = 1;
       const alpha = 1;
       const beta = 0.75;
 
-      const result = math.localResponseNormalization3D(x, radius, bias, alpha,
+      const result = x.localResponseNormalization(radius, bias, alpha,
         beta);
 
       const f = (...vals: number[]) =>
@@ -120,7 +120,7 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('computes complex normalization across channels', math => {
+    it('computes complex normalization across channels', () => {
       const x = dl.tensor3d(
         [1, 20, 300, 4, 5, 15, 24, 200, 1, 20, 300, 4, 5, 15, 24, 200],
         [2, 2, 4]);
@@ -130,7 +130,7 @@ const flatten = (arr: any): number[] => {
       const beta = 0.5;
       const normRegion = "acrossChannels";
 
-      const result = math.localResponseNormalization3D(x, radius, bias, alpha,
+      const result = x.localResponseNormalization(radius, bias, alpha,
         beta, normRegion);
 
       const f = (...vals: number[]) =>
@@ -169,7 +169,7 @@ const flatten = (arr: any): number[] => {
           ]);
     });
 
-    it('computes simple normalization within channel', math => {
+    it('computes simple normalization within channel', () => {
       const x = dl.tensor3d([1, 20, 300, 4], [2, 2, 1]);
       const radius = 1;
       const bias = 1;
@@ -177,7 +177,7 @@ const flatten = (arr: any): number[] => {
       const beta = 0.5;
       const normRegion = "withinChannel";
 
-      const result = math.localResponseNormalization3D(x, radius, bias, alpha,
+      const result = x.localResponseNormalization(radius, bias, alpha,
         beta, normRegion);
 
       const f = (...vals: number[]) =>
@@ -196,7 +196,7 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('computes complex normalization within channel', math => {
+    it('computes complex normalization within channel', () => {
       const x = dl.tensor3d([
         1, 20, 300, 4, 23, 25, 13, 156, 123, 5, 15, 24, 200, 12, 12, 13, 21, 3
       ], [3, 3, 2]);
@@ -206,7 +206,7 @@ const flatten = (arr: any): number[] => {
       const beta = 0.5;
       const normRegion = "withinChannel";
 
-      const result = math.localResponseNormalization3D(x, radius, bias, alpha,
+      const result = x.localResponseNormalization(radius, bias, alpha,
         beta, normRegion);
 
       const f = (...vals: number[]) =>
@@ -306,7 +306,7 @@ const flatten = (arr: any): number[] => {
           ]);
     });
 
-    it('yields same result as tensorflow', math => {
+    it('yields same result as tensorflow', () => {
 
       // t = tf.random_uniform([1, 3, 3, 8])
       // l = tf.nn.lrn(t, depth_radius=2)
@@ -364,7 +364,7 @@ const flatten = (arr: any): number[] => {
       const alpha = 1;
       const beta = 0.5;
 
-      const result = math.localResponseNormalization3D(x, radius, bias,
+      const result = x.localResponseNormalization(radius, bias,
         alpha, beta);
 
       test_util.expectArraysClose(result, flatten(expected));
@@ -383,31 +383,31 @@ const flatten = (arr: any): number[] => {
 {
   const tests: MathTests = it => {
 
-    it('throws error with invalid input', math => {
+    it('throws error with invalid input', () => {
       // tslint:disable-next-line:no-any
       const x: any = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
       const radius = 3;
 
-      expect(() => math.localResponseNormalization4D(x, radius))
+      expect(() => x.localResponseNormalization(radius))
         .toThrowError();
     });
 
-    it('throws error with invalid radius', math => {
+    it('throws error with invalid radius', () => {
       const x = dl.tensor4d([1, 20, 300, 4], [1, 1, 1, 4]);
       const radius = 0.5;
 
-      expect(() => math.localResponseNormalization4D(x, radius))
+      expect(() => x.localResponseNormalization(radius))
         .toThrowError();
     });
 
-    it('computes simple normalization across channels', math => {
+    it('computes simple normalization across channels', () => {
       const x = dl.tensor4d([1, 20, 300, 4, 1, 20, 300, 4], [2, 1, 1, 4]);
       const radius = 1;
       const bias = 1;
       const alpha = 1;
       const beta = 0.5;
 
-      const result = math.localResponseNormalization4D(x, radius, bias, alpha,
+      const result = x.localResponseNormalization(radius, bias, alpha,
         beta);
 
       const f = (...vals: number[]) =>
@@ -436,7 +436,7 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('computes simple normalization within channel', math => {
+    it('computes simple normalization within channel', () => {
       const x = dl.tensor4d([1, 20, 50, 4, 1, 20, 50, 4], [2, 2, 2, 1]);
       const radius = 1;
       const bias = 1;
@@ -444,7 +444,7 @@ const flatten = (arr: any): number[] => {
       const beta = 0.5;
       const normRegion = "withinChannel";
 
-      const result = math.localResponseNormalization4D(x, radius, bias, alpha,
+      const result = x.localResponseNormalization(radius, bias, alpha,
         beta, normRegion);
 
       const f = (...vals: number[]) =>
@@ -472,7 +472,7 @@ const flatten = (arr: any): number[] => {
         ]);
     });
 
-    it('yields same result as tensorflow', math => {
+    it('yields same result as tensorflow', () => {
 
       // t = tf.random_uniform([2, 3, 3, 8])
       // l = tf.nn.lrn(t, depth_radius=2)
@@ -569,7 +569,7 @@ const flatten = (arr: any): number[] => {
       const x = dl.tensor4d(flatten(input), [2, 3, 3, 8]);
       const radius = 2;
 
-      const result = math.localResponseNormalization4D(x, radius);
+      const result = x.localResponseNormalization4D(radius);
 
       test_util.expectArraysClose(result, flatten(expected));
     });

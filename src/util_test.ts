@@ -274,14 +274,14 @@ describe('util.squeezeShape', () => {
 
 {
   const tests: MathTests = it => {
-    it('not in list', math => {
+    it('not in list', () => {
       const a = dl.scalar(1);
       const list: Tensor[] = [dl.scalar(1), dl.tensor1d([1, 2, 3])];
 
       expect(util.isTensorInList(a, list)).toBe(false);
     });
 
-    it('in list', math => {
+    it('in list', () => {
       const a = dl.scalar(1);
       const list: Tensor[] = [dl.scalar(2), dl.tensor1d([1, 2, 3]), a];
 
@@ -341,7 +341,7 @@ describe('util.checkForNaN', () => {
 
 {
   const tests: MathTests = it => {
-    it('basic', math => {
+    it('basic', () => {
       const a = dl.scalar(1);
       const b = dl.scalar(3);
       const c = dl.tensor1d([1, 2, 3]);
@@ -358,7 +358,7 @@ describe('util.checkForNaN', () => {
 
 {
   const tests: MathTests = it => {
-    it('basic', math => {
+    it('basic', () => {
       const a = dl.scalar(1);
       const b = dl.scalar(3);
       const c = dl.tensor1d([1, 2, 3]);

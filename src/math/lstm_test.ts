@@ -18,12 +18,14 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
+
+import {Tensor2D} from './tensor';
 import {Rank} from './types';
 
 // dl.basicLSTMCell
 {
   const tests: MathTests = it => {
-    it('MultiRNNCell with 2 BasicLSTMCells', math => {
+    it('MultiRNNCell with 2 BasicLSTMCells', () => {
       const lstmKernel1 = dl.tensor2d(
           [
             0.26242125034332275, -0.8787832260131836, 0.781475305557251,
@@ -45,11 +47,12 @@ import {Rank} from './types';
           [0.9906240105628967, 0.6248329877853394, 0, 1.0224634408950806]);
 
       const forgetBias = dl.scalar(1.0);
-      const lstm1 =
-          dl.basicLSTMCell.bind(math, forgetBias, lstmKernel1, lstmBias1);
-      const lstm2 =
-          dl.basicLSTMCell.bind(math, forgetBias, lstmKernel2, lstmBias2);
-
+      const lstm1 = (data: Tensor2D, c: Tensor2D, h: Tensor2D) => {
+        return dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);
+      };
+      const lstm2 = (data: Tensor2D, c: Tensor2D, h: Tensor2D) => {
+        return dl.basicLSTMCell(forgetBias, lstmKernel2, lstmBias2, data, c, h);
+      };
       const c = [
         dl.zeros<Rank.R2>([1, lstmBias1.shape[0] / 4]),
         dl.zeros<Rank.R2>([1, lstmBias2.shape[0] / 4])

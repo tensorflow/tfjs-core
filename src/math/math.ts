@@ -106,14 +106,10 @@ export class NDArrayMath {
 
   add = binary_ops.Ops.add;
   addStrict = binary_ops.Ops.addStrict;
-  /** @deprecated */
-  arrayDividedByScalar = binary_ops.Ops.arrayDividedByScalar;
   div = binary_ops.Ops.div;
   divide = this.div;  // Alias.
   divStrict = binary_ops.Ops.divStrict;
   divideStrict = this.divStrict;  // Alias.
-  /** @deprecated */
-  elementWiseMul = binary_ops.Ops.elementWiseMul;
   maximum = binary_ops.Ops.maximum;
   maximumStrict = binary_ops.Ops.maximumStrict;
   minimum = binary_ops.Ops.minimum;
@@ -124,8 +120,6 @@ export class NDArrayMath {
   multiplyStrict = this.mulStrict;  // Alias.
   pow = binary_ops.Ops.pow;
   powStrict = binary_ops.Ops.powStrict;
-  /** @deprecated */
-  scalarDividedByArray = binary_ops.Ops.scalarDividedByArray;
   sub = binary_ops.Ops.sub;
   subtract = this.sub;  // Alias.
   subStrict = binary_ops.Ops.subStrict;
@@ -215,10 +209,7 @@ export class NDArrayMath {
   startScope: typeof ENV.engine.startScope;
   endScope: typeof ENV.engine.endScope;
 
-  /**
-   * @param safeMode In safe mode, you must use math operations inside
-   *     a dl.tidy() which will automatically clean up intermediate Tensors.
-   */
+  /** @deprecated */
   constructor(backend: BackendType|MathBackend, safeMode: boolean) {
     ENV.setMath(this, backend, safeMode);
     this.engine = ENV.engine;
@@ -263,6 +254,29 @@ export class NDArrayMath {
     return result;
   }
 
+  /** @deprecated Use mulStrict() instead. */
+  elementWiseMul<T extends Tensor>(a: T, b: T): T {
+    return a.mulStrict(b);
+  }
+
+  /** @deprecated Use div() instead. */
+  scalarDividedByArray<T extends Tensor>(c: Scalar, a: T): T {
+    util.assert(
+        c.size === 1,
+        `Error in scalarDividedByArray: first argument must be rank 0, but ` +
+            `got Tensor of rank ${c.rank}.`);
+    return c.div(a) as T;
+  }
+
+  /** @deprecated Use div(A, c) instead. */
+  arrayDividedByScalar<T extends Tensor>(a: T, c: Scalar): T {
+    util.assert(
+        c.size === 1,
+        `Error in arrayDividedByScalar: second argument must be rank 0, ` +
+            `but got Tensor of rank ${c.rank}.`);
+    return a.div(c) as T;
+  }
+
   /** @deprecated Use math.transpose() instead. */
   switchDim<R extends Rank>(x: Tensor<R>, perm?: number[]): Tensor<R> {
     return ops.transpose<R>(x, perm);
@@ -295,13 +309,7 @@ export class NDArrayMath {
     return this.subtract(a, c) as T;
   }
 
-  /**
-   * Computes a scaled array add operation, c1 * A + c2 * B.
-   * @param c1 The first scalar in the scaled array add computation.
-   * @param a The first Tensor in the scaled array add computation.
-   * @param c2 The second scalar in the scaled array add computation.
-   * @param cb The second Tensor in the scaled array add computation.
-   */
+  /** @deprecated */
   scaledArrayAdd<T extends Tensor>(c1: Scalar, a: T, c2: Scalar, b: T): T {
     util.assert(
         c1.size === 1,
