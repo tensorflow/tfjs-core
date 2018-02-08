@@ -16,12 +16,12 @@
  * =============================================================================
  */
 
-import {NDArray} from '../../math/ndarray';
+import {Tensor} from '../../math/tensor';
 
-// TODO(soergel): clean up the |string union type throughout when NDArray
+// TODO(soergel): clean up the |string union type throughout when Tensor
 // supports string.
 
-// TODO(soergel): consider factoring out the NDArray dependency here, to allow
+// TODO(soergel): consider factoring out the Tensor dependency here, to allow
 // making a Datasets package not dependent on DLJS.
 
 /**
@@ -30,14 +30,14 @@ import {NDArray} from '../../math/ndarray';
  * Such a value may not have a batch dimension.  A value may be a scalar or an
  * n-dimensional array.
  */
-export type ElementArray = number|number[]|NDArray|string;
+export type ElementArray = number|number[]|Tensor|string;
 
 /**
  * The value associated with a given key for a batch of elements.
  *
  * Such a value must always have a batch dimension, even if it is of length 1.
  */
-export type BatchArray = NDArray|string[];
+export type BatchArray = Tensor|string[];
 
 /**
  * A map from string keys (aka column names) to values for a single element.

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Array1D, Array2D, NDArray} from '../../math/ndarray';
+import {Tensor, Tensor1D, Tensor2D} from '../../math/tensor';
 import {describeMathCPU, expectArraysClose} from '../../test_util';
 
 import {TestDataset} from './dataset_test';
@@ -30,9 +30,9 @@ describeMathCPU('Dataset.batch()', [
           .then(batchStream => batchStream.collectRemaining().then(result => {
             expect(result.length).toEqual(13);
             for (const batch of result.slice(0, 12)) {
-              expect((batch['number'] as NDArray).shape).toEqual([8]);
-              expect((batch['numberArray'] as NDArray).shape).toEqual([8, 3]);
-              expect((batch['NDArray'] as NDArray).shape).toEqual([8, 3]);
+              expect((batch['number'] as Tensor).shape).toEqual([8]);
+              expect((batch['numberArray'] as Tensor).shape).toEqual([8, 3]);
+              expect((batch['Tensor'] as Tensor).shape).toEqual([8, 3]);
               expect((batch['string'] as string[]).length).toEqual(8);
             }
           }))
@@ -46,20 +46,20 @@ describeMathCPU('Dataset.batch()', [
       batchStreamPromise
           .then(batchStream => batchStream.collectRemaining().then(result => {
             const lastBatch = result[12];
-            expect((lastBatch['number'] as NDArray).shape).toEqual([4]);
-            expect((lastBatch['numberArray'] as NDArray).shape).toEqual([4, 3]);
-            expect((lastBatch['NDArray'] as NDArray).shape).toEqual([4, 3]);
+            expect((lastBatch['number'] as Tensor).shape).toEqual([4]);
+            expect((lastBatch['numberArray'] as Tensor).shape).toEqual([4, 3]);
+            expect((lastBatch['Tensor'] as Tensor).shape).toEqual([4, 3]);
             expect((lastBatch['string'] as string[]).length).toEqual(4);
 
             expectArraysClose(
-                lastBatch['number'] as NDArray, Array1D.new([96, 97, 98, 99]));
+                lastBatch['number'] as Tensor, Tensor1D.new([96, 97, 98, 99]));
             expectArraysClose(
-                lastBatch['numberArray'] as NDArray, Array2D.new([4, 3], [
+                lastBatch['numberArray'] as Tensor, Tensor2D.new([4, 3], [
                   [96, 96 ** 2, 96 ** 3], [97, 97 ** 2, 97 ** 3],
                   [98, 98 ** 2, 98 ** 3], [99, 99 ** 2, 99 ** 3]
                 ]));
             expectArraysClose(
-                lastBatch['NDArray'] as NDArray, Array2D.new([4, 3], [
+                lastBatch['Tensor'] as Tensor, Tensor2D.new([4, 3], [
                   [96, 96 ** 2, 96 ** 3], [97, 97 ** 2, 97 ** 3],
                   [98, 98 ** 2, 98 ** 3], [99, 99 ** 2, 99 ** 3]
                 ]));

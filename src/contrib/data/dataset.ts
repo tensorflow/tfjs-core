@@ -84,7 +84,7 @@ export abstract class Dataset {
    * It is assumed that each of the incoming DatasetElements has the same set of
    * keys.  For each key, the resulting BatchDataset provides a BatchElement
    * collecting all of the incoming values for that key.  Incoming strings are
-   * grouped into a string[].  Incoming NDArrays are grouped into a new NDArray
+   * grouped into a string[].  Incoming Tensors are grouped into a new Tensor
    * where the 0'th axis is the batch dimension.  These columnar representations
    * for each key can be zipped together to reconstruct the original
    * DatasetElements.

@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {Array1D} from '../../math/ndarray';
+import {Tensor1D} from '../../math/tensor';
 
 import {Dataset, datasetFromConcatenated, datasetFromElements} from './dataset';
 import {DataStream, streamFromItems} from './streams/data_stream';
@@ -34,8 +34,8 @@ class TestDatasetElementStream extends DataStream<DatasetElement> {
     const result = {
       'number': elementNumber,
       'numberArray': [elementNumber, elementNumber ** 2, elementNumber ** 3],
-      'NDArray':
-          Array1D.new([elementNumber, elementNumber ** 2, elementNumber ** 3]),
+      'Tensor':
+          Tensor1D.new([elementNumber, elementNumber ** 2, elementNumber ** 3]),
       'string': `Item ${elementNumber}`
     };
 

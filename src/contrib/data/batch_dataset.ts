@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {NDArray} from '../../math/ndarray';
+import {Tensor} from '../../math/tensor';
 import * as util from '../../util';
 
 import {Dataset} from './dataset';
@@ -58,7 +58,7 @@ export class BatchDataset {
     const rotated: {[key: string]: (ElementArray[]|string[])} = {};
 
     // Assume that the first element is representative.
-    // We do end up enforcing NDArray shape consistency below, but not
+    // We do end up enforcing Tensor shape consistency below, but not
     // cleanly.
     // TODO(soergel) validate against a schema, allow missing keys, etc.
     // etc.
@@ -86,17 +86,17 @@ export class BatchDataset {
         result[key] = rotated[key] as string[];
       } else {
         result[key] = BatchDataset.batchConcat(
-            rotated[key] as Array<number|number[]|NDArray>);
+            rotated[key] as Array<number|number[]|Tensor>);
       }
     }
     return result;
   }
 
   /**
-   * Assembles a list of same-shaped numbers, number arrays, or NDArrays
-   * into a single new NDArray where axis 0 is the batch dimension.
+   * Assembles a list of same-shaped numbers, number arrays, or Tensors
+   * into a single new Tensor where axis 0 is the batch dimension.
    */
-  private static batchConcat(arrays: Array<number|number[]|NDArray>): NDArray {
+  private static batchConcat(arrays: Array<number|number[]|Tensor>): Tensor {
     // Should we use GPU-enabled concat ops in deeplearn's math.ts?
     // Probably not; the GPU roundtrip is not worth it for a trivial
     // operation.
@@ -113,13 +113,13 @@ export class BatchDataset {
       resultVals.set(aVals, offset);
       offset += aVals.length;
     }
-    const result = NDArray.make(batchShape, {values: resultVals});
+    const result = Tensor.make(batchShape, {values: resultVals});
     return result;
   }
 
-  private static shapeAndValues(array: number|number[]|NDArray):
+  private static shapeAndValues(array: number|number[]|Tensor):
       [number[], number[]|Float32Array|Int32Array|Uint8Array] {
-    if (array instanceof NDArray) {
+    if (array instanceof Tensor) {
       return [array.shape, array.dataSync()];
     } else if (Array.isArray(array)) {
       return [[array.length], array];
