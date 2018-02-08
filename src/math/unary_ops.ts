@@ -16,11 +16,11 @@
  */
 
 import {ENV} from '../environment';
-import {zerosLike} from './ops';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
 import * as ops from './ops';
+import {zerosLike} from './ops';
 import * as selu_util from './selu_util';
 import {Tensor} from './tensor';
 
@@ -141,14 +141,16 @@ export class Ops {
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
     return ENV.engine.executeKernel(
-        'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
-      return {
-          // TODO(cais): Fix gradients for the case where x = min or x = max.
-          x: () => dy.where(
-              x.greater(ops.scalar(min)).logicalAnd(x.less(ops.scalar(max))),
-              zerosLike(dy)),
-      };
-    }) as T;
+               'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
+                 return {
+                   // TODO(cais): Fix gradients for the case where x = min or x
+                   // = max.
+                   x: () => dy.where(
+                       x.greater(ops.scalar(min))
+                           .logicalAnd(x.less(ops.scalar(max))),
+                       zerosLike(dy)),
+                 };
+               }) as T;
   }
 
   /**
@@ -222,8 +224,27 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static leakyRelu<T extends Tensor>(x: T, alpha = 0.2): T {
+    const gradient = (dy: T, y: T) => {
+      return {
+        x: () => {
+          const mask = x.greater(ops.scalar(0));
+
+          const greaterThanZeroDer = dy;
+          const lessEqualZeroDer = dy.mul(ops.scalar(alpha));
+
+          const res = ops.where(mask, greaterThanZeroDer, lessEqualZeroDer);
+
+          return res;
+        },
+        alpha: () => {
+          throw new Error(
+              'Derivative of prelu with respect to alpha is ' +
+              'not implemented yet');
+        }
+      };
+    };
     return ENV.engine.executeKernel(
-               'LeakyRelu', {inputs: {x}, args: {alpha}}) as T;
+               'LeakyRelu', {inputs: {x}, args: {alpha}}, gradient) as T;
   }
 
   /**
