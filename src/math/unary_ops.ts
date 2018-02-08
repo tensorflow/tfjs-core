@@ -235,11 +235,6 @@ export class Ops {
           const res = ops.where(mask, greaterThanZeroDer, lessEqualZeroDer);
 
           return res;
-        },
-        alpha: () => {
-          throw new Error(
-              'Derivative of prelu with respect to alpha is ' +
-              'not implemented yet');
         }
       };
     };

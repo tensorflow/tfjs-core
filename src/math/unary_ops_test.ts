@@ -1415,6 +1415,68 @@ import * as selu_util from './selu_util';
       expect(result.shape).toEqual(a.shape);
       test_util.expectArraysClose(result, [0, 1, NaN]);
     });
+
+    it('gradients: Scalar', () => {
+      const a = dl.scalar(-4);
+      const dy = dl.scalar(8);
+      const alpha = 0.1;
+
+      const gradients = dl.vjp(() => dl.leakyRelu(a, alpha), a, dy);
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [8 * alpha], 1e-1);
+    });
+
+    it('gradients: Tensor1D', () => {
+      const aValues = [1, -1, 0];
+      const dyValues = [1, 2, 3];
+      const alpha = 0.1;
+
+      const a = dl.tensor1d(aValues);
+      const dy = dl.tensor1d(dyValues);
+
+      const gradients = dl.vjp(() => dl.leakyRelu(a, alpha), a, dy);
+
+      const expected = [];
+      for (let i = 0; i < a.size; i++) {
+        if (aValues[i] > 0) {
+          expected[i] = dyValues[i];
+        } else {
+          expected[i] = dyValues[i] * alpha;
+        }
+      }
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+
+      test_util.expectArraysClose(gradients, expected, 1e-1);
+    });
+
+    it('gradients: Tensor2D', () => {
+      const aValues = [1, -1, 0, 0.5];
+      const dyValues = [1, 2, 3, 4];
+      const alpha = 0.1;
+
+      const a = dl.tensor2d(aValues, [2, 2]);
+      const dy = dl.tensor2d(dyValues, [2, 2]);
+
+      const gradients = dl.vjp(() => dl.leakyRelu(a, alpha), a, dy);
+
+      const expected = [];
+      for (let i = 0; i < a.size; i++) {
+        if (aValues[i] > 0) {
+          expected[i] = dyValues[i];
+        } else {
+          expected[i] = dyValues[i] * alpha;
+        }
+      }
+
+      expect(gradients.shape).toEqual(a.shape);
+      expect(gradients.dtype).toEqual('float32');
+
+      test_util.expectArraysClose(gradients, expected, 1e-1);
+    });
   };
 
   test_util.describeMathCPU('leakyRelu', [tests]);
