@@ -45,7 +45,7 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static ceil<T extends Tensor>(x: T): T {
-    // TODO(manrajgrover): Fix gradients for the case where x == ceil(x)
+    // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const gradient = (dy: T, y: T) => {
       return {x: () => ops.zeros(y.shape)};
     };
@@ -59,7 +59,7 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static floor<T extends Tensor>(x: T): T {
-    // TODO(manrajgrover): Fix gradients for the case where x == floor(x)
+    // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const gradient = (dy: T, y: T) => {
       return {x: () => ops.zeros(y.shape)};
     };
@@ -387,7 +387,7 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static step<T extends Tensor>(x: T, alpha = 0.0): T {
-    // TODO(manrajgrover): Fix gradients for the case where x == 0
+    // TODO(manrajgrover): Return null for gradients when backprop supports it.
     return ENV.engine.executeKernel(
                'Step', {inputs: {x}, args: {alpha}}, (dy: T, y: T) => {
                  return {x: () => ops.zeros(y.shape)};
