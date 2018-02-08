@@ -35,14 +35,8 @@ import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
-type DataBucket = {
-  values: DataTypeMap[DataType]; shape: number[]; dtype: DataType;
-};
-
 export class MathBackendCPU implements MathBackend {
-  private data = new WeakMap<DataId, DataBucket>();
-  private numBytes = 0;
-  private numDataBuffers = 0;
+  private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
 
   constructor() {
@@ -55,17 +49,14 @@ export class MathBackendCPU implements MathBackend {
     if (this.data.has(dataId)) {
       throw new Error(`Data buffer is already registered`);
     }
-    this.numDataBuffers++;
-    this.numBytes += util.sizeFromShape(shape) * util.bytesPerElement(dtype);
-    this.data.set(dataId, {shape, dtype, values: null});
+    this.data.set(dataId, null);
   }
   write(dataId: DataId, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
     this.throwIfNoData(dataId);
-    const bucket = this.data.get(dataId);
-    bucket.values = values;
+    this.data.set(dataId, values);
   }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
@@ -120,14 +111,11 @@ export class MathBackendCPU implements MathBackend {
   }
   readSync(dataId: DataId): TypedArray {
     this.throwIfNoData(dataId);
-    return this.data.get(dataId).values;
+    return this.data.get(dataId);
   }
 
   disposeData(dataId: DataId): void {
     if (this.data.has(dataId)) {
-      const {shape, dtype} = this.data.get(dataId);
-      this.numDataBuffers--;
-      this.numBytes -= util.sizeFromShape(shape) * util.bytesPerElement(dtype);
       this.data.delete(dataId);
     }
   }
@@ -139,8 +127,6 @@ export class MathBackendCPU implements MathBackend {
   }
   memory() {
     return {
-      numDataBuffers: this.numDataBuffers,
-      numBytes: this.numBytes,
       // Unreliable due to automatic gc. The numbers above are cumulative.
       unreliable: true
     };

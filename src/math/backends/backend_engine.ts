@@ -48,12 +48,20 @@ export interface TensorManager {
   memory(): {numDataBuffers: number; numBytes: number;};
 }
 
+export type MemoryInfo = {
+  numTensors: number; numDataBuffers: number; numBytes: number; backendInfo: {};
+  unreliable?: boolean;
+};
+
 export class BackendEngine implements TensorManager {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
   private refCounter = new WeakMap<DataId, number>();
   private nextTapeNodeId = 0;
+  private numBytes = 0;
+  private numTensors = 0;
+  private numDataBuffers = 0;
 
   private activeTape: Tape;
   private gradientScopeCount = 0;
@@ -114,7 +122,11 @@ export class BackendEngine implements TensorManager {
   registerTensor(a: Tensor|Variable): void {
     const refCount =
         this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
+    this.numTensors++;
     if (refCount === 0) {
+      this.numDataBuffers++;
+      this.numBytes +=
+          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
     this.refCounter.set(a.dataId, refCount + 1);
@@ -134,10 +146,14 @@ export class BackendEngine implements TensorManager {
     if (!this.refCounter.has(a.dataId)) {
       return;
     }
+    this.numTensors--;
     const refCount = this.refCounter.get(a.dataId);
     if (refCount <= 1) {
       this.refCounter.delete(a.dataId);
       this.backend.disposeData(a.dataId);
+      this.numDataBuffers--;
+      this.numBytes -=
+          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
     } else {
       this.refCounter.set(a.dataId, refCount - 1);
     }
@@ -146,8 +162,18 @@ export class BackendEngine implements TensorManager {
     // to do unconditionally.
   }
 
-  memory() {
-    return this.backend.memory();
+  memory(): MemoryInfo {
+    const backendInfo = this.backend.memory();
+    const memInfo: MemoryInfo = {
+      numTensors: this.numTensors,
+      numDataBuffers: this.numDataBuffers,
+      numBytes: this.numBytes,
+      backendInfo,
+    };
+    if (backendInfo.unreliable) {
+      memInfo.unreliable = true;
+    }
+    return memInfo;
   }
 
   private shouldRecord(): boolean {

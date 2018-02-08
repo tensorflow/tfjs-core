@@ -32,7 +32,7 @@ const gradientsScope = Gradients.gradientsScope;
         const a = dl.tensor1d([1, 2, 3]);
         let b = dl.tensor1d([0, 0, 0]);
 
-        expect(dl.memory().numDataBuffers).toBe(2);
+        expect(dl.memory().numTensors).toBe(2);
         dl.tidy(() => {
           const result = dl.tidy(() => {
             b = dl.addStrict(a, b);
@@ -42,33 +42,33 @@ const gradientsScope = Gradients.gradientsScope;
           });
 
           // result is new. All intermediates should be disposed.
-          expect(dl.memory().numDataBuffers).toBe(2 + 1);
+          expect(dl.memory().numTensors).toBe(2 + 1);
           test_util.expectArraysClose(result, [4, 8, 12]);
         });
 
         // a, b are still here, result should be disposed.
-        expect(dl.memory().numDataBuffers).toBe(2);
+        expect(dl.memory().numTensors).toBe(2);
       });
 
-      expect(dl.memory().numDataBuffers).toBe(0);
+      expect(dl.memory().numTensors).toBe(0);
     });
 
     it('multiple disposes does not affect num arrays', math => {
-      expect(dl.memory().numDataBuffers).toBe(0);
+      expect(dl.memory().numTensors).toBe(0);
       const a = dl.tensor1d([1, 2, 3]);
       const b = dl.tensor1d([1, 2, 3]);
-      expect(dl.memory().numDataBuffers).toBe(2);
+      expect(dl.memory().numTensors).toBe(2);
       a.dispose();
       a.dispose();
-      expect(dl.memory().numDataBuffers).toBe(1);
+      expect(dl.memory().numTensors).toBe(1);
       b.dispose();
-      expect(dl.memory().numDataBuffers).toBe(0);
+      expect(dl.memory().numTensors).toBe(0);
     });
 
     it('returns Tensor[]', math => {
       const a = dl.tensor1d([1, 2, 3]);
       const b = dl.tensor1d([0, -1, 1]);
-      expect(dl.memory().numDataBuffers).toBe(2);
+      expect(dl.memory().numTensors).toBe(2);
 
       dl.tidy(() => {
         const result = dl.tidy(() => {
@@ -77,24 +77,24 @@ const gradientsScope = Gradients.gradientsScope;
         });
 
         // the 2 results are new. All intermediates should be disposed.
-        expect(dl.memory().numDataBuffers).toBe(4);
+        expect(dl.memory().numTensors).toBe(4);
         test_util.expectArraysClose(result[0], [1, 1, 4]);
         test_util.expectArraysClose(result[1], [1, 3, 2]);
-        expect(dl.memory().numDataBuffers).toBe(4);
+        expect(dl.memory().numTensors).toBe(4);
       });
 
       // the 2 results should be disposed.
-      expect(dl.memory().numDataBuffers).toBe(2);
+      expect(dl.memory().numTensors).toBe(2);
       a.dispose();
       b.dispose();
-      expect(dl.memory().numDataBuffers).toBe(0);
+      expect(dl.memory().numTensors).toBe(0);
     });
 
     it('basic usage without return', math => {
       const a = dl.tensor1d([1, 2, 3]);
       let b = dl.tensor1d([0, 0, 0]);
 
-      expect(dl.memory().numDataBuffers).toBe(2);
+      expect(dl.memory().numTensors).toBe(2);
 
       dl.tidy(() => {
         b = dl.addStrict(a, b);
@@ -104,14 +104,14 @@ const gradientsScope = Gradients.gradientsScope;
       });
 
       // all intermediates should be disposed.
-      expect(dl.memory().numDataBuffers).toBe(2);
+      expect(dl.memory().numTensors).toBe(2);
     });
 
     it('nested usage', math => {
       const a = dl.tensor1d([1, 2, 3]);
       let b = dl.tensor1d([0, 0, 0]);
 
-      expect(dl.memory().numDataBuffers).toBe(2);
+      expect(dl.memory().numTensors).toBe(2);
 
       dl.tidy(() => {
         const result = dl.tidy(() => {
@@ -121,25 +121,25 @@ const gradientsScope = Gradients.gradientsScope;
               return dl.addStrict(a, b);
             });
             // original a, b, and two intermediates.
-            expect(dl.memory().numDataBuffers).toBe(4);
+            expect(dl.memory().numTensors).toBe(4);
 
             dl.tidy(() => {
               dl.addStrict(a, b);
             });
             // All the intermediates should be cleaned up.
-            expect(dl.memory().numDataBuffers).toBe(4);
+            expect(dl.memory().numTensors).toBe(4);
 
             return dl.addStrict(a, b);
           });
-          expect(dl.memory().numDataBuffers).toBe(4);
+          expect(dl.memory().numTensors).toBe(4);
 
           return dl.addStrict(a, b);
         });
 
-        expect(dl.memory().numDataBuffers).toBe(3);
+        expect(dl.memory().numTensors).toBe(3);
         test_util.expectArraysClose(result, [4, 8, 12]);
       });
-      expect(dl.memory().numDataBuffers).toBe(2);
+      expect(dl.memory().numTensors).toBe(2);
     });
 
     it('single argument', () => {
@@ -502,29 +502,29 @@ const gradientsScope = Gradients.gradientsScope;
   const tests: MathTests = it => {
     it('second order gradients with gradientsScope', math => {
       const a = dl.scalar(2);
-      expect(dl.memory().numDataBuffers).toBe(1);
+      expect(dl.memory().numTensors).toBe(1);
 
       const gradients = gradientsScope(() => {
         const der = dl.gradients(() => {
           const result = dl.pow(a, dl.scalar(3, 'int32'));
-          expect(dl.memory().numDataBuffers).toBe(3);
+          expect(dl.memory().numTensors).toBe(3);
 
           return result as Scalar;
         }, a);
 
         // Gradients shouldn't be disposed.
-        const numArrays = dl.memory().numDataBuffers;
+        const numArrays = dl.memory().numTensors;
         expect(numArrays).toBeGreaterThan(3);
 
         const result = dl.gradients(() => der, a);
 
         // New gradients shouldn't be disposed.
-        expect(dl.memory().numDataBuffers).toBeGreaterThan(numArrays + 1);
+        expect(dl.memory().numTensors).toBeGreaterThan(numArrays + 1);
         return result;
       });
 
       // a and gradients are the only remaining arrays.
-      expect(dl.memory().numDataBuffers).toBe(2);
+      expect(dl.memory().numTensors).toBe(2);
 
       expect(gradients.shape).toEqual(a.shape);
       test_util.expectArraysClose(gradients, [2 * 3 * a.get()], 1e-1);
@@ -603,15 +603,15 @@ const gradientsScope = Gradients.gradientsScope;
 {
   const tests: MathTests = it => {
     it('Sum(float)', () => {
-      expect(dl.memory().numDataBuffers).toBe(0);
+      expect(dl.memory().numTensors).toBe(0);
       expect(dl.memory().numBytes).toBe(0);
       const sum = dl.tidy(() => {
         const a = dl.tensor1d([1, 2, 3, 4]);
-        expect(dl.memory().numDataBuffers).toBe(1);
+        expect(dl.memory().numTensors).toBe(1);
         expect(dl.memory().numBytes).toBe(4 * 4);
         return a.sum();
       });
-      expect(dl.memory().numDataBuffers).toBe(1);
+      expect(dl.memory().numTensors).toBe(1);
       expect(dl.memory().numBytes).toBe(4);
       test_util.expectArraysClose(sum, [1 + 2 + 3 + 4]);
     });
@@ -619,11 +619,11 @@ const gradientsScope = Gradients.gradientsScope;
     it('Sum(bool)', () => {
       const sum = dl.tidy(() => {
         const a = dl.tensor1d([true, true, false, true], 'bool');
-        expect(dl.memory().numDataBuffers).toBe(1);
+        expect(dl.memory().numTensors).toBe(1);
         expect(dl.memory().numBytes).toBe(4);
         return a.sum();
       });
-      expect(dl.memory().numDataBuffers).toBe(1);
+      expect(dl.memory().numTensors).toBe(1);
       expect(dl.memory().numBytes).toBe(4);
       expect(sum.dtype).toBe('int32');
       test_util.expectArraysClose(sum, [1 + 1 + 0 + 1]);
@@ -632,11 +632,11 @@ const gradientsScope = Gradients.gradientsScope;
     it('Sum(int32)', () => {
       const sum = dl.tidy(() => {
         const a = dl.tensor1d([1, 1, 0, 1], 'int32');
-        expect(dl.memory().numDataBuffers).toBe(1);
+        expect(dl.memory().numTensors).toBe(1);
         expect(dl.memory().numBytes).toBe(4 * 4);
         return a.sum();
       });
-      expect(dl.memory().numDataBuffers).toBe(1);
+      expect(dl.memory().numTensors).toBe(1);
       expect(dl.memory().numBytes).toBe(4);
       expect(sum.dtype).toBe('int32');
       test_util.expectArraysClose(sum, [1 + 1 + 0 + 1]);

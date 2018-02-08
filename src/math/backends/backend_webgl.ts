@@ -73,8 +73,6 @@ export interface CPUTimerQuery {
 
 export class MathBackendWebGL implements MathBackend {
   private texData = new WeakMap<DataId, TextureData>();
-  private numBytes = 0;
-  private numDataBuffers = 0;
   private canvas: HTMLCanvasElement;
 
   private programTimersStack: TimerNode[];
@@ -84,8 +82,6 @@ export class MathBackendWebGL implements MathBackend {
     if (this.texData.has(dataId)) {
       throw new Error('Data buffer is already registered');
     }
-    this.numDataBuffers++;
-    this.numBytes += util.sizeFromShape(shape) * util.bytesPerElement(dtype);
     this.texData.set(dataId, {
       shape,
       dtype,
@@ -216,7 +212,7 @@ export class MathBackendWebGL implements MathBackend {
     });
   }
   memory() {
-    return {numDataBuffers: this.numDataBuffers, numBytes: this.numBytes};
+    return {unreliable: false};
   }
 
   private startTimer(): WebGLQuery|CPUTimerQuery {
@@ -246,13 +242,10 @@ export class MathBackendWebGL implements MathBackend {
 
   disposeData(dataId: DataId): void {
     if (this.texData.has(dataId)) {
-      const {texture, texShape, texType, shape, dtype} =
-          this.texData.get(dataId);
+      const {texture, texShape, texType} = this.texData.get(dataId);
       if (texture != null) {
         this.textureManager.releaseTexture(texture, texShape, texType);
       }
-      this.numDataBuffers--;
-      this.numBytes -= util.sizeFromShape(shape) * util.bytesPerElement(dtype);
       this.texData.delete(dataId);
     }
   }

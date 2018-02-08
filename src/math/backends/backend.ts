@@ -33,7 +33,7 @@ export interface TensorStorage {
       numChannels: number): Tensor3D;
   time(query: () => void): Promise<number>;
   register(dataId: DataId, shape: number[], dtype: DataType): void;
-  memory(): {numDataBuffers: number; numBytes: number; unreliable?: boolean};
+  memory(): {unreliable: boolean;};  // Backend-specific information.
 }
 
 export interface BackendTimer { time(f: () => void): Promise<number>; }

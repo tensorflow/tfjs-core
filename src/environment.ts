@@ -17,7 +17,7 @@
 
 import * as device_util from './device_util';
 import {MathBackend} from './math/backends/backend';
-import {BackendEngine} from './math/backends/backend_engine';
+import {BackendEngine, MemoryInfo} from './math/backends/backend_engine';
 import {doc} from './math/decorators';
 import {NDArrayMath} from './math/math';
 import * as util from './util';
@@ -239,20 +239,21 @@ export class Environment {
    * Returns memory info at the current time in the program. The result is an
    * object with the following properties:
    *
-   * - `numBytes` number of bytes allocated (undisposed) at this time.
-   * - `numDataBuffers` number of unique data buffers allocated
+   * - `numBytes`: number of bytes allocated (undisposed) at this time.
+   * - `numTensors`: number of unique tensors allocated
+   * - `numDataBuffers`: number of unique data buffers allocated
    *   (undisposed) at this time, which is ≤ the number of tensors
    *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same
    *   data buffer with `a`).
-   * - `unreliable` optional boolean:
-   *    - On WebGL, not present (falsy).
+   * - `unreliable`: optional boolean:
+   *    - On WebGL, not present (always reliable).
    *    - On CPU, true. Due to automatic garbage collection, these numbers
    *     represent undisposed tensors, i.e. not wrapped in `dl.tidy()`, or
    *     lacking a call to `tensor.dispose()`.
+   * - `backendInfo`: Backend-specific information.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
-  static memory():
-      {numDataBuffers: number; numBytes: number; unreliable?: boolean} {
+  static memory(): MemoryInfo {
     return ENV.engine.memory();
   }
 
