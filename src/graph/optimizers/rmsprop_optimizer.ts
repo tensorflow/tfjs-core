@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
 import {keep, tidy} from '../../globals';
 import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
