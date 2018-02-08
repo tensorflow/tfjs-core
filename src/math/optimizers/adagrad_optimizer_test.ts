@@ -42,6 +42,7 @@ const tests: MathTests = it => {
     // Cost & accumulator should be the only additional arrays.
     expect(math.getNumTensors()).toBe(numTensors + 2);
 
+    // epsilon = 1-e8
     // newAccumulatedGrad = accumulatedGrad + grad^2
     // x -= (learningRate * grad) / sqrt(newAccumulatedGrad + eps)
     //

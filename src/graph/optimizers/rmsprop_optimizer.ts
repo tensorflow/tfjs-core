@@ -22,17 +22,14 @@ import {SessionRuntime} from '../../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
+import {scalar} from '../../math/ops';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
 import {NamedTensorMap, NamedVariableMap} from '../../math/types';
-import {scalar, zerosLike} from '../ops';
 
 export class RMSPropOptimizer extends Optimizer {
-  private c: Scalar;
   private epsilon: Scalar;
   private gamma: Scalar;
-
-  private cache: NamedTensorMap;
 
   constructor(
       protected learningRate: number, gamma: number,
@@ -40,35 +37,13 @@ export class RMSPropOptimizer extends Optimizer {
       specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
 
-    this.c = scalar(-learningRate);
     this.epsilon = scalar(1e-6);
     this.gamma = scalar(gamma);
   }
 
   // THIS IS INCORRECT - RMSPROP TAKES 2 ARGUMENTS, NOT 1 GAMMA
   applyGradients(variableGradients: NamedVariableMap) {
-    for (const variableName in variableGradients) {
-      const variable = ENV.engine.registeredVariables[variableName];
-      // Initialize cache to 0.
-      if (this.cache[variableName] == null) {
-        this.cache[variableName] = keep(zerosLike(variable));
-      }
-
-      const gradient = variableGradients[variableName];
-      const oldCache = this.cache[variableName];
-
-      const newVariable = tidy(() => {
-        const cache = this.gamma.mul(oldCache).add(
-            this.one.sub(this.gamma).mul(gradient.square()));
-        oldCache.dispose();
-        this.cache[variableName] = keep(cache);
-
-        return this.c.mul(gradient.div(cache.sqrt().add(this.epsilon)))
-            .add(variable);
-      });
-
-      variable.assign(keep(newVariable));
-    }
+    throw new Error(`RMSProp optimizer not implemented for eager.`);
   }
 
   // Graph

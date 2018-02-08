@@ -27,16 +27,12 @@ import {AdadeltaOptimizer} from './adadelta_optimizer';
 const tests: MathTests = it => {
   it('basic', math => {
     const learningRate = .1;
-    const momentum = .5;
-    const optimizer = dl.train.adadelta(learningRate, momentum);
+    const rho = .95;
+    const optimizer = dl.train.adadelta(learningRate, rho);
 
-    const w = dl.variable(dl.zeros([1, 2]));
-    const b = dl.zeros([1]);
-    const x = dl.tensor1d([2, 4]);
+    const x = dl.variable(dl.tensor1d([1, 2]));
 
-    // TODO(nsthorat): Use tensordot() instead of reshapes when it's ready.
-    const f = () =>
-        w.reshape([1, 2]).matMul(x.reshape([2, 1])).add(b).sum() as dl.Scalar;
+    const f = () => x.square().sum() as dl.Scalar;
 
     let numTensors = math.getNumTensors();
 
@@ -45,39 +41,33 @@ const tests: MathTests = it => {
     // Cost & 2 accumulators should be the only additional arrays.
     expect(math.getNumTensors()).toBe(numTensors + 3);
 
-    // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
-    // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
-    //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
-    //            = [.8, 3.2]
-    // updates = [sqrt(old_updates_w1 + eps)/sqrt(old_cache_w1 +
-    // eps)*grad_w1,
-    //            sqrt(old_updates_w2 + eps)/sqrT(old_cache_w2 +
-    //            eps)*grad_w2] = [2, 4]
-    // w = [ w1_old - lr*updates_w1,
-    //            w2_old - lr*updates_w2]
-    //            = [-0.2, -0.4]
-    // new_updates = [gamma * old_updates_w1 + (1 - gamma) * 2**2,
-    //                gamma * old_updates_w2 + (1 - gamma) * 4**2]
-    //             = [0.8, 3.2]
+    // epsilon = 1-e8
+    // newAccumulatedGrad = rho * accumulatedGrad + (1 - rho) * grad ^ 2
+    // updates = -grad * sqrt(accumulatedUpdate + epsilon) /
+    //     sqrt(accumulatedGrad + epsilon)
+    // newAccumulatedUpdate = rho * accumulatedUpdate + (1 - rho) * updates ^ 2
+    // x += learningRate * updates
     //
-    test_util.expectArraysClose(w, [-0.2, -0.4]);
+    // de/dx = [2, 4]
+    // accumulatedGrad = [0, 0]
+    // newAccumulatedGrad = [.2, .8]
+    // updates = [-2, -4]
+    // newAccumulatedUpdate = [.2, .8]
+    // x = [0.8, 1.6]
+    test_util.expectArraysClose(x, [0.8, 1.6]);
 
     cost.dispose();
     numTensors = math.getNumTensors();
 
     cost = optimizer.minimize(f, /* returnCost */ false);
 
-    // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
-    //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
-    //            = [1.44, 5.76]
-    // updates = [sqrt(old_updates_w1 + eps)/sqrt(old_cache_w1 +
-    // eps)*grad_w1,
-    //            sqrt(old_updates_w2 + eps)/sqrT(old_cache_w2 +
-    //            eps)*grad_w2] = [2, 4]
-    // w = [ w1_old - lr*updates_w1,
-    //            w2_old - lr*updates_w2]
-    //            = [-0.4, -0.8]
-    test_util.expectArraysClose(w, [-.4, -.8]);
+    // de/dx = [1.6, 3.2]
+    // accumulatedGrad = [.2, .8]
+    // accumulatedUpdate = [.2, .8]
+    // newAccumulatedGrad = [0.318, 1.272]
+    // updates = [-1.6, -3.2]
+    // x = [0.6, 1.28]
+    test_util.expectArraysClose(x, [0.6, 1.28]);
 
     // There should be no new additional Tensors.
     expect(math.getNumTensors()).toBe(numTensors);
@@ -85,8 +75,6 @@ const tests: MathTests = it => {
     expect(cost).toBe(null);
 
     x.dispose();
-    b.dispose();
-    w.dispose();
     optimizer.dispose();
 
     // There should be no more Tensors.

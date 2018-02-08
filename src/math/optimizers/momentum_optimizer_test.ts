@@ -19,7 +19,7 @@ import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import {Scalar, Tensor1D, variable} from '../../math/tensor';
+import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {MathTests} from '../../test_util';
 
@@ -31,13 +31,9 @@ const tests: MathTests = it => {
     const momentum = .5;
     const optimizer = dl.train.momentum(learningRate, momentum);
 
-    const w = variable(dl.zeros([1, 2]));
-    const b = dl.zeros([1]);
-    const x = dl.tensor1d([2, 4]);
+    const x = dl.variable(dl.tensor1d([1, 2]));
 
-    // TODO(nsthorat): Use tensordot() instead of reshapes when it's ready.
-    const f = () =>
-        w.reshape([1, 2]).matMul(x.reshape([2, 1])).add(b).sum() as Scalar;
+    const f = () => x.square().sum() as dl.Scalar;
 
     let numTensors = math.getNumTensors();
 
@@ -46,21 +42,24 @@ const tests: MathTests = it => {
     // Cost / velocity should be the only additional arrays.
     expect(math.getNumTensors()).toBe(numTensors + 2);
 
-    // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
-    // velocity_w = [momentum* old_vel_w1 + x_1,
-    //                momentum* old_vel_w2 + x_2] = [2,4]
-    // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.2, -0.4]
-    test_util.expectArraysClose(w, [-0.2, -0.4]);
+    // newAccumulation = momentum * accumulation + gradient
+    // newVariable += -learningRate * newAccumulation + variable
+    //
+    // de/dx = [2, 4]
+    // newAccumulation = [2, 4]
+    // x = [.8, 1.6]
+    test_util.expectArraysClose(x, [.8, 1.6]);
 
     cost.dispose();
     numTensors = math.getNumTensors();
 
     cost = optimizer.minimize(f, /* returnCost */ false);
 
-    // velocity_w = [momentum* old_vel_w1 + x_1,
-    //                momentum* old_vel_w2 + x_2] = [3,6]
-    // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.5, -1.0]
-    test_util.expectArraysClose(w, new Float32Array([-.5, -1.0]));
+    // de/dx = [1.6, 3.2]
+    // accumulation = [2, 4]
+    // newAccumulation = [2.6, 5.2]
+    // x = [0.54, 1.08]
+    test_util.expectArraysClose(x, [0.54, 1.08]);
 
     // There should be no new additional Tensors.
     expect(math.getNumTensors()).toBe(numTensors);
@@ -68,8 +67,6 @@ const tests: MathTests = it => {
     expect(cost).toBe(null);
 
     x.dispose();
-    b.dispose();
-    w.dispose();
     optimizer.dispose();
 
     // There should be no more Tensors.

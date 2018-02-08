@@ -36,38 +36,36 @@ import {scalar, zerosLike} from '../ops';
 @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class MomentumOptimizer extends SGDOptimizer {
   private m: Scalar;
-  private variableVelocities: NamedTensorMap;
+  private accumulations: NamedTensorMap;
 
   constructor(
       protected learningRate: number, private momentum: number,
       specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.m = scalar(this.momentum);
-    this.variableVelocities = {};
+    this.accumulations = {};
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
       const variable = ENV.engine.registeredVariables[variableName];
-      // Initialize velocities to 0.
-      if (this.variableVelocities[variableName] == null) {
-        this.variableVelocities[variableName] = keep(zerosLike(variable));
+      if (this.accumulations[variableName] == null) {
+        this.accumulations[variableName] = keep(zerosLike(variable));
       }
 
-      const oldVelocity = this.variableVelocities[variableName];
+      const accumulation = this.accumulations[variableName];
       const gradient = variableGradients[variableName];
 
-      const [newVelocity, newVariableValue] = tidy(() => {
-        const newVelocity = this.m.mul(oldVelocity).add(gradient);
-        const newVariableValue = this.c.mul(newVelocity).add(variable);
+      const newVariable = tidy(() => {
+        const newAccumulation = this.m.mul(accumulation).add(gradient);
 
-        return [newVelocity, newVariableValue];
+        this.accumulations[variableName].dispose();
+        this.accumulations[variableName] = keep(newAccumulation);
+
+        return this.c.mul(newAccumulation).add(variable);
       });
 
-      this.variableVelocities[variableName].dispose();
-      this.variableVelocities[variableName] = keep(newVelocity);
-
-      variable.assign(newVariableValue);
+      variable.assign(newVariable);
     }
   }
 
@@ -124,9 +122,9 @@ export class MomentumOptimizer extends SGDOptimizer {
     if (this.variableVelocitiesGraph != null) {
       this.variableVelocitiesGraph.dispose();
     }
-    if (this.variableVelocities != null) {
-      for (const variableName in this.variableVelocities) {
-        this.variableVelocities[variableName].dispose();
+    if (this.accumulations != null) {
+      for (const variableName in this.accumulations) {
+        this.accumulations[variableName].dispose();
       }
     }
   }
