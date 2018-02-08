@@ -20,6 +20,8 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import * as util from '../util';
 
+import * as selu_util from './selu_util';
+
 // dl.relu
 {
   const tests: MathTests = it => {
@@ -1461,8 +1463,8 @@ import * as util from '../util';
 
 // dl.selu
 {
-  const scaleAlpha = 1.7580993408473768599402175208123;
-  const scale = 1.0507009873554804934193349852946;
+  const scaleAlpha = selu_util.SELU_SCALEALPHA;
+  const scale = selu_util.SELU_SCALE;
 
   const tests: MathTests = it => {
     it('calculate selu', () => {
@@ -1564,6 +1566,30 @@ import * as util from '../util';
         dl.clip(a, min, max);
       };
       expect(f).toThrowError();
+    });
+
+    it('derivative: 1D tensor', math => {
+      const min = -1;
+      const max = 2;
+      const x = dl.tensor1d([3, -2, 1]);  // Only 1 is not clipped.
+      const dy = dl.tensor1d([5, 50, 500]);
+      const gradients = math.vjp(() => math.clip(x, min, max), x, dy);
+
+      expect(gradients.shape).toEqual(x.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [0, 0, 500], 1e-1);
+    });
+
+    it('derivative: scalar', math => {
+      const min = -1;
+      const max = 2;
+      const x = dl.scalar(-10);  // Clipped.
+      const dy = dl.scalar(5);
+      const gradients = math.vjp(() => math.clip(x, min, max), x, dy);
+
+      expect(gradients.shape).toEqual(x.shape);
+      expect(gradients.dtype).toEqual('float32');
+      test_util.expectArraysClose(gradients, [0], 1e-1);
     });
   };
 
