@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
-import {MatrixOrientation} from './backends/types/matmul';
+import {MatrixOrientation} from './matmul';
 import {Rank} from './types';
 
 const commonTests: MathTests = it => {
@@ -70,8 +70,7 @@ const commonTests: MathTests = it => {
     const b = dl.zeros<Rank.R2>([3, 2]);
 
     const f = () => {
-      dl.matMul(
-          a, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED);
+      dl.matMul(a, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED);
     };
     expect(f).toThrowError();
   });
@@ -81,8 +80,7 @@ const commonTests: MathTests = it => {
     const b = dl.zeros<Rank.R2>([3, 2]);
 
     const f = () => {
-      dl.matMul(
-          a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR);
+      dl.matMul(a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR);
     };
     expect(f).toThrowError();
   });

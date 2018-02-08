@@ -16,8 +16,8 @@
  */
 
 import {keep, tidy} from '../../globals';
-import {MatrixOrientation} from '../../math/backends/types/matmul';
 import {NDArrayMath} from '../../math/math';
+import {MatrixOrientation} from '../../math/matmul';
 import {Tensor1D, Tensor2D} from '../../math/tensor';
 import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';

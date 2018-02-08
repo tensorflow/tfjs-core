@@ -17,10 +17,16 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
-
-import {MatrixOrientation} from './backends/types/matmul';
 import {doc, operation} from './decorators';
 import {Scalar, Tensor1D, Tensor2D} from './tensor';
+
+export enum MatrixOrientation {
+  REGULAR,
+  TRANSPOSED
+}
+
+const REGULAR = MatrixOrientation.REGULAR;
+const TRANSPOSED = MatrixOrientation.TRANSPOSED;
 
 export class Ops {
   /**
@@ -29,20 +35,18 @@ export class Ops {
    * in other cases.
    * @param a First matrix in dot product operation.
    * @param b Second matrix in dot product operation.
-   * @param aOrientation The MatrixOrientation of A. If using TRANSPOSED, will
+   * @param transposeA The MatrixOrientation of A. If using TRANSPOSED, will
    * compute A^T * B.
-   * @param bOrientation The MatrixOrientation of B. If using TRANSPOSED, will
+   * @param transposeB The MatrixOrientation of B. If using TRANSPOSED, will
    * compute A * B^T.
    */
   @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static matMul(
-      a: Tensor2D, b: Tensor2D, aOrientation = MatrixOrientation.REGULAR,
-      bOrientation = MatrixOrientation.REGULAR): Tensor2D {
-    const innerShapeA =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
-    const innerShapeB =
-        (bOrientation === MatrixOrientation.REGULAR) ? b.shape[0] : b.shape[1];
+      a: Tensor2D, b: Tensor2D, transposeA = REGULAR, transposeB = REGULAR):
+      Tensor2D {
+    const innerShapeA = (transposeA === REGULAR) ? a.shape[1] : a.shape[0];
+    const innerShapeB = (transposeB === REGULAR) ? b.shape[0] : b.shape[1];
 
     util.assert(
         a.rank === 2 && b.rank === 2,
@@ -53,26 +57,20 @@ export class Ops {
         innerShapeA === innerShapeB,
         `Error in matMul: inner shapes (${innerShapeA}) and (` +
             `${innerShapeB}) of Tensors with shapes ${a.shape} and ` +
-            `${b.shape} and orientations ${MatrixOrientation[aOrientation]}` +
-            ` and ${MatrixOrientation[bOrientation]} must match.`);
+            `${b.shape} and orientations ${MatrixOrientation[transposeA]}` +
+            ` and ${MatrixOrientation[transposeB]} must match.`);
 
-    return ENV.engine.executeKernel(
-               'MatMul', {inputs: {a, b}, args: {aOrientation, bOrientation}},
-               (dy: Tensor2D, y: Tensor2D) => {
-                 if (aOrientation === MatrixOrientation.TRANSPOSED ||
-                     bOrientation === MatrixOrientation.TRANSPOSED) {
-                   throw new Error(
-                       `Backprop for transposed MatMul not yet implemented.`);
-                 }
-                 return {
-                   a: () => dy.matMul(
-                                b.toFloat(), MatrixOrientation.REGULAR,
-                                MatrixOrientation.TRANSPOSED) as Tensor2D,
-                   b: () => a.toFloat().matMul(
-                                dy, MatrixOrientation.TRANSPOSED,
-                                MatrixOrientation.REGULAR) as Tensor2D
-                 };
-               }) as Tensor2D;
+    const grad = (dy: Tensor2D, y: Tensor2D) => {
+      if (transposeA === TRANSPOSED || transposeB === TRANSPOSED) {
+        throw new Error(`Backprop for transposed MatMul not yet implemented.`);
+      }
+      return {
+        a: () => dy.matMul(b.toFloat(), REGULAR, TRANSPOSED),
+        b: () => a.toFloat().matMul(dy, TRANSPOSED, REGULAR)
+      };
+    };
+    return ENV.engine.runKernel(
+        backend => backend.matMul(a, b, transposeA, transposeB), {a, b}, grad);
   }
 
   /**

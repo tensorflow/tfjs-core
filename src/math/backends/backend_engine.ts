@@ -25,7 +25,7 @@ import {Rank} from '../types';
 
 import {MathBackend, TensorStorage} from './backend';
 import * as kernel_registry from './kernel_registry';
-import {KernelConfigRegistry} from './kernel_registry';
+import {Kernel, KernelConfigRegistry} from './kernel_registry';
 import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
 import {KernelNode, Tape, TapeNode, TapeNodeInputGradientTensors} from './tape_types';
@@ -71,6 +71,36 @@ export class BackendEngine implements TensorManager, TensorStorage {
     this.activeScope = {keep: [], track: []};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
+  }
+
+  runKernel<T extends Tensor, I extends NamedTensorMap>(
+      kernelFn: (backend: MathBackend) => T, inputs: I,
+      grad?: (dy: T, y: T) => {[P in keyof I]: () => I[P]}): T {
+    let result: T;
+    // TODO(smilkov): Figure out kernel name.
+    const kernelName = '' as Kernel;
+    if (!ENV.get('DEBUG')) {
+      result = kernelFn(this.backend);
+    } else {
+      result =
+          this.profiler.profileKernel(kernelName, () => kernelFn(this.backend));
+    }
+
+    const recordKernel =
+        this.activeTape != null && this.customGradientDepth === 0;
+    if (recordKernel) {
+      const evaluatedNode: KernelNode = {
+        id: this.nextTapeNodeId++,
+        type: 'kernel',
+        name: kernelName,
+        kernel: kernelName,
+        inputAndArgs: {inputs},
+        output: result,
+        gradient: grad
+      };
+      this.activeTape.push(evaluatedNode);
+    }
+    return result;
   }
 
   executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, C

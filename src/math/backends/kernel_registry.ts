@@ -32,7 +32,6 @@ import {Conv2DDerBiasNode, Conv2DDerFilterNode, Conv2DDerInputNode, Conv2DNode, 
 import {GatherNode} from './types/gather';
 import {EqualNode, LogicalNode, WhereNode} from './types/logical';
 import {LRN4DNode} from './types/lrn';
-import {MatMulNode} from './types/matmul';
 import {MaximumNode, MaxNode, MinimumNode, MinNode} from './types/minmax';
 import {MultinomialNode} from './types/multinomial';
 import {OneHotNode} from './types/onehot';
@@ -56,12 +55,7 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
                   KernelConfigRegistry<R>[K]['output']>(
     backend: MathBackend, kernelName: K,
     inputAndArgs: KernelConfigRegistry<R>[K]['inputAndArgs']): O {
-  if (kernelName === 'MatMul') {
-    const config = inputAndArgs as MatMulNode['inputAndArgs'];
-    return backend.matMul(
-               config.inputs.a, config.inputs.b, config.args.aOrientation,
-               config.args.bOrientation) as O;
-  } else if (kernelName === 'Slice1D') {
+  if (kernelName === 'Slice1D') {
     const config = inputAndArgs as Slice1DNode['inputAndArgs'];
     return backend.slice1D(
                config.inputs.x, config.args.begin, config.args.size) as O;
@@ -366,7 +360,6 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
 }
 
 export interface KernelConfigRegistry<R extends Rank> {
-  MatMul: MatMulNode;
   Slice1D: Slice1DNode;
   Slice2D: Slice2DNode;
   Slice3D: Slice3DNode;

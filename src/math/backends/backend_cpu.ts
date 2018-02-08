@@ -16,23 +16,21 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import * as broadcast_util from '../broadcast_util';
 import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
+import {MatrixOrientation} from '../matmul';
 import * as ops from '../ops';
 import {tensor2d, tensor3d, tensor4d} from '../ops';
 import * as selu_util from '../selu_util';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
-
 import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
-import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
   private data: {[dataId: number]: DataTypeMap[DataType]} = {};
