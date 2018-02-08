@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import {NDArrayMath} from '../math/math';
-import {NDArray} from '../math/ndarray';
+import {Tensor} from '../math/tensor';
 import * as util from '../util';
 
 /**
@@ -26,15 +25,13 @@ export interface InputProvider {
   /**
    * Get the next input as a copy. This is important because the data might
    * get uploaded to the GPU and modify the original data.
-   * @param math NDArrayMath
    */
-  getNextCopy(math: NDArrayMath): NDArray;
+  getNextCopy(): Tensor;
   /**
    * Dispose the input copy.
-   * @param math NDArrayMath
    * @param copy The copy provided from getNextCopy
    */
-  disposeCopy(math: NDArrayMath, copy: NDArray): void;
+  disposeCopy(copy: Tensor): void;
 }
 
 /**
@@ -66,7 +63,7 @@ export abstract class InMemoryShuffledInputProviderBuilder implements
    * @param inputs All of the inputs, size: [number of inputs][number of
    * examples].
    */
-  constructor(protected inputs: NDArray[][]) {
+  constructor(protected inputs: Tensor[][]) {
     this.shuffledIndices = util.createShuffledIndices(inputs[0].length);
     this.numInputs = inputs.length;
 
@@ -103,7 +100,7 @@ export abstract class InMemoryShuffledInputProviderBuilder implements
     return returnIdx;
   }
 
-  protected getNextInput(inputId: number): NDArray {
+  protected getNextInput(inputId: number): Tensor {
     const currentExampleIndex = this.getCurrentExampleIndex();
 
     return this.inputs[inputId][this.shuffledIndices[currentExampleIndex]];
@@ -129,7 +126,7 @@ export abstract class InMemoryShuffledInputProviderBuilder implements
 }
 
 /**
- * An in CPU memory ShuffledInputProviderBuilder that shuffles NDArrays on the
+ * An in CPU memory ShuffledInputProviderBuilder that shuffles Tensors on the
  * CPU and keeps them mutually in sync.
  */
 export class InCPUMemoryShuffledInputProviderBuilder extends
@@ -138,10 +135,10 @@ export class InCPUMemoryShuffledInputProviderBuilder extends
     const shuffledInputProvider = this;
 
     return {
-      getNextCopy(math: NDArrayMath): NDArray {
-        return NDArray.like(shuffledInputProvider.getNextInput(inputId));
+      getNextCopy(): Tensor {
+        return shuffledInputProvider.getNextInput(inputId).clone();
       },
-      disposeCopy(math: NDArrayMath, copy: NDArray) {
+      disposeCopy(copy: Tensor) {
         copy.dispose();
       }
     };
@@ -149,7 +146,7 @@ export class InCPUMemoryShuffledInputProviderBuilder extends
 }
 
 /**
- * An in GPU memory ShuffledInputProviderBuilder that shuffles NDArrays on the
+ * An in GPU memory ShuffledInputProviderBuilder that shuffles Tensors on the
  * GPU and keeps them mutually in sync. This is more performant than the CPU
  * version as textures will stay in memory, however this is more GPU memory
  * intensive as it keeps textures resident in GPU memory.
@@ -160,10 +157,10 @@ export class InGPUMemoryShuffledInputProviderBuilder extends
     const shuffledInputProvider = this;
 
     return {
-      getNextCopy(math: NDArrayMath): NDArray {
-        return math.clone(shuffledInputProvider.getNextInput(inputId));
+      getNextCopy(): Tensor {
+        return shuffledInputProvider.getNextInput(inputId).clone();
       },
-      disposeCopy(math: NDArrayMath, copy: NDArray) {
+      disposeCopy(copy: Tensor) {
         copy.dispose();
       }
     };

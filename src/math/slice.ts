@@ -16,9 +16,10 @@
  */
 
 import {ENV} from '../environment';
-import {operation} from './decorators';
-import {Array1D, Array2D, Array3D, Array4D, NDArray} from './ndarray';
+
+import {doc, operation} from './decorators';
 import * as slice_util from './slice_util';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {Rank, ShapeMap} from './types';
 
 export class Ops {
@@ -30,11 +31,12 @@ export class Ops {
    * @param begin The offset to start the slice from.
    * @param size The size of the slice.
    */
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static slice1D(x: Array1D, begin: number, size: number): Array1D {
+  static slice1d(x: Tensor1D, begin: number, size: number): Tensor1D {
     slice_util.assertParamsValid(x, [begin], [size]);
     return ENV.engine.executeKernel(
-               'Slice1D', {inputs: {x}, args: {begin, size}}) as Array1D;
+               'Slice1D', {inputs: {x}, args: {begin, size}}) as Tensor1D;
   }
 
   /**
@@ -45,12 +47,13 @@ export class Ops {
    * @param begin The [row, col] 2d coordinates to start the slice from.
    * @param size The size of the slice.
    */
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static slice2D(x: Array2D, begin: [number, number], size: [number, number]):
-      Array2D {
+  static slice2d(x: Tensor2D, begin: [number, number], size: [number, number]):
+      Tensor2D {
     slice_util.assertParamsValid(x, begin, size);
     return ENV.engine.executeKernel(
-               'Slice2D', {inputs: {x}, args: {begin, size}}) as Array2D;
+               'Slice2D', {inputs: {x}, args: {begin, size}}) as Tensor2D;
   }
 
   /**
@@ -61,13 +64,14 @@ export class Ops {
    * @param begin The [row, col, depth] 3d coordinates to start the slice from.
    * @param size The size of the slice.
    */
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static slice3D(x: Array3D, begin: [number, number, number], size: [
+  static slice3d(x: Tensor3D, begin: [number, number, number], size: [
     number, number, number
-  ]): Array3D {
+  ]): Tensor3D {
     slice_util.assertParamsValid(x, begin, size);
     return ENV.engine.executeKernel(
-               'Slice3D', {inputs: {x}, args: {begin, size}}) as Array3D;
+               'Slice3D', {inputs: {x}, args: {begin, size}}) as Tensor3D;
   }
 
   /**
@@ -79,34 +83,36 @@ export class Ops {
    *              slice from.
    * @param size The size of the slice.
    */
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static slice4D(x: Array4D, begin: [number, number, number, number], size: [
+  static slice4d(x: Tensor4D, begin: [number, number, number, number], size: [
     number, number, number, number
-  ]): Array4D {
+  ]): Tensor4D {
     slice_util.assertParamsValid(x, begin, size);
     return ENV.engine.executeKernel(
-               'Slice4D', {inputs: {x}, args: {begin, size}}) as Array4D;
+               'Slice4D', {inputs: {x}, args: {begin, size}}) as Tensor4D;
   }
 
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static slice<R extends Rank>(
-      x: NDArray<R>, begin: ShapeMap[R], size: ShapeMap[R]): NDArray<R> {
+      x: Tensor<R>, begin: ShapeMap[R], size: ShapeMap[R]): Tensor<R> {
     if (x.rank === 0) {
       throw new Error('Slicing scalar is not possible');
     } else if (x.rank === 1) {
-      return Ops.slice1D(x as Array1D, begin[0], size[0]) as NDArray<R>;
+      return Ops.slice1d(x as Tensor1D, begin[0], size[0]) as Tensor<R>;
     } else if (x.rank === 2) {
-      return Ops.slice2D(
-                 x as Array2D, begin as [number, number],
-                 size as [number, number]) as NDArray<R>;
+      return Ops.slice2d(
+                 x as Tensor2D, begin as [number, number],
+                 size as [number, number]) as Tensor<R>;
     } else if (x.rank === 3) {
-      return Ops.slice3D(
-                 x as Array3D, begin as [number, number, number],
-                 size as [number, number, number]) as NDArray<R>;
+      return Ops.slice3d(
+                 x as Tensor3D, begin as [number, number, number],
+                 size as [number, number, number]) as Tensor<R>;
     } else if (x.rank === 4) {
-      return Ops.slice4D(
-                 x as Array4D, begin as [number, number, number, number],
-                 size as [number, number, number, number]) as NDArray<R>;
+      return Ops.slice4d(
+                 x as Tensor4D, begin as [number, number, number, number],
+                 size as [number, number, number, number]) as Tensor<R>;
     } else {
       throw new Error(`Slicing for rank ${x.rank} not implemented yet`);
     }

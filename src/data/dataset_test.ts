@@ -16,13 +16,12 @@
  */
 
 import * as dl from '../index';
-import {Array2D, NDArray} from '../math/ndarray';
+import {Tensor} from '../math/tensor';
 import * as test_util from '../test_util';
-
 import {InMemoryDataset} from './dataset';
 
 class StubDataset extends InMemoryDataset {
-  constructor(data: NDArray[][]) {
+  constructor(data: Tensor[][]) {
     super(data.map(value => value[0].shape));
     this.dataset = data;
   }
@@ -36,14 +35,14 @@ describe('Dataset', () => {
   it('normalize', () => {
     const data = [
       [
-        Array2D.new([2, 3], [1, 2, 10, -1, -2, .75]),
-        Array2D.new([2, 3], [2, 3, 20, -2, 2, .5]),
-        Array2D.new([2, 3], [3, 4, 30, -3, -4, 0]),
-        Array2D.new([2, 3], [4, 5, 40, -4, 4, 1])
+        dl.tensor2d([1, 2, 10, -1, -2, .75], [2, 3]),
+        dl.tensor2d([2, 3, 20, -2, 2, .5], [2, 3]),
+        dl.tensor2d([3, 4, 30, -3, -4, 0], [2, 3]),
+        dl.tensor2d([4, 5, 40, -4, 4, 1], [2, 3])
       ],
       [
-        dl.randNormal([1]), dl.randNormal([1]), dl.randNormal([1]),
-        dl.randNormal([1])
+        dl.randomNormal([1]), dl.randomNormal([1]), dl.randomNormal([1]),
+        dl.randomNormal([1])
       ]
     ];
     const dataset = new StubDataset(data);

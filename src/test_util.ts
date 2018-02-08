@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
-import {ENV, Features} from './environment';
+import {BackendType, ENV, Environment, Features} from './environment';
 import {MathBackendCPU} from './math/backends/backend_cpu';
 import {MathBackendWebGL} from './math/backends/backend_webgl';
 import {NDArrayMath} from './math/math';
-import {NDArray} from './math/ndarray';
+import {Tensor} from './math/tensor';
 import {DataType, TypedArray} from './math/types';
 import * as util from './util';
 
@@ -83,9 +83,9 @@ export function skewness(values: TypedArray|number[]) {
   return (1 / n) * sum3 / Math.pow((1 / (n - 1)) * sum2, 3 / 2);
 }
 
-export function jarqueBeraNormalityTest(a: NDArray|TypedArray|number[]) {
+export function jarqueBeraNormalityTest(a: Tensor|TypedArray|number[]) {
   let values: TypedArray|number[];
-  if (a instanceof NDArray) {
+  if (a instanceof Tensor) {
     values = a.dataSync();
   } else {
     values = a;
@@ -104,10 +104,10 @@ export function jarqueBeraNormalityTest(a: NDArray|TypedArray|number[]) {
 }
 
 export function expectArrayInMeanStdRange(
-    actual: NDArray|TypedArray|number[], expectedMean: number,
+    actual: Tensor|TypedArray|number[], expectedMean: number,
     expectedStdDev: number, epsilon = TEST_EPSILON) {
   let actualValues: TypedArray|number[];
-  if (actual instanceof NDArray) {
+  if (actual instanceof Tensor) {
     actualValues = actual.dataSync();
   } else {
     actualValues = actual;
@@ -119,9 +119,9 @@ export function expectArrayInMeanStdRange(
 }
 
 export function expectArraysClose(
-    actual: NDArray|TypedArray|number[],
-    expected: NDArray|TypedArray|number[]|boolean[], epsilon = TEST_EPSILON) {
-  if (!(actual instanceof NDArray) && !(expected instanceof NDArray)) {
+    actual: Tensor|TypedArray|number[],
+    expected: Tensor|TypedArray|number[]|boolean[], epsilon = TEST_EPSILON) {
+  if (!(actual instanceof Tensor) && !(expected instanceof Tensor)) {
     const aType = actual.constructor.name;
     const bType = expected.constructor.name;
 
@@ -130,7 +130,7 @@ export function expectArraysClose(
           `Arrays are of different type actual: ${aType} ` +
           `vs expected: ${bType}`);
     }
-  } else if (actual instanceof NDArray && expected instanceof NDArray) {
+  } else if (actual instanceof Tensor && expected instanceof Tensor) {
     if (actual.dtype !== expected.dtype) {
       throw new Error(
           `Arrays are of different type actual: ${actual.dtype} ` +
@@ -145,12 +145,12 @@ export function expectArraysClose(
 
   let actualValues: TypedArray|number[];
   let expectedValues: TypedArray|number[]|boolean[];
-  if (actual instanceof NDArray) {
+  if (actual instanceof Tensor) {
     actualValues = actual.dataSync();
   } else {
     actualValues = actual;
   }
-  if (expected instanceof NDArray) {
+  if (expected instanceof Tensor) {
     expectedValues = expected.dataSync();
   } else {
     expectedValues = expected;
@@ -177,8 +177,8 @@ export function expectArraysClose(
 }
 
 export function expectArraysEqual(
-    actual: NDArray|TypedArray|number[],
-    expected: NDArray|TypedArray|number[]|boolean[]) {
+    actual: Tensor|TypedArray|number[],
+    expected: Tensor|TypedArray|number[]|boolean[]) {
   return expectArraysClose(actual, expected, 0);
 }
 
@@ -200,9 +200,9 @@ function areClose(a: number, e: number, epsilon: number): boolean {
 }
 
 export function expectValuesInRange(
-    actual: NDArray|TypedArray|number[], low: number, high: number) {
+    actual: Tensor|TypedArray|number[], low: number, high: number) {
   let actualVals: TypedArray|number[];
-  if (actual instanceof NDArray) {
+  if (actual instanceof Tensor) {
     actualVals = actual.dataSync();
   } else {
     actualVals = actual;
@@ -267,10 +267,9 @@ export function describeMathCPU(
   const testNameBase = 'CPU: math.' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
-      (testName, tests, features) => executeMathTests(testName, tests, () => {
-        const safeMode = true;
-        return new NDArrayMath(new MathBackendCPU(), safeMode);
-      }, features), featuresList);
+      (testName, tests, features) =>
+          executeMathTests(testName, tests, 'cpu', features),
+      featuresList);
 }
 
 export function describeMathGPU(
@@ -278,10 +277,9 @@ export function describeMathGPU(
   const testNameBase = 'WebGL: math.' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests as Tests[],
-      (testName, tests, features) => executeMathTests(testName, tests, () => {
-        const safeMode = true;
-        return new NDArrayMath(new MathBackendWebGL(), safeMode);
-      }, features), featuresList);
+      (testName, tests, features) =>
+          executeMathTests(testName, tests, 'webgl', features),
+      featuresList);
 }
 
 export function describeCustom(
@@ -340,30 +338,26 @@ const PROMISE_XIT: It = (name: string, testFunc: () => void|Promise<void>) => {
 };
 
 export function executeMathTests(
-    testName: string, tests: MathTests[], mathFactory: () => NDArrayMath,
+    testName: string, tests: MathTests[], backendType: BackendType,
     features?: Features) {
-  let math: NDArrayMath;
-
   const customBeforeEach = () => {
-    math = mathFactory();
-    ENV.setMath(math);
-    math.startScope();
+    Environment.setBackend(backendType);
+    ENV.engine.startScope();
   };
   const customAfterEach = () => {
-    math.endScope(null);
-    math.dispose();
+    ENV.engine.endScope(null);
   };
   const customIt: It =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
-        PROMISE_IT(name, () => testFunc(math));
+        PROMISE_IT(name, () => testFunc(ENV.math));
       };
   const customFit: It =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
-        PROMISE_FIT(name, () => testFunc(math));
+        PROMISE_FIT(name, () => testFunc(ENV.math));
       };
   const customXit: It =
       (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
-        PROMISE_XIT(name, () => testFunc(math));
+        PROMISE_XIT(name, () => testFunc(ENV.math));
       };
 
   executeTests(

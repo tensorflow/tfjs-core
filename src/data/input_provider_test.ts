@@ -16,17 +16,12 @@
  */
 
 import {ENV} from '../environment';
-import {NDArrayMath} from '../math/math';
-import {Array1D, Scalar} from '../math/ndarray';
+import * as dl from '../index';
 import {InCPUMemoryShuffledInputProviderBuilder} from './input_provider';
 
 describe('InCPUMemoryShuffledInputProviderBuilder', () => {
-  let math: NDArrayMath;
-
   beforeEach(() => {
-    const safeMode = false;
-    math = new NDArrayMath('cpu', safeMode);
-    ENV.setMath(math);
+    dl.setBackend('cpu');
   });
 
   afterEach(() => {
@@ -34,8 +29,8 @@ describe('InCPUMemoryShuffledInputProviderBuilder', () => {
   });
 
   it('ensure inputs stay in sync', () => {
-    const x1s = [Scalar.new(1), Scalar.new(2), Scalar.new(3)];
-    const x2s = [Scalar.new(10), Scalar.new(20), Scalar.new(30)];
+    const x1s = [dl.scalar(1), dl.scalar(2), dl.scalar(3)];
+    const x2s = [dl.scalar(10), dl.scalar(20), dl.scalar(30)];
 
     const shuffledInputProvider =
         new InCPUMemoryShuffledInputProviderBuilder([x1s, x2s]);
@@ -44,8 +39,8 @@ describe('InCPUMemoryShuffledInputProviderBuilder', () => {
 
     const seenNumbers: {[key: number]: boolean} = {};
     for (let i = 0; i < x1s.length; i++) {
-      const x1 = x1provider.getNextCopy(math);
-      const x2 = x2provider.getNextCopy(math);
+      const x1 = x1provider.getNextCopy();
+      const x2 = x2provider.getNextCopy();
 
       expect(x1.get() * 10).toEqual(x2.get());
 
@@ -61,16 +56,16 @@ describe('InCPUMemoryShuffledInputProviderBuilder', () => {
   });
 
   it('different number of examples', () => {
-    const x1s = [Scalar.new(1), Scalar.new(2)];
-    const x2s = [Scalar.new(10), Scalar.new(20), Scalar.new(30)];
+    const x1s = [dl.scalar(1), dl.scalar(2)];
+    const x2s = [dl.scalar(10), dl.scalar(20), dl.scalar(30)];
 
     expect(() => new InCPUMemoryShuffledInputProviderBuilder([x1s, x2s]))
         .toThrowError();
   });
 
   it('different shapes within input', () => {
-    const x1s = [Scalar.new(1), Array1D.new([1, 2])];
-    const x2s = [Scalar.new(10), Scalar.new(20), Scalar.new(30)];
+    const x1s = [dl.scalar(1), dl.tensor1d([1, 2])];
+    const x2s = [dl.scalar(10), dl.scalar(20), dl.scalar(30)];
 
     expect(() => new InCPUMemoryShuffledInputProviderBuilder([x1s, x2s]))
         .toThrowError();
@@ -78,12 +73,8 @@ describe('InCPUMemoryShuffledInputProviderBuilder', () => {
 });
 
 describe('InGPUMemoryShuffledInputProviderBuilder', () => {
-  let math: NDArrayMath;
-
   beforeEach(() => {
-    const safeMode = false;
-    math = new NDArrayMath('webgl', safeMode);
-    ENV.setMath(math);
+    dl.setBackend('webgl');
   });
 
   afterEach(() => {
@@ -91,8 +82,8 @@ describe('InGPUMemoryShuffledInputProviderBuilder', () => {
   });
 
   it('ensure inputs stay in sync', () => {
-    const x1s = [Scalar.new(1), Scalar.new(2), Scalar.new(3)];
-    const x2s = [Scalar.new(10), Scalar.new(20), Scalar.new(30)];
+    const x1s = [dl.scalar(1), dl.scalar(2), dl.scalar(3)];
+    const x2s = [dl.scalar(10), dl.scalar(20), dl.scalar(30)];
 
     const shuffledInputProvider =
         new InCPUMemoryShuffledInputProviderBuilder([x1s, x2s]);
@@ -101,16 +92,16 @@ describe('InGPUMemoryShuffledInputProviderBuilder', () => {
 
     const seenNumbers: {[key: number]: boolean} = {};
     for (let i = 0; i < x1s.length; i++) {
-      const x1 = x1provider.getNextCopy(math);
-      const x2 = x2provider.getNextCopy(math);
+      const x1 = x1provider.getNextCopy();
+      const x2 = x2provider.getNextCopy();
 
       expect(x1.get() * 10).toEqual(x2.get());
 
       seenNumbers[x1.get()] = true;
       seenNumbers[x2.get()] = true;
 
-      x1provider.disposeCopy(math, x1);
-      x2provider.disposeCopy(math, x1);
+      x1provider.disposeCopy(x1);
+      x2provider.disposeCopy(x1);
     }
 
     // Values are shuffled, make sure we've seen everything.
@@ -121,8 +112,8 @@ describe('InGPUMemoryShuffledInputProviderBuilder', () => {
   });
 
   it('different number of examples', () => {
-    const x1s = [Scalar.new(1), Scalar.new(2)];
-    const x2s = [Scalar.new(10), Scalar.new(20), Scalar.new(30)];
+    const x1s = [dl.scalar(1), dl.scalar(2)];
+    const x2s = [dl.scalar(10), dl.scalar(20), dl.scalar(30)];
 
     expect(() => new InCPUMemoryShuffledInputProviderBuilder([x1s, x2s]))
         .toThrowError();
@@ -136,8 +127,8 @@ describe('InGPUMemoryShuffledInputProviderBuilder', () => {
   });
 
   it('different shapes within input', () => {
-    const x1s = [Scalar.new(1), Array1D.new([1, 2])];
-    const x2s = [Scalar.new(10), Scalar.new(20), Scalar.new(30)];
+    const x1s = [dl.scalar(1), dl.tensor1d([1, 2])];
+    const x2s = [dl.scalar(10), dl.scalar(20), dl.scalar(30)];
 
     expect(() => new InCPUMemoryShuffledInputProviderBuilder([x1s, x2s]))
         .toThrowError();

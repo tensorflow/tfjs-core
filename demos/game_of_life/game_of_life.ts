@@ -18,11 +18,9 @@ import * as dl from 'deeplearn';
 
 /** Generates GameOfLife sequence pairs (current sequence + next sequence) */
 export class GameOfLife {
-  math: dl.NDArrayMath;
   size: number;
 
-  constructor(size: number, math: dl.NDArrayMath) {
-    this.math = math;
+  constructor(size: number) {
     this.size = size;
   }
 
@@ -30,12 +28,12 @@ export class GameOfLife {
     this.size = size;
   }
 
-  generateGolExample(): [dl.NDArray, dl.NDArray] {
-    let world: dl.NDArray;
-    let worldNext: dl.NDArray;
+  generateGolExample(): [dl.Tensor, dl.Tensor] {
+    let world: dl.Tensor;
+    let worldNext: dl.Tensor;
     dl.tidy(() => {
-      const randWorld: dl.Array2D =
-          dl.randUniform([this.size - 2, this.size - 2], 0, 2, 'int32');
+      const randWorld: dl.Tensor2D =
+          dl.randomUniform([this.size - 2, this.size - 2], 0, 2, 'int32');
       const worldPadded = GameOfLife.padArray(randWorld);
       // TODO(kreeger): This logic can be vectorized and kept on the GPU with a
       // logical_or() and where() implementations.
@@ -60,13 +58,13 @@ export class GameOfLife {
       }
       world = dl.keep(worldPadded);
       worldNext = dl.keep(GameOfLife.padArray(
-          dl.Array2D.new(randWorld.shape, nextWorldValues, 'int32')));
+          dl.tensor2d(nextWorldValues, randWorld.shape, 'int32')));
     });
     return [world, worldNext];
   }
 
   /** Counts total sum of neighbors for a given world. */
-  private countNeighbors(size: number, worldPadded: dl.Array2D): dl.Array2D {
+  private countNeighbors(size: number, worldPadded: dl.Tensor2D): dl.Tensor2D {
     return worldPadded.slice([0, 0], [size - 2, size - 2])
         .add(worldPadded.slice([0, 1], [size - 2, size - 2]))
         .add(worldPadded.slice([0, 2], [size - 2, size - 2]))
@@ -80,7 +78,7 @@ export class GameOfLife {
 
   /* Helper method to pad an array until the op is ready. */
   // TODO(kreeger, #409): Drop this when math.pad() is ready.
-  private static padArray(array: dl.NDArray): dl.Array2D {
+  private static padArray(array: dl.Tensor): dl.Tensor2D {
     const x1 = array.shape[0];
     const x2 = array.shape[1];
     const pad = 1;
@@ -106,7 +104,7 @@ export class GameOfLife {
         }
       }
     }
-    return dl.Array2D.new(shape as [number, number], values, 'int32');
+    return dl.tensor2d(values, shape as [number, number], 'int32');
   }
 }
 
@@ -116,13 +114,12 @@ export class GameOfLife {
  */
 export class GameOfLifeModel {
   session: dl.Session;
-  math: dl.NDArrayMath;
 
   optimizer: dl.AdagradOptimizer;
-  inputTensor: dl.Tensor;
-  targetTensor: dl.Tensor;
-  costTensor: dl.Tensor;
-  predictionTensor: dl.Tensor;
+  inputTensor: dl.SymbolicTensor;
+  targetTensor: dl.SymbolicTensor;
+  costTensor: dl.SymbolicTensor;
+  predictionTensor: dl.SymbolicTensor;
 
   size: number;
   batchSize: number;
@@ -130,10 +127,6 @@ export class GameOfLifeModel {
 
   // Maps tensors to InputProviders
   feedEntries: dl.FeedEntry[];
-
-  constructor(math: dl.NDArrayMath) {
-    this.math = math;
-  }
 
   setupSession(
       boardSize: number, batchSize: number, initialLearningRate: number,
@@ -165,10 +158,10 @@ export class GameOfLifeModel {
       this.costTensor =
           graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
     }
-    this.session = new dl.Session(graph, this.math);
+    this.session = new dl.Session(graph, dl.ENV.math);
   }
 
-  trainBatch(fetchCost: boolean, worlds: Array<[dl.NDArray, dl.NDArray]>):
+  trainBatch(fetchCost: boolean, worlds: Array<[dl.Tensor, dl.Tensor]>):
       number {
     this.setTrainingData(worlds);
 
@@ -182,7 +175,7 @@ export class GameOfLifeModel {
     return costValue;
   }
 
-  predict(world: dl.NDArray): dl.Array2D {
+  predict(world: dl.Tensor): dl.Tensor2D {
     let values = null;
     dl.tidy(() => {
       const mapping =
@@ -191,10 +184,10 @@ export class GameOfLifeModel {
       const evalOutput = this.session.eval(this.predictionTensor, mapping);
       values = evalOutput.dataSync();
     });
-    return dl.Array2D.new([this.size, this.size], values);
+    return dl.tensor2d(values, [this.size, this.size]);
   }
 
-  private setTrainingData(worlds: Array<[dl.NDArray, dl.NDArray]>): void {
+  private setTrainingData(worlds: Array<[dl.Tensor, dl.Tensor]>): void {
     const inputs = [];
     const outputs = [];
     for (let i = 0; i < worlds.length; i++) {
@@ -217,9 +210,9 @@ export class GameOfLifeModel {
 
   /* Helper method for creating a fully connected layer. */
   private static createFullyConnectedLayer(
-      graph: dl.Graph, inputLayer: dl.Tensor, layerIndex: number,
+      graph: dl.Graph, inputLayer: dl.SymbolicTensor, layerIndex: number,
       sizeOfThisLayer: number, includeRelu = true,
-      includeBias = true): dl.Tensor {
+      includeBias = true): dl.SymbolicTensor {
     return graph.layers.dense(
         'fully_connected_' + layerIndex.toString(), inputLayer, sizeOfThisLayer,
         includeRelu ? (x) => graph.relu(x) : (x) => graph.sigmoid(x),
@@ -228,8 +221,8 @@ export class GameOfLifeModel {
 
   /* Helper method for calculating loss. */
   private logLoss(
-      graph: dl.Graph, labelTensor: dl.Tensor,
-      predictionTensor: dl.Tensor): dl.Tensor {
+      graph: dl.Graph, labelTensor: dl.SymbolicTensor,
+      predictionTensor: dl.SymbolicTensor): dl.SymbolicTensor {
     const epsilon = graph.constant(1e-7);
     const one = graph.constant(1);
     const negOne = graph.constant(-1);

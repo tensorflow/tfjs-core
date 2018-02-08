@@ -17,13 +17,11 @@
 
 import {BackendType, ENV} from '../environment';
 import * as util from '../util';
-
 import * as array_ops from './array_ops';
 import {MathBackend} from './backends/backend';
-// tslint:disable-next-line:max-line-length
-import {customGradient, gradients, valueAndGradients, variableGradients, vjp} from './backends/gradients';
+import {Gradients} from './backends/gradients';
 import {ScopeResult} from './backends/tape_util';
-import {keep, tidy} from './backends/tracking';
+import {Tracking} from './backends/tracking';
 import * as batchnorm from './batchnorm';
 import * as binary_ops from './binary_ops';
 import * as compare from './compare';
@@ -33,7 +31,6 @@ import * as image_ops from './image_ops';
 import * as logical from './logical_ops';
 import * as lstm_ops from './lstm';
 import * as matmul from './matmul';
-import {Array1D, Array3D, Array4D, NDArray, Scalar} from './ndarray';
 import * as norm from './norm';
 import * as ops from './ops';
 import * as pool from './pool';
@@ -41,9 +38,13 @@ import * as reduction_ops from './reduction_ops';
 import * as reverse from './reverse';
 import * as slice from './slice';
 import * as softmax_ops from './softmax';
+import {Scalar, Tensor, Tensor1D, Tensor3D, Tensor4D} from './tensor';
 import * as transpose from './transpose';
 import {Rank} from './types';
 import * as unary_ops from './unary_ops';
+
+const tidy = Tracking.tidy;
+const keep = Tracking.keep;
 
 export class NDArrayMath {
   // Ops.
@@ -54,27 +55,27 @@ export class NDArrayMath {
   dotProduct = matmul.Ops.dotProduct;
 
   slice = slice.Ops.slice;
-  slice1D = slice.Ops.slice1D;
-  slice2D = slice.Ops.slice2D;
-  slice3D = slice.Ops.slice3D;
-  slice4D = slice.Ops.slice4D;
+  slice1D = slice.Ops.slice1d;
+  slice2D = slice.Ops.slice2d;
+  slice3D = slice.Ops.slice3d;
+  slice4D = slice.Ops.slice4d;
 
   reverse = reverse.Ops.reverse;
-  reverse1D = reverse.Ops.reverse1D;
-  reverse2D = reverse.Ops.reverse2D;
-  reverse3D = reverse.Ops.reverse3D;
-  reverse4D = reverse.Ops.reverse4D;
+  reverse1D = reverse.Ops.reverse1d;
+  reverse2D = reverse.Ops.reverse2d;
+  reverse3D = reverse.Ops.reverse3d;
+  reverse4D = reverse.Ops.reverse4d;
 
   concat = concat.Ops.concat;
-  concat1D = concat.Ops.concat1D;
-  concat2D = concat.Ops.concat2D;
-  concat3D = concat.Ops.concat3D;
-  concat4D = concat.Ops.concat4D;
+  concat1D = concat.Ops.concat1d;
+  concat2D = concat.Ops.concat2d;
+  concat3D = concat.Ops.concat3d;
+  concat4D = concat.Ops.concat4d;
 
   batchNormalization = batchnorm.Ops.batchNormalization;
-  batchNormalization2D = batchnorm.Ops.batchNormalization2D;
-  batchNormalization3D = batchnorm.Ops.batchNormalization3D;
-  batchNormalization4D = batchnorm.Ops.batchNormalization4D;
+  batchNormalization2D = batchnorm.Ops.batchNormalization2d;
+  batchNormalization3D = batchnorm.Ops.batchNormalization3d;
+  batchNormalization4D = batchnorm.Ops.batchNormalization4d;
 
   avgPool = pool.Ops.avgPool;
   maxPool = pool.Ops.maxPool;
@@ -85,7 +86,7 @@ export class NDArrayMath {
   conv1d = conv.Ops.conv1d;
   conv2d = conv.Ops.conv2d;
   conv2dTranspose = conv.Ops.conv2dTranspose;
-  depthwiseConv2D = conv.Ops.depthwiseConv2D;
+  depthwiseConv2D = conv.Ops.depthwiseConv2d;
   /** @deprecated */
   conv2dDerBias = conv.Ops.conv2dDerBias;
   /** @deprecated */
@@ -129,8 +130,10 @@ export class NDArrayMath {
   subtract = this.sub;  // Alias.
   subStrict = binary_ops.Ops.subStrict;
 
+  logicalNot = logical.Ops.logicalNot;
   logicalAnd = logical.Ops.logicalAnd;
   logicalOr = logical.Ops.logicalOr;
+  logicalXor = logical.Ops.logicalXor;
   where = logical.Ops.where;
 
   transpose = transpose.Ops.transpose;
@@ -189,79 +192,67 @@ export class NDArrayMath {
   tile = array_ops.Ops.tile;
   oneHot = array_ops.Ops.oneHot;
   multinomial = array_ops.Ops.multinomial;
-  pad1D = array_ops.Ops.pad1D;
-  pad2D = array_ops.Ops.pad2D;
+  pad1D = array_ops.Ops.pad1d;
+  pad2D = array_ops.Ops.pad2d;
 
   /** @deprecated Use dl.image.resizeBilinear() */
   resizeBilinear3D = image_ops.Ops.resizeBilinear;
 
   // Tracking methods.
-  keep = keep;
+  keep = Tracking.keep;
 
   // Gradient methods.
-  customGradient = customGradient;
-  gradients = gradients;
-  valueAndGradients = valueAndGradients;
-  variableGradients = variableGradients;
-  vjp = vjp;
+  customGradient = Gradients.customGradient;
+  gradients = Gradients.gradients;
+  valueAndGradients = Gradients.valueAndGradients;
+  variableGradients = Gradients.variableGradients;
+  vjp = Gradients.vjp;
 
-  register: typeof ENV.engine.register;
   engine: typeof ENV.engine;
-  getNumArrays: typeof ENV.engine.getNumArrays;
+  getNumTensors: typeof ENV.engine.getNumTensors;
   dispose: typeof ENV.engine.dispose;
   registeredVariables: typeof ENV.engine.registeredVariables;
-  write: typeof ENV.engine.write;
-  read: typeof ENV.engine.read;
-  readSync: typeof ENV.engine.readSync;
-  disposeData: typeof ENV.engine.disposeData;
-  registerVariable: typeof ENV.engine.registerVariable;
   startScope: typeof ENV.engine.startScope;
   endScope: typeof ENV.engine.endScope;
 
   /**
    * @param safeMode In safe mode, you must use math operations inside
-   *     a dl.tidy() which will automatically clean up intermediate NDArrays.
+   *     a dl.tidy() which will automatically clean up intermediate Tensors.
    */
   constructor(backend: BackendType|MathBackend, safeMode: boolean) {
     ENV.setMath(this, backend, safeMode);
-    this.register = ENV.engine.register.bind(ENV.engine);
     this.engine = ENV.engine;
-    this.getNumArrays = ENV.engine.getNumArrays.bind(ENV.engine);
+    this.getNumTensors = ENV.engine.getNumTensors.bind(ENV.engine);
     this.dispose = ENV.engine.dispose.bind(ENV.engine);
     this.registeredVariables = ENV.engine.registeredVariables;
-    this.write = ENV.engine.write.bind(ENV.engine);
-    this.read = ENV.engine.read.bind(ENV.engine);
-    this.readSync = ENV.engine.readSync.bind(ENV.engine);
-    this.disposeData = ENV.engine.disposeData.bind(ENV.engine);
-    this.registerVariable = ENV.engine.registerVariable.bind(ENV.engine);
     this.startScope = ENV.engine.startScope.bind(ENV.engine);
     this.endScope = ENV.engine.endScope.bind(ENV.engine);
   }
 
   /** @deprecated Use dl.tidy() */
   scope<T extends ScopeResult>(scopeFn?: ScopeFn<T>): T {
-    const keepFn = <T extends NDArray>(ndarray: T): T => keep(ndarray);
-    const trackFn = <T extends NDArray>(ndarray: T): T => ndarray;
+    const keepFn = <T extends Tensor>(tensor: T): T => keep(tensor);
+    const trackFn = <T extends Tensor>(tensor: T): T => tensor;
     return tidy(() => scopeFn(keepFn, trackFn));
   }
 
   /** @deprecated This is a no-op. */
-  track<T extends NDArray>(result: T): T {
+  track<T extends Tensor>(result: T): T {
     return result;
   }
 
   /**
    * Computes the top K values and flattened indices.
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    * @param k How many top values to compute.
    */
-  topK(x: NDArray, k: number): {values: Array1D, indices: Array1D} {
+  topK(x: Tensor, k: number): {values: Tensor1D, indices: Tensor1D} {
     util.assert(
         k <= x.size,
         `Error in topK: k value (${k}) must be less than size of input ` +
-            `ndarray, got shape ${x.shape}.`);
-    let values: Array1D;
-    let indices: Array1D;
+            `tensor, got shape ${x.shape}.`);
+    let values: Tensor1D;
+    let indices: Tensor1D;
     tidy('topK', () => {
       values = ENV.engine.executeKernel('TopKValues', {inputs: {x}, args: {k}});
       indices =
@@ -273,12 +264,12 @@ export class NDArrayMath {
   }
 
   /** @deprecated Use math.transpose() instead. */
-  switchDim<R extends Rank>(x: NDArray<R>, perm?: number[]): NDArray<R> {
+  switchDim<R extends Rank>(x: Tensor<R>, perm?: number[]): Tensor<R> {
     return ops.transpose<R>(x, perm);
   }
 
   /** @deprecated Use math.add(c, A) instead. */
-  scalarPlusArray<T extends NDArray>(c: Scalar, a: T): T {
+  scalarPlusArray<T extends Tensor>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
         `Error in scalarPlusArray: first argument must be rank 0, but got ` +
@@ -287,7 +278,7 @@ export class NDArrayMath {
   }
 
   /** @deprecated Use math.sub(c, A) instead. */
-  scalarMinusArray<T extends NDArray>(c: Scalar, a: T): T {
+  scalarMinusArray<T extends Tensor>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
         `Error in scalarMinusArray: first argument must be rank 0, but got ` +
@@ -296,7 +287,7 @@ export class NDArrayMath {
   }
 
   /** @deprecated Use math.sub(A, c) instead. */
-  arrayMinusScalar<T extends NDArray>(a: T, c: Scalar): T {
+  arrayMinusScalar<T extends Tensor>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
         `Error in arrayMinusScalar: second argument must be rank 0, but ` +
@@ -307,11 +298,11 @@ export class NDArrayMath {
   /**
    * Computes a scaled array add operation, c1 * A + c2 * B.
    * @param c1 The first scalar in the scaled array add computation.
-   * @param a The first NDArray in the scaled array add computation.
+   * @param a The first Tensor in the scaled array add computation.
    * @param c2 The second scalar in the scaled array add computation.
-   * @param cb The second NDArray in the scaled array add computation.
+   * @param cb The second Tensor in the scaled array add computation.
    */
-  scaledArrayAdd<T extends NDArray>(c1: Scalar, a: T, c2: Scalar, b: T): T {
+  scaledArrayAdd<T extends Tensor>(c1: Scalar, a: T, c2: Scalar, b: T): T {
     util.assert(
         c1.size === 1,
         `Error in scaledArrayAdd: first argument must rank 0, but got ` +
@@ -319,7 +310,7 @@ export class NDArrayMath {
     util.assert(
         c2.size === 1,
         `Error in scaledArrayAdd: third argument must be rank 0, but got ` +
-            `NDArray of rank ${c2.rank}.`);
+            `Tensor of rank ${c2.rank}.`);
     util.assertShapesMatch(a.shape, b.shape, 'Error in scaledArrayAdd: ');
 
     return tidy('scaledArrayAdd', () => {
@@ -329,7 +320,7 @@ export class NDArrayMath {
   }
 
   /** @deprecated Use math.multiply(c, A) instead. */
-  scalarTimesArray<T extends NDArray>(c: Scalar, a: T): T {
+  scalarTimesArray<T extends Tensor>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
         `Error in arrayDividedByScalar: first argument must be rank 0, but ` +
@@ -340,7 +331,7 @@ export class NDArrayMath {
   /**
    * Normalizes the activation of a local neighborhood across or within
    * channels.
-   * @param x The input NDArray.
+   * @param x The input Tensor.
    * @param radius The number of adjacent channels or spatial locations of the
    *     1D normalization window. In Tensorflow this param is called
    *     'depth_radius' because only 'acrossChannels' mode is supported.
@@ -351,9 +342,9 @@ export class NDArrayMath {
    *     Default is 'acrossChannels'.
    */
   localResponseNormalization3D(
-      x: Array3D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
+      x: Tensor3D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
       normRegion: 'acrossChannels'|
-      'withinChannel' = 'acrossChannels'): Array3D {
+      'withinChannel' = 'acrossChannels'): Tensor3D {
     util.assert(
         x.rank === 3,
         `Error in localResponseNormalization3D: x must be rank 3 but got
@@ -372,7 +363,7 @@ export class NDArrayMath {
   /**
    * Normalizes the activation of a local neighborhood across or within
    * channels.
-   * @param x The input NDArray. The 4-D input tensor is treated as a 3-D array
+   * @param x The input Tensor. The 4-D input tensor is treated as a 3-D array
    *     of 1D vectors (along the last dimension), and each vector is
    * normalized independently.
    * @param radius The number of adjacent channels or spatial locations of the
@@ -385,9 +376,9 @@ export class NDArrayMath {
    *     Default is 'acrossChannels'.
    */
   localResponseNormalization4D(
-      x: Array4D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
+      x: Tensor4D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
       normRegion: 'acrossChannels'|
-      'withinChannel' = 'acrossChannels'): Array4D {
+      'withinChannel' = 'acrossChannels'): Tensor4D {
     util.assert(
         x.rank === 4,
         `Error in localResponseNormalization4D: x must be rank 4 but got
@@ -403,5 +394,5 @@ export class NDArrayMath {
 }
 
 export type ScopeFn<T extends ScopeResult> =
-    (keep: <T1 extends NDArray>(ndarray: T1) => T1,
-     track: <T2 extends NDArray>(ndarray: T2) => T2) => T;
+    (keep: <T1 extends Tensor>(tensor: T1) => T1,
+     track: <T2 extends Tensor>(tensor: T2) => T2) => T;

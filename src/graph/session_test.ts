@@ -18,11 +18,11 @@
 import {InputProvider} from '../data/input_provider';
 import {ENV} from '../environment';
 import * as dl from '../index';
-import {NDArrayMath} from '../math/math';
-import {Array1D, Scalar} from '../math/ndarray';
 import {SGDOptimizer} from '../math/optimizers/sgd_optimizer';
+import {Scalar, Tensor1D} from '../math/tensor';
 import * as test_util from '../test_util';
-import {Graph, Tensor} from './graph';
+
+import {Graph, SymbolicTensor} from './graph';
 import {FeedDictionary, FeedEntry, Session} from './session';
 
 describe('FeedDictionary', () => {
@@ -32,7 +32,8 @@ describe('FeedDictionary', () => {
 
   it('ctor populates dict from only feed entry', () => {
     dl.tidy(() => {
-      const e: FeedEntry = {tensor: new Tensor([]), data: dl.zeros([1])};
+      const e:
+          FeedEntry = {tensor: new SymbolicTensor([]), data: dl.zeros([1])};
       const d = new FeedDictionary([e]);
       expect(Object.keys(d.dict).length).toEqual(1);
       expect(d.dict[e.tensor.id]).toBe(e);
@@ -41,10 +42,10 @@ describe('FeedDictionary', () => {
 
   it('ctor populates dict from many entries', () => {
     const entries: FeedEntry[] = [
-      {tensor: new Tensor([]), data: dl.zeros([1])},
-      {tensor: new Tensor([]), data: dl.zeros([1])},
-      {tensor: new Tensor([]), data: dl.zeros([1])},
-      {tensor: new Tensor([]), data: dl.zeros([1])}
+      {tensor: new SymbolicTensor([]), data: dl.zeros([1])},
+      {tensor: new SymbolicTensor([]), data: dl.zeros([1])},
+      {tensor: new SymbolicTensor([]), data: dl.zeros([1])},
+      {tensor: new SymbolicTensor([]), data: dl.zeros([1])}
     ];
     const d = new FeedDictionary(entries);
     expect(Object.keys(d.dict).length).toEqual(entries.length);
@@ -52,7 +53,7 @@ describe('FeedDictionary', () => {
   });
 
   it('add adds entry to map keyed on tensor id', () => {
-    const t = new Tensor([]);
+    const t = new SymbolicTensor([]);
     const nda = dl.zeros([1]);
     const fd = new FeedDictionary([{tensor: t, data: nda}]);
     expect(fd.dict[t.id].tensor).toBe(t);
@@ -92,7 +93,7 @@ describe('Session', () => {
     const x = g.placeholder('x', [2]);
     const y = g.add(g.square(x), g.constant(3));
     const session = new Session(g, ENV.math);
-    const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+    const yVal = session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
     const expected = new Float32Array([28, 19]);
     test_util.expectArraysClose(yVal.dataSync(), expected);
   });
@@ -104,7 +105,7 @@ describe('Session', () => {
     const session = new Session(g, math);
 
     dl.tidy(() => {
-      const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const yVal = session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expected = new Float32Array([28, 19]);
       test_util.expectArraysClose(yVal.dataSync(), expected);
     });
@@ -119,7 +120,7 @@ describe('Session', () => {
 
     dl.tidy(() => {
       const yVal =
-          session.eval(y, [{tensor: xSquared, data: Array1D.new([25, 16])}]);
+          session.eval(y, [{tensor: xSquared, data: Tensor1D.new([25, 16])}]);
       const expected = new Float32Array([28, 19]);
       test_util.expectArraysClose(yVal.dataSync(), expected);
     });
@@ -135,7 +136,7 @@ describe('Session', () => {
 
     dl.tidy(() => {
       const result =
-          session.evalAll([y, z], [{tensor: x, data: Array1D.new([5, 4])}]);
+          session.evalAll([y, z], [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expectedY = new Float32Array([28, 19]);
       const expectedZ = new Float32Array([27, 18]);
       test_util.expectArraysClose(result[0].dataSync(), expectedY);
@@ -152,11 +153,13 @@ describe('Session', () => {
     const session = new Session(g, math);
 
     dl.tidy(() => {
-      const result1 = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const result1 =
+          session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expectedY = new Float32Array([30, 20]);
       test_util.expectArraysClose(result1.dataSync(), expectedY);
 
-      const result2 = session.eval(z, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const result2 =
+          session.eval(z, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expectedZ = new Float32Array([31, 21]);
       test_util.expectArraysClose(result2.dataSync(), expectedZ);
     });
@@ -181,7 +184,7 @@ describe('Session', () => {
       getNextCopy() {
         return xs[idx++];
       },
-      disposeCopy(math, example) {}
+      disposeCopy(example) {}
     };
 
     // w = x^2 + x + 3
@@ -199,7 +202,7 @@ describe('Session', () => {
     expect(dwdx).toBe(-1);
   });
 
-  it('Backprop through a node with 2 outputs, input is Array1D', () => {
+  it('Backprop through a node with 2 outputs, input is Tensor1D', () => {
     const math = ENV.math;
     const x = g.placeholder('x', [2]);
     const y = g.square(x);
@@ -210,9 +213,9 @@ describe('Session', () => {
     const session = new Session(g, math);
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([2, 4]);
+        return Tensor1D.new([2, 4]);
       },
-      disposeCopy(math, example) {}
+      disposeCopy(example) {}
     };
 
     // w = reduce_sum(x^2 + x + 3)
@@ -237,9 +240,9 @@ describe('Session', () => {
     const session = new Session(g, math);
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([1, 2]);
+        return Tensor1D.new([1, 2]);
       },
-      disposeCopy(math, example) {}
+      disposeCopy(example) {}
     };
 
     // prediction = reduce_sum((x + b0)^2 + b1)
@@ -269,29 +272,25 @@ describe('Session', () => {
   });
 
   it('Safe mode math, no math scope eval throws', () => {
-    const safeMode = true;
-    const math = new NDArrayMath('webgl', safeMode);
-    ENV.setMath(math);
+    dl.setBackend('webgl', true /* safeMode */);
 
     expect(() => {
       const x = g.placeholder('x', [2]);
       const y = g.square(x);
-      const session = new Session(g, math);
-      session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const session = new Session(g, dl.ENV.math);
+      session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
     }).toThrowError();
     ENV.reset();
   });
 
   it('Safe mode math, math scope eval does not throw', () => {
-    const safeMode = true;
-    const math = new NDArrayMath('webgl', safeMode);
-    ENV.setMath(math);
+    dl.setBackend('webgl', true /* safeMode */);
 
     dl.tidy(() => {
       const x = g.placeholder('x', [2]);
       const y = g.square(x);
-      const session = new Session(g, math);
-      const yVal = session.eval(y, [{tensor: x, data: Array1D.new([5, 4])}]);
+      const session = new Session(g, dl.ENV.math);
+      const yVal = session.eval(y, [{tensor: x, data: Tensor1D.new([5, 4])}]);
       const expected = new Float32Array([25, 16]);
       test_util.expectArraysClose(yVal.dataSync(), expected);
     });
@@ -299,20 +298,18 @@ describe('Session', () => {
   });
 
   it('Safe mode math, math scope train does not throw', () => {
-    const safeMode = true;
-    const math = new NDArrayMath('webgl', safeMode);
-    ENV.setMath(math);
+    dl.setBackend('webgl', true /* safeMode */);
 
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([2, 4]);
+        return Tensor1D.new([2, 4]);
       },
-      disposeCopy(math, example) {}
+      disposeCopy(example) {}
     };
 
     dl.tidy(() => {
       const optimizer = new SGDOptimizer(0.1);
-      const session = new Session(g, math);
+      const session = new Session(g, dl.ENV.math);
       const x = g.placeholder('x', [2]);
       const y = g.square(x);
       const z = g.add(x, g.constant(3));
@@ -327,19 +324,17 @@ describe('Session', () => {
   });
 
   it('Safe mode math, no math scope train throws', () => {
-    const safeMode = true;
-    const math = new NDArrayMath('webgl', safeMode);
-    ENV.setMath(math);
+    dl.setBackend('webgl', true /* safeMode */);
 
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Array1D.new([2, 4]);
+        return Tensor1D.new([2, 4]);
       },
-      disposeCopy(math, example) {}
+      disposeCopy(example) {}
     };
 
     expect(() => {
-      const session = new Session(g, math);
+      const session = new Session(g, dl.ENV.math);
       const optimizer = new SGDOptimizer(0.1);
       const x = g.placeholder('x', [2]);
       const y = g.square(x);

@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {keep, tidy} from '../../math/backends/tracking';
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 import {Operation} from './op';
@@ -29,7 +29,8 @@ export class Log extends Operation {
   /**
    * Natural log operation - ln(x)
    */
-  constructor(private xTensor: Tensor, private yTensor: Tensor) {
+  constructor(
+      private xTensor: SymbolicTensor, private yTensor: SymbolicTensor) {
     super();
   }
 

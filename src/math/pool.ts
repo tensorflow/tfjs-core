@@ -19,14 +19,14 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import * as conv_util from './conv_util';
-import {operation} from './decorators';
-import {Array3D, Array4D} from './ndarray';
+import {doc, operation} from './decorators';
+import {Tensor3D, Tensor4D} from './tensor';
 
 export class Ops {
   /**
    * Computes the 2D max pooling of an image.
    *
-   * @param x The input ndarray, of rank 4 or rank 3 of shape
+   * @param x The input tensor, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
@@ -42,12 +42,13 @@ export class Ops {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
+  @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
-  static maxPool<T extends Array3D|Array4D>(
+  static maxPool<T extends Tensor3D|Tensor4D>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let x4D = x as Array4D;
+    let x4D = x as Tensor4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
       reshapedTo4D = true;
@@ -65,7 +66,7 @@ export class Ops {
     const convInfo = conv_util.computePool2DInfo(
         x4D.shape, filterSize, strides, pad, dimRoundingMode);
 
-    const gradients = (dy: Array4D, y: Array4D) => {
+    const gradients = (dy: Tensor4D, y: Tensor4D) => {
       return {x: () => Ops.maxPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
     const res = ENV.engine.executeKernel(
@@ -95,7 +96,7 @@ export class Ops {
    *     is of fractional size.
    */
   @operation
-  static maxPoolBackprop<T extends Array3D|Array4D>(
+  static maxPoolBackprop<T extends Tensor3D|Tensor4D>(
       dy: T, input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -103,8 +104,8 @@ export class Ops {
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
 
-    let input4D = input as Array4D;
-    let dy4D = dy as Array4D;
+    let input4D = input as Tensor4D;
+    let dy4D = dy as Tensor4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
@@ -140,7 +141,7 @@ export class Ops {
   /**
    * Computes the 2D min pooling of an image.
    *
-   * @param input The input ndarray, of rank 4 or rank 3 of shape
+   * @param input The input tensor, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
@@ -156,12 +157,13 @@ export class Ops {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
+  @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
-  static minPool<T extends Array3D|Array4D>(
+  static minPool<T extends Tensor3D|Tensor4D>(
       input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let input4D = input as Array4D;
+    let input4D = input as Tensor4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;
@@ -189,7 +191,7 @@ export class Ops {
   /**
    * Computes the 2D average pooling of an image.
    *
-   * @param x The input ndarray, of rank 4 or rank 3 of shape
+   * @param x The input tensor, of rank 4 or rank 3 of shape
    *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
@@ -205,12 +207,13 @@ export class Ops {
    *     number. If none is provided, it will not round and error if the output
    *     is of fractional size.
    */
+  @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
-  static avgPool<T extends Array3D|Array4D>(
+  static avgPool<T extends Tensor3D|Tensor4D>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    let x4D = x as Array4D;
+    let x4D = x as Tensor4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
       reshapedTo4D = true;
@@ -229,7 +232,7 @@ export class Ops {
     const convInfo =
         conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
 
-    const gradients = (dy: Array4D, y: Array4D) => {
+    const gradients = (dy: Tensor4D, y: Tensor4D) => {
       return {x: () => Ops.avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
     };
     const res = ENV.engine.executeKernel(
@@ -255,15 +258,15 @@ export class Ops {
    *     used in the forward prop of the op.
    */
   @operation
-  static avgPoolBackprop<T extends Array3D|Array4D>(
+  static avgPoolBackprop<T extends Tensor3D|Tensor4D>(
       dy: T, input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
 
-    let input4D = input as Array4D;
-    let dy4D = dy as Array4D;
+    let input4D = input as Tensor4D;
+    let dy4D = dy as Tensor4D;
     let reshapedTo4D = false;
     if (input.rank === 3) {
       reshapedTo4D = true;

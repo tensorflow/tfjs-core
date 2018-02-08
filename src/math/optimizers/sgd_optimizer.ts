@@ -16,18 +16,27 @@
  */
 
 import {ENV} from '../../environment';
+import {keep, tidy} from '../../globals';
 import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
-import {keep, tidy} from '../backends/tracking';
-import {Scalar} from '../ndarray';
-import {NamedArrayMap} from '../types';
+import {doc} from '../decorators';
+import * as ops from '../ops';
+import {Scalar} from '../tensor';
+import {NamedTensorMap} from '../types';
+
 import {Optimizer} from './optimizer';
 
+/**
+ * Optimizer that implements stochastic gradient descent.
+ *
+ * Use `dl.train.sgd` to create an SGD optimizer.
+ */
+@doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class SGDOptimizer extends Optimizer {
-  private c: Scalar;
+  protected c: Scalar;
 
   constructor(protected learningRate: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
@@ -35,17 +44,13 @@ export class SGDOptimizer extends Optimizer {
   }
 
   // Eager mode
-  applyGradients(variableGradients: NamedArrayMap) {
-    const math = ENV.math;
-
+  applyGradients(variableGradients: NamedTensorMap) {
     const varNames = Object.keys(variableGradients);
     varNames.forEach(varName => {
       const gradient = variableGradients[varName];
-      const value = math.registeredVariables[varName];
+      const value = ENV.engine.registeredVariables[varName];
 
-      const newValue = tidy(() => {
-        return math.add(math.multiply(this.c, gradient), value);
-      });
+      const newValue = tidy(() => this.c.mul(gradient).add(value));
 
       value.assign(newValue);
     });
@@ -83,6 +88,6 @@ export class SGDOptimizer extends Optimizer {
     if (this.c != null) {
       this.c.dispose();
     }
-    this.c = ENV.math.keep(Scalar.new(-learningRate));
+    this.c = keep(ops.scalar(-learningRate));
   }
 }

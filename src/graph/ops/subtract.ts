@@ -15,13 +15,14 @@
  * =============================================================================
  */
 
-import {keep, tidy} from '../../math/backends/tracking';
+import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math/math';
-import {NDArray, Scalar} from '../../math/ndarray';
+import {Scalar, Tensor} from '../../math/tensor';
 import * as util from '../../util';
-import {Tensor} from '../graph';
+import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
+
 import {Operation} from './op';
 
 export class Subtract extends Operation {
@@ -32,7 +33,8 @@ export class Subtract extends Operation {
    * scalar.
    */
   constructor(
-      private t1: Tensor, private t2: Tensor, private outTensor: Tensor) {
+      private t1: SymbolicTensor, private t2: SymbolicTensor,
+      private outTensor: SymbolicTensor) {
     super();
     util.assert(
         util.sizeFromShape(t1.shape) === 1 ||
@@ -47,7 +49,7 @@ export class Subtract extends Operation {
     const t2 = inferenceArrays.get(this.t2) as Scalar;
 
     tidy(() => {
-      let result: NDArray;
+      let result: Tensor;
       if (util.isScalarShape(t1.shape)) {
         result = math.scalarMinusArray(t1, t2);
       } else if (util.isScalarShape(t2.shape)) {
