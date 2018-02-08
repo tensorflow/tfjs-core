@@ -84,59 +84,11 @@ average.data().then((avg) => console.log('mean squared difference: ' + avg));
 
 In the code above notice how we put all of our work in a `dl.tidy()`, this is a utility function that allows us to group operations together logically and importantly clean up any intermediate memory used by those operations along the way. Using `dl.tidy()` will help prevent memory leaks in your application and can be used to more carefully control when memory is reclaimed. This is particularly important in controlling how we use memory on the _GPU_
 
-### Backends
-
-The library provides a number of _backends_ which implement the core operations of the library, currently we have a __CPU__ backend and a __WebGL__ backend. Deeplearn.js will use the __WebGL__ backend by default whenever the browser supports it. The __WebGL__ backend uses the computers' __GPU__, to perform fast and highly optimized linear algebra operations.
-
-To force the use of the CPU backend, you can call `dl.setBackend('cpu')` at the start of your program
-
-To check which backend is being used call `dl.getBackend().`
-
-
-#### WebGL backend
-
-When using the WebGL backend, mathematical
-operations like `dl.add` enqueue shader programs to be executed on the GPU. Unlike in CPU backend, **these operations are not blocking** (though there is some overhead in moving data from main memory to GPU memory).
-
-These shader programs read and write from `WebGLTexture`s. When chaining mathematical operations, textures can stay in GPU memory, which is critical for performance.
-
-You can periodically _download_ data from the gpu by calling `data()` on a `Tensor`, this allows you to read that data in your main javascript thread.
-
-Example of taking the mean squared difference between two matrices:
-
-```js
-const a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
-const b = dl.tensor2d([0.0, 2.0, 4.0, 6.0], [2, 2]);
-
-// All these operations will execute on the GPU (if available)
-// without blocking the main thread.
-const diff = dl.sub(a, b);
-
-// Calling .data returns a promise that resolves to a TypedArray that holds
-// the tensor data downloaded from the GPU.
-diff.data().then((d) => console.log('difference: ' + d));
-// We could also use dataSync to do this synchronously.
-console.log('difference: ' + diff.dataSync());
-```
-
-> TIP: Avoid calling `data()/dataSync()` between mathematical GPU
-operations unless you are debugging. This forces a texture download, and
-subsequent operation calls will have to re-upload the data to a new
-texture.
-
-#### CPU Backend
-
-When using CPU implementations, these mathematical
-operations are blocking and get executed immediately on the underlying
-`TypedArray`s in the main JavaScript thread.
-
-The same operations are implemented on both so your code doesn't have to change based on which backend is used on the client.
-
 ### Training
 
 At the heart of machine learning problems is the question of actually _training_ the machine to do some task. In deeplearn.js this process is encapsulated by the concept of _Optimizers_. Optimizers are strategies to progressively tune the variables of your model in order to reduce the error (or _loss_ in ML parlance) in your models predictions.
 
-We cover training and optimizers in this tutorial[TK Link to training tutorial)], but here is an outline of what the training process in deeplearn.js looks like.
+We cover training and optimizers in this tutorial [TK Link to training tutorial)], but here is an outline of what the training process in deeplearn.js looks like.
 
 ```js
 import * as dl from 'deeplearn';
@@ -201,6 +153,54 @@ class TrainableModel {
   }
 }
 ```
+
+### Backends
+
+The library provides a number of _backends_ which implement the core operations of the library, currently we have a __CPU__ backend and a __WebGL__ backend. Deeplearn.js will use the __WebGL__ backend by default whenever the browser supports it. The __WebGL__ backend uses the computers' __GPU__, to perform fast and highly optimized linear algebra operations.
+
+To force the use of the CPU backend, you can call `dl.setBackend('cpu')` at the start of your program
+
+To check which backend is being used call `dl.getBackend().`
+
+
+#### WebGL backend
+
+When using the WebGL backend, mathematical
+operations like `dl.add` enqueue shader programs to be executed on the GPU. Unlike in CPU backend, **these operations are not blocking** (though there is some overhead in moving data from main memory to GPU memory).
+
+These shader programs read and write from `WebGLTexture`s. When chaining mathematical operations, textures can stay in GPU memory, which is critical for performance.
+
+You can periodically _download_ data from the gpu by calling `data()` on a `Tensor`, this allows you to read that data in your main javascript thread.
+
+Example of taking the mean squared difference between two matrices:
+
+```js
+const a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
+const b = dl.tensor2d([0.0, 2.0, 4.0, 6.0], [2, 2]);
+
+// All these operations will execute on the GPU (if available)
+// without blocking the main thread.
+const diff = dl.sub(a, b);
+
+// Calling .data returns a promise that resolves to a TypedArray that holds
+// the tensor data downloaded from the GPU.
+diff.data().then((d) => console.log('difference: ' + d));
+// We could also use dataSync to do this synchronously.
+console.log('difference: ' + diff.dataSync());
+```
+
+> TIP: Avoid calling `data()/dataSync()` between mathematical GPU
+operations unless you are debugging. This forces a texture download, and
+subsequent operation calls will have to re-upload the data to a new
+texture.
+
+#### CPU Backend
+
+When using CPU implementations, these mathematical
+operations are blocking and get executed immediately on the underlying
+`TypedArray`s in the main JavaScript thread.
+
+The same operations are implemented on both so your code doesn't have to change based on which backend is used on the client.
 
 ### Graphs
 **Note: the following sections describe using the deeplearn.js graph API. We have deprecated this API in support of a new 'eager' mode after research and community feedback. It will be removed in future versions of deeplearn.js. Eager Mode supports training and we will updated docs here soon.**
