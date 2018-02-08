@@ -236,15 +236,22 @@ export class Environment {
   }
 
   /**
-   * Returns memory info at the current time in the program.
+   * Returns memory info at the current time in the program. The result is an
+   * object with the following properties:
    *
-   * - `result.numBytes` is number of bytes in the program.
-   * - `result.numDataBuffers` is the number of unique data buffers, which is
-   *     ≤ the number of tensors (e.g. `a.reshape(newShape)` makes a
-   *     new Tensor that shares the same data buffer with `a`).
+   * - `numBytes` number of bytes allocated (undisposed) at this time.
+   * - `numDataBuffers` number of unique data buffers allocated
+   *   (undisposed) at this time, which is ≤ the number of tensors
+   *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same
+   *   data buffer with `a`).
+   * - `unreliable` optional, present if true. If the current backend can't
+   *    measure reliably (e.g. the cpu backend is unreliable due to automatic
+   *    garbage collection).
+   *
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
-  static memory(): {numDataBuffers: number; numBytes: number;} {
+  static memory():
+      {numDataBuffers: number; numBytes: number; unreliable?: boolean} {
     return ENV.engine.memory();
   }
 

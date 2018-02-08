@@ -53,8 +53,6 @@ export class BackendEngine implements TensorManager {
   registeredVariables: NamedVariableMap = {};
 
   private refCounter = new WeakMap<DataId, number>();
-  private numBytes = 0;
-  private numDataBuffers = 0;
   private nextTapeNodeId = 0;
 
   private activeTape: Tape;
@@ -117,9 +115,6 @@ export class BackendEngine implements TensorManager {
     const refCount =
         this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
     if (refCount === 0) {
-      this.numDataBuffers++;
-      this.numBytes +=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
     this.refCounter.set(a.dataId, refCount + 1);
@@ -143,9 +138,6 @@ export class BackendEngine implements TensorManager {
     if (refCount <= 1) {
       this.refCounter.delete(a.dataId);
       this.backend.disposeData(a.dataId);
-      this.numDataBuffers--;
-      this.numBytes -=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
     } else {
       this.refCounter.set(a.dataId, refCount - 1);
     }
@@ -154,8 +146,8 @@ export class BackendEngine implements TensorManager {
     // to do unconditionally.
   }
 
-  memory(): {numDataBuffers: number; numBytes: number;} {
-    return {numDataBuffers: this.numDataBuffers, numBytes: this.numBytes};
+  memory() {
+    return this.backend.memory();
   }
 
   private shouldRecord(): boolean {

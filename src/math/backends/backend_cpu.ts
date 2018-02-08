@@ -35,8 +35,14 @@ import * as axis_util from './../axis_util';
 import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
+type DataBucket = {
+  values: DataTypeMap[DataType]; shape: number[]; dtype: DataType;
+};
+
 export class MathBackendCPU implements MathBackend {
-  private data = new WeakMap<DataId, DataTypeMap[DataType]>();
+  private data = new WeakMap<DataId, DataBucket>();
+  private numBytes = 0;
+  private numDataBuffers = 0;
   private canvas: HTMLCanvasElement;
 
   constructor() {
@@ -46,14 +52,20 @@ export class MathBackendCPU implements MathBackend {
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
-    this.data.set(dataId, null);
+    if (this.data.has(dataId)) {
+      throw new Error(`data id ${dataId} already registered`);
+    }
+    this.numDataBuffers++;
+    this.numBytes += util.sizeFromShape(shape) * util.bytesPerElement(dtype);
+    this.data.set(dataId, {shape, dtype, values: null});
   }
   write(dataId: DataId, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
     this.throwIfNoData(dataId);
-    this.data.set(dataId, values);
+    const bucket = this.data.get(dataId);
+    bucket.values = values;
   }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
@@ -108,17 +120,30 @@ export class MathBackendCPU implements MathBackend {
   }
   readSync(dataId: DataId): TypedArray {
     this.throwIfNoData(dataId);
-    return this.data.get(dataId);
+    return this.data.get(dataId).values;
   }
 
   disposeData(dataId: DataId): void {
-    this.data.delete(dataId);
+    if (this.data.has(dataId)) {
+      const {shape, dtype} = this.data.get(dataId);
+      this.numDataBuffers--;
+      this.numBytes -= util.sizeFromShape(shape) * util.bytesPerElement(dtype);
+      this.data.delete(dataId);
+    }
   }
 
   async time(f: () => void): Promise<number> {
     const start = performance.now();
     f();
     return performance.now() - start;
+  }
+  memory() {
+    return {
+      numDataBuffers: this.numDataBuffers,
+      numBytes: this.numBytes,
+      // Unreliable due to automatic gc. The numbers above are cumulative.
+      unreliable: true
+    };
   }
 
   private throwIfNoData(dataId: DataId) {

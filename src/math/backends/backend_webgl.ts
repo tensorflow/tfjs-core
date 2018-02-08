@@ -73,6 +73,8 @@ export interface CPUTimerQuery {
 
 export class MathBackendWebGL implements MathBackend {
   private texData = new WeakMap<DataId, TextureData>();
+  private numBytes = 0;
+  private numDataBuffers = 0;
   private canvas: HTMLCanvasElement;
 
   private programTimersStack: TimerNode[];
@@ -82,6 +84,8 @@ export class MathBackendWebGL implements MathBackend {
     if (this.texData.has(dataId)) {
       throw new Error(`data id ${dataId} already registered`);
     }
+    this.numDataBuffers++;
+    this.numBytes += util.sizeFromShape(shape) * util.bytesPerElement(dtype);
     this.texData.set(dataId, {
       shape,
       dtype,
@@ -145,7 +149,6 @@ export class MathBackendWebGL implements MathBackend {
       this.uploadToGPU(dataId);
     }
   }
-
   readSync(dataId: DataId): TypedArray {
     this.throwIfNoData(dataId);
     const texData = this.texData.get(dataId);
@@ -184,7 +187,7 @@ export class MathBackendWebGL implements MathBackend {
     return this.readSync(dataId);
   }
 
-  time(f: () => void): Promise<number> {
+  async time(f: () => void): Promise<number> {
     const oldActiveTimers = this.activeTimers;
     const newActiveTimers: TimerNode[] = [];
 
@@ -206,14 +209,14 @@ export class MathBackendWebGL implements MathBackend {
       this.programTimersStack = null;
     }
 
-    return new Promise<number>((resolve, reject) => {
-      Promise.all(flattenedActiveTimers).then(results => {
-        let sum = 0;
-        results.forEach(result => sum += result);
-
-        resolve(sum);
-      });
+    return Promise.all(flattenedActiveTimers).then(results => {
+      let sum = 0;
+      results.forEach(result => sum += result);
+      return sum;
     });
+  }
+  memory() {
+    return {numDataBuffers: this.numDataBuffers, numBytes: this.numBytes};
   }
 
   private startTimer(): WebGLQuery|CPUTimerQuery {
@@ -243,10 +246,13 @@ export class MathBackendWebGL implements MathBackend {
 
   disposeData(dataId: DataId): void {
     if (this.texData.has(dataId)) {
-      const {texture, texShape, texType} = this.texData.get(dataId);
+      const {texture, texShape, texType, shape, dtype} =
+          this.texData.get(dataId);
       if (texture != null) {
         this.textureManager.releaseTexture(texture, texShape, texType);
       }
+      this.numDataBuffers--;
+      this.numBytes -= util.sizeFromShape(shape) * util.bytesPerElement(dtype);
       this.texData.delete(dataId);
     }
   }
@@ -961,7 +967,7 @@ export class MathBackendWebGL implements MathBackend {
       this.gpgpu.deleteProgram(this.binaryCache[key].webGLProgram);
     }
     this.textureManager.dispose();
-
+    this.canvas.remove();
     if (this.gpgpuCreatedLocally) {
       this.gpgpu.dispose();
     }
