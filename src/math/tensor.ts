@@ -95,7 +95,7 @@ export class TensorBuffer<R extends Rank> {
  * See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
  * Global_Objects/WeakMap
  */
-export type DataId = object;
+export type DataId = object;  // object instead of {} to force non-primitive.
 
 export class Tensor<R extends Rank = Rank> {
   private static nextId = 0;

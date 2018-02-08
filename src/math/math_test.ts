@@ -24,7 +24,7 @@ import {Scalar, Tensor} from './tensor';
 
 const gradientsScope = Gradients.gradientsScope;
 
-// math.tidy
+// dl.tidy
 {
   const gpuTests: MathTests = it => {
     it('returns Tensor', math => {
@@ -33,7 +33,6 @@ const gradientsScope = Gradients.gradientsScope;
         let b = dl.tensor1d([0, 0, 0]);
 
         expect(dl.memory().numDataBuffers).toBe(2);
-        expect(dl.memory().numBytes).toBe(2 * 3 * 4);
         dl.tidy(() => {
           const result = dl.tidy(() => {
             b = dl.addStrict(a, b);
@@ -44,17 +43,14 @@ const gradientsScope = Gradients.gradientsScope;
 
           // result is new. All intermediates should be disposed.
           expect(dl.memory().numDataBuffers).toBe(2 + 1);
-          expect(dl.memory().numBytes).toBe(3 * 3 * 4);
           test_util.expectArraysClose(result, [4, 8, 12]);
         });
 
         // a, b are still here, result should be disposed.
         expect(dl.memory().numDataBuffers).toBe(2);
-        expect(dl.memory().numBytes).toBe(2 * 3 * 4);
       });
 
       expect(dl.memory().numDataBuffers).toBe(0);
-      expect(dl.memory().numBytes).toBe(0);
     });
 
     it('multiple disposes does not affect num arrays', math => {

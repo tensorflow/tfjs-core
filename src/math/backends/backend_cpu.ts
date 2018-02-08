@@ -53,7 +53,7 @@ export class MathBackendCPU implements MathBackend {
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.data.has(dataId)) {
-      throw new Error(`data id ${dataId} already registered`);
+      throw new Error(`Data buffer is already registered`);
     }
     this.numDataBuffers++;
     this.numBytes += util.sizeFromShape(shape) * util.bytesPerElement(dtype);
@@ -149,7 +149,7 @@ export class MathBackendCPU implements MathBackend {
   private throwIfNoData(dataId: DataId) {
     if (!this.data.has(dataId)) {
       throw new Error(
-          `CPU backend: No data found for Tensor with data id ${dataId}. ` +
+          `CPU backend: No data found for this tensor. ` +
           `Did you change your backend in the middle of the program? ` +
           `New backends can't use Tensors created with previous backends`);
     }

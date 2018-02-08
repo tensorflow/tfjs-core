@@ -82,7 +82,7 @@ export class MathBackendWebGL implements MathBackend {
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.texData.has(dataId)) {
-      throw new Error(`data id ${dataId} already registered`);
+      throw new Error('Data buffer is already registered');
     }
     this.numDataBuffers++;
     this.numBytes += util.sizeFromShape(shape) * util.bytesPerElement(dtype);
@@ -977,7 +977,7 @@ export class MathBackendWebGL implements MathBackend {
   private throwIfNoData(dataId: DataId) {
     if (!this.texData.has(dataId)) {
       throw new Error(
-          `WebGL backend: No data found for Tensor with data id ${dataId}. ` +
+          `WebGL backend: No data found for this tensor. ` +
           `Did you change your backend in the middle of the program? ` +
           `New backends can't use Tensors created with previous backends`);
     }
