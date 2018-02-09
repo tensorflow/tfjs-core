@@ -48,6 +48,9 @@ export function parseDocDecorators(
     if (decoratorStr.startsWith(decoratorName)) {
       const decoratorConfigStr = decoratorStr.substring(decoratorName.length);
       docInfo = eval(decoratorConfigStr);
+      if (docInfo.subheading == null) {
+        docInfo.subheading = '';
+      }
     }
   });
   return docInfo;
@@ -148,6 +151,24 @@ export function sortMethods(docHeadings: DocHeading[]) {
     for (let j = 0; j < heading.subheadings.length; j++) {
       const subheading = heading.subheadings[j];
 
+      const me = subheading.name === 'Optimizers';
+
+      // Pin the symbols in order of the pins.
+      const pinnedSymbols = [];
+      if (subheading.pin != null) {
+        subheading.pin.forEach(pinnedSymbolName => {
+          // Loop backwards so we remove symbols.
+          for (let k = subheading.symbols.length - 1; k >= 0; k--) {
+            const symbol = subheading.symbols[k];
+            if (symbol.displayName === pinnedSymbolName) {
+              pinnedSymbols.push(symbol);
+              subheading.symbols.splice(k, 1);
+            }
+          }
+        });
+      }
+
+      // Sort non-pinned symbols by name.
       subheading.symbols.sort((a, b) => {
         if (a.displayName < b.displayName) {
           return -1;
@@ -156,6 +177,8 @@ export function sortMethods(docHeadings: DocHeading[]) {
         }
         return 0;
       });
+
+      subheading.symbols = pinnedSymbols.concat(subheading.symbols);
     }
   }
 }

@@ -46,7 +46,7 @@ export function parse(): Docs {
       subheadings: [
         {
           name: 'Creation',
-          pinnedSymbols: [
+          pin: [
             'tensor', 'scalar', 'tensor1d', 'tensor2d', 'tensor3d', 'tensor4d'
           ]
         },
@@ -62,12 +62,26 @@ export function parse(): Docs {
         {name: 'Logical'}
       ]
     },
-    {name: 'Training', subheadings: [{name: 'Gradients'}]},
-    {name: 'Performance', subheadings: [{name: 'Memory'}, {name: 'Timing'}]}
+    {
+      name: 'Training',
+      subheadings: [
+        {name: 'Gradients'}, {
+          name: 'Optimizers',
+          pin: [
+            'train.sgd', 'train.momentum', 'train.adagrad', 'train.adadelta'
+          ]
+        }
+      ]
+    },
+    {
+      name: 'Performance',
+      subheadings: [{name: 'Memory', pin: ['tidy']}, {name: 'Timing'}]
+    },
+    {name: 'Environment', subheadings: [{name: '', pin: ['setBackend']}]}
   ];
 
-  // We keep an auxillary map of explicitly marked "subclass" fields on @doc to
-  // the method entries
+  // We keep an auxillary map of explicitly marked "subclass" fields on @doc
+  // to the method entries
   const subclassMethodMap: {[subclass: string]: DocFunction[]} = {};
 
   // Use the same compiler options that we use to compile the library here.
