@@ -45,11 +45,10 @@ const tests: MathTests = it => {
     // epsilon = 1-e8
     // newAccumulatedGrad = accumulatedGrad + grad^2
     // x -= (learningRate * grad) / sqrt(newAccumulatedGrad + eps)
-    //
     // de/dx = [2, 4]
     // accumulatedGrad = [0.1, 0.1]
     // newAccumulatedGrad = [4.1, 16.1]
-    // x = [0.9012270405, 1.9750777607]
+    // x = [0.9012270405, 1.900311042]
     test_util.expectArraysClose(x, [0.9012270405, 1.9003110428]);
 
     cost.dispose();
@@ -61,7 +60,7 @@ const tests: MathTests = it => {
     // accumulatedGrad = [4.1, 16.1]
     // newAccumulatedGrad = [7.3488407141, 31.7037286432]
     // x = [0.8347372764, 1.904922697]
-    test_util.expectArraysClose(x, [0.8347372764, 1.904922697], 1e-1);
+    test_util.expectArraysClose(x, [0.8347372764, 1.83015597828]);
 
     // There should be no new additional Tensors.
     expect(dl.memory().numTensors).toBe(numTensors);
