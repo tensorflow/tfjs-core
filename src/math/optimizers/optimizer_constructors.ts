@@ -77,18 +77,4 @@ export class OptimizerConstructors {
         learningRate, undefined /** @deprecated specifiedVariableList */,
         initialAccumulatorValue);
   }
-
-  /**
-   * Constructs a `dl.train.MomentumOptimizer` that uses momentum gradient
-   * descent.
-   *
-   * @param learningRate The learning rate to use for the momentum gradient
-   * descent algorithm.
-   * @param gamma The momentum to use for the momentum gradient descent
-   * algorithm.
-   */
-  // @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
-  // static rmsprop(learningRate: number, gamma: number): MomentumOptimizer {
-  //   return new MomentumOptimizer(learningRate, gamma);
-  // }
 }

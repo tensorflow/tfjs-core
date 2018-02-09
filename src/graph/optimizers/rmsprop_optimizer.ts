@@ -40,7 +40,6 @@ export class RMSPropOptimizer extends Optimizer {
     this.gamma = scalar(gamma);
   }
 
-  // THIS IS INCORRECT - RMSPROP TAKES 2 ARGUMENTS, NOT 1 GAMMA
   applyGradients(variableGradients: NamedVariableMap) {
     throw new Error(`RMSProp optimizer not implemented for eager.`);
   }
