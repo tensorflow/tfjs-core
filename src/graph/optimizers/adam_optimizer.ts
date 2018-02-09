@@ -21,7 +21,7 @@ import {scalar} from '../../math/ops';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
 import {NamedVariableMap} from '../../math/types';
-import {Node} from '..//graph';
+import {Node} from '../graph';
 import {SessionRuntime} from '../session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 

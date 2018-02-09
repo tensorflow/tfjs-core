@@ -24,14 +24,15 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map
 import {NDArrayMath} from '../../math/math';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
-import {NamedTensorMap, NamedVariableMap} from '../../math/types';
+import {NamedVariableMap} from '../../math/types';
 import {fill, scalar} from '../ops';
+import {variable} from '../tensor';
 
 export class AdagradOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;
 
-  private accumulatedGrads: NamedTensorMap = {};
+  private accumulatedGrads: NamedVariableMap = {};
 
   constructor(
       protected learningRate: number, specifiedVariableList?: Node[],
@@ -44,10 +45,11 @@ export class AdagradOptimizer extends Optimizer {
 
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
-      const variable = ENV.engine.registeredVariables[variableName];
+      const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedGrads[variableName] == null) {
-        this.accumulatedGrads[variableName] =
-            keep(fill(variable.shape, this.initialAccumulatorValue));
+        const trainable = false;
+        this.accumulatedGrads[variableName] = variable(
+            fill(value.shape, this.initialAccumulatorValue), trainable);
       }
 
       const gradient = variableGradients[variableName];
@@ -56,15 +58,14 @@ export class AdagradOptimizer extends Optimizer {
       const newVariable = tidy(() => {
         const newAccumulatedGrad = accumulatedGrad.add(gradient.square());
 
-        accumulatedGrad.dispose();
-        this.accumulatedGrads[variableName] = keep(newAccumulatedGrad);
+        this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
 
         return this.c
             .mul(gradient.div(newAccumulatedGrad.add(this.epsilon).sqrt()))
-            .add(variable);
+            .add(value);
       });
 
-      variable.assign(keep(newVariable));
+      value.assign(newVariable);
     }
   }
 

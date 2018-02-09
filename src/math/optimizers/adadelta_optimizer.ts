@@ -24,9 +24,10 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map
 import {NDArrayMath} from '../../math/math';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
-import {NamedTensorMap, NamedVariableMap} from '../../math/types';
+import {NamedVariableMap} from '../../math/types';
 import {doc} from '../decorators';
 import {scalar, zerosLike} from '../ops';
+import {variable} from '../tensor';
 
 /**
  * Optimizer that implements the Adadelta algorithm.
@@ -42,8 +43,8 @@ export class AdadeltaOptimizer extends Optimizer {
   private rho: Scalar;
   private oneMinusRho: Scalar;
 
-  private accumulatedGrads: NamedTensorMap = {};
-  private accumulatedUpdates: NamedTensorMap = {};
+  private accumulatedGrads: NamedVariableMap = {};
+  private accumulatedUpdates: NamedVariableMap = {};
 
   constructor(
       learningRate: number, rho: number,
@@ -59,12 +60,16 @@ export class AdadeltaOptimizer extends Optimizer {
 
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
-      const variable = ENV.engine.registeredVariables[variableName];
+      const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedGrads[variableName] == null) {
-        this.accumulatedGrads[variableName] = keep(zerosLike(variable));
+        const trainable = false;
+        this.accumulatedGrads[variableName] =
+            variable(zerosLike(value), trainable);
       }
       if (this.accumulatedUpdates[variableName] == null) {
-        this.accumulatedUpdates[variableName] = keep(zerosLike(variable));
+        const trainable = false;
+        this.accumulatedUpdates[variableName] =
+            variable(zerosLike(value), trainable);
       }
 
       const gradient = variableGradients[variableName];
@@ -85,15 +90,13 @@ export class AdadeltaOptimizer extends Optimizer {
             this.rho.mul(accumulatedUpdate)
                 .add(this.oneMinusRho.mul(updates.square()));
 
-        accumulatedGrad.dispose();
-        accumulatedUpdate.dispose();
-        this.accumulatedGrads[variableName] = keep(newAccumulatedGrad);
-        this.accumulatedUpdates[variableName] = keep(newAccumulatedUpdate);
+        this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
+        this.accumulatedUpdates[variableName].assign(newAccumulatedUpdate);
 
-        return this.c.mul(updates).add(variable);
+        return this.c.mul(updates).add(value);
       });
 
-      variable.assign(keep(newVariable));
+      value.assign(newVariable);
     }
   }
 

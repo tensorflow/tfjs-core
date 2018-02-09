@@ -60,6 +60,7 @@ export class SGDOptimizer extends Optimizer {
   /**
    * Sets the learning rate of the optimizer.
    */
+  /** @deprecated */
   setLearningRate(learningRate: number) {
     this.learningRate = learningRate;
     if (this.c != null) {

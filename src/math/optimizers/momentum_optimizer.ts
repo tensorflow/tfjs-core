@@ -24,9 +24,10 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map
 import {NDArrayMath} from '../../math/math';
 import {SGDOptimizer} from '../../math/optimizers/sgd_optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
-import {NamedTensorMap, NamedVariableMap} from '../../math/types';
+import {NamedVariableMap} from '../../math/types';
 import {doc} from '../decorators';
 import {scalar, zerosLike} from '../ops';
+import {variable} from '../tensor';
 
 /**
  * Optimizer that implements momentum gradient descent.
@@ -36,7 +37,7 @@ import {scalar, zerosLike} from '../ops';
 @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
 export class MomentumOptimizer extends SGDOptimizer {
   private m: Scalar;
-  private accumulations: NamedTensorMap;
+  private accumulations: NamedVariableMap;
 
   constructor(
       protected learningRate: number, private momentum: number,
@@ -48,9 +49,11 @@ export class MomentumOptimizer extends SGDOptimizer {
 
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
-      const variable = ENV.engine.registeredVariables[variableName];
+      const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulations[variableName] == null) {
-        this.accumulations[variableName] = keep(zerosLike(variable));
+        const trainable = false;
+        this.accumulations[variableName] =
+            variable(zerosLike(value), trainable);
       }
 
       const accumulation = this.accumulations[variableName];
@@ -59,13 +62,12 @@ export class MomentumOptimizer extends SGDOptimizer {
       const newVariable = tidy(() => {
         const newAccumulation = this.m.mul(accumulation).add(gradient);
 
-        this.accumulations[variableName].dispose();
-        this.accumulations[variableName] = keep(newAccumulation);
+        this.accumulations[variableName].assign(newAccumulation);
 
-        return this.c.mul(newAccumulation).add(variable);
+        return this.c.mul(newAccumulation).add(value);
       });
 
-      variable.assign(newVariable);
+      value.assign(newVariable);
     }
   }
 
