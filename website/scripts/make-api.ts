@@ -21,11 +21,13 @@
  */
 
 import * as fs from 'fs';
+import * as MarkdownIt from 'markdown-it';
 import * as minimist from 'minimist';
 import * as mkdirp from 'mkdirp';
 import * as mustache from 'mustache';
 import * as shell from 'shelljs';
 import * as ts from 'typescript';
+
 import * as parser from './api-parser';
 import * as util from './api-util';
 
@@ -35,6 +37,15 @@ const HTML_OUT_DIR = '/tmp/deeplearn-new-website/api/';
 shell.mkdir('-p', HTML_OUT_DIR);
 
 const docs = parser.parse();
+
+const md = new MarkdownIt();
+
+// Add some helper functions
+docs['renderMarkdown'] = () => {
+  return function(text, render) {
+    return md.render(this.documentation);
+  };
+};
 
 // Write the HTML.
 const htmlFilePath = HTML_OUT_DIR + 'index.html';
