@@ -43,9 +43,6 @@ export class SGDOptimizer extends Optimizer {
       specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.setLearningRate(learningRate);
-
-    // Only used for graph.
-    this.one = scalar(1);
   }
 
   applyGradients(variableGradients: NamedTensorMap) {
@@ -73,6 +70,9 @@ export class SGDOptimizer extends Optimizer {
 
   dispose() {
     this.c.dispose();
+    if (this.one != null) {
+      this.one.dispose();
+    }
     super.dispose();
   }
 
@@ -82,6 +82,9 @@ export class SGDOptimizer extends Optimizer {
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
+    if (this.one == null) {
+      this.one = keep(scalar(1));
+    }
     tidy(() => {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);

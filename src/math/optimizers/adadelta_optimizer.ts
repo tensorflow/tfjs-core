@@ -55,7 +55,6 @@ export class AdadeltaOptimizer extends Optimizer {
     this.epsilon = keep(scalar(epsilon));
     this.rho = keep(scalar(rho));
     this.oneMinusRho = keep(scalar(1 - rho));
-    this.one = keep(scalar(1));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -120,6 +119,9 @@ export class AdadeltaOptimizer extends Optimizer {
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
+    if (this.one == null) {
+      this.one = keep(scalar(1));
+    }
     tidy(() => {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
