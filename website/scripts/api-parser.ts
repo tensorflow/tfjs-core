@@ -24,6 +24,7 @@ import {DocClass, DocFunction, DocFunctionParam, DocHeading, Docs, DocSubheading
 import * as util from './api-util';
 
 const DOCUMENTATION_DECORATOR = '@doc';
+const DOCUMENTATION_TYPE_ALIAS = 'docalias';
 const SRC_ROOT = 'src/';
 const PROGRAM_ROOT = SRC_ROOT + 'index.ts';
 
@@ -94,6 +95,7 @@ export function parse(): Docs {
   // We keep an auxillary map of explicitly marked "subclass" fields on
   // @doc to the method entries
   const subclassMethodMap: {[subclass: string]: DocFunction[]} = {};
+  const docTypeAliases: {[type: string]: string} = {};
 
   // Use the same compiler options that we use to compile the library
   // here.
@@ -110,14 +112,19 @@ export function parse(): Docs {
       ts.forEachChild(
           sourceFile,
           node => visitNode(
-              docHeadings, subclassMethodMap, checker, node, sourceFile));
+              docHeadings, subclassMethodMap, docTypeAliases, checker, node,
+              sourceFile));
     }
   }
 
+  // Attach subclass methods.
   util.addSubclassMethods(docHeadings, subclassMethodMap);
 
   // Sort the documentation.
   util.sortMethods(docHeadings);
+
+  // Replace doc aliases.
+  util.replaceDocTypeAliases(docHeadings, docTypeAliases);
 
   const docs: Docs = {headings: docHeadings};
 
@@ -128,7 +135,8 @@ export function parse(): Docs {
 function visitNode(
     docHeadings: DocHeading[],
     subclassMethodMap: {[subclass: string]: DocFunction[]},
-    checker: ts.TypeChecker, node: ts.Node, sourceFile: ts.SourceFile) {
+    docTypeAliases: {[type: string]: string}, checker: ts.TypeChecker,
+    node: ts.Node, sourceFile: ts.SourceFile) {
   if (ts.isMethodDeclaration(node)) {
     const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
 
@@ -164,12 +172,20 @@ function visitNode(
       subheading.symbols.push(
           serializeClass(checker, node, docInfo, sourceFile, docHeadings));
     }
+  } else if (
+      ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
+    const docAlias = util.getDocAlias(checker, node, DOCUMENTATION_TYPE_ALIAS);
+    if (docAlias != null) {
+      const symbol = checker.getSymbolAtLocation(node.name);
+      docTypeAliases[symbol.getName()] = docAlias;
+    }
   }
 
   ts.forEachChild(
       node,
-      node =>
-          visitNode(docHeadings, subclassMethodMap, checker, node, sourceFile));
+      node => visitNode(
+          docHeadings, subclassMethodMap, docTypeAliases, checker, node,
+          sourceFile));
 }
 
 export function serializeClass(

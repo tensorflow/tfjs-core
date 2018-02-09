@@ -204,3 +204,51 @@ export function isStatic(node: ts.MethodDeclaration): boolean {
   });
   return isStatic;
 }
+
+export function getDocAlias(
+    checker: ts.TypeChecker,
+    node: ts.InterfaceDeclaration|ts.TypeAliasDeclaration,
+    docTypeAlias: string) {
+  const symbol = checker.getSymbolAtLocation(node.name);
+  const docs = symbol.getDocumentationComment();
+  const tags = symbol.getJsDocTags();
+  for (let i = 0; i < tags.length; i++) {
+    const tag = tags[i];
+    if (tag.name === docTypeAlias) {
+      return tag.text;
+    }
+  }
+}
+
+export function foreachDocFunction(
+    docHeadings: DocHeading[], fn: (docFunction: DocFunction) => void) {
+  docHeadings.forEach(heading => {
+    heading.subheadings.forEach(subheading => {
+      subheading.symbols.forEach(untypedSymbol => {
+        if (untypedSymbol['isClass']) {
+          const symbol = untypedSymbol as DocClass;
+          symbol.methods.forEach(method => {
+            fn(method);
+          });
+        } else {
+          fn(untypedSymbol as DocFunction);
+        }
+      });
+    });
+  });
+}
+
+export function replaceDocTypeAliases(
+    docHeadings: DocHeading[], docTypeAliases: {[type: string]: string}) {
+  foreachDocFunction(docHeadings, docFunction => {
+    docFunction.parameters.forEach(param => {
+      Object.keys(docTypeAliases).forEach(type => {
+        if (param.type.indexOf(type) !== -1) {
+          const re = new RegExp(type + '\[[.*]\]');
+          param.type.replace(re, docTypeAliases[type]);
+          console.log(param);
+        }
+      });
+    });
+  });
+}

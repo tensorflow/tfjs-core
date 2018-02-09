@@ -48,6 +48,7 @@ export interface DocInfo<H extends Heading> {
   subheading?: HeadingMap[H];
   namespace?: Namespace;
   subclasses?: string[];
+  displayTypes?: {[param: string]: string};
 }
 
 // Pass through function that does nothing. Only used for documentation.

@@ -23,6 +23,9 @@ export enum DType {
   bool = 'bool'
 }
 
+/**
+ * @docalias number[]
+ */
 export interface ShapeMap {
   R0: number[];
   R1: [number];
