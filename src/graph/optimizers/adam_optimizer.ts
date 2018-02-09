@@ -142,5 +142,5 @@ export class AdamOptimizer extends Optimizer {
   private b2: Scalar;
   private accB1: Scalar;
   private accB2: Scalar;
-  protected one: Scalar;
+  private one: Scalar;
 }

@@ -102,5 +102,5 @@ export class RMSPropOptimizer extends Optimizer {
   }
 
   private accumulatedSquaredGradientsGraph = new TensorArrayMap();
-  protected one: Scalar;
+  private one: Scalar;
 }

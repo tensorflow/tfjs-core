@@ -132,5 +132,5 @@ export class AdamaxOptimizer extends Optimizer {
   private accB1: Scalar;
   private b1: Scalar;
   private b2: Scalar;
-  protected one: Scalar;
+  private one: Scalar;
 }
