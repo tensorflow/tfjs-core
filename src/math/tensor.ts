@@ -425,7 +425,7 @@ export class Tensor<R extends Rank = Rank> {
         this, mean, variance, varianceEpsilon, scale, offset);
   }
 
-  clone(): Tensor<R> {
+  clone<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.clone(this);
   }
