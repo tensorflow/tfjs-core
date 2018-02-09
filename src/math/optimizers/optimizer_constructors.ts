@@ -65,7 +65,7 @@ export class OptimizerConstructors {
   /**
    * Constructs a `dl.train.AdagradOptimizer` that uses the Adagrad algorithm.
    * See http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf or
-   * http://ruder.io/optimizing-gradient-descent/index.html#adadelta
+   * http://ruder.io/optimizing-gradient-descent/index.html#adagrad
    *
    * @param learningRate
    * @param initialAccumulatorValue
