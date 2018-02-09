@@ -35,7 +35,7 @@ const tests: MathTests = it => {
 
     const f = () => x.square().sum() as dl.Scalar;
 
-    let numTensors = dl.memory().numTensors
+    let numTensors = dl.memory().numTensors;
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
