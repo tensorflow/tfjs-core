@@ -51,23 +51,23 @@ export class MomentumOptimizer extends SGDOptimizer {
     for (const variableName in variableGradients) {
       const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulations[variableName] == null) {
+        const zeros = zerosLike(value);
         const trainable = false;
-        this.accumulations[variableName] =
-            variable(zerosLike(value), trainable);
+        this.accumulations[variableName] = variable(zeros, trainable);
+        zeros.dispose();
       }
 
       const accumulation = this.accumulations[variableName];
       const gradient = variableGradients[variableName];
 
-      const newVariable = tidy(() => {
+      const newValue = tidy(() => {
         const newAccumulation = this.m.mul(accumulation).add(gradient);
-
         this.accumulations[variableName].assign(newAccumulation);
 
         return this.c.mul(newAccumulation).add(value);
       });
 
-      value.assign(newVariable);
+      value.assign(newValue);
     }
   }
 

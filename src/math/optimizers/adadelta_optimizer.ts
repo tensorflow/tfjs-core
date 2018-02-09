@@ -62,14 +62,16 @@ export class AdadeltaOptimizer extends Optimizer {
     for (const variableName in variableGradients) {
       const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedGrads[variableName] == null) {
+        const zeros = zerosLike(value);
         const trainable = false;
-        this.accumulatedGrads[variableName] =
-            variable(zerosLike(value), trainable);
+        this.accumulatedGrads[variableName] = variable(zeros, trainable);
+        zeros.dispose();
       }
       if (this.accumulatedUpdates[variableName] == null) {
         const trainable = false;
-        this.accumulatedUpdates[variableName] =
-            variable(zerosLike(value), trainable);
+        const zeros = zerosLike(value);
+        this.accumulatedUpdates[variableName] = variable(zeros, trainable);
+        zeros.dispose();
       }
 
       const gradient = variableGradients[variableName];

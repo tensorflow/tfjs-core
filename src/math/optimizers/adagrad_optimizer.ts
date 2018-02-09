@@ -47,17 +47,18 @@ export class AdagradOptimizer extends Optimizer {
     for (const variableName in variableGradients) {
       const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedGrads[variableName] == null) {
+        const accumulatedGrad = fill(value.shape, this.initialAccumulatorValue);
         const trainable = false;
-        this.accumulatedGrads[variableName] = variable(
-            fill(value.shape, this.initialAccumulatorValue), trainable);
+        this.accumulatedGrads[variableName] =
+            variable(accumulatedGrad, trainable);
+        accumulatedGrad.dispose();
       }
 
       const gradient = variableGradients[variableName];
       const accumulatedGrad = this.accumulatedGrads[variableName];
 
-      const newVariable = tidy(() => {
+      const newValue = tidy(() => {
         const newAccumulatedGrad = accumulatedGrad.add(gradient.square());
-
         this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
 
         return this.c
@@ -65,7 +66,7 @@ export class AdagradOptimizer extends Optimizer {
             .add(value);
       });
 
-      value.assign(newVariable);
+      value.assign(newValue);
     }
   }
 

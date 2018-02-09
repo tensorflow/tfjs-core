@@ -76,7 +76,7 @@ const tests: MathTests = it => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
-    const x = variable(dl.scalar(4));
+    const x = dl.variable(dl.scalar(4));
     const bias = variable(dl.scalar(1));
     const strayVariable = variable(dl.scalar(-1));
     const varList = [x, bias];
