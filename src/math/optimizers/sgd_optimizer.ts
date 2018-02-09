@@ -43,6 +43,9 @@ export class SGDOptimizer extends Optimizer {
       specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.setLearningRate(learningRate);
+
+    // Only used for graph.
+    this.one = scalar(1);
   }
 
   applyGradients(variableGradients: NamedTensorMap) {
@@ -59,7 +62,6 @@ export class SGDOptimizer extends Optimizer {
 
   /**
    * Sets the learning rate of the optimizer.
-   * @param learningRate A number
    */
   setLearningRate(learningRate: number) {
     this.learningRate = learningRate;
@@ -96,4 +98,6 @@ export class SGDOptimizer extends Optimizer {
     this.variableGradients.dispose();
     this.variableGradients = new TensorArrayMap();
   }
+
+  protected one: Scalar;
 }

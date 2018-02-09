@@ -37,6 +37,7 @@ export class AdamOptimizer extends Optimizer {
     // accB* will be updated by batch.
     this.accB1 = scalar(this.beta1);
     this.accB2 = scalar(this.beta2);
+    this.one = scalar(1);
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -141,4 +142,5 @@ export class AdamOptimizer extends Optimizer {
   private b2: Scalar;
   private accB1: Scalar;
   private accB2: Scalar;
+  protected one: Scalar;
 }

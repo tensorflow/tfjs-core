@@ -51,10 +51,11 @@ export class AdadeltaOptimizer extends Optimizer {
       specifiedVariableList?: Node[], epsilon = 1e-8) {
     super(learningRate, specifiedVariableList);
 
-    this.c = scalar(-learningRate);
-    this.epsilon = scalar(epsilon);
-    this.rho = scalar(rho);
-    this.oneMinusRho = scalar(1 - rho);
+    this.c = keep(scalar(-learningRate));
+    this.epsilon = keep(scalar(epsilon));
+    this.rho = keep(scalar(rho));
+    this.oneMinusRho = keep(scalar(1 - rho));
+    this.one = keep(scalar(1));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -168,6 +169,9 @@ export class AdadeltaOptimizer extends Optimizer {
     this.epsilon.dispose();
     this.rho.dispose();
     this.oneMinusRho.dispose();
+    if (this.one != null) {
+      this.one.dispose();
+    }
     if (this.accumulatedSquaredGradientsGraph != null) {
       this.accumulatedSquaredGradientsGraph.dispose();
     }
@@ -184,4 +188,5 @@ export class AdadeltaOptimizer extends Optimizer {
 
   private accumulatedSquaredGradientsGraph = new TensorArrayMap();
   private accumulatedUpdatesGraph = new TensorArrayMap();
+  private one: Scalar;
 }

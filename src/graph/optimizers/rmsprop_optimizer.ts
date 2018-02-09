@@ -37,6 +37,7 @@ export class RMSPropOptimizer extends Optimizer {
 
     this.epsilon = scalar(1e-6);
     this.gamma = scalar(gamma);
+    this.one = scalar(1);
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -101,4 +102,5 @@ export class RMSPropOptimizer extends Optimizer {
   }
 
   private accumulatedSquaredGradientsGraph = new TensorArrayMap();
+  protected one: Scalar;
 }

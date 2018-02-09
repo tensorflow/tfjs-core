@@ -37,6 +37,7 @@ export class AdamaxOptimizer extends Optimizer {
     this.b2 = scalar(this.beta2);
 
     this.accB1 = scalar(this.beta1);
+    this.one = scalar(1);
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -131,4 +132,5 @@ export class AdamaxOptimizer extends Optimizer {
   private accB1: Scalar;
   private b1: Scalar;
   private b2: Scalar;
+  protected one: Scalar;
 }

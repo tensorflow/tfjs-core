@@ -66,8 +66,8 @@ const tests: MathTests = it => {
     // accumulatedUpdate = [.2, .8]
     // newAccumulatedGrad = [0.318, 1.272]
     // updates = [-1.6, -3.2]
-    // x = [0.6, 1.28]
-    test_util.expectArraysClose(x, [0.6, 1.28]);
+    // x = [0.64, 1.28]
+    test_util.expectArraysClose(x, [0.64, 1.28]);
 
     // There should be no new additional Tensors.
     expect(dl.memory().numTensors).toBe(numTensors);

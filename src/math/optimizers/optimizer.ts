@@ -35,7 +35,6 @@ export abstract class Optimizer {
     if (specifiedVariableList != null) {
       this.specifiedVariableNodes = specifiedVariableList as VariableNode[];
     }
-    this.one = keep(ops.scalar(1));
   }
 
   /**
@@ -143,7 +142,6 @@ export abstract class Optimizer {
     if (this.cGraph != null) {
       this.cGraph.dispose();
     }
-    this.one.dispose();
     if (this.variableNodes != null) {
       this.variableNodes.forEach(node => {
         node.data.dispose();
@@ -158,6 +156,5 @@ export abstract class Optimizer {
 
   protected variableGradients = new TensorArrayMap();
   protected prevBatchSize: number;
-  protected one: Scalar;
   protected cGraph: Scalar;
 }

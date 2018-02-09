@@ -29,6 +29,7 @@ import {fill, scalar} from '../ops';
 
 export class AdagradOptimizer extends Optimizer {
   private c: Scalar;
+  private epsilon: Scalar;
 
   private accumulatedGrads: NamedTensorMap = {};
 
@@ -37,8 +38,11 @@ export class AdagradOptimizer extends Optimizer {
       private initialAccumulatorValue = 0.1) {
     super(learningRate, specifiedVariableList);
 
-    this.c = scalar(-learningRate);
-    this.epsilon = scalar(1e-8);
+    this.c = keep(scalar(-learningRate));
+    this.epsilon = keep(scalar(1e-8));
+
+    // Only used for graph.
+    this.one = keep(scalar(1));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -126,5 +130,5 @@ export class AdagradOptimizer extends Optimizer {
   }
 
   private accumulatedSquaredGradients = new TensorArrayMap();
-  private epsilon: Scalar;
+  private one: Scalar;
 }
