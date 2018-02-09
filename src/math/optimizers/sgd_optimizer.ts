@@ -51,9 +51,10 @@ export class SGDOptimizer extends Optimizer {
       const gradient = variableGradients[varName];
       const value = ENV.engine.registeredVariables[varName];
 
-      const newValue = tidy(() => this.c.mul(gradient).add(value));
-
-      value.assign(newValue);
+      tidy(() => {
+        const newValue = this.c.mul(gradient).add(value);
+        value.assign(newValue);
+      });
     });
   }
 

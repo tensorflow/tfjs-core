@@ -62,23 +62,21 @@ export class AdadeltaOptimizer extends Optimizer {
     for (const variableName in variableGradients) {
       const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedGrads[variableName] == null) {
-        const zeros = zerosLike(value);
         const trainable = false;
-        this.accumulatedGrads[variableName] = variable(zeros, trainable);
-        zeros.dispose();
+        this.accumulatedGrads[variableName] =
+            variable(zerosLike(value), trainable);
       }
       if (this.accumulatedUpdates[variableName] == null) {
         const trainable = false;
-        const zeros = zerosLike(value);
-        this.accumulatedUpdates[variableName] = variable(zeros, trainable);
-        zeros.dispose();
+        this.accumulatedUpdates[variableName] =
+            variable(zerosLike(value), trainable);
       }
 
       const gradient = variableGradients[variableName];
       const accumulatedGrad = this.accumulatedGrads[variableName];
       const accumulatedUpdate = this.accumulatedUpdates[variableName];
 
-      const newVariable = tidy(() => {
+      tidy(() => {
         const newAccumulatedGrad =
             this.rho.mul(accumulatedGrad)
                 .add(this.oneMinusRho.mul(gradient.square()));
@@ -95,10 +93,9 @@ export class AdadeltaOptimizer extends Optimizer {
         this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
         this.accumulatedUpdates[variableName].assign(newAccumulatedUpdate);
 
-        return this.c.mul(updates).add(value);
+        const newValue = this.c.mul(updates).add(value);
+        value.assign(newValue);
       });
-
-      value.assign(newVariable);
     }
   }
 
