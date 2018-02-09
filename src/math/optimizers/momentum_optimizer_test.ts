@@ -26,7 +26,7 @@ import {MathTests} from '../../test_util';
 import {MomentumOptimizer} from './momentum_optimizer';
 
 const tests: MathTests = it => {
-  it('basic', math => {
+  it('basic', () => {
     const learningRate = .1;
     const momentum = .5;
     const optimizer = dl.train.momentum(learningRate, momentum);

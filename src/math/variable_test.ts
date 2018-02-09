@@ -23,7 +23,7 @@ import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variab
 import {Rank} from './types';
 
 const tests: MathTests = it => {
-  it('simple assign', math => {
+  it('simple assign', () => {
     const v = variable(dl.tensor1d([1, 2, 3]));
     test_util.expectArraysClose(v, [1, 2, 3]);
 
@@ -58,7 +58,7 @@ const tests: MathTests = it => {
     test_util.expectArraysClose(res, [6]);
   });
 
-  it('variables are not affected by tidy', math => {
+  it('variables are not affected by tidy', () => {
     let v: Variable<Rank.R1>;
     expect(dl.memory().numTensors).toBe(0);
 
@@ -104,7 +104,7 @@ const tests: MathTests = it => {
     expect(yh).toBeNull();
   });
 
-  it('assign will dispose old data', math => {
+  it('assign will dispose old data', () => {
     let v: Variable<Rank.R1>;
     v = variable(dl.tensor1d([1, 2, 3]));
     expect(dl.memory().numTensors).toBe(1);

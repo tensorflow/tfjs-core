@@ -38,7 +38,7 @@ import * as reduction_ops from './reduction_ops';
 import * as reverse from './reverse';
 import * as slice from './slice';
 import * as softmax_ops from './softmax';
-import {Scalar, Tensor, Tensor1D, Tensor3D, Tensor4D} from './tensor';
+import {Scalar, Tensor, Tensor1D} from './tensor';
 import * as transpose from './transpose';
 import {Rank} from './types';
 import * as unary_ops from './unary_ops';
@@ -332,70 +332,6 @@ export class NDArrayMath {
         `Error in arrayDividedByScalar: first argument must be rank 0, but ` +
             `got rank ${c.rank}.`);
     return this.multiply(c, a) as T;
-  }
-
-  /**
-   * Normalizes the activation of a local neighborhood across or within
-   * channels.
-   * @param x The input Tensor.
-   * @param radius The number of adjacent channels or spatial locations of the
-   *     1D normalization window. In Tensorflow this param is called
-   *     'depth_radius' because only 'acrossChannels' mode is supported.
-   * @param bias A constant bias term for the basis.
-   * @param alpha A scale factor, usually positive.
-   * @param beta An exponent.
-   * @param normRegion A string from: ['acrossChannels', 'withinChannel'].
-   *     Default is 'acrossChannels'.
-   */
-  localResponseNormalization3D(
-      x: Tensor3D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
-      normRegion: 'acrossChannels'|
-      'withinChannel' = 'acrossChannels'): Tensor3D {
-    util.assert(
-        x.rank === 3,
-        `Error in localResponseNormalization3D: x must be rank 3 but got
-         rank ${x.rank}.`);
-    util.assert(
-        util.isInt(radius),
-        `Error in localResponseNormalization3D: radius must be an integer
-         but got radius ${radius}.`);
-
-    const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-    const res = this.localResponseNormalization4D(
-        input4D, radius, bias, alpha, beta, normRegion);
-    return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
-  }
-
-  /**
-   * Normalizes the activation of a local neighborhood across or within
-   * channels.
-   * @param x The input Tensor. The 4-D input tensor is treated as a 3-D array
-   *     of 1D vectors (along the last dimension), and each vector is
-   * normalized independently.
-   * @param radius The number of adjacent channels or spatial locations of the
-   *     1D normalization window. In Tensorflow this param is called
-   *     'depth_radius' because only 'acrossChannels' mode is supported.
-   * @param bias A constant bias term for the basis.
-   * @param alpha A scale factor, usually positive.
-   * @param beta An exponent.
-   * @param normRegion A string from: ['acrossChannels', 'withinChannel'].
-   *     Default is 'acrossChannels'.
-   */
-  localResponseNormalization4D(
-      x: Tensor4D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
-      normRegion: 'acrossChannels'|
-      'withinChannel' = 'acrossChannels'): Tensor4D {
-    util.assert(
-        x.rank === 4,
-        `Error in localResponseNormalization4D: x must be rank 4 but got
-         rank ${x.rank}.`);
-    util.assert(
-        util.isInt(radius),
-        `Error in localResponseNormalization3D: radius must be an integer
-         but got radius ${radius}.`);
-
-    return ENV.engine.executeKernel(
-        'LRN4D', {inputs: {x}, args: {radius, bias, alpha, beta, normRegion}});
   }
 }
 

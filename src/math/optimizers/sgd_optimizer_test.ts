@@ -24,7 +24,7 @@ import {MathTests} from '../../test_util';
 import {SGDOptimizer} from './sgd_optimizer';
 
 const tests: MathTests = it => {
-  it('basic', math => {
+  it('basic', () => {
     const learningRate = .1;
     const optimizer = dl.train.sgd(learningRate);
 
@@ -32,7 +32,7 @@ const tests: MathTests = it => {
 
     let numTensors = dl.memory().numTensors;
 
-    let cost = optimizer.minimize(() => math.square(x), /* returnCost */ true);
+    let cost = optimizer.minimize(() => x.square(), /* returnCost */ true);
 
     // Cost should be the only additional array.
     expect(dl.memory().numTensors).toBe(numTensors + 1);
@@ -45,7 +45,7 @@ const tests: MathTests = it => {
     cost.dispose();
     numTensors = dl.memory().numTensors;
 
-    cost = optimizer.minimize(() => math.square(x), /* returnCost */ false);
+    cost = optimizer.minimize(() => x.square(), /* returnCost */ false);
     // There should be no new additional Tensors.
     expect(dl.memory().numTensors).toBe(numTensors);
 
@@ -59,7 +59,7 @@ const tests: MathTests = it => {
     expect(dl.memory().numTensors).toBe(0);
   });
 
-  it('graph', math => {
+  it('graph', () => {
     const inputProvider: InputProvider = {
       getNextCopy() {
         return dl.tensor1d([2, 4]);
@@ -73,7 +73,7 @@ const tests: MathTests = it => {
     const z = g.add(x, g.constant(3));
     const w = g.reduceSum(g.add(y, z));
     const optimizer = new SGDOptimizer(0.1);
-    const session = new Session(g, math);
+    const session = new Session(g, dl.ENV.math);
     // w = reduce_sum(x^2 + x + 3)
     // dw/dx = [2*x_1 + 1, 2*x_2 + 1]
     session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);

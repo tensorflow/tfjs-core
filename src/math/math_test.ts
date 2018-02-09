@@ -27,7 +27,7 @@ const gradientsScope = Gradients.gradientsScope;
 // dl.tidy
 {
   const gpuTests: MathTests = it => {
-    it('returns Tensor', math => {
+    it('returns Tensor', () => {
       dl.tidy(() => {
         const a = dl.tensor1d([1, 2, 3]);
         let b = dl.tensor1d([0, 0, 0]);
@@ -53,7 +53,7 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numTensors).toBe(0);
     });
 
-    it('multiple disposes does not affect num arrays', math => {
+    it('multiple disposes does not affect num arrays', () => {
       expect(dl.memory().numTensors).toBe(0);
       const a = dl.tensor1d([1, 2, 3]);
       const b = dl.tensor1d([1, 2, 3]);
@@ -65,7 +65,7 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numTensors).toBe(0);
     });
 
-    it('returns Tensor[]', math => {
+    it('returns Tensor[]', () => {
       const a = dl.tensor1d([1, 2, 3]);
       const b = dl.tensor1d([0, -1, 1]);
       expect(dl.memory().numTensors).toBe(2);
@@ -90,7 +90,7 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numTensors).toBe(0);
     });
 
-    it('basic usage without return', math => {
+    it('basic usage without return', () => {
       const a = dl.tensor1d([1, 2, 3]);
       let b = dl.tensor1d([0, 0, 0]);
 
@@ -107,7 +107,7 @@ const gradientsScope = Gradients.gradientsScope;
       expect(dl.memory().numTensors).toBe(2);
     });
 
-    it('nested usage', math => {
+    it('nested usage', () => {
       const a = dl.tensor1d([1, 2, 3]);
       let b = dl.tensor1d([0, 0, 0]);
 
@@ -500,7 +500,7 @@ const gradientsScope = Gradients.gradientsScope;
 
 {
   const tests: MathTests = it => {
-    it('second order gradients with gradientsScope', math => {
+    it('second order gradients with gradientsScope', () => {
       const a = dl.scalar(2);
       expect(dl.memory().numTensors).toBe(1);
 
