@@ -59,7 +59,7 @@ const tests: MathTests = it => {
     // de/dx = [1.802454081, 3.9501555214]
     // accumulatedGrad = [4.1, 16.1]
     // newAccumulatedGrad = [7.3488407141, 31.7037286432]
-    // x = [0.8347372764, 1.904922697]
+    // x = [0.8347372764, 1.83015597828]
     test_util.expectArraysClose(x, [0.8347372764, 1.83015597828]);
 
     // There should be no new additional Tensors.
