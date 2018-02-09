@@ -45,10 +45,11 @@ export function parse(): Docs {
       name: 'Tensors',
       description: `Tensors are the core datastructure of deeplearn.js. ` +
           `They are a generalization of vectors and matrices to potentially ` +
-          `higher dimensions.\n TODO: Finish this.`,
+          `higher dimensions.`,
       subheadings: [
         {
           name: 'Creation',
+          description: `This section describes how to construct tensors.`,
           pin: [
             'tensor', 'scalar', 'tensor1d', 'tensor2d', 'tensor3d', 'tensor4d'
           ]
@@ -90,18 +91,20 @@ export function parse(): Docs {
     }
   ];
 
-  // We keep an auxillary map of explicitly marked "subclass" fields on @doc
-  // to the method entries
+  // We keep an auxillary map of explicitly marked "subclass" fields on
+  // @doc to the method entries
   const subclassMethodMap: {[subclass: string]: DocFunction[]} = {};
 
-  // Use the same compiler options that we use to compile the library here.
+  // Use the same compiler options that we use to compile the library
+  // here.
   const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
 
   console.log(`Parsing AST from program root ${PROGRAM_ROOT}`);
   const program = ts.createProgram([PROGRAM_ROOT], tsconfig.compilerOptions);
   const checker = program.getTypeChecker();
 
-  // Visit all the nodes that are transitively linked from the source root.
+  // Visit all the nodes that are transitively linked from the source
+  // root.
   for (const sourceFile of program.getSourceFiles()) {
     if (!sourceFile.isDeclarationFile) {
       ts.forEachChild(
