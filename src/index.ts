@@ -34,6 +34,8 @@ export {ENV, Environment, Features} from './environment';
 export {Graph, SymbolicTensor} from './graph/graph';
 // tslint:disable-next-line:max-line-length
 export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
+// tslint:disable-next-line:max-line-length
+export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './graph/initializers';
 export {AdamOptimizer} from './graph/optimizers/adam_optimizer';
 export {AdamaxOptimizer} from './graph/optimizers/adamax_optimizer';
 export {RMSPropOptimizer} from './graph/optimizers/rmsprop_optimizer';
