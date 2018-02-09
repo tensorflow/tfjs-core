@@ -29,6 +29,7 @@ import * as concat from './concat';
 import * as conv from './conv';
 import * as image_ops from './image_ops';
 import * as logical from './logical_ops';
+import * as lrn_ops from './lrn';
 import * as lstm_ops from './lstm';
 import * as matmul from './matmul';
 import * as norm from './norm';
@@ -192,6 +193,9 @@ export class NDArrayMath {
   /** @deprecated Use dl.image.resizeBilinear() */
   resizeBilinear3D = image_ops.Ops.resizeBilinear;
 
+  localResponseNormalization3D = lrn_ops.LRN.localResponseNormalization;
+  localResponseNormalization4D = lrn_ops.LRN.localResponseNormalization;
+
   // Tracking methods.
   keep = Tracking.keep;
 
@@ -275,12 +279,12 @@ export class NDArrayMath {
     return a.div(c) as T;
   }
 
-  /** @deprecated Use math.transpose() instead. */
+  /** @deprecated Use dl.transpose() instead. */
   switchDim<R extends Rank>(x: Tensor<R>, perm?: number[]): Tensor<R> {
     return ops.transpose<R>(x, perm);
   }
 
-  /** @deprecated Use math.add(c, A) instead. */
+  /** @deprecated Use dl.add(c, A) instead. */
   scalarPlusArray<T extends Tensor>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
@@ -289,7 +293,7 @@ export class NDArrayMath {
     return this.add(c, a) as T;
   }
 
-  /** @deprecated Use math.sub(c, A) instead. */
+  /** @deprecated Use dl.sub(c, A) instead. */
   scalarMinusArray<T extends Tensor>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,
@@ -298,7 +302,7 @@ export class NDArrayMath {
     return this.subtract(c, a) as T;
   }
 
-  /** @deprecated Use math.sub(A, c) instead. */
+  /** @deprecated Use dl.sub(A, c) instead. */
   arrayMinusScalar<T extends Tensor>(a: T, c: Scalar): T {
     util.assert(
         c.size === 1,
@@ -325,7 +329,7 @@ export class NDArrayMath {
     });
   }
 
-  /** @deprecated Use math.multiply(c, A) instead. */
+  /** @deprecated Use dl.multiply(c, A) instead. */
   scalarTimesArray<T extends Tensor>(c: Scalar, a: T): T {
     util.assert(
         c.size === 1,

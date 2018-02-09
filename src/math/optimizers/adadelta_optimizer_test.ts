@@ -25,7 +25,7 @@ import {MathTests} from '../../test_util';
 import {AdadeltaOptimizer} from './adadelta_optimizer';
 
 const tests: MathTests = it => {
-  it('basic', math => {
+  it('basic', () => {
     const learningRate = .1;
     const rho = .95;
     const optimizer = dl.train.adadelta(learningRate, rho);

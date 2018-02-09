@@ -26,7 +26,7 @@ import {MathTests} from '../../test_util';
 import {AdagradOptimizer} from './adagrad_optimizer';
 
 const tests: MathTests = it => {
-  it('basic', math => {
+  it('basic', () => {
     const learningRate = .1;
     const initialAccumulatorValue = .1;
     const optimizer = dl.train.adagrad(learningRate, initialAccumulatorValue);

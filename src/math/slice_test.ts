@@ -20,7 +20,7 @@ import * as test_util from '../test_util';
 import {MathTests} from '../test_util';
 import {Rank} from './types';
 
-// math.slice1D
+// dl.slice1D
 {
   const tests: MathTests = it => {
     it('slices 1x1 into 1x1 (effectively a copy)', () => {
@@ -56,7 +56,7 @@ import {Rank} from './types';
   ]);
 }
 
-// math.slice2D
+// dl.slice2D
 {
   const tests: MathTests = it => {
     it('slicing a 1x1 from a 1x1 returns a 1x1', () => {
@@ -101,7 +101,7 @@ import {Rank} from './types';
   ]);
 }
 
-// math.slice3D
+// dl.slice3D
 {
   const tests: MathTests = it => {
     it('slices 1x1x1 into shape 1x1x1 (effectively a copy)', () => {
@@ -137,7 +137,7 @@ import {Rank} from './types';
   ]);
 }
 
-// math.slice4D
+// dl.slice4D
 {
   const tests: MathTests = it => {
     it('slices 1x1x1x1 into shape 1x1x1x1 (effectively a copy)', () => {

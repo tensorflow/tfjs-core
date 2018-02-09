@@ -113,7 +113,7 @@ export class Ops {
   }
 
   /**
-   * Concatenates two 4D tensors along a given axis. See math.concat2D() for
+   * Concatenates two 4D tensors along a given axis. See dl.concat2D() for
    * documentation.
    *
    * @param a The first array to concat.

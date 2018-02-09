@@ -19,12 +19,13 @@ import {ENV} from '../environment';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
-import {Tensor, Tensor3D, Tensor4D} from './tensor';
+import {Tensor3D, Tensor4D} from './tensor';
 
 export class LRN {
   /**
    * Normalizes the activation of a local neighborhood across or within
    * channels.
+   *
    * @param x The input Tensor. The 4-D input tensor is treated as a 3-D array
    *     of 1D vectors (along the last dimension), and each vector is
    * normalized independently.
@@ -37,36 +38,32 @@ export class LRN {
    * @param normRegion A string from: ['acrossChannels', 'withinChannel'].
    *     Default is 'acrossChannels'.
    */
-  @doc({heading: 'Normalization', subheading: 'Slicing and Joining'})
+  @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
-  static localResponseNormalization<T extends Tensor>(
+  static localResponseNormalization<T extends Tensor3D|Tensor4D>(
       x: T, radius = 5, bias = 1, alpha = 1, beta = 0.5,
       normRegion: 'acrossChannels'|'withinChannel' = 'acrossChannels'): T {
+    util.assert(
+        x.rank === 4 || x.rank === 3,
+        `Error in localResponseNormalization: x must be rank 3 or 4 but got
+               rank ${x.rank}.`);
+    util.assert(
+        util.isInt(radius),
+        `Error in localResponseNormalization3D: radius must be an integer
+                     but got radius ${radius}.`);
+    let x4D = x as Tensor4D;
+    let reshapedTo4D = false;
     if (x.rank === 3) {
-      return localResponseNormalization3D(
-          x, radius, bias, alpha, beta, normRegion);
-    } else if (x.rank === 4) {
-      return Ops.reverse4d(x as Tensor4D, axis) as Tensor<R>;
+      reshapedTo4D = true;
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    }
+    const res = ENV.engine.executeKernel(
+        'LRN4D',
+        {inputs: {x: x4D}, args: {radius, bias, alpha, beta, normRegion}});
+    if (reshapedTo4D) {
+      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     } else {
-      throw new Error(`Reverse for rank ${x.rank} is not yet implemented`);
+      return res as T;
     }
   }
-}
-
-function localResponseNormalization3D(
-    x: Tensor3D, radius = 5, bias = 1, alpha = 1, beta = 0.5,
-    normRegion: 'acrossChannels'|'withinChannel' = 'acrossChannels'): Tensor3D {
-  util.assert(
-      x.rank === 3,
-      `Error in localResponseNormalization3D: x must be rank 3 but got
-   rank ${x.rank}.`);
-  util.assert(
-      util.isInt(radius),
-      `Error in localResponseNormalization3D: radius must be an integer
-   but got radius ${radius}.`);
-
-  const input4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-  const res = localResponseNormalization4D(
-      input4D, radius, bias, alpha, beta, normRegion);
-  return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
 }
