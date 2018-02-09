@@ -151,8 +151,6 @@ export function sortMethods(docHeadings: DocHeading[]) {
     for (let j = 0; j < heading.subheadings.length; j++) {
       const subheading = heading.subheadings[j];
 
-      const me = subheading.name === 'Optimizers';
-
       // Pin the symbols in order of the pins.
       const pinnedSymbols = [];
       if (subheading.pin != null) {

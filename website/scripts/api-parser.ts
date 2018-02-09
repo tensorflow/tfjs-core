@@ -43,6 +43,9 @@ export function parse(): Docs {
   const docHeadings: DocHeading[] = [
     {
       name: 'Tensors',
+      description: `Tensors are the core datastructure of deeplearn.js. ` +
+          `They are a generalization of vectors and matrices to potentially ` +
+          `higher dimensions.\n TODO: Finish this.`,
       subheadings: [
         {
           name: 'Creation',
@@ -55,6 +58,7 @@ export function parse(): Docs {
     },
     {
       name: 'Operations',
+      description: '',
       subheadings: [
         {name: 'Arithmetic'}, {name: 'Basic math'}, {name: 'Matrices'},
         {name: 'Convolution'}, {name: 'Reduction'}, {name: 'Normalization'},
@@ -64,6 +68,7 @@ export function parse(): Docs {
     },
     {
       name: 'Training',
+      description: '',
       subheadings: [
         {name: 'Gradients'}, {
           name: 'Optimizers',
@@ -75,9 +80,14 @@ export function parse(): Docs {
     },
     {
       name: 'Performance',
+      description: '',
       subheadings: [{name: 'Memory', pin: ['tidy']}, {name: 'Timing'}]
     },
-    {name: 'Environment', subheadings: [{name: '', pin: ['setBackend']}]}
+    {
+      name: 'Environment',
+      description: '',
+      subheadings: [{name: '', pin: ['setBackend']}]
+    }
   ];
 
   // We keep an auxillary map of explicitly marked "subclass" fields on @doc
