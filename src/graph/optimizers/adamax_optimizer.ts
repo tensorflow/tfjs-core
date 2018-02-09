@@ -23,7 +23,6 @@ import {Scalar, Tensor} from '../../math/tensor';
 import {NamedVariableMap} from '../../math/types';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
-// tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
 export class AdamaxOptimizer extends Optimizer {

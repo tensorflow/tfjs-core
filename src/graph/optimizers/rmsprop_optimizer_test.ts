@@ -21,7 +21,6 @@ import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
 import {Graph} from '../graph';
 import {Session} from '../session';
-
 import {RMSPropOptimizer} from './rmsprop_optimizer';
 
 describe('rmsprop optimizer', () => {
