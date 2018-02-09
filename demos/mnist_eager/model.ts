@@ -12,9 +12,9 @@ const LABELS_SIZE = 10;
 
 const optimizer = dl.train.sgd(LEARNING_RATE);
 
-const weights = dl.variable(
-    () => dl.randomNormal(
-        [IMAGE_SIZE, LABELS_SIZE], 0, 1 / Math.sqrt(IMAGE_SIZE)));
+// Set up the model and loss function.
+const weights: dl.Tensor2D = dl.variable(
+    dl.randomNormal([IMAGE_SIZE, LABELS_SIZE], 0, 1 / Math.sqrt(IMAGE_SIZE)));
 
 const model = (xs: dl.Tensor2D) => xs.matMul(weights);
 
