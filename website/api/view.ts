@@ -24,6 +24,9 @@ export interface DocHeading {
 export interface DocSubheading {
   name: string;
   symbols?: DocSymbol[];
+  // Only used at initialization for sort-order. Pins by displayName, not symbol
+  // name (so that we use namespaces).
+  pinnedSymbols?: string[];
 }
 
 export type DocSymbol = DocFunction|DocClass;

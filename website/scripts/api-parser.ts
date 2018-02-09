@@ -44,8 +44,13 @@ export function parse(): Docs {
     {
       name: 'Tensors',
       subheadings: [
-        {name: 'Creation'}, {name: 'Transformations'},
-        {name: 'Slicing and Joining'}
+        {
+          name: 'Creation',
+          pinnedSymbols: [
+            'tensor', 'scalar', 'tensor1d', 'tensor2d', 'tensor3d', 'tensor4d'
+          ]
+        },
+        {name: 'Transformations'}, {name: 'Slicing and Joining'}
       ]
     },
     {
