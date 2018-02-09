@@ -24,7 +24,7 @@ import {SGDOptimizer} from './sgd_optimizer';
 const tests: MathTests = it => {
   it('basic', math => {
     const learningRate = .1;
-    const optimizer = new SGDOptimizer(learningRate);
+    const optimizer = dl.train.sgd(learningRate);
 
     const x = variable(dl.scalar(4));
     const bias = variable(dl.scalar(1));

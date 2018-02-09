@@ -35,12 +35,12 @@ const tests: MathTests = it => {
 
     const f = () => x.square().sum() as dl.Scalar;
 
-    let numTensors = math.getNumTensors();
+    let numTensors = dl.memory().numTensors
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
     // Cost & accumulator should be the only additional arrays.
-    expect(math.getNumTensors()).toBe(numTensors + 2);
+    expect(dl.memory().numTensors).toBe(numTensors + 2);
 
     // epsilon = 1-e8
     // newAccumulatedGrad = accumulatedGrad + grad^2
@@ -53,7 +53,7 @@ const tests: MathTests = it => {
     test_util.expectArraysClose(x, [0.9012270405, 1.9003110428]);
 
     cost.dispose();
-    numTensors = math.getNumTensors();
+    numTensors = dl.memory().numTensors;
 
     cost = optimizer.minimize(f, /* returnCost */ false);
 
@@ -64,7 +64,7 @@ const tests: MathTests = it => {
     test_util.expectArraysClose(x, [0.8347372764, 1.904922697], 1e-1);
 
     // There should be no new additional Tensors.
-    expect(math.getNumTensors()).toBe(numTensors);
+    expect(dl.memory().numTensors).toBe(numTensors);
 
     expect(cost).toBe(null);
 
@@ -72,7 +72,7 @@ const tests: MathTests = it => {
     optimizer.dispose();
 
     // There should be no more Tensors.
-    expect(math.getNumTensors()).toBe(0);
+    expect(dl.memory().numTensors).toBe(0);
   });
 
   it('graph', () => {
