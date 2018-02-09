@@ -242,13 +242,19 @@ export function replaceDocTypeAliases(
     docHeadings: DocHeading[], docTypeAliases: {[type: string]: string}) {
   foreachDocFunction(docHeadings, docFunction => {
     docFunction.parameters.forEach(param => {
-      Object.keys(docTypeAliases).forEach(type => {
-        if (param.type.indexOf(type) !== -1) {
-          const re = new RegExp(type + '\[[.*]\]');
-          param.type.replace(re, docTypeAliases[type]);
-          console.log(param);
-        }
-      });
+      param.type = replaceDocType(param.type, docTypeAliases);
     });
+  });
+}
+
+export function replaceDocType(
+    typeString: string, docTypeAliases: {[type: string]: string}): string {
+  Object.keys(docTypeAliases).forEach(type => {
+    if (typeString.indexOf(type) !== -1) {
+      const re = new RegExp(type + '\\[.*\\]', 'g');
+      console.log(re.source);
+      typeString = typeString.replace(re, docTypeAliases[type]);
+      console.log(typeString);
+    }
   });
 }
