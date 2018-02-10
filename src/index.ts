@@ -36,7 +36,6 @@ export {Graph, SymbolicTensor} from './graph/graph';
 export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
 // tslint:disable-next-line:max-line-length
 export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './graph/initializers';
-export {AdamOptimizer} from './graph/optimizers/adam_optimizer';
 export {AdamaxOptimizer} from './graph/optimizers/adamax_optimizer';
 export {RMSPropOptimizer} from './graph/optimizers/rmsprop_optimizer';
 export {CostReduction, FeedEntry, Session} from './graph/session';
@@ -48,6 +47,7 @@ export {LSTMCell} from './math/lstm';
 export {NDArrayMath} from './math/math';
 export {AdadeltaOptimizer} from './math/optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './math/optimizers/adagrad_optimizer';
+export {AdamOptimizer} from './math/optimizers/adam_optimizer';
 export {MomentumOptimizer} from './math/optimizers/momentum_optimizer';
 export {Optimizer} from './math/optimizers/optimizer';
 export {SGDOptimizer} from './math/optimizers/sgd_optimizer';

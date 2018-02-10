@@ -18,6 +18,7 @@ import {doc} from '../decorators';
 
 import {AdadeltaOptimizer} from './adadelta_optimizer';
 import {AdagradOptimizer} from './adagrad_optimizer';
+import {AdamOptimizer} from './adam_optimizer';
 import {MomentumOptimizer} from './momentum_optimizer';
 import {SGDOptimizer} from './sgd_optimizer';
 
@@ -44,6 +45,22 @@ export class OptimizerConstructors {
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static momentum(learningRate: number, momentum: number): MomentumOptimizer {
     return new MomentumOptimizer(learningRate, momentum);
+  }
+
+  /**
+   * Constructs a `dl.train.AdamOptimizer` that uses the Adam algorithm.
+   * See https://arxiv.org/abs/1412.6980
+   *
+   * @param learningRate
+   * @param beta1
+   * @param beta2
+   */
+  @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
+  static adam(learningRate: number, beta1: number, beta2: number):
+      AdamOptimizer {
+    return new AdamOptimizer(
+        learningRate, beta1, beta2,
+        undefined /** @deprecated specifiedVariableList */);
   }
 
   /**
