@@ -23,9 +23,13 @@ import {DataType, TypedArray} from './math/types';
 import * as util from './util';
 
 export const WEBGL_ENVS: Features[] = [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1},
+  {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  {
+    'BACKEND': 'webgl',
+    'WEBGL_FLOAT_TEXTURE_ENABLED': false,
+    'WEBGL_VERSION': 1
+  },
 ];
 export const CPU_ENVS: Features[] = [{'BACKEND': 'cpu'}];
 export const ALL_ENVS = WEBGL_ENVS.concat(CPU_ENVS);

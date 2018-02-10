@@ -288,7 +288,7 @@ export class Environment {
     if (feature === 'DEBUG') {
       return false;
     } else if (feature === 'BACKEND') {
-      return null;
+      return this.getBestBackendType();
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {
       const webGLVersion = this.get('WEBGL_VERSION');
 
@@ -418,9 +418,7 @@ export class Environment {
   }
 
   private initEngine() {
-    const safeMode = false;
-    const backendType = ENV.get('BACKEND') || this.getBestBackendType();
-    this.globalMath = new NDArrayMath(backendType, safeMode);
+    this.globalMath = new NDArrayMath(ENV.get('BACKEND'), false /* safeMode */);
   }
 }
 
