@@ -23,9 +23,7 @@ export enum DType {
   bool = 'bool'
 }
 
-/**
- * @docalias number[]
- */
+/** @docalias number[] */
 export interface ShapeMap {
   R0: number[];
   R1: [number];
@@ -61,6 +59,7 @@ export interface RecursiveArray<T extends any> {
   [index: number]: T|RecursiveArray<T>;
 }
 
+/** @docalias {[name: string]: Tensor} */
 export type NamedTensorMap = {
   [name: string]: Tensor
 };

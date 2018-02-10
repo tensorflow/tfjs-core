@@ -242,7 +242,7 @@ export function serializeMethod(
       checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
   const signature = type.getCallSignatures()[0];
 
-  const identifierGenericMap = util.getIdentifierGenericMap(node);
+  const identifierGenericMap = util.getIdentifierGenericMap(node, symbol.name);
 
   const parameters = signature.parameters.map(
       symbol => serializeParameter(checker, symbol, identifierGenericMap));

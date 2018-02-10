@@ -226,7 +226,7 @@ export function getJsDocTag(symbol: ts.Symbol, tag: string): string {
   for (let i = 0; i < tags.length; i++) {
     const jsdocTag = tags[i];
     if (jsdocTag.name === tag) {
-      return jsdocTag.text;
+      return jsdocTag.text.trim();
     }
   }
 }
@@ -259,7 +259,7 @@ export function parameterTypeToString(
               sanitizeTypeString(type.getText(), identifierGenericMap)));
     }
 
-    return types.join(' | ');
+    return types.join('|');
   } else {
     typeStr = sanitizeTypeString(typeStr, identifierGenericMap);
 
@@ -277,43 +277,51 @@ export function sanitizeTypeString(
   // If the return type is part of the generic map, use the mapped
   // type. For example, <T extends Tensor> will replace "T" with
   // "Tensor".
+  Object.keys(identifierGenericMap).forEach(identifier => {
+    const re = new RegExp('\\b' + identifier + '\\b', 'g');
+    typeString = typeString.replace(re, identifierGenericMap[identifier]);
+  });
   if (identifierGenericMap[typeString] != null) {
     typeString = identifierGenericMap[typeString];
   }
+  //
 
   // Remove generics.
-  typeString = removeGenerics(typeString);
+  typeString = typeString.replace(/(<.*>)/, '');
+
   return typeString;
 }
 
-// Remove generics from a string. e.g. Tensor<R> => Tensor.
-export function removeGenerics(typeStr: string) {
-  return typeStr.replace(/(<.*>)/, '');
-}
 /**
  * Computes a mapping of identifier to their generic type. For example:
  *   method<T extends Tensor>() {}
  * In this example, this method will return {'T': 'Tensor'}.
  */
-export function getIdentifierGenericMap(node: ts.MethodDeclaration):
-    {[generic: string]: string} {
+export function getIdentifierGenericMap(
+    node: ts.MethodDeclaration,
+    nameRemove: string): {[generic: string]: string} {
   const identifierGenericMap = {};
-  let identifier;
-  let generic;
+
   node.forEachChild(child => {
+    // TypeParameterDeclarations look like <T extends Tensor|NamedTensorMap>.
     if (ts.isTypeParameterDeclaration(child)) {
+      let identifier;
+      let generic;
       child.forEachChild(cc => {
+        // Type nodes are "Tensor|NamedTensorMap"
+        // Identifier nodes are "T".
         if (ts.isTypeNode(cc)) {
           generic = cc.getText();
         } else if (ts.isIdentifier(cc)) {
           identifier = cc.getText();
         }
       });
+      if (identifier != null && generic != null) {
+        identifierGenericMap[identifier] = generic;
+      }
     }
   });
-  if (identifier != null && generic != null) {
-    identifierGenericMap[identifier] = generic;
-  }
+
   return identifierGenericMap;
 }
 
@@ -345,12 +353,20 @@ export function replaceDocTypeAliases(
     docHeadings: DocHeading[], docTypeAliases: {[type: string]: string}) {
   foreachDocFunction(docHeadings, docFunction => {
     docFunction.parameters.forEach(param => {
-      Object.keys(docTypeAliases).forEach(type => {
-        if (param.type.indexOf(type) !== -1) {
-          const re = new RegExp(type + '(\\[.*\\])?', 'g');
-          param.type = param.type.replace(re, docTypeAliases[type]);
-        }
-      });
+      param.type = replaceDocTypeAlias(param.type, docTypeAliases);
     });
+    docFunction.returnType =
+        replaceDocTypeAlias(docFunction.returnType, docTypeAliases);
   });
+}
+
+export function replaceDocTypeAlias(
+    docTypeString: string, docTypeAliases: {[type: string]: string}): string {
+  Object.keys(docTypeAliases).forEach(type => {
+    if (docTypeString.indexOf(type) !== -1) {
+      const re = new RegExp(type + '(\\[.*\\])?', 'g');
+      docTypeString = docTypeString.replace(re, docTypeAliases[type]);
+    }
+  });
+  return docTypeString;
 }
