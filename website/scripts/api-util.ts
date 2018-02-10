@@ -236,8 +236,7 @@ export function getJsDocTag(symbol: ts.Symbol, tag: string): string {
  */
 export function parameterTypeToString(
     checker: ts.TypeChecker, symbol: ts.Symbol,
-    identifierGenericMap: {[identifier: string]: string},
-    parentNameREMOVE: string): string {
+    identifierGenericMap: {[identifier: string]: string}): string {
   const valueDeclaration = symbol.valueDeclaration;
 
   // Look for type nodes that aren't null and get the full text of the type

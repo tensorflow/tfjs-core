@@ -240,8 +240,7 @@ export function serializeMethod(
   const identifierGenericMap = util.getIdentifierGenericMap(node, symbol.name);
 
   const parameters = signature.parameters.map(
-      symbol => serializeParameter(
-          checker, symbol, identifierGenericMap, methodName));
+      symbol => serializeParameter(checker, symbol, identifierGenericMap));
   const paramStr = '(' +
       parameters.map(param => param.name + (param.optional ? '?' : ''))
           .join(', ') +
@@ -261,6 +260,8 @@ export function serializeMethod(
     }
   });
   if (returnType == null) {
+    // Fall back the the standard way of getting the type, which sometimes gives
+    // up and returns 'any' or '{}' for complex types.
     returnType = checker.typeToString(signature.getReturnType());
   }
   returnType = util.sanitizeTypeString(returnType, identifierGenericMap);
@@ -282,13 +283,11 @@ export function serializeMethod(
 
 function serializeParameter(
     checker: ts.TypeChecker, symbol: ts.Symbol,
-    identifierGenericMap: {[identifier: string]: string},
-    parentNameREMOVE: string): DocFunctionParam {
+    identifierGenericMap: {[identifier: string]: string}): DocFunctionParam {
   return {
     name: symbol.getName(),
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
-    type: util.parameterTypeToString(
-        checker, symbol, identifierGenericMap, parentNameREMOVE),
+    type: util.parameterTypeToString(checker, symbol, identifierGenericMap),
     optional: checker.isOptionalParameter(
         symbol.valueDeclaration as ts.ParameterDeclaration)
   };
