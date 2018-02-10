@@ -15,12 +15,19 @@
  * =============================================================================
  */
 
-import {BackendType, ENV, Environment, Features} from './environment';
+import {ENV, Environment, Features} from './environment';
 import {MathBackendCPU} from './math/backends/backend_cpu';
 import {MathBackendWebGL} from './math/backends/backend_webgl';
 import {Tensor} from './math/tensor';
 import {DataType, TypedArray} from './math/types';
 import * as util from './util';
+
+export const ALL_ENVS: Features[] = [
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1},
+  {'BACKEND': 'cpu'}
+];
 
 export type Tests = () => void;
 
@@ -253,13 +260,21 @@ export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
   return d;
 }
 
+export function describeWithFlags(
+    name: string, featuresList: Features[], tests: Tests) {
+  featuresList.forEach(features => {
+    const testName = name + ' ' + JSON.stringify(features);
+    executeTests(testName, [tests], features);
+  });
+}
+
 export function describeMathCPU(
     name: string, tests: Tests[], featuresList?: Features[]) {
   const testNameBase = 'CPU: ' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests,
       (testName, tests, features) =>
-          executeMathTests(testName, tests, 'cpu', features),
+          executeMathTests(testName, tests, features),
       featuresList);
 }
 
@@ -269,17 +284,15 @@ export function describeMathGPU(
   describeWithFeaturesAndExecutor(
       testNameBase, tests,
       (testName, tests, features) =>
-          executeMathTests(testName, tests, 'webgl', features),
+          executeMathTests(testName, tests, features),
       featuresList);
 }
 
 export function describeCustom(
-    name: string, tests: Tests, featuresList?: Features[],
-    customBeforeEach?: () => void, customAfterEach?: () => void) {
+    name: string, tests: Tests, featuresList?: Features[]) {
   describeWithFeaturesAndExecutor(
       name, [tests],
-      (testName, tests, features) => executeTests(
-          testName, tests, features, customBeforeEach, customAfterEach),
+      (testName, tests, features) => executeTests(testName, tests, features),
       featuresList);
 }
 
@@ -299,38 +312,24 @@ function describeWithFeaturesAndExecutor(
 }
 
 export function executeMathTests(
-    testName: string, tests: Tests[], backendType: BackendType,
-    features?: Features) {
-  const customBeforeEach = () => {
-    Environment.setBackend(backendType);
-    ENV.engine.startScope();
-  };
-  const customAfterEach = () => {
-    ENV.engine.endScope(null);
-  };
-
-  executeTests(
-      testName, tests as Tests[], features, customBeforeEach, customAfterEach);
+    testName: string, tests: Tests[], features?: Features) {
+  executeTests(testName, tests as Tests[], features);
 }
 
-function executeTests(
-    testName: string, tests: Tests[], features?: Features,
-    customBeforeEach?: () => void, customAfterEach?: () => void) {
+function executeTests(testName: string, tests: Tests[], features?: Features) {
   describe(testName, () => {
     beforeEach(() => {
       ENV.setFeatures(features || {});
       ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
       ENV.addCustomBackend('cpu', () => new MathBackendCPU());
-
-      if (customBeforeEach != null) {
-        customBeforeEach();
+      if (features && features.BACKEND != null) {
+        Environment.setBackend(features.BACKEND);
       }
+      ENV.engine.startScope();
     });
 
     afterEach(() => {
-      if (customAfterEach != null) {
-        customAfterEach();
-      }
+      ENV.engine.endScope(null);
       ENV.reset();
     });
 
