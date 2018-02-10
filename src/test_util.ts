@@ -22,11 +22,6 @@ import {Tensor} from './math/tensor';
 import {DataType, TypedArray} from './math/types';
 import * as util from './util';
 
-// This is how the it(), fit() and xit() function look in your tests
-export type MathIt = (name: string, testFn: () => void) => void;
-
-// This is the internal representation of the it(), fit() and xit() functions
-export type It = (name: string, testFn: () => void|Promise<void>) => void;
 export type Tests = () => void;
 
 /** Accuracy for tests. */
@@ -259,7 +254,7 @@ export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
 }
 
 export function describeMathCPU(
-    name: string, tests: Array<() => void>, featuresList?: Features[]) {
+    name: string, tests: Tests[], featuresList?: Features[]) {
   const testNameBase = 'CPU: ' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests,
@@ -269,7 +264,7 @@ export function describeMathCPU(
 }
 
 export function describeMathGPU(
-    name: string, tests: Array<() => void>, featuresList?: Features[]) {
+    name: string, tests: Tests[], featuresList?: Features[]) {
   const testNameBase = 'WebGL: ' + name;
   describeWithFeaturesAndExecutor(
       testNameBase, tests,
@@ -303,38 +298,8 @@ function describeWithFeaturesAndExecutor(
   }
 }
 
-function resolveTestFuncPromise(testFunc: () => void|Promise<void>) {
-  return (done: DoneFn) => {
-    const result = testFunc();
-    if (result instanceof Promise) {
-      result.then(done, e => {
-        fail(e);
-        done();
-      });
-    } else {
-      done();
-    }
-  };
-}
-
-// A wrapper around it() that calls done automatically if the function returns
-// a Promise, aka if it's an async/await function.
-const PROMISE_IT: It = (name: string, testFunc: () => void|Promise<void>) => {
-  it(name, resolveTestFuncPromise(testFunc));
-};
-
-const PROMISE_FIT: It = (name: string, testFunc: () => void|Promise<void>) => {
-  // tslint:disable-next-line:ban
-  fit(name, resolveTestFuncPromise(testFunc));
-};
-
-const PROMISE_XIT: It = (name: string, testFunc: () => void|Promise<void>) => {
-  // tslint:disable-next-line:ban
-  xit(name, resolveTestFuncPromise(testFunc));
-};
-
 export function executeMathTests(
-    testName: string, tests: Array<() => void>, backendType: BackendType,
+    testName: string, tests: Tests[], backendType: BackendType,
     features?: Features) {
   const customBeforeEach = () => {
     Environment.setBackend(backendType);
@@ -343,26 +308,14 @@ export function executeMathTests(
   const customAfterEach = () => {
     ENV.engine.endScope(null);
   };
-  const customIt: It = (name: string, testFunc: () => void|Promise<void>) => {
-    PROMISE_IT(name, () => testFunc());
-  };
-  const customFit: It = (name: string, testFunc: () => void|Promise<void>) => {
-    PROMISE_FIT(name, () => testFunc());
-  };
-  const customXit: It = (name: string, testFunc: () => void|Promise<void>) => {
-    PROMISE_XIT(name, () => testFunc());
-  };
 
   executeTests(
-      testName, tests as Tests[], features, customBeforeEach, customAfterEach,
-      customIt, customFit, customXit);
+      testName, tests as Tests[], features, customBeforeEach, customAfterEach);
 }
 
 function executeTests(
     testName: string, tests: Tests[], features?: Features,
-    customBeforeEach?: () => void, customAfterEach?: () => void,
-    customIt: It = PROMISE_IT, customFit: It = PROMISE_FIT,
-    customXit: It = PROMISE_XIT) {
+    customBeforeEach?: () => void, customAfterEach?: () => void) {
   describe(testName, () => {
     beforeEach(() => {
       ENV.setFeatures(features || {});
