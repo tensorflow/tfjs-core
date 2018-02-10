@@ -17,8 +17,9 @@
 
 import * as dl from '../index';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArrayInMeanStdRange, expectArraysClose, expectArraysEqual, expectValuesInRange, jarqueBeraNormalityTest} from '../test_util';
+import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectValuesInRange} from '../test_util';
 import * as util from '../util';
+import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 describeWithFlags('zeros', ALL_ENVS, () => {
   it('1D default dtype', () => {

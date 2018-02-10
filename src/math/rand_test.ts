@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from '../test_util';
 import {MPRandGauss} from './rand';
+import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 function isFloat(n: number): boolean {
   return Number(n) === n && n % 1 !== 0;

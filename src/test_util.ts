@@ -22,103 +22,18 @@ import {Tensor} from './math/tensor';
 import {DataType, TypedArray} from './math/types';
 import * as util from './util';
 
-export const ALL_ENVS: Features[] = [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1},
-  {'BACKEND': 'cpu'}
-];
 export const WEBGL_ENVS: Features[] = [
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1},
 ];
 export const CPU_ENVS: Features[] = [{'BACKEND': 'cpu'}];
+export const ALL_ENVS = WEBGL_ENVS.concat(CPU_ENVS);
 
 /** Accuracy for tests. */
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed
 // textures.
 export const TEST_EPSILON = 1e-2;
-
-export function mean(values: TypedArray|number[]) {
-  let sum = 0;
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i];
-  }
-  return sum / values.length;
-}
-
-export function standardDeviation(values: TypedArray|number[], mean: number) {
-  let squareDiffSum = 0;
-  for (let i = 0; i < values.length; i++) {
-    const diff = values[i] - mean;
-    squareDiffSum += diff * diff;
-  }
-  return Math.sqrt(squareDiffSum / values.length);
-}
-
-export function kurtosis(values: TypedArray|number[]) {
-  // https://en.wikipedia.org/wiki/Kurtosis
-  const valuesMean = mean(values);
-  const n = values.length;
-  let sum2 = 0;
-  let sum4 = 0;
-  for (let i = 0; i < n; i++) {
-    const v = values[i] - valuesMean;
-    sum2 += Math.pow(v, 2);
-    sum4 += Math.pow(v, 4);
-  }
-  return (1 / n) * sum4 / Math.pow((1 / n) * sum2, 2);
-}
-
-export function skewness(values: TypedArray|number[]) {
-  // https://en.wikipedia.org/wiki/Skewness
-  const valuesMean = mean(values);
-  const n = values.length;
-  let sum2 = 0;
-  let sum3 = 0;
-  for (let i = 0; i < n; i++) {
-    const v = values[i] - valuesMean;
-    sum2 += Math.pow(v, 2);
-    sum3 += Math.pow(v, 3);
-  }
-  return (1 / n) * sum3 / Math.pow((1 / (n - 1)) * sum2, 3 / 2);
-}
-
-export function jarqueBeraNormalityTest(a: Tensor|TypedArray|number[]) {
-  let values: TypedArray|number[];
-  if (a instanceof Tensor) {
-    values = a.dataSync();
-  } else {
-    values = a;
-  }
-  // https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
-  const n = values.length;
-  const s = skewness(values);
-  const k = kurtosis(values);
-  const jb = n / 6 * (Math.pow(s, 2) + 0.25 * Math.pow(k - 3, 2));
-  // JB test requires 2-degress of freedom from Chi-Square @ 0.95:
-  // http://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm
-  const CHI_SQUARE_2DEG = 5.991;
-  if (jb > CHI_SQUARE_2DEG) {
-    throw new Error(`Invalid p-value for JB: ${jb}`);
-  }
-}
-
-export function expectArrayInMeanStdRange(
-    actual: Tensor|TypedArray|number[], expectedMean: number,
-    expectedStdDev: number, epsilon = TEST_EPSILON) {
-  let actualValues: TypedArray|number[];
-  if (actual instanceof Tensor) {
-    actualValues = actual.dataSync();
-  } else {
-    actualValues = actual;
-  }
-  const actualMean = mean(actualValues);
-  expectNumbersClose(actualMean, expectedMean, epsilon);
-  expectNumbersClose(
-      standardDeviation(actualValues, actualMean), expectedStdDev, epsilon);
-}
 
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],
