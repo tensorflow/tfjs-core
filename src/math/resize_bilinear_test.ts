@@ -18,7 +18,7 @@
 import * as dl from '../index';
 import * as test_util from '../test_util';
 
-// math.resizeBilinear
+// dl.resizeBilinear
 {
   const tests = () => {
     it('simple alignCorners=false', () => {

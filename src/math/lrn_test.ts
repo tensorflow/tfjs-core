@@ -29,7 +29,7 @@ const flatten = (arr: any): number[] => {
   }, []);
 };
 
-// math.localResponseNormalization3D
+// dl.localResponseNormalization with Tensor3D
 {
   const tests = () => {
 
@@ -57,7 +57,7 @@ const flatten = (arr: any): number[] => {
       const alpha = 1;
       const beta = 0.5;
 
-      const result = x.localResponseNormalization3D(radius, bias, alpha,
+      const result = x.localResponseNormalization(radius, bias, alpha,
         beta);
 
       const f = (...vals: number[]) =>
@@ -370,21 +370,21 @@ const flatten = (arr: any): number[] => {
     });
   };
 
-  test_util.describeMathCPU('localResponseNormalization3D', [tests]);
-  test_util.describeMathGPU('localResponseNormalization3D', [tests], [
+  test_util.describeMathCPU('localResponseNormalization of 3D', [tests]);
+  test_util.describeMathGPU('localResponseNormalization of 3D', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2}
     //{'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
   ]);
 }
 
-// math.localResponseNormalization4D
+// dl.localResponseNormalization with Tensor4D
 {
   const tests = () => {
 
     it('throws error with invalid input', () => {
       // tslint:disable-next-line:no-any
-      const x: any = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
+      const x: any = dl.tensor2d([1, 20, 300, 4], [1, 4]);
       const radius = 3;
 
       expect(() => x.localResponseNormalization(radius))
@@ -568,14 +568,14 @@ const flatten = (arr: any): number[] => {
       const x = dl.tensor4d(flatten(input), [2, 3, 3, 8]);
       const radius = 2;
 
-      const result = x.localResponseNormalization4D(radius);
+      const result = x.localResponseNormalization(radius);
 
       test_util.expectArraysClose(result, flatten(expected));
     });
   };
 
-  test_util.describeMathCPU('localResponseNormalization4D', [tests]);
-  test_util.describeMathGPU('localResponseNormalization4D', [tests], [
+  test_util.describeMathCPU('localResponseNormalization of 4D', [tests]);
+  test_util.describeMathGPU('localResponseNormalization of 4D', [tests], [
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
     {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2}
    // {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}

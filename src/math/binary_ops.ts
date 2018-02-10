@@ -153,9 +153,7 @@ export class Ops {
         return dy.mul(dx);
       };
       const derExp = () => {
-        throw new Error(
-            `Backprop through exponent of math.pow not ` +
-            `implemented yet.`);
+        throw new Error(`Backprop through exponent not implemented yet.`);
       };
       return {base: derBase, exp: derExp};
     };

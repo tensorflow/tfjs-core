@@ -361,7 +361,7 @@ const gradientsScope = Gradients.gradientsScope;
       test_util.expectArraysClose(gradients.a, [2, 4, 6, 8]);
     });
 
-    it('reshape outside math.gradients() throws error', () => {
+    it('reshape outside dl.gradients() throws error', () => {
       const a = dl.tensor2d([1, 2, 3, 4], [2, 2]);
       const b = a.flatten();
       const exponent = dl.tensor1d([2, 2, 2, 2], 'int32');
@@ -390,7 +390,7 @@ const gradientsScope = Gradients.gradientsScope;
       test_util.expectArraysClose(gradients.a, [2, 4, 6, 8]);
     });
 
-    it('asType outside of math.gradients() throws error', () => {
+    it('asType outside of dl.gradients() throws error', () => {
       const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
       const b = a.toFloat();
       const exponent = dl.tensor2d([2, 2, 2, 2], [2, 2], 'int32');
