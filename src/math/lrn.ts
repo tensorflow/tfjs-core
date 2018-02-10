@@ -28,7 +28,7 @@ export class LRN {
    *
    * @param x The input Tensor. The 4-D input tensor is treated as a 3-D array
    *     of 1D vectors (along the last dimension), and each vector is
-   * normalized independently.
+   *     normalized independently.
    * @param radius The number of adjacent channels or spatial locations of the
    *     1D normalization window. In Tensorflow this param is called
    *     'depth_radius' because only 'acrossChannels' mode is supported.

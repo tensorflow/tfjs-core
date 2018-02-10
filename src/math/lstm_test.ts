@@ -45,12 +45,10 @@ import {Rank} from './types';
           [0.9906240105628967, 0.6248329877853394, 0, 1.0224634408950806]);
 
       const forgetBias = dl.scalar(1.0);
-      const lstm1 = (data: Tensor2D, c: Tensor2D, h: Tensor2D) => {
-        return dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);
-      };
-      const lstm2 = (data: Tensor2D, c: Tensor2D, h: Tensor2D) => {
-        return dl.basicLSTMCell(forgetBias, lstmKernel2, lstmBias2, data, c, h);
-      };
+      const lstm1 = (data: Tensor2D, c: Tensor2D, h: Tensor2D) =>
+          dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);
+      const lstm2 = (data: Tensor2D, c: Tensor2D, h: Tensor2D) =>
+          dl.basicLSTMCell(forgetBias, lstmKernel2, lstmBias2, data, c, h);
       const c = [
         dl.zeros<Rank.R2>([1, lstmBias1.shape[0] / 4]),
         dl.zeros<Rank.R2>([1, lstmBias2.shape[0] / 4])
