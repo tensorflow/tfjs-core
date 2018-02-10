@@ -250,7 +250,7 @@ export function parameterTypeToString(
   if (typeStr == null) {
     // Fall back to using the checkers method for converting the type to a
     // string.
-    checker.typeToString(
+    typeStr = checker.typeToString(
         checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!))
   }
 

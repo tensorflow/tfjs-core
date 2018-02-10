@@ -75,7 +75,10 @@ export function parse(): Docs {
         {name: 'Gradients'}, {
           name: 'Optimizers',
           pin: [
-            'train.sgd', 'train.momentum', 'train.adagrad', 'train.adadelta'
+            'train.sgd', 'train.SGDOptimizer', 'train.momentum',
+            'train.MomentumOptimizer', 'train.adagrad',
+            'train.AdagradOptimizer', 'train.adadelta',
+            'train.AdadeltaOptimizer'
           ]
         }
       ]
