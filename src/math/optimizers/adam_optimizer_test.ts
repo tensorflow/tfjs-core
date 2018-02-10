@@ -19,76 +19,74 @@ import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
 
 import {AdamOptimizer} from './adam_optimizer';
 
 const tests = () => {
-  // it('basic', () => {
-  //   const learningRate = .1;
-  //   const beta1 = .95;
-  //   const beta2 = .95;
-  //   const optimizer = dl.train.adam(learningRate, beta1, beta2);
+  it('basic', () => {
+    const learningRate = .1;
+    const beta1 = .95;
+    const beta2 = .95;
+    const optimizer = dl.train.adam(learningRate, beta1, beta2);
 
-  //   const x = dl.variable(dl.tensor1d([1, 2]));
+    const x = dl.variable(dl.tensor1d([1, 2]));
 
-  //   const f = () => x.square().sum() as dl.Scalar;
+    const f = () => x.square().sum() as dl.Scalar;
 
-  //   let numTensors = dl.memory().numTensors;
+    let numTensors = dl.memory().numTensors;
 
-  //   let cost = optimizer.minimize(f, /* returnCost */ true);
+    let cost = optimizer.minimize(f, /* returnCost */ true);
 
-  //   // Cost & 2 accumulators should be the only additional arrays.
-  //   expect(dl.memory().numTensors).toBe(numTensors + 3);
+    // Cost & 2 accumulators should be the only additional arrays.
+    expect(dl.memory().numTensors).toBe(numTensors + 3);
 
-  //   // epsilon = 1-e8
-  //   // newAccumulatedGrad = rho * accumulatedGrad + (1 - rho) * grad ^ 2
-  //   // updates = -grad * sqrt(accumulatedUpdate + epsilon) /
-  //   //     sqrt(accumulatedGrad + epsilon)
-  //   // newAccumulatedUpdate = rho * accumulatedUpdate + (1 - rho) * updates ^
-  //   2
-  //   // x += learningRate * updates
-  //   //
-  //   // de/dx = [2, 4]
-  //   // accumulatedGrad = [0, 0]
-  //   // newAccumulatedGrad = [.2, .8]
-  //   // updates = [-2, -4]
-  //   // newAccumulatedUpdate = [.2, .8]
-  //   // x = [0.8, 1.6]
-  //   test_util.expectArraysClose(x, [0.8, 1.6]);
+    // epsilon = 1-e8
+    // newAccumulatedGrad = rho * accumulatedGrad + (1 - rho) * grad ^ 2
+    // updates = -grad * sqrt(accumulatedUpdate + epsilon) /
+    //     sqrt(accumulatedGrad + epsilon)
+    // newAccumulatedUpdate = rho * accumulatedUpdate + (1 - rho) * updates ^ 2
+    // x += learningRate * updates
+    //
+    // de/dx = [2, 4]
+    // accumulatedGrad = [0, 0]
+    // newAccumulatedGrad = [.2, .8]
+    // updates = [-2, -4]
+    // newAccumulatedUpdate = [.2, .8]
+    // x = [0.8, 1.6]
+    test_util.expectArraysClose(x, [0.8, 1.6]);
 
-  //   cost.dispose();
-  //   numTensors = dl.memory().numTensors;
+    cost.dispose();
+    numTensors = dl.memory().numTensors;
 
-  //   cost = optimizer.minimize(f, /* returnCost */ false);
+    cost = optimizer.minimize(f, /* returnCost */ false);
 
-  //   // de/dx = [1.6, 3.2]
-  //   // accumulatedGrad = [.2, .8]
-  //   // accumulatedUpdate = [.2, .8]
-  //   // newAccumulatedGrad = [0.318, 1.272]
-  //   // updates = [-1.6, -3.2]
-  //   // x = [0.64, 1.28]
-  //   test_util.expectArraysClose(x, [0.64, 1.28]);
+    // de/dx = [1.6, 3.2]
+    // accumulatedGrad = [.2, .8]
+    // accumulatedUpdate = [.2, .8]
+    // newAccumulatedGrad = [0.318, 1.272]
+    // updates = [-1.6, -3.2]
+    // x = [0.64, 1.28]
+    test_util.expectArraysClose(x, [0.64, 1.28]);
 
-  //   // There should be no new additional Tensors.
-  //   expect(dl.memory().numTensors).toBe(numTensors);
+    // There should be no new additional Tensors.
+    expect(dl.memory().numTensors).toBe(numTensors);
 
-  //   expect(cost).toBe(null);
+    expect(cost).toBe(null);
 
-  //   x.dispose();
-  //   optimizer.dispose();
+    x.dispose();
+    optimizer.dispose();
 
-  //   // There should be no more Tensors.
-  //   expect(dl.memory().numTensors).toBe(0);
-  // });
+    // There should be no more Tensors.
+    expect(dl.memory().numTensors).toBe(0);
+  });
 
   it('graph', () => {
     const math = ENV.math;
 
     const inputProvider: InputProvider = {
       getNextCopy() {
-        return Tensor1D.new([2, 4]);
+        return dl.tensor1d([2, 4]);
       },
       disposeCopy(example) {}
     };
