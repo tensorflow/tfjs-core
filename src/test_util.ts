@@ -28,8 +28,12 @@ export const ALL_ENVS: Features[] = [
   {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1},
   {'BACKEND': 'cpu'}
 ];
-
-export type Tests = () => void;
+export const WEBGL_ENVS: Features[] = [
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1},
+];
+export const CPU_ENVS: Features[] = [{'BACKEND': 'cpu'}];
 
 /** Accuracy for tests. */
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed
@@ -213,62 +217,16 @@ export function expectValuesInRange(
   }
 }
 
-export function randomArrayInRange(
-    n: number, minValue: number, maxValue: number): Float32Array {
-  const v = new Float32Array(n);
-  const range = maxValue - minValue;
-  for (let i = 0; i < n; ++i) {
-    v[i] = (Math.random() * range) + minValue;
-  }
-  return v;
-}
-
-export function makeIdentity(n: number): Float32Array {
-  const i = new Float32Array(n * n);
-  for (let j = 0; j < n; ++j) {
-    i[(j * n) + j] = 1;
-  }
-  return i;
-}
-
-export function cpuMultiplyMatrix(
-    a: Float32Array, aRow: number, aCol: number, b: Float32Array, bRow: number,
-    bCol: number) {
-  const result = new Float32Array(aRow * bCol);
-  for (let r = 0; r < aRow; ++r) {
-    const aOffset = (r * aCol);
-    const cOffset = (r * bCol);
-    for (let c = 0; c < bCol; ++c) {
-      let d = 0;
-      for (let k = 0; k < aCol; ++k) {
-        d += a[aOffset + k] * b[(k * bCol) + c];
-      }
-      result[cOffset + c] = d;
-    }
-  }
-  return result;
-}
-
-export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
-  if (a.length !== b.length) {
-    throw new Error('cpuDotProduct: incompatible vectors.');
-  }
-  let d = 0;
-  for (let i = 0; i < a.length; ++i) {
-    d += a[i] * b[i];
-  }
-  return d;
-}
-
 export function describeWithFlags(
-    name: string, featuresList: Features[], tests: Tests) {
+    name: string, featuresList: Features[], tests: () => void) {
   featuresList.forEach(features => {
     const testName = name + ' ' + JSON.stringify(features);
-    executeTests(testName, [tests], features);
+    executeTests(testName, tests, features);
   });
 }
 
-function executeTests(testName: string, tests: Tests[], features?: Features) {
+function executeTests(
+    testName: string, tests: () => void, features?: Features) {
   describe(testName, () => {
     beforeEach(() => {
       ENV.setFeatures(features || {});
@@ -285,7 +243,7 @@ function executeTests(testName: string, tests: Tests[], features?: Features) {
       ENV.reset();
     });
 
-    tests.forEach(test => test());
+    tests();
   });
 }
 
