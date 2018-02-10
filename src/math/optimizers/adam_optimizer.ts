@@ -78,23 +78,19 @@ export class AdamOptimizer extends Optimizer {
         const oldSecondMoment = this.secondMoment.get(node.output);
 
         const newFirstMoment = math.scaledArrayAdd(
-            this.b1, oldFirstMoment, math.subtract(this.one, this.b1),
-            gradient);
-        const gradientSquare = math.multiply(gradient, gradient);
+            this.b1, oldFirstMoment, this.one.sub(this.b1), gradient);
+        const gradientSquare = gradient.square();
         const newSecondMoment = math.scaledArrayAdd(
-            this.b2, oldSecondMoment, math.subtract(this.one, this.b2),
-            gradientSquare);
+            this.b2, oldSecondMoment, this.one.sub(this.b2), gradientSquare);
 
         const biasCorrectedFirstMoment =
-            math.divide(newFirstMoment, math.subtract(this.one, this.accB1));
+            newFirstMoment.div(this.one.sub(this.accB1));
         const biasCorrectedSecondMoment =
-            math.divide(newSecondMoment, math.subtract(this.one, this.accB2));
-
+            newSecondMoment.div(this.one.sub(this.accB2));
         const variable = math.scaledArrayAdd(
             this.cGraph,
-            math.divide(
-                biasCorrectedFirstMoment,
-                math.add(math.sqrt(biasCorrectedSecondMoment), this.eps)),
+            biasCorrectedFirstMoment.div(
+                this.eps.add(biasCorrectedSecondMoment.sqrt())),
             this.one, oldVariable);
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
