@@ -30,7 +30,8 @@
     }
 
     .container nav a {
-      color: #346f91
+      color: black;
+      font-size: 18px
     }
 
     .container nav .title {
@@ -107,6 +108,17 @@
       text-decoration-color: lightgrey;
     }
 
+    /* .toc::-webkit-scrollbar {
+      -webkit-appearance: none;
+      width: 7px;
+    }
+
+    .toc::-webkit-scrollbar-thumb {
+      border-radius: 4px;
+      background-color: rgba(0, 0, 0, .5);
+      -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+    } */
+
     /* Reference Pane */
 
     .reference .section {
@@ -115,14 +127,13 @@
 
     .reference .subsection {
       margin-top: 40px;
-      border-bottom: 1px solid lightgrey;
       margin-left: 0;
     }
 
     .reference .subsection-title {
-      font-weight: 500;
-      margin-bottom: 25px;
-      text-decoration: underline;
+      font-weight: 200;
+      margin-bottom: 80px;
+      border-bottom: 1px solid rgb(96,125,139);
     }
 
     code {
@@ -137,9 +148,15 @@
       white-space: pre;
     }
 
-    .symbol {
-      padding-left: 16px;
+    .reference .symbol {
+      margin-left: 32px;
       margin-bottom: 80px;
+      border-bottom: 1px dashed lightgrey;
+      padding-bottom: 50px;
+    }
+
+    .reference .symbol .documentation p {
+      margin: 0
     }
 
     .parameter {
@@ -219,13 +236,14 @@
       </div>
       {{/headings}}
     </div>
+
+
     <div class="reference">
       {{#headings}}
       <div class="section">
-        <div class="section-title mdl-typography--title">{{name}}</div>
         {{#subheadings}}
         <div class="subsection">
-          <div class="subsection-title mdl-typography--subhead">{{name}}</div>
+          <div class="subsection-title mdl-typography--display-3">{{../name}} &nbsp;/&nbsp; {{name}}</div>
           {{#symbols}}
           <div class="symbol">
             <h5>#
@@ -237,7 +255,7 @@
                {{/isClass}}
             </h5>
 
-            <div class="documentation">{{#renderMarkdown}}{{/renderMarkdown}}</div>
+            <div class="documentation">{{{markdown documentation}}}</div>
 
             {{#isFunction}}
             <div class="parameter-heading mdl-typography--subhead">Parameters:</div>
@@ -248,7 +266,7 @@
                   <code>{{name}}: {{type}}</code>
                 </span>
                 <span class="param-docs">
-                  {{#optional}}(Optional){{/optional}} {{#renderMarkdown}}{{documentation}}{{/renderMarkdown}}
+                  {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
                 </span>
               </li>
               {{/parameters}}
@@ -264,7 +282,7 @@
                 <code>{{symbolName}}{{paramStr}}</code>
               </div>
               <div class="method-docs">
-                {{#optional}}(Optional){{/optional}} {{documentation}}
+                {{#optional}}(Optional){{/optional}} {{{markdown documentation}}}
 
                 <div class="parameter-heading mdl-typography--subhead">Parameters:</div>
                 <ul>
@@ -274,7 +292,7 @@
                       <code>{{name}}: {{type}}</code>
                     </span>
                     <span class="param-docs">
-                      {{#optional}}(Optional){{/optional}} {{documentation}}
+                      {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
                     </span>
                   </li>
                   {{/parameters}}

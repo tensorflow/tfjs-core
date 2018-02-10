@@ -21,10 +21,10 @@
  */
 
 import * as fs from 'fs';
+import * as HandleBars from 'handlebars';
 import * as MarkdownIt from 'markdown-it';
 import * as minimist from 'minimist';
 import * as mkdirp from 'mkdirp';
-import * as mustache from 'mustache';
 import * as shell from 'shelljs';
 import * as ts from 'typescript';
 
@@ -41,16 +41,24 @@ const docs = parser.parse();
 const md = new MarkdownIt();
 
 // Add some helper functions
-docs['renderMarkdown'] = () => {
-  return function(text, render) {
-    return md.render(this.documentation);
-  };
-};
+HandleBars.registerHelper('markdown', function(attr) {
+  return md.render(attr);
+});
+
+// Renders a string to markdown but removes the outer <p> tag
+HandleBars.registerHelper('markdownInner', function(attr) {
+  const asMd: string =
+      md.render(attr.trim()).replace(/<p>/, '').replace(/(<\/p>\s*)$/, '');
+
+  return asMd;
+});
 
 // Write the HTML.
 const htmlFilePath = HTML_OUT_DIR + 'index.html';
 const mustacheTemplate = fs.readFileSync(API_TEMPLATE_PATH, 'utf8');
-const html = mustache.render(mustacheTemplate, docs);
+
+const html = HandleBars.compile(mustacheTemplate)(docs);
+// const html = mustache.render(mustacheTemplate, docs);
 fs.writeFileSync(htmlFilePath, html);
 
 // Compute some statics and render them.
