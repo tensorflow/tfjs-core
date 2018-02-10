@@ -239,44 +239,23 @@ export function parameterTypeToString(
     identifierGenericMap: {[identifier: string]: string},
     parentNameREMOVE: string): string {
   const valueDeclaration = symbol.valueDeclaration;
-  let typeStr = checker.typeToString(
-      checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!));
 
-  // console.log(parentNameREMOVE);
-  // if (parentNameREMOVE === 'max') {
-  // console.log('multiRNNCell: ', symbol.valueDeclaration.getText());
+  // Look for type nodes that aren't null and get the full text of the type
+  // node, falling back to using the checker to serialize the type.
+  let typeStr;
   symbol.valueDeclaration.forEachChild(child => {
-    // console.log(kind(child), child.getText());
     if (ts.isTypeNode(child) && child.kind != ts.SyntaxKind.NullKeyword) {
-      // console.log('IS TYPE: ', kind(child), child.getText());
       typeStr = child.getText();
     }
   });
-  //}
-  if (typeStr === 'any' && valueDeclaration != null &&
-      (valueDeclaration as any).type != null &&
-      ts.isUnionTypeNode((valueDeclaration as any).type)) {
-    // tslint:disable-next-line:no-any
-    const valueDeclarationType = (valueDeclaration as any).type;
-
-    // If 'any' comes out of the typeToString method, and this is a deep union
-    // type, try to parse out each of the unions manually. For some reason te
-    // typescript compiler returns "any" for complex union types, e.g.
-    // TypedArray|number|number[]|number[][]...
-    const types = [];
-
-    if (valueDeclarationType.types != null) {
-      valueDeclarationType.types.forEach(
-          type => types.push(
-              sanitizeTypeString(type.getText(), identifierGenericMap)));
-    }
-    return typeStr;
-    // return types.join('|');
-  } else {
-    typeStr = sanitizeTypeString(typeStr, identifierGenericMap);
-
-    return typeStr;
+  if (typeStr == null) {
+    // Fall back to using the checkers method for converting the type to a
+    // string.
+    checker.typeToString(
+        checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!))
   }
+
+  return sanitizeTypeString(typeStr, identifierGenericMap);
 }
 
 /**
@@ -293,10 +272,6 @@ export function sanitizeTypeString(
     const re = new RegExp('\\b' + identifier + '\\b', 'g');
     typeString = typeString.replace(re, identifierGenericMap[identifier]);
   });
-  if (identifierGenericMap[typeString] != null) {
-    typeString = identifierGenericMap[typeString];
-  }
-  //
 
   // Remove generics.
   typeString = typeString.replace(/(<.*>)/, '');

@@ -117,15 +117,9 @@ export function parse(): Docs {
     }
   }
 
-  // Attach subclass methods.
   util.addSubclassMethods(docHeadings, subclassMethodMap);
-
-  // Sort the documentation.
   util.sortMethods(docHeadings);
-
-  // Replace doc aliases.
   util.replaceDocTypeAliases(docHeadings, docTypeAliases);
-  console.log(docTypeAliases);
 
   // TODO(nsthorat): Link types to their symbol docs.
 
