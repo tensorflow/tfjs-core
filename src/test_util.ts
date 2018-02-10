@@ -268,54 +268,6 @@ export function describeWithFlags(
   });
 }
 
-export function describeMathCPU(
-    name: string, tests: Tests[], featuresList?: Features[]) {
-  const testNameBase = 'CPU: ' + name;
-  describeWithFeaturesAndExecutor(
-      testNameBase, tests,
-      (testName, tests, features) =>
-          executeMathTests(testName, tests, features),
-      featuresList);
-}
-
-export function describeMathGPU(
-    name: string, tests: Tests[], featuresList?: Features[]) {
-  const testNameBase = 'WebGL: ' + name;
-  describeWithFeaturesAndExecutor(
-      testNameBase, tests,
-      (testName, tests, features) =>
-          executeMathTests(testName, tests, features),
-      featuresList);
-}
-
-export function describeCustom(
-    name: string, tests: Tests, featuresList?: Features[]) {
-  describeWithFeaturesAndExecutor(
-      name, [tests],
-      (testName, tests, features) => executeTests(testName, tests, features),
-      featuresList);
-}
-
-type TestExecutor = (testName: string, tests: Tests[], features?: Features) =>
-    void;
-function describeWithFeaturesAndExecutor(
-    testNameBase: string, tests: Tests[], executor: TestExecutor,
-    featuresList?: Features[]) {
-  if (featuresList != null) {
-    featuresList.forEach(features => {
-      const testName = testNameBase + ' ' + JSON.stringify(features);
-      executor(testName, tests, features);
-    });
-  } else {
-    executor(testNameBase, tests);
-  }
-}
-
-export function executeMathTests(
-    testName: string, tests: Tests[], features?: Features) {
-  executeTests(testName, tests as Tests[], features);
-}
-
 function executeTests(testName: string, tests: Tests[], features?: Features) {
   describe(testName, () => {
     beforeEach(() => {
