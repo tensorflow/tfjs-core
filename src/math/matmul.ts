@@ -60,7 +60,7 @@ export class Ops {
             `${b.shape} and orientations ${MatrixOrientation[transposeA]}` +
             ` and ${MatrixOrientation[transposeB]} must match.`);
 
-    const grad = (dy: Tensor2D, y: Tensor2D) => {
+    const grad = (dy: Tensor2D) => {
       if (transposeA === TRANSPOSED || transposeB === TRANSPOSED) {
         throw new Error(`Backprop for transposed MatMul not yet implemented.`);
       }

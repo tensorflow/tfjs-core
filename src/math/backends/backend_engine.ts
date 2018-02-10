@@ -20,9 +20,9 @@ import {tidy} from '../../globals';
 import * as util from '../../util';
 import * as ops from '../ops';
 import {DataId, Tensor, Tensor3D, Variable} from '../tensor';
+// tslint:disable-next-line:max-line-length
 import {NamedTensorMap, NamedVariableMap, TypedArray} from '../types';
 import {Rank} from '../types';
-
 import {MathBackend} from './backend';
 import * as kernel_registry from './kernel_registry';
 import {Kernel, KernelConfigRegistry} from './kernel_registry';
@@ -36,6 +36,9 @@ interface ScopeState {
   keep: Tensor[];
   track: Tensor[];
 }
+
+export type ForwardFunc<T extends Tensor> =
+    (backend: MathBackend, save?: (map: NamedTensorMap) => void) => T;
 
 export type CustomGradientFunc<T extends Tensor> = () => {
   value: T, gradients: (dy: T, y: T) => TapeNodeInputGradientTensors
@@ -82,16 +85,20 @@ export class BackendEngine implements TensorManager {
   }
 
   runKernel<T extends Tensor, I extends NamedTensorMap>(
-      kernelFn: (backend: MathBackend) => T, inputs?: I,
-      grad?: (dy: T, y: T) => {[P in keyof I]: () => I[P]}): T {
+      forwardFunc: ForwardFunc<T>,
+      inputs?: I,
+      backwardsFunc?:
+          (dy: T, saved: NamedTensorMap) => {[P in keyof I]: () => I[P]},
+      ): T {
     let result: T;
     // TODO(smilkov): Figure out kernel name.
     const kernelName = '' as Kernel;
+    let saved: NamedTensorMap = null;
     if (!ENV.get('DEBUG')) {
-      result = kernelFn(this.backend);
+      result = forwardFunc(this.backend, x => saved = x);
     } else {
-      result =
-          this.profiler.profileKernel(kernelName, () => kernelFn(this.backend));
+      result = this.profiler.profileKernel(
+          kernelName, () => forwardFunc(this.backend, x => saved = x));
     }
 
     const recordKernel =
@@ -104,7 +111,7 @@ export class BackendEngine implements TensorManager {
         kernel: kernelName,
         inputAndArgs: {inputs},
         output: result,
-        gradient: grad
+        gradient: (dy: T) => backwardsFunc(dy, saved)
       };
       this.activeTape.push(evaluatedNode);
     }

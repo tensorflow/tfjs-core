@@ -142,7 +142,7 @@ export class Ops {
         'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(base.shape, exp.shape);
 
-    const grad = (dy: T, y: T) => {
+    const grad = (dy: T) => {
       if (!util.arraysEqual(base.shape, exp.shape)) {
         throw new Error(
             `Gradient of pow not yet supported for broadcasted shapes.`);

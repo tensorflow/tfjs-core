@@ -17,6 +17,8 @@
 
 import {ENV} from '../environment';
 import * as util from '../util';
+
+import {ForwardFunc} from './backends/backend_engine';
 import {doc, operation} from './decorators';
 import {MPRandGauss, RandNormalDataTypes} from './rand';
 // tslint:disable-next-line:max-line-length
@@ -450,7 +452,7 @@ export class Ops {
         x.size === util.sizeFromShape(shape),
         'new shape and old shape must have the same number of elements.');
 
-    const grad = (dy: Tensor<R2>, y: Tensor<R2>) => {
+    const grad = (dy: Tensor<R2>) => {
       return {x: () => dy.reshape(x.shape)};
     };
     return ENV.engine.runKernel(
@@ -465,10 +467,7 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
   static cast<T extends Tensor>(x: T, dtype: DataType): T {
-    const grad = (dy: T, y: T) => {
-      return {x: () => dy.clone()};
-    };
-    return ENV.engine.runKernel(backend => {
+    const forw: ForwardFunc<T> = backend => {
       if (!util.hasEncodingLoss(x.dtype, dtype)) {
         // We don't change the underlying data, since we cast to higher
         // precision.
@@ -477,11 +476,15 @@ export class Ops {
       if (dtype === 'int32') {
         return backend.int(x);
       } else if (dtype === 'bool') {
-        return backend.notEqual(x, Ops.scalar(0, x.dtype));
+        return backend.notEqual(x, Ops.scalar(0, x.dtype)) as T;
       } else {
         throw new Error(`Error in Cast: unknown dtype argument (${dtype})`);
       }
-    }, {x}, grad) as T;
+    };
+    const grad = (dy: T) => {
+      return {x: () => dy.clone()};
+    };
+    return ENV.engine.runKernel(forw, {x}, grad) as T;
   }
 
   /**

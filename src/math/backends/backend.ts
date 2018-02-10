@@ -20,7 +20,7 @@ import {Conv2DInfo} from '../conv_util';
 import {MatrixOrientation} from '../matmul';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {DataType, Rank, TypedArray} from '../types';
+import {DataType, TypedArray} from '../types';
 
 export interface TensorStorage {
   read(dataId: DataId): Promise<TypedArray>;
@@ -126,7 +126,7 @@ export interface MathBackend extends TensorStorage, BackendTimer {
   leakyRelu<T extends Tensor>(x: T, alpha: number): T;
   prelu<T extends Tensor>(x: T, alpha: T): T;
   preluDer<T extends Tensor>(x: T, alpha: T): T;
-  int<R extends Rank>(x: Tensor<R>): Tensor<R>;
+  int<T extends Tensor>(x: T): T;
 
   clip<T extends Tensor>(x: T, min: number, max: number): T;
 
