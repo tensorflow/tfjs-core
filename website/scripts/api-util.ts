@@ -236,11 +236,23 @@ export function getJsDocTag(symbol: ts.Symbol, tag: string): string {
  */
 export function parameterTypeToString(
     checker: ts.TypeChecker, symbol: ts.Symbol,
-    identifierGenericMap: {[identifier: string]: string}): string {
+    identifierGenericMap: {[identifier: string]: string},
+    parentNameREMOVE: string): string {
   const valueDeclaration = symbol.valueDeclaration;
   let typeStr = checker.typeToString(
       checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!));
 
+  // console.log(parentNameREMOVE);
+  // if (parentNameREMOVE === 'max') {
+  // console.log('multiRNNCell: ', symbol.valueDeclaration.getText());
+  symbol.valueDeclaration.forEachChild(child => {
+    // console.log(kind(child), child.getText());
+    if (ts.isTypeNode(child) && child.kind != ts.SyntaxKind.NullKeyword) {
+      // console.log('IS TYPE: ', kind(child), child.getText());
+      typeStr = child.getText();
+    }
+  });
+  //}
   if (typeStr === 'any' && valueDeclaration != null &&
       (valueDeclaration as any).type != null &&
       ts.isUnionTypeNode((valueDeclaration as any).type)) {
@@ -258,8 +270,8 @@ export function parameterTypeToString(
           type => types.push(
               sanitizeTypeString(type.getText(), identifierGenericMap)));
     }
-
-    return types.join('|');
+    return typeStr;
+    // return types.join('|');
   } else {
     typeStr = sanitizeTypeString(typeStr, identifierGenericMap);
 
@@ -364,7 +376,7 @@ export function replaceDocTypeAlias(
     docTypeString: string, docTypeAliases: {[type: string]: string}): string {
   Object.keys(docTypeAliases).forEach(type => {
     if (docTypeString.indexOf(type) !== -1) {
-      const re = new RegExp(type + '(\\[.*\\])?', 'g');
+      const re = new RegExp(type + '(\\[.+\\])?', 'g');
       docTypeString = docTypeString.replace(re, docTypeAliases[type]);
     }
   });

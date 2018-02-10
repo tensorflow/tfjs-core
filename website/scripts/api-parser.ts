@@ -125,6 +125,7 @@ export function parse(): Docs {
 
   // Replace doc aliases.
   util.replaceDocTypeAliases(docHeadings, docTypeAliases);
+  console.log(docTypeAliases);
 
   // TODO(nsthorat): Link types to their symbol docs.
 
@@ -245,7 +246,8 @@ export function serializeMethod(
   const identifierGenericMap = util.getIdentifierGenericMap(node, symbol.name);
 
   const parameters = signature.parameters.map(
-      symbol => serializeParameter(checker, symbol, identifierGenericMap));
+      symbol => serializeParameter(
+          checker, symbol, identifierGenericMap, methodName));
   const paramStr = '(' +
       parameters.map(param => param.name + (param.optional ? '?' : ''))
           .join(', ') +
@@ -254,7 +256,19 @@ export function serializeMethod(
   const {displayFilename, githubUrl} =
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
 
-  let returnType = checker.typeToString(signature.getReturnType());
+  // Find a type node in the method signature. This is a return type. If it
+  // cannot be found (no return type), fall back to the standard way of getting
+  // the type. We do this because getting the full text of the type node is
+  // better than using the signature return type.
+  let returnType;
+  node.forEachChild(child => {
+    if (ts.isTypeNode(child)) {
+      returnType = child.getText();
+    }
+  });
+  if (returnType == null) {
+    returnType = checker.typeToString(signature.getReturnType());
+  }
   returnType = util.sanitizeTypeString(returnType, identifierGenericMap);
 
   const method: DocFunction = {
@@ -274,11 +288,13 @@ export function serializeMethod(
 
 function serializeParameter(
     checker: ts.TypeChecker, symbol: ts.Symbol,
-    identifierGenericMap: {[identifier: string]: string}): DocFunctionParam {
+    identifierGenericMap: {[identifier: string]: string},
+    parentNameREMOVE: string): DocFunctionParam {
   return {
     name: symbol.getName(),
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
-    type: util.parameterTypeToString(checker, symbol, identifierGenericMap),
+    type: util.parameterTypeToString(
+        checker, symbol, identifierGenericMap, parentNameREMOVE),
     optional: checker.isOptionalParameter(
         symbol.valueDeclaration as ts.ParameterDeclaration)
   };

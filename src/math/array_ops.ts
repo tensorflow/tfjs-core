@@ -580,7 +580,7 @@ export class Ops {
    */
   @operation
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  static linspace(start: number, stop: number, num: number) {
+  static linspace(start: number, stop: number, num: number): Tensor1D {
     if (num === 0) {
       throw new Error('Cannot request zero samples');
     }

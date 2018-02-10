@@ -38,6 +38,7 @@ export interface DataTypeMap {
   int32: Int32Array;
   bool: Uint8Array;
 }
+/** @docalias 'float32'|'int32'|'bool' */
 export type DataType = keyof DataTypeMap;
 export type TypedArray = DataTypeMap[DataType];
 

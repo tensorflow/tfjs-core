@@ -434,32 +434,31 @@ export class Tensor<R extends Rank = Rank> {
 
   // Reduction ops.
 
-  logSumExp<T extends Tensor>(axis: number|number[] = null, keepDims = false):
-      T {
+  logSumExp<T extends Tensor>(axis?: number|number[], keepDims = false): T {
     this.throwIfDisposed();
     return ops.logSumExp(this, axis, keepDims);
   }
-  sum<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+  sum<T extends Tensor>(axis?: number|number[], keepDims = false): T {
     this.throwIfDisposed();
     return ops.sum(this, axis, keepDims);
   }
-  mean<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+  mean<T extends Tensor>(axis?: number|number[], keepDims = false): T {
     this.throwIfDisposed();
     return ops.mean(this, axis, keepDims);
   }
-  min<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+  min<T extends Tensor>(axis?: number|number[], keepDims = false): T {
     this.throwIfDisposed();
     return ops.min(this, axis, keepDims);
   }
-  max<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+  max<T extends Tensor>(axis?: number|number[], keepDims = false): T {
     this.throwIfDisposed();
     return ops.max(this, axis, keepDims);
   }
-  argMin<T extends Tensor>(axis: number = null): T {
+  argMin<T extends Tensor>(axis?: number): T {
     this.throwIfDisposed();
     return ops.argMin(this, axis);
   }
-  argMax<T extends Tensor>(axis: number = null): T {
+  argMax<T extends Tensor>(axis?: number): T {
     this.throwIfDisposed();
     return ops.argMax(this, axis);
   }
