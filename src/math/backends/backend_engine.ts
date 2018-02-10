@@ -82,7 +82,7 @@ export class BackendEngine implements TensorManager {
   }
 
   runKernel<T extends Tensor, I extends NamedTensorMap>(
-      kernelFn: (backend: MathBackend) => T, inputs: I,
+      kernelFn: (backend: MathBackend) => T, inputs?: I,
       grad?: (dy: T, y: T) => {[P in keyof I]: () => I[P]}): T {
     let result: T;
     // TODO(smilkov): Figure out kernel name.

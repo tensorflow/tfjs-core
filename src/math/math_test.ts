@@ -20,7 +20,7 @@ import * as dl from '../index';
 import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectNumbersClose} from '../test_util';
 
 import {Gradients} from './backends/gradients';
-import {MatrixOrientation} from './backends/types/matmul';
+import {MatrixOrientation} from './matmul';
 import {Scalar, Tensor} from './tensor';
 
 const gradientsScope = Gradients.gradientsScope;

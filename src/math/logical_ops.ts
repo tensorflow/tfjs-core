@@ -32,9 +32,9 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
-  static logicalNot<T extends Tensor>(x: Tensor): T {
+  static logicalNot<T extends Tensor>(x: T): T {
     util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
-    return ENV.engine.executeKernel('LogicalNot', {inputs: {x}}) as T;
+    return ENV.engine.runKernel(backend => backend.logicalNot(x));
   }
 
   /**

@@ -17,11 +17,10 @@
  */
 
 import {Conv2DInfo} from '../conv_util';
+import {MatrixOrientation} from '../matmul';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, Rank, TypedArray} from '../types';
-
-import {MatrixOrientation} from './types/matmul';
 
 export interface TensorStorage {
   read(dataId: DataId): Promise<TypedArray>;
@@ -94,7 +93,7 @@ export interface MathBackend extends TensorStorage, BackendTimer {
   greater(a: Tensor, b: Tensor): Tensor;
   greaterEqual(a: Tensor, b: Tensor): Tensor;
 
-  logicalNot(a: Tensor): Tensor;
+  logicalNot<T extends Tensor>(a: T): T;
   logicalAnd(a: Tensor, b: Tensor): Tensor;
   logicalOr(a: Tensor, b: Tensor): Tensor;
   logicalXor(a: Tensor, b: Tensor): Tensor;
@@ -185,16 +184,16 @@ export interface MathBackend extends TensorStorage, BackendTimer {
 
   batchNormalization2D(
       x: Tensor2D, mean: Tensor2D|Tensor1D, variance: Tensor2D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor2D|Tensor1D,
-      offset?: Tensor2D|Tensor1D): Tensor2D;
+      varianceEpsilon: number, scale: Tensor2D|Tensor1D,
+      offset: Tensor2D|Tensor1D): Tensor2D;
   batchNormalization3D(
       x: Tensor3D, mean: Tensor3D|Tensor1D, variance: Tensor3D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor3D|Tensor1D,
-      offset?: Tensor3D|Tensor1D): Tensor3D;
+      varianceEpsilon: number, scale: Tensor3D|Tensor1D,
+      offset: Tensor3D|Tensor1D): Tensor3D;
   batchNormalization4D(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
-      offset?: Tensor4D|Tensor1D): Tensor4D;
+      varianceEpsilon: number, scale: Tensor4D|Tensor1D,
+      offset: Tensor4D|Tensor1D): Tensor4D;
 
   localResponseNormalization4D(
       x: Tensor4D, radius: number, bias: number, alpha: number, beta: number,

@@ -281,7 +281,7 @@ export class NDArrayMath {
 
   /** @deprecated Use dl.transpose() instead. */
   switchDim<R extends Rank>(x: Tensor<R>, perm?: number[]): Tensor<R> {
-    return ops.transpose<R>(x, perm);
+    return ops.transpose(x, perm);
   }
 
   /** @deprecated Use dl.add(c, A) instead. */

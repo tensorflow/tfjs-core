@@ -18,9 +18,7 @@
 import * as util from '../../util';
 import {Tensor} from '../tensor';
 import {TypedArray} from '../types';
-
 import {BackendTimer} from './backend';
-import {Kernel} from './kernel_registry';
 
 export class Profiler {
   constructor(private backendTimer: BackendTimer, private logger?: Logger) {
@@ -29,7 +27,7 @@ export class Profiler {
     }
   }
 
-  profileKernel<T extends Tensor>(kernelName: Kernel, f: () => T): T {
+  profileKernel<T extends Tensor>(kernelName: string, f: () => T): T {
     let result: T;
     const holdResultWrapperFn = () => {
       result = f();
@@ -49,7 +47,7 @@ export class Profiler {
 
 export class Logger {
   logKernelProfile(
-      kernelName: Kernel, result: Tensor, vals: TypedArray, timeMs: number) {
+      kernelName: string, result: Tensor, vals: TypedArray, timeMs: number) {
     const time = util.rightPad(`${timeMs}ms`, 9);
     const paddedName = util.rightPad(kernelName, 25);
     const rank = result.rank;

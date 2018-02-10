@@ -359,29 +359,24 @@ export class Ops {
       probabilities: Tensor1D|Tensor2D, numSamples: number, seed?: number):
       Tensor1D|Tensor2D {
     const numOutcomes = probabilities.size;
+    const origRank = probabilities.rank;
     if (numOutcomes < 2) {
       throw new Error(
           `Error in multinomial: you need at least 2 outcomes, but got ` +
           `${numOutcomes}.`);
     }
-    if (probabilities.rank > 2) {
+    if (origRank > 2) {
       throw new Error(
-          `Rank of probabilities must be 1 or 2, but is ${probabilities.rank}`);
+          `Rank of probabilities must be 1 or 2, but is ${origRank}`);
     }
     seed = seed || Math.random();
-    const origRank = probabilities.rank;
 
-    if (probabilities.rank === 1) {
-      probabilities = probabilities.as2D(1, -1);
-    }
-    const res = ENV.engine.executeKernel('Multinomial', {
-      inputs: {probs: (probabilities as Tensor2D)},
-      args: {numSamples, seed}
-    });
-    if (origRank === 1) {
-      return res.as1D();
-    }
-    return res;
+    const prob2D =
+        origRank === 1 ? probabilities.as2D(1, -1) : probabilities as Tensor2D;
+    const res = ENV.engine.runKernel(
+        backend => backend.multinomial(prob2D, numSamples, seed));
+
+    return origRank === 1 ? res.as1D() : res;
   }
 
   /**
@@ -403,8 +398,8 @@ export class Ops {
     if (depth < 2) {
       throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
     }
-    return ENV.engine.executeKernel(
-        'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
+    return ENV.engine.runKernel(
+        backend => backend.oneHot(indices, depth, onValue, offValue));
   }
 
   /**
@@ -458,9 +453,8 @@ export class Ops {
     const grad = (dy: Tensor<R2>, y: Tensor<R2>) => {
       return {x: () => dy.reshape(x.shape)};
     };
-    return ENV.engine.executeKernel(
-               'Reshape', {inputs: {x}, args: {newShape: shape}}, grad) as
-        Tensor<R2>;
+    return ENV.engine.runKernel(
+        backend => Tensor.make(shape, {dataId: x.dataId}, x.dtype), {x}, grad);
   }
 
   /**
@@ -472,10 +466,22 @@ export class Ops {
   @operation
   static cast<T extends Tensor>(x: T, dtype: DataType): T {
     const grad = (dy: T, y: T) => {
-      return {x: () => dy.reshape(dy.shape)};
+      return {x: () => dy.clone()};
     };
-    return ENV.engine.executeKernel(
-               'Cast', {inputs: {x}, args: {newDType: dtype}}, grad) as T;
+    return ENV.engine.runKernel(backend => {
+      if (!util.hasEncodingLoss(x.dtype, dtype)) {
+        // We don't change the underlying data, since we cast to higher
+        // precision.
+        return Tensor.make(x.shape, {dataId: x.dataId}, dtype) as T;
+      }
+      if (dtype === 'int32') {
+        return backend.int(x);
+      } else if (dtype === 'bool') {
+        return backend.notEqual(x, Ops.scalar(0, x.dtype));
+      } else {
+        throw new Error(`Error in Cast: unknown dtype argument (${dtype})`);
+      }
+    }, {x}, grad) as T;
   }
 
   /**
@@ -497,7 +503,7 @@ export class Ops {
         x.rank === reps.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of reps ${reps}.`);
-    return ENV.engine.executeKernel('Tile', {inputs: {x}, args: {reps}}) as T;
+    return ENV.engine.runKernel(backend => backend.tile(x, reps));
   }
 
   /**
@@ -510,8 +516,7 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static gather<T extends Tensor>(x: T, indices: Tensor1D, axis = 0): T {
-    return ENV.engine.executeKernel(
-               'Gather', {inputs: {x, indices}, args: {axis}}) as T;
+    return ENV.engine.runKernel(backend => backend.gather(x, indices, axis));
   }
 
   /**
@@ -534,8 +539,8 @@ export class Ops {
     util.assert(
         paddings.length === 2,
         'Invalid number of paddings. Must be length of 2.');
-    return ENV.engine.executeKernel(
-        'Pad1D', {inputs: {x}, args: {paddings, constantValue}});
+    return ENV.engine.runKernel(
+        backend => backend.pad1D(x, paddings, constantValue));
   }
 
   /**
@@ -561,8 +566,8 @@ export class Ops {
         paddings.length === 2 && paddings[0].length === 2 &&
             paddings[1].length === 2,
         'Invalid number of paddings. Must be length of 2 each.');
-    return ENV.engine.executeKernel(
-        'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
+    return ENV.engine.runKernel(
+        backend => backend.pad2D(x, paddings, constantValue));
   }
 
   /**

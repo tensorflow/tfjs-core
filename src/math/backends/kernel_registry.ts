@@ -15,16 +15,12 @@
  * =============================================================================
  */
 
-import * as util from '../../util';
-import * as ops from '../ops';
-import {Tensor} from '../tensor';
 import {Rank} from '../types';
 import {MathBackend} from './backend';
 import {ArgMaxNode, ArgMinNode} from './types/argminmax';
 // tslint:disable-next-line:max-line-length
 import {BatchNorm2DNode, BatchNorm3DNode, BatchNorm4DNode} from './types/batchnorm';
 import {BinaryNode} from './types/binary';
-import {CastNode} from './types/cast';
 // tslint:disable-next-line:max-line-length
 import {ConcatNode} from './types/concat';
 // tslint:disable-next-line:max-line-length
@@ -38,17 +34,12 @@ import {OneHotNode} from './types/onehot';
 import {Pad1DNode, Pad2DNode} from './types/pad';
 // tslint:disable-next-line:max-line-length
 import {PoolBackpropNode, PoolNode} from './types/pool';
-import {PowNode} from './types/pow';
-import {PReLUNode} from './types/prelu';
-import {ReshapeNode} from './types/reshape';
 import {ResizeBilinearNode} from './types/resize_bilinear';
 import {Reverse4DNode} from './types/reverse';
 // tslint:disable-next-line:max-line-length
 import {Slice1DNode, Slice2DNode, Slice3DNode, Slice4DNode} from './types/slice';
 import {SumNode} from './types/sum';
 import {TopKIndicesNode, TopKValuesNode} from './types/topk';
-// tslint:disable-next-line:max-line-length
-import {ClipNode, LeakyReluNode, StepNode, TileNode, TransposeNode, UnaryNode} from './types/unary';
 
 export function
 executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
@@ -77,9 +68,6 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
   } else if (kernelName === 'Concat') {
     const config = inputAndArgs as ConcatNode['inputAndArgs'];
     return backend.concat(config.inputs.a, config.inputs.b) as O;
-  } else if (kernelName === 'Neg') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.neg(config.inputs.x) as O;
   } else if (kernelName === 'Add') {
     const config = inputAndArgs as BinaryNode['inputAndArgs'];
     return backend.add(config.inputs.a, config.inputs.b) as O;
@@ -119,9 +107,6 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
   } else if (kernelName === 'GreaterEqual') {
     const config = inputAndArgs as EqualNode['inputAndArgs'];
     return backend.greaterEqual(config.inputs.a, config.inputs.b) as O;
-  } else if (kernelName === 'LogicalNot') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.logicalNot(config.inputs.x) as O;
   } else if (kernelName === 'LogicalAnd') {
     const config = inputAndArgs as LogicalNode['inputAndArgs'];
     return backend.logicalAnd(config.inputs.a, config.inputs.b) as O;
@@ -154,112 +139,6 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
   } else if (kernelName === 'Maximum') {
     const config = inputAndArgs as MaximumNode['inputAndArgs'];
     return backend.maximum(config.inputs.a, config.inputs.b) as O;
-  } else if (kernelName === 'Ceil') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.ceil(config.inputs.x) as O;
-  } else if (kernelName === 'Floor') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.floor(config.inputs.x) as O;
-  } else if (kernelName === 'Pow') {
-    const config = inputAndArgs as PowNode<R>['inputAndArgs'];
-    return backend.pow(config.inputs.base, config.inputs.exp) as O;
-  } else if (kernelName === 'Exp') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.exp(config.inputs.x) as O;
-  } else if (kernelName === 'Log') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.log(config.inputs.x) as O;
-  } else if (kernelName === 'Sqrt') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.sqrt(config.inputs.x) as O;
-  } else if (kernelName === 'Square') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.square(config.inputs.x) as O;
-  } else if (kernelName === 'Relu') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.relu(config.inputs.x) as O;
-  } else if (kernelName === 'Reshape') {
-    const config = inputAndArgs as ReshapeNode['inputAndArgs'];
-    const x = config.inputs.x;
-    const newShape = config.args.newShape;
-    return Tensor.make(newShape, {dataId: x.dataId}, x.dtype) as O;
-  } else if (kernelName === 'Cast') {
-    const config = inputAndArgs as CastNode['inputAndArgs'];
-    const x = config.inputs.x;
-    const newDType = config.args.newDType;
-
-    if (!util.hasEncodingLoss(x.dtype, newDType)) {
-      // We don't change the underlying data, since we cast to higher
-      // precision.
-      return Tensor.make(x.shape, {dataId: x.dataId}, newDType) as O;
-    }
-    if (newDType === 'int32') {
-      return backend.int(x) as O;
-    } else if (newDType === 'bool') {
-      return backend.notEqual(x, ops.scalar(0, x.dtype)) as O;
-    } else {
-      throw new Error(`Error in Cast: unknown dtype argument (${newDType})`);
-    }
-  } else if (kernelName === 'LeakyRelu') {
-    const config = inputAndArgs as LeakyReluNode<R>['inputAndArgs'];
-    return backend.leakyRelu(config.inputs.x, config.args.alpha) as O;
-  } else if (kernelName === 'PReLU') {
-    const config = inputAndArgs as PReLUNode<R>['inputAndArgs'];
-    return backend.prelu(config.inputs.x, config.inputs.alpha) as O;
-  } else if (kernelName === 'PReLUDer') {
-    const config = inputAndArgs as PReLUNode<R>['inputAndArgs'];
-    return backend.preluDer(config.inputs.x, config.inputs.alpha) as O;
-  } else if (kernelName === 'Elu') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.elu(config.inputs.x) as O;
-  } else if (kernelName === 'EluDer') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.eluDer(config.inputs.x) as O;
-  } else if (kernelName === 'Selu') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.selu(config.inputs.x) as O;
-  } else if (kernelName === 'Abs') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.abs(config.inputs.x) as O;
-  } else if (kernelName === 'Sigmoid') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.sigmoid(config.inputs.x) as O;
-  } else if (kernelName === 'Step') {
-    const config = inputAndArgs as StepNode<R>['inputAndArgs'];
-    return backend.step(config.inputs.x, config.args.alpha) as O;
-  } else if (kernelName === 'Sin') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.sin(config.inputs.x) as O;
-  } else if (kernelName === 'Cos') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.cos(config.inputs.x) as O;
-  } else if (kernelName === 'Tan') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.tan(config.inputs.x) as O;
-  } else if (kernelName === 'Asin') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.asin(config.inputs.x) as O;
-  } else if (kernelName === 'Acos') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.acos(config.inputs.x) as O;
-  } else if (kernelName === 'Atan') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.atan(config.inputs.x) as O;
-  } else if (kernelName === 'Sinh') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.sinh(config.inputs.x) as O;
-  } else if (kernelName === 'Cosh') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.cosh(config.inputs.x) as O;
-  } else if (kernelName === 'Tanh') {
-    const config = inputAndArgs as UnaryNode<R>['inputAndArgs'];
-    return backend.tanh(config.inputs.x) as O;
-  } else if (kernelName === 'Clip') {
-    const config = inputAndArgs as ClipNode<R>['inputAndArgs'];
-    return backend.clip(config.inputs.x, config.args.min, config.args.max) as O;
-  } else if (kernelName === 'Tile') {
-    const config = inputAndArgs as TileNode<R>['inputAndArgs'];
-    return backend.tile(config.inputs.x, config.args.reps) as O;
   } else if (kernelName === 'Gather') {
     const config = inputAndArgs as GatherNode<R>['inputAndArgs'];
     return backend.gather(
@@ -274,9 +153,6 @@ executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
     return backend.pad2D(
                config.inputs.x, config.args.paddings,
                config.args.constantValue) as O;
-  } else if (kernelName === 'Transpose') {
-    const config = inputAndArgs as TransposeNode<R>['inputAndArgs'];
-    return backend.transpose(config.inputs.x, config.args.perm) as O;
   } else if (kernelName === 'Conv2D') {
     const config = inputAndArgs as Conv2DNode['inputAndArgs'];
     return backend.conv2d(
@@ -366,7 +242,6 @@ export interface KernelConfigRegistry<R extends Rank> {
   Slice4D: Slice4DNode;
   Reverse4D: Reverse4DNode;
   Concat: ConcatNode;
-  Neg: UnaryNode<R>;
   Add: BinaryNode;
   Sub: BinaryNode;
   Mul: BinaryNode;
@@ -380,7 +255,6 @@ export interface KernelConfigRegistry<R extends Rank> {
   LessEqual: EqualNode;
   Greater: EqualNode;
   GreaterEqual: EqualNode;
-  LogicalNot: UnaryNode<R>;
   LogicalAnd: LogicalNode;
   LogicalOr: LogicalNode;
   LogicalXor: LogicalNode;
@@ -391,39 +265,8 @@ export interface KernelConfigRegistry<R extends Rank> {
   Minimum: MinimumNode;
   Max: MaxNode;
   Maximum: MaximumNode;
-  Ceil: UnaryNode<R>;
-  Floor: UnaryNode<R>;
-  Pow: PowNode<R>;
-  Exp: UnaryNode<R>;
-  Log: UnaryNode<R>;
-  Sqrt: UnaryNode<R>;
-  Square: UnaryNode<R>;
-  Relu: UnaryNode<R>;
-  LeakyRelu: LeakyReluNode<R>;
-  PReLU: PReLUNode<R>;
-  PReLUDer: PReLUNode<R>;
-  Reshape: ReshapeNode;
-  Cast: CastNode;
-  Elu: UnaryNode<R>;
-  EluDer: UnaryNode<R>;
-  Selu: UnaryNode<R>;
-  Abs: UnaryNode<R>;
-  Sigmoid: UnaryNode<R>;
-  Step: StepNode<R>;
-  Sin: UnaryNode<R>;
-  Cos: UnaryNode<R>;
-  Tan: UnaryNode<R>;
-  Asin: UnaryNode<R>;
-  Acos: UnaryNode<R>;
-  Atan: UnaryNode<R>;
-  Sinh: UnaryNode<R>;
-  Cosh: UnaryNode<R>;
-  Tanh: UnaryNode<R>;
-  Clip: ClipNode<R>;
-  Transpose: TransposeNode<R>;
   Pad1D: Pad1DNode;
   Pad2D: Pad2DNode;
-  Tile: TileNode<R>;
   Gather: GatherNode<R>;
   Conv2D: Conv2DNode;
   Conv2DDerInput: Conv2DDerInputNode;

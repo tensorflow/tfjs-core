@@ -136,30 +136,26 @@ export class Ops {
    */
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
-  static pow<T extends Tensor>(base: Tensor, exp: Tensor): T {
+  static pow<T extends Tensor>(base: T, exp: Tensor): T {
     util.assert(
         exp.dtype === 'int32',
         'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(base.shape, exp.shape);
 
-    const gradient = (dy: Tensor, y: Tensor) => {
+    const grad = (dy: T, y: T) => {
       if (!util.arraysEqual(base.shape, exp.shape)) {
         throw new Error(
             `Gradient of pow not yet supported for broadcasted shapes.`);
       }
       const derBase = () => {
-        const dx =
-            exp.toFloat().mul(base.pow(exp.sub(scalar(1, 'int32'))).toFloat());
-        return dy.mul(dx);
+        const dx = exp.toFloat().mul(
+                       base.pow(exp.sub(scalar(1, 'int32'))).toFloat()) as T;
+        return dy.mulStrict(dx);
       };
-      const derExp = () => {
-        throw new Error(`Backprop through exponent not implemented yet.`);
-      };
-      return {base: derBase, exp: derExp};
+      return {base: derBase};
     };
-
-    return ENV.engine.executeKernel('Pow', {inputs: {base, exp}}, gradient) as
-        T;
+    return ENV.engine.runKernel(
+        backend => backend.pow(base, exp), {base}, grad);
   }
 
   /**

@@ -20,14 +20,15 @@ import * as util from '../../util';
 import * as axis_util from '../axis_util';
 import {Conv2DInfo} from '../conv_util';
 import {NDArrayMath} from '../math';
+import {MatrixOrientation} from '../matmul';
 import * as reduce_util from '../reduce_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, Rank, RecursiveArray, TypedArray} from '../types';
+
 import {MathBackend} from './backend';
-import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
