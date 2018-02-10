@@ -21,11 +21,10 @@ import {Session} from '../../graph/session';
 import * as dl from '../../index';
 import {Scalar, Tensor1D, variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {MathTests} from '../../test_util';
 
 import {MomentumOptimizer} from './momentum_optimizer';
 
-const tests: MathTests = it => {
+const tests = () => {
   it('basic', () => {
     const learningRate = .1;
     const momentum = .5;

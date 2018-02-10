@@ -19,7 +19,6 @@ import * as dl from './index';
 import {Tensor} from './math/tensor';
 import {NamedTensorMap} from './math/types';
 import * as test_util from './test_util';
-import {MathTests} from './test_util';
 import * as util from './util';
 
 describe('Util', () => {
@@ -273,7 +272,7 @@ describe('util.squeezeShape', () => {
 });
 
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('not in list', () => {
       const a = dl.scalar(1);
       const list: Tensor[] = [dl.scalar(1), dl.tensor1d([1, 2, 3])];
@@ -340,7 +339,7 @@ describe('util.checkForNaN', () => {
 });
 
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('basic', () => {
       const a = dl.scalar(1);
       const b = dl.scalar(3);
@@ -357,7 +356,7 @@ describe('util.checkForNaN', () => {
 }
 
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('basic', () => {
       const a = dl.scalar(1);
       const b = dl.scalar(3);

@@ -19,7 +19,6 @@
 import * as dl from '../../index';
 import {NamedTensorMap} from '../../math/types';
 import * as test_util from '../../test_util';
-import {MathTests} from '../../test_util';
 import {Scalar, Tensor} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
@@ -27,7 +26,7 @@ import * as tape_util from './tape_util';
 
 // getFilteredNodesXToY
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('getFilteredNodesXToY no paths from x to y', () => {
       const x = dl.scalar(1);
       const intermediate1 = dl.scalar(0);
@@ -426,7 +425,7 @@ import * as tape_util from './tape_util';
 
 // backpropagateGradients
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('Throws if gradient is not defined', () => {
       const x = dl.scalar(0);
       const y = dl.scalar(1);
@@ -636,7 +635,7 @@ import * as tape_util from './tape_util';
 
 // extractTensorsFromScopeResult
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('null input returns empty tensor', () => {
       const results = tape_util.extractTensorsFromScopeResult(null);
 
@@ -664,7 +663,7 @@ import * as tape_util from './tape_util';
 }
 
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('pass through when all inputs are defined', () => {
       const x1 = dl.scalar(1);
       const x2 = dl.scalar(2);

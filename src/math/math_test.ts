@@ -17,7 +17,6 @@
 
 import * as dl from '../index';
 import * as test_util from '../test_util';
-import {MathTests} from '../test_util';
 import {Gradients} from './backends/gradients';
 import {MatrixOrientation} from './backends/types/matmul';
 import {Scalar, Tensor} from './tensor';
@@ -26,7 +25,7 @@ const gradientsScope = Gradients.gradientsScope;
 
 // dl.tidy
 {
-  const gpuTests: MathTests = it => {
+  const gpuTests = () => {
     it('returns Tensor', () => {
       dl.tidy(() => {
         const a = dl.tensor1d([1, 2, 3]);
@@ -188,7 +187,7 @@ const gradientsScope = Gradients.gradientsScope;
 
 // fromPixels & math
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('debug mode does not error when no nans', () => {
       const pixels = new ImageData(2, 2);
       for (let i = 0; i < 8; i++) {
@@ -219,7 +218,7 @@ const gradientsScope = Gradients.gradientsScope;
 
 // vjp integration tests
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('matmul + relu', () => {
       const a = dl.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
       const b = dl.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
@@ -300,7 +299,7 @@ const gradientsScope = Gradients.gradientsScope;
 
 // gradients integration tests
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('matmul + relu', () => {
       const a = dl.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
       const b = dl.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
@@ -416,7 +415,7 @@ const gradientsScope = Gradients.gradientsScope;
 
 // valueAndGradients integration tests
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('matmul + relu', () => {
       const a = dl.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
       const b = dl.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
@@ -499,7 +498,7 @@ const gradientsScope = Gradients.gradientsScope;
 }
 
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('second order gradients with gradientsScope', () => {
       const a = dl.scalar(2);
       expect(dl.memory().numTensors).toBe(1);
@@ -541,7 +540,7 @@ const gradientsScope = Gradients.gradientsScope;
 
 // customGradients
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('basic', () => {
       const a = dl.scalar(3);
       const b = dl.scalar(2, 'int32');
@@ -601,7 +600,7 @@ const gradientsScope = Gradients.gradientsScope;
 
 // dl.memory
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('Sum(float)', () => {
       expect(dl.memory().numTensors).toBe(0);
       expect(dl.memory().numBytes).toBe(0);

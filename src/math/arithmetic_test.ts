@@ -17,11 +17,10 @@
 
 import * as dl from '../index';
 import * as test_util from '../test_util';
-import {MathTests} from '../test_util';
 
 // divide
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('divide', () => {
       const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
       const c = dl.tensor2d([1, 2, 3, 4, 2, 5], [2, 3]);
@@ -251,7 +250,7 @@ import {MathTests} from '../test_util';
 
 // multiply
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('multiplyStrict same-shaped tensors', () => {
       const a = dl.tensor2d([1, 2, -3, -4], [2, 2]);
       const b = dl.tensor2d([5, 3, 4, -7], [2, 2]);
@@ -463,7 +462,7 @@ import {MathTests} from '../test_util';
 
 // pow
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('same-shaped tensors', () => {
       const a = dl.tensor2d([1, -2, -3, 0, 7, 1], [2, 3]);
       const b = dl.tensor2d([5, 3, 4, 5, 2, -3], [2, 3], 'int32');
@@ -601,7 +600,7 @@ import {MathTests} from '../test_util';
 
 // element-wise add / sub
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('c + A', () => {
       const c = dl.scalar(5);
       const a = dl.tensor1d([1, 2, 3]);
@@ -751,7 +750,7 @@ import {MathTests} from '../test_util';
 
 // subtract
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('c - A', () => {
       const c = dl.scalar(5);
       const a = dl.tensor1d([7, 2, 3]);

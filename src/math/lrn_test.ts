@@ -16,7 +16,6 @@
  */
 
 import * as test_util from '../test_util';
-import {MathTests} from '../test_util';
 import * as dl from '../index';
 
 const sqArr = (arr: number[]) => arr.map(d => d * d);
@@ -32,7 +31,7 @@ const flatten = (arr: any): number[] => {
 
 // math.localResponseNormalization3D
 {
-  const tests: MathTests = it => {
+  const tests = () => {
 
     it('throws error with invalid input', () => {
       // tslint:disable-next-line:no-any
@@ -381,7 +380,7 @@ const flatten = (arr: any): number[] => {
 
 // math.localResponseNormalization4D
 {
-  const tests: MathTests = it => {
+  const tests = () => {
 
     it('throws error with invalid input', () => {
       // tslint:disable-next-line:no-any

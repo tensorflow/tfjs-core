@@ -20,10 +20,9 @@ import {Session} from '../../graph/session';
 import * as dl from '../../index';
 import {variable} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {MathTests} from '../../test_util';
 import {SGDOptimizer} from './sgd_optimizer';
 
-const tests: MathTests = it => {
+const tests = () => {
   it('basic', () => {
     const learningRate = .1;
     const optimizer = dl.train.sgd(learningRate);

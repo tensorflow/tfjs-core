@@ -17,12 +17,11 @@
 
 import * as dl from '../index';
 import * as test_util from '../test_util';
-import {MathTests} from '../test_util';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
 import {Rank} from './types';
 
-const tests: MathTests = it => {
+const tests = () => {
   it('simple assign', () => {
     const v = variable(dl.tensor1d([1, 2, 3]));
     test_util.expectArraysClose(v, [1, 2, 3]);

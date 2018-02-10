@@ -17,10 +17,9 @@
 
 import * as dl from '../index';
 import * as test_util from '../test_util';
-import {MathTests} from '../test_util';
 import {SquareCostFunc} from './cost_functions';
 
-const tests: MathTests = it => {
+const tests = () => {
   it('Square cost', () => {
     const y = dl.tensor1d([1, 3, -2]);
     const target = dl.tensor1d([0, 3, -1.5]);

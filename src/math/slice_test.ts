@@ -17,12 +17,11 @@
 
 import * as dl from '../index';
 import * as test_util from '../test_util';
-import {MathTests} from '../test_util';
 import {Rank} from './types';
 
 // math.slice1D
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('slices 1x1 into 1x1 (effectively a copy)', () => {
       const a = dl.tensor1d([5]);
       const result = dl.slice1d(a, 0, 1);
@@ -58,7 +57,7 @@ import {Rank} from './types';
 
 // math.slice2D
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('slicing a 1x1 from a 1x1 returns a 1x1', () => {
       const a = dl.tensor2d([0], [1, 1]);
       const b = dl.slice2d(a, [0, 0], [1, 1]);
@@ -103,7 +102,7 @@ import {Rank} from './types';
 
 // math.slice3D
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('slices 1x1x1 into shape 1x1x1 (effectively a copy)', () => {
       const a = dl.tensor3d([[[5]]], [1, 1, 1]);
       const result = a.slice([0, 0, 0], [1, 1, 1]);
@@ -139,7 +138,7 @@ import {Rank} from './types';
 
 // math.slice4D
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('slices 1x1x1x1 into shape 1x1x1x1 (effectively a copy)', () => {
       const a = dl.tensor4d([[[[5]]]], [1, 1, 1, 1]);
       const result = a.slice([0, 0, 0, 0], [1, 1, 1, 1]);
