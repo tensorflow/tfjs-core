@@ -16,22 +16,57 @@
  */
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
+import {Graph} from '../../graph/graph';
+import {Session} from '../../graph/session';
 import * as dl from '../../index';
 import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {Graph} from '../graph';
-import {Session} from '../session';
+import {MathTests} from '../../test_util';
 import {RMSPropOptimizer} from './rmsprop_optimizer';
 
-describe('rmsprop optimizer', () => {
-  it('basic', () => {
+const tests: MathTests = it => {
+  it('basic', math => {
+    const learningRate = .1;
+    const rho = .95;
+    const optimizer = dl.train.rmsprop(learningRate, rho);
+
+    const x = dl.variable(dl.tensor1d([1, 2]));
+
+    const f = () => x.square().sum() as dl.Scalar;
+
+    let numTensors = dl.memory().numTensors;
+
+    let cost = optimizer.minimize(f, /* returnCost */ true);
+
+    // Cost & 2 accumulators should be the only additional arrays.
+    expect(dl.memory().numTensors).toBe(numTensors + 3);
+
+    test_util.expectArraysClose(x, [0.8, 1.6]);
+
+    cost.dispose();
+    numTensors = dl.memory().numTensors;
+
+    cost = optimizer.minimize(f, /* returnCost */ false);
+    test_util.expectArraysClose(x, [0.64, 1.28]);
+
+    // There should be no new additional Tensors.
+    expect(dl.memory().numTensors).toBe(numTensors);
+
+    expect(cost).toBe(null);
+
+    x.dispose();
+    optimizer.dispose();
+    expect(dl.memory().numTensors).toBe(0);
+  });
+
+  it('graph', () => {
     const math = ENV.math;
 
     const inputProvider: InputProvider = {
       getNextCopy() {
         return Tensor1D.new([2, 4]);
       },
-      disposeCopy(example) {}
+      disposeCopy(math) {}
     };
 
     dl.tidy(() => {
@@ -40,27 +75,21 @@ describe('rmsprop optimizer', () => {
       const w = g.variable('w', dl.zeros([1, 2]));
       const b = g.variable('b', dl.zeros([1]));
       const y = g.reduceSum(g.add(g.matmul(w, x), b));
-      const optimizer = new RMSPropOptimizer(0.1, 0.8);
       const session = new Session(g, math);
-      // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
-      // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
-      //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
-      //            = [.8, .3.2]
-      // w = [ w1_old - lr*grad_w1/sqrt(cahce_w1 + eps),
-      //            w2_old - lr*grad_w1/sqrt(cahce_w2 + eps)]
-      //            = [-0.2236, -0.2236]
+      const optimizer = new RMSPropOptimizer(0.1, 0.8);
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw, new Float32Array([-.2236, -0.2236]));
-      // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
-      //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
-      //            = [1.44, 5.76]
-      // w = [ w1_old - lr*grad_w1/sqrt(cahce_w1 + eps),
-      //            w2_old - lr*grad_w1/sqrt(cahce_w2 + eps)]
-      //            = [-.39027, -.39027]
+      test_util.expectArraysClose(dydw, new Float32Array([-0.2, -0.4]), 1e-2);
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw2, new Float32Array([-.39027, -.39027]));
+      test_util.expectArraysClose(dydw2, new Float32Array([-.4, -.8]), 1e-2);
     });
   });
-});
+};
+
+test_util.describeMathCPU('RMSPropOptimizer', [tests]);
+test_util.describeMathGPU('RMSPropOptimizer', [tests], [
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
+]);
