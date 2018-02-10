@@ -26,11 +26,11 @@ import {AdamOptimizer} from './adam_optimizer';
 const tests = () => {
   it('basic', () => {
     const learningRate = .1;
-    const beta1 = .95;
-    const beta2 = .95;
+    const beta1 = .8;
+    const beta2 = .9;
     const optimizer = dl.train.adam(learningRate, beta1, beta2);
 
-    const x = dl.variable(dl.tensor1d([1, 2]));
+    const x = dl.variable(dl.tensor1d([2, 4]));
 
     const f = () => x.square().sum() as dl.Scalar;
 
@@ -40,35 +40,38 @@ const tests = () => {
 
     // Cost & 2 accumulators should be the only additional arrays.
     expect(dl.memory().numTensors).toBe(numTensors + 3);
-
-    // epsilon = 1-e8
-    // newAccumulatedGrad = rho * accumulatedGrad + (1 - rho) * grad ^ 2
-    // updates = -grad * sqrt(accumulatedUpdate + epsilon) /
-    //     sqrt(accumulatedGrad + epsilon)
-    // newAccumulatedUpdate = rho * accumulatedUpdate + (1 - rho) * updates ^ 2
-    // x += learningRate * updates
+    // new_first_m = [
+    //    beta1 * old_first_m_w1 + (1-beta1) * grad_w1,
+    //    beta1 * old_first_m_w2 + (1-beta1) * grad_w2
+    // ] = [.8, 1.6]
+    // new_second_m = [
+    //    beta2 * old_second_m_w1 + (1-beta2) * grad_w1**2,
+    //    beta2 * old_second_m_w2 + (1-beta2) * grad_w2**2
+    // ] = [1.6, 6.4]
+    // m = [new_first_m/(1-acc_beta1)] = [4, 8]
+    // v = [new_second_m/(1-acc_beta2)] = [16, 64]
+    // x = [x - lr * m / sqrt(v)] = [1.9, 3.9]
     //
-    // de/dx = [2, 4]
-    // accumulatedGrad = [0, 0]
-    // newAccumulatedGrad = [.2, .8]
-    // updates = [-2, -4]
-    // newAccumulatedUpdate = [.2, .8]
-    // x = [0.8, 1.6]
-    test_util.expectArraysClose(x, [0.8, 1.6]);
+    test_util.expectArraysClose(x, [1.9, 3.9]);
 
     cost.dispose();
     numTensors = dl.memory().numTensors;
 
     cost = optimizer.minimize(f, /* returnCost */ false);
 
-    // de/dx = [1.6, 3.2]
-    // accumulatedGrad = [.2, .8]
-    // accumulatedUpdate = [.2, .8]
-    // newAccumulatedGrad = [0.318, 1.272]
-    // updates = [-1.6, -3.2]
-    // x = [0.64, 1.28]
-    test_util.expectArraysClose(x, [0.64, 1.28]);
-
+    // new_first_m = [
+    //    beta1 * old_first_m_w1 + (1-beta1) * grad_w1,
+    //    beta1 * old_first_m_w2 + (1-beta1) * grad_w2
+    // ] = [1.4, 2.84]
+    // new_second_m = [
+    //    beta2 * old_second_m_w1 + (1-beta2) * grad_w1**2,
+    //    beta2 * old_second_m_w2 + (1-beta2) * grad_w2**2
+    // ] = [2.884, 11.884]
+    // m = [new_first_m/(1-acc_beta1)] = [3.888888, 7.88889]
+    // v = [new_second_m/(1-acc_beta2)] = [15.1789, 62.5473]
+    // x = [x - lr * m / sqrt(v)] = [1.8000001, 3.8002]
+    //
+    test_util.expectArraysClose(x, [1.8000001, 3.8002]);
     // There should be no new additional Tensors.
     expect(dl.memory().numTensors).toBe(numTensors);
 
@@ -92,12 +95,16 @@ const tests = () => {
     };
 
     dl.tidy(() => {
+      const learningRate = .1;
+      const beta1 = .8;
+      const beta2 = .9;
+
       const g = new Graph();
       const x = g.placeholder('x', [2]);
       const w = g.variable('w', dl.zeros([1, 2]));
       const b = g.variable('b', dl.zeros([1]));
       const y = g.reduceSum(g.add(g.matmul(w, x), b));
-      const optimizer = new AdamOptimizer(0.1, 0.8, 0.9);
+      const optimizer = new AdamOptimizer(learningRate, beta1, beta2);
       const session = new Session(g, math);
       // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
       // new_first_m = [beta1*old_first_m_w1 + (1-beta1)*grad_w1,

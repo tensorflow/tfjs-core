@@ -29,6 +29,7 @@ import {NamedVariableMap} from '../../math/types';
 import {variable} from '../tensor';
 
 export class AdamOptimizer extends Optimizer {
+  private c: Scalar;
   private eps: Scalar;
   private b1: Scalar;
   private b2: Scalar;
@@ -43,14 +44,15 @@ export class AdamOptimizer extends Optimizer {
       protected learningRate: number, private beta1: number,
       private beta2: number, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
-    this.eps = scalar(1e-8);
+    this.c = keep(scalar(-learningRate));
+    this.eps = keep(scalar(1e-8));
     // b1, b2 keep initial value of beta* hyperparameters.
-    this.b1 = scalar(this.beta1);
-    this.b2 = scalar(this.beta2);
+    this.b1 = keep(scalar(this.beta1));
+    this.b2 = keep(scalar(this.beta2));
     // accB* will be updated by batch.
-    this.accB1 = scalar(this.beta1);
-    this.accB2 = scalar(this.beta2);
-    this.one = scalar(1);
+    this.accB1 = keep(scalar(this.beta1));
+    this.accB2 = keep(scalar(this.beta2));
+    this.one = keep(scalar(1));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -67,8 +69,46 @@ export class AdamOptimizer extends Optimizer {
             variable(zerosLike(value), trainable);
       }
 
-      tidy(() => {});
+      const gradient = variableGradients[variableName];
+      const firstMoment = this.accumulatedFirstMoment[variableName];
+      const secondMoment = this.accumulatedSecondMoment[variableName];
+
+      tidy(() => {
+        const newFirstMoment =
+            this.b1.mul(firstMoment).add(this.one.sub(this.b1).mul(gradient));
+        const newSecondMoment =
+            this.b2.mul(secondMoment)
+                .add(this.one.sub(this.b2).mul(gradient.square()));
+
+        const biasCorrectedFirstMoment =
+            newFirstMoment.div(this.one.sub(this.accB1));
+        const biasCorrectedSecondMoment =
+            newSecondMoment.div(this.one.sub(this.accB2));
+
+        this.accumulatedFirstMoment[variableName].assign(newFirstMoment);
+        this.accumulatedSecondMoment[variableName].assign(newSecondMoment);
+
+        const newValue = this.c
+                             .mul(biasCorrectedFirstMoment.div(this.eps.add(
+                                 biasCorrectedSecondMoment.sqrt())))
+                             .add(value);
+        value.assign(newValue);
+      });
     }
+
+    this.disposeAndUpdateBetas();
+  }
+
+  disposeAndUpdateBetas() {
+    // Make sure to dispose old value objects.
+    const oldAccB1 = this.accB1;
+    const oldAccB2 = this.accB2;
+    // accB* represents beta1 and beta2 to
+    // the power t (the number of iteration).
+    this.accB1 = keep(this.accB1.mul(this.b1));
+    this.accB2 = keep(this.accB2.mul(this.b2));
+    oldAccB1.dispose();
+    oldAccB2.dispose();
   }
 
   beforeBatch(
@@ -130,15 +170,7 @@ export class AdamOptimizer extends Optimizer {
         oldSecondMoment.dispose();
       });
 
-      // Make sure to dispose old value objects.
-      const oldAccB1 = this.accB1;
-      const oldAccB2 = this.accB2;
-      // accB* represents beta1 and beta2 to
-      // the power t (the number of iteration).
-      this.accB1 = keep(math.multiply(this.accB1, this.b1));
-      this.accB2 = keep(math.multiply(this.accB2, this.b2));
-      oldAccB1.dispose();
-      oldAccB2.dispose();
+      this.disposeAndUpdateBetas();
     });
 
     this.variableGradients.dispose();
@@ -147,13 +179,31 @@ export class AdamOptimizer extends Optimizer {
 
   dispose() {
     super.dispose();
-    this.firstMomentGraph.dispose();
-    this.secondMomentGraph.dispose();
+    this.c.dispose();
     this.eps.dispose();
     this.b1.dispose();
     this.b2.dispose();
     this.accB1.dispose();
     this.accB2.dispose();
+    this.one.dispose();
+
+    if (this.firstMomentGraph != null) {
+      this.firstMomentGraph.dispose();
+    }
+
+    if (this.secondMomentGraph != null) {
+      this.secondMomentGraph.dispose();
+    }
+
+    if (this.accumulatedFirstMoment != null) {
+      Object.keys(this.accumulatedFirstMoment)
+          .forEach(name => this.accumulatedFirstMoment[name].dispose());
+    }
+
+    if (this.accumulatedSecondMoment != null) {
+      Object.keys(this.accumulatedSecondMoment)
+          .forEach(name => this.accumulatedSecondMoment[name].dispose());
+    }
   }
 
   // Average of gradient
