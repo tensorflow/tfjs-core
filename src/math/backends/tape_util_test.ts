@@ -1,7 +1,7 @@
 
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2017 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +19,6 @@
 import * as dl from '../../index';
 import {NamedTensorMap} from '../../math/types';
 import * as test_util from '../../test_util';
-import {MathTests} from '../../test_util';
 import {Scalar, Tensor} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {Tape, TapeNode, TapeNodeInputConfig, TapeNodeOutput} from './tape_types';
@@ -27,7 +26,7 @@ import * as tape_util from './tape_util';
 
 // getFilteredNodesXToY
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('getFilteredNodesXToY no paths from x to y', () => {
       const x = dl.scalar(1);
       const intermediate1 = dl.scalar(0);
@@ -426,7 +425,7 @@ import * as tape_util from './tape_util';
 
 // backpropagateGradients
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('Throws if gradient is not defined', () => {
       const x = dl.scalar(0);
       const y = dl.scalar(1);
@@ -470,7 +469,7 @@ import * as tape_util from './tape_util';
         },
         output: y,
         gradient: (dy: Scalar, y: Scalar) => {
-          return {x: () => dl.add(dy, dl.scalar(1))};
+          return {x: () => dy.add(dl.scalar(1))};
         }
       }];
 
@@ -499,7 +498,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => dl.add(dy, dl.scalar(1))};
+            return {x: () => dy.add(dl.scalar(1))};
           }
         },
         {
@@ -511,7 +510,7 @@ import * as tape_util from './tape_util';
           },
           output: y,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {intermediate: () => dl.add(dy, dl.scalar(1))};
+            return {intermediate: () => dy.add(dl.scalar(1))};
           }
         }
       ];
@@ -543,7 +542,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate1,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => dl.add(dy, dl.scalar(1))};
+            return {x: () => dy.add(dl.scalar(1))};
           }
         },
         {
@@ -555,7 +554,7 @@ import * as tape_util from './tape_util';
           },
           output: intermediate2,
           gradient: (dy: Scalar, y: Scalar) => {
-            return {x: () => dl.add(dy, dl.scalar(1))};
+            return {x: () => dy.add(dl.scalar(1))};
           }
         },
         {
@@ -568,8 +567,8 @@ import * as tape_util from './tape_util';
           output: y,
           gradient: (dy: Scalar, y: Scalar) => {
             return {
-              intermediate1: () => dl.add(dy, dl.scalar(1)),
-              intermediate2: () => dl.add(dy, dl.scalar(1))
+              intermediate1: () => dy.add(dl.scalar(1)),
+              intermediate2: () => dy.add(dl.scalar(1))
             };
           }
         }
@@ -604,10 +603,7 @@ import * as tape_util from './tape_util';
              },
              output: {intermediate1, intermediate2},
              gradient: (dy: NamedTensorMap, y: NamedTensorMap) => {
-               return {
-                 x: () =>
-                     dl.mul(dy['intermediate1'], dy['intermediate2'])
-               };
+               return {x: () => dy['intermediate1'].mul(dy['intermediate2'])};
              }
            },
            {
@@ -620,8 +616,8 @@ import * as tape_util from './tape_util';
              output: y,
              gradient: (dy: Scalar, y: Scalar) => {
                return {
-                 intermediate1: () => dl.add(dy, dl.scalar(2)),
-                 intermediate2: () => dl.add(dy, dl.scalar(3))
+                 intermediate1: () => dy.add(dl.scalar(2)),
+                 intermediate2: () => dy.add(dl.scalar(3))
                };
              }
            }
@@ -639,7 +635,7 @@ import * as tape_util from './tape_util';
 
 // extractTensorsFromScopeResult
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('null input returns empty tensor', () => {
       const results = tape_util.extractTensorsFromScopeResult(null);
 
@@ -667,7 +663,7 @@ import * as tape_util from './tape_util';
 }
 
 {
-  const tests: MathTests = it => {
+  const tests = () => {
     it('pass through when all inputs are defined', () => {
       const x1 = dl.scalar(1);
       const x2 = dl.scalar(2);
