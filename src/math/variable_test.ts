@@ -16,19 +16,18 @@
  */
 
 import * as dl from '../index';
-import * as test_util from '../test_util';
-import {MathTests} from '../test_util';
+import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
 import {Rank} from './types';
 
-const tests: MathTests = it => {
-  it('simple assign', math => {
+describeWithFlags('variable', ALL_ENVS, () => {
+  it('simple assign', () => {
     const v = variable(dl.tensor1d([1, 2, 3]));
-    test_util.expectArraysClose(v, [1, 2, 3]);
+    expectArraysClose(v, [1, 2, 3]);
 
     v.assign(dl.tensor1d([4, 5, 6]));
-    test_util.expectArraysClose(v, [4, 5, 6]);
+    expectArraysClose(v, [4, 5, 6]);
   });
 
   it('default names are unique', () => {
@@ -55,26 +54,26 @@ const tests: MathTests = it => {
     const value = dl.tensor1d([1, 2, 3]);
     const v = variable(value);
     const res = dl.sum(v);
-    test_util.expectArraysClose(res, [6]);
+    expectArraysClose(res, [6]);
   });
 
-  it('variables are not affected by tidy', math => {
+  it('variables are not affected by tidy', () => {
     let v: Variable<Rank.R1>;
-    expect(math.getNumTensors()).toBe(0);
+    expect(dl.memory().numTensors).toBe(0);
 
     dl.tidy(() => {
       const value = dl.tensor1d([1, 2, 3], 'float32');
-      expect(math.getNumTensors()).toBe(1);
+      expect(dl.memory().numTensors).toBe(1);
 
       v = variable(value);
-      expect(math.getNumTensors()).toBe(1);
+      expect(dl.memory().numTensors).toBe(1);
     });
 
-    expect(math.getNumTensors()).toBe(1);
-    test_util.expectArraysClose(v, [1, 2, 3]);
+    expect(dl.memory().numTensors).toBe(1);
+    expectArraysClose(v, [1, 2, 3]);
 
     v.dispose();
-    expect(math.getNumTensors()).toBe(0);
+    expect(dl.memory().numTensors).toBe(0);
   });
 
   it('variables are assignable to tensors', () => {
@@ -104,23 +103,23 @@ const tests: MathTests = it => {
     expect(yh).toBeNull();
   });
 
-  it('assign will dispose old data', math => {
+  it('assign will dispose old data', () => {
     let v: Variable<Rank.R1>;
     v = variable(dl.tensor1d([1, 2, 3]));
-    expect(math.getNumTensors()).toBe(1);
-    test_util.expectArraysClose(v, [1, 2, 3]);
+    expect(dl.memory().numTensors).toBe(1);
+    expectArraysClose(v, [1, 2, 3]);
 
     const secondArray = dl.tensor1d([4, 5, 6]);
-    expect(math.getNumTensors()).toBe(2);
+    expect(dl.memory().numTensors).toBe(2);
 
     v.assign(secondArray);
-    test_util.expectArraysClose(v, [4, 5, 6]);
-    // Assign disposes the 1st array.
-    expect(math.getNumTensors()).toBe(1);
+    expectArraysClose(v, [4, 5, 6]);
+    // Assign doesn't dispose the 1st array.
+    expect(dl.memory().numTensors).toBe(2);
 
     v.dispose();
-    // Disposing the variable disposes the 2nd array.
-    expect(math.getNumTensors()).toBe(0);
+    // Disposing the variable disposes itself.
+    expect(dl.memory().numTensors).toBe(1);
   });
 
   it('shape must match', () => {
@@ -139,11 +138,4 @@ const tests: MathTests = it => {
     expect(() => v.assign(dl.tensor1d([true, false, true], 'bool') as any))
         .toThrowError();
   });
-};
-
-test_util.describeMathCPU('Variables', [tests]);
-test_util.describeMathGPU('Variables', [tests], [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-]);
+});

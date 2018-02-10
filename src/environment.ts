@@ -17,14 +17,15 @@
 
 import * as device_util from './device_util';
 import {MathBackend} from './math/backends/backend';
-import {BackendEngine} from './math/backends/backend_engine';
+import {BackendEngine, MemoryInfo} from './math/backends/backend_engine';
 import {doc} from './math/decorators';
 import {NDArrayMath} from './math/math';
 import * as util from './util';
 
 export enum Type {
   NUMBER,
-  BOOLEAN
+  BOOLEAN,
+  STRING
 }
 
 export interface Features {
@@ -47,6 +48,7 @@ export interface Features {
   'WEBGL_FLOAT_TEXTURE_ENABLED'?: boolean;
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
   'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
+  'BACKEND'?: BackendType;
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
@@ -57,7 +59,8 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_FLOAT_TEXTURE_ENABLED', type: Type.BOOLEAN}, {
     name: 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED',
     type: Type.BOOLEAN
-  }
+  },
+  {name: 'BACKEND', type: Type.STRING}
 ];
 
 export interface URLProperty {
@@ -235,6 +238,28 @@ export class Environment {
     return ENV.currentBackendType;
   }
 
+  /**
+   * Returns memory info at the current time in the program. The result is an
+   * object with the following properties:
+   *
+   * - `numBytes`: number of bytes allocated (undisposed) at this time.
+   * - `numTensors`: number of unique tensors allocated
+   * - `numDataBuffers`: number of unique data buffers allocated
+   *   (undisposed) at this time, which is ≤ the number of tensors
+   *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same
+   *   data buffer with `a`).
+   * - `unreliable`: optional boolean:
+   *    - On WebGL, not present (always reliable).
+   *    - On CPU, true. Due to automatic garbage collection, these numbers
+   *     represent undisposed tensors, i.e. not wrapped in `dl.tidy()`, or
+   *     lacking a call to `tensor.dispose()`.
+   * - `backendInfo`: Backend-specific information.
+   */
+  @doc({heading: 'Performance', subheading: 'Memory'})
+  static memory(): MemoryInfo {
+    return ENV.engine.memory();
+  }
+
   get<K extends keyof Features>(feature: K): Features[K] {
     if (feature in this.features) {
       return this.features[feature];
@@ -262,6 +287,8 @@ export class Environment {
   private evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
     if (feature === 'DEBUG') {
       return false;
+    } else if (feature === 'BACKEND') {
+      return this.getBestBackendType();
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {
       const webGLVersion = this.get('WEBGL_VERSION');
 
@@ -391,8 +418,7 @@ export class Environment {
   }
 
   private initEngine() {
-    const safeMode = false;
-    this.globalMath = new NDArrayMath(this.getBestBackendType(), safeMode);
+    this.globalMath = new NDArrayMath(ENV.get('BACKEND'), false /* safeMode */);
   }
 }
 
@@ -424,6 +450,9 @@ function getFeaturesFromURL(): Features {
           features[urlProperty.name] = +urlFlags[urlProperty.name];
         } else if (urlProperty.type === Type.BOOLEAN) {
           features[urlProperty.name] = urlFlags[urlProperty.name] === 'true';
+        } else if (urlProperty.type === Type.STRING) {
+          // tslint:disable-next-line:no-any
+          features[urlProperty.name] = urlFlags[urlProperty.name] as any;
         } else {
           console.warn(`Unknown URL param: ${urlProperty.name}.`);
         }

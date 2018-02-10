@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,61 +19,56 @@ import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import {Scalar, Tensor1D, variable} from '../../math/tensor';
-import * as test_util from '../../test_util';
-import {MathTests} from '../../test_util';
-
+import {Tensor1D} from '../../math/tensor';
+import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 import {MomentumOptimizer} from './momentum_optimizer';
 
-const tests: MathTests = it => {
-  it('basic', math => {
+describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
+  it('basic', () => {
     const learningRate = .1;
     const momentum = .5;
     const optimizer = dl.train.momentum(learningRate, momentum);
 
-    const w = variable(dl.zeros([1, 2]));
-    const b = dl.zeros([1]);
-    const x = dl.tensor1d([2, 4]);
+    const x = dl.variable(dl.tensor1d([1, 2]));
 
-    // TODO(nsthorat): Use tensordot() instead of reshapes when it's ready.
-    const f = () =>
-        w.reshape([1, 2]).matMul(x.reshape([2, 1])).add(b).sum() as Scalar;
+    const f = () => x.square().sum() as dl.Scalar;
 
-    let numTensors = math.getNumTensors();
+    let numTensors = dl.memory().numTensors;
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
     // Cost / velocity should be the only additional arrays.
-    expect(math.getNumTensors()).toBe(numTensors + 2);
+    expect(dl.memory().numTensors).toBe(numTensors + 2);
 
-    // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
-    // velocity_w = [momentum* old_vel_w1 + x_1,
-    //                momentum* old_vel_w2 + x_2] = [2,4]
-    // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.2, -0.4]
-    test_util.expectArraysClose(w, [-0.2, -0.4]);
+    // newAccumulation = momentum * accumulation + gradient
+    // newVariable += -learningRate * newAccumulation + variable
+    //
+    // de/dx = [2, 4]
+    // newAccumulation = [2, 4]
+    // x = [.8, 1.6]
+    expectArraysClose(x, [.8, 1.6]);
 
     cost.dispose();
-    numTensors = math.getNumTensors();
+    numTensors = dl.memory().numTensors;
 
     cost = optimizer.minimize(f, /* returnCost */ false);
 
-    // velocity_w = [momentum* old_vel_w1 + x_1,
-    //                momentum* old_vel_w2 + x_2] = [3,6]
-    // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.5, -1.0]
-    test_util.expectArraysClose(w, new Float32Array([-.5, -1.0]));
+    // de/dx = [1.6, 3.2]
+    // accumulation = [2, 4]
+    // newAccumulation = [2.6, 5.2]
+    // x = [0.54, 1.08]
+    expectArraysClose(x, [0.54, 1.08]);
 
     // There should be no new additional Tensors.
-    expect(math.getNumTensors()).toBe(numTensors);
+    expect(dl.memory().numTensors).toBe(numTensors);
 
     expect(cost).toBe(null);
 
     x.dispose();
-    b.dispose();
-    w.dispose();
     optimizer.dispose();
 
     // There should be no more Tensors.
-    expect(math.getNumTensors()).toBe(0);
+    expect(dl.memory().numTensors).toBe(0);
   });
 
   it('graph', () => {
@@ -100,20 +95,13 @@ const tests: MathTests = it => {
       // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.2, -0.4]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       let wValue = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(wValue, new Float32Array([-.2, -0.4]));
+      expectArraysClose(wValue, new Float32Array([-.2, -0.4]));
       // velocity_w = [momentum* old_vel_w1 + x_1,
       //                momentum* old_vel_w2 + x_2] = [3,6]
       // w = [ w_old - lr*vel_w1, w_old - lr*vel_w2] = [-0.5, -1.0]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       wValue = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(wValue, new Float32Array([-.5, -1.0]));
+      expectArraysClose(wValue, new Float32Array([-.5, -1.0]));
     });
   });
-};
-
-test_util.describeMathCPU('MomentumOptimizer', [tests]);
-test_util.describeMathGPU('MomentumOptimizer', [tests], [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-]);
+});
