@@ -217,9 +217,12 @@ export function getDocAlias(
   return getJsDocTag(symbol, docTypeAlias);
 }
 
+/**
+ * Finds a jsdoc tag by a given tag name for a symbol. e.g. @docalias number[]
+ * => number[].
+ */
 export function getJsDocTag(symbol: ts.Symbol, tag: string): string {
   const tags = symbol.getJsDocTags();
-  // console.log(tags);
   for (let i = 0; i < tags.length; i++) {
     const jsdocTag = tags[i];
     if (jsdocTag.name === tag) {
@@ -228,7 +231,10 @@ export function getJsDocTag(symbol: ts.Symbol, tag: string): string {
   }
 }
 
-export function typeToString(
+/**
+ * Converts a function parameter symbol to its string type value.
+ */
+export function parameterTypeToString(
     checker: ts.TypeChecker, symbol: ts.Symbol,
     identifierGenericMap: {[identifier: string]: string}): string {
   const valueDeclaration = symbol.valueDeclaration;
@@ -243,34 +249,41 @@ export function typeToString(
 
     // If 'any' comes out of the typeToString method, and this is a deep union
     // type, try to parse out each of the unions manually. For some reason te
-    // typescript compiler returns "any" for complex union types.
+    // typescript compiler returns "any" for complex union types, e.g.
+    // TypedArray|number|number[]|number[][]...
     const types = [];
 
     if (valueDeclarationType.types != null) {
-      valueDeclarationType.types.forEach(type => types.push(type.getText()));
+      valueDeclarationType.types.forEach(
+          type => types.push(
+              sanitizeTypeString(type.getText(), identifierGenericMap)));
     }
 
     return types.join(' | ');
   } else {
-    typeStr = simplifyTypeStr(typeStr, identifierGenericMap);
+    typeStr = sanitizeTypeString(typeStr, identifierGenericMap);
 
     return typeStr;
   }
 }
 
-export function simplifyTypeStr(
-    returnTypeStr: string,
-    identifierGenericMap: {[identifier: string]: string}) {
+/**
+ * Sanitizes a type string by removing generics and replacing generics.
+ *   e.g. Tensor<R> => Tensor
+ *   e.g. T => Tensor
+ */
+export function sanitizeTypeString(
+    typeString: string, identifierGenericMap: {[identifier: string]: string}) {
   // If the return type is part of the generic map, use the mapped
   // type. For example, <T extends Tensor> will replace "T" with
   // "Tensor".
-  if (identifierGenericMap[returnTypeStr] != null) {
-    returnTypeStr = identifierGenericMap[returnTypeStr];
+  if (identifierGenericMap[typeString] != null) {
+    typeString = identifierGenericMap[typeString];
   }
 
   // Remove generics.
-  returnTypeStr = removeGenerics(returnTypeStr);
-  return returnTypeStr;
+  typeString = removeGenerics(typeString);
+  return typeString;
 }
 
 // Remove generics from a string. e.g. Tensor<R> => Tensor.
@@ -304,6 +317,9 @@ export function getIdentifierGenericMap(node: ts.MethodDeclaration):
   return identifierGenericMap;
 }
 
+/**
+ * Iterate over all functions in the docs.
+ */
 export function foreachDocFunction(
     docHeadings: DocHeading[], fn: (docFunction: DocFunction) => void) {
   docHeadings.forEach(heading => {
@@ -322,22 +338,19 @@ export function foreachDocFunction(
   });
 }
 
+/**
+ * Replace all types with their aliases. e.g. ShapeMap[R2] => number[]
+ */
 export function replaceDocTypeAliases(
     docHeadings: DocHeading[], docTypeAliases: {[type: string]: string}) {
   foreachDocFunction(docHeadings, docFunction => {
     docFunction.parameters.forEach(param => {
-      param.type = replaceDocType(param.type, docTypeAliases);
+      Object.keys(docTypeAliases).forEach(type => {
+        if (param.type.indexOf(type) !== -1) {
+          const re = new RegExp(type + '(\\[.*\\])?', 'g');
+          param.type = param.type.replace(re, docTypeAliases[type]);
+        }
+      });
     });
   });
-}
-
-export function replaceDocType(
-    typeString: string, docTypeAliases: {[type: string]: string}): string {
-  Object.keys(docTypeAliases).forEach(type => {
-    if (typeString.indexOf(type) !== -1) {
-      const re = new RegExp(type + '(\\[.*\\])?', 'g');
-      typeString = typeString.replace(re, docTypeAliases[type]);
-    }
-  });
-  return typeString;
 }

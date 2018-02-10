@@ -69,7 +69,6 @@ export class Ops {
   /**
    * Computes exponential of the input Tensor element-wise. y = e ^ x
    * @param x The input Tensor.
-   * @returns A tensor with the same shape as `x`.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation

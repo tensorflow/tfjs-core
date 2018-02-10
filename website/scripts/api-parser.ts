@@ -117,8 +117,6 @@ export function parse(): Docs {
     }
   }
 
-  console.log(docTypeAliases);
-
   // Attach subclass methods.
   util.addSubclassMethods(docHeadings, subclassMethodMap);
 
@@ -127,6 +125,8 @@ export function parse(): Docs {
 
   // Replace doc aliases.
   util.replaceDocTypeAliases(docHeadings, docTypeAliases);
+
+  // TODO(nsthorat): Link types to their symbol docs.
 
   const docs: Docs = {headings: docHeadings};
 
@@ -255,16 +255,7 @@ export function serializeMethod(
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
 
   let returnType = checker.typeToString(signature.getReturnType());
-  returnType = util.simplifyTypeStr(returnType, identifierGenericMap);
-
-  // if (symbol.name === 'exp') {
-  //   const type = util.typeToString(
-  //       checker, signature.getReturnType().symbol, identifierGenericMap);
-  //   console.log('-------------------------------\n', symbol.name, type);
-  //   console.log(parameters);
-  //   console.log('ret', symbol.getJsDocTags());
-  //   console.log(node.getText());
-  // }
+  returnType = util.sanitizeTypeString(returnType, identifierGenericMap);
 
   const method: DocFunction = {
     symbolName: symbol.name,
@@ -287,7 +278,7 @@ function serializeParameter(
   return {
     name: symbol.getName(),
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
-    type: util.typeToString(checker, symbol, identifierGenericMap),
+    type: util.parameterTypeToString(checker, symbol, identifierGenericMap),
     optional: checker.isOptionalParameter(
         symbol.valueDeclaration as ts.ParameterDeclaration)
   };
