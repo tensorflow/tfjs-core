@@ -427,38 +427,39 @@ export class Tensor<R extends Rank = Rank> {
         this, mean, variance, varianceEpsilon, scale, offset);
   }
 
-  clone<T extends Tensor>(this: T): T {
+  clone(): Tensor<R> {
     this.throwIfDisposed();
     return ops.clone(this);
   }
 
   // Reduction ops.
 
-  logSumExp<T extends Tensor>(axis?: number|number[], keepDims = false): T {
+  logSumExp<T extends Tensor>(axis: number|number[] = null, keepDims = false):
+      T {
     this.throwIfDisposed();
     return ops.logSumExp(this, axis, keepDims);
   }
-  sum<T extends Tensor>(axis?: number|number[], keepDims = false): T {
+  sum<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return ops.sum(this, axis, keepDims);
   }
-  mean<T extends Tensor>(axis?: number|number[], keepDims = false): T {
+  mean<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return ops.mean(this, axis, keepDims);
   }
-  min<T extends Tensor>(axis?: number|number[], keepDims = false): T {
+  min<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return ops.min(this, axis, keepDims);
   }
-  max<T extends Tensor>(axis?: number|number[], keepDims = false): T {
+  max<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return ops.max(this, axis, keepDims);
   }
-  argMin<T extends Tensor>(axis?: number): T {
+  argMin<T extends Tensor>(axis: number = null): T {
     this.throwIfDisposed();
     return ops.argMin(this, axis);
   }
-  argMax<T extends Tensor>(axis?: number): T {
+  argMax<T extends Tensor>(axis: number = null): T {
     this.throwIfDisposed();
     return ops.argMax(this, axis);
   }
@@ -765,13 +766,6 @@ export class Tensor<R extends Rank = Rank> {
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
     return ops.minPool(this, filterSize, strides, pad, dimRoundingMode);
-  }
-
-  localResponseNormalization<T extends Tensor3D|Tensor4D>(
-      this: T, radius = 5, bias = 1, alpha = 1, beta = 0.5,
-      normRegion: 'acrossChannels'|'withinChannel' = 'acrossChannels'): T {
-    return ops.localResponseNormalization(
-        this, radius, bias, alpha, beta, normRegion);
   }
 }
 
