@@ -16,11 +16,11 @@
  */
 
 import {ENV} from '../environment';
-import {zerosLike} from './ops';
 import * as util from '../util';
 
 import {doc, operation} from './decorators';
 import * as ops from './ops';
+import {zerosLike} from './ops';
 import * as selu_util from './selu_util';
 import {Tensor} from './tensor';
 
@@ -69,6 +69,7 @@ export class Ops {
   /**
    * Computes exponential of the input Tensor element-wise. y = e ^ x
    * @param x The input Tensor.
+   * @returns A tensor with the same shape as `x`.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -141,14 +142,16 @@ export class Ops {
         `Error in clip: min (${min}) must be` +
             `less than or equal to max (${max}).`);
     return ENV.engine.executeKernel(
-        'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
-      return {
-          // TODO(cais): Fix gradients for the case where x = min or x = max.
-          x: () => dy.where(
-              x.greater(ops.scalar(min)).logicalAnd(x.less(ops.scalar(max))),
-              zerosLike(dy)),
-      };
-    }) as T;
+               'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
+                 return {
+                   // TODO(cais): Fix gradients for the case where x = min or x
+                   // = max.
+                   x: () => dy.where(
+                       x.greater(ops.scalar(min))
+                           .logicalAnd(x.less(ops.scalar(max))),
+                       zerosLike(dy)),
+                 };
+               }) as T;
   }
 
   /**

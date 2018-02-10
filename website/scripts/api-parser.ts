@@ -242,8 +242,10 @@ export function serializeMethod(
       checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
   const signature = type.getCallSignatures()[0];
 
-  const parameters =
-      signature.parameters.map(symbol => serializeParameter(checker, symbol));
+  const identifierGenericMap = util.getIdentifierGenericMap(node);
+
+  const parameters = signature.parameters.map(
+      symbol => serializeParameter(checker, symbol, identifierGenericMap));
   const paramStr = '(' +
       parameters.map(param => param.name + (param.optional ? '?' : ''))
           .join(', ') +
@@ -252,12 +254,24 @@ export function serializeMethod(
   const {displayFilename, githubUrl} =
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
 
+  let returnType = checker.typeToString(signature.getReturnType());
+  returnType = util.simplifyTypeStr(returnType, identifierGenericMap);
+
+  // if (symbol.name === 'exp') {
+  //   const type = util.typeToString(
+  //       checker, signature.getReturnType().symbol, identifierGenericMap);
+  //   console.log('-------------------------------\n', symbol.name, type);
+  //   console.log(parameters);
+  //   console.log('ret', symbol.getJsDocTags());
+  //   console.log(node.getText());
+  // }
+
   const method: DocFunction = {
     symbolName: symbol.name,
     displayName,
     paramStr,
     parameters,
-    returnType: checker.typeToString(signature.getReturnType()),
+    returnType,
     documentation: ts.displayPartsToString(signature.getDocumentationComment()),
     fileName: displayFilename,
     githubUrl,
@@ -268,11 +282,12 @@ export function serializeMethod(
 }
 
 function serializeParameter(
-    checker: ts.TypeChecker, symbol: ts.Symbol): DocFunctionParam {
+    checker: ts.TypeChecker, symbol: ts.Symbol,
+    identifierGenericMap: {[identifier: string]: string}): DocFunctionParam {
   return {
     name: symbol.getName(),
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
-    type: util.typeToString(checker, symbol),
+    type: util.typeToString(checker, symbol, identifierGenericMap),
     optional: checker.isOptionalParameter(
         symbol.valueDeclaration as ts.ParameterDeclaration)
   };

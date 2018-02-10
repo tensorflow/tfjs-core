@@ -205,37 +205,45 @@ export function isStatic(node: ts.MethodDeclaration): boolean {
   return isStatic;
 }
 
+/**
+ * Gets a doc alias, e.g. @docalias, from a interface / type alias.
+ */
 export function getDocAlias(
     checker: ts.TypeChecker,
     node: ts.InterfaceDeclaration|ts.TypeAliasDeclaration,
     docTypeAlias: string) {
   const symbol = checker.getSymbolAtLocation(node.name);
   const docs = symbol.getDocumentationComment();
+  return getJsDocTag(symbol, docTypeAlias);
+}
+
+export function getJsDocTag(symbol: ts.Symbol, tag: string): string {
   const tags = symbol.getJsDocTags();
+  // console.log(tags);
   for (let i = 0; i < tags.length; i++) {
-    const tag = tags[i];
-    if (tag.name === docTypeAlias) {
-      return tag.text;
+    const jsdocTag = tags[i];
+    if (jsdocTag.name === tag) {
+      return jsdocTag.text;
     }
   }
 }
 
 export function typeToString(
-    checker: ts.TypeChecker, symbol: ts.Symbol): string {
+    checker: ts.TypeChecker, symbol: ts.Symbol,
+    identifierGenericMap: {[identifier: string]: string}): string {
   const valueDeclaration = symbol.valueDeclaration;
-
-  const type =
-      checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
-
-  const typeStr = checker.typeToString(
+  let typeStr = checker.typeToString(
       checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!));
 
-  // tslint:disable-next-line:no-any
-  const valueDeclarationType = (valueDeclaration as any).type;
-  if (typeStr === 'any' && valueDeclarationType != null &&
-      ts.isUnionTypeNode(valueDeclarationType)) {
+  if (typeStr === 'any' && valueDeclaration != null &&
+      (valueDeclaration as any).type != null &&
+      ts.isUnionTypeNode((valueDeclaration as any).type)) {
+    // tslint:disable-next-line:no-any
+    const valueDeclarationType = (valueDeclaration as any).type;
+
     // If 'any' comes out of the typeToString method, and this is a deep union
-    // type, try to parse out each of the unions manually.
+    // type, try to parse out each of the unions manually. For some reason te
+    // typescript compiler returns "any" for complex union types.
     const types = [];
 
     if (valueDeclarationType.types != null) {
@@ -244,8 +252,56 @@ export function typeToString(
 
     return types.join(' | ');
   } else {
+    typeStr = simplifyTypeStr(typeStr, identifierGenericMap);
+
     return typeStr;
   }
+}
+
+export function simplifyTypeStr(
+    returnTypeStr: string,
+    identifierGenericMap: {[identifier: string]: string}) {
+  // If the return type is part of the generic map, use the mapped
+  // type. For example, <T extends Tensor> will replace "T" with
+  // "Tensor".
+  if (identifierGenericMap[returnTypeStr] != null) {
+    returnTypeStr = identifierGenericMap[returnTypeStr];
+  }
+
+  // Remove generics.
+  returnTypeStr = removeGenerics(returnTypeStr);
+  return returnTypeStr;
+}
+
+// Remove generics from a string. e.g. Tensor<R> => Tensor.
+export function removeGenerics(typeStr: string) {
+  return typeStr.replace(/(<.*>)/, '');
+}
+/**
+ * Computes a mapping of identifier to their generic type. For example:
+ *   method<T extends Tensor>() {}
+ * In this example, this method will return {'T': 'Tensor'}.
+ */
+export function getIdentifierGenericMap(node: ts.MethodDeclaration):
+    {[generic: string]: string} {
+  const identifierGenericMap = {};
+  let identifier;
+  let generic;
+  node.forEachChild(child => {
+    if (ts.isTypeParameterDeclaration(child)) {
+      child.forEachChild(cc => {
+        if (ts.isTypeNode(cc)) {
+          generic = cc.getText();
+        } else if (ts.isIdentifier(cc)) {
+          identifier = cc.getText();
+        }
+      });
+    }
+  });
+  if (identifier != null && generic != null) {
+    identifierGenericMap[identifier] = generic;
+  }
+  return identifierGenericMap;
 }
 
 export function foreachDocFunction(
@@ -280,9 +336,7 @@ export function replaceDocType(
   Object.keys(docTypeAliases).forEach(type => {
     if (typeString.indexOf(type) !== -1) {
       const re = new RegExp(type + '(\\[.*\\])?', 'g');
-      // console.log(re.source);
       typeString = typeString.replace(re, docTypeAliases[type]);
-      // console.log(typeString);
     }
   });
   return typeString;

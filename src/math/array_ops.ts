@@ -23,7 +23,7 @@ import {MPRandGauss, RandNormalDataTypes} from './rand';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from './tensor';
 // tslint:disable-next-line:max-line-length
-import {ArrayData, DataType, DataTypeMap, Rank, RegularArray, ShapeMap, TensorLike, TypedArray} from './types';
+import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
 
 export class Ops {
   /**
@@ -37,9 +37,9 @@ export class Ops {
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor<R extends Rank>(
-      val: TypedArray|number|boolean|RegularArray<number>|RegularArray<boolean>,
+      values: TypedArray|number|boolean|number[]|number[][]|number[][][]|
+      number[][][][]|boolean[]|boolean[][]|boolean[][][]|boolean[][][][],
       shape?: ShapeMap[R], dtype: DataType = 'float32'): Tensor<R> {
-    let values = val as TensorLike;
     const inferredShape = util.inferShape(values);
     if (shape != null && inferredShape.length !== 1) {
       util.assertShapesMatch(

@@ -51,11 +51,6 @@ export enum Rank {
   R4 = 'R4'
 }
 
-/**
- * @docalias number[]|TypedArray
- */
-export type TensorLike =
-    TypedArray|number|boolean|RegularArray<number>|RegularArray<boolean>;
 export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
 export type ArrayData<D extends DataType> =
