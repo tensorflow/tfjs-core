@@ -19,6 +19,7 @@ import {ENV} from '../../environment';
 import {keep, tidy} from '../../globals';
 import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
+import * as session_util from '../../graph/session_util';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
@@ -42,7 +43,7 @@ export class RMSPropOptimizer extends Optimizer {
       protected learningRate: number, rho = 0.9, momentum = 0.0,
       /** @deprecated only for graph */
       specifiedVariableList?: Node[], epsilon = 1e-8) {
-    super(-learningRate, specifiedVariableList);
+    super(learningRate, specifiedVariableList);
 
     this.c = keep(scalar(learningRate));
     this.epsilon = keep(scalar(epsilon));
@@ -95,8 +96,19 @@ export class RMSPropOptimizer extends Optimizer {
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
-    super.beforeBatch(
-        math, batchSize, runtime, activationArrayMap, gradientArrayMap);
+    this.variableNodes = this.specifiedVariableNodes == null ?
+        session_util.getVariableNodesFromEvaluationSet(runtime.nodes) :
+        this.specifiedVariableNodes;
+    if (batchSize !== this.prevBatchSize) {
+      if (this.cGraph != null) {
+        this.cGraph.dispose();
+      }
+      this.prevBatchSize = batchSize;
+      this.cGraph = math.keep(scalar(this.learningRate / batchSize));
+    }
+    this.variableNodes.forEach(
+        node => this.variableGradients.set(
+            node.output, math.keep(Tensor.zeros(node.output.shape))));
     if (this.accumulatedMeanSquaredGraph.size() === 0) {
       this.variableNodes.forEach(node => {
         this.accumulatedMeanSquaredGraph.set(
@@ -117,27 +129,29 @@ export class RMSPropOptimizer extends Optimizer {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
         const oldMeanSquare = this.accumulatedMeanSquaredGraph.get(node.output);
-        const oldMom = this.accumulatedMomentGraph.get(node.output);
+        const oldMoment = this.accumulatedMomentGraph.get(node.output);
 
         // mean_square = rho * mean_square{t-1} +
-        //                         (1-rho) * gradient.square()
-        // mom = momentum * mom{t - 1} +
+        //          (1-rho) * gradient.square()
+        // moment = momentum * mom{t - 1} +
         //          learning_rate * gradient / sqrt(mean_square + epsilon)
-        // variable = variable - mom
+        // variable = variable - moment
         const meanSquare = math.scaledArrayAdd(
             this.rho, oldMeanSquare, this.oneMinusRho, gradient.square());
-        const mom = math.scaledArrayAdd(
-            this.cGraph, gradient.div(meanSquare.add(this.epsilon).sqrt()),
-            this.m, oldMom);
-        const variable = oldVariable.sub(mom);
+        const moment = math.scaledArrayAdd(
+            this.m, oldMoment, this.cGraph,
+            gradient.div(meanSquare.add(this.epsilon).sqrt()));
+        const variable = oldVariable.sub(moment);
+
         this.accumulatedMeanSquaredGraph.set(node.output, keep(meanSquare));
-        this.accumulatedMomentGraph.set(node.output, keep(mom));
+        this.accumulatedMomentGraph.set(node.output, keep(moment));
         activationArrayMap.set(node.output, keep(variable));
 
         node.data = variable;
 
         oldVariable.dispose();
         oldMeanSquare.dispose();
+        oldMoment.dispose();
       });
     });
 
