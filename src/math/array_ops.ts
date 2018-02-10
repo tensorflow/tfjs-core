@@ -253,8 +253,8 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static randomNormal<R extends Rank>(
-      shape: ShapeMap[R], mean = 0, stdDev = 1,
-      dtype?: keyof RandNormalDataTypes, seed?: number): Tensor<R> {
+      shape: ShapeMap[R], mean = 0, stdDev = 1, dtype?: 'float32'|'int32',
+      seed?: number): Tensor<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
@@ -279,8 +279,8 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static truncatedNormal<R extends Rank>(
-      shape: ShapeMap[R], mean = 0, stdDev = 1,
-      dtype?: keyof RandNormalDataTypes, seed?: number): Tensor<R> {
+      shape: ShapeMap[R], mean = 0, stdDev = 1, dtype?: 'float32'|'int32',
+      seed?: number): Tensor<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
