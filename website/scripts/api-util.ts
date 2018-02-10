@@ -108,7 +108,7 @@ export function fillHeadingsAndGetSubheading(
     }
   }
   if (heading == null) {
-    heading = {name: docInfo.heading, subheadings: []};
+    heading = {name: docInfo.heading, description: '', subheadings: []};
     docHeadings.push(heading);
   }
 
@@ -220,6 +220,34 @@ export function getDocAlias(
   }
 }
 
+export function typeToString(
+    checker: ts.TypeChecker, symbol: ts.Symbol): string {
+  const valueDeclaration = symbol.valueDeclaration;
+
+  const type =
+      checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
+
+  const typeStr = checker.typeToString(
+      checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!));
+
+  // tslint:disable-next-line:no-any
+  const valueDeclarationType = (valueDeclaration as any).type;
+  if (typeStr === 'any' && valueDeclarationType != null &&
+      ts.isUnionTypeNode(valueDeclarationType)) {
+    // If 'any' comes out of the typeToString method, and this is a deep union
+    // type, try to parse out each of the unions manually.
+    const types = [];
+
+    if (valueDeclarationType.types != null) {
+      valueDeclarationType.types.forEach(type => types.push(type.getText()));
+    }
+
+    return types.join(' | ');
+  } else {
+    return typeStr;
+  }
+}
+
 export function foreachDocFunction(
     docHeadings: DocHeading[], fn: (docFunction: DocFunction) => void) {
   docHeadings.forEach(heading => {
@@ -251,10 +279,11 @@ export function replaceDocType(
     typeString: string, docTypeAliases: {[type: string]: string}): string {
   Object.keys(docTypeAliases).forEach(type => {
     if (typeString.indexOf(type) !== -1) {
-      const re = new RegExp(type + '\\[.*\\]', 'g');
-      console.log(re.source);
+      const re = new RegExp(type + '(\\[.*\\])?', 'g');
+      // console.log(re.source);
       typeString = typeString.replace(re, docTypeAliases[type]);
-      console.log(typeString);
+      // console.log(typeString);
     }
   });
+  return typeString;
 }

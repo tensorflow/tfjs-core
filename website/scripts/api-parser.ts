@@ -117,6 +117,8 @@ export function parse(): Docs {
     }
   }
 
+  console.log(docTypeAliases);
+
   // Attach subclass methods.
   util.addSubclassMethods(docHeadings, subclassMethodMap);
 
@@ -270,8 +272,7 @@ function serializeParameter(
   return {
     name: symbol.getName(),
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
-    type: checker.typeToString(
-        checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!)),
+    type: util.typeToString(checker, symbol),
     optional: checker.isOptionalParameter(
         symbol.valueDeclaration as ts.ParameterDeclaration)
   };
