@@ -76,7 +76,15 @@ export class Gradients {
     return res.gradients;
   }
 
-  static grad(f: (...args: Tensor[]) => Tensor):
+  static grad<T extends Tensor>(f: (x: T) => Tensor): (x: T) => T {
+    return (x: T): T => {
+      const vAndG = ENV.engine.gradients(() => f(x), [x]);
+      vAndG.value.dispose();
+      return vAndG.gradients[0] as T;
+    };
+  }
+
+  static grads(f: (...args: Tensor[]) => Tensor):
       (...args: Tensor[]) => Tensor[] {
     return (...args: Tensor[]): Tensor[] => {
       const vAndG = ENV.engine.gradients(() => f(...args), args);

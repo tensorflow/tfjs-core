@@ -305,16 +305,32 @@ describeWithFlags('gradients', ALL_ENVS, () => {
         1e-1);
   });
 
+  // f must take a single input.
   it('grad(f)', () => {
-    const gradF = dl.grad(x => x.square());
-    const result = gradF(dl.tensor1d([.1, .2]));
+    const grad = dl.grad(x => x.square());
+    const result = grad(dl.tensor1d([.1, .2]));
+    expectArraysClose(result, [.2, .4]);
+  });
+
+  // f takes multiple inputs.
+  it('grads(f)', () => {
+    const grad = dl.grads(x => x.square());
+    const result = grad(dl.tensor1d([.1, .2]));
     expectArraysClose(result[0], [.2, .4]);
   });
 
+  // higher-order. f must take a single input.
   it('grad(grad(f))', () => {
-    const gradF = dl.grad(x => x.mul(x).mul(x));
-    const gradgradF = dl.grad(x => gradF(x)[0]);
-    const result = gradgradF(dl.tensor1d([.1, .2]));
+    const gradgrad = dl.grad(dl.grad(x => x.mul(x).mul(x)));
+    const result = gradgrad(dl.tensor1d([.1, .2]));
+    expectArraysClose(result, [.6, 1.2]);
+  });
+
+  // higher-order. f takes multiple inputs.
+  it('grads(grads(f))', () => {
+    const grad = dl.grads(x => x.mul(x).mul(x));
+    const gradgrad = dl.grads(x => grad(x)[0]);
+    const result = gradgrad(dl.tensor1d([.1, .2]));
     expectArraysClose(result[0], [.6, 1.2]);
   });
 
