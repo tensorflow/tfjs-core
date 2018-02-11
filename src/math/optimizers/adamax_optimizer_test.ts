@@ -46,13 +46,23 @@ describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
     //    beta1 * old_first_m_w1 + (1-beta1) * grad_w1,
     //    beta1 * old_first_m_w2 + (1-beta1) * grad_w2
     // ] = [.8, 1.6]
-    // new_second_m = [
-    //    beta2 * old_second_m_w1 + (1-beta2) * grad_w1**2,
-    //    beta2 * old_second_m_w2 + (1-beta2) * grad_w2**2
-    // ] = [1.6, 6.4]
-    // m = [new_first_m/(1-acc_beta1)] = [4, 8]
-    // v = [new_second_m/(1-acc_beta2)] = [16, 64]
-    // x = [x - lr * m / sqrt(v)] = [1.9, 3.9]
+    //
+    // ut_0 = beta2 * old_weighted_inf_norm = [0, 0]
+    // u1_1 = [
+    //    abs(grad_w1),
+    //    abs(grad_w2)
+    // ] = [4, 8]
+    // new_weighted_inf_norm = max(ut_0, ut_1) = [4, 8]
+    //
+    // coefficient = alpha / (1-beta1) = 0.5
+    // updates = coefficient * [
+    //    new_first_m1 / new_weighted_inf_norm1,
+    //    new_first_m2 / new_weighted_inf_norm2
+    // ] = [0.1, 0.1]
+    // w = [
+    //    w1_old - updates_1,
+    //    w2_old - updates_2
+    // ] = [1.9, 3.9]
     //
     expectArraysClose(x, [1.9, 3.9]);
 
@@ -61,19 +71,36 @@ describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
 
     cost = optimizer.minimize(f, /* returnCost */ false);
 
+    // gradient = [3.8, 7.8]
     // new_first_m = [
     //    beta1 * old_first_m_w1 + (1-beta1) * grad_w1,
     //    beta1 * old_first_m_w2 + (1-beta1) * grad_w2
+    // ] = [
+    //    0.8 * 0.8 + 0.2 * 3.8,
+    //    0.8 * 1.6 + 0.2 * 7.8
     // ] = [1.4, 2.84]
-    // new_second_m = [
-    //    beta2 * old_second_m_w1 + (1-beta2) * grad_w1**2,
-    //    beta2 * old_second_m_w2 + (1-beta2) * grad_w2**2
-    // ] = [2.884, 11.884]
-    // m = [new_first_m/(1-acc_beta1)] = [3.888888, 7.88889]
-    // v = [new_second_m/(1-acc_beta2)] = [15.1789, 62.5473]
-    // x = [x - lr * m / sqrt(v)] = [1.8000001, 3.8002]
     //
-    expectArraysClose(x, [1.8000001, 3.8002]);
+    // ut_0 = beta2 * old_weighted_inf_norm = [
+    //    0.9 * 4,
+    //    0.9 * 8
+    // ] = [3.6, 7.2]
+    // u1_1 = [
+    //    abs(grad_w1),
+    //    abs(grad_w2)
+    // ] = [3.8, 7.8]
+    // new_weighted_inf_norm = max(ut_0, ut_1) = [3.8, 7.8]
+    //
+    // coefficient = alpha / (1 - beta1*beta1) = 0.277777
+    // updates = coefficient * [
+    //    new_first_m1 / new_weighted_inf_norm1,
+    //    new_first_m2 / new_weighted_inf_norm2
+    // ] = [0.102333, 0.1011]
+    // w = [
+    //    w1_old - updates_1,
+    //    w2_old - updates_2
+    // ] = [1.7976, 3.7989]
+    //
+    expectArraysClose(x, [1.7976, 3.7989]);
     // There should be no new additional Tensors.
     expect(dl.memory().numTensors).toBe(numTensors);
 
@@ -97,12 +124,15 @@ describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
     };
 
     dl.tidy(() => {
+      const learningRate = .1;
+      const beta1 = .8;
+      const beta2 = .9;
       const g = new Graph();
       const x = g.placeholder('x', [2]);
       const w = g.variable('w', dl.zeros([1, 2]));
       const b = g.variable('b', dl.zeros([1]));
       const y = g.reduceSum(g.add(g.matmul(w, x), b));
-      const optimizer = new AdamaxOptimizer(0.1, 0.8, 0.9);
+      const optimizer = new AdamaxOptimizer(learningRate, beta1, beta2);
       const session = new Session(g, math);
       // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
       // new_first_m = [beta1*old_first_m_w1 + (1-beta1)*grad_w1,

@@ -45,13 +45,13 @@ export class AdamaxOptimizer extends Optimizer {
       /** @deprecated */ specifiedVariableList?: Node[], epsilon = 1e-8) {
     super(learningRate, specifiedVariableList);
     this.c = keep(scalar(-learningRate));
-    this.eps = scalar(epsilon);
+    this.eps = keep(scalar(epsilon));
     // b1, b2 keep initial value of beta* hyperparameters.
-    this.b1 = scalar(this.beta1);
-    this.b2 = scalar(this.beta2);
+    this.b1 = keep(scalar(this.beta1));
+    this.b2 = keep(scalar(this.beta2));
 
-    this.accB1 = scalar(this.beta1);
-    this.one = scalar(1);
+    this.accB1 = keep(scalar(this.beta1));
+    this.one = keep(scalar(1));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -175,6 +175,7 @@ export class AdamaxOptimizer extends Optimizer {
     this.accB1.dispose();
     this.b1.dispose();
     this.b2.dispose();
+    this.one.dispose();
 
     if (this.firstMomentGraph != null) {
       this.firstMomentGraph.dispose();
