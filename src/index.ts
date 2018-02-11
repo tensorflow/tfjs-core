@@ -34,20 +34,20 @@ export {ENV, Environment, Features} from './environment';
 export {Graph, SymbolicTensor} from './graph/graph';
 // tslint:disable-next-line:max-line-length
 export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
-export {AdadeltaOptimizer} from './graph/optimizers/adadelta_optimizer';
-export {AdagradOptimizer} from './graph/optimizers/adagrad_optimizer';
+// tslint:disable-next-line:max-line-length
+export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './graph/initializers';
 export {AdamOptimizer} from './graph/optimizers/adam_optimizer';
 export {AdamaxOptimizer} from './graph/optimizers/adamax_optimizer';
 export {RMSPropOptimizer} from './graph/optimizers/rmsprop_optimizer';
 export {CostReduction, FeedEntry, Session} from './graph/session';
-// tslint:disable-next-line:max-line-length
-export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './initializers';
 export {MathBackendCPU, NDArrayMathCPU} from './math/backends/backend_cpu';
 export {MathBackendWebGL, NDArrayMathGPU} from './math/backends/backend_webgl';
 export {MatrixOrientation} from './math/backends/types/matmul';
 export {GPGPUContext} from './math/backends/webgl/gpgpu_context';
 export {LSTMCell} from './math/lstm';
 export {NDArrayMath} from './math/math';
+export {AdadeltaOptimizer} from './math/optimizers/adadelta_optimizer';
+export {AdagradOptimizer} from './math/optimizers/adagrad_optimizer';
 export {MomentumOptimizer} from './math/optimizers/momentum_optimizer';
 export {Optimizer} from './math/optimizers/optimizer';
 export {SGDOptimizer} from './math/optimizers/sgd_optimizer';
@@ -73,3 +73,4 @@ export * from './globals';
 
 export const setBackend = Environment.setBackend;
 export const getBackend = Environment.getBackend;
+export const memory = Environment.memory;
