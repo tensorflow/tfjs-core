@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,22 +16,78 @@
  */
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
+import {Graph} from '../../graph/graph';
+import {Session} from '../../graph/session';
 import * as dl from '../../index';
 import {Tensor1D} from '../../math/tensor';
-import * as test_util from '../../test_util';
-import {Graph} from '../graph';
-import {Session} from '../session';
+import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 import {AdadeltaOptimizer} from './adadelta_optimizer';
 
-describe('adadelta optimizer', () => {
+describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
   it('basic', () => {
+    const learningRate = .1;
+    const rho = .95;
+    const optimizer = dl.train.adadelta(learningRate, rho);
+
+    const x = dl.variable(dl.tensor1d([1, 2]));
+
+    const f = () => x.square().sum() as dl.Scalar;
+
+    let numTensors = dl.memory().numTensors;
+
+    let cost = optimizer.minimize(f, /* returnCost */ true);
+
+    // Cost & 2 accumulators should be the only additional arrays.
+    expect(dl.memory().numTensors).toBe(numTensors + 3);
+
+    // epsilon = 1-e8
+    // newAccumulatedGrad = rho * accumulatedGrad + (1 - rho) * grad ^ 2
+    // updates = -grad * sqrt(accumulatedUpdate + epsilon) /
+    //     sqrt(accumulatedGrad + epsilon)
+    // newAccumulatedUpdate = rho * accumulatedUpdate + (1 - rho) * updates ^ 2
+    // x += learningRate * updates
+    //
+    // de/dx = [2, 4]
+    // accumulatedGrad = [0, 0]
+    // newAccumulatedGrad = [.2, .8]
+    // updates = [-2, -4]
+    // newAccumulatedUpdate = [.2, .8]
+    // x = [0.8, 1.6]
+    expectArraysClose(x, [0.8, 1.6]);
+
+    cost.dispose();
+    numTensors = dl.memory().numTensors;
+
+    cost = optimizer.minimize(f, /* returnCost */ false);
+
+    // de/dx = [1.6, 3.2]
+    // accumulatedGrad = [.2, .8]
+    // accumulatedUpdate = [.2, .8]
+    // newAccumulatedGrad = [0.318, 1.272]
+    // updates = [-1.6, -3.2]
+    // x = [0.64, 1.28]
+    expectArraysClose(x, [0.64, 1.28]);
+
+    // There should be no new additional Tensors.
+    expect(dl.memory().numTensors).toBe(numTensors);
+
+    expect(cost).toBe(null);
+
+    x.dispose();
+    optimizer.dispose();
+
+    // There should be no more Tensors.
+    expect(dl.memory().numTensors).toBe(0);
+  });
+
+  it('graph', () => {
     const math = ENV.math;
 
     const inputProvider: InputProvider = {
       getNextCopy() {
         return Tensor1D.new([2, 4]);
       },
-      disposeCopy(example) {}
+      disposeCopy(math) {}
     };
 
     dl.tidy(() => {
@@ -46,9 +102,10 @@ describe('adadelta optimizer', () => {
       // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
       //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
       //            = [.8, 3.2]
-      // updates = [sqrt(old_updates_w1 + eps)/sqrt(old_cache_w1 + eps)*grad_w1,
-      //            sqrt(old_updates_w2 + eps)/sqrT(old_cache_w2 + eps)*grad_w2]
-      //            = [2, 4]
+      // updates = [sqrt(old_updates_w1 + eps)/sqrt(old_cache_w1 +
+      // eps)*grad_w1,
+      //            sqrt(old_updates_w2 + eps)/sqrT(old_cache_w2 +
+      //            eps)*grad_w2] = [2, 4]
       // w = [ w1_old - lr*updates_w1,
       //            w2_old - lr*updates_w2]
       //            = [-0.2, -0.4]
@@ -58,19 +115,20 @@ describe('adadelta optimizer', () => {
       //
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw, new Float32Array([-0.2, -0.4]), 1e-5);
+      expectArraysClose(dydw, new Float32Array([-0.2, -0.4]), 1e-2);
       // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
       //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
       //            = [1.44, 5.76]
-      // updates = [sqrt(old_updates_w1 + eps)/sqrt(old_cache_w1 + eps)*grad_w1,
-      //            sqrt(old_updates_w2 + eps)/sqrT(old_cache_w2 + eps)*grad_w2]
-      //            = [2, 4]
+      // updates = [sqrt(old_updates_w1 + eps)/sqrt(old_cache_w1 +
+      // eps)*grad_w1,
+      //            sqrt(old_updates_w2 + eps)/sqrT(old_cache_w2 +
+      //            eps)*grad_w2] = [2, 4]
       // w = [ w1_old - lr*updates_w1,
       //            w2_old - lr*updates_w2]
       //            = [-0.4, -0.8]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw2, new Float32Array([-.4, -.8]), 2e-5);
+      expectArraysClose(dydw2, new Float32Array([-.4, -.8]), 1e-2);
     });
   });
 });
