@@ -49,24 +49,25 @@ export class OptimizerConstructors {
 
   /**
    * Constructs a `dl.train.RMSPropOptimizer` that uses RMSProp gradient
-   * descent.
+   * descent. This implementation uses plain momentum and is not centered
+   * version of RMSProp.
    *
    * See
    * http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
    *
    * @param learningRate The learning rate to use for the RMSProp gradient
    * descent algorithm.
-   * @param rho The discounting factor for the history/coming gradient (decay)
+   * @param decay The discounting factor for the history/coming gradient
    * @param momentum The momentum to use for the RMSProp gradient descent
    * algorithm.
    * @param epsilon Small value to avoid zero denominator.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static rmsprop(
-      learningRate: number, rho = .9, momentum = 0.0, epsilon = 1e-8):
+      learningRate: number, decay = .9, momentum = 0.0, epsilon = 1e-8):
       RMSPropOptimizer {
     return new RMSPropOptimizer(
-        learningRate, rho, momentum,
+        learningRate, decay, momentum,
         undefined /** @deprecated specifiedVariableList */, epsilon);
   }
 

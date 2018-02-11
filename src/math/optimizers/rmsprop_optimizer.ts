@@ -32,24 +32,24 @@ import {variable} from '../tensor';
 export class RMSPropOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;
-  private rho: Scalar;
-  private m: Scalar;
-  private oneMinusRho: Scalar;
+  private decay: Scalar;
+  private momentum: Scalar;
+  private oneMinusDecay: Scalar;
 
   private accumulatedMeanSquares: NamedVariableMap = {};
   private accumulatedMoments: NamedVariableMap = {};
 
   constructor(
-      protected learningRate: number, rho = 0.9, momentum = 0.0,
+      protected learningRate: number, decay = 0.9, momentum = 0.0,
       /** @deprecated only for graph */
       specifiedVariableList?: Node[], epsilon = 1e-8) {
     super(learningRate, specifiedVariableList);
 
     this.c = keep(scalar(learningRate));
     this.epsilon = keep(scalar(epsilon));
-    this.rho = keep(scalar(rho));
-    this.m = keep(scalar(momentum));
-    this.oneMinusRho = keep(scalar(1 - rho));
+    this.decay = keep(scalar(decay));
+    this.momentum = keep(scalar(momentum));
+    this.oneMinusDecay = keep(scalar(1 - decay));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -72,11 +72,11 @@ export class RMSPropOptimizer extends Optimizer {
 
       tidy(() => {
         const newAccumulatedMeanSquare =
-            this.rho.mul(accumulatedMeanSquare)
-                .add(this.oneMinusRho.mul(gradient.square()));
+            this.decay.mul(accumulatedMeanSquare)
+                .add(this.oneMinusDecay.mul(gradient.square()));
 
         const newAccumulatedMoments =
-            this.m.mul(accumulatedMoments)
+            this.momentum.mul(accumulatedMoments)
                 .add(this.c.mul(gradient).div(
                     newAccumulatedMeanSquare.add(this.epsilon).sqrt()));
 
@@ -131,15 +131,15 @@ export class RMSPropOptimizer extends Optimizer {
         const oldMeanSquare = this.accumulatedMeanSquaredGraph.get(node.output);
         const oldMoment = this.accumulatedMomentGraph.get(node.output);
 
-        // mean_square = rho * mean_square{t-1} +
-        //          (1-rho) * gradient.square()
+        // mean_square = decay * mean_square{t-1} +
+        //          (1-decay) * gradient.square()
         // moment = momentum * mom{t - 1} +
         //          learning_rate * gradient / sqrt(mean_square + epsilon)
         // variable = variable - moment
         const meanSquare = math.scaledArrayAdd(
-            this.rho, oldMeanSquare, this.oneMinusRho, gradient.square());
+            this.decay, oldMeanSquare, this.oneMinusDecay, gradient.square());
         const moment = math.scaledArrayAdd(
-            this.m, oldMoment, this.cGraph,
+            this.momentum, oldMoment, this.cGraph,
             gradient.div(meanSquare.add(this.epsilon).sqrt()));
         const variable = oldVariable.sub(moment);
 
@@ -163,9 +163,9 @@ export class RMSPropOptimizer extends Optimizer {
     super.dispose();
     this.c.dispose();
     this.epsilon.dispose();
-    this.rho.dispose();
-    this.m.dispose();
-    this.oneMinusRho.dispose();
+    this.decay.dispose();
+    this.momentum.dispose();
+    this.oneMinusDecay.dispose();
     if (this.accumulatedMeanSquaredGraph != null) {
       this.accumulatedMeanSquaredGraph.dispose();
     }
