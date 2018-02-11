@@ -354,7 +354,7 @@ export function checkForNaN<D extends DataType>(
     vals: DataTypeMap[D], dtype: D, name: string): void {
   for (let i = 0; i < vals.length; i++) {
     if (isValNaN(vals[i], dtype)) {
-      throw Error(`The result of the last math.${name} has NaNs.`);
+      throw Error(`The result of the '${name}' has NaNs.`);
     }
   }
 }
@@ -447,4 +447,14 @@ export function isTypedArray(a: TypedArray|number|boolean|RegularArray<number>|
                              RegularArray<boolean>): boolean {
   return a instanceof Float32Array || a instanceof Int32Array ||
       a instanceof Uint8Array;
+}
+
+export function bytesPerElement(dtype: DataType): number {
+  if (dtype === 'float32' || dtype === 'int32') {
+    return 4;
+  } else if (dtype === 'bool') {
+    return 1;
+  } else {
+    throw new Error(`Unknown dtype ${dtype}`);
+  }
 }
