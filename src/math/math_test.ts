@@ -305,6 +305,19 @@ describeWithFlags('gradients', ALL_ENVS, () => {
         1e-1);
   });
 
+  it('grad(f)', () => {
+    const gradF = dl.grad(x => x.square());
+    const result = gradF(dl.tensor1d([.1, .2]));
+    expectArraysClose(result[0], [.2, .4]);
+  });
+
+  it('grad(grad(f))', () => {
+    const gradF = dl.grad(x => x.mul(x).mul(x));
+    const gradgradF = dl.grad(x => gradF(x)[0]);
+    const result = gradgradF(dl.tensor1d([.1, .2]));
+    expectArraysClose(result[0], [.6, 1.2]);
+  });
+
   it('second order nested gradient', () => {
     const a = dl.scalar(2);
     const gradients = dl.gradients(() => {

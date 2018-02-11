@@ -76,6 +76,15 @@ export class Gradients {
     return res.gradients;
   }
 
+  static grad(f: (...args: Tensor[]) => Tensor):
+      (...args: Tensor[]) => Tensor[] {
+    return (...args: Tensor[]): Tensor[] => {
+      const vAndG = ENV.engine.gradients(() => f(...args), args);
+      vAndG.value.dispose();
+      return vAndG.gradients;
+    };
+  }
+
   /**
    * Computes and returns the gradient of f(x) with respect to the list of
    * trainable variables provided by `varList`. If no list is provided, it
