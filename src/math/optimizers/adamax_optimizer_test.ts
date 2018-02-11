@@ -16,14 +16,76 @@
  */
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
+import {Graph} from '../../graph/graph';
+import {Session} from '../../graph/session';
 import * as dl from '../../index';
 import {Tensor1D} from '../../math/tensor';
 import * as test_util from '../../test_util';
-import {Graph} from '../graph';
-import {Session} from '../session';
+import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
+
 import {AdamaxOptimizer} from './adamax_optimizer';
 
-describe('adamax optimizer', () => {
+describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
+  it('basic', () => {
+    const learningRate = .1;
+    const beta1 = .8;
+    const beta2 = .9;
+    const optimizer = dl.train.adamax(learningRate, beta1, beta2);
+
+    const x = dl.variable(dl.tensor1d([2, 4]));
+
+    const f = () => x.square().sum() as dl.Scalar;
+
+    let numTensors = dl.memory().numTensors;
+
+    let cost = optimizer.minimize(f, /* returnCost */ true);
+
+    // Cost & 2 accumulators should be the only additional arrays.
+    expect(dl.memory().numTensors).toBe(numTensors + 3);
+    // new_first_m = [
+    //    beta1 * old_first_m_w1 + (1-beta1) * grad_w1,
+    //    beta1 * old_first_m_w2 + (1-beta1) * grad_w2
+    // ] = [.8, 1.6]
+    // new_second_m = [
+    //    beta2 * old_second_m_w1 + (1-beta2) * grad_w1**2,
+    //    beta2 * old_second_m_w2 + (1-beta2) * grad_w2**2
+    // ] = [1.6, 6.4]
+    // m = [new_first_m/(1-acc_beta1)] = [4, 8]
+    // v = [new_second_m/(1-acc_beta2)] = [16, 64]
+    // x = [x - lr * m / sqrt(v)] = [1.9, 3.9]
+    //
+    expectArraysClose(x, [1.9, 3.9]);
+
+    cost.dispose();
+    numTensors = dl.memory().numTensors;
+
+    cost = optimizer.minimize(f, /* returnCost */ false);
+
+    // new_first_m = [
+    //    beta1 * old_first_m_w1 + (1-beta1) * grad_w1,
+    //    beta1 * old_first_m_w2 + (1-beta1) * grad_w2
+    // ] = [1.4, 2.84]
+    // new_second_m = [
+    //    beta2 * old_second_m_w1 + (1-beta2) * grad_w1**2,
+    //    beta2 * old_second_m_w2 + (1-beta2) * grad_w2**2
+    // ] = [2.884, 11.884]
+    // m = [new_first_m/(1-acc_beta1)] = [3.888888, 7.88889]
+    // v = [new_second_m/(1-acc_beta2)] = [15.1789, 62.5473]
+    // x = [x - lr * m / sqrt(v)] = [1.8000001, 3.8002]
+    //
+    expectArraysClose(x, [1.8000001, 3.8002]);
+    // There should be no new additional Tensors.
+    expect(dl.memory().numTensors).toBe(numTensors);
+
+    expect(cost).toBe(null);
+
+    x.dispose();
+    optimizer.dispose();
+
+    // There should be no more Tensors.
+    expect(dl.memory().numTensors).toBe(0);
+  });
+
   it('adamax', () => {
     const math = ENV.math;
 
@@ -60,7 +122,7 @@ describe('adamax optimizer', () => {
       //
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw, new Float32Array([-0.1, -0.1]), 1e-5);
+      test_util.expectArraysClose(dydw, new Float32Array([-0.1, -0.1]), 1e-1);
 
       // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
       // new_first_m = [beta1*old_first_m_w1 + (1-beta1)*grad_w1,
@@ -81,7 +143,7 @@ describe('adamax optimizer', () => {
 
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).dataSync();
-      test_util.expectArraysClose(dydw2, new Float32Array([-.2, -.2]), 2e-5);
+      test_util.expectArraysClose(dydw2, new Float32Array([-.2, -.2]), 1e-1);
     });
   });
 });

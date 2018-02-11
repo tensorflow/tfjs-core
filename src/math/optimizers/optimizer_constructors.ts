@@ -18,6 +18,7 @@ import {doc} from '../decorators';
 
 import {AdadeltaOptimizer} from './adadelta_optimizer';
 import {AdagradOptimizer} from './adagrad_optimizer';
+import {AdamaxOptimizer} from './adamax_optimizer';
 import {MomentumOptimizer} from './momentum_optimizer';
 import {SGDOptimizer} from './sgd_optimizer';
 
@@ -60,6 +61,23 @@ export class OptimizerConstructors {
     return new AdadeltaOptimizer(
         learningRate, rho, undefined /** @deprecated specifiedVariableList */,
         epsilon);
+  }
+
+  /**
+   * Constructs a `dl.train.AdamaxOptimizer` that uses the Adam algorithm.
+   * See https://arxiv.org/abs/1412.6980
+   *
+   * @param learningRate
+   * @param beta1
+   * @param beta2
+   */
+  @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
+  static adamax(
+      learningRate = 0.002, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8):
+      AdamaxOptimizer {
+    return new AdamaxOptimizer(
+        learningRate, beta1, beta2,
+        undefined /** @deprecated specifiedVariableList */, epsilon);
   }
 
   /**
