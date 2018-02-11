@@ -207,7 +207,7 @@ export type ScopeResultImmediate =
     void|Tensor|RegularArray<Tensor>|{[key: string]: Tensor | Tensor[]};
 /** @docalias Tensor|Tensor[]|{[key: string]: Tensor}|void */
 export type ScopeResult = ScopeResultImmediate|Promise<ScopeResultImmediate>;
-/** @docalias () => Tensor|Tensor[]|{[key: string]: Tensor}|void */
+/** @docalias Function */
 export type ScopeFn<T extends ScopeResult> = () => T;
 
 export function extractTensorsFromScopeResult(result: ScopeResultImmediate):

@@ -18,7 +18,7 @@ export interface Docs { headings: DocHeading[]; }
 
 export interface DocHeading {
   name: string;
-  description: string;
+  description?: string;
   subheadings: DocSubheading[];
 }
 
