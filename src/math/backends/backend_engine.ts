@@ -37,8 +37,8 @@ interface ScopeState {
   track: Tensor[];
 }
 
-export type CustomGradientFunc<T extends Tensor> = () => {
-  value: T, gradients: (dy: T, y: T) => TapeNodeInputGradientTensors
+export type CustomGradientFunc<T extends Tensor> = (...args: Tensor[]) => {
+  value: T, gradFunc: (dy: T) => Tensor[];
 };
 
 export interface TensorManager {
@@ -181,16 +181,29 @@ export class BackendEngine implements TensorManager {
   }
 
   private addTapeNode(
-      inputs: NamedTensorMap, result: Tensor,
-      gradientsFunc: (dy: Tensor, y: Tensor) => TapeNodeInputGradientTensors):
-      void {
+      inputs: Tensor[], result: Tensor,
+      gradientsFunc: (dy: Tensor) => Tensor[]): void {
+    const inputsMap: NamedTensorMap = {};
+    inputs.forEach((input, idx) => {
+      inputsMap[idx] = input;
+    });
+
+    const gradient = (dy: Tensor) => {
+      const res = gradientsFunc(dy);
+      const resMap: TapeNodeInputGradientTensors = {};
+      res.forEach((r, idx) => {
+        resMap[idx] = () => r;
+      });
+      return resMap;
+    };
+
     const evaluatedNode: TapeNode<Tensor> = {
       id: this.nextTapeNodeId++,
       type: 'customGradient',
       name,
-      inputAndArgs: {inputs},
+      inputAndArgs: {inputs: inputsMap},
       output: result,
-      gradient: gradientsFunc
+      gradient
     };
     this.activeTape.push(evaluatedNode);
   }
@@ -279,7 +292,7 @@ export class BackendEngine implements TensorManager {
    * which defaults to `1`.
    */
   gradients<T extends Tensor>(f: () => T, xs: Tensor[], dy?: T):
-      {value: T, gradients: Tensor[]} {
+      {value: T, grads: Tensor[]} {
     return tidy('gradients', () => {
       const y = f();
       // Filter out the nodes that don't connect x => y.
@@ -287,7 +300,7 @@ export class BackendEngine implements TensorManager {
           tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
       if (filteredTape.length === 0 && xs.length > 0) {
         throw new Error(
-            `Cannot compute gradient: y is not a function of xs.` +
+            `Cannot compute gradient: y is not a function of \`x\`s. ` +
             `Make sure the xs you are computing gradients with respect ` +
             `to are used inside the gradient function.`);
       }
@@ -298,30 +311,31 @@ export class BackendEngine implements TensorManager {
       // Backprop gradients through the filtered nodes.
       tape_util.backpropagateGradients(accumulatedGradientMap, filteredTape);
 
-      const gradients = xs.map(x => accumulatedGradientMap[x.id]);
-      return {value: y, gradients};
+      const grads = xs.map(x => accumulatedGradientMap[x.id]);
+      return {value: y, grads};
     }, true /* gradientsMode */);
   }
 
-  customGradient<T extends Tensor>(
-      name: string, f: CustomGradientFunc<T>, inputs: NamedTensorMap): T {
+  customGrad<T extends Tensor>(f: CustomGradientFunc<T>):
+      (...args: Tensor[]) => T {
     this.customGradientDepth++;
 
-    let gradientsFunc: (dy: T, y: T) => TapeNodeInputGradientTensors;
-    const gradientsMode = true;
-    const result = tidy('customGradient', () => {
-      const {value, gradients} = f();
-      gradientsFunc = gradients;
-      return value;
-    }, gradientsMode);
+    return (...inputs: Tensor[]): T => {
+      let gradientsFunc: (dy: T) => Tensor[];
+      const gradientsMode = true;
+      const result = tidy(f.name, () => {
+        const {value, gradFunc} = f(...inputs);
+        gradientsFunc = gradFunc;
+        return value;
+      }, gradientsMode);
 
-    this.customGradientDepth--;
+      this.customGradientDepth--;
 
-    if (this.shouldRecord()) {
-      this.addTapeNode(inputs, result, gradientsFunc);
-    }
-
-    return result;
+      if (this.shouldRecord()) {
+        this.addTapeNode(inputs, result, gradientsFunc);
+      }
+      return result;
+    };
   }
 
   // Forwarding to backend.

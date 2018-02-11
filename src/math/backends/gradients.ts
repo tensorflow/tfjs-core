@@ -17,16 +17,15 @@
 
 import {ENV} from '../../environment';
 import {tidy} from '../../globals';
-import * as util from '../../util';
 import {doc} from '../decorators';
 import {Scalar, Tensor, Variable} from '../tensor';
-import {NamedTensorMap, Rank} from '../types';
+import {NamedTensorMap} from '../types';
 import {CustomGradientFunc} from './backend_engine';
 import {ScopeFn, ScopeResult} from './tape_util';
 
 export class Gradients {
   /**
-   * Create a new gradients scope. Similar to scope, but forces all inner scopes
+   * Create a new tape scope. Similar to scope, but forces all inner scopes
    * to not clean up so that gradient operations can be used inside of this
    * scope.
    * @param nameOrScopeFn The name of the scope, or the function to execute.
@@ -37,59 +36,91 @@ export class Gradients {
    * @param scopeFn The function to execute.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
-  static gradientsScope<T extends ScopeResult>(
+  static tapeScope<T extends ScopeResult>(
       nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
-    return tidy(nameOrScopeFn, scopeFn, true /* gradientsScope */);
+    return tidy(nameOrScopeFn, scopeFn, true /* tapeScope */);
   }
 
   /**
-   * Computes and returns the vector jacobian product of f(x) with respect to x.
-   * This method allows you to provide a non-scalar dy to backprop from.
+   * Computes the gradient of `f(x)` w.r.t. `x`. `f(x)` must take a single
+   * tensor `x`. Returns another function `g(x0, dy?)`, which when called gives
+   * `df/dx` evaluated at `x0`. If `dy` is provided, the gradient of
+   * `dl.dot(f(x), dy)` is computed instead.
    *
-   * @param f The function to execute. f() should return a Tensor of the same
-   * shape and dtype as dy.
-   * @param x The input to compute dy/dx over. This can be a single value or
-   * an object mapping a string to a Tensor. If using the object mode, this
-   * method will return an object of the same shape.
+   * If `f()` takes multiple inputs, use `dl.grads` instead.
+   *
+   * @param f The function f(x), to compute gradient for.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
-  static vjp<T extends Tensor|NamedTensorMap, R extends Rank>(
-      f: () => Tensor<R>, x: T, dy: Tensor<R>): T {
-    const res = Gradients.valueAndGradients(f, x, dy);
-    res.value.dispose();
-    return res.gradients;
-  }
-
-  /**
-   * Computes and returns the gradient of f(x) with respect to x.
-   *
-   * @param f The function to execute. f() should return a Tensor.
-   * @param x The input to compute de/dx over. This can be a single value or
-   * an object mapping a string to a Tensor. If using the object mode, this
-   * method will return an object of the same shape.
-   */
-  @doc({heading: 'Training', subheading: 'Gradients'})
-  static gradients<R extends Rank, T extends Tensor|NamedTensorMap>(
-      f: () => Tensor<R>, x: T): T {
-    const res = Gradients.valueAndGradients(f, x);
-    res.value.dispose();
-    return res.gradients;
-  }
-
-  static grad<T extends Tensor>(f: (x: T) => Tensor): (x: T) => T {
-    return (x: T): T => {
-      const vAndG = ENV.engine.gradients(() => f(x), [x]);
-      vAndG.value.dispose();
-      return vAndG.gradients[0] as T;
+  static grad<I extends Tensor, O extends Tensor>(f: (x: I) => O):
+      (x: I, dy?: O) => I {
+    return (x: I, dy?: O): I => {
+      const {value, grads} = ENV.engine.gradients(() => f(x), [x], dy);
+      value.dispose();
+      checkGrads(grads);
+      return grads[0] as I;
     };
   }
 
-  static grads(f: (...args: Tensor[]) => Tensor):
-      (...args: Tensor[]) => Tensor[] {
-    return (...args: Tensor[]): Tensor[] => {
-      const vAndG = ENV.engine.gradients(() => f(...args), args);
-      vAndG.value.dispose();
-      return vAndG.gradients;
+  /**
+   * Like `dl.grad`, but returns also the value of `f()`. Useful when `f()`
+   * returns a metric you want to show. The result is a rich object with
+   * the following properties:
+   * - `grad`: The gradient of `f(x)` w.r.t `x` (result of `dl.grad`).
+   * - `value`: The value returned by `f(x)`.
+   */
+  @doc({heading: 'Training', subheading: 'Gradients'})
+  static valueAndGrad<I extends Tensor, O extends Tensor>(f: (x: I) => O):
+      (x: I, dy?: O) => {
+        value: O;
+        grad: I;
+      } {
+    return (x: I, dy?: O) => {
+      const {grads, value} = ENV.engine.gradients(() => f(x), [x], dy);
+      checkGrads(grads);
+      return {grad: grads[0] as I, value: value as O};
+    };
+  }
+
+  /**
+   * Computes the gradients of `f(x1, x2,...)` w.r.t. each input `x1`, `x2`,...
+   * Returns another function `g([x1', x2',...], dy?)`, which when called gives
+   * an array of tensors: `[df/dx1, df/dx2,...]` evaluated at `[x1', x2',...]`.
+   * If `dy` is provided, the gradient of `dl.dot(f(x), dy)` is computed
+   * instead.
+   *
+   * if `f()` takes a single input, use `dl.grad` instead.
+   *
+   * @param f The function `f(x1, x2,...)` to compute gradients for.
+   */
+  @doc({heading: 'Training', subheading: 'Gradients'})
+  static grads<O extends Tensor>(f: (...args: Tensor[]) => O):
+      (args: Tensor[], dy?: O) => Tensor[] {
+    return (args: Tensor[], dy?: O): Tensor[] => {
+      const {value, grads} = ENV.engine.gradients(() => f(...args), args, dy);
+      value.dispose();
+      checkGrads(grads);
+      return grads;
+    };
+  }
+
+  /**
+   * Like `dl.grads`, but returns also the value of `f()`. Useful when `f()`
+   * returns a metric you want to show. The result is a rich object with
+   * the following properties:
+   * - `grads`: The gradients of `f()` w.r.t each input (result of `dl.grads`).
+   * - `value`: The value returned by `f(x)`.
+   */
+  @doc({heading: 'Training', subheading: 'Gradients'})
+  static valueAndGrads<O extends Tensor>(f: (...args: Tensor[]) => O):
+      (args: Tensor[], dy?: O) => {
+        grads: Tensor[];
+        value: O;
+      } {
+    return (args: Tensor[], dy?: O) => {
+      const res = ENV.engine.gradients(() => f(...args), args, dy);
+      checkGrads(res.grads);
+      return res;
     };
   }
 
@@ -102,8 +133,8 @@ export class Gradients {
    * respect to. Defaults to all trainable variables.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
-  static variableGradients(f: () => Scalar, varList?: Variable[]):
-      {value: Scalar, gradients: NamedTensorMap} {
+  static variableGrads(f: () => Scalar, varList?: Variable[]):
+      {value: Scalar, grads: NamedTensorMap} {
     if (varList == null) {
       // Get all of the trainable variables.
       varList = [];
@@ -113,7 +144,7 @@ export class Gradients {
     }
     // Prune non-trainable variables.
     varList = varList.filter(variable => variable.trainable);
-    const {value, gradients} = ENV.engine.gradients(f, varList);
+    const {value, grads} = ENV.engine.gradients(f, varList);
     if (value.rank > 0) {
       throw new Error(
           `The user-provided function must return a Scalar, but it ` +
@@ -121,58 +152,35 @@ export class Gradients {
     }
     const namedGrads: NamedTensorMap = {};
     varList.forEach((v, i) => {
-      if (gradients[i] != null) {
-        namedGrads[v.name] = gradients[i];
+      if (grads[i] != null) {
+        namedGrads[v.name] = grads[i];
       }
     });
-    return {value, gradients: namedGrads};
-  }
-
-  /**
-   * Computes and returns the gradient of f(x) with respect to x. Returns
-   * both f(x) and f'(x).
-   *
-   * @param f The function to execute. f() should return a Tensor.
-   * @param x The input to compute de/dx over. This can be a single value or
-   * an object mapping a string to a Tensor. If using the object mode,
-   * this method will return an object of the same shape.
-   */
-  @doc({heading: 'Training', subheading: 'Gradients'})
-  static valueAndGradients<R extends Rank, T extends Tensor|NamedTensorMap>(
-      f: () => Tensor<R>, x: T, dy?: Tensor<R>):
-      {value: Tensor<R>, gradients: T} {
-    const keys = x instanceof Tensor ? null : Object.keys(x);
-    const xs = util.flattenNameArrayMap(x, keys);
-
-    const {value, gradients} = ENV.engine.gradients(f, xs, dy);
-    const numNullGradients = gradients.filter(g => g == null).length;
-    if (numNullGradients > 0) {
-      throw new Error(
-          `Cannot compute gradient: y is not a function of xs.` +
-          `Make sure the xs you are computing gradients with respect ` +
-          `to are used inside the gradient function.`);
-    }
-    const resGradients = (x instanceof Tensor) ?
-        gradients[0] as T :
-        util.unflattenToNameArrayMap(keys, gradients) as T;
-    return {value, gradients: resGradients};
+    return {value, grads: namedGrads};
   }
 
   /**
    * Evaluates a function f() with a custom gradient function f'() to use during
    * backpropagation.
    *
+   * //TODO(smilkov): Update doc.
+   *
    * @param f The function to evaluate in forward mode. Returns a value Tensor
    *    and a gradient function closure.
-   * @param inputs The inputs to compute the gradient with respect to. These
-   *    Tensors should be used in f().
-   * @param name An optional name for the customGradient method. Used for
-   *    debugging.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
-  static customGradient<T extends Tensor>(
-      name: string, f: CustomGradientFunc<T>, inputs: NamedTensorMap): T {
-    name = name || '';
-    return ENV.engine.customGradient(name, f, inputs);
+  static customGrad<T extends Tensor>(f: CustomGradientFunc<T>):
+      (...args: Tensor[]) => T {
+    return ENV.engine.customGrad(f);
+  }
+}
+
+function checkGrads(grads: Tensor[]) {
+  const numNullGradients = grads.filter(g => g == null).length;
+  if (numNullGradients > 0) {
+    throw new Error(
+        `Cannot compute gradient: y is not a function of \`x\`s. ` +
+        `Make sure the xs you are computing gradients with respect ` +
+        `to are used inside the gradient function.`);
   }
 }
