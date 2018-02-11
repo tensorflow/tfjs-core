@@ -225,18 +225,7 @@ export class Ops {
   @operation
   static leakyRelu<T extends Tensor>(x: T, alpha = 0.2): T {
     const gradient = (dy: T, y: T) => {
-      return {
-        x: () => {
-          const mask = x.greater(ops.scalar(0));
-
-          const greaterThanZeroDer = dy;
-          const lessEqualZeroDer = dy.mul(ops.scalar(alpha));
-
-          const res = ops.where(mask, greaterThanZeroDer, lessEqualZeroDer);
-
-          return res;
-        }
-      };
+      return {x: () => dy.mul(x.step(alpha))};
     };
     return ENV.engine.executeKernel(
                'LeakyRelu', {inputs: {x}, args: {alpha}}, gradient) as T;

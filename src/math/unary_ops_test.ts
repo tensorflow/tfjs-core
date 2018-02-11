@@ -1209,7 +1209,7 @@ describeWithFlags('leakyRelu', ALL_ENVS, () => {
   });
 
   it('gradients: Tensor1D', () => {
-    const aValues = [1, -1, 0];
+    const aValues = [1, -1, 0.1];
     const dyValues = [1, 2, 3];
     const alpha = 0.1;
 
@@ -1234,7 +1234,7 @@ describeWithFlags('leakyRelu', ALL_ENVS, () => {
   });
 
   it('gradients: Tensor2D', () => {
-    const aValues = [1, -1, 0, 0.5];
+    const aValues = [1, -1, 0.1, 0.5];
     const dyValues = [1, 2, 3, 4];
     const alpha = 0.1;
 
