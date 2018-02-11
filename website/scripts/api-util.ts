@@ -350,7 +350,7 @@ export function replaceDocTypeAlias(
     docTypeString: string, docTypeAliases: {[type: string]: string}): string {
   Object.keys(docTypeAliases).forEach(type => {
     if (docTypeString.indexOf(type) !== -1) {
-      const re = new RegExp(type + '(\\[.+\\])?', 'g');
+      const re = new RegExp('\\b' + type + '\\b(\\[.+\\])?', 'g');
       docTypeString = docTypeString.replace(re, docTypeAliases[type]);
     }
   });
