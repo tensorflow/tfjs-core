@@ -16,14 +16,15 @@
  */
 
 import {keep, tidy} from '../../globals';
+import {Node} from '../../graph/graph';
+import {SessionRuntime} from '../../graph/session';
+// tslint:disable-next-line:max-line-length
+import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
 import {NDArrayMath} from '../../math/math';
 import {scalar} from '../../math/ops';
 import {Optimizer} from '../../math/optimizers/optimizer';
 import {Scalar, Tensor} from '../../math/tensor';
 import {NamedVariableMap} from '../../math/types';
-import {Node} from '../graph';
-import {SessionRuntime} from '../session';
-import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 
 export class AdamaxOptimizer extends Optimizer {
   constructor(
