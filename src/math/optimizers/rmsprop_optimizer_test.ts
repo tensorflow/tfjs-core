@@ -19,10 +19,11 @@ import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import * as test_util from '../../test_util';
+import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
+
 import {RMSPropOptimizer} from './rmsprop_optimizer';
 
-const tests = () => {
+describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
   it('basic', () => {
     const learningRate = 0.1;
     const moment = 0.1;
@@ -54,7 +55,7 @@ const tests = () => {
     // accumulatedMoments = [0, 0]
     // newAccumulatedMoments = [0.44721, 0.44721]
     // x = [0.55279, 1.55279]
-    test_util.expectArraysClose(x, [0.55279, 1.55279]);
+    expectArraysClose(x, [0.55279, 1.55279]);
 
     cost.dispose();
     numTensors = dl.memory().numTensors;
@@ -68,7 +69,7 @@ const tests = () => {
     // accumulatedMoments = [0.44721, 0.44721]
     // newAccumulatedMoments = [0.26534, 0.32336]
     // x = [0.28745, 1.22943]
-    test_util.expectArraysClose(x, [0.28745, 1.222943]);
+    expectArraysClose(x, [0.28745, 1.222943]);
 
     // There should be no new additional Tensors.
     expect(dl.memory().numTensors).toBe(numTensors);
@@ -120,7 +121,7 @@ const tests = () => {
       //    w1_old - moment_w1,
       //    w2_old - moment_w2
       // ] = [-0.44721358, -0.4472136]
-      test_util.expectArraysClose(
+      expectArraysClose(
           dydw, new Float32Array([-0.44721358, -0.4472136]), 1e-2);
 
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
@@ -143,15 +144,7 @@ const tests = () => {
       //    w1_old - moment_w1,
       //    w2_old - moment_w2
       // ] = [-0.812191, -0.812191]
-      test_util.expectArraysClose(
-          dydw2, new Float32Array([-0.812191, -0.812191]), 1e-1);
+      expectArraysClose(dydw2, new Float32Array([-0.812191, -0.812191]), 1e-1);
     });
   });
-};
-
-test_util.describeMathCPU('RMSPropOptimizer', [tests]);
-test_util.describeMathGPU('RMSPropOptimizer', [tests], [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}
-]);
+});
