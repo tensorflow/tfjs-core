@@ -312,7 +312,7 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     expectArraysClose(result, [.2, .4]);
   });
 
-  // f takes multiple inputs.
+  // f takes multiple inputs. TF API.
   it('grads(f)', () => {
     const grad = dl.grads(x => x.square());
     const result = grad(dl.tensor1d([.1, .2]));
@@ -326,7 +326,7 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     expectArraysClose(result, [.6, 1.2]);
   });
 
-  // higher-order. f takes multiple inputs.
+  // higher-order. f takes multiple inputs. TF API.
   it('grads(grads(f))', () => {
     const grad = dl.grads(x => x.mul(x).mul(x));
     const gradgrad = dl.grads(x => grad(x)[0]);
