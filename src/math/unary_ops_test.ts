@@ -1218,19 +1218,10 @@ describeWithFlags('leakyRelu', ALL_ENVS, () => {
 
     const gradients = dl.vjp(() => dl.leakyRelu(a, alpha), a, dy);
 
-    const expected = [];
-    for (let i = 0; i < a.size; i++) {
-      if (aValues[i] > 0) {
-        expected[i] = dyValues[i];
-      } else {
-        expected[i] = dyValues[i] * alpha;
-      }
-    }
-
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
 
-    expectArraysClose(gradients, expected, 1e-1);
+    expectArraysClose(gradients, [1, 2 * alpha, 3], 1e-1);
   });
 
   it('gradients: Tensor2D', () => {
@@ -1243,19 +1234,10 @@ describeWithFlags('leakyRelu', ALL_ENVS, () => {
 
     const gradients = dl.vjp(() => dl.leakyRelu(a, alpha), a, dy);
 
-    const expected = [];
-    for (let i = 0; i < a.size; i++) {
-      if (aValues[i] > 0) {
-        expected[i] = dyValues[i];
-      } else {
-        expected[i] = dyValues[i] * alpha;
-      }
-    }
-
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
 
-    expectArraysClose(gradients, expected, 1e-1);
+    expectArraysClose(gradients, [1, 2 * alpha, 3, 4], 1e-1);
   });
 });
 
