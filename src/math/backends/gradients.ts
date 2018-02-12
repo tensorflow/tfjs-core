@@ -163,10 +163,11 @@ export class Gradients {
   /**
    * Overrides the gradient computation of a function `f`.
    *
-   * Takes a function `f(...inputs)` and returns another function
-   * `g(...inputs)` which takes the same inputs as `f`. When called, `g` returns
-   * `f().value`. In backward mode, custom gradients w.r.t. each input of `f`
-   * are computed using `f().gradFunc`.
+   * Takes a function `f(...inputs) => {value: Tensor,
+   * gradFunc: dy => Tensor[]}` and returns another function `g(...inputs)`
+   * which takes the same inputs as `f`. When called, `g` returns `f().value`.
+   * In backward mode, custom gradients w.r.t. each input of `f` are computed
+   * using `f().gradFunc`.
    *
    * @param f The function to evaluate in forward mode, which should return
    * `{value: Tensor, gradFunc: (dy) => Tensor[]}`, where gradFunc returns the
