@@ -199,8 +199,6 @@ export class Ops {
     const gradient = (dy: T, y: T) => {
       return {
         x: () => {
-          // Currently, Scalars are not supported by ops.where
-          util.assert(x.rank !== 0, 'Error in selu gradient: ');
           const mask = x.greater(ops.scalar(0));
 
           const scaleAlpha = ops.scalar(selu_util.SELU_SCALEALPHA);
