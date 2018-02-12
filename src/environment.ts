@@ -16,10 +16,10 @@
  */
 
 import * as device_util from './device_util';
-import {MathBackend} from './math/backends/backend';
-import {BackendEngine, MemoryInfo} from './math/backends/backend_engine';
-import {doc} from './math/decorators';
-import {NDArrayMath} from './math/math';
+import {doc} from './doc';
+import {Engine, MemoryInfo} from './engine';
+import {KernelBackend} from './kernels/backend';
+import {NDArrayMath} from './math';
 import * as util from './util';
 
 export enum Type {
@@ -185,6 +185,7 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   return isEnabled;
 }
 
+/** @docalias 'webgl'|'cpu' */
 export type BackendType = 'webgl'|'cpu';
 
 /** List of currently supported backends ordered by preference. */
@@ -193,9 +194,9 @@ const SUPPORTED_BACKENDS: BackendType[] = ['webgl', 'cpu'];
 export class Environment {
   private features: Features = {};
   private globalMath: NDArrayMath;
-  private globalEngine: BackendEngine;
-  private BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
-  private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
+  private globalEngine: Engine;
+  private BACKEND_REGISTRY: {[id: string]: KernelBackend} = {};
+  private backends: {[id: string]: KernelBackend} = this.BACKEND_REGISTRY;
   private currentBackendType: BackendType;
 
   constructor(features?: Features) {
@@ -220,7 +221,7 @@ export class Environment {
    *     construct tensors and call math operations inside a dl.tidy() which
    *     will automatically clean up intermediate tensors.
    */
-  @doc({heading: 'Environment', subheading: ''})
+  @doc({heading: 'Environment'})
   static setBackend(backendType: BackendType, safeMode = false) {
     if (!(backendType in ENV.backends)) {
       throw new Error(`Backend type '${backendType}' not found in registry`);
@@ -232,7 +233,7 @@ export class Environment {
    * Returns the current backend (cpu, webgl, etc). The backend is responsible
    * for creating tensors and executing operations on those tensors.
    */
-  @doc({heading: 'Environment', subheading: ''})
+  @doc({heading: 'Environment'})
   static getBackend(): BackendType {
     ENV.initEngine();
     return ENV.currentBackendType;
@@ -339,7 +340,8 @@ export class Environment {
   }
 
   setMath(
-      math: NDArrayMath, backend?: BackendType|MathBackend, safeMode = false) {
+      math: NDArrayMath, backend?: BackendType|KernelBackend,
+      safeMode = false) {
     if (this.globalMath === math) {
       return;
     }
@@ -351,11 +353,11 @@ export class Environment {
       customBackend = true;
       this.currentBackendType = 'custom' as BackendType;
     }
-    this.globalEngine = new BackendEngine(backend, customBackend, safeMode);
+    this.globalEngine = new Engine(backend, customBackend, safeMode);
     this.globalMath = math;
   }
 
-  findBackend(name: BackendType): MathBackend {
+  findBackend(name: BackendType): KernelBackend {
     return this.backends[name];
   }
 
@@ -367,7 +369,7 @@ export class Environment {
    *     an instance of the backend.
    * @return False if the creation/registration failed. True otherwise.
    */
-  addCustomBackend(name: BackendType, factory: () => MathBackend): boolean {
+  addCustomBackend(name: BackendType, factory: () => KernelBackend): boolean {
     if (name in this.backends) {
       throw new Error(`${name} backend was already registered`);
     }
@@ -389,7 +391,7 @@ export class Environment {
    * return an instance of the backend.
    * @return False if the creation/registration failed. True otherwise.
    */
-  registerBackend(name: BackendType, factory: () => MathBackend): boolean {
+  registerBackend(name: BackendType, factory: () => KernelBackend): boolean {
     if (name in this.BACKEND_REGISTRY) {
       throw new Error(`${name} backend was already registered as global`);
     }
@@ -410,7 +412,7 @@ export class Environment {
     return this.globalMath;
   }
 
-  get engine(): BackendEngine {
+  get engine(): Engine {
     if (this.globalEngine == null) {
       this.initEngine();
     }
