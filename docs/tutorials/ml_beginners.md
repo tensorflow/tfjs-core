@@ -4,11 +4,11 @@ order: 2
 ---
 # Training for ML Beginners
 
-In order to get a model to learn to do the things we would like, we have to train it. There are various styles of training, but this guide will primarily focus on supoervised training. This is where we give build a model and give it some examples of inputs and _desired outputs_, we then adjust our model variables to learn to correctly map from these inputs to outputs and hopefully generalize to unseen inputs.
+In order to get a model to learn to do the things we would like, we have to train it. There are various styles of training, but this guide will primarily focus on supervised training. This is where we build a model and give it some examples of inputs and __desired outputs__, we then adjust our model variables to learn to correctly 'map' from these inputs to outputs and hopefully generalize to unseen inputs.
 
-Lets look at a small toy example to get a feel for what training a model looks like. Note that this tutorials does not include machine learning best practices that deeplearn.js supports such as batching or shuffling training examples.
+Lets look at a toy example to get a feel for what training a model looks like. Note that this tutorials _does not_ include machine learning best practices that deeplearn.js supports such as batching or shuffling training examples.
 
-In this guide we will build a very simple model to learn the coefficients for a quadratic equation given a set of existing x, y observations. This is the equation we want to fit to our data
+In this guide we will build a very simple model to learn the coefficients for a quadratic equation given a set of **existing** `x` and `y` observations. This is the equation we want to fit to our data
 
 ```
 y = a * x^2 + b * x + c
@@ -83,7 +83,6 @@ function predict(input) {
  */
 function loss(prediction, actual) {
   // Having a good error metric is key for training a machine learning model
-  // Feel free to experiment with this and see how it affects the result.
   const error = dl.scalar(actual).sub(prediction).square();
   return error;
 }
