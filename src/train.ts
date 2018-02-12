@@ -16,18 +16,21 @@
  */
 
 // So typings can propagate.
-import {AdadeltaOptimizer} from './math/optimizers/adadelta_optimizer';
-import {AdagradOptimizer} from './math/optimizers/adagrad_optimizer';
-import {MomentumOptimizer} from './math/optimizers/momentum_optimizer';
-import {OptimizerConstructors} from './math/optimizers/optimizer_constructors';
-import {SGDOptimizer} from './math/optimizers/sgd_optimizer';
+import {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
+import {AdagradOptimizer} from './optimizers/adagrad_optimizer';
+import {MomentumOptimizer} from './optimizers/momentum_optimizer';
+import {OptimizerConstructors} from './optimizers/optimizer_constructors';
+import {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
+import {SGDOptimizer} from './optimizers/sgd_optimizer';
 
 // tslint:disable-next-line:no-unused-expression
-[MomentumOptimizer, SGDOptimizer, AdadeltaOptimizer, AdagradOptimizer];
+[MomentumOptimizer, SGDOptimizer, AdadeltaOptimizer, AdagradOptimizer,
+ RMSPropOptimizer];
 
 export const train = {
   sgd: OptimizerConstructors.sgd,
   momentum: OptimizerConstructors.momentum,
   adadelta: OptimizerConstructors.adadelta,
-  adagrad: OptimizerConstructors.adagrad
+  adagrad: OptimizerConstructors.adagrad,
+  rmsprop: OptimizerConstructors.rmsprop
 };
