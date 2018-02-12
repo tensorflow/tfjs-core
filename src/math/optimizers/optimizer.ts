@@ -21,11 +21,11 @@ import {SessionRuntime} from '../../graph/session';
 import * as session_util from '../../graph/session_util';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
-import {NDArrayMath} from '../../math/math';
-import {Scalar, Tensor, Variable} from '../../math/tensor';
-import {doc} from '../decorators';
-import * as ops from '../ops';
-import {NamedTensorMap} from '../types';
+import {NDArrayMath} from '../../math';
+import {Scalar, Tensor, Variable} from '../../tensor';
+import {doc} from '../../decorators';
+import * as ops from '../../ops/ops';
+import {NamedTensorMap} from '../../types';
 
 export abstract class Optimizer {
   protected variableNodes: VariableNode[];

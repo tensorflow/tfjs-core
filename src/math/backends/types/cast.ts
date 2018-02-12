@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../tensor';
-import {DataType} from '../../types';
-import {KernelNode} from '../tape_types';
+import {Tensor} from '../../../tensor';
+import {DataType} from '../../../types';
+import {KernelNode} from '../../../tape_types';
 
 export interface CastNode extends KernelNode {
   inputAndArgs: {inputs: {x: Tensor}; args: {newDType: DataType};};

@@ -21,12 +21,12 @@ import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
-import {NDArrayMath} from '../../math/math';
+import {NDArrayMath} from '../../math';
 import {Optimizer} from '../../math/optimizers/optimizer';
-import {Scalar, Tensor} from '../../math/tensor';
-import {NamedVariableMap} from '../../math/types';
-import {fill, scalar} from '../ops';
-import {variable} from '../tensor';
+import {Scalar, Tensor} from '../../tensor';
+import {NamedVariableMap} from '../../types';
+import {fill, scalar} from '../../ops/ops';
+import {variable} from '../../tensor';
 
 export class AdagradOptimizer extends Optimizer {
   private c: Scalar;

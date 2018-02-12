@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Conv2DInfo} from '../../conv_util';
-import {Tensor1D, Tensor4D} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Conv2DInfo} from '../../../ops/conv_util';
+import {Tensor1D, Tensor4D} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 export interface Conv2DNode extends KernelNode {
   inputAndArgs: {

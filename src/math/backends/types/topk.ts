@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Tensor1D, Tensor} from '../../tensor';
-import {Rank} from '../../types';
-import {KernelNode} from '../tape_types';
+import {Tensor1D, Tensor} from '../../../tensor';
+import {Rank} from '../../../types';
+import {KernelNode} from '../../../tape_types';
 
 // Values
 export interface TopKValuesNode<

@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Conv2DInfo} from '../../conv_util';
-import {Tensor4D} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Conv2DInfo} from '../../../ops/conv_util';
+import {Tensor4D} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 // Pool
 export interface PoolNode extends KernelNode {

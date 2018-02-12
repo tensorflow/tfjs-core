@@ -16,7 +16,7 @@
  */
 
 import * as dl from '../../index';
-import {variable, Variable} from '../../math/tensor';
+import {variable, Variable} from '../../tensor';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 import {SGDOptimizer} from './sgd_optimizer';

@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {Tensor2D} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor2D} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 export interface MatMulNode extends KernelNode {
   inputAndArgs: {

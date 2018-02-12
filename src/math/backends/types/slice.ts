@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 export interface Slice1DNode extends KernelNode {
   inputAndArgs: {inputs: {x: Tensor1D;}; args: {begin: number; size: number;};};

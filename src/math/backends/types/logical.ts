@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../tensor';
-import {DataType} from '../../types';
-import {KernelNode} from '../tape_types';
+import {Tensor} from '../../../tensor';
+import {DataType} from '../../../types';
+import {KernelNode} from '../../../tape_types';
 
 // Equal/NotEqual/Less/LessEqual/Greater/GreaterEqual
 export interface EqualNode extends KernelNode {

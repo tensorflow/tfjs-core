@@ -16,8 +16,8 @@
  * =============================================================================
  */
 
-import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 export interface BatchNorm4DNode extends KernelNode {
   inputAndArgs: {

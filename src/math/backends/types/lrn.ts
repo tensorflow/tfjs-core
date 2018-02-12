@@ -16,8 +16,8 @@
  * =============================================================================
  */
 
-import {Tensor4D} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor4D} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 // 4D
 export interface LRN4DNode extends KernelNode {

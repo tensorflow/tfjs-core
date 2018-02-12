@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {Tensor4D} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor4D} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 export interface ResizeBilinearNode extends KernelNode {
   inputAndArgs: {

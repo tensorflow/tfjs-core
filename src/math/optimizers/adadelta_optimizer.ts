@@ -21,13 +21,13 @@ import {Node} from '../../graph/graph';
 import {SessionRuntime} from '../../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
-import {NDArrayMath} from '../../math/math';
+import {NDArrayMath} from '../../math';
 import {Optimizer} from '../../math/optimizers/optimizer';
-import {Scalar, Tensor} from '../../math/tensor';
-import {NamedVariableMap} from '../../math/types';
-import {doc} from '../decorators';
-import {scalar, zerosLike} from '../ops';
-import {variable} from '../tensor';
+import {Scalar, Tensor} from '../../tensor';
+import {NamedVariableMap} from '../../types';
+import {doc} from '../../decorators';
+import {scalar, zerosLike} from '../../ops/ops';
+import {variable} from '../../tensor';
 
 /**
  * Optimizer that implements the Adadelta algorithm.

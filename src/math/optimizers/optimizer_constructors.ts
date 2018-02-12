@@ -14,7 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {doc} from '../decorators';
+import {doc} from '../../decorators';
 
 import {AdadeltaOptimizer} from './adadelta_optimizer';
 import {AdagradOptimizer} from './adagrad_optimizer';

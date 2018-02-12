@@ -19,7 +19,7 @@ import {ENV} from '../../environment';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import {Tensor1D} from '../../math/tensor';
+import {Tensor1D} from '../../tensor';
 import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 import {AdadeltaOptimizer} from './adadelta_optimizer';
 

@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 // Reduction min.
 export interface MinNode extends KernelNode {

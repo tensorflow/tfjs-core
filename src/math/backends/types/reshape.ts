@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 export interface ReshapeNode extends KernelNode {
   inputAndArgs: {inputs: {x: Tensor}; args: {newShape: number[]};};

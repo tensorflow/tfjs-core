@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../tensor';
-import {Rank} from '../../types';
-import {KernelNode} from '../tape_types';
+import {Tensor} from '../../../tensor';
+import {Rank} from '../../../types';
+import {KernelNode} from '../../../tape_types';
 
 export interface PowNode<R extends Rank, T extends Tensor<R> = Tensor<R>>
     extends KernelNode {

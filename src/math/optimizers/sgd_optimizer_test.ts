@@ -18,7 +18,7 @@ import {InputProvider} from '../../data/input_provider';
 import {Graph} from '../../graph/graph';
 import {Session} from '../../graph/session';
 import * as dl from '../../index';
-import {variable} from '../../math/tensor';
+import {variable} from '../../tensor';
 import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 import {SGDOptimizer} from './sgd_optimizer';
 

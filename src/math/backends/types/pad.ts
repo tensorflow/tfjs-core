@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {Tensor1D, Tensor2D} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor1D, Tensor2D} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 export interface Pad1DNode extends KernelNode {
   inputAndArgs: {

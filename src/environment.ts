@@ -16,10 +16,10 @@
  */
 
 import * as device_util from './device_util';
-import {MathBackend} from './math/backends/backend';
-import {BackendEngine, MemoryInfo} from './math/backends/backend_engine';
-import {doc} from './math/decorators';
-import {NDArrayMath} from './math/math';
+import {Engine, MemoryInfo} from './engine';
+import {MathBackend} from './kernels/backend';
+import {doc} from './decorators';
+import {NDArrayMath} from './math';
 import * as util from './util';
 
 export enum Type {
@@ -194,7 +194,7 @@ const SUPPORTED_BACKENDS: BackendType[] = ['webgl', 'cpu'];
 export class Environment {
   private features: Features = {};
   private globalMath: NDArrayMath;
-  private globalEngine: BackendEngine;
+  private globalEngine: Engine;
   private BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
   private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
   private currentBackendType: BackendType;
@@ -352,7 +352,7 @@ export class Environment {
       customBackend = true;
       this.currentBackendType = 'custom' as BackendType;
     }
-    this.globalEngine = new BackendEngine(backend, customBackend, safeMode);
+    this.globalEngine = new Engine(backend, customBackend, safeMode);
     this.globalMath = math;
   }
 
@@ -411,7 +411,7 @@ export class Environment {
     return this.globalMath;
   }
 
-  get engine(): BackendEngine {
+  get engine(): Engine {
     if (this.globalEngine == null) {
       this.initEngine();
     }

@@ -19,7 +19,7 @@ import {InputProvider} from '../data/input_provider';
 import {ENV} from '../environment';
 import * as dl from '../index';
 import {SGDOptimizer} from '../math/optimizers/sgd_optimizer';
-import {Scalar, Tensor1D} from '../math/tensor';
+import {Scalar, Tensor1D} from '../tensor';
 import * as test_util from '../test_util';
 
 import {Graph, SymbolicTensor} from './graph';

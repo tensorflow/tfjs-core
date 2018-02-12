@@ -22,12 +22,12 @@ import {SessionRuntime} from '../../graph/session';
 import * as session_util from '../../graph/session_util';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../../graph/tensor_array_map';
-import {NDArrayMath} from '../../math/math';
-import {scalar, zerosLike} from '../../math/ops';
+import {NDArrayMath} from '../../math';
+import {scalar, zerosLike} from '../../ops/ops';
 import {Optimizer} from '../../math/optimizers/optimizer';
-import {Scalar, Tensor} from '../../math/tensor';
-import {NamedVariableMap} from '../../math/types';
-import {variable} from '../tensor';
+import {Scalar, Tensor} from '../../tensor';
+import {NamedVariableMap} from '../../types';
+import {variable} from '../../tensor';
 
 export class RMSPropOptimizer extends Optimizer {
   private c: Scalar;

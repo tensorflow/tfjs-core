@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../tensor';
-import {KernelNode} from '../tape_types';
+import {Tensor} from '../../../tensor';
+import {KernelNode} from '../../../tape_types';
 
 export interface BinaryNode extends KernelNode {
   inputAndArgs: {inputs: {a: Tensor; b: Tensor;};};
