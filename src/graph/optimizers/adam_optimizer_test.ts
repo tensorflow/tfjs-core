@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +17,7 @@
 import {InputProvider} from '../../data/input_provider';
 import {ENV} from '../../environment';
 import * as dl from '../../index';
-import {Tensor1D} from '../../math/tensor';
+import {Tensor1D} from '../../tensor';
 import * as test_util from '../../test_util';
 import {Graph} from '../graph';
 import {Session} from '../session';
@@ -31,7 +31,7 @@ describe('adam optimizer', () => {
       getNextCopy() {
         return Tensor1D.new([2, 4]);
       },
-      disposeCopy(math, example) {}
+      disposeCopy(example) {}
     };
 
     dl.tidy(() => {

@@ -16,14 +16,16 @@
  */
 
 import * as device_util from './device_util';
-import {MathBackend} from './math/backends/backend';
-import {BackendEngine} from './math/backends/backend_engine';
-import {NDArrayMath} from './math/math';
+import {doc} from './doc';
+import {Engine, MemoryInfo} from './engine';
+import {KernelBackend} from './kernels/backend';
+import {NDArrayMath} from './math';
 import * as util from './util';
 
 export enum Type {
   NUMBER,
-  BOOLEAN
+  BOOLEAN,
+  STRING
 }
 
 export interface Features {
@@ -46,6 +48,7 @@ export interface Features {
   'WEBGL_FLOAT_TEXTURE_ENABLED'?: boolean;
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
   'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
+  'BACKEND'?: BackendType;
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
@@ -56,7 +59,8 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_FLOAT_TEXTURE_ENABLED', type: Type.BOOLEAN}, {
     name: 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED',
     type: Type.BOOLEAN
-  }
+  },
+  {name: 'BACKEND', type: Type.STRING}
 ];
 
 export interface URLProperty {
@@ -181,16 +185,19 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   return isEnabled;
 }
 
+/** @docalias 'webgl'|'cpu' */
 export type BackendType = 'webgl'|'cpu';
+
+/** List of currently supported backends ordered by preference. */
+const SUPPORTED_BACKENDS: BackendType[] = ['webgl', 'cpu'];
 
 export class Environment {
   private features: Features = {};
-  private globalMath: NDArrayMath = null;
-  private BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
-  private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
-
-  engine: BackendEngine;
-  backend: MathBackend;
+  private globalMath: NDArrayMath;
+  private globalEngine: Engine;
+  private BACKEND_REGISTRY: {[id: string]: KernelBackend} = {};
+  private backends: {[id: string]: KernelBackend} = this.BACKEND_REGISTRY;
+  private currentBackendType: BackendType;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -203,6 +210,55 @@ export class Environment {
           'be downloaded to CPU and checked for NaNs. ' +
           'This significantly impacts performance.');
     }
+  }
+
+  /**
+   * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
+   * executing operations on those tensors.
+   *
+   * @param backendType The backend type. Currently supports 'webgl'|'cpu'.
+   * @param safeMode Defaults to false. In safe mode, you are forced to
+   *     construct tensors and call math operations inside a dl.tidy() which
+   *     will automatically clean up intermediate tensors.
+   */
+  @doc({heading: 'Environment'})
+  static setBackend(backendType: BackendType, safeMode = false) {
+    if (!(backendType in ENV.backends)) {
+      throw new Error(`Backend type '${backendType}' not found in registry`);
+    }
+    ENV.globalMath = new NDArrayMath(backendType, safeMode);
+  }
+
+  /**
+   * Returns the current backend (cpu, webgl, etc). The backend is responsible
+   * for creating tensors and executing operations on those tensors.
+   */
+  @doc({heading: 'Environment'})
+  static getBackend(): BackendType {
+    ENV.initEngine();
+    return ENV.currentBackendType;
+  }
+
+  /**
+   * Returns memory info at the current time in the program. The result is an
+   * object with the following properties:
+   *
+   * - `numBytes`: number of bytes allocated (undisposed) at this time.
+   * - `numTensors`: number of unique tensors allocated
+   * - `numDataBuffers`: number of unique data buffers allocated
+   *   (undisposed) at this time, which is ≤ the number of tensors
+   *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same
+   *   data buffer with `a`).
+   * - `unreliable`: optional boolean:
+   *    - On WebGL, not present (always reliable).
+   *    - On CPU, true. Due to automatic garbage collection, these numbers
+   *     represent undisposed tensors, i.e. not wrapped in `dl.tidy()`, or
+   *     lacking a call to `tensor.dispose()`.
+   * - `backendInfo`: Backend-specific information.
+   */
+  @doc({heading: 'Performance', subheading: 'Memory'})
+  static memory(): MemoryInfo {
+    return ENV.engine.memory();
   }
 
   get<K extends keyof Features>(feature: K): Features[K] {
@@ -220,9 +276,8 @@ export class Environment {
   }
 
   getBestBackendType(): BackendType {
-    const orderedBackends: BackendType[] = ['webgl', 'cpu'];
-    for (let i = 0; i < orderedBackends.length; ++i) {
-      const backendId = orderedBackends[i];
+    for (let i = 0; i < SUPPORTED_BACKENDS.length; ++i) {
+      const backendId = SUPPORTED_BACKENDS[i];
       if (backendId in this.backends) {
         return backendId;
       }
@@ -233,6 +288,8 @@ export class Environment {
   private evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
     if (feature === 'DEBUG') {
       return false;
+    } else if (feature === 'BACKEND') {
+      return this.getBestBackendType();
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {
       const webGLVersion = this.get('WEBGL_VERSION');
 
@@ -272,6 +329,7 @@ export class Environment {
     if (this.globalMath != null) {
       this.globalMath.dispose();
       this.globalMath = null;
+      this.globalEngine = null;
     }
     if (this.backends !== this.BACKEND_REGISTRY) {
       for (const name in this.backends) {
@@ -282,22 +340,24 @@ export class Environment {
   }
 
   setMath(
-      math: NDArrayMath, backend?: BackendType|MathBackend, safeMode = false) {
+      math: NDArrayMath, backend?: BackendType|KernelBackend,
+      safeMode = false) {
     if (this.globalMath === math) {
       return;
     }
     let customBackend = false;
     if (typeof backend === 'string') {
-      this.backend = ENV.getBackend(backend);
+      this.currentBackendType = backend;
+      backend = ENV.findBackend(backend);
     } else {
       customBackend = true;
-      this.backend = backend;
+      this.currentBackendType = 'custom' as BackendType;
     }
-    this.engine = new BackendEngine(this.backend, customBackend, safeMode);
+    this.globalEngine = new Engine(backend, customBackend, safeMode);
     this.globalMath = math;
   }
 
-  getBackend(name: BackendType): MathBackend {
+  findBackend(name: BackendType): KernelBackend {
     return this.backends[name];
   }
 
@@ -309,7 +369,7 @@ export class Environment {
    *     an instance of the backend.
    * @return False if the creation/registration failed. True otherwise.
    */
-  addCustomBackend(name: BackendType, factory: () => MathBackend): boolean {
+  addCustomBackend(name: BackendType, factory: () => KernelBackend): boolean {
     if (name in this.backends) {
       throw new Error(`${name} backend was already registered`);
     }
@@ -331,7 +391,7 @@ export class Environment {
    * return an instance of the backend.
    * @return False if the creation/registration failed. True otherwise.
    */
-  registerBackend(name: BackendType, factory: () => MathBackend): boolean {
+  registerBackend(name: BackendType, factory: () => KernelBackend): boolean {
     if (name in this.BACKEND_REGISTRY) {
       throw new Error(`${name} backend was already registered as global`);
     }
@@ -344,12 +404,23 @@ export class Environment {
     }
   }
 
+  /** @deprecated. Use ENV.engine. */
   get math(): NDArrayMath {
-    if (this.globalMath == null) {
-      const safeMode = false;
-      this.globalMath = new NDArrayMath(this.getBestBackendType(), safeMode);
+    if (this.globalEngine == null) {
+      this.initEngine();
     }
     return this.globalMath;
+  }
+
+  get engine(): Engine {
+    if (this.globalEngine == null) {
+      this.initEngine();
+    }
+    return this.globalEngine;
+  }
+
+  private initEngine() {
+    this.globalMath = new NDArrayMath(ENV.get('BACKEND'), false /* safeMode */);
   }
 }
 
@@ -381,6 +452,9 @@ function getFeaturesFromURL(): Features {
           features[urlProperty.name] = +urlFlags[urlProperty.name];
         } else if (urlProperty.type === Type.BOOLEAN) {
           features[urlProperty.name] = urlFlags[urlProperty.name] === 'true';
+        } else if (urlProperty.type === Type.STRING) {
+          // tslint:disable-next-line:no-any
+          features[urlProperty.name] = urlFlags[urlProperty.name] as any;
         } else {
           console.warn(`Unknown URL param: ${urlProperty.name}.`);
         }

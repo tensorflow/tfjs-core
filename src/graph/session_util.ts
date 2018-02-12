@@ -17,8 +17,8 @@
 
 // tslint:disable-next-line:max-line-length
 import {InputProvider} from '../data/input_provider';
-import {NDArrayMath} from '../math/math';
-import {Tensor} from '../math/tensor';
+import {NDArrayMath} from '../math';
+import {Tensor} from '../tensor';
 import * as util from '../util';
 
 // tslint:disable-next-line:max-line-length
@@ -123,7 +123,7 @@ export function loadInputsFromFeedDictionaryToTensorArrayMap(
       data = feedEntry.data as Tensor;
     } else {
       const provider = feedEntry.data as InputProvider;
-      data = provider.getNextCopy(math);
+      data = provider.getNextCopy();
     }
 
     util.assert(
@@ -147,7 +147,7 @@ export function releaseFeedDictionaryInputsFromTensorArrayMap(
       const provider = feedEntry.data as InputProvider;
 
       const feedEntryArray = activations.get(feedEntry.tensor);
-      provider.disposeCopy(math, feedEntryArray);
+      provider.disposeCopy(feedEntryArray);
     }
 
     activations.delete(feedEntry.tensor);

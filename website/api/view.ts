@@ -18,24 +18,47 @@ export interface Docs { headings: DocHeading[]; }
 
 export interface DocHeading {
   name: string;
+  description?: string;
   subheadings: DocSubheading[];
 }
 
 export interface DocSubheading {
   name: string;
-  methods?: DocMethod[];
+  description?: string;
+  symbols?: DocSymbol[];
+  // Only used at initialization for sort-order. Pins by displayName, not symbol
+  // name (so that we use namespaces).
+  pin?: string[];
 }
 
-export interface DocMethod {
-  path: string;
+export type DocSymbol = DocFunction|DocClass;
+
+export interface DocClass {
+  symbolName: string;
+  displayName: string;
   documentation: string;
-  returnType: string;
   fileName: string;
   githubUrl: string;
-  parameters: DocMethodParam[];
+  methods: DocFunction[];
+
+  isClass: true;
 }
 
-export interface DocMethodParam {
+export interface DocFunction {
+  symbolName: string;
+  displayName: string;
+  documentation: string;
+  fileName: string;
+  githubUrl: string;
+  parameters: DocFunctionParam[];
+
+  paramStr: string;
+  returnType: string;
+
+  isFunction: true;
+}
+
+export interface DocFunctionParam {
   name: string;
   type: string;
   optional: boolean;

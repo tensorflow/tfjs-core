@@ -1,6 +1,6 @@
 ﻿/**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,10 +16,11 @@
  */
 
 import {keep, tidy} from '../../globals';
-import {NDArrayMath} from '../../math/math';
-import {Optimizer} from '../../math/optimizers/optimizer';
-import {Scalar, Tensor} from '../../math/tensor';
-import {NamedVariableMap} from '../../math/types';
+import {NDArrayMath} from '../../math';
+import {scalar} from '../../ops/ops';
+import {Optimizer} from '../../optimizers/optimizer';
+import {Scalar, Tensor} from '../../tensor';
+import {NamedVariableMap} from '../../types';
 import {Node} from '../graph';
 import {SessionRuntime} from '../session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -27,14 +28,16 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
 export class AdamaxOptimizer extends Optimizer {
   constructor(
       protected learningRate: number, private beta1: number,
-      private beta2: number, specifiedVariableList?: Node[]) {
+      private beta2: number,
+      /** @deprecated */ specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.eps = Scalar.new(1e-8);
     // b1, b2 keep initial value of beta* hyperparameters.
-    this.b1 = Scalar.new(this.beta1);
-    this.b2 = Scalar.new(this.beta2);
+    this.b1 = scalar(this.beta1);
+    this.b2 = scalar(this.beta2);
 
-    this.accB1 = Scalar.new(this.beta1);
+    this.accB1 = scalar(this.beta1);
+    this.one = scalar(1);
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -129,4 +132,5 @@ export class AdamaxOptimizer extends Optimizer {
   private accB1: Scalar;
   private b1: Scalar;
   private b2: Scalar;
+  private one: Scalar;
 }
