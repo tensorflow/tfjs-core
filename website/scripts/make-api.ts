@@ -47,7 +47,7 @@ HandleBars.registerHelper('markdown', function(attr) {
 
 // Renders a string to markdown but removes the outer <p> tag
 HandleBars.registerHelper('markdownInner', function(attr) {
-  const asMd: string =
+  const asMd =
       md.render(attr.trim()).replace(/<p>/, '').replace(/(<\/p>\s*)$/, '');
 
   return asMd;
@@ -55,10 +55,9 @@ HandleBars.registerHelper('markdownInner', function(attr) {
 
 // Write the HTML.
 const htmlFilePath = HTML_OUT_DIR + 'index.html';
-const mustacheTemplate = fs.readFileSync(API_TEMPLATE_PATH, 'utf8');
+const template = fs.readFileSync(API_TEMPLATE_PATH, 'utf8');
 
-const html = HandleBars.compile(mustacheTemplate)(docs);
-// const html = mustache.render(mustacheTemplate, docs);
+const html = HandleBars.compile(template)(docs);
 fs.writeFileSync(htmlFilePath, html);
 
 // Compute some statics and render them.

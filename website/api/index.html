@@ -209,115 +209,108 @@
 </head>
 
 <body>
-<div class="container">
-  <nav>
-    <a href="index.html">deeplearn.js</a>
-  </nav>
+  <div class="container">
+    <nav>
+      <a href="index.html">deeplearn.js</a>
+    </nav>
 
-  <div class="content-area">
-    <div class="toc">
-      <div class="section">
-        <div class='section-title mdl-typography--title'>API Reference </div>
-        <div class="sub-section-title mdl-typography--subhead-color-contrast">(v 0.5)</div>
-      </div>
-      {{#headings}}
-      <div class="section">
-        <div class="section-title mdl-typography--title">{{name}}</div>
-        {{#subheadings}}
-        <div class="subsection">
-          <div class="sub-section-title mdl-typography--subhead">{{name}}</div>
-          {{#symbols}}
-          <div class="symbol">
-            <a href="#dl.{{displayName}}">dl.{{displayName}}</a>
-          </div>
-          {{/symbols}}
+    <div class="content-area">
+      <div class="toc">
+        <div class="section">
+          <div class='section-title mdl-typography--title'>API Reference </div>
+          <div class="sub-section-title mdl-typography--subhead-color-contrast">(v 0.5)</div>
         </div>
-        {{/subheadings}}
-      </div>
-      {{/headings}}
-    </div>
-
-
-    <div class="reference">
-      {{#headings}}
-      <div class="section">
-        {{#subheadings}}
-        <div class="subsection">
-          <div class="subsection-title mdl-typography--display-3">{{../name}} &nbsp;/&nbsp; {{name}}</div>
-          {{#symbols}}
-          <div class="symbol">
-            <h5>#
-              <a name="dl.{{displayName}}" href="#dl.{{displayName}}">dl.{{displayName}}</a>{{paramStr}}
-               {{#isClass}}
-                <span class="class-chip mdl-chip">
-                  <span class="mdl-chip__text">Class</span>
-                </span>
-               {{/isClass}}
-            </h5>
-
-            <div class="documentation">{{{markdown documentation}}}</div>
-
-            {{#isFunction}}
-            <div class="parameter-heading mdl-typography--subhead">Parameters:</div>
-            <ul>
-               {{#parameters}}
-              <li class="parameter">
-                <span class="param-name">
-                  <code>{{name}}: {{type}}</code>
-                </span>
-                <span class="param-docs">
-                  {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
-                </span>
-              </li>
-              {{/parameters}}
-            </ul>
-            <div class="returns mdl-typography--subhead">
-              Returns: <code>{{returnType}}</code>
+        {{#headings}}
+        <div class="section">
+          <div class="section-title mdl-typography--title">{{name}}</div>
+          {{#subheadings}}
+          <div class="subsection">
+            <div class="sub-section-title mdl-typography--subhead">{{name}}</div>
+            {{#symbols}}
+            <div class="symbol">
+              <a href="#dl.{{displayName}}">dl.{{displayName}}</a>
             </div>
-            {{/isFunction}} {{#isClass}}
-            <h6>Methods:</h6>
-            {{#methods}}
-            <div class="method">
-              <div class="method-name">
-                <code>{{symbolName}}{{paramStr}}</code>
-              </div>
-              <div class="method-docs">
-                {{#optional}}(Optional){{/optional}} {{{markdown documentation}}}
-
-                <div class="parameter-heading mdl-typography--subhead">Parameters:</div>
-                <ul>
-                  {{#parameters}}
-                  <li class="parameter">
-                    <span class="param-name">
-                      <code>{{name}}: {{type}}</code>
-                    </span>
-                    <span class="param-docs">
-                      {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
-                    </span>
-                  </li>
-                  {{/parameters}}
-                </ul>
-              </div>
-            </div>
-            {{/methods}} {{/isClass}}
-
-            <div class="source-ref">
-               Defined in <a href="{{githubUrl}}" target=_blank>{{fileName}}</a>
-            </div>
+            {{/symbols}}
           </div>
-          {{/symbols}}
+          {{/subheadings}}
         </div>
-        {{/subheadings}}
+        {{/headings}}
       </div>
-      {{/headings}}
 
+
+      <div class="reference">
+        {{#headings}}
+        <div class="section">
+          {{#subheadings}}
+          <div class="subsection">
+            <div class="subsection-title mdl-typography--display-3">{{../name}} &nbsp;/&nbsp; {{name}}</div>
+            {{#symbols}}
+            <div class="symbol">
+              <h5>#
+                <a name="dl.{{displayName}}" href="#dl.{{displayName}}">dl.{{displayName}}</a>{{paramStr}}
+                {{#isClass}}
+                  <span class="class-chip mdl-chip">
+                    <span class="mdl-chip__text">Class</span>
+                  </span>
+                {{/isClass}}
+              </h5>
+
+              <div class="documentation">{{{markdown documentation}}}</div>
+
+              {{#isFunction}}
+              <div class="parameter-heading mdl-typography--subhead">Parameters:</div>
+              <ul>
+                {{#parameters}}
+                <li class="parameter">
+                  <span class="param-name">
+                    <code>{{name}}: {{type}}</code>
+                  </span>
+                  <span class="param-docs">
+                    {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
+                  </span>
+                </li>
+                {{/parameters}}
+              </ul>
+              <div class="returns mdl-typography--subhead">
+                Returns: <code>{{returnType}}</code>
+              </div>
+              {{/isFunction}} {{#isClass}}
+              <h6>Methods:</h6>
+              {{#methods}}
+              <div class="method">
+                <div class="method-name">
+                  <code>{{symbolName}}{{paramStr}}</code>
+                </div>
+                <div class="method-docs">
+                  {{#optional}}(Optional){{/optional}} {{{markdown documentation}}}
+
+                  <div class="parameter-heading mdl-typography--subhead">Parameters:</div>
+                  <ul>
+                    {{#parameters}}
+                    <li class="parameter">
+                      <span class="param-name">
+                        <code>{{name}}: {{type}}</code>
+                      </span>
+                      <span class="param-docs">
+                        {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
+                      </span>
+                    </li>
+                    {{/parameters}}
+                  </ul>
+                </div>
+              </div>
+              {{/methods}} {{/isClass}}
+
+              <div class="source-ref">
+                Defined in <a href="{{githubUrl}}" target=_blank>{{fileName}}</a>
+              </div>
+            </div>
+            {{/symbols}}
+          </div>
+          {{/subheadings}}
+        </div>
+        {{/headings}}
+      </div>
     </div>
   </div>
-</div>
-
 </body>
-
-
-
-
-
