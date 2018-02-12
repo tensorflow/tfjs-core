@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {operation} from '../decorators';
+import {operation} from './operation';
 import {doc} from '../doc';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';

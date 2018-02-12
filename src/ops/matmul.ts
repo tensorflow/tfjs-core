@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {operation} from '../decorators';
+import {operation} from './operation';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {MatrixOrientation} from '../kernels/types/matmul';

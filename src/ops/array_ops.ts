@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {operation} from '../decorators';
+import {operation} from './operation';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length

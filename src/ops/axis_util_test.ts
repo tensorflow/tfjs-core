@@ -16,7 +16,7 @@
  */
 
 import * as dl from '../index';
-import {expectArraysClose} from '../test_util';
+import {describeWithFlags, expectArraysClose} from '../test_util';
 import * as axis_util from './axis_util';
 
 describe('axis_util combineLocations', () => {
@@ -263,7 +263,7 @@ describe('axis_util parseAxisParam', () => {
   });
 });
 
-describe('axis_util getUndoAxesPermutation', () => {
+describeWithFlags('axis_util getUndoAxesPermutation', [{}], () => {
   it('4d axes', () => {
     const axes = [2, 0, 1, 3];
     expect(axis_util.getUndoAxesPermutation(axes)).toEqual([1, 2, 0, 3]);

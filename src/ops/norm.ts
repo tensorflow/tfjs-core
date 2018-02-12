@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {operation} from '../decorators';
+import {operation} from './operation';
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
 import * as axis_util from './axis_util';
