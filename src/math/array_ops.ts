@@ -27,7 +27,7 @@ import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike
 
 export class Ops {
   /**
-   * Creates a tensor with the provided values, shape and dtype.
+   * Creates a `Tensor` with the provided values, shape and dtype.
    *
    * @param values The values of the tensor. Can be nested array of numbers,
    *     or a flat array, or a `TypedArray`.
@@ -458,6 +458,17 @@ export class Ops {
     return ENV.engine.executeKernel(
                'Reshape', {inputs: {x}, args: {newShape: shape}}, grad) as
         Tensor<R2>;
+  }
+
+  /**
+   * Removes dimensions of size 1 from the shape of a Tensor.
+   * @param axis An optional list of numbers. If specified, only
+   * squeezes the dimensions listed. The dimension index starts at 0. It is an
+   * error to squeeze a dimension that is not 1.
+   */
+  @doc({heading: 'Tensors', subheading: 'Transformations'})
+  static squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T {
+    return Ops.reshape(x, util.squeezeShape(x.shape, axis).newShape) as T;
   }
 
   /**

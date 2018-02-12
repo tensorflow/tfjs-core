@@ -99,6 +99,17 @@ export class TensorBuffer<R extends Rank> {
  */
 export type DataId = object;  // object instead of {} to force non-primitive.
 
+/**
+ * A Tensor object represents an immutable, multidimensional array of numbers
+ * that has a shape and a data type.
+ *
+ * Mathematical operations in deeplearn.js take Tensors as inputs and output
+ * Tensors. These operations are member functions of Tensors objects for
+ * operation-chaining.
+ *
+ * e.g. `dl.sqrt(dl.scalar(2))` is equivalent to `dl.scalar(2).sqrt()`.
+ */
+@doc({heading: 'Tensors', subheading: 'Creation'})
 export class Tensor<R extends Rank = Rank> {
   private static nextId = 0;
 
@@ -218,47 +229,52 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * @param axis An optional list of number. If specified, only
-   * squeezes the dimensions listed. The dimension index starts at 0. It is an
-   * error to squeeze a dimension that is not 1.
+   * Flatten a Tensor to a 1D array.
    */
-  squeeze<T extends Tensor>(axis?: number[]): T {
-    this.throwIfDisposed();
-    return this.reshape(util.squeezeShape(this.shape, axis).newShape) as T;
-  }
-
-  /** Flatten a Tensor to a 1D array. */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   flatten(): Tensor1D {
     this.throwIfDisposed();
     return this.as1D();
   }
 
+  /** Converts a size-1 `Tensor` to a `Scalar`. */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   asScalar(): Scalar {
     this.throwIfDisposed();
     util.assert(this.size === 1, 'The array must have only 1 element.');
     return this.reshape<Rank.R0>([]);
   }
 
+  /** Converts a `Tensor` to a `Tensor1D`. */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   as1D(): Tensor1D {
     this.throwIfDisposed();
     return this.reshape<Rank.R1>([this.size]);
   }
 
+  /** Converts a `Tensor` to a `Tensor2D`. */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   as2D(rows: number, columns: number): Tensor2D {
     this.throwIfDisposed();
     return this.reshape<Rank.R2>([rows, columns]);
   }
 
+  /** Converts a `Tensor` to a `Tensor3D`. */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   as3D(rows: number, columns: number, depth: number): Tensor3D {
     this.throwIfDisposed();
     return this.reshape<Rank.R3>([rows, columns, depth]);
   }
 
+  /** Converts a `Tensor` to a `Tensor4D`. */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   as4D(rows: number, columns: number, depth: number, depth2: number): Tensor4D {
     this.throwIfDisposed();
     return this.reshape<Rank.R4>([rows, columns, depth, depth2]);
   }
 
+  /** Casts a `Tensor` to a specified dtype. */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   asType<T extends this>(this: T, dtype: DataType): T {
     this.throwIfDisposed();
     return ops.cast(this, dtype);
@@ -331,8 +347,9 @@ export class Tensor<R extends Rank = Rank> {
 
   /**
    * Asynchronously downloads the values from the Tensor. Returns a promise
-   * that resolves when the data is ready.
+   * that resolves with the backing `TypedArray` when the data is ready.
    */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   async data(): Promise<TypedArray> {
     this.throwIfDisposed();
     return ENV.engine.read(this.dataId);
@@ -342,11 +359,13 @@ export class Tensor<R extends Rank = Rank> {
    * Synchronously downloads the values from the Tensor. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   dataSync(): TypedArray {
     this.throwIfDisposed();
     return ENV.engine.readSync(this.dataId);
   }
 
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   dispose(): void {
     if (this.isDisposed) {
       return;
@@ -363,16 +382,19 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /** Casts the array to type `float32` */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   toFloat<T extends this>(this: T): T {
     return this.asType('float32');
   }
 
   /** Casts the array to type `int32` */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   toInt() {
     return this.asType('int32');
   }
 
   /** Casts the array to type `bool` */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   toBool() {
     return this.asType('bool');
   }
@@ -388,6 +410,11 @@ export class Tensor<R extends Rank = Rank> {
   reshapeAs<T extends Tensor>(x: T): T {
     this.throwIfDisposed();
     return this.reshape(x.shape) as T;
+  }
+
+  squeeze<T extends Tensor>(axis?: number[]): T {
+    this.throwIfDisposed();
+    return ops.squeeze(this, axis);
   }
 
   tile<T extends this>(this: T, reps: number[]): T {

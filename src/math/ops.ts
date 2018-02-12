@@ -159,6 +159,7 @@ export const randomNormal = array_ops.Ops.randomNormal;
 export const truncatedNormal = array_ops.Ops.truncatedNormal;
 export const randomUniform = array_ops.Ops.randomUniform;
 export const reshape = array_ops.Ops.reshape;
+export const squeeze = array_ops.Ops.squeeze;
 export const tile = array_ops.Ops.tile;
 export const gather = array_ops.Ops.gather;
 export const multinomial = array_ops.Ops.multinomial;
