@@ -15,18 +15,18 @@
  * =============================================================================
  */
 
-import {operation} from './operation';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import * as util from '../util';
+
 import * as broadcast_util from './broadcast_util';
+import {operation} from './operation';
 import {scalar} from './ops';
 
 export class Ops {
   /**
    * Adds two Tensors element-wise, A + B. Supports broadcasting.
-   * For a stricter version without broadcasting use addStrict().
    *
    * @param a The first `Tensor` to add.
    * @param b The second `Tensor` to add. Must have the same type as `a`.
@@ -61,8 +61,9 @@ export class Ops {
   }
 
   /**
-   * Adds two Tensors element-wise, A + B. Inputs must
-   * be the same shape. For broadcasting support, use add() instead.
+   * Adds two Tensors element-wise, A + B.
+   *
+   * Inputs must be the same shape. For broadcasting support, use add() instead.
    *
    * @param a The first Tensor to multiply element-wise.
    * @param b The second Tensor to multiply element-wise.
@@ -76,7 +77,6 @@ export class Ops {
 
   /**
    * Subtracts two Tensors element-wise, A - B. Supports broadcasting.
-   * For a stricter version without broadcasting use subStrict().
    *
    * @param a The first `Tensor`.
    * @param b The second `Tensor`. Must have the same dtype as `a`.
@@ -112,7 +112,9 @@ export class Ops {
 
   /**
    * Subtracts two Tensors element-wise, A - B. Inputs must
-   * be the same shape. For broadcasting support, use sub() instead.
+   * be the same shape.
+   *
+   * For broadcasting support, use sub() instead.
    *
    * @param a The first Tensor to multiply element-wise.
    * @param b The second Tensor to multiply element-wise.
@@ -127,10 +129,14 @@ export class Ops {
   /**
    * Computes the power of one value to another. Supports broadcasting.
    * Given a tensor x and a tensor y, this operation computes x^y for
-   * corresponding elements in x and y. For example:
-   * x = tf.constant([[2, 2], [3, 3]])
-   * y = tf.constant([[8, 16], [2, 3]])
-   * pow(x, y)  # [[256, 65536], [9, 27]]
+   * corresponding elements in x and y.
+   *
+   * For example:
+   * ```
+   * x = tf.tensor([[2, 2], [3, 3]])
+   * y = tf.tensor([[8, 16], [2, 3]])
+   * dl.pow(x, y)  # [[256, 65536], [9, 27]]
+   * ```
    *
    * @param base The base Tensor to pow element-wise.
    * @param exp The exponent Tensor to pow element-wise.
@@ -165,7 +171,9 @@ export class Ops {
 
   /**
    * Computes the power of one value to another. Inputs must
-   * be the same shape. For broadcasting support, use pow() instead.
+   * be the same shape.
+   *
+   * For broadcasting support, use pow() instead.
    *
    * @param base The base Tensor to pow element-wise.
    * @param exp The exponent Tensor to pow element-wise.
@@ -179,7 +187,6 @@ export class Ops {
 
   /**
    * Multiplies two Tensors element-wise, A * B. Supports broadcasting.
-   * For a stricter version without broadcasting use mulStrict().
    *
    * @param a The first `Tensor`.
    * @param b The second `Tensor`. Must have the same dtype as `a`.
@@ -214,8 +221,9 @@ export class Ops {
   }
 
   /**
-   * Multiplies two Tensors element-wise, A * B. Inputs must
-   * be the same shape. For broadcasting support, use mul().
+   * Multiplies two Tensors element-wise, A * B.
+   *
+   * Inputs must be the same shape. For broadcasting support, use mul().
    *
    * @param a The first `Tensor`.
    * @param b The second `Tensor`. Must have the same dtype as `a`.
@@ -229,6 +237,7 @@ export class Ops {
 
   /**
    * Divides two Tensors element-wise, A / B. Supports broadcasting.
+   *
    * For a stricter version without broadcasting use divStrict().
    *
    * @param a The first `Tensor`.
@@ -264,7 +273,7 @@ export class Ops {
 
   /**
    * Divides two Tensors element-wise, A / B. Inputs must
-   * be the same shape. For broadcasting support, use div() instead.
+   * be the same shape.
    *
    * @param a The first Tensor to multiply element-wise.
    * @param b The second Tensor to multiply element-wise.

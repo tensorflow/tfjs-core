@@ -100,12 +100,6 @@ export type DataId = object;  // object instead of {} to force non-primitive.
 /**
  * A Tensor object represents an immutable, multidimensional array of numbers
  * that has a shape and a data type.
- *
- * Mathematical operations in deeplearn.js take Tensors as inputs and output
- * Tensors. These operations are member functions of Tensors objects for
- * operation-chaining.
- *
- * e.g. `dl.sqrt(dl.scalar(2))` is equivalent to `dl.scalar(2).sqrt()`.
  */
 @doc({heading: 'Tensors', subheading: 'Creation'})
 export class Tensor<R extends Rank = Rank> {
@@ -800,12 +794,19 @@ export class Tensor<R extends Rank = Rank> {
   }
 }
 
+/**
+ * A rank-0 Tensor subclass for convenience and readability.
+ */
+@doc({heading: 'Tensors', subheading: 'Creation'})
 export class Scalar extends Tensor<Rank.R0> {
   static new(value: number|boolean, dtype?: DataType): Scalar {
     return ops.scalar(value, dtype);
   }
 }
 
+/**
+ * A rank-1 Tensor subclass for convenience and readability.
+ */
 export class Tensor1D extends Tensor<Rank.R1> {
   static new<D extends DataType = 'float32'>(
       values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Tensor1D {
@@ -813,6 +814,9 @@ export class Tensor1D extends Tensor<Rank.R1> {
   }
 }
 
+/**
+ * A rank-2 Tensor subclass for convenience and readability.
+ */
 export class Tensor2D extends Tensor<Rank.R2> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number],
@@ -822,6 +826,9 @@ export class Tensor2D extends Tensor<Rank.R2> {
   }
 }
 
+/**
+ * A rank-3 Tensor subclass for convenience and readability.
+ */
 export class Tensor3D extends Tensor<Rank.R3> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number],
@@ -831,6 +838,9 @@ export class Tensor3D extends Tensor<Rank.R3> {
   }
 }
 
+/**
+ * A rank-4 Tensor subclass for convenience and readability.
+ */
 export class Tensor4D extends Tensor<Rank.R4> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number, number],
@@ -840,6 +850,9 @@ export class Tensor4D extends Tensor<Rank.R4> {
   }
 }
 
+/**
+ * A mutable Tensor, useful for persisting state, e.g. for training.
+ */
 export class Variable<R extends Rank = Rank> extends Tensor<R> {
   private static nextVarId = 0;
   name: string;
@@ -881,7 +894,11 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
     return new Variable(initialValue, trainable, name);
   }
 
-  /** Assign a new array to this variable. The old array will be disposed. */
+  /**
+   * Assign a new Tensor to this variable. The new Tensor must have the same
+   * shape and dtype as the old Tensor.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   assign(newValue: Tensor<R>): void {
     if (newValue.dtype !== this.dtype) {
       throw new Error(
