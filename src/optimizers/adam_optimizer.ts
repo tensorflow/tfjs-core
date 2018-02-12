@@ -23,7 +23,7 @@ import {SessionRuntime} from '../graph/session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
 import {NDArrayMath} from '../math';
 import {scalar, zerosLike} from '../ops/ops';
-import {Scalar, Tensor} from '../tensor';
+import {Scalar, Tensor, Variable} from '../tensor';
 import {variable} from '../tensor';
 import {NamedVariableMap} from '../types';
 
@@ -34,8 +34,8 @@ export class AdamOptimizer extends Optimizer {
   private eps: Scalar;
   private beta1: Scalar;
   private beta2: Scalar;
-  private accBeta1: Scalar;
-  private accBeta2: Scalar;
+  private accBeta1: Variable;
+  private accBeta2: Variable;
   private one: Scalar;
 
   private accumulatedFirstMoment: NamedVariableMap = {};
@@ -51,8 +51,8 @@ export class AdamOptimizer extends Optimizer {
     this.beta1 = keep(scalar(beta1));
     this.beta2 = keep(scalar(beta2));
     // accB* will be updated by batch.
-    this.accBeta1 = keep(scalar(beta1));
-    this.accBeta2 = keep(scalar(beta2));
+    this.accBeta1 = variable(scalar(beta1));
+    this.accBeta2 = variable(scalar(beta2));
     this.one = keep(scalar(1));
   }
 
@@ -97,15 +97,10 @@ export class AdamOptimizer extends Optimizer {
       });
     }
 
-    // Make sure to dispose old value objects.
-    const oldAccB1 = this.accBeta1;
-    const oldAccB2 = this.accBeta2;
-    // accB* represents beta1 and beta2 to
-    // the power t (the number of iteration).
-    this.accBeta1 = keep(this.accBeta1.mul(this.beta1));
-    this.accBeta2 = keep(this.accBeta2.mul(this.beta2));
-    oldAccB1.dispose();
-    oldAccB2.dispose();
+    tidy(() => {
+      this.accBeta1.assign(this.accBeta1.mul(this.beta1));
+      this.accBeta2.assign(this.accBeta2.mul(this.beta2));
+    });
   }
 
   beforeBatch(
@@ -167,16 +162,8 @@ export class AdamOptimizer extends Optimizer {
         oldFirstMoment.dispose();
         oldSecondMoment.dispose();
       });
-
-      // Make sure to dispose old value objects.
-      const oldAccB1 = this.accBeta1;
-      const oldAccB2 = this.accBeta2;
-      // accB* represents beta1 and beta2 to
-      // the power t (the number of iteration).
-      this.accBeta1 = keep(this.accBeta1.mul(this.beta1));
-      this.accBeta2 = keep(this.accBeta2.mul(this.beta2));
-      oldAccB1.dispose();
-      oldAccB2.dispose();
+      this.accBeta1.assign(this.accBeta1.mul(this.beta1));
+      this.accBeta2.assign(this.accBeta2.mul(this.beta2));
     });
 
     this.variableGradients.dispose();
