@@ -1252,7 +1252,7 @@ describeWithFlags('selu', ALL_ENVS, () => {
     let a = dl.scalar(aValue);
     let dy = dl.scalar(dyValue);
 
-    let gradients = dl.grad(a => dl.selu(a))(a, dy)
+    let gradients = dl.grad(a => dl.selu(a))(a, dy);
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
@@ -1263,7 +1263,7 @@ describeWithFlags('selu', ALL_ENVS, () => {
     a = dl.scalar(aValue);
     dy = dl.scalar(dyValue);
 
-    gradients = dl.grad(a => dl.selu(a))(a, dy)
+    gradients = dl.grad(a => dl.selu(a))(a, dy);
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
