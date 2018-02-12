@@ -15,11 +15,12 @@
  * =============================================================================
  */
 
-import {operation} from './operation';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import * as util from '../util';
+
+import {operation} from './operation';
 import * as ops from './ops';
 import {zerosLike} from './ops';
 import * as selu_util from './selu_util';
@@ -27,7 +28,7 @@ import * as selu_util from './selu_util';
 export class Ops {
   /**
    * Computes -1 * A element-wise.
-   * @param x The input array.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -46,6 +47,7 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static ceil<T extends Tensor>(x: T): T {
+    // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const gradient = (dy: T, y: T) => {
       return {x: () => ops.zeros(y.shape)};
     };
@@ -53,13 +55,13 @@ export class Ops {
   }
 
   /**
-   * Computes floor of input NDArray element-wise. y = floor(x).
-   * TODO(manrajgrover): Fix gradient once backprop handles nulls
-   * @param x The input NDArray.
+   * Computes floor of input Tensor element-wise. y = floor(x).
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static floor<T extends Tensor>(x: T): T {
+    // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const gradient = (dy: T, y: T) => {
       return {x: () => ops.zeros(y.shape)};
     };
@@ -105,7 +107,7 @@ export class Ops {
   /**
    * Computes square of `x` element-wise.
    *
-   * @param x The input array.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -168,7 +170,7 @@ export class Ops {
 
   /**
    * Computes exponential linear element-wise
-   * @param x the input Tensor
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -188,6 +190,7 @@ export class Ops {
 
   /**
    * Computes scaled exponential linear element-wise.
+   * @param x The input Tensor.
    * @hidden
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -196,8 +199,6 @@ export class Ops {
     const gradient = (dy: T, y: T) => {
       return {
         x: () => {
-          // Currently, Scalars are not supported by ops.where
-          util.assert(x.rank !== 0, 'Error in selu gradient: ');
           const mask = x.greater(ops.scalar(0));
 
           const scaleAlpha = ops.scalar(selu_util.SELU_SCALEALPHA);
@@ -217,21 +218,24 @@ export class Ops {
 
   /**
    * Computes leaky rectified linear element-wise
-   * @param x the input Tensor
-   * @param alpha scaling factor for negative values, defaults to 0.2
+   * @param x The input Tensor.
+   * @param alpha scaling factor for negative values, defaults to 0.2.
    * @return {Tensor}
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static leakyRelu<T extends Tensor>(x: T, alpha = 0.2): T {
+    const gradient = (dy: T, y: T) => {
+      return {x: () => dy.mul(x.step(alpha))};
+    };
     return ENV.engine.executeKernel(
-               'LeakyRelu', {inputs: {x}, args: {alpha}}) as T;
+               'LeakyRelu', {inputs: {x}, args: {alpha}}, gradient) as T;
   }
 
   /**
    * Computes leaky rectified linear element-wise with parametric alphas
-   * @param x the input Tensor
-   * @param alpha scaling factor Tensor for negative values
+   * @param x The input Tensor.
+   * @param alpha scaling factor Tensor for negative values.
    * @return {Tensor}
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -378,7 +382,7 @@ export class Ops {
 
   /**
    * Computes step of the input Tensor element-wise,
-   * y=1 if x>0|alpha*x if x<=0.
+   * y=1 if x>0|alpha if x<=0.
    *
    * @param x The input Tensor.
    * @param alpha The gradient when input is negative.
@@ -386,7 +390,11 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static step<T extends Tensor>(x: T, alpha = 0.0): T {
-    return ENV.engine.executeKernel('Step', {inputs: {x}, args: {alpha}}) as T;
+    // TODO(manrajgrover): Return null for gradients when backprop supports it.
+    return ENV.engine.executeKernel(
+               'Step', {inputs: {x}, args: {alpha}}, (dy: T, y: T) => {
+                 return {x: () => ops.zeros(y.shape)};
+               }) as T;
   }
 }
 
