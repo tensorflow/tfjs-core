@@ -42,10 +42,11 @@ export class Gradients {
   }
 
   /**
-   * Computes the gradient of `f(x)` w.r.t. `x`. `f(x)` must take a single
-   * tensor `x`. Returns another function `g(x0, dy?)`, which when called gives
-   * `df/dx` evaluated at `x0`. If `dy` is provided, the gradient of
-   * `dl.dot(f(x), dy)` is computed instead.
+   * Computes the gradient of `f(x)` w.r.t. `x`.
+   *
+   * `f(x)` must take a single tensor `x`. Returns another function `g(x, dy?)`,
+   * which when called gives `df/dx`. If `dy` is provided, the gradient of
+   * `dl.dot(f(x), dy)` w.r.t. `x` is computed instead.
    *
    * If `f()` takes multiple inputs, use `dl.grads` instead.
    *
@@ -84,12 +85,12 @@ export class Gradients {
 
   /**
    * Computes the gradients of `f(x1, x2,...)` w.r.t. each input `x1`, `x2`,...
-   * Returns another function `g([x1', x2',...], dy?)`, which when called gives
-   * an array of tensors: `[df/dx1, df/dx2,...]` evaluated at `[x1', x2',...]`.
-   * If `dy` is provided, the gradient of `dl.dot(f(x), dy)` is computed
-   * instead.
+   * Returns another function `g([x1, x2,...], dy?)`, which when called gives
+   * an array of tensors: `[df/dx1, df/dx2,...]` evaluated at `[x1, x2,...]`.
+   * If `dy` is provided, the gradient of `dl.dot(f(x), dy)` w.r.t. each input
+   * is computed instead.
    *
-   * if `f()` takes a single input, use `dl.grad` instead.
+   * If `f()` takes a single input, use `dl.grad` instead.
    *
    * @param f The function `f(x1, x2,...)` to compute gradients for.
    */
