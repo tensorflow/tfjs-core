@@ -81,10 +81,10 @@ export class OptimizerConstructors {
    * @param beta2
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
-  static adam(learningRate: number, beta1: number, beta2: number):
+  static adam(learningRate = 0.001, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8):
       AdamOptimizer {
     return new AdamOptimizer(
-        learningRate, beta1, beta2,
+        learningRate, beta1, beta2, epsilon,
         undefined /** @deprecated specifiedVariableList */);
   }
 

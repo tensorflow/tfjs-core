@@ -32,27 +32,27 @@ import {Optimizer} from './optimizer';
 export class AdamOptimizer extends Optimizer {
   private c: Scalar;
   private eps: Scalar;
-  private b1: Scalar;
-  private b2: Scalar;
-  private accB1: Scalar;
-  private accB2: Scalar;
+  private beta1: Scalar;
+  private beta2: Scalar;
+  private accBeta1: Scalar;
+  private accBeta2: Scalar;
   private one: Scalar;
 
   private accumulatedFirstMoment: NamedVariableMap = {};
   private accumulatedSecondMoment: NamedVariableMap = {};
 
   constructor(
-      protected learningRate: number, private beta1: number,
-      private beta2: number, specifiedVariableList?: Node[]) {
+      protected learningRate: number, beta1: number, beta2: number,
+      epsilon = 1e-8, specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.c = keep(scalar(-learningRate));
-    this.eps = keep(scalar(1e-8));
+    this.eps = keep(scalar(epsilon));
     // b1, b2 keep initial value of beta* hyperparameters.
-    this.b1 = keep(scalar(this.beta1));
-    this.b2 = keep(scalar(this.beta2));
+    this.beta1 = keep(scalar(beta1));
+    this.beta2 = keep(scalar(beta2));
     // accB* will be updated by batch.
-    this.accB1 = keep(scalar(this.beta1));
-    this.accB2 = keep(scalar(this.beta2));
+    this.accBeta1 = keep(scalar(beta1));
+    this.accBeta2 = keep(scalar(beta2));
     this.one = keep(scalar(1));
   }
 
@@ -75,16 +75,16 @@ export class AdamOptimizer extends Optimizer {
       const secondMoment = this.accumulatedSecondMoment[variableName];
 
       tidy(() => {
-        const newFirstMoment =
-            this.b1.mul(firstMoment).add(this.one.sub(this.b1).mul(gradient));
+        const newFirstMoment = this.beta1.mul(firstMoment)
+                                   .add(this.one.sub(this.beta1).mul(gradient));
         const newSecondMoment =
-            this.b2.mul(secondMoment)
-                .add(this.one.sub(this.b2).mul(gradient.square()));
+            this.beta2.mul(secondMoment)
+                .add(this.one.sub(this.beta2).mul(gradient.square()));
 
         const biasCorrectedFirstMoment =
-            newFirstMoment.div(this.one.sub(this.accB1));
+            newFirstMoment.div(this.one.sub(this.accBeta1));
         const biasCorrectedSecondMoment =
-            newSecondMoment.div(this.one.sub(this.accB2));
+            newSecondMoment.div(this.one.sub(this.accBeta2));
 
         this.accumulatedFirstMoment[variableName].assign(newFirstMoment);
         this.accumulatedSecondMoment[variableName].assign(newSecondMoment);
@@ -97,17 +97,13 @@ export class AdamOptimizer extends Optimizer {
       });
     }
 
-    this.disposeAndUpdateBetas();
-  }
-
-  disposeAndUpdateBetas() {
     // Make sure to dispose old value objects.
-    const oldAccB1 = this.accB1;
-    const oldAccB2 = this.accB2;
+    const oldAccB1 = this.accBeta1;
+    const oldAccB2 = this.accBeta2;
     // accB* represents beta1 and beta2 to
     // the power t (the number of iteration).
-    this.accB1 = keep(this.accB1.mul(this.b1));
-    this.accB2 = keep(this.accB2.mul(this.b2));
+    this.accBeta1 = keep(this.accBeta1.mul(this.beta1));
+    this.accBeta2 = keep(this.accBeta2.mul(this.beta2));
     oldAccB1.dispose();
     oldAccB2.dispose();
   }
@@ -146,14 +142,15 @@ export class AdamOptimizer extends Optimizer {
         const oldSecondMoment = this.secondMomentGraph.get(node.output);
 
         const newFirstMoment = math.scaledArrayAdd(
-            this.b1, oldFirstMoment, this.one.sub(this.b1), gradient);
+            this.beta1, oldFirstMoment, this.one.sub(this.beta1), gradient);
         const newSecondMoment = math.scaledArrayAdd(
-            this.b2, oldSecondMoment, this.one.sub(this.b2), gradient.square());
+            this.beta2, oldSecondMoment, this.one.sub(this.beta2),
+            gradient.square());
 
         const biasCorrectedFirstMoment =
-            newFirstMoment.div(this.one.sub(this.accB1));
+            newFirstMoment.div(this.one.sub(this.accBeta1));
         const biasCorrectedSecondMoment =
-            newSecondMoment.div(this.one.sub(this.accB2));
+            newSecondMoment.div(this.one.sub(this.accBeta2));
         const variable = math.scaledArrayAdd(
             this.cGraph,
             biasCorrectedFirstMoment.div(
@@ -171,7 +168,15 @@ export class AdamOptimizer extends Optimizer {
         oldSecondMoment.dispose();
       });
 
-      this.disposeAndUpdateBetas();
+      // Make sure to dispose old value objects.
+      const oldAccB1 = this.accBeta1;
+      const oldAccB2 = this.accBeta2;
+      // accB* represents beta1 and beta2 to
+      // the power t (the number of iteration).
+      this.accBeta1 = keep(this.accBeta1.mul(this.beta1));
+      this.accBeta2 = keep(this.accBeta2.mul(this.beta2));
+      oldAccB1.dispose();
+      oldAccB2.dispose();
     });
 
     this.variableGradients.dispose();
@@ -182,10 +187,10 @@ export class AdamOptimizer extends Optimizer {
     super.dispose();
     this.c.dispose();
     this.eps.dispose();
-    this.b1.dispose();
-    this.b2.dispose();
-    this.accB1.dispose();
-    this.accB2.dispose();
+    this.beta1.dispose();
+    this.beta2.dispose();
+    this.accBeta1.dispose();
+    this.accBeta2.dispose();
     this.one.dispose();
 
     if (this.firstMomentGraph != null) {
