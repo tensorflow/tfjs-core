@@ -510,9 +510,9 @@ export class Ops {
   }
 
   /**
-   * Gather slices from tensor `x`'s axis `axis` according to `indices`
+   * Gather slices from tensor `x`'s axis `axis` according to `indices`.
    *
-   * @param x The tensor to transpose.
+   * @param x The input tensor.
    * @param indices The indices of the values to extract.
    * @param axis The axis over which to select values. Defaults to 0.
    */
