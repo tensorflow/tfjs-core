@@ -18,11 +18,11 @@
 import * as seedrandom from 'seedrandom';
 
 import {ENV} from '../environment';
-import * as util from '../util';
+import {NDArrayMath} from '../math';
+import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
-import {NDArrayMath} from '../math';
 import * as ops from '../ops/ops';
 import {tensor2d, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
@@ -30,12 +30,12 @@ import * as selu_util from '../ops/selu_util';
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
+import * as util from '../util';
 
-import * as axis_util from '../ops/axis_util';
-import {MathBackend} from './backend';
-import {MatrixOrientation} from '../math/backends/types/matmul';
+import {KernelBackend} from './backend';
+import {MatrixOrientation} from './types/matmul';
 
-export class MathBackendCPU implements MathBackend {
+export class KernelBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
 
@@ -1662,7 +1662,7 @@ export class MathBackendCPU implements MathBackend {
   dispose() {}
 }
 
-ENV.registerBackend('cpu', () => new MathBackendCPU());
+ENV.registerBackend('cpu', () => new KernelBackendCPU());
 
 /** @deprecated Call dl.setBackend('cpu') instead. */
 export class NDArrayMathCPU extends NDArrayMath {

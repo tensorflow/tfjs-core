@@ -18,7 +18,7 @@
 import {keep, tidy} from '../../globals';
 import {NDArrayMath} from '../../math';
 import {scalar} from '../../ops/ops';
-import {Optimizer} from '../../math/optimizers/optimizer';
+import {Optimizer} from '../../optimizers/optimizer';
 import {Scalar, Tensor} from '../../tensor';
 import {NamedVariableMap} from '../../types';
 import {Node} from '../graph';

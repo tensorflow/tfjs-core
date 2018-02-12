@@ -17,15 +17,15 @@
 
 import {ENV} from './environment';
 import {tidy} from './globals';
-import {MathBackend} from './kernels/backend';
+import {KernelBackend} from './kernels/backend';
 import * as kernel_registry from './kernels/kernel_registry';
 import {KernelConfigRegistry} from './kernels/kernel_registry';
+import * as ops from './ops/ops';
 import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
 import {KernelNode, Tape, TapeNode, TapeNodeInputGradientTensors} from './tape_types';
 import * as tape_util from './tape_util';
 import {ScopeResultImmediate} from './tape_util';
-import * as ops from './ops/ops';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TypedArray} from './types';
 import {Rank} from './types';
@@ -78,7 +78,7 @@ export class Engine implements TensorManager {
   private profiler: Profiler;
 
   constructor(
-      public backend: MathBackend, private customBackend: boolean,
+      public backend: KernelBackend, private customBackend: boolean,
       public safeMode: boolean) {
     // Create a default outer scope.
     this.activeScope = {keep: [], track: []};

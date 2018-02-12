@@ -18,7 +18,7 @@
 import {InputProvider} from '../data/input_provider';
 import {tidy} from '../globals';
 import {NDArrayMath} from '../math';
-import {Optimizer} from '../math/optimizers/optimizer';
+import {Optimizer} from '../optimizers/optimizer';
 import {Scalar, Tensor} from '../tensor';
 import * as util from '../util';
 

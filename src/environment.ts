@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
+import {doc} from './decorators';
 import * as device_util from './device_util';
 import {Engine, MemoryInfo} from './engine';
-import {MathBackend} from './kernels/backend';
-import {doc} from './decorators';
+import {KernelBackend} from './kernels/backend';
 import {NDArrayMath} from './math';
 import * as util from './util';
 
@@ -195,8 +195,8 @@ export class Environment {
   private features: Features = {};
   private globalMath: NDArrayMath;
   private globalEngine: Engine;
-  private BACKEND_REGISTRY: {[id: string]: MathBackend} = {};
-  private backends: {[id: string]: MathBackend} = this.BACKEND_REGISTRY;
+  private BACKEND_REGISTRY: {[id: string]: KernelBackend} = {};
+  private backends: {[id: string]: KernelBackend} = this.BACKEND_REGISTRY;
   private currentBackendType: BackendType;
 
   constructor(features?: Features) {
@@ -340,7 +340,8 @@ export class Environment {
   }
 
   setMath(
-      math: NDArrayMath, backend?: BackendType|MathBackend, safeMode = false) {
+      math: NDArrayMath, backend?: BackendType|KernelBackend,
+      safeMode = false) {
     if (this.globalMath === math) {
       return;
     }
@@ -356,7 +357,7 @@ export class Environment {
     this.globalMath = math;
   }
 
-  findBackend(name: BackendType): MathBackend {
+  findBackend(name: BackendType): KernelBackend {
     return this.backends[name];
   }
 
@@ -368,7 +369,7 @@ export class Environment {
    *     an instance of the backend.
    * @return False if the creation/registration failed. True otherwise.
    */
-  addCustomBackend(name: BackendType, factory: () => MathBackend): boolean {
+  addCustomBackend(name: BackendType, factory: () => KernelBackend): boolean {
     if (name in this.backends) {
       throw new Error(`${name} backend was already registered`);
     }
@@ -390,7 +391,7 @@ export class Environment {
    * return an instance of the backend.
    * @return False if the creation/registration failed. True otherwise.
    */
-  registerBackend(name: BackendType, factory: () => MathBackend): boolean {
+  registerBackend(name: BackendType, factory: () => KernelBackend): boolean {
     if (name in this.BACKEND_REGISTRY) {
       throw new Error(`${name} backend was already registered as global`);
     }

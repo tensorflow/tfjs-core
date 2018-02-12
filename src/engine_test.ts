@@ -16,10 +16,10 @@
  */
 
 import * as dl from './index';
+import {MatrixOrientation} from './kernels/types/matmul';
+import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
-import {MatrixOrientation} from './math/backends/types/matmul';
-import {Tensor} from './tensor';
 
 describeWithFlags('tidy', ALL_ENVS, () => {
   it('returns Tensor', () => {

@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import {MatrixOrientation} from '../../math/backends/types/matmul';
-
+import {MatrixOrientation} from '../types/matmul';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class MatMulProgram implements GPGPUProgram {

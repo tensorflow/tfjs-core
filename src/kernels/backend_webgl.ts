@@ -16,18 +16,19 @@
  */
 
 import {ENV} from '../environment';
-import * as util from '../util';
+import {NDArrayMath} from '../math';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
-import {NDArrayMath} from '../math';
 import * as reduce_util from '../ops/reduce_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, Rank, RecursiveArray, TypedArray} from '../types';
-import {MathBackend} from './backend';
-import {MatrixOrientation} from '../math/backends/types/matmul';
+import * as util from '../util';
+
+import {KernelBackend} from './backend';
+import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -71,7 +72,7 @@ export interface CPUTimerQuery {
   endMs?: number;
 }
 
-export class MathBackendWebGL implements MathBackend {
+export class KernelBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
   private canvas: HTMLCanvasElement;
 
@@ -1017,7 +1018,7 @@ export class MathBackendWebGL implements MathBackend {
   }
 }
 
-ENV.registerBackend('webgl', () => new MathBackendWebGL());
+ENV.registerBackend('webgl', () => new KernelBackendWebGL());
 
 /** @deprecated Call dl.setBackend('webgl') instead. */
 export class NDArrayMathGPU extends NDArrayMath {
@@ -1025,17 +1026,17 @@ export class NDArrayMathGPU extends NDArrayMath {
     console.warn(
         'new NDArrayMathGPU() is deprecated. Please use ' +
         'dl.setBackend(\'webgl\').');
-    super(new MathBackendWebGL(gpgpu), safeMode);
+    super(new KernelBackendWebGL(gpgpu), safeMode);
   }
 
   // TODO(smilkov): Remove these two methods (used only in tests), and make
   // engine.backend private.
   getGPGPUContext(): GPGPUContext {
-    return (this.engine.backend as MathBackendWebGL).getGPGPUContext();
+    return (this.engine.backend as KernelBackendWebGL).getGPGPUContext();
   }
 
   getTextureManager(): TextureManager {
-    return (this.engine.backend as MathBackendWebGL).getTextureManager();
+    return (this.engine.backend as KernelBackendWebGL).getTextureManager();
   }
 }
 

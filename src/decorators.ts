@@ -14,7 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
-import {tidy} from './globals';
+import {Tracking} from './tracking';
 
 /**
  * Decorator for wrapping functions that perform math operations on
@@ -26,7 +26,7 @@ export function operation(
   const fn = descriptor.value;
   // tslint:disable-next-line:no-any
   descriptor.value = (...args: any[]) => {
-    return tidy(name, () => fn(...args));
+    return Tracking.tidy(name, () => fn(...args));
   };
   return descriptor;
 }

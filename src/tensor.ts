@@ -17,7 +17,7 @@
 
 import {doc} from './decorators';
 import {ENV} from './environment';
-import {MatrixOrientation} from './math/backends/types/matmul';
+import {MatrixOrientation} from './kernels/types/matmul';
 import * as ops from './ops/ops';
 import {RandNormalDataTypes} from './ops/rand';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';

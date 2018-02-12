@@ -17,9 +17,9 @@
 
 import * as device_util from './device_util';
 import {ENV, Environment, Features} from './environment';
-import {MathBackend} from './kernels/backend';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {KernelBackend} from './kernels/backend';
+import {KernelBackendCPU} from './kernels/backend_cpu';
+import {KernelBackendWebGL} from './kernels/backend_webgl';
 
 describe('disjoint query timer enabled', () => {
   afterEach(() => {
@@ -231,9 +231,9 @@ describe('Backend', () => {
         Features = {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2};
     ENV.setFeatures(features);
 
-    let backend: MathBackend;
+    let backend: KernelBackend;
     ENV.addCustomBackend('webgl', () => {
-      backend = new MathBackendWebGL();
+      backend = new KernelBackendWebGL();
       return backend;
     });
 
@@ -243,15 +243,16 @@ describe('Backend', () => {
 
   it('double registration fails', () => {
     ENV.setFeatures({'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2});
-    ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
-    expect(() => ENV.addCustomBackend('webgl', () => new MathBackendWebGL()))
+    ENV.addCustomBackend('webgl', () => new KernelBackendWebGL());
+    expect(() => ENV.addCustomBackend('webgl', () => new KernelBackendWebGL()))
         .toThrowError();
   });
 
   it('webgl not supported, falls back to cpu', () => {
     ENV.setFeatures({'WEBGL_VERSION': 0});
-    ENV.addCustomBackend('cpu', () => new MathBackendCPU());
-    const success = ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
+    ENV.addCustomBackend('cpu', () => new KernelBackendCPU());
+    const success =
+        ENV.addCustomBackend('webgl', () => new KernelBackendWebGL());
     expect(success).toBe(false);
     expect(ENV.findBackend('webgl') == null).toBe(true);
     expect(ENV.getBestBackendType()).toBe('cpu');

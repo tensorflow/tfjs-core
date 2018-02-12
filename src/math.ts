@@ -16,7 +16,7 @@
  */
 
 import {BackendType, ENV} from './environment';
-import {MathBackend} from './kernels/backend';
+import {KernelBackend} from './kernels/backend';
 import * as array_ops from './ops/array_ops';
 import * as batchnorm from './ops/batchnorm';
 import * as binary_ops from './ops/binary_ops';
@@ -205,7 +205,7 @@ export class NDArrayMath {
   endScope: typeof ENV.engine.endScope;
 
   /** @deprecated */
-  constructor(backend: BackendType|MathBackend, safeMode: boolean) {
+  constructor(backend: BackendType|KernelBackend, safeMode: boolean) {
     ENV.setMath(this, backend, safeMode);
     this.engine = ENV.engine;
     this.dispose = ENV.engine.dispose.bind(ENV.engine);

@@ -16,8 +16,8 @@
  */
 
 import {ENV, Environment, Features} from './environment';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {KernelBackendCPU} from './kernels/backend_cpu';
+import {KernelBackendWebGL} from './kernels/backend_webgl';
 import {Tensor} from './tensor';
 import {DataType, TypedArray} from './types';
 import * as util from './util';
@@ -149,8 +149,8 @@ function executeTests(
   describe(testName, () => {
     beforeEach(() => {
       ENV.setFeatures(features || {});
-      ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
-      ENV.addCustomBackend('cpu', () => new MathBackendCPU());
+      ENV.addCustomBackend('webgl', () => new KernelBackendWebGL());
+      ENV.addCustomBackend('cpu', () => new KernelBackendCPU());
       if (features && features.BACKEND != null) {
         Environment.setBackend(features.BACKEND);
       }

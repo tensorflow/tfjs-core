@@ -15,46 +15,47 @@
  * =============================================================================
  */
 
-import * as util from '../util';
 import * as ops from '../ops/ops';
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
-import {MathBackend} from './backend';
-import {ArgMaxNode, ArgMinNode} from '../math/backends/types/argminmax';
+import * as util from '../util';
+
+import {KernelBackend} from './backend';
+import {ArgMaxNode, ArgMinNode} from './types/argminmax';
 // tslint:disable-next-line:max-line-length
-import {BatchNorm2DNode, BatchNorm3DNode, BatchNorm4DNode} from '../math/backends/types/batchnorm';
-import {BinaryNode} from '../math/backends/types/binary';
-import {CastNode} from '../math/backends/types/cast';
+import {BatchNorm2DNode, BatchNorm3DNode, BatchNorm4DNode} from './types/batchnorm';
+import {BinaryNode} from './types/binary';
+import {CastNode} from './types/cast';
 // tslint:disable-next-line:max-line-length
-import {ConcatNode} from '../math/backends/types/concat';
+import {ConcatNode} from './types/concat';
 // tslint:disable-next-line:max-line-length
-import {Conv2DDerBiasNode, Conv2DDerFilterNode, Conv2DDerInputNode, Conv2DNode, DepthwiseConv2DNode} from '../math/backends/types/conv';
-import {GatherNode} from '../math/backends/types/gather';
-import {EqualNode, LogicalNode, WhereNode} from '../math/backends/types/logical';
-import {LRN4DNode} from '../math/backends/types/lrn';
-import {MatMulNode} from '../math/backends/types/matmul';
-import {MaximumNode, MaxNode, MinimumNode, MinNode} from '../math/backends/types/minmax';
-import {MultinomialNode} from '../math/backends/types/multinomial';
-import {OneHotNode} from '../math/backends/types/onehot';
-import {Pad1DNode, Pad2DNode} from '../math/backends/types/pad';
+import {Conv2DDerBiasNode, Conv2DDerFilterNode, Conv2DDerInputNode, Conv2DNode, DepthwiseConv2DNode} from './types/conv';
+import {GatherNode} from './types/gather';
+import {EqualNode, LogicalNode, WhereNode} from './types/logical';
+import {LRN4DNode} from './types/lrn';
+import {MatMulNode} from './types/matmul';
+import {MaximumNode, MaxNode, MinimumNode, MinNode} from './types/minmax';
+import {MultinomialNode} from './types/multinomial';
+import {OneHotNode} from './types/onehot';
+import {Pad1DNode, Pad2DNode} from './types/pad';
 // tslint:disable-next-line:max-line-length
-import {PoolBackpropNode, PoolNode} from '../math/backends/types/pool';
-import {PowNode} from '../math/backends/types/pow';
-import {PReLUNode} from '../math/backends/types/prelu';
-import {ReshapeNode} from '../math/backends/types/reshape';
-import {ResizeBilinearNode} from '../math/backends/types/resize_bilinear';
-import {Reverse4DNode} from '../math/backends/types/reverse';
+import {PoolBackpropNode, PoolNode} from './types/pool';
+import {PowNode} from './types/pow';
+import {PReLUNode} from './types/prelu';
+import {ReshapeNode} from './types/reshape';
+import {ResizeBilinearNode} from './types/resize_bilinear';
+import {Reverse4DNode} from './types/reverse';
 // tslint:disable-next-line:max-line-length
-import {Slice1DNode, Slice2DNode, Slice3DNode, Slice4DNode} from '../math/backends/types/slice';
-import {SumNode} from '../math/backends/types/sum';
-import {TopKIndicesNode, TopKValuesNode} from '../math/backends/types/topk';
+import {Slice1DNode, Slice2DNode, Slice3DNode, Slice4DNode} from './types/slice';
+import {SumNode} from './types/sum';
+import {TopKIndicesNode, TopKValuesNode} from './types/topk';
 // tslint:disable-next-line:max-line-length
-import {ClipNode, LeakyReluNode, StepNode, TileNode, TransposeNode, UnaryNode} from '../math/backends/types/unary';
+import {ClipNode, LeakyReluNode, StepNode, TileNode, TransposeNode, UnaryNode} from './types/unary';
 
 export function
 executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, O extends
                   KernelConfigRegistry<R>[K]['output']>(
-    backend: MathBackend, kernelName: K,
+    backend: KernelBackend, kernelName: K,
     inputAndArgs: KernelConfigRegistry<R>[K]['inputAndArgs']): O {
   if (kernelName === 'MatMul') {
     const config = inputAndArgs as MatMulNode['inputAndArgs'];

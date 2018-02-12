@@ -16,10 +16,9 @@
  */
 
 import * as dl from '../index';
+import {MatrixOrientation} from '../kernels/types/matmul';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, describeWithFlags, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
-
-import {MatrixOrientation} from '../math/backends/types/matmul';
 import {Rank} from '../types';
 
 describeWithFlags('matmul', ALL_ENVS, () => {
