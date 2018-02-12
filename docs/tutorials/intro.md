@@ -11,26 +11,9 @@ in a browser or run pre-trained models in inference mode. It provides an API for
 constructing differentiable data flow graphs, as well as a set of mathematical
 functions that can be used directly.
 
-* TOC
-{:toc}
+Lets take a look at some of the core concepts in deeplean.js
 
-You can find the code that supplements this tutorial
-[here](https://github.com/PAIR-code/deeplearnjs/tree/master/demos/intro).
-
-Run it yourself with:
-```ts
-./scripts/watch-demo demos/intro
-```
-
-And visit `http://localhost:8080/demos/intro/`.
-
-Or just view the demo we have hosted [here](https://deeplearnjs.org/demos/intro/).
-
-In our documentation we will use ES2017 syntax
-
-## Core concepts
-
-### Tensors
+## Tensors
 
 The central unit of data in **deeplearn.js** is the `Tensor`. A `Tensor`
 consists of a set of floating point values shaped into an array of an arbitrary
@@ -41,120 +24,154 @@ their shape. The library provides sugar subclasses for low-rank `Tensor`s:
 Example usage with a 2x3 matrix:
 
 ```js
-const shape = [2, 3]; // 2 rows, 3 columns
-const a = dl.tensor2d([1.0, 2.0, 3.0, 10.0, 20.0, 30.0], shape);
+let shape = [2, 3]; // 2 rows, 3 columns
+let a = dl.tensor2d([1.0, 2.0, 3.0, 10.0, 20.0, 30.0], shape);
+// deeplearn.js can also infer the shape
+let b = dl.tensor2d([[0.0, 2.0], [4.0, 6.0]]);
 ```
 
-`Tensor`s can store data either on the GPU as a `WebGLTexture`, where each
-pixel stores a floating point value, or on the CPU as a vanilla JavaScript
-`TypedArray`. Most of the time, the user should not think about the storage,
-as it is an implementation detail.
+`Tensor`s can store data either on the GPU as a `WebGLTexture`, or on the CPU as
+a JavaScript `TypedArray`. Most of the time, the user should not think about
+the storage, as it is an implementation detail.
 
-If `Tensor` data is
-stored on the CPU, the first time a GPU mathematical operation is called the
-data will be uploaded to a texture automatically. If you call
-`tensor.data()` on a GPU-resident `Tensor`, the
-library will _download_ the texture to the CPU and delete the texture.
-
-
-#### Operations (Ops)
-
-While Tensors allow us to store data, ops allow us to manipulate data. Deeplean.js comes with a wide variety of mathematical opearations suitable for linear algebra and machine learning. These include unary ops like ... and binary ops like ... and .... Generally speaking an op will do some transformation on one of more tensors and return a new tensor as a result.
+One place you do want to think about it is when pulling data out of a Tensor, for
+example when debugging.
 
 ```js
-const a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
-const b = dl.tensor2d([0.0, 2.0, 4.0, 6.0], [2, 2]);
+let a = dl.tensor2d([[0.0, 2.0], [4.0, 6.0]]);
+a = a.square();
 
-// Putting our operations in a dl.tidy will allow the library
-// to automatically clean up all the intermediate memory used to
-// compute our result. It is also a great way to group units
-// of related operations.
-const average = dl.tidy(() => {
-  const diff = dl.sub(a, b);
-  const squaredDiff = dl.mul(diff, diff);
-  const sum = dl.sum(squaredDiff);
-  const size = dl.scalar(a.size);
-  const average = dl.div(sum, size);
-  return average
-})
+a.data().then(data => console.log('The data TypedArray', data));
 
-average.data().then((avg) => console.log('mean squared difference: ' + avg));
-
+// Alternatively we can also call this synchronously
+let data = a.dataSync();
+console.log('The data TypedArray', data);
 ```
 
-In the code above notice how we put all of our work in a `dl.tidy()`, this is a utility function that allows us to group operations together logically and importantly clean up any intermediate memory used by those operations along the way. Using `dl.tidy()` will help prevent memory leaks in your application and can be used to more carefully control when memory is reclaimed. This is particularly important in controlling how we use memory on the _GPU_
+In the example above we first create a tensor then call a math operation on it. This will
+_upload_ that tensor to the GPU automatically. When we want to use it in out JavaScript context
+(e.g. to print it out), we call `data` or `dataSync` to _download_ it to the CPU memory. Note that
+this is a relatively expensive operation, so you would likely want to call the async version.
 
-### Training
 
-At the heart of machine learning problems is the question of actually _training_ the machine to do some task. In deeplearn.js this process is encapsulated by the concept of _Optimizers_. Optimizers are strategies to progressively tune the variables of your model in order to reduce the error (or _loss_ in ML parlance) in your models predictions.
+### Operations (Ops)
 
-We cover training and optimizers in this tutorial [TK Link to training tutorial)], but here is an outline of what the training process in deeplearn.js looks like.
+While Tensors allow us to store data, ops allow us to manipulate data. Deeplean.js comes with a wide variety of mathematical opearations suitable for linear algebra and machine learning. These include unary ops like `square` and binary ops like `add` and `mul` Generally speaking an op will do some transformation on one of more tensors and return a new tensor as a result.
+
+```js
+let a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
+let b = dl.tensor2d([[0.0, 2.0], [4.0, 6.0]]);
+
+
+// The library has a chainable API allowing you to call operations
+// directly as methods on Tensors.
+let average = a.sub(b).square().mean();
+
+// All operations are also exposed as functions in the main namespace
+// so we could also do.
+let avg = dl.mean(dl.square(dl.sub(a, b)));
+```
+
+#### Tidy Operations
+
+Because deeplearn.js uses the GPU to accelerate math operations, there is a need
+to manage GPU memory. While in regular javascript this is handled with scopes, we
+provide a convenience function to clean up intermediate memory that operations might use.
+
+We call this function `dl.tidy`.
+
+```js
+let a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
+
+// dl.tidy takes a function to tidy up after
+let average = dl.tidy(() => {
+  // dl.tidy will clean up all the GPU memory used by tensors inside
+  // this function, other than the tensor that is returned.
+  //
+  // Even in a short sequence of operations like the one below, a number
+  // of intermediate tensors get created. So it is a good practice to
+  // put your math ops in a tidy!
+  return a.sub(b).square().mean();
+});
+```
+
+Using `dl.tidy()` will help prevent memory leaks in your application and can be used to more carefully control when memory is reclaimed.
+
+The manual way to clean up a tensor's backing memory is the dispose method.
+
+```js
+let a = dl.tensor2d([[0.0, 2.0], [4.0, 6.0]]);
+a = a.square();
+a.dispose(); // Clean up GPU buffer
+```
+
+But using tidy functions is much more convenient!
+
+## Training
+
+At the heart of many machine learning problems is the question of actually _training_ the machine to do some task. In deeplearn.js this process is encapsulated by  _Optimizers_. Optimizers are strategies to progressively tune the variables of your model in order to reduce the error (or _loss_ in ML parlance) in your models predictions.
+
+We cover training and optimizers [in this tutorial](ml_beginners.md), but here is an outline of what the training process in deeplearn.js looks like.
 
 ```js
 import * as dl from 'deeplearn';
 
-// You don't have to use a class, but it can useful to encapsulate the model
-class TrainableModel {
+// Initialize the models variables
+const weights = dl.variable(dl.Array2D.randTruncatedNormal([10, 64]));
+const biases = dl.variable(dl.Array1D.zeros([64]));
 
-  constructor() {
-    // Initialize the models variables
-    this.weights = dl.variable(dl.Array4D.randTruncatedNormal([5, 5, 3, 64]));
-    this.biases = dl.variable(dl.Array1D.zeros([64], 'float32'));
+// Set a learning rate and create an optimizer.
+const LEARNING_RATE = .1;
+const optimizer = new dl.SGDOptimizer(LEARNING_RATE);
 
-    // Set a learning rate and create an optimizer.
-    const LEARNING_RATE = .1;
-    this.optimizer = new dl.SGDOptimizer(LEARNING_RATE);
-  }
+/**
+ * Perform inference
+ */
+function inference(input) {
+  // Do inference, return a prediction.
+}
 
-  /**
-   * Perform inference
-   */
-  inference(input) {
-    // Do inference, return a prediction.
-  }
+/**
+ * Compute the loss of the model by comparing the prediction
+ * and ground truth.
+ */
+function loss(predictions, groundTruth) {
+  // Do calculation, return a loss value.
+}
 
-  /**
-   * Compute the loss of the model by comparing the prediction
-   * and ground truth.
-   */
-  loss(predictions, groundTruth) {
-    // Do calculation, return a loss value.
-  }
+/**
+ * Train the model a *single* step.
+ */
+function trainStep(data, groundTruth, returnCost = true) {
+  // Calling optimizer.minimize will adjust the variables in the
+  // model based on the loss value returned by your loss function.
+  // It handles all the backpropogation and weight updates.
+  const cost = optimizer.minimize(() => {
+    // Make a prediction using the current state of the model
+    // Any variables used in this inference function will be optimized
+    // by the optimizer.
+    const prediction = inference(data);
 
-  /**
-   * Train the model a _single_ step.
-   */
-  trainStep(data, groundTruth, returnCost = true) {
-    // Calling optimizer.minimize will adjust the variables in the
-    // model based on the loss value returned by your loss function.
-    // It handles all the backpropogation and weight updates.
-    const cost = this.optimizer.minimize(() => {
-      // Make a prediction using the current state of the model
-      // Any variables used in this inference function will be optimized
-      // by the optimizer.
-      const prediction = this.inference(data);
+    // Compute loss of the current model and return it.
+    // Once returned the optimizer will adjust the network
+    // weights for our next iteration.
+    return loss(groundTruth, prediction);
+  }, returnCost);
 
-      // Compute loss of the current model and return it.
-      // Once returned the optimizer will adjust the network
-      // weights for our next iteration.
-      return this.loss(groundTruth, prediction);
-    }, returnCost);
+  // return the current loss/cost so that we can visualize it
+  return cost;
+}
 
-    // return the current loss/cost so that we can visualize it
-    return cost;
-  }
-
-  /**
-   * Train the model.
-   */
-  train(data, batchSize, numEpochs) {
-    // Call trainstep in a loop.  Use requestAnimationFrame to
-    // avoid stalling the browser.
-  }
+/**
+ * Train the model.
+ */
+function train(data, batchSize, numEpochs) {
+  // Call trainstep in a loop.  Use requestAnimationFrame to
+  // avoid stalling the browser.
 }
 ```
 
-### Backends
+## Backends
 
 The library provides a number of _backends_ which implement the core operations of the library, currently we have a __CPU__ backend and a __WebGL__ backend. Deeplearn.js will use the __WebGL__ backend by default whenever the browser supports it. The __WebGL__ backend uses the computers' __GPU__, to perform fast and highly optimized linear algebra operations.
 
@@ -163,7 +180,7 @@ To force the use of the CPU backend, you can call `dl.setBackend('cpu')` at the 
 To check which backend is being used call `dl.getBackend().`
 
 
-#### WebGL backend
+### WebGL backend
 
 When using the WebGL backend, mathematical
 operations like `dl.add` enqueue shader programs to be executed on the GPU. Unlike in CPU backend, **these operations are not blocking** (though there is some overhead in moving data from main memory to GPU memory).
@@ -184,7 +201,7 @@ const diff = dl.sub(a, b);
 
 // Calling .data returns a promise that resolves to a TypedArray that holds
 // the tensor data downloaded from the GPU.
-diff.data().then((d) => console.log('difference: ' + d));
+diff.data().then(d => console.log('difference: ' + d));
 // We could also use dataSync to do this synchronously.
 console.log('difference: ' + diff.dataSync());
 ```
@@ -194,7 +211,7 @@ operations unless you are debugging. This forces a texture download, and
 subsequent operation calls will have to re-upload the data to a new
 texture.
 
-#### CPU Backend
+### CPU Backend
 
 When using CPU implementations, these mathematical
 operations are blocking and get executed immediately on the underlying
@@ -202,8 +219,8 @@ operations are blocking and get executed immediately on the underlying
 
 The same operations are implemented on both so your code doesn't have to change based on which backend is used on the client.
 
-### Graphs
-**Note: the following sections describe using the deeplearn.js graph API. We have deprecated this API in support of a new 'eager' mode after research and community feedback. It will be removed in future versions of deeplearn.js. Eager Mode supports training and we will updated docs here soon.**
+## Graphs
+**Note: the following sections describe using the deeplearn.js graph API. We have deprecated this API in support of a new 'eager' mode after research and community feedback. It will be removed in future versions of deeplearn.js. Eager Mode supports training**
 
 Differentiable data flow graphs in **deeplearn.js** use a delayed execution model,
 just like in TensorFlow. Users construct a graph and then train or
@@ -246,7 +263,7 @@ const costTensor = g.meanSquaredCost(outputTensor, labelTensor);
 console.log(outputTensor.shape);
 ```
 
-#### Session and FeedEntry
+### Session and FeedEntry
 
 Session objects are what drive the execution of `Graph`s. `FeedEntry`
 (similar to TensorFlow `feed_dict`) are what provide data for the run,

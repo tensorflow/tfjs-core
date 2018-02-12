@@ -1,20 +1,20 @@
 ---
 layout: page
-order: 3
+order: 2
 ---
-# Training
+# Training for ML Beginners
 
 In order to get a model to learn to do the things we would like, we have to train it. There are various styles of training, but this guide will primarily focus on supoervised training. This is where we give build a model and give it some examples of inputs and _desired outputs_, we then adjust our model variables to learn to correctly map from these inputs to outputs and hopefully generalize to unseen inputs.
 
-In this guide we will build a very simple toy model to learn the coefficients for a quadratic equation given a set of existing x, y observations. This is the equation we want to fit to our data
+Lets look at a small toy example to get a feel for what training a model looks like. Note that this tutorials does not include machine learning best practices that deeplearn.js supports such as batching or shuffling training examples.
+
+In this guide we will build a very simple model to learn the coefficients for a quadratic equation given a set of existing x, y observations. This is the equation we want to fit to our data
 
 ```
 y = a * x^2 + b * x + c
 ```
 
-[TK Would be great to have a diagram here]
-
-To do this they key deeplearn.js API we will use is the optimizer API. We will set up some variables to represent the coefficients (a, b and c), and the optimizer will automatically adjust the values of these coefficients. Lets take a look at the code, it is heavily commented so we can step through it slowly.
+To do this the key deeplearn.js API we will use is the *optimizer* API. We will set up some variables (or weights) to represent the coefficients (a, b and c), and the optimizer will automatically adjust the values of these coefficients. Lets take a look at the code, it is heavily commented so feel free to read through it slowly.
 
 ```js
 import * as dl from 'deeplearn';
@@ -59,6 +59,7 @@ const optimizer = new dl.SGDOptimizer(learningRate);
  * It is also sometimes referred to as the "forward" step of our training process.
  * Though we will use the same function for predictions later.
  *
+ *
  * @return number predicted y value
  */
 function predict(input) {
@@ -66,9 +67,9 @@ function predict(input) {
   return dl.tidy(() => {
     const x = dl.scalar(input);
 
-    const ax2 = dl.square(x).mul(a);
-    const bx = x.mul(b);
-    const y = dl.add(ax2, bx).add(c);
+    const ax2 = a.mul(x.square());
+    const bx = b.mul(x);
+    const y = ax2.add(bx).add(c);
 
     return y;
   });
@@ -81,6 +82,8 @@ function predict(input) {
  * actual number is a number with the y value the model should have predicted
  */
 function loss(prediction, actual) {
+  // Having a good error metric is key for training a machine learning model
+  // Feel free to experiment with this and see how it affects the result.
   const error = dl.scalar(actual).sub(prediction).square();
   return error;
 }
@@ -159,4 +162,4 @@ train(data.xs, data.ys, 50, () => {
 After training the model, you can infer through the graph again to get a
 value for "y" given an "x".
 
-This is a very simple model and training setup. Too simple for most challenges we would want to use neural networks for. In practice we would likely not just use `Scalar` variables, and we would likely want to use techniques like batching our training data (and computing error over a batch) as well as shuffling our training data, so that the model doesn't learn something dependent on the order of examples. Future tutorials will explore common techniques used in building more robust training pipelines.
+This is a very simple model and training setup. Too simple for most challenges we would want to use neural networks for. In practice we would likely not just use `Scalar` variables. We would likely want to use techniques like batching our training data, which allows us to run prediction over a number of inputs in parallel, and computing error over a batch. As well as shuffling our training data, so that the model doesn't learn something dependent on the order of examples. Future tutorials will explore common techniques used in building more robust training pipelines.

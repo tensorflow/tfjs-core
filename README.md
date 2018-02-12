@@ -9,8 +9,7 @@ machine intelligence. **deeplearn.js** brings performant machine learning
 building blocks to the web, allowing you to train neural networks in a browser
 or run pre-trained models in inference mode.
 
-We provide two APIs, an immediate execution model (think NumPy) and a deferred
-execution model mirroring the TensorFlow API.
+We provide an API the closely mirrors the TensorFlow eager API.
 **deeplearn.js** was originally developed by the Google Brain PAIR team to build
 powerful interactive machine learning tools for the browser, but it can be used
 for everything from education, to model understanding, to art projects.
@@ -49,10 +48,10 @@ import * as dl from 'deeplearn'; // If not loading the script as a global
 const a = dl.tensor1d([1, 2, 3]);
 const b = dl.scalar(2);
 
-const result = dl.add(a, b);
-result.data().then((data) => console.log(data)); // Float32Array([3, 4, 5]
+const result = a.add(b); // a is not modified, result is a new tensor/
+result.data().then(data => console.log(data)); // Float32Array([3, 4, 5]
 
-// Alternatively you can use a blocking call to get the final data.
+// Alternatively you can use a blocking call to get the data.
 // However this might slow your program down if called repeatedly.
 console.log(result.dataSync()); // Float32Array([3, 4, 5]
 ```
@@ -69,10 +68,10 @@ load deeplearn.js
 var a = dl.tensor1d([1, 2, 3]);
 var b = dl.scalar(2);
 
-var result = dl.add(a, b);
+var result = a.add(b); // a is not modified, result is a new tensor/
 
 // Option 1: With a Promise.
-result.data().then((data) => console.log(data)); // Float32Array([3, 4, 5])
+result.data().then(data => console.log(data)); // Float32Array([3, 4, 5])
 
 // Option 2: Synchronous download of data. Blocks the UI.
 console.log(result.dataSync());
