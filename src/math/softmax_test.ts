@@ -191,15 +191,22 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const softmaxLogits = dl.softmax(logits);
     const dy = dl.scalar(2);
 
-    const dlogits = dl.grad(
-        logits => dl.losses.softmaxCrossEntropy(labels, logits))(logits, dy);
+    const grads = dl.grads(
+        (labels, logits) => dl.losses.softmaxCrossEntropy(labels, logits));
+    const [dlabels, dlogits] = grads([labels, logits], dy);
 
     expect(dlogits.shape).toEqual(logits.shape);
-
     expectArraysClose(dlogits, [
       dy.get() * (softmaxLogits.get(0) - labels.get(0)),
       dy.get() * (softmaxLogits.get(1) - labels.get(1)),
       dy.get() * (softmaxLogits.get(2) - labels.get(2))
+    ]);
+
+    expect(dlabels.shape).toEqual(labels.shape);
+    expectArraysClose(dlabels, [
+      dy.get() * (labels.get(0) - softmaxLogits.get(0)),
+      dy.get() * (labels.get(1) - softmaxLogits.get(1)),
+      dy.get() * (labels.get(2) - softmaxLogits.get(2))
     ]);
   });
 

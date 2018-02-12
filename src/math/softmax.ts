@@ -105,7 +105,7 @@ export class Ops {
           `and dim was ${dim}`);
     }
     // Use a custom gradient for numerical stability.
-    const customOp = customGrad(logits => {
+    const customOp = customGrad((labels, logits) => {
       const predictedProbs = logits.softmax(dim);
       const costVector =
           ops.scalar(1e-5).add(predictedProbs).log().mul(labels).neg();
@@ -114,12 +114,14 @@ export class Ops {
       const gradFunc = (dy: O) => {
         const dyShape = axis_util.expandShapeToKeepDim(dy.shape, [dim]);
         return [
+          dy.reshape(dyShape).mul(labels.toFloat().sub(predictedProbs)),
           dy.reshape(dyShape).mul(predictedProbs.sub(labels.toFloat())),
+
         ];
       };
       return {value, gradFunc};
     });
 
-    return customOp(logits);
+    return customOp(labels, logits);
   }
 }

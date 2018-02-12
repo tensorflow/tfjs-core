@@ -46,7 +46,7 @@ export class Gradients {
    *
    * `f(x)` must take a single tensor `x`. Returns another function `g(x, dy?)`,
    * which when called gives `df/dx`. If `dy` is provided, the gradient of
-   * `dl.dot(f(x), dy)` w.r.t. `x` is computed instead.
+   * `f(x).mul(dy).sum()` w.r.t. `x` is computed instead.
    *
    * If `f()` takes multiple inputs, use `dl.grads` instead.
    *
@@ -60,6 +60,28 @@ export class Gradients {
       value.dispose();
       checkGrads(grads);
       return grads[0] as I;
+    };
+  }
+
+  /**
+   * Computes the gradients of `f(x1, x2,...)` w.r.t. each input `x1`, `x2`,...
+   * Returns another function `g([x1, x2,...], dy?)`, which when called gives
+   * an array of tensors: `[df/dx1, df/dx2,...]` evaluated at `[x1, x2,...]`.
+   * If `dy` is provided, the gradient of `f(x).mul(dy).sum()` w.r.t. each input
+   * is computed instead.
+   *
+   * If `f()` takes a single input, use `dl.grad` instead.
+   *
+   * @param f The function `f(x1, x2,...)` to compute gradients for.
+   */
+  @doc({heading: 'Training', subheading: 'Gradients'})
+  static grads<O extends Tensor>(f: (...args: Tensor[]) => O):
+      (args: Tensor[], dy?: O) => Tensor[] {
+    return (args: Tensor[], dy?: O): Tensor[] => {
+      const {value, grads} = ENV.engine.gradients(() => f(...args), args, dy);
+      value.dispose();
+      checkGrads(grads);
+      return grads;
     };
   }
 
@@ -80,28 +102,6 @@ export class Gradients {
       const {grads, value} = ENV.engine.gradients(() => f(x), [x], dy);
       checkGrads(grads);
       return {grad: grads[0] as I, value: value as O};
-    };
-  }
-
-  /**
-   * Computes the gradients of `f(x1, x2,...)` w.r.t. each input `x1`, `x2`,...
-   * Returns another function `g([x1, x2,...], dy?)`, which when called gives
-   * an array of tensors: `[df/dx1, df/dx2,...]` evaluated at `[x1, x2,...]`.
-   * If `dy` is provided, the gradient of `dl.dot(f(x), dy)` w.r.t. each input
-   * is computed instead.
-   *
-   * If `f()` takes a single input, use `dl.grad` instead.
-   *
-   * @param f The function `f(x1, x2,...)` to compute gradients for.
-   */
-  @doc({heading: 'Training', subheading: 'Gradients'})
-  static grads<O extends Tensor>(f: (...args: Tensor[]) => O):
-      (args: Tensor[], dy?: O) => Tensor[] {
-    return (args: Tensor[], dy?: O): Tensor[] => {
-      const {value, grads} = ENV.engine.gradients(() => f(...args), args, dy);
-      value.dispose();
-      checkGrads(grads);
-      return grads;
     };
   }
 
