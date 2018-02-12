@@ -15,11 +15,12 @@
  * =============================================================================
  */
 
+import {operation} from '../decorators';
+import {doc} from '../doc';
 import {ENV} from '../environment';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as util from '../util';
 import * as axis_util from './axis_util';
-import {doc, operation} from '../decorators';
-import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 
 export class Ops {
   /**

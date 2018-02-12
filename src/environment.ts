@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {doc} from './decorators';
 import * as device_util from './device_util';
+import {doc} from './doc';
 import {Engine, MemoryInfo} from './engine';
 import {KernelBackend} from './kernels/backend';
 import {NDArrayMath} from './math';

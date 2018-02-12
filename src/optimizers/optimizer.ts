@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {doc} from '../doc';
 import {keep, tidy, variableGrads} from '../globals';
 import {Node, VariableNode} from '../graph/graph';
 import {SessionRuntime} from '../graph/session';
@@ -22,9 +23,8 @@ import * as session_util from '../graph/session_util';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
 import {NDArrayMath} from '../math';
-import {Scalar, Tensor, Variable} from '../tensor';
-import {doc} from '../decorators';
 import * as ops from '../ops/ops';
+import {Scalar, Tensor, Variable} from '../tensor';
 import {NamedTensorMap} from '../types';
 
 export abstract class Optimizer {

@@ -16,9 +16,9 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {describeWithFlags, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
-import {GPGPUContext} from './webgl/gpgpu_context';
-import * as tex_util from './webgl/tex_util';
+import {describeWithFlags, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../../test_util';
+import {GPGPUContext} from './gpgpu_context';
+import * as tex_util from './tex_util';
 
 describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;

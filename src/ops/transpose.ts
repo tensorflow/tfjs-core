@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
+import {operation} from '../decorators';
+import {doc} from '../doc';
 import {ENV} from '../environment';
-import * as util from '../util';
-
-import * as axis_util from './axis_util';
-import {doc, operation} from '../decorators';
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
+import * as util from '../util';
+import * as axis_util from './axis_util';
 
 export class Ops {
   /**

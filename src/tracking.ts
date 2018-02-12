@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {doc} from './decorators';
+import {doc} from './doc';
 import {ENV} from './environment';
 // tslint:disable-next-line:max-line-length
 import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';

@@ -16,7 +16,6 @@
  */
 
 import {MPRandGauss} from './rand';
-// tslint:disable-next-line:max-line-length
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 function isFloat(n: number): boolean {

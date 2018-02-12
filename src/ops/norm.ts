@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
-import * as axis_util from './axis_util';
-import {doc, operation} from '../decorators';
-import * as ops from './ops';
+import {operation} from '../decorators';
+import {doc} from '../doc';
 import {Tensor} from '../tensor';
+import * as axis_util from './axis_util';
+import * as ops from './ops';
 
 export class Ops {
   /**

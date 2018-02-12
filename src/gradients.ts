@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
+import {doc} from './doc';
+import {CustomGradientFunc} from './engine';
 import {ENV} from './environment';
 import {tidy} from './globals';
-import {doc} from './decorators';
+import {ScopeFn, ScopeResult} from './tape_util';
 import {Scalar, Tensor, Variable} from './tensor';
 import {NamedTensorMap} from './types';
-import {CustomGradientFunc} from './engine';
-import {ScopeFn, ScopeResult} from './tape_util';
 
 export class Gradients {
   /**

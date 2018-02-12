@@ -15,15 +15,16 @@
  * =============================================================================
  */
 
+import {operation} from '../decorators';
+import {doc} from '../doc';
 import {ENV} from '../environment';
-import * as util from '../util';
-
-import {doc, operation} from '../decorators';
-import {MPRandGauss} from './rand';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D} from '../types';
+import * as util from '../util';
+
+import {MPRandGauss} from './rand';
 
 export class Ops {
   /**

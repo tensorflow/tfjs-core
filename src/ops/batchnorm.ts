@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
+import {operation} from '../decorators';
+import {doc} from '../doc';
 import {ENV} from '../environment';
-import * as util from '../util';
-
-import {doc, operation} from '../decorators';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {Rank} from '../types';
+import * as util from '../util';
 
 export class Ops {
   /**

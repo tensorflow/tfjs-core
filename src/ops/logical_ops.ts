@@ -15,14 +15,14 @@
  * =============================================================================
  */
 
+import {operation} from '../decorators';
+import {doc} from '../doc';
 import {ENV} from '../environment';
-import * as util from '../util';
-
-import * as broadcast_util from './broadcast_util';
-import {doc, operation} from '../decorators';
 import {Tensor} from '../tensor';
 import * as types from '../types';
 import {DataType} from '../types';
+import * as util from '../util';
+import * as broadcast_util from './broadcast_util';
 
 export class Ops {
   /**

@@ -14,7 +14,8 @@
  * limitations under the License.
  * =============================================================================
  */
-import {Tracking} from './tracking';
+
+import {tidy} from './globals';
 
 /**
  * Decorator for wrapping functions that perform math operations on
@@ -26,32 +27,7 @@ export function operation(
   const fn = descriptor.value;
   // tslint:disable-next-line:no-any
   descriptor.value = (...args: any[]) => {
-    return Tracking.tidy(name, () => fn(...args));
+    return tidy(name, () => fn(...args));
   };
   return descriptor;
-}
-
-export interface HeadingMap {
-  'Tensors': 'Creation'|'Transformations'|'Slicing and Joining';
-  'Operations': 'Arithmetic'|'Basic math'|'Matrices'|'Convolution'|
-      'Normalization'|'Images'|'Logical'|'RNN'|'Reduction'|'Classification';
-  'Training': 'Gradients'|'Optimizers';
-  'Performance': 'Memory'|'Timing';
-  // TODO(nsthorat): Make subheading optional.
-  'Environment': '';
-}
-export type Heading = keyof HeadingMap;
-export type Namespace = 'losses'|'image'|'train';
-
-export interface DocInfo<H extends Heading> {
-  heading: H;
-  subheading?: HeadingMap[H];
-  namespace?: Namespace;
-  subclasses?: string[];
-}
-
-// Pass through function that does nothing. Only used for documentation.
-export function doc<H extends Heading>(info: DocInfo<H>) {
-  // tslint:disable-next-line:no-any
-  return (...args: any[]) => {};
 }

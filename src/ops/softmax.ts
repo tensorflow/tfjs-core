@@ -15,12 +15,13 @@
  * =============================================================================
  */
 
+import {operation} from '../decorators';
+import {doc} from '../doc';
 import {customGrad} from '../globals';
+import {Tensor} from '../tensor';
 import * as util from '../util';
 import * as axis_util from './axis_util';
-import {doc, operation} from '../decorators';
 import * as ops from './ops';
-import {Tensor} from '../tensor';
 
 export class Ops {
   /**

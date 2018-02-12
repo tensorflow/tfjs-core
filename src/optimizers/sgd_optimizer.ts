@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {doc} from '../doc';
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {Node} from '../graph/graph';
@@ -22,7 +23,6 @@ import {SessionRuntime} from '../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
 import {NDArrayMath} from '../math';
-import {doc} from '../decorators';
 import {scalar} from '../ops/ops';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../types';

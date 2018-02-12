@@ -15,14 +15,14 @@
  * =============================================================================
  */
 
+import {operation} from '../decorators';
+import {doc} from '../doc';
 import {ENV} from '../environment';
+import {Tensor} from '../tensor';
 import * as util from '../util';
-
-import {doc, operation} from '../decorators';
 import * as ops from './ops';
 import {zerosLike} from './ops';
 import * as selu_util from './selu_util';
-import {Tensor} from '../tensor';
 
 export class Ops {
   /**
