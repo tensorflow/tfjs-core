@@ -15,18 +15,18 @@
  * =============================================================================
  */
 
-import {operation} from './operation';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import * as util from '../util';
+import {operation} from './operation';
 import * as ops from './ops';
 import {zerosLike} from './ops';
 import * as selu_util from './selu_util';
 
 export class Ops {
   /**
-   * Computes -1 * A element-wise.
+   * Computes `-1 * x` element-wise.
    * @param x The input array.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -38,9 +38,8 @@ export class Ops {
   }
 
   /**
-   * Computes ceiling of input Tensor element-wise. y = ceil(x)
-   * TODO(nsthorat): Make this return an int32 when we add rank as a
-   * generic.
+   * Computes ceiling of input Tensor element-wise: `ceil(x)`
+   *
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -53,13 +52,14 @@ export class Ops {
   }
 
   /**
-   * Computes floor of input NDArray element-wise. y = floor(x).
-   * TODO(manrajgrover): Fix gradient once backprop handles nulls
-   * @param x The input NDArray.
+   * Computes floor of input `Tensor` element-wise: `floor(x)`.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static floor<T extends Tensor>(x: T): T {
+    // TODO(nsthorat): Let gradients be null for cases where we want to stop
+    // backpropgation.
     const gradient = (dy: T, y: T) => {
       return {x: () => ops.zeros(y.shape)};
     };
@@ -67,7 +67,7 @@ export class Ops {
   }
 
   /**
-   * Computes exponential of the input Tensor element-wise. y = e ^ x
+   * Computes exponential of the input Tensor element-wise. `e ^ x`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -79,7 +79,7 @@ export class Ops {
   }
 
   /**
-   * Computes natural logarithm of the input Tensor element-wise. y = ln(x)
+   * Computes natural logarithm of the input Tensor element-wise: `ln(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -91,7 +91,7 @@ export class Ops {
   }
 
   /**
-   * Computes square root of the input Tensor element-wise. y = sqrt(x)
+   * Computes square root of the input Tensor element-wise: `y = sqrt(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -103,7 +103,7 @@ export class Ops {
   }
 
   /**
-   * Computes square of `x` element-wise.
+   * Computes square of `x` element-wise: `x ^ 2`
    *
    * @param x The input array.
    */
@@ -116,7 +116,8 @@ export class Ops {
   }
 
   /**
-   * Computes absolute value element-wise.
+   * Computes absolute value element-wise: `abs(x)`
+   *
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -128,33 +129,36 @@ export class Ops {
   }
 
   /**
-   * Clips values element-wise.
+   * Clips values element-wise. `max(min(x, clipValueMax), clipValueMin)`
    * @param x The input Tensor.
-   * @param min Lower-bound of range to be clipped to.
-   * @param max Upper-bound of range to be clipped to.
+   * @param clipValueMin Lower-bound of range to be clipped to.
+   * @param clipValueMax Upper-bound of range to be clipped to.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static clip<T extends Tensor>(x: T, min: number, max: number): T {
+  static clipByValue<T extends Tensor>(
+      x: T, clipValueMin: number, clipValueMax: number): T {
     util.assert(
-        (min <= max),
-        `Error in clip: min (${min}) must be` +
-            `less than or equal to max (${max}).`);
+        (clipValueMin <= clipValueMax),
+        `Error in clip: min (${clipValueMin}) must be` +
+            `less than or equal to max (${clipValueMax}).`);
     return ENV.engine.executeKernel(
-               'Clip', {inputs: {x}, args: {min, max}}, (dy: T, y: T) => {
+               'Clip',
+               {inputs: {x}, args: {min: clipValueMin, max: clipValueMax}},
+               (dy: T, y: T) => {
                  return {
                    // TODO(cais): Fix gradients for the case where x = min or x
                    // = max.
                    x: () => dy.where(
-                       x.greater(ops.scalar(min))
-                           .logicalAnd(x.less(ops.scalar(max))),
+                       x.greater(ops.scalar(clipValueMin))
+                           .logicalAnd(x.less(ops.scalar(clipValueMax))),
                        zerosLike(dy)),
                  };
                }) as T;
   }
 
   /**
-   * Computes rectified linear element-wise, max(x, 0).
+   * Computes rectified linear element-wise: `max(x, 0)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -167,7 +171,7 @@ export class Ops {
   }
 
   /**
-   * Computes exponential linear element-wise
+   * Computes exponential linear element-wise, `x > 0 ? e ^ x - 1 : 0`
    * @param x the input Tensor
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -188,6 +192,8 @@ export class Ops {
 
   /**
    * Computes scaled exponential linear element-wise.
+   *
+   * `x < 0 ? scale * alpha * (exp(x) - 1) : x`
    * @hidden
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -216,7 +222,12 @@ export class Ops {
   }
 
   /**
-   * Computes leaky rectified linear element-wise
+   * Computes leaky rectified linear element-wise.
+   *
+   * See
+   * [http://web.stanford.edu/~awni/papers/relu_hybrid_icml2013_final.pdf](
+   *     http://web.stanford.edu/~awni/papers/relu_hybrid_icml2013_final.pdf)
+   *
    * @param x the input Tensor
    * @param alpha scaling factor for negative values, defaults to 0.2
    * @return {Tensor}
@@ -229,7 +240,9 @@ export class Ops {
   }
 
   /**
-   * Computes leaky rectified linear element-wise with parametric alphas
+   * Computes leaky rectified linear element-wise with parametric alphas.
+   *
+   * `x < 0 ? alpha * x : f(x) = x`
    * @param x the input Tensor
    * @param alpha scaling factor Tensor for negative values
    * @return {Tensor}
@@ -251,7 +264,7 @@ export class Ops {
   }
 
   /**
-   * Computes sigmoid element-wise, y = 1 / (1 + exp(-x)).
+   * Computes sigmoid element-wise, `1 / (1 + exp(-x))`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -263,10 +276,8 @@ export class Ops {
   }
 
   /**
-   * Computes sin of the input Tensor element-wise, y = sin(x).
+   * Computes sin of the input Tensor element-wise: `sin(x)`
    * @param x The input Tensor.
-   *
-   * TODO(smilkov): Fix dl.cos() and other ops that should return a float.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -277,7 +288,7 @@ export class Ops {
   }
 
   /**
-   * Computes cos of the input Tensor element-wise, y = cos(x).
+   * Computes cos of the input Tensor element-wise: `cos(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -289,7 +300,7 @@ export class Ops {
   }
 
   /**
-   * Computes tan of the input Tensor element-wise, y = tan(x).
+   * Computes tan of the input Tensor element-wise, `tan(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -301,7 +312,7 @@ export class Ops {
   }
 
   /**
-   * Computes asin of the input Tensor element-wise, y = asin(x).
+   * Computes asin of the input Tensor element-wise: `asin(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -315,7 +326,7 @@ export class Ops {
   }
 
   /**
-   * Computes acos of the input Tensor element-wise, y = acos(x).
+   * Computes acos of the input Tensor element-wise: `acos(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -329,7 +340,7 @@ export class Ops {
   }
 
   /**
-   * Computes atan of the input Tensor element-wise, y = atan(x).
+   * Computes atan of the input Tensor element-wise: `atan(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -341,7 +352,7 @@ export class Ops {
   }
 
   /**
-   * Computes hyperbolic sin of the input Tensor element-wise, y = sinh(x).
+   * Computes hyperbolic sin of the input Tensor element-wise: `sinh(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -353,7 +364,7 @@ export class Ops {
   }
 
   /**
-   * Computes hyperbolic cos of the input Tensor element-wise, y = cosh(x).
+   * Computes hyperbolic cos of the input Tensor element-wise: `cosh(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -365,7 +376,7 @@ export class Ops {
   }
 
   /**
-   * Computes hyperbolic tangent of the input Tensor element-wise.
+   * Computes hyperbolic tangent of the input Tensor element-wise: `tanh(x)`
    * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
@@ -377,8 +388,7 @@ export class Ops {
   }
 
   /**
-   * Computes step of the input Tensor element-wise,
-   * y=1 if x>0|alpha*x if x<=0.
+   * Computes step of the input Tensor element-wise: `x > 0 ? 1 : alpha * x`
    *
    * @param x The input Tensor.
    * @param alpha The gradient when input is negative.
