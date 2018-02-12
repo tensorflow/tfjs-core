@@ -25,7 +25,7 @@ import {ScopeFn, ScopeResult} from './tape_util';
 
 export class Gradients {
   /**
-   * Create a new tape scope. Similar to scope, but forces all inner scopes
+   * Create a new gradient scope. Similar to scope, but forces all inner scopes
    * to not clean up so that gradient operations can be used inside of this
    * scope.
    * @param nameOrScopeFn The name of the scope, or the function to execute.
@@ -36,9 +36,9 @@ export class Gradients {
    * @param scopeFn The function to execute.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
-  static tapeScope<T extends ScopeResult>(
+  static gradScope<T extends ScopeResult>(
       nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
-    return tidy(nameOrScopeFn, scopeFn, true /* tapeScope */);
+    return tidy(nameOrScopeFn, scopeFn, true /* gradScope */);
   }
 
   /**
@@ -160,13 +160,16 @@ export class Gradients {
   }
 
   /**
-   * Evaluates a function f() with a custom gradient function f'() to use during
-   * backpropagation.
+   * Overrides the gradient computation of a function `f`.
    *
-   * //TODO(smilkov): Update doc.
+   * Takes a function `f(...inputs)` and returns another function
+   * `g(...inputs)` which takes the same inputs as `f`. When called, `g` returns
+   * `f().value`. In backward mode, custom gradients w.r.t. each input of `f`
+   * are computed using `f().gradFunc`.
    *
-   * @param f The function to evaluate in forward mode. Returns a value Tensor
-   *    and a gradient function closure.
+   * @param f The function to evaluate in forward mode, which should return
+   * `{value: Tensor, gradFunc: (dy) => Tensor[]}`, where gradFunc returns the
+   * custom gradients of `f` w.r.t. its inputs.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
   static customGrad<T extends Tensor>(f: CustomGradientFunc<T>):

@@ -239,8 +239,8 @@ describeWithFlags('gradients', ALL_ENVS, () => {
   });
 
   it('grads(f)', () => {
-    const grad = dl.grads(x => x.square());
-    const result = grad([dl.tensor1d([.1, .2])]);
+    const grads = dl.grads(x => x.square());
+    const result = grads([dl.tensor1d([.1, .2])]);
     expectArraysClose(result[0], [.2, .4]);
   });
 
@@ -258,18 +258,16 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     expectArraysClose(da, [2, 4, 6, 8]);
   });
 
-  it('reshape outside dl.gradients() throws error', () => {
+  it('reshape outside dl.grads() throws error', () => {
     const a = dl.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = a.flatten();
     const exponent = dl.tensor1d([2, 2, 2, 2], 'int32');
 
     const f = () => {
-      const res = dl.grads((a, b) => {
+      dl.grads((a, b) => {
         const m = dl.pow(b, exponent);
         return dl.sum(m);
       })([a, b]);
-      console.log(res);
-      console.log(res[0], res[1]);
     };
     expect(f).toThrowError();
   });
@@ -289,7 +287,7 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     expectArraysClose(da, [2, 4, 6, 8]);
   });
 
-  it('asType outside of dl.gradients() throws error', () => {
+  it('asType outside of dl.grads() throws error', () => {
     const a = dl.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
     const b = a.toFloat();
     const exponent = dl.tensor2d([2, 2, 2, 2], [2, 2], 'int32');
@@ -390,9 +388,9 @@ describeWithFlags('higher-order gradients', ALL_ENVS, () => {
   });
 
   it('grads(grads(f))', () => {
-    const grad = dl.grads(x => x.mul(x).mul(x));
-    const gradgrad = dl.grads(x => grad([x])[0]);
-    const result = gradgrad([dl.tensor1d([.1, .2])]);
+    const grads = dl.grads(x => x.mul(x).mul(x));
+    const gradsgrads = dl.grads(x => grads([x])[0]);
+    const result = gradsgrads([dl.tensor1d([.1, .2])]);
     expectArraysClose(result[0], [.6, 1.2]);
   });
 });

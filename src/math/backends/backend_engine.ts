@@ -38,7 +38,7 @@ interface ScopeState {
 }
 
 /**
- * @docalias (...args: Tensor[]) => {
+ * @docalias (...inputs: Tensor[]) => {
  *   value: Tensor,
  *   gradFunc: (dy: Tensor) => Tensor[]
  * }

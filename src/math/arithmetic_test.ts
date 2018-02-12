@@ -362,7 +362,7 @@ describeWithFlags('mul', ALL_ENVS, () => {
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);
-    expect(db.dtype).toEqual('float32');
+    expect(da.dtype).toEqual('float32');
     expectArraysClose(da, [3 * 1, 4 * 10, 5 * 20]);
 
     expect(db.shape).toEqual(b.shape);
