@@ -101,8 +101,8 @@ export class OptimizerConstructors {
       learningRate = 0.002, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8):
       AdamaxOptimizer {
     return new AdamaxOptimizer(
-        learningRate, beta1, beta2,
-        undefined /** @deprecated specifiedVariableList */, epsilon);
+        learningRate, beta1, beta2, epsilon,
+        undefined /** @deprecated specifiedVariableList */);
   }
 
   /**

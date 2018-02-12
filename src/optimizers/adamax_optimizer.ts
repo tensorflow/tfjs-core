@@ -32,26 +32,26 @@ import {Optimizer} from './optimizer';
 export class AdamaxOptimizer extends Optimizer {
   private c: Scalar;
   private eps: Scalar;
-  private accB1: Scalar;
-  private b1: Scalar;
-  private b2: Scalar;
+  private accBeta1: Scalar;
+  private beta1: Scalar;
+  private beta2: Scalar;
   private one: Scalar;
 
   private accumulatedFirstMoment: NamedVariableMap = {};
   private accumulatedWeightedInfNorm: NamedVariableMap = {};
 
   constructor(
-      protected learningRate: number, private beta1: number,
-      private beta2: number,
-      /** @deprecated */ specifiedVariableList?: Node[], epsilon = 1e-8) {
+      protected learningRate: number, beta1: number, beta2: number,
+      epsilon = 1e-8,
+      /** @deprecated */ specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.c = keep(scalar(-learningRate));
     this.eps = keep(scalar(epsilon));
     // b1, b2 keep initial value of beta* hyperparameters.
-    this.b1 = keep(scalar(this.beta1));
-    this.b2 = keep(scalar(this.beta2));
+    this.beta1 = keep(scalar(beta1));
+    this.beta2 = keep(scalar(beta2));
 
-    this.accB1 = keep(scalar(this.beta1));
+    this.accBeta1 = keep(scalar(beta1));
     this.one = keep(scalar(1));
   }
 
@@ -74,10 +74,10 @@ export class AdamaxOptimizer extends Optimizer {
       const weightedInfNorm = this.accumulatedWeightedInfNorm[variableName];
 
       tidy(() => {
-        const newFirstMoment =
-            this.b1.mul(firstMoment).add(this.one.sub(this.b1).mul(gradient));
+        const newFirstMoment = this.beta1.mul(firstMoment)
+                                   .add(this.one.sub(this.beta1).mul(gradient));
 
-        const ut0 = this.b2.mul(weightedInfNorm);
+        const ut0 = this.beta2.mul(weightedInfNorm);
         const ut1 = gradient.abs();
 
         const newWeightedInfNorm = ut0.maximum(ut1);
@@ -87,20 +87,16 @@ export class AdamaxOptimizer extends Optimizer {
             newWeightedInfNorm);
 
         const newValue =
-            this.c.divStrict(this.one.sub(this.accB1))
+            this.c.divStrict(this.one.sub(this.accBeta1))
                 .mul(newFirstMoment.div(this.eps.add(newWeightedInfNorm)))
                 .add(value);
         value.assign(newValue);
       });
     }
 
-    this._disposeAndUpdateBeta();
-  }
-
-  _disposeAndUpdateBeta() {
     // Make sure to dispose old values.
-    const oldAccB1 = this.accB1;
-    this.accB1 = keep(this.accB1.mul(this.b1));
+    const oldAccB1 = this.accBeta1;
+    this.accBeta1 = keep(this.accBeta1.mul(this.beta1));
     oldAccB1.dispose();
   }
 
@@ -138,16 +134,16 @@ export class AdamaxOptimizer extends Optimizer {
         const oldWeightedInfNorm = this.weightedInfNormGraph.get(node.output);
 
         const newFirstMoment = math.scaledArrayAdd(
-            this.b1, oldFirstMoment, this.one.sub(this.b1), gradient);
+            this.beta1, oldFirstMoment, this.one.sub(this.beta1), gradient);
 
-        const ut0 = this.b2.mul(oldWeightedInfNorm);
+        const ut0 = this.beta2.mul(oldWeightedInfNorm);
         const ut1 = gradient.abs();
 
         const newWeightedInfNorm = ut0.maximum(ut1);
 
         const variable = math.scaledArrayAdd(
             this.one, oldVariable,
-            this.cGraph.divStrict(this.one.sub(this.accB1)),
+            this.cGraph.divStrict(this.one.sub(this.accBeta1)),
             newFirstMoment.div(this.eps.add(newWeightedInfNorm)));
 
         activationArrayMap.set(node.output, keep(variable));
@@ -162,7 +158,10 @@ export class AdamaxOptimizer extends Optimizer {
         oldWeightedInfNorm.dispose();
       });
 
-      this._disposeAndUpdateBeta();
+      // Make sure to dispose old values.
+      const oldAccBeta1 = this.accBeta1;
+      this.accBeta1 = keep(this.accBeta1.mul(this.beta1));
+      oldAccBeta1.dispose();
     });
 
     this.variableGradients.dispose();
@@ -173,9 +172,9 @@ export class AdamaxOptimizer extends Optimizer {
     super.dispose();
     this.c.dispose();
     this.eps.dispose();
-    this.accB1.dispose();
-    this.b1.dispose();
-    this.b2.dispose();
+    this.accBeta1.dispose();
+    this.beta1.dispose();
+    this.beta2.dispose();
     this.one.dispose();
 
     if (this.firstMomentGraph != null) {
