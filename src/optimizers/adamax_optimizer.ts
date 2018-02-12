@@ -23,7 +23,7 @@ import {SessionRuntime} from '../graph/session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
 import {NDArrayMath} from '../math';
 import {scalar, zerosLike} from '../ops/ops';
-import {Scalar, Tensor} from '../tensor';
+import {Scalar, Tensor, Variable} from '../tensor';
 import {variable} from '../tensor';
 import {NamedVariableMap} from '../types';
 
@@ -32,7 +32,7 @@ import {Optimizer} from './optimizer';
 export class AdamaxOptimizer extends Optimizer {
   private c: Scalar;
   private eps: Scalar;
-  private accBeta1: Scalar;
+  private accBeta1: Variable;
   private beta1: Scalar;
   private beta2: Scalar;
   private one: Scalar;
@@ -51,7 +51,7 @@ export class AdamaxOptimizer extends Optimizer {
     this.beta1 = keep(scalar(beta1));
     this.beta2 = keep(scalar(beta2));
 
-    this.accBeta1 = keep(scalar(beta1));
+    this.accBeta1 = variable(scalar(beta1));
     this.one = keep(scalar(1));
   }
 
@@ -94,10 +94,7 @@ export class AdamaxOptimizer extends Optimizer {
       });
     }
 
-    // Make sure to dispose old values.
-    const oldAccB1 = this.accBeta1;
-    this.accBeta1 = keep(this.accBeta1.mul(this.beta1));
-    oldAccB1.dispose();
+    tidy(() => this.accBeta1.assign(this.accBeta1.mul(this.beta1)));
   }
 
   beforeBatch(
@@ -158,10 +155,7 @@ export class AdamaxOptimizer extends Optimizer {
         oldWeightedInfNorm.dispose();
       });
 
-      // Make sure to dispose old values.
-      const oldAccBeta1 = this.accBeta1;
-      this.accBeta1 = keep(this.accBeta1.mul(this.beta1));
-      oldAccBeta1.dispose();
+      this.accBeta1.assign(this.accBeta1.mul(this.beta1));
     });
 
     this.variableGradients.dispose();
