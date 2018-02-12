@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
-import {operation} from './operation';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {Rank, ShapeMap} from '../types';
+import {operation} from './operation';
 import * as slice_util from './slice_util';
 
 export class Ops {

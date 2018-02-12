@@ -29,6 +29,11 @@ export interface TensorData {
   values?: TypedArray;
 }
 
+/**
+ * A mutable object, similar to `Tensor`, that allows users to set values
+ * at locations before converting to an immutable `Tensor`.
+ */
+@doc({heading: 'Tensors', subheading: 'Creation'})
 export class TensorBuffer<R extends Rank> {
   values: TypedArray;
   private strides: number[];
@@ -38,6 +43,12 @@ export class TensorBuffer<R extends Rank> {
     this.strides = computeStrides(shape);
   }
 
+  /**
+   * Sets a value in the buffer at a given location.
+   * @param value The value to set.
+   * @param locs  The location to set the value at.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   set(value: number, ...locs: number[]) {
     if (locs.length === 0) {
       locs = [0];
@@ -82,6 +93,10 @@ export class TensorBuffer<R extends Rank> {
     return this.shape.length;
   }
 
+  /**
+   * Creates an immutable `Tensor` object from the buffer.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   toTensor(): Tensor<R> {
     return Tensor.make(this.shape, {values: this.values}, this.dtype);
   }

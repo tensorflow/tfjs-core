@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {operation} from './operation';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
@@ -24,6 +23,7 @@ import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} fr
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D} from '../types';
 import * as util from '../util';
 
+import {operation} from './operation';
 import {MPRandGauss} from './rand';
 
 export class Ops {
@@ -428,7 +428,7 @@ export class Ops {
   }
 
   /**
-   * Reshapes a tensor.
+   * Reshapes a tensor to a given shape.
    *
    * Given a input tensor, returns a new tensor with the same values as the
    * input tensor with shape `shape`.
@@ -524,7 +524,7 @@ export class Ops {
   }
 
   /**
-   * Pads a Tensor1D.
+   * Pads a Tensor1D with a given value.
    *
    * This operation will pad a tensor according to the `paddings` you specify.
    *
@@ -548,7 +548,7 @@ export class Ops {
   }
 
   /**
-   * Pads a Tensor2D.
+   * Pads a Tensor2D with a given value.
    *
    * This operation will pad a tensor according to the `paddings` you specify.
    *
