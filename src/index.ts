@@ -39,8 +39,8 @@ export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializ
 export {AdamOptimizer} from './graph/optimizers/adam_optimizer';
 export {AdamaxOptimizer} from './graph/optimizers/adamax_optimizer';
 export {CostReduction, FeedEntry, Session} from './graph/session';
-export {KernelBackendCPU, NDArrayMathCPU} from './kernels/backend_cpu';
-export {KernelBackendWebGL, NDArrayMathGPU} from './kernels/backend_webgl';
+export {MathBackendCPU, NDArrayMathCPU} from './kernels/backend_cpu';
+export {MathBackendWebGL, NDArrayMathGPU} from './kernels/backend_webgl';
 export {MatrixOrientation} from './kernels/types/matmul';
 export {GPGPUContext} from './kernels/webgl/gpgpu_context';
 export {NDArrayMath} from './math';

@@ -72,7 +72,7 @@ export interface CPUTimerQuery {
   endMs?: number;
 }
 
-export class KernelBackendWebGL implements KernelBackend {
+export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
   private canvas: HTMLCanvasElement;
 
@@ -1018,7 +1018,7 @@ export class KernelBackendWebGL implements KernelBackend {
   }
 }
 
-ENV.registerBackend('webgl', () => new KernelBackendWebGL());
+ENV.registerBackend('webgl', () => new MathBackendWebGL());
 
 /** @deprecated Call dl.setBackend('webgl') instead. */
 export class NDArrayMathGPU extends NDArrayMath {
@@ -1026,17 +1026,17 @@ export class NDArrayMathGPU extends NDArrayMath {
     console.warn(
         'new NDArrayMathGPU() is deprecated. Please use ' +
         'dl.setBackend(\'webgl\').');
-    super(new KernelBackendWebGL(gpgpu), safeMode);
+    super(new MathBackendWebGL(gpgpu), safeMode);
   }
 
   // TODO(smilkov): Remove these two methods (used only in tests), and make
   // engine.backend private.
   getGPGPUContext(): GPGPUContext {
-    return (this.engine.backend as KernelBackendWebGL).getGPGPUContext();
+    return (this.engine.backend as MathBackendWebGL).getGPGPUContext();
   }
 
   getTextureManager(): TextureManager {
-    return (this.engine.backend as KernelBackendWebGL).getTextureManager();
+    return (this.engine.backend as MathBackendWebGL).getTextureManager();
   }
 }
 

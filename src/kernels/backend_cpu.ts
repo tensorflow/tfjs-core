@@ -35,7 +35,7 @@ import * as util from '../util';
 import {KernelBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
-export class KernelBackendCPU implements KernelBackend {
+export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
 
@@ -1662,7 +1662,7 @@ export class KernelBackendCPU implements KernelBackend {
   dispose() {}
 }
 
-ENV.registerBackend('cpu', () => new KernelBackendCPU());
+ENV.registerBackend('cpu', () => new MathBackendCPU());
 
 /** @deprecated Call dl.setBackend('cpu') instead. */
 export class NDArrayMathCPU extends NDArrayMath {

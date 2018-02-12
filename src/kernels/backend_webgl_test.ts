@@ -17,12 +17,12 @@
 
 // tslint:disable-next-line:max-line-length
 import {describeWithFlags, expectArraysClose, WEBGL_ENVS} from '../test_util';
-import {KernelBackendWebGL} from './backend_webgl';
+import {MathBackendWebGL} from './backend_webgl';
 
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   it('delayed storage, reading', () => {
     const delayedStorage = true;
-    const backend = new KernelBackendWebGL(null, delayedStorage);
+    const backend = new MathBackendWebGL(null, delayedStorage);
     const texManager = backend.getTextureManager();
     const dataId = {};
     backend.register(dataId, [3], 'float32');
@@ -40,7 +40,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('delayed storage, overwriting', () => {
     const delayedStorage = true;
-    const backend = new KernelBackendWebGL(null, delayedStorage);
+    const backend = new MathBackendWebGL(null, delayedStorage);
     const texManager = backend.getTextureManager();
     const dataId = {};
     backend.register(dataId, [3], 'float32');
@@ -59,7 +59,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('immediate storage reading', () => {
     const delayedStorage = false;
-    const backend = new KernelBackendWebGL(null, delayedStorage);
+    const backend = new MathBackendWebGL(null, delayedStorage);
     const texManager = backend.getTextureManager();
     const dataId = {};
     backend.register(dataId, [3], 'float32');
@@ -73,7 +73,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('immediate storage overwriting', () => {
     const delayedStorage = false;
-    const backend = new KernelBackendWebGL(null, delayedStorage);
+    const backend = new MathBackendWebGL(null, delayedStorage);
     const texManager = backend.getTextureManager();
     const dataId = {};
     backend.register(dataId, [3], 'float32');
@@ -89,7 +89,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('disposal of backend disposes all textures', () => {
     const delayedStorage = false;
-    const backend = new KernelBackendWebGL(null, delayedStorage);
+    const backend = new MathBackendWebGL(null, delayedStorage);
     const texManager = backend.getTextureManager();
     const dataId = {};
     backend.register(dataId, [3], 'float32');
