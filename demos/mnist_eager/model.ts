@@ -25,9 +25,8 @@ const loss = (labels: dl.Tensor2D, ys: dl.Tensor2D) =>
 export async function train(data: MnistData, log: (message: string) => void) {
   const returnCost = true;
   for (let i = 0; i < TRAIN_STEPS; i++) {
+    const batch = data.nextTrainBatch(BATCH_SIZE);
     const cost = optimizer.minimize(() => {
-      const batch = data.nextTrainBatch(BATCH_SIZE);
-
       return loss(batch.labels, model(batch.xs));
     }, returnCost);
 
