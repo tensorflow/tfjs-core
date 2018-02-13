@@ -456,7 +456,7 @@ export class Tensor<R extends Rank = Rank> {
   }
   concat(x: Tensor<R>, axis: number): Tensor<R> {
     this.throwIfDisposed();
-    return ops.concat(this, x, axis);
+    return ops.concat([this, x], axis);
   }
   batchNormalization(
       mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
