@@ -284,8 +284,7 @@ export function getIdentifierGenericMap(
   const identifierGenericMap = {};
 
   node.forEachChild(child => {
-    // TypeParameterDeclarations look like <T extends
-    // Tensor|NamedTensorMap>.
+    // TypeParameterDeclarations look like <T extends Tensor|NamedTensorMap>.
     if (ts.isTypeParameterDeclaration(child)) {
       let identifier;
       let generic;
