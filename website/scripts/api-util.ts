@@ -188,11 +188,6 @@ export function sortMethods(docHeadings: DocHeading[]) {
   }
 }
 
-// Returns display names like 'dl.train.Optimizer'.
-export function getDisplayName(docInfo: DocInfo, name: string) {
-  return (docInfo.namespace != null ? docInfo.namespace + '.' : '') + name;
-}
-
 export function kind(node: ts.Node): string {
   const keys = Object.keys(ts.SyntaxKind);
   for (let i = 0; i < keys.length; i++) {
@@ -250,7 +245,7 @@ export function parameterTypeToString(
   // node, falling back to using the checker to serialize the type.
   let typeStr;
   symbol.valueDeclaration.forEachChild(child => {
-    if (ts.isTypeNode(child) && child.kind != ts.SyntaxKind.NullKeyword) {
+    if (ts.isTypeNode(child) && child.kind !== ts.SyntaxKind.NullKeyword) {
       typeStr = child.getText();
     }
   });
@@ -362,4 +357,29 @@ export function replaceDocTypeAlias(
     }
   });
   return docTypeString;
+}
+
+// Link symbols together. This should be used outside of the parser.
+export function linkSymbols(docs: Docs, toplevelNamespace: string) {
+  console.log('--------linking------');
+  // Find all the symbols.
+  const symbols = [];
+  docs.headings.forEach(heading => {
+    heading.subheadings.forEach(subheading => {
+      subheading.symbols.forEach(symbol => {
+        const namespace = toplevelNamespace + '.' +
+            (symbol.namespace != null ? symbol.namespace + '.' : '');
+
+        if (symbol['isClass'] != null) {
+          symbol.urlHash = `class:${toplevelNamespace}.${symbol.displayName}`;
+        } else {
+          symbol.urlHash = toplevelNamespace + '.' + symbol.displayName;
+        }
+
+        symbols.push(symbol.symbolName);
+      });
+    });
+  });
+
+  const symbolUrls = [];
 }

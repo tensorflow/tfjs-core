@@ -202,13 +202,11 @@ export function serializeClass(
 
   const name = symbol.getName();
 
-  const displayName = util.getDisplayName(docInfo, name);
-
   const {displayFilename, githubUrl} =
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
   const docClass: DocClass = {
     symbolName: name,
-    displayName,
+    namespace: docInfo.namespace,
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
     fileName: displayFilename,
     githubUrl,
@@ -240,7 +238,6 @@ export function serializeMethod(
   }
 
   const methodName = node.name.getText();
-  const displayName = util.getDisplayName(docInfo, methodName);
 
   const symbol = checker.getSymbolAtLocation(node.name);
   const type =
@@ -278,7 +275,7 @@ export function serializeMethod(
 
   const method: DocFunction = {
     symbolName: symbol.name,
-    displayName,
+    namespace: docInfo.namespace,
     paramStr,
     parameters,
     returnType,

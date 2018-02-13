@@ -31,6 +31,7 @@ import * as ts from 'typescript';
 import * as parser from './api-parser';
 import * as util from './api-util';
 
+const TOPLEVEL_NAMESPACE = 'dl';
 const API_TEMPLATE_PATH = './website/api/index.html';
 const HTML_OUT_DIR = '/tmp/deeplearn-new-website/api/';
 
@@ -38,15 +39,17 @@ shell.mkdir('-p', HTML_OUT_DIR);
 
 const docs = parser.parse();
 
+util.linkSymbols(docs, TOPLEVEL_NAMESPACE);
+
 const md = new MarkdownIt();
 
 // Add some helper functions
-HandleBars.registerHelper('markdown', function(attr) {
+HandleBars.registerHelper('markdown', attr => {
   return md.render(attr);
 });
 
 // Renders a string to markdown but removes the outer <p> tag
-HandleBars.registerHelper('markdownInner', function(attr) {
+HandleBars.registerHelper('markdownInner', attr => {
   const asMd =
       md.render(attr.trim()).replace(/<p>/, '').replace(/(<\/p>\s*)$/, '');
 
