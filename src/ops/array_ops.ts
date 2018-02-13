@@ -644,6 +644,24 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
   static stack<T extends Tensor>(tensors: T[], axis = 0): Tensor {
+    util.assert(tensors.length >= 2, 'Pass at least two tensors to dl.stack');
+    const rank = tensors[0].rank;
+    const shape = tensors[0].shape;
+    const dtype = tensors[0].dtype;
+
+    util.assert(axis <= rank, 'Axis must be <= rank of the tensor');
+
+    tensors.forEach(t => {
+      util.assertShapesMatch(
+          shape, t.shape,
+          'All tensors passed to dl.stack must have matching shapes');
+    });
+
+    tensors.forEach(t => {
+      util.assert(
+          dtype === t.dtype,
+          'All tensors passed to dl.stack must have matching dtypes');
+    });
     const expandedTensors = tensors.map(t => t.expandDims(axis));
     return Concat.concat(expandedTensors, axis);
   }
@@ -658,7 +676,9 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
   static expandDims<R2 extends Rank>(x: Tensor, axis = 0): Tensor<R2> {
-    const newShape = x.shape.slice().splice(axis, 0, 1);
+    util.assert(axis <= x.rank, 'Axis must be <= rank of the tensor');
+    const newShape = x.shape.slice();
+    newShape.splice(axis, 0, 1);
     return Ops.reshape(x, newShape);
   }
 

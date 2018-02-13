@@ -127,7 +127,7 @@ export class Concat {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static concat<T extends Tensor>(tensors: T[], axis = 0): T {
-    util.assert(tensors.length >= 2, 'Pass at least two tensors in dl.concat');
+    util.assert(tensors.length >= 2, 'Pass at least two tensors to dl.concat');
     let result = tensors[0];
     for (let i = 1; i < tensors.length; ++i) {
       result = concat2Tensors(result, tensors[i], axis);

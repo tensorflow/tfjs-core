@@ -43,12 +43,14 @@ export class TensorBuffer<R extends Rank> {
   constructor(
       public shape: ShapeMap[R], public dtype: DataType,
       public values: TypedArray) {
-    const n = values.length;
-    const size = util.sizeFromShape(shape);
-    util.assert(
-        n === size,
-        `Length of values '${n}' does not match the size ` +
-            `inferred by the shape '${size}'`);
+    if (values != null) {
+      const n = values.length;
+      const size = util.sizeFromShape(shape);
+      util.assert(
+          n === size,
+          `Length of values '${n}' does not match the size ` +
+              `inferred by the shape '${size}'`);
+    }
     this.values =
         values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
     this.strides = computeStrides(shape);
@@ -317,7 +319,7 @@ export class Tensor<R extends Rank = Rank> {
     return this.shape.length;
   }
 
-  /** @deprecated. Use tensor.buffer().get(...locs) */
+  /** @deprecated. Use `tensor.buffer().get(...locs)` */
   get(...locs: number[]) {
     this.throwIfDisposed();
     if (locs.length === 0) {
@@ -330,7 +332,7 @@ export class Tensor<R extends Rank = Rank> {
     return this.dataSync()[index];
   }
 
-  /** @deprecated. Use tensor.buffer().get(...locs) */
+  /** @deprecated. Use `tensor.buffer().get(...locs)` */
   async val(...locs: number[]): Promise<number> {
     if (locs.length === 0) {
       locs = [0];
@@ -340,7 +342,7 @@ export class Tensor<R extends Rank = Rank> {
     return this.get(...locs);
   }
 
-  /** @deprecated. Use tensor.buffer().locToIndex(locs) */
+  /** @deprecated. Use `tensor.buffer().locToIndex(locs)` */
   locToIndex(locs: number[]): number {
     this.throwIfDisposed();
     if (this.rank === 0) {
@@ -355,7 +357,7 @@ export class Tensor<R extends Rank = Rank> {
     return index;
   }
 
-  /** @deprecated. Use tensor.buffer().indexToLoc(index) */
+  /** @deprecated. Use `tensor.buffer().indexToLoc(index)` */
   indexToLoc(index: number): number[] {
     this.throwIfDisposed();
     if (this.rank === 0) {
