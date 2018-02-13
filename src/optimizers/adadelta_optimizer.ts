@@ -29,9 +29,7 @@ import {variable} from '../tensor';
 import {NamedVariableMap} from '../types';
 import {Optimizer} from './optimizer';
 
-/**
- * @doclink Optimizer
- */
+/** @doclink Optimizer */
 export class AdadeltaOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;

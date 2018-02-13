@@ -29,9 +29,7 @@ import {NamedTensorMap} from '../types';
 
 import {Optimizer} from './optimizer';
 
-/**
- * @doclink Optimizer
- */
+/** @doclink Optimizer */
 export class SGDOptimizer extends Optimizer {
   protected c: Scalar;
 

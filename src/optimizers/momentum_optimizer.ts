@@ -29,9 +29,7 @@ import {variable} from '../tensor';
 import {NamedVariableMap} from '../types';
 import {SGDOptimizer} from './sgd_optimizer';
 
-/**
- * @doclink Optimizer
- */
+/** @doclink Optimizer */
 export class MomentumOptimizer extends SGDOptimizer {
   private m: Scalar;
   private accumulations: NamedVariableMap;

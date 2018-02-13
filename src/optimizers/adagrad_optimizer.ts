@@ -30,9 +30,7 @@ import {NamedVariableMap} from '../types';
 
 import {Optimizer} from './optimizer';
 
-/**
- * @doclink Optimizer
- */
+/** @doclink Optimizer */
 export class AdagradOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;
