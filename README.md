@@ -9,7 +9,7 @@ machine intelligence. **deeplearn.js** brings performant machine learning
 building blocks to the web, allowing you to train neural networks in a browser
 or run pre-trained models in inference mode.
 
-We provide an API the closely mirrors the TensorFlow eager API.
+We provide an API that closely mirrors the TensorFlow eager API.
 **deeplearn.js** was originally developed by the Google Brain PAIR team to build
 powerful interactive machine learning tools for the browser, but it can be used
 for everything from education, to model understanding, to art projects.
@@ -22,19 +22,13 @@ or `npm install deeplearn`
 Alternatively you can use a script tag. Here we load it from a CDN.
 In this case it will be available as a global variable named `dl`.
 
-```html
-<script src="https://cdn.jsdelivr.net/npm/deeplearn"></script>
-<!-- or -->
-<script src="https://unpkg.com/deeplearn"></script>
-```
-
-You can also specify which version to load by appending an `@version` string
-to the url
+You can replace also specify which version to load replacing `@latest` with a specific
+version string (e.g. `0.5.0`).
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/deeplearn@0.4.2"></script>
+<script src="https://cdn.jsdelivr.net/npm/deeplearn@latest"></script>
 <!-- or -->
-<script src="https://unpkg.com/deeplearn@0.4.2"></script>
+<script src="https://unpkg.com/deeplearn@latest"></script>
 ```
 
 #### TypeScript / ES6 JavaScript
@@ -48,7 +42,7 @@ import * as dl from 'deeplearn'; // If not loading the script as a global
 const a = dl.tensor1d([1, 2, 3]);
 const b = dl.scalar(2);
 
-const result = a.add(b); // a is not modified, result is a new tensor/
+const result = a.add(b); // a is not modified, result is a new tensor
 result.data().then(data => console.log(data)); // Float32Array([3, 4, 5]
 
 // Alternatively you can use a blocking call to get the data.
@@ -68,7 +62,7 @@ load deeplearn.js
 var a = dl.tensor1d([1, 2, 3]);
 var b = dl.scalar(2);
 
-var result = a.add(b); // a is not modified, result is a new tensor/
+var result = a.add(b); // a is not modified, result is a new tensor
 
 // Option 1: With a Promise.
 result.data().then(data => console.log(data)); // Float32Array([3, 4, 5])

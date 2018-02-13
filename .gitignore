@@ -10,4 +10,3 @@ npm-debug.log
 dist/
 .idea/
 deeplearn-*.tgz
-demos/homepage/vendor

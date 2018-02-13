@@ -9,12 +9,12 @@ intelligence. **deeplearn.js** brings highly performant machine learning
 building blocks to your fingertips, allowing you to train neural networks
 in a browser or run pre-trained models in inference mode.
 
-Lets take a look at some of the core concepts in deeplean.js
+Lets take a look at some of the core concepts in deeplearn.js
 
 ## Tensors
 
 The central unit of data in **deeplearn.js** is the `Tensor`. A `Tensor`
-consists of a set of floating point values shaped into an array of an arbitrary
+consists of a set of numerical values shaped into an array of an arbitrary
 number of dimensions. Tensors have a `shape` attribute to define
 their shape. The library provides sugar subclasses for low-rank Tensors:
 `Scalar`, `Tensor1D`, `Tensor2D`, `Tensor3D` and `Tensor4D`, as well as helper functions to construct them.
@@ -55,7 +55,7 @@ this is a relatively expensive operation, so you would likely want to call the a
 
 ### Operations (Ops)
 
-While Tensors allow us to store data, ops allow us to manipulate data. Deeplean.js comes with a wide variety of mathematical opearations suitable for linear algebra and machine learning. These include unary ops like `square()` and binary ops like `add()` and `mul()` Generally speaking an op will do some transformation on one of more tensors and return a new tensor as a result.
+While Tensors allow us to store data, ops allow us to manipulate data. __deeplearn.js__ comes with a wide variety of mathematical opearations suitable for linear algebra and machine learning. These include unary ops like `square()` and binary ops like `add()` and `mul()` Generally speaking an op will do some transformation on one of more tensors and return a new tensor as a result.
 
 ```js
 let a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
@@ -73,14 +73,14 @@ let avg = dl.mean(dl.square(dl.sub(a, b)));
 #### Tidy Operations
 
 Because deeplearn.js uses the GPU to accelerate math operations, there is a need
-to manage GPU memory. While in regular javascript this is handled with scopes, we
+to manage GPU memory. While in regular JavaScript this is handled with scopes, we
 provide a convenience function to clean up intermediate memory created when performing
 operations on tensors.
 
 We call this function `dl.tidy`.
 
 ```js
-let a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
+let a = dl.tensor2d([1.0, 2.0, 3.0, 4.0]);
 
 // dl.tidy takes a function to tidy up after
 let average = dl.tidy(() => {
@@ -108,7 +108,7 @@ But using tidy functions is much more convenient!
 
 ## Training
 
-At the heart of many machine learning problems is the question of actually _training_ the machine to do some task. In deeplearn.js this process is encapsulated by  _Optimizers_. Optimizers are strategies to progressively tune the variables of your model in order to reduce the error (or _loss_ in ML parlance) in your models predictions.
+At the heart of many machine learning problems is the question of actually _training_ the machine to do some task. In deeplearn.js this process is encapsulated by  _Optimizers_. Optimizers are strategies to progressively tune the variables of your model in order to reduce the error (or _loss_ in ML parlance) in your model's predictions. Training runs eagerly, i.e. just like any other JavaScript code.
 
 We cover training and optimizers [in this tutorial](ml_beginners.md), but here is an outline of what the training process in deeplearn.js looks like.
 
@@ -116,32 +116,32 @@ We cover training and optimizers [in this tutorial](ml_beginners.md), but here i
 import * as dl from 'deeplearn';
 
 // Initialize the models variables
-const weights = dl.variable(dl.randNormal([10, 64]));
+const weights = dl.variable(dl.randomNormal([10, 64]));
 const biases = dl.variable(dl.zeros([64]));
 
 // Set a learning rate and create an optimizer.
 const LEARNING_RATE = .1;
-const optimizer = new dl.SGDOptimizer(LEARNING_RATE);
+const optimizer = dl.train.sgd(LEARNING_RATE)
 
 /**
- * Perform inference
+ * Perform inference return a prediction
  */
 function inference(input) {
-  // Do inference, return a prediction.
 }
 
 /**
  * Compute the loss of the model by comparing the prediction
  * and ground truth.
+ *
+ * Return a Scalar (i.e. single number tensor) loss value.
  */
-function loss(predictions, groundTruth) {
-  // Do calculation, return a loss value.
+function loss(predictions, label) {
 }
 
 /**
  * Train the model a *single* step.
  */
-function trainStep(data, groundTruth, returnCost = true) {
+function trainStep(data, label, returnCost = true) {
   // Calling optimizer.minimize will adjust the variables in the
   // model based on the loss value returned by your loss function.
   // It handles all the backpropogation and weight updates.
@@ -157,7 +157,7 @@ function trainStep(data, groundTruth, returnCost = true) {
     //
     // Once we return the less the optimizer will adjust the network
     // weights for our next iteration.
-    return loss(groundTruth, prediction);
+    return loss(prediction, label);
   }, returnCost);
 
   // return the current loss/cost so that we can visualize it
@@ -168,9 +168,8 @@ function trainStep(data, groundTruth, returnCost = true) {
  * Train the model.
  */
 function train(data, batchSize, numEpochs) {
-  // Call trainstep in a loop.  Use requestAnimationFrame to
-  // avoid stalling the browser.
-}
+  // Call trainstep in a loop.  Use await dl.nextFrame() to avoid stalling
+  // the browser.
 ```
 
 ## Backends
