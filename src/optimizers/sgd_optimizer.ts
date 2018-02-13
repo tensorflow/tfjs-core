@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {doc} from '../doc';
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {Node} from '../graph/graph';
