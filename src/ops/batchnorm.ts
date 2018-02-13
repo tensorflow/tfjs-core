@@ -168,7 +168,7 @@ export class Ops {
    * shapes:
    *   - The same shape as the input.
    *   - In the common case, the depth dimension is the last dimension of x, so
-   *     the values would be an Tensor1D of shape [depth].
+   *     the values would be an `Tensor1D` of shape [depth].
    *
    * @param x The input Tensor.
    * @param mean A mean Tensor.

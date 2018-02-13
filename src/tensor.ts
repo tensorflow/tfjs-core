@@ -115,8 +115,10 @@ export class TensorBuffer<R extends Rank> {
 export type DataId = object;  // object instead of {} to force non-primitive.
 
 /**
- * A Tensor object represents an immutable, multidimensional array of numbers
+ * A `Tensor` object represents an immutable, multidimensional array of numbers
  * that has a shape and a data type.
+ *
+ * See `tensor` for details on how to create a `Tensor`.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor<R extends Rank = Rank> {
@@ -355,7 +357,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Asynchronously downloads the values from the Tensor. Returns a promise of
+   * Asynchronously downloads the values from the `Tensor`. Returns a promise of
    * `TypedArray` that resolves when the computation has finished.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
@@ -365,7 +367,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Synchronously downloads the values from the Tensor. This blocks the UI
+   * Synchronously downloads the values from the `Tensor`. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
@@ -869,7 +871,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   name: string;
 
   /**
-   * Private constructor since we can not add logic before calling super().
+   * Private constructor since we can not add logic before calling `super()`.
    * Instead, we expose static `Variable.variable` method below, which will be
    * added to global namespace.
    */
