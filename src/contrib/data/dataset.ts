@@ -19,7 +19,7 @@
 import * as seedrandom from 'seedrandom';
 
 import {BatchDataset} from './batch_dataset';
-import {DataStream} from './streams/data_stream';
+import {DataStream, streamFromZipped} from './streams/data_stream';
 import {streamFromConcatenated} from './streams/data_stream';
 import {streamFromFunction} from './streams/data_stream';
 import {streamFromItems} from './streams/data_stream';
@@ -247,5 +247,12 @@ export function datasetFromConcatenated(datasets: Dataset[]) {
   return datasetFromStreamFn(async () => {
     const streamStream = await Promise.all(datasets.map((d) => d.getStream()));
     return streamFromConcatenated(streamFromItems(streamStream));
+  });
+}
+
+export function datasetFromZipped(datasets: Dataset[]) {
+  return datasetFromStreamFn(async () => {
+    const streams = await Promise.all(datasets.map((d) => d.getStream()));
+    return streamFromZipped(streams);
   });
 }
