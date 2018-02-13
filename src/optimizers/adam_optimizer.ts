@@ -36,6 +36,8 @@ export class AdamOptimizer extends Optimizer {
   private beta2: Scalar;
   private accBeta1: Variable;
   private accBeta2: Variable;
+  private oneMinusBeta1: Scalar;
+  private oneMinusBeta2: Scalar;
   private one: Scalar;
 
   private accumulatedFirstMoment: NamedVariableMap = {};
@@ -53,38 +55,41 @@ export class AdamOptimizer extends Optimizer {
     // accB* will be updated by batch.
     this.accBeta1 = variable(scalar(beta1));
     this.accBeta2 = variable(scalar(beta2));
+    this.oneMinusBeta1 = keep(scalar(1 - beta1));
+    this.oneMinusBeta2 = keep(scalar(1 - beta2));
     this.one = keep(scalar(1));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
-    for (const variableName in variableGradients) {
-      const value = ENV.engine.registeredVariables[variableName];
-      if (this.accumulatedFirstMoment[variableName] == null) {
-        const trainable = false;
-        this.accumulatedFirstMoment[variableName] =
-            variable(zerosLike(value), trainable);
-      }
-      if (this.accumulatedSecondMoment[variableName] == null) {
-        const trainable = false;
-        this.accumulatedSecondMoment[variableName] =
-            variable(zerosLike(value), trainable);
-      }
+    tidy(() => {
+      const oneMinusAccBeta1 = this.one.sub(this.accBeta1);
+      const oneMinusAccBeta2 = this.one.sub(this.accBeta2);
 
-      const gradient = variableGradients[variableName];
-      const firstMoment = this.accumulatedFirstMoment[variableName];
-      const secondMoment = this.accumulatedSecondMoment[variableName];
+      for (const variableName in variableGradients) {
+        const value = ENV.engine.registeredVariables[variableName];
+        if (this.accumulatedFirstMoment[variableName] == null) {
+          const trainable = false;
+          this.accumulatedFirstMoment[variableName] =
+              variable(zerosLike(value), trainable);
+        }
+        if (this.accumulatedSecondMoment[variableName] == null) {
+          const trainable = false;
+          this.accumulatedSecondMoment[variableName] =
+              variable(zerosLike(value), trainable);
+        }
 
-      tidy(() => {
-        const newFirstMoment = this.beta1.mul(firstMoment)
-                                   .add(this.one.sub(this.beta1).mul(gradient));
+        const gradient = variableGradients[variableName];
+        const firstMoment = this.accumulatedFirstMoment[variableName];
+        const secondMoment = this.accumulatedSecondMoment[variableName];
+
+        const newFirstMoment =
+            this.beta1.mul(firstMoment).add(this.oneMinusBeta1.mul(gradient));
         const newSecondMoment =
             this.beta2.mul(secondMoment)
-                .add(this.one.sub(this.beta2).mul(gradient.square()));
+                .add(this.oneMinusBeta2.mul(gradient.square()));
 
-        const biasCorrectedFirstMoment =
-            newFirstMoment.div(this.one.sub(this.accBeta1));
-        const biasCorrectedSecondMoment =
-            newSecondMoment.div(this.one.sub(this.accBeta2));
+        const biasCorrectedFirstMoment = newFirstMoment.div(oneMinusAccBeta1);
+        const biasCorrectedSecondMoment = newSecondMoment.div(oneMinusAccBeta2);
 
         this.accumulatedFirstMoment[variableName].assign(newFirstMoment);
         this.accumulatedSecondMoment[variableName].assign(newSecondMoment);
@@ -94,10 +99,8 @@ export class AdamOptimizer extends Optimizer {
                                  biasCorrectedSecondMoment.sqrt())))
                              .add(value);
         value.assign(newValue);
-      });
-    }
+      }
 
-    tidy(() => {
       this.accBeta1.assign(this.accBeta1.mul(this.beta1));
       this.accBeta2.assign(this.accBeta2.mul(this.beta2));
     });
@@ -129,6 +132,9 @@ export class AdamOptimizer extends Optimizer {
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
     tidy(() => {
+      const oneMinusAccBeta1 = this.one.sub(this.accBeta1);
+      const oneMinusAccBeta2 = this.one.sub(this.accBeta2);
+
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
         const gradient = this.variableGradients.get(node.output);
@@ -137,15 +143,12 @@ export class AdamOptimizer extends Optimizer {
         const oldSecondMoment = this.secondMomentGraph.get(node.output);
 
         const newFirstMoment = math.scaledArrayAdd(
-            this.beta1, oldFirstMoment, this.one.sub(this.beta1), gradient);
+            this.beta1, oldFirstMoment, this.oneMinusBeta1, gradient);
         const newSecondMoment = math.scaledArrayAdd(
-            this.beta2, oldSecondMoment, this.one.sub(this.beta2),
-            gradient.square());
+            this.beta2, oldSecondMoment, this.oneMinusBeta2, gradient.square());
 
-        const biasCorrectedFirstMoment =
-            newFirstMoment.div(this.one.sub(this.accBeta1));
-        const biasCorrectedSecondMoment =
-            newSecondMoment.div(this.one.sub(this.accBeta2));
+        const biasCorrectedFirstMoment = newFirstMoment.div(oneMinusAccBeta1);
+        const biasCorrectedSecondMoment = newSecondMoment.div(oneMinusAccBeta2);
         const variable = math.scaledArrayAdd(
             this.cGraph,
             biasCorrectedFirstMoment.div(
@@ -178,6 +181,8 @@ export class AdamOptimizer extends Optimizer {
     this.beta2.dispose();
     this.accBeta1.dispose();
     this.accBeta2.dispose();
+    this.oneMinusBeta1.dispose();
+    this.oneMinusBeta2.dispose();
     this.one.dispose();
 
     if (this.firstMomentGraph != null) {
