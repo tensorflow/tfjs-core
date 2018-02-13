@@ -25,7 +25,7 @@ Example usage with a 2x3 matrix:
 let shape = [2, 3]; // 2 rows, 3 columns
 let a = dl.tensor2d([1.0, 2.0, 3.0, 10.0, 20.0, 30.0], shape);
 // deeplearn.js can also infer the shape
-let b = dl.tensor2d([[0.0, 2.0], [4.0, 6.0]]);
+let b = dl.tensor2d([[0.0, 2.0], [4.0, 6.0]]);  // 2 rows, 2 columns
 ```
 
 `Tensor` can store data either on the GPU as a `WebGLTexture`, or on the CPU as
@@ -58,7 +58,7 @@ this is a relatively expensive operation, so you would likely want to call the a
 While Tensors allow us to store data, ops allow us to manipulate data. __deeplearn.js__ comes with a wide variety of mathematical opearations suitable for linear algebra and machine learning. These include unary ops like `square()` and binary ops like `add()` and `mul()` Generally speaking an op will do some transformation on one of more tensors and return a new tensor as a result.
 
 ```js
-let a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
+let a = dl.tensor2d([[1.0, 2.0], [3.0, 4.0]]);
 let b = dl.tensor2d([[0.0, 2.0], [4.0, 6.0]]);
 
 // The library has a chainable API allowing you to call operations
@@ -193,8 +193,8 @@ You can periodically _download_ data from the gpu by calling `data()` on a `Tens
 Example of taking the mean squared difference between two matrices:
 
 ```js
-const a = dl.tensor2d([1.0, 2.0, 3.0, 4.0], [2, 2]);
-const b = dl.tensor2d([0.0, 2.0, 4.0, 6.0], [2, 2]);
+const a = dl.tensor2d([[1.0, 2.0], [3.0, 4.0]]);
+const b = dl.tensor2d([[0.0, 2.0], [4.0, 6.0]]);
 
 // All these operations will execute on the GPU (if available)
 // without blocking the main thread.
