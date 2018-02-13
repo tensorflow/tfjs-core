@@ -815,18 +815,14 @@ export class Tensor<R extends Rank = Rank> {
   }
 }
 
-/**
- * @doclink Tensor
- */
+/** @doclink Tensor */
 export class Scalar extends Tensor<Rank.R0> {
   static new(value: number|boolean, dtype?: DataType): Scalar {
     return ops.scalar(value, dtype);
   }
 }
 
-/**
- * @doclink Tensor
- */
+/** @doclink Tensor */
 export class Tensor1D extends Tensor<Rank.R1> {
   static new<D extends DataType = 'float32'>(
       values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Tensor1D {
@@ -834,9 +830,7 @@ export class Tensor1D extends Tensor<Rank.R1> {
   }
 }
 
-/**
- * @doclink Tensor
- */
+/** @doclink Tensor */
 export class Tensor2D extends Tensor<Rank.R2> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number],
@@ -846,9 +840,7 @@ export class Tensor2D extends Tensor<Rank.R2> {
   }
 }
 
-/**
- * @doclink Tensor
- */
+/** @doclink Tensor */
 export class Tensor3D extends Tensor<Rank.R3> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number],
@@ -858,9 +850,7 @@ export class Tensor3D extends Tensor<Rank.R3> {
   }
 }
 
-/**
- * @doclink Tensor
- */
+/** @doclink Tensor */
 export class Tensor4D extends Tensor<Rank.R4> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number, number],
