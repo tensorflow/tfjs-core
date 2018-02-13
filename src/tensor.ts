@@ -236,44 +236,6 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Prints information about the `Tensor` including its data.
-   *
-   * @param verbose Whether to print verbose information about the `Tensor`,
-   * including dtype and size.
-   */
-  print(verbose = false): this {
-    let displayName = Tensor.name;
-    if (this.rank === 0) {
-      displayName = Scalar.name;
-    } else if (this.rank === 1) {
-      displayName = Tensor1D.name;
-    } else if (this.rank === 2) {
-      displayName = Tensor2D.name;
-    } else if (this.rank === 3) {
-      displayName = Tensor3D.name;
-    } else if (this.rank === 1) {
-      displayName = Tensor4D.name;
-    }
-
-    // Construct a new class so that we can display a rich object in the console
-    // that only has the properties that we want to show about the tensor but
-    // still shows it as if it's the proper class.
-    const C = new Function(`return class ${displayName} {}`)();
-
-    const displayTensor = new C();
-    displayTensor.shape = this.shape;
-    displayTensor.data = Array.from(this.dataSync());
-
-    if (verbose) {
-      displayTensor.dtype = this.dtype;
-      displayTensor.size = this.size;
-    }
-
-    console.log(displayTensor);
-
-    return this;
-  }
-  /**
    * Flatten a Tensor to a 1D array.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
@@ -445,6 +407,10 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   // Chain API.
+
+  print(verbose = false): void {
+    return ops.print(this);
+  }
 
   /** Reshapes the current tensor into the provided shape. */
   reshape<R2 extends Rank>(newShape: ShapeMap[R2]): Tensor<R2> {
@@ -848,7 +814,7 @@ export class Tensor<R extends Rank = Rank> {
 }
 
 /**
- * A rank-0 Tensor subclass for convenience and readability.
+ * A rank-0 `Tensor` subclass for convenience and readability.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Scalar extends Tensor<Rank.R0> {
@@ -858,7 +824,7 @@ export class Scalar extends Tensor<Rank.R0> {
 }
 
 /**
- * A rank-1 Tensor subclass for convenience and readability.
+ * A rank-1 `Tensor` subclass for convenience and readability.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor1D extends Tensor<Rank.R1> {
@@ -869,7 +835,7 @@ export class Tensor1D extends Tensor<Rank.R1> {
 }
 
 /**
- * A rank-2 Tensor subclass for convenience and readability.
+ * A rank-2 `Tensor` subclass for convenience and readability.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor2D extends Tensor<Rank.R2> {
@@ -882,7 +848,7 @@ export class Tensor2D extends Tensor<Rank.R2> {
 }
 
 /**
- * A rank-3 Tensor subclass for convenience and readability.
+ * A rank-3 `Tensor` subclass for convenience and readability.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor3D extends Tensor<Rank.R3> {
@@ -895,7 +861,7 @@ export class Tensor3D extends Tensor<Rank.R3> {
 }
 
 /**
- * A rank-4 Tensor subclass for convenience and readability.
+ * A rank-4 `Tensor` subclass for convenience and readability.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor4D extends Tensor<Rank.R4> {
@@ -908,7 +874,7 @@ export class Tensor4D extends Tensor<Rank.R4> {
 }
 
 /**
- * A mutable Tensor, useful for persisting state, e.g. for training.
+ * A mutable `Tensor`, useful for persisting state, e.g. for training.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Variable<R extends Rank = Rank> extends Tensor<R> {
@@ -953,8 +919,8 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   }
 
   /**
-   * Assign a new Tensor to this variable. The new Tensor must have the same
-   * shape and dtype as the old Tensor.
+   * Assign a new `Tensor` to this variable. The new `Tensor` must have the same
+   * shape and dtype as the old `Tensor`.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   assign(newValue: Tensor<R>): void {

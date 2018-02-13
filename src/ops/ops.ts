@@ -176,6 +176,7 @@ export const tensor1d = array_ops.Ops.tensor1d;
 export const tensor2d = array_ops.Ops.tensor2d;
 export const tensor3d = array_ops.Ops.tensor3d;
 export const tensor4d = array_ops.Ops.tensor4d;
+export const print = array_ops.Ops.print;
 
 export const basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
 export const multiRNNCell = lstm_ops.Ops.multiRNNCell;
