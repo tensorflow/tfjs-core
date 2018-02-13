@@ -160,6 +160,12 @@ describeWithFlags('step', ALL_ENVS, () => {
     expectArraysClose(result, [1, 0, 0, 1, 0]);
   });
 
+  it('with 1d tensor and alpha', () => {
+    const a = dl.tensor1d([1, -2, -.01, 3, NaN]);
+    const result = dl.step(a, 0.1);
+    expectArraysClose(result, [1, 0.1, 0.1, 1, NaN]);
+  });
+
   it('with 2d tensor', () => {
     const a = dl.tensor2d([1, -5, -3, 4], [2, 2]);
     const result = dl.step(a);
@@ -171,6 +177,39 @@ describeWithFlags('step', ALL_ENVS, () => {
     const a = dl.tensor1d([1, -2, -.01, 3, NaN]);
     const result = dl.step(a);
     expectArraysClose(result, [1, 0, 0, 1, NaN]);
+  });
+
+  it('gradients: Scalar', () => {
+    const a = dl.scalar(-4);
+    const dy = dl.scalar(8);
+
+    const gradients = dl.grad(a => dl.step(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [0], 1e-1);
+  });
+
+  it('gradients: Tensor1D', () => {
+    const a = dl.tensor1d([1, 2, -3, 5]);
+    const dy = dl.tensor1d([1, 2, 3, 4]);
+
+    const gradients = dl.grad(a => dl.step(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
+  });
+
+  it('gradients: Tensor2D', () => {
+    const a = dl.tensor2d([3, -1, -2, 3], [2, 2]);
+    const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+
+    const gradients = dl.grad(a => dl.step(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [0, 0, 0, 0], 1e-1);
   });
 });
 
@@ -1198,6 +1237,50 @@ describeWithFlags('leakyRelu', ALL_ENVS, () => {
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [0, 1, NaN]);
   });
+
+  it('gradients: Scalar', () => {
+    const a = dl.scalar(-4);
+    const dy = dl.scalar(8);
+    const alpha = 0.1;
+
+    const gradients = dl.grad((a) => dl.leakyRelu(a, alpha))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [8 * alpha], 1e-1);
+  });
+
+  it('gradients: Tensor1D', () => {
+    const aValues = [1, -1, 0.1];
+    const dyValues = [1, 2, 3];
+    const alpha = 0.1;
+
+    const a = dl.tensor1d(aValues);
+    const dy = dl.tensor1d(dyValues);
+
+    const gradients = dl.grad((a) => dl.leakyRelu(a, alpha))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+
+    expectArraysClose(gradients, [1, 2 * alpha, 3], 1e-1);
+  });
+
+  it('gradients: Tensor2D', () => {
+    const aValues = [1, -1, 0.1, 0.5];
+    const dyValues = [1, 2, 3, 4];
+    const alpha = 0.1;
+
+    const a = dl.tensor2d(aValues, [2, 2]);
+    const dy = dl.tensor2d(dyValues, [2, 2]);
+
+    const gradients = dl.grad((a) => dl.leakyRelu(a, alpha))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+
+    expectArraysClose(gradients, [1, 2 * alpha, 3, 4], 1e-1);
+  });
 });
 
 describeWithFlags('elu', ALL_ENVS, () => {
@@ -1244,6 +1327,31 @@ describeWithFlags('selu', ALL_ENVS, () => {
     const result = dl.selu(a);
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [1.0507, NaN]);
+  });
+
+  it('gradients: Scalar', () => {
+    let aValue = 1;
+    let dyValue = 1;
+    let a = dl.scalar(aValue);
+    let dy = dl.scalar(dyValue);
+
+    let gradients = dl.grad(a => dl.selu(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [dyValue * scale], 1e-1);
+
+    aValue = -1;
+    dyValue = 2;
+    a = dl.scalar(aValue);
+    dy = dl.scalar(dyValue);
+
+    gradients = dl.grad(a => dl.selu(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(
+        gradients, [dyValue * scaleAlpha * Math.exp(aValue)], 1e-1);
   });
 
   it('gradients: Tensor1D', () => {

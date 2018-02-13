@@ -45,6 +45,7 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static ceil<T extends Tensor>(x: T): T {
+    // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const gradient = (dy: T, y: T) => {
       return {x: () => ops.zeros(y.shape)};
     };
@@ -105,7 +106,7 @@ export class Ops {
   /**
    * Computes square of `x` element-wise: `x ^ 2`
    *
-   * @param x The input array.
+   * @param x The input Tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
@@ -202,8 +203,6 @@ export class Ops {
     const gradient = (dy: T, y: T) => {
       return {
         x: () => {
-          // Currently, Scalars are not supported by ops.where
-          util.assert(x.rank !== 0, 'Error in selu gradient: ');
           const mask = x.greater(ops.scalar(0));
 
           const scaleAlpha = ops.scalar(selu_util.SELU_SCALEALPHA);
@@ -235,8 +234,11 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static leakyRelu<T extends Tensor>(x: T, alpha = 0.2): T {
+    const gradient = (dy: T, y: T) => {
+      return {x: () => dy.mul(x.step(alpha))};
+    };
     return ENV.engine.executeKernel(
-               'LeakyRelu', {inputs: {x}, args: {alpha}}) as T;
+               'LeakyRelu', {inputs: {x}, args: {alpha}}, gradient) as T;
   }
 
   /**
@@ -396,7 +398,11 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static step<T extends Tensor>(x: T, alpha = 0.0): T {
-    return ENV.engine.executeKernel('Step', {inputs: {x}, args: {alpha}}) as T;
+    // TODO(manrajgrover): Return null for gradients when backprop supports it.
+    return ENV.engine.executeKernel(
+               'Step', {inputs: {x}, args: {alpha}}, (dy: T, y: T) => {
+                 return {x: () => ops.zeros(y.shape)};
+               }) as T;
   }
 }
 
