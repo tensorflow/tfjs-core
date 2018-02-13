@@ -52,12 +52,16 @@ export function parse(): Docs {
           name: 'Creation',
           description: `This section describes how to construct tensors.`,
           pin: [
-            'tensor', 'Tensor', 'scalar', 'tensor1d', 'tensor2d', 'tensor3d',
-            'tensor4d'
+            'tensor', 'scalar', 'tensor1d', 'tensor2d', 'tensor3d', 'tensor4d'
           ]
         },
-        {name: 'Classes'}, {name: 'Transformations'},
-        {name: 'Slicing and Joining'}
+        {
+          name: 'Classes',
+          pin: [
+            'Tensor', 'Scalar', 'Tensor1D', 'Tensor2D', 'Tensor3D', 'Tensor4D'
+          ]
+        },
+        {name: 'Transformations'}, {name: 'Slicing and Joining'}
       ]
     },
     {

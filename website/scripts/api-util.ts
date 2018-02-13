@@ -359,11 +359,15 @@ export function replaceDocTypeAlias(
   return docTypeString;
 }
 
+interface SymbolAndUrl {
+  symbolName: string;
+  urlHash: string;
+}
 // Link symbols together. This should be used outside of the parser.
 export function linkSymbols(docs: Docs, toplevelNamespace: string) {
   console.log('--------linking------');
   // Find all the symbols.
-  const symbols = [];
+  const symbols: SymbolAndUrl[] = [];
   docs.headings.forEach(heading => {
     heading.subheadings.forEach(subheading => {
       subheading.symbols.forEach(symbol => {
@@ -377,10 +381,31 @@ export function linkSymbols(docs: Docs, toplevelNamespace: string) {
           symbol.urlHash = symbol.displayName;
         }
 
-        symbols.push(symbol.symbolName);
+        symbols.push({symbolName: symbol.symbolName, urlHash: symbol.urlHash});
+      });
+    });
+  });
+
+  // Link all the symbols.
+  docs.headings.forEach(heading => {
+    heading.subheadings.forEach(subheading => {
+      subheading.symbols.forEach(symbol => {
+        symbol.documentation =
+            replaceSymbolsWithLinks(symbol.documentation, symbols);
       });
     });
   });
 
   const symbolUrls = [];
+}
+
+function replaceSymbolsWithLinks(
+    input: string, symbolsAndUrls: SymbolAndUrl[]): string {
+  symbolsAndUrls.forEach(symbolAndUrl => {
+    const re = new RegExp('\`' + symbolAndUrl.symbolName + '\`', 'g');
+
+    input = input.replace(
+        re, `[${symbolAndUrl.symbolName}](#${symbolAndUrl.urlHash})`);
+  });
+  return input;
 }
