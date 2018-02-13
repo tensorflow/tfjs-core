@@ -136,6 +136,8 @@ export class AdamaxOptimizer extends Optimizer {
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
     tidy(() => {
+      const lr = this.cGraph.div(this.one.add(this.decay.mul(this.iteration)));
+
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
 
@@ -152,8 +154,7 @@ export class AdamaxOptimizer extends Optimizer {
         const newWeightedInfNorm = ut0.maximum(ut1);
 
         const variable = math.scaledArrayAdd(
-            this.one, oldVariable,
-            this.cGraph.divStrict(this.one.sub(this.accBeta1)),
+            this.one, oldVariable, lr.div(this.one.sub(this.accBeta1)),
             newFirstMoment.div(this.eps.add(newWeightedInfNorm)));
 
         activationArrayMap.set(node.output, keep(variable));
@@ -168,6 +169,7 @@ export class AdamaxOptimizer extends Optimizer {
         oldWeightedInfNorm.dispose();
       });
 
+      this.iteration.assign(this.iteration.add(this.one));
       this.accBeta1.assign(this.accBeta1.mul(this.beta1));
     });
 

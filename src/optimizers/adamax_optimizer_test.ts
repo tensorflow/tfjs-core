@@ -126,15 +126,17 @@ describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
     };
 
     dl.tidy(() => {
-      const learningRate = .1;
-      const beta1 = .8;
-      const beta2 = .9;
+      const learningRate = 0.1;
+      const beta1 = 0.8;
+      const beta2 = 0.9;
+      const decay = 0.1;
       const g = new Graph();
       const x = g.placeholder('x', [2]);
       const w = g.variable('w', dl.zeros([1, 2]));
       const b = g.variable('b', dl.zeros([1]));
       const y = g.reduceSum(g.add(g.matmul(w, x), b));
-      const optimizer = new AdamaxOptimizer(learningRate, beta1, beta2);
+      const optimizer =
+          new AdamaxOptimizer(learningRate, beta1, beta2, undefined, decay);
       const session = new Session(g, math);
       // w = reduce_sum(w_1*x_1 + w_2*x_2 + b)
       // new_first_m = [beta1*old_first_m_w1 + (1-beta1)*grad_w1,
@@ -166,16 +168,19 @@ describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
       // u1_1 = [(1-beta2)*grad_w1, (1-beta2)*grad_w2] = [.2 .4]
       // new_weighted_inf_norm = max(ut_0, ut_1 ) = [.2 .4]
       //
-      // coefficient = alpha/(1-(beta1*beta1) = 0.278
+      // alpha = 0.1 / (1 + 0.1 * 1) = 0.09090909
+      //
+      // coefficient = alpha/(1-(beta1*beta1) = 0.25252525
       // updates = coefficient*[new_first_m1/new_weighted_inf_norm1,
       //                        new_first_m2/new_weighted_inf_norm2]
-      //         = [1.0, 1.0]
+      //         = [0.909090909, 0.909090909]
       // w = [ w1_old - lr*updates_1, w2_old - lr*updates_2]
-      //            = [-0.2, -0.2]
+      //            = [-0.1909090909, -0.1909090909]
 
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).dataSync();
-      expectArraysClose(dydw2, new Float32Array([-.2, -.2]), 1e-1);
+      expectArraysClose(
+          dydw2, new Float32Array([-0.1909090909, -0.1909090909]), 1e-2);
     });
   });
 });
