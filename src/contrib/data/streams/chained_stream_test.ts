@@ -42,11 +42,13 @@ describe('ChainedStream', () => {
   it('produces multiple underlying streams as expected', done => {
     const chainedStreamPromise = ChainedStream.create(streamFromItems([
       new TestIntegerStream(), new TestIntegerStream(), new TestIntegerStream(),
+      new TestIntegerStream(), new TestIntegerStream(), new TestIntegerStream(),
+      new TestIntegerStream(), new TestIntegerStream(), new TestIntegerStream(),
       new TestIntegerStream()
     ]));
 
     const expectedResult: number[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 10; i++) {
       for (let j = 0; j < 100; j++) {
         expectedResult[i * 100 + j] = j;
       }
