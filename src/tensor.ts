@@ -411,7 +411,7 @@ export class Tensor<R extends Rank = Rank> {
   // Chain API.
 
   print(verbose = false): void {
-    return ops.print(this);
+    return ops.print(this, verbose);
   }
 
   /** Reshapes the current tensor into the provided shape. */
