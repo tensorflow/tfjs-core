@@ -255,8 +255,8 @@ export class Ops {
    * Creates a tensor filled with a scalar value.
    * @param shape An array of integers defining the output tensor shape.
    * @param value The scalar value to fill the tensor with.
-   * @param dtype The type of an element in the resulting tensor. Can
-   *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
+   * @param dtype The type of an element in the resulting tensor. Defaults to
+   * 'float'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
@@ -638,13 +638,10 @@ export class Ops {
   /**
    * Return an evenly spaced sequence of numbers over the given interval.
    *
-   * The stop value can be optionally excluded by passing setting [endpoint] to
-   * true.
-   *
    * @param start The start value of the sequence
    * @param stop The end value of the sequence
    * @param num The number of values to generate
-   * @param endpoint Optional, determines whether stop is included in the
+   * @param endpoint Determines whether stop is included in the
    * sequence. Defaults to true.
    */
   @operation
@@ -674,8 +671,8 @@ export class Ops {
    *
    * @param start An integer start value
    * @param stop An integer stop value
-   * @param step An optional integer increment (will default to 1 or -1)
-   * @param dtype An optional dtype
+   * @param step An integer increment (will default to 1 or -1)
+   * @param dtype
    */
   @operation
   @doc({heading: 'Tensors', subheading: 'Creation'})

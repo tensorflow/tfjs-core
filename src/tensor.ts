@@ -816,9 +816,8 @@ export class Tensor<R extends Rank = Rank> {
 }
 
 /**
- * A type alias for a rank-0 `Tensor`.
+ * @doclink Tensor
  */
-@doc({heading: 'Tensors', subheading: 'Classes'})
 export class Scalar extends Tensor<Rank.R0> {
   static new(value: number|boolean, dtype?: DataType): Scalar {
     return ops.scalar(value, dtype);
@@ -826,9 +825,8 @@ export class Scalar extends Tensor<Rank.R0> {
 }
 
 /**
- * A type alias for a rank-1 `Tensor`.
+ * @doclink Tensor
  */
-@doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor1D extends Tensor<Rank.R1> {
   static new<D extends DataType = 'float32'>(
       values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Tensor1D {
@@ -837,9 +835,8 @@ export class Tensor1D extends Tensor<Rank.R1> {
 }
 
 /**
- * A type alias for a rank-2 `Tensor`.
+ * @doclink Tensor
  */
-@doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor2D extends Tensor<Rank.R2> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number],
@@ -850,9 +847,8 @@ export class Tensor2D extends Tensor<Rank.R2> {
 }
 
 /**
- * A type alias for a rank-3 `Tensor`.
+ * @doclink Tensor
  */
-@doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor3D extends Tensor<Rank.R3> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number],
@@ -863,9 +859,8 @@ export class Tensor3D extends Tensor<Rank.R3> {
 }
 
 /**
- * A type alias for a rank-4 `Tensor`.
+ * @doclink Tensor
  */
-@doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor4D extends Tensor<Rank.R4> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number, number],

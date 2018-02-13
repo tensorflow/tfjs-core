@@ -31,11 +31,8 @@ import {NamedVariableMap} from '../types';
 import {Optimizer} from './optimizer';
 
 /**
- * Optimizer that implements the RMSProp optimization algorithm.
- *
- * Use `dl.train.rmsprop` to create a RMSProp ptimizer.
+ * @doclink Optimizer
  */
-@doc({heading: 'Training', subheading: 'Classes', namespace: 'train'})
 export class RMSPropOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;

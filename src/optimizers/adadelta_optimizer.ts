@@ -30,13 +30,8 @@ import {NamedVariableMap} from '../types';
 import {Optimizer} from './optimizer';
 
 /**
- * Optimizer that implements the Adadelta algorithm.
- *
- * Use `dl.train.adadelta` to create an Adadelta optimizer.
- *
- * See: https://arxiv.org/abs/1212.5701
+ * @doclink Optimizer
  */
-@doc({heading: 'Training', subheading: 'Classes', namespace: 'train'})
 export class AdadeltaOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;

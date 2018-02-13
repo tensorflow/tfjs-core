@@ -30,11 +30,8 @@ import {NamedTensorMap} from '../types';
 import {Optimizer} from './optimizer';
 
 /**
- * Optimizer that implements stochastic gradient descent.
- *
- * Use `dl.train.sgd` to create an SGD optimizer.
+ * @doclink Optimizer
  */
-@doc({heading: 'Training', subheading: 'Classes', namespace: 'train'})
 export class SGDOptimizer extends Optimizer {
   protected c: Scalar;
 

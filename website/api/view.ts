@@ -43,8 +43,9 @@ export interface DocClass {
 
   isClass: true;
 
+  // Filled in by the linker.
   displayName?: string;
-  urlHash?: string;  // Filled in by the linker.
+  urlHash?: string;
 }
 
 export interface DocFunction {

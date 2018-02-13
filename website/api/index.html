@@ -136,19 +136,26 @@
       border-bottom: 1px solid rgb(96,125,139);
     }
 
-    .documentation pre, .documentation a {
-      background: #f7f7f7;
+    .documentation pre, .param-docs pre {
+      background: #f4f4f4;
     }
 
-    code {
-      background: #f7f7f7;
+    code, .markdown {
+      background: #f4f4f4;
       color: #37474f;
       padding: 2px 4px;
       font: 500 90%/2 Roboto Mono, monospace;
+    }
+    code {
       word-break: break-word;
     }
-    .documentation a {
-      padding: 2px 4px;
+    .markdown {
+      display: inline-block;
+    }
+
+    .documentation a, .returns a, .param-docs a {
+      background: #f4f4f4;
+      padding: 4px 6px;
       font: 500 90%/2 Roboto Mono, monospace;
     }
 
@@ -272,7 +279,7 @@
                 {{#parameters}}
                 <li class="parameter">
                   <span class="param-name">
-                    <code>{{name}}: {{type}}</code>
+                    <div class="markdown">{{name}}: {{{markdownInner type}}}</div>
                   </span>
                   <span class="param-docs">
                     {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
@@ -281,7 +288,7 @@
                 {{/parameters}}
               </ul>
               <div class="returns mdl-typography--subhead">
-                Returns: <code>{{returnType}}</code>
+                Returns: <div class="markdown">{{{markdownInner returnType}}}</div>
               </div>
               {{/isFunction}} {{#isClass}}
               <h6>Methods:</h6>
@@ -290,7 +297,7 @@
                 <div class="method-name">
                   <code>{{symbolName}}{{paramStr}}</code>
                 </div>
-                <div class="method-docs">
+                <div class="method-docs documentation">
                   {{#optional}}(Optional){{/optional}} {{{markdown documentation}}}
 
                   <div class="parameter-heading mdl-typography--subhead">Parameters:</div>

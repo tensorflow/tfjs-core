@@ -30,11 +30,8 @@ import {NamedVariableMap} from '../types';
 import {SGDOptimizer} from './sgd_optimizer';
 
 /**
- * Optimizer that implements momentum gradient descent.
- *
- * Use `dl.train.momentum` to create a momentum optimizer.
+ * @doclink Optimizer
  */
-@doc({heading: 'Training', subheading: 'Classes', namespace: 'train'})
 export class MomentumOptimizer extends SGDOptimizer {
   private m: Scalar;
   private accumulations: NamedVariableMap;

@@ -37,9 +37,33 @@ const HTML_OUT_DIR = '/tmp/deeplearn-new-website/api/';
 
 shell.mkdir('-p', HTML_OUT_DIR);
 
-const docs = parser.parse();
+const {docs, docLinkAliases} = parser.parse();
 
-util.linkSymbols(docs, TOPLEVEL_NAMESPACE);
+// Predefine some custom type links.
+const symbols: util.SymbolAndUrl[] = [
+  {
+    symbolName: 'TypedArray',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/' +
+        'JavaScript/Reference/Global_Objects/TypedArray'
+  },
+  {
+    symbolName: 'ImageData',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/ImageData'
+  },
+  {
+    symbolName: 'HTMLImageElement',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement'
+  },
+  {
+    symbolName: 'HTMLCanvasElement',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement'
+  },
+  {
+    symbolName: 'HTMLVideoElement',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement'
+  }
+];
+util.linkSymbols(docs, symbols, TOPLEVEL_NAMESPACE, docLinkAliases);
 
 const md = new MarkdownIt();
 

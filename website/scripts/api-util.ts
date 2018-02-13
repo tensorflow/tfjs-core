@@ -208,22 +208,15 @@ export function isStatic(node: ts.MethodDeclaration): boolean {
 }
 
 /**
- * Gets a doc alias, e.g. @docalias, from a interface / type alias.
- */
-export function getDocAlias(
-    checker: ts.TypeChecker,
-    node: ts.InterfaceDeclaration|ts.TypeAliasDeclaration,
-    docTypeAlias: string) {
-  const symbol = checker.getSymbolAtLocation(node.name);
-  const docs = symbol.getDocumentationComment();
-  return getJsDocTag(symbol, docTypeAlias);
-}
-
-/**
  * Finds a jsdoc tag by a given tag name for a symbol. e.g. @docalias number[]
  * => number[].
  */
-export function getJsDocTag(symbol: ts.Symbol, tag: string): string {
+export function getJsdoc(
+    checker: ts.TypeChecker,
+    node: ts.InterfaceDeclaration|ts.TypeAliasDeclaration|ts.ClassDeclaration,
+    tag: string) {
+  const symbol = checker.getSymbolAtLocation(node.name);
+  const docs = symbol.getDocumentationComment();
   const tags = symbol.getJsDocTags();
   for (let i = 0; i < tags.length; i++) {
     const jsdocTag = tags[i];
@@ -291,7 +284,8 @@ export function getIdentifierGenericMap(
   const identifierGenericMap = {};
 
   node.forEachChild(child => {
-    // TypeParameterDeclarations look like <T extends Tensor|NamedTensorMap>.
+    // TypeParameterDeclarations look like <T extends
+    // Tensor|NamedTensorMap>.
     if (ts.isTypeParameterDeclaration(child)) {
       let identifier;
       let generic;
@@ -359,15 +353,15 @@ export function replaceDocTypeAlias(
   return docTypeString;
 }
 
-interface SymbolAndUrl {
+export interface SymbolAndUrl {
   symbolName: string;
-  urlHash: string;
+  url: string;
 }
-// Link symbols together. This should be used outside of the parser.
-export function linkSymbols(docs: Docs, toplevelNamespace: string) {
-  console.log('--------linking------');
+// Link symbols together with markdown links.
+export function linkSymbols(
+    docs: Docs, symbols: SymbolAndUrl[], toplevelNamespace: string,
+    docLinkAliases: {[symbolName: string]: string}) {
   // Find all the symbols.
-  const symbols: SymbolAndUrl[] = [];
   docs.headings.forEach(heading => {
     heading.subheadings.forEach(subheading => {
       subheading.symbols.forEach(symbol => {
@@ -381,31 +375,56 @@ export function linkSymbols(docs: Docs, toplevelNamespace: string) {
           symbol.urlHash = symbol.displayName;
         }
 
-        symbols.push({symbolName: symbol.symbolName, urlHash: symbol.urlHash});
+        symbols.push(
+            {symbolName: symbol.symbolName, url: '#' + symbol.urlHash});
       });
     });
   });
 
-  // Link all the symbols.
+  // Add new doc link alias symbols.
+  Object.keys(docLinkAliases).forEach(docLinkAlias => {
+    // Find the symbol so we can find the url hash.
+    symbols.forEach(symbol => {
+      if (symbol.symbolName === docLinkAliases[docLinkAlias]) {
+        symbols.push({symbolName: docLinkAlias, url: symbol.url});
+      }
+    });
+  });
+
+  // Replace class documentation with links.
   docs.headings.forEach(heading => {
     heading.subheadings.forEach(subheading => {
       subheading.symbols.forEach(symbol => {
-        symbol.documentation =
-            replaceSymbolsWithLinks(symbol.documentation, symbols);
+        if (symbol['isClass']) {
+          symbol.documentation = replaceSymbolsWithLinks(
+              symbol.documentation, symbols, true /** isMarkdown */);
+        }
       });
     });
   });
-
-  const symbolUrls = [];
+  foreachDocFunction(docs.headings, method => {
+    method.documentation = replaceSymbolsWithLinks(
+        method.documentation, symbols, true /** isMarkdown */);
+    method.returnType = replaceSymbolsWithLinks(
+        method.returnType, symbols, false /** isMarkdown */);
+    method.parameters.forEach(param => {
+      param.documentation = replaceSymbolsWithLinks(
+          param.documentation, symbols, true /** isMarkdown */);
+      param.type =
+          replaceSymbolsWithLinks(param.type, symbols, false /** isMarkdown */);
+    });
+  });
 }
 
 function replaceSymbolsWithLinks(
-    input: string, symbolsAndUrls: SymbolAndUrl[]): string {
+    input: string, symbolsAndUrls: SymbolAndUrl[],
+    isMarkdown: boolean): string {
   symbolsAndUrls.forEach(symbolAndUrl => {
-    const re = new RegExp('\`' + symbolAndUrl.symbolName + '\`', 'g');
+    const wrapper = isMarkdown ? '\`' : '\\b(?![\'])';
+    const re = new RegExp(wrapper + symbolAndUrl.symbolName + wrapper, 'g');
 
-    input = input.replace(
-        re, `[${symbolAndUrl.symbolName}](#${symbolAndUrl.urlHash})`);
+    input =
+        input.replace(re, `[${symbolAndUrl.symbolName}](${symbolAndUrl.url})`);
   });
   return input;
 }
