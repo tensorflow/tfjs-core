@@ -14,8 +14,6 @@
  * limitations under the License.
  * =============================================================================
  */
-
-import {doc} from './doc';
 import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TypedArray} from './types';
@@ -449,18 +447,5 @@ export function bytesPerElement(dtype: DataType): number {
     return 1;
   } else {
     throw new Error(`Unknown dtype ${dtype}`);
-  }
-}
-
-export class Util {
-  /**
-   * Returns a promise that resolve when a requestAnimationFrame has completed.
-   *
-   * This is simply a sugar method so that users can do the following:
-   * `await dl.nextFrame();`
-   */
-  @doc({heading: 'Performance', subheading: 'Timing'})
-  static nextFrame(): Promise<void> {
-    return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
   }
 }
