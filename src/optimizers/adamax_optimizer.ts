@@ -35,15 +35,17 @@ export class AdamaxOptimizer extends Optimizer {
   private accBeta1: Variable;
   private beta1: Scalar;
   private beta2: Scalar;
+  private decay: Scalar;
   private oneMinusBeta1: Scalar;
   private one: Scalar;
+  private iteration: Variable;
 
   private accumulatedFirstMoment: NamedVariableMap = {};
   private accumulatedWeightedInfNorm: NamedVariableMap = {};
 
   constructor(
       protected learningRate: number, beta1: number, beta2: number,
-      epsilon = 1e-8,
+      epsilon = 1e-8, decay = 0.0,
       /** @deprecated */ specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.c = keep(scalar(-learningRate));
@@ -51,6 +53,9 @@ export class AdamaxOptimizer extends Optimizer {
     // b1, b2 keep initial value of beta* hyperparameters.
     this.beta1 = keep(scalar(beta1));
     this.beta2 = keep(scalar(beta2));
+
+    this.decay = keep(scalar(decay));
+    this.iteration = variable(scalar(0));
 
     this.oneMinusBeta1 = keep(scalar(1 - beta1));
 
@@ -61,6 +66,8 @@ export class AdamaxOptimizer extends Optimizer {
   applyGradients(variableGradients: NamedVariableMap) {
     tidy(() => {
       const oneMinusAccBeta1 = this.one.sub(this.accBeta1);
+      const lr = this.c.div(this.one.add(this.decay.mul(this.iteration)));
+
       for (const variableName in variableGradients) {
         const value = ENV.engine.registeredVariables[variableName];
         if (this.accumulatedFirstMoment[variableName] == null) {
@@ -91,12 +98,14 @@ export class AdamaxOptimizer extends Optimizer {
             newWeightedInfNorm);
 
         const newValue =
-            this.c.div(oneMinusAccBeta1)
+            lr.div(oneMinusAccBeta1)
                 .mul(newFirstMoment.div(this.eps.add(newWeightedInfNorm)))
                 .add(value);
+
         value.assign(newValue);
       }
 
+      this.iteration.assign(this.iteration.add(this.one));
       this.accBeta1.assign(this.accBeta1.mul(this.beta1));
     });
   }
@@ -174,6 +183,10 @@ export class AdamaxOptimizer extends Optimizer {
     this.beta1.dispose();
     this.beta2.dispose();
     this.oneMinusBeta1.dispose();
+
+    this.decay.dispose();
+    this.iteration.dispose();
+
     this.one.dispose();
 
     if (this.firstMomentGraph != null) {

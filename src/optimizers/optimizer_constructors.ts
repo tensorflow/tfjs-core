@@ -95,13 +95,14 @@ export class OptimizerConstructors {
    * @param learningRate
    * @param beta1
    * @param beta2
+   * @param decay
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static adamax(
-      learningRate = 0.002, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8):
-      AdamaxOptimizer {
+      learningRate = 0.002, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8,
+      decay = 0.0): AdamaxOptimizer {
     return new AdamaxOptimizer(
-        learningRate, beta1, beta2, epsilon,
+        learningRate, beta1, beta2, epsilon, decay,
         undefined /** @deprecated specifiedVariableList */);
   }
 

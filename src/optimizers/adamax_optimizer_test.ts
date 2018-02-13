@@ -25,10 +25,12 @@ import {AdamaxOptimizer} from './adamax_optimizer';
 
 describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
   it('basic', () => {
-    const learningRate = .1;
-    const beta1 = .8;
-    const beta2 = .9;
-    const optimizer = dl.train.adamax(learningRate, beta1, beta2);
+    const learningRate = 0.1;
+    const beta1 = 0.8;
+    const beta2 = 0.9;
+    const decay = 0.1;
+    const optimizer =
+        dl.train.adamax(learningRate, beta1, beta2, undefined, decay);
 
     const x = dl.variable(dl.tensor1d([2, 4]));
 
@@ -88,17 +90,19 @@ describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
     // ] = [3.8, 7.8]
     // new_weighted_inf_norm = max(ut_0, ut_1) = [3.8, 7.8]
     //
-    // coefficient = alpha / (1 - beta1*beta1) = 0.277777
+    // alpha = 0.1 / (1 + 0.1 * 1) = 0.0909090909
+    //
+    // coefficient = alpha / (1 - beta1*beta1) = 0.25252525
     // updates = coefficient * [
     //    new_first_m1 / new_weighted_inf_norm1,
     //    new_first_m2 / new_weighted_inf_norm2
-    // ] = [0.102333, 0.1011]
+    // ] = [0.09303, 0.09194]
     // w = [
     //    w1_old - updates_1,
     //    w2_old - updates_2
-    // ] = [1.7976, 3.7989]
+    // ] = [1.80697, 3.8086]
     //
-    expectArraysClose(x, [1.7976, 3.7989]);
+    expectArraysClose(x, [1.80697, 3.8086]);
     // There should be no new additional Tensors.
     expect(dl.memory().numTensors).toBe(numTensors);
 
