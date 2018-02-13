@@ -390,6 +390,22 @@ class ChainState<T> {
       public readonly moreStreams: DataStream<DataStream<T>>) {}
 }
 
+async function nextChainState<T>(afterState: Promise<ChainState<T>>):
+    Promise<ChainState<T>> {
+  const state = await afterState;
+  let stream = state.currentStream;
+  if (stream == null) {
+    return new ChainState(undefined, undefined, state.moreStreams);
+  }
+  const item = await stream.next();
+  if (item == null) {
+    stream = await state.moreStreams.next();
+    return nextChainState(
+        Promise.resolve(new ChainState(undefined, stream, state.moreStreams)));
+  }
+  return new ChainState(item, stream, state.moreStreams);
+}
+
 /**
  * Provides a `DataStream` that concatenates a stream of underlying streams.
  *
@@ -410,24 +426,8 @@ export class ChainedStream<T> extends DataStream<T> {
     return c;
   }
 
-  private static async nextState<T>(afterState: Promise<ChainState<T>>):
-      Promise<ChainState<T>> {
-    const state = await afterState;
-    let stream = state.currentStream;
-    if (stream == null) {
-      return new ChainState(undefined, undefined, state.moreStreams);
-    }
-    const item = await stream.next();
-    if (item == null) {
-      stream = await state.moreStreams.next();
-      return this.nextState(Promise.resolve(
-          new ChainState(undefined, stream, state.moreStreams)));
-    }
-    return new ChainState(item, stream, state.moreStreams);
-  }
-
   async next(): Promise<T> {
-    this.currentPromise = ChainedStream.nextState(this.currentPromise);
+    this.currentPromise = nextChainState(this.currentPromise);
     return (await this.currentPromise).item;
   }
 }

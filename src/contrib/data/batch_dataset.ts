@@ -48,83 +48,82 @@ export class BatchDataset {
   async getStream(): Promise<DataStream<DatasetBatch>> {
     const batchesAsArrays = (await this.base.getStream())
                                 .batch(this.batchSize, this.smallLastBatch);
-    return batchesAsArrays.map(BatchDataset.makeDatasetBatch);
+    return batchesAsArrays.map(makeDatasetBatch);
   }
+}
 
-  /**
-   * Constructs a DatasetBatch from a list of DatasetElements.
-   */
-  private static makeDatasetBatch(elements: DatasetElement[]): DatasetBatch {
-    const rotated: {[key: string]: (ElementArray[]|string[])} = {};
+/**
+ * Constructs a DatasetBatch from a list of DatasetElements.
+ */
+function makeDatasetBatch(elements: DatasetElement[]): DatasetBatch {
+  const rotated: {[key: string]: (ElementArray[]|string[])} = {};
 
-    // Assume that the first element is representative.
-    // We do end up enforcing Tensor shape consistency below, but not
-    // cleanly.
-    // TODO(soergel) validate against a schema, allow missing keys, etc.
-    // etc.
-    const firstElement: DatasetElement = elements[0];
-    const keys = Object.keys(firstElement);
+  // Assume that the first element is representative.
+  // We do end up enforcing Tensor shape consistency below, but not
+  // cleanly.
+  // TODO(soergel) validate against a schema, allow missing keys, etc.
+  // etc.
+  const firstElement: DatasetElement = elements[0];
+  const keys = Object.keys(firstElement);
+  keys.forEach(key => {
+    rotated[key] = [];
+  });
+
+  for (const e of elements) {
     keys.forEach(key => {
-      rotated[key] = [];
+      const value = e[key];
+      (rotated[key] as ElementArray[]).push(value);
     });
-
-    for (const e of elements) {
-      keys.forEach(key => {
-        const value = e[key];
-        (rotated[key] as ElementArray[]).push(value);
-      });
-    }
-
-    const result: {[key: string]: (BatchArray|string[])} = {};
-    for (const key of keys) {
-      // this sanity check should always pass
-      if (rotated[key].length !== elements.length) {
-        throw new Error(
-            `Batching failed to get a '${key}' value for each element.`);
-      }
-      if (typeof rotated[key][0] === 'string') {
-        result[key] = rotated[key] as string[];
-      } else {
-        result[key] = BatchDataset.batchConcat(
-            rotated[key] as Array<number|number[]|Tensor>);
-      }
-    }
-    return result;
   }
 
-  /**
-   * Assembles a list of same-shaped numbers, number arrays, or Tensors
-   * into a single new Tensor where axis 0 is the batch dimension.
-   */
-  private static batchConcat(arrays: Array<number|number[]|Tensor>): Tensor {
-    // Should we use GPU-enabled concat ops in deeplearn's math.ts?
-    // Probably not; the GPU roundtrip is not worth it for a trivial
-    // operation.
-    const [elementShape, ] = BatchDataset.shapeAndValues(arrays[0]);
-    const batchShape = [arrays.length].concat(elementShape);
-    const resultVals = new Float32Array(batchShape.reduce((x, y) => x * y));
-
-    let offset = 0;
-    for (const a of arrays) {
-      const [aShape, aVals] = BatchDataset.shapeAndValues(a);
-      if (!util.arraysEqual(aShape, elementShape)) {
-        throw new Error('Elements must have the same shape to be batched');
-      }
-      resultVals.set(aVals, offset);
-      offset += aVals.length;
+  const result: {[key: string]: (BatchArray|string[])} = {};
+  for (const key of keys) {
+    // this sanity check should always pass
+    if (rotated[key].length !== elements.length) {
+      throw new Error(
+          `Batching failed to get a '${key}' value for each element.`);
     }
-    const result = Tensor.make(batchShape, {values: resultVals});
-    return result;
-  }
-
-  private static shapeAndValues(array: number|number[]|Tensor):
-      [number[], number[]|Float32Array|Int32Array|Uint8Array] {
-    if (array instanceof Tensor) {
-      return [array.shape, array.dataSync()];
-    } else if (Array.isArray(array)) {
-      return [[array.length], array];
+    if (typeof rotated[key][0] === 'string') {
+      result[key] = rotated[key] as string[];
     } else {
-      return [[], [array]];
+      result[key] = batchConcat(rotated[key] as Array<number|number[]|Tensor>);
     }
+  }
+  return result;
+}
+
+/**
+ * Assembles a list of same-shaped numbers, number arrays, or Tensors
+ * into a single new Tensor where axis 0 is the batch dimension.
+ */
+function batchConcat(arrays: Array<number|number[]|Tensor>): Tensor {
+  // Should we use GPU-enabled concat ops in deeplearn's math.ts?
+  // Probably not; the GPU roundtrip is not worth it for a trivial
+  // operation.
+  const [elementShape, ] = shapeAndValues(arrays[0]);
+  const batchShape = [arrays.length].concat(elementShape);
+  const resultVals = new Float32Array(batchShape.reduce((x, y) => x * y));
+
+  let offset = 0;
+  for (const a of arrays) {
+    const [aShape, aVals] = shapeAndValues(a);
+    if (!util.arraysEqual(aShape, elementShape)) {
+      throw new Error('Elements must have the same shape to be batched');
+    }
+    resultVals.set(aVals, offset);
+    offset += aVals.length;
+  }
+  const result = Tensor.make(batchShape, {values: resultVals});
+  return result;
+}
+
+function shapeAndValues(array: number|number[]|Tensor):
+    [number[], number[]|Float32Array|Int32Array|Uint8Array] {
+  if (array instanceof Tensor) {
+    return [array.shape, array.dataSync()];
+  } else if (Array.isArray(array)) {
+    return [[array.length], array];
+  } else {
+    return [[], [array]];
   }
 }

@@ -18,7 +18,7 @@
 
 import {FileDataSource} from '../sources/file_data_source';
 
-import {CSVDataset} from './csv_dataset';
+import {CSVDataset, CsvHeaderConfig} from './csv_dataset';
 
 const csvData = `ab,cd,ef
 ghi,,jkl
@@ -58,9 +58,10 @@ describe('CSVDataset', () => {
              .catch(done.fail);
        });
      });
-  it('Reads CSV column headers when none are provided', done => {
+  it('Reads CSV column headers when requested', done => {
     const source = new FileDataSource(csvBlobWithHeaders, {chunkSize: 10});
-    const datasetPromise = CSVDataset.create(source);
+    const datasetPromise =
+        CSVDataset.create(source, CsvHeaderConfig.READ_FIRST_LINE);
     datasetPromise.then(dataset => {
       expect(dataset.csvColumnNames).toEqual(['foo', 'bar', 'baz']);
       dataset.getStream()
@@ -73,6 +74,27 @@ describe('CSVDataset', () => {
               {'foo': 'qrs', 'bar': 'tu', 'baz': undefined},
               {'foo': 'v', 'bar': 'w', 'baz': 'x'},
               {'foo': 'y', 'bar': 'z', 'baz': undefined},
+            ]);
+          }))
+          .then(done)
+          .catch(done.fail);
+    });
+  });
+  it('Numbers CSV columns by default', done => {
+    const source = new FileDataSource(csvBlob, {chunkSize: 10});
+    const datasetPromise = CSVDataset.create(source);
+    datasetPromise.then(dataset => {
+      expect(dataset.csvColumnNames).toEqual(['0', '1', '2']);
+      dataset.getStream()
+          .then(stream => stream.collectRemaining().then(result => {
+            expect(result).toEqual([
+              {'0': 'ab', '1': 'cd', '2': 'ef'},
+              {'0': 'ghi', '1': undefined, '2': 'jkl'},
+              {'0': undefined, '1': 'mn', '2': 'op'},
+              {'0': 1.4, '1': 7.8, '2': 12},
+              {'0': 'qrs', '1': 'tu', '2': undefined},
+              {'0': 'v', '1': 'w', '2': 'x'},
+              {'0': 'y', '1': 'z', '2': undefined},
             ]);
           }))
           .then(done)

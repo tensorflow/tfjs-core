@@ -13,14 +13,14 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/fetch-mock": "^5.12.2",
+    "@types/fetch-mock": "~5.12.2",
     "@types/jasmine": "~2.5.53",
     "@types/seedrandom": "~2.4.27",
-    "@types/utf8": "^2.1.6",
+    "@types/utf8": "~2.1.6",
     "browserify": "~14.4.0",
     "clang-format": "~1.2.2",
     "cross-spawn": "~5.1.0",
-    "fetch-mock": "^5.13.1",
+    "fetch-mock": "~5.13.1",
     "http-server": "~0.10.0",
     "jasmine-core": "~2.6.4",
     "karma": "~1.7.0",
@@ -51,6 +51,6 @@
   },
   "dependencies": {
     "seedrandom": "~2.4.3",
-    "utf8": "^2.1.2"
+    "utf8": "~2.1.2"
   }
 }
