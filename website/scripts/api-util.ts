@@ -165,7 +165,7 @@ export function sortMethods(docHeadings: DocHeading[]) {
           // Loop backwards so we remove symbols.
           for (let k = subheading.symbols.length - 1; k >= 0; k--) {
             const symbol = subheading.symbols[k];
-            if (symbol.displayName === pinnedSymbolName) {
+            if (symbol.symbolName === pinnedSymbolName) {
               pinnedSymbols.push(symbol);
               subheading.symbols.splice(k, 1);
             }
@@ -175,9 +175,9 @@ export function sortMethods(docHeadings: DocHeading[]) {
 
       // Sort non-pinned symbols by name.
       subheading.symbols.sort((a, b) => {
-        if (a.displayName < b.displayName) {
+        if (a.symbolName < b.symbolName) {
           return -1;
-        } else if (a.displayName > b.displayName) {
+        } else if (a.symbolName > b.symbolName) {
           return 1;
         }
         return 0;
@@ -369,11 +369,12 @@ export function linkSymbols(docs: Docs, toplevelNamespace: string) {
       subheading.symbols.forEach(symbol => {
         const namespace = toplevelNamespace + '.' +
             (symbol.namespace != null ? symbol.namespace + '.' : '');
+        symbol.displayName = namespace + symbol.symbolName;
 
         if (symbol['isClass'] != null) {
-          symbol.urlHash = `class:${toplevelNamespace}.${symbol.displayName}`;
+          symbol.urlHash = `class:${symbol.displayName}`;
         } else {
-          symbol.urlHash = toplevelNamespace + '.' + symbol.displayName;
+          symbol.urlHash = symbol.displayName;
         }
 
         symbols.push(symbol.symbolName);

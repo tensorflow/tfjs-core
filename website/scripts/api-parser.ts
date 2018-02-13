@@ -74,18 +74,13 @@ export function parse(): Docs {
       name: 'Training',
       description: '',
       subheadings: [
-        {name: 'Gradients'}, {
-          name: 'Optimizers',
-          pin: [
-            'train.sgd', 'train.momentum', 'train.adagrad', 'train.adadelta'
-
-          ]
-        },
+        {name: 'Gradients'},
+        {name: 'Optimizers', pin: ['sgd', 'momentum', 'adagrad', 'adadelta']},
         {name: 'Losses'}, {
           name: 'Classes',
           pin: [
-            'train.SGDOptimizer', 'train.MomentumOptimizer',
-            'train.AdagradOptimizer', 'train.AdadeltaOptimizer'
+            'SGDOptimizer', 'MomentumOptimizer', 'AdagradOptimizer',
+            'AdadeltaOptimizer'
           ]
         }
       ]

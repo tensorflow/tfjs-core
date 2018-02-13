@@ -232,7 +232,7 @@
             <div class="sub-section-title mdl-typography--subhead">{{name}}</div>
             {{#symbols}}
             <div class="symbol">
-              <a href="#{{#isClass}}class:{{/isClass}}dl.{{displayName}}">dl.{{displayName}}</a>
+              <a href="#{{urlHash}}">{{displayName}}</a>
             </div>
             {{/symbols}}
           </div>
@@ -252,7 +252,7 @@
             {{#symbols}}
             <div class="symbol">
               <h5>#
-                <a name="{{#isClass}}class:{{/isClass}}dl.{{displayName}}" href="#{{#isClass}}class:{{/isClass}}dl.{{displayName}}">dl.{{displayName}}</a>{{paramStr}}
+                <a name="{{urlHash}}" href="#{{urlHash}}">{{displayName}}</a>{{paramStr}}
                 {{#isClass}}
                   <span class="class-chip mdl-chip">
                     <span class="mdl-chip__text">Class</span>
