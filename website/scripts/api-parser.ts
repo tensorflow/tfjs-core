@@ -56,17 +56,18 @@ export function parse(): Docs {
             'tensor4d'
           ]
         },
-        {name: 'Transformations'}, {name: 'Slicing and Joining'}
+        {name: 'Classes'}, {name: 'Transformations'},
+        {name: 'Slicing and Joining'}
       ]
     },
     {
       name: 'Operations',
       description: '',
       subheadings: [
-        {name: 'Arithmetic'}, {name: 'Basic math'}, {name: 'Matrices'},
-        {name: 'Convolution'}, {name: 'Reduction'}, {name: 'Normalization'},
-        {name: 'Images'}, {name: 'RNN'}, {name: 'Classification'},
-        {name: 'Logical'}
+        {name: 'Arithmetic', pin: ['add', 'sub', 'mul', 'div']},
+        {name: 'Basic math'}, {name: 'Matrices'}, {name: 'Convolution'},
+        {name: 'Reduction'}, {name: 'Normalization'}, {name: 'Images'},
+        {name: 'RNN'}, {name: 'Logical'}
       ]
     },
     {
@@ -76,10 +77,15 @@ export function parse(): Docs {
         {name: 'Gradients'}, {
           name: 'Optimizers',
           pin: [
-            'train.sgd', 'train.SGDOptimizer', 'train.momentum',
-            'train.MomentumOptimizer', 'train.adagrad',
-            'train.AdagradOptimizer', 'train.adadelta',
-            'train.AdadeltaOptimizer'
+            'train.sgd', 'train.momentum', 'train.adagrad', 'train.adadelta'
+
+          ]
+        },
+        {name: 'Losses'}, {
+          name: 'Classes',
+          pin: [
+            'train.SGDOptimizer', 'train.MomentumOptimizer',
+            'train.AdagradOptimizer', 'train.AdadeltaOptimizer'
           ]
         }
       ]

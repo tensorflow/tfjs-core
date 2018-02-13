@@ -30,6 +30,19 @@ export class Ops {
   /**
    * Creates a `Tensor` with the provided values, shape and dtype.
    *
+   * ```js
+   * // You can pass an array of values to create a vector.
+   * dl.tensor([1, 2, 3, 4]).print()  // shape: [4]
+   * ```
+   *
+   * // You can pass a nested array of values to make a matrix or a higher
+   * dimensional tensor
+   * dl.tensor([[1, 2], [3, 4]]).print();  // shape: [2, 2]
+   *
+   * // You can also pass a flat array and specify a shape yourself.
+   * dl.tensor([1, 2, 3, 4], [2, 2]).print();  // shape: [2, 2]
+   * ```
+   *
    * @param values The values of the tensor. Can be nested array of numbers,
    *     or a flat array, or a `TypedArray`.
    * @param shape The shape of the tensor. Optional. If not provided,
@@ -317,7 +330,6 @@ export class Ops {
    * each element in the output tensor.
    * @param dtype The data type of the output tensor. Defaults to 'float32'.
    */
-  @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static rand<R extends Rank>(
       shape: ShapeMap[R], randFunction: () => number, dtype?: DataType):
@@ -536,7 +548,6 @@ export class Ops {
    *     left and right side of the tensor.
    * @param constantValue The scalar pad value to use. Defaults to 0.
    */
-  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static pad1d(x: Tensor1D, paddings: [number, number], constantValue = 0):
       Tensor1D {
@@ -561,7 +572,6 @@ export class Ops {
    *     tensor.
    * @param constantValue The scalar pad value to use. Defaults to 0.
    */
-  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static pad2d(
       x: Tensor2D, paddings: [[number, number], [number, number]],
