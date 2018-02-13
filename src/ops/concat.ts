@@ -23,7 +23,7 @@ import * as util from '../util';
 import * as concat_util from './concat_util';
 import {operation} from './operation';
 
-export class Ops {
+export class Concat {
   /**
    * Concatenates a list of `Tensor1D`s along an axis. See `concat` for details.
    *
@@ -36,7 +36,7 @@ export class Ops {
    * @return The concatenated array.
    */
   static concat1d(tensors: Tensor1D[]): Tensor1D {
-    return Ops.concat(tensors, 0 /* axis */);
+    return Concat.concat(tensors, 0 /* axis */);
   }
 
   /**
@@ -67,7 +67,7 @@ export class Ops {
    * @return The concatenated array.
    */
   static concat2d(tensors: Tensor2D[], axis: number): Tensor2D {
-    return Ops.concat(tensors, axis);
+    return Concat.concat(tensors, axis);
   }
 
   /**
@@ -101,7 +101,7 @@ export class Ops {
    * @return The concatenated array.
    */
   static concat3d(tensors: Tensor3D[], axis: number): Tensor3D {
-    return Ops.concat(tensors, axis);
+    return Concat.concat(tensors, axis);
   }
 
   /**
@@ -112,7 +112,7 @@ export class Ops {
    * @return The concatenated array.
    */
   static concat4d(tensors: Tensor4D[], axis: number): Tensor4D {
-    return Ops.concat(tensors, axis);
+    return Concat.concat(tensors, axis);
   }
 
   /**
@@ -122,11 +122,11 @@ export class Ops {
    * dimensions except `axis`.
    *
    * @param tensors A list of `Tensor`s to concatenate.
-   * @param axis The axis to concate along.
+   * @param axis The axis to concate along. Defaults to 0 (the first dim).
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static concat<T extends Tensor>(tensors: T[], axis: number): T {
+  static concat<T extends Tensor>(tensors: T[], axis = 0): T {
     util.assert(tensors.length >= 2, 'Pass at least two tensors in dl.concat');
     let result = tensors[0];
     for (let i = 1; i < tensors.length; ++i) {

@@ -45,6 +45,16 @@ describeWithFlags('concat1d', ALL_ENVS, () => {
     const expected = [3, 5, 7];
     expectArraysClose(result, expected);
   });
+
+  it('3 + 5 + 7 + 9', () => {
+    const a = dl.tensor1d([3]);
+    const b = dl.tensor1d([5]);
+    const c = dl.tensor1d([7]);
+    const d = dl.tensor1d([9]);
+
+    const result = dl.concat1d([a, b, c, d]);
+    expectArraysClose(result, [3, 5, 7, 9]);
+  });
 });
 
 describeWithFlags('concat2d', ALL_ENVS, () => {
@@ -84,6 +94,19 @@ describeWithFlags('concat2d', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
+  it('[[1, 2],[3, 4]] + [[5, 6]] + [[7, 8]], axis=0', () => {
+    const axis = 0;
+    const a = dl.tensor2d([[1, 2], [3, 4]]);
+    const b = dl.tensor2d([[5, 6]]);
+    const c = dl.tensor2d([[7, 8]]);
+
+    const result = dl.concat2d([a, b, c], axis);
+    const expected = [1, 2, 3, 4, 5, 6, 7, 8];
+
+    expect(result.shape).toEqual([4, 2]);
+    expectArraysClose(result, expected);
+  });
+
   it('[[1, 2], [3, 4]] + [[5, 6]], axis=1 throws error', () => {
     const axis = 1;
     const a = dl.tensor2d([[1, 2], [3, 4]], [2, 2]);
@@ -101,6 +124,19 @@ describeWithFlags('concat2d', ALL_ENVS, () => {
     const expected = [1, 2, 5, 6, 3, 4, 7, 8];
 
     expect(result.shape).toEqual([2, 4]);
+    expectArraysClose(result, expected);
+  });
+
+  it('[[1, 2],[3, 4]] + [[5, 6],[7, 8]] + [[9, 10],[11, 12]], axis=1', () => {
+    const axis = 1;
+    const a = dl.tensor2d([[1, 2], [3, 4]]);
+    const b = dl.tensor2d([[5, 6], [7, 8]]);
+    const c = dl.tensor2d([[9, 10], [11, 12]]);
+
+    const result = dl.concat2d([a, b, c], axis);
+    const expected = [1, 2, 5, 6, 9, 10, 3, 4, 7, 8, 11, 12];
+
+    expect(result.shape).toEqual([2, 6]);
     expectArraysClose(result, expected);
   });
 });

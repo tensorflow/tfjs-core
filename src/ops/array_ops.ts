@@ -20,9 +20,9 @@ import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 // tslint:disable-next-line:max-line-length
-import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D} from '../types';
+import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray} from '../types';
 import * as util from '../util';
-
+import {Concat} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
 
@@ -636,10 +636,37 @@ export class Ops {
   }
 
   /**
+   * Stacks a list of rank-`R` tensors into one rank-`(R+1)` tensor.
+   *
+   * @param tensors A list of `Tensor` objects with the same shape and dtype.
+   * @param axis The axis to stack along. Defaults to 0 (the first dim).
+   */
+  @doc({heading: 'Tensors', subheading: 'Transformations'})
+  @operation
+  static stack<T extends Tensor>(tensors: T[], axis = 0): Tensor {
+    const expandedTensors = tensors.map(t => t.expandDims(axis));
+    return Concat.concat(expandedTensors, axis);
+  }
+
+  /**
+   * Returns a `Tensor` that has expanded rank, by inserting a dimension
+   * into the tensor's shape.
+   *
+   * @param axis The dimension index at which to insert shape of `1`. Defaults
+   *     to 0 (the first dimension).
+   */
+  @doc({heading: 'Tensors', subheading: 'Transformations'})
+  @operation
+  static expandDims<R2 extends Rank>(x: Tensor, axis = 0): Tensor<R2> {
+    const newShape = x.shape.slice().splice(axis, 0, 1);
+    return Ops.reshape(x, newShape);
+  }
+
+  /**
    * Return an evenly spaced sequence of numbers over the given interval.
    *
-   * The stop value can be optionally excluded by passing setting [endpoint] to
-   * true.
+   * The stop value can be optionally excluded by passing setting [endpoint]
+   * to true.
    *
    * @param start The start value of the sequence
    * @param stop The end value of the sequence
@@ -715,18 +742,19 @@ export class Ops {
   /**
    * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
    *
-   * The values are stored in cpu as a `TypedArray`. Fill the buffer using
-   * `buffer.set()`, or by modifying directly `buffer.values`.
+   * The values are stored in cpu as `TypedArray`. Fill the buffer using
+   * `buffer.set()`, or by modifying directly `buffer.values`. When done,
+   * call `buffer.toTensor()` to get an immutable `Tensor` with those values.
    *
-   * When done, call `buffer.toTensor()` to get an immutable `Tensor` with those
-   * values.
    * @param shape An array of integers defining the output tensor shape.
    * @param dtype The dtype of the buffer. Defaults to 'float32'.
+   * @param values The values of the buffer as `TypedArray`. Defaults to zeros.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static buffer<R extends Rank>(
-      shape: ShapeMap[R], dtype: DataType = 'float32'): TensorBuffer<R> {
-    return new TensorBuffer<R>(shape, dtype);
+      shape: ShapeMap[R], dtype: DataType = 'float32', values?: TypedArray):
+      TensorBuffer<R> {
+    return new TensorBuffer<R>(shape, dtype, values);
   }
 
   /**

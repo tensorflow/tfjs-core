@@ -40,7 +40,6 @@ export class Tracking {
    *     using the provided name.
    * @param fn The function to execute.
    * @param gradMode If true, starts a tape and doesn't dispose tensors.
-   *     See dl.gradScope for details.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
   static tidy<T extends ScopeResult>(

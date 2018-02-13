@@ -40,11 +40,11 @@ export const batchNormalization2d = batchnorm_ops.Ops.batchNormalization2d;
 export const batchNormalization3d = batchnorm_ops.Ops.batchNormalization3d;
 export const batchNormalization4d = batchnorm_ops.Ops.batchNormalization4d;
 
-export const concat = concat_ops.Ops.concat;
-export const concat1d = concat_ops.Ops.concat1d;
-export const concat2d = concat_ops.Ops.concat2d;
-export const concat3d = concat_ops.Ops.concat3d;
-export const concat4d = concat_ops.Ops.concat4d;
+export const concat = concat_ops.Concat.concat;
+export const concat1d = concat_ops.Concat.concat1d;
+export const concat2d = concat_ops.Concat.concat2d;
+export const concat3d = concat_ops.Concat.concat3d;
+export const concat4d = concat_ops.Concat.concat4d;
 
 export const conv1d = conv_ops.Ops.conv1d;
 export const conv2d = conv_ops.Ops.conv2d;
