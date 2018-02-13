@@ -44,13 +44,21 @@ export function parse(): Docs {
   const docHeadings: DocHeading[] = [
     {
       name: 'Tensors',
-      description: `Tensors are the core datastructure of deeplearn.js. ` +
-          `They are a generalization of vectors and matrices to potentially ` +
-          `higher dimensions.`,
+      description: '',
       subheadings: [
         {
           name: 'Creation',
-          description: `This section describes how to construct tensors.`,
+          // description: `Tensors are the core datastructure of deeplearn.js. `
+          // +
+          //     `They are a generalization of vectors and matrices to ` +
+          //     `potentially higher dimensions. We have utility function to `,
+          description: `Tensors are the core datastructure of deeplearn.js.
+             They are a generalization of vectors and matrices to potentially
+             higher dimensions.
+             <br><br>
+             We have utility functions for common cases like 1D, 2D, 3D
+             and 4D tensors, as well a number of functions to iniatialize
+             tensors in ways useful for machine learning`,
           pin: [
             'tensor', 'Tensor', 'scalar', 'tensor1d', 'tensor2d', 'tensor3d',
             'tensor4d'
