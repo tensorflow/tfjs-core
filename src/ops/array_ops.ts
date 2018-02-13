@@ -226,8 +226,8 @@ export class Ops {
    * Creates a tensor with all elements set to 1.
    *
    * @param shape An array of integers defining the output tensor shape.
-   * @param dtype The type of an element in the resulting tensor. Can
-   *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
+   * @param dtype The type of an element in the resulting tensor. Defaults to
+   *     'float'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation

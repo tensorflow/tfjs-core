@@ -357,7 +357,11 @@ export interface SymbolAndUrl {
   symbolName: string;
   url: string;
 }
-// Link symbols together with markdown links.
+
+/**
+ * Adds markdown links for reference symbols in documentation, parameter types,
+ * and return types.
+ */
 export function linkSymbols(
     docs: Docs, symbols: SymbolAndUrl[], toplevelNamespace: string,
     docLinkAliases: {[symbolName: string]: string}) {
