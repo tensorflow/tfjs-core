@@ -15,108 +15,29 @@
  * =============================================================================
  */
 
-import {BackendType, ENV, Environment, Features} from './environment';
-import {MathBackendCPU} from './math/backends/backend_cpu';
-import {MathBackendWebGL} from './math/backends/backend_webgl';
-import {NDArrayMath} from './math/math';
-import {Tensor} from './math/tensor';
-import {DataType, TypedArray} from './math/types';
+import {ENV, Environment, Features} from './environment';
+import {MathBackendCPU} from './kernels/backend_cpu';
+import {MathBackendWebGL} from './kernels/backend_webgl';
+import {Tensor} from './tensor';
+import {DataType, TypedArray} from './types';
 import * as util from './util';
 
-// This is how the it(), fit() and xit() function look in your tests
-export type MathIt = (name: string, testFn: (math: NDArrayMath) => void) =>
-    void;
-
-// This is the internal representation of the it(), fit() and xit() functions
-export type It = (name: string, testFn: () => void|Promise<void>) => void;
-
-export type MathTests = (it: MathIt, fit?: MathIt, xit?: MathIt) => void;
-export type Tests = (it: It, fit?: It, xit?: It) => void;
+export const WEBGL_ENVS: Features[] = [
+  {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
+  {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
+  {
+    'BACKEND': 'webgl',
+    'WEBGL_FLOAT_TEXTURE_ENABLED': false,
+    'WEBGL_VERSION': 1
+  },
+];
+export const CPU_ENVS: Features[] = [{'BACKEND': 'cpu'}];
+export const ALL_ENVS = WEBGL_ENVS.concat(CPU_ENVS);
 
 /** Accuracy for tests. */
 // TODO(nsthorat || smilkov): Fix this low precision for byte-backed
 // textures.
 export const TEST_EPSILON = 1e-2;
-
-export function mean(values: TypedArray|number[]) {
-  let sum = 0;
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i];
-  }
-  return sum / values.length;
-}
-
-export function standardDeviation(values: TypedArray|number[], mean: number) {
-  let squareDiffSum = 0;
-  for (let i = 0; i < values.length; i++) {
-    const diff = values[i] - mean;
-    squareDiffSum += diff * diff;
-  }
-  return Math.sqrt(squareDiffSum / values.length);
-}
-
-export function kurtosis(values: TypedArray|number[]) {
-  // https://en.wikipedia.org/wiki/Kurtosis
-  const valuesMean = mean(values);
-  const n = values.length;
-  let sum2 = 0;
-  let sum4 = 0;
-  for (let i = 0; i < n; i++) {
-    const v = values[i] - valuesMean;
-    sum2 += Math.pow(v, 2);
-    sum4 += Math.pow(v, 4);
-  }
-  return (1 / n) * sum4 / Math.pow((1 / n) * sum2, 2);
-}
-
-export function skewness(values: TypedArray|number[]) {
-  // https://en.wikipedia.org/wiki/Skewness
-  const valuesMean = mean(values);
-  const n = values.length;
-  let sum2 = 0;
-  let sum3 = 0;
-  for (let i = 0; i < n; i++) {
-    const v = values[i] - valuesMean;
-    sum2 += Math.pow(v, 2);
-    sum3 += Math.pow(v, 3);
-  }
-  return (1 / n) * sum3 / Math.pow((1 / (n - 1)) * sum2, 3 / 2);
-}
-
-export function jarqueBeraNormalityTest(a: Tensor|TypedArray|number[]) {
-  let values: TypedArray|number[];
-  if (a instanceof Tensor) {
-    values = a.dataSync();
-  } else {
-    values = a;
-  }
-  // https://en.wikipedia.org/wiki/Jarque%E2%80%93Bera_test
-  const n = values.length;
-  const s = skewness(values);
-  const k = kurtosis(values);
-  const jb = n / 6 * (Math.pow(s, 2) + 0.25 * Math.pow(k - 3, 2));
-  // JB test requires 2-degress of freedom from Chi-Square @ 0.95:
-  // http://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm
-  const CHI_SQUARE_2DEG = 5.991;
-  if (jb > CHI_SQUARE_2DEG) {
-    throw new Error(`Invalid p-value for JB: ${jb}`);
-  }
-}
-
-export function expectArrayInMeanStdRange(
-    actual: Tensor|TypedArray|number[], expectedMean: number,
-    expectedStdDev: number, epsilon = TEST_EPSILON) {
-  let actualValues: TypedArray|number[];
-  if (actual instanceof Tensor) {
-    actualValues = actual.dataSync();
-  } else {
-    actualValues = actual;
-  }
-  const actualMean = mean(actualValues);
-  expectNumbersClose(actualMean, expectedMean, epsilon);
-  expectNumbersClose(
-      standardDeviation(actualValues, actualMean), expectedStdDev, epsilon);
-}
 
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],
@@ -215,184 +136,33 @@ export function expectValuesInRange(
   }
 }
 
-export function randomArrayInRange(
-    n: number, minValue: number, maxValue: number): Float32Array {
-  const v = new Float32Array(n);
-  const range = maxValue - minValue;
-  for (let i = 0; i < n; ++i) {
-    v[i] = (Math.random() * range) + minValue;
-  }
-  return v;
-}
-
-export function makeIdentity(n: number): Float32Array {
-  const i = new Float32Array(n * n);
-  for (let j = 0; j < n; ++j) {
-    i[(j * n) + j] = 1;
-  }
-  return i;
-}
-
-export function cpuMultiplyMatrix(
-    a: Float32Array, aRow: number, aCol: number, b: Float32Array, bRow: number,
-    bCol: number) {
-  const result = new Float32Array(aRow * bCol);
-  for (let r = 0; r < aRow; ++r) {
-    const aOffset = (r * aCol);
-    const cOffset = (r * bCol);
-    for (let c = 0; c < bCol; ++c) {
-      let d = 0;
-      for (let k = 0; k < aCol; ++k) {
-        d += a[aOffset + k] * b[(k * bCol) + c];
-      }
-      result[cOffset + c] = d;
-    }
-  }
-  return result;
-}
-
-export function cpuDotProduct(a: Float32Array, b: Float32Array): number {
-  if (a.length !== b.length) {
-    throw new Error('cpuDotProduct: incompatible vectors.');
-  }
-  let d = 0;
-  for (let i = 0; i < a.length; ++i) {
-    d += a[i] * b[i];
-  }
-  return d;
-}
-
-export function describeMathCPU(
-    name: string, tests: MathTests[], featuresList?: Features[]) {
-  const testNameBase = 'CPU: math.' + name;
-  describeWithFeaturesAndExecutor(
-      testNameBase, tests as Tests[],
-      (testName, tests, features) =>
-          executeMathTests(testName, tests, 'cpu', features),
-      featuresList);
-}
-
-export function describeMathGPU(
-    name: string, tests: MathTests[], featuresList?: Features[]) {
-  const testNameBase = 'WebGL: math.' + name;
-  describeWithFeaturesAndExecutor(
-      testNameBase, tests as Tests[],
-      (testName, tests, features) =>
-          executeMathTests(testName, tests, 'webgl', features),
-      featuresList);
-}
-
-export function describeCustom(
-    name: string, tests: Tests, featuresList?: Features[],
-    customBeforeEach?: () => void, customAfterEach?: () => void) {
-  describeWithFeaturesAndExecutor(
-      name, [tests],
-      (testName, tests, features) => executeTests(
-          testName, tests, features, customBeforeEach, customAfterEach),
-      featuresList);
-}
-
-type TestExecutor = (testName: string, tests: Tests[], features?: Features) =>
-    void;
-function describeWithFeaturesAndExecutor(
-    testNameBase: string, tests: Tests[], executor: TestExecutor,
-    featuresList?: Features[]) {
-  if (featuresList != null) {
-    featuresList.forEach(features => {
-      const testName = testNameBase + ' ' + JSON.stringify(features);
-      executor(testName, tests, features);
-    });
-  } else {
-    executor(testNameBase, tests);
-  }
-}
-
-function resolveTestFuncPromise(testFunc: () => void|Promise<void>) {
-  return (done: DoneFn) => {
-    const result = testFunc();
-    if (result instanceof Promise) {
-      result.then(done, e => {
-        fail(e);
-        done();
-      });
-    } else {
-      done();
-    }
-  };
-}
-
-// A wrapper around it() that calls done automatically if the function returns
-// a Promise, aka if it's an async/await function.
-const PROMISE_IT: It = (name: string, testFunc: () => void|Promise<void>) => {
-  it(name, resolveTestFuncPromise(testFunc));
-};
-
-const PROMISE_FIT: It = (name: string, testFunc: () => void|Promise<void>) => {
-  // tslint:disable-next-line:ban
-  fit(name, resolveTestFuncPromise(testFunc));
-};
-
-const PROMISE_XIT: It = (name: string, testFunc: () => void|Promise<void>) => {
-  // tslint:disable-next-line:ban
-  xit(name, resolveTestFuncPromise(testFunc));
-};
-
-export function executeMathTests(
-    testName: string, tests: MathTests[], backendType: BackendType,
-    features?: Features) {
-  const customBeforeEach = () => {
-    Environment.setBackend(backendType);
-    ENV.engine.startScope();
-  };
-  const customAfterEach = () => {
-    ENV.engine.endScope(null);
-  };
-  const customIt: It =
-      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
-        PROMISE_IT(name, () => testFunc(ENV.math));
-      };
-  const customFit: It =
-      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
-        PROMISE_FIT(name, () => testFunc(ENV.math));
-      };
-  const customXit: It =
-      (name: string, testFunc: (math: NDArrayMath) => void|Promise<void>) => {
-        PROMISE_XIT(name, () => testFunc(ENV.math));
-      };
-
-  executeTests(
-      testName, tests as Tests[], features, customBeforeEach, customAfterEach,
-      customIt, customFit, customXit);
+export function describeWithFlags(
+    name: string, featuresList: Features[], tests: () => void) {
+  featuresList.forEach(features => {
+    const testName = name + ' ' + JSON.stringify(features);
+    executeTests(testName, tests, features);
+  });
 }
 
 function executeTests(
-    testName: string, tests: Tests[], features?: Features,
-    customBeforeEach?: () => void, customAfterEach?: () => void,
-    customIt: It = PROMISE_IT, customFit: It = PROMISE_FIT,
-    customXit: It = PROMISE_XIT) {
+    testName: string, tests: () => void, features?: Features) {
   describe(testName, () => {
     beforeEach(() => {
-      if (features != null) {
-        ENV.setFeatures(features);
-        ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
-        ENV.addCustomBackend('cpu', () => new MathBackendCPU());
+      ENV.setFeatures(features || {});
+      ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
+      ENV.addCustomBackend('cpu', () => new MathBackendCPU());
+      if (features && features.BACKEND != null) {
+        Environment.setBackend(features.BACKEND);
       }
-
-      if (customBeforeEach != null) {
-        customBeforeEach();
-      }
+      ENV.engine.startScope();
     });
 
     afterEach(() => {
-      if (customAfterEach != null) {
-        customAfterEach();
-      }
-      if (features != null) {
-        ENV.reset();
-      }
+      ENV.engine.endScope(null);
+      ENV.reset();
     });
 
-    tests.forEach(test => test(customIt, customFit, customXit));
+    tests();
   });
 }
 
