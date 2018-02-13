@@ -305,7 +305,7 @@
                     {{#parameters}}
                     <li class="parameter">
                       <span class="param-name">
-                        <code>{{name}}: {{type}}</code>
+                        <div class="markdown">{{name}}: {{{markdownInner type}}}</div>
                       </span>
                       <span class="param-docs">
                         {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
