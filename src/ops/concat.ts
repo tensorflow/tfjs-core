@@ -25,7 +25,7 @@ import {operation} from './operation';
 
 export class Ops {
   /**
-   * Concatenates two 1D tensors. See `concat`.
+   * Concatenates two 1D tensors. See `concat` for details.
    *
    * For example, if:
    * A: shape(3) = |r1, g1, b1|
@@ -41,7 +41,7 @@ export class Ops {
   }
 
   /**
-   * Concatenates two 2D tensors along a given axis. See `concat`.
+   * Concatenates two 2D tensors along a given axis. See `concat` for details.
    *
    * For example, if:
    * A: shape(2, 3) = | r1, g1, b1 |
@@ -73,7 +73,7 @@ export class Ops {
   }
 
   /**
-   * Concatenates two 3D tensors along a given axis. See `concat`.
+   * Concatenates two 3D tensors along a given axis. See `concat` for details.
    *
    * For example, if:
    * A: shape(2, 1, 3) = | r1, g1, b1 |
@@ -108,7 +108,7 @@ export class Ops {
   }
 
   /**
-   * Concatenates two 4D tensors along a given axis. See `concat`.
+   * Concatenates two 4D tensors along a given axis. See `concat` for details.
    *
    * @param a The first array to concat.
    * @param b The second array to conat.

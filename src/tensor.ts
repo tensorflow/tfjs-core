@@ -32,6 +32,8 @@ export interface TensorData {
 /**
  * A mutable object, similar to `Tensor`, that allows users to set values
  * at locations before converting to an immutable `Tensor`.
+ *
+ * See `buffer` for creating a tensor buffer.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class TensorBuffer<R extends Rank> {
@@ -353,8 +355,8 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Asynchronously downloads the values from the Tensor. Returns a promise
-   * that resolves with the backing `TypedArray` when the data is ready.
+   * Asynchronously downloads the values from the Tensor. Returns a promise of
+   * `TypedArray` that resolves when the computation has finished.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   async data(): Promise<TypedArray> {
@@ -673,7 +675,7 @@ export class Tensor<R extends Rank = Rank> {
   }
   clip(min: number, max: number): Tensor<R> {
     this.throwIfDisposed();
-    return ops.clip(this, min, max);
+    return ops.clipByValue(this, min, max);
   }
   relu(): Tensor<R> {
     this.throwIfDisposed();
@@ -814,7 +816,7 @@ export class Tensor<R extends Rank = Rank> {
 }
 
 /**
- * A rank-0 `Tensor` subclass for convenience and readability.
+ * A type alias for a rank-0 `Tensor`.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Scalar extends Tensor<Rank.R0> {
@@ -824,7 +826,7 @@ export class Scalar extends Tensor<Rank.R0> {
 }
 
 /**
- * A rank-1 `Tensor` subclass for convenience and readability.
+ * A type alias for a rank-1 `Tensor`.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor1D extends Tensor<Rank.R1> {
@@ -835,7 +837,7 @@ export class Tensor1D extends Tensor<Rank.R1> {
 }
 
 /**
- * A rank-2 `Tensor` subclass for convenience and readability.
+ * A type alias for a rank-2 `Tensor`.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor2D extends Tensor<Rank.R2> {
@@ -848,7 +850,7 @@ export class Tensor2D extends Tensor<Rank.R2> {
 }
 
 /**
- * A rank-3 `Tensor` subclass for convenience and readability.
+ * A type alias for a rank-3 `Tensor`.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor3D extends Tensor<Rank.R3> {
@@ -861,7 +863,7 @@ export class Tensor3D extends Tensor<Rank.R3> {
 }
 
 /**
- * A rank-4 `Tensor` subclass for convenience and readability.
+ * A type alias for a rank-4 `Tensor`.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor4D extends Tensor<Rank.R4> {

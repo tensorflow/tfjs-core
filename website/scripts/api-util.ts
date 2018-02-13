@@ -71,7 +71,7 @@ export function addSubclassMethods(
           throw new Error(
               `Subheading '${subheading.name}' has no symbols. ` +
               `Please remove it from the predefined docHeadings, or ` +
-              `add methods to the subeading in the code with @doc.`);
+              `add methods to the subheading in the code with @doc.`);
         }
 
         for (let k = 0; k < subheading.symbols.length; k++) {

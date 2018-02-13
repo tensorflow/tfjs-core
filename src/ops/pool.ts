@@ -35,7 +35,7 @@ export class Ops {
    *       regardless of filter size.
    *    - `valid`: output will be smaller than input if filter is larger
    *       than 1x1.
-   *   - For more info, see this guide:
+   *    - For more info, see this guide:
    *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
    *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
    * @param dimRoundingMode The rounding mode used when computing output
@@ -150,7 +150,7 @@ export class Ops {
    *       regardless of filter size.
    *    - `valid`: output will be smaller than input if filter is larger
    *       than 1x1.
-   *   - For more info, see this guide:
+   *    - For more info, see this guide:
    *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
    *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
    * @param dimRoundingMode The rounding mode used when computing output
@@ -200,7 +200,7 @@ export class Ops {
    *       regardless of filter size.
    *    - `valid`: output will be smaller than input if filter is larger
    *       than 1x1.
-   *   - For more info, see this guide:
+   *    - For more info, see this guide:
    *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
    *         https://www.tensorflow.org/api_guides/python/nn#Convolution)
    * @param dimRoundingMode The rounding mode used when computing output

@@ -43,6 +43,7 @@ export class Ops {
   /**
    * Strict version of `notEqual` that forces `a` and `b` to be of the same
    * shape.
+   *
    * @param a The first input `Tensor`.
    * @param b The second input `Tensor`. Must have the same shape and dtype as
    *     `a`.
@@ -73,6 +74,7 @@ export class Ops {
   /**
    * Strict version of `less` that forces `a` and `b` to be of the same
    * shape.
+   *
    * @param a The first input `Tensor`.
    * @param b The second input `Tensor`. Must have the same shape and dtype as
    *     `a`.

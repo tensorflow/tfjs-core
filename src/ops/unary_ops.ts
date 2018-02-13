@@ -195,7 +195,6 @@ export class Ops {
    * Computes scaled exponential linear element-wise.
    *
    * `x < 0 ? scale * alpha * (exp(x) - 1) : x`
-   * @hidden
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation

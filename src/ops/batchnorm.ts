@@ -27,6 +27,7 @@ export class Ops {
   /**
    * Batch normalization, strictly for 2D. For the more relaxed version, see
    * `batchNormalization`.
+   *
    * @param x The input Tensor.
    * @param mean A mean Tensor.
    * @param variance A variance Tensor.
@@ -72,6 +73,7 @@ export class Ops {
   /**
    * Batch normalization, strictly for 3D. For the more relaxed version, see
    * `batchNormalization`.
+   *
    * @param x The input Tensor.
    * @param mean A mean Tensor.
    * @param variance A variance Tensor.
@@ -166,9 +168,11 @@ export class Ops {
    * [http://arxiv.org/abs/1502.03167](http://arxiv.org/abs/1502.03167).
    *
    * Mean, variance, scale, and offset can be of two
-   * shapes: 1) The same shape as the input. 2) In the common
-   * case, the depth dimension is the last dimension of x, so the values would
-   * be an Tensor1D of shape [depth].
+   * shapes:
+   *   - The same shape as the input.
+   *   - In the common case, the depth dimension is the last dimension of x, so
+   *     the values would be an Tensor1D of shape [depth].
+   *
    * @param x The input Tensor.
    * @param mean A mean Tensor.
    * @param variance A variance Tensor.

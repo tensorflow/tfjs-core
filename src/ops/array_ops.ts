@@ -31,18 +31,18 @@ export class Ops {
    * Creates a `Tensor` with the provided values, shape and dtype.
    *
    * ```js
-   * // You can pass an array of values to create a vector.
+   * // Pass an array of values to create a vector.
    * dl.tensor([1, 2, 3, 4]).print()  // shape: [4]
    * ```
    *
    * ```js
-   * // You can pass a nested array of values to make a matrix or a higher
+   * // Pass a nested array of values to make a matrix or a higher
    * // dimensional tensor.
    * dl.tensor([[1, 2], [3, 4]]).print();  // shape: [2, 2]
    * ```
    *
    * ```js
-   * // You can also pass a flat array and specify a shape yourself.
+   * // Pass a flat array and specify a shape yourself.
    * dl.tensor([1, 2, 3, 4], [2, 2]).print();  // shape: [2, 2]
    * ```
    *
@@ -130,11 +130,11 @@ export class Ops {
    * using this method as it makes code more readable.
    *
    *  ```js
-   * // You can pass a nested array.
+   * // Pass a nested array.
    * dl.tensor2d([[1, 2], [3, 4]]).print();
    * ```
    * ```js
-   * // Or you can pass a flat array and specify a shape.
+   * // Pass a flat array and specify a shape.
    * dl.tensor2d([1, 2, 3, 4], [2, 2]).print();
    * ```
    * @param values The values of the tensor. Can be nested array of numbers,
@@ -165,11 +165,11 @@ export class Ops {
    * recommend using this method as it makes code more readable.
    *
    *  ```js
-   * // You can pass a nested array.
+   * // Pass a nested array.
    * dl.tensor3d([[[1], [2]], [[3], [4]]]).print();
    * ```
    * ```js
-   * // Or you can pass a flat array and specify a shape.
+   * // Pass a flat array and specify a shape.
    * dl.tensor3d([1, 2, 3, 4], [2, 2, 1]).print();
    * ```
    * @param values The values of the tensor. Can be nested array of numbers,
@@ -195,11 +195,11 @@ export class Ops {
   /**
    * Creates rank-4 tensor with the provided values, shape and dtype.
    *  ```js
-   * // You can pass a nested array.
+   * // Pass a nested array.
    * dl.tensor4d([[[[1], [2]], [[3], [4]]]]).print();
    * ```
    * ```js
-   * // Or you can pass a flat array and specify a shape.
+   * // Pass a flat array and specify a shape.
    * dl.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]).print();
    * ```
    * @param values The values of the tensor. Can be nested array of numbers,
@@ -524,10 +524,11 @@ export class Ops {
   }
 
   /**
-   * Removes dimensions of size 1 from the shape of a Tensor.
+   * Removes dimensions of size 1 from the shape of a `Tensor`.
+   *
    * @param axis An optional list of numbers. If specified, only
-   * squeezes the dimensions listed. The dimension index starts at 0. It is an
-   * error to squeeze a dimension that is not 1.
+   *     squeezes the dimensions listed. The dimension index starts at 0. It is
+   *     an error to squeeze a dimension that is not 1.
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   static squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T {
@@ -737,16 +738,9 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static print<T extends Tensor>(x: T, verbose = false): void {
     let displayName = Tensor.name;
-    if (x.rank === 0) {
-      displayName = Scalar.name;
-    } else if (x.rank === 1) {
-      displayName = Tensor1D.name;
-    } else if (x.rank === 2) {
-      displayName = Tensor2D.name;
-    } else if (x.rank === 3) {
-      displayName = Tensor3D.name;
-    } else if (x.rank === 1) {
-      displayName = Tensor4D.name;
+    if (x.rank <= 4) {
+      displayName =
+          ['Scalar', 'Tensor1D', 'Tensor2D', 'Tensor3D', 'Tensor4D'][x.rank];
     }
 
     // Construct a new class so that we can display a rich object in the console
