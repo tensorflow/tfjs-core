@@ -35,6 +35,7 @@ export class AdamaxOptimizer extends Optimizer {
   private accBeta1: Variable;
   private beta1: Scalar;
   private beta2: Scalar;
+  private oneMinusBeta1: Scalar;
   private one: Scalar;
 
   private accumulatedFirstMoment: NamedVariableMap = {};
@@ -51,31 +52,34 @@ export class AdamaxOptimizer extends Optimizer {
     this.beta1 = keep(scalar(beta1));
     this.beta2 = keep(scalar(beta2));
 
+    this.oneMinusBeta1 = keep(scalar(1 - beta1));
+
     this.accBeta1 = variable(scalar(beta1));
     this.one = keep(scalar(1));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
-    for (const variableName in variableGradients) {
-      const value = ENV.engine.registeredVariables[variableName];
-      if (this.accumulatedFirstMoment[variableName] == null) {
-        const trainable = false;
-        this.accumulatedFirstMoment[variableName] =
-            variable(zerosLike(value), trainable);
-      }
-      if (this.accumulatedWeightedInfNorm[variableName] == null) {
-        const trainable = false;
-        this.accumulatedWeightedInfNorm[variableName] =
-            variable(zerosLike(value), trainable);
-      }
+    tidy(() => {
+      const oneMinusAccBeta1 = this.one.sub(this.accBeta1);
+      for (const variableName in variableGradients) {
+        const value = ENV.engine.registeredVariables[variableName];
+        if (this.accumulatedFirstMoment[variableName] == null) {
+          const trainable = false;
+          this.accumulatedFirstMoment[variableName] =
+              variable(zerosLike(value), trainable);
+        }
+        if (this.accumulatedWeightedInfNorm[variableName] == null) {
+          const trainable = false;
+          this.accumulatedWeightedInfNorm[variableName] =
+              variable(zerosLike(value), trainable);
+        }
 
-      const gradient = variableGradients[variableName];
-      const firstMoment = this.accumulatedFirstMoment[variableName];
-      const weightedInfNorm = this.accumulatedWeightedInfNorm[variableName];
+        const gradient = variableGradients[variableName];
+        const firstMoment = this.accumulatedFirstMoment[variableName];
+        const weightedInfNorm = this.accumulatedWeightedInfNorm[variableName];
 
-      tidy(() => {
-        const newFirstMoment = this.beta1.mul(firstMoment)
-                                   .add(this.one.sub(this.beta1).mul(gradient));
+        const newFirstMoment =
+            this.beta1.mul(firstMoment).add(this.oneMinusBeta1.mul(gradient));
 
         const ut0 = this.beta2.mul(weightedInfNorm);
         const ut1 = gradient.abs();
@@ -87,14 +91,14 @@ export class AdamaxOptimizer extends Optimizer {
             newWeightedInfNorm);
 
         const newValue =
-            this.c.divStrict(this.one.sub(this.accBeta1))
+            this.c.div(oneMinusAccBeta1)
                 .mul(newFirstMoment.div(this.eps.add(newWeightedInfNorm)))
                 .add(value);
         value.assign(newValue);
-      });
-    }
+      }
 
-    tidy(() => this.accBeta1.assign(this.accBeta1.mul(this.beta1)));
+      this.accBeta1.assign(this.accBeta1.mul(this.beta1));
+    });
   }
 
   beforeBatch(
@@ -131,7 +135,7 @@ export class AdamaxOptimizer extends Optimizer {
         const oldWeightedInfNorm = this.weightedInfNormGraph.get(node.output);
 
         const newFirstMoment = math.scaledArrayAdd(
-            this.beta1, oldFirstMoment, this.one.sub(this.beta1), gradient);
+            this.beta1, oldFirstMoment, this.oneMinusBeta1, gradient);
 
         const ut0 = this.beta2.mul(oldWeightedInfNorm);
         const ut1 = gradient.abs();
@@ -169,6 +173,7 @@ export class AdamaxOptimizer extends Optimizer {
     this.accBeta1.dispose();
     this.beta1.dispose();
     this.beta2.dispose();
+    this.oneMinusBeta1.dispose();
     this.one.dispose();
 
     if (this.firstMomentGraph != null) {

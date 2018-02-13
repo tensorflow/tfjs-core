@@ -89,7 +89,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `dl.train.AdamaxOptimizer` that uses the Adam algorithm.
+   * Constructs a `AdamaxOptimizer` that uses the Adam algorithm.
    * See https://arxiv.org/abs/1412.6980
    *
    * @param learningRate
