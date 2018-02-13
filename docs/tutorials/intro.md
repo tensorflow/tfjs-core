@@ -108,7 +108,7 @@ But using tidy functions is much more convenient!
 
 ## Training
 
-At the heart of many machine learning problems is the question of actually _training_ the machine to do some task. In deeplearn.js this process is encapsulated by  _Optimizers_. Optimizers are strategies to progressively tune the variables of your model in order to reduce the error (or _loss_ in ML parlance) in your model's predictions. Training runs eagerly, i.e. just like any other JavaScript code.
+At the heart of many machine learning problems is the question of actually _training_ the machine to do some task. In deeplearn.js this process is encapsulated by  _Optimizers_. Optimizers are strategies to progressively tune the variables of your model in order to reduce the error (or _loss_ in ML parlance) in your model's predictions.
 
 We cover training and optimizers [in this tutorial](ml_beginners.md), but here is an outline of what the training process in deeplearn.js looks like.
 
@@ -126,8 +126,7 @@ const optimizer = dl.train.sgd(LEARNING_RATE)
 /**
  * Perform inference return a prediction
  */
-function inference(input) {
-}
+function inference(input) { }
 
 /**
  * Compute the loss of the model by comparing the prediction
@@ -135,13 +134,12 @@ function inference(input) {
  *
  * Return a Scalar (i.e. single number tensor) loss value.
  */
-function loss(predictions, label) {
-}
+function loss(predictions, labels) { }
 
 /**
  * Train the model a *single* step.
  */
-function trainStep(data, label, returnCost = true) {
+function trainStep(data, labels, returnCost = true) {
   // Calling optimizer.minimize will adjust the variables in the
   // model based on the loss value returned by your loss function.
   // It handles all the backpropogation and weight updates.
@@ -157,7 +155,7 @@ function trainStep(data, label, returnCost = true) {
     //
     // Once we return the less the optimizer will adjust the network
     // weights for our next iteration.
-    return loss(prediction, label);
+    return loss(prediction, labels);
   }, returnCost);
 
   // return the current loss/cost so that we can visualize it
@@ -166,15 +164,18 @@ function trainStep(data, label, returnCost = true) {
 
 /**
  * Train the model.
+ *
+ * Calls trainstep in a loop. Use await dl.nextFrame() to avoid
+ * stalling the browser.
+ *
+ * You can load, batch and shuffle your data here.
  */
-function train(data, batchSize, numEpochs) {
-  // Call trainstep in a loop.  Use await dl.nextFrame() to avoid stalling
-  // the browser.
+function train(data) { }
 ```
 
 ## Backends
 
-The library provides a number of _backends_ which implement the core operations of the library, currently we have a __CPU__ backend and a __WebGL__ backend. Deeplearn.js will use the __WebGL__ backend by default whenever the browser supports it. The __WebGL__ backend uses the computers' __GPU__, to perform fast and highly optimized linear algebra operations.
+The library provides a number of _backends_ which implement the core mathematics of the library, currently we have a __CPU__ backend and a __WebGL__ backend. Deeplearn.js will use the __WebGL__ backend by default whenever the browser supports it. The __WebGL__ backend uses the computers' __GPU__, to perform fast and highly optimized linear algebra kernels.
 
 To force the use of the CPU backend, you can call `dl.setBackend('cpu')` at the start of your program
 
