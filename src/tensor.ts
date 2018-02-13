@@ -18,7 +18,6 @@
 import {doc} from './doc';
 import {ENV} from './environment';
 import {MatrixOrientation} from './kernels/types/matmul';
-import * as array_ops from './ops/array_ops';
 import * as ops from './ops/ops';
 import {RandNormalDataTypes} from './ops/rand';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
@@ -387,7 +386,7 @@ export class Tensor<R extends Rank = Rank> {
   /** Returns a `TensorBuffer` that holds the underlying data. */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   buffer(): TensorBuffer<R> {
-    return array_ops.Ops.buffer(this.shape, this.dtype, this.dataSync());
+    return ops.buffer(this.shape, this.dtype, this.dataSync());
   }
 
   /**
@@ -473,7 +472,7 @@ export class Tensor<R extends Rank = Rank> {
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   expandDims<R2 extends Rank>(axis = 0): Tensor<R2> {
-    return array_ops.Ops.expandDims(this, axis);
+    return ops.expandDims(this, axis);
   }
 
   /**
@@ -520,9 +519,12 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.reverse(this, axis);
   }
-  concat(x: Tensor<R>, axis = 0): Tensor<R> {
+  concat<T extends Tensor>(this: T, x: T, axis = 0): T {
     this.throwIfDisposed();
     return ops.concat([this, x], axis);
+  }
+  stack(x: Tensor, axis = 0): Tensor {
+    return ops.stack([this, x], axis);
   }
   batchNormalization(
       mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
