@@ -23,6 +23,7 @@ import * as webgl_util from './kernels/webgl/webgl_util';
 import * as conv_util from './ops/conv_util';
 import * as test_util from './test_util';
 import * as util from './util';
+import {Util} from './util';
 import {version} from './version';
 
 export {CheckpointLoader} from './data/checkpoint_loader';
@@ -74,3 +75,5 @@ export * from './globals';
 export const setBackend = Environment.setBackend;
 export const getBackend = Environment.getBackend;
 export const memory = Environment.memory;
+
+export const nextFrame = Util.nextFrame;
