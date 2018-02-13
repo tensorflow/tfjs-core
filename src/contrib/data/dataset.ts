@@ -19,6 +19,7 @@
 import * as seedrandom from 'seedrandom';
 
 import {BatchDataset} from './batch_dataset';
+import {DatasetStatistics, makeDatasetStatistics} from './statistics';
 import {DataStream} from './streams/data_stream';
 import {streamFromConcatenated} from './streams/data_stream';
 import {streamFromFunction} from './streams/data_stream';
@@ -46,6 +47,13 @@ export abstract class Dataset {
    */
   abstract async getStream(): Promise<DataStream<DatasetElement>>;
 
+  // TODO(soergel): plumb this through, to distinguish e.g. webcam from files
+  // abstract isDeterministic(): boolean;
+
+  async getStats(shuffleSize?: number, sampleSize?: number):
+      Promise<DatasetStatistics> {
+    return makeDatasetStatistics(this, shuffleSize, sampleSize);
+  }
   /**
    * Filters this dataset according to `predicate`.
    *
@@ -162,6 +170,8 @@ export abstract class Dataset {
       return (await base.getStream()).skip(count);
     });
   }
+
+  // TODO(soergel): deep sharded shuffle, where supported
 
   /**
    * Randomly shuffles the elements of this dataset.

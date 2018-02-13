@@ -35,6 +35,14 @@ export function streamFromItems<T>(items: T[]): DataStream<T> {
 }
 
 /**
+ * Create a `DataStream` of incrementing integers.
+ */
+export function streamFromIncrementing(start: number): DataStream<number> {
+  let i = start;
+  return streamFromFunction(() => i++);
+}
+
+/**
  * Create a `DataStream` from a function.
  */
 export function streamFromFunction<T>(func: () => T | Promise<T>):
@@ -103,6 +111,22 @@ export abstract class DataStream<T> {
   }
 
   /**
+   * Draw items from the stream until it is exhausted.
+   *
+   * This can be useful when the stream has side effects but no output.  In
+   * that case, calling this function guarantees that the stream will be fully
+   * processed.
+   */
+  async resolveFully(): Promise<void> {
+    let x = await this.next();
+    while (x !== undefined) {
+      x = await this.next();
+    }
+  }
+
+  // TODO(soergel): Implement reduce() etc.
+
+  /**
    * Filters this stream according to `predicate`.
    *
    * @param predicate A function mapping a stream element to a boolean or a
@@ -124,6 +148,15 @@ export abstract class DataStream<T> {
    */
   map<S>(transform: (value: T) => S | Promise<S>): DataStream<S> {
     return new MapStream(this, transform);
+  }
+
+  /**
+   * Apply a function to every element of the stream.
+   *
+   * @param f A function to apply to each stream element.
+   */
+  async forEach(f: (value: T) => void|Promise<void>): Promise<void> {
+    return this.map(f).resolveFully();
   }
 
   /**
@@ -184,6 +217,8 @@ export abstract class DataStream<T> {
   prefetch(bufferSize: number): DataStream<T> {
     return new PrefetchStream(this, bufferSize);
   }
+
+  // TODO(soergel): deep sharded shuffle, where supported
 
   /**
    * Randomly shuffles the elements of this stream.
