@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../math/tensor';
+import {Tensor} from '../../tensor';
 import * as util from '../../util';
 
 import {Dataset} from './dataset';

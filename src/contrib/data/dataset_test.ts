@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {Tensor1D} from '../../math/tensor';
+import {Tensor1D} from '../../tensor';
 
 import {Dataset, datasetFromConcatenated, datasetFromElements} from './dataset';
 import {DataStream, streamFromItems} from './streams/data_stream';

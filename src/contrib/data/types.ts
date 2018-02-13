@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../math/tensor';
+import {Tensor} from '../../tensor';
 
 // TODO(soergel): clean up the |string union type throughout when Tensor
 // supports string.
