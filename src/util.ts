@@ -18,6 +18,7 @@
 import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TypedArray} from './types';
+import { doc } from './doc';
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
@@ -403,15 +404,6 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
   return true;
 }
 
-/**
- * Returns a promise that resolve when a requestAnimationFrame has completed.
- * This is simply a sugar method so that users can do the following:
- * `await dl.nextFrame();`
- */
-export function nextFrame(): Promise<void> {
-  return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-}
-
 export function copyTypedArray<D extends DataType>(
     array: DataTypeMap[D]|number[]|boolean[], dtype: D): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32') {
@@ -456,5 +448,18 @@ export function bytesPerElement(dtype: DataType): number {
     return 1;
   } else {
     throw new Error(`Unknown dtype ${dtype}`);
+  }
+}
+
+export class Util {
+  /**
+   * Returns a promise that resolve when a requestAnimationFrame has completed.
+   *
+   * This is simply a sugar method so that users can do the following:
+   * `await dl.nextFrame();`
+   */
+  @doc({heading: 'Performance', subheading: 'Timing'})
+  static nextFrame(): Promise<void> {
+    return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
   }
 }
