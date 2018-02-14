@@ -484,31 +484,33 @@
       console.log = oldLog;
     };
 
-    // Find all the code blocks.
-    var jsBlocks = document.querySelectorAll('.language-js');
-    for (let i = 0; i < jsBlocks.length; i++) {
-      var block = jsBlocks[i];
+    (function() {
+      // Find all the code blocks.
+      var jsBlocks = document.querySelectorAll('.language-js');
+      for (var i = 0; i < jsBlocks.length; i++) {
+        var block = jsBlocks[i];
 
-      var consoleElement = document.createElement('div');
-      consoleElement.className = 'snippet-console';
+        var consoleElement = document.createElement('div');
+        consoleElement.className = 'snippet-console';
 
-      var consoleRunElement = document.createElement('button');
-      consoleRunElement.innerText = 'Run';
-      consoleRunElement.className = 'snippet-run-button';
+        var consoleRunElement = document.createElement('button');
+        consoleRunElement.innerText = 'Run';
+        consoleRunElement.className = 'snippet-run-button';
 
-      var consoleLogElement = document.createElement('div');
-      consoleLogElement.className = 'snippet-console-log';
+        var consoleLogElement = document.createElement('div');
+        consoleLogElement.className = 'snippet-console-log';
 
-      consoleElement.appendChild(consoleLogElement);
-      consoleElement.appendChild(consoleRunElement);
-      block.parentElement.insertAdjacentElement('afterend', consoleElement);
+        consoleElement.appendChild(consoleLogElement);
+        consoleElement.appendChild(consoleRunElement);
+        block.parentElement.insertAdjacentElement('afterend', consoleElement);
 
-      consoleRunElement.addEventListener('click', function() {
-        var consoleLogElement =
-            this.parentElement.querySelector('.snippet-console-log');
-        var snippetText = this.parentElement.previousElementSibling.innerText;
-        executeCodeSnippet(consoleLogElement, snippetText);
-      });
-    }
+        consoleRunElement.addEventListener('click', function() {
+          var consoleLogElement =
+              this.parentElement.querySelector('.snippet-console-log');
+          var snippetText = this.parentElement.previousElementSibling.innerText;
+          executeCodeSnippet(consoleLogElement, snippetText);
+        });
+      }
+    })();
   </script>
 </body>
