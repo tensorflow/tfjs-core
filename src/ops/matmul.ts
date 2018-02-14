@@ -22,8 +22,6 @@ import {Scalar, Tensor1D, Tensor2D} from '../tensor';
 import * as util from '../util';
 import {operation} from './operation';
 
-import {operation} from './operation';
-
 export class Ops {
   /**
    * Computes the dot product of two matrices, A * B. These must be matrices,
