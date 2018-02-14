@@ -29,8 +29,11 @@ export interface LSTMCell {
 export class Ops {
   /**
    * Computes the next states and outputs of a stack of LSTMCells.
+   *
    * Each cell output is used as input to the next cell.
-   * This is only the forward mode.
+   *
+   * Returns `[cellState, cellOutput]`.
+   *
    * Derived from tf.contrib.rn.MultiRNNCell.
    *
    * @param lstmCells Array of LSTMCell functions.
@@ -62,7 +65,9 @@ export class Ops {
 
   /**
    * Computes the next state and output of a BasicLSTMCell.
-   * This is only the forward mode.
+   *
+   * Returns `[newC, newH]`.
+   *
    * Derived from tf.contrib.rnn.BasicLSTMCell.
    *
    * @param forgetBias Forget bias for the cell.

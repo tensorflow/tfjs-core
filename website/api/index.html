@@ -140,7 +140,7 @@
       background: #f4f4f4;
     }
 
-    code, .param-name {
+    code, .param-name, .return-type {
       background: #f4f4f4;
       color: #37474f;
       padding: 2px 4px;
@@ -150,7 +150,7 @@
       word-break: break-word;
     }
 
-    .documentation a, .returns a,  .param-name a {
+    .documentation a, .returns a,  .param-name a, .method-docs a, .param-docs a {
       background: #f4f4f4;
       padding: 4px 6px;
       font: 500 90%/2 Roboto Mono, monospace;
@@ -285,7 +285,7 @@
                 {{/parameters}}
               </ul>
               <div class="returns mdl-typography--subhead">
-                Returns: {{{markdownInner returnType}}}
+                Returns: <span class="return-type">{{{markdownInner returnType}}}</span>
               </div>
               {{/isFunction}} {{#isClass}}
               <h6>Methods:</h6>

@@ -57,12 +57,7 @@ export function parse():
             'tensor', 'scalar', 'tensor1d', 'tensor2d', 'tensor3d', 'tensor4d'
           ]
         },
-        {
-          name: 'Classes',
-          pin: [
-            'Tensor', 'Scalar', 'Tensor1D', 'Tensor2D', 'Tensor3D', 'Tensor4D'
-          ]
-        },
+        {name: 'Classes', pin: ['Tensor', 'Variable', 'TensorBuffer']},
         {name: 'Transformations'}, {name: 'Slicing and Joining'}
       ]
     },
@@ -82,13 +77,7 @@ export function parse():
       subheadings: [
         {name: 'Gradients'},
         {name: 'Optimizers', pin: ['sgd', 'momentum', 'adagrad', 'adadelta']},
-        {name: 'Losses'}, {
-          name: 'Classes',
-          pin: [
-            'SGDOptimizer', 'MomentumOptimizer', 'AdagradOptimizer',
-            'AdadeltaOptimizer'
-          ]
-        }
+        {name: 'Losses'}, {name: 'Classes'}
       ]
     },
     {

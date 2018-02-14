@@ -24,7 +24,7 @@ import {operation} from './operation';
 
 export class Ops {
   /**
-   * Reverses a `Tensor1D.
+   * Reverses a `Tensor1D`.
    *
    * @param x The input tensor.
    */

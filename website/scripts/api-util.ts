@@ -355,11 +355,14 @@ export function replaceDocTypeAlias(
 export interface SymbolAndUrl {
   symbolName: string;
   url: string;
+  type: 'function'|'class';
+  namespace?: string;
 }
 
 /**
  * Adds markdown links for reference symbols in documentation, parameter types,
- * and return types.
+ * and return types. Uses @doclink aliases to link displayed symbols to another
+ * symbol's documentation.
  */
 export function linkSymbols(
     docs: Docs, symbols: SymbolAndUrl[], toplevelNamespace: string,
@@ -378,8 +381,12 @@ export function linkSymbols(
           symbol.urlHash = symbol.displayName;
         }
 
-        symbols.push(
-            {symbolName: symbol.symbolName, url: '#' + symbol.urlHash});
+        symbols.push({
+          symbolName: symbol.symbolName,
+          url: '#' + symbol.urlHash,
+          type: symbol['isClass'] != null ? 'class' : 'function',
+          namespace
+        });
       });
     });
   });
@@ -389,7 +396,12 @@ export function linkSymbols(
     // Find the symbol so we can find the url hash.
     symbols.forEach(symbol => {
       if (symbol.symbolName === docLinkAliases[docLinkAlias]) {
-        symbols.push({symbolName: docLinkAlias, url: symbol.url});
+        symbols.push({
+          symbolName: docLinkAlias,
+          url: symbol.url,
+          type: symbol.type,
+          namespace: symbol.namespace
+        });
       }
     });
   });
@@ -426,8 +438,15 @@ function replaceSymbolsWithLinks(
     const wrapper = isMarkdown ? '\`' : '\\b(?![\'])';
     const re = new RegExp(wrapper + symbolAndUrl.symbolName + wrapper, 'g');
 
-    input =
-        input.replace(re, `[${symbolAndUrl.symbolName}](${symbolAndUrl.url})`);
+    let displayText;
+    if (symbolAndUrl.type === 'function') {
+      displayText = symbolAndUrl.namespace ? symbolAndUrl.namespace : '';
+      displayText += symbolAndUrl.symbolName + '()';
+    } else {
+      displayText = symbolAndUrl.symbolName;
+    }
+
+    input = input.replace(re, `[${displayText}](${symbolAndUrl.url})`);
   });
   return input;
 }

@@ -88,8 +88,8 @@ export class Gradients {
    * Like `dl.grad`, but returns also the value of `f()`. Useful when `f()`
    * returns a metric you want to show. The result is a rich object with
    * the following properties:
-   * - `grad`: The gradient of `f(x)` w.r.t `x` (result of `grad`).
-   * - `value`: The value returned by `f(x)`.
+   * - grad: The gradient of `f(x)` w.r.t `x` (result of `grad`).
+   * - value: The value returned by `f(x)`.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
   static valueAndGrad<I extends Tensor, O extends Tensor>(f: (x: I) => O):
@@ -108,8 +108,8 @@ export class Gradients {
    * Like `grads`, but returns also the value of `f()`. Useful when `f()`
    * returns a metric you want to show. The result is a rich object with
    * the following properties:
-   * - `grads`: The gradients of `f()` w.r.t each input (result of `grads`).
-   * - `value`: The value returned by `f(x)`.
+   * - grads: The gradients of `f()` w.r.t each input (result of `grads`).
+   * - value: The value returned by `f(x)`.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
   static valueAndGrads<O extends Tensor>(f: (...args: Tensor[]) => O):

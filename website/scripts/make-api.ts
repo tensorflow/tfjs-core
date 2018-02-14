@@ -44,23 +44,28 @@ const symbols: util.SymbolAndUrl[] = [
   {
     symbolName: 'TypedArray',
     url: 'https://developer.mozilla.org/en-US/docs/Web/' +
-        'JavaScript/Reference/Global_Objects/TypedArray'
+        'JavaScript/Reference/Global_Objects/TypedArray',
+    type: 'class'
   },
   {
     symbolName: 'ImageData',
-    url: 'https://developer.mozilla.org/en-US/docs/Web/API/ImageData'
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/ImageData',
+    type: 'class'
   },
   {
     symbolName: 'HTMLImageElement',
-    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement'
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement',
+    type: 'class'
   },
   {
     symbolName: 'HTMLCanvasElement',
-    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement'
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement',
+    type: 'class'
   },
   {
     symbolName: 'HTMLVideoElement',
-    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement'
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement',
+    type: 'class'
   }
 ];
 util.linkSymbols(docs, symbols, TOPLEVEL_NAMESPACE, docLinkAliases);
