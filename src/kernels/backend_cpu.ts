@@ -16,6 +16,7 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../environment';
 import {NDArrayMath} from '../math';
 import * as axis_util from '../ops/axis_util';
@@ -30,7 +31,8 @@ import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor'
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
-import {KernelBackend} from './backend';
+
+import {BackendTimingInfo, KernelBackend} from './backend';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -117,10 +119,11 @@ export class MathBackendCPU implements KernelBackend {
     }
   }
 
-  async time(f: () => void): Promise<number> {
+  async time(f: () => void): Promise<BackendTimingInfo> {
     const start = performance.now();
     f();
-    return performance.now() - start;
+    const backendComputeMs = performance.now() - start;
+    return {backendComputeMs};
   }
   memory() {
     return {

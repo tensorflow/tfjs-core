@@ -16,6 +16,7 @@
  */
 
 import {doc} from './doc';
+import {TimingInfo} from './engine';
 import {ENV} from './environment';
 // tslint:disable-next-line:max-line-length
 import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
@@ -93,7 +94,7 @@ export class Tracking {
    * @param f The function to execute and time.
    */
   @doc({heading: 'Performance', subheading: 'Timing'})
-  static time(f: () => void): Promise<number> {
+  static time(f: () => void): Promise<TimingInfo> {
     return ENV.engine.time(f);
   }
 }
