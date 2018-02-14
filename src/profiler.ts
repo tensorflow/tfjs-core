@@ -39,8 +39,7 @@ export class Profiler {
     util.checkForNaN(vals, result.dtype, kernelName);
 
     timer.then(timing => {
-      this.logger.logKernelProfile(
-          kernelName, result, vals, timing.backendComputeMs);
+      this.logger.logKernelProfile(kernelName, result, vals, timing.kernelMs);
     });
 
     return result as T;

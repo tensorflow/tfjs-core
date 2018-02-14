@@ -28,10 +28,10 @@ class TestBackendTimer implements BackendTimer {
 
   async time(query: () => void): Promise<BackendTimingInfo> {
     query();
-    const backendComputeMs = await new Promise<number>(
+    const kernelMs = await new Promise<number>(
         resolve => setTimeout(
             resolve(this.queryTimeMs * this.counter++), this.delayMs));
-    return {backendComputeMs};
+    return {kernelMs};
   }
 }
 

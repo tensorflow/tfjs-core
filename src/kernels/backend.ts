@@ -22,7 +22,7 @@ import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor'
 import {DataType, Rank, TypedArray} from '../types';
 
 // Required information for all backends.
-export interface BackendTimingInfo { backendComputeMs: number; }
+export interface BackendTimingInfo { kernelMs: number; }
 
 export interface TensorStorage {
   read(dataId: DataId): Promise<TypedArray>;

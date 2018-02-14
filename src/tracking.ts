@@ -94,7 +94,7 @@ export class Tracking {
    * The result is an object with the following properties (all times in ms):
    *
    * - `wallMs`: wall execution time.
-   * - `backendComputeMs`: kernel execution time, ignoring data transfer.
+   * - `kernelMs`: kernel execution time, ignoring data transfer.
    * - On `WebGL` the following additional properties exist:
    *   - `uploadWaitMs`: cpu blocking time on texture uploads.
    *   - `downloadWaitMs`: cpu blocking time on texture downloads (readPixels).

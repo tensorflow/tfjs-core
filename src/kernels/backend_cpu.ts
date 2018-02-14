@@ -120,8 +120,8 @@ export class MathBackendCPU implements KernelBackend {
   async time(f: () => void): Promise<BackendTimingInfo> {
     const start = performance.now();
     f();
-    const backendComputeMs = performance.now() - start;
-    return {backendComputeMs};
+    const kernelMs = performance.now() - start;
+    return {kernelMs};
   }
   memory() {
     return {
