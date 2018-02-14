@@ -195,7 +195,7 @@
       margin-right: 0.33em;
     }
 
-    .documentation pre, .param-docs pre {
+    .param-docs pre {
       background: #f4f4f4;
     }
 
@@ -205,9 +205,11 @@
     }
 
     pre.hljs {
-      margin: 24px;
+      padding: 24px;
+      padding-bottom: 32px;
       /* margin-left: 24px; */
-      padding: 0;
+      margin: 0;
+      background: white;
     }
 
     code, .param-name, .return-type {
@@ -227,8 +229,6 @@
       font-weight: 500;
       font-family: Roboto Mono, monospace;
     }
-
-
 
     .reference .symbol {
       margin-left: 32px;
@@ -288,15 +288,25 @@
     }
 
     .snippet-console {
-      background-color: white;
+      margin: -32px 24px 0 24px;
+      min-height: 24px;
       position: relative;
     }
-    .snippet-run-button {
-      position: absolute;
-      right: 0;
-      top: 0;
+
+    .snippet-console-log {
+      border-radius: 8px;
+      background: #f4f4f4;
+      padding: 8px 16px;
+      min-height: 16px;
+      white-space: pre;
+      font-family: "Roboto Mono", monospace;
     }
 
+    .snippet-run-button {
+      position: absolute;
+      right: 4px;
+      top: 4px;
+    }
   </style>
 
   <script>
@@ -459,6 +469,21 @@
     </div>
   </div>
   <script>
+    function executeCodeSnippet(consoleLogElement, codeSnippet) {
+      consoleLogElement.innerText = '';
+
+      const oldLog = console.log;
+      console.log = function(logStr) {
+        consoleLogElement.innerText += logStr + '\n';
+      };
+
+      var snippet = 'dl.tidy(function() {' + codeSnippet + '});';
+
+      eval(snippet);
+
+      console.log = oldLog;
+    };
+
     // Find all the code blocks.
     var jsBlocks = document.querySelectorAll('.language-js');
     for (let i = 0; i < jsBlocks.length; i++) {
@@ -478,25 +503,11 @@
       consoleElement.appendChild(consoleRunElement);
       block.parentElement.insertAdjacentElement('afterend', consoleElement);
 
-      var snippet = `dl.tidy(function() {
-        ${block.innerText}
-      });`;
-
-      function execute() {
-        consoleLogElement.innerText = '';
-
-        const oldLog = console.log;
-        console.log = function(logStr) {
-          consoleLogElement.innerText += logStr + '\n';
-        }
-
-        eval(snippet);
-
-        console.log = oldLog;
-      };
-
       consoleRunElement.addEventListener('click', function() {
-        execute();
+        var consoleLogElement = this.parentElement.querySelector(
+            '.snippet-console-log');
+        var snippetText = this.parentElement.previousElementSibling.innerText;
+        executeCodeSnippet(consoleLogElement, snippetText);
       });
     }
   </script>
