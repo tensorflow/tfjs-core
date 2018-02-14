@@ -25,7 +25,6 @@ import * as HandleBars from 'handlebars';
 import * as hljs from 'highlight.js';
 import * as MarkdownIt from 'markdown-it';
 import * as minimist from 'minimist';
-import * as minimist from 'minimist';
 import * as mkdirp from 'mkdirp';
 import * as shell from 'shelljs';
 import * as ts from 'typescript';
