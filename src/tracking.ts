@@ -91,7 +91,7 @@ export class Tracking {
   /**
    * Executes `f()` and returns a promise that resolves with timing information.
    *
-   * The result is an object with the following properties (all times in ms):
+   * The result is an object with the following properties:
    *
    * - `wallMs`: wall execution time.
    * - `kernelMs`: kernel execution time, ignoring data transfer.
