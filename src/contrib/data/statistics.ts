@@ -1,6 +1,3 @@
-import {Dataset, ElementArray} from '..';
-import {Tensor, Scalar} from '../..';
-
 /**
  * @license
  * Copyright 2018 Google LLC. All Rights Reserved.
@@ -19,6 +16,9 @@ import {Tensor, Scalar} from '../..';
  * =============================================================================
  */
 
+import {Dataset, ElementArray} from '..';
+import {Scalar, Tensor} from '../..';
+
 // TODO(soergel) This whole file is the barest stopgap.
 
 export class NumericColumnStatistics {
@@ -31,35 +31,66 @@ export type DatasetStatistics = {
   [key: string]: NumericColumnStatistics
 };
 
-export class NumericScaler {
-  minT: Tensor;
-  maxT: Tensor;
-
-  constructor(protected readonly min: number, protected readonly max: number) {
-    this.minT = Scalar.new(this.min);
-    this.maxT = Scalar.new(this.max);
-  }
-
-  scaleTo01(value: ElementArray): ElementArray {
+/**
+ * Provides a function that scales numeric values into the [0, 1] interval.
+ *
+ * @param min the lower bound of the inputs, which should be mapped to 0.
+ * @param min the upper bound of the inputs, which should be mapped to 1
+ * @return A function that maps an input ElementArray to a scaled ElementArray.
+ */
+export function scaleTo01(min: number, max: number): (value: ElementArray) =>
+    ElementArray {
+  const minTensor: Tensor = Scalar.new(min);
+  const maxTensor: Tensor = Scalar.new(max);
+  return (value: ElementArray): ElementArray => {
     if (typeof (value) === 'string') {
-      throw new Error("Can't scale a string.");
+      throw new Error('Can\'t scale a string.');
     } else {
       if (value instanceof Tensor) {
-        const result = value.sub(this.minT).div(this.maxT);
+        const result = value.sub(minTensor).div(maxTensor);
         return result;
       } else if (value instanceof Array) {
-        return value.map(v => (v - this.min) / this.max);
+        return value.map(v => (v - min) / max);
       } else {
-        return (value - this.min) / this.max;
+        return (value - min) / max;
       }
     }
-  }
+  };
 }
 
+/**
+ * Gathers statistics from a Dataset (or optionally from a sample).
+ *
+ * Currently we gather only the minimum and maximum value from each numeric
+ * column.
+ *
+ * This obtains a stream from the Dataset and, by default, does a full pass
+ * to gather the statistics.
+ *
+ * Statistics may be computed over a sample.  However: simply taking the first n
+ * items from the stream may produce a poor estimate if the stream is ordered in
+ * some way.
+ *
+ * A truly random shuffle of the stream would of course solve this
+ * problem, but many streams do not allow for this, instead providing only a
+ * sliding-window shuffle.  A partially-randomized sample could be obtained by
+ * shuffling over a window followed by taking the first n samples (where n is
+ * smaller than the shuffle window size).  However there is little point in
+ * using that approach here, because the cost is likely dominated by obtaining
+ * the data.  Thus, once we have filled our shuffle buffer, we may as well use
+ * all of that data instead of sampling from it.
+ *
+ * @param dataset A Dataset over which to measure statistics.
+ * @param shuffleSize The size of the shuffle window to use, if any.  (Not
+ *   recommended, as described above).
+ * @param sampleSize The number of examples to take from the (possibly shuffled)
+ *   stream.
+ */
 export async function makeDatasetStatistics(
-    dataset: Dataset, shuffleSize?: number,
-    sampleSize?: number): Promise<DatasetStatistics> {
+    dataset: Dataset, sampleSize?: number,
+    shuffleSize?: number): Promise<DatasetStatistics> {
   let stream = await dataset.getStream();
+  // TODO(soergel): allow for deep shuffle where possible.
   if (shuffleSize != null) {
     stream = stream.shuffle(shuffleSize);
   }
@@ -75,6 +106,7 @@ export async function makeDatasetStatistics(
       if (typeof (value) === 'string') {
         // TODO(soergel): collect string stats too
       } else {
+        // TODO(soergel): Also collect mean, stddev, histogram, etc.
         let recordMax: number;
         let recordMin: number;
         if (value instanceof Tensor) {
