@@ -24,9 +24,8 @@ import {operation} from './operation';
 
 export class Ops {
   /**
-   * Computes the dot product of two matrices, A * B. These must be matrices,
-   * use matrixTimesVector and vectorTimesMatrix, dotProduct, and outerProduct
-   * in other cases.
+   * Computes the dot product of two matrices, A * B. These must be matrices.
+   *
    * @param a First matrix in dot product operation.
    * @param b Second matrix in dot product operation.
    * @param transposeA If true, `a` is transposed before multiplication.
@@ -71,6 +70,7 @@ export class Ops {
 
   /**
    * Computes the dot product of a vector and a matrix, v * B.
+   *
    * @param v The vector in dot product operation.
    * @param matrix The matrix in dot product operation.
    */
@@ -119,6 +119,7 @@ export class Ops {
 
   /**
    * Computes the dot product of two vectors, v1 * v2.
+   *
    * @param v1 The first vector in the dot product operation.
    * @param v2 The second vector in the dot product operation.
    */
@@ -138,6 +139,7 @@ export class Ops {
 
   /**
    * Computes the outer product of two vectors, v1 and v2.
+   *
    * @param v1 The first vector in the outer product operation.
    * @param v2 The second vector in the dot product operation.
    */

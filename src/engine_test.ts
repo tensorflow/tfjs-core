@@ -216,11 +216,15 @@ describeWithFlags('gradients', ALL_ENVS, () => {
 
     // de/da = dot(de/dy, bT)
     expect(da.shape).toEqual(a.shape);
-    expectArraysClose(da, dl.matMul(dedm, b, false, true), 1e-1);
+    let transposeA = false;
+    let transposeB = true;
+    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB), 1e-1);
 
     // de/db = dot(aT, de/dy)
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, dl.matMul(a, dedm, true, false), 1e-1);
+    transposeA = true;
+    transposeB = false;
+    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB), 1e-1);
   });
 
   it('grad(f)', () => {
@@ -317,10 +321,14 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
 
     const [da, db] = grads;
     // de/da = dot(de/dy, bT)
-    expectArraysClose(da, dl.matMul(dedm, b, false, true), 1e-1);
+    let transposeA = false;
+    let transposeB = true;
+    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB), 1e-1);
 
     // de/db = dot(aT, de/dy)
-    expectArraysClose(db, dl.matMul(a, dedm, true, false), 1e-1);
+    transposeA = true;
+    transposeB = false;
+    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB), 1e-1);
   });
 
   it('matmul + relu + inner tidy', () => {
@@ -348,10 +356,14 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
 
     const [da, db] = grads;
     // de/da = dot(de/dy, bT)
-    expectArraysClose(da, dl.matMul(dedm, b, false, true), 1e-1);
+    let transposeA = false;
+    let transposeB = true;
+    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB), 1e-1);
 
     // de/db = dot(aT, de/dy)
-    expectArraysClose(db, dl.matMul(a, dedm, true, false), 1e-1);
+    transposeA = true;
+    transposeB = false;
+    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB), 1e-1);
   });
 });
 
