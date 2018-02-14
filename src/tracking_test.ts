@@ -22,8 +22,8 @@ describeWithFlags('time webgl', WEBGL_ENVS, () => {
   it('upload + compute', async () => {
     const a = dl.zeros([10, 10]);
     const time = await dl.time(() => a.square()) as dl.WebGLTimingInfo;
-    expect(time.backend.uploadWaitMs > 0);
-    expect(time.backend.downloadWaitMs === 0);
+    expect(time.uploadWaitMs > 0);
+    expect(time.downloadWaitMs === 0);
     expect(time.backendComputeMs > 0);
     expect(time.wallMs >= time.backendComputeMs);
   });
@@ -32,8 +32,8 @@ describeWithFlags('time webgl', WEBGL_ENVS, () => {
     const a = dl.zeros([10, 10]);
     const time =
         await dl.time(() => a.square().dataSync()) as dl.WebGLTimingInfo;
-    expect(time.backend.uploadWaitMs > 0);
-    expect(time.backend.downloadWaitMs > 0);
+    expect(time.uploadWaitMs > 0);
+    expect(time.downloadWaitMs > 0);
     expect(time.backendComputeMs > 0);
     expect(time.wallMs >= time.backendComputeMs);
   });
@@ -42,8 +42,8 @@ describeWithFlags('time webgl', WEBGL_ENVS, () => {
     const a = dl.zeros([10, 10]);
     const time = await dl.time(async () => await a.square().data()) as
         dl.WebGLTimingInfo;
-    expect(time.backend.uploadWaitMs > 0);
-    expect(time.backend.downloadWaitMs > 0);
+    expect(time.uploadWaitMs > 0);
+    expect(time.downloadWaitMs > 0);
     expect(time.backendComputeMs > 0);
     expect(time.wallMs >= time.backendComputeMs);
   });
@@ -54,8 +54,8 @@ describeWithFlags('time webgl', WEBGL_ENVS, () => {
     a.square();
     const time = await dl.time(() => a.sqrt()) as dl.WebGLTimingInfo;
     // The tensor was already on gpu.
-    expect(time.backend.uploadWaitMs === 0);
-    expect(time.backend.downloadWaitMs === 0);
+    expect(time.uploadWaitMs === 0);
+    expect(time.downloadWaitMs === 0);
     expect(time.backendComputeMs > 0);
     expect(time.wallMs >= time.backendComputeMs);
   });

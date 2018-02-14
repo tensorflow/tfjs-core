@@ -54,7 +54,7 @@ export interface TensorManager {
 }
 
 export type MemoryInfo = {
-  numTensors: number; numDataBuffers: number; numBytes: number; backendInfo: {};
+  numTensors: number; numDataBuffers: number; numBytes: number;
   unreliable?: boolean;
 };
 
@@ -170,17 +170,11 @@ export class Engine implements TensorManager {
   }
 
   memory(): MemoryInfo {
-    const backendInfo = this.backend.memory();
-    const memInfo: MemoryInfo = {
-      numTensors: this.numTensors,
-      numDataBuffers: this.numDataBuffers,
-      numBytes: this.numBytes,
-      backendInfo,
-    };
-    if (backendInfo.unreliable) {
-      memInfo.unreliable = true;
-    }
-    return memInfo;
+    const info = this.backend.memory() as MemoryInfo;
+    info.numTensors = this.numTensors;
+    info.numDataBuffers = this.numDataBuffers;
+    info.numBytes = this.numBytes;
+    return info;
   }
 
   private shouldRecord(): boolean {

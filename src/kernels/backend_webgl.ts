@@ -73,7 +73,8 @@ export interface CPUTimerQuery {
 }
 
 export interface WebGLTimingInfo extends TimingInfo {
-  backend: {uploadWaitMs: number; downloadWaitMs: number};
+  uploadWaitMs: number;
+  downloadWaitMs: number;
 }
 
 export class MathBackendWebGL implements KernelBackend {
@@ -229,10 +230,8 @@ export class MathBackendWebGL implements KernelBackend {
           return sum;
         });
     const res: WebGLTimingInfo = {
-      backend: {
-        uploadWaitMs: this.uploadWaitMs,
-        downloadWaitMs: this.downloadWaitMs,
-      },
+      uploadWaitMs: this.uploadWaitMs,
+      downloadWaitMs: this.downloadWaitMs,
       backendComputeMs,
       wallMs: null  // will be filled by the engine
     };
