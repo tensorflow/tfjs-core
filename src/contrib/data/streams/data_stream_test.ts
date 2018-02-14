@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {DataStream} from './data_stream';
+import {DataStream, streamFromZipped} from './data_stream';
 import {streamFromConcatenated} from './data_stream';
 import {streamFromConcatenatedFunction} from './data_stream';
 import {streamFromFunction, streamFromItems} from './data_stream';
@@ -230,6 +230,21 @@ describe('DataStream', () => {
     readStreamPromise
         .then(readStream => readStream.collectRemaining().then(result => {
           expect(result).toEqual(expectedResult);
+        }))
+        .then(done)
+        .catch(done.fail);
+  });
+
+  it('can be created by zipping streams', done => {
+    const a = new TestIntegerStream().map(x=>({'a':x}));
+    const b = new TestIntegerStream().map(x=>({'b':x}));
+    const readStreamPromise = streamFromZipped([a, b]);
+    readStreamPromise
+        .then(readStream => readStream.collectRemaining().then(result => {
+          expect(result.length).toEqual(100);
+          for(const e of result) {
+            expect(e['a']).toEqual(e['b']);
+          }
         }))
         .then(done)
         .catch(done.fail);
