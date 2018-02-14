@@ -192,8 +192,6 @@
       color: #37474f;
       padding: 2px 4px;
       font: 500 90%/2 Roboto Mono, monospace;
-    }
-    code {
       word-break: break-word;
     }
 
@@ -410,6 +408,7 @@
       });`;
 
       const execute = () => {
+        consoleLogElement.innerText = '';
         const oldLog = console.log;
         console.log = logStr => consoleLogElement.innerText += logStr + '\n';
 

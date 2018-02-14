@@ -43,6 +43,8 @@ shell.mkdir('-p', HTML_OUT_DIR);
 
 let bundleJsPath;
 if (argv['master']) {
+  // When using --master, build a deeplearn.js bundle if it doesn't exist. This
+  // is mainly for development.
   if (!fs.existsSync(HTML_OUT_DIR + 'deeplearn.js')) {
     shell.exec('./scripts/build-standalone.sh');
     shell.cp('./dist/deeplearn.js', HTML_OUT_DIR);
@@ -51,8 +53,9 @@ if (argv['master']) {
 } else {
   // Read version and point to it.
   const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-  console.log('version: ' + pkg.version);
+  bundleJsPath = `https://cdn.jsdelivr.net/npm/deeplearn@${pkg.version}`;
 }
+console.log(`Using bundle path ${bundleJsPath}.`);
 
 const {docs, docLinkAliases} = parser.parse();
 docs.bundleJsPath = bundleJsPath;
