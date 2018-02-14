@@ -278,14 +278,6 @@
       color:#0277BD;
     }
 
-    .mdl-chip__text {
-      vertical-align: baseline !important;
-    }
-
-    .class-chip {
-      margin-left: 16px;
-    }
-
     .chip {
       background: #f4f4f4;
       display: inline-block;
@@ -408,13 +400,12 @@
             {{#symbols}}
             <div class="symbol">
               <h5>
-                <span class='symbol-marker'>&fnof;</span>
+                {{#if isClass}}
+                  <span class="chip">Class</span>
+                {{else}}
+                  <span class='symbol-marker'>&fnof;</span>
+                {{/if}}
                 <a class='symbol-name' name="{{urlHash}}" href="#{{urlHash}}">{{displayName}}</a>{{paramStr}}
-                {{#isClass}}
-                  <span class="class-chip mdl-chip">
-                    <span class="mdl-chip__text">Class</span>
-                  </span>
-                {{/isClass}}
               </h5>
 
               <div class="documentation">{{{markdown documentation}}}</div>
