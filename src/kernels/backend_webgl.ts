@@ -28,7 +28,7 @@ import * as types from '../types';
 import {DataType, DataTypeMap, Rank, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
 
-import {BackendTimingInfo, KernelBackend} from './backend';
+import {KernelBackend} from './backend';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -82,9 +82,9 @@ export class MathBackendWebGL implements KernelBackend {
 
   private programTimersStack: TimerNode[];
   private activeTimers: TimerNode[];
-  // Total time spent in uploading data to webgl. Accumulates when timing.
+  // Accumulated time spent (including blocking) in uploading data to webgl.
   private uploadWaitMs = 0;
-  // Total time spent in downloading data from webgl. Accumulates when timing.
+  // Accumulated time spent (including blocking in downloading data from webgl.
   private downloadWaitMs = 0;
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
@@ -184,16 +184,8 @@ export class MathBackendWebGL implements KernelBackend {
       return values;
     }
     if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) {
-      const shouldTimeProgram = this.activeTimers != null;
-      let start: number;
-      if (shouldTimeProgram) {
-        start = performance.now();
-      }
       const float32Values = await this.gpgpu.downloadMatrixFromTextureAsync(
           texture, texShape[0], texShape[1]);
-      if (shouldTimeProgram) {
-        this.downloadWaitMs += performance.now() - start;
-      }
       this.cacheOnCPU(dataId, float32Values);
       return texData.values;
     }
@@ -208,7 +200,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.readSync(dataId);
   }
 
-  async time(f: () => void): Promise<BackendTimingInfo> {
+  async time(f: () => void): Promise<WebGLTimingInfo> {
     const oldActiveTimers = this.activeTimers;
     const newActiveTimers: TimerNode[] = [];
 
@@ -236,12 +228,13 @@ export class MathBackendWebGL implements KernelBackend {
           results.forEach(result => sum += result);
           return sum;
         });
-    const res = {
+    const res: WebGLTimingInfo = {
       backend: {
         uploadWaitMs: this.uploadWaitMs,
         downloadWaitMs: this.downloadWaitMs,
       },
-      backendComputeMs
+      backendComputeMs,
+      wallMs: null  // will be filled by the engine
     };
     this.uploadWaitMs = 0;
     this.downloadWaitMs = 0;
