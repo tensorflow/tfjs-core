@@ -257,7 +257,8 @@
     }
 
     .method {
-      margin-left: 25px;
+      margin: 16px 0px 24px 25px;
+
     }
 
     .param-name {
@@ -309,6 +310,8 @@
       position: absolute;
       right: 4px;
       top: 4px;
+      font-size: 12px;
+      font-weight: bold;
     }
   </style>
 
@@ -345,7 +348,7 @@
             lastHighlightedTocElement.classList.remove('highlighted');
           }
           tocFound.classList.add('highlighted');
-          tocFound.scrollIntoView(false);
+          // tocFound.scrollIntoView(false);
           lastHighlightedTocElement = tocFound;
         }
       }
@@ -359,6 +362,7 @@
 <body>
   <!-- Partials -->
   {{#*inline "paramList"}}
+    {{#if parameters.length}}
     <div class="parameter-list">
       <div class="parameter-heading">Parameters:</div>
       <ul>
@@ -379,14 +383,14 @@
         {{/parameters}}
       </ul>
     </div>
-
+    {{/if}}
   {{/inline}}
   <!-- END Partials -->
 
 
   <div class="container">
     <nav>
-      <a href="index.html">deeplearn.js</a>
+      <a href="/index.html">deeplearn.js</a>
     </nav>
 
     <div class="content-area">
@@ -516,4 +520,16 @@
       }
     })();
   </script>
+  <script>
+    (function (i, s, o, g, r, a, m) {
+    i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+      (i[r].q = i[r].q || []).push(arguments)
+    }, i[r].l = 1 * new Date(); a = s.createElement(o),
+      m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', 'UA-46457317-8', 'auto');
+    ga('send', 'pageview');
+  </script>
+
 </body>
