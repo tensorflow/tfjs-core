@@ -16,7 +16,6 @@
  */
 
 import * as dl from '../index';
-import {MatrixOrientation} from '../kernels/types/matmul';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, describeWithFlags, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
@@ -36,8 +35,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = dl.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
-    const c = dl.matMul(
-        a, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED);
+    const c = dl.matMul(a, b, false, true);
 
     const expected = [7, 10, 16, 31];
     expectArraysClose(c, expected);
@@ -47,8 +45,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = dl.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
-    const c = dl.matMul(
-        a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR);
+    const c = dl.matMul(a, b, true, false);
 
     const expected = [17, 12, 2, 22, 15, 4, 27, 18, 6];
     expectArraysClose(c, expected);
@@ -58,8 +55,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
     const b = dl.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
-    const c = dl.matMul(
-        a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.TRANSPOSED);
+    const c = dl.matMul(a, b, true, true);
 
     const expected = [11, 13, 14, 20];
     expectArraysClose(c, expected);
@@ -70,7 +66,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const b = dl.zeros<Rank.R2>([3, 2]);
 
     const f = () => {
-      dl.matMul(a, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED);
+      dl.matMul(a, b, false, true);
     };
     expect(f).toThrowError();
   });
@@ -80,7 +76,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const b = dl.zeros<Rank.R2>([3, 2]);
 
     const f = () => {
-      dl.matMul(a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR);
+      dl.matMul(a, b, true, false);
     };
     expect(f).toThrowError();
   });
@@ -90,8 +86,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const b = dl.zeros<Rank.R2>([3, 2]);
 
     const f = () => {
-      dl.matMul(
-          a, b, MatrixOrientation.TRANSPOSED, MatrixOrientation.TRANSPOSED);
+      dl.matMul(a, b, true, true);
     };
     expect(f).toThrowError();
   });
@@ -232,8 +227,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const dy = dl.tensor2d([1, 10, 20, 30], [2, 2]);
 
     const grads = dl.grads(
-        (a: dl.Tensor2D, b: dl.Tensor2D) => dl.matMul(
-            a, b, MatrixOrientation.REGULAR, MatrixOrientation.REGULAR));
+        (a: dl.Tensor2D, b: dl.Tensor2D) => dl.matMul(a, b, false, false));
     const [da, db] = grads([a, b], dy);
 
     // da = dy * bT

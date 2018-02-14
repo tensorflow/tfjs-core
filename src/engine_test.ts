@@ -16,7 +16,6 @@
  */
 
 import * as dl from './index';
-import {MatrixOrientation} from './kernels/types/matmul';
 import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
@@ -217,19 +216,11 @@ describeWithFlags('gradients', ALL_ENVS, () => {
 
     // de/da = dot(de/dy, bT)
     expect(da.shape).toEqual(a.shape);
-    expectArraysClose(
-        da,
-        dl.matMul(
-            dedm, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
-        1e-1);
+    expectArraysClose(da, dl.matMul(dedm, b, false, true), 1e-1);
 
     // de/db = dot(aT, de/dy)
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(
-        db,
-        dl.matMul(
-            a, dedm, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR),
-        1e-1);
+    expectArraysClose(db, dl.matMul(a, dedm, true, false), 1e-1);
   });
 
   it('grad(f)', () => {
@@ -326,18 +317,10 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
 
     const [da, db] = grads;
     // de/da = dot(de/dy, bT)
-    expectArraysClose(
-        da,
-        dl.matMul(
-            dedm, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
-        1e-1);
+    expectArraysClose(da, dl.matMul(dedm, b, false, true), 1e-1);
 
     // de/db = dot(aT, de/dy)
-    expectArraysClose(
-        db,
-        dl.matMul(
-            a, dedm, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR),
-        1e-1);
+    expectArraysClose(db, dl.matMul(a, dedm, true, false), 1e-1);
   });
 
   it('matmul + relu + inner tidy', () => {
@@ -365,18 +348,10 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
 
     const [da, db] = grads;
     // de/da = dot(de/dy, bT)
-    expectArraysClose(
-        da,
-        dl.matMul(
-            dedm, b, MatrixOrientation.REGULAR, MatrixOrientation.TRANSPOSED),
-        1e-1);
+    expectArraysClose(da, dl.matMul(dedm, b, false, true), 1e-1);
 
     // de/db = dot(aT, de/dy)
-    expectArraysClose(
-        db,
-        dl.matMul(
-            a, dedm, MatrixOrientation.TRANSPOSED, MatrixOrientation.REGULAR),
-        1e-1);
+    expectArraysClose(db, dl.matMul(a, dedm, true, false), 1e-1);
   });
 });
 
