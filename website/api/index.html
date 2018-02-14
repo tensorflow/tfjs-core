@@ -304,7 +304,6 @@
         {{/headings}}
       </div>
 
-
       <div class="reference">
         {{#headings}}
         <div class="section">
@@ -400,14 +399,16 @@
 
       consoleElement.appendChild(consoleLogElement);
       consoleElement.appendChild(consoleRunElement);
-      block.parentElement.appendChild(consoleElement);
+      console.log(block);
+      block.parentElement.insertAdjacentElement('afterend', consoleElement);
 
       const snippet = `dl.tidy(() => {
-        ${block.innerHTML}
+        ${block.innerText}
       });`;
 
       const execute = () => {
         consoleLogElement.innerText = '';
+
         const oldLog = console.log;
         console.log = logStr => consoleLogElement.innerText += logStr + '\n';
 

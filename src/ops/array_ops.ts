@@ -443,7 +443,7 @@ export class Ops {
    * Creates a `Tensor` with values drawn from a multinomial distribution.
    *
    * ```js
-   * const probs = dl.tensor([.75, .25])
+   * const probs = dl.tensor([.75, .25]);
    * dl.multinomial(probs, 3).print();
    * ```
    *
