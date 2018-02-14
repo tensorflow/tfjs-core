@@ -526,6 +526,10 @@ export class Tensor<R extends Rank = Rank> {
   stack(x: Tensor, axis = 0): Tensor {
     return ops.stack([this, x], axis);
   }
+  pad<T extends Tensor>(
+      this: T, paddings: Array<[number, number]>, constantValue = 0): T {
+    return ops.pad(this, paddings, constantValue);
+  }
   batchNormalization(
       mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
       varianceEpsilon = .001, scale?: Tensor<R>|Tensor1D,
