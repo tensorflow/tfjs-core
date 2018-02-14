@@ -22,12 +22,14 @@ import {SessionRuntime} from '../graph/session';
 // tslint:disable-next-line:max-line-length
 import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
 import {NDArrayMath} from '../math';
-import {Optimizer} from './optimizer';
-import {Scalar, Tensor} from '../tensor';
-import {NamedVariableMap} from '../types';
 import {fill, scalar} from '../ops/ops';
+import {Scalar, Tensor} from '../tensor';
 import {variable} from '../tensor';
+import {NamedVariableMap} from '../types';
 
+import {Optimizer} from './optimizer';
+
+/** @doclink Optimizer */
 export class AdagradOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;
@@ -48,8 +50,10 @@ export class AdagradOptimizer extends Optimizer {
       const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedGrads[variableName] == null) {
         const trainable = false;
-        this.accumulatedGrads[variableName] = variable(
-            fill(value.shape, this.initialAccumulatorValue), trainable);
+        tidy(() => {
+          this.accumulatedGrads[variableName] = variable(
+              fill(value.shape, this.initialAccumulatorValue), trainable);
+        });
       }
 
       const gradient = variableGradients[variableName];

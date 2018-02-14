@@ -16,7 +16,6 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import {ENV} from '../environment';
 import {NDArrayMath} from '../math';
 import * as axis_util from '../ops/axis_util';
@@ -24,16 +23,14 @@ import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as ops from '../ops/ops';
-import {tensor2d, tensor3d, tensor4d} from '../ops/ops';
+import {tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
-
 import {KernelBackend} from './backend';
-import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -269,28 +266,20 @@ export class MathBackendCPU implements KernelBackend {
         T;
   }
 
-  matMul(
-      a: Tensor2D, b: Tensor2D, aOrientation = MatrixOrientation.REGULAR,
-      bOrientation = MatrixOrientation.REGULAR): Tensor2D {
-    const sharedDim =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
-
-    const leftDim =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[0] : a.shape[1];
-    const rightDim =
-        (bOrientation === MatrixOrientation.REGULAR) ? b.shape[1] : b.shape[0];
+  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
+      Tensor2D {
+    const sharedDim = transposeA ? a.shape[0] : a.shape[1];
+    const leftDim = transposeA ? a.shape[1] : a.shape[0];
+    const rightDim = transposeB ? b.shape[0] : b.shape[1];
 
     const normalGetter = (matrix: Tensor2D, i: number, j: number) =>
         matrix.get(i, j);
     const transposedGetter = (matrix: Tensor2D, i: number, j: number) =>
         matrix.get(j, i);
 
-    const aGetter = (aOrientation === MatrixOrientation.REGULAR) ?
-        normalGetter :
-        transposedGetter;
-    const bGetter = (bOrientation === MatrixOrientation.REGULAR) ?
-        normalGetter :
-        transposedGetter;
+    const aGetter = transposeA ? transposedGetter : normalGetter;
+    const bGetter = transposeB ? transposedGetter : normalGetter;
+
     const values = new Float32Array(leftDim * rightDim);
     let index = 0;
     for (let i = 0; i < leftDim; ++i) {
@@ -1469,48 +1458,6 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     return output.toTensor();
-  }
-
-  batchNormalization2D(
-      x: Tensor2D, mean: Tensor2D|Tensor1D, variance: Tensor2D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor2D|Tensor1D,
-      offset?: Tensor2D|Tensor1D): Tensor2D {
-    const xValues = x.dataSync();
-    const meanValues = mean.dataSync();
-    const varianceValues = variance.dataSync();
-    const scaleValues = scale ? scale.dataSync() : [1];
-    const offsetValues = offset ? offset.dataSync() : [0];
-    const outValues = new Float32Array(xValues.length);
-
-    for (let i = 0; i < xValues.length; i++) {
-      outValues[i] = offsetValues[i % offsetValues.length] +
-          (xValues[i] - meanValues[i % meanValues.length]) *
-              scaleValues[i % scaleValues.length] /
-              Math.sqrt(
-                  varianceValues[i % varianceValues.length] + varianceEpsilon);
-    }
-    return tensor2d(outValues, x.shape);
-  }
-
-  batchNormalization3D(
-      x: Tensor3D, mean: Tensor3D|Tensor1D, variance: Tensor3D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor3D|Tensor1D,
-      offset?: Tensor3D|Tensor1D): Tensor3D {
-    const xValues = x.dataSync();
-    const meanValues = mean.dataSync();
-    const varianceValues = variance.dataSync();
-    const scaleValues = scale ? scale.dataSync() : [1];
-    const offsetValues = offset ? offset.dataSync() : [0];
-    const outValues = new Float32Array(xValues.length);
-
-    for (let i = 0; i < xValues.length; i++) {
-      outValues[i] = offsetValues[i % offsetValues.length] +
-          (xValues[i] - meanValues[i % meanValues.length]) *
-              scaleValues[i % scaleValues.length] /
-              Math.sqrt(
-                  varianceValues[i % varianceValues.length] + varianceEpsilon);
-    }
-    return tensor3d(outValues, x.shape);
   }
 
   batchNormalization4D(

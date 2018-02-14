@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {BrowserUtil} from './browser_util';
 import * as contrib from './contrib';
 import * as xhr_dataset from './data/xhr-dataset';
 import * as environment from './environment';
@@ -37,7 +38,6 @@ export {Graph, SymbolicTensor} from './graph/graph';
 export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
 // tslint:disable-next-line:max-line-length
 export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './graph/initializers';
-export {AdamOptimizer} from './graph/optimizers/adam_optimizer';
 export {AdamaxOptimizer} from './graph/optimizers/adamax_optimizer';
 export {CostReduction, FeedEntry, Session} from './graph/session';
 export {MathBackendCPU, NDArrayMathCPU} from './kernels/backend_cpu';
@@ -49,6 +49,7 @@ export {Model} from './model';
 export {LSTMCell} from './ops/lstm';
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
+export {AdamOptimizer} from './optimizers/adam_optimizer';
 export {MomentumOptimizer} from './optimizers/momentum_optimizer';
 export {Optimizer} from './optimizers/optimizer';
 export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
@@ -76,3 +77,5 @@ export * from './globals';
 export const setBackend = Environment.setBackend;
 export const getBackend = Environment.getBackend;
 export const memory = Environment.memory;
+
+export const nextFrame = BrowserUtil.nextFrame;
