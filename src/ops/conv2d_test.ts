@@ -146,8 +146,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const dy = dl.tensor3d([3, 1, 2, 0], [2, 2, 1]);
 
     const grads = dl.grads(
-        (x: dl.Tensor3D, filter: dl.Tensor4D, bias: dl.Tensor1D) =>
-            x.conv2d(filter, stride, pad));
+        (x: dl.Tensor3D, filter: dl.Tensor4D) => x.conv2d(filter, stride, pad));
     const [dx, dfilter] = grads([x, filter], dy);
 
     expect(dx.shape).toEqual(x.shape);
