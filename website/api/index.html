@@ -316,7 +316,7 @@
         }
 
         if (found) {
-          tocFound = tocArea.querySelector(`[data-symbol-name="${found.getAttribute('name')}"]`)
+          tocFound = tocArea.querySelector(`[href="#${found.getAttribute('name')}"]`)
 
           if (lastHighlightedTocElement) {
             lastHighlightedTocElement.classList.remove('highlighted');
@@ -380,7 +380,7 @@
             <div class="sub-section-title mdl-typography--subhead">{{name}}</div>
             {{#symbols}}
             <div class="symbol">
-              <a data-symbol-name="{{urlHash}}" href="#{{urlHash}}">{{displayName}}</a>
+              <a href="#{{urlHash}}">{{displayName}}</a>
             </div>
             {{/symbols}}
           </div>
