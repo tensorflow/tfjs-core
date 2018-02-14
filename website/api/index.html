@@ -291,11 +291,11 @@
               <h6>Methods:</h6>
               {{#methods}}
               <div class="method">
-                <div class="method-name">
+                <span class="method-name">
                   <code>{{symbolName}}{{paramStr}}</code>
-                </div>
-                <div class="method-docs">
-                  {{#optional}}(Optional){{/optional}} {{{markdown documentation}}}
+                </span>
+                <span class="method-docs">
+                  {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
 
                   <div class="parameter-heading mdl-typography--subhead">Parameters:</div>
                   <ul>
@@ -310,7 +310,7 @@
                     </li>
                     {{/parameters}}
                   </ul>
-                </div>
+                </span>
               </div>
               {{/methods}} {{/isClass}}
 
