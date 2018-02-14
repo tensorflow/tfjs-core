@@ -19,7 +19,7 @@
 import * as seedrandom from 'seedrandom';
 
 import {BatchDataset} from './batch_dataset';
-import {DatasetStatistics, makeDatasetStatistics} from './statistics';
+import {DatasetStatistics, computeStatistics} from './statistics';
 import {DataStream} from './streams/data_stream';
 import {streamFromConcatenated} from './streams/data_stream';
 import {streamFromFunction} from './streams/data_stream';
@@ -52,8 +52,10 @@ export abstract class Dataset {
 
   async getStats(shuffleSize?: number, sampleSize?: number):
       Promise<DatasetStatistics> {
-    return makeDatasetStatistics(this, shuffleSize, sampleSize);
+    return computeStatistics(
+        this, shuffleSize, sampleSize);
   }
+
   /**
    * Filters this dataset according to `predicate`.
    *

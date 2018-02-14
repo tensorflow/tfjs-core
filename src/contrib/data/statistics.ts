@@ -16,8 +16,10 @@
  * =============================================================================
  */
 
-import {Dataset, ElementArray} from '..';
-import {Scalar, Tensor} from '../..';
+import {Scalar, Tensor} from '../../tensor';
+
+import {Dataset} from './dataset';
+import {ElementArray} from './types';
 
 // TODO(soergel) This whole file is the barest stopgap.
 
@@ -86,7 +88,7 @@ export function scaleTo01(min: number, max: number): (value: ElementArray) =>
  * @param sampleSize The number of examples to take from the (possibly shuffled)
  *   stream.
  */
-export async function makeDatasetStatistics(
+export async function computeStatistics(
     dataset: Dataset, sampleSize?: number,
     shuffleSize?: number): Promise<DatasetStatistics> {
   let stream = await dataset.getStream();
