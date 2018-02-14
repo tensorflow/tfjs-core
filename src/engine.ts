@@ -224,8 +224,8 @@ export class Engine implements TensorManager {
   }
 
   /**
-   * Start a scope. Use this with endScope() to achieve the same
-   * functionality as scope() without the need for a function closure.
+   * Start a scope. Use this with endScope() to achieve the same functionality
+   * as scope() without the need for a function closure.
    */
   startScope(gradientsMode = false) {
     if (gradientsMode && this.gradientScopeCount === 0) {
@@ -241,8 +241,8 @@ export class Engine implements TensorManager {
   }
 
   /**
-   * End a scope. Use this with startScope() to achieve the same
-   * functionality as scope() without the need for a function closure.
+   * End a scope. Use this with startScope() to achieve the same functionality
+   * as scope() without the need for a function closure.
    */
   endScope(result: ScopeResultImmediate, gradientsMode = false) {
     if (gradientsMode) {
@@ -291,10 +291,10 @@ export class Engine implements TensorManager {
   }
 
   /**
-   * Returns gradients of `f` w.r.t. each of the `xs`. The gradients
-   * returned are of the same length as `xs`, but some might be null if `f`
-   * was not a function of that `x`. It also takes optional dy to multiply
-   * the gradient, which defaults to `1`.
+   * Returns gradients of `f` w.r.t. each of the `xs`. The gradients returned
+   * are of the same length as `xs`, but some might be null if `f` was not
+   * a function of that `x`. It also takes optional dy to multiply the gradient,
+   * which defaults to `1`.
    */
   gradients<T extends Tensor>(f: () => T, xs: Tensor[], dy?: T):
       {value: T, grads: Tensor[]} {
