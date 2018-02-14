@@ -79,7 +79,11 @@ describeWithFlags('variable', ALL_ENVS, () => {
   it('constructor does not dispose', () => {
     const a = dl.scalar(2);
     const v = dl.variable(a);
-    expect(dl.memory().numTensors).toBe(2);
+
+    const {numTensors, numDataBuffers} = dl.memory();
+    expect(numTensors).toBe(2);
+    expect(numDataBuffers).toBe(1);
+
     expectArraysClose(v, [2]);
     expectArraysClose(a, [2]);
   });
@@ -114,21 +118,27 @@ describeWithFlags('variable', ALL_ENVS, () => {
   it('assign does not dispose old data', () => {
     let v: Variable<Rank.R1>;
     v = variable(dl.tensor1d([1, 2, 3]));
+
     expect(dl.memory().numTensors).toBe(2);
+    expect(dl.memory().numDataBuffers).toBe(1);
+
     expectArraysClose(v, [1, 2, 3]);
 
     const secondArray = dl.tensor1d([4, 5, 6]);
     expect(dl.memory().numTensors).toBe(3);
+    expect(dl.memory().numDataBuffers).toBe(2);
 
     v.assign(secondArray);
     expectArraysClose(v, [4, 5, 6]);
     // Assign doesn't dispose the 1st array.
     expect(dl.memory().numTensors).toBe(3);
+    expect(dl.memory().numDataBuffers).toBe(2);
 
     v.dispose();
     // Disposing the variable disposes itself. The input to variable and
     // secondArray are the only remaining tensors.
     expect(dl.memory().numTensors).toBe(2);
+    expect(dl.memory().numDataBuffers).toBe(2);
   });
 
   it('shape must match', () => {
