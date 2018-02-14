@@ -1,4 +1,3 @@
-
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -15,25 +14,17 @@
  * limitations under the License.
  * =============================================================================
  */
+import {doc} from './doc';
 
-import {KernelNode} from '../../tape_types';
-import {Tensor1D, Tensor4D} from '../../tensor';
-
-export interface BatchNorm4DNode extends KernelNode {
-  inputAndArgs: {
-    inputs: {
-      x: Tensor4D; mean: Tensor4D | Tensor1D; variance: Tensor4D | Tensor1D;
-      scale?: Tensor4D | Tensor1D;
-      offset?: Tensor4D | Tensor1D;
-    };
-    args: {varianceEpsilon: number};
-  };
-  output: Tensor4D;
-  gradient: (dy: Tensor4D, y: Tensor4D) => {
-    x: () => Tensor4D;
-    mean: () => Tensor4D | Tensor1D;
-    variance: () => Tensor4D | Tensor1D;
-    scale?: () => Tensor4D | Tensor1D;
-    offset?: () => Tensor4D | Tensor1D;
-  };
+export class BrowserUtil {
+  /**
+   * Returns a promise that resolve when a requestAnimationFrame has completed.
+   *
+   * This is simply a sugar method so that users can do the following:
+   * `await dl.nextFrame();`
+   */
+  @doc({heading: 'Performance', subheading: 'Timing'})
+  static nextFrame(): Promise<void> {
+    return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+  }
 }

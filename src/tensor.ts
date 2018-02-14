@@ -28,6 +28,13 @@ export interface TensorData {
   values?: TypedArray;
 }
 
+/**
+ * A mutable object, similar to `Tensor`, that allows users to set values
+ * at locations before converting to an immutable `Tensor`.
+ *
+ * See `buffer` for creating a tensor buffer.
+ */
+@doc({heading: 'Tensors', subheading: 'Classes'})
 export class TensorBuffer<R extends Rank> {
   values: TypedArray;
   private strides: number[];
@@ -37,6 +44,12 @@ export class TensorBuffer<R extends Rank> {
     this.strides = computeStrides(shape);
   }
 
+  /**
+   * Sets a value in the buffer at a given location.
+   * @param value The value to set.
+   * @param locs  The location to set the value at.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   set(value: number, ...locs: number[]) {
     if (locs.length === 0) {
       locs = [0];
@@ -81,6 +94,10 @@ export class TensorBuffer<R extends Rank> {
     return this.shape.length;
   }
 
+  /**
+   * Creates an immutable `Tensor` object from the buffer.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   toTensor(): Tensor<R> {
     return Tensor.make(this.shape, {values: this.values}, this.dtype);
   }
@@ -96,6 +113,13 @@ export class TensorBuffer<R extends Rank> {
  */
 export type DataId = object;  // object instead of {} to force non-primitive.
 
+/**
+ * A `Tensor` object represents an immutable, multidimensional array of numbers
+ * that has a shape and a data type.
+ *
+ * See `tensor` for details on how to create a `Tensor`.
+ */
+@doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor<R extends Rank = Rank> {
   private static nextId = 0;
 
@@ -215,47 +239,52 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * @param axis An optional list of number. If specified, only
-   * squeezes the dimensions listed. The dimension index starts at 0. It is an
-   * error to squeeze a dimension that is not 1.
+   * Flatten a Tensor to a 1D array.
    */
-  squeeze<T extends Tensor>(axis?: number[]): T {
-    this.throwIfDisposed();
-    return this.reshape(util.squeezeShape(this.shape, axis).newShape) as T;
-  }
-
-  /** Flatten a Tensor to a 1D array. */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   flatten(): Tensor1D {
     this.throwIfDisposed();
     return this.as1D();
   }
 
+  /** Converts a size-1 `Tensor` to a `Scalar`. */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   asScalar(): Scalar {
     this.throwIfDisposed();
     util.assert(this.size === 1, 'The array must have only 1 element.');
     return this.reshape<Rank.R0>([]);
   }
 
+  /** Converts a `Tensor` to a `Tensor1D`. */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   as1D(): Tensor1D {
     this.throwIfDisposed();
     return this.reshape<Rank.R1>([this.size]);
   }
 
+  /** Converts a `Tensor` to a `Tensor2D`. */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   as2D(rows: number, columns: number): Tensor2D {
     this.throwIfDisposed();
     return this.reshape<Rank.R2>([rows, columns]);
   }
 
+  /** Converts a `Tensor` to a `Tensor3D`. */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   as3D(rows: number, columns: number, depth: number): Tensor3D {
     this.throwIfDisposed();
     return this.reshape<Rank.R3>([rows, columns, depth]);
   }
 
+  /** Converts a `Tensor` to a `Tensor4D`. */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   as4D(rows: number, columns: number, depth: number, depth2: number): Tensor4D {
     this.throwIfDisposed();
     return this.reshape<Rank.R4>([rows, columns, depth, depth2]);
   }
 
+  /** Casts a `Tensor` to a specified dtype. */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   asType<T extends this>(this: T, dtype: DataType): T {
     this.throwIfDisposed();
     return ops.cast(this, dtype);
@@ -327,23 +356,26 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Asynchronously downloads the values from the Tensor. Returns a promise
-   * that resolves when the data is ready.
+   * Asynchronously downloads the values from the `Tensor`. Returns a promise of
+   * `TypedArray` that resolves when the computation has finished.
    */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   async data(): Promise<TypedArray> {
     this.throwIfDisposed();
     return ENV.engine.read(this.dataId);
   }
 
   /**
-   * Synchronously downloads the values from the Tensor. This blocks the UI
+   * Synchronously downloads the values from the `Tensor`. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   dataSync(): TypedArray {
     this.throwIfDisposed();
     return ENV.engine.readSync(this.dataId);
   }
 
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   dispose(): void {
     if (this.isDisposed) {
       return;
@@ -360,21 +392,28 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /** Casts the array to type `float32` */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   toFloat<T extends this>(this: T): T {
     return this.asType('float32');
   }
 
   /** Casts the array to type `int32` */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   toInt() {
     return this.asType('int32');
   }
 
   /** Casts the array to type `bool` */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   toBool() {
     return this.asType('bool');
   }
 
   // Chain API.
+
+  print(verbose = false): void {
+    return ops.print(this, verbose);
+  }
 
   /** Reshapes the current tensor into the provided shape. */
   reshape<R2 extends Rank>(newShape: ShapeMap[R2]): Tensor<R2> {
@@ -385,6 +424,11 @@ export class Tensor<R extends Rank = Rank> {
   reshapeAs<T extends Tensor>(x: T): T {
     this.throwIfDisposed();
     return this.reshape(x.shape) as T;
+  }
+
+  squeeze<T extends Tensor>(axis?: number[]): T {
+    this.throwIfDisposed();
+    return ops.squeeze(this, axis);
   }
 
   tile<T extends this>(this: T, reps: number[]): T {
@@ -630,7 +674,7 @@ export class Tensor<R extends Rank = Rank> {
   }
   clip(min: number, max: number): Tensor<R> {
     this.throwIfDisposed();
-    return ops.clip(this, min, max);
+    return ops.clipByValue(this, min, max);
   }
   relu(): Tensor<R> {
     this.throwIfDisposed();
@@ -770,12 +814,14 @@ export class Tensor<R extends Rank = Rank> {
   }
 }
 
+/** @doclink Tensor */
 export class Scalar extends Tensor<Rank.R0> {
   static new(value: number|boolean, dtype?: DataType): Scalar {
     return ops.scalar(value, dtype);
   }
 }
 
+/** @doclink Tensor */
 export class Tensor1D extends Tensor<Rank.R1> {
   static new<D extends DataType = 'float32'>(
       values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Tensor1D {
@@ -783,6 +829,7 @@ export class Tensor1D extends Tensor<Rank.R1> {
   }
 }
 
+/** @doclink Tensor */
 export class Tensor2D extends Tensor<Rank.R2> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number],
@@ -792,6 +839,7 @@ export class Tensor2D extends Tensor<Rank.R2> {
   }
 }
 
+/** @doclink Tensor */
 export class Tensor3D extends Tensor<Rank.R3> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number],
@@ -801,6 +849,7 @@ export class Tensor3D extends Tensor<Rank.R3> {
   }
 }
 
+/** @doclink Tensor */
 export class Tensor4D extends Tensor<Rank.R4> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number, number],
@@ -810,12 +859,16 @@ export class Tensor4D extends Tensor<Rank.R4> {
   }
 }
 
+/**
+ * A mutable `Tensor`, useful for persisting state, e.g. for training.
+ */
+@doc({heading: 'Tensors', subheading: 'Classes'})
 export class Variable<R extends Rank = Rank> extends Tensor<R> {
   private static nextVarId = 0;
   name: string;
 
   /**
-   * Private constructor since we can not add logic before calling super().
+   * Private constructor since we can not add logic before calling `super()`.
    * Instead, we expose static `Variable.variable` method below, which will be
    * added to global namespace.
    */
@@ -851,7 +904,11 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
     return new Variable(initialValue, trainable, name);
   }
 
-  /** Assign a new array to this variable. The old array will be disposed. */
+  /**
+   * Assign a new `Tensor` to this variable. The new `Tensor` must have the same
+   * shape and dtype as the old `Tensor`.
+   */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
   assign(newValue: Tensor<R>): void {
     if (newValue.dtype !== this.dtype) {
       throw new Error(
