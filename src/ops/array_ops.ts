@@ -587,7 +587,7 @@ export class Ops {
   }
 
   /**
-   * Pads a Tensor1D with a given value.
+   * Pads a `Tensor1D` with a given value.
    *
    * This operation will pad a tensor according to the `paddings` you specify.
    *
@@ -595,9 +595,8 @@ export class Ops {
    * Tensorflow's `pad` operation.
    *
    * @param x The tensor to pad.
-   * @param paddings A tuple of ints [padLeft, padRight], how much to pad on the
-   *     left and right side of the tensor.
-   * @param constantValue The scalar pad value to use. Defaults to 0.
+   * @param paddings A tuple of ints `[padLeft, padRight]`, how much to pad.
+   * @param constantValue The pad value to use. Defaults to 0.
    */
   @operation
   static pad1d(x: Tensor1D, paddings: [number, number], constantValue = 0):
@@ -610,18 +609,15 @@ export class Ops {
   }
 
   /**
-   * Pads a Tensor2D with a given value.
-   *
-   * This operation will pad a tensor according to the `paddings` you specify.
+   * Pads a `Tensor2D` with a given value and the `paddings` you specify.
    *
    * This operation currently only implements the `CONSTANT` mode from
-   * Tensorflow's `pad` operation.
+   * TensorFlow's `pad` operation.
    *
    * @param x The tensor to pad.
-   * @param paddings A pair of tuple ints
-   *     [[padTop, padBottom], [padLeft, padRight]], how much to pad on the
-   *     tensor.
-   * @param constantValue The scalar pad value to use. Defaults to 0.
+   * @param paddings A pair of tuple ints:
+   *     `[[padTop, padBottom], [padLeft, padRight]]`, how much to pad.
+   * @param constantValue The pad value to use. Defaults to 0.
    */
   @operation
   static pad2d(
@@ -633,6 +629,34 @@ export class Ops {
         'Invalid number of paddings. Must be length of 2 each.');
     return ENV.engine.executeKernel(
         'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
+  }
+
+  /**
+   * Pads a `Tensor` with a given value and the `paddings` you specify.
+   *
+   * This operation currently only implements the `CONSTANT` mode from
+   * Tensorflow's `pad` operation.
+   *
+   * @param x The tensor to pad.
+   * @param paddings An array of length `R` (the rank of the tensor), where each
+   *     element is a length-2 tuple of ints `[padBefore, padAfter]`, specifying
+   *     how much to pad along each dimension of the tensor.
+   * @param constantValue The pad value to use. Defaults to 0.
+   */
+  @doc({heading: 'Tensors', subheading: 'Transformations'})
+  @operation
+  static pad<T extends Tensor>(
+      x: T, paddings: Array<[number, number]>, constantValue = 0): T {
+    if (x.rank === 1) {
+      return Ops.pad1d(x as Tensor1D, paddings[0], constantValue) as T;
+    } else if (x.rank === 2) {
+      return Ops.pad2d(
+                 x as Tensor2D,
+                 paddings as [[number, number], [number, number]],
+                 constantValue) as T;
+    } else {
+      throw new Error(`pad of rank-${x.rank} tensor is not yet supported`);
+    }
   }
 
   /**

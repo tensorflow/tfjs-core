@@ -179,6 +179,7 @@ export const tensor4d = array_ops.Ops.tensor4d;
 export const print = array_ops.Ops.print;
 export const expandDims = array_ops.Ops.expandDims;
 export const stack = array_ops.Ops.stack;
+export const pad = array_ops.Ops.pad;
 
 export const basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
 export const multiRNNCell = lstm_ops.Ops.multiRNNCell;
