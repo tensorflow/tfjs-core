@@ -19,8 +19,6 @@ import * as dl from '../index';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectValuesInRange} from '../test_util';
 import * as util from '../util';
-
-// tslint:disable-next-line:max-line-length
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 describeWithFlags('zeros', ALL_ENVS, () => {
@@ -1713,6 +1711,7 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
   it('scalar, default axis is 0', () => {
     const res = dl.scalar(1).expandDims();
     expect(res.shape).toEqual([1]);
+    expectArraysClose(res, [1]);
   });
 
   it('scalar, axis is out of bounds throws error', () => {
@@ -1723,25 +1722,30 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
   it('1d, axis=0', () => {
     const res = dl.tensor1d([1, 2, 3]).expandDims(0 /* axis */);
     expect(res.shape).toEqual([1, 3]);
+    expectArraysClose(res, [1, 2, 3]);
   });
 
   it('1d, axis=1', () => {
     const res = dl.tensor1d([1, 2, 3]).expandDims(1 /* axis */);
     expect(res.shape).toEqual([3, 1]);
+    expectArraysClose(res, [1, 2, 3]);
   });
 
   it('2d, axis=0', () => {
     const res = dl.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(0 /* axis */);
     expect(res.shape).toEqual([1, 3, 2]);
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
   });
 
   it('2d, axis=1', () => {
     const res = dl.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(1 /* axis */);
     expect(res.shape).toEqual([3, 1, 2]);
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
   });
 
   it('2d, axis=2', () => {
     const res = dl.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(2 /* axis */);
     expect(res.shape).toEqual([3, 2, 1]);
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
   });
 });

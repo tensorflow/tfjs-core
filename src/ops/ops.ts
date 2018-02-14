@@ -165,8 +165,6 @@ export const gather = array_ops.Ops.gather;
 export const multinomial = array_ops.Ops.multinomial;
 export const oneHot = array_ops.Ops.oneHot;
 export const linspace = array_ops.Ops.linspace;
-export const pad1d = array_ops.Ops.pad1d;
-export const pad2d = array_ops.Ops.pad2d;
 export const range = array_ops.Ops.range;
 export const buffer = array_ops.Ops.buffer;
 export const fill = array_ops.Ops.fill;
@@ -180,6 +178,8 @@ export const print = array_ops.Ops.print;
 export const expandDims = array_ops.Ops.expandDims;
 export const stack = array_ops.Ops.stack;
 export const pad = array_ops.Ops.pad;
+export const pad1d = array_ops.Ops.pad1d;
+export const pad2d = array_ops.Ops.pad2d;
 
 export const basicLSTMCell = lstm_ops.Ops.basicLSTMCell;
 export const multiRNNCell = lstm_ops.Ops.multiRNNCell;

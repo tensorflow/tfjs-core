@@ -116,18 +116,18 @@ export class Concat {
   }
 
   /**
-   * Concatenates a list of tensors along a given axis.
+   * Concatenates a list of `Tensor`s along a given axis.
    *
    * The tensors ranks and types must match, and their sizes must match in all
    * dimensions except `axis`.
    *
-   * @param tensors A list of `Tensor`s to concatenate.
+   * @param tensors A list of tensors to concatenate.
    * @param axis The axis to concate along. Defaults to 0 (the first dim).
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static concat<T extends Tensor>(tensors: T[], axis = 0): T {
-    util.assert(tensors.length >= 2, 'Pass at least two tensors to dl.concat');
+    util.assert(tensors.length >= 2, 'Pass at least two tensors to concat');
     let result = tensors[0];
     for (let i = 1; i < tensors.length; ++i) {
       result = concat2Tensors(result, tensors[i], axis);

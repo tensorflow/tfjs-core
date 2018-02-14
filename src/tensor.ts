@@ -79,6 +79,7 @@ export class TensorBuffer<R extends Rank> {
    *
    * @param locs The location indices.
    */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
   get(...locs: number[]): number {
     if (locs.length === 0) {
       locs = [0];

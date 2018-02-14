@@ -655,7 +655,9 @@ export class Ops {
   @operation
   static pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue = 0): T {
-    if (x.rank === 1) {
+    if (x.rank === 0) {
+      throw new Error('pad(scalar) is not defined. Pass non-scalar to pad');
+    } else if (x.rank === 1) {
       return Ops.pad1d(x as Tensor1D, paddings[0], constantValue) as T;
     } else if (x.rank === 2) {
       return Ops.pad2d(
@@ -668,9 +670,9 @@ export class Ops {
   }
 
   /**
-   * Stacks a list of rank-`R` tensors into one rank-`(R+1)` tensor.
+   * Stacks a list of rank-`R` `Tensor`s into one rank-`(R+1)` `Tensor`.
    *
-   * @param tensors A list of `Tensor` objects with the same shape and dtype.
+   * @param tensors A list of tensor objects with the same shape and dtype.
    * @param axis The axis to stack along. Defaults to 0 (the first dim).
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
@@ -686,13 +688,13 @@ export class Ops {
     tensors.forEach(t => {
       util.assertShapesMatch(
           shape, t.shape,
-          'All tensors passed to dl.stack must have matching shapes');
+          'All tensors passed to stack must have matching shapes');
     });
 
     tensors.forEach(t => {
       util.assert(
           dtype === t.dtype,
-          'All tensors passed to dl.stack must have matching dtypes');
+          'All tensors passed to stack must have matching dtypes');
     });
     const expandedTensors = tensors.map(t => t.expandDims(axis));
     return Concat.concat(expandedTensors, axis);
