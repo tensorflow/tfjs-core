@@ -16,9 +16,9 @@
  */
 
 import * as dl from './index';
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from './test_util';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
+import {ALL_ENVS, describeWithFlags, expectArraysClose} from './test_util';
 import {Rank} from './types';
 
 describeWithFlags('variable', ALL_ENVS, () => {
@@ -137,5 +137,13 @@ describeWithFlags('variable', ALL_ENVS, () => {
     // tslint:disable-next-line:no-any
     expect(() => v.assign(dl.tensor1d([true, false, true], 'bool') as any))
         .toThrowError();
+  });
+
+  it('constructor does not dispose', () => {
+    const a = dl.scalar(2);
+    const v = dl.variable(a);
+    expect(dl.memory().numTensors).toBe(2);
+    expectArraysClose(v, [2]);
+    expectArraysClose(a, [2]);
   });
 });
