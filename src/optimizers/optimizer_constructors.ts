@@ -18,13 +18,14 @@
 import {doc} from '../doc';
 import {AdadeltaOptimizer} from './adadelta_optimizer';
 import {AdagradOptimizer} from './adagrad_optimizer';
+import {AdamOptimizer} from './adam_optimizer';
 import {MomentumOptimizer} from './momentum_optimizer';
 import {RMSPropOptimizer} from './rmsprop_optimizer';
 import {SGDOptimizer} from './sgd_optimizer';
 
 export class OptimizerConstructors {
   /**
-   * Constructs a `dl.train.SGDOptimizer` that uses stochastic gradient descent.
+   * Constructs a `SGDOptimizer` that uses stochastic gradient descent.
    *
    * @param learningRate The learning rate to use for the SGD algorithm.
    */
@@ -34,7 +35,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `dl.train.MomentumOptimizer` that uses momentum gradient
+   * Constructs a `MomentumOptimizer` that uses momentum gradient
    * descent.
    *
    * @param learningRate The learning rate to use for the momentum gradient
@@ -48,7 +49,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `dl.train.RMSPropOptimizer` that uses RMSProp gradient
+   * Constructs a `RMSPropOptimizer` that uses RMSProp gradient
    * descent. This implementation uses plain momentum and is not centered
    * version of RMSProp.
    *
@@ -72,7 +73,23 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `dl.train.AdadeltaOptimizer` that uses the Adadelta algorithm.
+   * Constructs a `AdamOptimizer` that uses the Adam algorithm.
+   * See https://arxiv.org/abs/1412.6980
+   *
+   * @param learningRate
+   * @param beta1
+   * @param beta2
+   */
+  @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
+  static adam(learningRate = 0.001, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8):
+      AdamOptimizer {
+    return new AdamOptimizer(
+        learningRate, beta1, beta2, epsilon,
+        undefined /** @deprecated specifiedVariableList */);
+  }
+
+  /**
+   * Constructs a `AdadeltaOptimizer` that uses the Adadelta algorithm.
    * See https://arxiv.org/abs/1212.5701
    *
    * @param learningRate
@@ -88,7 +105,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `dl.train.AdagradOptimizer` that uses the Adagrad algorithm.
+   * Constructs a `AdagradOptimizer` that uses the Adagrad algorithm.
    * See http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf or
    * http://ruder.io/optimizing-gradient-descent/index.html#adagrad
    *

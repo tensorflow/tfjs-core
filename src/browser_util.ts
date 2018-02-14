@@ -14,23 +14,17 @@
  * limitations under the License.
  * =============================================================================
  */
+import {doc} from './doc';
 
-import {KernelNode} from '../../tape_types';
-import {Tensor2D} from '../../tensor';
-
-export interface MatMulNode extends KernelNode {
-  inputAndArgs: {
-    inputs: {a: Tensor2D; b: Tensor2D;};
-    args: {transposeA: boolean; transposeB: boolean};
-  };
-  output: Tensor2D;
-  gradient: (dy: Tensor2D, y: Tensor2D) => {
-    a: () => Tensor2D;
-    b: () => Tensor2D;
-  };
-}
-
-export enum MatrixOrientation {
-  REGULAR,
-  TRANSPOSED
+export class BrowserUtil {
+  /**
+   * Returns a promise that resolve when a requestAnimationFrame has completed.
+   *
+   * This is simply a sugar method so that users can do the following:
+   * `await dl.nextFrame();`
+   */
+  @doc({heading: 'Performance', subheading: 'Timing'})
+  static nextFrame(): Promise<void> {
+    return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+  }
 }
