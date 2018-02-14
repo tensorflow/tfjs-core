@@ -383,40 +383,42 @@
   </div>
   <script>
     // Find all the code blocks.
-    const jsBlocks = document.querySelectorAll('.language-js');
+    var jsBlocks = document.querySelectorAll('.language-js');
     for (let i = 0; i < jsBlocks.length; i++) {
-      const block = jsBlocks[i];
+      var block = jsBlocks[i];
 
-      const consoleElement = document.createElement('div');
+      var consoleElement = document.createElement('div');
       consoleElement.className = 'snippet-console';
 
-      const consoleRunElement = document.createElement('button');
+      var consoleRunElement = document.createElement('button');
       consoleRunElement.innerText = 'Run';
       consoleRunElement.className = 'snippet-run-button';
 
-      const consoleLogElement = document.createElement('div');
+      var consoleLogElement = document.createElement('div');
       consoleLogElement.className = 'snippet-console-log';
 
       consoleElement.appendChild(consoleLogElement);
       consoleElement.appendChild(consoleRunElement);
       block.parentElement.insertAdjacentElement('afterend', consoleElement);
 
-      const snippet = `dl.tidy(() => {
+      var snippet = `dl.tidy(function() {
         ${block.innerText}
       });`;
 
-      const execute = () => {
+      function execute() {
         consoleLogElement.innerText = '';
 
         const oldLog = console.log;
-        console.log = logStr => consoleLogElement.innerText += logStr + '\n';
+        console.log = function(logStr) {
+          consoleLogElement.innerText += logStr + '\n';
+        }
 
         eval(snippet);
 
         console.log = oldLog;
       };
 
-      consoleRunElement.addEventListener('click', () => {
+      consoleRunElement.addEventListener('click', function() {
         execute();
       });
     }
