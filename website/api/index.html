@@ -140,7 +140,7 @@
       background: #f4f4f4;
     }
 
-    code, .markdown {
+    code, .param-name {
       background: #f4f4f4;
       color: #37474f;
       padding: 2px 4px;
@@ -149,11 +149,8 @@
     code {
       word-break: break-word;
     }
-    .markdown {
-      display: inline-block;
-    }
 
-    .documentation a, .returns a, .param-docs a {
+    .documentation a, .returns a,  .param-name a {
       background: #f4f4f4;
       padding: 4px 6px;
       font: 500 90%/2 Roboto Mono, monospace;
@@ -279,7 +276,7 @@
                 {{#parameters}}
                 <li class="parameter">
                   <span class="param-name">
-                    <div class="markdown">{{name}}: {{{markdownInner type}}}</div>
+                    {{name}}: {{{markdownInner type}}}
                   </span>
                   <span class="param-docs">
                     {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
@@ -288,7 +285,7 @@
                 {{/parameters}}
               </ul>
               <div class="returns mdl-typography--subhead">
-                Returns: <div class="markdown">{{{markdownInner returnType}}}</div>
+                Returns: {{{markdownInner returnType}}}
               </div>
               {{/isFunction}} {{#isClass}}
               <h6>Methods:</h6>
@@ -305,7 +302,7 @@
                     {{#parameters}}
                     <li class="parameter">
                       <span class="param-name">
-                        <div class="markdown">{{name}}: {{{markdownInner type}}}</div>
+                        {{name}}: {{{markdownInner type}}}
                       </span>
                       <span class="param-docs">
                         {{#optional}}(Optional){{/optional}} {{{markdownInner documentation}}}
