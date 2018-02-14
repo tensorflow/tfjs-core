@@ -66,7 +66,7 @@ describeWithFlags('variable', ALL_ENVS, () => {
       expect(dl.memory().numTensors).toBe(1);
 
       v = variable(value);
-      expect(dl.memory().numTensors).toBe(1);
+      expect(dl.memory().numTensors).toBe(2);
     });
 
     expect(dl.memory().numTensors).toBe(1);
@@ -74,6 +74,14 @@ describeWithFlags('variable', ALL_ENVS, () => {
 
     v.dispose();
     expect(dl.memory().numTensors).toBe(0);
+  });
+
+  it('constructor does not dispose', () => {
+    const a = dl.scalar(2);
+    const v = dl.variable(a);
+    expect(dl.memory().numTensors).toBe(2);
+    expectArraysClose(v, [2]);
+    expectArraysClose(a, [2]);
   });
 
   it('variables are assignable to tensors', () => {
@@ -103,23 +111,24 @@ describeWithFlags('variable', ALL_ENVS, () => {
     expect(yh).toBeNull();
   });
 
-  it('assign will dispose old data', () => {
+  it('assign does not dispose old data', () => {
     let v: Variable<Rank.R1>;
     v = variable(dl.tensor1d([1, 2, 3]));
-    expect(dl.memory().numTensors).toBe(1);
+    expect(dl.memory().numTensors).toBe(2);
     expectArraysClose(v, [1, 2, 3]);
 
     const secondArray = dl.tensor1d([4, 5, 6]);
-    expect(dl.memory().numTensors).toBe(2);
+    expect(dl.memory().numTensors).toBe(3);
 
     v.assign(secondArray);
     expectArraysClose(v, [4, 5, 6]);
     // Assign doesn't dispose the 1st array.
-    expect(dl.memory().numTensors).toBe(2);
+    expect(dl.memory().numTensors).toBe(3);
 
     v.dispose();
-    // Disposing the variable disposes itself.
-    expect(dl.memory().numTensors).toBe(1);
+    // Disposing the variable disposes itself. The input to variable and
+    // secondArray are the only remaining tensors.
+    expect(dl.memory().numTensors).toBe(2);
   });
 
   it('shape must match', () => {
@@ -137,13 +146,5 @@ describeWithFlags('variable', ALL_ENVS, () => {
     // tslint:disable-next-line:no-any
     expect(() => v.assign(dl.tensor1d([true, false, true], 'bool') as any))
         .toThrowError();
-  });
-
-  it('constructor does not dispose', () => {
-    const a = dl.scalar(2);
-    const v = dl.variable(a);
-    expect(dl.memory().numTensors).toBe(2);
-    expectArraysClose(v, [2]);
-    expectArraysClose(a, [2]);
   });
 });
