@@ -142,8 +142,10 @@ export class TensorBuffer<R extends Rank> {
 export type DataId = object;  // object instead of {} to force non-primitive.
 
 /**
- * A Tensor object represents an immutable, multidimensional array of numbers
+ * A `Tensor` object represents an immutable, multidimensional array of numbers
  * that has a shape and a data type.
+ *
+ * See `tensor` for details on how to create a `Tensor`.
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class Tensor<R extends Rank = Rank> {
@@ -390,7 +392,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Asynchronously downloads the values from the Tensor. Returns a promise of
+   * Asynchronously downloads the values from the `Tensor`. Returns a promise of
    * `TypedArray` that resolves when the computation has finished.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
@@ -400,7 +402,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Synchronously downloads the values from the Tensor. This blocks the UI
+   * Synchronously downloads the values from the `Tensor`. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
@@ -882,20 +884,14 @@ export class Tensor<R extends Rank = Rank> {
   }
 }
 
-/**
- * A type alias for a rank-0 `Tensor`.
- */
-@doc({heading: 'Tensors', subheading: 'Classes'})
+/** @doclink Tensor */
 export class Scalar extends Tensor<Rank.R0> {
   static new(value: number|boolean, dtype?: DataType): Scalar {
     return ops.scalar(value, dtype);
   }
 }
 
-/**
- * A type alias for a rank-1 `Tensor`.
- */
-@doc({heading: 'Tensors', subheading: 'Classes'})
+/** @doclink Tensor */
 export class Tensor1D extends Tensor<Rank.R1> {
   static new<D extends DataType = 'float32'>(
       values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Tensor1D {
@@ -903,10 +899,7 @@ export class Tensor1D extends Tensor<Rank.R1> {
   }
 }
 
-/**
- * A type alias for a rank-2 `Tensor`.
- */
-@doc({heading: 'Tensors', subheading: 'Classes'})
+/** @doclink Tensor */
 export class Tensor2D extends Tensor<Rank.R2> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number],
@@ -916,10 +909,7 @@ export class Tensor2D extends Tensor<Rank.R2> {
   }
 }
 
-/**
- * A type alias for a rank-3 `Tensor`.
- */
-@doc({heading: 'Tensors', subheading: 'Classes'})
+/** @doclink Tensor */
 export class Tensor3D extends Tensor<Rank.R3> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number],
@@ -929,10 +919,7 @@ export class Tensor3D extends Tensor<Rank.R3> {
   }
 }
 
-/**
- * A type alias for a rank-4 `Tensor`.
- */
-@doc({heading: 'Tensors', subheading: 'Classes'})
+/** @doclink Tensor */
 export class Tensor4D extends Tensor<Rank.R4> {
   static new<D extends DataType = 'float32'>(
       shape: [number, number, number, number],
@@ -951,7 +938,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   name: string;
 
   /**
-   * Private constructor since we can not add logic before calling super().
+   * Private constructor since we can not add logic before calling `super()`.
    * Instead, we expose static `Variable.variable` method below, which will be
    * added to global namespace.
    */

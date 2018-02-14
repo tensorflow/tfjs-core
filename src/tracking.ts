@@ -28,10 +28,10 @@ export class Tracking {
    * the function.
    *
    * Using this method helps avoid memory leaks. In general, wrap calls to
-   * operations in dl.tidy() for automatic memory cleanup.
+   * operations in `tidy` for automatic memory cleanup.
    *
    * When in safe mode, you must enclose all `Tensor` creation and ops
-   * inside a `dl.tidy()` to prevent memory leaks.
+   * inside a `tidy` to prevent memory leaks.
    *
    * @param nameOrFn The name of the closure, or the function to execute.
    *     If a name is provided, the 2nd argument should be the function.
@@ -78,7 +78,7 @@ export class Tracking {
   }
 
   /**
-   * Keeps a Tensor generated inside a dl.tidy() from being disposed
+   * Keeps a Tensor generated inside a `tidy` from being disposed
    * automatically.
    * @param result The Tensor to keep from being disposed.
    */
@@ -88,8 +88,8 @@ export class Tracking {
   }
 
   /**
-   * Executes f() and returns a promise that resolves with the elapsed time of
-   * f() in milliseconds.
+   * Executes `f()` and returns a promise that resolves with the elapsed time of
+   * `f()` in milliseconds.
    * @param f The function to execute and time.
    */
   @doc({heading: 'Performance', subheading: 'Timing'})
