@@ -80,10 +80,8 @@ describeWithFlags('variable', ALL_ENVS, () => {
     const a = dl.scalar(2);
     const v = dl.variable(a);
 
-    const {numTensors, numDataBuffers} = dl.memory();
-    expect(numTensors).toBe(2);
-    expect(numDataBuffers).toBe(1);
-
+    expect(dl.memory().numTensors).toBe(2);
+    expect(dl.memory().numDataBuffers).toBe(1);
     expectArraysClose(v, [2]);
     expectArraysClose(a, [2]);
   });
