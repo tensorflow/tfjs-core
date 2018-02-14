@@ -24,11 +24,12 @@ import * as session_util from '../graph/session_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
 import {NDArrayMath} from '../math';
 import {scalar, zerosLike} from '../ops/ops';
-import {Optimizer} from './optimizer';
 import {Scalar, Tensor} from '../tensor';
-import {NamedVariableMap} from '../types';
 import {variable} from '../tensor';
+import {NamedVariableMap} from '../types';
+import {Optimizer} from './optimizer';
 
+/** @doclink Optimizer */
 export class RMSPropOptimizer extends Optimizer {
   private c: Scalar;
   private epsilon: Scalar;
@@ -57,13 +58,17 @@ export class RMSPropOptimizer extends Optimizer {
       const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedMeanSquares[variableName] == null) {
         const trainable = false;
-        this.accumulatedMeanSquares[variableName] =
-            variable(zerosLike(value), trainable);
+        tidy(() => {
+          this.accumulatedMeanSquares[variableName] =
+              variable(zerosLike(value), trainable);
+        });
       }
       if (this.accumulatedMoments[variableName] == null) {
         const trainable = false;
-        this.accumulatedMoments[variableName] =
-            variable(zerosLike(value), trainable);
+        tidy(() => {
+          this.accumulatedMoments[variableName] =
+              variable(zerosLike(value), trainable);
+        });
       }
 
       const accumulatedMeanSquare = this.accumulatedMeanSquares[variableName];
