@@ -27,7 +27,7 @@ import * as minimist from 'minimist';
 import * as mkdirp from 'mkdirp';
 import * as shell from 'shelljs';
 import * as ts from 'typescript';
-
+import * as minimist from 'minimist';
 import * as parser from './api-parser';
 import * as util from './api-util';
 
@@ -35,9 +35,25 @@ const TOPLEVEL_NAMESPACE = 'dl';
 const API_TEMPLATE_PATH = './website/api/index.html';
 const HTML_OUT_DIR = '/tmp/deeplearn-new-website/api/';
 
+const argv = minimist(process.argv.slice(2));
+
 shell.mkdir('-p', HTML_OUT_DIR);
 
+let bundleJsPath;
+if (argv['master']) {
+  if (!fs.existsSync(HTML_OUT_DIR + 'deeplearn.js')) {
+    shell.exec('./scripts/build-standalone.sh');
+    shell.cp('./dist/deeplearn.js', HTML_OUT_DIR);
+  }
+  bundleJsPath = 'deeplearn.js';
+} else {
+  // Read version and point to it.
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  console.log('version: ' + pkg.version);
+}
+
 const {docs, docLinkAliases} = parser.parse();
+docs.bundleJsPath = bundleJsPath;
 
 // Predefine some custom type links.
 const symbols: util.SymbolAndUrl[] = [

@@ -217,7 +217,18 @@
       margin-left: 16px;
     }
 
+    .snippet-console {
+      background-color: white;
+      position: relative;
+    }
+    .snippet-run-button {
+      position: absolute;
+      right: 0;
+      top: 0;
+    }
+
   </style>
+  <script src="{{bundleJsPath}}"></script>
 </head>
 
 <body>
@@ -326,4 +337,42 @@
       </div>
     </div>
   </div>
+  <script>
+    // Find all the code blocks.
+    const jsBlocks = document.querySelectorAll('.language-js');
+    for (let i = 0; i < jsBlocks.length; i++) {
+      const block = jsBlocks[i];
+
+      const consoleElement = document.createElement('div');
+      consoleElement.className = 'snippet-console';
+
+      const consoleRunElement = document.createElement('button');
+      consoleRunElement.innerText = 'Run';
+      consoleRunElement.className = 'snippet-run-button';
+
+      const consoleLogElement = document.createElement('div');
+      consoleLogElement.className = 'snippet-console-log';
+
+      consoleElement.appendChild(consoleLogElement);
+      consoleElement.appendChild(consoleRunElement);
+      block.parentElement.appendChild(consoleElement);
+
+      const snippet = `dl.tidy(() => {
+        ${block.innerHTML}
+      });`;
+
+      const execute = () => {
+        const oldLog = console.log;
+        console.log = logStr => consoleLogElement.innerText += logStr + '\n';
+
+        eval(snippet);
+
+        console.log = oldLog;
+      };
+
+      consoleRunElement.addEventListener('click', () => {
+        execute();
+      });
+    }
+  </script>
 </body>
