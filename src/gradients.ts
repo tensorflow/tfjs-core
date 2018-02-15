@@ -49,6 +49,15 @@ export class Gradients {
    *
    * If `f()` takes multiple inputs, use `grads` instead.
    *
+   * ```js
+   * // f(x) = x ^ 2
+   * const f = x => x.square();
+   * // df/dx = 2x
+   * const grad = dl.grad(f);
+   *
+   * grad(dl.tensor1d([2, 3])).print();
+   * ```
+   *
    * @param f The function f(x), to compute gradient for.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
