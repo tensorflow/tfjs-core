@@ -55,8 +55,8 @@ export class OptimizerConstructors {
    * preds.forEach((pred, i) => {
    *   console.log(`x: ${i}, pred: ${pred}`);
    * });
-   *
    * ```
+   *
    * @param learningRate The learning rate to use for the SGD algorithm.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
