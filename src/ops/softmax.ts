@@ -67,7 +67,7 @@ export class Ops {
       const gradFunc = (dy: T) => {
         const dyTimesY = dy.mul(y);
         const keepDims = true;
-        return [dyTimesY.sub(dyTimesY.sum([dim], keepDims).mul(y))];
+        return dyTimesY.sub(dyTimesY.sum([dim], keepDims).mul(y));
       };
 
       return {value: y, gradFunc};
@@ -127,7 +127,6 @@ export class Ops {
         return [
           dy.reshape(dyShape).mul(labels.toFloat().sub(predictedProbs)),
           dy.reshape(dyShape).mul(predictedProbs.sub(labels.toFloat())),
-
         ];
       };
       return {value, gradFunc};
