@@ -50,6 +50,7 @@ export class OptimizerConstructors {
    *   });
    * }
    *
+   * console.log(`a: ${a.dataSync()}, b: ${b.dataSync()}, c: ${c.dataSync()});
    * data.forEach(point => {
    *   const pred = model(point.x).dataSync();
    *   console.log(`x: ${point.x.dataSync()}, pred: ${pred}`);
