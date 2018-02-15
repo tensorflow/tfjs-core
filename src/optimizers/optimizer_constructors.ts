@@ -50,10 +50,9 @@ export class OptimizerConstructors {
    *   });
    * }
    *
-   * // Predict.
    * data.forEach(point => {
-   *   const pred = model(point.x).get();
-   *   console.log(`x: ${point.x.get()}, pred: ${pred}`);
+   *   const pred = model(point.x).dataSync();
+   *   console.log(`x: ${point.x.dataSync()}, pred: ${pred}`);
    * });
    *
    * ```
