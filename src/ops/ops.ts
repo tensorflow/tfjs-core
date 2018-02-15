@@ -75,7 +75,6 @@ export const slice3d = slice_ops.Ops.slice3d;
 export const slice4d = slice_ops.Ops.slice4d;
 
 export const argMax = reduction_ops.Ops.argMax;
-export const argMaxEquals = reduction_ops.Ops.argMaxEquals;
 export const argMin = reduction_ops.Ops.argMin;
 export const logSumExp = reduction_ops.Ops.logSumExp;
 export const max = reduction_ops.Ops.max;

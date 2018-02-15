@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {customGrad} from '../globals';
-import {Scalar, Tensor} from '../tensor';
+import {Tensor} from '../tensor';
 import * as util from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './operation';
@@ -360,19 +360,6 @@ export class Ops {
     }
 
     return ENV.engine.executeKernel('ArgMax', {inputs: {x}, args: {axes}}) as T;
-  }
-
-  /**
-   * Returns a 1 if the argMax of x1 and x2 are the same, otherwise 0.
-   *
-   * @param x1 The first input tensor.
-   * @param x2 The second input tensor.
-   */
-  @doc({heading: 'Operations', subheading: 'Reduction'})
-  @operation
-  static argMaxEquals(x1: Tensor, x2: Tensor): Scalar {
-    util.assertShapesMatch(x1.shape, x2.shape, 'Error in argMaxEquals: ');
-    return x1.argMax().equal(x2.argMax());
   }
 
   /**

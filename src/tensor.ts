@@ -576,10 +576,6 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.argMax(this, axis);
   }
-  argMaxEquals(x: Tensor): Scalar {
-    this.throwIfDisposed();
-    return ops.argMaxEquals(this, x);
-  }
 
   // Binary ops.
 
