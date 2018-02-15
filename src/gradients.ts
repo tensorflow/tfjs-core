@@ -53,22 +53,22 @@ export class Gradients {
    * // f(x) = x ^ 2
    * const f = x => x.square();
    * // f'(x) = 2x
-   * const grad = dl.grad(f);
+   * const g = dl.grad(f);
    *
    * const x = dl.tensor1d([2, 3]);
-   * grad(x).print();
+   * g(x).print();
    * ```
    *
    * ```js
    * // f(x) = x ^ 3
    * const f = x => x.pow(dl.scalar(3, 'int32'));
    * // f'(x) = 3x ^ 2
-   * const grad = dl.grad(f);
+   * const g = dl.grad(f);
    * // f''(x) = 6x
-   * const gradgrad = dl.grad(grad);
+   * const gg = dl.grad(g);
    *
    * const x = dl.tensor1d([2, 3]);
-   * gradgrad(x).print();
+   * gg(x).print();
    * ```
    *
    * @param f The function f(x), to compute gradient for.
@@ -97,11 +97,11 @@ export class Gradients {
    * // f(a, b) = a * b
    * const f = (a, b) => a.mul(b);
    * // df / da = b, df / db = a
-   * const grads = dl.grads(f);
+   * const g = dl.grads(f);
    *
    * const a = dl.tensor1d([2, 3]);
    * const b = dl.tensor1d([-2, -3]);
-   * const [da, db] = grads([a, b]);
+   * const [da, db] = g([a, b]);
    * console.log('da');
    * da.print();
    * console.log('db');
@@ -132,10 +132,10 @@ export class Gradients {
    * // f(x) = x ^ 2
    * const f = x => x.square();
    * // f'(x) = 2x
-   * const valueAndGrad = dl.valueAndGrad(f);
+   * const g = dl.valueAndGrad(f);
    *
    * const x = dl.tensor1d([2, 3]);
-   * const {value, grad} = valueAndGrad(x);
+   * const {value, grad} = g(x);
    *
    * console.log('value');
    * value.print();
@@ -167,11 +167,11 @@ export class Gradients {
    * // f(a, b) = a * b
    * const f = (a, b) => a.mul(b);
    * // df/da = b, df/db = a
-   * const valueAndGrads = dl.valueAndGrads(f);
+   * const g = dl.valueAndGrads(f);
    *
    * const a = dl.tensor1d([2, 3]);
    * const b = dl.tensor1d([-2, -3]);
-   * const {value, grads} = valueAndGrads([a, b]);
+   * const {value, grads} = g([a, b]);
    *
    * const [da, db] = grads;
    *
@@ -205,24 +205,17 @@ export class Gradients {
    * ```js
    * const a = dl.variable(dl.tensor1d([1, 2]));
    * const b = dl.variable(dl.tensor1d([3, 4]));
+   * const x = dl.tensor1d([5, 6]);
    *
    * // f(a, b) = a * x ^ 2 + b * x
-   * const f = (x) => a.mul(x.square()).add(b.mul(x));
+   * const f = () => a.mul(x.square()).add(b.mul(x));
    * // df/da = x ^ 2, df/db = x
-   * const variableGrads = dl.variableGrads(f);
-   *
-   * const x = dl.tensor1d([5, 6]);
-   * const {value, grads} = variableGrads([x]);
-   *
-   * const [da, db] = grads;
-   *
-   * console.log('value');
-   * value.print();
+   * const {value, grads} = dl.variableGrads(f);
    *
    * console.log('da');
-   * da.print();
+   * grads.a.print();
    * console.log('db');
-   * db.print();
+   * grads.b.print();
    * ```
    * @param f The function to execute. f() should return a scalar.
    * @param varList An optional list of variables to provide gradients with
@@ -271,12 +264,12 @@ export class Gradients {
    * });
    *
    * const x = dl.tensor1d([-1, -2, 3]);
-   * const grad = dl.grad(x => customOp(x));
+   * const dx = dl.grad(x => customOp(x));
    *
    * console.log(`f(x):`);
    * customOp(x).print();
    * console.log(`f'(x):`);
-   * grad(x).print();
+   * dx(x).print();
    * ```
    *
    * @param f The function to evaluate in forward mode, which should return
