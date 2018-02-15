@@ -957,17 +957,17 @@ export class Ops {
   static print<T extends Tensor>(x: T, verbose = false): void {
     const C = class Tensor {
       shape: number[];
-      data: number[];
+      values: number[];
       dtype: string;
       size: number;
     };
 
     const displayTensor = new C();
     displayTensor.shape = x.shape;
-    displayTensor.data = Array.from(x.dataSync());
+    displayTensor.values = Array.from(x.dataSync());
     displayTensor.toString = function() {
       const fields = [
-        `data: [${this.data.join(', ')}]`, `shape: [${x.shape.join(', ')}]`,
+        `values: [${this.values.join(', ')}]`, `shape: [${x.shape.join(', ')}]`,
         `rank: ${x.rank}`
       ];
       if (verbose) {
@@ -978,7 +978,7 @@ export class Ops {
         fields[i] = '  ' + fields[i];
       }
 
-      return 'Tensor {\n' + fields.join(',\n') + '\n}';
+      return 'TensorInfo {\n' + fields.join(',\n') + '\n}';
     };
 
     if (verbose) {
