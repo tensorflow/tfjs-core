@@ -55,11 +55,13 @@ export class AdamaxOptimizer extends Optimizer {
     this.beta2 = keep(scalar(beta2));
 
     this.decay = keep(scalar(decay));
-    this.iteration = variable(scalar(0));
+
+    tidy(() => {
+      this.iteration = variable(scalar(0));
+      this.accBeta1 = variable(scalar(beta1));
+    });
 
     this.oneMinusBeta1 = keep(scalar(1 - beta1));
-
-    this.accBeta1 = variable(scalar(beta1));
     this.one = keep(scalar(1));
   }
 
