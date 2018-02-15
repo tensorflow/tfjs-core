@@ -419,19 +419,6 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
     // First order: dy * a. Second order: dy.
     expectArraysClose(dda, dy);
   });
-
-  it('calling gradient of custom op twice works', () => {
-    const customOp = dl.customGrad(x => {
-      // Override gradient of our custom x ^ 2 op to be dy * abs(x);
-      return {value: x.square(), gradFunc: dy => [dy.mul(x.abs())]};
-    });
-    const x = dl.tensor1d([-1, -2, 3]);
-    const grad = dl.grad(x => customOp(x));
-
-    expectArraysClose(grad(x), [1, 2, 3]);
-    expectArraysClose(grad(x), [1, 2, 3]);
-    expectArraysClose(grad(x), [1, 2, 3]);
-  });
 });
 
 describeWithFlags('memory', ALL_ENVS, () => {
