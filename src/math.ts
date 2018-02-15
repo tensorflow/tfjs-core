@@ -84,7 +84,6 @@ export class NDArrayMath {
   conv2dDerInput = conv.Ops.conv2dDerInput;
 
   argMax = reduction_ops.Ops.argMax;
-
   argMin = reduction_ops.Ops.argMin;
   logSumExp = reduction_ops.Ops.logSumExp;
   max = reduction_ops.Ops.max;
