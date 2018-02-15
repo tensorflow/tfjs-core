@@ -16,7 +16,6 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import {ENV} from '../environment';
 import {NDArrayMath} from '../math';
 import * as axis_util from '../ops/axis_util';
@@ -31,9 +30,7 @@ import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor'
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
-
-import {KernelBackend} from './backend';
-import {MatrixOrientation} from './types/matmul';
+import {BackendTimingInfo, KernelBackend} from './backend';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -120,10 +117,11 @@ export class MathBackendCPU implements KernelBackend {
     }
   }
 
-  async time(f: () => void): Promise<number> {
+  async time(f: () => void): Promise<BackendTimingInfo> {
     const start = performance.now();
     f();
-    return performance.now() - start;
+    const kernelMs = performance.now() - start;
+    return {kernelMs};
   }
   memory() {
     return {
@@ -269,28 +267,20 @@ export class MathBackendCPU implements KernelBackend {
         T;
   }
 
-  matMul(
-      a: Tensor2D, b: Tensor2D, aOrientation = MatrixOrientation.REGULAR,
-      bOrientation = MatrixOrientation.REGULAR): Tensor2D {
-    const sharedDim =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[1] : a.shape[0];
-
-    const leftDim =
-        (aOrientation === MatrixOrientation.REGULAR) ? a.shape[0] : a.shape[1];
-    const rightDim =
-        (bOrientation === MatrixOrientation.REGULAR) ? b.shape[1] : b.shape[0];
+  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
+      Tensor2D {
+    const sharedDim = transposeA ? a.shape[0] : a.shape[1];
+    const leftDim = transposeA ? a.shape[1] : a.shape[0];
+    const rightDim = transposeB ? b.shape[0] : b.shape[1];
 
     const normalGetter = (matrix: Tensor2D, i: number, j: number) =>
         matrix.get(i, j);
     const transposedGetter = (matrix: Tensor2D, i: number, j: number) =>
         matrix.get(j, i);
 
-    const aGetter = (aOrientation === MatrixOrientation.REGULAR) ?
-        normalGetter :
-        transposedGetter;
-    const bGetter = (bOrientation === MatrixOrientation.REGULAR) ?
-        normalGetter :
-        transposedGetter;
+    const aGetter = transposeA ? transposedGetter : normalGetter;
+    const bGetter = transposeB ? transposedGetter : normalGetter;
+
     const values = new Float32Array(leftDim * rightDim);
     let index = 0;
     for (let i = 0; i < leftDim; ++i) {
@@ -913,9 +903,7 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
-  conv2d(
-      x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null,
-      convInfo: Conv2DInfo): Tensor4D {
+  conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
@@ -944,8 +932,7 @@ export class MathBackendCPU implements KernelBackend {
                 }
               }
             }
-            const biasVal = (bias != null) ? bias.get(d2) : 0;
-            y.set(dotProd + biasVal, b, yR, yC, d2);
+            y.set(dotProd, b, yR, yC, d2);
           }
         }
       }
@@ -1039,23 +1026,6 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return dW.toTensor();
-  }
-
-  conv2dDerBias(dy: Tensor4D): Tensor1D {
-    const [batchSize, numRows, numCols, outDepth] = dy.shape;
-    const values = new Float32Array(outDepth);
-    for (let d2 = 0; d2 < outDepth; ++d2) {
-      let sum = 0;
-      for (let b = 0; b < batchSize; ++b) {
-        for (let r = 0; r < numRows; ++r) {
-          for (let c = 0; c < numCols; ++c) {
-            sum += dy.get(b, r, c, d2);
-          }
-        }
-      }
-      values[d2] = sum;
-    }
-    return ops.tensor1d(values);
   }
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):

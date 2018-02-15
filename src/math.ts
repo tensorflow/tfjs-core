@@ -21,7 +21,6 @@ import * as array_ops from './ops/array_ops';
 import * as batchnorm from './ops/batchnorm';
 import * as binary_ops from './ops/binary_ops';
 import * as compare from './ops/compare';
-import * as concat from './ops/concat';
 import * as conv from './ops/conv';
 import * as image_ops from './ops/image_ops';
 import * as logical from './ops/logical_ops';
@@ -38,7 +37,7 @@ import * as softmax_ops from './ops/softmax';
 import * as transpose from './ops/transpose';
 import * as unary_ops from './ops/unary_ops';
 import {ScopeResult} from './tape_util';
-import {Scalar, Tensor, Tensor1D} from './tensor';
+import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {Tracking} from './tracking';
 import {Rank} from './types';
 import * as util from './util';
@@ -66,12 +65,6 @@ export class NDArrayMath {
   reverse3D = reverse.Ops.reverse3d;
   reverse4D = reverse.Ops.reverse4d;
 
-  concat = concat.Ops.concat;
-  concat1D = concat.Ops.concat1d;
-  concat2D = concat.Ops.concat2d;
-  concat3D = concat.Ops.concat3d;
-  concat4D = concat.Ops.concat4d;
-
   batchNormalization = batchnorm.Ops.batchNormalization;
   batchNormalization2D = batchnorm.Ops.batchNormalization2d;
   batchNormalization3D = batchnorm.Ops.batchNormalization3d;
@@ -83,12 +76,8 @@ export class NDArrayMath {
   /** @deprecated */
   maxPoolBackprop = pool.Ops.maxPoolBackprop;
 
-  conv1d = conv.Ops.conv1d;
-  conv2d = conv.Ops.conv2d;
   conv2dTranspose = conv.Ops.conv2dTranspose;
   depthwiseConv2D = conv.Ops.depthwiseConv2d;
-  /** @deprecated */
-  conv2dDerBias = conv.Ops.conv2dDerBias;
   /** @deprecated */
   conv2dDerFilter = conv.Ops.conv2dDerFilter;
   /** @deprecated */
@@ -328,6 +317,60 @@ export class NDArrayMath {
         `Error in arrayDividedByScalar: first argument must be rank 0, but ` +
             `got rank ${c.rank}.`);
     return this.multiply(c, a) as T;
+  }
+
+  /** @deprecated */
+  concat<T extends Tensor>(a: T, b: T, axis: number): T {
+    return ops.concat([a, b], axis);
+  }
+
+  /** @deprecated */
+  concat1D(a: Tensor1D, b: Tensor1D): Tensor1D {
+    return ops.concat1d([a, b]);
+  }
+
+  /** @deprecated */
+  concat2D(a: Tensor2D, b: Tensor2D, axis: number): Tensor2D {
+    return ops.concat2d([a, b], axis);
+  }
+
+  /** @deprecated */
+  concat3D(a: Tensor3D, b: Tensor3D, axis: number): Tensor3D {
+    return ops.concat3d([a, b], axis);
+  }
+
+  /** @deprecated */
+  concat4D(a: Tensor4D, b: Tensor4D, axis: number): Tensor4D {
+    return ops.concat4d([a, b], axis);
+  }
+
+  /** @deprecated */
+  conv1d<T extends Tensor2D|Tensor3D>(
+      input: T, filter: Tensor3D, bias: Tensor1D|null, stride: number,
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    if (bias != null) {
+      util.assert(
+          bias.rank === 1,
+          `Error in conv1d: bias must be rank 1, but got rank ` +
+              `${bias.rank}.`);
+    }
+    const res = ops.conv1d(input, filter, stride, pad, dimRoundingMode);
+    return res.add(bias) as T;
+  }
+
+  /** @deprecated */
+  conv2d<T extends Tensor3D|Tensor4D>(
+      x: T, filter: Tensor4D, bias: Tensor1D|null,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    if (bias != null) {
+      util.assert(
+          bias.rank === 1,
+          `Error in conv2d: bias must be rank 1, but got rank ` +
+              `${bias.rank}.`);
+    }
+    const res = ops.conv2d(x, filter, strides, pad, dimRoundingMode);
+    return res.add(bias) as T;
   }
 }
 

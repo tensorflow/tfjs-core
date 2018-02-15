@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {TimingInfo} from '../engine';
 import {ENV} from '../environment';
 import {NDArrayMath} from '../math';
 import * as axis_util from '../ops/axis_util';
@@ -28,7 +29,6 @@ import {DataType, DataTypeMap, Rank, RecursiveArray, TypedArray} from '../types'
 import * as util from '../util';
 
 import {KernelBackend} from './backend';
-import {MatrixOrientation} from './types/matmul';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -37,7 +37,7 @@ import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
-import {Conv2DDerBiasProgram, Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
+import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
@@ -72,12 +72,21 @@ export interface CPUTimerQuery {
   endMs?: number;
 }
 
+export interface WebGLTimingInfo extends TimingInfo {
+  uploadWaitMs: number;
+  downloadWaitMs: number;
+}
+
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
   private canvas: HTMLCanvasElement;
 
   private programTimersStack: TimerNode[];
   private activeTimers: TimerNode[];
+  // Accumulated time spent (including blocking) in uploading data to webgl.
+  private uploadWaitMs = 0;
+  // Accumulated time spent (including blocking in downloading data from webgl.
+  private downloadWaitMs = 0;
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.texData.has(dataId)) {
@@ -154,8 +163,16 @@ export class MathBackendWebGL implements KernelBackend {
       this.cacheOnCPU(dataId);
       return values;
     }
+    const shouldTimeProgram = this.activeTimers != null;
+    let start: number;
+    if (shouldTimeProgram) {
+      start = performance.now();
+    }
     const float32Values =
         this.gpgpu.downloadMatrixFromTexture(texture, texShape[0], texShape[1]);
+    if (shouldTimeProgram) {
+      this.downloadWaitMs += performance.now() - start;
+    }
     this.cacheOnCPU(dataId, float32Values);
     return texData.values;
   }
@@ -184,7 +201,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.readSync(dataId);
   }
 
-  async time(f: () => void): Promise<number> {
+  async time(f: () => void): Promise<WebGLTimingInfo> {
     const oldActiveTimers = this.activeTimers;
     const newActiveTimers: TimerNode[] = [];
 
@@ -206,11 +223,20 @@ export class MathBackendWebGL implements KernelBackend {
       this.programTimersStack = null;
     }
 
-    return Promise.all(flattenedActiveTimers).then(results => {
+    const kernelMs = await Promise.all(flattenedActiveTimers).then(results => {
       let sum = 0;
       results.forEach(result => sum += result);
       return sum;
     });
+    const res: WebGLTimingInfo = {
+      uploadWaitMs: this.uploadWaitMs,
+      downloadWaitMs: this.downloadWaitMs,
+      kernelMs,
+      wallMs: null  // will be filled by the engine
+    };
+    this.uploadWaitMs = 0;
+    this.downloadWaitMs = 0;
+    return res;
   }
   memory() {
     return {unreliable: false};
@@ -330,11 +356,9 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  matMul(
-      a: Tensor2D, b: Tensor2D, aOrientation: MatrixOrientation,
-      bOrientation: MatrixOrientation): Tensor2D {
-    const program =
-        new MatMulProgram(a.shape, b.shape, aOrientation, bOrientation);
+  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
+      Tensor2D {
+    const program = new MatMulProgram(a.shape, b.shape, transposeA, transposeB);
     return this.compileAndRun<Tensor2D, Tensor2D>(program, [a, b]);
   }
 
@@ -752,12 +776,9 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  conv2d(
-      x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null,
-      convInfo: Conv2DInfo): Tensor4D {
-    const program = new Conv2DProgram(convInfo, bias != null);
-    const inputs = bias != null ? [x, filter, bias] : [x, filter];
-    return this.compileAndRun(program, inputs);
+  conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+    const program = new Conv2DProgram(convInfo);
+    return this.compileAndRun(program, [x, filter]);
   }
 
   conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
@@ -769,11 +790,6 @@ export class MathBackendWebGL implements KernelBackend {
   conv2dDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const program = new Conv2DDerFilterProgram(convInfo);
     return this.compileAndRun(program, [x, dy]);
-  }
-
-  conv2dDerBias(dy: Tensor4D): Tensor1D {
-    const program = new Conv2DDerBiasProgram(dy.shape);
-    return this.compileAndRun(program, [dy]);
   }
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
@@ -937,6 +953,11 @@ export class MathBackendWebGL implements KernelBackend {
       // Array is already on GPU. No-op.
       return;
     }
+    const shouldTimeProgram = this.activeTimers != null;
+    let start: number;
+    if (shouldTimeProgram) {
+      start = performance.now();
+    }
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     texData.texShape = texShape;
@@ -949,6 +970,9 @@ export class MathBackendWebGL implements KernelBackend {
           texShape[1], typedArrayToFloat32(values, dtype));
       // Once uploaded, don't store the values on cpu.
       texData.values = null;
+      if (shouldTimeProgram) {
+        this.uploadWaitMs += performance.now() - start;
+      }
     }
   }
 
