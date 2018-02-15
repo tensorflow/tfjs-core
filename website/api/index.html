@@ -476,7 +476,7 @@
     </div>
   </div>
   <script>
-    function executeCodeSnippet(consoleLogElement, codeSnippet) {
+    async function executeCodeSnippet(consoleLogElement, codeSnippet) {
       consoleLogElement.innerText = '';
 
       var oldLog = console.log;
@@ -484,9 +484,9 @@
         consoleLogElement.innerText += logStr + '\n';
       };
 
-      var snippet = 'dl.tidy(function() {' + codeSnippet + '});';
+      var snippet = 'dl.tidy(async function() {' + codeSnippet + '});';
 
-      eval(snippet);
+      await eval(snippet);
 
       console.log = oldLog;
     };

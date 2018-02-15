@@ -124,6 +124,7 @@ export class Tracking {
    * console.log('b:');
    * b.print();
    * ```
+   *
    * @param result The tensor to keep from being disposed.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
@@ -141,6 +142,13 @@ export class Tracking {
    * - On `WebGL` the following additional properties exist:
    *   - `uploadWaitMs`: cpu blocking time on texture uploads.
    *   - `downloadWaitMs`: cpu blocking time on texture downloads (readPixels).
+   *
+   * ```js
+   * const x = dl.randomNormal([20, 20]);
+   * const time = await dl.time(() => x.matMul(x));
+   *
+   * console.log(`kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`);
+   * ```
    *
    * @param f The function to execute and time.
    */
