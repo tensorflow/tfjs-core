@@ -28,32 +28,32 @@ export class OptimizerConstructors {
    * Constructs a `SGDOptimizer` that uses stochastic gradient descent.
    *
    * ```js
-   * // Learn [a, b, c], for y = a * x^2 + b * x + c.
-   * const data = [
-   *     {x: dl.scalar(0), y: dl.scalar(1.1)},
-   *     {x: dl.scalar(1), y: dl.scalar(5.9)},
-   *     {x: dl.scalar(2), y: dl.scalar(16.8)},
-   *     {x: dl.scalar(3), y: dl.scalar(33.9)}];
+   * // Fit a quadratic function by learning the coefficients a, b, c.
+   * const xs = dl.tensor1d([0, 1, 2, 3]);
+   * const ys = dl.tensor1d([1.1, 5.9, 16.8, 33.9]);
+   *
    * const a = dl.variable(dl.scalar(Math.random()));
    * const b = dl.variable(dl.scalar(Math.random()));
    * const c = dl.variable(dl.scalar(Math.random()));
    *
-   * const model = x => a.mul(x.square()).add(b.mul(x)).add(c);
-   * const loss = (pred, label) => pred.sub(label).square();
+   * // y = a * x^2 + b * x + c.
+   * const f = x => a.mul(x.square()).add(b.mul(x)).add(c);
+   * const loss = (pred, label) => pred.sub(label).square().mean();
    *
    * const learningRate = 0.01;
    * const optimizer = dl.train.sgd(learningRate);
    *
+   * // Train the model.
    * for (let i = 0; i < 10; i++) {
-   *   data.forEach(point => {
-   *     optimizer.minimize(() => loss(model(point.x), point.y));
-   *   });
+   *   optimizer.minimize(() => loss(f(xs), ys));
    * }
    *
-   * console.log(`a: ${a.dataSync()}, b: ${b.dataSync()}, c: ${c.dataSync()});
-   * data.forEach(point => {
-   *   const pred = model(point.x).dataSync();
-   *   console.log(`x: ${point.x.dataSync()}, pred: ${pred}`);
+   * // Make predictions.
+   * console.log(
+   *     `a: ${a.dataSync()}, b: ${b.dataSync()}, c: ${c.dataSync()}`);
+   * const preds = f(xs).dataSync();
+   * preds.forEach((pred, i) => {
+   *   console.log(`x: ${i}, pred: ${pred}`);
    * });
    *
    * ```
