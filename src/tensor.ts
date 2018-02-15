@@ -511,6 +511,12 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.matMul(this as Tensor2D, b, transposeA, transposeB);
   }
+  norm(
+      ord: number|'euclidean'|'fro' = 'euclidean', axis: number|number[] = null,
+      keepDims = false): Tensor {
+    this.throwIfDisposed();
+    return ops.norm(this, ord, axis, keepDims);
+  }
   slice(begin: ShapeMap[R], size: ShapeMap[R]): Tensor<R> {
     this.throwIfDisposed();
     return ops.slice(this, begin, size);
@@ -977,8 +983,8 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   }
 
   /**
-   * Assign a new `Tensor` to this variable. The new `Tensor` must have the same
-   * shape and dtype as the old `Tensor`.
+   * Assign a new `Tensor` to this variable. The new `Tensor` must have the
+   * same shape and dtype as the old `Tensor`.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   assign(newValue: Tensor<R>): void {

@@ -51,7 +51,6 @@ export const conv2d = conv_ops.Ops.conv2d;
 export const conv2dTranspose = conv_ops.Ops.conv2dTranspose;
 export const depthwiseConv2d = conv_ops.Ops.depthwiseConv2d;
 
-export const dotProduct = matmul_ops.Ops.dotProduct;
 export const matMul = matmul_ops.Ops.matMul;
 export const matrixTimesVector = matmul_ops.Ops.matrixTimesVector;
 export const outerProduct = matmul_ops.Ops.outerProduct;
