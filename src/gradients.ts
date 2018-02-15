@@ -207,7 +207,15 @@ export class Gradients {
     }
     // Prune non-trainable variables.
     varList = varList.filter(variable => variable.trainable);
-    const {value, grads} = ENV.engine.gradients(f, varList);
+    const allowNoGradients = true;
+    const {value, grads} =
+        ENV.engine.gradients(f, varList, null, allowNoGradients);
+
+    util.assert(
+        grads.some(g => g != null),
+        'Cannot find a connection between any variable and the result of the ' +
+            'loss function y=f(x). Please make sure the operations that use ' +
+            'variables are inside the function f passed to minimize().');
     util.assert(
         value.rank === 0,
         `The f passed in variableGrads(f) must return a scalar, but it ` +
@@ -247,6 +255,6 @@ function checkGrads(grads: Tensor[]) {
   if (numNullGradients > 0) {
     throw new Error(
         `Cannot compute gradient of y=f(x) with respect to x. Make sure that
-        the f you passed encloses all operations that lead from x to y.`);
+    the f you passed encloses all operations that lead from x to y.`);
   }
 }

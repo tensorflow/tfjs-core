@@ -292,16 +292,18 @@ export class Engine implements TensorManager {
    * not a function of that `x`. It also takes optional dy to multiply the
    * gradient, which defaults to `1`.
    */
-  gradients<T extends Tensor>(f: () => T, xs: Tensor[], dy?: T):
-      {value: T, grads: Tensor[]} {
+  gradients<T extends Tensor>(
+      f: () => T, xs: Tensor[], dy?: T,
+      allowNoGradients = false): {value: T, grads: Tensor[]} {
     return tidy('gradients', () => {
       const y = f();
       util.assert(
-          y instanceof Tensor, 'The result y returned by f() must be a tensor');
+          y instanceof Tensor,
+          'The result y returned by f() must be a tensor.');
       // Filter out the nodes that don't connect x => y.
       const filteredTape =
           tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
-      if (filteredTape.length === 0 && xs.length > 0) {
+      if (!allowNoGradients && filteredTape.length === 0 && xs.length > 0) {
         throw new Error(
             'Cannot compute gradient of y=f(x) with respect to x. Make sure ' +
             'that the f you passed encloses all operations that lead from x ' +
@@ -322,7 +324,8 @@ export class Engine implements TensorManager {
   customGrad<T extends Tensor>(f: CustomGradientFunc<T>):
       (...args: Tensor[]) => T {
     util.assert(
-        util.isFunction(f), 'The f passed in customGrad(f) must be a function');
+        util.isFunction(f),
+        'The f passed in customGrad(f) must be a function.');
     return (...inputs: Tensor[]): T => {
       util.assert(
           inputs.every(t => t instanceof Tensor),
