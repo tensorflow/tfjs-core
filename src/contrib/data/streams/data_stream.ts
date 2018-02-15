@@ -18,6 +18,7 @@
 
 import * as seedrandom from 'seedrandom';
 
+import {DatasetElement} from '../types';
 import {GrowingRingBuffer} from '../util/growing_ring_buffer';
 import {RingBuffer} from '../util/ring_buffer';
 
@@ -62,7 +63,7 @@ export async function streamFromConcatenated<T>(
  * Since a `DataStream` is read-once, it cannot be repeated, but this
  * function can be used to achieve a similar effect:
  *
- *   DataStream.ofConcatenatedFunction(() => new MyStream(), 6);
+ *   streamFromConcatenatedFunction(() => new MyStream(), 6);
  *
  * @param streamFunc: A function that produces a new stream on each call.
  * @param count: The number of times to call the function.
@@ -70,6 +71,21 @@ export async function streamFromConcatenated<T>(
 export async function streamFromConcatenatedFunction<T>(
     streamFunc: () => DataStream<T>, count: number): Promise<DataStream<T>> {
   return streamFromConcatenated(streamFromFunction(streamFunc).take(count));
+}
+
+/**
+ * Create a `DataStream<DatasetElement>` by zipping together a set of streams.
+ * The underlying streams must have the same number of elements, and obviously
+ * must provide them in a consistent order such that they correspond.
+ *
+ * The result of the zip operation is simply to merge the underlying
+ * `DatasetElement`s, so their keys should be disjoint.  If they are not, values
+ * provided by streams later in the input list override those from earlier ones.
+ */
+export async function streamFromZipped(
+    streams: Array<DataStream<DatasetElement>>):
+    Promise<DataStream<DatasetElement>> {
+  return new ZipperStream(streams);
 }
 
 /**
@@ -428,6 +444,65 @@ export class ChainedStream<T> extends DataStream<T> {
 
   async next(): Promise<T> {
     this.currentPromise = nextChainState(this.currentPromise);
+    return (await this.currentPromise).item;
+  }
+}
+
+class ZipperState {
+  constructor(public readonly item: DatasetElement) {}
+}
+
+/**
+ * Provides a `DataStream<DatasetElement>` that zips together a set of streams.
+ * The underlying streams must have the same number of elements, and obviously
+ * must provide them in a consistent order such that they correspond.
+ *
+ * The result of the zip operation is simply to merge the underlying
+ * `DatasetElement`s, so their keys should be disjoint.  If they are not, values
+ * provided by streams later in the input list override those from earlier ones.
+ *
+ * Doing this in a concurrency-safe way requires some trickery.  In particular,
+ * we want this stream to return the elements from the underlying streams in
+ * the correct order according to when next() was called, even if the resulting
+ * Promises resolve in a different order.
+ */
+class ZipperStream extends DataStream<DatasetElement> {
+  private currentPromise: Promise<ZipperState>;
+  count = 0;
+
+  constructor(protected readonly streams: Array<DataStream<DatasetElement>>) {
+    super();
+    this.currentPromise = Promise.resolve(new ZipperState(undefined));
+  }
+
+  private async nextState(afterState: Promise<ZipperState>):
+      Promise<ZipperState> {
+    // This chaining ensures that the underlying next() are not even called
+    // before the previous ones have resolved.
+    await afterState;
+
+    const elements = await Promise.all(this.streams.map(s => s.next()));
+    if (elements.some(x => x == null)) {
+      if (elements.every(x => x == null)) {
+        // The streams ended simultaneously, as expected
+        return new ZipperState(undefined);
+      }
+      throw new Error(
+          `Zipped streams should have the same length.  Mismatched at element ${
+              this.count}.`);
+    }
+    const mergedElement: DatasetElement = {};
+    for (const e of elements) {
+      // TODO(soergel): error on colliding keys.  Is checking worth the cost?
+      // As written here, later values for the same key overwrite earlier ones.
+      Object.assign(mergedElement, e);
+    }
+    this.count++;
+    return new ZipperState(mergedElement);
+  }
+
+  async next(): Promise<DatasetElement> {
+    this.currentPromise = this.nextState(this.currentPromise);
     return (await this.currentPromise).item;
   }
 }
