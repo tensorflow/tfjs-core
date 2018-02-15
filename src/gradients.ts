@@ -203,12 +203,13 @@ export class Gradients {
    * defaults to all trainable variables.
    *
    * ```js
-   * const a = dl.variable(dl.tensor1d([3, 4]));
-   * const b = dl.variable(dl.tensor1d([5, 6]));
+   * const trainable = true;
+   * const a = dl.variable(dl.tensor1d([3, 4]), trainable, 'a');
+   * const b = dl.variable(dl.tensor1d([5, 6]), trainable, 'b');
    * const x = dl.tensor1d([1, 2]);
    *
    * // f(a, b) = a * x ^ 2 + b * x
-   * const f = () => a.mul(x.square()).add(b.mul(x));
+   * const f = () => a.mul(x.square()).add(b.mul(x)).sum();
    * // df/da = x ^ 2, df/db = x
    * const {value, grads} = dl.variableGrads(f);
    *
