@@ -52,10 +52,23 @@ export class Gradients {
    * ```js
    * // f(x) = x ^ 2
    * const f = x => x.square();
-   * // df/dx = 2x
+   * // f'(x) = 2x
    * const grad = dl.grad(f);
    *
-   * grad(dl.tensor1d([2, 3])).print();
+   * const x = dl.tensor1d([2, 3]);
+   * grad(x).print();
+   * ```
+   *
+   * ```js
+   * // f(x) = x ^ 3
+   * const f = x => x.pow(dl.scalar(3, 'int32'));
+   * // f'(x) = 3x ^ 2
+   * const grad = dl.grad(f);
+   * // f''(x) = 6x
+   * const gradgrad = dl.grad(grad);
+   *
+   * const x = dl.tensor1d([2, 3]);
+   * gradgrad(x).print();
    * ```
    *
    * @param f The function f(x), to compute gradient for.

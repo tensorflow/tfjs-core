@@ -192,7 +192,8 @@ export class Ops {
     broadcast_util.assertAndGetBroadcastShape(base.shape, exp.shape);
 
     const gradient = (dy: Tensor, y: Tensor) => {
-      if (!util.arraysEqual(base.shape, exp.shape)) {
+      if (!util.arraysEqual(base.shape, exp.shape) &&
+          !util.isScalarShape(exp.shape)) {
         throw new Error(
             `Gradient of pow not yet supported for broadcasted shapes.`);
       }
