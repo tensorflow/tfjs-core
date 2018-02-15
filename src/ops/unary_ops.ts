@@ -216,7 +216,7 @@ export class Ops {
    * ```js
    * const x = dl.tensor1d([-1, 2, -3, 4]);
    *
-   * x.elu().print();  // or dl.elu(x)
+   * x.relu().print();  // or dl.relu(x)
    * ```
    * @param x The input tensor.
    */
@@ -235,7 +235,7 @@ export class Ops {
    * ```js
    * const x = dl.tensor1d([-1, 1, -3, 2]);
    *
-   * x.relu().print();  // or dl.relu(x)
+   * x.elu().print();  // or dl.elu(x)
    * ```
    * @param x The input tensor.
    */
