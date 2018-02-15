@@ -256,6 +256,7 @@ export class Gradients {
    * trainable variables provided by `varList`. If no list is provided, it
    * defaults to all trainable variables.
    *
+   * ```js
    * const trainable = true;
    * const a = dl.variable(dl.tensor1d([3, 4]), trainable, 'a');
    * const b = dl.variable(dl.tensor1d([5, 6]), trainable, 'b');
