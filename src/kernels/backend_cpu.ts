@@ -30,7 +30,7 @@ import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor'
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
-import {KernelBackend} from './backend';
+import {BackendTimingInfo, KernelBackend} from './backend';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -117,10 +117,11 @@ export class MathBackendCPU implements KernelBackend {
     }
   }
 
-  async time(f: () => void): Promise<number> {
+  async time(f: () => void): Promise<BackendTimingInfo> {
     const start = performance.now();
     f();
-    return performance.now() - start;
+    const kernelMs = performance.now() - start;
+    return {kernelMs};
   }
   memory() {
     return {
@@ -902,9 +903,7 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
-  conv2d(
-      x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null,
-      convInfo: Conv2DInfo): Tensor4D {
+  conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const padLeft = convInfo.padInfo.left;
@@ -933,8 +932,7 @@ export class MathBackendCPU implements KernelBackend {
                 }
               }
             }
-            const biasVal = (bias != null) ? bias.get(d2) : 0;
-            y.set(dotProd + biasVal, b, yR, yC, d2);
+            y.set(dotProd, b, yR, yC, d2);
           }
         }
       }
@@ -1028,23 +1026,6 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return dW.toTensor();
-  }
-
-  conv2dDerBias(dy: Tensor4D): Tensor1D {
-    const [batchSize, numRows, numCols, outDepth] = dy.shape;
-    const values = new Float32Array(outDepth);
-    for (let d2 = 0; d2 < outDepth; ++d2) {
-      let sum = 0;
-      for (let b = 0; b < batchSize; ++b) {
-        for (let r = 0; r < numRows; ++r) {
-          for (let c = 0; c < numCols; ++c) {
-            sum += dy.get(b, r, c, d2);
-          }
-        }
-      }
-      values[d2] = sum;
-    }
-    return ops.tensor1d(values);
   }
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):

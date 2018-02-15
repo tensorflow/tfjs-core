@@ -21,6 +21,9 @@ import {Conv2DInfo} from '../ops/conv_util';
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, Rank, TypedArray} from '../types';
 
+// Required information for all backends.
+export interface BackendTimingInfo { kernelMs: number; }
+
 export interface TensorStorage {
   read(dataId: DataId): Promise<TypedArray>;
   readSync(dataId: DataId): TypedArray;
@@ -29,12 +32,13 @@ export interface TensorStorage {
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D;
-  time(query: () => void): Promise<number>;
   register(dataId: DataId, shape: number[], dtype: DataType): void;
   memory(): {unreliable: boolean;};  // Backend-specific information.
 }
 
-export interface BackendTimer { time(f: () => void): Promise<number>; }
+export interface BackendTimer {
+  time(f: () => void): Promise<BackendTimingInfo>;
+}
 
 /**
  * The interface that defines the kernels that should be implemented when
@@ -146,13 +150,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   step<T extends Tensor>(x: T, alpha: number): T;
 
-  conv2d(
-      x: Tensor4D, filter: Tensor4D, bias: Tensor1D|null,
-      convInfo: Conv2DInfo): Tensor4D;
+  conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D;
   conv2dDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
-  conv2dDerBias(dY: Tensor4D): Tensor1D;
 
   depthwiseConv2D(input: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D;

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,43 +29,46 @@ import {NamedVariableMap} from '../types';
 
 import {Optimizer} from './optimizer';
 
-export class AdamOptimizer extends Optimizer {
+export class AdamaxOptimizer extends Optimizer {
   private c: Scalar;
   private eps: Scalar;
+  private accBeta1: Variable;
   private beta1: Scalar;
   private beta2: Scalar;
-  private accBeta1: Variable;
-  private accBeta2: Variable;
+  private decay: Scalar;
   private oneMinusBeta1: Scalar;
-  private oneMinusBeta2: Scalar;
   private one: Scalar;
+  private iteration: Variable;
 
   private accumulatedFirstMoment: NamedVariableMap = {};
-  private accumulatedSecondMoment: NamedVariableMap = {};
+  private accumulatedWeightedInfNorm: NamedVariableMap = {};
 
   constructor(
       protected learningRate: number, beta1: number, beta2: number,
-      epsilon = 1e-8, specifiedVariableList?: Node[]) {
+      epsilon = 1e-8, decay = 0.0,
+      /** @deprecated */ specifiedVariableList?: Node[]) {
     super(learningRate, specifiedVariableList);
     this.c = keep(scalar(-learningRate));
     this.eps = keep(scalar(epsilon));
     // b1, b2 keep initial value of beta* hyperparameters.
     this.beta1 = keep(scalar(beta1));
     this.beta2 = keep(scalar(beta2));
+
+    this.decay = keep(scalar(decay));
+
     tidy(() => {
-      // accB* will be updated by batch.
+      this.iteration = variable(scalar(0));
       this.accBeta1 = variable(scalar(beta1));
-      this.accBeta2 = variable(scalar(beta2));
     });
+
     this.oneMinusBeta1 = keep(scalar(1 - beta1));
-    this.oneMinusBeta2 = keep(scalar(1 - beta2));
     this.one = keep(scalar(1));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
     tidy(() => {
       const oneMinusAccBeta1 = this.one.sub(this.accBeta1);
-      const oneMinusAccBeta2 = this.one.sub(this.accBeta2);
+      const lr = this.c.div(this.one.add(this.decay.mul(this.iteration)));
 
       for (const variableName in variableGradients) {
         const value = ENV.engine.registeredVariables[variableName];
@@ -74,37 +77,38 @@ export class AdamOptimizer extends Optimizer {
           this.accumulatedFirstMoment[variableName] =
               variable(zerosLike(value), trainable);
         }
-        if (this.accumulatedSecondMoment[variableName] == null) {
+        if (this.accumulatedWeightedInfNorm[variableName] == null) {
           const trainable = false;
-          this.accumulatedSecondMoment[variableName] =
+          this.accumulatedWeightedInfNorm[variableName] =
               variable(zerosLike(value), trainable);
         }
 
         const gradient = variableGradients[variableName];
         const firstMoment = this.accumulatedFirstMoment[variableName];
-        const secondMoment = this.accumulatedSecondMoment[variableName];
+        const weightedInfNorm = this.accumulatedWeightedInfNorm[variableName];
 
         const newFirstMoment =
             this.beta1.mul(firstMoment).add(this.oneMinusBeta1.mul(gradient));
-        const newSecondMoment =
-            this.beta2.mul(secondMoment)
-                .add(this.oneMinusBeta2.mul(gradient.square()));
 
-        const biasCorrectedFirstMoment = newFirstMoment.div(oneMinusAccBeta1);
-        const biasCorrectedSecondMoment = newSecondMoment.div(oneMinusAccBeta2);
+        const ut0 = this.beta2.mul(weightedInfNorm);
+        const ut1 = gradient.abs();
+
+        const newWeightedInfNorm = ut0.maximum(ut1);
 
         this.accumulatedFirstMoment[variableName].assign(newFirstMoment);
-        this.accumulatedSecondMoment[variableName].assign(newSecondMoment);
+        this.accumulatedWeightedInfNorm[variableName].assign(
+            newWeightedInfNorm);
 
-        const newValue = this.c
-                             .mul(biasCorrectedFirstMoment.div(this.eps.add(
-                                 biasCorrectedSecondMoment.sqrt())))
-                             .add(value);
+        const newValue =
+            lr.div(oneMinusAccBeta1)
+                .mul(newFirstMoment.div(this.eps.add(newWeightedInfNorm)))
+                .add(value);
+
         value.assign(newValue);
       }
 
+      this.iteration.assign(this.iteration.add(this.one));
       this.accBeta1.assign(this.accBeta1.mul(this.beta1));
-      this.accBeta2.assign(this.accBeta2.mul(this.beta2));
     });
   }
 
@@ -121,9 +125,9 @@ export class AdamOptimizer extends Optimizer {
       });
     }
 
-    if (this.secondMomentGraph.size() === 0) {
+    if (this.weightedInfNormGraph.size() === 0) {
       this.variableNodes.forEach(node => {
-        this.secondMomentGraph.set(
+        this.weightedInfNormGraph.set(
             node.output, Tensor.zeros(node.output.shape));
       });
     }
@@ -134,41 +138,41 @@ export class AdamOptimizer extends Optimizer {
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
     tidy(() => {
-      const oneMinusAccBeta1 = this.one.sub(this.accBeta1);
-      const oneMinusAccBeta2 = this.one.sub(this.accBeta2);
+      const lr = this.cGraph.div(this.one.add(this.decay.mul(this.iteration)));
 
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
-        const gradient = this.variableGradients.get(node.output);
 
+        const gradient = this.variableGradients.get(node.output);
         const oldFirstMoment = this.firstMomentGraph.get(node.output);
-        const oldSecondMoment = this.secondMomentGraph.get(node.output);
+        const oldWeightedInfNorm = this.weightedInfNormGraph.get(node.output);
 
         const newFirstMoment = math.scaledArrayAdd(
             this.beta1, oldFirstMoment, this.oneMinusBeta1, gradient);
-        const newSecondMoment = math.scaledArrayAdd(
-            this.beta2, oldSecondMoment, this.oneMinusBeta2, gradient.square());
 
-        const biasCorrectedFirstMoment = newFirstMoment.div(oneMinusAccBeta1);
-        const biasCorrectedSecondMoment = newSecondMoment.div(oneMinusAccBeta2);
+        const ut0 = this.beta2.mul(oldWeightedInfNorm);
+        const ut1 = gradient.abs();
+
+        const newWeightedInfNorm = ut0.maximum(ut1);
+
         const variable = math.scaledArrayAdd(
-            this.cGraph,
-            biasCorrectedFirstMoment.div(
-                this.eps.add(biasCorrectedSecondMoment.sqrt())),
-            this.one, oldVariable);
+            this.one, oldVariable, lr.div(this.one.sub(this.accBeta1)),
+            newFirstMoment.div(this.eps.add(newWeightedInfNorm)));
+
         activationArrayMap.set(node.output, keep(variable));
         node.data = variable;
 
         this.firstMomentGraph.set(node.output, keep(newFirstMoment));
-        this.secondMomentGraph.set(node.output, keep(newSecondMoment));
+        this.weightedInfNormGraph.set(node.output, keep(newWeightedInfNorm));
 
         oldVariable.dispose();
         gradient.dispose();
         oldFirstMoment.dispose();
-        oldSecondMoment.dispose();
+        oldWeightedInfNorm.dispose();
       });
+
+      this.iteration.assign(this.iteration.add(this.one));
       this.accBeta1.assign(this.accBeta1.mul(this.beta1));
-      this.accBeta2.assign(this.accBeta2.mul(this.beta2));
     });
 
     this.variableGradients.dispose();
@@ -179,20 +183,22 @@ export class AdamOptimizer extends Optimizer {
     super.dispose();
     this.c.dispose();
     this.eps.dispose();
+    this.accBeta1.dispose();
     this.beta1.dispose();
     this.beta2.dispose();
-    this.accBeta1.dispose();
-    this.accBeta2.dispose();
     this.oneMinusBeta1.dispose();
-    this.oneMinusBeta2.dispose();
+
+    this.decay.dispose();
+    this.iteration.dispose();
+
     this.one.dispose();
 
     if (this.firstMomentGraph != null) {
       this.firstMomentGraph.dispose();
     }
 
-    if (this.secondMomentGraph != null) {
-      this.secondMomentGraph.dispose();
+    if (this.weightedInfNormGraph != null) {
+      this.weightedInfNormGraph.dispose();
     }
 
     if (this.accumulatedFirstMoment != null) {
@@ -200,14 +206,14 @@ export class AdamOptimizer extends Optimizer {
           .forEach(name => this.accumulatedFirstMoment[name].dispose());
     }
 
-    if (this.accumulatedSecondMoment != null) {
-      Object.keys(this.accumulatedSecondMoment)
-          .forEach(name => this.accumulatedSecondMoment[name].dispose());
+    if (this.accumulatedWeightedInfNorm != null) {
+      Object.keys(this.accumulatedWeightedInfNorm)
+          .forEach(name => this.accumulatedWeightedInfNorm[name].dispose());
     }
   }
 
-  // Average of gradient
+  // Average of 1st gradient
   private firstMomentGraph = new TensorArrayMap();
-  // Average of squared gradient
-  private secondMomentGraph = new TensorArrayMap();
+  // Average of exponentially weighed infinity norm
+  private weightedInfNormGraph = new TensorArrayMap();
 }
