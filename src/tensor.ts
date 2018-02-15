@@ -740,7 +740,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.abs(this);
   }
-  clip(min: number, max: number): Tensor<R> {
+  clipByValue(min: number, max: number): Tensor<R> {
     this.throwIfDisposed();
     return ops.clipByValue(this, min, max);
   }
