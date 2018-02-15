@@ -19,7 +19,7 @@
 import * as seedrandom from 'seedrandom';
 
 import {BatchDataset} from './batch_dataset';
-import {DatasetStatistics, computeStatistics} from './statistics';
+import {computeDatasetStatistics, DatasetStatistics} from './statistics';
 import {DataStream} from './streams/data_stream';
 import {streamFromConcatenated} from './streams/data_stream';
 import {streamFromFunction} from './streams/data_stream';
@@ -47,13 +47,41 @@ export abstract class Dataset {
    */
   abstract async getStream(): Promise<DataStream<DatasetElement>>;
 
-  // TODO(soergel): plumb this through, to distinguish e.g. webcam from files
+  // TODO(soergel): Make Datasets report whether repeated getStream() calls
+  // produce the same result (e.g., reading from a file) or different results
+  // (e.g., from the webcam).  Currently we don't make this distinction but it
+  // could be important for the user to know.
   // abstract isDeterministic(): boolean;
 
-  async getStats(shuffleSize?: number, sampleSize?: number):
+  // TODO(soergel): memoize computeStatistics()
+
+  /**
+   * Gathers statistics from a Dataset (or optionally from a sample).
+   *
+   * This obtains a stream from the Dataset and, by default, does a full pass
+   * to gather the statistics.
+   *
+   * Statistics may be computed over a sample.  However: simply taking the first
+   * n items from the stream may produce a poor estimate if the stream is
+   * ordered in some way.
+   *
+   * A truly random shuffle of the stream would of course solve this
+   * problem, but many streams do not allow for this, instead providing only a
+   * sliding-window shuffle.  A partially-randomized sample could be obtained by
+   * shuffling over a window followed by taking the first n samples (where n is
+   * smaller than the shuffle window size).  However there is little point in
+   * using that approach here, because the cost is likely dominated by obtaining
+   * the data.  Thus, once we have filled our shuffle buffer, we may as well use
+   * all of that data instead of sampling from it.
+   *
+   * @param sampleSize The number of examples to take from the (possibly
+   *   shuffled) stream.
+   * @param shuffleWindowSize The size of the shuffle window to use, if any.
+   *   (Not recommended, as described above).
+   */
+  async computeStatistics(sampleSize?: number, shuffleWindowSize?: number):
       Promise<DatasetStatistics> {
-    return computeStatistics(
-        this, shuffleSize, sampleSize);
+    return computeDatasetStatistics(this, sampleSize, shuffleWindowSize);
   }
 
   /**

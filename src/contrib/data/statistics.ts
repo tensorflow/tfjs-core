@@ -21,13 +21,15 @@ import {Scalar, Tensor} from '../../tensor';
 import {Dataset} from './dataset';
 import {ElementArray} from './types';
 
-// TODO(soergel) This whole file is the barest stopgap.
+// TODO(soergel): Flesh out collected statistics.
+// For numeric columns we should provide mean, stddev, histogram, etc.
+// For string columns we should provide a vocabulary (at least, top-k), maybe a
+// length histogram, etc.
+// Collecting only numeric min and max is just the bare minimum for now.
 
-export class NumericColumnStatistics {
-  min = Number.POSITIVE_INFINITY;
-
-  max = Number.NEGATIVE_INFINITY;
-}
+export type NumericColumnStatistics = {
+  min: number; max: number;
+};
 
 export type DatasetStatistics = {
   [key: string]: NumericColumnStatistics
@@ -37,99 +39,81 @@ export type DatasetStatistics = {
  * Provides a function that scales numeric values into the [0, 1] interval.
  *
  * @param min the lower bound of the inputs, which should be mapped to 0.
- * @param min the upper bound of the inputs, which should be mapped to 1
+ * @param max the upper bound of the inputs, which should be mapped to 1,
  * @return A function that maps an input ElementArray to a scaled ElementArray.
  */
 export function scaleTo01(min: number, max: number): (value: ElementArray) =>
     ElementArray {
+  const range = max - min;
   const minTensor: Tensor = Scalar.new(min);
-  const maxTensor: Tensor = Scalar.new(max);
+  const rangeTensor: Tensor = Scalar.new(range);
   return (value: ElementArray): ElementArray => {
     if (typeof (value) === 'string') {
       throw new Error('Can\'t scale a string.');
     } else {
       if (value instanceof Tensor) {
-        const result = value.sub(minTensor).div(maxTensor);
+        const result = value.sub(minTensor).div(rangeTensor);
         return result;
       } else if (value instanceof Array) {
-        return value.map(v => (v - min) / max);
+        return value.map(v => (v - min) / range);
       } else {
-        return (value - min) / max;
+        return (value - min) / range;
       }
     }
   };
 }
 
-/**
- * Gathers statistics from a Dataset (or optionally from a sample).
- *
- * Currently we gather only the minimum and maximum value from each numeric
- * column.
- *
- * This obtains a stream from the Dataset and, by default, does a full pass
- * to gather the statistics.
- *
- * Statistics may be computed over a sample.  However: simply taking the first n
- * items from the stream may produce a poor estimate if the stream is ordered in
- * some way.
- *
- * A truly random shuffle of the stream would of course solve this
- * problem, but many streams do not allow for this, instead providing only a
- * sliding-window shuffle.  A partially-randomized sample could be obtained by
- * shuffling over a window followed by taking the first n samples (where n is
- * smaller than the shuffle window size).  However there is little point in
- * using that approach here, because the cost is likely dominated by obtaining
- * the data.  Thus, once we have filled our shuffle buffer, we may as well use
- * all of that data instead of sampling from it.
- *
- * @param dataset A Dataset over which to measure statistics.
- * @param shuffleSize The size of the shuffle window to use, if any.  (Not
- *   recommended, as described above).
- * @param sampleSize The number of examples to take from the (possibly shuffled)
- *   stream.
- */
-export async function computeStatistics(
+export async function computeDatasetStatistics(
     dataset: Dataset, sampleSize?: number,
-    shuffleSize?: number): Promise<DatasetStatistics> {
+    shuffleWindowSize?: number): Promise<DatasetStatistics> {
   let stream = await dataset.getStream();
   // TODO(soergel): allow for deep shuffle where possible.
-  if (shuffleSize != null) {
-    stream = stream.shuffle(shuffleSize);
+  if (shuffleWindowSize != null) {
+    stream = stream.shuffle(shuffleWindowSize);
   }
   if (sampleSize != null) {
     stream = stream.take(sampleSize);
   }
+
+  // TODO(soergel): prepare the column objects based on a schema.q
   const result: DatasetStatistics = {};
-  // TODO(soergel): prepare the column objects based on a schema.
 
   await stream.forEach(e => {
     for (const key in e) {
       const value = e[key];
       if (typeof (value) === 'string') {
-        // TODO(soergel): collect string stats too
       } else {
-        // TODO(soergel): Also collect mean, stddev, histogram, etc.
-        let recordMax: number;
         let recordMin: number;
+        let recordMax: number;
         if (value instanceof Tensor) {
-          recordMax = value.max().dataSync()[0];
           recordMin = value.min().dataSync()[0];
+          recordMax = value.max().dataSync()[0];
         } else if (value instanceof Array) {
-          recordMax = value.reduce((a, b) => Math.max(a, b));
           recordMin = value.reduce((a, b) => Math.min(a, b));
-        } else {
-          recordMax = value;
+          recordMax = value.reduce((a, b) => Math.max(a, b));
+        } else if (!isNaN(value) && isFinite(value)) {
           recordMin = value;
+          recordMax = value;
+        } else {
+          // TODO(soergel): don't throw; instead record the stats as "unknown".
+          throw new Error(`Cannot compute statistics: ${key} = ${value}`);
         }
         let columnStats: NumericColumnStatistics = result[key];
         if (columnStats == null) {
-          columnStats = new NumericColumnStatistics();
+          columnStats = {
+            min: Number.POSITIVE_INFINITY,
+            max: Number.NEGATIVE_INFINITY
+          };
           result[key] = columnStats;
         }
-        columnStats.max = Math.max(columnStats.max, recordMax);
         columnStats.min = Math.min(columnStats.min, recordMin);
+        columnStats.max = Math.max(columnStats.max, recordMax);
       }
     }
+    // Returning undefined or null (i.e, type void) would indicate that the
+    // stream is exhausted.  So, we have to return *something* in order for
+    // resolveFully() to operate.
+    return {};
   });
   return result;
 }

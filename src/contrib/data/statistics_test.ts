@@ -14,23 +14,24 @@
  * limitations under the License.
  * =============================================================================
  */
-/*
+
 import {ALL_ENVS, describeWithFlags} from '../../test_util';
 
 import {TestDataset} from './dataset_test';
-import {makeDatasetStatistics, scaleTo01} from './statistics';
+import {scaleTo01} from './statistics';
 
 describeWithFlags('makeDatasetStatistics', ALL_ENVS, () => {
   it('computes numeric min and max over numbers, arrays, and Tensors', done => {
-    const ds = new TestDataset();
-    makeDatasetStatistics(ds)
+    const ds = new TestDataset().skip(55);
+    ds.computeStatistics()
         .then(stats => {
-          expect(stats['number'].min).toEqual(0);
-          expect(stats['number'].max).toEqual(100);
-          expect(stats['numberArray'].min).toEqual(0);
-          expect(stats['numberArray'].max).toEqual(1000000);
-          expect(stats['Tensor'].min).toEqual(0);
-          expect(stats['Tensor'].max).toEqual(1000000);
+          expect(stats['number'].min).toEqual(55);
+          expect(stats['number'].max).toEqual(99);
+          // The TestDataset includes cubes of the indices
+          expect(stats['numberArray'].min).toEqual(55);
+          expect(stats['numberArray'].max).toEqual(99 * 99 * 99);
+          expect(stats['Tensor'].min).toEqual(55);
+          expect(stats['Tensor'].max).toEqual(99 * 99 * 99);
         })
         .then(done)
         .catch(done.fail);
@@ -39,17 +40,16 @@ describeWithFlags('makeDatasetStatistics', ALL_ENVS, () => {
 
 describeWithFlags('scaleTo01', ALL_ENVS, () => {
   it('scales numeric data to the [0, 1] interval', done => {
-    const ds = new TestDataset();
-    const scaleFn = scaleTo01(0, 1000000);
-    const scaledDataset = ds.map(x=>({'Tensor': scaleFn(x['Tensor'])}));
+    const ds = new TestDataset().skip(55);
+    const scaleFn = scaleTo01(55, 99 * 99 * 99);
+    const scaledDataset = ds.map(x => ({'Tensor': scaleFn(x['Tensor'])}));
 
-    makeDatasetStatistics(scaledDataset)
+    scaledDataset.computeStatistics()
         .then(stats => {
-          expect(stats['Tensor'].min).toEqual(0);
-          expect(stats['Tensor'].max).toEqual(1);
+          expect(stats['Tensor'].min).toBeCloseTo(0);
+          expect(stats['Tensor'].max).toBeCloseTo(1);
         })
         .then(done)
         .catch(done.fail);
   });
 });
-*/

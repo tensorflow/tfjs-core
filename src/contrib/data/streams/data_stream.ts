@@ -103,7 +103,7 @@ export abstract class DataStream<T> {
   async collectRemaining(): Promise<T[]> {
     const result: T[] = [];
     let x = await this.next();
-    while (x !== undefined) {
+    while (x != null) {
       result.push(x);
       x = await this.next();
     }
@@ -119,7 +119,7 @@ export abstract class DataStream<T> {
    */
   async resolveFully(): Promise<void> {
     let x = await this.next();
-    while (x !== undefined) {
+    while (x != null) {
       x = await this.next();
     }
   }
@@ -155,7 +155,7 @@ export abstract class DataStream<T> {
    *
    * @param f A function to apply to each stream element.
    */
-  async forEach(f: (value: T) => void|Promise<void>): Promise<void> {
+  async forEach(f: (value: T) => {}|Promise<{}>): Promise<void> {
     return this.map(f).resolveFully();
   }
 
@@ -228,8 +228,8 @@ export abstract class DataStream<T> {
    * @param seed: (Optional.) An integer specifying the random seed that will
    *   be used to create the distribution.
    */
-  shuffle(bufferSize: number, seed?: string): DataStream<T> {
-    return new ShuffleStream(this, bufferSize, seed);
+  shuffle(windowSize: number, seed?: string): DataStream<T> {
+    return new ShuffleStream(this, windowSize, seed);
   }
 }
 
@@ -521,9 +521,9 @@ export class ShuffleStream<T> extends PrefetchStream<T> {
   private upstreamExhausted = false;
 
   constructor(
-      protected upstream: DataStream<T>, protected bufferSize: number,
+      protected upstream: DataStream<T>, protected windowSize: number,
       seed?: string) {
-    super(upstream, bufferSize);
+    super(upstream, windowSize);
     this.random = seedrandom(seed);
   }
 
