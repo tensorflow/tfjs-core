@@ -28,6 +28,12 @@ export class Ops {
   /**
    * Computes `-1 * x` element-wise.
    *
+   * ```js
+   * const a = dl.tensor1d([1, 2, -2]);
+   *
+   * a.neg().print();  // or dl.neg(a)
+   * ```
+   *
    * @param x The input tensor.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
