@@ -64,8 +64,8 @@ export function parse():
         {
           name: 'Classes',
           description: `<p>
-          This section shows the common deeplearn.js classes and the methods
-          we expose on them.
+          This section shows the main Tensor related classes in deeplearn.js and
+          the methods we expose on them.
           </p>`,
           pin: ['Tensor', 'Variable', 'TensorBuffer']
         },

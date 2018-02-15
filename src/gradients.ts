@@ -93,6 +93,21 @@ export class Gradients {
    *
    * If `f()` takes a single input, use `grad` instead.
    *
+   * ```js
+   * // f(a, b) = a * b
+   * const f = (a, b) => a.mul(b);
+   * // df / da = b, df / db = a
+   * const grads = dl.grads(f);
+   *
+   * const a = dl.tensor1d([2, 3]);
+   * const b = dl.tensor1d([-2, -3]);
+   * const [da, db] = grads([a, b]);
+   * console.log('da');
+   * da.print();
+   * console.log('db');
+   * db.print();
+   * ```
+   *
    * @param f The function `f(x1, x2,...)` to compute gradients for.
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
@@ -112,6 +127,21 @@ export class Gradients {
    * the following properties:
    * - grad: The gradient of `f(x)` w.r.t `x` (result of `grad`).
    * - value: The value returned by `f(x)`.
+   *
+   * ```js
+   * // f(x) = x ^ 2
+   * const f = x => x.square();
+   * // f'(x) = 2x
+   * const valueAndGrad = dl.valueAndGrad(f);
+   *
+   * const x = dl.tensor1d([2, 3]);
+   * const {value, grad} = valueAndGrad(x);
+   *
+   * console.log('value');
+   * value.print();
+   * console.log('grad');
+   * grad.print();
+   * ```
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
   static valueAndGrad<I extends Tensor, O extends Tensor>(f: (x: I) => O):
@@ -132,6 +162,27 @@ export class Gradients {
    * the following properties:
    * - grads: The gradients of `f()` w.r.t each input (result of `grads`).
    * - value: The value returned by `f(x)`.
+   *
+   * ```js
+   * // f(a, b) = a * b
+   * const f = (a, b) => a.mul(b);
+   * // df/da = b, df/db = a
+   * const valueAndGrads = dl.valueAndGrads(f);
+   *
+   * const a = dl.tensor1d([2, 3]);
+   * const b = dl.tensor1d([-2, -3]);
+   * const {value, grads} = valueAndGrads([a, b]);
+   *
+   * const [da, db] = grads;
+   *
+   * console.log('value');
+   * value.print();
+   *
+   * console.log('da');
+   * da.print();
+   * console.log('db');
+   * db.print();
+   * ```
    */
   @doc({heading: 'Training', subheading: 'Gradients'})
   static valueAndGrads<O extends Tensor>(f: (...args: Tensor[]) => O):
@@ -150,6 +201,29 @@ export class Gradients {
    * Computes and returns the gradient of f(x) with respect to the list of
    * trainable variables provided by `varList`. If no list is provided, it
    * defaults to all trainable variables.
+   *
+   * ```js
+   * const a = dl.variable(dl.tensor1d([1, 2]));
+   * const b = dl.variable(dl.tensor1d([3, 4]));
+   *
+   * // f(a, b) = a * x ^ 2 + b * x
+   * const f = (x) => a.mul(x.square()).add(b.mul(x));
+   * // df/da = x ^ 2, df/db = x
+   * const variableGrads = dl.variableGrads(f);
+   *
+   * const x = dl.tensor1d([5, 6]);
+   * const {value, grads} = variableGrads([x]);
+   *
+   * const [da, db] = grads;
+   *
+   * console.log('value');
+   * value.print();
+   *
+   * console.log('da');
+   * da.print();
+   * console.log('db');
+   * db.print();
+   * ```
    * @param f The function to execute. f() should return a scalar.
    * @param varList An optional list of variables to provide gradients with
    *     respect to. Defaults to all trainable variables.
@@ -189,6 +263,21 @@ export class Gradients {
    * which takes the same inputs as `f`. When called, `g` returns `f().value`.
    * In backward mode, custom gradients w.r.t. each input of `f` are computed
    * using `f().gradFunc`.
+   *
+   * ```js
+   * const customOp = dl.customGrad(x => {
+   *   // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+   *   return {value: x.square(), gradFunc: dy => [dy.mul(x.abs())]};
+   * });
+   *
+   * const x = dl.tensor1d([-1, -2, 3]);
+   * const grad = dl.grad(x => customOp(x));
+   *
+   * console.log(`f(x):`);
+   * customOp(x).print();
+   * console.log(`f'(x):`);
+   * grad(x).print();
+   * ```
    *
    * @param f The function to evaluate in forward mode, which should return
    *     `{value: Tensor, gradFunc: (dy) => Tensor[]}`, where `gradFunc` returns

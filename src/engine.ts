@@ -333,6 +333,8 @@ export class Engine implements TensorManager {
       this.customGradientDepth--;
 
       if (this.shouldRecord()) {
+        console.log('----adding tape node----');
+        console.log(inputs);
         this.addTapeNode(inputs, result, gradientsFunc);
       }
       return result;
