@@ -106,36 +106,20 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
     expect(cost).toBe(null);
   });
 
-  it('varList empty array of variables to update updates nothing', () => {
+  it('varList empty array of variables throws error', () => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
     const x = variable(dl.scalar(4));
     const bias = variable(dl.scalar(1));
-    const strayVariable = variable(dl.scalar(-1));
+    // Stray variable.
+    variable(dl.scalar(-1));
     const varList: Variable[] = [];
 
     const f = () => x.square().addStrict(bias);
 
-    let cost = optimizer.minimize(f, /* returnCost */ true, varList);
-
-    // x should not have been updated.
-    expectArraysClose(x, [4]);
-    // bias should not have been updated.
-    expectArraysClose(bias, [1]);
-    expectArraysClose(cost, [Math.pow(4, 2) + 1]);
-    // The stray variable should remain unchanged.
-    expectArraysClose(strayVariable, [-1]);
-
-    cost = optimizer.minimize(f, /* returnCost */ false, varList);
-
-    // x again should not have been updated.
-    expectArraysClose(x, [4]);
-    // bias again should not have been updated.
-    expectArraysClose(bias, [1]);
-    // The stray variable should remain unchanged.
-    expectArraysClose(strayVariable, [-1]);
-    expect(cost).toBe(null);
+    expect(() => optimizer.minimize(f, /* returnCost */ true, varList))
+        .toThrowError();
   });
 
   it('varList subset of variables update', () => {
