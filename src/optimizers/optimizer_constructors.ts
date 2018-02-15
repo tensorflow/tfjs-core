@@ -27,6 +27,36 @@ export class OptimizerConstructors {
   /**
    * Constructs a `SGDOptimizer` that uses stochastic gradient descent.
    *
+   * ```js
+   * // Learn [a, b, c], for y = a * x^2 + b * x + c.
+   * const data = [
+   *     {x: dl.scalar(0), y: dl.scalar(1.1)},
+   *     {x: dl.scalar(1), y: dl.scalar(5.9)},
+   *     {x: dl.scalar(2), y: dl.scalar(16.8)},
+   *     {x: dl.scalar(3), y: dl.scalar(33.9)}];
+   * const a = dl.variable(dl.scalar(Math.random()));
+   * const b = dl.variable(dl.scalar(Math.random()));
+   * const c = dl.variable(dl.scalar(Math.random()));
+   *
+   * const model = x => a.mul(x.square()).add(b.mul(x)).add(c);
+   * const loss = (pred, label) => pred.sub(label).square();
+   *
+   * const learningRate = 0.01;
+   * const optimizer = dl.train.sgd(learningRate);
+   *
+   * for (let i = 0; i < 10; i++) {
+   *   data.forEach(point => {
+   *     optimizer.minimize(() => loss(model(point.x), point.y));
+   *   });
+   * }
+   *
+   * // Predict.
+   * data.forEach(point => {
+   *   const pred = model(point.x).get();
+   *   console.log(`x: ${point.x.get()}, pred: ${pred}`);
+   * });
+   *
+   * ```
    * @param learningRate The learning rate to use for the SGD algorithm.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
