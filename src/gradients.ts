@@ -257,9 +257,8 @@ export class Gradients {
    * defaults to all trainable variables.
    *
    * ```js
-   * const trainable = true;
-   * const a = dl.variable(dl.tensor1d([3, 4]), trainable, 'a');
-   * const b = dl.variable(dl.tensor1d([5, 6]), trainable, 'b');
+   * const a = dl.variable(dl.tensor1d([3, 4]));
+   * const b = dl.variable(dl.tensor1d([5, 6]));
    * const x = dl.tensor1d([1, 2]);
    *
    * // f(a, b) = a * x ^ 2 + b * x
@@ -267,10 +266,7 @@ export class Gradients {
    * // df/da = x ^ 2, df/db = x
    * const {value, grads} = dl.variableGrads(f);
    *
-   * console.log('da');
-   * grads.a.print();
-   * console.log('db');
-   * grads.b.print();
+   * Object.keys(grads).forEach(varName => grads[varName].print());
    * ```
    *
    * @param f The function to execute. f() should return a scalar.
