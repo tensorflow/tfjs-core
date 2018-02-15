@@ -32,18 +32,18 @@ export class Ops {
    *
    * ```js
    * // Pass an array of values to create a vector.
-   * dl.tensor([1, 2, 3, 4]).print()  // shape: [4]
+   * dl.tensor([1, 2, 3, 4]).print();
    * ```
    *
    * ```js
    * // Pass a nested array of values to make a matrix or a higher
    * // dimensional tensor.
-   * dl.tensor([[1, 2], [3, 4]]).print();  // shape: [2, 2]
+   * dl.tensor([[1, 2], [3, 4]]).print();
    * ```
    *
    * ```js
    * // Pass a flat array and specify a shape yourself.
-   * dl.tensor([1, 2, 3, 4], [2, 2]).print();  // shape: [2, 2]
+   * dl.tensor([1, 2, 3, 4], [2, 2]).print();
    * ```
    *
    * @param values The values of the tensor. Can be nested array of numbers,
@@ -339,6 +339,10 @@ export class Ops {
   /**
    * Creates a `Tensor` with values sampled from a normal distribution.
    *
+   * ```js
+   * dl.randomNormal([2, 2]).print();
+   * ```
+   *
    * @param shape An array of integers defining the output tensor shape.
    * @param mean The mean of the normal distribution.
    * @param stdDev The standard deviation of the normal distribution.
@@ -361,6 +365,10 @@ export class Ops {
   /**
    * Creates a `Tensor` with values sampled from a truncated normal
    * distribution.
+   *
+   * ```js
+   * dl.truncatedNormal([2, 2]).print();
+   * ```
    *
    * The generated values follow a normal distribution with specified mean and
    * standard deviation, except that values whose magnitude is more than 2
@@ -391,6 +399,10 @@ export class Ops {
    * The generated values follow a uniform distribution in the range [minval,
    * maxval). The lower bound minval is included in the range, while the upper
    * bound maxval is excluded.
+   *
+   * ```js
+   * dl.randomUniform([2, 2]).print();
+   * ```
    *
    * @param shape An array of integers defining the output tensor shape.
    * @param minval The lower bound on the range of random values to generate.
@@ -490,6 +502,10 @@ export class Ops {
    * value `onValue` (defaults to 1), while all other locations take value
    * `offValue` (defaults to 0).
    *
+   * ```js
+   * dl.oneHot(dl.tensor1d([0, 1]), 3).print();
+   * ```
+   *
    * @param indices 1D Array of indices.
    * @param depth The depth of the one hot dimension.
    * @param onValue A number used to fill in output when the index matches
@@ -510,6 +526,16 @@ export class Ops {
 
   /**
    * Creates a `Tensor` from an image.
+   *
+   * ```js
+   * const image = new ImageData(1, 1);
+   * image.data[0] = 100;
+   * image.data[1] = 150;
+   * image.data[2] = 200;
+   * image.data[3] = 255;
+   *
+   * dl.fromPixels(image).print();
+   * ```
    *
    * @param pixels The input image to construct the tensor from. Accepts image
    * of type `ImageData`, `HTMLImageElement`, `HTMLCanvasElement`, or
@@ -546,6 +572,11 @@ export class Ops {
    * elements implied by shape must be the same as the number of elements in
    * tensor.
    *
+   * ```js
+   * const x = dl.tensor1d([1, 2, 3, 4]);
+   * x.reshape([2, 2]).print();
+   * ```
+   *
    * @param x A tensor.
    * @param shape An array of integers defining the output tensor shape.
    */
@@ -568,6 +599,10 @@ export class Ops {
   /**
    * Removes dimensions of size 1 from the shape of a `Tensor`.
    *
+   * ```js
+   * const x = dl.tensor([1, 2, 3, 4], [1, 1, 4]);
+   * x.squeeze().print();
+   * ```
    * @param axis An optional list of numbers. If specified, only
    *     squeezes the dimensions listed. The dimension index starts at 0. It is
    *     an error to squeeze a dimension that is not 1.
@@ -579,6 +614,11 @@ export class Ops {
 
   /**
    * Casts a tensor to a new dtype.
+   *
+   * ```js
+   * const x = dl.tensor1d([1.5, 2.5, 3]);
+   * dl.cast(x, 'int32').print();
+   * ```
    * @param x A tensor.
    * @param dtype The dtype to cast the input tensor to.
    */
@@ -601,6 +641,17 @@ export class Ops {
    * `reps[i]` times along the i'th dimension. For example, tiling
    * `[a, b, c, d]` by `[2]` produces `[a, b, c, d, a, b, c, d]`.
    *
+   * ```js
+   * const a = dl.tensor1d([1, 2]);
+   *
+   * a.tile([2]).print();    // or a.tile([2])
+   * ```
+   *
+   * ```js
+   * const a = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   *
+   * a.tile([1, 2]).print();  // or a.tile([1, 2])
+   * ```
    * @param x The tensor to transpose.
    * @param reps Determines the number of replications per dimension.
    */
@@ -617,6 +668,19 @@ export class Ops {
   /**
    * Gather slices from tensor `x`'s axis `axis` according to `indices`.
    *
+   * ```js
+   * const x = dl.tensor1d([1, 2, 3, 4]);
+   * const indices = dl.tensor1d([1, 3, 3]);
+   *
+   * x.gather(indices).print();
+   * ```
+   *
+   * ```js
+   * const x = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   * const indices = dl.tensor1d([1, 1, 0]);
+   *
+   * x.gather(indices).print();
+   * ```
    * @param x The input tensor.
    * @param indices The indices of the values to extract.
    * @param axis The axis over which to select values. Defaults to 0.
@@ -679,6 +743,10 @@ export class Ops {
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
    *
+   * ```js
+   * const x = dl.tensor1d([1, 2, 3, 4]);
+   * x.pad([[1, 2]]).print();
+   * ```
    * @param x The tensor to pad.
    * @param paddings An array of length `R` (the rank of the tensor), where each
    *     element is a length-2 tuple of ints `[padBefore, padAfter]`, specifying
@@ -706,10 +774,17 @@ export class Ops {
   /**
    * Stacks a list of rank-`R` `Tensor`s into one rank-`(R+1)` `Tensor`.
    *
+   * ```js
+   * const a = dl.tensor1d([1, 2]);
+   * const b = dl.tensor1d([3, 4]);
+   * const c = dl.tensor1d([5, 6]);
+   * dl.stack([a, b, c]).print();
+   * ```
+   *
    * @param tensors A list of tensor objects with the same shape and dtype.
    * @param axis The axis to stack along. Defaults to 0 (the first dim).
    */
-  @doc({heading: 'Tensors', subheading: 'Transformations'})
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static stack<T extends Tensor>(tensors: T[], axis = 0): Tensor {
     util.assert(tensors.length >= 2, 'Pass at least two tensors to dl.stack');
@@ -737,6 +812,12 @@ export class Ops {
   /**
    * Returns a `Tensor` that has expanded rank, by inserting a dimension
    * into the tensor's shape.
+   *
+   * ```js
+   * const x = dl.tensor1d([1, 2, 3, 4]);
+   * const axis = 1;
+   * x.expandDims(axis).print();
+   * ```
    *
    * @param axis The dimension index at which to insert shape of `1`. Defaults
    *     to 0 (the first dimension).
@@ -786,6 +867,10 @@ export class Ops {
    * The tensor is a is half-open interval meaning it includes start, but
    * excludes stop. Decrementing ranges and negative step values are also
    * supported.
+   *
+   * ```js
+   * dl.range(0, 9, 2).print();
+   * ```
    *
    * @param start An integer start value
    * @param stop An integer stop value
@@ -861,7 +946,12 @@ export class Ops {
   /**
    * Prints information about the `Tensor` including its data.
    *
-   * @param verbose Whether to print verbose information about the `Tensor`,
+   * ```js
+   * const verbose = true;
+   * dl.tensor2d([1, 2, 3, 4], [2, 2]).print(verbose);
+   * ```
+   *
+   * @param verbose Whether to print verbose information about the ` Tensor`,
    * including dtype and size.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
@@ -877,10 +967,19 @@ export class Ops {
     displayTensor.shape = x.shape;
     displayTensor.data = Array.from(x.dataSync());
     displayTensor.toString = function() {
-      return `Tensor {\n` +
-          `  data: [${this.data.join(', ')}],\n` +
-          `  shape: [${x.shape.join(', ')}]\n` +
-          `}`;
+      const fields = [
+        `data: [${this.data.join(', ')}]`, `shape: [${x.shape.join(', ')}]`,
+        `rank: ${x.rank}`
+      ];
+      if (verbose) {
+        fields.push(`dtype: '${this.dtype}'`);
+        fields.push(`size: ${this.size}`);
+      }
+      for (let i = 0; i < fields.length; i++) {
+        fields[i] = '  ' + fields[i];
+      }
+
+      return 'Tensor {\n' + fields.join(',\n') + '\n}';
     };
 
     if (verbose) {
@@ -901,7 +1000,10 @@ function makeZerosTypedArray<D extends DataType>(
   } else if (dtype === 'bool') {
     return new Uint8Array(size);
   } else {
-    throw new Error(`Unknown data type ${dtype}`);
+    throw new Error(` Unknown data type $ {
+    dtype
+  }
+  `);
   }
 }
 

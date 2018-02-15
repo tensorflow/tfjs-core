@@ -955,6 +955,12 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
 
   /**
    * Creates a new variable with the provided initial value.
+   * ```js
+   * const x = dl.variable(dl.tensor([1, 2, 3]));
+   * x.assign(dl.tensor([4, 5, 6]));
+   *
+   * x.print();
+   * ```
    *
    * @param initialValue A tensor.
    * @param trainable If true, optimizers are allowed to update it.
