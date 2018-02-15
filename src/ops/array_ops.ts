@@ -999,10 +999,7 @@ function makeZerosTypedArray<D extends DataType>(
   } else if (dtype === 'bool') {
     return new Uint8Array(size);
   } else {
-    throw new Error(` Unknown data type $ {
-    dtype
-  }
-  `);
+    throw new Error(`Unknown data type $ {dtype}`);
   }
 }
 
