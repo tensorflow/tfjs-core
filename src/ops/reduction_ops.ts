@@ -44,7 +44,7 @@ export class Ops {
    * const x = dl.tensor2d([1, 2, 3, 4], [2, 2]);
    *
    * const axis = 1;
-   * a.logSumExp(axis).print();  // or dl.logSumExp(a, axis)
+   * x.logSumExp(axis).print();  // or dl.logSumExp(a, axis)
    * ```
    * @param input The input tensor.
    * @param axis The dimension(s) to reduce. If null (the default),
@@ -208,7 +208,7 @@ export class Ops {
    * ```js
    * const x = dl.tensor1d([1, 2, 3]);
    *
-   * a.min().print();  // or dl.min(x)
+   * x.min().print();  // or dl.min(x)
    * ```
    *
    * ```js
