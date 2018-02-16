@@ -112,7 +112,7 @@ export function parse():
       subheadings: [
         {
           name: 'Gradients',
-          pin: ['grad', 'grads', 'valAndGrad', 'valueAndGrads', 'customGrad']
+          pin: ['grad', 'grads', 'valAndGrad', 'valAndGrads', 'customGrad']
         },
         {name: 'Optimizers', pin: ['sgd', 'momentum', 'adagrad', 'adadelta']},
         {name: 'Losses'}, {name: 'Classes'}
