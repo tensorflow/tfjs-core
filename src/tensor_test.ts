@@ -820,3 +820,25 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([4]);
   });
 });
+
+describe('tensor.toString', () => {
+  it('1d tensor', () => {
+    const a = dl.zeros([4]);
+    console.log(a.toString());
+  });
+
+  it('2d tensor', () => {
+    const a = dl.linspace(0, 100, 9).reshape([3, 3]);
+    console.log(a.toString());
+  });
+
+  it('3d tensor', () => {
+    const a = dl.zeros([3, 3, 2]);
+    console.log(a.toString());
+  });
+
+  it('4d tensor', () => {
+    const a = dl.zeros([3, 3, 2, 2]);
+    console.log(a.toString());
+  });
+});
