@@ -26,6 +26,39 @@ const NUM_FIRST_LAST_VALS = 3;
 // Number of significant digits to show.
 const NUM_SIG_DIGITS = 7;
 
+export function tensorToString(t: Tensor, verbose: boolean) {
+  const vals = t.dataSync();
+  const padPerCol = computeMaxSizePerColumn(t);
+  const valsLines = subTensorToString(vals, t.shape, t.strides, padPerCol);
+  const lines = ['Tensor'];
+  if (verbose) {
+    lines.push(`  dtype: ${t.dtype}`);
+    lines.push(`  rank: ${t.rank}`);
+    lines.push(`  shape: [${t.shape}]`);
+    lines.push(`  values:`);
+  }
+  lines.push(valsLines.map(l => '    ' + l).join('\n'));
+  return lines.join('\n');
+}
+
+function computeMaxSizePerColumn(t: Tensor): number[] {
+  const vals = t.dataSync();
+  const n = t.size;
+
+  const numCols = t.strides[t.strides.length - 1];
+  const padPerCol = new Array(numCols).fill(0);
+  if (t.rank > 1) {
+    for (let row = 0; row < n / numCols; row++) {
+      const offset = row * numCols;
+      for (let j = 0; j < numCols; j++) {
+        padPerCol[j] =
+            Math.max(padPerCol[j], valToString(vals[offset + j], 0).length);
+      }
+    }
+  }
+  return padPerCol;
+}
+
 function valToString(val: number, pad: number) {
   return util.rightPad(parseFloat(val.toFixed(NUM_SIG_DIGITS)).toString(), pad);
 }
@@ -104,37 +137,4 @@ function subTensorToString(
   lines[lines.length - 1] =
       ' ' + lines[lines.length - 1] + ']' + (isLast ? '' : newLineSep);
   return lines;
-}
-
-function computeMaxSizePerColumn(t: Tensor): number[] {
-  const vals = t.dataSync();
-  const n = t.size;
-
-  const numCols = t.strides[t.strides.length - 1];
-  const padPerCol = new Array(numCols).fill(0);
-  if (t.rank > 1) {
-    for (let row = 0; row < n / numCols; row++) {
-      const offset = row * numCols;
-      for (let j = 0; j < numCols; j++) {
-        padPerCol[j] =
-            Math.max(padPerCol[j], valToString(vals[offset + j], 0).length);
-      }
-    }
-  }
-  return padPerCol;
-}
-
-export function tensorToString(t: Tensor, verbose: boolean) {
-  const vals = t.dataSync();
-  const padPerCol = computeMaxSizePerColumn(t);
-  const valsLines = subTensorToString(vals, t.shape, t.strides, padPerCol);
-  const lines = ['Tensor'];
-  if (verbose) {
-    lines.push(`  dtype: ${t.dtype}`);
-    lines.push(`  rank: ${t.rank}`);
-    lines.push(`  shape: [${t.shape}]`);
-    lines.push(`  values:`);
-  }
-  lines.push(valsLines.map(l => '    ' + l).join('\n'));
-  return lines.join('\n');
 }
