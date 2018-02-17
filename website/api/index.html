@@ -127,8 +127,6 @@
       /* border-bottom: 1px solid #d2d7da; */
     }
 
-
-
     .section-title {
       margin-bottom: 0px;
     }
@@ -141,6 +139,13 @@
     .sub-section-title {
       margin-bottom: 8px;
       font-weight: 400;
+    }
+
+    .subsection-title::before, h5::before {
+      display: block;
+      content: "";
+      height: 60px;
+      margin: -60px 0 0;
     }
 
 
@@ -408,7 +413,7 @@
       <ul>
         {{#parameters}}
         <li class="parameter">
-          <span <span class="param-name">
+          <span class="param-name">
             {{name}}:&nbsp;{{{markdownInner type}}}
           </span>
           <span class="param-docs">
@@ -469,7 +474,7 @@
             <div class="subsection-description mdl-typography--headline">{{{description}}}</div>
             {{#symbols}}
             <div class="symbol">
-              <h5>
+              <h5 id="{{urlHash}}">
                 {{#if isClass}}
                   <span class="chip">Class</span>
                 {{else}}
