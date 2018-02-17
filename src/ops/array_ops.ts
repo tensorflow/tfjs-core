@@ -377,7 +377,7 @@ export class Ops {
    * @param shape An array of integers defining the output tensor shape.
    * @param mean The mean of the normal distribution.
    * @param stdDev The standard deviation of the normal distribution.
-   * @param dtype The data type of the output.
+   * @param dtype The data type of the output tensor.
    * @param seed The seed for the random number generator.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
@@ -536,9 +536,7 @@ export class Ops {
    * dl.fromPixels(image).print();
    * ```
    *
-   * @param pixels The input image to construct the tensor from. Accepts image
-   * of type `ImageData`, `HTMLImageElement`, `HTMLCanvasElement`, or
-   * `HTMLVideoElement`.
+   * @param pixels The input image to construct the tensor from.
    * @param numChannels The number of channels of the output tensor. The
    * supported image types are all 4-channel by default, a numChannels value
    * less than 4 allows you to ignore channels.
@@ -836,9 +834,9 @@ export class Ops {
    * ```js
    * dl.linspace(0, 9, 10).print();
    * ```
-   * @param start The start value of the sequence
-   * @param stop The end value of the sequence
-   * @param num The number of values to generate
+   * @param start The start value of the sequence.
+   * @param stop The end value of the sequence.
+   * @param num The number of values to generate.
    * @param endpoint Determines whether stop is included in the
    * sequence. Defaults to true.
    */
@@ -874,7 +872,7 @@ export class Ops {
    * @param start An integer start value
    * @param stop An integer stop value
    * @param step An integer increment (will default to 1 or -1)
-   * @param dtype
+   * @param dtype The data type of the output tensor. Defaults to 'float32'.
    */
   @operation
   @doc({heading: 'Tensors', subheading: 'Creation'})
@@ -949,7 +947,7 @@ export class Ops {
    * const verbose = true;
    * dl.tensor2d([1, 2, 3, 4], [2, 2]).print(verbose);
    * ```
-   *
+   * @param x The tensor to be printed.
    * @param verbose Whether to print verbose information about the ` Tensor`,
    * including dtype and size.
    */
