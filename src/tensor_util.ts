@@ -17,45 +17,121 @@
 
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
+import * as util from './util';
 
+// Maximum number of values before we decide to show ellipsis.
 const LIMIT_NUM_VALS = 20;
+// Number of first and last values to show when displaying a, b,...,y, z.
+const NUM_FIRST_LAST_VALS = 3;
+// Number of significant digits to show.
+const NUM_SIG_DIGITS = 7;
+
+function valToString(val: number, pad: number) {
+  return util.rightPad(parseFloat(val.toFixed(NUM_SIG_DIGITS)).toString(), pad);
+}
 
 function subTensorToString(
-    vals: TypedArray, shape: number[], strides: number[], depth = 0,
-    isFirst = true): string {
+    vals: TypedArray, shape: number[], strides: number[], padPerCol: number[],
+    isLast = true): string[] {
   const size = shape[0];
   const rank = shape.length;
-  let prefix = '';
-  if (!isFirst) {
-    for (let i = 0; i < depth; i++) {
-      prefix += ' ';
+  if (rank === 0) {
+    return [vals[0] + ''];
+  }
+
+  if (rank === 1) {
+    if (size > LIMIT_NUM_VALS) {
+      const firstVals = Array.from(vals.subarray(0, NUM_FIRST_LAST_VALS));
+      const lastVals =
+          Array.from(vals.subarray(size - NUM_FIRST_LAST_VALS, size));
+      return [
+        '[' + firstVals.map((x, i) => valToString(x, padPerCol[i])).join(', ') +
+        ', ..., ' +
+        lastVals
+            .map(
+                (x, i) =>
+                    valToString(x, padPerCol[size - NUM_FIRST_LAST_VALS + i]))
+            .join(', ') +
+        ']'
+      ];
     }
+    return [
+      '[' +
+      Array.from(vals).map((x, i) => valToString(x, padPerCol[i])).join(', ') +
+      ']'
+    ];
   }
-  if (rank <= 1) {
-    return prefix + '[' + vals.join(', ') + ']';
-  }
+
+  // The array is rank 2 or more.
   const subshape = shape.slice(1);
   const substrides = strides.slice(1);
   const stride = strides[0];
-  const elems = [];
-  for (let i = 0; i < size; i++) {
-    const start = i * stride;
-    const end = start + stride;
-    elems.push(subTensorToString(
-        vals.subarray(start, end), subshape, substrides, depth + 1, i === 0));
+  const lines: string[] = [];
+  if (size > LIMIT_NUM_VALS) {
+    for (let i = 0; i < NUM_FIRST_LAST_VALS; i++) {
+      const start = i * stride;
+      const end = start + stride;
+      lines.push(...subTensorToString(
+          vals.subarray(start, end), subshape, substrides, padPerCol,
+          false /* isLast */));
+    }
+    lines.push('...');
+    for (let i = size - NUM_FIRST_LAST_VALS; i < size; i++) {
+      const start = i * stride;
+      const end = start + stride;
+      lines.push(...subTensorToString(
+          vals.subarray(start, end), subshape, substrides, padPerCol,
+          i === size - 1 /* isLast */));
+    }
+  } else {
+    for (let i = 0; i < size; i++) {
+      const start = i * stride;
+      const end = start + stride;
+      lines.push(...subTensorToString(
+          vals.subarray(start, end), subshape, substrides, padPerCol,
+          i === size - 1 /* isLast */));
+    }
   }
-  let newlineSep = '';
-  for (let i = 1; i < rank; i++) {
-    newlineSep += '\n';
+  const sep = rank === 2 ? ',' : '';
+  lines[0] = '[' + lines[0] + sep;
+  for (let i = 1; i < lines.length - 1; i++) {
+    lines[i] = ' ' + lines[i] + sep;
   }
-  return prefix + '[' + elems.join(',' + newlineSep) + ']';
+  let newLineSep = ',\n';
+  for (let i = 2; i < rank; i++) {
+    newLineSep += '\n';
+  }
+  lines[lines.length - 1] =
+      ' ' + lines[lines.length - 1] + ']' + (isLast ? '' : newLineSep);
+  return lines;
+}
+
+function computeMaxSizePerColumn(t: Tensor): number[] {
+  const vals = t.dataSync();
+  const n = t.size;
+
+  const numCols = t.strides[t.strides.length - 1];
+  const padPerCol = new Array(numCols).fill(0);
+  if (t.rank > 1) {
+    for (let row = 0; row < n / numCols; row++) {
+      const offset = row * numCols;
+      for (let j = 0; j < numCols; j++) {
+        padPerCol[j] =
+            Math.max(padPerCol[j], valToString(vals[offset + j], 0).length);
+      }
+    }
+  }
+  return padPerCol;
 }
 
 export function tensorToString(t: Tensor) {
   const vals = t.dataSync();
+  const padPerCol = computeMaxSizePerColumn(t);
+  const valsLines = subTensorToString(vals, t.shape, t.strides, padPerCol);
   const lines = [
-    'Tensor', `  dtype: ${t.dtype}`, `  rank: ${t.rank}`, `  shape: ${t.shape}`,
-    `  values:`, subTensorToString(vals, t.shape, t.strides)
+    'Tensor', `  dtype: ${t.dtype}`, `  rank: ${t.rank}`,
+    `  shape: [${t.shape}]`, `  values:`,
+    valsLines.map(l => '    ' + l).join('\n')
   ];
   return lines.join('\n');
 }
