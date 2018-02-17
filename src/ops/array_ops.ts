@@ -957,7 +957,7 @@ export class Ops {
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static print<T extends Tensor>(x: T, verbose = false): void {
-    console.log(tensor_util.tensorToString(x));
+    console.log(tensor_util.tensorToString(x, verbose));
   }
 }
 

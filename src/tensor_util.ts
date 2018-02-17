@@ -124,14 +124,17 @@ function computeMaxSizePerColumn(t: Tensor): number[] {
   return padPerCol;
 }
 
-export function tensorToString(t: Tensor) {
+export function tensorToString(t: Tensor, verbose: boolean) {
   const vals = t.dataSync();
   const padPerCol = computeMaxSizePerColumn(t);
   const valsLines = subTensorToString(vals, t.shape, t.strides, padPerCol);
-  const lines = [
-    'Tensor', `  dtype: ${t.dtype}`, `  rank: ${t.rank}`,
-    `  shape: [${t.shape}]`, `  values:`,
-    valsLines.map(l => '    ' + l).join('\n')
-  ];
+  const lines = ['Tensor'];
+  if (verbose) {
+    lines.push(`  dtype: ${t.dtype}`);
+    lines.push(`  rank: ${t.rank}`);
+    lines.push(`  shape: [${t.shape}]`);
+    lines.push(`  values:`);
+  }
+  lines.push(valsLines.map(l => '    ' + l).join('\n'));
   return lines.join('\n');
 }
