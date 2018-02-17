@@ -69,7 +69,7 @@ function subTensorToString(
   const size = shape[0];
   const rank = shape.length;
   if (rank === 0) {
-    return [vals[0] + ''];
+    return [vals[0].toString()];
   }
 
   if (rank === 1) {
