@@ -311,7 +311,7 @@ export class Ops {
    * dl.zerosLike(x).print();
    * ```
    *
-   * @param x A tensor.
+   * @param x The tensor of required shape.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
