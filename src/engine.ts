@@ -20,9 +20,8 @@ import {tidy} from './globals';
 import {BackendTimingInfo, KernelBackend} from './kernels/backend';
 import * as ops from './ops/ops';
 import {Profiler} from './profiler';
-// tslint:disable-next-line:max-line-length
-import {KernelNode, Tape, TapeNode, TapeNodeInputGradientTensors} from './tape_types';
 import * as tape_util from './tape_util';
+import {NamedGradientMap, TapeNode} from './tape_util';
 import {ScopeResultImmediate} from './tape_util';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TypedArray} from './types';
@@ -70,7 +69,7 @@ export class Engine implements TensorManager {
   private numTensors = 0;
   private numDataBuffers = 0;
 
-  private activeTape: Tape;
+  private activeTape: TapeNode[];
   private gradientScopeCount = 0;
   private customGradientDepth = 0;
 
@@ -111,12 +110,10 @@ export class Engine implements TensorManager {
     const recordKernel =
         this.activeTape != null && this.customGradientDepth === 0;
     if (recordKernel) {
-      const evaluatedNode: KernelNode = {
+      const evaluatedNode: TapeNode = {
         id: this.nextTapeNodeId++,
-        type: 'kernel',
         name: kernelName,
-        kernel: kernelName,
-        inputAndArgs: {inputs},
+        inputs,
         output: result,
         gradient: (dy: T) => backwardsFunc(dy, saved)
       };
@@ -192,18 +189,17 @@ export class Engine implements TensorManager {
 
     const gradient = (dy: Tensor) => {
       const res = gradientsFunc(dy);
-      const resMap: TapeNodeInputGradientTensors = {};
+      const resMap: NamedGradientMap = {};
       res.forEach((r, idx) => {
         resMap[idx] = () => r;
       });
       return resMap;
     };
 
-    const evaluatedNode: TapeNode<Tensor> = {
+    const evaluatedNode: TapeNode = {
       id: this.nextTapeNodeId++,
-      type: 'customGradient',
-      name,
-      inputAndArgs: {inputs: inputsMap},
+      name: '',  // TODO(smilkov): Figure out kernel name.
+      inputs: inputsMap,
       output: result,
       gradient
     };
