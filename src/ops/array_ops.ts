@@ -574,7 +574,7 @@ export class Ops {
    * x.reshape([2, 2]).print();
    * ```
    *
-   * @param x A tensor.
+   * @param x The input tensor which needs to be reshaped.
    * @param shape An array of integers defining the output tensor shape.
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
@@ -600,6 +600,8 @@ export class Ops {
    * const x = dl.tensor([1, 2, 3, 4], [1, 1, 4]);
    * x.squeeze().print();
    * ```
+   *
+   * @param x The input tensor which needs to be squeezed.
    * @param axis An optional list of numbers. If specified, only
    *     squeezes the dimensions listed. The dimension index starts at 0. It is
    *     an error to squeeze a dimension that is not 1.
@@ -610,13 +612,13 @@ export class Ops {
   }
 
   /**
-   * Casts a tensor to a new dtype.
+   * Casts a `Tensor` to a new dtype.
    *
    * ```js
    * const x = dl.tensor1d([1.5, 2.5, 3]);
    * dl.cast(x, 'int32').print();
    * ```
-   * @param x A tensor.
+   * @param x The input tensor to be casted.
    * @param dtype The dtype to cast the input tensor to.
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
@@ -678,7 +680,7 @@ export class Ops {
    *
    * x.gather(indices).print();
    * ```
-   * @param x The input tensor.
+   * @param x The input tensor whose slices need to be gathered.
    * @param indices The indices of the values to extract.
    * @param axis The axis over which to select values. Defaults to 0.
    */
@@ -816,6 +818,7 @@ export class Ops {
    * x.expandDims(axis).print();
    * ```
    *
+   * @param x The input tensor whose dimensions need to be expanded.
    * @param axis The dimension index at which to insert shape of `1`. Defaults
    *     to 0 (the first dimension).
    */
