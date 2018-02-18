@@ -30,6 +30,7 @@ import * as util from './util';
 interface ScopeState {
   keep: Tensor[];
   track: Tensor[];
+  name?: string;
 }
 
 export type ForwardFunc<T extends Tensor> =
@@ -93,13 +94,13 @@ export class Engine implements TensorManager {
       backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
       ): T {
     let result: T;
-    // TODO(smilkov): Figure out kernel name.
-    const kernelName = '';
     const saved: Tensor[] = [];
     const saveFunc = <T extends Tensor>(x: T): T => {
       saved.push(x);
       return x;
     };
+    const kernelName = this.activeScope.name;
+
     if (!ENV.get('DEBUG')) {
       result = forwardFunc(this.backend, saveFunc);
     } else {
@@ -198,7 +199,7 @@ export class Engine implements TensorManager {
 
     const evaluatedNode: TapeNode = {
       id: this.nextTapeNodeId++,
-      name: '',  // TODO(smilkov): Figure out kernel name.
+      name: this.activeScope.name,
       inputs: inputsMap,
       output: result,
       gradient
@@ -220,7 +221,7 @@ export class Engine implements TensorManager {
    * Start a scope. Use this with endScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  startScope(gradientsMode = false) {
+  startScope(name?: string, gradientsMode = false) {
     if (gradientsMode && this.gradientScopeCount === 0) {
       this.activeTape = [];
     }
@@ -228,9 +229,12 @@ export class Engine implements TensorManager {
       this.gradientScopeCount++;
     }
 
-    const newScopeArrays: ScopeState = {keep: [], track: []};
-    this.scopeStack.push(newScopeArrays);
-    this.activeScope = newScopeArrays;
+    const scopeInfo: ScopeState = {keep: [], track: []};
+    if (name) {
+      scopeInfo.name = name;
+    }
+    this.scopeStack.push(scopeInfo);
+    this.activeScope = scopeInfo;
   }
 
   /**
