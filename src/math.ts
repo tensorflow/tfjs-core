@@ -227,9 +227,8 @@ export class NDArrayMath {
     let values: Tensor1D;
     let indices: Tensor1D;
     tidy('topK', () => {
-      values = ENV.engine.executeKernel('TopKValues', {inputs: {x}, args: {k}});
-      indices =
-          ENV.engine.executeKernel('TopKIndices', {inputs: {x}, args: {k}});
+      values = ENV.engine.runKernel(backend => backend.topKValues(x, k));
+      indices = ENV.engine.runKernel(backend => backend.topKIndices(x, k));
       return values;
     });
     const result = {values, indices};

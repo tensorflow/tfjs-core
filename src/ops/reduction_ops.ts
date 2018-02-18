@@ -115,8 +115,8 @@ export class Ops {
         reductionAxes =
             axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
       }
-      let value = ENV.engine.executeKernel(
-          'Sum', {inputs: {x: permutedX}, args: {axes: reductionAxes}});
+      let value = ENV.engine.runKernel(
+          backend => backend.sum(permutedX, reductionAxes));
       if (keepDims) {
         const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
         value = value.reshape(newShape);

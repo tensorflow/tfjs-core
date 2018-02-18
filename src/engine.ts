@@ -18,8 +18,6 @@
 import {ENV} from './environment';
 import {tidy} from './globals';
 import {BackendTimingInfo, KernelBackend} from './kernels/backend';
-import * as kernel_registry from './kernels/kernel_registry';
-import {KernelConfigRegistry} from './kernels/kernel_registry';
 import * as ops from './ops/ops';
 import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
@@ -28,7 +26,6 @@ import * as tape_util from './tape_util';
 import {ScopeResultImmediate} from './tape_util';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TypedArray} from './types';
-import {Rank} from './types';
 import * as util from './util';
 
 interface ScopeState {
@@ -125,42 +122,6 @@ export class Engine implements TensorManager {
       };
       this.activeTape.push(evaluatedNode);
     }
-    return result;
-  }
-
-  executeKernel<R extends Rank, K extends keyof KernelConfigRegistry<R>, C
-                    extends KernelConfigRegistry<R>[K]['inputAndArgs']>(
-      kernelName: K, config: C, grad?: KernelConfigRegistry<R>[K]['gradient']):
-      KernelConfigRegistry<R>[K]['output'] {
-    let result: KernelConfigRegistry<R>[K]['output'];
-    if (!ENV.get('DEBUG')) {
-      // NOTE: This isn't pulled out into a separate function to so that we
-      // keep a shallow stack trace.
-      result = kernel_registry.executeKernel(this.backend, kernelName, config);
-    } else {
-      result = this.profiler.profileKernel(
-          kernelName,
-          () =>
-              kernel_registry.executeKernel(this.backend, kernelName, config));
-    }
-
-    const recordKernel =
-        this.activeTape != null && this.customGradientDepth === 0;
-    if (recordKernel) {
-      config = tape_util.stripUndefinedInputsFromInputConfig(config) as C;
-
-      const evaluatedNode: KernelNode = {
-        id: this.nextTapeNodeId++,
-        type: 'kernel',
-        name: `kernel: ${kernelName}`,
-        kernel: kernelName,
-        inputAndArgs: config,
-        output: result,
-        gradient: grad
-      };
-      this.activeTape.push(evaluatedNode);
-    }
-
     return result;
   }
 
