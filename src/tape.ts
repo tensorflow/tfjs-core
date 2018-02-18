@@ -22,9 +22,10 @@ import * as util from './util';
 export interface TapeNode {
   id: number;
   name: string;
-  inputs: NamedTensorMap;
   output: Tensor;
-  gradient: (dy: Tensor|NamedTensorMap) => NamedGradientMap;
+  // Optional params, defined only for ops with gradient impl.
+  inputs?: NamedTensorMap;
+  gradient?: (dy: Tensor|NamedTensorMap) => NamedGradientMap;
 }
 
 export type NamedGradientMap = {
@@ -51,7 +52,11 @@ export function getFilteredNodesXToY(
   for (let i = 0; i < tape.length; i++) {
     const node = tape[i];
     const nodeInputs = node.inputs;
-
+    if (nodeInputs == null) {
+      throw new Error(
+          `${node.name} is missing gradient implementation. ` +
+          `Failed to back-propagate.`);
+    }
     for (const inputName in nodeInputs) {
       const input = nodeInputs[inputName];
 
@@ -110,15 +115,10 @@ export function getFilteredNodesXToY(
         }
       }
 
-      let prunedOutputs: Tensor|{[outputName: string]: Tensor};
-      // Nothing to prune if the output is just a single Tensor since the
-      // node would have been pruned.
-      prunedOutputs = node.output;
-
       // Copy the node and overwrite inputsAndArgs to the pruned version.
       const prunedNode = Object.assign({}, node) as TapeNode;
       prunedNode.inputs = prunedInputs;
-      prunedNode.output = prunedOutputs;
+      prunedNode.output = node.output;
 
       filteredTape.push(prunedNode);
     }

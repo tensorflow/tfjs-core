@@ -20,7 +20,8 @@ import {tidy} from './globals';
 import {BackendTimingInfo, KernelBackend} from './kernels/backend';
 import * as ops from './ops/ops';
 import {Profiler} from './profiler';
-import * as tape_util from './tape';
+// tslint:disable-next-line:max-line-length
+import {backpropagateGradients, extractTensorsFromScopeResult, getFilteredNodesXToY} from './tape';
 import {NamedGradientMap, TapeNode} from './tape';
 import {ScopeResultImmediate} from './tape';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
@@ -33,6 +34,10 @@ interface ScopeState {
   name?: string;
 }
 
+/**
+ * A function that computes an output. The save function is for saving tensors
+ * computed in the forward pass, that we need in the backwards pass.
+ */
 export type ForwardFunc<T extends Tensor> =
     (backend: KernelBackend, save?: <S extends Tensor>(tensor: S) => S) => T;
 
@@ -111,14 +116,18 @@ export class Engine implements TensorManager {
     const recordKernel =
         this.activeTape != null && this.customGradientDepth === 0;
     if (recordKernel) {
-      const evaluatedNode: TapeNode = {
+      const tapeNode: TapeNode = {
         id: this.nextTapeNodeId++,
         name: kernelName,
-        inputs,
-        output: result,
-        gradient: (dy: T) => backwardsFunc(dy, saved)
+        output: result
       };
-      this.activeTape.push(evaluatedNode);
+      if (inputs != null) {
+        tapeNode.inputs = inputs;
+      }
+      if (backwardsFunc != null) {
+        tapeNode.gradient = (dy: T) => backwardsFunc(dy, saved);
+      }
+      this.activeTape.push(tapeNode);
     }
     return result;
   }
@@ -197,14 +206,14 @@ export class Engine implements TensorManager {
       return resMap;
     };
 
-    const evaluatedNode: TapeNode = {
+    const tapeNode: TapeNode = {
       id: this.nextTapeNodeId++,
       name: this.activeScope.name,
       inputs: inputsMap,
       output: result,
       gradient
     };
-    this.activeTape.push(evaluatedNode);
+    this.activeTape.push(tapeNode);
   }
 
   keep<T extends Tensor>(result: T): T {
@@ -250,8 +259,7 @@ export class Engine implements TensorManager {
     }
 
     let tensorsToKeep = this.activeScope.keep;
-    const tensorsToTrackInParent =
-        tape_util.extractTensorsFromScopeResult(result);
+    const tensorsToTrackInParent = extractTensorsFromScopeResult(result);
     tensorsToKeep = tensorsToKeep.concat(tensorsToTrackInParent);
 
     // Dispose the arrays tracked in this scope.
@@ -302,8 +310,7 @@ export class Engine implements TensorManager {
           y instanceof Tensor,
           'The result y returned by f() must be a tensor.');
       // Filter out the nodes that don't connect x => y.
-      const filteredTape =
-          tape_util.getFilteredNodesXToY(this.activeTape, xs, y);
+      const filteredTape = getFilteredNodesXToY(this.activeTape, xs, y);
       if (!allowNoGradients && filteredTape.length === 0 && xs.length > 0) {
         throw new Error(
             'Cannot compute gradient of y=f(x) with respect to x. Make sure ' +
@@ -315,7 +322,7 @@ export class Engine implements TensorManager {
       accumulatedGradientMap[y.id] = (dy == null) ? ops.onesLike(y) : dy;
 
       // Backprop gradients through the filtered nodes.
-      tape_util.backpropagateGradients(accumulatedGradientMap, filteredTape);
+      backpropagateGradients(accumulatedGradientMap, filteredTape);
 
       const grads = xs.map(x => accumulatedGradientMap[x.id]);
       return {value: y, grads};
