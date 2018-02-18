@@ -36,6 +36,8 @@ export interface TensorData {
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class TensorBuffer<R extends Rank> {
+  size: number;
+
   private strides: number[];
 
   constructor(
@@ -52,6 +54,7 @@ export class TensorBuffer<R extends Rank> {
     this.values =
         values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
     this.strides = computeStrides(shape);
+    this.size = util.sizeFromShape(shape);
   }
 
   /**

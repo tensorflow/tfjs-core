@@ -19,10 +19,12 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {Rank, ShapeMap} from '../types';
+import * as util from '../util';
+import {ArrayOps} from './array_ops';
 import {operation} from './operation';
 import * as slice_util from './slice_util';
 
-export class Ops {
+export class SliceOps {
   /**
    * Extracts a 1D slice from 1D array starting at coordinates `begin` and is
    * of length `size`.
@@ -33,8 +35,10 @@ export class Ops {
    */
   @operation
   static slice1d(x: Tensor1D, begin: number, size: number): Tensor1D {
-    slice_util.assertParamsValid(x, [begin], [size]);
-    return ENV.engine.runKernel(backend => backend.slice1D(x, begin, size));
+    util.assert(
+        x.rank === 1,
+        `slice1d expects a rank-1 tensor, but got a rank-${x.rank} tensor`);
+    return SliceOps.slice(x, [begin], [size]);
   }
 
   /**
@@ -48,8 +52,10 @@ export class Ops {
   @operation
   static slice2d(x: Tensor2D, begin: [number, number], size: [number, number]):
       Tensor2D {
-    slice_util.assertParamsValid(x, begin, size);
-    return ENV.engine.runKernel(backend => backend.slice2D(x, begin, size));
+    util.assert(
+        x.rank === 2,
+        `slice1d expects a rank-2 tensor, but got a rank-${x.rank} tensor`);
+    return SliceOps.slice(x, begin, size);
   }
 
   /**
@@ -64,8 +70,10 @@ export class Ops {
   static slice3d(x: Tensor3D, begin: [number, number, number], size: [
     number, number, number
   ]): Tensor3D {
-    slice_util.assertParamsValid(x, begin, size);
-    return ENV.engine.runKernel(backend => backend.slice3D(x, begin, size));
+    util.assert(
+        x.rank === 3,
+        `slice1d expects a rank-3 tensor, but got a rank-${x.rank} tensor`);
+    return SliceOps.slice(x, begin, size);
   }
 
   /**
@@ -81,8 +89,10 @@ export class Ops {
   static slice4d(x: Tensor4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Tensor4D {
-    slice_util.assertParamsValid(x, begin, size);
-    return ENV.engine.runKernel(backend => backend.slice4D(x, begin, size));
+    util.assert(
+        x.rank === 4,
+        `slice1d expects a rank-4 tensor, but got a rank-${x.rank} tensor`);
+    return SliceOps.slice(x, begin, size);
   }
 
   /**
@@ -115,26 +125,27 @@ export class Ops {
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static slice<R extends Rank>(
-      x: Tensor<R>, begin: ShapeMap[R], size: ShapeMap[R]): Tensor<R> {
+  static slice<R extends Rank, T extends Tensor<R>>(
+      x: T, begin: ShapeMap[R], size: ShapeMap[R]): T {
+    slice_util.assertParamsValid(x, begin, size);
     if (x.rank === 0) {
       throw new Error('Slicing scalar is not possible');
-    } else if (x.rank === 1) {
-      return Ops.slice1d(x as Tensor1D, begin[0], size[0]) as Tensor<R>;
-    } else if (x.rank === 2) {
-      return Ops.slice2d(
-                 x as Tensor2D, begin as [number, number],
-                 size as [number, number]) as Tensor<R>;
-    } else if (x.rank === 3) {
-      return Ops.slice3d(
-                 x as Tensor3D, begin as [number, number, number],
-                 size as [number, number, number]) as Tensor<R>;
-    } else if (x.rank === 4) {
-      return Ops.slice4d(
-                 x as Tensor4D, begin as [number, number, number, number],
-                 size as [number, number, number, number]) as Tensor<R>;
-    } else {
-      throw new Error(`Slicing for rank ${x.rank} not implemented yet`);
     }
+    const inputShape = x.shape;
+    const grad = (dy: T) => {
+      // Create an Nx2 padding where the first column represents how many
+      // zeros are to be prepended for each dimension, and the second
+      // column indicates how many zeros are appended.
+
+      // The number of zeros to append is the shape of the input
+      // elementwise-subtracted by both the begin vector and sizes vector.
+      const paddings: Array<[number, number]> = [];
+      for (let i = 0; i < dy.rank; i++) {
+        paddings.push([begin[i], inputShape[i] - begin[i] - size[i]]);
+      }
+      return {x: () => ArrayOps.pad(dy, paddings)};
+    };
+    return ENV.engine.runKernel(
+               backend => backend.slice(x, begin, size), {x}, grad) as T;
   }
 }

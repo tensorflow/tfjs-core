@@ -139,56 +139,13 @@ export class MathBackendCPU implements KernelBackend {
     }
   }
 
-  slice1D(x: Tensor1D, begin: number, size: number): Tensor1D {
-    const newVals = x.dataSync().slice(begin, begin + size);
-    return ops.tensor1d(newVals, x.dtype);
-  }
+  slice(x: Tensor, begin: number[], size: number[]): Tensor {
+    const buffer = ops.buffer(size, x.dtype);
 
-  slice2D(x: Tensor2D, begin: [number, number], size: [number, number]):
-      Tensor2D {
-    const buffer = ops.buffer<Rank.R2>(size, x.dtype);
-    const [startI, startJ] = begin;
-
-    for (let i = 0; i < size[0]; ++i) {
-      for (let j = 0; j < size[1]; ++j) {
-        const val = x.get(i + startI, j + startJ);
-        buffer.set(val, i, j);
-      }
-    }
-    return buffer.toTensor();
-  }
-
-  slice3D(x: Tensor3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Tensor3D {
-    const buffer = ops.buffer<Rank.R3>(size, x.dtype);
-    const [startI, startJ, startK] = begin;
-
-    for (let i = 0; i < size[0]; ++i) {
-      for (let j = 0; j < size[1]; ++j) {
-        for (let k = 0; k < size[2]; ++k) {
-          const val = x.get(i + startI, j + startJ, k + startK);
-          buffer.set(val, i, j, k);
-        }
-      }
-    }
-    return buffer.toTensor();
-  }
-  slice4D(x: Tensor4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Tensor4D {
-    const buffer = ops.buffer<Rank.R4>(size, x.dtype);
-    const [startI, startJ, startK, startL] = begin;
-
-    for (let i = 0; i < size[0]; ++i) {
-      for (let j = 0; j < size[1]; ++j) {
-        for (let k = 0; k < size[2]; ++k) {
-          for (let l = 0; l < size[3]; ++l) {
-            const val = x.get(i + startI, j + startJ, k + startK, l + startL);
-            buffer.set(val, i, j, k, l);
-          }
-        }
-      }
+    for (let i = 0; i < buffer.size; ++i) {
+      const loc = buffer.indexToLoc(i);
+      const xLoc = loc.map((idx, j) => idx + begin[j]);
+      buffer.set(x.get(...xLoc), ...loc);
     }
     return buffer.toTensor();
   }

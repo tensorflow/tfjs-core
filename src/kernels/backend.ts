@@ -50,15 +50,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D;
 
-  slice1D(x: Tensor1D, begin: number, size: number): Tensor1D;
-  slice2D(x: Tensor2D, begin: [number, number], size: [number, number]):
-      Tensor2D;
-  slice3D(x: Tensor3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Tensor3D;
-  slice4D(x: Tensor4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Tensor4D;
+  slice(x: Tensor, begin: number[], size: number[]): Tensor;
 
   reverse4D(a: Tensor4D, axis: number[]): Tensor4D;
 

@@ -309,30 +309,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.gpgpu;
   }
 
-  slice1D(x: Tensor1D, begin: number, size: number): Tensor1D {
-    const program = new SliceProgram([size]);
-    const customSetup = program.getCustomSetupFunc([begin]);
-    return this.compileAndRun(program, [x], null, customSetup);
-  }
-
-  slice2D(x: Tensor2D, begin: [number, number], size: [number, number]):
-      Tensor2D {
-    const program = new SliceProgram(size);
-    const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [x], null, customSetup);
-  }
-
-  slice3D(x: Tensor3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Tensor3D {
-    const program = new SliceProgram(size);
-    const customSetup = program.getCustomSetupFunc(begin);
-    return this.compileAndRun(program, [x], null, customSetup);
-  }
-
-  slice4D(x: Tensor4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Tensor4D {
+  slice(x: Tensor, begin: number[], size: number[]): Tensor {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
     return this.compileAndRun(program, [x], null, customSetup);

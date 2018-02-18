@@ -22,7 +22,7 @@ import * as util from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './operation';
 
-export class Ops {
+export class ReverseOps {
   /**
    * Reverses a `Tensor1D`.
    *
@@ -31,7 +31,7 @@ export class Ops {
   static reverse1d(x: Tensor1D): Tensor1D {
     util.assert(x.rank === 1, `Error in reverse1D: x must be rank 1 but got
              rank ${x.rank}.`);
-    return Ops.reverse(x, 0);
+    return ReverseOps.reverse(x, 0);
   }
 
   /**
@@ -44,7 +44,7 @@ export class Ops {
   static reverse2d(x: Tensor2D, axis: number|number[]): Tensor2D {
     util.assert(x.rank === 2, `Error in reverse2D: x must be rank 2 but got
              rank ${x.rank}.`);
-    return Ops.reverse(x, axis);
+    return ReverseOps.reverse(x, axis);
   }
 
   /**
@@ -56,7 +56,7 @@ export class Ops {
   static reverse3d(x: Tensor3D, axis: number|number[]): Tensor3D {
     util.assert(x.rank === 3, `Error in reverse3D: x must be rank 3 but got
              rank ${x.rank}.`);
-    return Ops.reverse(x, axis);
+    return ReverseOps.reverse(x, axis);
   }
 
   /**
@@ -68,7 +68,7 @@ export class Ops {
   static reverse4d(x: Tensor4D, axis: number|number[]): Tensor4D {
     util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
              rank ${x.rank}.`);
-    return Ops.reverse(x, axis);
+    return ReverseOps.reverse(x, axis);
   }
 
   /**
