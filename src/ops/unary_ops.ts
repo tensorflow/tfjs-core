@@ -16,9 +16,11 @@
  */
 
 import {doc} from '../doc';
+import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import * as util from '../util';
+
 import {operation} from './operation';
 import * as ops from './ops';
 import {zerosLike} from './ops';
@@ -60,7 +62,7 @@ export class Ops {
   static ceil<T extends Tensor>(x: T): T {
     // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const grad = (dy: T) => {
-      return {x: () => ops.zeros(dy.shape)};
+      return {x: () => ops.zerosLike(dy)};
     };
     return ENV.engine.runKernel(backend => backend.ceil(x), {x}, grad);
   }

@@ -16,12 +16,14 @@
  */
 
 import {doc} from '../doc';
+import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray} from '../types';
 import * as util from '../util';
+
 import {Concat} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
