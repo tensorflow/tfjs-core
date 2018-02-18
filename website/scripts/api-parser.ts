@@ -24,6 +24,8 @@ import {DocClass, DocFunction, DocFunctionParam, DocHeading, Docs, DocSubheading
 import * as util from './api-util';
 
 const DOCUMENTATION_DECORATOR = '@doc';
+const DOCUMENTATION_TYPE_ALIAS = 'docalias';
+const DOCUMENTATION_LINK_ALIAS = 'doclink';
 const SRC_ROOT = 'src/';
 const PROGRAM_ROOT = SRC_ROOT + 'index.ts';
 
@@ -32,7 +34,8 @@ const repoPath = process.cwd();
 /**
  * Parses the program.
  */
-export function parse(): Docs {
+export function parse():
+    {docs: Docs, docLinkAliases: {[symbolName: string]: string}} {
   if (!fs.existsSync(PROGRAM_ROOT)) {
     throw new Error(
         `Program root ${PROGRAM_ROOT} does not exist. Please run this script ` +
@@ -43,60 +46,136 @@ export function parse(): Docs {
   const docHeadings: DocHeading[] = [
     {
       name: 'Tensors',
+      description: '',
       subheadings: [
-        {name: 'Creation'}, {name: 'Transformations'},
-        {name: 'Slicing and Joining'}
+        {
+          name: 'Creation',
+          description: `<p>Tensors are the core datastructure of deeplearn.js.
+             They are a generalization of vectors and matrices to potentially
+             higher dimensions.
+             </p>
+             <p>We have utility functions for common cases like Scalar, 1D,
+             2D, 3D and 4D tensors, as well a number of functions to initialize
+             tensors in ways useful for machine learning.</p>`,
+          pin: [
+            'tensor', 'scalar', 'tensor1d', 'tensor2d', 'tensor3d', 'tensor4d'
+          ]
+        },
+        {
+          name: 'Classes',
+          description: `<p>
+          This section shows the main Tensor related classes in deeplearn.js and
+          the methods we expose on them.
+          </p>`,
+          pin: ['Tensor', 'Variable', 'TensorBuffer']
+        },
+        {
+          name: 'Transformations',
+          description: `<p>This section describes some common Tensor
+              transformations for reshaping and type-casting.</p>`
+        },
+        {
+          name: 'Slicing and Joining',
+          description: `<p>deeplearn.js provides several operations
+              to slice or extract parts of a tensor, or join multiple
+              tensors together.`
+        }
       ]
     },
     {
       name: 'Operations',
+      description: '',
       subheadings: [
-        {name: 'Arithmetic'}, {name: 'Basic math'}, {name: 'Matrices'},
-        {name: 'Convolution'}, {name: 'Reduction'}, {name: 'Normalization'},
-        {name: 'Images'}, {name: 'RNN'}, {name: 'Classification'},
-        {name: 'Logical'}
+        {
+          name: 'Arithmetic',
+          description:
+              `<p>To perform mathematical computation on Tensors, we use
+              operations. Tensors are immutable, so all operations always return
+              new Tensors and never modify input Tensors.</p>`,
+          pin: ['add', 'sub', 'mul', 'div']
+        },
+        {name: 'Basic math'}, {name: 'Matrices'}, {name: 'Convolution'},
+        {name: 'Reduction'}, {name: 'Normalization'}, {name: 'Images'},
+        {name: 'RNN'}, {name: 'Logical'}
       ]
     },
-    {name: 'Training', subheadings: [{name: 'Gradients'}]},
-    {name: 'Performance', subheadings: [{name: 'Memory'}, {name: 'Timing'}]}
+    {
+      name: 'Training',
+      description: `<p>We also provide an API to do perform training, and
+      compute gradients. We compute gradients eagerly, users provide a function
+      that is a combination of operations and we automatically differentiate
+      that function's output with respect to its inputs.
+
+      <p>For those familiar with TensorFlow, the API we expose exactly mirrors
+      the TensorFlow Eager API.
+      </p>`,
+      subheadings: [
+        {
+          name: 'Gradients',
+          pin: ['grad', 'grads', 'valAndGrad', 'valAndGrads', 'customGrad']
+        },
+        {name: 'Optimizers', pin: ['sgd', 'momentum', 'adagrad', 'adadelta']},
+        {name: 'Losses'}, {name: 'Classes'}
+      ]
+    },
+    {
+      name: 'Performance',
+      description: `<p>`,
+      subheadings:
+          [{name: 'Memory', pin: ['tidy']}, {name: 'Timing', pin: ['time']}]
+    },
+    {
+      name: 'Environment',
+      description: `<p>deeplearn.js can run mathematical operations on
+          different backends. Currently, we support WebGL and JavaScript
+          CPU. By default, we choose the 'best' backend available, but
+          allow users to customize their backend.`,
+      subheadings: [{name: '', pin: ['setBackend']}]
+    }
   ];
 
-  // We keep an auxillary map of explicitly marked "subclass" fields on @doc to
-  // the method entries
+  // We keep an auxillary map of explicitly marked "subclass" fields on
+  // @doc to the method entries
   const subclassMethodMap: {[subclass: string]: DocFunction[]} = {};
+  const docTypeAliases: {[type: string]: string} = {};
+  const docLinkAliases: {[symbolName: string]: string} = {};
 
-  // Use the same compiler options that we use to compile the library here.
+  // Use the same compiler options that we use to compile the library
+  // here.
   const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
 
   console.log(`Parsing AST from program root ${PROGRAM_ROOT}`);
   const program = ts.createProgram([PROGRAM_ROOT], tsconfig.compilerOptions);
   const checker = program.getTypeChecker();
 
-  // Visit all the nodes that are transitively linked from the source root.
+  // Visit all the nodes that are transitively linked from the source
+  // root.
   for (const sourceFile of program.getSourceFiles()) {
     if (!sourceFile.isDeclarationFile) {
       ts.forEachChild(
           sourceFile,
           node => visitNode(
-              docHeadings, subclassMethodMap, checker, node, sourceFile));
+              docHeadings, subclassMethodMap, docTypeAliases, docLinkAliases,
+              checker, node, sourceFile));
     }
   }
 
   util.addSubclassMethods(docHeadings, subclassMethodMap);
-
-  // Sort the documentation.
   util.sortMethods(docHeadings);
+  util.replaceDocTypeAliases(docHeadings, docTypeAliases);
 
   const docs: Docs = {headings: docHeadings};
 
-  return docs;
+  return {docs, docLinkAliases};
 }
 
 // Visits nodes of the AST, finding documentation annotated with @doc.
 function visitNode(
     docHeadings: DocHeading[],
     subclassMethodMap: {[subclass: string]: DocFunction[]},
-    checker: ts.TypeChecker, node: ts.Node, sourceFile: ts.SourceFile) {
+    docTypeAliases: {[type: string]: string},
+    docLinkAliases: {[symbolName: string]: string}, checker: ts.TypeChecker,
+    node: ts.Node, sourceFile: ts.SourceFile) {
   if (ts.isMethodDeclaration(node)) {
     const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
 
@@ -123,8 +202,12 @@ function visitNode(
       }
     }
   } else if (ts.isClassDeclaration(node)) {
-    const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
+    const docLinkAlias = util.getJsdoc(checker, node, DOCUMENTATION_LINK_ALIAS);
+    if (docLinkAlias != null) {
+      docLinkAliases[node.name.getText()] = docLinkAlias;
+    }
 
+    const docInfo = util.getDocDecorator(node, DOCUMENTATION_DECORATOR);
     if (docInfo != null) {
       const subheading =
           util.fillHeadingsAndGetSubheading(docInfo, docHeadings);
@@ -132,12 +215,27 @@ function visitNode(
       subheading.symbols.push(
           serializeClass(checker, node, docInfo, sourceFile, docHeadings));
     }
+
+    // You can't use both doc link aliases and @doc decorators.
+    if (docInfo != null && docLinkAlias != null) {
+      throw new Error(
+          `Class ${node.name.getText()} has both a ` +
+          `doc link alias and a doc decorator.`);
+    }
+  } else if (
+      ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
+    const docAlias = util.getJsdoc(checker, node, DOCUMENTATION_TYPE_ALIAS);
+    if (docAlias != null) {
+      const symbol = checker.getSymbolAtLocation(node.name);
+      docTypeAliases[symbol.getName()] = docAlias;
+    }
   }
 
   ts.forEachChild(
       node,
-      node =>
-          visitNode(docHeadings, subclassMethodMap, checker, node, sourceFile));
+      node => visitNode(
+          docHeadings, subclassMethodMap, docTypeAliases, docLinkAliases,
+          checker, node, sourceFile));
 }
 
 export function serializeClass(
@@ -147,13 +245,11 @@ export function serializeClass(
 
   const name = symbol.getName();
 
-  const displayName = util.getDisplayName(docInfo, name);
-
   const {displayFilename, githubUrl} =
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
   const docClass: DocClass = {
     symbolName: name,
-    displayName,
+    namespace: docInfo.namespace,
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
     fileName: displayFilename,
     githubUrl,
@@ -185,15 +281,16 @@ export function serializeMethod(
   }
 
   const methodName = node.name.getText();
-  const displayName = util.getDisplayName(docInfo, methodName);
 
   const symbol = checker.getSymbolAtLocation(node.name);
   const type =
       checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
   const signature = type.getCallSignatures()[0];
 
-  const parameters =
-      signature.parameters.map(symbol => serializeParameter(checker, symbol));
+  const identifierGenericMap = util.getIdentifierGenericMap(node, symbol.name);
+
+  const parameters = signature.parameters.map(
+      symbol => serializeParameter(checker, symbol, identifierGenericMap));
   const paramStr = '(' +
       parameters.map(param => param.name + (param.optional ? '?' : ''))
           .join(', ') +
@@ -202,12 +299,29 @@ export function serializeMethod(
   const {displayFilename, githubUrl} =
       util.getFileInfo(node, sourceFile, repoPath, SRC_ROOT);
 
+  // Find a type node in the method signature. This is a return type. If
+  // it cannot be found (no return type), fall back to the standard way of
+  // getting the type. We do this because getting the full text of the
+  // type node is better than using the signature return type.
+  let returnType;
+  node.forEachChild(child => {
+    if (ts.isTypeNode(child)) {
+      returnType = child.getText();
+    }
+  });
+  if (returnType == null) {
+    // Fall back the the standard way of getting the type, which sometimes
+    // gives up and returns 'any' or '{}' for complex types.
+    returnType = checker.typeToString(signature.getReturnType());
+  }
+  returnType = util.sanitizeTypeString(returnType, identifierGenericMap);
+
   const method: DocFunction = {
     symbolName: symbol.name,
-    displayName,
+    namespace: docInfo.namespace,
     paramStr,
     parameters,
-    returnType: checker.typeToString(signature.getReturnType()),
+    returnType,
     documentation: ts.displayPartsToString(signature.getDocumentationComment()),
     fileName: displayFilename,
     githubUrl,
@@ -218,12 +332,12 @@ export function serializeMethod(
 }
 
 function serializeParameter(
-    checker: ts.TypeChecker, symbol: ts.Symbol): DocFunctionParam {
+    checker: ts.TypeChecker, symbol: ts.Symbol,
+    identifierGenericMap: {[identifier: string]: string}): DocFunctionParam {
   return {
     name: symbol.getName(),
     documentation: ts.displayPartsToString(symbol.getDocumentationComment()),
-    type: checker.typeToString(
-        checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!)),
+    type: util.parameterTypeToString(checker, symbol, identifierGenericMap),
     optional: checker.isOptionalParameter(
         symbol.valueDeclaration as ts.ParameterDeclaration)
   };

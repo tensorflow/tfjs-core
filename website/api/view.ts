@@ -14,34 +14,46 @@
  * limitations under the License.
  * =============================================================================
  */
-export interface Docs { headings: DocHeading[]; }
+export interface Docs {
+  headings: DocHeading[];
+  bundleJsPath?: string;
+}
 
 export interface DocHeading {
   name: string;
+  description?: string;
   subheadings: DocSubheading[];
 }
 
 export interface DocSubheading {
   name: string;
+  description?: string;
   symbols?: DocSymbol[];
+  // Only used at initialization for sort-order. Pins by displayName, not symbol
+  // name (so that we use namespaces).
+  pin?: string[];
 }
 
 export type DocSymbol = DocFunction|DocClass;
 
 export interface DocClass {
   symbolName: string;
-  displayName: string;
+  namespace: string;
   documentation: string;
   fileName: string;
   githubUrl: string;
   methods: DocFunction[];
 
   isClass: true;
+
+  // Filled in by the linker.
+  displayName?: string;
+  urlHash?: string;
 }
 
 export interface DocFunction {
   symbolName: string;
-  displayName: string;
+  namespace: string;
   documentation: string;
   fileName: string;
   githubUrl: string;
@@ -51,6 +63,10 @@ export interface DocFunction {
   returnType: string;
 
   isFunction: true;
+
+  // Filled in by the linker.
+  displayName?: string;
+  urlHash?: string;
 }
 
 export interface DocFunctionParam {

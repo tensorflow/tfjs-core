@@ -16,9 +16,8 @@
  */
 
 import {keep, tidy} from '../../globals';
-import {NDArrayMath} from '../../math/math';
-import {MatrixOrientation} from '../../math/matmul';
-import {Tensor1D, Tensor2D} from '../../math/tensor';
+import {NDArrayMath} from '../../math';
+import {Tensor1D, Tensor2D} from '../../tensor';
 import {SymbolicTensor} from '../graph';
 import * as graph_util from '../graph_util';
 import {SummedTensorArrayMap, TensorArrayMap} from '../tensor_array_map';
@@ -75,16 +74,12 @@ export class MatMul extends Operation {
       // dx1 = dy * x2T
       // dx2 = x1T * dy
       if (graph_util.shouldBackProp(this.x1Tensor)) {
-        const dx1 = math.matMul(
-            dy as Tensor2D, x2 as Tensor2D, MatrixOrientation.REGULAR,
-            MatrixOrientation.TRANSPOSED);
+        const dx1 = math.matMul(dy as Tensor2D, x2 as Tensor2D, false, true);
         gradientArrays.add(
             this.x1Tensor, this.x1Tensor.shape.length === 1 ? dx1.as1D() : dx1);
       }
       if (graph_util.shouldBackProp(this.x2Tensor)) {
-        const dx2 = math.matMul(
-            x1 as Tensor2D, dy as Tensor2D, MatrixOrientation.TRANSPOSED,
-            MatrixOrientation.REGULAR);
+        const dx2 = math.matMul(x1 as Tensor2D, dy as Tensor2D, true, false);
         gradientArrays.add(
             this.x2Tensor, this.x2Tensor.shape.length === 1 ? dx2.as1D() : dx2);
       }
