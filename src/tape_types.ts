@@ -15,10 +15,8 @@
  * =============================================================================
  */
 
-import {NamedTensorMap} from './types';
 import {Tensor} from './tensor';
-import {Rank} from './types';
-import {KernelConfigRegistry} from './kernels/kernel_registry';
+import {NamedTensorMap} from './types';
 
 export type Tape = Array<TapeNode<TapeNodeOutput>>;
 export type TapeNodeOutput = Tensor|NamedTensorMap;
@@ -42,7 +40,7 @@ export type TapeNodeInputGradientTensors = {
 
 // Kernel nodes
 export interface KernelNode extends TapeNode<Tensor> {
-  kernel: keyof KernelConfigRegistry<Rank>;
+  kernel: string;
   inputAndArgs: KernelInputConfig;
   output: Tensor;
 }

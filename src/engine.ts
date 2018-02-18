@@ -19,7 +19,7 @@ import {ENV} from './environment';
 import {tidy} from './globals';
 import {BackendTimingInfo, KernelBackend} from './kernels/backend';
 import * as kernel_registry from './kernels/kernel_registry';
-import {Kernel, KernelConfigRegistry} from './kernels/kernel_registry';
+import {KernelConfigRegistry} from './kernels/kernel_registry';
 import * as ops from './ops/ops';
 import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
@@ -37,7 +37,7 @@ interface ScopeState {
 }
 
 export type ForwardFunc<T extends Tensor> =
-    (backend: KernelBackend, save?: (map: NamedTensorMap) => void) => T;
+    (backend: KernelBackend, save?: <S extends Tensor>(tensor: S) => S) => T;
 
 /**
  * @docalias (a: Tensor, b: Tensor,...) => {
@@ -94,18 +94,21 @@ export class Engine implements TensorManager {
   runKernel<T extends Tensor, I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
       inputs?: I,
-      backwardsFunc?:
-          (dy: T, saved: NamedTensorMap) => {[P in keyof I]: () => I[P]},
+      backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
       ): T {
     let result: T;
     // TODO(smilkov): Figure out kernel name.
-    const kernelName = '' as Kernel;
-    let saved: NamedTensorMap = null;
+    const kernelName = '';
+    const saved: Tensor[] = [];
+    const saveFunc = <T extends Tensor>(x: T): T => {
+      saved.push(x);
+      return x;
+    };
     if (!ENV.get('DEBUG')) {
-      result = forwardFunc(this.backend, x => saved = x);
+      result = forwardFunc(this.backend, saveFunc);
     } else {
       result = this.profiler.profileKernel(
-          kernelName, () => forwardFunc(this.backend, x => saved = x));
+          kernelName, () => forwardFunc(this.backend, saveFunc));
     }
 
     const recordKernel =

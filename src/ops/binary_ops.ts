@@ -55,7 +55,7 @@ export class Ops {
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
-    const der = (dy: Tensor, y: Tensor) => {
+    const der = (dy: Tensor) => {
       const derA = () => {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
@@ -74,7 +74,7 @@ export class Ops {
       };
       return {a: derA, b: derB};
     };
-    return ENV.engine.executeKernel('Add', {inputs: {a, b}}, der) as T;
+    return ENV.engine.runKernel(backend => backend.add(a, b), {a, b}, der) as T;
   }
 
   /**
@@ -121,7 +121,7 @@ export class Ops {
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
-    const der = (dy: Tensor, y: Tensor) => {
+    const der = (dy: Tensor) => {
       const derA = () => {
         let res = dy;
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
@@ -140,7 +140,8 @@ export class Ops {
       };
       return {a: derA, b: derB};
     };
-    return ENV.engine.executeKernel('Sub', {inputs: {a, b}}, der) as T;
+    return ENV.engine.runKernel(
+               backend => backend.subtract(a, b), {a, b}, der) as T;
   }
 
   /**
@@ -253,7 +254,7 @@ export class Ops {
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
-    const der = (dy: Tensor, y: Tensor) => {
+    const der = (dy: Tensor) => {
       const derA = () => {
         const res = dy.mul(b.toFloat());
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
@@ -272,7 +273,8 @@ export class Ops {
       };
       return {a: derA, b: derB};
     };
-    return ENV.engine.executeKernel('Mul', {inputs: {a, b}}, der) as T;
+    return ENV.engine.runKernel(
+               backend => backend.multiply(a, b), {a, b}, der) as T;
   }
 
   /**
@@ -317,7 +319,7 @@ export class Ops {
   static div<T extends Tensor>(a: Tensor, b: Tensor): T {
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const der = (dy: Tensor, y: Tensor) => {
+    const der = (dy: Tensor) => {
       const derA = () => {
         const res = dy.div(b.toFloat());
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
@@ -337,7 +339,8 @@ export class Ops {
       };
       return {a: derA, b: derB};
     };
-    return ENV.engine.executeKernel('Div', {inputs: {a, b}}, der) as T;
+    return ENV.engine.runKernel(backend => backend.divide(a, b), {a, b}, der) as
+        T;
   }
 
   /**
@@ -382,12 +385,13 @@ export class Ops {
   static minimum<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const der = (dy: Tensor, y: Tensor) => {
+    const der = (dy: Tensor) => {
       const derA = () => dy.mul(a.lessEqual(b).toFloat());
       const derB = () => dy.mul(a.greater(b).toFloat());
       return {a: derA, b: derB};
     };
-    return ENV.engine.executeKernel('Minimum', {inputs: {a, b}}, der) as T;
+    return ENV.engine.runKernel(
+               backend => backend.minimum(a, b), {a, b}, der) as T;
   }
 
   /**
@@ -432,12 +436,13 @@ export class Ops {
   static maximum<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const der = (dy: Tensor, y: Tensor) => {
+    const der = (dy: Tensor) => {
       const derA = () => dy.mul(a.greaterEqual(b).toFloat());
       const derB = () => dy.mul(a.less(b).toFloat());
       return {a: derA, b: derB};
     };
-    return ENV.engine.executeKernel('Maximum', {inputs: {a, b}}, der) as T;
+    return ENV.engine.runKernel(
+               backend => backend.maximum(a, b), {a, b}, der) as T;
   }
 
   /**

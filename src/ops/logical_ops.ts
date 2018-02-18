@@ -19,7 +19,6 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import * as types from '../types';
-import {DataType} from '../types';
 import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
@@ -50,7 +49,7 @@ export class Ops {
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('LogicalAnd', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(backend => backend.logicalAnd(a, b)) as T;
   }
 
   /**
@@ -66,7 +65,7 @@ export class Ops {
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('LogicalOr', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(backend => backend.logicalOr(a, b)) as T;
   }
 
   /**
@@ -82,7 +81,7 @@ export class Ops {
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('LogicalXor', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(backend => backend.logicalXor(a, b)) as T;
   }
 
   /**
@@ -117,9 +116,7 @@ export class Ops {
 
     // Default to highest percision of number:
     const dtype = types.upcastType(a.dtype, b.dtype);
-    return ENV.engine.executeKernel(
-               'Where',
-               {inputs: {condition, a, b}, args: {dtype: dtype as DataType}}) as
-        T;
+    return ENV.engine.runKernel(
+               backend => backend.where(condition, a, b, dtype)) as T;
   }
 }

@@ -16,11 +16,9 @@
  */
 
 import {doc} from '../doc';
-import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import * as util from '../util';
-
 import {operation} from './operation';
 import * as ops from './ops';
 import {zerosLike} from './ops';
@@ -101,15 +99,12 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static exp<T extends Tensor>(x: T): T {
-    const forw: ForwardFunc<T> = (backend, save) => {
-      const y = backend.exp(x);
-      save({y});
-      return y;
+    const bck = (dy: T, saved: Tensor[]) => {
+      const [y] = saved;
+      return {x: () => dy.mulStrict(y as T)};
     };
-    const bck = (dy: T, saved: {y: T}) => {
-      return {x: () => dy.mulStrict(saved.y)};
-    };
-    return ENV.engine.runKernel(forw, {x}, bck);
+    return ENV.engine.runKernel(
+        (backend, save) => save(backend.exp(x)), {x}, bck);
   }
 
   /**
@@ -355,16 +350,12 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static sigmoid<T extends Tensor>(x: T): T {
-    const forw: ForwardFunc<T> = (backend, save) => {
-      const y = backend.sigmoid(x);
-      save({y});
-      return y;
-    };
-    const grad = (dy: T, saved: {y: T}) => {
-      const {y} = saved;
+    const grad = (dy: T, saved: Tensor[]) => {
+      const [y] = saved;
       return {x: () => dy.mulStrict(y.mul(ops.scalar(1).sub(y)))};
     };
-    return ENV.engine.runKernel(forw, {x}, grad);
+    return ENV.engine.runKernel(
+        (backend, save) => save(backend.sigmoid(x)), {x}, grad);
   }
 
   /**
@@ -537,16 +528,12 @@ export class Ops {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static tanh<T extends Tensor>(x: T): T {
-    const forw: ForwardFunc<T> = (backend, save) => {
-      const y = backend.tanh(x);
-      save({y});
-      return y;
-    };
-    const grad = (dy: T, saved: {y: T}) => {
-      const {y} = saved;
+    const grad = (dy: T, saved: Tensor[]) => {
+      const [y] = saved;
       return {x: () => ops.scalar(1).sub(y.square()).mulStrict(dy) as T};
     };
-    return ENV.engine.runKernel(forw, {x}, grad);
+    return ENV.engine.runKernel(
+        (backend, save) => save(backend.tanh(x)), {x}, grad);
   }
 
   /**
