@@ -18,11 +18,9 @@
 
 import * as dl from './index';
 import * as tape_util from './tape_util';
-// tslint:disable-next-line:max-line-length
 import {TapeNode} from './tape_util';
 import {Scalar, Tensor} from './tensor';
 import {CPU_ENVS, describeWithFlags, expectArraysClose} from './test_util';
-import {NamedTensorMap} from './types';
 
 describeWithFlags('getFilteredNodesXToY', CPU_ENVS, () => {
   it('getFilteredNodesXToY no paths from x to y', () => {
@@ -190,110 +188,6 @@ describeWithFlags('getFilteredNodesXToY', CPU_ENVS, () => {
         .toEqual(
             {id: 0, name: 'node0', inputs: {x}, output: y, gradient: null});
   });
-
-  it('getFilteredNodesXToY x => {intermediate, orphan1} and ' +
-         '{orphan2, intermediate} => {y, orphan3}',
-     () => {
-       const x = dl.scalar(1);
-       const intermediate = dl.scalar(5);
-       const orphan1 = dl.scalar(1);
-       const orphan2 = dl.scalar(2);
-       const orphan3 = dl.scalar(3);
-       const y = dl.scalar(2);
-
-       const tape: TapeNode[] = [
-         {
-           id: 0,
-           name: 'node0',
-           inputs: {x},
-           output: {orphan1, intermediate},
-           gradient: null
-         },
-         {
-           id: 1,
-           name: 'node1',
-           inputs: {intermediate, orphan2},
-           output: {y, orphan3},
-           gradient: null
-         }
-       ];
-
-       const filteredTapeNodes = tape_util.getFilteredNodesXToY(tape, [x], y);
-
-       expect(filteredTapeNodes.length).toBe(2);
-       // The orphans should be pruned from inputs and outputs.
-       expect(filteredTapeNodes[0]).toEqual({
-         id: 0,
-         name: 'node0',
-         inputs: {x},
-         output: intermediate,
-         gradient: null
-       });
-       expect(filteredTapeNodes[1]).toEqual({
-         id: 1,
-         name: 'node1',
-         inputs: {intermediate},
-         output: y,
-         gradient: null
-       });
-     });
-
-  it('getFilteredNodesXToY x0 => orphan0, ' +
-         'x0 => intermediate0, x0 => intermediate1, ' +
-         '[intermediate0, intermediate1, x1, orphan1] => {y, orphan2}',
-     () => {
-       const x0 = dl.scalar(1);
-       const orphan0 = dl.scalar(2);
-
-       const intermediate0 = dl.scalar(3);
-       const intermediate1 = dl.scalar(4);
-
-       const x1 = dl.scalar(5);
-       const orphan1 = dl.scalar(6);
-       const y = dl.scalar(7);
-       const orphan2 = dl.scalar(8);
-
-       const tape: TapeNode[] = [
-         {
-           id: 0,
-           name: 'node0',
-           inputs: {x0},
-           output: intermediate0,
-           gradient: null
-         },
-         {
-           id: 1,
-           name: 'node1',
-           inputs: {x0},
-           output: intermediate1,
-           gradient: null
-         },
-         {id: 2, name: 'node2', inputs: {x0}, output: orphan0, gradient: null},
-         {
-           id: 3,
-           name: 'node3',
-           inputs: {intermediate0, intermediate1, x1, orphan1},
-           output: {y, orphan2},
-           gradient: null
-         }
-       ];
-
-       const filteredTapeNodes =
-           tape_util.getFilteredNodesXToY(tape, [x0, x1], y);
-
-       expect(filteredTapeNodes.length).toBe(3);
-       expect(filteredTapeNodes[0]).toEqual(tape[0]);
-       expect(filteredTapeNodes[1]).toEqual(tape[1]);
-       // The orphans should be removed and the orphan1 should be pruned from
-       // inputs.
-       expect(filteredTapeNodes[2]).toEqual({
-         id: 3,
-         name: 'node3',
-         inputs: {intermediate0, intermediate1, x1},
-         output: y,
-         gradient: null
-       });
-     });
 });
 
 describeWithFlags('backpropagateGradients', CPU_ENVS, () => {
@@ -424,48 +318,6 @@ describeWithFlags('backpropagateGradients', CPU_ENVS, () => {
     // dx = dy + 1 + 1 + 1 + 1 + 1
     expectArraysClose(accumulatedGradientsMap[x.id], [dy.dataSync()[0] + 5]);
   });
-
-  it('basic backprop with a multi-output split node accumulates gradients',
-     () => {
-       const x = dl.scalar(0);
-       const intermediate1 = dl.scalar(1);
-       const intermediate2 = dl.scalar(2);
-       const y = dl.scalar(3);
-
-       const dy = dl.scalar(1);
-
-       const accumulatedGradientsMap: {[tensorId: number]: Tensor} = {};
-       accumulatedGradientsMap[y.id] = dy;
-
-       const tape: TapeNode[] = [
-         {
-           id: 0,
-           name: 'node0',
-           inputs: {x},
-           output: {intermediate1, intermediate2},
-           gradient: (dy: NamedTensorMap) => {
-             return {x: () => dy['intermediate1'].mul(dy['intermediate2'])};
-           }
-         },
-         {
-           id: 1,
-           name: 'node1',
-           inputs: {intermediate1, intermediate2},
-           output: y,
-           gradient: (dy: Scalar) => {
-             return {
-               intermediate1: () => dy.add(dl.scalar(2)),
-               intermediate2: () => dy.add(dl.scalar(3))
-             };
-           }
-         }
-       ];
-
-       tape_util.backpropagateGradients(accumulatedGradientsMap, tape);
-
-       expectArraysClose(
-           accumulatedGradientsMap[x.id], [(dy.get() + 2) * (dy.get() + 3)]);
-     });
 });
 
 describeWithFlags('extractTensorsFromScopeResult', CPU_ENVS, () => {
