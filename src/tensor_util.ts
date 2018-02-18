@@ -20,11 +20,11 @@ import {TypedArray} from './types';
 import * as util from './util';
 
 // Maximum number of values before we decide to show ellipsis.
-const LIMIT_NUM_VALS = 20;
+const FORMAT_LIMIT_NUM_VALS = 20;
 // Number of first and last values to show when displaying a, b,...,y, z.
-const NUM_FIRST_LAST_VALS = 3;
+const FORMAT_NUM_FIRST_LAST_VALS = 3;
 // Number of significant digits to show.
-const NUM_SIG_DIGITS = 7;
+const FORMAT_NUM_SIG_DIGITS = 7;
 
 export function tensorToString(t: Tensor, verbose: boolean) {
   const vals = t.dataSync();
@@ -60,7 +60,8 @@ function computeMaxSizePerColumn(t: Tensor): number[] {
 }
 
 function valToString(val: number, pad: number) {
-  return util.rightPad(parseFloat(val.toFixed(NUM_SIG_DIGITS)).toString(), pad);
+  return util.rightPad(
+      parseFloat(val.toFixed(FORMAT_NUM_SIG_DIGITS)).toString(), pad);
 }
 
 function subTensorToString(
@@ -73,17 +74,18 @@ function subTensorToString(
   }
 
   if (rank === 1) {
-    if (size > LIMIT_NUM_VALS) {
-      const firstVals = Array.from(vals.subarray(0, NUM_FIRST_LAST_VALS));
+    if (size > FORMAT_LIMIT_NUM_VALS) {
+      const firstVals =
+          Array.from(vals.subarray(0, FORMAT_NUM_FIRST_LAST_VALS));
       const lastVals =
-          Array.from(vals.subarray(size - NUM_FIRST_LAST_VALS, size));
+          Array.from(vals.subarray(size - FORMAT_NUM_FIRST_LAST_VALS, size));
       return [
         '[' + firstVals.map((x, i) => valToString(x, padPerCol[i])).join(', ') +
         ', ..., ' +
         lastVals
             .map(
-                (x, i) =>
-                    valToString(x, padPerCol[size - NUM_FIRST_LAST_VALS + i]))
+                (x, i) => valToString(
+                    x, padPerCol[size - FORMAT_NUM_FIRST_LAST_VALS + i]))
             .join(', ') +
         ']'
       ];
@@ -100,8 +102,8 @@ function subTensorToString(
   const substrides = strides.slice(1);
   const stride = strides[0];
   const lines: string[] = [];
-  if (size > LIMIT_NUM_VALS) {
-    for (let i = 0; i < NUM_FIRST_LAST_VALS; i++) {
+  if (size > FORMAT_LIMIT_NUM_VALS) {
+    for (let i = 0; i < FORMAT_NUM_FIRST_LAST_VALS; i++) {
       const start = i * stride;
       const end = start + stride;
       lines.push(...subTensorToString(
@@ -109,7 +111,7 @@ function subTensorToString(
           false /* isLast */));
     }
     lines.push('...');
-    for (let i = size - NUM_FIRST_LAST_VALS; i < size; i++) {
+    for (let i = size - FORMAT_NUM_FIRST_LAST_VALS; i < size; i++) {
       const start = i * stride;
       const end = start + stride;
       lines.push(...subTensorToString(
