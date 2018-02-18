@@ -36,7 +36,7 @@ import * as slice from './ops/slice';
 import * as softmax_ops from './ops/softmax';
 import * as transpose from './ops/transpose';
 import * as unary_ops from './ops/unary_ops';
-import {ScopeResult} from './tape_util';
+import {ScopeResult} from './tape';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {Tracking} from './tracking';
 import {Rank} from './types';

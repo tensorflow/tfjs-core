@@ -17,8 +17,8 @@
  */
 
 import * as dl from './index';
-import * as tape_util from './tape_util';
-import {TapeNode} from './tape_util';
+import * as tape_util from './tape';
+import {TapeNode} from './tape';
 import {Scalar, Tensor} from './tensor';
 import {CPU_ENVS, describeWithFlags, expectArraysClose} from './test_util';
 
