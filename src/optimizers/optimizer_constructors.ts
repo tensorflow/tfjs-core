@@ -34,9 +34,9 @@ export class OptimizerConstructors {
    * const xs = dl.tensor1d([0, 1, 2, 3]);
    * const ys = dl.tensor1d([1.1, 5.9, 16.8, 33.9]);
    *
-   * const a = dl.variable(dl.scalar(Math.random()));
-   * const b = dl.variable(dl.scalar(Math.random()));
-   * const c = dl.variable(dl.scalar(Math.random()));
+   * const a = dl.scalar(Math.random()).variable();
+   * const b = dl.scalar(Math.random()).variable();
+   * const c = dl.scalar(Math.random()).variable();
    *
    * // y = a * x^2 + b * x + c.
    * const f = x => a.mul(x.square()).add(b.mul(x)).add(c);
@@ -86,7 +86,8 @@ export class OptimizerConstructors {
    * version of RMSProp.
    *
    * See
-   * http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+   * [http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf](
+   * http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
    *
    * @param learningRate The learning rate to use for the RMSProp gradient
    * descent algorithm.
@@ -106,7 +107,7 @@ export class OptimizerConstructors {
 
   /**
    * Constructs a `AdamOptimizer` that uses the Adam algorithm.
-   * See https://arxiv.org/abs/1412.6980
+   * See [https://arxiv.org/abs/1412.6980](https://arxiv.org/abs/1412.6980)
    *
    * @param learningRate
    * @param beta1
@@ -122,7 +123,7 @@ export class OptimizerConstructors {
 
   /**
    * Constructs a `AdadeltaOptimizer` that uses the Adadelta algorithm.
-   * See https://arxiv.org/abs/1212.5701
+   * See [https://arxiv.org/abs/1212.5701](https://arxiv.org/abs/1212.5701)
    *
    * @param learningRate
    * @param rho
@@ -138,7 +139,7 @@ export class OptimizerConstructors {
 
   /**
    * Constructs a `AdamaxOptimizer` that uses the Adam algorithm.
-   * See https://arxiv.org/abs/1412.6980
+   * See [https://arxiv.org/abs/1412.6980](https://arxiv.org/abs/1412.6980)
    *
    * @param learningRate
    * @param beta1
@@ -157,8 +158,12 @@ export class OptimizerConstructors {
   /**
    * Constructs a `dl.train.AdagradOptimizer` that uses the Adagrad algorithm.
    * Constructs a `AdagradOptimizer` that uses the Adagrad algorithm.
-   * See http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf or
-   * http://ruder.io/optimizing-gradient-descent/index.html#adagrad
+   * See
+   * [http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf](
+   * http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf)
+   * or
+   * [http://ruder.io/optimizing-gradient-descent/index.html#adagrad](
+   * http://ruder.io/optimizing-gradient-descent/index.html#adagrad)
    *
    * @param learningRate
    * @param initialAccumulatorValue
