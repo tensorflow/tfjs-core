@@ -16,6 +16,7 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class Pad1DProgram implements GPGPUProgram {
   variableNames = ['x'];
@@ -48,34 +49,31 @@ export class Pad2DProgram implements GPGPUProgram {
   variableNames = ['x'];
   outputShape: number[];
   userCode: string;
-  rank: number;
 
   constructor(
-      xShape: number[], paddings: [[number, number], [number, number]],
+      xShape: number[], paddings: Array<[number, number]>,
       constantValue: number) {
-    const topPadding = paddings[0][0];
-    const bottomPadding = paddings[0][1];
     const leftPadding = paddings[1][0];
     const rightPadding = paddings[1][1];
 
-    this.outputShape = [
-      topPadding + xShape[0] + bottomPadding,
-      leftPadding + xShape[1] + rightPadding
-    ];
-    this.rank = 2;
+    this.outputShape = [leftPadding + xShape[1] + rightPadding];
+    const rank = xShape.length;
 
     const sourceCoords = `resRC.x - ${topPadding}, resRC.y - ${leftPadding}`;
+    const type = getCoordsDataType(rank);
 
     this.userCode = `
+      ${type} beforePad = ${type}(${paddings[0][0]}, ${paddings[1][0]});
+      ${type} afterPad = ${type}(${paddings[0][1]}, ${paddings[1][1]});
+
       void main() {
-        ivec2 resRC = getOutputCoords();
-        int topShape = ${topPadding} + ${xShape[0]};
+        ${type} resRC = getOutputCoords();
         int leftShape = ${leftPadding} + ${xShape[1]};
-        if (resRC.x < ${topPadding} || resRC.x >= topShape ||
-            resRC.y < ${leftPadding} || resRC.y >= leftShape) {
+        if (any(lessThan(resRC, beforePad)) ||
+            any(greaterThanEqual(resRC, afterPad))) {
           setOutput(float(${constantValue}));
         } else {
-          setOutput(getX(${sourceCoords}));
+          setOutput(getX(resRC - beforePad));
         }
       }
     `;
