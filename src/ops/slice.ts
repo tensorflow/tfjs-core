@@ -26,7 +26,7 @@ import * as slice_util from './slice_util';
 export class SliceOps {
   /**
    * Extracts a 1D slice from 1D array starting at coordinates `begin` and is
-   * of length `size`. See `pad` for details.
+   * of length `size`. See `slice` for details.
    */
   static slice1d(x: Tensor1D, begin: number, size: number): Tensor1D {
     util.assert(
@@ -37,7 +37,7 @@ export class SliceOps {
 
   /**
    * Extracts a 2D slice from a 2D array starting at coordinates `begin` and
-   * is of size `size`. See `pad` for details.
+   * is of size `size`. See `slice` for details.
    */
   static slice2d(x: Tensor2D, begin: [number, number], size: [number, number]):
       Tensor2D {
@@ -49,7 +49,7 @@ export class SliceOps {
 
   /**
    * Extracts a 3D slice from a 3D array starting at coordinates `begin` and
-   * is of size `size`. See `pad` for details.
+   * is of size `size`. See `slice` for details.
    */
   static slice3d(x: Tensor3D, begin: [number, number, number], size: [
     number, number, number
@@ -62,7 +62,7 @@ export class SliceOps {
 
   /**
    * Extracts a 4D slice from a 4D array starting at coordinates `begin` and
-   * is of size `size`. See `pad` for details.
+   * is of size `size`. See `slice` for details.
    */
   static slice4d(x: Tensor4D, begin: [number, number, number, number], size: [
     number, number, number, number
