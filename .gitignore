@@ -10,4 +10,5 @@ npm-debug.log
 .DS_Store
 dist/
 .idea/
+.vscode/
 deeplearn-*.tgz
