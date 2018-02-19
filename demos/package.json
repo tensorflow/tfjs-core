@@ -1,6 +1,6 @@
 {
   "name": "deeplearn-demos",
-  "version": "0.1.1",
+  "version": "0.1.2-dev",
   "description": "deeplearn.js demos - not actually published",
   "private": true,
   "dependencies": {
@@ -52,9 +52,9 @@
     "@bower_components/web-animations-js": "web-animations/web-animations-js#^2.2.0",
     "@bower_components/webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.24",
     "chart.js": "~2.7.1",
-    "deeplearn": "file:../dist/",
-    "deeplearn-knn-image-classifier": "~0.2.3",
-    "deeplearn-squeezenet": "~0.1.9",
+    "deeplearn": "latest",
+    "deeplearn-knn-image-classifier": "latest",
+    "deeplearn-squeezenet": "latest",
     "tslint": "~5.8.0",
     "vue": "~2.5.9"
   },
@@ -64,11 +64,11 @@
   },
   "devDependencies": {
     "@types/polymer": "~1.1.31",
+    "browserify": "~14.5.0",
     "d3-array": "~1.2.1",
     "d3-format": "~1.2.1",
     "d3-scale": "~1.0.7",
     "minimist": "~1.2.0",
-    "mkdirp": "~0.5.1",
     "poi": "~9.6.8",
     "poi-preset-typescript": "~9.0.2",
     "polymer-bundler": "~3.0.1",
@@ -79,7 +79,10 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
+    "localpreplegacy": "yarn link deeplearn && yarn run prep",
+    "localprep": "yarn link deeplearn && yarn link deeplearn-knn-image-classifier && yarn link deeplearn-squeezenet && yarn run prep",
     "prep": "yarn",
+    "localbuild": "yarn run build && yarn link",
     "build": "tsc",
     "lint": "tslint -p . -t verbose"
   },

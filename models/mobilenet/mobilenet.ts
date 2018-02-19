@@ -15,8 +15,7 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMath, Scalar} from 'deeplearn';
-import * as model_util from '../util';
+import {Array1D, Array3D, Array4D, CheckpointLoader, Model, NDArray, NDArrayMath, Scalar, util} from 'deeplearn';
 import {IMAGENET_CLASSES} from './imagenet_classes';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
@@ -148,7 +147,7 @@ export class MobileNet implements Model {
   async getTopKClasses(logits: Array1D, topK: number):
       Promise<{[className: string]: number}> {
     const predictions = this.math.softmax(logits).asType('float32');
-    const topk = model_util.topK(await predictions.data(), topK);
+    const topk = util.topK(await predictions.data(), topK);
     const topkIndices = topk.indices;
     const topkValues = topk.values;
 

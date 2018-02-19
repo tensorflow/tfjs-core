@@ -3,10 +3,9 @@
   "version": "0.0.1",
   "description": "Starter project for using deeplearn.js with TypeScript",
   "dependencies": {
-    "deeplearn": "0.3.15"
+    "deeplearn": "latest"
   },
   "devDependencies": {
-    "mkdirp": "~0.5.1",
     "tsify": "~3.0.3",
     "tslint": "~5.8.0",
     "typescript": "2.7.2",
@@ -14,7 +13,9 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "prep": "yarn && mkdirp dist",
+    "localprep": "yarn link deeplearn && yarn run prep",
+    "prep": "yarn",
+    "localbuild": "yarn run build && yarn link",
     "watch": "watchify main.ts -p [tsify] -v --debug -o dist/bundle.js",
     "build": "browserify main.ts -p [tsify] -o dist/bundle.js",
     "lint": "tslint -p . -t verbose",

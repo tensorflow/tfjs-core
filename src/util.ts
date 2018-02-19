@@ -38,6 +38,28 @@ export function shuffle(array: any[]|Uint32Array|Int32Array|
   }
 }
 
+export function topK<T extends Float32Array|Int32Array|Uint8Array>(
+    values: T, k: number): {values: T, indices: Int32Array} {
+  const valuesAndIndices: Array<{value: number, index: number}> = [];
+  for (let i = 0; i < values.length; i++) {
+    valuesAndIndices.push({value: values[i], index: i});
+  }
+  valuesAndIndices.sort((a, b) => {
+    return b.value - a.value;
+  });
+  const topkValues = values instanceof Float32Array ?
+      new Float32Array(k) :
+      values instanceof Float32Array ? new Float32Array(k) : new Uint8Array(k);
+
+  // const topkValues = new Float32Array(k);
+  const topkIndices = new Int32Array(k);
+  for (let i = 0; i < k; i++) {
+    topkValues[i] = valuesAndIndices[i].value;
+    topkIndices[i] = valuesAndIndices[i].index;
+  }
+  return {values: topkValues as T, indices: topkIndices};
+}
+
 /** Clamps a value to a specified range. */
 export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));

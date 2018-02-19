@@ -15,9 +15,8 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Model, NDArrayMath, Scalar} from 'deeplearn';
+import {Array1D, Array2D, Array3D, Model, NDArrayMath, Scalar, util} from 'deeplearn';
 import {SqueezeNet} from 'deeplearn-squeezenet';
-import * as model_util from '../util';
 
 export class KNNImageClassifier implements Model {
   private squeezeNet: SqueezeNet;
@@ -179,7 +178,7 @@ export class KNNImageClassifier implements Model {
     const knn = this.predict(image).asType('float32');
     const numExamples = this.getNumExamples();
     const kVal = Math.min(this.k, numExamples);
-    const topK = model_util.topK(await knn.data(), kVal);
+    const topK = util.topK(await knn.data(), kVal);
     knn.dispose();
     const topKIndices = topK.indices;
 
