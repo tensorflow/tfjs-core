@@ -39,9 +39,9 @@ export class ReverseOps {
    *
    * @param x The input tensor.
    * @param axis The set of dimensions to reverse. Must be in the
-   *     range [-rank(x), rank(x)).
+   *     range [-rank(x), rank(x)). Defaults to all axes.
    */
-  static reverse2d(x: Tensor2D, axis: number|number[]): Tensor2D {
+  static reverse2d(x: Tensor2D, axis?: number|number[]): Tensor2D {
     util.assert(x.rank === 2, `Error in reverse2D: x must be rank 2 but got
              rank ${x.rank}.`);
     return ReverseOps.reverse(x, axis);
@@ -51,9 +51,9 @@ export class ReverseOps {
    * Reverses a `Tensor3D` along a specified axis
    * @param x The input tensor.
    * @param axis The set of dimensions to reverse. Must be in the
-   *     range [-rank(x), rank(x)).
+   *     range [-rank(x), rank(x)). Defaults to all axes.
    */
-  static reverse3d(x: Tensor3D, axis: number|number[]): Tensor3D {
+  static reverse3d(x: Tensor3D, axis?: number|number[]): Tensor3D {
     util.assert(x.rank === 3, `Error in reverse3D: x must be rank 3 but got
              rank ${x.rank}.`);
     return ReverseOps.reverse(x, axis);
@@ -63,9 +63,9 @@ export class ReverseOps {
    * Reverses a `Tensor4D` along a specified axis
    * @param x The input tensor.
    * @param axis The set of dimensions to reverse. Must be in the
-   *     range [-rank(x), rank(x)).
+   *     range [-rank(x), rank(x)). Defaults to all axes.
    */
-  static reverse4d(x: Tensor4D, axis: number|number[]): Tensor4D {
+  static reverse4d(x: Tensor4D, axis?: number|number[]): Tensor4D {
     util.assert(x.rank === 4, `Error in reverse4D: x must be rank 4 but got
              rank ${x.rank}.`);
     return ReverseOps.reverse(x, axis);
@@ -88,11 +88,11 @@ export class ReverseOps {
    * ```
    * @param x The input tensor.
    * @param axis The set of dimensions to reverse. Must be in the
-   *     range [-rank(x), rank(x)).
+   *     range [-rank(x), rank(x)). Defaults to all axes.
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static reverse<T extends Tensor>(x: T, axis: number|number[]): T {
+  static reverse<T extends Tensor>(x: T, axis?: number|number[]): T {
     if (x.rank === 0) {
       return x.clone();
     }
