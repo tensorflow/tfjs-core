@@ -304,9 +304,7 @@ export class Engine implements TensorManager {
   gradients<T extends Tensor>(
       f: () => T, xs: Tensor[], dy?: T,
       allowNoGradients = false): {value: T, grads: Tensor[]} {
-    if (xs.length === 0) {
-      throw new Error('gradients() received an empty list of xs.');
-    }
+    util.assert(xs.length > 0, 'gradients() received an empty list of xs.');
 
     return tidy('gradients', () => {
       const y = f();
