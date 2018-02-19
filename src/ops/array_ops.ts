@@ -605,8 +605,7 @@ export class ArrayOps {
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   static squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T {
-    const axes = parseAxisParam(axis, x.shape);
-    return ArrayOps.reshape(x, util.squeezeShape(x.shape, axes).newShape) as T;
+    return ArrayOps.reshape(x, util.squeezeShape(x.shape, axis).newShape) as T;
   }
 
   /**
