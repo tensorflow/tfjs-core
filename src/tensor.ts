@@ -532,7 +532,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.slice(this, begin, size);
   }
-  reverse(axis: number|number[]): Tensor<R> {
+  reverse<T extends Tensor>(this: T, axis: number|number[]): T {
     this.throwIfDisposed();
     return ops.reverse(this, axis);
   }

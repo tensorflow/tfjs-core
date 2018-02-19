@@ -97,7 +97,11 @@ export class ReverseOps {
       return x.clone();
     }
     const axes = parseAxisParam(axis, x.shape);
-    const res = ENV.engine.runKernel(backend => backend.reverse(x, axes));
+    const grad = (dy: T) => {
+      return {x: () => dy.reverse(axes)};
+    };
+    const res =
+        ENV.engine.runKernel(backend => backend.reverse(x, axes), {x}, grad);
     return res.reshapeAs(x);
   }
 }

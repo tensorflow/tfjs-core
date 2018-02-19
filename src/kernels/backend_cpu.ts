@@ -150,7 +150,7 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor() as T;
   }
 
-  reverse(x: Tensor, axis: number[]): Tensor {
+  reverse<T extends Tensor>(x: T, axis: number[]): T {
     const buffer = ops.buffer(x.shape, x.dtype);
     const xBuffer = x.buffer();
 
@@ -161,7 +161,7 @@ export class MathBackendCPU implements KernelBackend {
       buffer.set(xBuffer.get(...inLoc), ...outLoc);
     }
 
-    return buffer.toTensor();
+    return buffer.toTensor() as T;
   }
 
   // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
