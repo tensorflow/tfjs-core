@@ -1053,6 +1053,9 @@ export class MathBackendCPU implements KernelBackend {
     const start = paddings.map(p => p[0]);
     const xBuffer = x.buffer();
     const buffer = ops.buffer(outShape, x.dtype);
+    if (constantValue !== 0) {
+      buffer.values.fill(constantValue);
+    }
 
     for (let i = 0; i < x.size; i++) {
       const coords = xBuffer.indexToLoc(i);
