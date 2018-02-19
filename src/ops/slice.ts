@@ -20,7 +20,6 @@ import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {Rank, ShapeMap} from '../types';
 import * as util from '../util';
-import {ArrayOps} from './array_ops';
 import {operation} from './operation';
 import * as slice_util from './slice_util';
 
@@ -113,8 +112,8 @@ export class SliceOps {
     const inputShape = x.shape;
     const grad = (dy: T) => {
       // Create an Nx2 padding where the first column represents how many
-      // zeros are to be prepended for each dimension, and the second
-      // column indicates how many zeros are appended.
+      // zeros are prepended (at start) for each dimension, and the second
+      // column indicates how many zeros are appended (at end).
 
       // The number of zeros to append is the shape of the input
       // elementwise-subtracted by both the begin vector and sizes vector.
@@ -122,7 +121,7 @@ export class SliceOps {
       for (let i = 0; i < dy.rank; i++) {
         paddings.push([begin[i], inputShape[i] - begin[i] - size[i]]);
       }
-      return {x: () => ArrayOps.pad(dy, paddings)};
+      return {x: () => dy.pad(paddings)};
     };
     return ENV.engine.runKernel(
                backend => backend.slice(x, begin, size), {x}, grad) as T;

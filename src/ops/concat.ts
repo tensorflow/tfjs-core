@@ -19,7 +19,7 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as util from '../util';
-
+import {parseAxisParam} from './axis_util';
 import * as concat_util from './concat_util';
 import {operation} from './operation';
 
@@ -148,8 +148,10 @@ export class ConcatOps {
   static concat<T extends Tensor>(tensors: T[], axis = 0): T {
     util.assert(tensors.length >= 2, 'Pass at least two tensors to concat');
     let result = tensors[0];
+    const axes = parseAxisParam(axis, result.shape);
+
     for (let i = 1; i < tensors.length; ++i) {
-      result = concat2Tensors(result, tensors[i], axis);
+      result = concat2Tensors(result, tensors[i], axes[0]);
     }
     return result;
   }

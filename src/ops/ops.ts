@@ -174,9 +174,12 @@ export const tensor4d = ArrayOps.tensor4d;
 export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
+
 export const pad = ArrayOps.pad;
 export const pad1d = ArrayOps.pad1d;
 export const pad2d = ArrayOps.pad2d;
+export const pad3d = ArrayOps.pad3d;
+export const pad4d = ArrayOps.pad4d;
 
 export const basicLSTMCell = LSTMOps.basicLSTMCell;
 export const multiRNNCell = LSTMOps.multiRNNCell;

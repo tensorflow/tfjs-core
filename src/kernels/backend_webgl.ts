@@ -315,7 +315,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x], null, customSetup);
   }
 
-  reverse4D(x: Tensor4D, axis: number[]): Tensor4D {
+  reverse(x: Tensor, axis: number[]): Tensor {
     const program = new ReverseProgram(x.shape, axis);
     return this.compileAndRun(program, [x]);
   }

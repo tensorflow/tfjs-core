@@ -24,6 +24,7 @@ import * as tensor_util from '../tensor_util';
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray} from '../types';
 import * as util from '../util';
+import {parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
@@ -604,7 +605,8 @@ export class ArrayOps {
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   static squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T {
-    return ArrayOps.reshape(x, util.squeezeShape(x.shape, axis).newShape) as T;
+    const axes = parseAxisParam(axis, x.shape);
+    return ArrayOps.reshape(x, util.squeezeShape(x.shape, axes).newShape) as T;
   }
 
   /**
@@ -696,7 +698,8 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static gather<T extends Tensor>(x: T, indices: Tensor1D, axis = 0): T {
-    return ENV.engine.runKernel(backend => backend.gather(x, indices, axis));
+    const axes = parseAxisParam(axis, x.shape);
+    return ENV.engine.runKernel(backend => backend.gather(x, indices, axes[0]));
   }
 
   /**

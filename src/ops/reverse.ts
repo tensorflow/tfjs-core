@@ -19,7 +19,7 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as util from '../util';
-import * as axis_util from './axis_util';
+import {parseAxisParam} from './axis_util';
 import {operation} from './operation';
 
 export class ReverseOps {
@@ -93,24 +93,11 @@ export class ReverseOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static reverse<T extends Tensor>(x: T, axis: number|number[]): T {
-    let x4d: Tensor4D;
-    const axisCleaned =
-        axis_util.parseAxisParam(axis, x.shape).map(a => a + 4 - x.rank);
     if (x.rank === 0) {
       return x.clone();
-    } else if (x.rank === 1) {
-      x4d = x.as4D(1, 1, 1, x.shape[0]);
-    } else if (x.rank === 2) {
-      x4d = x.as4D(1, 1, x.shape[0], x.shape[1]);
-    } else if (x.rank === 3) {
-      x4d = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
-    } else if (x.rank === 4) {
-      x4d = x as Tensor4D;
-    } else {
-      throw new Error(`Reverse for rank ${x.rank} is not yet implemented`);
     }
-    const res =
-        ENV.engine.runKernel(backend => backend.reverse4D(x4d, axisCleaned));
+    const axes = parseAxisParam(axis, x.shape);
+    const res = ENV.engine.runKernel(backend => backend.reverse(x, axes));
     return res.reshapeAs(x);
   }
 }
