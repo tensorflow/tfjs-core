@@ -130,7 +130,7 @@ export class OptimizerConstructors {
    * @param learningRate The learning rate to use for the Adadelta gradient
    * descent algorithm.
    * @param rho The learning rate decay over each update.
-   * @param epsilon A constant epsilon used to better conditioning the grad
+   * @param epsilon A constant epsilon used to better condition the grad
    * update.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})

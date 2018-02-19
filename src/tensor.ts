@@ -330,7 +330,7 @@ export class Tensor<R extends Rank = Rank> {
   /**
    * Casts a `Tensor` to a specified dtype.
    *
-   * @param dtype Typecode or data-type to which the array is cast.
+   * @param dtype Data-type to cast the tensor to.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   asType<T extends this>(this: T, dtype: DataType): T {
@@ -434,7 +434,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Disposes the `Tensor` from the memory.
+   * Disposes `Tensor` from the memory.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   dispose(): void {
@@ -471,10 +471,10 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Prints the tensor. See `print` for details.
+   * Prints the `Tensor`. See `print` for details.
    *
-   * @param verbose Whether to print verbose information about the Tensor,
-   * including dtype and size.
+   * @param verbose Whether to print verbose information about the tensor,
+   *    including dtype and size.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   print(verbose = false): void {
@@ -509,7 +509,7 @@ export class Tensor<R extends Rank = Rank> {
    * into the tensor's shape. See `expandDims` for details.
    *
    * @param axis The dimension index at which to insert shape of 1. Defaults to
-   * 0 (the first dimension).
+   *    0 (the first dimension).
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   expandDims<R2 extends Rank>(axis = 0): Tensor<R2> {
@@ -520,9 +520,9 @@ export class Tensor<R extends Rank = Rank> {
    * Returns a `Tensor` with dimensions of size 1 removed from the shape.
    * See `squeeze` for more details.
    *
-   * @param axis An optional list of numbers. If specified, only squeezes the
-   * dimensions listed. The dimension index starts at 0. It is an error to
-   * squeeze a dimension that is not 1.
+   * @param axis A list of numbers. If specified, only squeezes the
+   *    dimensions listed. The dimension index starts at 0. It is an error to
+   *    squeeze a dimension that is not 1.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   squeeze<T extends Tensor>(axis?: number[]): T {
@@ -1011,7 +1011,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
    * x.print();
    * ```
    *
-   * @param initialValue Initial value for tensor.
+   * @param initialValue Initial value for the tensor.
    * @param trainable If true, optimizers are allowed to update it.
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.
@@ -1030,7 +1030,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
    * Assign a new `Tensor` to this variable. The new `Tensor` must have the
    * same shape and dtype as the old `Tensor`.
    *
-   * @param newValue New `Tensor` to be assigned to this variable.
+   * @param newValue New tensor to be assigned to this variable.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   assign(newValue: Tensor<R>): void {
