@@ -700,39 +700,19 @@ export class ArrayOps {
   }
 
   /**
-   * Pads a `Tensor1D` with a given value.
-   *
-   * This operation will pad a tensor according to the `paddings` you specify.
-   *
-   * This operation currently only implements the `CONSTANT` mode from
-   * Tensorflow's `pad` operation.
-   *
-   * @param x The tensor to pad.
-   * @param paddings A tuple of ints `[padLeft, padRight]`, how much to pad.
-   * @param constantValue The pad value to use. Defaults to 0.
+   * Pads a `Tensor1D` with a given value and paddings. See `pad` for details.
    */
-  @operation
   static pad1d(x: Tensor1D, paddings: [number, number], constantValue = 0):
       Tensor1D {
     util.assert(
         paddings.length === 2,
         'Invalid number of paddings. Must be length of 2.');
-    return ENV.engine.runKernel(
-        backend => backend.pad1D(x, paddings, constantValue));
+    return ArrayOps.pad(x, [paddings], constantValue);
   }
 
   /**
-   * Pads a `Tensor2D` with a given value and the `paddings` you specify.
-   *
-   * This operation currently only implements the `CONSTANT` mode from
-   * TensorFlow's `pad` operation.
-   *
-   * @param x The tensor to pad.
-   * @param paddings A pair of tuple ints:
-   *     `[[padTop, padBottom], [padLeft, padRight]]`, how much to pad.
-   * @param constantValue The pad value to use. Defaults to 0.
+   * Pads a `Tensor2D` with a given value and paddings. See `pad` for details.
    */
-  @operation
   static pad2d(
       x: Tensor2D, paddings: [[number, number], [number, number]],
       constantValue = 0): Tensor2D {
@@ -740,12 +720,44 @@ export class ArrayOps {
         paddings.length === 2 && paddings[0].length === 2 &&
             paddings[1].length === 2,
         'Invalid number of paddings. Must be length of 2 each.');
-    return ENV.engine.runKernel(
-        backend => backend.pad2D(x, paddings, constantValue));
+    return ArrayOps.pad(x, paddings, constantValue);
   }
 
   /**
-   * Pads a `Tensor` with a given value and the `paddings` you specify.
+   * Pads a `Tensor3D` with a given value and paddings. See `pad` for details.
+   */
+  static pad3d(
+      x: Tensor3D,
+      paddings: [[number, number], [number, number], [number, number]],
+      constantValue = 0): Tensor3D {
+    util.assert(
+        paddings.length === 3 && paddings[0].length === 2 &&
+            paddings[1].length === 2 && paddings[2].length === 2,
+        'Invalid number of paddings. Must be length of 2 each.');
+    return ArrayOps.pad(x, paddings, constantValue);
+  }
+
+  /**
+   * Pads a `Tensor4D` with a given value and paddings. See `pad` for details.
+   */
+  static pad4d(
+      x: Tensor4D,
+      paddings:
+          [
+            [number, number], [number, number], [number, number],
+            [number, number]
+          ],
+      constantValue = 0): Tensor4D {
+    util.assert(
+        paddings.length === 4 && paddings[0].length === 2 &&
+            paddings[1].length === 2 && paddings[2].length === 2 &&
+            paddings[3].length === 2,
+        'Invalid number of paddings. Must be length of 2 each.');
+    return ArrayOps.pad(x, paddings, constantValue);
+  }
+
+  /**
+   * Pads a `Tensor` with a given value and paddings.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
@@ -766,16 +778,9 @@ export class ArrayOps {
       x: T, paddings: Array<[number, number]>, constantValue = 0): T {
     if (x.rank === 0) {
       throw new Error('pad(scalar) is not defined. Pass non-scalar to pad');
-    } else if (x.rank === 1) {
-      return ArrayOps.pad1d(x as Tensor1D, paddings[0], constantValue) as T;
-    } else if (x.rank === 2) {
-      return ArrayOps.pad2d(
-                 x as Tensor2D,
-                 paddings as [[number, number], [number, number]],
-                 constantValue) as T;
-    } else {
-      throw new Error(`pad of rank-${x.rank} tensor is not yet supported`);
     }
+    return ENV.engine.runKernel(
+               backend => backend.pad(x, paddings, constantValue)) as T;
   }
 
   /**

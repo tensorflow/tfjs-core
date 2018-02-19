@@ -27,13 +27,8 @@ import * as slice_util from './slice_util';
 export class SliceOps {
   /**
    * Extracts a 1D slice from 1D array starting at coordinates `begin` and is
-   * of length `size`.
-   *
-   * @param x The input array to slice from.
-   * @param begin The offset to start the slice from.
-   * @param size The size of the slice.
+   * of length `size`. See `pad` for details.
    */
-  @operation
   static slice1d(x: Tensor1D, begin: number, size: number): Tensor1D {
     util.assert(
         x.rank === 1,
@@ -43,13 +38,8 @@ export class SliceOps {
 
   /**
    * Extracts a 2D slice from a 2D array starting at coordinates `begin` and
-   * is of size `size`.
-   *
-   * @param x The input array to slice from.
-   * @param begin The [row, col] 2d coordinates to start the slice from.
-   * @param size The size of the slice.
+   * is of size `size`. See `pad` for details.
    */
-  @operation
   static slice2d(x: Tensor2D, begin: [number, number], size: [number, number]):
       Tensor2D {
     util.assert(
@@ -60,13 +50,8 @@ export class SliceOps {
 
   /**
    * Extracts a 3D slice from a 3D array starting at coordinates `begin` and
-   * is of size `size`.
-   *
-   * @param x The input array to slice from.
-   * @param begin The [row, col, depth] 3d coordinates to start the slice from.
-   * @param size The size of the slice.
+   * is of size `size`. See `pad` for details.
    */
-  @operation
   static slice3d(x: Tensor3D, begin: [number, number, number], size: [
     number, number, number
   ]): Tensor3D {
@@ -78,14 +63,8 @@ export class SliceOps {
 
   /**
    * Extracts a 4D slice from a 4D array starting at coordinates `begin` and
-   * is of size `size`.
-   *
-   * @param x The input array to slice from.
-   * @param begin The [row, col, depth, depth2] 4d coordinates to start the
-   *              slice from.
-   * @param size The size of the slice.
+   * is of size `size`. See `pad` for details.
    */
-  @operation
   static slice4d(x: Tensor4D, begin: [number, number, number, number], size: [
     number, number, number, number
   ]): Tensor4D {

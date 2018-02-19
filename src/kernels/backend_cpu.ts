@@ -1046,65 +1046,20 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as T;
   }
 
-  pad1D(x: Tensor1D, paddings: [number, number], constantValue: number):
-      Tensor1D {
-    const leftPadding = paddings[0];
-    const rightPadding = paddings[1];
+  pad(x: Tensor, paddings: Array<[number, number]>,
+      constantValue: number): Tensor {
+    const outShape = paddings.map(
+        (p, i) => p[0] /* beforePad */ + x.shape[i] + p[1] /* afterPad */);
+    const start = paddings.map(p => p[0]);
+    const xBuffer = x.buffer();
+    const buffer = ops.buffer(outShape, x.dtype);
 
-    const values = x.dataSync();
-    const result = ops.zeros<Rank.R1>(
-        [leftPadding + values.length + rightPadding], x.dtype);
-    const newValues = result.dataSync();
-
-    let z = 0;
-    for (let i = 0; i < newValues.length; i++) {
-      if (i >= leftPadding && i < leftPadding + values.length) {
-        newValues[i] = values[z++];
-      } else {
-        newValues[i] = constantValue;
-      }
+    for (let i = 0; i < x.size; i++) {
+      const coords = xBuffer.indexToLoc(i);
+      const outCoords = coords.map((c, i) => c + start[i]);
+      buffer.set(x.get(...coords), ...outCoords);
     }
-    return result;
-  }
-
-  pad2D(
-      x: Tensor2D, paddings: [[number, number], [number, number]],
-      constantValue: number): Tensor2D {
-    const topPadding = paddings[0][0];
-    const bottomPadding = paddings[0][1];
-    const leftPadding = paddings[1][0];
-    const rightPadding = paddings[1][1];
-
-    const newShape: [number, number] = [
-      topPadding + x.shape[0] + bottomPadding,
-      leftPadding + x.shape[1] + rightPadding
-    ];
-
-    const result = ops.zeros<Rank.R2>(newShape, x.dtype);
-    const newValues = result.dataSync();
-
-    const values = x.dataSync();
-
-    let z = 0;
-    for (let i = 0; i < newShape[0]; i++) {
-      let rangeStart = -1;
-      let rangeEnd = -1;
-
-      if (i >= topPadding && i < newShape[0] - bottomPadding) {
-        rangeStart = i * newShape[1] + leftPadding;
-        rangeEnd = rangeStart + x.shape[1] - 1;
-      }
-
-      for (let j = 0; j < newShape[1]; j++) {
-        const v = i * newShape[1] + j;
-        if (v >= rangeStart && v <= rangeEnd) {
-          newValues[v] = values[z++];
-        } else {
-          newValues[v] = constantValue;
-        }
-      }
-    }
-    return result;
+    return buffer.toTensor();
   }
 
   transpose<T extends Tensor>(x: T, perm: number[]): T {

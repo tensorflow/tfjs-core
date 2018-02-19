@@ -49,7 +49,7 @@ import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
-import {Pad1DProgram, Pad2DProgram} from './webgl/pad_gpu';
+import {PadProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
@@ -382,16 +382,9 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  pad1D(x: Tensor1D, paddings: [number, number], constantValue: number):
-      Tensor1D {
-    const program = new Pad1DProgram(x.shape, paddings, constantValue);
-    return this.compileAndRun(program, [x]);
-  }
-
-  pad2D(
-      x: Tensor2D, paddings: [[number, number], [number, number]],
-      constantValue: number): Tensor2D {
-    const program = new Pad2DProgram(x.shape, paddings, constantValue);
+  pad(x: Tensor, paddings: Array<[number, number]>,
+      constantValue: number): Tensor {
+    const program = new PadProgram(x.shape, paddings, constantValue);
     return this.compileAndRun(program, [x]);
   }
 
