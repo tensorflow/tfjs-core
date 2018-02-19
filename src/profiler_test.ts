@@ -36,7 +36,7 @@ class TestBackendTimer implements BackendTimer {
 
 class TestLogger extends Logger {
   logKernelProfile(
-      kernelName: string, result: Tensor, vals: TypedArray, timeMs: number) {}
+      name: string, result: Tensor, vals: TypedArray, timeMs: number) {}
 }
 
 describe('profiler.Profiler', () => {
