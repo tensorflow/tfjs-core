@@ -50,7 +50,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D;
 
-  slice(x: Tensor, begin: number[], size: number[]): Tensor;
+  slice<T extends Tensor>(x: T, begin: number[], size: number[]): T;
 
   reverse4D(a: Tensor4D, axis: number[]): Tensor4D;
 
@@ -159,8 +159,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   tile<T extends Tensor>(x: T, reps: number[]): T;
 
-  pad(x: Tensor, paddings: Array<[number, number]>,
-      constantValue: number): Tensor;
+  pad<T extends Tensor>(
+      x: T, paddings: Array<[number, number]>, constantValue: number): T;
 
   transpose<T extends Tensor>(x: T, perm: number[]): T;
 

@@ -309,7 +309,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.gpgpu;
   }
 
-  slice(x: Tensor, begin: number[], size: number[]): Tensor {
+  slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
     return this.compileAndRun(program, [x], null, customSetup);
@@ -382,8 +382,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  pad(x: Tensor, paddings: Array<[number, number]>,
-      constantValue: number): Tensor {
+  pad<T extends Tensor>(
+      x: T, paddings: Array<[number, number]>, constantValue: number): T {
     const program = new PadProgram(x.shape, paddings, constantValue);
     return this.compileAndRun(program, [x]);
   }

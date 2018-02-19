@@ -527,7 +527,8 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.norm(this, ord, axis, keepDims);
   }
-  slice(begin: ShapeMap[R], size: ShapeMap[R]): Tensor<R> {
+  slice<T extends Tensor<R>>(this: T, begin: ShapeMap[R], size: ShapeMap[R]):
+      T {
     this.throwIfDisposed();
     return ops.slice(this, begin, size);
   }

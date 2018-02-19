@@ -779,8 +779,15 @@ export class ArrayOps {
     if (x.rank === 0) {
       throw new Error('pad(scalar) is not defined. Pass non-scalar to pad');
     }
+    // Pad introduces values around the original tensor, so the gradient slices
+    // the original shape out of the gradient.
+    const begin = paddings.map(p => p[0]);
+    const grad = (dy: T) => {
+      return {x: () => dy.slice(begin, x.shape)};
+    };
     return ENV.engine.runKernel(
-               backend => backend.pad(x, paddings, constantValue)) as T;
+               backend => backend.pad(x, paddings, constantValue), {x}, grad) as
+        T;
   }
 
   /**

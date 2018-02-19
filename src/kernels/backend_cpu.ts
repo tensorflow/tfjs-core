@@ -139,7 +139,7 @@ export class MathBackendCPU implements KernelBackend {
     }
   }
 
-  slice(x: Tensor, begin: number[], size: number[]): Tensor {
+  slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     const buffer = ops.buffer(size, x.dtype);
 
     for (let i = 0; i < buffer.size; ++i) {
@@ -147,7 +147,7 @@ export class MathBackendCPU implements KernelBackend {
       const xLoc = loc.map((idx, j) => idx + begin[j]);
       buffer.set(x.get(...xLoc), ...loc);
     }
-    return buffer.toTensor();
+    return buffer.toTensor() as T;
   }
 
   reverse4D(x: Tensor4D, axis: number[]): Tensor4D {
@@ -1046,8 +1046,8 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as T;
   }
 
-  pad(x: Tensor, paddings: Array<[number, number]>,
-      constantValue: number): Tensor {
+  pad<T extends Tensor>(
+      x: T, paddings: Array<[number, number]>, constantValue: number): T {
     const outShape = paddings.map(
         (p, i) => p[0] /* beforePad */ + x.shape[i] + p[1] /* afterPad */);
     const start = paddings.map(p => p[0]);
@@ -1062,7 +1062,7 @@ export class MathBackendCPU implements KernelBackend {
       const outCoords = coords.map((c, i) => c + start[i]);
       buffer.set(x.get(...coords), ...outCoords);
     }
-    return buffer.toTensor();
+    return buffer.toTensor() as T;
   }
 
   transpose<T extends Tensor>(x: T, perm: number[]): T {
