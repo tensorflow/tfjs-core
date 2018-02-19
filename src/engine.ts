@@ -104,13 +104,13 @@ export class Engine implements TensorManager {
       saved.push(x);
       return x;
     };
-    const kernelName = this.activeScope.name;
+    const scopeName = this.activeScope.name;
 
     if (!ENV.get('DEBUG')) {
       result = forwardFunc(this.backend, saveFunc);
     } else {
       result = this.profiler.profileKernel(
-          kernelName, () => forwardFunc(this.backend, saveFunc));
+          scopeName, () => forwardFunc(this.backend, saveFunc));
     }
 
     const recordKernel =
@@ -118,7 +118,7 @@ export class Engine implements TensorManager {
     if (recordKernel) {
       const tapeNode: TapeNode = {
         id: this.nextTapeNodeId++,
-        name: kernelName,
+        name: scopeName,
         output: result
       };
       if (inputs != null) {
