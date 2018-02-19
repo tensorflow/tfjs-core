@@ -1,6 +1,6 @@
 {
   "name": "deeplearn-mobilenet",
-  "version": "0.1.4",
+  "version": "0.1.4-dev",
   "description": "Pretrained MobileNet model in deeplearn.js",
   "main": "dist/mobilenet/index.js",
   "unpkg": "dist/bundle.js",

@@ -79,7 +79,6 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "localpreplegacy": "yarn link deeplearn && yarn run prep",
     "localprep": "yarn link deeplearn && yarn link deeplearn-knn-image-classifier && yarn link deeplearn-squeezenet && yarn run prep",
     "prep": "yarn",
     "localbuild": "yarn run build && yarn link",
