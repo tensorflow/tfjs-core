@@ -434,7 +434,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Disposes `Tensor` from the memory.
+   * Disposes `Tensor` from memory.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   dispose(): void {
