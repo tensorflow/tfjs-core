@@ -182,31 +182,25 @@ export function rightPad(a: string, size: number): string {
   return a + ' '.repeat(size - a.length);
 }
 
-export function repeatedTry(
+export function wait(waitTime: number): Promise<void> {
+  return new Promise<void>(resolve => setTimeout(() => resolve(), waitTime));
+}
+
+export async function repeatedTry(
     checkFn: () => boolean, delayFn = (counter: number) => 0,
     maxCounter?: number): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    let tryCount = 0;
+  let tryCount = 0;
 
-    const tryFn = () => {
-      if (checkFn()) {
-        resolve();
-        return;
-      }
-
-      tryCount++;
-
-      const nextBackoff = delayFn(tryCount);
-
-      if (maxCounter != null && tryCount >= maxCounter) {
-        reject();
-        return;
-      }
-      setTimeout(tryFn, nextBackoff);
-    };
-
-    setTimeout(tryFn, 0);
-  });
+  while (true) {
+    if (checkFn()) {
+      return;
+    }
+    tryCount++;
+    if (maxCounter != null && tryCount >= maxCounter) {
+      throw new Error('Exceeded max number of tries');
+    }
+    await wait(delayFn(tryCount));
+  }
 }
 
 export function getQueryParams(queryString: string): {[key: string]: string} {

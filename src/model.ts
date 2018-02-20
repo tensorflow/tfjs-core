@@ -99,14 +99,15 @@ const optimizer = dl.train.sgd(0.01);
 const tr = new Trainer(model, dataset, optimizer);
 
 // Calls back every 10 steps.
-await tr.train(10, (step, loss) => {
+tr.train(10, (step, loss) => {
   console.log(step, loss);
   if (step >= 1000) {
+    // Test what the model learned - don't care much about the next mem leak.
+    console.log(model.predict(dataset.next()));
+    model.dispose();  // For pedantic users, clean up all variables.
+
     // Stop training.
     return true;
   }
   return false;
 });
-// Test what the model learned - don't care much about the next mem leak.
-console.log(model.predict(dataset.next()));
-model.dispose();  // For pedantic users, clean up all variables.

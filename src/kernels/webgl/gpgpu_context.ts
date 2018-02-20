@@ -361,26 +361,23 @@ export class GPGPUContext {
       gl2.beginQuery(ext.TIME_ELAPSED_EXT, query);
 
       return query;
-    } else {
-      const ext = this.getQueryTimerExtensionWebGL1();
-      const query = ext.createQueryEXT();
-
-      ext.beginQueryEXT(ext.TIME_ELAPSED_EXT, query);
-
-      return query;
     }
+    const ext = this.getQueryTimerExtensionWebGL1();
+    const query = ext.createQueryEXT();
+
+    ext.beginQueryEXT(ext.TIME_ELAPSED_EXT, query);
+
+    return query;
   }
 
   endQuery() {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
-
       gl2.endQuery(ext.TIME_ELAPSED_EXT);
-    } else {
-      const ext = this.getQueryTimerExtensionWebGL1();
-      ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
     }
+    const ext = this.getQueryTimerExtensionWebGL1();
+    ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
   }
 
   private isQueryAvailable(query: WebGLQuery, queryTimerVersion: number):
@@ -410,19 +407,12 @@ export class GPGPUContext {
     }
   }
 
-  pollQueryTime(query: WebGLQuery): Promise<number> {
-    return new Promise<number>((resolve, reject) => {
-      const resolveWithWarning = () => {
-        console.warn('Disjoint query timer never available.');
-        resolve(-1);
-      };
-
-      const queryTimerVersion =
-          ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
-      util.repeatedTry(() => this.isQueryAvailable(query, queryTimerVersion))
-          .then(() => resolve(this.getQueryTime(query, queryTimerVersion)))
-          .catch(resolveWithWarning);
-    });
+  async pollQueryTime(query: WebGLQuery): Promise<number> {
+    const queryTimerVersion =
+        ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
+    await util.repeatedTry(
+        () => this.isQueryAvailable(query, queryTimerVersion));
+    return this.getQueryTime(query, queryTimerVersion);
   }
 
   private getQueryTime(query: WebGLQuery, queryTimerVersion: number): number {
