@@ -6,9 +6,8 @@
 
 # These directories have dependencies on each other and so must be built in the
 # correct order.  Note this also means they should be published to NPM in the
-# same order, with later packages rebuilt after an earlier dependency is
-# published, so that yarn.lock will reflect the correct version for "latest"
-# dependencies.
+# same order, so that the dependency versions can be appropriately updated
+# along the way.
 
 MODULES="
 .
