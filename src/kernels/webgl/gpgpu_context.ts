@@ -190,6 +190,8 @@ export class GPGPUContext {
             this.gl, rows, columns));
   }
 
+  private firstProgram = true;
+
   public createProgram(fragmentShaderSource: string): WebGLProgram {
     this.throwIfDisposed();
     const gl = this.gl;
@@ -203,7 +205,12 @@ export class GPGPUContext {
     if (this.autoDebugValidate) {
       webgl_util.validateProgram(gl, program);
     }
-
+    if (this.firstProgram) {
+      this.firstProgram = false;
+      this.gl.useProgram(program);
+      gpgpu_util.bindVertexProgramAttributeStreams(
+          gl, this.program, this.vertexBuffer);
+    }
     return program;
   }
 
@@ -295,12 +302,10 @@ export class GPGPUContext {
     webgl_util.validateFramebuffer(this.gl);
   }
 
-  public executeProgram(attribLocations?: {[name: string]: number}) {
+  public executeProgram() {
     this.throwIfDisposed();
     this.throwIfNoProgram();
     const gl = this.gl;
-    gpgpu_util.bindVertexProgramAttributeStreams(
-        gl, this.program, this.vertexBuffer, attribLocations);
     if (this.autoDebugValidate) {
       this.debugValidate();
     }

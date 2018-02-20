@@ -23,7 +23,13 @@ interface Dataset {
   next(): dl.Tensor;
 }
 
-interface Model {
+export interface Model {
+  load(): Promise<void|void[]>;
+  predict(input: dl.Tensor): dl.Tensor;
+  dispose(): void;
+}
+
+interface Model2 {
   initVars(): void;
   loss(batch: dl.Tensor): dl.Scalar;
   predict(batch: dl.Tensor): dl.Tensor;
@@ -33,7 +39,7 @@ interface Model {
 // Exposed via dl.train.trainer().
 class Trainer {
   constructor(
-      private model: Model, private dataset: Dataset,
+      private model: Model2, private dataset: Dataset,
       private optimizer: dl.Optimizer) {
     model.initVars();
   }
@@ -74,7 +80,7 @@ class SomeDataset implements Dataset {
 }
 
 // Silly model that learns the mean of the data.
-class SomeModel implements Model {
+class SomeModel implements Model2 {
   private mean: dl.Variable;
 
   initVars() {
