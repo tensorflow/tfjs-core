@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "unpkg": "dist/bundle.js",
   "types": "dist/index.d.ts",
-  "dependencies": {
-    "deeplearn": "latest"
+  "peerDependencies": {
+    "deeplearn": "~0.5.0"
   },
   "repository": {
     "type": "git",
@@ -15,6 +15,7 @@
   "devDependencies": {
     "browserify": "~14.5.0",
     "browserify-shim": "~3.8.14",
+    "deeplearn": "~0.5.0",
     "tsify": "~3.0.3",
     "tslint": "~5.8.0",
     "typescript": "2.7.2",
