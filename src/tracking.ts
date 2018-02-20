@@ -19,7 +19,7 @@ import {doc} from './doc';
 import {TimingInfo} from './engine';
 import {ENV} from './environment';
 // tslint:disable-next-line:max-line-length
-import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape';
+import {ScopeFn, ScopeResult} from './tape';
 import {Tensor} from './tensor';
 
 export class Tracking {
@@ -93,7 +93,7 @@ export class Tracking {
       result.then(r => ENV.engine.endScope(r, gradMode));
       return result;
     } else {
-      ENV.engine.endScope(result as ScopeResultImmediate, gradMode);
+      ENV.engine.endScope(result as ScopeResult, gradMode);
       return result;
     }
   }
