@@ -1,6 +1,6 @@
 {
   "name": "deeplearn",
-  "version": "0.5.1-dev",
+  "version": "0.5.0",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -43,9 +43,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "localprep": "yarn run prep",
     "prep": "yarn",
-    "localbuild": "yarn run build && yarn link",
     "build": "tsc",
     "test": "karma start",
     "test-travis": "karma start --browsers='bs_firefox_mac,bs_chrome_mac' --singleRun",

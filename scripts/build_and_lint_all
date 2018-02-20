@@ -4,32 +4,105 @@
 # cd deeplearn
 # scripts/build_and_lint_all
 
+ROOTDIR=`pwd`
+
 # These directories have dependencies on each other and so must be built in the
 # correct order.  Note this also means they should be published to NPM in the
 # same order, so that the dependency versions can be appropriately updated
 # along the way.
 
-MODULES="
-.
-models/squeezenet
-models/knn_image_classifier
-models/mobilenet
-models/yolo_mobilenet
-demos
-starter/typescript
-starter/es6
-"
+# TODO: refactor the package structure to remove the need for yarn link here.
 
-ROOTDIR=`pwd`
+echo
+echo =======================================================
+echo Building deeplearn
+echo =======================================================
+yarn run prep
+yarn run build
+yarn link
+yarn run lint
+cd $ROOTDIR
 
-for m in $MODULES; do
-  echo
-  echo =======================================================
-  echo Building $m
-  echo =======================================================
-  cd $m
-  yarn run localprep
-  yarn run localbuild
-  yarn run lint
-  cd $ROOTDIR
-done
+# Build all models against head.
+echo
+echo =======================================================
+echo Building models/squeezenet
+echo =======================================================
+cd models/squeezenet
+yarn link deeplearn
+yarn run prep
+yarn run build
+yarn link
+yarn run lint
+cd $ROOTDIR
+
+echo
+echo =======================================================
+echo Building models/knn_image_classifier
+echo =======================================================
+cd models/knn_image_classifier
+yarn link deeplearn
+yarn link deeplearn-squeezenet
+yarn run prep
+yarn run build
+yarn link
+yarn run lint
+cd $ROOTDIR
+
+echo
+echo =======================================================
+echo Building models/mobilenet
+echo =======================================================
+cd models/mobilenet
+yarn link deeplearn
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR
+
+echo
+echo =======================================================
+echo Building models/yolo-mobilenet
+echo =======================================================
+cd models/yolo-mobilenet
+yarn link deeplearn
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR
+
+# The demos package should go away; until it does, build it against head.
+echo
+echo =======================================================
+echo Building demos
+echo =======================================================
+cd demos
+yarn link deeplearn
+yarn link deeplearn-squeezenet
+yarn link deeplearn-knn-image-classifier
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR
+
+# Note that the starter projects do not link in deeplearn; they should always
+# depend only on a released version.
+echo
+echo =======================================================
+echo Building starter/typescript
+echo =======================================================
+cd starter/typescript
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR
+
+echo
+echo =======================================================
+echo Building starter/es6
+echo =======================================================
+cd starter/es6
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR

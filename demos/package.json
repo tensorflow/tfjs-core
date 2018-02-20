@@ -1,6 +1,6 @@
 {
   "name": "deeplearn-demos",
-  "version": "0.1.2-dev",
+  "version": "0.1.2",
   "description": "deeplearn.js demos - not actually published",
   "private": true,
   "dependencies": {
@@ -52,7 +52,7 @@
     "@bower_components/web-animations-js": "web-animations/web-animations-js#^2.2.0",
     "@bower_components/webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.24",
     "chart.js": "~2.7.1",
-    "deeplearn": "latest",
+    "deeplearn": "file:../",
     "deeplearn-knn-image-classifier": "latest",
     "deeplearn-squeezenet": "latest",
     "tslint": "~5.8.0",
@@ -79,9 +79,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "localprep": "yarn link deeplearn && yarn link deeplearn-knn-image-classifier && yarn link deeplearn-squeezenet && yarn run prep",
     "prep": "yarn",
-    "localbuild": "yarn run build && yarn link",
     "build": "tsc",
     "lint": "tslint -p . -t verbose"
   },

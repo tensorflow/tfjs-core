@@ -1,6 +1,6 @@
 {
   "name": "deeplearn-squeezenet",
-  "version": "0.1.10-dev",
+  "version": "0.1.10",
   "description": "Pretrained SqueezeNet model in deeplearn.js",
   "main": "dist/squeezenet/index.js",
   "unpkg": "dist/bundle.js",
@@ -23,9 +23,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "localprep": "yarn link deeplearn && yarn run prep",
     "prep": "yarn",
-    "localbuild": "yarn run build && yarn link",
     "build": "tsc --sourceMap false && browserify -g browserify-shim --standalone squeezenet index.ts -p [tsify] -o dist/bundle.js",
     "lint": "tslint -p . -t verbose",
     "publish-npm": "yarn build && yarn publish"

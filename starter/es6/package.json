@@ -4,7 +4,7 @@
   "description": "Starter project for using deeplearn.js with es6",
   "dependencies": {
     "babel-polyfill": "~6.26.0",
-    "deeplearn": "latest"
+    "deeplearn": "~0.5.0"
   },
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "~6.13.0",
@@ -33,9 +33,7 @@
     ]
   },
   "scripts": {
-    "localprep": "yarn link deeplearn && yarn run prep",
     "prep": "yarn",
-    "localbuild": "yarn run build && yarn link",
     "watch": "watchify main.js -v --debug -o dist/bundle.js",
     "build": "browserify main.js -o dist/bundle.js",
     "lint": "eslint main.js",

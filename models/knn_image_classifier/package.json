@@ -1,6 +1,6 @@
 {
   "name": "deeplearn-knn-image-classifier",
-  "version": "0.2.4-dev",
+  "version": "0.2.4",
   "description": "A KNN Image Classifier model in deeplearn.js",
   "main": "dist/knn_image_classifier/index.js",
   "unpkg": "dist/bundle.js",
@@ -26,9 +26,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "localprep": "yarn link deeplearn && yarn link deeplearn-squeezenet && yarn run prep",
     "prep": "yarn",
-    "localbuild": "yarn run build && yarn link",
     "build": "tsc --sourceMap false && browserify -g browserify-shim --standalone knn_image_classifier index.ts -p [tsify] -o dist/bundle.js",
     "lint": "tslint -p . -t verbose",
     "publish-npm": "yarn build && yarn publish"

@@ -1,6 +1,6 @@
 {
   "name": "deeplearn-mobilenet",
-  "version": "0.1.4-dev",
+  "version": "0.1.4",
   "description": "Pretrained MobileNet model in deeplearn.js",
   "main": "dist/mobilenet/index.js",
   "unpkg": "dist/bundle.js",
@@ -23,9 +23,7 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "localprep": "yarn link deeplearn && yarn run prep",
     "prep": "yarn",
-    "localbuild": "yarn run build && yarn link",
     "build": "browserify -g browserify-shim --standalone mobilenet index.ts -p [tsify] -o dist/bundle.js",
     "lint": "tslint -p . -t verbose",
     "publish-npm": "tsc --sourceMap false && yarn build && npm publish"
