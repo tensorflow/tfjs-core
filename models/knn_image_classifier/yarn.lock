@@ -564,7 +564,7 @@ deeplearn-squeezenet@latest:
   version "0.1.9"
   resolved "https://registry.yarnpkg.com/deeplearn-squeezenet/-/deeplearn-squeezenet-0.1.9.tgz#a4194c31156cd2fa7421aaffcc6e3d4b3e3ef1c1"
 
-deeplearn@latest:
+deeplearn@~0.5.0:
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/deeplearn/-/deeplearn-0.5.0.tgz#015c25fb35fcbf40cf9f31d9fff7760af7a436ec"
   dependencies:
