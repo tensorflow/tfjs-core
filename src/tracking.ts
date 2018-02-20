@@ -87,15 +87,9 @@ export class Tracking {
       // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
     }
     ENV.engine.startScope(name, gradMode);
-
     const result = fn();
-    if (result instanceof Promise) {
-      result.then(r => ENV.engine.endScope(r, gradMode));
-      return result;
-    } else {
-      ENV.engine.endScope(result as ScopeResult, gradMode);
-      return result;
-    }
+    ENV.engine.endScope(result, gradMode);
+    return result;
   }
 
   /**

@@ -241,12 +241,13 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
   }
 
   async runInference() {
-    await dl.tidy(async () => {
+    const inferenceResult = dl.tidy(() => {
       const preprocessed = dl.fromPixels(this.contentImgElement);
-      const inferenceResult = await this.transformNet.predict(preprocessed);
-      this.setCanvasShape(inferenceResult.shape);
-      renderToCanvas(inferenceResult, this.canvas);
+      return this.transformNet.predict(preprocessed);
     });
+    this.setCanvasShape(inferenceResult.shape);
+    renderToCanvas(inferenceResult, this.canvas);
+    inferenceResult.dispose();
   }
 
   private setCanvasShape(shape: number[]) {

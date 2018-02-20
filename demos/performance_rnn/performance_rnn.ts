@@ -412,15 +412,16 @@ async function generateStep(loopId: number) {
     // Was part of an outdated generateStep() scheduled via setTimeout.
     return;
   }
-  await dl.tidy(async () => {
-    const lstm1 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
-        dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);
-    const lstm2 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
-        dl.basicLSTMCell(forgetBias, lstmKernel2, lstmBias2, data, c, h);
-    const lstm3 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
-        dl.basicLSTMCell(forgetBias, lstmKernel3, lstmBias3, data, c, h);
 
-    const outputs: dl.Scalar[] = [];
+  const lstm1 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
+      dl.basicLSTMCell(forgetBias, lstmKernel1, lstmBias1, data, c, h);
+  const lstm2 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
+      dl.basicLSTMCell(forgetBias, lstmKernel2, lstmBias2, data, c, h);
+  const lstm3 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
+      dl.basicLSTMCell(forgetBias, lstmKernel3, lstmBias3, data, c, h);
+
+  const outputs: dl.Scalar[] = [];
+  dl.tidy(() => {
     // Generate some notes.
     for (let i = 0; i < STEPS_PER_GENERATE_CALL; i++) {
       // Use last sampled output as the next input.
@@ -452,24 +453,23 @@ async function generateStep(loopId: number) {
 
     c.forEach(val => dl.keep(val));
     h.forEach(val => dl.keep(val));
-
-    await outputs[outputs.length - 1].data();
-
-    for (let i = 0; i < outputs.length; i++) {
-      playOutput(await outputs[i].val());
-    }
-
-    if (piano.now() - currentPianoTimeSec > MAX_GENERATION_LAG_SECONDS) {
-      console.warn(
-          `Generation is ${
-              piano.now() - currentPianoTimeSec} seconds behind, ` +
-          `which is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
-      currentPianoTimeSec = piano.now();
-    }
-    const delta = Math.max(
-        0, currentPianoTimeSec - piano.now() - GENERATION_BUFFER_SECONDS);
-    setTimeout(() => generateStep(loopId), delta * 1000);
   });
+
+  await outputs[outputs.length - 1].data();
+
+  for (let i = 0; i < outputs.length; i++) {
+    playOutput(await outputs[i].val());
+  }
+
+  if (piano.now() - currentPianoTimeSec > MAX_GENERATION_LAG_SECONDS) {
+    console.warn(
+        `Generation is ${piano.now() - currentPianoTimeSec} seconds behind, ` +
+        `which is over ${MAX_NOTE_DURATION_SECONDS}. Resetting time!`);
+    currentPianoTimeSec = piano.now();
+  }
+  const delta = Math.max(
+      0, currentPianoTimeSec - piano.now() - GENERATION_BUFFER_SECONDS);
+  setTimeout(() => generateStep(loopId), delta * 1000);
 }
 
 let midi;
