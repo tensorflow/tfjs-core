@@ -18,7 +18,6 @@
 import {ENV} from '../../environment';
 import {Tensor} from '../../tensor';
 import * as util from '../../util';
-
 import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import {ShapeInfo} from './shader_compiler';

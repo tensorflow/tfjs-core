@@ -416,7 +416,8 @@ export class GPGPUContext {
         console.warn('Disjoint query timer never available.');
         resolve(-1);
       };
-        const queryTimerVersion =
+
+      const queryTimerVersion =
           ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
       util.repeatedTry(() => this.isQueryAvailable(query, queryTimerVersion))
           .then(() => resolve(this.getQueryTime(query, queryTimerVersion)))
