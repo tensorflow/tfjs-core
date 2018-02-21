@@ -97,20 +97,20 @@ export class Engine implements TensorManager {
       inputs?: I,
       backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
       ): T {
-    let result: T;
     const saved: Tensor[] = [];
     const saveFunc = <T extends Tensor>(x: T): T => {
       saved.push(x);
       return x;
     };
     const scopeName = this.activeScope.name;
-
-    if (!ENV.get('DEBUG')) {
-      result = forwardFunc(this.backend, saveFunc);
-    } else {
-      result = this.profiler.profileKernel(
-          scopeName, () => forwardFunc(this.backend, saveFunc));
-    }
+    const result = tidy(() => {
+      if (!ENV.get('DEBUG')) {
+        return forwardFunc(this.backend, saveFunc);
+      } else {
+        return this.profiler.profileKernel(
+            scopeName, () => forwardFunc(this.backend, saveFunc));
+      }
+    });
 
     const recordKernel =
         this.activeTape != null && this.customGradientDepth === 0;

@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {tidy} from './globals';
 import {Tensor} from './tensor';
 import {NamedTensorMap} from './types';
 import * as util from './util';
@@ -149,16 +150,16 @@ export function backpropagateGradients(
     }
 
     // Backprop dy through this node and accumulate gradients over the inputs.
-    const inputGradients = node.gradient(dy);
+    const gradFuncs = node.gradient(dy);
     for (const inputName in node.inputs) {
-      if (!(inputName in inputGradients)) {
+      if (!(inputName in gradFuncs)) {
         throw new Error(
             `Cannot backprop through input ${inputName}. ` +
-            `Available gradients found: ${Object.keys(inputGradients)}.`);
+            `Available gradients found: ${Object.keys(gradFuncs)}.`);
       }
 
       // Call the gradient function.
-      const dx = inputGradients[inputName]();
+      const dx = tidy(() => gradFuncs[inputName]());
       const x = node.inputs[inputName];
       if (!util.arraysEqual(dx.shape, x.shape)) {
         throw new Error(
