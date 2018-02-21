@@ -190,7 +190,7 @@ export interface ScopeArray extends Array<ScopeAny> {}
 export type ScopeResult = ScopeAny|Promise<ScopeAny>;
 
 /** @docalias Function */
-export type ScopeFn<T extends ScopeAny> = () => T;
+export type ScopeFn<T extends ScopeResult> = () => T;
 
 export function extractTensorsFromScopeResult(result: ScopeResult): Tensor[] {
   if (result == null) {
