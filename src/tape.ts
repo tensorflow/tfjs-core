@@ -16,7 +16,7 @@
  */
 
 import {Tensor} from './tensor';
-import {NamedTensorMap, RegularArray} from './types';
+import {NamedTensorMap} from './types';
 import * as util from './util';
 
 export interface TapeNode {
@@ -178,9 +178,16 @@ export function backpropagateGradients(
   }
 }
 
-/** @docalias Tensor|Tensor[]|{[key: string]: Tensor}|void */
+/**
+ * @docalias void|number|string|Tensor|Tensor[]|{[key:
+ * string]:Tensor|number|string}
+ */
 export type ScopeResult =
-    void|Tensor|RegularArray<Tensor>|{[key: string]: Tensor | Tensor[]};
+    void|Tensor|string|number|boolean|ScopeObject|ScopeArray;
+
+export interface ScopeObject { [x: string]: ScopeResult; }
+export interface ScopeArray extends Array<ScopeResult> {}
+
 /** @docalias Function */
 export type ScopeFn<T extends ScopeResult> = () => T;
 
@@ -194,10 +201,19 @@ export function extractTensorsFromScopeResult(result: ScopeResult): Tensor[] {
 
   const list: Tensor[] = [];
   const resultObj = result as {[key: string]: Tensor};
+  if (!isIterable(resultObj)) {
+    return [];
+  }
+
   // Iteration over keys works also for arrays.
   for (const k in resultObj) {
     const sublist = util.flatten(resultObj[k]).filter(x => x instanceof Tensor);
     list.push(...sublist);
   }
   return list;
+}
+
+// tslint:disable-next-line:no-any
+function isIterable(obj: any): boolean {
+  return Array.isArray(obj) || typeof obj === 'object';
 }
