@@ -93,9 +93,6 @@ export class MomentumOptimizer extends SGDOptimizer {
       math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
       activationArrayMap: TensorArrayMap,
       gradientArrayMap: SummedTensorArrayMap) {
-    if (this.one == null) {
-      this.one = keep(scalar(1));
-    }
     tidy(() => {
       this.variableNodes.forEach(node => {
         const oldVariable = activationArrayMap.get(node.output);
@@ -127,9 +124,6 @@ export class MomentumOptimizer extends SGDOptimizer {
   dispose() {
     super.dispose();
     this.m.dispose();
-    if (this.one != null) {
-      this.one.dispose();
-    }
     if (this.variableVelocitiesGraph != null) {
       this.variableVelocitiesGraph.dispose();
     }
