@@ -64,7 +64,7 @@ reader.getAllVariables().then(async vars => {
       const outputH = h[1];
       const logits =
           outputH.matMul(fullyConnectedWeights).add(fullyConnectedBiases);
-      const result = dl.argMax(logits).as1D();
+      const result = dl.argMax(logits).asType('float32').as1D();
       results.push(result);
       input = result;
     }
@@ -73,7 +73,7 @@ reader.getAllVariables().then(async vars => {
   const resultsData =
       (await Promise.all(results.map(r => r.data()))).map(d => d[0]);
   document.getElementById('expected').innerHTML = expected.toString();
-  document.getElementById('results').innerHTML = results.toString();
+  document.getElementById('results').innerHTML = resultsData.toString();
   if (dl.util.arraysEqual(expected, resultsData)) {
     document.getElementById('success').innerHTML = 'Success!';
   } else {

@@ -76,10 +76,8 @@ export const learnXOR = async () => {
    * Train the model
    */
   for (let i = 0; i < iterations; i += 1) {
-    cost = dl.tidy(() => {
-      return session.train(
-          costTensor, feedEntries, 4, optimizer, dl.CostReduction.MEAN);
-    });
+    cost = session.train(
+        costTensor, feedEntries, 4, optimizer, dl.CostReduction.MEAN);
   }
   loss = await cost.val();
 

@@ -240,14 +240,13 @@ export class StyleTransferDemo extends StyleTransferDemoPolymer {
         });
   }
 
-  async runInference() {
-    const inferenceResult = dl.tidy(() => {
+  runInference() {
+    dl.tidy(() => {
       const preprocessed = dl.fromPixels(this.contentImgElement);
-      return this.transformNet.predict(preprocessed);
+      const inferenceResult = this.transformNet.predict(preprocessed);
+      this.setCanvasShape(inferenceResult.shape);
+      renderToCanvas(inferenceResult, this.canvas);
     });
-    this.setCanvasShape(inferenceResult.shape);
-    renderToCanvas(inferenceResult, this.canvas);
-    inferenceResult.dispose();
   }
 
   private setCanvasShape(shape: number[]) {

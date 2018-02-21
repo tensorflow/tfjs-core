@@ -88,6 +88,9 @@ export class Tracking {
     }
     ENV.engine.startScope(name, gradMode);
     const result = fn();
+    if (result instanceof Promise) {
+      throw new Error('The function f passed to tidy cannot return a promise');
+    }
     ENV.engine.endScope(result, gradMode);
     return result;
   }

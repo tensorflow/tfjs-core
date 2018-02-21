@@ -420,9 +420,10 @@ async function generateStep(loopId: number) {
   const lstm3 = (data: dl.Tensor2D, c: dl.Tensor2D, h: dl.Tensor2D) =>
       dl.basicLSTMCell(forgetBias, lstmKernel3, lstmBias3, data, c, h);
 
-  const outputs: dl.Scalar[] = [];
-  dl.tidy(() => {
+  let outputs: dl.Scalar[] = [];
+  [c, h, outputs] = dl.tidy(() => {
     // Generate some notes.
+    const innerOuts: dl.Scalar[] = [];
     for (let i = 0; i < STEPS_PER_GENERATE_CALL; i++) {
       // Use last sampled output as the next input.
       const eventInput = dl.oneHot(lastSample.as1D(), EVENT_SIZE).as1D();
@@ -436,6 +437,8 @@ async function generateStep(loopId: number) {
       const input = conditioning.concat(eventInput, axis);
       const output =
           dl.multiRNNCell([lstm1, lstm2, lstm3], input.as2D(1, -1), c, h);
+      c.forEach(c => c.dispose());
+      h.forEach(h => h.dispose());
       c = output[0];
       h = output[1];
 
@@ -446,13 +449,10 @@ async function generateStep(loopId: number) {
       // TODO(smilkov): Use dl.multinomial once exposed to the user.
       const sampledOutput = dl.ENV.math.multinomial(softmax, 1).asScalar();
 
-      outputs.push(sampledOutput);
-      dl.keep(sampledOutput);
+      innerOuts.push(sampledOutput);
       lastSample = sampledOutput;
     }
-
-    c.forEach(val => dl.keep(val));
-    h.forEach(val => dl.keep(val));
+    return [c, h, innerOuts] as [dl.Tensor2D[], dl.Tensor2D[], dl.Scalar[]];
   });
 
   await outputs[outputs.length - 1].data();
