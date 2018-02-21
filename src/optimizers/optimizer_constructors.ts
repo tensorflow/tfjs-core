@@ -76,8 +76,11 @@ export class OptimizerConstructors {
    * algorithm.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
-  static momentum(learningRate: number, momentum: number): MomentumOptimizer {
-    return new MomentumOptimizer(learningRate, momentum);
+  static momentum(learningRate: number, momentum: number, useNesterov = false):
+      MomentumOptimizer {
+    return new MomentumOptimizer(
+        learningRate, momentum,
+        undefined /** @deprecated specifiedVariableList */, useNesterov);
   }
 
   /**
