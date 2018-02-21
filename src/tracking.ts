@@ -24,9 +24,12 @@ import {Tensor} from './tensor';
 
 export class Tracking {
   /**
-   * Executes the provided function and after it is executed, cleans up all
-   * intermediate tensors allocated by the function except those returned by
-   * the function.
+   * Executes the provided function `f` and after it is executed, cleans up all
+   * intermediate tensors allocated by `f` except those returned by `f`.
+   * `f` must not return a Promise (async functions not allowed).
+   * The returned result can be a complex object, however tidy only walks the
+   * top-level properties (depth 1) of that object to search for tensors, or
+   * lists of tensors that need to be tracked in the parent scope.
    *
    * Using this method helps avoid memory leaks. In general, wrap calls to
    * operations in `tidy` for automatic memory cleanup.
@@ -55,9 +58,8 @@ export class Tracking {
    *
    * @param nameOrFn The name of the closure, or the function to execute.
    *     If a name is provided, the 2nd argument should be the function.
-   *     If a name is provided, and debug mode is on, the timing and the memory
-   *     usage of the function will be tracked and displayed on the console
-   *     using the provided name.
+   *     If debug mode is on, the timing and the memory usage of the function
+   *     will be tracked and displayed on the console using the provided name.
    * @param fn The function to execute.
    * @param gradMode If true, starts a tape and doesn't dispose tensors.
    */
