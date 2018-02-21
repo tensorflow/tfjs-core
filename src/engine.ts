@@ -21,9 +21,8 @@ import {BackendTimingInfo, KernelBackend} from './kernels/backend';
 import * as ops from './ops/ops';
 import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
-import {backpropagateGradients, extractTensorsFromScopeResult, getFilteredNodesXToY} from './tape';
+import {backpropagateGradients, extractTensorsFromScopeResult, getFilteredNodesXToY, ScopeResult} from './tape';
 import {NamedGradientMap, TapeNode} from './tape';
-import {ScopeResultImmediate} from './tape';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TypedArray} from './types';
 import * as util from './util';
@@ -250,7 +249,7 @@ export class Engine implements TensorManager {
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  endScope(result: ScopeResultImmediate, gradientsMode = false) {
+  endScope(result: ScopeResult, gradientsMode = false) {
     if (gradientsMode) {
       this.gradientScopeCount--;
       if (this.gradientScopeCount === 0) {
@@ -304,6 +303,8 @@ export class Engine implements TensorManager {
   gradients<T extends Tensor>(
       f: () => T, xs: Tensor[], dy?: T,
       allowNoGradients = false): {value: T, grads: Tensor[]} {
+    util.assert(xs.length > 0, 'gradients() received an empty list of xs.');
+
     return tidy('gradients', () => {
       const y = f();
       util.assert(
