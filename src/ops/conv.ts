@@ -80,9 +80,11 @@ export class ConvOps {
     const input4D =
         input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
     const strides: [number, number] = [1, stride];
+    const rates = 1;
 
     const res =
-        ConvOps.conv2d(input4D, filter4D, strides, pad, dimRoundingMode);
+        ConvOps.conv2d(input4D, filter4D, strides, rates, pad, dimRoundingMode);
+
     if (reshapedTo3D) {
       return res.as2D(res.shape[2], res.shape[3]) as T;
     }
@@ -99,6 +101,11 @@ export class ConvOps {
    *     `[filterHeight, filterWidth, inDepth, outDepth]`.
    * @param strides The strides of the convolution: `[strideHeight,
    * strideWidth]`.
+   * @param rates The dilation rates: `[rateHeight, rateWidth]` in which we
+   * sample input values across the height and width dimensions in atrous
+   * convolution. Defaults to `[1, 1]`. If `rate` is a single number, then
+   * `rateHeight == rateWidth`. If it is greater than 1, then all values
+   * of `strides` must be 1.
    * @param pad The type of padding algorithm.
    *    - `same` and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -115,7 +122,8 @@ export class ConvOps {
   @operation
   static conv2d<T extends Tensor3D|Tensor4D>(
       x: T, filter: Tensor4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      rates: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as Tensor4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -142,7 +150,7 @@ export class ConvOps {
             `input depth for filter ${filter.shape[2]}.`);
 
     const convInfo = conv_util.computeConv2DInfo(
-        x4D.shape, filter.shape, strides, pad, dimRoundingMode);
+        x4D.shape, filter.shape, strides, rates, pad, dimRoundingMode);
 
     const grad = (dy: Tensor4D) => {
       return {
@@ -230,8 +238,10 @@ export class ConvOps {
               `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
     }
 
+    const rates = 1;
+
     const convInfo = conv_util.computeConv2DInfo(
-        xShape4D, filter.shape, strides, pad, dimRoundingMode);
+        xShape4D, filter.shape, strides, rates, pad, dimRoundingMode);
     const res = ENV.engine.runKernel(
         backend => backend.conv2dDerInput(dy4D, filter, convInfo), {dy4D});
     if (reshapedTo4D) {
@@ -298,8 +308,10 @@ export class ConvOps {
               `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
     }
 
+    const rates = 1;
+
     const convInfo = conv_util.computeConv2DInfo(
-        x4D.shape, filterShape, strides, pad, dimRoundingMode);
+        x4D.shape, filterShape, strides, rates, pad, dimRoundingMode);
     return ENV.engine.runKernel(
         backend => backend.conv2dDerFilter(x4D, dy4D, convInfo), {x4D, dy4D});
   }
@@ -413,7 +425,7 @@ export class ConvOps {
     }
 
     const convInfo = conv_util.computeConv2DInfo(
-        input4D.shape, filter.shape, strides, pad, dimRoundingMode,
+        input4D.shape, filter.shape, strides, rates, pad, dimRoundingMode,
         true /* depthwise */);
     const res = ENV.engine.runKernel(
         backend => backend.depthwiseConv2D(input4D, filter, convInfo),
