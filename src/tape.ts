@@ -182,7 +182,7 @@ export type ScopeAny = void|Tensor|string|number|boolean|ScopeObject|ScopeArray;
 export interface ScopeObject { [x: string]: ScopeAny; }
 export interface ScopeArray extends Array<ScopeAny> {}
 
-// TODO(smilkov): Remove Promise<ScopeAny> in  0.6.0 and make it run-time error.
+// TODO(smilkov): Remove Promise<ScopeAny> in 0.6.0 and make it run-time error.
 /**
  * @docalias void|number|string|Tensor|Tensor[]|{[key:
  * string]:Tensor|number|string}

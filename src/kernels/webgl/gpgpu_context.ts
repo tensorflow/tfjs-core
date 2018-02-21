@@ -207,7 +207,7 @@ export class GPGPUContext {
     }
     if (this.firstProgram) {
       this.firstProgram = false;
-      this.gl.useProgram(program);
+      this.setProgram(program);
       gpgpu_util.bindVertexProgramAttributeStreams(
           gl, this.program, this.vertexBuffer);
     }
