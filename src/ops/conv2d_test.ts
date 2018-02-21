@@ -28,11 +28,12 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const fSize = 1;
     const pad = 0;
     const stride = 1;
+    const rate = 1;
 
     const x = dl.tensor3d([1, 2, 3, 4], inputShape);
     const w = dl.tensor4d([2], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = dl.conv2d(x, w, stride, pad);
+    const result = dl.conv2d(x, w, stride, rate, pad);
 
     expectArraysClose(result, [2, 4, 6, 8]);
   });
@@ -44,11 +45,12 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const fSize = 1;
     const pad = 0;
     const stride = 1;
+    const rate = 1;
 
     const x = dl.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], inShape);
     const w = dl.tensor4d([2], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = dl.conv2d(x, w, stride, pad);
+    const result = dl.conv2d(x, w, stride, rate, pad);
     expect(result.shape).toEqual([2, 2, 2, 1]);
     const expected = [2, 4, 6, 8, 10, 12, 14, 16];
 
@@ -62,12 +64,13 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const fSize = 2;
     const pad = 0;
     const stride = 1;
+    const rate = 1;
 
     const x = dl.tensor3d([1, 2, 3, 4], inputShape);
     const w =
         dl.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = dl.conv2d(x, w, stride, pad);
+    const result = dl.conv2d(x, w, stride, rate, pad);
     expectArraysClose(result, [20]);
   });
 
@@ -77,13 +80,14 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const fSize = 2;
     const pad = 0;
     const stride = 1;
+    const rate = 1;
 
     // tslint:disable-next-line:no-any
     const x: any = dl.tensor2d([1, 2, 3, 4], [2, 2]);
     const w =
         dl.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
 
-    expect(() => dl.conv2d(x, w, stride, pad)).toThrowError();
+    expect(() => dl.conv2d(x, w, stride, rate, pad)).toThrowError();
   });
 
   it('throws when weights is not rank 4', () => {
@@ -91,12 +95,13 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const pad = 0;
     const stride = 1;
+    const rate = 1;
 
     const x = dl.tensor3d([1, 2, 3, 4], inputShape);
     // tslint:disable-next-line:no-any
     const w: any = dl.tensor3d([3, 1, 5, 0], [2, 2, 1]);
 
-    expect(() => dl.conv2d(x, w, stride, pad)).toThrowError();
+    expect(() => dl.conv2d(x, w, stride, rate, pad)).toThrowError();
   });
 
   it('throws when x depth does not match weight depth', () => {
@@ -107,12 +112,13 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const fSize = 2;
     const pad = 0;
     const stride = 1;
+    const rate = 1;
 
     const x = dl.tensor3d([1, 2, 3, 4], inputShape);
     const w =
         dl.randomNormal<Rank.R4>([fSize, fSize, wrongInputDepth, outputDepth]);
 
-    expect(() => dl.conv2d(x, w, stride, pad)).toThrowError();
+    expect(() => dl.conv2d(x, w, stride, rate, pad)).toThrowError();
   });
 
   it('throws when dimRoundingMode is set and pad is not a number', () => {
@@ -122,12 +128,14 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const fSize = 2;
     const pad = 'valid';
     const stride = 1;
+    const rate = 1;
     const dimRoundingMode = 'round';
 
     const x = dl.tensor3d([1, 2, 3, 4], inputShape);
     const w = dl.randomNormal<Rank.R4>([fSize, fSize, inputDepth, outputDepth]);
 
-    expect(() => dl.conv2d(x, w, stride, pad, dimRoundingMode)).toThrowError();
+    expect(() => dl.conv2d(x, w, stride, rate, pad, dimRoundingMode))
+      .toThrowError();
   });
 
   it('gradient input=[3,3,1] f=[2,2,1,1] s=1 p=0', () => {
@@ -136,6 +144,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const inputShape: [number, number, number] = [3, 3, inputDepth];
     const filterSize = 2;
     const stride = 1;
+    const rate = 1;
     const pad = 0;
 
     const filterShape: [number, number, number, number] =
@@ -146,7 +155,8 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const dy = dl.tensor3d([3, 1, 2, 0], [2, 2, 1]);
 
     const grads = dl.grads(
-        (x: dl.Tensor3D, filter: dl.Tensor4D) => x.conv2d(filter, stride, pad));
+        (x: dl.Tensor3D, filter: dl.Tensor4D) => x.conv2d(filter, stride,
+          rate, pad));
     const [dx, dfilter] = grads([x, filter], dy);
 
     expect(dx.shape).toEqual(x.shape);
@@ -162,6 +172,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const inputShape: [number, number, number, number] = [2, 3, 3, inputDepth];
     const filterSize = 2;
     const stride = 1;
+    const rate = 1;
     const pad = 0;
 
     const filterShape: [number, number, number, number] =
@@ -173,7 +184,8 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const dy = dl.tensor4d([3, 1, 2, 0, 3, 1, 2, 0], [2, 2, 2, 1]);
 
     const grads = dl.grads(
-        (x: dl.Tensor4D, filter: dl.Tensor4D) => x.conv2d(filter, stride, pad));
+        (x: dl.Tensor4D, filter: dl.Tensor4D) => x.conv2d(filter, stride,
+          rate, pad));
     const [dx, dfilter] = grads([x, filter], dy);
 
     expect(dx.shape).toEqual(x.shape);

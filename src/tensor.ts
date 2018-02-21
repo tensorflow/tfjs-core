@@ -831,9 +831,10 @@ export class Tensor<R extends Rank = Rank> {
   }
   conv2d<T extends Tensor3D|Tensor4D>(
       this: T, filter: Tensor4D, strides: [number, number]|number,
+      rates: [number, number]|number,
       pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
-    return ops.conv2d(this, filter, strides, pad, dimRoundingMode);
+    return ops.conv2d(this, filter, strides, rates, pad, dimRoundingMode);
   }
   conv2dTranspose<T extends Tensor3D|Tensor4D>(
       this: T, filter: Tensor4D,

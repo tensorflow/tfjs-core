@@ -368,7 +368,7 @@ export class NDArrayMath {
           `Error in conv2d: bias must be rank 1, but got rank ` +
               `${bias.rank}.`);
     }
-    const res = ops.conv2d(x, filter, strides, pad, dimRoundingMode);
+    const res = ops.conv2d(x, filter, strides, 1, pad, dimRoundingMode);
     return res.add(bias) as T;
   }
 
