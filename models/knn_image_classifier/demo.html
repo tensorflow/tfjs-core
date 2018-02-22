@@ -27,9 +27,9 @@
 
     resultElement.innerText = 'Training...';
 
-    const catPixels = dl.Array3D.fromPixels(cat);
-    const dog1Pixels = dl.Array3D.fromPixels(dog1);
-    const dog2Pixels = dl.Array3D.fromPixels(dog2);
+    const catPixels = dl.fromPixels(cat);
+    const dog1Pixels = dl.fromPixels(dog1);
+    const dog2Pixels = dl.fromPixels(dog2);
 
     knn.addImage(catPixels, 0);
     knn.addImage(dog1Pixels, 1);
