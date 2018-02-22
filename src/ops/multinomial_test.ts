@@ -19,10 +19,10 @@ import * as dl from '../index';
 import {Tensor1D} from '../tensor';
 import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
 import {Rank} from '../types';
-import * as array_ops from './array_ops';
+import {ArrayOps} from './array_ops';
 
 // TODO(smilkov): Use dl.multinomial once exposed to the user.
-const multinomial = array_ops.Ops.multinomial;
+const multinomial = ArrayOps.multinomial;
 
 describeWithFlags('multinomial', ALL_ENVS, () => {
   const NUM_SAMPLES = 10000;
@@ -99,8 +99,8 @@ describeWithFlags('multinomial', ALL_ENVS, () => {
   });
 
   it('passing Tensor3D throws error', () => {
-    const probs = dl.zeros([3, 2, 2]) as Tensor1D;
-    expect(() => multinomial(probs, 3)).toThrowError();
+    const probs = dl.zeros([3, 2, 2]);
+    expect(() => multinomial(probs as Tensor1D, 3)).toThrowError();
   });
 
   function computeProbs(

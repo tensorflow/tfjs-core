@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import * as dl from './index';
 import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
@@ -57,6 +58,22 @@ describeWithFlags('tidy', ALL_ENVS, () => {
     expect(dl.memory().numTensors).toBe(1);
     b.dispose();
     expect(dl.memory().numTensors).toBe(0);
+  });
+
+  it('allows primitive types', () => {
+    const a = dl.tidy(() => 5);
+    expect(a).toBe(5);
+
+    const b = dl.tidy(() => 'hello');
+    expect(b).toBe('hello');
+  });
+
+  it('allows complex types', () => {
+    const res = dl.tidy(() => {
+      return {a: dl.scalar(1), b: 'hello', c: [dl.scalar(2), 'world']};
+    });
+    expectArraysClose(res.a, [1]);
+    expectArraysClose(res.c[0] as dl.Scalar, [2]);
   });
 
   it('returns Tensor[]', () => {
@@ -312,6 +329,11 @@ describeWithFlags('gradients', ALL_ENVS, () => {
       })(a);
     };
     expect(f).toThrowError();
+  });
+
+  it('empty list of xs leads to Error', () => {
+    expect(() => ENV.engine.gradients(() => dl.scalar(1), [], dl.scalar(2)))
+        .toThrowError(/empty list of xs/);
   });
 });
 

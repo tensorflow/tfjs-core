@@ -19,6 +19,7 @@ import {doc} from './doc';
 import {ENV} from './environment';
 import * as ops from './ops/ops';
 import {RandNormalDataTypes} from './ops/rand';
+import * as tensor_util from './tensor_util';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
 import * as util from './util';
 
@@ -36,6 +37,8 @@ export interface TensorData {
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class TensorBuffer<R extends Rank> {
+  size: number;
+
   private strides: number[];
 
   constructor(
@@ -52,6 +55,7 @@ export class TensorBuffer<R extends Rank> {
     this.values =
         values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
     this.strides = computeStrides(shape);
+    this.size = util.sizeFromShape(shape);
   }
 
   /**
@@ -494,6 +498,12 @@ export class Tensor<R extends Rank = Rank> {
     return ops.clone(this);
   }
 
+  /** Returns a human-readable description of the tensor. Useful for logging. */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
+  toString(): string {
+    return tensor_util.tensorToString(this, true /* verbose */);
+  }
+
   // Below is chain API that is not exposed to docs to avoid repetition. To
   // expose a method, move it above this comment and add @doc and jsdoc.
 
@@ -517,11 +527,12 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.norm(this, ord, axis, keepDims);
   }
-  slice(begin: ShapeMap[R], size: ShapeMap[R]): Tensor<R> {
+  slice<T extends Tensor<R>>(this: T, begin: ShapeMap[R], size: ShapeMap[R]):
+      T {
     this.throwIfDisposed();
     return ops.slice(this, begin, size);
   }
-  reverse(axis: number|number[]): Tensor<R> {
+  reverse<T extends Tensor>(this: T, axis?: number|number[]): T {
     this.throwIfDisposed();
     return ops.reverse(this, axis);
   }
@@ -595,7 +606,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.subStrict(this, x);
   }
-  pow<T extends Tensor>(exp: Tensor): T {
+  pow<T extends Tensor>(this: T, exp: Tensor): T {
     this.throwIfDisposed();
     return ops.pow(this, exp);
   }
@@ -635,7 +646,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.maximumStrict(this, x);
   }
-  transpose(perm?: number[]): Tensor<R> {
+  transpose<T extends Tensor>(this: T, perm?: number[]): T {
     this.throwIfDisposed();
     return ops.transpose(this, perm);
   }
@@ -710,35 +721,35 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   // Unary ops.
-  neg(): Tensor<R> {
+  neg<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.neg(this);
   }
-  ceil(): Tensor<R> {
+  ceil<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.ceil(this);
   }
-  floor(): Tensor<R> {
+  floor<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.floor(this);
   }
-  exp(): Tensor<R> {
+  exp<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.exp(this);
   }
-  log(): Tensor<R> {
+  log<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.log(this);
   }
-  sqrt(): Tensor<R> {
+  sqrt<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sqrt(this);
   }
-  square(): Tensor<R> {
+  square<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.square(this);
   }
-  abs(): Tensor<R> {
+  abs<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.abs(this);
   }
@@ -746,15 +757,15 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.clipByValue(this, min, max);
   }
-  relu(): Tensor<R> {
+  relu<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.relu(this);
   }
-  elu(): Tensor<R> {
+  elu<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.elu(this);
   }
-  selu(): Tensor<R> {
+  selu<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.selu(this);
   }
@@ -766,47 +777,47 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.prelu(this, alpha);
   }
-  sigmoid(): Tensor<R> {
+  sigmoid<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sigmoid(this);
   }
-  sin(): Tensor<R> {
+  sin<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sin(this);
   }
-  cos(): Tensor<R> {
+  cos<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.cos(this);
   }
-  tan(): Tensor<R> {
+  tan<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.tan(this);
   }
-  asin(): Tensor<R> {
+  asin<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.asin(this);
   }
-  acos(): Tensor<R> {
+  acos<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.acos(this);
   }
-  atan(): Tensor<R> {
+  atan<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.atan(this);
   }
-  sinh(): Tensor<R> {
+  sinh<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sinh(this);
   }
-  cosh(): Tensor<R> {
+  cosh<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.cosh(this);
   }
-  tanh(): Tensor<R> {
+  tanh<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.tanh(this);
   }
-  step(alpha = 0.0): Tensor<R> {
+  step<T extends Tensor>(this: T, alpha = 0.0): T {
     this.throwIfDisposed();
     return ops.step(this, alpha);
   }

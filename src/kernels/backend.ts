@@ -19,7 +19,7 @@
 import {Conv2DInfo} from '../ops/conv_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {DataType, Rank, TypedArray} from '../types';
+import {DataType, TypedArray} from '../types';
 
 // Required information for all backends.
 export interface BackendTimingInfo { kernelMs: number; }
@@ -50,17 +50,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D;
 
-  slice1D(x: Tensor1D, begin: number, size: number): Tensor1D;
-  slice2D(x: Tensor2D, begin: [number, number], size: [number, number]):
-      Tensor2D;
-  slice3D(x: Tensor3D, begin: [number, number, number], size: [
-    number, number, number
-  ]): Tensor3D;
-  slice4D(x: Tensor4D, begin: [number, number, number, number], size: [
-    number, number, number, number
-  ]): Tensor4D;
+  slice<T extends Tensor>(x: T, begin: number[], size: number[]): T;
 
-  reverse4D(a: Tensor4D, axis: number[]): Tensor4D;
+  reverse<T extends Tensor>(a: T, axis: number[]): T;
 
   // Any concat of n-dimensional tensors across any axis can be reduced to
   // a concatenation of two-dimensional tensors across the axis 1 by first
@@ -95,7 +87,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   greater(a: Tensor, b: Tensor): Tensor;
   greaterEqual(a: Tensor, b: Tensor): Tensor;
 
-  logicalNot(a: Tensor): Tensor;
+  logicalNot<T extends Tensor>(a: T): T;
   logicalAnd(a: Tensor, b: Tensor): Tensor;
   logicalOr(a: Tensor, b: Tensor): Tensor;
   logicalXor(a: Tensor, b: Tensor): Tensor;
@@ -128,7 +120,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   leakyRelu<T extends Tensor>(x: T, alpha: number): T;
   prelu<T extends Tensor>(x: T, alpha: T): T;
   preluDer<T extends Tensor>(x: T, alpha: T): T;
-  int<R extends Rank>(x: Tensor<R>): Tensor<R>;
+  int<T extends Tensor>(x: T): T;
 
   clip<T extends Tensor>(x: T, min: number, max: number): T;
 
@@ -167,11 +159,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   tile<T extends Tensor>(x: T, reps: number[]): T;
 
-  pad1D(x: Tensor1D, paddings: [number, number], constantValue: number):
-      Tensor1D;
-  pad2D(
-      x: Tensor2D, paddings: [[number, number], [number, number]],
-      constantValue: number): Tensor2D;
+  pad<T extends Tensor>(
+      x: T, paddings: Array<[number, number]>, constantValue: number): T;
 
   transpose<T extends Tensor>(x: T, perm: number[]): T;
 
@@ -183,8 +172,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   batchNormalization4D(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
-      offset?: Tensor4D|Tensor1D): Tensor4D;
+      varianceEpsilon: number, scale: Tensor4D|Tensor1D,
+      offset: Tensor4D|Tensor1D): Tensor4D;
 
   localResponseNormalization4D(
       x: Tensor4D, radius: number, bias: number, alpha: number, beta: number,
