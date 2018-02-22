@@ -16,9 +16,9 @@
  * =============================================================================
  */
 
+import {ByteStream} from '../async_streams/byte_stream';
+import {URLStream} from '../async_streams/url_stream';
 import {DataSource} from '../datasource';
-import {ByteStream} from '../streams/byte_stream';
-import {URLStream} from '../streams/url_stream';
 
 /*
  * Represents a URL readable as a stream of binary data chunks.

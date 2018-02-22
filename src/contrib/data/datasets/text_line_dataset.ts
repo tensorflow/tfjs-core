@@ -16,9 +16,9 @@
  * =============================================================================
  */
 
+import {DataStream} from '../async_streams/data_stream';
 import {Dataset} from '../dataset';
 import {DataSource} from '../datasource';
-import {DataStream} from '../streams/data_stream';
 import {DatasetElement} from '../types';
 
 /**

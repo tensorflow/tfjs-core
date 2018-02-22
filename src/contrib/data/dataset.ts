@@ -18,12 +18,12 @@
 
 import * as seedrandom from 'seedrandom';
 
+import {DataStream} from './async_streams/data_stream';
+import {streamFromConcatenated} from './async_streams/data_stream';
+import {streamFromFunction} from './async_streams/data_stream';
+import {streamFromItems} from './async_streams/data_stream';
 import {BatchDataset} from './batch_dataset';
 import {computeDatasetStatistics, DatasetStatistics} from './statistics';
-import {DataStream} from './streams/data_stream';
-import {streamFromConcatenated} from './streams/data_stream';
-import {streamFromFunction} from './streams/data_stream';
-import {streamFromItems} from './streams/data_stream';
 import {DatasetElement} from './types';
 
 // TODO(soergel): consider vectorized operations within the pipeline.

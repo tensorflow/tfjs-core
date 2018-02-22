@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {ByteStream} from './streams/byte_stream';
+import {ByteStream} from './async_streams/byte_stream';
 
 /**
  * Represents a data source readable as a stream of binary data chunks.

@@ -16,10 +16,10 @@
  * =============================================================================
  */
 
+import {ByteStream} from '../async_streams/byte_stream';
+import {FileReaderStream} from '../async_streams/filereader_stream';
+import {FileReaderStreamOptions} from '../async_streams/filereader_stream';
 import {DataSource} from '../datasource';
-import {ByteStream} from '../streams/byte_stream';
-import {FileReaderStream} from '../streams/filereader_stream';
-import {FileReaderStreamOptions} from '../streams/filereader_stream';
 
 /**
  * Represents a file or blob readable as a stream of binary data chunks.

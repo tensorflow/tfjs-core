@@ -85,6 +85,7 @@ export async function streamFromConcatenatedFunction<T>(
  * stream of elements.
  */
 export abstract class DataStream<T> {
+  // TODO(soergel) next() should return IteratorResult<T>
   /**
    * Returns a `Promise` for the next element in the stream.
    *
@@ -155,7 +156,7 @@ export abstract class DataStream<T> {
    *
    * @param f A function to apply to each stream element.
    */
-  async forEach(f: (value: T) => {}|Promise<{}>): Promise<void> {
+  async forEach(f: (value: T) => {} | Promise<{}>): Promise<void> {
     return this.map(f).resolveFully();
   }
 
