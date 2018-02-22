@@ -21,7 +21,8 @@
 
     resultElement.innerText = 'Predicting...';
 
-    const pixels = dl.Array3D.fromPixels(cat);
+    //make a 3D array from the image and resize it to standart dimentions
+    const pixels = math.resizeBilinear3D(dl.Array3D.fromPixels(cat),[227, 227]);
 
     const result = squeezeNet.predict(pixels);
 
