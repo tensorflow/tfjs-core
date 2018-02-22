@@ -26,9 +26,9 @@ const GOOGLE_CLOUD_STORAGE_DIR =
 export type ActivationName = 'conv_1'|'maxpool_1'|'fire2'|'fire3'|'maxpool_2'|
     'fire4'|'fire5'|'maxpool_3'|'fire6'|'fire7'|'fire8'|'fire9'|'conv10';
 
-export class SqueezeNet implements dl.Model {
+export class SqueezeNet {
   private variables: {[varName: string]: dl.Tensor};
-  private preprocessOffset = Tensor1D.new([103.939, 116.779, 123.68]);
+  private preprocessOffset = dl.tensor1d([103.939, 116.779, 123.68]);
 
   /**
    * Loads necessary variables for SqueezeNet.
@@ -61,86 +61,89 @@ export class SqueezeNet implements dl.Model {
    */
   predictWithActivation(input: Tensor3D, activationName?: ActivationName):
       {logits: Tensor1D, activation: Tensor3D} {
-    let activation: Tensor3D;
-    // Preprocess the input.
-    const preprocessedInput =
-        dl.sub(input.asType('float32'), this.preprocessOffset) as Tensor3D;
+    return dl.tidy(() => {
+      let activation: Tensor3D;
+      // Preprocess the input.
+      const preprocessedInput =
+          dl.sub(input.asType('float32'), this.preprocessOffset) as Tensor3D;
 
-    const conv1relu =
-        preprocessedInput.conv2d(this.variables['conv1_W:0'] as Tensor4D, 2, 0)
-            .add(this.variables['conv1_b:0'] as Tensor1D)
-            .relu() as Tensor3D;
+      const conv1relu =
+          preprocessedInput
+              .conv2d(this.variables['conv1_W:0'] as Tensor4D, 2, 0)
+              .add(this.variables['conv1_b:0'] as Tensor1D)
+              .relu() as Tensor3D;
 
-    if (activationName === 'conv_1') {
-      activation = conv1relu;
-    }
+      if (activationName === 'conv_1') {
+        activation = conv1relu;
+      }
 
-    const pool1 = dl.maxPool(conv1relu, 3, 2, 0);
-    if (activationName === 'maxpool_1') {
-      activation = pool1;
-    }
+      const pool1 = conv1relu.maxPool(3, 2, 0);
+      if (activationName === 'maxpool_1') {
+        activation = pool1;
+      }
 
-    const fire2 = this.fireModule(pool1, 2);
-    if (activationName === 'fire2') {
-      activation = fire2;
-    }
+      const fire2 = this.fireModule(pool1, 2);
+      if (activationName === 'fire2') {
+        activation = fire2;
+      }
 
-    const fire3 = this.fireModule(fire2, 3);
-    if (activationName === 'fire3') {
-      activation = fire3;
-    }
+      const fire3 = this.fireModule(fire2, 3);
+      if (activationName === 'fire3') {
+        activation = fire3;
+      }
 
-    const pool2 = dl.maxPool(fire3, 3, 2, 'valid');
-    if (activationName === 'maxpool_2') {
-      activation = pool2;
-    }
+      const pool2 = fire3.maxPool(3, 2, 'valid');
+      if (activationName === 'maxpool_2') {
+        activation = pool2;
+      }
 
-    const fire4 = this.fireModule(pool2, 4);
-    if (activationName === 'fire4') {
-      activation = fire4;
-    }
+      const fire4 = this.fireModule(pool2, 4);
+      if (activationName === 'fire4') {
+        activation = fire4;
+      }
 
-    const fire5 = this.fireModule(fire4, 5);
-    if (activationName === 'fire5') {
-      activation = fire5;
-    }
+      const fire5 = this.fireModule(fire4, 5);
+      if (activationName === 'fire5') {
+        activation = fire5;
+      }
 
-    const pool3 = dl.maxPool(fire5, 3, 2, 0);
-    if (activationName === 'maxpool_3') {
-      activation = pool3;
-    }
+      const pool3 = fire5.maxPool(3, 2, 0);
+      if (activationName === 'maxpool_3') {
+        activation = pool3;
+      }
 
-    const fire6 = this.fireModule(pool3, 6);
-    if (activationName === 'fire6') {
-      activation = fire6;
-    }
+      const fire6 = this.fireModule(pool3, 6);
+      if (activationName === 'fire6') {
+        activation = fire6;
+      }
 
-    const fire7 = this.fireModule(fire6, 7);
-    if (activationName === 'fire7') {
-      activation = fire7;
-    }
+      const fire7 = this.fireModule(fire6, 7);
+      if (activationName === 'fire7') {
+        activation = fire7;
+      }
 
-    const fire8 = this.fireModule(fire7, 8);
-    if (activationName === 'fire8') {
-      activation = fire8;
-    }
+      const fire8 = this.fireModule(fire7, 8);
+      if (activationName === 'fire8') {
+        activation = fire8;
+      }
 
-    const fire9 = this.fireModule(fire8, 9);
-    if (activationName === 'fire9') {
-      activation = fire9;
-    }
+      const fire9 = this.fireModule(fire8, 9);
+      if (activationName === 'fire9') {
+        activation = fire9;
+      }
 
-    const conv10 =
-        dl.conv2d(fire9, this.variables['conv10_W:0'] as Tensor4D, 1, 0)
-            .add(this.variables['conv10_b:0']) as Tensor3D;
+      const conv10 =
+          fire9.conv2d(this.variables['conv10_W:0'] as Tensor4D, 1, 0)
+              .add(this.variables['conv10_b:0']) as Tensor3D;
 
-    if (activationName === 'conv10') {
-      activation = conv10;
-    }
-    return {
-      logits: dl.avgPool(conv10, conv10.shape[0], 1, 0).as1D() as Tensor1D,
-      activation: activation as Tensor3D
-    };
+      if (activationName === 'conv10') {
+        activation = conv10;
+      }
+      return {
+        logits: dl.avgPool(conv10, conv10.shape[0], 1, 0).as1D() as Tensor1D,
+        activation: activation as Tensor3D
+      };
+    });
   }
 
   private fireModule(input: Tensor3D, fireId: number) {
@@ -177,7 +180,9 @@ export class SqueezeNet implements dl.Model {
    */
   async getTopKClasses(logits: Tensor1D, topK: number):
       Promise<{[className: string]: number}> {
-    const predictions = dl.softmax(logits).asType('float32');
+    const predictions = dl.tidy(() => {
+      return dl.softmax(logits).asType('float32');
+    });
     const topk =
         model_util.topK(await predictions.data() as Float32Array, topK);
     predictions.dispose();

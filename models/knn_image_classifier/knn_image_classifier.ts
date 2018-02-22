@@ -20,7 +20,7 @@ import {Tensor1D, Tensor2D, Tensor3D} from 'deeplearn';
 import {SqueezeNet} from 'deeplearn-squeezenet';
 import * as model_util from '../util';
 
-export class KNNImageClassifier implements dl.Model {
+export class KNNImageClassifier {
   private squeezeNet: SqueezeNet;
 
   // A concatenated matrix of all class logits matrices, lazily created and
@@ -31,7 +31,7 @@ export class KNNImageClassifier implements dl.Model {
   private classExampleCount: number[] = [];
 
   private varsLoaded = false;
-  private squashLogitsDenominator = dl.Scalar.new(300);
+  private squashLogitsDenominator = dl.scalar(300);
 
   /**
    * Contructor for the class.
@@ -84,25 +84,29 @@ export class KNNImageClassifier implements dl.Model {
     }
     this.clearTrainLogitsMatrix();
 
-    // Add the squeezenet logits for the image to the appropriate class
-    // logits matrix.
-    const logits = this.squeezeNet.predict(image);
-    const imageLogits = this.normalizeVector(logits);
+    dl.tidy(() => {
+      // Add the squeezenet logits for the image to the appropriate class
+      // logits matrix.
+      const logits = this.squeezeNet.predict(image);
+      const imageLogits = this.normalizeVector(logits);
 
-    const logitsSize = imageLogits.shape[0];
-    if (this.classLogitsMatrices[classIndex] == null) {
-      this.classLogitsMatrices[classIndex] = imageLogits.as2D(1, logitsSize);
-    } else {
-      const newTrainLogitsMatrix =
-          this.classLogitsMatrices[classIndex]
-              .as2D(this.classExampleCount[classIndex], logitsSize)
-              .concat(imageLogits.as2D(1, logitsSize), 0);
+      const logitsSize = imageLogits.shape[0];
+      if (this.classLogitsMatrices[classIndex] == null) {
+        this.classLogitsMatrices[classIndex] = imageLogits.as2D(1, logitsSize);
+      } else {
+        const newTrainLogitsMatrix =
+            this.classLogitsMatrices[classIndex]
+                .as2D(this.classExampleCount[classIndex], logitsSize)
+                .concat(imageLogits.as2D(1, logitsSize), 0);
 
-      this.classLogitsMatrices[classIndex].dispose();
-      this.classLogitsMatrices[classIndex] = newTrainLogitsMatrix;
-    }
+        this.classLogitsMatrices[classIndex].dispose();
+        this.classLogitsMatrices[classIndex] = newTrainLogitsMatrix;
+      }
 
-    this.classExampleCount[classIndex]++;
+      dl.keep(this.classLogitsMatrices[classIndex]);
+
+      this.classExampleCount[classIndex]++;
+    });
   }
 
   /**
@@ -125,32 +129,34 @@ export class KNNImageClassifier implements dl.Model {
       throw new Error('Cannot predict until vars have been loaded.');
     }
 
-    const logits = this.squeezeNet.predict(image);
-    const imageLogits = this.normalizeVector(logits);
-    const logitsSize = imageLogits.shape[0];
+    return dl.tidy(() => {
+      const logits = this.squeezeNet.predict(image);
+      const imageLogits = this.normalizeVector(logits);
+      const logitsSize = imageLogits.shape[0];
 
-    // Lazily create the logits matrix for all training images if necessary.
-    if (this.trainLogitsMatrix == null) {
-      let newTrainLogitsMatrix = null;
+      // Lazily create the logits matrix for all training images if necessary.
+      if (this.trainLogitsMatrix == null) {
+        let newTrainLogitsMatrix = null;
 
-      for (let i = 0; i < this.numClasses; i++) {
-        newTrainLogitsMatrix = this.concatWithNulls(
-            newTrainLogitsMatrix, this.classLogitsMatrices[i]);
+        for (let i = 0; i < this.numClasses; i++) {
+          newTrainLogitsMatrix = this.concatWithNulls(
+              newTrainLogitsMatrix, this.classLogitsMatrices[i]);
+        }
+        this.trainLogitsMatrix = newTrainLogitsMatrix;
       }
-      this.trainLogitsMatrix = newTrainLogitsMatrix;
-    }
 
-    if (this.trainLogitsMatrix == null) {
-      console.warn('Cannot predict without providing training images.');
-      return null;
-    }
+      if (this.trainLogitsMatrix == null) {
+        console.warn('Cannot predict without providing training images.');
+        return null;
+      }
 
-    const numExamples = this.getNumExamples();
-    return dl
-        .matMul(
-            this.trainLogitsMatrix.as2D(numExamples, logitsSize),
-            imageLogits.as2D(logitsSize, 1))
-        .as1D();
+      dl.keep(this.trainLogitsMatrix);
+
+      const numExamples = this.getNumExamples();
+      return this.trainLogitsMatrix.as2D(numExamples, logitsSize)
+          .matMul(imageLogits.as2D(logitsSize, 1))
+          .as1D();
+    });
   }
 
   /**
@@ -234,9 +240,9 @@ export class KNNImageClassifier implements dl.Model {
       return null;
     }
     if (ndarray1 == null) {
-      return dl.clone(ndarray2);
+      return ndarray2.clone();
     } else if (ndarray2 === null) {
-      return dl.clone(ndarray1);
+      return ndarray1.clone();
     }
     return ndarray1.concat(ndarray2, 0);
   }
@@ -250,8 +256,7 @@ export class KNNImageClassifier implements dl.Model {
     // our fixed point precision. Remove this once we use floating point
     // intermediates with proper dynamic range quantization.
     const squashedVec = dl.div(vec, this.squashLogitsDenominator);
-
-    const sqrtSum = dl.mulStrict(squashedVec, squashedVec).sum().sqrt();
+    const sqrtSum = squashedVec.square().sum().sqrt();
 
     return dl.div(squashedVec, sqrtSum);
   }
