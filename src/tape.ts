@@ -52,11 +52,6 @@ export function getFilteredNodesXToY(
   for (let i = 0; i < tape.length; i++) {
     const node = tape[i];
     const nodeInputs = node.inputs;
-    if (nodeInputs == null) {
-      throw new Error(
-          `${node.name} is missing gradient implementation. ` +
-          `Failed to back-propagate.`);
-    }
     for (const inputName in nodeInputs) {
       const input = nodeInputs[inputName];
 

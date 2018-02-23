@@ -94,7 +94,7 @@ export class Engine implements TensorManager {
 
   runKernel<T extends Tensor, I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
-      inputs?: I,
+      inputs: I,
       backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
       ): T {
     let result: T;
