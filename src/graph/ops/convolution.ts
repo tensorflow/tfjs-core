@@ -38,6 +38,8 @@ export class Convolution2D extends Operation {
    * @param outputDepth The depth of the output (Number of filters).
    * @param stride How many pixels to shift the filter by when sliding.
    *     Defaults to 1.
+   * @param dilation How many pixels on the input to skip when convolving.
+   *     Defaults to 1.
    * @param zeroPad How many pixels to pad the input from each side. Defaults to
    *     a value so that the rows and columns of the output ndarray is
    *     the same as the input ndarray.
@@ -48,14 +50,18 @@ export class Convolution2D extends Operation {
       private wTensor: SymbolicTensor, private xTensor: SymbolicTensor,
       private bTensor: SymbolicTensor, private yTensor: SymbolicTensor,
       private fieldSize: number, private outputDepth: number,
-      private stride = 1, zeroPad?: number) {
+      private stride = 1, private dilation = 1, zeroPad?: number) {
     super();
     this.assertWeightsShape(wTensor.shape);
+    util.assert(stride === 1 || dilation === 1,
+      `Stride of ${stride} cannot be greater than 1 when dilation`
+      + `of ${dilation} is greater than 1.`
+    );
     this.zeroPad = zeroPad != null ?
         zeroPad :
         conv_util.computeDefaultPad(
             this.xTensor.shape as [number, number, number], this.fieldSize,
-            this.stride);
+            this.stride, this.dilation);
     util.assert(
         util.isInt(this.zeroPad),
         `The zero padding (${this.zeroPad}) must be an integer. Change the ` +
@@ -70,7 +76,8 @@ export class Convolution2D extends Operation {
     tidy(() => {
       inferenceArrays.set(
           this.yTensor,
-          keep(math.conv2d(x, weights, biases, this.stride, this.zeroPad)));
+          keep(math.conv2d(
+            x, weights, biases, this.stride, this.dilation, this.zeroPad)));
     });
   }
 

@@ -47,8 +47,8 @@ export class ConvOps {
   @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
   static conv1d<T extends Tensor2D|Tensor3D>(
-      input: T, filter: Tensor3D, stride: number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      input: T, filter: Tensor3D, stride: number, dilation: number,
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input3D = input as Tensor3D;
     let reshapedTo3D = false;
     if (input.rank === 2) {
@@ -74,15 +74,20 @@ export class ConvOps {
         input3D.shape[2] === filter.shape[1],
         `Error in conv1d: depth of input (${input3D.shape[2]}) must match  ` +
             `input depth for filter ${filter.shape[1]}.`);
+    util.assert(
+        eitherStridesOrDilationsAreOne(stride, dilation),
+        'Error in conv1D: Either stride or dilation must be 1.' +
+            `Got stride ${stride} and dilation '${dilation}'`);
 
     const filter4D =
         filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
     const input4D =
         input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
     const strides: [number, number] = [1, stride];
+    const dilations: [number, number] = [1, dilation];
 
-    const res =
-        ConvOps.conv2d(input4D, filter4D, strides, pad, dimRoundingMode);
+    const res = ConvOps.conv2d(
+        input4D, filter4D, strides, dilations, pad, dimRoundingMode);
 
     if (reshapedTo3D) {
       return res.as2D(res.shape[2], res.shape[3]) as T;
@@ -100,6 +105,11 @@ export class ConvOps {
    *     `[filterHeight, filterWidth, inDepth, outDepth]`.
    * @param strides The strides of the convolution: `[strideHeight,
    * strideWidth]`.
+   * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+   *     in which we sample input values across the height and width dimensions
+   *     in atrous convolution. Defaults to `[1, 1]`. If `rate` is a single
+   *     number, then `dilationHeight == dilationWidth`. If it is greater than
+   *     1, then all values of `strides` must be 1.
    * @param pad The type of padding algorithm.
    *    - `same` and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -116,7 +126,8 @@ export class ConvOps {
   @operation
   static conv2d<T extends Tensor3D|Tensor4D>(
       x: T, filter: Tensor4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      dilations: [number, number]|number = [1, 1], pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as Tensor4D;
     let reshapedTo4D = false;
 
@@ -142,8 +153,10 @@ export class ConvOps {
         x4D.shape[3] === filter.shape[2],
         `Error in conv2d: depth of input (${x4D.shape[3]}) must match  ` +
             `input depth for filter ${filter.shape[2]}.`);
-
-    const dilations = 1;
+    util.assert(
+        eitherStridesOrDilationsAreOne(strides, dilations),
+        'Error in conv2D: Either strides or dilations must be 1.' +
+            `Got strides ${strides} and dilations '${dilations}'`);
 
     const convInfo = conv_util.computeConv2DInfo(
         x4D.shape, filter.shape, strides, dilations, pad, dimRoundingMode);
@@ -375,7 +388,7 @@ export class ConvOps {
    *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
    * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
    *     in which we sample input values across the height and width dimensions
-   *     in atrous convolution. Defaults to `[1, 1]`. If `dilations` is a single
+   *     in atrous convolution. Defaults to `[1, 1]`. If `rate` is a single
    *     number, then `dilationHeight == dilationWidth`. If it is greater than
    *     1, then all values of `strides` must be 1.
    * @param dimRoundingMode The rounding mode used when computing output
@@ -437,4 +450,15 @@ export class ConvOps {
 
 function parseTupleParam(param: number|[number, number]): [number, number] {
   return typeof param === 'number' ? [param, param] : param;
+}
+
+function eitherStridesOrDilationsAreOne(
+    strides: number|[number, number],
+    dilations: number|[number, number]): boolean {
+  const [strideHeight, strideWidth] = parseTupleParam(strides);
+  const [dilationHeight, dilationWidth] = parseTupleParam(dilations);
+
+  return (
+      (strideHeight === 1 && strideWidth === 1) ||
+      (dilationHeight === 1 && dilationWidth === 1));
 }
