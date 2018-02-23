@@ -63,8 +63,10 @@ export function computePool2DInfo(
   } else {
     throw new Error(`Unknown dataFormat ${dataFormat}`);
   }
-  return computeConv2DInfo(
-      inShape, filterShape, strides, 1, pad, roundingMode, false, dataFormat);
+  const dilations = 1;
+
+  return computeConv2DInfo(inShape, filterShape, strides, dilations, pad,
+    roundingMode, false, dataFormat);
 }
 
 /**
@@ -75,7 +77,7 @@ export function computeConv2DInfo(
     inShape: [number, number, number, number],
     filterShape: [number, number, number, number],
     strides: number|[number, number],
-    rates: number|[number, number],
+    dilations: number|[number, number],
     pad: 'same'|'valid'|number,
     roundingMode?: 'floor'|'round'|'ceil', depthwise = false,
     dataFormat: 'channelsFirst'|'channelsLast' = 'channelsLast'): Conv2DInfo {
@@ -90,12 +92,12 @@ export function computeConv2DInfo(
 
   const [filterHeight, filterWidth, , filterChannels] = filterShape;
   const [strideHeight, strideWidth] = parseTupleParam(strides);
-  const [rateHeight, rateWidth] = parseTupleParam(rates);
+  const [dilationHeight, dilationWidth] = parseTupleParam(dilations);
 
   const effectiveFilterHeight
-    = getEffectiveFilterSize(filterHeight, rateHeight);
+    = getEffectiveFilterSize(filterHeight, dilationHeight);
   const effectiveFilterWidth
-    = getEffectiveFilterSize(filterWidth, rateWidth);
+    = getEffectiveFilterSize(filterWidth, dilationWidth);
 
   const { padInfo, outHeight, outWidth } = getPadAndOutInfo(
     pad, inHeight, inWidth, strideHeight, strideWidth,
@@ -185,20 +187,23 @@ function parseTupleParam(param: number|[number, number]): [number, number] {
   return typeof param === 'number' ? [param, param] : param;
 }
 
-/* Atrous convolution is equivalent to standard convolution with upsampled
- * filters with effective height
- * filter_height + (filter_height - 1) * (rate - 1)
- * and effective width filter_width + (filter_width - 1) * (rate - 1),
- * produced by inserting rate - 1 zeros along consecutive elements across
+/* See https://www.tensorflow.org/api_docs/python/tf/nn/atrous_conv2d
+ * Atrous convolution is equivalent to standard convolution with upsampled
+ * filters with effective_filter_height =
+ * filter_height + (filter_height - 1) * (dilation - 1)
+ * and effective_filter_width =
+ * filter_width + (filter_width - 1) * (dilation - 1),
+ * produced by inserting dilation - 1 zeros along consecutive elements across
  * the filters' spatial dimensions.
- * When there is a dilation rate, this converts a filter dimension to the
+ * When there is a dilation dilation, this converts a filter dimension to the
  * effective filter dimension, so it can be used in a standard convolution.
- * See https://www.tensorflow.org/api_docs/python/tf/nn/atrous_conv2d
  */
-function getEffectiveFilterSize(filterSize: number, rate: number) {
-  if (rate <= 1) return filterSize;
+function getEffectiveFilterSize(filterSize: number, dilation: number) {
+  if (dilation <= 1) {
+    return filterSize;
+  }
 
-  return filterSize + (filterSize - 1) * (rate - 1);
+  return filterSize + (filterSize - 1) * (dilation - 1);
 }
 
 function getPadAndOutInfo(
