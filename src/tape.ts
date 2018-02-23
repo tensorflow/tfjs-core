@@ -23,8 +23,8 @@ export interface TapeNode {
   id: number;
   name: string;
   output: Tensor;
+  inputs: NamedTensorMap;
   // Optional params, defined only for ops with gradient impl.
-  inputs?: NamedTensorMap;
   gradient?: (dy: Tensor|NamedTensorMap) => NamedGradientMap;
 }
 

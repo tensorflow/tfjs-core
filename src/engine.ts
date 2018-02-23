@@ -117,11 +117,10 @@ export class Engine implements TensorManager {
       const tapeNode: TapeNode = {
         id: this.nextTapeNodeId++,
         name: scopeName,
-        output: result
+        inputs,
+        output: result,
+
       };
-      if (inputs != null) {
-        tapeNode.inputs = inputs;
-      }
       if (backwardsFunc != null) {
         tapeNode.gradient = (dy: T) => backwardsFunc(dy, saved);
       }
