@@ -63,6 +63,7 @@ describe('Convolution', () => {
     const outputDepth = 2;
     const fieldSize = 3;
     const stride = 2;
+    const dilation = 1;
     const zeroPad = 1;
     const weights2D =
         Tensor2D.new([fieldSize * fieldSize * inputDepth, outputDepth], [
@@ -93,7 +94,7 @@ describe('Convolution', () => {
     activations.set(bTensor, biases);
     const conv = new Convolution2D(
         wTensor, xTensor, bTensor, yTensor, fieldSize, outputDepth, stride,
-        zeroPad);
+        dilation, zeroPad);
     conv.feedForward(math, activations);
 
     const result = activations.get(yTensor);
@@ -167,6 +168,7 @@ describe('Convolution', () => {
     const fSize = 7;
     const outputDepth = 10;
     const stride = 1;
+    const dilation = 1;
     const zeroPad = 1;
 
     const weights = dl.randomNormal([fSize, fSize, inputDepth, outputDepth]);
@@ -185,7 +187,7 @@ describe('Convolution', () => {
 
     const conv = new Convolution2D(
         wTensor, xTensor, bTensor, yTensor, fSize, outputDepth, stride,
-        zeroPad);
+        dilation, zeroPad);
 
     conv.feedForward(math, activations);
 
@@ -202,6 +204,7 @@ describe('Convolution', () => {
     const fSize = 2;
     const outputDepth = 1;
     const stride = 1;
+    const dilation = 1;
     const zeroPad = 0;
 
     const x3d = dl.randomNormal<Rank.R3>([3, 3, inputDepth]);
@@ -220,7 +223,7 @@ describe('Convolution', () => {
     activations.set(bTensor, biases);
     const conv = new Convolution2D(
         wTensor, xTensor, bTensor, yTensor, fSize, outputDepth, stride,
-        zeroPad);
+        dilation, zeroPad);
 
     conv.feedForward(math, activations);
 
@@ -313,6 +316,7 @@ describe('Convolution', () => {
     const outputDepth = 7;
     const stride = 1;
     const zeroPad = 1;
+    const dilation = 1;
 
     const weights = dl.randomNormal([fSize, fSize, inputDepth, outputDepth]);
     const biases = dl.randomNormal([outputDepth]);
@@ -330,7 +334,7 @@ describe('Convolution', () => {
 
     const conv = new Convolution2D(
         wTensor, xTensor, bTensor, yTensor, fSize, outputDepth, stride,
-        zeroPad);
+        dilation, zeroPad);
 
     conv.feedForward(math, activations);
 
