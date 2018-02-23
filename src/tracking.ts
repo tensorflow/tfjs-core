@@ -16,10 +16,8 @@
  */
 
 import {doc} from './doc';
-import {TimingInfo} from './engine';
+import {ScopeFn, ScopeResult, TimingInfo} from './engine';
 import {ENV} from './environment';
-// tslint:disable-next-line:max-line-length
-import {ScopeFn, ScopeResult} from './tape';
 import {Tensor} from './tensor';
 
 export class Tracking {
@@ -91,7 +89,9 @@ export class Tracking {
     ENV.engine.startScope(name, gradMode);
     const result = fn();
     if (result instanceof Promise) {
-      throw new Error('The function f passed to tidy cannot return a promise');
+      console.warn(
+          'Returning a promise inside of tidy is dangerous. ' +
+          'This will be a run-time error in 0.6.0');
     }
     ENV.engine.endScope(result, gradMode);
     return result;
