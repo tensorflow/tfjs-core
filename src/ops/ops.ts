@@ -23,6 +23,7 @@ import {ConcatOps} from './concat';
 import {ConvOps} from './conv';
 import {ImageOps} from './image_ops';
 import {LogicalOps} from './logical_ops';
+import {LossOps} from './loss_ops';
 import {LRNOps} from './lrn';
 import {LSTMOps} from './lstm';
 import {MatmulOps} from './matmul';
@@ -195,7 +196,9 @@ import {Rank} from '../types';
 [Tensor, Rank, Tensor3D, Tensor4D];
 
 export const losses = {
-  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
+  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy,
+  absoluteDifference: LossOps.absoluteDifference,
+  computeWeightedLoss: LossOps.computeWeightedLoss
 };
 
 export const image = {

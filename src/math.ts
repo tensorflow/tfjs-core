@@ -25,6 +25,7 @@ import {CompareOps} from './ops/compare';
 import {ConvOps} from './ops/conv';
 import {ImageOps} from './ops/image_ops';
 import {LogicalOps} from './ops/logical_ops';
+import {LossOps} from './ops/loss_ops';
 import {LRNOps} from './ops/lrn';
 import {LSTMOps} from './ops/lstm';
 import {MatmulOps} from './ops/matmul';
@@ -117,6 +118,9 @@ export class NDArrayMath {
   logicalOr = LogicalOps.logicalOr;
   logicalXor = LogicalOps.logicalXor;
   where = LogicalOps.where;
+
+  absoluteDifference = LossOps.absoluteDifference;
+  computeWeightedLoss = LossOps.computeWeightedLoss;
 
   transpose = TransposeOps.transpose;
 
