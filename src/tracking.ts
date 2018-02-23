@@ -16,17 +16,18 @@
  */
 
 import {doc} from './doc';
-import {TimingInfo} from './engine';
+import {ScopeFn, ScopeResult, TimingInfo} from './engine';
 import {ENV} from './environment';
-// tslint:disable-next-line:max-line-length
-import {ScopeFn, ScopeResult, ScopeResultImmediate} from './tape_util';
 import {Tensor} from './tensor';
 
 export class Tracking {
   /**
-   * Executes the provided function and after it is executed, cleans up all
-   * intermediate tensors allocated by the function except those returned by
-   * the function.
+   * Executes the provided function `f` and after it is executed, cleans up all
+   * intermediate tensors allocated by `f` except those returned by `f`.
+   * `f` must not return a Promise (async functions not allowed).
+   * The returned result can be a complex object, however tidy only walks the
+   * top-level properties (depth 1) of that object to search for tensors, or
+   * lists of tensors that need to be tracked in the parent scope.
    *
    * Using this method helps avoid memory leaks. In general, wrap calls to
    * operations in `tidy` for automatic memory cleanup.
@@ -55,22 +56,21 @@ export class Tracking {
    *
    * @param nameOrFn The name of the closure, or the function to execute.
    *     If a name is provided, the 2nd argument should be the function.
-   *     If a name is provided, and debug mode is on, the timing and the memory
-   *     usage of the function will be tracked and displayed on the console
-   *     using the provided name.
+   *     If debug mode is on, the timing and the memory usage of the function
+   *     will be tracked and displayed on the console using the provided name.
    * @param fn The function to execute.
    * @param gradMode If true, starts a tape and doesn't dispose tensors.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
   static tidy<T extends ScopeResult>(
       nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
+    let name = null;
     if (fn == null) {
       // Called with only 1 argument.
       if (typeof nameOrFn !== 'function') {
         throw new Error('Please provide a function to dl.tidy()');
       }
       fn = nameOrFn;
-      nameOrFn = '';
     } else {
       // Called with 2 arguments.
       if (typeof nameOrFn !== 'string' && !(nameOrFn instanceof String)) {
@@ -83,18 +83,18 @@ export class Tracking {
             'When calling with two arguments, the 2nd argument ' +
             'to dl.tidy() must be a function');
       }
+      name = nameOrFn as string;
       // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
     }
-    ENV.engine.startScope(gradMode);
-
+    ENV.engine.startScope(name, gradMode);
     const result = fn();
     if (result instanceof Promise) {
-      result.then(r => ENV.engine.endScope(r, gradMode));
-      return result;
-    } else {
-      ENV.engine.endScope(result as ScopeResultImmediate, gradMode);
-      return result;
+      console.warn(
+          'Returning a promise inside of tidy is dangerous. ' +
+          'This will be a run-time error in 0.6.0');
     }
+    ENV.engine.endScope(result, gradMode);
+    return result;
   }
 
   /**

@@ -23,7 +23,7 @@ import * as util from '../util';
 
 import {operation} from './operation';
 
-export class Ops {
+export class BatchNormOps {
   /**
    * Batch normalization, strictly for 2D. For the more relaxed version, see
    * `batchNormalization`.
@@ -65,7 +65,7 @@ export class Ops {
               `but got rank ${offset.rank}.`);
     }
 
-    return Ops.batchNormalization(
+    return BatchNormOps.batchNormalization(
         x, mean, variance, varianceEpsilon, scale, offset);
   }
 
@@ -110,7 +110,7 @@ export class Ops {
               `but got rank ${offset.rank}.`);
     }
 
-    return Ops.batchNormalization(
+    return BatchNormOps.batchNormalization(
         x, mean, variance, varianceEpsilon, scale, offset);
   }
 
@@ -154,7 +154,7 @@ export class Ops {
           `Error in batchNormalization4D: offset must be rank 4 or rank 1 ` +
               `but got rank ${offset.rank}.`);
     }
-    return Ops.batchNormalization(
+    return BatchNormOps.batchNormalization(
         x, mean, variance, varianceEpsilon, scale, offset);
   }
 
@@ -193,18 +193,13 @@ export class Ops {
       x4D = x as Tensor4D;
     }
 
-    return ENV.engine
-               .executeKernel('BatchNorm4D', {
-                 inputs: {
-                   x: x4D,
-                   mean: batchnormReshape4D(mean),
-                   variance: batchnormReshape4D(variance),
-                   scale: batchnormReshape4D(scale),
-                   offset: batchnormReshape4D(offset)
-                 },
-                 args: {varianceEpsilon}
-               })
-               .reshape(x.shape) as Tensor<R>;
+    const res = ENV.engine.runKernel(
+        backend => backend.batchNormalization4D(
+            x4D, batchnormReshape4D(mean), batchnormReshape4D(variance),
+            varianceEpsilon, batchnormReshape4D(scale),
+            batchnormReshape4D(offset)),
+        {x, mean, variance});
+    return res.reshape(x.shape);
   }
 }
 

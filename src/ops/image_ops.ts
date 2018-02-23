@@ -21,7 +21,7 @@ import {Tensor3D, Tensor4D} from '../tensor';
 import * as util from '../util';
 import {operation} from './operation';
 
-export class Ops {
+export class ImageOps {
   /**
    * Bilinear resize a batch of 3D images to a new shape.
    *
@@ -54,9 +54,10 @@ export class Ops {
           images.as4D(1, images.shape[0], images.shape[1], images.shape[2]);
     }
     const [newHeight, newWidth] = size;
-    const res = ENV.engine.executeKernel(
-        'ResizeBilinear',
-        {inputs: {x: batchImages}, args: {newHeight, newWidth, alignCorners}});
+    const res = ENV.engine.runKernel(
+        backend => backend.resizeBilinear(
+            batchImages, newHeight, newWidth, alignCorners),
+        {batchImages});
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }

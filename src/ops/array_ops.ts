@@ -16,17 +16,20 @@
  */
 
 import {doc} from '../doc';
+import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import * as tensor_util from '../tensor_util';
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray} from '../types';
 import * as util from '../util';
-import {Concat} from './concat';
+import {parseAxisParam} from './axis_util';
+import {ConcatOps} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
 
-export class Ops {
+export class ArrayOps {
   /**
    * Creates a `Tensor` with the provided values, shape and dtype.
    *
@@ -94,7 +97,7 @@ export class Ops {
           'Error creating a new Scalar: value must be a primitive ' +
           '(number|boolean)');
     }
-    return Ops.tensor(value, [], dtype);
+    return ArrayOps.tensor(value, [], dtype);
   }
 
   /**
@@ -119,7 +122,7 @@ export class Ops {
       throw new Error(
           'Error creating a new Tensor1D: values must be a flat/TypedArray');
     }
-    return Ops.tensor(values, inferredShape as [number], dtype);
+    return ArrayOps.tensor(values, inferredShape as [number], dtype);
   }
 
   /**
@@ -155,7 +158,7 @@ export class Ops {
           'or flat/TypedArray');
     }
     shape = shape || inferredShape as [number, number];
-    return Ops.tensor(values, shape, dtype);
+    return ArrayOps.tensor(values, shape, dtype);
   }
 
   /**
@@ -191,7 +194,7 @@ export class Ops {
           'or flat/TypedArray');
     }
     shape = shape || inferredShape as [number, number, number];
-    return Ops.tensor(values, shape, dtype);
+    return ArrayOps.tensor(values, shape, dtype);
   }
 
   /**
@@ -222,7 +225,7 @@ export class Ops {
           'or flat/TypedArray');
     }
     shape = shape || inferredShape as [number, number, number, number];
-    return Ops.tensor(values, shape, dtype);
+    return ArrayOps.tensor(values, shape, dtype);
   }
 
   /**
@@ -299,7 +302,7 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static onesLike<T extends Tensor>(x: T): T {
-    return Ops.ones(x.shape, x.dtype) as T;
+    return ArrayOps.ones(x.shape, x.dtype) as T;
   }
 
   /**
@@ -316,7 +319,7 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static zerosLike<T extends Tensor>(x: T): T {
-    return Ops.zeros(x.shape, x.dtype) as T;
+    return ArrayOps.zeros(x.shape, x.dtype) as T;
   }
 
   /**
@@ -471,29 +474,24 @@ export class Ops {
       probabilities: Tensor1D|Tensor2D, numSamples: number, seed?: number):
       Tensor1D|Tensor2D {
     const numOutcomes = probabilities.size;
+    const origRank = probabilities.rank;
     if (numOutcomes < 2) {
       throw new Error(
           `Error in multinomial: you need at least 2 outcomes, but got ` +
           `${numOutcomes}.`);
     }
-    if (probabilities.rank > 2) {
+    if (origRank > 2) {
       throw new Error(
-          `Rank of probabilities must be 1 or 2, but is ${probabilities.rank}`);
+          `Rank of probabilities must be 1 or 2, but is ${origRank}`);
     }
     seed = seed || Math.random();
-    const origRank = probabilities.rank;
 
-    if (probabilities.rank === 1) {
-      probabilities = probabilities.as2D(1, -1);
-    }
-    const res = ENV.engine.executeKernel('Multinomial', {
-      inputs: {probs: (probabilities as Tensor2D)},
-      args: {numSamples, seed}
-    });
-    if (origRank === 1) {
-      return res.as1D();
-    }
-    return res;
+    const prob2D =
+        origRank === 1 ? probabilities.as2D(1, -1) : probabilities as Tensor2D;
+    const res = ENV.engine.runKernel(
+        backend => backend.multinomial(prob2D, numSamples, seed), {prob2D});
+
+    return origRank === 1 ? res.as1D() : res;
   }
 
   /**
@@ -519,8 +517,9 @@ export class Ops {
     if (depth < 2) {
       throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
     }
-    return ENV.engine.executeKernel(
-        'OneHot', {inputs: {indices}, args: {depth, onValue, offValue}});
+    return ENV.engine.runKernel(
+        backend => backend.oneHot(indices, depth, onValue, offValue),
+        {indices});
   }
 
   /**
@@ -585,12 +584,11 @@ export class Ops {
         x.size === util.sizeFromShape(shape),
         'new shape and old shape must have the same number of elements.');
 
-    const grad = (dy: Tensor<R2>, y: Tensor<R2>) => {
+    const grad = (dy: Tensor<R2>) => {
       return {x: () => dy.reshape(x.shape)};
     };
-    return ENV.engine.executeKernel(
-               'Reshape', {inputs: {x}, args: {newShape: shape}}, grad) as
-        Tensor<R2>;
+    return ENV.engine.runKernel(
+        backend => Tensor.make(shape, {dataId: x.dataId}, x.dtype), {x}, grad);
   }
 
   /**
@@ -608,7 +606,7 @@ export class Ops {
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   static squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T {
-    return Ops.reshape(x, util.squeezeShape(x.shape, axis).newShape) as T;
+    return ArrayOps.reshape(x, util.squeezeShape(x.shape, axis).newShape) as T;
   }
 
   /**
@@ -624,11 +622,24 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
   static cast<T extends Tensor>(x: T, dtype: DataType): T {
-    const grad = (dy: T, y: T) => {
-      return {x: () => dy.reshape(dy.shape)};
+    const forw: ForwardFunc<T> = backend => {
+      if (!util.hasEncodingLoss(x.dtype, dtype)) {
+        // We don't change the underlying data, since we cast to higher
+        // precision.
+        return Tensor.make(x.shape, {dataId: x.dataId}, dtype) as T;
+      }
+      if (dtype === 'int32') {
+        return backend.int(x);
+      } else if (dtype === 'bool') {
+        return backend.notEqual(x, ArrayOps.scalar(0, x.dtype)) as T;
+      } else {
+        throw new Error(`Error in Cast: unknown dtype argument (${dtype})`);
+      }
     };
-    return ENV.engine.executeKernel(
-               'Cast', {inputs: {x}, args: {newDType: dtype}}, grad) as T;
+    const grad = (dy: T) => {
+      return {x: () => dy.clone()};
+    };
+    return ENV.engine.runKernel(forw, {x}, grad) as T;
   }
 
   /**
@@ -661,7 +672,7 @@ export class Ops {
         x.rank === reps.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of reps ${reps}.`);
-    return ENV.engine.executeKernel('Tile', {inputs: {x}, args: {reps}}) as T;
+    return ENV.engine.runKernel(backend => backend.tile(x, reps), {x});
   }
 
   /**
@@ -687,44 +698,25 @@ export class Ops {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static gather<T extends Tensor>(x: T, indices: Tensor1D, axis = 0): T {
-    return ENV.engine.executeKernel(
-               'Gather', {inputs: {x, indices}, args: {axis}}) as T;
+    const axes = parseAxisParam(axis, x.shape);
+    return ENV.engine.runKernel(
+        backend => backend.gather(x, indices, axes[0]), {x, indices});
   }
 
   /**
-   * Pads a `Tensor1D` with a given value.
-   *
-   * This operation will pad a tensor according to the `paddings` you specify.
-   *
-   * This operation currently only implements the `CONSTANT` mode from
-   * Tensorflow's `pad` operation.
-   *
-   * @param x The tensor to pad.
-   * @param paddings A tuple of ints `[padLeft, padRight]`, how much to pad.
-   * @param constantValue The pad value to use. Defaults to 0.
+   * Pads a `Tensor1D` with a given value and paddings. See `pad` for details.
    */
-  @operation
   static pad1d(x: Tensor1D, paddings: [number, number], constantValue = 0):
       Tensor1D {
     util.assert(
         paddings.length === 2,
         'Invalid number of paddings. Must be length of 2.');
-    return ENV.engine.executeKernel(
-        'Pad1D', {inputs: {x}, args: {paddings, constantValue}});
+    return ArrayOps.pad(x, [paddings], constantValue);
   }
 
   /**
-   * Pads a `Tensor2D` with a given value and the `paddings` you specify.
-   *
-   * This operation currently only implements the `CONSTANT` mode from
-   * TensorFlow's `pad` operation.
-   *
-   * @param x The tensor to pad.
-   * @param paddings A pair of tuple ints:
-   *     `[[padTop, padBottom], [padLeft, padRight]]`, how much to pad.
-   * @param constantValue The pad value to use. Defaults to 0.
+   * Pads a `Tensor2D` with a given value and paddings. See `pad` for details.
    */
-  @operation
   static pad2d(
       x: Tensor2D, paddings: [[number, number], [number, number]],
       constantValue = 0): Tensor2D {
@@ -732,12 +724,44 @@ export class Ops {
         paddings.length === 2 && paddings[0].length === 2 &&
             paddings[1].length === 2,
         'Invalid number of paddings. Must be length of 2 each.');
-    return ENV.engine.executeKernel(
-        'Pad2D', {inputs: {x}, args: {paddings, constantValue}});
+    return ArrayOps.pad(x, paddings, constantValue);
   }
 
   /**
-   * Pads a `Tensor` with a given value and the `paddings` you specify.
+   * Pads a `Tensor3D` with a given value and paddings. See `pad` for details.
+   */
+  static pad3d(
+      x: Tensor3D,
+      paddings: [[number, number], [number, number], [number, number]],
+      constantValue = 0): Tensor3D {
+    util.assert(
+        paddings.length === 3 && paddings[0].length === 2 &&
+            paddings[1].length === 2 && paddings[2].length === 2,
+        'Invalid number of paddings. Must be length of 2 each.');
+    return ArrayOps.pad(x, paddings, constantValue);
+  }
+
+  /**
+   * Pads a `Tensor4D` with a given value and paddings. See `pad` for details.
+   */
+  static pad4d(
+      x: Tensor4D,
+      paddings:
+          [
+            [number, number], [number, number], [number, number],
+            [number, number]
+          ],
+      constantValue = 0): Tensor4D {
+    util.assert(
+        paddings.length === 4 && paddings[0].length === 2 &&
+            paddings[1].length === 2 && paddings[2].length === 2 &&
+            paddings[3].length === 2,
+        'Invalid number of paddings. Must be length of 2 each.');
+    return ArrayOps.pad(x, paddings, constantValue);
+  }
+
+  /**
+   * Pads a `Tensor` with a given value and paddings.
    *
    * This operation currently only implements the `CONSTANT` mode from
    * Tensorflow's `pad` operation.
@@ -758,16 +782,16 @@ export class Ops {
       x: T, paddings: Array<[number, number]>, constantValue = 0): T {
     if (x.rank === 0) {
       throw new Error('pad(scalar) is not defined. Pass non-scalar to pad');
-    } else if (x.rank === 1) {
-      return Ops.pad1d(x as Tensor1D, paddings[0], constantValue) as T;
-    } else if (x.rank === 2) {
-      return Ops.pad2d(
-                 x as Tensor2D,
-                 paddings as [[number, number], [number, number]],
-                 constantValue) as T;
-    } else {
-      throw new Error(`pad of rank-${x.rank} tensor is not yet supported`);
     }
+    // Pad introduces values around the original tensor, so the gradient slices
+    // the original shape out of the gradient.
+    const begin = paddings.map(p => p[0]);
+    const grad = (dy: T) => {
+      return {x: () => dy.slice(begin, x.shape)};
+    };
+    return ENV.engine.runKernel(
+               backend => backend.pad(x, paddings, constantValue), {x}, grad) as
+        T;
   }
 
   /**
@@ -805,7 +829,7 @@ export class Ops {
           'All tensors passed to stack must have matching dtypes');
     });
     const expandedTensors = tensors.map(t => t.expandDims(axis));
-    return Concat.concat(expandedTensors, axis);
+    return ConcatOps.concat(expandedTensors, axis);
   }
 
   /**
@@ -828,7 +852,7 @@ export class Ops {
     util.assert(axis <= x.rank, 'Axis must be <= rank of the tensor');
     const newShape = x.shape.slice();
     newShape.splice(axis, 0, 1);
-    return Ops.reshape(x, newShape);
+    return ArrayOps.reshape(x, newShape);
   }
 
   /**
@@ -892,7 +916,7 @@ export class Ops {
 
     if (sameStartStop || increasingRangeNegativeStep ||
         decreasingRangePositiveStep) {
-      return Ops.zeros([0], dtype);
+      return ArrayOps.zeros([0], dtype);
     }
 
     const numElements = Math.abs(Math.ceil((stop - start) / step));
@@ -909,7 +933,7 @@ export class Ops {
       values[i] = values[i - 1] + step;
     }
 
-    return Ops.tensor1d(values, dtype);
+    return ArrayOps.tensor1d(values, dtype);
   }
 
   /**
@@ -956,38 +980,7 @@ export class Ops {
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static print<T extends Tensor>(x: T, verbose = false): void {
-    const C = class Tensor {
-      shape: number[];
-      values: number[];
-      dtype: string;
-      size: number;
-    };
-
-    const displayTensor = new C();
-    displayTensor.shape = x.shape;
-    displayTensor.values = Array.from(x.dataSync());
-    displayTensor.toString = function() {
-      const fields = [
-        `values: [${this.values.join(', ')}]`, `shape: [${x.shape.join(', ')}]`,
-        `rank: ${x.rank}`
-      ];
-      if (verbose) {
-        fields.push(`dtype: '${this.dtype}'`);
-        fields.push(`size: ${this.size}`);
-      }
-      for (let i = 0; i < fields.length; i++) {
-        fields[i] = '  ' + fields[i];
-      }
-
-      return 'TensorInfo {\n' + fields.join(',\n') + '\n}';
-    };
-
-    if (verbose) {
-      displayTensor.dtype = x.dtype;
-      displayTensor.size = x.size;
-    }
-
-    console.log(displayTensor);
+    console.log(tensor_util.tensorToString(x, verbose));
   }
 }
 
