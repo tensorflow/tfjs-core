@@ -142,9 +142,8 @@ describe('conv_util computeConvInfo', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const stride = 1;
     const dilations = 2;
-    const convInfo =
-        conv_util.computeConv2DInfo(
-          inShape, [2, 2, 1, 1], stride, dilations, 'same');
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape, [2, 2, 1, 1], stride, dilations, 'same');
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(3);
     expect(convInfo.outWidth).toEqual(3);
@@ -160,9 +159,8 @@ describe('conv_util computeConvInfo', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const stride = 1;
     const dilations = 2;
-    const convInfo =
-        conv_util.computeConv2DInfo(
-          inShape, [2, 1, 1, 1], stride, dilations, 'same');
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape, [2, 1, 1, 1], stride, dilations, 'same');
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(3);
     expect(convInfo.outWidth).toEqual(3);
@@ -178,9 +176,8 @@ describe('conv_util computeConvInfo', () => {
     const inShape: [number, number, number, number] = [1, 8, 8, 1];
     const stride = 1;
     const dilations: [number, number] = [4, 3];
-    const convInfo =
-        conv_util.computeConv2DInfo(
-          inShape, [3, 4, 1, 1], stride, dilations, 'same');
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape, [3, 4, 1, 1], stride, dilations, 'same');
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(8);
     expect(convInfo.outWidth).toEqual(8);
@@ -196,9 +193,8 @@ describe('conv_util computeConvInfo', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const stride = 1;
     const dilations = 2;
-    const convInfo =
-        conv_util.computeConv2DInfo(
-          inShape, [2, 1, 1, 1], stride, dilations, 'valid');
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape, [2, 1, 1, 1], stride, dilations, 'valid');
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(1);
     expect(convInfo.outWidth).toEqual(3);
@@ -209,9 +205,8 @@ describe('conv_util computeConvInfo', () => {
     const inShape: [number, number, number, number] = [1, 3, 3, 1];
     const stride = 1;
     const dilations = 2;
-    const convInfo =
-        conv_util.computeConv2DInfo(
-          inShape, [2, 2, 1, 1], stride, dilations, 'valid');
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape, [2, 2, 1, 1], stride, dilations, 'valid');
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(1);
     expect(convInfo.outWidth).toEqual(1);
@@ -222,9 +217,8 @@ describe('conv_util computeConvInfo', () => {
     const inShape: [number, number, number, number] = [1, 4, 4, 1];
     const stride = 1;
     const dilations = 2;
-    const convInfo =
-        conv_util.computeConv2DInfo(
-          inShape, [2, 2, 1, 1], stride, dilations, 'valid');
+    const convInfo = conv_util.computeConv2DInfo(
+        inShape, [2, 2, 1, 1], stride, dilations, 'valid');
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(2);
     expect(convInfo.outWidth).toEqual(2);
@@ -242,8 +236,8 @@ describe('conv_util computeConv2DInfo with depthwise=true', () => {
     const dilation = 1;
     const pad = 'same';
     const convInfo = conv_util.computeConv2DInfo(
-        inShape, [fSize, fSize, inChannels, chMul], stride, dilation, pad,
-        null, true);
+        inShape, [fSize, fSize, inChannels, chMul], stride, dilation, pad, null,
+        true);
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(1);
     expect(convInfo.outWidth).toEqual(1);
@@ -262,8 +256,8 @@ describe('conv_util computeConv2DInfo with depthwise=true', () => {
     const dilation = 1;
     const pad = 'same';
     const convInfo = conv_util.computeConv2DInfo(
-        inShape, [fSize, fSize, inChannels, chMul], stride, dilation, pad,
-        null, true);
+        inShape, [fSize, fSize, inChannels, chMul], stride, dilation, pad, null,
+        true);
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(3);
     expect(convInfo.outWidth).toEqual(3);
@@ -282,8 +276,8 @@ describe('conv_util computeConv2DInfo with depthwise=true', () => {
     const dilation = 1;
     const pad = 'valid';
     const convInfo = conv_util.computeConv2DInfo(
-        inShape, [fSize, fSize, inChannels, chMul], stride, dilation, pad,
-        null, true);
+        inShape, [fSize, fSize, inChannels, chMul], stride, dilation, pad, null,
+        true);
     expect(convInfo.batchSize).toEqual(1);
     expect(convInfo.outHeight).toEqual(2);
     expect(convInfo.outWidth).toEqual(2);

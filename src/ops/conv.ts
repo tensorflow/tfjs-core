@@ -81,8 +81,8 @@ export class ConvOps {
         input3D.as4D(input3D.shape[0], 1, input3D.shape[1], input3D.shape[2]);
     const strides: [number, number] = [1, stride];
 
-    const res = ConvOps.conv2d(
-      input4D, filter4D, strides, pad, dimRoundingMode);
+    const res =
+        ConvOps.conv2d(input4D, filter4D, strides, pad, dimRoundingMode);
 
     if (reshapedTo3D) {
       return res.as2D(res.shape[2], res.shape[3]) as T;
@@ -116,10 +116,10 @@ export class ConvOps {
   @operation
   static conv2d<T extends Tensor3D|Tensor4D>(
       x: T, filter: Tensor4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as Tensor4D;
     let reshapedTo4D = false;
+
     if (x.rank === 3) {
       reshapedTo4D = true;
       x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);

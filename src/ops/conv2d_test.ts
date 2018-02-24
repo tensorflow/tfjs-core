@@ -127,8 +127,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const x = dl.tensor3d([1, 2, 3, 4], inputShape);
     const w = dl.randomNormal<Rank.R4>([fSize, fSize, inputDepth, outputDepth]);
 
-    expect(() => dl.conv2d(x, w, stride, pad, dimRoundingMode))
-      .toThrowError();
+    expect(() => dl.conv2d(x, w, stride, pad, dimRoundingMode)).toThrowError();
   });
 
   it('gradient input=[3,3,1] f=[2,2,1,1] s=1 p=0', () => {
@@ -174,8 +173,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const dy = dl.tensor4d([3, 1, 2, 0, 3, 1, 2, 0], [2, 2, 2, 1]);
 
     const grads = dl.grads(
-        (x: dl.Tensor4D, filter: dl.Tensor4D) => x.conv2d(filter, stride,
-          pad));
+        (x: dl.Tensor4D, filter: dl.Tensor4D) => x.conv2d(filter, stride, pad));
     const [dx, dfilter] = grads([x, filter], dy);
 
     expect(dx.shape).toEqual(x.shape);

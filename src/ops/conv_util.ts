@@ -65,8 +65,9 @@ export function computePool2DInfo(
   }
   const dilations = 1;
 
-  return computeConv2DInfo(inShape, filterShape, strides, dilations, pad,
-    roundingMode, false, dataFormat);
+  return computeConv2DInfo(
+      inShape, filterShape, strides, dilations, pad, roundingMode, false,
+      dataFormat);
 }
 
 /**
@@ -76,10 +77,9 @@ export function computePool2DInfo(
 export function computeConv2DInfo(
     inShape: [number, number, number, number],
     filterShape: [number, number, number, number],
-    strides: number|[number, number],
-    dilations: number|[number, number],
-    pad: 'same'|'valid'|number,
-    roundingMode?: 'floor'|'round'|'ceil', depthwise = false,
+    strides: number|[number, number], dilations: number|[number, number],
+    pad: 'same'|'valid'|number, roundingMode?: 'floor'|'round'|'ceil',
+    depthwise = false,
     dataFormat: 'channelsFirst'|'channelsLast' = 'channelsLast'): Conv2DInfo {
   let [batchSize, inHeight, inWidth, inChannels] = [-1, -1, -1, -1];
   if (dataFormat === 'channelsLast') {
@@ -94,14 +94,14 @@ export function computeConv2DInfo(
   const [strideHeight, strideWidth] = parseTupleParam(strides);
   const [dilationHeight, dilationWidth] = parseTupleParam(dilations);
 
-  const effectiveFilterHeight
-    = getEffectiveFilterSize(filterHeight, dilationHeight);
-  const effectiveFilterWidth
-    = getEffectiveFilterSize(filterWidth, dilationWidth);
+  const effectiveFilterHeight =
+      getEffectiveFilterSize(filterHeight, dilationHeight);
+  const effectiveFilterWidth =
+      getEffectiveFilterSize(filterWidth, dilationWidth);
 
-  const { padInfo, outHeight, outWidth } = getPadAndOutInfo(
-    pad, inHeight, inWidth, strideHeight, strideWidth,
-    effectiveFilterHeight, effectiveFilterWidth, roundingMode);
+  const {padInfo, outHeight, outWidth} = getPadAndOutInfo(
+      pad, inHeight, inWidth, strideHeight, strideWidth, effectiveFilterHeight,
+      effectiveFilterWidth, roundingMode);
 
   const outChannels = depthwise ? filterChannels * inChannels : filterChannels;
 
