@@ -20,7 +20,7 @@ import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
 describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
-  it('input=1x3x3x1,f=2,s=1,p=valid,chMul=1', () => {
+  it('input=1x3x3x1,f=2,s=1,d=1,p=valid,chMul=1', () => {
     const fSize = 2;
     const pad = 'valid';
     const stride = 1;
@@ -42,6 +42,40 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
 
     const expected = [1.07022, 1.03167, 0.67041, 0.778863];
     expectArraysClose(result, expected);
+  });
+
+  it('input=1x3x3x1,f=2,s=1,d=2,p=valid,chMul=1', () => {
+    const fSize = 2;
+    const pad = 'valid';
+    const stride = 1;
+    const dilation = 2;
+    const chMul = 1;
+    const inDepth = 1;
+
+    const x = dl.tensor4d(
+        [
+          0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
+          0.0741907, 0.409265, 0.351377
+        ],
+        [1, 3, 3, inDepth]);
+    const w = dl.tensor4d(
+        [0.303873, 0.229223, 0.144333, 0.803373],
+        [fSize, fSize, inDepth, chMul],
+    );
+    // adding a dilation rate is equivalent to using a filter
+    // with 0s for the dilation rate
+    const fSizeDilated = fSize + (fSize - 1) * (dilation - 1);
+    const wDilated = dl.tensor4d(
+        [0.303873, 0, 0.229223, 0, 0, 0, 0.144333, 0, 0.803373],
+        [fSizeDilated, fSizeDilated, inDepth, chMul],
+    );
+
+    const result = dl.depthwiseConv2d(x, w, stride, pad, dilation);
+
+    const expectedResult = dl.depthwiseConv2d(x, wDilated, stride, pad);
+
+    expect(result.shape).toEqual(expectedResult.shape);
+    expectArraysClose(result, expectedResult);
   });
 
   it('input=1x3x3x2,f=2,s=1,p=same,chMul=1', () => {
