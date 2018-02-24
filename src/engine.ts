@@ -156,7 +156,7 @@ export class Engine implements TensorManager {
     this.registeredVariables[v.name] = v;
   }
 
-  disposeTensor(a: Tensor): void {
+  async disposeTensor(a: Tensor): Promise<void> {
     if (!this.refCounter.has(a.dataId)) {
       return;
     }
@@ -164,10 +164,10 @@ export class Engine implements TensorManager {
     const refCount = this.refCounter.get(a.dataId);
     if (refCount <= 1) {
       this.refCounter.delete(a.dataId);
-      this.backend.disposeData(a.dataId);
       this.numDataBuffers--;
       this.numBytes -=
           util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      await this.backend.disposeData(a.dataId);
     } else {
       this.refCounter.set(a.dataId, refCount - 1);
     }

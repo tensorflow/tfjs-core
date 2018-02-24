@@ -111,7 +111,7 @@ export class MathBackendCPU implements KernelBackend {
     return this.data.get(dataId);
   }
 
-  disposeData(dataId: DataId): void {
+  async disposeData(dataId: DataId): Promise<void> {
     if (this.data.has(dataId)) {
       this.data.delete(dataId);
     }

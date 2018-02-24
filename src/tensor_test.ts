@@ -921,3 +921,18 @@ describe('tensor.toString', () => {
         '     [1.9910001, 0.0640865, 0.2983858]]');
   });
 });
+
+describeWithFlags('tensor.data', ALL_ENVS, () => {
+  it('.data() talks to tidy and undoes disposal of tensor', done => {
+    dl.tidy(() => {
+      const a = dl.scalar(5);
+      a.square();  // Uploads it on GPU.
+      a.data().then(vals => {
+        expectNumbersClose(vals[0], 5);
+        done();
+      });
+    });
+    // tidy ends immediately, but should not dispose the scalar since there is
+    // a pending data read.
+  });
+});

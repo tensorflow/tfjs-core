@@ -343,8 +343,8 @@ export class Tensor<R extends Rank = Rank> {
       locs = [0];
     }
     this.throwIfDisposed();
-    await this.data();
-    return this.get(...locs);
+    const vals = await this.data();
+    return ops.buffer(this.shape, this.dtype, vals).get(...locs);
   }
 
   /** @deprecated. Use `tensor.buffer().locToIndex(locs)` */
@@ -416,12 +416,12 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   @doc({heading: 'Tensors', subheading: 'Classes'})
-  dispose(): void {
+  async dispose(): Promise<void> {
     if (this.isDisposed) {
       return;
     }
+    await ENV.engine.disposeTensor(this);
     this.isDisposed = true;
-    ENV.engine.disposeTensor(this);
   }
 
   private isDisposed = false;

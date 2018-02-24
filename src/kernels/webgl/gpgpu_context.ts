@@ -349,11 +349,8 @@ export class GPGPUContext {
    */
   public runQuery(queryFn: () => void): Promise<number> {
     const query = this.beginQuery();
-
     queryFn();
-
     this.endQuery();
-
     return this.pollQueryTime(query);
   }
 
@@ -411,17 +408,49 @@ export class GPGPUContext {
   }
 
   pollQueryTime(query: WebGLQuery): Promise<number> {
-    return new Promise<number>((resolve, reject) => {
-      const resolveWithWarning = () => {
-        console.warn('Disjoint query timer never available.');
-        resolve(-1);
-      };
-
+    return new Promise<number>(resolve => {
       const queryTimerVersion =
           ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
-      util.repeatedTry(() => this.isQueryAvailable(query, queryTimerVersion))
-          .then(() => resolve(this.getQueryTime(query, queryTimerVersion)))
-          .catch(resolveWithWarning);
+      this.addItemToPoll(() => {
+        if (this.isQueryAvailable(query, queryTimerVersion)) {
+          return this.getQueryTime(query, queryTimerVersion);
+        }
+        return null;
+      }, resolve);
+    });
+  }
+
+  private itemsToPoll: PollItem[] = [];
+
+  private pollItems(): void {
+    // Track the items we need to poll again at the next tick.
+    const itemsToPollAgain: PollItem[] = [];
+    this.itemsToPoll.forEach(item => {
+      const {pollFn, resolve} = item;
+      const pollResult = pollFn();
+      if (pollResult == null) {
+        // Check this item again, on the next tick.
+        itemsToPollAgain.push(item);
+      } else {
+        // This item is ready. Notify the observer.
+        resolve(pollResult);
+      }
+    });
+    this.itemsToPoll = itemsToPollAgain;
+  }
+
+  private addItemToPoll(
+      pollFn: () => number, resolve: (value: number) => void) {
+    this.itemsToPoll.push({pollFn, resolve});
+    if (this.itemsToPoll.length > 1) {
+      // We already have a running loop that polls.
+      return;
+    }
+    // Start a new loop that polls.
+    util.repeatedTry(() => {
+      this.pollItems();
+      // End the loop if no more items to poll.
+      return this.itemsToPoll.length === 0;
     });
   }
 
@@ -521,3 +550,8 @@ export class GPGPUContext {
     }
   }
 }
+
+type PollItem = {
+  pollFn: () => number,
+  resolve: (value: number) => void
+};

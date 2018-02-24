@@ -56,13 +56,17 @@ export class TensorImageVisualizer extends TensorImageVisualizerPolymer {
     }
   }
 
-  drawRGBImageData(tensor: dl.Tensor3D) {
+  async drawRGBImageData(tensor: dl.Tensor3D) {
     let pixelOffset = 0;
-    for (let i = 0; i < tensor.shape[0]; i++) {
-      for (let j = 0; j < tensor.shape[1]; j++) {
-        this.imageData.data[pixelOffset++] = tensor.get(i, j, 0);
-        this.imageData.data[pixelOffset++] = tensor.get(i, j, 1);
-        this.imageData.data[pixelOffset++] = tensor.get(i, j, 2);
+    let valOffset = 0;
+    const vals = await tensor.data();
+    const height = tensor.shape[0];
+    const width = tensor.shape[1];
+    for (let i = 0; i < height; i++) {
+      for (let j = 0; j < width; j++) {
+        this.imageData.data[pixelOffset++] = vals[valOffset++];
+        this.imageData.data[pixelOffset++] = vals[valOffset++];
+        this.imageData.data[pixelOffset++] = vals[valOffset++];
         this.imageData.data[pixelOffset++] = 255;
       }
     }

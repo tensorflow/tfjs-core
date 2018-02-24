@@ -77,6 +77,7 @@ export interface WebGLTimingInfo extends TimingInfo {
 
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
+  private pendingRead = new WeakMap<DataId, Promise<{}>>();
   private canvas: HTMLCanvasElement;
 
   private programTimersStack: TimerNode[];
@@ -195,7 +196,10 @@ export class MathBackendWebGL implements KernelBackend {
 
     // Construct an empty query. We're just interested in getting a callback
     // when the GPU command queue has executed until this point in time.
-    await this.gpgpu.runQuery(() => {});
+    const readPromise = this.gpgpu.runQuery(() => {});
+    this.pendingRead.set(dataId, readPromise);
+    await readPromise;
+    this.pendingRead.delete(dataId);
     return this.readSync(dataId);
   }
 
@@ -265,7 +269,10 @@ export class MathBackendWebGL implements KernelBackend {
     return timerQuery.endMs - timerQuery.startMs;
   }
 
-  disposeData(dataId: DataId): void {
+  async disposeData(dataId: DataId): Promise<void> {
+    if (this.pendingRead.has(dataId)) {
+      await this.pendingRead.get(dataId);
+    }
     if (this.texData.has(dataId)) {
       const {texture, texShape, texType} = this.texData.get(dataId);
       if (texture != null) {
