@@ -45,6 +45,7 @@ export {MathBackendWebGL, NDArrayMathGPU, WebGLTimingInfo} from './kernels/backe
 export {GPGPUContext} from './kernels/webgl/gpgpu_context';
 export {NDArrayMath} from './math';
 export {Model} from './model';
+export {Reduction} from './ops/loss_ops';
 export {LSTMCell} from './ops/lstm';
 export {MatrixOrientation} from './ops/matmul';
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';

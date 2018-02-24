@@ -20,12 +20,11 @@ import {Tensor} from '../tensor';
 import * as util from '../util';
 
 import {operation} from './operation';
-import * as ops from './ops';
 
 export enum Reduction {
-  NONE = 'none',
-  MEAN = 'weightedMean',
-  SUM = 'weightedSum'
+  NONE,
+  MEAN,
+  SUM
 }
 
 export class LossOps {
@@ -41,8 +40,19 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
-      labels: T, weights?: T): O {
-    return labels.mul(weights);
+      labels: T, weights?: T, reduction?: Reduction.NONE): O {
+    const weightedLoss = labels.mul(weights);
+    let loss;
+    if (reduction === Reduction.NONE) {
+      loss = weightedLoss as O;
+    } else {
+      loss = weightedLoss.sum() as O;
+      if (reduction === Reduction.MEAN) {
+        loss = loss.div(weights.sum()) as O;
+      }
+    }
+
+    return loss;
   }
 
   /**
@@ -51,14 +61,20 @@ export class LossOps {
    * @param labels The ground truth output tensor, same dimensions as
    *    'predictions'.
    * @param predictions The predicted outputs.
+   * @param weights `Tensor` whose rank is either 0, or the same rank as
+   *    `labels`, and must be broadcastable to `labels` (i.e., all dimensions
+   *    must be either `1`, or the same as the corresponding `losses`
+   *    dimension).
+   * @param reduction Type of reduction to apply to loss. Should be of type
+   *    `Reduction`
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static absoluteDifference<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: T): O {
+      labels: T, predictions: T, weights?: T, reduction?: Reduction.NONE): O {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in absoluteDifference: ');
     const losses = labels.sub(predictions).abs();
-    return LossOps.computeWeightedLoss(losses, weights);
+    return LossOps.computeWeightedLoss(losses, weights, reduction);
   }
 }
