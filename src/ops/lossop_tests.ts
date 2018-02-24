@@ -17,123 +17,119 @@
 
 import * as dl from '../index';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose, expectNumbersClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
 
-describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
+describeWithFlags('absoluteDifference', ALL_ENVS, () => {
   it('1D', () => {
-    const logits = dl.tensor1d([1, 2, 3]);
-    const label = dl.tensor1d([0.3, 0.6, 0.1]);
-    const softmaxLogits = dl.softmax(logits);
+    const predictions = dl.tensor1d([1, 2, 3]);
+    const label = dl.tensor1d([0.3, -0.6, -0.1]);
 
-    const y = dl.losses.softmaxCrossEntropy(label, logits);
-
-    expect(y.shape).toEqual([]);
-    expectNumbersClose(
-        y.get(),
-        -Math.log(softmaxLogits.get(0)) * label.get(0) +
-            -Math.log(softmaxLogits.get(1)) * label.get(1) +
-            -Math.log(softmaxLogits.get(2)) * label.get(2));
-  });
-
-  it('2D implicit dim', () => {
-    const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
-    const softmaxLogits = dl.softmax(logits);
-
-    const y = dl.losses.softmaxCrossEntropy(label, logits);
-
-    expect(y.shape).toEqual([2]);
-    expectArraysClose(y, [
-      -Math.log(softmaxLogits.get(0, 0)) * label.get(0, 0) +
-          -Math.log(softmaxLogits.get(0, 1)) * label.get(0, 1) +
-          -Math.log(softmaxLogits.get(0, 2)) * label.get(0, 2),
-      -Math.log(softmaxLogits.get(1, 0)) * label.get(1, 0) +
-          -Math.log(softmaxLogits.get(1, 1)) * label.get(1, 1) +
-          -Math.log(softmaxLogits.get(1, 2)) * label.get(1, 2)
-    ]);
-  });
-
-  it('2D, dim=1', () => {
-    const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
-    const dim = 1;
-    const softmaxLogits = dl.softmax(logits, dim);
-
-    const y = dl.losses.softmaxCrossEntropy(label, logits, dim);
-
-    expect(y.shape).toEqual([2]);
-    expectArraysClose(y, [
-      -Math.log(softmaxLogits.get(0, 0)) * label.get(0, 0) +
-          -Math.log(softmaxLogits.get(0, 1)) * label.get(0, 1) +
-          -Math.log(softmaxLogits.get(0, 2)) * label.get(0, 2),
-      -Math.log(softmaxLogits.get(1, 0)) * label.get(1, 0) +
-          -Math.log(softmaxLogits.get(1, 1)) * label.get(1, 1) +
-          -Math.log(softmaxLogits.get(1, 2)) * label.get(1, 2)
-    ]);
-  });
-
-  it('2D, dim=0 throws error', () => {
-    const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
-    const dim = 0;
-
-    expect(() => dl.losses.softmaxCrossEntropy(label, logits, dim))
-        .toThrowError();
-  });
-
-  it('Propagates NaNs', () => {
-    const logits = dl.tensor1d([1, 2, NaN]);
-    const label = dl.tensor1d([0.3, 0.6, 0.1]);
-
-    const y = dl.losses.softmaxCrossEntropy(label, logits);
+    const y = dl.losses.absoluteDifference(label, predictions);
 
     expect(y.shape).toEqual([]);
-    expectArraysClose(y, [NaN]);
+    expectArraysClose(
+        y, [Math.abs(1 - 0.3), Math.abs(2 - (-0.6)), Math.abs(3 - (-0.1))]);
   });
 
-  it('1D gradient', () => {
-    const logits = dl.tensor1d([1, 2, 3]);
-    const labels = dl.tensor1d([0.3, 0.6, 0.1]);
-    const softmaxLogits = dl.softmax(logits);
-    const dy = dl.scalar(2);
+  // it('2D implicit dim', () => {
+  //   const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+  //   const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
+  //   const softmaxLogits = dl.softmax(logits);
 
-    const grads = dl.grads(
-        (labels, logits) => dl.losses.softmaxCrossEntropy(labels, logits));
-    const [dlabels, dlogits] = grads([labels, logits], dy);
+  //   const y = dl.losses.softmaxCrossEntropy(label, logits);
 
-    expect(dlogits.shape).toEqual(logits.shape);
-    expectArraysClose(dlogits, [
-      dy.get() * (softmaxLogits.get(0) - labels.get(0)),
-      dy.get() * (softmaxLogits.get(1) - labels.get(1)),
-      dy.get() * (softmaxLogits.get(2) - labels.get(2))
-    ]);
+  //   expect(y.shape).toEqual([2]);
+  //   expectArraysClose(y, [
+  //     -Math.log(softmaxLogits.get(0, 0)) * label.get(0, 0) +
+  //         -Math.log(softmaxLogits.get(0, 1)) * label.get(0, 1) +
+  //         -Math.log(softmaxLogits.get(0, 2)) * label.get(0, 2),
+  //     -Math.log(softmaxLogits.get(1, 0)) * label.get(1, 0) +
+  //         -Math.log(softmaxLogits.get(1, 1)) * label.get(1, 1) +
+  //         -Math.log(softmaxLogits.get(1, 2)) * label.get(1, 2)
+  //   ]);
+  // });
 
-    expect(dlabels.shape).toEqual(labels.shape);
-    expectArraysClose(dlabels, [
-      dy.get() * (labels.get(0) - softmaxLogits.get(0)),
-      dy.get() * (labels.get(1) - softmaxLogits.get(1)),
-      dy.get() * (labels.get(2) - softmaxLogits.get(2))
-    ]);
-  });
+  // it('2D, dim=1', () => {
+  //   const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+  //   const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
+  //   const dim = 1;
+  //   const softmaxLogits = dl.softmax(logits, dim);
 
-  it('2D gradient', () => {
-    const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const labels = dl.tensor2d([0.3, 0.6, 0.1, .2, .3, .5], [2, 3]);
-    const softmaxLogits = dl.softmax(logits);
-    const dy = dl.tensor1d([2, 4]);
+  //   const y = dl.losses.softmaxCrossEntropy(label, logits, dim);
 
-    const dlogits = dl.grad(
-        logits => dl.losses.softmaxCrossEntropy(labels, logits))(logits, dy);
+  //   expect(y.shape).toEqual([2]);
+  //   expectArraysClose(y, [
+  //     -Math.log(softmaxLogits.get(0, 0)) * label.get(0, 0) +
+  //         -Math.log(softmaxLogits.get(0, 1)) * label.get(0, 1) +
+  //         -Math.log(softmaxLogits.get(0, 2)) * label.get(0, 2),
+  //     -Math.log(softmaxLogits.get(1, 0)) * label.get(1, 0) +
+  //         -Math.log(softmaxLogits.get(1, 1)) * label.get(1, 1) +
+  //         -Math.log(softmaxLogits.get(1, 2)) * label.get(1, 2)
+  //   ]);
+  // });
 
-    expect(dlogits.shape).toEqual(logits.shape);
+  // it('2D, dim=0 throws error', () => {
+  //   const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+  //   const label = dl.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
+  //   const dim = 0;
 
-    expectArraysClose(dlogits, [
-      dy.get(0) * (softmaxLogits.get(0, 0) - labels.get(0, 0)),
-      dy.get(0) * (softmaxLogits.get(0, 1) - labels.get(0, 1)),
-      dy.get(0) * (softmaxLogits.get(0, 2) - labels.get(0, 2)),
-      dy.get(1) * (softmaxLogits.get(1, 0) - labels.get(1, 0)),
-      dy.get(1) * (softmaxLogits.get(1, 1) - labels.get(1, 1)),
-      dy.get(1) * (softmaxLogits.get(1, 2) - labels.get(1, 2))
-    ]);
-  });
+  //   expect(() => dl.losses.softmaxCrossEntropy(label, logits, dim))
+  //       .toThrowError();
+  // });
+
+  // it('Propagates NaNs', () => {
+  //   const logits = dl.tensor1d([1, 2, NaN]);
+  //   const label = dl.tensor1d([0.3, 0.6, 0.1]);
+
+  //   const y = dl.losses.softmaxCrossEntropy(label, logits);
+
+  //   expect(y.shape).toEqual([]);
+  //   expectArraysClose(y, [NaN]);
+  // });
+
+  // it('1D gradient', () => {
+  //   const logits = dl.tensor1d([1, 2, 3]);
+  //   const labels = dl.tensor1d([0.3, 0.6, 0.1]);
+  //   const softmaxLogits = dl.softmax(logits);
+  //   const dy = dl.scalar(2);
+
+  //   const grads = dl.grads(
+  //       (labels, logits) => dl.losses.softmaxCrossEntropy(labels, logits));
+  //   const [dlabels, dlogits] = grads([labels, logits], dy);
+
+  //   expect(dlogits.shape).toEqual(logits.shape);
+  //   expectArraysClose(dlogits, [
+  //     dy.get() * (softmaxLogits.get(0) - labels.get(0)),
+  //     dy.get() * (softmaxLogits.get(1) - labels.get(1)),
+  //     dy.get() * (softmaxLogits.get(2) - labels.get(2))
+  //   ]);
+
+  //   expect(dlabels.shape).toEqual(labels.shape);
+  //   expectArraysClose(dlabels, [
+  //     dy.get() * (labels.get(0) - softmaxLogits.get(0)),
+  //     dy.get() * (labels.get(1) - softmaxLogits.get(1)),
+  //     dy.get() * (labels.get(2) - softmaxLogits.get(2))
+  //   ]);
+  // });
+
+  // it('2D gradient', () => {
+  //   const logits = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+  //   const labels = dl.tensor2d([0.3, 0.6, 0.1, .2, .3, .5], [2, 3]);
+  //   const softmaxLogits = dl.softmax(logits);
+  //   const dy = dl.tensor1d([2, 4]);
+
+  //   const dlogits = dl.grad(
+  //       logits => dl.losses.softmaxCrossEntropy(labels, logits))(logits, dy);
+
+  //   expect(dlogits.shape).toEqual(logits.shape);
+
+  //   expectArraysClose(dlogits, [
+  //     dy.get(0) * (softmaxLogits.get(0, 0) - labels.get(0, 0)),
+  //     dy.get(0) * (softmaxLogits.get(0, 1) - labels.get(0, 1)),
+  //     dy.get(0) * (softmaxLogits.get(0, 2) - labels.get(0, 2)),
+  //     dy.get(1) * (softmaxLogits.get(1, 0) - labels.get(1, 0)),
+  //     dy.get(1) * (softmaxLogits.get(1, 1) - labels.get(1, 1)),
+  //     dy.get(1) * (softmaxLogits.get(1, 2) - labels.get(1, 2))
+  //   ]);
+  // });
 });

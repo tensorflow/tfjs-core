@@ -20,11 +20,12 @@ import {Tensor} from '../tensor';
 import * as util from '../util';
 
 import {operation} from './operation';
+import * as ops from './ops';
 
 export enum Reduction {
-  NONE,
-  MEAN,
-  SUM
+  NONE = 'none',
+  MEAN = 'mean',
+  SUM = 'sum'
 }
 
 export class LossOps {
@@ -33,14 +34,17 @@ export class LossOps {
    *
    * @param losses `Tensor` of shape `[batch_size, d1, ... dN]`.
    * @param weights `Tensor` whose rank is either 0, or the same rank as
-   *    `labels`, and must be broadcastable to `labels` (i.e., all dimensions
-   *    must be either `1`, or the same as the corresponding `losses`
-   *    dimension).
+   *    `labels`, and must be broadcastable to `labels` (i.e., all
+   * dimensions must be either `1`, or the same as the corresponding
+   * `losses` dimension).
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
-      labels: T, weights?: T, reduction?: Reduction.NONE): O {
+      labels: T, weights: Tensor, reduction?: Reduction.NONE): O {
+    if (weights === null) {
+      weights = ops.scalar(1);
+    }
     const weightedLoss = labels.mul(weights);
     let loss;
     if (reduction === Reduction.NONE) {
@@ -71,7 +75,8 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static absoluteDifference<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: T, reduction?: Reduction.NONE): O {
+      labels: T, predictions: T, weights?: Tensor, reduction?: Reduction.NONE):
+      O {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in absoluteDifference: ');
     const losses = labels.sub(predictions).abs();
