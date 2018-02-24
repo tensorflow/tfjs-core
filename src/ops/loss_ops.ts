@@ -41,12 +41,14 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
-      labels: T, weights: Tensor, reduction?: Reduction.NONE): O {
-    if (weights === null) {
+      labels: T, weights?: Tensor, reduction = Reduction.NONE): O {
+    if (weights === undefined) {
       weights = ops.scalar(1);
     }
+
     const weightedLoss = labels.mul(weights);
     let loss;
+
     if (reduction === Reduction.NONE) {
       loss = weightedLoss as O;
     } else {
@@ -75,7 +77,7 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static absoluteDifference<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: Tensor, reduction?: Reduction.NONE):
+      labels: T, predictions: T, weights?: Tensor, reduction = Reduction.NONE):
       O {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in absoluteDifference: ');
