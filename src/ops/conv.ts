@@ -423,11 +423,11 @@ export class ConvOps {
     if (dilations == null) {
       dilations = [1, 1];
     }
-    const [dilationHeight, dilationWidth] = parseTupleParam(dilations);
     util.assert(
-        dilationHeight === 1 && dilationWidth === 1,
-        'Error in depthwiseConv2D: dilation rates greater than 1 are not yet ' +
-            `supported. Got dilations '${dilations}'`);
+        eitherStridesOrDilationsAreOne(strides, dilations),
+        'Error in depthwiseConv2d: Either strides or dilations must be 1.' +
+            `Got strides ${strides} and dilations '${dilations}'`);
+
     if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
