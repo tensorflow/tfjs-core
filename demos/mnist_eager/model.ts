@@ -4,7 +4,7 @@ import {MnistData} from './data';
 // Hyperparameters.
 const LEARNING_RATE = .05;
 const BATCH_SIZE = 64;
-const TRAIN_STEPS = 100;
+const TRAIN_STEPS = 200;
 
 // Data constants.
 const IMAGE_SIZE = 784;
@@ -22,19 +22,25 @@ const loss = (labels: dl.Tensor2D, ys: dl.Tensor2D) =>
     dl.losses.softmaxCrossEntropy(labels, ys).mean() as dl.Scalar;
 
 // Train the model.
-export async function train(data: MnistData, log: (message: string) => void) {
-  const returnCost = true;
+export async function train(data: MnistData) {
+  let cost: dl.Scalar;
+  // Warm up.
+  cost = optimizer.minimize(() => {
+    const batch = data.nextTrainBatch(BATCH_SIZE);
+    return loss(batch.labels, model(batch.xs));
+  }, true);
+  await cost.data();
+  const start = performance.now();
   for (let i = 0; i < TRAIN_STEPS; i++) {
-    const cost = optimizer.minimize(() => {
+    cost = optimizer.minimize(() => {
       const batch = data.nextTrainBatch(BATCH_SIZE);
 
       return loss(batch.labels, model(batch.xs));
-    }, returnCost);
-
-    log(`loss[${i}]: ${cost.dataSync()}`);
-
-    await dl.nextFrame();
+    }, i === TRAIN_STEPS - 1);
   }
+  const costVal = (await cost.data())[0];
+  console.log('Train took', performance.now() - start, 'ms');
+  console.log('cost', costVal);
 }
 
 // Predict the digit number from a batch of input images.

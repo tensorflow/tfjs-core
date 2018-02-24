@@ -422,7 +422,7 @@ export class GPGPUContext {
 
   private itemsToPoll: PollItem[] = [];
 
-  private pollItems(): void {
+  pollItems(): void {
     // Track the items we need to poll again at the next tick.
     const itemsToPollAgain: PollItem[] = [];
     this.itemsToPoll.forEach(item => {

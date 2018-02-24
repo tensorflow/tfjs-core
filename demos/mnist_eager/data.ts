@@ -53,29 +53,37 @@ export class MnistData {
   private nextBatch(
       batchSize: number, data: dl.Tensor[][],
       index: () => number): {xs: dl.Tensor2D, labels: dl.Tensor2D} {
-    let xs: dl.Tensor2D = null;
-    let labels: dl.Tensor2D = null;
+    const xSize = data[0][0].size;
+    const xs = dl.zeros<dl.Rank.R2>([batchSize, xSize], 'float32');
+    const xsVals = xs.dataSync();
+
+    const labelSize = data[1][0].size;
+    const labels = dl.zeros<dl.Rank.R2>([batchSize, labelSize], 'float32');
+    const labelsVals = labels.dataSync();
 
     for (let i = 0; i < batchSize; i++) {
       const idx = index();
 
-      const x = data[0][idx].reshape([1, 784]) as dl.Tensor2D;
-      xs = concatWithNulls(xs, x);
+      const xVals = data[0][idx].dataSync();
+      xsVals.set(xVals, i * xSize);
 
-      const label = data[1][idx].reshape([1, 10]) as dl.Tensor2D;
-      labels = concatWithNulls(labels, label);
+      const labelVals = data[1][idx].dataSync();
+      labelsVals.set(labelVals, i * labelSize);
     }
     return {xs, labels};
+  }
+
+  public reset() {
+    this.shuffledTrainIndex = 0;
+    this.shuffledTestIndex = 0;
   }
 
   public async load() {
     this.dataset = new dl.XhrDataset(mnistConfig);
     await this.dataset.fetchData();
-
     this.dataset.normalizeWithinBounds(0, -1, 1);
     this.trainingData = this.getTrainingData();
     this.testData = this.getTestData();
-
     this.trainIndices =
         dl.util.createShuffledIndices(this.trainingData[0].length);
     this.testIndices = dl.util.createShuffledIndices(this.testData[0].length);
@@ -86,7 +94,6 @@ export class MnistData {
         this.dataset.getData() as [dl.Tensor[], dl.Tensor[]];
 
     const end = Math.floor(TRAIN_TEST_RATIO * images.length);
-
     return [images.slice(0, end), labels.slice(0, end)];
   }
 
@@ -102,21 +109,4 @@ export class MnistData {
 
     return [images.slice(start), labels.slice(start)];
   }
-}
-
-/**
- * TODO(nsthorat): Add math.stack, similar to np.stack, which will avoid the
- * need for us allowing concating with null values.
- */
-function concatWithNulls(x1: dl.Tensor2D, x2: dl.Tensor2D): dl.Tensor2D {
-  if (x1 == null && x2 == null) {
-    return null;
-  }
-  if (x1 == null) {
-    return x2;
-  } else if (x2 === null) {
-    return x1;
-  }
-  const axis = 0;
-  return x1.concat(x2, axis);
 }

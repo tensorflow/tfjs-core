@@ -27,7 +27,7 @@ export interface BackendTimingInfo { kernelMs: number; }
 export interface TensorStorage {
   read(dataId: DataId): Promise<TypedArray>;
   readSync(dataId: DataId): TypedArray;
-  disposeData(dataId: DataId): Promise<void>;
+  disposeData(dataId: DataId): void;
   write(dataId: DataId, values: TypedArray): void;
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,

@@ -416,11 +416,11 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   @doc({heading: 'Tensors', subheading: 'Classes'})
-  async dispose(): Promise<void> {
+  dispose(): void {
     if (this.isDisposed) {
       return;
     }
-    await ENV.engine.disposeTensor(this);
+    ENV.engine.disposeTensor(this);
     this.isDisposed = true;
   }
 
