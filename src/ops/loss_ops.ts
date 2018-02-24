@@ -34,19 +34,19 @@ export class LossOps {
    *
    * @param losses `Tensor` of shape `[batch_size, d1, ... dN]`.
    * @param weights `Tensor` whose rank is either 0, or the same rank as
-   *    `labels`, and must be broadcastable to `labels` (i.e., all
+   *    `losses`, and must be broadcastable to `losses` (i.e., all
    * dimensions must be either `1`, or the same as the corresponding
    * `losses` dimension).
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
-      labels: T, weights?: Tensor, reduction = Reduction.NONE): O {
+      losses: T, weights?: Tensor, reduction = Reduction.NONE): O {
     if (weights === undefined) {
       weights = ops.scalar(1);
     }
 
-    const weightedLoss = labels.mul(weights);
+    const weightedLoss = losses.mul(weights);
     let loss;
 
     if (reduction === Reduction.NONE) {
@@ -54,7 +54,7 @@ export class LossOps {
     } else {
       loss = weightedLoss.sum() as O;
       if (reduction === Reduction.MEAN) {
-        loss = loss.div(weights.sum()) as O;
+        loss = loss.div(ops.onesLike(losses).mul(weights).sum()) as O;
       }
     }
 
