@@ -23,7 +23,7 @@ import {SessionRuntime} from '../graph/session';
 import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
 import {NDArrayMath} from '../math';
 import {scalar, zerosLike} from '../ops/ops';
-import {Scalar, Tensor, Variable} from '../tensor';
+import {Scalar, Tensor} from '../tensor';
 import {NamedVariableMap} from '../types';
 
 import {SGDOptimizer} from './sgd_optimizer';
@@ -56,7 +56,7 @@ export class MomentumOptimizer extends SGDOptimizer {
       const gradient = variableGradients[variableName];
 
       tidy(() => {
-        let newValue: Variable;
+        let newValue: Tensor;
         const newAccumulation = this.m.mul(accumulation).add(gradient);
         if (this.useNesterov) {
           newValue =
@@ -99,7 +99,7 @@ export class MomentumOptimizer extends SGDOptimizer {
         const gradient = this.variableGradients.get(node.output);
         const oldVelocity = this.variableVelocitiesGraph.get(node.output);
 
-        let variable: Variable;
+        let variable: Tensor;
         const velocity = this.m.mul(oldVelocity).add(gradient);
         if (this.useNesterov) {
           variable = this.cGraph.mul(gradient.add(velocity.mul(this.m)))
