@@ -75,10 +75,19 @@ export interface WebGLTimingInfo extends TimingInfo {
   downloadWaitMs: number;
 }
 
+// Maximum number of textures before we start moving data from gpu to cpu.
+// Moving avoids gpu memory leaks and relies on JavaScript's garbage collector.
+const NUM_TEXTURES_BEFORE_PAGING = 1000;
+
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
+  // List of data ids that have a pending read operation.
   private pendingRead = new WeakSet<DataId>();
+  // List of data ids that are scheduled for disposal, but are waiting on a
+  // pending read operation.
   private pendingDisposal = new WeakSet<DataId>();
+  // List of data ids that are currently residing on gpu memory.
+  private dataInGPU: DataId[] = [];
 
   private canvas: HTMLCanvasElement;
 
@@ -208,8 +217,8 @@ export class MathBackendWebGL implements KernelBackend {
     this.pendingRead.delete(dataId);
     const vals = this.readSync(dataId);
     if (this.pendingDisposal.has(dataId)) {
-      this.disposeData(dataId);
       this.pendingDisposal.delete(dataId);
+      this.disposeData(dataId);
     }
     return vals;
   }
@@ -942,8 +951,8 @@ export class MathBackendWebGL implements KernelBackend {
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
-      this.dataOnGpu.splice(this.dataOnGpu.indexOf(dataId), 1);
-      this.dataOnGpu.push(dataId);
+      this.dataInGPU.splice(this.dataInGPU.indexOf(dataId), 1);
+      this.dataInGPU.push(dataId);
       return;
     }
     const shouldTimeProgram = this.activeTimers != null;
@@ -983,14 +992,13 @@ export class MathBackendWebGL implements KernelBackend {
       texData.values = float32ToTypedArray(float32Values, dtype);
     }
   }
-  private dataOnGpu: DataId[] = [];
 
   private releaseTexture(
       dataId: DataId, texture: WebGLTexture, texShape: [number, number],
       texType: TextureType) {
-    const idx = this.dataOnGpu.indexOf(dataId);
+    const idx = this.dataInGPU.indexOf(dataId);
     if (idx >= 0) {
-      this.dataOnGpu.splice(idx, 1);
+      this.dataInGPU.splice(idx, 1);
     }
     this.textureManager.releaseTexture(texture, texShape, texType);
   }
@@ -998,9 +1006,9 @@ export class MathBackendWebGL implements KernelBackend {
   private acquireTexture(
       dataId: DataId, texShape: [number, number],
       texType: TextureType): WebGLTexture {
-    this.dataOnGpu.push(dataId);
-    if (this.dataOnGpu.length > 100) {
-      this.read(this.dataOnGpu.shift());
+    this.dataInGPU.push(dataId);
+    if (this.dataInGPU.length > NUM_TEXTURES_BEFORE_PAGING) {
+      this.read(this.dataInGPU.shift());
     }
     return this.textureManager.acquireTexture(texShape, texType);
   }
