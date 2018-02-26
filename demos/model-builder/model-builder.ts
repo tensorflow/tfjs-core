@@ -765,16 +765,16 @@ export class ModelBuilder extends ModelBuilderPolymer {
     this.examplesTrained = this.batchSize * totalBatchesTrained;
   }
 
-  async displayCost(avgCost: dl.Scalar) {
+  displayCost(avgCost: dl.Scalar) {
     this.costChartData.push(
-        {x: this.graphRunner.getTotalBatchesTrained(), y: await avgCost.val()});
+        {x: this.graphRunner.getTotalBatchesTrained(), y: avgCost.get()});
     this.costChart.update();
   }
 
-  async displayAccuracy(accuracy: dl.Scalar) {
+  displayAccuracy(accuracy: dl.Scalar) {
     this.accuracyChartData.push({
       x: this.graphRunner.getTotalBatchesTrained(),
-      y: (await accuracy.val()) * 100
+      y: accuracy.get() * 100
     });
     this.accuracyChart.update();
   }
@@ -800,7 +800,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
                       .toPrecision(3));
   }
 
-  async displayInferenceExamplesOutput(
+  displayInferenceExamplesOutput(
       inputFeeds: dl.FeedEntry[][], inferenceOutputs: dl.Tensor[]) {
     let images: dl.Tensor3D[] = [];
     const logits: dl.Tensor1D[] = [];
@@ -823,7 +823,7 @@ export class ModelBuilder extends ModelBuilderPolymer {
     for (let i = 0; i < inputFeeds.length; i++) {
       const softmaxLogits = this.math.softmax(logits[i]).asType('float32');
 
-      await this.outputTensorVisualizers[i].drawLogits(
+      this.outputTensorVisualizers[i].drawLogits(
           softmaxLogits, labels[i],
           this.xhrDatasetConfigs[this.selectedDatasetName].labelClassNames);
       this.inputTensorVisualizers[i].draw();

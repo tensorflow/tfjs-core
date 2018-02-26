@@ -420,7 +420,7 @@ export class Tensor<R extends Rank = Rank> {
     if (this.isDisposed) {
       return;
     }
-    ENV.engine.disposeTensor(this);
+    // ENV.engine.disposeTensor(this);
     this.isDisposed = true;
   }
 

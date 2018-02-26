@@ -23,8 +23,10 @@ async function train() {
 
 async function mnist() {
   await load();
-  await train();
-  console.log(dl.memory());
   // test();
 }
 mnist();
+document.getElementById('train').onclick = async () => {
+  await train();
+  console.log(dl.memory());
+};

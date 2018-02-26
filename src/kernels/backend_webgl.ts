@@ -146,7 +146,7 @@ export class MathBackendWebGL implements KernelBackend {
     const {texture, texShape, texType} = texData;
     if (texture != null) {
       // Release the old texture.
-      this.textureManager.releaseTexture(texture, texShape, texType);
+      this.releaseTexture(dataId, texture, texShape, texType);
       texData.texture = null;
       texData.texShape = null;
     }
@@ -283,7 +283,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (this.texData.has(dataId)) {
       const {texture, texShape, texType} = this.texData.get(dataId);
       if (texture != null) {
-        this.textureManager.releaseTexture(texture, texShape, texType);
+        this.releaseTexture(dataId, texture, texShape, texType);
       }
       this.texData.delete(dataId);
     }
@@ -933,6 +933,9 @@ export class MathBackendWebGL implements KernelBackend {
     const {shape, values, texture, dtype, texType} = texData;
     if (texture != null) {
       // Array is already on GPU. No-op.
+      // Touching the texture.
+      this.dataOnGpu.splice(this.dataOnGpu.indexOf(dataId), 1);
+      this.dataOnGpu.push(dataId);
       return;
     }
     const shouldTimeProgram = this.activeTimers != null;
@@ -943,15 +946,13 @@ export class MathBackendWebGL implements KernelBackend {
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     texData.texShape = texShape;
-    const newTexture = this.textureManager.acquireTexture(texShape, texType);
+    const newTexture = this.acquireTexture(dataId, texShape, texType);
     texData.texture = newTexture;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
           newTexture, texShape[0],
           // TODO(smilkov): Propagate the original typed array to gpgpu.
           texShape[1], typedArrayToFloat32(values, dtype));
-      // Once uploaded, don't store the values on cpu.
-      texData.values = null;
       if (shouldTimeProgram) {
         this.uploadWaitMs += performance.now() - start;
       }
@@ -966,13 +967,40 @@ export class MathBackendWebGL implements KernelBackend {
     const texData = this.texData.get(dataId);
     const {texture, texShape, dtype, texType} = texData;
     if (dontKeepCopyOnGPU && texture != null) {
-      this.textureManager.releaseTexture(texture, texShape, texType);
+      this.releaseTexture(dataId, texture, texShape, texType);
       texData.texture = null;
       texData.texShape = null;
     }
     if (float32Values != null) {
       texData.values = float32ToTypedArray(float32Values, dtype);
     }
+  }
+  private dataOnGpu: DataId[] = [];
+
+  private releaseTexture(
+      dataId: DataId, texture: WebGLTexture, texShape: [number, number],
+      texType: TextureType) {
+    const idx = this.dataOnGpu.indexOf(dataId);
+    this.dataOnGpu.splice(idx, 1);
+    this.textureManager.releaseTexture(texture, texShape, texType);
+  }
+
+  private acquireTexture(
+      dataId: DataId, texShape: [number, number],
+      texType: TextureType): WebGLTexture {
+    this.dataOnGpu.push(dataId);
+    if (this.dataOnGpu.length > 500) {
+      const dataId = this.dataOnGpu[0];
+      const texData = this.texData.get(dataId);
+      const {texture, texShape, texType} = texData;
+      this.releaseTexture(dataId, texture, texShape, texType);
+      texData.texShape = null;
+      texData.texture = null;
+      if (texData.values == null) {
+        console.log('dropped values');
+      }
+    }
+    return this.textureManager.acquireTexture(texShape, texType);
   }
 }
 

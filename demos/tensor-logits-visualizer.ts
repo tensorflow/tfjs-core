@@ -67,12 +67,12 @@ export class TensorLogitsVisualizer extends TensorLogitsVisualizerPolymer {
     }
   }
 
-  async drawLogits(
+  drawLogits(
       predictedLogits: dl.Tensor1D, labelLogits: dl.Tensor1D,
       labelClassNames?: string[]) {
-    const [labelClass, logitsVals] =
-        await Promise.all([labelLogits.argMax().val(), predictedLogits.data()]);
-    const topk = this.topK(logitsVals as Float32Array, TOP_K);
+    const labelClass = labelLogits.argMax().get();
+
+    const topk = this.topK(predictedLogits.dataSync() as Float32Array, TOP_K);
     const topkIndices = topk.indices;
     const topkValues = topk.values;
 

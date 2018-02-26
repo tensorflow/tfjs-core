@@ -162,10 +162,10 @@ export class Engine implements TensorManager {
     const refCount = this.refCounter.get(a.dataId);
     if (refCount <= 1) {
       this.refCounter.delete(a.dataId);
+      this.backend.disposeData(a.dataId);
       this.numDataBuffers--;
       this.numBytes -=
           util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
-      this.backend.disposeData(a.dataId);
     } else {
       this.refCounter.set(a.dataId, refCount - 1);
     }
