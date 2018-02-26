@@ -78,8 +78,9 @@ echo Building demos
 echo =======================================================
 cd demos
 yarn link deeplearn
-yarn link deeplearn-squeezenet
-yarn link deeplearn-knn-image-classifier
+# Note we do not link the models, but instead use the latest published versions.
+# yarn link deeplearn-squeezenet
+# yarn link deeplearn-knn-image-classifier
 yarn run prep
 yarn run build
 yarn run lint
