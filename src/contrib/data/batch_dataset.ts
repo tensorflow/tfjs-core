@@ -19,8 +19,8 @@
 import {Tensor} from '../../tensor';
 import * as util from '../../util';
 
+import {DataStream} from './async_streams/data_stream';
 import {Dataset} from './dataset';
-import {DataStream} from './streams/data_stream';
 import {BatchArray, DatasetBatch, DatasetElement, ElementArray} from './types';
 
 /**

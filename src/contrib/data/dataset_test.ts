@@ -18,8 +18,8 @@
 
 import {Tensor1D} from '../../tensor';
 
+import {DataStream, streamFromItems} from './async_streams/data_stream';
 import {Dataset, datasetFromConcatenated, datasetFromElements} from './dataset';
-import {DataStream, streamFromItems} from './streams/data_stream';
 import {DatasetElement} from './types';
 
 class TestDatasetElementStream extends DataStream<DatasetElement> {
