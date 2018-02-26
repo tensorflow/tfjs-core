@@ -62,9 +62,9 @@ cd $ROOTDIR
 
 echo
 echo =======================================================
-echo Building models/yolo-mobilenet
+echo Building models/yolo_mobilenet
 echo =======================================================
-cd models/yolo-mobilenet
+cd models/yolo_mobilenet
 yarn link deeplearn
 yarn run prep
 yarn run build
