@@ -16,15 +16,15 @@
  */
 // tslint:disable-next-line:max-line-length
 import * as dl from 'deeplearn';
-import {CheckpointLoader, Model, Tensor, Tensor1D, Tensor3D, Tensor4D} from 'deeplearn';
+import {Tensor1D, Tensor3D, Tensor4D} from 'deeplearn';
 
 import {BoundingBox} from './mobilenet_utils';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
     'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
 
-export class YoloMobileNetDetection implements Model {
-  private variables: {[varName: string]: Tensor};
+export class YoloMobileNetDetection implements dl.Model {
+  private variables: {[varName: string]: dl.Tensor};
 
   // yolo variables
   private PREPROCESS_DIVISOR = dl.scalar(255.0 / 2);
@@ -40,7 +40,7 @@ export class YoloMobileNetDetection implements Model {
    * Loads necessary variables for MobileNet.
    */
   async load(): Promise<void> {
-    const checkpointLoader = new CheckpointLoader(
+    const checkpointLoader = new dl.CheckpointLoader(
         GOOGLE_CLOUD_STORAGE_DIR + 'yolo_mobilenet_v1_1.0_416/');
     this.variables = await checkpointLoader.getAllVariables();
   }
