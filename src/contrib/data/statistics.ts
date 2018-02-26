@@ -75,7 +75,7 @@ export async function computeDatasetStatistics(
     sampleDataset = sampleDataset.take(sampleSize);
   }
 
-  // TODO(soergel): prepare the column objects based on a schema.q
+  // TODO(soergel): prepare the column objects based on a schema.
   const result: DatasetStatistics = {};
 
   await sampleDataset.forEach(e => {

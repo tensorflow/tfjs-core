@@ -17,12 +17,12 @@
 
 import * as dl from '../../index';
 import {Tensor, Tensor1D, Tensor2D} from '../../tensor';
-import {ALL_ENVS, expectArraysClose, fdescribeWithFlags} from '../../test_util';
+import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 
 import {consume} from './batch_dataset';
 import {TestDataset} from './dataset_test';
 
-fdescribeWithFlags('Dataset.batch()', ALL_ENVS, () => {
+describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
   it('batches entries into column-oriented DatasetBatches', done => {
     const ds = new TestDataset();
     const bds = ds.batch(8);

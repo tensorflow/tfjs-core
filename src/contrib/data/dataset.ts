@@ -251,8 +251,9 @@ export abstract class Dataset {
     return (await this.getStream()).collectRemaining();
   }
 
-  async forEach(f: (input: DatasetElement) => {}) {
-    (await this.getStream()).forEach(f, consumePrep);
+  async forEach(f: (input: DatasetElement) => {}): Promise<void> {
+    const stream = await this.getStream();
+    return stream.forEach(f, consumePrep);
   }
 
   /* TODO(soergel): for parity with tf.data:

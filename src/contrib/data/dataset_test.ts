@@ -204,7 +204,12 @@ describeWithFlags('Dataset', ALL_ENVS, () => {
 
   it('forEach does not leak Tensors', done => {
     const ds = new TestDataset();
-    ds.forEach(element => null)
+    let count = 0;
+    ds.forEach(element => {
+        count++;
+        return {};
+      })
+        .then(() => expect(count).toEqual(100))
         .then(() => expect(dl.memory().numTensors).toEqual(0))
         .then(done)
         .catch(done.fail);
