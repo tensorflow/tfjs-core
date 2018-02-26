@@ -424,7 +424,8 @@ export class GPGPUContext {
   private itemsToPoll: PollItem[] = [];
 
   pollItems(): void {
-    // Track the items we need to poll again at the next tick.
+    // Find the last query that has finished using binary search.
+    // All other queries before it are also done.
     const index = binSearchLastTrue(this.itemsToPoll.map(x => x.isDoneFn));
     for (let i = 0; i <= index; ++i) {
       const {resolveFn} = this.itemsToPoll[i];

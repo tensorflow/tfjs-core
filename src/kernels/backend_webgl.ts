@@ -178,6 +178,11 @@ export class MathBackendWebGL implements KernelBackend {
     return texData.values;
   }
   async read(dataId: DataId): Promise<TypedArray> {
+    if (this.pendingRead.has(dataId)) {
+      // TODO(smilkov): Fix this. Attach this observer
+      // to the existing read promise.
+      return null;
+    }
     this.throwIfNoData(dataId);
     const texData = this.texData.get(dataId);
     const {texture, values, texShape} = texData;
@@ -276,6 +281,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   disposeData(dataId: DataId): void {
+    if (this.pendingDisposal.has(dataId)) {
+      return;
+    }
     if (this.pendingRead.has(dataId)) {
       this.pendingDisposal.add(dataId);
       return;
@@ -990,8 +998,7 @@ export class MathBackendWebGL implements KernelBackend {
       texType: TextureType): WebGLTexture {
     this.dataOnGpu.push(dataId);
     if (this.dataOnGpu.length > 100) {
-      const dataId = this.dataOnGpu[0];
-      this.read(dataId);
+      this.read(this.dataOnGpu.shift());
     }
     return this.textureManager.acquireTexture(texShape, texType);
   }
