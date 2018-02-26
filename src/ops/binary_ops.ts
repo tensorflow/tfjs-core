@@ -375,7 +375,7 @@ export class BinaryOps {
    * ```
    *
    * ```js
-   * // Broadcast minumum a with b.
+   * // Broadcast minimum a with b.
    * const a = dl.tensor1d([2, 4, 6, 8]);
    * const b = dl.scalar(5);
    *
