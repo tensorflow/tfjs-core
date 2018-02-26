@@ -337,9 +337,8 @@ export function downloadMatrixFromOutputTexture(
       () => gl.readPixels(
           0, 0, w, h, gl.RGBA, getTextureType(gl), downloadTarget));
 
-  // return decodeDownloadTargetArrayBuffer(
-  //     downloadTarget, rows, columns, channelsPerPixel);
-  return downloadTarget.subarray(0, rows * columns) as Float32Array;
+  return decodeDownloadTargetArrayBuffer(
+      downloadTarget, rows, columns, channelsPerPixel);
 }
 
 export function downloadMatrixFromRGBAColorTexture(
