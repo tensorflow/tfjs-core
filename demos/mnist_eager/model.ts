@@ -75,6 +75,9 @@ export async function train(data: MnistData) {
       const batch = data.nextTrainBatch(BATCH_SIZE);
       return loss(batch.labels, model(batch.xs));
     }, i === TRAIN_STEPS - 1);
+    if (i % 5 === 0) {
+      await dl.nextFrame();
+    }
   }
   const costVal = (await cost.data())[0];
   console.log('Train took', performance.now() - start, 'ms');

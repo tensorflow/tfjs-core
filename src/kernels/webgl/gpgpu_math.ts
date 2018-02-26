@@ -150,7 +150,6 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   if (customSetup != null) {
     customSetup(gpgpu, binary.webGLProgram);
   }
-  gpgpu.pollItems();
   gpgpu.executeProgram();
 }
 
