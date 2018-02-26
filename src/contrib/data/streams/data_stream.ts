@@ -134,8 +134,9 @@ export abstract class DataStream<T> {
    *
    * @returns A `DataStream` of elements for which the predicate was true.
    */
-  filter(predicate: (value: T) => boolean | Promise<boolean>): DataStream<T> {
-    return new FilterStream(this, predicate);
+  filter(predicate: (value: T) => boolean, consume?: (item: T) => void):
+      DataStream<T> {
+    return new FilterStream(this, predicate, consume);
   }
 
   /**
@@ -146,8 +147,11 @@ export abstract class DataStream<T> {
    *
    * @returns A `DataStream` of transformed elements.
    */
-  map<S>(transform: (value: T) => S | Promise<S>): DataStream<S> {
-    return new MapStream(this, transform);
+  map<OUT>(
+      transform: (value: T) => OUT,
+      consumePrep?: (item: T) => ((output: OUT) => void),
+      retain?: (item: OUT) => OUT): DataStream<OUT> {
+    return new MapStream(this, transform, consumePrep, retain);
   }
 
   /**
@@ -155,8 +159,10 @@ export abstract class DataStream<T> {
    *
    * @param f A function to apply to each stream element.
    */
-  async forEach(f: (value: T) => {}|Promise<{}>): Promise<void> {
-    return this.map(f).resolveFully();
+  async forEach(
+      f: (value: T) => {},
+      consumePrep?: (item: T) => ((output: {}) => void)): Promise<void> {
+    return this.map(f, consumePrep, undefined).resolveFully();
   }
 
   /**
@@ -200,9 +206,9 @@ export abstract class DataStream<T> {
    * @param count The number of items to skip.  If a negative or undefined value
    *   is given, the entire stream is returned unaltered.
    */
-  skip(count: number): DataStream<T> {
+  skip(count: number, consume?: (item: T) => void): DataStream<T> {
     if (count < 0 || count == null) return this;
-    return new SkipStream(this, count);
+    return new SkipStream(this, count, consume);
   }
 
   /**
@@ -270,13 +276,16 @@ class FunctionCallStream<T> extends DataStream<T> {
 
 class SkipStream<T> extends DataStream<T> {
   count = 0;
-  constructor(protected upstream: DataStream<T>, protected maxCount: number) {
+  constructor(
+      protected upstream: DataStream<T>, protected maxCount: number,
+      protected consume: (item: T) => void) {
     super();
   }
 
   async next(): Promise<T> {
     while (this.count++ < this.maxCount) {
       const skipped = await this.upstream.next();
+      if (this.consume != null) this.consume(skipped);
       // short-circuit if upstream is already empty
       if (skipped == null) {
         return undefined;
@@ -344,6 +353,16 @@ export abstract class QueueStream<T> extends DataStream<T> {
   }
 }
 
+// TODO(soergel): consider clean separation of synchronous pumpOne
+/*abstract class TransformingQueueStream<IN, OUT> extends QueueStream<OUT> {
+  async pump() {
+    return pumpOne(await this.upstream.next());
+  }
+
+  // not async!
+  pump(input:IN) : boolean {}
+}*/
+
 class BatchStream<T> extends QueueStream<T[]> {
   constructor(
       protected upstream: DataStream<T>, protected batchSize: number,
@@ -366,6 +385,7 @@ class BatchStream<T> extends QueueStream<T[]> {
       }
       return false;
     }
+
     this.currentBatch.push(item);
     if (this.currentBatch.length === this.batchSize) {
       this.outputQueue.push(this.currentBatch);
@@ -378,7 +398,8 @@ class BatchStream<T> extends QueueStream<T[]> {
 class FilterStream<T> extends QueueStream<T> {
   constructor(
       protected upstream: DataStream<T>,
-      protected predicate: (value: T) => boolean | Promise<boolean>) {
+      protected predicate: (value: T) => boolean,
+      protected consume: (item: T) => void) {
     super();
   }
 
@@ -387,21 +408,20 @@ class FilterStream<T> extends QueueStream<T> {
     if (item == null) {
       return false;
     }
-    let accept = this.predicate(item);
-    if (accept instanceof Promise) {
-      accept = await accept;
-    }
-    if (accept) {
+    if (this.predicate(item)) {
       this.outputQueue.push(item);
-    }
+    } else if (this.consume != null)
+      this.consume(item);
     return true;
   }
 }
 
-class MapStream<T, S> extends QueueStream<S> {
+class MapStream<IN, OUT> extends QueueStream<OUT> {
   constructor(
-      protected upstream: DataStream<T>,
-      protected transform: (value: T) => S | Promise<S>) {
+      protected upstream: DataStream<IN>,
+      protected transform: (value: IN) => OUT,
+      protected consumePrep: (item: IN) => ((item: OUT) => void),
+      protected retain: (item: OUT) => OUT) {
     super();
   }
 
@@ -410,10 +430,15 @@ class MapStream<T, S> extends QueueStream<S> {
     if (item == null) {
       return false;
     }
+    const consumeFn = this.consumePrep == null ? null : this.consumePrep(item);
+    // Careful: the transform may mutate the item in place.
+    // that's why we have to prepare the consumeFn above but execute it below.
     let mapped = this.transform(item);
-    if (mapped instanceof Promise) {
-      mapped = await mapped;
-    }
+
+    if (this.retain != null) mapped = this.retain(mapped);
+    // Consume *after* retain, in case of overlap
+    if (consumeFn != null) consumeFn(mapped);
+
     this.outputQueue.push(mapped);
     return true;
   }

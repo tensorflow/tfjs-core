@@ -18,6 +18,9 @@
 
 import * as seedrandom from 'seedrandom';
 
+import * as dl from '../../index';
+import {Tensor} from '../../tensor';
+
 import {BatchDataset} from './batch_dataset';
 import {computeDatasetStatistics, DatasetStatistics} from './statistics';
 import {DataStream} from './streams/data_stream';
@@ -44,6 +47,10 @@ export abstract class Dataset {
   /*
    * Provide a new stream of elements.  Note this will also start new streams
    * from any underlying `Dataset`s.
+   *
+   * CAUTION: Any Tensors contained within the DatasetElements returned from
+   * this stream *must* be manually disposed to avoid a GPU memory leak.
+   * The dl.tidy() approach cannot be used in a asynchronous context.
    */
   abstract async getStream(): Promise<DataStream<DatasetElement>>;
 
@@ -92,11 +99,10 @@ export abstract class Dataset {
    *
    * @returns A `Dataset` of elements for which the predicate was true.
    */
-  filter(filterer: (value: DatasetElement) => boolean | Promise<boolean>):
-      Dataset {
+  filter(filterer: (value: DatasetElement) => boolean): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).filter(filterer);
+      return (await base.getStream()).filter(filterer, consume);
     });
   }
 
@@ -108,11 +114,10 @@ export abstract class Dataset {
    *
    * @returns A `Dataset` of transformed elements.
    */
-  map(transform: (value: DatasetElement) => DatasetElement |
-          Promise<DatasetElement>): Dataset {
+  map(transform: (value: DatasetElement) => DatasetElement): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).map(transform);
+      return (await base.getStream()).map(transform, consumePrep, retain);
     });
   }
 
@@ -197,7 +202,7 @@ export abstract class Dataset {
   skip(count: number): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).skip(count);
+      return (await base.getStream()).skip(count, consume);
     });
   }
 
@@ -240,6 +245,14 @@ export abstract class Dataset {
     return datasetFromStreamFn(async () => {
       return (await base.getStream()).prefetch(bufferSize);
     });
+  }
+
+  async collectAll() {
+    return (await this.getStream()).collectRemaining();
+  }
+
+  async forEach(f: (input: DatasetElement) => {}) {
+    (await this.getStream()).forEach(f, consumePrep);
   }
 
   /* TODO(soergel): for parity with tf.data:
@@ -288,4 +301,46 @@ export function datasetFromConcatenated(datasets: Dataset[]) {
     const streamStream = await Promise.all(datasets.map((d) => d.getStream()));
     return streamFromConcatenated(streamFromItems(streamStream));
   });
+}
+
+function consume(input: DatasetElement): void {
+  for (const key in input) {
+    const value = input[key];
+    if (value instanceof Tensor) {
+      value.dispose();
+    }
+  }
+}
+
+function consumePrep(input: DatasetElement): (output: DatasetElement) => void {
+  const inputTensors = extractTensorsFromElement(input);
+  return (output: DatasetElement) => {
+    const outputTensors = extractTensorsFromElement(output);
+    // TODO(soergel) faster intersection
+    for (const t of inputTensors) {
+      if (!dl.util.isTensorInList(t, outputTensors)) {
+        t.dispose();
+      }
+    }
+  };
+}
+
+function extractTensorsFromElement(input: DatasetElement) {
+  const tensors: Tensor[] = [];
+  for (const key in input) {
+    const value = input[key];
+    if (value instanceof Tensor) {
+      tensors.push(value);
+    }
+  }
+  return tensors;
+}
+
+// TODO(soergel): figure out how best to limit scope
+export function retain(input: DatasetElement): DatasetElement {
+  const inputTensors = extractTensorsFromElement(input);
+  for (const t of inputTensors) {
+    dl.keep(t);
+  }
+  return input;
 }

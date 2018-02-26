@@ -15,13 +15,14 @@
  * =============================================================================
  */
 
+import * as dl from '../../index';
 import {Tensor, Tensor1D, Tensor2D} from '../../tensor';
+import {ALL_ENVS, expectArraysClose, fdescribeWithFlags} from '../../test_util';
 
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
-
+import {consume} from './batch_dataset';
 import {TestDataset} from './dataset_test';
 
-describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
+fdescribeWithFlags('Dataset.batch()', ALL_ENVS, () => {
   it('batches entries into column-oriented DatasetBatches', done => {
     const ds = new TestDataset();
     const bds = ds.batch(8);
@@ -35,7 +36,14 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
             expect((batch['Tensor'] as Tensor).shape).toEqual([8, 3]);
             expect((batch['string'] as string[]).length).toEqual(8);
           }
+          return result;
         }))
+        .then((result) => {
+          for (const batch of result) {
+            consume(batch);
+          }
+        })
+        .then(() => expect(dl.memory().numTensors).toBe(0))
         .then(done)
         .catch(done.fail);
   });
@@ -70,8 +78,15 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
           expect(lastBatch['string'] as string[]).toEqual([
             'Item 96', 'Item 97', 'Item 98', 'Item 99'
           ]);
+          return result;
         }))
-
+        .then((result) => {
+          for (const batch of result) {
+            consume(batch);
+          }
+        })
+        // these three tensors are just the expected results above
+        .then(() => expect(dl.memory().numTensors).toBe(3))
         .then(done)
         .catch(done.fail);
   });
