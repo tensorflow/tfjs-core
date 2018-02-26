@@ -39,6 +39,7 @@ export class GPGPUContext {
   program: WebGLProgram|null = null;
   private disposed = false;
   private autoDebugValidate = false;
+  private disjoint: boolean;
 
   constructor(gl?: WebGLRenderingContext) {
     if (gl != null) {
@@ -392,18 +393,21 @@ export class GPGPUContext {
 
       const available =
           gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
+      if (this.disjoint == null) {
+        this.disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+      }
 
-      const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
-      return available && !disjoint;
+      return available && !this.disjoint;
     } else {
       const ext = this.getQueryTimerExtensionWebGL1();
 
       const available =
           ext.getQueryObjectEXT(query, ext.QUERY_RESULT_AVAILABLE_EXT);
+      if (this.disjoint == null) {
+        this.disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+      }
 
-      const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
-
-      return available && !disjoint;
+      return available && !this.disjoint;
     }
   }
 

@@ -4,7 +4,7 @@ import {MnistData} from './data';
 // Hyperparameters.
 const LEARNING_RATE = .1;
 const BATCH_SIZE = 64;
-const TRAIN_STEPS = 200;
+const TRAIN_STEPS = 50;
 
 // Data constants.
 const IMAGE_SIZE = 28;
