@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-export function topK(values: Float32Array, k: number):
-    {values: Float32Array, indices: Int32Array} {
+export function topK<T extends Float32Array|Int32Array|Uint8Array>(
+    values: T, k: number): {values: T, indices: Int32Array} {
   const valuesAndIndices: Array<{value: number, index: number}> = [];
   for (let i = 0; i < values.length; i++) {
     valuesAndIndices.push({value: values[i], index: i});
@@ -24,11 +24,13 @@ export function topK(values: Float32Array, k: number):
   valuesAndIndices.sort((a, b) => {
     return b.value - a.value;
   });
-  const topkValues = new Float32Array(k);
+  const topkValues = values instanceof Float32Array ?
+      new Float32Array(k) :
+      values instanceof Float32Array ? new Float32Array(k) : new Uint8Array(k);
   const topkIndices = new Int32Array(k);
   for (let i = 0; i < k; i++) {
     topkValues[i] = valuesAndIndices[i].value;
     topkIndices[i] = valuesAndIndices[i].index;
   }
-  return {values: topkValues, indices: topkIndices};
+  return {values: topkValues as T, indices: topkIndices};
 }

@@ -79,8 +79,8 @@ export class GameOfLife {
   /* Helper method to pad an array until the op is ready. */
   // TODO(kreeger, #409): Drop this when math.pad() is ready.
   private static padArray(array: dl.Tensor): dl.Tensor2D {
-    const x1 = array.shape[0];
-    const x2 = array.shape[1];
+    const x1: number = array.shape[0];
+    const x2: number = array.shape[1];
     const pad = 1;
 
     const oldValues = array.dataSync();

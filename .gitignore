@@ -5,6 +5,7 @@ scripts/**/*.js
 !demos/playground/frame.js
 coverage/
 package-lock.json
+yarn-error.log
 npm-debug.log
 .DS_Store
 dist/

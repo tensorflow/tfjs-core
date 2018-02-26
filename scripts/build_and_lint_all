@@ -1,64 +1,109 @@
-#!/usr/bin/env node
-// Copyright 2017 Google Inc. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-// =============================================================================
+#!/bin/sh
 
-const fs = require('fs');
-const path = require('path');
-const shell = require('shelljs');
+# Usage:
+# cd deeplearn
+# scripts/build_and_lint_all
 
-const IGNORE_DIRS = ['node_modules', 'dist', 'coverage'];
+ROOTDIR=`pwd`
 
-/** Returns all sub-dirs that contain package.json. */
-function getPackageDirs(dir, filelist) {
-  const files = fs.readdirSync(dir);
-  filelist = filelist || [];
-  files.forEach(file => {
-    if (IGNORE_DIRS.indexOf(file) >= 0 || file.startsWith('.')) {
-      return;
-    }
-    const childPath = path.join(dir, file);
-    if (fs.statSync(childPath).isDirectory()) {
-      filelist = getPackageDirs(childPath, filelist);
-    } else if (file === 'package.json') {
-      filelist.push(dir);
-    }
-  });
-  return filelist;
-};
+# These directories have dependencies on each other and so must be built in the
+# correct order.  Note this also means they should be published to NPM in the
+# same order, so that the dependency versions can be appropriately updated
+# along the way.
 
-function run(cmd, filePath) {
-  if (shell.exec(cmd).code !== 0) {
-    shell.echo('Failed running', cmd, 'on', filePath);
-    shell.exit(1);
-  }
-}
+# TODO: refactor the package structure to remove the need for yarn link here.
 
-function runYarn(filePath) {
-  const cwd = process.cwd();
-  shell.cd(filePath);
-  shell.echo('=======================================================');
-  shell.echo('Building', filePath);
-  run('yarn prep', filePath);
-  run('yarn build', filePath);
-  run('yarn lint', filePath);
-  shell.cd(cwd);
-}
+echo
+echo =======================================================
+echo Building deeplearn
+echo =======================================================
+yarn run prep
+yarn run build
+yarn link
+yarn run lint
+cd $ROOTDIR
 
-let dirs = getPackageDirs(process.cwd());
-// Keep only packages that have the 'name' property.
-dirs = dirs.filter(dir => require(path.join(dir, 'package.json')).name && dir !== process.cwd());
+# Build all models against head.
+echo
+echo =======================================================
+echo Building models/squeezenet
+echo =======================================================
+cd models/squeezenet
+yarn link deeplearn
+yarn run prep
+yarn run build
+yarn link
+yarn run lint
+cd $ROOTDIR
 
-runYarn(process.cwd());
-dirs.forEach(dir => runYarn(dir));
+echo
+echo =======================================================
+echo Building models/knn_image_classifier
+echo =======================================================
+cd models/knn_image_classifier
+yarn link deeplearn
+yarn link deeplearn-squeezenet
+yarn run prep
+yarn run build
+yarn link
+yarn run lint
+cd $ROOTDIR
+
+echo
+echo =======================================================
+echo Building models/mobilenet
+echo =======================================================
+cd models/mobilenet
+yarn link deeplearn
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR
+
+echo
+echo =======================================================
+echo Building models/yolo_mobilenet
+echo =======================================================
+cd models/yolo_mobilenet
+yarn link deeplearn
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR
+
+# The demos package should go away; until it does, build it against head.
+echo
+echo =======================================================
+echo Building demos
+echo =======================================================
+cd demos
+yarn link deeplearn
+# Note we do not link the models, but instead use the latest published versions.
+# yarn link deeplearn-squeezenet
+# yarn link deeplearn-knn-image-classifier
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR
+
+# Note that the starter projects do not link in deeplearn; they should always
+# depend only on a released version.
+echo
+echo =======================================================
+echo Building starter/typescript
+echo =======================================================
+cd starter/typescript
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR
+
+echo
+echo =======================================================
+echo Building starter/es6
+echo =======================================================
+cd starter/es6
+yarn run prep
+yarn run build
+yarn run lint
+cd $ROOTDIR

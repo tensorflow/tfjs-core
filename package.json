@@ -43,8 +43,8 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "prep": "yarn && mkdirp dist && yarn build && cd demos/ && yarn prep && cd ..",
-    "build": "tsc",
+    "prep": "yarn && cd demos && yarn run prep",
+    "build": "tsc && cd demos && yarn run build",
     "test": "karma start",
     "test-travis": "karma start --browsers='bs_firefox_mac,bs_chrome_mac' --singleRun",
     "lint": "tslint -p . -t verbose",

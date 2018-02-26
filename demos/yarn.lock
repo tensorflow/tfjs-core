@@ -1375,7 +1375,7 @@ browserify-zlib@^0.2.0, browserify-zlib@~0.2.0:
   dependencies:
     pako "~1.0.5"
 
-browserify@^14.0.0:
+browserify@^14.0.0, browserify@~14.5.0:
   version "14.5.0"
   resolved "https://registry.yarnpkg.com/browserify/-/browserify-14.5.0.tgz#0bbbce521acd6e4d1d54d8e9365008efb85a9cc5"
   dependencies:
@@ -2271,18 +2271,21 @@ deep-is@~0.1.3:
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/deep-is/-/deep-is-0.1.3.tgz#b369d6fb5dbc13eecf524f91b070feedc357cf34"
 
-deeplearn-knn-image-classifier@~0.3.0:
+deeplearn-knn-image-classifier@latest:
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/deeplearn-knn-image-classifier/-/deeplearn-knn-image-classifier-0.3.0.tgz#19b91f8cd6a2cbe899f52de77c11c48d7431425b"
   dependencies:
     deeplearn-squeezenet "~0.2.0"
 
-deeplearn-squeezenet@~0.2.0:
+deeplearn-squeezenet@latest, deeplearn-squeezenet@~0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/deeplearn-squeezenet/-/deeplearn-squeezenet-0.2.0.tgz#b5d37317defe4ee2cd71cffe5a9af30ccb13145f"
 
-"deeplearn@file:../dist":
-  version "0.0.0"
+"deeplearn@file:..":
+  version "0.5.0"
+  dependencies:
+    seedrandom "~2.4.3"
+    utf8 "~2.1.2"
 
 deepmerge@^1.5.2:
   version "1.5.2"
@@ -5746,6 +5749,10 @@ schema-utils@^0.3.0:
   dependencies:
     ajv "^5.0.0"
 
+seedrandom@~2.4.3:
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/seedrandom/-/seedrandom-2.4.3.tgz#2438504dad33917314bff18ac4d794f16d6aaecc"
+
 select-hose@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
@@ -6674,6 +6681,10 @@ user-home@^2.0.0:
   resolved "https://registry.yarnpkg.com/user-home/-/user-home-2.0.0.tgz#9c70bfd8169bc1dcbf48604e0f04b8b49cde9e9f"
   dependencies:
     os-homedir "^1.0.0"
+
+utf8@~2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/utf8/-/utf8-2.1.2.tgz#1fa0d9270e9be850d9b05027f63519bf46457d96"
 
 util-deprecate@~1.0.1:
   version "1.0.2"
