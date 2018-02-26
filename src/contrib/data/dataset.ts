@@ -102,7 +102,8 @@ export abstract class Dataset {
   filter(filterer: (value: DatasetElement) => boolean): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).filter(filterer, consume);
+      return (await base.getStream())
+          .filter(x => dl.tidy(() => filterer(x)), consume);
     });
   }
 
@@ -117,7 +118,8 @@ export abstract class Dataset {
   map(transform: (value: DatasetElement) => DatasetElement): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).map(transform, consumePrep, retain);
+      return (await base.getStream())
+          .map(x => dl.tidy(() => transform(x)), consumePrep, retain);
     });
   }
 
@@ -251,9 +253,18 @@ export abstract class Dataset {
     return (await this.getStream()).collectRemaining();
   }
 
-  async forEach(f: (input: DatasetElement) => {}): Promise<void> {
+  async forEach(f: (input: DatasetElement) => {}, keepInputTensors = false):
+      Promise<void> {
     const stream = await this.getStream();
-    return stream.forEach(f, consumePrep);
+    let fAndMaybeConsume = f;
+    if (!keepInputTensors) {
+      fAndMaybeConsume = (input: DatasetElement) => {
+        f(input);
+        consume(input);
+        return {};
+      };
+    }
+    return stream.forEach(fAndMaybeConsume, consumePrep);
   }
 
   /* TODO(soergel): for parity with tf.data:
