@@ -18,7 +18,8 @@
 
 import * as seedrandom from 'seedrandom';
 
-import * as dl from '../../index';
+import {util} from '../..';
+import {keep, tidy} from '../../globals';
 import {Tensor} from '../../tensor';
 
 import {BatchDataset} from './batch_dataset';
@@ -103,7 +104,7 @@ export abstract class Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
       return (await base.getStream())
-          .filter(x => dl.tidy(() => filterer(x)), consume);
+          .filter(x => tidy(() => filterer(x)), consume);
     });
   }
 
@@ -119,7 +120,7 @@ export abstract class Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
       return (await base.getStream())
-          .map(x => dl.tidy(() => transform(x)), consumePrep, retain);
+          .map(x => tidy(() => transform(x)), consumePrep, retain);
     });
   }
 
@@ -249,15 +250,37 @@ export abstract class Dataset {
     });
   }
 
+  /**
+   * Collect all elements of this dataset into an array.
+   * Obviously this will succeed only for small datasets that fit in memory.
+   * Useful for testing.
+   *
+   * @returns A Promise for an array of elements, which will resolve
+   *   when a new stream has been obtained and fully consumed.
+   */
   async collectAll() {
     return (await this.getStream()).collectRemaining();
   }
 
-  async forEach(f: (input: DatasetElement) => {}, keepInputTensors = false):
+  /**
+   * Apply a function to every element of the dataset.
+   *
+   * After the function is applied to a `DatasetElement`, any Tensors contained
+   * within that element are disposed by default.  Normally that is the right
+   * thing to do to prevent a GPU memory leak, since those Tensors cannot be
+   * reused elsewhere anyway (unless the function stored them as a side effect).
+   * If it is necessary for some reason to keep the Tensors here, be sure to
+   * dispose them later!
+   *
+   * @param f A function to apply to each dataset element.
+   * @param keepTensors Prevent Tensors obtained from the dataset from being
+   *   disposed.  Defaults to false (i.e., Tensors will be disposed).
+   */
+  async forEach(f: (input: DatasetElement) => {}, keepTensors = false):
       Promise<void> {
     const stream = await this.getStream();
     let fAndMaybeConsume = f;
-    if (!keepInputTensors) {
+    if (!keepTensors) {
       fAndMaybeConsume = (input: DatasetElement) => {
         f(input);
         consume(input);
@@ -324,13 +347,23 @@ function consume(input: DatasetElement): void {
   }
 }
 
+/**
+ * Prepare a function that will dispose any Tensors contained in a
+ * DatasetElement.
+ *
+ * This formulation allows the DatasetElement to be mutated, reading its current
+ * contents before disposing them.  The mutated DatasetElement may or may not
+ * contain the same Tensors as before.  Here, the function closure stores the
+ * original set of Tensors so that they can be disposed-- unless those same
+ * Tensors are still present in the output.
+ */
 function consumePrep(input: DatasetElement): (output: DatasetElement) => void {
   const inputTensors = extractTensorsFromElement(input);
   return (output: DatasetElement) => {
     const outputTensors = extractTensorsFromElement(output);
     // TODO(soergel) faster intersection
     for (const t of inputTensors) {
-      if (!dl.util.isTensorInList(t, outputTensors)) {
+      if (!util.isTensorInList(t, outputTensors)) {
         t.dispose();
       }
     }
@@ -348,11 +381,10 @@ function extractTensorsFromElement(input: DatasetElement) {
   return tensors;
 }
 
-// TODO(soergel): figure out how best to limit scope
-export function retain(input: DatasetElement): DatasetElement {
+function retain(input: DatasetElement): DatasetElement {
   const inputTensors = extractTensorsFromElement(input);
   for (const t of inputTensors) {
-    dl.keep(t);
+    keep(t);
   }
   return input;
 }

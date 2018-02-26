@@ -16,12 +16,12 @@
  * =============================================================================
  */
 
+import {keep} from '../../globals';
 import * as dl from '../../index';
 import {Tensor1D, Tensor2D} from '../../tensor';
 import {ALL_ENVS, describeWithFlags} from '../../test_util';
 
 import {Dataset, datasetFromConcatenated, datasetFromElements} from './dataset';
-import {retain} from './dataset';
 import {DataStream, streamFromItems} from './streams/data_stream';
 import {DatasetElement} from './types';
 
@@ -47,7 +47,8 @@ class TestDatasetElementStream extends DataStream<DatasetElement> {
           ]),
       'string': `Item ${elementNumber}`
     };
-    retain(result);
+    keep(result['Tensor']);
+    keep(result['Tensor2']);
     this.currentIndex++;
     return result;
   }

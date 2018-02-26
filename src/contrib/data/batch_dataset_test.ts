@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
-import * as dl from '../../index';
+import {DatasetBatch} from '..';
+import {ENV} from '../../environment';
 import {Tensor, Tensor1D, Tensor2D} from '../../tensor';
 import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 
-import {consume} from './batch_dataset';
 import {TestDataset} from './dataset_test';
 
 describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
@@ -43,7 +43,7 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
             consume(batch);
           }
         })
-        .then(() => expect(dl.memory().numTensors).toBe(0))
+        .then(() => expect(ENV.engine.memory().numTensors).toBe(0))
         .then(done)
         .catch(done.fail);
   });
@@ -86,8 +86,17 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
           }
         })
         // these three tensors are just the expected results above
-        .then(() => expect(dl.memory().numTensors).toBe(3))
+        .then(() => expect(ENV.engine.memory().numTensors).toBe(3))
         .then(done)
         .catch(done.fail);
   });
 });
+
+function consume(input: DatasetBatch): void {
+  for (const key in input) {
+    const value = input[key];
+    if (value instanceof Tensor) {
+      value.dispose();
+    }
+  }
+}

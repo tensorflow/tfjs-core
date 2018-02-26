@@ -129,15 +129,6 @@ function shapeAndValues(array: number|number[]|Tensor):
   }
 }
 
-export function consume(input: DatasetBatch): void {
-  for (const key in input) {
-    const value = input[key];
-    if (value instanceof Tensor) {
-      value.dispose();
-    }
-  }
-}
-
 function consumePrep(input: DatasetElement[]): (output: DatasetBatch) => void {
   const inputTensors = extractTensorsFromElementArray(input);
   return (output: DatasetBatch) => {
