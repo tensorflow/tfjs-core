@@ -17,6 +17,11 @@
 
 import * as dl from 'deeplearn';
 
+interface DataInterface {
+  input: number[][];
+  target: number[][];
+}
+
 class ComplementaryColorModel {
   // Runs training.
   session: dl.Session;
@@ -31,13 +36,13 @@ class ComplementaryColorModel {
   // Each training batch will be on this many examples.
   batchSize = 50;
 
-  inputTensor: dl.SymbolicTensor;
-  targetTensor: dl.SymbolicTensor;
+  inputTensor: dl.Tensor2D;
   costTensor: dl.SymbolicTensor;
-  predictionTensor: dl.SymbolicTensor;
 
-  // Maps tensors to InputProviders.
-  feedEntries: dl.FeedEntry[];
+  // data
+  data: DataInterface;
+  weights: dl.Variable<dl.Rank.R2>[] = [];
+  biases: dl.Variable<dl.Rank.R2>[] = [];
 
   constructor() {
     this.optimizer = dl.train.sgd(this.learningRate);
@@ -47,38 +52,54 @@ class ComplementaryColorModel {
    * Constructs the graph of the model. Call this method before training.
    */
   setupSession(): void {
-    const graph = new dl.Graph();
+    // const graph = new dl.Graph();
+    //
+    // // This tensor contains the input. In this case, it is a scalar.
+    // this.inputTensor = graph.placeholder('input RGB value', [3]);
+    //
+    // // This tensor contains the target.
+    // this.targetTensor = graph.placeholder('output RGB value', [3]);
+    //
+    // // Create 3 fully connected layers, each with half the number of nodes of
+    // // the previous layer. The first one has 64 nodes.
+    // let fullyConnectedLayer =
+    //     this.calculateFullyConnectedLayer(graph, this.inputTensor, 0, 64);
+    //
+    // // Create fully connected layer 1, which has 32 nodes.
+    // fullyConnectedLayer =
+    //     this.calculateFullyConnectedLayer(graph, fullyConnectedLayer, 1, 32);
+    //
+    // // Create fully connected layer 2, which has 16 nodes.
+    // fullyConnectedLayer =
+    //     this.calculateFullyConnectedLayer(graph, fullyConnectedLayer, 2, 16);
+    // this.predictionTensor =
+    //     this.calculateFullyConnectedLayer(graph, fullyConnectedLayer, 3, 3);
+    //
+    // // We will optimize using mean squared loss.
+    // this.costTensor =
+    //     graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
+    //
+    // // Create the session only after constructing the graph.
+    // this.session = new dl.Session(graph, this.math);
 
-    // This tensor contains the input. In this case, it is a scalar.
-    this.inputTensor = graph.placeholder('input RGB value', [3]);
 
-    // This tensor contains the target.
-    this.targetTensor = graph.placeholder('output RGB value', [3]);
-
-    // Create 3 fully connected layers, each with half the number of nodes of
-    // the previous layer. The first one has 64 nodes.
-    let fullyConnectedLayer =
-        this.createFullyConnectedLayer(graph, this.inputTensor, 0, 64);
-
-    // Create fully connected layer 1, which has 32 nodes.
-    fullyConnectedLayer =
-        this.createFullyConnectedLayer(graph, fullyConnectedLayer, 1, 32);
-
-    // Create fully connected layer 2, which has 16 nodes.
-    fullyConnectedLayer =
-        this.createFullyConnectedLayer(graph, fullyConnectedLayer, 2, 16);
-    this.predictionTensor =
-        this.createFullyConnectedLayer(graph, fullyConnectedLayer, 3, 3);
-
-    // We will optimize using mean squared loss.
-    this.costTensor =
-        graph.meanSquaredCost(this.targetTensor, this.predictionTensor);
-
-    // Create the session only after constructing the graph.
-    this.session = new dl.Session(graph, this.math);
-
+    this.setUpModel();
     // Generate the data that will be used to train the model.
     this.generateTrainingData(1e5);
+  }
+
+  setUpModel(): void {
+    // Create 3 fully connected layers, each with half the number of nodes of
+    // the previous layer. The first one has 64 nodes.
+    this.createFullyConnectedLayerWeights(3, 0, 64);
+
+    // Create fully connected layer 1, which has 32 nodes.
+    this.createFullyConnectedLayerWeights(64, 1, 32);
+
+    // Create fully connected layer 2, which has 16 nodes.
+    this.createFullyConnectedLayerWeights(32, 2, 16);
+
+    this.createFullyConnectedLayerWeights(16, 3, 3);
   }
 
   /**
@@ -90,29 +111,26 @@ class ComplementaryColorModel {
    * batch. Otherwise, returns -1. We should only retrieve the cost now and then
    * because doing so requires transferring data from the GPU.
    */
-  train1Batch(shouldFetchCost: boolean): number {
+  train1Batch(step: number, shouldFetchCost: boolean): dl.Scalar {
     // Every 42 steps, lower the learning rate by 15%.
     const learningRate =
-        this.learningRate * Math.pow(0.85, Math.floor(step / 42));
+      this.learningRate * Math.pow(0.85, Math.floor(step / 42));
     this.optimizer.setLearningRate(learningRate);
 
     // Train 1 batch.
-    let costValue = -1;
+    let cost: dl.Scalar = null;
     dl.tidy(() => {
-      const cost = this.session.train(
-          this.costTensor, this.feedEntries, this.batchSize, this.optimizer,
-          shouldFetchCost ? dl.CostReduction.MEAN : dl.CostReduction.NONE);
+      for (let i = 0; i < this.data.input.length; i++) {
+        const { input, target } = this.data;
 
-      if (!shouldFetchCost) {
-        // We only train. We do not compute the cost.
-        return;
+        cost = this.optimizer.minimize(() => {
+          const prediction = this.predict(input[i]);
+          return this.loss(prediction, dl.tensor2d(target[i], [1, target[i].length]));
+        }, shouldFetchCost);
       }
-
-      // Compute the cost (by calling get), which requires transferring data
-      // from the GPU.
-      costValue = cost.get();
+      return cost;
     });
-    return costValue;
+    return cost;
   }
 
   normalizeColor(rgbColor: number[]): number[] {
@@ -123,30 +141,69 @@ class ComplementaryColorModel {
     return normalizedRgbColor.map(v => v * 255);
   }
 
-  predict(rgbColor: number[]): number[] {
-    let complementColor: number[] = [];
-    dl.tidy(() => {
-      const mapping = [{
-        tensor: this.inputTensor,
-        data: dl.tensor1d(this.normalizeColor(rgbColor)),
-      }];
-      const evalOutput = this.session.eval(this.predictionTensor, mapping);
-      const values = evalOutput.dataSync();
-      const colors = this.denormalizeColor(Array.prototype.slice.call(values));
-
-      // Make sure the values are within range.
-      complementColor =
-          colors.map(v => Math.round(Math.max(Math.min(v, 255), 0)));
-    });
-    return complementColor;
+  denormalizeColorTensor(normalizedRgbColor: dl.Tensor2D): dl.Tensor2D {
+    // Make sure the values are within range.
+    return normalizedRgbColor
+      .mul(dl.scalar(255))
+      .clipByValue(0, 255)
+      .ceil() as dl.Tensor2D;
   }
 
-  private createFullyConnectedLayer(
-      graph: dl.Graph, inputLayer: dl.SymbolicTensor, layerIndex: number,
-      sizeOfThisLayer: number) {
-    return graph.layers.dense(
-        `fully_connected_${layerIndex}`, inputLayer, sizeOfThisLayer,
-        (x) => graph.relu(x));
+  predictRaw(input: number[]): dl.Tensor2D {
+    return dl.tidy(() => {
+      // This tensor contains the input. In this case, it is a scalar.
+      this.inputTensor = dl.tensor2d(input, [1, 3]);
+
+      // Create 3 fully connected layers, each with half the number of nodes of
+      // the previous layer. The first one has 64 nodes.
+      let fullyConnectedLayer =
+        this.calculateFullyConnectedLayer(this.inputTensor, 0);
+
+      // Create fully connected layer 1, which has 32 nodes.
+      fullyConnectedLayer =
+        this.calculateFullyConnectedLayer(fullyConnectedLayer, 1);
+
+      // Create fully connected layer 2, which has 16 nodes.
+      fullyConnectedLayer =
+        this.calculateFullyConnectedLayer(fullyConnectedLayer, 2);
+      return this.calculateFullyConnectedLayer(fullyConnectedLayer, 3);
+    });
+  }
+
+  predict(rgbColor: number[]) {
+    return dl.tidy(() => {
+      const evalOutput = this.predictRaw(this.normalizeColor(rgbColor));
+      return this.denormalizeColorTensor(evalOutput);
+    });
+  }
+
+  private initializeWeights(shape: number[], sizeOfThisLayer: number) {
+    return dl.randomNormal(shape, sizeOfThisLayer).mul(dl.scalar(Math.sqrt(2.0 / sizeOfThisLayer)));
+  }
+
+  private createFullyConnectedLayerWeights(
+    sizeOfPreviousLayer: number, layerIndex: number,
+    sizeOfThisLayer: number): void {
+
+    const weights: dl.Variable<dl.Rank.R2> = dl.variable(
+      this.initializeWeights([sizeOfPreviousLayer, sizeOfThisLayer], sizeOfThisLayer),
+      true,
+      `fully_connected_${layerIndex}_weights`,
+    ) as dl.Variable<dl.Rank.R2>;
+    this.weights[layerIndex] = weights;
+
+    const bias: dl.Variable<dl.Rank.R2> = dl.variable(dl.zeros([1, sizeOfThisLayer]));
+    this.biases[layerIndex] = bias;
+  }
+
+  private calculateFullyConnectedLayer(
+    inputLayer: dl.Tensor2D, layerIndex: number): dl.Tensor2D {
+    return inputLayer.matMul(this.weights[layerIndex]).add(this.biases[layerIndex]).relu() as dl.Tensor2D;
+  }
+
+  private loss(prediction: dl.Tensor2D, actual: dl.Tensor2D) {
+
+    return prediction.sub(actual).square().mean().mean() as dl.Scalar;
   }
 
   /**
@@ -164,25 +221,10 @@ class ComplementaryColorModel {
     }
 
     // Store the data within Tensor1Ds so that learnjs can use it.
-    const inputArray: dl.Tensor1D[] =
-        rawInputs.map(c => dl.tensor1d(this.normalizeColor(c)));
-    const targetArray: dl.Tensor1D[] = rawInputs.map(
-        c => dl.tensor1d(
-            this.normalizeColor(this.computeComplementaryColor(c))));
+    const inputArray: number[][] = rawInputs.map(c => this.normalizeColor(c));
+    const targetArray: number[][] = rawInputs.map(c => this.normalizeColor(this.computeComplementaryColor(c)));
 
-    // This provider will shuffle the training data (and will do so in a way
-    // that does not separate the input-target relationship).
-    const shuffledInputProviderBuilder =
-        new dl.InCPUMemoryShuffledInputProviderBuilder(
-            [inputArray, targetArray]);
-    const [inputProvider, targetProvider] =
-        shuffledInputProviderBuilder.getInputProviders();
-
-    // Maps tensors to InputProviders.
-    this.feedEntries = [
-      {tensor: this.inputTensor, data: inputProvider},
-      {tensor: this.targetTensor, data: targetProvider}
-    ];
+    this.data = {input: inputArray, target: targetArray};
   }
 
   private generateRandomChannelValue() {
@@ -267,47 +309,75 @@ const complementaryColorModel = new ComplementaryColorModel();
 complementaryColorModel.setupSession();
 
 // On every frame, we train and then maybe update the UI.
-let step = 0;
-function trainAndMaybeRender() {
-  if (step > 4242) {
-    // Stop training.
-    return;
-  }
-
-  // Schedule the next batch to be trained.
-  requestAnimationFrame(trainAndMaybeRender);
-
+async function asyncTrainAndMaybeRender() {
   // We only fetch the cost every 5 steps because doing so requires a transfer
   // of data from the GPU.
   const localStepsToRun = 5;
-  let cost;
-  for (let i = 0; i < localStepsToRun; i++) {
-    cost = complementaryColorModel.train1Batch(i === localStepsToRun - 1);
-    step++;
+  const totalSteps = 4242;
+
+  let promise;
+
+  for (let step = 0; step < totalSteps; step++) {
+    let cost;
+    const isMod = step % localStepsToRun === 0;
+    cost = complementaryColorModel.train1Batch(step, isMod);
+    if (isMod) {
+      // Print data to console so the user can inspect.
+      console.log('step', step, 'cost', cost.dataSync()[0]);
+
+      visualizePredictedComplement()
+    }
+
+    promise = await dl.nextFrame();
   }
+  return promise;
+}
 
-  // Print data to console so the user can inspect.
-  console.log('step', step - 1, 'cost', cost);
+// let step = 0;
+// function trainAndMaybeRender() {
+//   if (step > 4242) {
+//     // Stop training.
+//     return;
+//   }
+//
+//   // Schedule the next batch to be trained.
+//   requestAnimationFrame(trainAndMaybeRender);
+//
+//   // We only fetch the cost every 5 steps because doing so requires a transfer
+//   // of data from the GPU.
+//   const localStepsToRun = 5;
+//   let cost;
+//   for (let i = 0; i < localStepsToRun; i++) {
+//     cost = complementaryColorModel.train1Batch(i === localStepsToRun - 1);
+//     step++;
+//   }
+//
+//   // Print data to console so the user can inspect.
+//   console.log('step', step - 1, 'cost', cost);
+//
+//   visualizePredictedComplement()
+// }
 
+function visualizePredictedComplement() {
   // Visualize the predicted complement.
   const colorRows = document.querySelectorAll('tr[data-original-color]');
   for (let i = 0; i < colorRows.length; i++) {
     const rowElement = colorRows[i];
     const tds = rowElement.querySelectorAll('td');
     const originalColor =
-        (rowElement.getAttribute('data-original-color') as string)
-            .split(',')
-            .map(v => parseInt(v, 10));
+      (rowElement.getAttribute('data-original-color') as string)
+        .split(',')
+        .map(v => parseInt(v, 10));
 
     // Visualize the predicted color.
-    const predictedColor = complementaryColorModel.predict(originalColor);
+    const predictedColor = Array.prototype.slice.call(complementaryColorModel.predict(originalColor).dataSync());
     populateContainerWithColor(
-        tds[2], predictedColor[0], predictedColor[1], predictedColor[2]);
+      tds[2], predictedColor[0], predictedColor[1], predictedColor[2]);
   }
 }
 
 function populateContainerWithColor(
-    container: HTMLElement, r: number, g: number, b: number) {
+  container: HTMLElement, r: number, g: number, b: number) {
   const originalColorString = 'rgb(' + [r, g, b].join(',') + ')';
   container.textContent = originalColorString;
 
@@ -323,22 +393,22 @@ function initializeUi() {
     const rowElement = colorRows[i];
     const tds = rowElement.querySelectorAll('td');
     const originalColor =
-        (rowElement.getAttribute('data-original-color') as string)
-            .split(',')
-            .map(v => parseInt(v, 10));
+      (rowElement.getAttribute('data-original-color') as string)
+        .split(',')
+        .map(v => parseInt(v, 10));
 
     // Visualize the original color.
     populateContainerWithColor(
-        tds[0], originalColor[0], originalColor[1], originalColor[2]);
+      tds[0], originalColor[0], originalColor[1], originalColor[2]);
 
     // Visualize the complementary color.
     const complement =
-        complementaryColorModel.computeComplementaryColor(originalColor);
+      complementaryColorModel.computeComplementaryColor(originalColor);
     populateContainerWithColor(
-        tds[1], complement[0], complement[1], complement[2]);
+      tds[1], complement[0], complement[1], complement[2]);
   }
 }
 
 // Kick off training.
 initializeUi();
-trainAndMaybeRender();
+asyncTrainAndMaybeRender();
