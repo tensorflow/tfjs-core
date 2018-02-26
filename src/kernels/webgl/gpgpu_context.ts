@@ -415,12 +415,9 @@ export class GPGPUContext {
     return new Promise<number>(resolve => {
       const queryTimerVersion =
           ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
-      this.addItemToPoll(() => {
-        if (this.isQueryAvailable(query, queryTimerVersion)) {
-          return this.getQueryTime(query, queryTimerVersion);
-        }
-        return null;
-      }, resolve);
+      this.addItemToPoll(
+          () => this.isQueryAvailable(query, queryTimerVersion),
+          () => resolve(this.getQueryTime(query, queryTimerVersion)));
     });
   }
 
@@ -428,24 +425,16 @@ export class GPGPUContext {
 
   pollItems(): void {
     // Track the items we need to poll again at the next tick.
-    const itemsToPollAgain: PollItem[] = [];
-    this.itemsToPoll.forEach(item => {
-      const {pollFn, resolve} = item;
-      const pollResult = pollFn();
-      if (pollResult == null) {
-        // Check this item again, on the next tick.
-        itemsToPollAgain.push(item);
-      } else {
-        // This item is ready. Notify the observer.
-        resolve(pollResult);
-      }
-    });
-    this.itemsToPoll = itemsToPollAgain;
+    const index = binSearchLastTrue(this.itemsToPoll.map(x => x.isDoneFn));
+    for (let i = 0; i <= index; ++i) {
+      const {resolveFn} = this.itemsToPoll[i];
+      resolveFn();
+    }
+    this.itemsToPoll = this.itemsToPoll.slice(index + 1);
   }
 
-  private addItemToPoll(
-      pollFn: () => number, resolve: (value: number) => void) {
-    this.itemsToPoll.push({pollFn, resolve});
+  private addItemToPoll(isDoneFn: () => boolean, resolveFn: () => void) {
+    this.itemsToPoll.push({isDoneFn, resolveFn});
     if (this.itemsToPoll.length > 1) {
       // We already have a running loop that polls.
       return;
@@ -556,6 +545,27 @@ export class GPGPUContext {
 }
 
 type PollItem = {
-  pollFn: () => number,
-  resolve: (value: number) => void
+  isDoneFn: () => boolean,
+  resolveFn: () => void
 };
+
+/**
+ * Finds the index of the last true element using binary search where
+ * evaluation of an entry is expensive.
+ */
+export function binSearchLastTrue(arr: Array<() => boolean>): number {
+  let start = 0;
+  let end = arr.length - 1;
+  let best = -1;
+  while (start <= end) {
+    const mid = (start + end) >> 1;
+    const isDone = arr[mid]();
+    if (isDone) {
+      best = mid;
+      start = mid + 1;
+    } else {
+      end = mid - 1;
+    }
+  }
+  return best;
+}

@@ -923,8 +923,7 @@ describe('tensor.toString', () => {
 });
 
 describeWithFlags('tensor.data', ALL_ENVS, () => {
-  // tslint:disable-next-line:ban
-  fit('.data() talks to tidy and undoes disposal of tensor', done => {
+  it('.data() talks to tidy and undoes disposal of tensor', done => {
     dl.tidy(() => {
       const a = dl.scalar(5);
       a.square();  // Uploads it on GPU.
