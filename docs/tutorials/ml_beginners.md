@@ -84,7 +84,7 @@ function predict(input) {
 function loss(prediction, actual) {
   // Having a good error metric is key for training a machine learning model
   const error = dl.scalar(actual).sub(prediction).square();
-  return error;
+  return error.asScalar();
 }
 
 /*
@@ -96,8 +96,6 @@ function loss(prediction, actual) {
  * ys — training data y values
  */
 async function train(xs, ys, numIterations, done) {
-  let currentIteration = 0;
-
   for (let iter = 0; iter < numIterations; iter++) {
     for (let i = 0; i < xs.length; i++) {
       // Minimize is where the magic happens, we must return a

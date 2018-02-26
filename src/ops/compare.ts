@@ -22,7 +22,7 @@ import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
 
-export class Ops {
+export class CompareOps {
   /**
    * Returns the truth value of (a != b) element-wise. Supports broadcasting.
    *
@@ -37,7 +37,7 @@ export class Ops {
   static notEqual<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('NotEqual', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(backend => backend.notEqual(a, b), {a, b}) as T;
   }
 
   /**
@@ -68,7 +68,7 @@ export class Ops {
   static less<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('Less', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(backend => backend.less(a, b), {a, b}) as T;
   }
 
   /**
@@ -99,7 +99,7 @@ export class Ops {
   static equal<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('Equal', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(backend => backend.equal(a, b), {a, b}) as T;
   }
 
   @operation
@@ -122,7 +122,8 @@ export class Ops {
   static lessEqual<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('LessEqual', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(backend => backend.lessEqual(a, b), {a, b}) as
+        T;
   }
 
   @operation
@@ -145,7 +146,7 @@ export class Ops {
   static greater<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('Greater', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(backend => backend.greater(a, b), {a, b}) as T;
   }
 
   @operation
@@ -168,7 +169,8 @@ export class Ops {
   static greaterEqual<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.executeKernel('GreaterEqual', {inputs: {a, b}}) as T;
+    return ENV.engine.runKernel(
+               backend => backend.greaterEqual(a, b), {a, b}) as T;
   }
 
   @operation

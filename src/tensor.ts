@@ -37,6 +37,8 @@ export interface TensorData {
  */
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class TensorBuffer<R extends Rank> {
+  size: number;
+
   private strides: number[];
 
   constructor(
@@ -53,6 +55,7 @@ export class TensorBuffer<R extends Rank> {
     this.values =
         values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
     this.strides = computeStrides(shape);
+    this.size = util.sizeFromShape(shape);
   }
 
   /**
@@ -289,28 +292,50 @@ export class Tensor<R extends Rank = Rank> {
     return this.reshape<Rank.R1>([this.size]);
   }
 
-  /** Converts a `Tensor` to a `Tensor2D`. */
+  /**
+   * Converts a `Tensor` to a `Tensor2D`.
+   *
+   * @param rows Number of rows in `Tensor2D`.
+   * @param columns Number of columns in `Tensor2D`.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   as2D(rows: number, columns: number): Tensor2D {
     this.throwIfDisposed();
     return this.reshape<Rank.R2>([rows, columns]);
   }
 
-  /** Converts a `Tensor` to a `Tensor3D`. */
+  /**
+   * Converts a `Tensor` to a `Tensor3D`.
+   *
+   * @param rows Number of rows in `Tensor3D`.
+   * @param columns Number of columns in `Tensor3D`.
+   * @param depth Depth of `Tensor3D`.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   as3D(rows: number, columns: number, depth: number): Tensor3D {
     this.throwIfDisposed();
     return this.reshape<Rank.R3>([rows, columns, depth]);
   }
 
-  /** Converts a `Tensor` to a `Tensor4D`. */
+  /**
+   * Converts a `Tensor` to a `Tensor4D`.
+   *
+   * @param rows Number of rows in `Tensor4D`.
+   * @param columns Number of columns in `Tensor4D`.
+   * @param depth Depth of `Tensor4D`.
+   * @param depth2 4th dimension of `Tensor4D`.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   as4D(rows: number, columns: number, depth: number, depth2: number): Tensor4D {
     this.throwIfDisposed();
     return this.reshape<Rank.R4>([rows, columns, depth, depth2]);
   }
 
-  /** Casts a `Tensor` to a specified dtype. */
+  /**
+   * Casts a `Tensor` to a specified dtype.
+   *
+   * @param dtype Data-type to cast the tensor to.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   asType<T extends this>(this: T, dtype: DataType): T {
     this.throwIfDisposed();
@@ -412,6 +437,9 @@ export class Tensor<R extends Rank = Rank> {
     return ENV.engine.readSync(this.dataId);
   }
 
+  /**
+   * Disposes `Tensor` from memory.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   dispose(): void {
     if (this.isDisposed) {
@@ -446,7 +474,12 @@ export class Tensor<R extends Rank = Rank> {
     return this.asType('bool');
   }
 
-  /** Prints the tensor. See `print` for details. */
+  /**
+   * Prints the `Tensor`. See `print` for details.
+   *
+   * @param verbose Whether to print verbose information about the tensor,
+   *    including dtype and size.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   print(verbose = false): void {
     return ops.print(this, verbose);
@@ -455,6 +488,8 @@ export class Tensor<R extends Rank = Rank> {
   /**
    * Reshapes the tensor into the provided shape.
    * See `reshape` for more details.
+   *
+   * @param newShape An array of integers defining the output tensor shape.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   reshape<R2 extends Rank>(newShape: ShapeMap[R2]): Tensor<R2> {
@@ -462,7 +497,11 @@ export class Tensor<R extends Rank = Rank> {
     return ops.reshape(this, newShape);
   }
 
-  /** Reshapes the tensor into the shape of the provided tensor. */
+  /**
+   * Reshapes the tensor into the shape of the provided tensor.
+   *
+   * @param x The tensor of required shape.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   reshapeAs<T extends Tensor>(x: T): T {
     this.throwIfDisposed();
@@ -472,6 +511,9 @@ export class Tensor<R extends Rank = Rank> {
   /**
    * Returns a `Tensor` that has expanded rank, by inserting a dimension
    * into the tensor's shape. See `expandDims` for details.
+   *
+   * @param axis The dimension index at which to insert shape of 1. Defaults to
+   *    0 (the first dimension).
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   expandDims<R2 extends Rank>(axis = 0): Tensor<R2> {
@@ -481,6 +523,10 @@ export class Tensor<R extends Rank = Rank> {
   /**
    * Returns a `Tensor` with dimensions of size 1 removed from the shape.
    * See `squeeze` for more details.
+   *
+   * @param axis A list of numbers. If specified, only squeezes the
+   *    dimensions listed. The dimension index starts at 0. It is an error to
+   *    squeeze a dimension that is not 1.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   squeeze<T extends Tensor>(axis?: number[]): T {
@@ -524,11 +570,12 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.norm(this, ord, axis, keepDims);
   }
-  slice(begin: ShapeMap[R], size: ShapeMap[R]): Tensor<R> {
+  slice<T extends Tensor<R>>(this: T, begin: ShapeMap[R], size: ShapeMap[R]):
+      T {
     this.throwIfDisposed();
     return ops.slice(this, begin, size);
   }
-  reverse(axis: number|number[]): Tensor<R> {
+  reverse<T extends Tensor>(this: T, axis?: number|number[]): T {
     this.throwIfDisposed();
     return ops.reverse(this, axis);
   }
@@ -602,7 +649,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.subStrict(this, x);
   }
-  pow<T extends Tensor>(exp: Tensor): T {
+  pow<T extends Tensor>(this: T, exp: Tensor): T {
     this.throwIfDisposed();
     return ops.pow(this, exp);
   }
@@ -642,7 +689,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.maximumStrict(this, x);
   }
-  transpose(perm?: number[]): Tensor<R> {
+  transpose<T extends Tensor>(this: T, perm?: number[]): T {
     this.throwIfDisposed();
     return ops.transpose(this, perm);
   }
@@ -717,35 +764,35 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   // Unary ops.
-  neg(): Tensor<R> {
+  neg<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.neg(this);
   }
-  ceil(): Tensor<R> {
+  ceil<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.ceil(this);
   }
-  floor(): Tensor<R> {
+  floor<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.floor(this);
   }
-  exp(): Tensor<R> {
+  exp<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.exp(this);
   }
-  log(): Tensor<R> {
+  log<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.log(this);
   }
-  sqrt(): Tensor<R> {
+  sqrt<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sqrt(this);
   }
-  square(): Tensor<R> {
+  square<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.square(this);
   }
-  abs(): Tensor<R> {
+  abs<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.abs(this);
   }
@@ -753,15 +800,15 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.clipByValue(this, min, max);
   }
-  relu(): Tensor<R> {
+  relu<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.relu(this);
   }
-  elu(): Tensor<R> {
+  elu<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.elu(this);
   }
-  selu(): Tensor<R> {
+  selu<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.selu(this);
   }
@@ -773,47 +820,47 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.prelu(this, alpha);
   }
-  sigmoid(): Tensor<R> {
+  sigmoid<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sigmoid(this);
   }
-  sin(): Tensor<R> {
+  sin<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sin(this);
   }
-  cos(): Tensor<R> {
+  cos<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.cos(this);
   }
-  tan(): Tensor<R> {
+  tan<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.tan(this);
   }
-  asin(): Tensor<R> {
+  asin<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.asin(this);
   }
-  acos(): Tensor<R> {
+  acos<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.acos(this);
   }
-  atan(): Tensor<R> {
+  atan<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.atan(this);
   }
-  sinh(): Tensor<R> {
+  sinh<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sinh(this);
   }
-  cosh(): Tensor<R> {
+  cosh<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.cosh(this);
   }
-  tanh(): Tensor<R> {
+  tanh<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.tanh(this);
   }
-  step(alpha = 0.0): Tensor<R> {
+  step<T extends Tensor>(this: T, alpha = 0.0): T {
     this.throwIfDisposed();
     return ops.step(this, alpha);
   }
@@ -975,7 +1022,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
    * x.print();
    * ```
    *
-   * @param initialValue A tensor.
+   * @param initialValue Initial value for the tensor.
    * @param trainable If true, optimizers are allowed to update it.
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.
@@ -993,6 +1040,8 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   /**
    * Assign a new `Tensor` to this variable. The new `Tensor` must have the
    * same shape and dtype as the old `Tensor`.
+   *
+   * @param newValue New tensor to be assigned to this variable.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   assign(newValue: Tensor<R>): void {
