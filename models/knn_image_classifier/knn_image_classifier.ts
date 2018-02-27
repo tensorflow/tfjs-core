@@ -228,8 +228,8 @@ export class KNNImageClassifier {
      return this.classLogitsMatrices;
   }
 
-  setClassLogitsMatrices(classLogitsMatrics: Tensor2D[]) {
-     this.classLogitsMatrices = classLogitsMatrics;
+  setClassLogitsMatrices(classLogitsMatrices: Tensor2D[]) {
+     this.classLogitsMatrices = classLogitsMatrices;
   }
 
   /**
