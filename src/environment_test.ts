@@ -258,7 +258,7 @@ describe('Backend', () => {
   });
 
   it('default custom background null', () => {
-    expect(ENV.findBackend('webgl')).toBeNull();
+    expect(ENV.findBackend('custom')).toBeNull();
   });
 
   it('allow custom backend', () => {
