@@ -279,7 +279,7 @@ export abstract class Dataset {
   async forEach(f: (input: DatasetElement) => {}, keepTensors = false):
       Promise<void> {
     const stream = await this.getStream();
-    return stream.forEach(f, keepTensors ? undefined : disposeElementPrep);
+    return stream.forEach(f, keepTensors ? undefined : disposeElement);
   }
 
   /* TODO(soergel): for parity with tf.data:

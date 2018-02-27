@@ -173,9 +173,10 @@ export abstract class DataStream<T> {
    *   function accepts an argument that may modify the list of objects to be
    *   collected, e.g. by reversing the tentative decision made previously.
    */
-  async forEach(
-      f: (value: T) => {},
-      consumePrep?: (item: T) => ((output: {}) => void)): Promise<void> {
+  async forEach(f: (value: T) => void, consume?: (item: T) => void):
+      Promise<void> {
+    const consumePrep =
+        consume == null ? null : (item: T) => ((output: void) => consume(item));
     return this.map(f, consumePrep).resolveFully();
   }
 
