@@ -55,7 +55,7 @@ class ComplementaryColorModel {
     // Construct Model
     this.setUpModel();
     // Generate the data that will be used to train the model.
-    this.generateTrainingData(1e3);
+    this.generateTrainingData(5e3);
   }
 
   setUpModel(): void {
@@ -90,12 +90,12 @@ class ComplementaryColorModel {
     // Train 1 batch.
     let cost: dl.Scalar = null;
     dl.tidy(() => {
-      for (let i = 0; i < this.data.input.length; i++) {
+      for (let i = 0; i <= this.data.input.length - this.batchSize; i += this.batchSize) {
         const { input, target } = this.data;
 
         cost = this.optimizer.minimize(() => {
-          const prediction = this.predict(input[i]);
-          return this.loss(prediction, dl.tensor2d(target[i], [1, target[i].length]));
+          const prediction = this.predict(input.slice(i, i + this.batchSize));
+          return this.loss(prediction, dl.tensor2d(target.slice(i, i + this.batchSize), [this.batchSize, target[0].length]));
         }, shouldFetchCost);
       }
       return cost;
@@ -121,10 +121,10 @@ class ComplementaryColorModel {
       .maximum(dl.scalar(0));
   }
 
-  predictRaw(input: number[]): dl.Tensor2D {
+  predictRaw(input: number[][]): dl.Tensor2D {
     return dl.tidy(() => {
       // This tensor contains the input. In this case, it is a scalar.
-      this.inputTensor = dl.tensor2d(input, [1, 3]);
+      this.inputTensor = dl.tensor2d(input, [input.length, input[0].length]);
 
       // Create 3 fully connected layers, each with half the number of nodes of
       // the previous layer. The first one has 64 nodes.
@@ -142,7 +142,7 @@ class ComplementaryColorModel {
     });
   }
 
-  predict(normalizedRgbColor: number[]) {
+  predict(normalizedRgbColor: number[][]) {
     return dl.tidy(() => {
       const evalOutput = this.predictRaw(normalizedRgbColor);
       return this.clampedColorTensor(evalOutput);
@@ -151,7 +151,7 @@ class ComplementaryColorModel {
 
   denormalizedPredict(rgbcolor: number[]) {
     return dl.tidy(() => {
-      return this.denormalizeColorTensor(this.predict(this.normalizeColor(rgbcolor)));
+      return this.denormalizeColorTensor(this.predict([this.normalizeColor(rgbcolor)]));
     });
   }
 
@@ -291,11 +291,11 @@ async function trainAndMaybeRender() {
   // We only fetch the cost every 5 steps because doing so requires a transfer
   // of data from the GPU.
   const localStepsToRun = 5;
-  const totalSteps = 100;
+  const totalSteps = 500;
 
   let promise;
 
-  for (let step = 0; step < totalSteps; step++) {
+  for (let step = 0; step <= totalSteps; step++) {
     let cost;
     const isMod = step % localStepsToRun === 0;
     cost = complementaryColorModel.train1Batch(step, isMod);
