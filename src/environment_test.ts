@@ -256,4 +256,15 @@ describe('Backend', () => {
     expect(ENV.findBackend('webgl') == null).toBe(true);
     expect(ENV.getBestBackendType()).toBe('cpu');
   });
+
+  it('default custom background null', () => {
+    expect(ENV.findBackend('webgl')).toBeNull();
+  });
+
+  it('allow custom backend', () => {
+    const backend = new MathBackendCPU();
+    const success = ENV.addCustomBackend('custom', () => backend);
+    expect(success).toBeTruthy();
+    expect(ENV.findBackend('custom')).toEqual(backend);
+  });
 });
