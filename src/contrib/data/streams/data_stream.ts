@@ -178,7 +178,8 @@ export abstract class DataStream<T> {
    */
   async forEach(f: (value: T) => void, consume?: (item: T) => void):
       Promise<void> {
-    const consumePrep = (item: T) => ((output: void) => consume(item));
+    const consumePrep =
+        consume == null ? null : (item: T) => ((output: void) => consume(item));
     return this.map(f, consumePrep).resolveFully();
   }
 
