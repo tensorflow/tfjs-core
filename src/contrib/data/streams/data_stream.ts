@@ -85,6 +85,9 @@ export async function streamFromConcatenatedFunction<T>(
  * stream of elements.
  */
 export abstract class DataStream<T> {
+  // This class implements AsyncIterator<T>, but we have not yet set the
+  // TypeScript --downlevelIteration flag to enable that.
+
   /**
    * Returns a `Promise` for the next element in the stream.
    *
