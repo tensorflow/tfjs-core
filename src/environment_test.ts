@@ -258,7 +258,7 @@ describe('Backend', () => {
   });
 
   it('default custom background null', () => {
-    expect(ENV.findBackend('custom')).toBeNull();
+    expect(ENV.findBackend('custom')).not.toBeDefined();
   });
 
   it('allow custom backend', () => {
