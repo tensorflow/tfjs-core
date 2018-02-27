@@ -263,7 +263,7 @@ describe('Backend', () => {
 
   it('allow custom backend', () => {
     const backend = new MathBackendCPU();
-    const success = ENV.addCustomBackend('custom', () => backend);
+    const success = ENV.registerBackend('custom', () => backend);
     expect(success).toBeTruthy();
     expect(ENV.findBackend('custom')).toEqual(backend);
   });
