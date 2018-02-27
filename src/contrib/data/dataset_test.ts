@@ -16,10 +16,9 @@
  * =============================================================================
  */
 
-import {keep} from '../../globals';
 import * as dl from '../../index';
 import {Tensor1D, Tensor2D} from '../../tensor';
-import {ALL_ENVS, describeWithFlags} from '../../test_util';
+import {CPU_ENVS, describeWithFlags} from '../../test_util';
 
 import {Dataset, datasetFromConcatenated, datasetFromElements} from './dataset';
 import {DataStream, streamFromItems} from './streams/data_stream';
@@ -47,8 +46,8 @@ class TestDatasetElementStream extends DataStream<DatasetElement> {
           ]),
       'string': `Item ${elementNumber}`
     };
-    keep(result['Tensor']);
-    keep(result['Tensor2']);
+    dl.keep(result['Tensor']);
+    dl.keep(result['Tensor2']);
     this.currentIndex++;
     return result;
   }
@@ -60,8 +59,8 @@ export class TestDataset extends Dataset {
   }
 }
 
-describeWithFlags('Dataset', ALL_ENVS, () => {
-  it('can be created by concatenating underlying datasets', done => {
+describeWithFlags('Dataset', CPU_ENVS, () => {
+  it('can be created by concatenating underlying datasets', async done => {
     const a = datasetFromElements([{'item': 1}, {'item': 2}]);
     const b = datasetFromElements([{'item': 3}, {'item': 4}]);
     const c = datasetFromElements([{'item': 5}, {'item': 6}]);
@@ -141,78 +140,57 @@ describeWithFlags('Dataset', ALL_ENVS, () => {
     done();
   });
 
-  it('can collect all items into memory', done => {
+  it('can collect all items into memory', async () => {
     const ds = new TestDataset();
-    ds.collectAll()
-        .then(result => {
-          expect(result.length).toEqual(100);
-        })
-        .then(() => expect(dl.memory().numTensors).toEqual(200))
-        .then(done)
-        .catch(done.fail);
+    const items = await ds.collectAll();
+    expect(items.length).toEqual(100);
+    expect(dl.memory().numTensors).toEqual(200);
   });
 
-  it('skip does not leak Tensors', done => {
+  it('skip does not leak Tensors', async () => {
     const ds = new TestDataset();
     expect(dl.memory().numTensors).toEqual(0);
-    ds.skip(15)
-        .collectAll()
-        .then(() => expect(dl.memory().numTensors).toEqual(170))
-        .then(done)
-        .catch(done.fail);
+    await ds.skip(15).collectAll();
+    expect(dl.memory().numTensors).toEqual(170);
   });
 
-  it('filter does not leak Tensors', done => {
+  it('filter does not leak Tensors', async () => {
     const ds = new TestDataset();
     expect(dl.memory().numTensors).toEqual(0);
-    ds.filter(x => ((x['number'] as number) % 2 === 0))
-        .collectAll()
-        .then(() => expect(dl.memory().numTensors).toEqual(100))
-        .then(done)
-        .catch(done.fail);
+    await ds.filter(x => ((x['number'] as number) % 2 === 0)).collectAll();
+    expect(dl.memory().numTensors).toEqual(100);
   });
 
-  it('map does not leak Tensors when none are returned', done => {
+  it('map does not leak Tensors when none are returned', async () => {
     const ds = new TestDataset();
     expect(dl.memory().numTensors).toEqual(0);
-    ds.map(x => ({'constant': 1}))
-        .collectAll()
-        .then(() => expect(dl.memory().numTensors).toEqual(0))
-        .then(done)
-        .catch(done.fail);
+    await ds.map(x => ({'constant': 1})).collectAll();
+    expect(dl.memory().numTensors).toEqual(0);
   });
 
   it('map does not lose or leak Tensors when some inputs are passed through',
-     done => {
+     async () => {
        const ds = new TestDataset();
        expect(dl.memory().numTensors).toEqual(0);
-       ds.map(x => ({'Tensor2': x['Tensor2']}))
-           .collectAll()
-           .then(() => expect(dl.memory().numTensors).toEqual(100))
-           .then(done)
-           .catch(done.fail);
+       await ds.map(x => ({'Tensor2': x['Tensor2']})).collectAll();
+       expect(dl.memory().numTensors).toEqual(100);
      });
 
-  it('map does not leak Tensors when inputs are replaced', done => {
+  it('map does not leak Tensors when inputs are replaced', async () => {
     const ds = new TestDataset();
     expect(dl.memory().numTensors).toEqual(0);
-    ds.map(x => ({'a': Tensor1D.new([1, 2, 3])}))
-        .collectAll()
-        .then(() => expect(dl.memory().numTensors).toEqual(100))
-        .then(done)
-        .catch(done.fail);
+    await ds.map(x => ({'a': Tensor1D.new([1, 2, 3])})).collectAll();
+    expect(dl.memory().numTensors).toEqual(100);
   });
 
-  it('forEach does not leak Tensors', done => {
+  it('forEach does not leak Tensors', async () => {
     const ds = new TestDataset();
     let count = 0;
-    ds.forEach(element => {
-        count++;
-        return {};
-      })
-        .then(() => expect(count).toEqual(100))
-        .then(() => expect(dl.memory().numTensors).toEqual(0))
-        .then(done)
-        .catch(done.fail);
+    await ds.forEach(element => {
+      count++;
+      return {};
+    });
+    expect(count).toEqual(100);
+    expect(dl.memory().numTensors).toEqual(0);
   });
 });

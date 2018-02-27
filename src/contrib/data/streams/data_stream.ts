@@ -131,6 +131,8 @@ export abstract class DataStream<T> {
    *
    * @param predicate A function mapping a stream element to a boolean or a
    * `Promise` for one.
+   * @param consume A function that finalizes an item, e.g. by marking it for
+   *   garbage collection.
    *
    * @returns A `DataStream` of elements for which the predicate was true.
    */
@@ -144,13 +146,20 @@ export abstract class DataStream<T> {
    *
    * @param predicate A function mapping a stream element to a transformed
    *   element.
+   * @param consumePrep A function that tentatively schedules an item or its
+   *   components for garbage collection.  The return value must be a second
+   *   function that actually executes the cleanup procedure.  This second
+   *   function accepts an argument that may modify the list of objects to be
+   *   collected, e.g. by reversing the tentative decision made previously.
+   * @param retain A function that marks an item to be retained (i.e.,
+   *   protected from garbage collection), and returns it (or a marked copy).
    *
    * @returns A `DataStream` of transformed elements.
    */
-  map<OUT>(
-      transform: (value: T) => OUT,
-      consumePrep?: (item: T) => ((output: OUT) => void),
-      retain?: (item: OUT) => OUT): DataStream<OUT> {
+  map<O>(
+      transform: (value: T) => O,
+      consumePrep?: (item: T) => ((output: O) => void),
+      retain?: (item: O) => O): DataStream<O> {
     return new MapStream(this, transform, consumePrep, retain);
   }
 
@@ -158,6 +167,11 @@ export abstract class DataStream<T> {
    * Apply a function to every element of the stream.
    *
    * @param f A function to apply to each stream element.
+   * @param consumePrep A function that tentatively schedules an item or its
+   *   components for garbage collection.  The return value must be a second
+   *   function that actually executes the cleanup procedure.  This second
+   *   function accepts an argument that may modify the list of objects to be
+   *   collected, e.g. by reversing the tentative decision made previously.
    */
   async forEach(
       f: (value: T) => {},
@@ -196,7 +210,9 @@ export abstract class DataStream<T> {
    *   unaltered.
    */
   take(count: number): DataStream<T> {
-    if (count < 0 || count == null) return this;
+    if (count < 0 || count == null) {
+      return this;
+    }
     return new TakeStream(this, count);
   }
 
@@ -205,9 +221,13 @@ export abstract class DataStream<T> {
    *
    * @param count The number of items to skip.  If a negative or undefined value
    *   is given, the entire stream is returned unaltered.
+   * @param consume A function that finalizes an item, e.g. by marking it for
+   *   garbage collection.
    */
   skip(count: number, consume?: (item: T) => void): DataStream<T> {
-    if (count < 0 || count == null) return this;
+    if (count < 0 || count == null) {
+      return this;
+    }
     return new SkipStream(this, count, consume);
   }
 
@@ -355,13 +375,13 @@ export abstract class QueueStream<T> extends DataStream<T> {
 }
 
 // TODO(soergel): consider clean separation of synchronous pumpOne
-/*abstract class TransformingQueueStream<IN, OUT> extends QueueStream<OUT> {
+/*abstract class TransformingQueueStream<I, O> extends QueueStream<O> {
   async pump() {
     return pumpOne(await this.upstream.next());
   }
 
   // not async!
-  pump(input:IN) : boolean {}
+  pump(input:I) : boolean {}
 }*/
 
 class BatchStream<T> extends QueueStream<T[]> {
@@ -400,7 +420,7 @@ class FilterStream<T> extends QueueStream<T> {
   constructor(
       protected upstream: DataStream<T>,
       protected predicate: (value: T) => boolean,
-      protected consume: (item: T) => void) {
+      protected consume?: (item: T) => void) {
     super();
   }
 
@@ -411,18 +431,18 @@ class FilterStream<T> extends QueueStream<T> {
     }
     if (this.predicate(item.value)) {
       this.outputQueue.push(item.value);
-    } else if (this.consume != null)
+    } else if (this.consume != null) {
       this.consume(item.value);
+    }
     return true;
   }
 }
 
-class MapStream<IN, OUT> extends QueueStream<OUT> {
+class MapStream<I, O> extends QueueStream<O> {
   constructor(
-      protected upstream: DataStream<IN>,
-      protected transform: (value: IN) => OUT,
-      protected consumePrep: (item: IN) => ((item: OUT) => void),
-      protected retain: (item: OUT) => OUT) {
+      protected upstream: DataStream<I>, protected transform: (value: I) => O,
+      protected consumePrep: (item: I) => ((item: O) => void),
+      protected retain: (item: O) => O) {
     super();
   }
 
@@ -437,9 +457,13 @@ class MapStream<IN, OUT> extends QueueStream<OUT> {
     // that's why we have to prepare the consumeFn above but execute it below.
     let mapped = this.transform(item.value);
 
-    if (this.retain != null) mapped = this.retain(mapped);
+    if (this.retain != null) {
+      mapped = this.retain(mapped);
+    }
     // Consume *after* retain, in case of overlap
-    if (consumeFn != null) consumeFn(mapped);
+    if (consumeFn != null) {
+      consumeFn(mapped);
+    }
 
     this.outputQueue.push(mapped);
     return true;
@@ -534,7 +558,9 @@ export class PrefetchStream<T> extends DataStream<T> {
     this.refill();
     // Note this probably never happens; instead the buffer fills up with
     // "done" IteratorResults so we just return those.
-    if (this.buffer.isEmpty()) return {value: null, done: true};
+    if (this.buffer.isEmpty()) {
+      return {value: null, done: true};
+    }
     const result = await this.buffer.shift();
     // TODO(soergel) benchmark performance with and without this.
     this.refill();

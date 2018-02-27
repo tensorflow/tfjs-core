@@ -104,7 +104,7 @@ export abstract class Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
       return (await base.getStream())
-          .filter(x => tidy(() => filterer(x)), consume);
+          .filter(x => tidy(() => filterer(x)), disposeElement);
     });
   }
 
@@ -120,7 +120,7 @@ export abstract class Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
       return (await base.getStream())
-          .map(x => tidy(() => transform(x)), consumePrep, retain);
+          .map(x => tidy(() => transform(x)), disposeElementPrep, keepElement);
     });
   }
 
@@ -205,7 +205,7 @@ export abstract class Dataset {
   skip(count: number): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).skip(count, consume);
+      return (await base.getStream()).skip(count, disposeElement);
     });
   }
 
@@ -279,15 +279,7 @@ export abstract class Dataset {
   async forEach(f: (input: DatasetElement) => {}, keepTensors = false):
       Promise<void> {
     const stream = await this.getStream();
-    let fAndMaybeConsume = f;
-    if (!keepTensors) {
-      fAndMaybeConsume = (input: DatasetElement) => {
-        f(input);
-        consume(input);
-        return {};
-      };
-    }
-    return stream.forEach(fAndMaybeConsume, consumePrep);
+    return stream.forEach(f, keepTensors ? undefined : disposeElementPrep);
   }
 
   /* TODO(soergel): for parity with tf.data:
@@ -338,7 +330,7 @@ export function datasetFromConcatenated(datasets: Dataset[]) {
   });
 }
 
-function consume(input: DatasetElement): void {
+function disposeElement(input: DatasetElement): void {
   for (const key in input) {
     const value = input[key];
     if (value instanceof Tensor) {
@@ -357,7 +349,8 @@ function consume(input: DatasetElement): void {
  * original set of Tensors so that they can be disposed-- unless those same
  * Tensors are still present in the output.
  */
-function consumePrep(input: DatasetElement): (output: DatasetElement) => void {
+function disposeElementPrep(input: DatasetElement): (output: DatasetElement) =>
+    void {
   const inputTensors = extractTensorsFromElement(input);
   return (output: DatasetElement) => {
     const outputTensors = extractTensorsFromElement(output);
@@ -381,7 +374,7 @@ function extractTensorsFromElement(input: DatasetElement) {
   return tensors;
 }
 
-function retain(input: DatasetElement): DatasetElement {
+function keepElement(input: DatasetElement): DatasetElement {
   const inputTensors = extractTensorsFromElement(input);
   for (const t of inputTensors) {
     keep(t);
