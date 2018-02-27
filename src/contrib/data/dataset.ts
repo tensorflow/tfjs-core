@@ -276,10 +276,10 @@ export abstract class Dataset {
    * @param keepTensors Prevent Tensors obtained from the dataset from being
    *   disposed.  Defaults to false (i.e., Tensors will be disposed).
    */
-  async forEach(f: (input: DatasetElement) => {}, keepTensors = false):
+  async forEach(f: (input: DatasetElement) => void, keepTensors = false):
       Promise<void> {
     const stream = await this.getStream();
-    return stream.forEach(f, keepTensors ? undefined : disposeElementPrep);
+    return stream.forEach(f, keepTensors ? undefined : disposeElement);
   }
 
   /* TODO(soergel): for parity with tf.data:

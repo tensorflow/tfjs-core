@@ -28,9 +28,9 @@ class TestDatasetElementStream extends DataStream<DatasetElement> {
   data = Array.from({length: 100}, (v, k) => k);
   currentIndex = 0;
 
-  async next(): Promise<DatasetElement> {
+  async next(): Promise<IteratorResult<DatasetElement>> {
     if (this.currentIndex >= 100) {
-      return undefined;
+      return {value: null, done: true};
     }
     const elementNumber = this.data[this.currentIndex];
     const result = {
@@ -49,7 +49,7 @@ class TestDatasetElementStream extends DataStream<DatasetElement> {
     dl.keep(result['Tensor']);
     dl.keep(result['Tensor2']);
     this.currentIndex++;
-    return result;
+    return {value: result, done: false};
   }
 }
 

@@ -88,7 +88,10 @@ export abstract class DataStream<T> {
   /**
    * Returns a `Promise` for the next element in the stream.
    *
-   * Calling next() on a closed stream returns `undefined`.
+   * When an item can be provided successfully, the return value is
+   * `{value:T, done:true}`.
+   *
+   * Calling next() on a closed stream returns `{value:null, done:true}`.
    */
   abstract async next(): Promise<IteratorResult<T>>;
 
@@ -167,15 +170,12 @@ export abstract class DataStream<T> {
    * Apply a function to every element of the stream.
    *
    * @param f A function to apply to each stream element.
-   * @param consumePrep A function that tentatively schedules an item or its
-   *   components for garbage collection.  The return value must be a second
-   *   function that actually executes the cleanup procedure.  This second
-   *   function accepts an argument that may modify the list of objects to be
-   *   collected, e.g. by reversing the tentative decision made previously.
+   * @param consume A function that finalizes an item, e.g. by marking it for
+   *   garbage collection.
    */
-  async forEach(
-      f: (value: T) => {},
-      consumePrep?: (item: T) => ((output: {}) => void)): Promise<void> {
+  async forEach(f: (value: T) => void, consume?: (item: T) => void):
+      Promise<void> {
+    const consumePrep = (item: T) => ((output: void) => consume(item));
     return this.map(f, consumePrep).resolveFully();
   }
 
@@ -310,7 +310,9 @@ class SkipStream<T> extends DataStream<T> {
       if (skipped.done) {
         return skipped;
       }
-      if (this.consume != null) this.consume(skipped.value);
+      if (this.consume != null) {
+        this.consume(skipped.value);
+      }
     }
     return this.upstream.next();
   }
@@ -324,7 +326,7 @@ class TakeStream<T> extends DataStream<T> {
 
   async next(): Promise<IteratorResult<T>> {
     if (this.count++ >= this.maxCount) {
-      return undefined;
+      return {value: null, done: true};
     }
     return this.upstream.next();
   }
@@ -367,7 +369,7 @@ export abstract class QueueStream<T> extends DataStream<T> {
     // output queue, then this stream is also exhausted.
     while (this.outputQueue.length() === 0) {
       if (!await this.pump()) {
-        return undefined;
+        return {value: null, done: true};
       }
     }
     return {value: this.outputQueue.shift(), done: false};
@@ -470,10 +472,15 @@ class MapStream<I, O> extends QueueStream<O> {
   }
 }
 
+/**
+ * ChainStates have the following meanings:
+ * {undefined, stream, moreStreams}: previous stream was done, try again
+ * {{value:T,done:false}, stream, moreStreams): item was found, return it
+ */
 class ChainState<T> {
   constructor(
       public readonly item: IteratorResult<T>,
-      public readonly currentStream: DataStream<T>,
+      public readonly currentStream: IteratorResult<DataStream<T>>,
       public readonly moreStreams: DataStream<DataStream<T>>) {}
 }
 
@@ -481,13 +488,15 @@ async function nextChainState<T>(afterState: Promise<ChainState<T>>):
     Promise<ChainState<T>> {
   const state = await afterState;
   let stream = state.currentStream;
-  if (stream == null) {
-    return new ChainState(undefined, undefined, state.moreStreams);
+  if (stream.done) {
+    // Once the concatenated stream is exhausted, it stays that way.
+    return new ChainState(
+        {value: null, done: true}, {value: null, done: true},
+        state.moreStreams);
   }
-  const item = await stream.next();
+  const item = await stream.value.next();
   if (item.done) {
-    const nextStreamResult = await state.moreStreams.next();
-    stream = nextStreamResult.done ? null : nextStreamResult.value;
+    stream = await state.moreStreams.next();
     return nextChainState(
         Promise.resolve(new ChainState(undefined, stream, state.moreStreams)));
   }
@@ -509,9 +518,7 @@ export class ChainedStream<T> extends DataStream<T> {
       Promise<ChainedStream<T>> {
     const c = new ChainedStream<T>();
 
-    const nextStreamResult = await baseStreams.next();
-    const currentStream = nextStreamResult.done ? null : nextStreamResult.value;
-
+    const currentStream = await baseStreams.next();
     c.currentPromise =
         Promise.resolve(new ChainState(undefined, currentStream, baseStreams));
     return c;
