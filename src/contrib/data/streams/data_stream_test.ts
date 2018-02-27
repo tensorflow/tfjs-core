@@ -16,42 +16,38 @@
  * =============================================================================
  */
 
-import {DataStream} from './data_stream';
+import {DataStream, streamFromIncrementing} from './data_stream';
 import {streamFromConcatenated} from './data_stream';
 import {streamFromConcatenatedFunction} from './data_stream';
 import {streamFromFunction, streamFromItems} from './data_stream';
 
 export class TestIntegerStream extends DataStream<number> {
-  public static data = Array.from({length: 100}, (v, k) => k);
   currentIndex = 0;
+  data: number[];
 
-  async next() {
-    if (this.currentIndex >= 100) {
-      return undefined;
+  constructor(protected readonly length = 100) {
+    super();
+    this.data = Array.from({length}, (v, k) => k);
+  }
+
+  async next(): Promise<IteratorResult<number>> {
+    if (this.currentIndex >= this.length) {
+      return {value: null, done: true};
     }
-    const result = TestIntegerStream.data[this.currentIndex];
+    const result = this.data[this.currentIndex];
     this.currentIndex++;
-    // Sleep for a random number of milliseconds, up to 3.
+    // Sleep for a millisecond every so often.
     // This purposely scrambles the order in which these promises are resolved,
     // to demonstrate that the various methods still process the stream
     // in the correct order.
-    const randomMS = Math.floor(Math.random() * 3);
-    await new Promise(res => setTimeout(res, randomMS));
-    return result;
+    if (Math.random() < 0.1) {
+      await new Promise(res => setTimeout(res, 1));
+    }
+    return {value: result, done: false};
   }
 }
 
 describe('DataStream', () => {
-  // TODO(davidsoergel): Remove this once we figure out the timeout issue.
-  let originalTimeout: number;
-  beforeAll(() => {
-    originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000;
-  });
-  afterAll(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
-  });
-
   it('collects all stream elements into an array', done => {
     const readStream = new TestIntegerStream();
     readStream.collectRemaining()
@@ -127,17 +123,19 @@ describe('DataStream', () => {
   });
 
   it('is unaltered by a negative or undefined take() count.', done => {
-    const readStream = new TestIntegerStream().take(-1);
+    const baseStream = new TestIntegerStream();
+    const readStream = baseStream.take(-1);
     readStream.collectRemaining()
         .then(result => {
-          expect(result).toEqual(TestIntegerStream.data);
+          expect(result).toEqual(baseStream.data);
         })
         .then(done)
         .catch(done.fail);
-    const readStream2 = new TestIntegerStream().take(undefined);
+    const baseStream2 = new TestIntegerStream();
+    const readStream2 = baseStream2.take(undefined);
     readStream2.collectRemaining()
         .then(result => {
-          expect(result).toEqual(TestIntegerStream.data);
+          expect(result).toEqual(baseStream2.data);
         })
         .then(done)
         .catch(done.fail);
@@ -154,17 +152,19 @@ describe('DataStream', () => {
   });
 
   it('is unaltered by a negative or undefined skip() count.', done => {
-    const readStream = new TestIntegerStream().skip(-1);
+    const baseStream = new TestIntegerStream();
+    const readStream = baseStream.skip(-1);
     readStream.collectRemaining()
         .then(result => {
-          expect(result).toEqual(TestIntegerStream.data);
+          expect(result).toEqual(baseStream.data);
         })
         .then(done)
         .catch(done.fail);
-    const readStream2 = new TestIntegerStream().skip(undefined);
+    const baseStream2 = new TestIntegerStream();
+    const readStream2 = baseStream2.skip(undefined);
     readStream2.collectRemaining()
         .then(result => {
-          expect(result).toEqual(TestIntegerStream.data);
+          expect(result).toEqual(baseStream2.data);
         })
         .then(done)
         .catch(done.fail);
@@ -182,9 +182,20 @@ describe('DataStream', () => {
 
   it('can be created from a function', done => {
     let i = -1;
-    const func = () => ++i < 7 ? i : undefined;
+    const func = () => ++i < 100 ? i : undefined;
 
-    const readStream = streamFromFunction(func);
+    // streamFromFunction never ends, so we truncate it
+    const readStream = streamFromFunction(func).take(7);
+    readStream.collectRemaining()
+        .then(result => {
+          expect(result).toEqual([0, 1, 2, 3, 4, 5, 6]);
+        })
+        .then(done)
+        .catch(done.fail);
+  });
+
+  it('can be created with incrementing integers', done => {
+    const readStream = streamFromIncrementing(0).take(7);
     readStream.collectRemaining()
         .then(result => {
           expect(result).toEqual([0, 1, 2, 3, 4, 5, 6]);
@@ -219,9 +230,9 @@ describe('DataStream', () => {
 
   it('can be created by concatenating streams from a function', done => {
     const readStreamPromise =
-        streamFromConcatenatedFunction(() => new TestIntegerStream(), 7);
+        streamFromConcatenatedFunction(() => new TestIntegerStream(), 3);
     const expectedResult: number[] = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 100; j++) {
         expectedResult[i * 100 + j] = j;
       }

@@ -29,7 +29,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     const rho = .95;
     const optimizer = dl.train.adadelta(learningRate, rho);
 
-    const x = dl.variable(dl.tensor1d([1, 2]));
+    const x = dl.tensor1d([1, 2]).variable();
 
     const f = () => x.square().sum() as dl.Scalar;
 
@@ -115,7 +115,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
       //
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw = session.activationArrayMap.get(w).dataSync();
-      expectArraysClose(dydw, new Float32Array([-0.2, -0.4]), 1e-2);
+      expectArraysClose(dydw, new Float32Array([-0.2, -0.4]));
       // cache = [gamma*old_cache_w1 + (1-gamma)*grad_w1**2,
       //            gamma*old_cache_w2 + (1-gamma)*grad_w2**2]
       //            = [1.44, 5.76]
@@ -128,7 +128,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
       //            = [-0.4, -0.8]
       session.train(y, [{tensor: x, data: inputProvider}], 1, optimizer);
       const dydw2 = session.activationArrayMap.get(w).dataSync();
-      expectArraysClose(dydw2, new Float32Array([-.4, -.8]), 1e-2);
+      expectArraysClose(dydw2, new Float32Array([-.4, -.8]));
     });
   });
 });

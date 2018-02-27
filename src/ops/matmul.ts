@@ -17,15 +17,26 @@
 
 import {doc} from '../doc';
 import {ENV} from '../environment';
-import {MatrixOrientation} from '../kernels/types/matmul';
 import {Scalar, Tensor1D, Tensor2D} from '../tensor';
 import * as util from '../util';
 import {operation} from './operation';
 
-export class Ops {
+/** @deprecated Use bools transposeA and transposeB when calling matmul() */
+export enum MatrixOrientation {
+  REGULAR,
+  TRANSPOSED
+}
+
+export class MatmulOps {
   /**
    * Computes the dot product of two matrices, A * B. These must be matrices.
    *
+   * ```js
+   * const a = dl.tensor2d([1, 2], [1, 2]);
+   * const b = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   *
+   * a.matMul(b).print();  // or dl.matMul(a, b)
+   * ```
    * @param a First matrix in dot product operation.
    * @param b Second matrix in dot product operation.
    * @param transposeA If true, `a` is transposed before multiplication.
@@ -54,18 +65,17 @@ export class Ops {
             `${b.shape} and transposeA=${transposeA}` +
             ` and transposeB=${transposeB} must match.`);
 
-    return ENV.engine.executeKernel(
-               'MatMul', {inputs: {a, b}, args: {transposeA, transposeB}},
-               (dy: Tensor2D, y: Tensor2D) => {
-                 if (transposeA || transposeB) {
-                   throw new Error(
-                       `Backprop for transposed MatMul not yet implemented.`);
-                 }
-                 return {
-                   a: () => dy.matMul(b.toFloat(), false, true) as Tensor2D,
-                   b: () => a.toFloat().matMul(dy, true, false) as Tensor2D
-                 };
-               }) as Tensor2D;
+    const grad = (dy: Tensor2D) => {
+      if (transposeA || transposeB) {
+        throw new Error(`Backprop for transposed MatMul not yet implemented.`);
+      }
+      return {
+        a: () => dy.matMul(b.toFloat(), false, true),
+        b: () => a.toFloat().matMul(dy, true, false)
+      };
+    };
+    return ENV.engine.runKernel(
+        backend => backend.matMul(a, b, transposeA, transposeB), {a, b}, grad);
   }
 
   /**
@@ -74,7 +84,6 @@ export class Ops {
    * @param v The vector in dot product operation.
    * @param matrix The matrix in dot product operation.
    */
-  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static vectorTimesMatrix(v: Tensor1D, matrix: Tensor2D): Tensor1D {
     util.assert(
@@ -94,10 +103,10 @@ export class Ops {
 
   /**
    * Computes the dot product of a matrix and vector, A * v.
+   *
    * @param matrix The matrix in dot product operation.
    * @param v The vector in dot product operation.
    */
-  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static matrixTimesVector(matrix: Tensor2D, v: Tensor1D): Tensor1D {
     util.assert(
@@ -123,7 +132,6 @@ export class Ops {
    * @param v1 The first vector in the dot product operation.
    * @param v2 The second vector in the dot product operation.
    */
-  @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static dotProduct(v1: Tensor1D, v2: Tensor1D): Scalar {
     util.assert(
@@ -140,6 +148,12 @@ export class Ops {
   /**
    * Computes the outer product of two vectors, v1 and v2.
    *
+   * ```js
+   * const a = dl.tensor1d([1, 2, 3]);
+   * const b = dl.tensor1d([3, 4, 5]);
+   *
+   * dl.outerProduct(a, b).print();
+   * ```
    * @param v1 The first vector in the outer product operation.
    * @param v2 The second vector in the dot product operation.
    */

@@ -21,9 +21,10 @@
 
     resultElement.innerText = 'Predicting...';
 
-    const pixels = dl.Array3D.fromPixels(cat);
+    const pixels = dl.fromPixels(cat);
+    const resized = dl.image.resizeBilinear(pixels, [227, 227]);
 
-    const result = squeezeNet.predict(pixels);
+    const result = squeezeNet.predict(resized);
 
     resultElement.innerText = '';
 

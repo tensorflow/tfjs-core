@@ -15,13 +15,14 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import {Tensor, Tensor1D, Tensor2D} from '../../tensor';
-
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
+import {CPU_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 
 import {TestDataset} from './dataset_test';
+import {DatasetBatch} from './types';
 
-describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
+describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
   it('batches entries into column-oriented DatasetBatches', done => {
     const ds = new TestDataset();
     const bds = ds.batch(8);
@@ -35,7 +36,14 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
             expect((batch['Tensor'] as Tensor).shape).toEqual([8, 3]);
             expect((batch['string'] as string[]).length).toEqual(8);
           }
+          return result;
         }))
+        .then((result) => {
+          for (const batch of result) {
+            disposeBatch(batch);
+          }
+        })
+        .then(() => expect(ENV.engine.memory().numTensors).toBe(0))
         .then(done)
         .catch(done.fail);
   });
@@ -70,9 +78,25 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
           expect(lastBatch['string'] as string[]).toEqual([
             'Item 96', 'Item 97', 'Item 98', 'Item 99'
           ]);
+          return result;
         }))
-
+        .then((result) => {
+          for (const batch of result) {
+            disposeBatch(batch);
+          }
+        })
+        // these three tensors are just the expected results above
+        .then(() => expect(ENV.engine.memory().numTensors).toBe(3))
         .then(done)
         .catch(done.fail);
   });
 });
+
+function disposeBatch(input: DatasetBatch): void {
+  for (const key in input) {
+    const value = input[key];
+    if (value instanceof Tensor) {
+      value.dispose();
+    }
+  }
+}

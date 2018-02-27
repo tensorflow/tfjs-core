@@ -16,7 +16,9 @@
  * =============================================================================
  */
 
-import {Tensor1D} from '../../tensor';
+import * as dl from '../../index';
+import {Tensor1D, Tensor2D} from '../../tensor';
+import {CPU_ENVS, describeWithFlags} from '../../test_util';
 
 import {Dataset, datasetFromConcatenated, datasetFromElements} from './dataset';
 import {DataStream, streamFromItems} from './streams/data_stream';
@@ -26,9 +28,9 @@ class TestDatasetElementStream extends DataStream<DatasetElement> {
   data = Array.from({length: 100}, (v, k) => k);
   currentIndex = 0;
 
-  async next(): Promise<DatasetElement> {
+  async next(): Promise<IteratorResult<DatasetElement>> {
     if (this.currentIndex >= 100) {
-      return undefined;
+      return {value: null, done: true};
     }
     const elementNumber = this.data[this.currentIndex];
     const result = {
@@ -36,11 +38,18 @@ class TestDatasetElementStream extends DataStream<DatasetElement> {
       'numberArray': [elementNumber, elementNumber ** 2, elementNumber ** 3],
       'Tensor':
           Tensor1D.new([elementNumber, elementNumber ** 2, elementNumber ** 3]),
+      'Tensor2': Tensor2D.new(
+          [2, 2],
+          [
+            elementNumber, elementNumber ** 2, elementNumber ** 3,
+            elementNumber ** 4
+          ]),
       'string': `Item ${elementNumber}`
     };
-
+    dl.keep(result['Tensor']);
+    dl.keep(result['Tensor2']);
     this.currentIndex++;
-    return result;
+    return {value: result, done: false};
   }
 }
 
@@ -50,19 +59,19 @@ export class TestDataset extends Dataset {
   }
 }
 
-describe('Dataset', () => {
-  it('can be created by concatenating underlying datasets', done => {
+describeWithFlags('Dataset', CPU_ENVS, () => {
+  it('can be created by concatenating underlying datasets', async done => {
     const a = datasetFromElements([{'item': 1}, {'item': 2}]);
     const b = datasetFromElements([{'item': 3}, {'item': 4}]);
     const c = datasetFromElements([{'item': 5}, {'item': 6}]);
-    const readStreamPromise = datasetFromConcatenated([a, b, c]).getStream();
-    readStreamPromise
-        .then(readStream => readStream.collectRemaining().then(result => {
+    datasetFromConcatenated([a, b, c])
+        .collectAll()
+        .then(result => {
           expect(result).toEqual([
             {'item': 1}, {'item': 2}, {'item': 3}, {'item': 4}, {'item': 5},
             {'item': 6}
           ]);
-        }))
+        })
         .then(done)
         .catch(done.fail);
   });
@@ -70,23 +79,23 @@ describe('Dataset', () => {
   it('can be concatenated', done => {
     const a = datasetFromElements([{'item': 1}, {'item': 2}, {'item': 3}]);
     const b = datasetFromElements([{'item': 4}, {'item': 5}, {'item': 6}]);
-    const readStreamPromise = a.concatenate(b).getStream();
-    readStreamPromise
-        .then(readStream => readStream.collectRemaining().then(result => {
+    a.concatenate(b)
+        .collectAll()
+        .then(result => {
           expect(result).toEqual([
             {'item': 1}, {'item': 2}, {'item': 3}, {'item': 4}, {'item': 5},
             {'item': 6}
           ]);
-        }))
+        })
         .then(done)
         .catch(done.fail);
   });
 
   it('can be repeated a fixed number of times', done => {
     const a = datasetFromElements([{'item': 1}, {'item': 2}, {'item': 3}]);
-    const readStreamPromise = a.repeat(4).getStream();
-    readStreamPromise
-        .then(readStream => readStream.collectRemaining().then(result => {
+    a.repeat(4)
+        .collectAll()
+        .then(result => {
           expect(result).toEqual([
             {'item': 1},
             {'item': 2},
@@ -101,18 +110,14 @@ describe('Dataset', () => {
             {'item': 2},
             {'item': 3},
           ]);
-        }))
+        })
         .then(done)
         .catch(done.fail);
   });
 
   it('can be repeated indefinitely', done => {
     const a = datasetFromElements([{'item': 1}, {'item': 2}, {'item': 3}]);
-    const readStreamPromise = a.repeat().getStream();
-    readStreamPromise
-        .then(readStream => readStream.take(1234).collectRemaining())
-        .then(done)
-        .catch(done.fail);
+    a.repeat().take(234).collectAll().then(done).catch(done.fail);
     done();
   });
 
@@ -131,11 +136,61 @@ describe('Dataset', () => {
       }
     }
     const a = new CustomDataset();
-    const readStreamPromise = a.repeat().getStream();
-    readStreamPromise
-        .then(readStream => readStream.take(1234).collectRemaining())
-        .then(done)
-        .catch(done.fail);
+    a.repeat().take(1234).collectAll().then(done).catch(done.fail);
     done();
+  });
+
+  it('can collect all items into memory', async () => {
+    const ds = new TestDataset();
+    const items = await ds.collectAll();
+    expect(items.length).toEqual(100);
+    expect(dl.memory().numTensors).toEqual(200);
+  });
+
+  it('skip does not leak Tensors', async () => {
+    const ds = new TestDataset();
+    expect(dl.memory().numTensors).toEqual(0);
+    await ds.skip(15).collectAll();
+    expect(dl.memory().numTensors).toEqual(170);
+  });
+
+  it('filter does not leak Tensors', async () => {
+    const ds = new TestDataset();
+    expect(dl.memory().numTensors).toEqual(0);
+    await ds.filter(x => ((x['number'] as number) % 2 === 0)).collectAll();
+    expect(dl.memory().numTensors).toEqual(100);
+  });
+
+  it('map does not leak Tensors when none are returned', async () => {
+    const ds = new TestDataset();
+    expect(dl.memory().numTensors).toEqual(0);
+    await ds.map(x => ({'constant': 1})).collectAll();
+    expect(dl.memory().numTensors).toEqual(0);
+  });
+
+  it('map does not lose or leak Tensors when some inputs are passed through',
+     async () => {
+       const ds = new TestDataset();
+       expect(dl.memory().numTensors).toEqual(0);
+       await ds.map(x => ({'Tensor2': x['Tensor2']})).collectAll();
+       expect(dl.memory().numTensors).toEqual(100);
+     });
+
+  it('map does not leak Tensors when inputs are replaced', async () => {
+    const ds = new TestDataset();
+    expect(dl.memory().numTensors).toEqual(0);
+    await ds.map(x => ({'a': Tensor1D.new([1, 2, 3])})).collectAll();
+    expect(dl.memory().numTensors).toEqual(100);
+  });
+
+  it('forEach does not leak Tensors', async () => {
+    const ds = new TestDataset();
+    let count = 0;
+    await ds.forEach(element => {
+      count++;
+      return {};
+    });
+    expect(count).toEqual(100);
+    expect(dl.memory().numTensors).toEqual(0);
   });
 });

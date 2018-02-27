@@ -246,7 +246,7 @@ export function parameterTypeToString(
     // Fall back to using the checkers method for converting the type to a
     // string.
     typeStr = checker.typeToString(
-        checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!))
+        checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!));
   }
 
   return sanitizeTypeString(typeStr, identifierGenericMap);
@@ -435,7 +435,7 @@ function replaceSymbolsWithLinks(
     input: string, symbolsAndUrls: SymbolAndUrl[],
     isMarkdown: boolean): string {
   symbolsAndUrls.forEach(symbolAndUrl => {
-    const wrapper = isMarkdown ? '\`' : '\\b(?![\'])';
+    const wrapper = isMarkdown ? '\`' : '\\b(?![\'\:])';
     const re = new RegExp(wrapper + symbolAndUrl.symbolName + wrapper, 'g');
 
     let displayText;

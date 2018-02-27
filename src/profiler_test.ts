@@ -16,27 +16,27 @@
  */
 
 import * as dl from './index';
-import {Tensor} from './tensor';
-import {BackendTimer} from './kernels/backend';
-import {Kernel} from './kernels/kernel_registry';
-import {Logger, Profiler} from './profiler';
+import {BackendTimer, BackendTimingInfo} from './kernels/backend';
 import {TypedArray} from './kernels/webgl/tex_util';
+import {Logger, Profiler} from './profiler';
+import {Tensor} from './tensor';
 
 class TestBackendTimer implements BackendTimer {
   private counter = 1;
   constructor(private delayMs: number, private queryTimeMs: number) {}
 
-  time(query: () => void): Promise<number> {
+  async time(query: () => void): Promise<BackendTimingInfo> {
     query();
-    return new Promise<number>(
+    const kernelMs = await new Promise<number>(
         resolve => setTimeout(
             resolve(this.queryTimeMs * this.counter++), this.delayMs));
+    return {kernelMs};
   }
 }
 
 class TestLogger extends Logger {
   logKernelProfile(
-      kernelName: Kernel, result: Tensor, vals: TypedArray, timeMs: number) {}
+      name: string, result: Tensor, vals: TypedArray, timeMs: number) {}
 }
 
 describe('profiler.Profiler', () => {

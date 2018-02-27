@@ -24,7 +24,6 @@ import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
 import {NDArrayMath} from '../math';
 import {scalar, zerosLike} from '../ops/ops';
 import {Scalar, Tensor, Variable} from '../tensor';
-import {variable} from '../tensor';
 import {NamedVariableMap} from '../types';
 
 import {Optimizer} from './optimizer';
@@ -52,9 +51,11 @@ export class AdamOptimizer extends Optimizer {
     // b1, b2 keep initial value of beta* hyperparameters.
     this.beta1 = keep(scalar(beta1));
     this.beta2 = keep(scalar(beta2));
-    // accB* will be updated by batch.
-    this.accBeta1 = variable(scalar(beta1));
-    this.accBeta2 = variable(scalar(beta2));
+    tidy(() => {
+      // accB* will be updated by batch.
+      this.accBeta1 = scalar(beta1).variable();
+      this.accBeta2 = scalar(beta2).variable();
+    });
     this.oneMinusBeta1 = keep(scalar(1 - beta1));
     this.oneMinusBeta2 = keep(scalar(1 - beta2));
     this.one = keep(scalar(1));
@@ -70,12 +71,12 @@ export class AdamOptimizer extends Optimizer {
         if (this.accumulatedFirstMoment[variableName] == null) {
           const trainable = false;
           this.accumulatedFirstMoment[variableName] =
-              variable(zerosLike(value), trainable);
+              zerosLike(value).variable(trainable);
         }
         if (this.accumulatedSecondMoment[variableName] == null) {
           const trainable = false;
           this.accumulatedSecondMoment[variableName] =
-              variable(zerosLike(value), trainable);
+              zerosLike(value).variable(trainable);
         }
 
         const gradient = variableGradients[variableName];

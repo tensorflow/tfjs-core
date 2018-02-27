@@ -18,7 +18,12 @@
 
 import * as seedrandom from 'seedrandom';
 
+import {util} from '../..';
+import {keep, tidy} from '../../globals';
+import {Tensor} from '../../tensor';
+
 import {BatchDataset} from './batch_dataset';
+import {computeDatasetStatistics, DatasetStatistics} from './statistics';
 import {DataStream} from './streams/data_stream';
 import {streamFromConcatenated} from './streams/data_stream';
 import {streamFromFunction} from './streams/data_stream';
@@ -43,8 +48,49 @@ export abstract class Dataset {
   /*
    * Provide a new stream of elements.  Note this will also start new streams
    * from any underlying `Dataset`s.
+   *
+   * CAUTION: Any Tensors contained within the DatasetElements returned from
+   * this stream *must* be manually disposed to avoid a GPU memory leak.
+   * The dl.tidy() approach cannot be used in a asynchronous context.
    */
   abstract async getStream(): Promise<DataStream<DatasetElement>>;
+
+  // TODO(soergel): Make Datasets report whether repeated getStream() calls
+  // produce the same result (e.g., reading from a file) or different results
+  // (e.g., from the webcam).  Currently we don't make this distinction but it
+  // could be important for the user to know.
+  // abstract isDeterministic(): boolean;
+
+  // TODO(soergel): memoize computeStatistics()
+
+  /**
+   * Gathers statistics from a Dataset (or optionally from a sample).
+   *
+   * This obtains a stream from the Dataset and, by default, does a full pass
+   * to gather the statistics.
+   *
+   * Statistics may be computed over a sample.  However: simply taking the first
+   * n items from the stream may produce a poor estimate if the stream is
+   * ordered in some way.
+   *
+   * A truly random shuffle of the stream would of course solve this
+   * problem, but many streams do not allow for this, instead providing only a
+   * sliding-window shuffle.  A partially-randomized sample could be obtained by
+   * shuffling over a window followed by taking the first n samples (where n is
+   * smaller than the shuffle window size).  However there is little point in
+   * using that approach here, because the cost is likely dominated by obtaining
+   * the data.  Thus, once we have filled our shuffle buffer, we may as well use
+   * all of that data instead of sampling from it.
+   *
+   * @param sampleSize The number of examples to take from the (possibly
+   *   shuffled) stream.
+   * @param shuffleWindowSize The size of the shuffle window to use, if any.
+   *   (Not recommended, as described above).
+   */
+  async computeStatistics(sampleSize?: number, shuffleWindowSize?: number):
+      Promise<DatasetStatistics> {
+    return computeDatasetStatistics(this, sampleSize, shuffleWindowSize);
+  }
 
   /**
    * Filters this dataset according to `predicate`.
@@ -54,11 +100,11 @@ export abstract class Dataset {
    *
    * @returns A `Dataset` of elements for which the predicate was true.
    */
-  filter(filterer: (value: DatasetElement) => boolean | Promise<boolean>):
-      Dataset {
+  filter(filterer: (value: DatasetElement) => boolean): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).filter(filterer);
+      return (await base.getStream())
+          .filter(x => tidy(() => filterer(x)), disposeElement);
     });
   }
 
@@ -70,11 +116,11 @@ export abstract class Dataset {
    *
    * @returns A `Dataset` of transformed elements.
    */
-  map(transform: (value: DatasetElement) => DatasetElement |
-          Promise<DatasetElement>): Dataset {
+  map(transform: (value: DatasetElement) => DatasetElement): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).map(transform);
+      return (await base.getStream())
+          .map(x => tidy(() => transform(x)), disposeElementPrep, keepElement);
     });
   }
 
@@ -159,9 +205,11 @@ export abstract class Dataset {
   skip(count: number): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).skip(count);
+      return (await base.getStream()).skip(count, disposeElement);
     });
   }
+
+  // TODO(soergel): deep sharded shuffle, where supported
 
   /**
    * Randomly shuffles the elements of this dataset.
@@ -200,6 +248,38 @@ export abstract class Dataset {
     return datasetFromStreamFn(async () => {
       return (await base.getStream()).prefetch(bufferSize);
     });
+  }
+
+  /**
+   * Collect all elements of this dataset into an array.
+   * Obviously this will succeed only for small datasets that fit in memory.
+   * Useful for testing.
+   *
+   * @returns A Promise for an array of elements, which will resolve
+   *   when a new stream has been obtained and fully consumed.
+   */
+  async collectAll() {
+    return (await this.getStream()).collectRemaining();
+  }
+
+  /**
+   * Apply a function to every element of the dataset.
+   *
+   * After the function is applied to a `DatasetElement`, any Tensors contained
+   * within that element are disposed by default.  Normally that is the right
+   * thing to do to prevent a GPU memory leak, since those Tensors cannot be
+   * reused elsewhere anyway (unless the function stored them as a side effect).
+   * If it is necessary for some reason to keep the Tensors here, be sure to
+   * dispose them later!
+   *
+   * @param f A function to apply to each dataset element.
+   * @param keepTensors Prevent Tensors obtained from the dataset from being
+   *   disposed.  Defaults to false (i.e., Tensors will be disposed).
+   */
+  async forEach(f: (input: DatasetElement) => void, keepTensors = false):
+      Promise<void> {
+    const stream = await this.getStream();
+    return stream.forEach(f, keepTensors ? undefined : disposeElement);
   }
 
   /* TODO(soergel): for parity with tf.data:
@@ -248,4 +328,56 @@ export function datasetFromConcatenated(datasets: Dataset[]) {
     const streamStream = await Promise.all(datasets.map((d) => d.getStream()));
     return streamFromConcatenated(streamFromItems(streamStream));
   });
+}
+
+function disposeElement(input: DatasetElement): void {
+  for (const key in input) {
+    const value = input[key];
+    if (value instanceof Tensor) {
+      value.dispose();
+    }
+  }
+}
+
+/**
+ * Prepare a function that will dispose any Tensors contained in a
+ * DatasetElement.
+ *
+ * This formulation allows the DatasetElement to be mutated, reading its current
+ * contents before disposing them.  The mutated DatasetElement may or may not
+ * contain the same Tensors as before.  Here, the function closure stores the
+ * original set of Tensors so that they can be disposed-- unless those same
+ * Tensors are still present in the output.
+ */
+function disposeElementPrep(input: DatasetElement): (output: DatasetElement) =>
+    void {
+  const inputTensors = extractTensorsFromElement(input);
+  return (output: DatasetElement) => {
+    const outputTensors = extractTensorsFromElement(output);
+    // TODO(soergel) faster intersection
+    for (const t of inputTensors) {
+      if (!util.isTensorInList(t, outputTensors)) {
+        t.dispose();
+      }
+    }
+  };
+}
+
+function extractTensorsFromElement(input: DatasetElement) {
+  const tensors: Tensor[] = [];
+  for (const key in input) {
+    const value = input[key];
+    if (value instanceof Tensor) {
+      tensors.push(value);
+    }
+  }
+  return tensors;
+}
+
+function keepElement(input: DatasetElement): DatasetElement {
+  const inputTensors = extractTensorsFromElement(input);
+  for (const t of inputTensors) {
+    keep(t);
+  }
+  return input;
 }

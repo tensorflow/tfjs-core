@@ -18,12 +18,11 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
-import {Rank} from '../types';
 import * as util from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './operation';
 
-export class Ops {
+export class TransposeOps {
   /**
    * Transposes the `Tensor`. Permutes the dimensions according to `perm`.
    *
@@ -32,25 +31,30 @@ export class Ops {
    * where `n` is the rank of the input `Tensor`. Hence by default, this
    * operation performs a regular matrix transpose on 2-D input `Tensor`s.
    *
+   * ```js
+   * const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+   *
+   * a.transpose().print();  // or dl.transpose(a)
+   * ```
+   *
    * @param x The tensor to transpose.
    * @param perm The permutation of the dimensions of a.
    */
   @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
-  static transpose<R extends Rank>(x: Tensor<R>, perm?: number[]): Tensor<R> {
+  static transpose<T extends Tensor>(x: T, perm?: number[]): T {
     if (perm == null) {
       perm = x.shape.map((s, i) => i).reverse();
     }
-    const der = (dy: Tensor) => {
+    const der = (dy: T) => {
       const undoPerm = axis_util.getUndoAxesPermutation(perm);
-      const derX = () => dy.transpose(undoPerm);
-      return {x: derX};
+      return {x: () => dy.transpose(undoPerm)};
     };
     util.assert(
         x.rank === perm.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of perm ${perm}.`);
-    return ENV.engine.executeKernel(
-               'Transpose', {inputs: {x}, args: {perm}}, der) as Tensor<R>;
+    return ENV.engine.runKernel(
+        backend => backend.transpose(x, perm), {x}, der);
   }
 }

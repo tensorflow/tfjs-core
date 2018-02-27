@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
+import {extractTensorsFromScopeResult} from './engine';
 import * as dl from './index';
-import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
+import {ALL_ENVS, CPU_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
 
 describeWithFlags('tidy', ALL_ENVS, () => {
   it('returns Tensor', () => {
@@ -57,6 +57,22 @@ describeWithFlags('tidy', ALL_ENVS, () => {
     expect(dl.memory().numTensors).toBe(1);
     b.dispose();
     expect(dl.memory().numTensors).toBe(0);
+  });
+
+  it('allows primitive types', () => {
+    const a = dl.tidy(() => 5);
+    expect(a).toBe(5);
+
+    const b = dl.tidy(() => 'hello');
+    expect(b).toBe('hello');
+  });
+
+  it('allows complex types', () => {
+    const res = dl.tidy(() => {
+      return {a: dl.scalar(1), b: 'hello', c: [dl.scalar(2), 'world']};
+    });
+    expectArraysClose(res.a, [1]);
+    expectArraysClose(res.c[0] as dl.Scalar, [2]);
   });
 
   it('returns Tensor[]', () => {
@@ -183,7 +199,7 @@ describeWithFlags('fromPixels + regular math op', ALL_ENVS, () => {
       pixels.data[i] = 250;
     }
 
-    const a = Tensor.fromPixels(pixels, 4);
+    const a = dl.fromPixels(pixels, 4);
     const b = dl.scalar(20, 'int32');
 
     const res = dl.add(a, b);
@@ -218,13 +234,13 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     expect(da.shape).toEqual(a.shape);
     let transposeA = false;
     let transposeB = true;
-    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB), 1e-1);
+    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB));
 
     // de/db = dot(aT, de/dy)
     expect(db.shape).toEqual(b.shape);
     transposeA = true;
     transposeB = false;
-    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB), 1e-1);
+    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB));
   });
 
   it('grad(f)', () => {
@@ -233,10 +249,28 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     expectArraysClose(result, [.2, .4]);
   });
 
+  it('calling grad(f) twice works', () => {
+    const grad = dl.grad(x => x.square());
+
+    const result = grad(dl.tensor1d([.1, .2]));
+    const result2 = grad(dl.tensor1d([.1, .4]));
+    expectArraysClose(result, [.2, .4]);
+    expectArraysClose(result2, [.2, .8]);
+  });
+
   it('grads(f)', () => {
     const grads = dl.grads(x => x.square());
     const result = grads([dl.tensor1d([.1, .2])]);
     expectArraysClose(result[0], [.2, .4]);
+  });
+
+  it('calling grads(f) twice works', () => {
+    const grads = dl.grads(x => x.square());
+
+    const result = grads([dl.tensor1d([.1, .2])]);
+    const result2 = grads([dl.tensor1d([.1, .4])]);
+    expectArraysClose(result[0], [.2, .4]);
+    expectArraysClose(result2[0], [.2, .8]);
   });
 
   it('works with reshape', () => {
@@ -265,6 +299,27 @@ describeWithFlags('gradients', ALL_ENVS, () => {
       })([a, b]);
     };
     expect(f).toThrowError();
+  });
+
+  it('does not error if irrelevant (pruned) ops are missing grads', () => {
+    const a = dl.tensor1d([true, true], 'bool');
+    const b = dl.tensor1d([false, true], 'bool');
+    const da = dl.grad(a => {
+      // Logical has no gradients, but it is irrelevant.
+      a.logicalAnd(b);
+      return a.sum();
+    })(a);
+    expectArraysClose(da, [1, 1]);
+  });
+
+  it('errors if relevant ops are missing grads', () => {
+    const a = dl.tensor1d([true, true], 'bool');
+    const b = dl.tensor1d([false, true], 'bool');
+    const dfda = dl.grad(a => {
+      // Logical has no gradients, but it's relevant to the output.
+      return a.logicalAnd(b);
+    });
+    expect(() => dfda(a)).toThrowError();
   });
 
   it('works with asType', () => {
@@ -312,7 +367,7 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
           return dl.sum(y);
         })([a, b]);
 
-    expectNumbersClose(value.get(), 10, 1e-1);
+    expectNumbersClose(value.get(), 10);
 
     // de/dy = 1
     // dy/dm = step(m)
@@ -323,12 +378,12 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
     // de/da = dot(de/dy, bT)
     let transposeA = false;
     let transposeB = true;
-    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB), 1e-1);
+    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB));
 
     // de/db = dot(aT, de/dy)
     transposeA = true;
     transposeB = false;
-    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB), 1e-1);
+    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB));
   });
 
   it('matmul + relu + inner tidy', () => {
@@ -347,7 +402,7 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
           });
         })([a, b]);
 
-    expectNumbersClose(value.get(), 10, 1e-1);
+    expectNumbersClose(value.get(), 10);
 
     // de/dy = 1
     // dy/dm = step(m)
@@ -358,12 +413,12 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
     // de/da = dot(de/dy, bT)
     let transposeA = false;
     let transposeB = true;
-    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB), 1e-1);
+    expectArraysClose(da, dl.matMul(dedm, b, transposeA, transposeB));
 
     // de/db = dot(aT, de/dy)
     transposeA = true;
     transposeB = false;
-    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB), 1e-1);
+    expectArraysClose(db, dl.matMul(a, dedm, transposeA, transposeB));
   });
 });
 
@@ -390,7 +445,7 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
 
     const customPow = dl.customGrad(a => {
       const value = dl.pow(a, b);
-      const gradFunc = (dy: Tensor) => [dy.mul(dl.scalar(0.1))];
+      const gradFunc = (dy: dl.Tensor) => dy.mul(dl.scalar(0.1));
       return {value, gradFunc};
     });
 
@@ -409,7 +464,7 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
 
     const customPow = dl.customGrad(a => {
       const value = dl.pow(a, b);
-      const gradFunc = (dy: Tensor) => [dy.mul(a)];
+      const gradFunc = (dy: dl.Tensor) => dy.mul(a);
       return {value, gradFunc};
     });
 
@@ -418,6 +473,18 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
 
     // First order: dy * a. Second order: dy.
     expectArraysClose(dda, dy);
+  });
+
+  it('calling gradient of custom op twice works', () => {
+    const customOp = dl.customGrad(x => {
+      // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+      return {value: x.square(), gradFunc: dy => dy.mul(x.abs())};
+    });
+    const x = dl.tensor1d([-1, -2, 3]);
+    const grad = dl.grad(x => customOp(x));
+
+    expectArraysClose(grad(x), [1, 2, 3]);
+    expectArraysClose(grad(x), [1, 2, 3]);
   });
 });
 
@@ -460,5 +527,29 @@ describeWithFlags('memory', ALL_ENVS, () => {
     expect(dl.memory().numBytes).toBe(4);
     expect(sum.dtype).toBe('int32');
     expectArraysClose(sum, [1 + 1 + 0 + 1]);
+  });
+});
+
+describeWithFlags('extractTensorsFromScopeResult', CPU_ENVS, () => {
+  it('null input returns empty tensor', () => {
+    const results = extractTensorsFromScopeResult(null);
+
+    expect(results).toEqual([]);
+  });
+
+  it('tensor input returns one element tensor', () => {
+    const x = dl.scalar(1);
+    const results = extractTensorsFromScopeResult(x);
+
+    expect(results).toEqual([x]);
+  });
+
+  it('name tensor map returns flattened tensor', () => {
+    const x1 = dl.scalar(1);
+    const x2 = dl.scalar(3);
+    const x3 = dl.scalar(4);
+    const results = extractTensorsFromScopeResult({x1, x2, x3});
+
+    expect(results).toEqual([x1, x2, x3]);
   });
 });

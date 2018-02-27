@@ -16,7 +16,7 @@
  */
 
 import * as dl from '../index';
-import {variable, Variable} from '../tensor';
+import {Variable} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
 import {SGDOptimizer} from './sgd_optimizer';
@@ -26,9 +26,9 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
     const learningRate = .1;
     const optimizer = dl.train.sgd(learningRate);
 
-    const x = variable(dl.scalar(4));
-    const bias = variable(dl.scalar(1));
-    const strayVariable = variable(dl.scalar(-1));
+    const x = dl.scalar(4).variable();
+    const bias = dl.scalar(1).variable();
+    const strayVariable = dl.scalar(-1).variable();
 
     let numTensors = dl.memory().numTensors;
 
@@ -76,9 +76,9 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
-    const x = dl.variable(dl.scalar(4));
-    const bias = variable(dl.scalar(1));
-    const strayVariable = variable(dl.scalar(-1));
+    const x = dl.scalar(4).variable();
+    const bias = dl.scalar(1).variable();
+    const strayVariable = dl.scalar(-1).variable();
     const varList = [x, bias];
 
     const f = () => x.square().addStrict(bias);
@@ -106,45 +106,29 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
     expect(cost).toBe(null);
   });
 
-  it('varList empty array of variables to update updates nothing', () => {
+  it('varList empty array of variables throws error', () => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
-    const x = variable(dl.scalar(4));
-    const bias = variable(dl.scalar(1));
-    const strayVariable = variable(dl.scalar(-1));
+    const x = dl.scalar(4).variable();
+    const bias = dl.scalar(1).variable();
+    // Stray variable.
+    dl.scalar(-1).variable();
     const varList: Variable[] = [];
 
     const f = () => x.square().addStrict(bias);
 
-    let cost = optimizer.minimize(f, /* returnCost */ true, varList);
-
-    // x should not have been updated.
-    expectArraysClose(x, [4]);
-    // bias should not have been updated.
-    expectArraysClose(bias, [1]);
-    expectArraysClose(cost, [Math.pow(4, 2) + 1]);
-    // The stray variable should remain unchanged.
-    expectArraysClose(strayVariable, [-1]);
-
-    cost = optimizer.minimize(f, /* returnCost */ false, varList);
-
-    // x again should not have been updated.
-    expectArraysClose(x, [4]);
-    // bias again should not have been updated.
-    expectArraysClose(bias, [1]);
-    // The stray variable should remain unchanged.
-    expectArraysClose(strayVariable, [-1]);
-    expect(cost).toBe(null);
+    expect(() => optimizer.minimize(f, /* returnCost */ true, varList))
+        .toThrowError();
   });
 
   it('varList subset of variables update', () => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
-    const x = variable(dl.scalar(4));
-    const bias = variable(dl.scalar(1));
-    const strayVariable = variable(dl.scalar(-1));
+    const x = dl.scalar(4).variable();
+    const bias = dl.scalar(1).variable();
+    const strayVariable = dl.scalar(-1).variable();
     const varList = [x];
 
     const f = () => x.square().addStrict(bias);
@@ -176,9 +160,9 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
     const optimizer = new SGDOptimizer(learningRate);
 
     const trainable = false;
-    const x = variable(dl.scalar(4), trainable);
-    const bias = variable(dl.scalar(1));
-    const strayVariable = variable(dl.scalar(-1));
+    const x = dl.scalar(4).variable(trainable);
+    const bias = dl.scalar(1).variable();
+    const strayVariable = dl.scalar(-1).variable();
 
     const f = () => x.square().addStrict(bias);
 
@@ -204,44 +188,28 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
     expectArraysClose(strayVariable, [-1]);
   });
 
-  it('only bias trainable, only x in varList does nothing', () => {
+  it('only bias trainable, only x in varList throws error', () => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
     const trainable = false;
-    const x = variable(dl.scalar(4), trainable);
-    const bias = variable(dl.scalar(1));
-    const strayVariable = variable(dl.scalar(-1));
+    const x = dl.scalar(4).variable(trainable);
+    const bias = dl.scalar(1).variable();
+    // stray variable.
+    dl.scalar(-1).variable();
     const varList = [x];
 
     const f = () => x.square().addStrict(bias);
 
-    let cost = optimizer.minimize(f, /* returnCost */ true, varList);
-
-    // x should not have been updated.
-    expectArraysClose(x, [4]);
-    // bias should remain unchanged.
-    expectArraysClose(bias, [1]);
-    expectArraysClose(cost, [Math.pow(4, 2) + 1]);
-    // The stray variable should remain unchanged.
-    expectArraysClose(strayVariable, [-1]);
-
-    cost = optimizer.minimize(f, /* returnCost */ false, varList);
-
-    // x should not have been updated.
-    expectArraysClose(x, [4]);
-    // bias should not have been updated.
-    expectArraysClose(bias, [1]);
-    expect(cost).toBe(null);
-    // The stray variable should remain unchanged.
-    expectArraysClose(strayVariable, [-1]);
+    expect(() => optimizer.minimize(f, /* returnCost */ true, varList))
+        .toThrowError();
   });
 
   it('throws error when f returns a non-scalar', () => {
     const learningRate = .1;
     const optimizer = new SGDOptimizer(learningRate);
 
-    const x = variable(dl.tensor1d([1, 2]));
+    const x = dl.tensor1d([1, 2]).variable();
     const f = () => x.square();
 
     // tslint:disable-next-line:no-any

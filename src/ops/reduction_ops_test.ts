@@ -259,35 +259,6 @@ describeWithFlags('argmin', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('argMaxEquals', ALL_ENVS, () => {
-  it('equals', () => {
-    const a = dl.tensor1d([5, 0, 3, 7, 3]);
-    const b = dl.tensor1d([-100.3, -20.0, -10.0, -5, -100]);
-    const result = dl.argMaxEquals(a, b);
-    expect(result.get()).toBe(1);
-  });
-
-  it('not equals', () => {
-    const a = dl.tensor1d([5, 0, 3, 1, 3]);
-    const b = dl.tensor1d([-100.3, -20.0, -10.0, -5, 0]);
-    const result = dl.argMaxEquals(a, b);
-    expect(result.get()).toBe(0);
-  });
-
-  it('propagates NaNs', () => {
-    const a = dl.tensor1d([0, 3, 1, 3]);
-    const b = dl.tensor1d([NaN, -20.0, -10.0, -5]);
-    const result = dl.argMaxEquals(a, b);
-    assertIsNan(result.get(), result.dtype);
-  });
-
-  it('throws when given arrays of different shape', () => {
-    const a = dl.tensor1d([5, 0, 3, 7, 3, 10]);
-    const b = dl.tensor1d([-100.3, -20.0, -10.0, -5, -100]);
-    expect(() => dl.argMaxEquals(a, b)).toThrowError();
-  });
-});
-
 describeWithFlags('logSumExp', ALL_ENVS, () => {
   it('0', () => {
     const a = dl.scalar(0);
@@ -479,7 +450,7 @@ describeWithFlags('sum', ALL_ENVS, () => {
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
-    expectArraysClose(gradients, [10, 10, 10, 10, 10, 10], 1e-1);
+    expectArraysClose(gradients, [10, 10, 10, 10, 10, 10]);
   });
 
   it('gradients: sum(2d, axis=0)', () => {
@@ -491,7 +462,7 @@ describeWithFlags('sum', ALL_ENVS, () => {
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
-    expectArraysClose(gradients, [10, 20, 10, 20, 10, 20], 1e-1);
+    expectArraysClose(gradients, [10, 20, 10, 20, 10, 20]);
   });
 
   it('gradients: sum(2d, axis=1)', () => {
@@ -503,7 +474,7 @@ describeWithFlags('sum', ALL_ENVS, () => {
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
-    expectArraysClose(gradients, [10, 10, 20, 20, 30, 30], 1e-1);
+    expectArraysClose(gradients, [10, 10, 20, 20, 30, 30]);
   });
 });
 

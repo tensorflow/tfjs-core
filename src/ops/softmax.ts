@@ -24,12 +24,24 @@ import * as axis_util from './axis_util';
 import {operation} from './operation';
 import * as ops from './ops';
 
-export class Ops {
+export class SoftmaxOps {
   /**
    * Computes the softmax normalized vector given the logits.
    *
+   * ```js
+   * const a = dl.tensor1d([1, 2, 3]);
+   *
+   * a.softmax().print();  // or dl.softmax(a)
+   * ```
+   *
+   * ```js
+   * const a = dl.tensor2d([2, 4, 6, 1, 2, 3], [2, 3]);
+   *
+   * a.softmax().print();  // or dl.softmax(a)
+   * ```
+   *
    * @param logits The logits array.
-   * @param dim The dimension softmax would be performed on. Defaults to -1
+   * @param dim The dimension softmax would be performed on. Defaults to `-1`
    *     which indicates the last dimension.
    */
   @doc({heading: 'Operations', subheading: 'Normalization'})
@@ -55,7 +67,7 @@ export class Ops {
       const gradFunc = (dy: T) => {
         const dyTimesY = dy.mul(y);
         const keepDims = true;
-        return [dyTimesY.sub(dyTimesY.sum([dim], keepDims).mul(y))];
+        return dyTimesY.sub(dyTimesY.sum([dim], keepDims).mul(y));
       };
 
       return {value: y, gradFunc};
@@ -72,12 +84,12 @@ export class Ops {
    * For example, each CIFAR-10 image is labeled with one and only one label: an
    * image can be a dog or a truck, but not both.
    *
-   * NOTE: While the classes are mutually exclusive, their probabilities need
+   * `NOTE`: While the classes are mutually exclusive, their probabilities need
    * not be. All that is required is that each row of labels is a valid
    * probability distribution. If they are not, the computation of the gradient
    * will be incorrect.
    *
-   * WARNING: This op expects unscaled logits, since it performs a softmax on
+   * `WARNING`: This op expects unscaled logits, since it performs a softmax on
    * logits internally for efficiency. Do not call this op with the output of
    * softmax, as it will produce incorrect results.
    *
@@ -85,7 +97,7 @@ export class Ops {
    * and the same dtype.
    * @param labels The labels array.
    * @param logits The logits array.
-   * @param dim The dimension softmax would be performed on. Defaults to -1
+   * @param dim The dimension softmax would be performed on. Defaults to `-1`
    *     which indicates the last dimension.
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
@@ -115,7 +127,6 @@ export class Ops {
         return [
           dy.reshape(dyShape).mul(labels.toFloat().sub(predictedProbs)),
           dy.reshape(dyShape).mul(predictedProbs.sub(labels.toFloat())),
-
         ];
       };
       return {value, gradFunc};

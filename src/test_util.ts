@@ -25,19 +25,19 @@ import * as util from './util';
 export const WEBGL_ENVS: Features[] = [
   {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
   {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  {
-    'BACKEND': 'webgl',
-    'WEBGL_FLOAT_TEXTURE_ENABLED': false,
-    'WEBGL_VERSION': 1
-  },
+  // TODO(nsthorat,smilkov): Enable when byte-backed textures are fixed.
+  // {
+  // 'BACKEND': 'webgl',
+  // 'WEBGL_FLOAT_TEXTURE_ENABLED': false,
+  // 'WEBGL_VERSION': 1
+  // }
 ];
+
 export const CPU_ENVS: Features[] = [{'BACKEND': 'cpu'}];
 export const ALL_ENVS = WEBGL_ENVS.concat(CPU_ENVS);
 
 /** Accuracy for tests. */
-// TODO(nsthorat || smilkov): Fix this low precision for byte-backed
-// textures.
-export const TEST_EPSILON = 1e-2;
+export const TEST_EPSILON = 1e-3;
 
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],

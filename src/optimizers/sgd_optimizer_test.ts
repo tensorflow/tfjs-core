@@ -18,7 +18,6 @@ import {InputProvider} from '../data/input_provider';
 import {Graph} from '../graph/graph';
 import {Session} from '../graph/session';
 import * as dl from '../index';
-import {variable} from '../tensor';
 import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
 import {SGDOptimizer} from './sgd_optimizer';
 
@@ -27,7 +26,7 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
     const learningRate = .1;
     const optimizer = dl.train.sgd(learningRate);
 
-    const x = variable(dl.scalar(4));
+    const x = dl.scalar(4).variable();
 
     let numTensors = dl.memory().numTensors;
 
@@ -77,6 +76,6 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
     // dw/dx = [2*x_1 + 1, 2*x_2 + 1]
     session.train(w, [{tensor: x, data: inputProvider}], 1, optimizer);
     const dwdx = session.gradientArrayMap.get(x).dataSync();
-    expectArraysClose(dwdx, new Float32Array([5, 9]), 1e-1);
+    expectArraysClose(dwdx, new Float32Array([5, 9]));
   });
 });

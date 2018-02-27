@@ -111,7 +111,7 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
         imagenet_util.getRenderGrayscaleChannelsCollageShader(this.gpgpu);
 
     const cameraSetup = this.setupCameraInput();
-    this.squeezeNet = new SqueezeNet(this.math);
+    this.squeezeNet = new SqueezeNet();
 
     await Promise.all([this.squeezeNet.load(), cameraSetup]);
 
@@ -180,30 +180,32 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
 
     const isWebcam = this.selectedInputName === 'webcam';
 
-    await dl.tidy(async () => {
-      if (!this.isMediaLoaded) {
-        return;
-      }
+    if (!this.isMediaLoaded) {
+      return;
+    }
 
-      const element =
-          isWebcam ? this.webcamVideoElement : this.staticImgElement;
+    const element = isWebcam ? this.webcamVideoElement : this.staticImgElement;
 
-      const image = dl.fromPixels(element, 3);
+    const image = dl.fromPixels(element, 3);
 
-      const inferenceResult =
-          this.squeezeNet.predictWithActivation(image, this.selectedLayerName);
+    const inferenceResult =
+        this.squeezeNet.predictWithActivation(image, this.selectedLayerName);
 
-      const topClassesToProbability = await this.squeezeNet.getTopKClasses(
-          inferenceResult.logits, TOP_K_CLASSES);
+    const topClassesToProbability = await this.squeezeNet.getTopKClasses(
+        inferenceResult.logits, TOP_K_CLASSES);
 
-      const endTime = performance.now();
+    const endTime = performance.now();
 
-      const elapsed = Math.floor(1000 * (endTime - startTime)) / 1000;
-      (this.querySelector('#totalTime') as HTMLDivElement).innerHTML =
-          `last inference time: ${elapsed} ms`;
+    const elapsed = Math.floor(1000 * (endTime - startTime)) / 1000;
+    (this.querySelector('#totalTime') as HTMLDivElement).innerHTML =
+        `last inference time: ${elapsed} ms`;
 
-      let count = 0;
-      for (const className in topClassesToProbability) {
+    let count = 0;
+    for (const className in topClassesToProbability) {
+      if (isWebcam) {
+        document.getElementById(`class${count}`).innerHTML = '';
+        document.getElementById(`prob${count}`).innerHTML = '';
+      } else {
         if (!(className in topClassesToProbability)) {
           continue;
         }
@@ -211,12 +213,14 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
         document.getElementById(`prob${count}`).innerHTML =
             (Math.floor(1000 * topClassesToProbability[className]) / 1000)
                 .toString();
-        count++;
       }
+      count++;
+    }
 
-      // Render activations.
-      const activationTensor = inferenceResult.activation;
+    // Render activations.
+    const activationTensor = inferenceResult.activation;
 
+    const [minValues, maxValues] = dl.tidy(() => {
       // Compute max and min per channel for normalization.
       const maxValues = activationTensor.maxPool(
           activationTensor.shape[1], activationTensor.shape[1], 0);
@@ -237,11 +241,18 @@ export class ImagenetDemo extends ImagenetDemoPolymer {
           this.backend.getTextureData(activationTensor.dataId).texShape,
           activationTensor.shape[0], activationTensor.shape[2],
           this.inferenceCanvas.width, numRows);
-      // Unclear why, but unless we wait for the gpu to fully end, we get a
-      // flicker effect.
-      await maxValues.data();
-      await minValues.data();
+      return [minValues, maxValues];
     });
+    // Unclear why, but unless we wait for the gpu to fully end, we get a
+    // flicker effect.
+    await maxValues.data();
+    await minValues.data();
+
+    image.dispose();
+    inferenceResult.activation.dispose();
+    inferenceResult.logits.dispose();
+    minValues.dispose();
+    maxValues.dispose();
     requestAnimationFrame(() => this.animate());
   }
 }
