@@ -15,14 +15,14 @@
  * =============================================================================
  */
 
-import {DatasetBatch} from '..';
 import {ENV} from '../../environment';
 import {Tensor, Tensor1D, Tensor2D} from '../../tensor';
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
+import {CPU_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
 
 import {TestDataset} from './dataset_test';
+import {DatasetBatch} from './types';
 
-describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
+describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
   it('batches entries into column-oriented DatasetBatches', done => {
     const ds = new TestDataset();
     const bds = ds.batch(8);
@@ -40,7 +40,7 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
         }))
         .then((result) => {
           for (const batch of result) {
-            consume(batch);
+            disposeBatch(batch);
           }
         })
         .then(() => expect(ENV.engine.memory().numTensors).toBe(0))
@@ -82,7 +82,7 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
         }))
         .then((result) => {
           for (const batch of result) {
-            consume(batch);
+            disposeBatch(batch);
           }
         })
         // these three tensors are just the expected results above
@@ -92,7 +92,7 @@ describeWithFlags('Dataset.batch()', ALL_ENVS, () => {
   });
 });
 
-function consume(input: DatasetBatch): void {
+function disposeBatch(input: DatasetBatch): void {
   for (const key in input) {
     const value = input[key];
     if (value instanceof Tensor) {

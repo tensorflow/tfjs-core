@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import * as dl from '../../index';
+import {ENV} from '../../environment';
 import {Tensor} from '../../tensor';
 import * as util from '../../util';
 
@@ -49,7 +49,7 @@ export class BatchDataset {
   async getStream(): Promise<DataStream<DatasetBatch>> {
     const batchesAsArrays = (await this.base.getStream())
                                 .batch(this.batchSize, this.smallLastBatch);
-    return batchesAsArrays.map(makeDatasetBatch, consumePrep, retain);
+    return batchesAsArrays.map(makeDatasetBatch, disposeBatchPrep, keepBatch);
   }
 }
 
@@ -129,7 +129,8 @@ function shapeAndValues(array: number|number[]|Tensor):
   }
 }
 
-function consumePrep(input: DatasetElement[]): (output: DatasetBatch) => void {
+function disposeBatchPrep(input: DatasetElement[]): (output: DatasetBatch) =>
+    void {
   const inputTensors = extractTensorsFromElementArray(input);
   return (output: DatasetBatch) => {
     // ignore the output tensors here: they can't possibly be passed through
@@ -152,11 +153,11 @@ function extractTensorsFromElementArray(input: DatasetElement[]): Tensor[] {
   return tensors;
 }
 
-function retain(input: DatasetBatch): DatasetBatch {
+function keepBatch(input: DatasetBatch): DatasetBatch {
   for (const key in input) {
     const value = input[key];
     if (value instanceof Tensor) {
-      dl.keep(value);
+      ENV.engine.keep(value);
     }
   }
   return input;
