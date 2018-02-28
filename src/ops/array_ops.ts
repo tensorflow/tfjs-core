@@ -676,26 +676,20 @@ export class ArrayOps {
       const derX = () => {
         let xGrad = ArrayOps.zerosLike(x);
         if (x.rank === 1) {
-          const steps = dy.shape[0] / x.shape[0];
-          for (let i = 0; i < steps; ++i) {
+          for (let i = 0; i < reps[0]; ++i) {
             xGrad = xGrad.add(dy.slice([i * x.shape[0]], [x.shape[0]]));
           }
         } else if (x.rank === 2) {
-          const steps0 = dy.shape[0] / x.shape[0];
-          const steps1 = dy.shape[1] / x.shape[1];
-          for (let i = 0; i < steps0; ++i) {
-            for (let j = 0; j < steps1; ++j) {
+          for (let i = 0; i < reps[0]; ++i) {
+            for (let j = 0; j < reps[1]; ++j) {
               xGrad = xGrad.add(dy.slice([i * x.shape[0], j * x.shape[1]],
                                           [x.shape[0], x.shape[1]]));
             }
           }
         } else if (x.rank === 3) {
-          const steps0 = dy.shape[0] / x.shape[0];
-          const steps1 = dy.shape[1] / x.shape[1];
-          const steps2 = dy.shape[2] / x.shape[2];
-          for (let i = 0; i < steps0; ++i) {
-            for (let j = 0; j < steps1; ++j) {
-              for (let k = 0; k < steps2; ++k) {
+          for (let i = 0; i < reps[0]; ++i) {
+            for (let j = 0; j < reps[1]; ++j) {
+              for (let k = 0; k < reps[2]; ++k) {
                 xGrad = xGrad.add(dy.slice(
                   [i * x.shape[0], j * x.shape[1], k * x.shape[2]],
                   [x.shape[0], x.shape[1], x.shape[2]]));
@@ -703,14 +697,10 @@ export class ArrayOps {
             }
           }
         } else if (x.rank === 4) {
-          const steps0 = dy.shape[0] / x.shape[0];
-          const steps1 = dy.shape[1] / x.shape[1];
-          const steps2 = dy.shape[2] / x.shape[2];
-          const steps3 = dy.shape[3] / x.shape[3];
-          for (let i = 0; i < steps0; ++i) {
-            for (let j = 0; j < steps1; ++j) {
-              for (let k = 0; k < steps2; ++k) {
-                for (let l = 0; l < steps3; ++l) {
+          for (let i = 0; i < reps[0]; ++i) {
+            for (let j = 0; j < reps[1]; ++j) {
+              for (let k = 0; k < reps[2]; ++k) {
+                for (let l = 0; l < reps[3]; ++l) {
                   xGrad = xGrad.add(dy.slice(
                    [i * x.shape[0], j * x.shape[1], k * x.shape[2],
                     l * x.shape[3]],
