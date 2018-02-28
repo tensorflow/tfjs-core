@@ -166,8 +166,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     expect(result.shape).toEqual([3, 3, inDepth * chMul]);
   });
 
-  // tslint:disable-next-line:ban
-  fit('Pass null for dilations, which defaults to [1, 1]', () => {
+  it('Pass null for dilations, which defaults to [1, 1]', () => {
     const fSize = 2;
     const pad = 'same';
     const stride = 1;
