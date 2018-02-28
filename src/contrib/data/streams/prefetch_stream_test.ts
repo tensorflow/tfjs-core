@@ -21,8 +21,7 @@ import {PrefetchStream} from './data_stream';
 import {TestIntegerStream} from './data_stream_test';
 
 describe('PrefetchStream', () => {
-  // tslint:disable-next-line:ban
-  fit('fetches a stream completely (stream size < buffer size)', done => {
+  it('fetches a stream completely (stream size < buffer size)', done => {
     const prefetchStream = new PrefetchStream(new TestIntegerStream(), 500);
     const expectedResult: number[] = [];
     for (let j = 0; j < 100; j++) {
@@ -37,30 +36,31 @@ describe('PrefetchStream', () => {
         .catch(done.fail);
   });
 
-  it('fetches a chained stream completely (stream size < buffer size)',
-     done => {
-       const baseStreamPromise = streamFromConcatenatedFunction(() => {
-         return new TestIntegerStream();
-       }, 3);
+  // tslint:disable-next-line:ban
+  fit('fetches a chained stream completely (stream size < buffer size)',
+      done => {
+        const baseStreamPromise = streamFromConcatenatedFunction(() => {
+          return new TestIntegerStream();
+        }, 3);
 
-       const prefetchStreamPromise = baseStreamPromise.then(
-           baseStream => new PrefetchStream(baseStream, 500));
-       const expectedResult: number[] = [];
-       for (let i = 0; i < 3; i++) {
-         for (let j = 0; j < 100; j++) {
-           expectedResult[i * 100 + j] = j;
-         }
-       }
+        const prefetchStreamPromise = baseStreamPromise.then(
+            baseStream => new PrefetchStream(baseStream, 500));
+        const expectedResult: number[] = [];
+        for (let i = 0; i < 3; i++) {
+          for (let j = 0; j < 100; j++) {
+            expectedResult[i * 100 + j] = j;
+          }
+        }
 
-       prefetchStreamPromise
-           .then(
-               prefetchStream =>
-                   prefetchStream.collectRemaining().then(result => {
-                     expect(result).toEqual(expectedResult);
-                   }))
-           .then(done)
-           .catch(done.fail);
-     });
+        prefetchStreamPromise
+            .then(
+                prefetchStream =>
+                    prefetchStream.collectRemaining().then(result => {
+                      expect(result).toEqual(expectedResult);
+                    }))
+            .then(done)
+            .catch(done.fail);
+      });
 
   it('fetches a chained stream completely (stream size > buffer size)',
      done => {
