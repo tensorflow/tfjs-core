@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {NDArray} from '../../..';
+import {NDArray, Tensor} from '../../..';
 
 import {DataStream, QueueStream} from './data_stream';
 
@@ -44,7 +44,8 @@ export class IDXStream extends QueueStream<NDArray> {
 
   async readFirstChunk(): Promise<void> {
     // Assume that the first chunk is large enough to contain the entire header
-    const chunk = await this.upstream.next();
+    const chunkResult = await this.upstream.next();
+    const chunk = chunkResult.value;
     if (chunk[0] !== 0 || chunk[1] !== 0) {
       throw new Error('IDX magic number must start with 00.');
     }
@@ -67,15 +68,18 @@ export class IDXStream extends QueueStream<NDArray> {
     }
     const chunkRemainder = chunk.slice(index);
     this.numRecords = shape[0];
-    this.recordShape = shape.slice(1);
+    this.recordShape = shape.slice(1, shape.length);
     this.recordBytes = 1;
     for (const d of this.recordShape) {
       this.recordBytes *= d;
     }
-    console.log(
-        `Reading IDX file with ${this.numRecords} records of shape ` +
-        `${this.recordShape} taking ${this.recordBytes} bytes each.`);
-    this.pumpImpl(chunkRemainder);  // return value is always true; ignore
+    // console.debug(
+    //     `Reading IDX file with ${this.numRecords} records of shape ` +
+    //    `${this.recordShape} taking ${this.recordBytes} bytes each.`);
+    this.pumpImpl({
+      value: chunkRemainder,
+      done: false
+    });  // return value is always true; ignore
   }
 
   async pump(): Promise<boolean> {
@@ -83,8 +87,8 @@ export class IDXStream extends QueueStream<NDArray> {
     return this.pumpImpl(chunk);
   }
 
-  private pumpImpl(chunk: Uint8Array): boolean {
-    if (chunk == null) {
+  private pumpImpl(chunkResult: IteratorResult<Uint8Array>): boolean {
+    if (chunkResult.done) {
       if (this.carryover.length === 0) {
         return false;
       }
@@ -92,24 +96,23 @@ export class IDXStream extends QueueStream<NDArray> {
       // Pretend that the pump succeeded in order to emit the small last batch.
       // The next pump() call will actually fail.
       this.outputQueue.push(
-          NDArray.make(this.recordShape, {values: this.carryover}));
+          Tensor.make(this.recordShape, {values: this.carryover}));
       this.carryover = new Uint8Array([]);
       return true;
     }
+
+    const chunk = chunkResult.value;
 
     // TODO(soergel): consider factoring out a FixedLengthChunkStream
 
     // First make sure we have enough bytes, combining the carryover with the
     // current chunk, to create at least one record.
     const availableBytes = this.carryover.length + chunk.length;
-    console.log(`Carryover: ${this.carryover.length} Chunk: ${
-        chunk.length} Total: ${availableBytes}`);
     if (availableBytes < this.recordBytes) {
       const n = new Uint8Array(availableBytes);
       n.set(this.carryover);
       n.set(chunk, this.carryover.length);
       this.carryover = n;
-      console.log(`Set carryover: ${this.carryover.length}`);
       return true;
     }
 
@@ -117,8 +120,6 @@ export class IDXStream extends QueueStream<NDArray> {
     // chunk.
     const firstRecord = new Uint8Array(this.recordBytes);
 
-    console.log(`Using carryover: ${this.carryover.length} in record: ${
-        firstRecord.length}`);
     firstRecord.set(this.carryover);
     let index = this.recordBytes - this.carryover.length;
     firstRecord.set(chunk.slice(0, index));

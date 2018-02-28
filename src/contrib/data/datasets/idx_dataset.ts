@@ -19,24 +19,24 @@
 import {Dataset} from '../dataset';
 import {DataSource} from '../datasource';
 import {DataStream} from '../streams/data_stream';
+import {IDXStream} from '../streams/idx_stream';
 import {DatasetElement} from '../types';
-import { IDXStream } from '../streams/idx_stream';
 
 /**
- * Represents a potentially large collection of text lines.
+ * A potentially large collection of Tensors parsed from an IDX source.
  *
- * The produced `DatasetElement`s each contain a single string value, with the
- * key given by the `columnName` argument (default 'line').
+ * The produced `DatasetElement`s each contain a single Tensor, with the
+ * key given by the `columnName` argument (default 'data').
  *
  * The results are not batched.
  */
 export class IDXDataset extends Dataset {
   /**
-   * Create a `TextLineDataset`.
+   * Create an `IDXDataset`.
    *
    * @param input A `DataSource` providing a chunked, UTF8-encoded byte stream.
    * @param columnName The key to use in the resulting `DatasetElement`s
-   *   (default 'line').
+   *   (default 'data').
    */
   constructor(
       protected readonly input: DataSource,
