@@ -172,10 +172,11 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const stride = 1;
     const chMul = 3;
     const inDepth = 2;
+    const dilations: [number, number] = null;
 
     const x = dl.zeros<Rank.R3>([3, 3, inDepth]);
     const w = dl.zeros<Rank.R4>([fSize, fSize, inDepth, chMul]);
-    const result = dl.depthwiseConv2d(x, w, stride, pad, null);
+    const result = dl.depthwiseConv2d(x, w, stride, pad, dilations);
     expect(result.shape).toEqual([3, 3, inDepth * chMul]);
   });
 });
