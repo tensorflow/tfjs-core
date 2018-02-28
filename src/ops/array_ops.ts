@@ -726,7 +726,7 @@ export class ArrayOps {
         }
         return xGrad;
       };
-      return {x: derX}
+      return {x: derX};
     };
     return ENV.engine.runKernel(backend => backend.tile(x, reps), {x}, grad);
   }
