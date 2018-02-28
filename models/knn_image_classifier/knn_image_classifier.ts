@@ -230,8 +230,8 @@ export class KNNImageClassifier {
 
   setClassLogitsMatrices(classLogitsMatrices: Tensor2D[]) {
     this.classLogitsMatrices = classLogitsMatrices;
-    this.classExampleCount =
-        classLogitsMatrices.map((tensor: Tensor2D) => tensor.shape[0]);
+    this.classExampleCount = classLogitsMatrices.map(
+        (tensor: Tensor2D) => tensor != null ? tensor.shape[0] : 0);
     this.clearTrainLogitsMatrix();
   }
 
