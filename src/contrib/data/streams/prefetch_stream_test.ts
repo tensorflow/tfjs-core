@@ -21,8 +21,8 @@ import {PrefetchStream} from './data_stream';
 import {TestIntegerStream} from './data_stream_test';
 
 describe('PrefetchStream', () => {
-
-  it('fetches a stream completely (stream size < buffer size)', done => {
+  // tslint:disable-next-line:ban
+  fit('fetches a stream completely (stream size < buffer size)', done => {
     const prefetchStream = new PrefetchStream(new TestIntegerStream(), 500);
     const expectedResult: number[] = [];
     for (let j = 0; j < 100; j++) {

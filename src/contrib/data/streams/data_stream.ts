@@ -58,8 +58,8 @@ export function streamFromFunction<T>(func: () => T | Promise<T>):
  *
  * @param baseStreams A stream of streams to be concatenated.
  */
-export async function streamFromConcatenated<T>(
-    baseStreams: DataStream<DataStream<T>>): Promise<DataStream<T>> {
+export function streamFromConcatenated<T>(
+    baseStreams: DataStream<DataStream<T>>): DataStream<T> {
   return ChainedStream.create(baseStreams);
 }
 
@@ -178,8 +178,8 @@ export abstract class DataStream<T> {
    * @param stream A `DataStream` to be concatenated onto this one.
    * @returns A `DataStream`.
    */
-  async concatenate(stream: DataStream<T>): Promise<DataStream<T>> {
-    return ChainedStream.create(new ArrayStream([this, stream]));
+  concatenate(stream: DataStream<T>): DataStream<T> {
+    return ChainedStream.create(streamFromItems([this, stream]));
   }
 
   /**
@@ -423,28 +423,6 @@ class MapStream<T, S> extends QueueStream<S> {
   }
 }
 
-class ChainState<T> {
-  constructor(
-      public readonly item: T, public readonly currentStream: DataStream<T>,
-      public readonly moreStreams: DataStream<DataStream<T>>) {}
-}
-
-async function nextChainState<T>(afterState: Promise<ChainState<T>>):
-    Promise<ChainState<T>> {
-  const state = await afterState;
-  let stream = state.currentStream;
-  if (stream == null) {
-    return new ChainState(undefined, undefined, state.moreStreams);
-  }
-  const item = await stream.next();
-  if (item == null) {
-    stream = await state.moreStreams.next();
-    return nextChainState(
-        Promise.resolve(new ChainState(undefined, stream, state.moreStreams)));
-  }
-  return new ChainState(item, stream, state.moreStreams);
-}
-
 /**
  * Provides a `DataStream` that concatenates a stream of underlying streams.
  *
@@ -454,20 +432,31 @@ async function nextChainState<T>(afterState: Promise<ChainState<T>>):
  * Promises resolve in a different order.
  */
 export class ChainedStream<T> extends DataStream<T> {
-  private currentPromise: Promise<ChainState<T>>;
+  private currentStream: DataStream<T> = null;
+  private moreStreams: DataStream<DataStream<T>>;
+  private item: T = null;
 
-  static async create<T>(baseStreams: DataStream<DataStream<T>>):
-      Promise<ChainedStream<T>> {
+  static create<T>(streams: DataStream<DataStream<T>>): ChainedStream<T> {
     const c = new ChainedStream<T>();
-    const currentStream = await baseStreams.next();
-    c.currentPromise =
-        Promise.resolve(new ChainState(undefined, currentStream, baseStreams));
+    c.moreStreams = streams;
     return c;
   }
 
   async next(): Promise<T> {
-    this.currentPromise = nextChainState(this.currentPromise);
-    return (await this.currentPromise).item;
+    await this.advanceChain();
+    return this.item;
+  }
+
+  private async advanceChain(): Promise<void> {
+    this.currentStream = this.currentStream || await this.moreStreams.next();
+    if (this.currentStream != null) {
+      this.item = await this.currentStream.next();
+      if (this.item == null) {
+        // Advance the stream of streams.
+        this.currentStream = null;
+        return this.advanceChain();
+      }
+    }
   }
 }
 
@@ -492,8 +481,8 @@ export class PrefetchStream<T> extends DataStream<T> {
   }
 
   /**
-   * Refill the prefetch buffer.  Returns only after the buffer is full, or the
-   * upstream source is exhausted.
+   * Refill the prefetch buffer.  Returns only after the buffer is full, or
+   * the upstream source is exhausted.
    */
   protected refill() {
     while (!this.buffer.isFull()) {
@@ -518,9 +507,10 @@ export class PrefetchStream<T> extends DataStream<T> {
 }
 
 /**
- * A stream that performs a sliding-window random shuffle on an upstream source.
- * This is like a `PrefetchStream` except that the items are returned in
- * randomized order.  Mixing naturally improves as the buffer size increases.
+ * A stream that performs a sliding-window random shuffle on an upstream
+ * source. This is like a `PrefetchStream` except that the items are returned
+ * in randomized order.  Mixing naturally improves as the buffer size
+ * increases.
  */
 export class ShuffleStream<T> extends PrefetchStream<T> {
   private random: seedrandom.prng;
