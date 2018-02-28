@@ -18,9 +18,7 @@
 
 import * as seedrandom from 'seedrandom';
 
-import {util} from '../..';
-import {keep, tidy} from '../../globals';
-import {Tensor} from '../../tensor';
+import {tidy} from '../../globals';
 
 import {BatchDataset} from './batch_dataset';
 import {computeDatasetStatistics, DatasetStatistics} from './statistics';
@@ -103,8 +101,7 @@ export abstract class Dataset {
   filter(filterer: (value: DatasetElement) => boolean): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream())
-          .filter(x => tidy(() => filterer(x)), disposeElement);
+      return (await base.getStream()).filter(x => tidy(() => filterer(x)));
     });
   }
 
@@ -119,8 +116,7 @@ export abstract class Dataset {
   map(transform: (value: DatasetElement) => DatasetElement): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream())
-          .map(x => tidy(() => transform(x)), disposeElementPrep, keepElement);
+      return (await base.getStream()).map(x => tidy(() => transform(x)));
     });
   }
 
@@ -205,7 +201,7 @@ export abstract class Dataset {
   skip(count: number): Dataset {
     const base = this;
     return datasetFromStreamFn(async () => {
-      return (await base.getStream()).skip(count, disposeElement);
+      return (await base.getStream()).skip(count);
     });
   }
 
@@ -273,13 +269,9 @@ export abstract class Dataset {
    * dispose them later!
    *
    * @param f A function to apply to each dataset element.
-   * @param keepTensors Prevent Tensors obtained from the dataset from being
-   *   disposed.  Defaults to false (i.e., Tensors will be disposed).
    */
-  async forEach(f: (input: DatasetElement) => {}, keepTensors = false):
-      Promise<void> {
-    const stream = await this.getStream();
-    return stream.forEach(f, keepTensors ? undefined : disposeElement);
+  async forEach(f: (input: DatasetElement) => {}): Promise<void> {
+    return (await this.getStream()).forEach(f);
   }
 
   /* TODO(soergel): for parity with tf.data:
@@ -328,56 +320,4 @@ export function datasetFromConcatenated(datasets: Dataset[]) {
     const streamStream = await Promise.all(datasets.map((d) => d.getStream()));
     return streamFromConcatenated(streamFromItems(streamStream));
   });
-}
-
-function disposeElement(input: DatasetElement): void {
-  for (const key in input) {
-    const value = input[key];
-    if (value instanceof Tensor) {
-      value.dispose();
-    }
-  }
-}
-
-/**
- * Prepare a function that will dispose any Tensors contained in a
- * DatasetElement.
- *
- * This formulation allows the DatasetElement to be mutated, reading its current
- * contents before disposing them.  The mutated DatasetElement may or may not
- * contain the same Tensors as before.  Here, the function closure stores the
- * original set of Tensors so that they can be disposed-- unless those same
- * Tensors are still present in the output.
- */
-function disposeElementPrep(input: DatasetElement): (output: DatasetElement) =>
-    void {
-  const inputTensors = extractTensorsFromElement(input);
-  return (output: DatasetElement) => {
-    const outputTensors = extractTensorsFromElement(output);
-    // TODO(soergel) faster intersection
-    for (const t of inputTensors) {
-      if (!util.isTensorInList(t, outputTensors)) {
-        t.dispose();
-      }
-    }
-  };
-}
-
-function extractTensorsFromElement(input: DatasetElement) {
-  const tensors: Tensor[] = [];
-  for (const key in input) {
-    const value = input[key];
-    if (value instanceof Tensor) {
-      tensors.push(value);
-    }
-  }
-  return tensors;
-}
-
-function keepElement(input: DatasetElement): DatasetElement {
-  const inputTensors = extractTensorsFromElement(input);
-  for (const t of inputTensors) {
-    keep(t);
-  }
-  return input;
 }

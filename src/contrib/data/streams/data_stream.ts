@@ -18,6 +18,9 @@
 
 import * as seedrandom from 'seedrandom';
 
+import {extractTensorsFromAny} from '../../../engine';
+import {dispose} from '../../../globals';
+import {isTensorInList} from '../../../util';
 import {GrowingRingBuffer} from '../util/growing_ring_buffer';
 import {RingBuffer} from '../util/ring_buffer';
 
@@ -131,14 +134,11 @@ export abstract class DataStream<T> {
    *
    * @param predicate A function mapping a stream element to a boolean or a
    * `Promise` for one.
-   * @param consume A function that finalizes an item, e.g. by marking it for
-   *   garbage collection.
    *
    * @returns A `DataStream` of elements for which the predicate was true.
    */
-  filter(predicate: (value: T) => boolean, consume?: (item: T) => void):
-      DataStream<T> {
-    return new FilterStream(this, predicate, consume);
+  filter(predicate: (value: T) => boolean): DataStream<T> {
+    return new FilterStream(this, predicate);
   }
 
   /**
@@ -146,38 +146,20 @@ export abstract class DataStream<T> {
    *
    * @param predicate A function mapping a stream element to a transformed
    *   element.
-   * @param consumePrep A function that tentatively schedules an item or its
-   *   components for garbage collection.  The return value must be a second
-   *   function that actually executes the cleanup procedure.  This second
-   *   function accepts an argument that may modify the list of objects to be
-   *   collected, e.g. by reversing the tentative decision made previously.
-   * @param retain A function that marks an item to be retained (i.e.,
-   *   protected from garbage collection), and returns it (or a marked copy).
    *
    * @returns A `DataStream` of transformed elements.
    */
-  map<O>(
-      transform: (value: T) => O,
-      consumePrep?: (item: T) => ((output: O) => void),
-      retain?: (item: O) => O): DataStream<O> {
-    return new MapStream(this, transform, consumePrep, retain);
+  map<O>(transform: (value: T) => O): DataStream<O> {
+    return new MapStream(this, transform);
   }
 
   /**
    * Apply a function to every element of the stream.
    *
    * @param f A function to apply to each stream element.
-   * @param consumePrep A function that tentatively schedules an item or its
-   *   components for garbage collection.  The return value must be a second
-   *   function that actually executes the cleanup procedure.  This second
-   *   function accepts an argument that may modify the list of objects to be
-   *   collected, e.g. by reversing the tentative decision made previously.
    */
-  async forEach(f: (value: T) => void, consume?: (item: T) => void):
-      Promise<void> {
-    const consumePrep =
-        consume == null ? null : (item: T) => ((output: void) => consume(item));
-    return this.map(f, consumePrep).resolveFully();
+  async forEach(f: (value: T) => void): Promise<void> {
+    return this.map(f).resolveFully();
   }
 
   /**
@@ -222,14 +204,12 @@ export abstract class DataStream<T> {
    *
    * @param count The number of items to skip.  If a negative or undefined value
    *   is given, the entire stream is returned unaltered.
-   * @param consume A function that finalizes an item, e.g. by marking it for
-   *   garbage collection.
    */
-  skip(count: number, consume?: (item: T) => void): DataStream<T> {
+  skip(count: number): DataStream<T> {
     if (count < 0 || count == null) {
       return this;
     }
-    return new SkipStream(this, count, consume);
+    return new SkipStream(this, count);
   }
 
   /**
@@ -297,22 +277,18 @@ class FunctionCallStream<T> extends DataStream<T> {
 
 class SkipStream<T> extends DataStream<T> {
   count = 0;
-  constructor(
-      protected upstream: DataStream<T>, protected maxCount: number,
-      protected consume: (item: T) => void) {
+  constructor(protected upstream: DataStream<T>, protected maxCount: number) {
     super();
   }
 
   async next(): Promise<T> {
     while (this.count++ < this.maxCount) {
       const skipped = await this.upstream.next();
-      if (this.consume != null) {
-        this.consume(skipped);
-      }
       // short-circuit if upstream is already empty
       if (skipped == null) {
         return undefined;
       }
+      dispose(skipped);
     }
     return this.upstream.next();
   }
@@ -421,8 +397,7 @@ class BatchStream<T> extends QueueStream<T[]> {
 class FilterStream<T> extends QueueStream<T> {
   constructor(
       protected upstream: DataStream<T>,
-      protected predicate: (value: T) => boolean,
-      protected consume?: (item: T) => void) {
+      protected predicate: (value: T) => boolean) {
     super();
   }
 
@@ -433,8 +408,8 @@ class FilterStream<T> extends QueueStream<T> {
     }
     if (this.predicate(item)) {
       this.outputQueue.push(item);
-    } else if (this.consume != null) {
-      this.consume(item);
+    } else {
+      dispose(item);
     }
     return true;
   }
@@ -442,9 +417,7 @@ class FilterStream<T> extends QueueStream<T> {
 
 class MapStream<I, O> extends QueueStream<O> {
   constructor(
-      protected upstream: DataStream<I>, protected transform: (value: I) => O,
-      protected consumePrep: (item: I) => ((item: O) => void),
-      protected retain: (item: O) => O) {
+      protected upstream: DataStream<I>, protected transform: (value: I) => O) {
     super();
   }
 
@@ -453,17 +426,22 @@ class MapStream<I, O> extends QueueStream<O> {
     if (item == null) {
       return false;
     }
-    const consumeFn = this.consumePrep == null ? null : this.consumePrep(item);
+    const inputTensors = extractTensorsFromAny(item);
     // Careful: the transform may mutate the item in place.
-    // that's why we have to prepare the consumeFn above but execute it below.
-    let mapped = this.transform(item);
+    // that's why we have to remember the input Tensors above, and then below
+    // dispose only those that were not passed through to the output.
+    // Note too that the transform function is responsible for tidying any
+    // intermediate Tensors.  Here we are concerned only about the inputs.
+    const mapped = this.transform(item);
 
-    if (this.retain != null) {
-      mapped = this.retain(mapped);
-    }
-    // Consume *after* retain, in case of overlap
-    if (consumeFn != null) {
-      consumeFn(mapped);
+    const outputTensors = extractTensorsFromAny(mapped);
+
+    // TODO(soergel) faster intersection
+    // TODO(soergel) move to dl.disposeExcept(in, out)?
+    for (const t of inputTensors) {
+      if (!isTensorInList(t, outputTensors)) {
+        t.dispose();
+      }
     }
 
     this.outputQueue.push(mapped);

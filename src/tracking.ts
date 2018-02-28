@@ -16,6 +16,7 @@
  */
 
 import {doc} from './doc';
+import {extractTensorsFromAny} from './engine';
 import {ScopeFn, ScopeResult, TimingInfo} from './engine';
 import {ENV} from './environment';
 import {Tensor} from './tensor';
@@ -95,6 +96,15 @@ export class Tracking {
     }
     ENV.engine.endScope(result, gradMode);
     return result;
+  }
+
+  // DO NOT SUBMIT; stopgap.
+  // tslint:disable-next-line:no-any
+  static dispose(x: any) {
+    const tensors = extractTensorsFromAny(x);
+    for (const t of tensors) {
+      t.dispose();
+    }
   }
 
   /**

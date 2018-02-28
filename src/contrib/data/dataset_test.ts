@@ -144,13 +144,18 @@ describeWithFlags('Dataset', CPU_ENVS, () => {
     const ds = new TestDataset();
     const items = await ds.collectAll();
     expect(items.length).toEqual(100);
+    // The test dataset has 100 elements, each containing 2 Tensors.
     expect(dl.memory().numTensors).toEqual(200);
   });
 
   it('skip does not leak Tensors', async () => {
     const ds = new TestDataset();
     expect(dl.memory().numTensors).toEqual(0);
-    await ds.skip(15).collectAll();
+    const result = await ds.skip(15).collectAll();
+    // The test dataset had 100 elements; we skipped 15; 85 remain.
+    expect(result.length).toEqual(85);
+    // Each element of the test dataset contains 2 Tensors;
+    // 85 elements remain, so 2 * 85 = 170 Tensors remain.
     expect(dl.memory().numTensors).toEqual(170);
   });
 
@@ -158,6 +163,9 @@ describeWithFlags('Dataset', CPU_ENVS, () => {
     const ds = new TestDataset();
     expect(dl.memory().numTensors).toEqual(0);
     await ds.filter(x => ((x['number'] as number) % 2 === 0)).collectAll();
+    // Each element of the test dataset contains 2 Tensors.
+    // There were 100 elements, but we filtered out half of them.
+    // Thus 50 * 2 = 100 Tensors remain.
     expect(dl.memory().numTensors).toEqual(100);
   });
 
@@ -165,6 +173,7 @@ describeWithFlags('Dataset', CPU_ENVS, () => {
     const ds = new TestDataset();
     expect(dl.memory().numTensors).toEqual(0);
     await ds.map(x => ({'constant': 1})).collectAll();
+    // The map operation consumed all of the tensors and emitted none.
     expect(dl.memory().numTensors).toEqual(0);
   });
 
@@ -173,6 +182,9 @@ describeWithFlags('Dataset', CPU_ENVS, () => {
        const ds = new TestDataset();
        expect(dl.memory().numTensors).toEqual(0);
        await ds.map(x => ({'Tensor2': x['Tensor2']})).collectAll();
+       // Each element of the test dataset contains 2 Tensors.
+       // Our map operation retained one of the Tensors and discarded the other.
+       // Thus the mapped data contains 100 elements with 1 Tensor each.
        expect(dl.memory().numTensors).toEqual(100);
      });
 
@@ -180,6 +192,9 @@ describeWithFlags('Dataset', CPU_ENVS, () => {
     const ds = new TestDataset();
     expect(dl.memory().numTensors).toEqual(0);
     await ds.map(x => ({'a': Tensor1D.new([1, 2, 3])})).collectAll();
+    // Each element of the test dataset contains 2 Tensors.
+    // Our map operation discarded both Tensors and created one new one.
+    // Thus the mapped data contains 100 elements with 1 Tensor each.
     expect(dl.memory().numTensors).toEqual(100);
   });
 
@@ -190,7 +205,9 @@ describeWithFlags('Dataset', CPU_ENVS, () => {
       count++;
       return {};
     });
+    // forEach traversed the entire dataset of 100 elements.
     expect(count).toEqual(100);
+    // forEach consumed all of the input Tensors.
     expect(dl.memory().numTensors).toEqual(0);
   });
 });
