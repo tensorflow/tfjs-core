@@ -675,6 +675,8 @@ export class ArrayOps {
     const grad = (dy: T) => {
       const derX = () => {
         let xGrad = ArrayOps.zerosLike(x);
+        // TODO(cais): Maybe reduce memory footprint by avoiding repeated
+        // slicing.
         if (x.rank === 1) {
           for (let i = 0; i < reps[0]; ++i) {
             xGrad = xGrad.add(dy.slice([i * x.shape[0]], [x.shape[0]]));
