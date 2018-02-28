@@ -454,6 +454,32 @@ export function extractTensorsFromScopeResult(result: ScopeResult): Tensor[] {
   return list;
 }
 
+// DO NOT SUBMIT; stopgap.
+// This is a copy of extractTensorsFromScopeResult but with no type constraints.
+// tslint:disable-next-line:no-any
+export function extractTensorsFromAny(result: any): Tensor[] {
+  if (result == null) {
+    return [];
+  }
+  if (result instanceof Tensor) {
+    return [result];
+  }
+
+  const list: Tensor[] = [];
+  // tslint:disable-next-line:no-any
+  const resultObj = result as {[key: string]: any};  // type relaxed here
+  if (!isIterable(resultObj)) {
+    return [];
+  }
+
+  // Iteration over keys works also for arrays.
+  for (const k in resultObj) {
+    const sublist = util.flatten(resultObj[k]).filter(x => x instanceof Tensor);
+    list.push(...sublist);
+  }
+  return list;
+}
+
 // tslint:disable-next-line:no-any
 function isIterable(obj: any): boolean {
   return Array.isArray(obj) || typeof obj === 'object';

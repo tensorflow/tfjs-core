@@ -16,7 +16,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
+import {dispose} from '../../globals';
 import {Tensor} from '../../tensor';
 import * as util from '../../util';
 
@@ -49,7 +49,7 @@ export class BatchDataset {
   async getStream(): Promise<DataStream<DatasetBatch>> {
     const batchesAsArrays = (await this.base.getStream())
                                 .batch(this.batchSize, this.smallLastBatch);
-    return batchesAsArrays.map(makeDatasetBatch, disposeBatchPrep, keepBatch);
+    return batchesAsArrays.map(makeDatasetBatch);
   }
 }
 
@@ -90,6 +90,10 @@ function makeDatasetBatch(elements: DatasetElement[]): DatasetBatch {
       result[key] = batchConcat(rotated[key] as Array<number|number[]|Tensor>);
     }
   }
+  for (const e of elements) {
+    dispose(e);
+  }
+
   return result;
 }
 
@@ -127,38 +131,4 @@ function shapeAndValues(array: number|number[]|Tensor):
   } else {
     return [[], [array]];
   }
-}
-
-function disposeBatchPrep(input: DatasetElement[]): (output: DatasetBatch) =>
-    void {
-  const inputTensors = extractTensorsFromElementArray(input);
-  return (output: DatasetBatch) => {
-    // ignore the output tensors here: they can't possibly be passed through
-    for (const t of inputTensors) {
-      t.dispose();
-    }
-  };
-}
-
-function extractTensorsFromElementArray(input: DatasetElement[]): Tensor[] {
-  const tensors: Tensor[] = [];
-  for (const element of input) {
-    for (const key in element) {
-      const value = element[key];
-      if (value instanceof Tensor) {
-        tensors.push(value);
-      }
-    }
-  }
-  return tensors;
-}
-
-function keepBatch(input: DatasetBatch): DatasetBatch {
-  for (const key in input) {
-    const value = input[key];
-    if (value instanceof Tensor) {
-      ENV.engine.keep(value);
-    }
-  }
-  return input;
 }

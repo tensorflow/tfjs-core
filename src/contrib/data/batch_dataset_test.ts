@@ -15,12 +15,9 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
-import {Tensor, Tensor1D, Tensor2D} from '../../tensor';
+import * as dl from '../../index';
 import {CPU_ENVS, describeWithFlags, expectArraysClose} from '../../test_util';
-
 import {TestDataset} from './dataset_test';
-import {DatasetBatch} from './types';
 
 describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
   it('batches entries into column-oriented DatasetBatches', done => {
@@ -31,9 +28,9 @@ describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
         .then(batchStream => batchStream.collectRemaining().then(result => {
           expect(result.length).toEqual(13);
           for (const batch of result.slice(0, 12)) {
-            expect((batch['number'] as Tensor).shape).toEqual([8]);
-            expect((batch['numberArray'] as Tensor).shape).toEqual([8, 3]);
-            expect((batch['Tensor'] as Tensor).shape).toEqual([8, 3]);
+            expect((batch['number'] as dl.Tensor).shape).toEqual([8]);
+            expect((batch['numberArray'] as dl.Tensor).shape).toEqual([8, 3]);
+            expect((batch['Tensor'] as dl.Tensor).shape).toEqual([8, 3]);
             expect((batch['string'] as string[]).length).toEqual(8);
           }
           return result;
@@ -43,7 +40,7 @@ describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
             disposeBatch(batch);
           }
         })
-        .then(() => expect(ENV.engine.memory().numTensors).toBe(0))
+        .then(() => expect(dl.ENV.engine.memory().numTensors).toBe(0))
         .then(done)
         .catch(done.fail);
   });
@@ -54,20 +51,21 @@ describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
     batchStreamPromise
         .then(batchStream => batchStream.collectRemaining().then(result => {
           const lastBatch = result[12];
-          expect((lastBatch['number'] as Tensor).shape).toEqual([4]);
-          expect((lastBatch['numberArray'] as Tensor).shape).toEqual([4, 3]);
-          expect((lastBatch['Tensor'] as Tensor).shape).toEqual([4, 3]);
+          expect((lastBatch['number'] as dl.Tensor).shape).toEqual([4]);
+          expect((lastBatch['numberArray'] as dl.Tensor).shape).toEqual([4, 3]);
+          expect((lastBatch['Tensor'] as dl.Tensor).shape).toEqual([4, 3]);
           expect((lastBatch['string'] as string[]).length).toEqual(4);
 
           expectArraysClose(
-              lastBatch['number'] as Tensor, Tensor1D.new([96, 97, 98, 99]));
+              lastBatch['number'] as dl.Tensor,
+              dl.Tensor1D.new([96, 97, 98, 99]));
           expectArraysClose(
-              lastBatch['numberArray'] as Tensor, Tensor2D.new([4, 3], [
+              lastBatch['numberArray'] as dl.Tensor, dl.Tensor2D.new([4, 3], [
                 [96, 96 ** 2, 96 ** 3], [97, 97 ** 2, 97 ** 3],
                 [98, 98 ** 2, 98 ** 3], [99, 99 ** 2, 99 ** 3]
               ]));
           expectArraysClose(
-              lastBatch['Tensor'] as Tensor, Tensor2D.new([4, 3], [
+              lastBatch['Tensor'] as dl.Tensor, dl.Tensor2D.new([4, 3], [
                 [96, 96 ** 2, 96 ** 3], [97, 97 ** 2, 97 ** 3],
                 [98, 98 ** 2, 98 ** 3], [99, 99 ** 2, 99 ** 3]
               ]));
@@ -86,16 +84,16 @@ describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
           }
         })
         // these three tensors are just the expected results above
-        .then(() => expect(ENV.engine.memory().numTensors).toBe(3))
+        .then(() => expect(dl.ENV.engine.memory().numTensors).toBe(3))
         .then(done)
         .catch(done.fail);
   });
 });
 
-function disposeBatch(input: DatasetBatch): void {
+function disposeBatch(input: dl.contrib.DatasetBatch): void {
   for (const key in input) {
     const value = input[key];
-    if (value instanceof Tensor) {
+    if (value instanceof dl.Tensor) {
       value.dispose();
     }
   }
