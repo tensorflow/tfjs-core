@@ -48,7 +48,7 @@ class TestDatasetElementStream extends DataStream<dl.contrib.DatasetElement> {
 }
 
 export class TestDataset extends dl.contrib.Dataset {
-  async getStream(): Promise<DataStream<dl.contrib.DatasetElement>> {
+  getStream(): DataStream<dl.contrib.DatasetElement> {
     return new TestDatasetElementStream();
   }
 }
@@ -125,7 +125,7 @@ describeWithFlags('Dataset', CPU_ENVS, () => {
 
     class CustomDataset extends dl.contrib.Dataset {
       state = {val: 1};
-      async getStream() {
+      getStream() {
         const result = streamFromItems([
           {'item': this.state.val++}, {'item': this.state.val++},
           {'item': this.state.val++}

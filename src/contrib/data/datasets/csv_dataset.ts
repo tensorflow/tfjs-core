@@ -100,8 +100,8 @@ export class CSVDataset extends Dataset {
     return result;
   }
 
-  async getStream(): Promise<DataStream<DatasetElement>> {
-    let lines = await this.base.getStream();
+  getStream(): DataStream<DatasetElement> {
+    let lines = this.base.getStream();
     if (this.hasHeaderLine) {
       // We previously read the first line to get the headers.
       // Now that we're providing data, skip it.
