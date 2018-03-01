@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {ScopeResult} from './engine';
 import {BackendType, ENV} from './environment';
 import {KernelBackend} from './kernels/backend';
 import {ArrayOps} from './ops/array_ops';
@@ -40,7 +39,7 @@ import {TransposeOps} from './ops/transpose';
 import {UnaryOps} from './ops/unary_ops';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {Tracking} from './tracking';
-import {Rank} from './types';
+import {Rank, TensorContainer} from './types';
 import * as util from './util';
 
 const tidy = Tracking.tidy;
@@ -207,7 +206,7 @@ export class NDArrayMath {
   }
 
   /** @deprecated Use dl.tidy() */
-  scope<T extends ScopeResult>(scopeFn?: ScopeFn<T>): T {
+  scope<T extends TensorContainer>(scopeFn?: ScopeFn<T>): T {
     const keepFn = <T extends Tensor>(tensor: T): T => keep(tensor);
     const trackFn = <T extends Tensor>(tensor: T): T => tensor;
     return tidy(() => scopeFn(keepFn, trackFn));
@@ -382,6 +381,6 @@ export class NDArrayMath {
   }
 }
 
-export type ScopeFn<T extends ScopeResult> =
+export type ScopeFn<T extends TensorContainer> =
     (keep: <T1 extends Tensor>(tensor: T1) => T1,
      track: <T2 extends Tensor>(tensor: T2) => T2) => T;
