@@ -352,16 +352,6 @@ export abstract class QueueStream<T> extends DataStream<T> {
   }
 }
 
-// TODO(soergel): consider clean separation of synchronous pumpOne
-/*abstract class TransformingQueueStream<I, O> extends QueueStream<O> {
-  async pump() {
-    return pumpOne(await this.upstream.next());
-  }
-
-  // not async!
-  pump(input:I) : boolean {}
-}*/
-
 class BatchStream<T> extends QueueStream<T[]> {
   constructor(
       protected upstream: DataStream<T>, protected batchSize: number,

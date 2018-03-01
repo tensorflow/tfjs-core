@@ -78,7 +78,7 @@ function makeDatasetBatch(elements: DatasetElement[]): DatasetBatch {
   }
 
   const result: {[key: string]: (BatchArray|string[])} = {};
-  for (const key of keys) {
+  keys.forEach(key => {
     // this sanity check should always pass
     if (rotated[key].length !== elements.length) {
       throw new Error(
@@ -89,10 +89,8 @@ function makeDatasetBatch(elements: DatasetElement[]): DatasetBatch {
     } else {
       result[key] = batchConcat(rotated[key] as Array<number|number[]|Tensor>);
     }
-  }
-  for (const e of elements) {
-    dispose(e);
-  }
+  });
+  elements.forEach(dispose);
 
   return result;
 }

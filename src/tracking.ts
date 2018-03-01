@@ -102,9 +102,7 @@ export class Tracking {
   // tslint:disable-next-line:no-any
   static dispose(x: any) {
     const tensors = extractTensorsFromAny(x);
-    for (const t of tensors) {
-      t.dispose();
-    }
+    tensors.forEach(t => t.dispose());
   }
 
   /**

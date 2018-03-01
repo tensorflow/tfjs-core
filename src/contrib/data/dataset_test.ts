@@ -42,8 +42,6 @@ class TestDatasetElementStream extends DataStream<dl.contrib.DatasetElement> {
           ]),
       'string': `Item ${elementNumber}`
     };
-    dl.keep(result['Tensor']);
-    dl.keep(result['Tensor2']);
     this.currentIndex++;
     return result;
   }
