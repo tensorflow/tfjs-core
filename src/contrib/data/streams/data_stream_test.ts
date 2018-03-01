@@ -228,7 +228,7 @@ describe('DataStream', () => {
   });
 
   it('can be created by concatenating streams from a function', done => {
-    const readStreamPromise =
+    const readStream =
         streamFromConcatenatedFunction(() => new TestIntegerStream(), 3);
     const expectedResult: number[] = [];
     for (let i = 0; i < 3; i++) {
@@ -237,10 +237,10 @@ describe('DataStream', () => {
       }
     }
 
-    readStreamPromise
-        .then(readStream => readStream.collectRemaining().then(result => {
+    readStream.collectRemaining()
+        .then(result => {
           expect(result).toEqual(expectedResult);
-        }))
+        })
         .then(done)
         .catch(done.fail);
   });

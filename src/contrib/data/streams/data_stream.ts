@@ -75,8 +75,8 @@ export function streamFromConcatenated<T>(
  * @param streamFunc: A function that produces a new stream on each call.
  * @param count: The number of times to call the function.
  */
-export async function streamFromConcatenatedFunction<T>(
-    streamFunc: () => DataStream<T>, count: number): Promise<DataStream<T>> {
+export function streamFromConcatenatedFunction<T>(
+    streamFunc: () => DataStream<T>, count: number): DataStream<T> {
   return streamFromConcatenated(streamFromFunction(streamFunc).take(count));
 }
 
@@ -432,9 +432,9 @@ class MapStream<T, S> extends QueueStream<S> {
  * Promises resolve in a different order.
  */
 export class ChainedStream<T> extends DataStream<T> {
-  private currentStream: DataStream<T> = null;
+  private stream: DataStream<T> = null;
   private moreStreams: DataStream<DataStream<T>>;
-  private item: T = null;
+  private lastRead: Promise<T> = null;
 
   static create<T>(streams: DataStream<DataStream<T>>): ChainedStream<T> {
     const c = new ChainedStream<T>();
@@ -443,20 +443,30 @@ export class ChainedStream<T> extends DataStream<T> {
   }
 
   async next(): Promise<T> {
-    await this.advanceChain();
-    return this.item;
+    this.lastRead = this.readFromChain(this.lastRead);
+    return this.lastRead;
   }
 
-  private async advanceChain(): Promise<void> {
-    this.currentStream = this.currentStream || await this.moreStreams.next();
-    if (this.currentStream != null) {
-      this.item = await this.currentStream.next();
-      if (this.item == null) {
-        // Advance the stream of streams.
-        this.currentStream = null;
-        return this.advanceChain();
+  private async readFromChain(lastRead: Promise<T>): Promise<T> {
+    // Must await on the previous read since the previous read may have advanced
+    // the stream of streams, from which we need to read.
+    // This is unfortunate since we can't paralellize reads. Which means
+    // prefetching of chained streams is a no-op.
+    // TODO(smilkov): Rework logic to allow parallel reads.
+    await lastRead;
+    if (this.stream == null) {
+      this.stream = await this.moreStreams.next();
+      if (this.stream == null) {
+        // No more streams to stream from.
+        return null;
       }
     }
+    const item = await this.stream.next();
+    if (item == null) {
+      this.stream = null;
+      return this.readFromChain(lastRead);
+    }
+    return item;
   }
 }
 
@@ -487,22 +497,13 @@ export class PrefetchStream<T> extends DataStream<T> {
   protected refill() {
     while (!this.buffer.isFull()) {
       const v = this.upstream.next();
-      if (v == null) {
-        return;
-      }
       this.buffer.push(v);
     }
   }
 
-  async next(): Promise<T> {
+  next(): Promise<T> {
     this.refill();
-    if (this.buffer.isEmpty()) {
-      return undefined;
-    }
-    const result = await this.buffer.shift();
-    // TODO(soergel) benchmark performance with and without this.
-    this.refill();
-    return result;
+    return this.buffer.shift();
   }
 }
 

@@ -36,40 +36,14 @@ describe('PrefetchStream', () => {
         .catch(done.fail);
   });
 
-  // tslint:disable-next-line:ban
-  fit('fetches a chained stream completely (stream size < buffer size)',
-      done => {
-        const baseStreamPromise = streamFromConcatenatedFunction(() => {
-          return new TestIntegerStream();
-        }, 3);
-
-        const prefetchStreamPromise = baseStreamPromise.then(
-            baseStream => new PrefetchStream(baseStream, 500));
-        const expectedResult: number[] = [];
-        for (let i = 0; i < 3; i++) {
-          for (let j = 0; j < 100; j++) {
-            expectedResult[i * 100 + j] = j;
-          }
-        }
-
-        prefetchStreamPromise
-            .then(
-                prefetchStream =>
-                    prefetchStream.collectRemaining().then(result => {
-                      expect(result).toEqual(expectedResult);
-                    }))
-            .then(done)
-            .catch(done.fail);
-      });
-
-  it('fetches a chained stream completely (stream size > buffer size)',
-     done => {
-       const baseStreamPromise = streamFromConcatenatedFunction(() => {
+  it('fetches a chained stream completely (stream size < buffer size)',
+     async done => {
+       const baseStream = streamFromConcatenatedFunction(() => {
          return new TestIntegerStream();
        }, 3);
 
-       const prefetchStreamPromise = baseStreamPromise.then(
-           baseStream => new PrefetchStream(baseStream, 122));
+       const prefetchStream = new PrefetchStream(baseStream, 500);
+
        const expectedResult: number[] = [];
        for (let i = 0; i < 3; i++) {
          for (let j = 0; j < 100; j++) {
@@ -77,12 +51,32 @@ describe('PrefetchStream', () => {
          }
        }
 
-       prefetchStreamPromise
-           .then(
-               prefetchStream =>
-                   prefetchStream.collectRemaining().then(result => {
-                     expect(result).toEqual(expectedResult);
-                   }))
+       prefetchStream.collectRemaining()
+           .then(result => {
+             expect(result).toEqual(expectedResult);
+           })
+           .then(done)
+           .catch(done.fail);
+     });
+
+  it('fetches a chained stream completely (stream size > buffer size)',
+     done => {
+       const baseStream = streamFromConcatenatedFunction(() => {
+         return new TestIntegerStream();
+       }, 3);
+
+       const prefetchStream = new PrefetchStream(baseStream, 122);
+       const expectedResult: number[] = [];
+       for (let i = 0; i < 3; i++) {
+         for (let j = 0; j < 100; j++) {
+           expectedResult[i * 100 + j] = j;
+         }
+       }
+
+       prefetchStream.collectRemaining()
+           .then(result => {
+             expect(result).toEqual(expectedResult);
+           })
            .then(done)
            .catch(done.fail);
      });
