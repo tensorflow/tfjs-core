@@ -16,9 +16,10 @@
  */
 
 import {doc} from './doc';
-import {ScopeFn, ScopeResult, TimingInfo} from './engine';
+import {ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
 import {Tensor} from './tensor';
+import {TensorContainer} from './types';
 
 export class Tracking {
   /**
@@ -62,7 +63,7 @@ export class Tracking {
    * @param gradMode If true, starts a tape and doesn't dispose tensors.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
-  static tidy<T extends ScopeResult>(
+  static tidy<T extends TensorContainer>(
       nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
     let name = null;
     if (fn == null) {
