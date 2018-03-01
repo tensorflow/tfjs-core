@@ -461,6 +461,20 @@ export function extractTensorsFromContainer(result: TensorContainer): Tensor[] {
   return extractTensorsFromAny(result);
 }
 
+/**
+ * Extracts any `Tensor`s found within the provided object up to depth 1.
+ *
+ * @param container an object that may be a `Tensor` or may directly contain
+ *   `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  In general it
+ *   is safe to pass any object here, except that `Promise`s are not
+ *   supported.
+ * @returns An array of `Tensors` found within the passed object.  If the
+ *   argument is simply a `Tensor', a list containing that `Tensor` is
+ *   returned.  If the argument directly contains `Tensor`s, a list of them
+ *   will be returned.  `Tensor`s nested more deeply within the argument will
+ *   however not be found.  If the object is not a `Tensor` or does not
+ *   contain `Tensors`, an empty list is returned.
+ */
 // tslint:disable-next-line:no-any
 export function extractTensorsFromAny(result: any): Tensor[] {
   if (result == null) {
