@@ -23,24 +23,23 @@ interface DataInterface {
 }
 
 class ComplementaryColorModel {
-  // Runs training.
-  session: dl.Session;
-
-  // Encapsulates math operations on the CPU and GPU.
-  math = dl.ENV.math;
-
   // An optimizer with a certain learning rate. Used for training.
   learningRate = 0.1;
   optimizer: dl.SGDOptimizer;
 
+  // The entire data set contains this many samples
+  sampleSize = 5e3;
+
   // Each training batch will be on this many examples.
   batchSize = 50;
 
-  inputTensor: dl.Tensor2D;
-  costTensor: dl.SymbolicTensor;
+  // The model will be trained for this many times.
+  totalSteps = 500;
 
-  // data
+  // An array to store the data used for training
   data: DataInterface;
+
+  // Arrays that contains the weight and bias variables for the fully connected layers
   weights: dl.Variable<dl.Rank.R2>[] = [];
   biases: dl.Variable<dl.Rank.R0>[] = [];
 
@@ -49,26 +48,30 @@ class ComplementaryColorModel {
   }
 
   /**
-   * Constructs the graph of the model. Call this method before training.
+   * Constructs the weights and generates data. Call this method before training.
    */
   setupSession(): void {
-    // Construct Model
-    this.setUpModel();
+    // Generate and initialize the weight variables for the fully connected layers
+    this.setupModel();
     // Generate the data that will be used to train the model.
-    this.generateTrainingData(5e3);
+    this.generateTrainingData(this.sampleSize);
   }
 
-  setUpModel(): void {
+  /**
+   * Constructs the weight variables of the model. Call this method before training with fully connected layers.
+   */
+  setupModel(): void {
     // Create 3 fully connected layers, each with half the number of nodes of
     // the previous layer. The first one has 64 nodes.
-    this.createFullyConnectedLayerWeights(3, 0, 64);
+    this.createFullyConnectedLayerWeights(3, 64, 0);
 
     // Create fully connected layer 1, which has 32 nodes.
-    this.createFullyConnectedLayerWeights(64, 1, 32);
+    this.createFullyConnectedLayerWeights(64, 32, 1);
 
     // Create fully connected layer 2, which has 16 nodes.
-    this.createFullyConnectedLayerWeights(32, 2, 16);
+    this.createFullyConnectedLayerWeights(32, 16, 2);
 
+    // Create fully connected output layer, which has 3 nodes.
     this.createFullyConnectedLayerWeights(16, 3, 3);
   }
 
@@ -121,31 +124,20 @@ class ComplementaryColorModel {
       .maximum(dl.scalar(0));
   }
 
-  predictRaw(input: number[][]): dl.Tensor2D {
-    return dl.tidy(() => {
-      // This tensor contains the input. In this case, it is a scalar.
-      this.inputTensor = dl.tensor2d(input, [input.length, input[0].length]);
-
-      // Create 3 fully connected layers, each with half the number of nodes of
-      // the previous layer. The first one has 64 nodes.
-      let fullyConnectedLayer =
-        this.calculateFullyConnectedLayer(this.inputTensor, 0);
-
-      // Create fully connected layer 1, which has 32 nodes.
-      fullyConnectedLayer =
-        this.calculateFullyConnectedLayer(fullyConnectedLayer, 1);
-
-      // Create fully connected layer 2, which has 16 nodes.
-      fullyConnectedLayer =
-        this.calculateFullyConnectedLayer(fullyConnectedLayer, 2);
-      return this.calculateFullyConnectedLayer(fullyConnectedLayer, 3);
-    });
-  }
-
   predict(normalizedRgbColor: number[][]) {
     return dl.tidy(() => {
-      const evalOutput = this.predictRaw(normalizedRgbColor);
-      return this.clampedColorTensor(evalOutput);
+      // This tensor contains the input. In this case, it is a 2D tensor.
+      const inputTensor = dl.tensor2d(normalizedRgbColor, [normalizedRgbColor.length, normalizedRgbColor[0].length]);
+
+      // Connect 3 fully connected layers, each with half the number of nodes of
+      // the previous layer, and the output layer. The weights were initialized
+      // during the model setup.
+      let outputTensor = inputTensor;
+      for (let layer = 0; layer < this.weights.length; layer++) {
+        outputTensor = this.connectFullyConnectedLayer(outputTensor, layer);
+      }
+
+      return this.clampedColorTensor(outputTensor);
     });
   }
 
@@ -160,8 +152,8 @@ class ComplementaryColorModel {
   }
 
   private createFullyConnectedLayerWeights(
-    sizeOfPreviousLayer: number, layerIndex: number,
-    sizeOfThisLayer: number): void {
+    sizeOfPreviousLayer: number, sizeOfThisLayer: number,
+    layerIndex: number): void {
 
     const weights: dl.Variable<dl.Rank.R2> = dl.variable(
       this.initializeWeights([sizeOfPreviousLayer, sizeOfThisLayer], sizeOfPreviousLayer),
@@ -174,13 +166,12 @@ class ComplementaryColorModel {
     this.biases[layerIndex] = bias;
   }
 
-  private calculateFullyConnectedLayer(
+  private connectFullyConnectedLayer(
     inputLayer: dl.Tensor2D, layerIndex: number): dl.Tensor2D {
     return inputLayer.matMul(this.weights[layerIndex]).add(this.biases[layerIndex]).relu() as dl.Tensor2D;
   }
 
   private loss(prediction: dl.Tensor2D, actual: dl.Tensor2D) {
-
     return prediction.sub(actual).square().mean().mean() as dl.Scalar;
   }
 
@@ -291,18 +282,21 @@ async function trainAndMaybeRender() {
   // We only fetch the cost every 5 steps because doing so requires a transfer
   // of data from the GPU.
   const localStepsToRun = 5;
-  const totalSteps = 500;
 
   let promise;
 
-  for (let step = 0; step <= totalSteps; step++) {
+  for (let step = 1; step <= this.totalSteps; step++) {
     let cost;
     const isMod = step % localStepsToRun === 0;
     cost = complementaryColorModel.train1Batch(step, isMod);
+
+    // Only execute processes that require transfer of data from the GPU
+    // if the step count is a multiple of 5
     if (isMod) {
       // Print data to console so the user can inspect.
       console.log('step', step, 'cost', cost.dataSync()[0]);
 
+      // Repaint the predicted complement visualization
       visualizePredictedComplement()
     }
 
@@ -364,4 +358,6 @@ function initializeUi() {
 
 // Kick off training.
 initializeUi();
-trainAndMaybeRender();
+trainAndMaybeRender().then(() => {
+  console.log('Training is done.');
+});
