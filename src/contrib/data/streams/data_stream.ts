@@ -450,7 +450,7 @@ export class ChainedStream<T> extends DataStream<T> {
   private async readFromChain(lastRead: Promise<T>): Promise<T> {
     // Must await on the previous read since the previous read may have advanced
     // the stream of streams, from which we need to read.
-    // This is unfortunate since we can't paralellize reads. Which means
+    // This is unfortunate since we can't parallelize reads. Which means
     // prefetching of chained streams is a no-op.
     // TODO(smilkov): Rework logic to allow parallel reads.
     await lastRead;
@@ -503,6 +503,9 @@ export class PrefetchStream<T> extends DataStream<T> {
 
   next(): Promise<T> {
     this.refill();
+    // This shift will never throw an error because the buffer is always full
+    // after a refill. If the stream is exhausted, the buffer will be full of
+    // Promises that will resolve to the end-of-stream signal.
     return this.buffer.shift();
   }
 }
