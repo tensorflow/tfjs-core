@@ -178,8 +178,7 @@ class ComplementaryColorModel {
     this.biases[layerIndex] = bias;
   }
 
-  private connectFullyConnectedLayer(
-    inputLayer: dl.Tensor2D, layerIndex: number): dl.Tensor2D {
+  private connectFullyConnectedLayer(inputLayer: dl.Tensor2D, layerIndex: number): dl.Tensor2D {
     return inputLayer.matMul(this.weights[layerIndex]).add(this.biases[layerIndex]).relu() as dl.Tensor2D;
   }
 
@@ -306,7 +305,7 @@ async function trainAndMaybeRender() {
   const localStepsToRun = 5;
 
   // The model will be trained for this many times.
-  const totalSteps = 4242;
+  const totalSteps = 500;
 
   let promise;
 
