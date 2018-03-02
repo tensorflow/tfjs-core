@@ -33,29 +33,30 @@ class ComplementaryColorModel {
   // Each training batch will be on this many examples.
   batchSize = 50;
 
-  // An array to store the data used for training
+  // Stores the data used for training
   data: DataInterface;
 
-  // Arrays that contains the weight and bias variables for the fully connected layers
-  weights: dl.Variable<dl.Rank.R2>[] = [];
-  biases: dl.Variable<dl.Rank.R0>[] = [];
+  // Contains the weight and bias variables for the fully connected layers
+  weights: Array<dl.Variable<dl.Rank.R2>> = [];
+  biases: Array<dl.Variable<dl.Rank.R0>> = [];
 
   constructor() {
     this.optimizer = dl.train.sgd(this.learningRate);
   }
 
   /**
-   * Constructs the weights and generates data. Call this method before training.
+   * Constructs weights and generates data. Call this method before training.
    */
   setupSession(): void {
-    // Generate and initialize the weight variables for the fully connected layers
+    // Generate and initialize the weight variables for fully connected layers
     this.setupModel();
     // Generate the data that will be used to train the model.
     this.generateTrainingData(this.sampleSize);
   }
 
   /**
-   * Constructs the weight variables of the model. Call this method before training with fully connected layers.
+   * Constructs the weight variables of the model. Call this method before
+   * training with fully connected layers.
    */
   setupModel(): void {
     // Create 3 fully connected layers, each with half the number of nodes of
@@ -86,7 +87,8 @@ class ComplementaryColorModel {
 
       return this.optimizer.minimize(() => {
         const prediction = this.predict(input);
-        return this.loss(prediction, dl.tensor2d(target, [target.length, target[0].length]));
+        return this.loss(prediction, dl.tensor2d(
+          target, [target.length, target[0].length]));
       }, shouldFetchCost);
     });
   };
@@ -107,8 +109,9 @@ class ComplementaryColorModel {
     // Train 1 batch.
     return dl.tidy(() => {
       let cost: dl.Scalar = dl.scalar(0);
-      for (let i = 0; i <= this.data.input.length - this.batchSize; i += this.batchSize) {
-        const { input, target } = this.data;
+      const { input, target } = this.data;
+      const lastBatchIndex = input.length - this.batchSize;
+      for (let i = 0; i <= lastBatchIndex; i += this.batchSize) {
         const batchData = {
           input: input.slice(i, i + this.batchSize),
           target: target.slice(i, i + this.batchSize),
@@ -127,19 +130,20 @@ class ComplementaryColorModel {
 
   denormalizeColorTensor(rgbColorTensor: dl.Tensor2D): dl.Tensor2D {
     return rgbColorTensor.mul(dl.scalar(255)).ceil() as dl.Tensor2D;
-  };
+  }
 
   clampedColorTensor(normalizedRgbColorTensor: dl.Tensor2D): dl.Tensor2D {
     // Make sure the values are within range.
-    return <dl.Tensor2D>normalizedRgbColorTensor
+    return normalizedRgbColorTensor
       .minimum(dl.scalar(1))
-      .maximum(dl.scalar(0));
+      .maximum(dl.scalar(0)) as dl.Tensor2D;
   }
 
   predict(normalizedRgbColor: number[][]) {
     return dl.tidy(() => {
       // This tensor contains the input. In this case, it is a 2D tensor.
-      const inputTensor = dl.tensor2d(normalizedRgbColor, [normalizedRgbColor.length, normalizedRgbColor[0].length]);
+      const inputTensor = dl.tensor2d(normalizedRgbColor,
+        [normalizedRgbColor.length, normalizedRgbColor[0].length]);
 
       // Connect 3 fully connected layers, each with half the number of nodes of
       // the previous layer, and the output layer. The weights were initialized
@@ -155,12 +159,14 @@ class ComplementaryColorModel {
 
   denormalizedPredict(rgbcolor: number[]) {
     return dl.tidy(() => {
-      return this.denormalizeColorTensor(this.predict([this.normalizeColor(rgbcolor)]));
+      return this.denormalizeColorTensor(
+        this.predict([this.normalizeColor(rgbcolor)]));
     });
   }
 
   private initializeWeights(shape: number[], sizeOfPreviousLayer: number) {
-    return dl.randomNormal(shape).mul(dl.scalar(Math.sqrt(2.0 / sizeOfPreviousLayer)));
+    return dl.randomNormal(shape).mul(
+      dl.scalar(Math.sqrt(2.0 / sizeOfPreviousLayer)));
   }
 
   private createFullyConnectedLayerWeights(
@@ -168,7 +174,8 @@ class ComplementaryColorModel {
     layerIndex: number): void {
 
     const weights: dl.Variable<dl.Rank.R2> = dl.variable(
-      this.initializeWeights([sizeOfPreviousLayer, sizeOfThisLayer], sizeOfPreviousLayer),
+      this.initializeWeights(
+        [sizeOfPreviousLayer, sizeOfThisLayer],sizeOfPreviousLayer),
       true,
       `fully_connected_${layerIndex}_weights`,
     ) as dl.Variable<dl.Rank.R2>;
@@ -178,8 +185,12 @@ class ComplementaryColorModel {
     this.biases[layerIndex] = bias;
   }
 
-  private connectFullyConnectedLayer(inputLayer: dl.Tensor2D, layerIndex: number): dl.Tensor2D {
-    return inputLayer.matMul(this.weights[layerIndex]).add(this.biases[layerIndex]).relu() as dl.Tensor2D;
+  private connectFullyConnectedLayer(
+    inputLayer: dl.Tensor2D, layerIndex: number): dl.Tensor2D {
+    return inputLayer.matMul(
+      this.weights[layerIndex])
+      .add(this.biases[layerIndex])
+      .relu() as dl.Tensor2D;
   }
 
   private loss(prediction: dl.Tensor2D, actual: dl.Tensor2D) {
@@ -202,7 +213,8 @@ class ComplementaryColorModel {
 
     // Store the data within Tensor1Ds so that learnjs can use it.
     const inputArray: number[][] = rawInputs.map(c => this.normalizeColor(c));
-    const targetArray: number[][] = rawInputs.map(c => this.normalizeColor(this.computeComplementaryColor(c)));
+    const targetArray: number[][] = rawInputs.map(
+      c => this.normalizeColor(this.computeComplementaryColor(c)));
 
     this.data = {input: inputArray, target: targetArray};
   }
@@ -324,7 +336,7 @@ async function trainAndMaybeRender() {
       console.log('step', step, 'cost', cost.dataSync()[0]);
 
       // Repaint the predicted complement visualization
-      visualizePredictedComplement()
+      visualizePredictedComplement();
     }
 
     promise = await dl.nextFrame();
@@ -344,9 +356,11 @@ function visualizePredictedComplement() {
         .map(v => parseInt(v, 10));
 
     // Visualize the predicted color.
-    const predictedColor = Array.prototype.slice.call(complementaryColorModel.denormalizedPredict(originalColor).dataSync());
-    populateContainerWithColor(
-      tds[2], predictedColor[0], predictedColor[1], predictedColor[2]);
+    const predictedColor = Array.prototype.slice.call(
+      complementaryColorModel.denormalizedPredict(originalColor).dataSync());
+
+    populateContainerWithColor(tds[2], predictedColor[0],
+      predictedColor[1], predictedColor[2]);
   }
 }
 
