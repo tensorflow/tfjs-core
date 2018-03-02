@@ -28,13 +28,10 @@ class ComplementaryColorModel {
   optimizer: dl.SGDOptimizer;
 
   // The entire data set contains this many samples
-  sampleSize = 5e3;
+  sampleSize = 5e4;
 
   // Each training batch will be on this many examples.
   batchSize = 50;
-
-  // The model will be trained for this many times.
-  totalSteps = 500;
 
   // An array to store the data used for training
   data: DataInterface;
@@ -77,42 +74,57 @@ class ComplementaryColorModel {
 
   /**
    * Trains one batch for one iteration. Call this method multiple times to
-   * progressively train. Calling this function transfers data from the GPU in
-   * order to obtain the current loss on training data.
+   * progressively train.
    *
    * If shouldFetchCost is true, returns the mean cost across examples in the
-   * batch. Otherwise, returns -1. We should only retrieve the cost now and then
-   * because doing so requires transferring data from the GPU.
+   * batch. Otherwise, returns null.
    */
-  train1Batch(step: number, shouldFetchCost: boolean): dl.Scalar {
+  train1Batch(data: DataInterface, shouldFetchCost: boolean): dl.Scalar {
+    // Train 1 batch.
+    return dl.tidy(() => {
+      const { input, target } = data;
+
+      return this.optimizer.minimize(() => {
+        const prediction = this.predict(input);
+        return this.loss(prediction, dl.tensor2d(target, [target.length, target[0].length]));
+      }, shouldFetchCost);
+    });
+  };
+
+  /**
+   * Trains all batches within the training epoch for one iteration. Call
+   * this method multiple times to progressively train.
+   *
+   * If shouldFetchCost is true, returns the mean cost across examples in the
+   * all the batches within the training epoch. Otherwise, returns null.
+   */
+  train1Step(step: number, shouldFetchCost: boolean): dl.Scalar {
     // Every 42 steps, lower the learning rate by 15%.
     const learningRate =
       this.learningRate * Math.pow(0.85, Math.floor(step / 42));
     this.optimizer.setLearningRate(learningRate);
 
     // Train 1 batch.
-    let cost: dl.Scalar = null;
-    dl.tidy(() => {
+    return dl.tidy(() => {
+      let cost: dl.Scalar = dl.scalar(0);
       for (let i = 0; i <= this.data.input.length - this.batchSize; i += this.batchSize) {
         const { input, target } = this.data;
-
-        cost = this.optimizer.minimize(() => {
-          const prediction = this.predict(input.slice(i, i + this.batchSize));
-          return this.loss(prediction, dl.tensor2d(target.slice(i, i + this.batchSize), [this.batchSize, target[0].length]));
-        }, shouldFetchCost);
+        const batchData = {
+          input: input.slice(i, i + this.batchSize),
+          target: target.slice(i, i + this.batchSize),
+        };
+        if (shouldFetchCost) {
+          cost = cost.add(this.train1Batch(batchData, shouldFetchCost));
+        }
       }
-      return cost;
+      return shouldFetchCost ? cost.div(dl.scalar(this.batchSize)) : null;
     });
-    return cost;
   }
 
   normalizeColor(rgbColor: number[]): number[] {
     return rgbColor.map(v => v / 255);
   }
 
-  denormalizeColor(normalizedRgbColor: number[]): number[] {
-    return normalizedRgbColor.map(v => Math.round(v * 255));
-  }
   denormalizeColorTensor(rgbColorTensor: dl.Tensor2D): dl.Tensor2D {
     return rgbColorTensor.mul(dl.scalar(255)).ceil() as dl.Tensor2D;
   };
@@ -252,11 +264,21 @@ class ComplementaryColorModel {
       r = g = b = l;  // achromatic
     } else {
       const hue2rgb = (p: number, q: number, t: number) => {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1 / 6) return p + (q - p) * 6 * t;
-        if (t < 1 / 2) return q;
-        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        if (t < 0) {
+          t += 1;
+        }
+        if (t > 1) {
+          t -= 1;
+        }
+        if (t < 1 / 6) {
+          return p + (q - p) * 6 * t;
+        }
+        if (t < 1 / 2) {
+          return q;
+        }
+        if (t < 2 / 3) {
+          return p + (q - p) * (2 / 3 - t) * 6;
+        }
         return p;
       };
 
@@ -283,12 +305,15 @@ async function trainAndMaybeRender() {
   // of data from the GPU.
   const localStepsToRun = 5;
 
+  // The model will be trained for this many times.
+  const totalSteps = 4242;
+
   let promise;
 
-  for (let step = 1; step <= this.totalSteps; step++) {
+  for (let step = 1; step <= totalSteps; step++) {
     let cost;
     const isMod = step % localStepsToRun === 0;
-    cost = complementaryColorModel.train1Batch(step, isMod);
+    cost = complementaryColorModel.train1Step(step, isMod);
 
     // Only execute processes that require transfer of data from the GPU
     // if the step count is a multiple of 5
