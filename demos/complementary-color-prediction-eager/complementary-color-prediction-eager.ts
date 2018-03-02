@@ -95,12 +95,16 @@ class ComplementaryColorModel {
 
   /**
    * Trains all batches within the training epoch for one iteration. Call
-   * this method multiple times to progressively train.
+   * this method multiple times to progressively train. Calling this function
+   * with shouldFetchCost equal to true transfers data from the GPU in order
+   * to obtain the current loss on training data.
    *
    * If shouldFetchCost is true, returns the mean cost across examples in the
-   * all the batches within the training epoch. Otherwise, returns null.
+   * all the batches within the training epoch. Otherwise, returns null. We
+   * should only retrieve the cost now and the because doing so requires
+   * transferring data from the GPU.
    */
-  train1Step(step: number, shouldFetchCost: boolean): dl.Scalar {
+  train1Step(step: number, shouldFetchCost: boolean): number {
     // Every 42 steps, lower the learning rate by 15%.
     const learningRate =
       this.learningRate * Math.pow(0.85, Math.floor(step / 42));
@@ -120,7 +124,7 @@ class ComplementaryColorModel {
           cost = cost.add(this.train1Batch(batchData, shouldFetchCost));
         }
       }
-      return shouldFetchCost ? cost.div(dl.scalar(this.batchSize)) : null;
+      return shouldFetchCost ? cost.div(dl.scalar(this.batchSize)).dataSync()[0] : null;
     });
   }
 
@@ -159,8 +163,13 @@ class ComplementaryColorModel {
 
   denormalizedPredict(rgbcolor: number[]) {
     return dl.tidy(() => {
-      return this.denormalizeColorTensor(
-        this.predict([this.normalizeColor(rgbcolor)]));
+      const normalizedColorTensor = [this.normalizeColor(rgbcolor)];
+      const predictedNormalizedColorTensor =
+        this.predict(normalizedColorTensor);
+      const predictedDenormalizedColorTensor =
+        this.denormalizeColorTensor(predictedNormalizedColorTensor);
+
+      return Array.prototype.slice.call(predictedDenormalizedColorTensor.dataSync());
     });
   }
 
@@ -333,7 +342,7 @@ async function trainAndMaybeRender() {
     // if the step count is a multiple of 5
     if (isMod) {
       // Print data to console so the user can inspect.
-      console.log('step', step, 'cost', cost.dataSync()[0]);
+      console.log('step', step, 'cost', cost);
 
       // Repaint the predicted complement visualization
       visualizePredictedComplement();
@@ -356,8 +365,7 @@ function visualizePredictedComplement() {
         .map(v => parseInt(v, 10));
 
     // Visualize the predicted color.
-    const predictedColor = Array.prototype.slice.call(
-      complementaryColorModel.denormalizedPredict(originalColor).dataSync());
+    const predictedColor = complementaryColorModel.denormalizedPredict(originalColor);
 
     populateContainerWithColor(tds[2], predictedColor[0],
       predictedColor[1], predictedColor[2]);
