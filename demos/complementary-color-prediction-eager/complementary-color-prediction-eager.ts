@@ -124,7 +124,8 @@ class ComplementaryColorModel {
           cost = cost.add(this.train1Batch(batchData, shouldFetchCost));
         }
       }
-      return shouldFetchCost ? cost.div(dl.scalar(this.batchSize)).dataSync()[0] : null;
+      return shouldFetchCost ?
+        cost.div(dl.scalar(this.batchSize)).dataSync()[0] : null;
     });
   }
 
@@ -169,7 +170,8 @@ class ComplementaryColorModel {
       const predictedDenormalizedColorTensor =
         this.denormalizeColorTensor(predictedNormalizedColorTensor);
 
-      return Array.prototype.slice.call(predictedDenormalizedColorTensor.dataSync());
+      return Array.prototype.slice.call(
+        predictedDenormalizedColorTensor.dataSync());
     });
   }
 
@@ -365,7 +367,8 @@ function visualizePredictedComplement() {
         .map(v => parseInt(v, 10));
 
     // Visualize the predicted color.
-    const predictedColor = complementaryColorModel.denormalizedPredict(originalColor);
+    const predictedColor =
+      complementaryColorModel.denormalizedPredict(originalColor);
 
     populateContainerWithColor(tds[2], predictedColor[0],
       predictedColor[1], predictedColor[2]);
