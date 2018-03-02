@@ -47,8 +47,8 @@ export class BatchDataset {
    * from any underlying `Dataset`s or 'BatchDataset's.
    */
   async getStream(): Promise<DataStream<DatasetBatch>> {
-    const batchesAsArrays = (await this.base.getStream())
-                                .batch(this.batchSize, this.smallLastBatch);
+    const batchesAsArrays =
+        this.base.getStream().batch(this.batchSize, this.smallLastBatch);
     return batchesAsArrays.map(makeDatasetBatch);
   }
 }

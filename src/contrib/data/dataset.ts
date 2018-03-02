@@ -247,23 +247,19 @@ export abstract class Dataset {
    *   when a new stream has been obtained and fully consumed.
    */
   async collectAll() {
-    return (await this.getStream()).collectRemaining();
+    return this.getStream().collectRemaining();
   }
 
   /**
    * Apply a function to every element of the dataset.
    *
    * After the function is applied to a `DatasetElement`, any Tensors contained
-   * within that element are disposed by default.  Normally that is the right
-   * thing to do to prevent a GPU memory leak, since those Tensors cannot be
-   * reused elsewhere anyway (unless the function stored them as a side effect).
-   * If it is necessary for some reason to keep the Tensors here, be sure to
-   * dispose them later!
+   * within that element are disposed.
    *
    * @param f A function to apply to each dataset element.
    */
   async forEach(f: (input: DatasetElement) => {}): Promise<void> {
-    return (await this.getStream()).forEach(f);
+    return this.getStream().forEach(f);
   }
 
   /* TODO(soergel): for parity with tf.data:
