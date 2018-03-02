@@ -307,6 +307,9 @@ async function trainAndMaybeRender() {
   // The model will be trained for this many times.
   const totalSteps = 500;
 
+  // Paint the initial complementary color prediction
+  visualizePredictedComplement();
+
   let promise;
 
   for (let step = 1; step <= totalSteps; step++) {
