@@ -91,7 +91,7 @@ class ComplementaryColorModel {
           target, [target.length, target[0].length]));
       }, shouldFetchCost);
     });
-  };
+  }
 
   /**
    * Trains all batches within the training epoch for one iteration. Call
