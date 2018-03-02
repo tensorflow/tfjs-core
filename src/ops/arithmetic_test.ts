@@ -494,12 +494,13 @@ describeWithFlags('pow', ALL_ENVS, () => {
     expectArraysClose(result, [NaN, 27, NaN, 0], 0.05);
   });
 
-  it('throws when passed non int32 exponent param', () => {
-    const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3]);
-    const b = dl.tensor2d([5, 3, 4, -7], [2, 2], 'float32');
+  it('handles non int32 exponent param', () => {
+    const a = dl.tensor1d([2, 4]);
+    const b = dl.tensor1d([.5, 1.2]);
 
-    // tslint:disable-next-line
-    expect(() => dl.pow(a, b as any)).toThrowError();
+    const result = dl.pow(a, b);
+    const expected = [1.414, 5.278];
+    expectArraysClose(result, expected, 0.001);
   });
 
   it('broadcasting same rank Tensors different shape', () => {
@@ -543,12 +544,13 @@ describeWithFlags('pow', ALL_ENVS, () => {
     expect(() => dl.powStrict(a, b)).toThrowError();
   });
 
-  it('powStrict throws when passed non int32 exponent param', () => {
-    const a = dl.tensor2d([1, 2, -3, -4, 5, 6], [2, 3]);
-    const b = dl.tensor2d([5, 3, 4, -7], [2, 2], 'float32');
+  it('powStrict handles non int32 exponent param', () => {
+    const a = dl.tensor1d([2, 4]);
+    const b = dl.tensor1d([.5, 1.2]);
 
-    // tslint:disable-next-line
-    expect(() => dl.powStrict(a, b as any)).toThrowError();
+    const result = dl.powStrict(a, b);
+    const expected = [1.414, 5.278];
+    expectArraysClose(result, expected, 0.001);
   });
 
   it('gradients: Scalar ^ Scalar', () => {
