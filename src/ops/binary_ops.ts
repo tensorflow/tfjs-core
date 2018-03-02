@@ -188,9 +188,6 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static pow<T extends Tensor>(base: T, exp: Tensor): T {
-    util.assert(
-        exp.dtype === 'int32',
-        'only supports int32 data type for the exponent parameter.');
     broadcast_util.assertAndGetBroadcastShape(base.shape, exp.shape);
 
     const grad = (dy: Tensor) => {
