@@ -294,16 +294,3 @@ export function datasetFromStreamFn(
 export function datasetFromElements(items: DatasetElement[]): Dataset {
   return datasetFromStreamFn(() => streamFromItems(items));
 }
-
-/**
- * Create a `Dataset` by concatenating underlying `Dataset`s.
- *
- * Note that if the underlying `Dataset`s return elements in a
- * nondeterministic order, then this concatenated `Dataset` will do the same.
- */
-export function datasetFromConcatenated(datasets: Dataset[]) {
-  return datasetFromStreamFn(() => {
-    const streamStream = datasets.map(d => d.getStream());
-    return streamFromConcatenated(streamFromItems(streamStream));
-  });
-}
