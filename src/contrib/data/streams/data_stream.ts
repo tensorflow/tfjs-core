@@ -18,9 +18,8 @@
 
 import * as seedrandom from 'seedrandom';
 
-import {extractTensorsFromAny} from '../../../engine';
 import {dispose} from '../../../globals';
-import {isTensorInList} from '../../../util';
+import {extractTensorsFromAny, isTensorInList} from '../../../util';
 import {GrowingRingBuffer} from '../util/growing_ring_buffer';
 import {RingBuffer} from '../util/ring_buffer';
 
@@ -61,8 +60,8 @@ export function streamFromFunction<T>(func: () => T | Promise<T>):
  *
  * @param baseStreams A stream of streams to be concatenated.
  */
-export async function streamFromConcatenated<T>(
-    baseStreams: DataStream<DataStream<T>>): Promise<DataStream<T>> {
+export function streamFromConcatenated<T>(
+    baseStreams: DataStream<DataStream<T>>): DataStream<T> {
   return ChainedStream.create(baseStreams);
 }
 
@@ -78,8 +77,8 @@ export async function streamFromConcatenated<T>(
  * @param streamFunc: A function that produces a new stream on each call.
  * @param count: The number of times to call the function.
  */
-export async function streamFromConcatenatedFunction<T>(
-    streamFunc: () => DataStream<T>, count: number): Promise<DataStream<T>> {
+export function streamFromConcatenatedFunction<T>(
+    streamFunc: () => DataStream<T>, count: number): DataStream<T> {
   return streamFromConcatenated(streamFromFunction(streamFunc).take(count));
 }
 
@@ -187,8 +186,8 @@ export abstract class DataStream<T> {
    * @param stream A `DataStream` to be concatenated onto this one.
    * @returns A `DataStream`.
    */
-  async concatenate(stream: DataStream<T>): Promise<DataStream<T>> {
-    return ChainedStream.create(new ArrayStream([this, stream]));
+  concatenate(stream: DataStream<T>): DataStream<T> {
+    return ChainedStream.create(streamFromItems([this, stream]));
   }
 
   /**
@@ -359,16 +358,6 @@ export abstract class QueueStream<T> extends DataStream<T> {
   }
 }
 
-// TODO(soergel): consider clean separation of synchronous pumpOne
-/*abstract class TransformingQueueStream<I, O> extends QueueStream<O> {
-  async pump() {
-    return pumpOne(await this.upstream.next());
-  }
-
-  // not async!
-  pump(input:I) : boolean {}
-}*/
-
 class BatchStream<T> extends QueueStream<T[]> {
   constructor(
       protected upstream: DataStream<T>, protected batchSize: number,
@@ -457,37 +446,6 @@ class MapStream<I, O> extends QueueStream<O> {
 }
 
 /**
- * ChainStates have the following meanings:
- * {undefined, stream, moreStreams}: previous stream was done, try again
- * {{value:T,done:false}, stream, moreStreams): item was found, return it
- */
-class ChainState<T> {
-  constructor(
-      public readonly item: IteratorResult<T>,
-      public readonly currentStream: IteratorResult<DataStream<T>>,
-      public readonly moreStreams: DataStream<DataStream<T>>) {}
-}
-
-async function nextChainState<T>(afterState: Promise<ChainState<T>>):
-    Promise<ChainState<T>> {
-  const state = await afterState;
-  let stream = state.currentStream;
-  if (stream.done) {
-    // Once the concatenated stream is exhausted, it stays that way.
-    return new ChainState(
-        {value: null, done: true}, {value: null, done: true},
-        state.moreStreams);
-  }
-  const item = await stream.value.next();
-  if (item.done) {
-    stream = await state.moreStreams.next();
-    return nextChainState(
-        Promise.resolve(new ChainState(undefined, stream, state.moreStreams)));
-  }
-  return new ChainState(item, stream, state.moreStreams);
-}
-
-/**
  * Provides a `DataStream` that concatenates a stream of underlying streams.
  *
  * Doing this in a concurrency-safe way requires some trickery.  In particular,
@@ -496,21 +454,43 @@ async function nextChainState<T>(afterState: Promise<ChainState<T>>):
  * Promises resolve in a different order.
  */
 export class ChainedStream<T> extends DataStream<T> {
-  private currentPromise: Promise<ChainState<T>>;
+  private stream: DataStream<T> = null;
+  private moreStreams: DataStream<DataStream<T>>;
+  private lastRead: Promise<IteratorResult<T>> = null;
 
-  static async create<T>(baseStreams: DataStream<DataStream<T>>):
-      Promise<ChainedStream<T>> {
+  static create<T>(streams: DataStream<DataStream<T>>): ChainedStream<T> {
     const c = new ChainedStream<T>();
-
-    const currentStream = await baseStreams.next();
-    c.currentPromise =
-        Promise.resolve(new ChainState(undefined, currentStream, baseStreams));
+    c.moreStreams = streams;
     return c;
   }
 
   async next(): Promise<IteratorResult<T>> {
-    this.currentPromise = nextChainState(this.currentPromise);
-    return (await this.currentPromise).item;
+    this.lastRead = this.readFromChain(this.lastRead);
+    return this.lastRead;
+  }
+
+  private async readFromChain(lastRead: Promise<IteratorResult<T>>):
+      Promise<IteratorResult<T>> {
+    // Must await on the previous read since the previous read may have advanced
+    // the stream of streams, from which we need to read.
+    // This is unfortunate since we can't parallelize reads. Which means
+    // prefetching of chained streams is a no-op.
+    // TODO(smilkov): Rework logic to allow parallel reads.
+    await lastRead;
+    if (this.stream == null) {
+      const streamResult = await this.moreStreams.next();
+      if (streamResult.done) {
+        // No more streams to stream from.
+        return {value: null, done: true};
+      }
+      this.stream = streamResult.value;
+    }
+    const itemResult = await this.stream.next();
+    if (itemResult.done) {
+      this.stream = null;
+      return this.readFromChain(lastRead);
+    }
+    return itemResult;
   }
 }
 
@@ -535,8 +515,8 @@ export class PrefetchStream<T> extends DataStream<T> {
   }
 
   /**
-   * Refill the prefetch buffer.  Returns only after the buffer is full, or the
-   * upstream source is exhausted.
+   * Refill the prefetch buffer.  Returns only after the buffer is full, or
+   * the upstream source is exhausted.
    */
   protected refill() {
     while (!this.buffer.isFull()) {
@@ -545,24 +525,20 @@ export class PrefetchStream<T> extends DataStream<T> {
     }
   }
 
-  async next(): Promise<IteratorResult<T>> {
+  next(): Promise<IteratorResult<T>> {
     this.refill();
-    // Note this probably never happens; instead the buffer fills up with
-    // "done" IteratorResults so we just return those.
-    if (this.buffer.isEmpty()) {
-      return {value: null, done: true};
-    }
-    const result = await this.buffer.shift();
-    // TODO(soergel) benchmark performance with and without this.
-    this.refill();
-    return result;
+    // This shift will never throw an error because the buffer is always full
+    // after a refill. If the stream is exhausted, the buffer will be full of
+    // Promises that will resolve to the end-of-stream signal.
+    return this.buffer.shift();
   }
 }
 
 /**
- * A stream that performs a sliding-window random shuffle on an upstream source.
- * This is like a `PrefetchStream` except that the items are returned in
- * randomized order.  Mixing naturally improves as the buffer size increases.
+ * A stream that performs a sliding-window random shuffle on an upstream
+ * source. This is like a `PrefetchStream` except that the items are returned
+ * in randomized order.  Mixing naturally improves as the buffer size
+ * increases.
  */
 export class ShuffleStream<T> extends PrefetchStream<T> {
   private random: seedrandom.prng;

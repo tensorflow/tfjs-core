@@ -27,18 +27,16 @@ describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
     batchStreamPromise
         .then(batchStream => batchStream.collectRemaining().then(result => {
           expect(result.length).toEqual(13);
-          for (const batch of result.slice(0, 12)) {
+          result.slice(0, 12).forEach(batch => {
             expect((batch['number'] as dl.Tensor).shape).toEqual([8]);
             expect((batch['numberArray'] as dl.Tensor).shape).toEqual([8, 3]);
             expect((batch['Tensor'] as dl.Tensor).shape).toEqual([8, 3]);
             expect((batch['string'] as string[]).length).toEqual(8);
-          }
+          });
           return result;
         }))
         .then((result) => {
-          for (const batch of result) {
-            disposeBatch(batch);
-          }
+          result.forEach(dl.dispose);
         })
         .then(() => expect(dl.ENV.engine.memory().numTensors).toBe(0))
         .then(done)
@@ -79,9 +77,7 @@ describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
           return result;
         }))
         .then((result) => {
-          for (const batch of result) {
-            disposeBatch(batch);
-          }
+          result.forEach(dl.dispose);
         })
         // these three tensors are just the expected results above
         .then(() => expect(dl.ENV.engine.memory().numTensors).toBe(3))
@@ -89,12 +85,3 @@ describeWithFlags('Dataset.batch()', CPU_ENVS, () => {
         .catch(done.fail);
   });
 });
-
-function disposeBatch(input: dl.contrib.DatasetBatch): void {
-  for (const key in input) {
-    const value = input[key];
-    if (value instanceof dl.Tensor) {
-      value.dispose();
-    }
-  }
-}
