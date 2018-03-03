@@ -363,7 +363,7 @@ class FilterStream<T> extends DataStream<T> {
       if (item.done || this.predicate(item.value)) {
         return item;
       }
-      dispose(item);
+      dispose(item.value);
     }
   }
 }
@@ -379,7 +379,7 @@ class MapStream<I, O> extends DataStream<O> {
     if (item.done) {
       return {value: null, done: true};
     }
-    const inputTensors = extractTensorsFromAny(item);
+    const inputTensors = extractTensorsFromAny(item.value);
     // Careful: the transform may mutate the item in place.
     // that's why we have to remember the input Tensors above, and then below
     // dispose only those that were not passed through to the output.
