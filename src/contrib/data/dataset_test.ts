@@ -24,9 +24,9 @@ class TestDatasetElementStream extends DataStream<dl.contrib.DatasetElement> {
   data = Array.from({length: 100}, (v, k) => k);
   currentIndex = 0;
 
-  async next(): Promise<dl.contrib.DatasetElement> {
+  async next(): Promise<IteratorResult<dl.contrib.DatasetElement>> {
     if (this.currentIndex >= 100) {
-      return undefined;
+      return {value: null, done: true};
     }
     const elementNumber = this.data[this.currentIndex];
     const result = {
@@ -43,7 +43,7 @@ class TestDatasetElementStream extends DataStream<dl.contrib.DatasetElement> {
       'string': `Item ${elementNumber}`
     };
     this.currentIndex++;
-    return result;
+    return {value: result, done: false};
   }
 }
 
@@ -54,22 +54,6 @@ export class TestDataset extends dl.contrib.Dataset {
 }
 
 describeWithFlags('Dataset', CPU_ENVS, () => {
-  it('can be created by concatenating underlying datasets', async done => {
-    const a = dl.contrib.datasetFromElements([{'item': 1}, {'item': 2}]);
-    const b = dl.contrib.datasetFromElements([{'item': 3}, {'item': 4}]);
-    const c = dl.contrib.datasetFromElements([{'item': 5}, {'item': 6}]);
-    dl.contrib.datasetFromConcatenated([a, b, c])
-        .collectAll()
-        .then(result => {
-          expect(result).toEqual([
-            {'item': 1}, {'item': 2}, {'item': 3}, {'item': 4}, {'item': 5},
-            {'item': 6}
-          ]);
-        })
-        .then(done)
-        .catch(done.fail);
-  });
-
   it('can be concatenated', done => {
     const a =
         dl.contrib.datasetFromElements([{'item': 1}, {'item': 2}, {'item': 3}]);
@@ -86,6 +70,23 @@ describeWithFlags('Dataset', CPU_ENVS, () => {
         .then(done)
         .catch(done.fail);
   });
+
+  it('can be created by concatenating multiple underlying datasets via reduce',
+     async done => {
+       const a = dl.contrib.datasetFromElements([{'item': 1}, {'item': 2}]);
+       const b = dl.contrib.datasetFromElements([{'item': 3}, {'item': 4}]);
+       const c = dl.contrib.datasetFromElements([{'item': 5}, {'item': 6}]);
+       const concatenated = [a, b, c].reduce((a, b) => a.concatenate(b));
+       concatenated.collectAll()
+           .then(result => {
+             expect(result).toEqual([
+               {'item': 1}, {'item': 2}, {'item': 3}, {'item': 4}, {'item': 5},
+               {'item': 6}
+             ]);
+           })
+           .then(done)
+           .catch(done.fail);
+     });
 
   it('can be repeated a fixed number of times', done => {
     const a =

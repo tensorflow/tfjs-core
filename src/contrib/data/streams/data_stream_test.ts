@@ -30,9 +30,9 @@ export class TestIntegerStream extends DataStream<number> {
     this.data = Array.from({length}, (v, k) => k);
   }
 
-  async next() {
+  async next(): Promise<IteratorResult<number>> {
     if (this.currentIndex >= this.length) {
-      return undefined;
+      return {value: null, done: true};
     }
     const result = this.data[this.currentIndex];
     this.currentIndex++;
@@ -43,7 +43,7 @@ export class TestIntegerStream extends DataStream<number> {
     if (Math.random() < 0.1) {
       await new Promise(res => setTimeout(res, 1));
     }
-    return result;
+    return {value: result, done: false};
   }
 }
 
@@ -182,9 +182,10 @@ describe('DataStream', () => {
 
   it('can be created from a function', done => {
     let i = -1;
-    const func = () => ++i < 7 ? i : undefined;
+    const func = () => ++i < 100 ? i : undefined;
 
-    const readStream = streamFromFunction(func);
+    // streamFromFunction never ends, so we truncate it
+    const readStream = streamFromFunction(func).take(7);
     readStream.collectRemaining()
         .then(result => {
           expect(result).toEqual([0, 1, 2, 3, 4, 5, 6]);
