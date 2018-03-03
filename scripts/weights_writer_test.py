@@ -14,6 +14,7 @@
 # ==============================================================================
 
 import unittest
+from weights_writer import write_weights
 
 class TestWeightsWrite(unittest.TestCase):
   def test_upper(self):

@@ -111,11 +111,11 @@ def write_weights(
 
   return manifest_json
 
-groups = [
-  {'weight1': np.linspace(0, 1000, 1000, dtype='float32').reshape([50, 20]),
-  'weight2': np.linspace(0, 2000, 1000, dtype='int32')},
-  {'weight3': np.array([10, 20, 30, 40], 'int32'),
-  'weight4': np.array([10.1, 20.2, 30.3, 40.4, 50.5, 60.6], 'float32')}
-]
+#groups = [
+ # {'weight1': np.linspace(0, 1000, 1000, dtype='float32').reshape([50, 20]),
+ # 'weight2': np.linspace(0, 2000, 1000, dtype='int32')},
+ # {'weight3': np.array([10, 20, 30, 40], 'int32'),
+  #'weight4': np.array([10.1, 20.2, 30.3, 40.4, 50.5, 60.6], 'float32')}
+#]
 
-print write_weights(groups, './demos/test/weights/')
+#print write_weights(groups, './demos/test/weights/')
