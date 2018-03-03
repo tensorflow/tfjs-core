@@ -1,0 +1,1 @@
+[{"weights": [{"dtype": "int32", "shape": [1000], "name": "weight2"}, {"dtype": "float32", "shape": [50, 20], "name": "weight1"}], "filepaths": ["group0-000001-of-000001"]}, {"weights": [{"dtype": "float32", "shape": [6], "name": "weight4"}, {"dtype": "int32", "shape": [4], "name": "weight3"}], "filepaths": ["group1-000001-of-000001"]}]

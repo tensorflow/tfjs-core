@@ -26,6 +26,7 @@ import * as conv_util from './ops/conv_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
+import {WeightsLoader} from './weights_loader';
 
 export {CheckpointLoader} from './data/checkpoint_loader';
 export {DataStats, InMemoryDataset} from './data/dataset';
@@ -80,3 +81,5 @@ export const getBackend = Environment.getBackend;
 export const memory = Environment.memory;
 
 export const nextFrame = BrowserUtil.nextFrame;
+
+export const loadWeights = WeightsLoader.loadWeights;
