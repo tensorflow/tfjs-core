@@ -94,7 +94,7 @@ export abstract class DataStream<T> {
    * Returns a `Promise` for the next element in the stream.
    *
    * When an item can be provided successfully, the return value is
-   * `{value:T, done:true}`.
+   * `{value:T, done:false}`.
    *
    * Calling next() on a closed stream returns `{value:null, done:true}`.
    */
@@ -294,7 +294,7 @@ class SkipStream<T> extends DataStream<T> {
       if (skipped.done) {
         return skipped;
       }
-      dispose(skipped);
+      dispose(skipped.value);
     }
     return this.upstream.next();
   }
@@ -422,7 +422,7 @@ class MapStream<I, O> extends QueueStream<O> {
     if (item.done) {
       return false;
     }
-    const inputTensors = extractTensorsFromAny(item);
+    const inputTensors = extractTensorsFromAny(item.value);
     // Careful: the transform may mutate the item in place.
     // that's why we have to remember the input Tensors above, and then below
     // dispose only those that were not passed through to the output.

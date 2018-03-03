@@ -258,7 +258,7 @@ export abstract class Dataset {
    *
    * @param f A function to apply to each dataset element.
    */
-  async forEach(f: (input: DatasetElement) => {}): Promise<void> {
+  async forEach(f: (input: DatasetElement) => void): Promise<void> {
     return this.getStream().forEach(f);
   }
 
