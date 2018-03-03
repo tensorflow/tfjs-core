@@ -44,8 +44,8 @@ export class IDXDataset extends Dataset {
     super();
   }
 
-  async getStream(): Promise<DataStream<DatasetElement>> {
-    const tensorStream = await IDXStream.create(await this.input.getStream());
+  getStream(): DataStream<DatasetElement> {
+    const tensorStream = new IDXStream(this.input.getStream());
     return tensorStream.map(x => ({[this.columnName]: x}));
   }
 }

@@ -22,6 +22,8 @@ import {DataStream, QueueStream} from './data_stream';
 
 // TODO(soergel): support dtypes beyond uint8, if there is any demand
 export class IDXStream extends QueueStream<NDArray> {
+  private isInitialized = false;
+
   // A partial record at the end of an upstream chunk
   carryover: Uint8Array = new Uint8Array([]);
 
@@ -32,14 +34,8 @@ export class IDXStream extends QueueStream<NDArray> {
   recordShape: number[];
   recordBytes = 1;
 
-  private constructor(protected upstream: DataStream<Uint8Array>) {
+  constructor(protected upstream: DataStream<Uint8Array>) {
     super();
-  }
-
-  static async create(upstream: DataStream<Uint8Array>): Promise<IDXStream> {
-    const stream = new IDXStream(upstream);
-    await stream.readFirstChunk();
-    return stream;
   }
 
   async readFirstChunk(): Promise<void> {
@@ -83,6 +79,11 @@ export class IDXStream extends QueueStream<NDArray> {
   }
 
   async pump(): Promise<boolean> {
+    if (!this.isInitialized) {
+      await this.readFirstChunk();
+      this.isInitialized = true;
+      return true;
+    }
     const chunk = await this.upstream.next();
     return this.pumpImpl(chunk);
   }
