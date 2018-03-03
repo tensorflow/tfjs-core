@@ -362,8 +362,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
         .toThrowError();
   });
 
-  // tslint:disable-next-line:ban
-  fit('throws if requested weight has unknown dtype', done => {
+  it('throws if requested weight has unknown dtype', done => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3])});
 
     const manifest: WeightsManifestConfig = [{
