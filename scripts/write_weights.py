@@ -32,13 +32,21 @@ DTYPE_BYTES = {'float32': 4, 'int32': 4}
   individual groups.
 
   Args:
-    weight_groups: An array of weight entries, representing the group. Each
-      entry is a dict that maps a unique name to a numpy array, for example:
+    weight_groups: An list of groups. Each group is an array of weight entries.
+      Each entry is a dict that maps a unique name to a numpy array, for example:
       entry = {
-        'weight1': np.array([1, 2, 3], 'float32')
+        'name': 'weight1',
+        'data': np.array([1, 2, 3], 'float32')
       }
 
-      Names must be unique across all groups.
+      Weights groups would then look like:
+      weight_groups = [
+        [group_0_entry1, group_0_entry2],
+        [group_1_entry1, group_1_entry2],
+      ]
+
+      The 'name' must be unique across all groups. The 'data' field must be a
+      numpy ndarray.
     write_dir: A directory to write the files to.
     shard_size: The size of shards in bytes. Defaults to 4MB, which is Chrome's
       max file size for caching.
@@ -48,6 +56,26 @@ DTYPE_BYTES = {'float32': 4, 'int32': 4}
 """
 def write_weights(
     weight_groups, write_dir, shard_size = 1024 * 1024 * 4, write_manifest=True):
+  if not isinstance(weight_groups, list):
+    raise Exception('weight_groups must be a list of groups')
+  if len(weight_groups) == 0:
+    raise Exception('weight_groups must have more than one list element')
+  for i in range(len(weight_groups)):
+    if not isinstance(weight_groups[i], list):
+      raise Exception('weight_groups[' + i + '] must be a list of weight entries')
+    for j in range(len(weight_groups[i])):
+      if 'name' not in weight_groups[i][j]:
+        raise Exception(
+            'weight_groups[' + i + '][' + j + '] has no string field \'name\'')
+      if 'data' not in weight_groups[i][j]:
+        raise Exception(
+            'weight_groups[' + i + '][' + j + '] has no numpy ' + \
+            'array field \'data\'')
+      if not isinstance(weight_groups[i][j]['data'], np.ndarray):
+        raise Exception(
+            'weight_groups[' + i + '][' + j + '][\'data\'] is not a numpy ' + \
+            'array')
+
   weight_names = Set([])
   manifest = []
 
@@ -62,7 +90,7 @@ def write_weights(
       if isinstance(data, np.ndarray):
         if not data.dtype.name in DTYPE_BYTES:
           raise Exception('Error dumping weight ' + name + ' dtype ' +
-              data.dtype.name + ' from not yet supported.')
+              data.dtype.name + ' from not supported.')
 
         bytes = data.tobytes()
         group_bytes += bytes
@@ -112,18 +140,3 @@ def write_weights(
       f.write(manifest_json)
 
   return manifest_json
-
-#groups = [
- # {'weight1': np.linspace(0, 1000, 1000, dtype='float32').reshape([50, 20]),
- # 'weight2': np.linspace(0, 2000, 1000, dtype='int32')},
- # {'weight3': np.array([10, 20, 30, 40], 'int32'),
-  #'weight4': np.array([10.1, 20.2, 30.3, 40.4, 50.5, 60.6], 'float32')}
-#]
-#groups = [
-#  [{
-#    'name': 'weight1',
-#    'data': np.array([1, 2, 3], 'float32')
-#  }]
-#]
-
-#print write_weights(groups, '/tmp/')

@@ -43,6 +43,10 @@ class TestWriteWeights(unittest.TestCase):
     manifest_json = write_weights(groups, TMP_DIR, shard_size = 4 * 4)
     manifest = json.loads(manifest_json)
 
+    self.assertTrue(
+        os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
+        'weights_manifest.json does not exist')
+
     self.assertEquals(
       manifest,
       [{
@@ -69,6 +73,10 @@ class TestWriteWeights(unittest.TestCase):
     # multiple files.
     manifest_json = write_weights(groups, TMP_DIR, shard_size = 2 * 4)
     manifest = json.loads(manifest_json)
+
+    self.assertTrue(
+        os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
+        'weights_manifest.json does not exist')
 
     self.assertEquals(
       manifest,
@@ -104,6 +112,9 @@ class TestWriteWeights(unittest.TestCase):
     manifest_json = write_weights(groups, TMP_DIR, shard_size = 8 * 4)
     manifest = json.loads(manifest_json)
 
+    self.assertTrue(
+        os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
+        'weights_manifest.json does not exist')
     self.assertEquals(
       manifest,
       [{
@@ -140,6 +151,9 @@ class TestWriteWeights(unittest.TestCase):
     manifest_json = write_weights(groups, TMP_DIR, shard_size = 2 * 4)
     manifest = json.loads(manifest_json)
 
+    self.assertTrue(
+        os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
+        'weights_manifest.json does not exist')
     self.assertEquals(
       manifest,
       [{
@@ -199,6 +213,9 @@ class TestWriteWeights(unittest.TestCase):
     manifest_json = write_weights(groups, TMP_DIR, shard_size = 4 * 4)
     manifest = json.loads(manifest_json)
 
+    self.assertTrue(
+        os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
+        'weights_manifest.json does not exist')
     self.assertEquals(
       manifest,
       [{
@@ -248,6 +265,101 @@ class TestWriteWeights(unittest.TestCase):
     group2_shard_3_path = os.path.join(TMP_DIR, 'group1-000003-of-000003')
     group2_shard_3 = np.fromfile(group2_shard_3_path, 'float32')
     np.testing.assert_array_equal(group2_shard_3, np.array([1.5, 1.6], 'float32'))
+
+  def test_no_write_manfest(self):
+    groups = [
+      [{
+        'name': 'weight1',
+        'data': np.array([1, 2, 3], 'float32')
+      }]
+    ]
+
+    manifest_json = write_weights(groups, TMP_DIR, write_manifest=False)
+    manifest = json.loads(manifest_json)
+
+    self.assertFalse(
+        os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
+        'weights_manifest.json exists, but expected not to exist')
+    self.assertEquals(
+      manifest,
+      [{
+        'filepaths': ['group0-000001-of-000001'],
+        'weights': [{
+          'name': 'weight1',
+          'shape': [3],
+          'dtype': 'float32'
+        }]
+      }])
+
+    weights_path = os.path.join(TMP_DIR, 'group0-000001-of-000001')
+    weight1 = np.fromfile(weights_path, 'float32')
+    np.testing.assert_array_equal(weight1, np.array([1, 2, 3], 'float32'))
+
+  def test_no_weights_groups_throws(self):
+    groups = None
+    with self.assertRaises(Exception):
+      write_weights(groups, TMP_DIR)
+
+  def test_empty_groups_throws(self):
+    groups = []
+    with self.assertRaises(Exception):
+      write_weights(groups, TMP_DIR)
+
+  def test_non_grouped_weights_throws(self):
+    groups = [{
+      'name': 'weight1',
+      'data': np.array([1, 2, 3], 'float32')
+    }]
+
+    with self.assertRaises(Exception):
+      write_weights(groups, TMP_DIR)
+
+  def test_bad_weights_entry_throws_no_name(self):
+    groups = [
+      [{
+        'noname': 'weight1',
+        'data': np.array([1, 2, 3], 'float32')
+      }]
+    ]
+
+    with self.assertRaises(Exception):
+      write_weights(groups, TMP_DIR)
+
+  def test_bad_weights_entry_throws_no_data(self):
+    groups = [
+      [{
+        'name': 'weight1',
+        'nodata': np.array([1, 2, 3], 'float32')
+      }]
+    ]
+
+    with self.assertRaises(Exception):
+      write_weights(groups, TMP_DIR)
+
+  def test_bad_numpy_array_dtype_throws(self):
+    groups = [
+      [{
+        'name': 'weight1',
+        'data': np.array([1, 2, 3], 'float64')
+      }]
+    ]
+
+    with self.assertRaises(Exception):
+      write_weights(groups, TMP_DIR)
+
+  def test_duplicate_weight_name_throws(self):
+    groups = [
+      [{
+        'name': 'duplicate',
+        'data': np.array([1, 2, 3], 'float32')
+      }], [{
+        'name': 'duplicate',
+        'data': np.array([4, 5, 6], 'float32')
+      }]
+    ]
+
+    with self.assertRaises(Exception):
+      write_weights(groups, TMP_DIR)
 
 if __name__ == '__main__':
     unittest.main()
