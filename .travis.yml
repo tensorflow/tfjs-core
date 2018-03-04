@@ -1,6 +1,6 @@
 language: node_js
 node_js: "8"
 script:
-  - ./scripts/build_and_lint_all
   - python -m unittest discover scripts "*_test.py"
+  - ./scripts/build_and_lint_all
   - if [ "$BROWSERSTACK_KEY" ]; then yarn test-travis; fi
