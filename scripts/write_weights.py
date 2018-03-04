@@ -56,7 +56,9 @@ def write_weights(
     # sharding.
     group_bytes = ''
     weights_entries = []
-    for name, data in group.iteritems():
+    for entry in group:
+      data = entry['data']
+      name = entry['name']
       if isinstance(data, np.ndarray):
         if not data.dtype.name in DTYPE_BYTES:
           raise Exception('Error dumping weight ' + name + ' dtype ' +
@@ -89,7 +91,7 @@ def write_weights(
       shard = group_bytes[offset : offset + shard_size]
 
       shard_idx = '{:0>6d}'.format(i + 1)
-      filename = 'group' + str(group_index) + '-' + shard_idx + '-of-' + total_shards_display
+      filename ='group' + str(group_index) + '-' + shard_idx + '-of-' + total_shards_display
       filenames.append(filename)
       filepath = os.path.join(write_dir, filename)
       # Write the shard to disk.
@@ -117,5 +119,11 @@ def write_weights(
  # {'weight3': np.array([10, 20, 30, 40], 'int32'),
   #'weight4': np.array([10.1, 20.2, 30.3, 40.4, 50.5, 60.6], 'float32')}
 #]
+#groups = [
+#  [{
+#    'name': 'weight1',
+#    'data': np.array([1, 2, 3], 'float32')
+#  }]
+#]
 
-#print write_weights(groups, './demos/test/weights/')
+#print write_weights(groups, '/tmp/')
