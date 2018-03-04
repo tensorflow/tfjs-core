@@ -185,7 +185,6 @@ describe('DataStream', () => {
     const func = () =>
         ++i < 7 ? {value: i, done: false} : {value: null, done: true};
 
-    // streamFromFunction never ends, so we truncate it
     const readStream = streamFromFunction(func);
     readStream.collectRemaining()
         .then(result => {
