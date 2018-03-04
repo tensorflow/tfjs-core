@@ -36,7 +36,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     const weightsNamesToFetch = ['weight0'];
-    dl.loadWeights(manifest, weightsNamesToFetch, './')
+    dl.loadWeights(manifest, './', weightsNamesToFetch)
         .then(weights => {
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(1);
 
@@ -64,7 +64,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     // Load the first weight.
-    dl.loadWeights(manifest, ['weight0'], './')
+    dl.loadWeights(manifest, './', ['weight0'])
         .then(weights => {
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(1);
 
@@ -92,7 +92,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     // Load the second weight.
-    dl.loadWeights(manifest, ['weight1'], './')
+    dl.loadWeights(manifest, './', ['weight1'])
         .then(weights => {
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(1);
 
@@ -120,7 +120,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     // Load all weights.
-    dl.loadWeights(manifest, ['weight0', 'weight1'], './')
+    dl.loadWeights(manifest, './', ['weight0', 'weight1'])
         .then(weights => {
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(1);
 
@@ -159,7 +159,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     // Load all weights.
-    dl.loadWeights(manifest, ['weight0', 'weight1'], './')
+    dl.loadWeights(manifest, './', ['weight0', 'weight1'])
         .then(weights => {
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(1);
 
@@ -196,7 +196,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
       'weights': [{'name': 'weight0', 'dtype': 'float32', 'shape': [5, 2]}]
     }];
 
-    dl.loadWeights(manifest, ['weight0'], './')
+    dl.loadWeights(manifest, './', ['weight0'])
         .then(weights => {
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(3);
 
@@ -238,7 +238,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
       ]
     }];
 
-    dl.loadWeights(manifest, ['weight0', 'weight1'], './')
+    dl.loadWeights(manifest, './', ['weight0', 'weight1'])
         .then(weights => {
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(3);
 
@@ -282,7 +282,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
       }
     ];
 
-    dl.loadWeights(manifest, ['weight0', 'weight1'], './')
+    dl.loadWeights(manifest, './', ['weight0', 'weight1'])
         .then(weights => {
           // Only the first group should be fetched.
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(1);
@@ -327,7 +327,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
       }
     ];
 
-    dl.loadWeights(manifest, ['weight0', 'weight2'], './')
+    dl.loadWeights(manifest, './', ['weight0', 'weight2'])
         .then(weights => {
           // Both groups need to be fetched.
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(2);
@@ -349,6 +349,62 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
         .catch(done.fail);
   });
 
+  it('2 group, 4 weights, dont specify weights fetchs all', done => {
+    setupFakeWeightFiles({
+      './weightfile0': new Float32Array([1, 2, 3, 4, 5]),
+      './weightfile1': new Float32Array([6, 7, 8, 9])
+    });
+
+    const manifest: WeightsManifestConfig = [
+      {
+        'filepaths': ['weightfile0'],
+        'weights': [
+          {'name': 'weight0', 'dtype': 'float32', 'shape': [2]},
+          {'name': 'weight1', 'dtype': 'float32', 'shape': [3]}
+        ]
+      },
+      {
+        'filepaths': ['weightfile1'],
+        'weights': [
+          {'name': 'weight2', 'dtype': 'float32', 'shape': [3, 1]},
+          {'name': 'weight3', 'dtype': 'float32', 'shape': []}
+        ]
+      }
+    ];
+
+    // Don't pass a third argument to loadWeights to load all weights.
+    dl.loadWeights(manifest, './')
+        .then(weights => {
+          // Both groups need to be fetched.
+          expect((window.fetch as jasmine.Spy).calls.count()).toBe(2);
+
+          const weightNames = Object.keys(weights);
+          expect(weightNames.length).toEqual(2);
+
+          const weight0 = weights['weight0'];
+          expectArraysClose(weight0, [1, 2]);
+          expect(weight0.shape).toEqual([2]);
+          expect(weight0.dtype).toEqual('float32');
+
+          const weight1 = weights['weight1'];
+          expectArraysClose(weight1, [4, 5, 6]);
+          expect(weight1.shape).toEqual([3]);
+          expect(weight1.dtype).toEqual('float32');
+
+          const weight2 = weights['weight2'];
+          expectArraysClose(weight2, [6, 7, 8]);
+          expect(weight2.shape).toEqual([3, 1]);
+          expect(weight2.dtype).toEqual('float32');
+
+          const weight3 = weights['weight3'];
+          expectArraysClose(weight3, [9]);
+          expect(weight3.shape).toEqual([]);
+          expect(weight3.dtype).toEqual('float32');
+        })
+        .then(done)
+        .catch(done.fail);
+  });
+
   it('throws if requested weight not found', done => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3])});
 
@@ -358,7 +414,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     const weightsNamesToFetch = ['doesntexist'];
-    expect(() => dl.loadWeights(manifest, weightsNamesToFetch, './'))
+    expect(() => dl.loadWeights(manifest, './', weightsNamesToFetch))
         .toThrowError();
   });
 
@@ -376,7 +432,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     const weightsNamesToFetch = ['weight0'];
-    dl.loadWeights(manifest, weightsNamesToFetch, './')
+    dl.loadWeights(manifest, './', weightsNamesToFetch)
         // We're expecting an asynchronous call to fail here so we need to use
         // this approach over .toThrowError().
         .then(() => done.fail())

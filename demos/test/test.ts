@@ -5,8 +5,7 @@ import * as dl from '../../src/index';
       await fetch('./weights/weights_manifest.json');
   const json = await weightsManifestResponse.json();
 
-  const result = await dl.loadWeights(
-      json, ['weight4', 'weight2', 'weight1', 'weight3'], './weights');
+  const result = await dl.loadWeights(json, './weights', ['weight1']);
 
   Object.keys(result).forEach(key => {
     const tensor = result[key];

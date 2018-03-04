@@ -44,8 +44,8 @@ export class WeightsLoader {
    * @param weightNames The names of the weights to be fetched.
    */
   static async loadWeights(
-      manifest: WeightsManifestConfig, weightNames: string[],
-      pathPrefix: string): Promise<NamedTensorMap> {
+      manifest: WeightsManifestConfig, filePathPrefix = '',
+      weightNames?: string[]): Promise<NamedTensorMap> {
     // TODO(nsthorat): Groups are currently fetched atomically. If you need a
     // single weight from a group, the whole group will be fetched. At a future
     // date, we should support fetching only the individual shards within a
@@ -61,28 +61,39 @@ export class WeightsLoader {
         sizeBytes: number;
       }>
     } = {};
-    const weightsFound = weightNames.map(() => false);
+    const weightsFound =
+        weightNames != null ? weightNames.map(() => false) : [];
     const allManifestWeightNames: string[] = [];
     manifest.forEach((manifestGroupConfig, groupIndex) => {
       let groupOffset = 0;
       manifestGroupConfig.weights.forEach(weightsEntry => {
         const weightsBytes = DTYPE_VALUE_SIZE_MAP[weightsEntry.dtype] *
             util.sizeFromShape(weightsEntry.shape);
-        weightNames.forEach((weightName, weightIndex) => {
-          if (weightName === weightsEntry.name) {
-            groupIndicesToFetchMap[groupIndex] = true;
-            weightsFound[weightIndex] = true;
 
-            if (groupWeightsToFetch[groupIndex] == null) {
-              groupWeightsToFetch[groupIndex] = [];
-            }
-            groupWeightsToFetch[groupIndex].push({
-              manifestEntry: weightsEntry,
-              groupOffset,
-              sizeBytes: weightsBytes
-            });
+        const enqueueWeightsForFetchingFn = () => {
+          groupIndicesToFetchMap[groupIndex] = true;
+          if (groupWeightsToFetch[groupIndex] == null) {
+            groupWeightsToFetch[groupIndex] = [];
           }
-        });
+
+          groupWeightsToFetch[groupIndex].push({
+            manifestEntry: weightsEntry,
+            groupOffset,
+            sizeBytes: weightsBytes
+          });
+        };
+
+        if (weightNames != null) {
+          weightNames.forEach((weightName, weightIndex) => {
+            if (weightName === weightsEntry.name) {
+              enqueueWeightsForFetchingFn();
+              weightsFound[weightIndex] = true;
+            }
+          });
+        } else {
+          enqueueWeightsForFetchingFn();
+        }
+
         allManifestWeightNames.push(weightsEntry.name);
         groupOffset += weightsBytes;
       });
@@ -112,8 +123,8 @@ export class WeightsLoader {
     const requests: Array<Promise<Response>> = [];
     groupIndicesToFetch.forEach(i => {
       manifest[i].filepaths.forEach(filepath => {
-        const fetchUrl =
-            pathPrefix + (!pathPrefix.endsWith('/') ? '/' : '') + filepath;
+        const fetchUrl = filePathPrefix +
+            (!filePathPrefix.endsWith('/') ? '/' : '') + filepath;
         requests.push(fetch(fetchUrl));
       });
     });
