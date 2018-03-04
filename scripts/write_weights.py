@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+# =============================================================================
 
 import json
 import math
@@ -33,7 +33,8 @@ DTYPE_BYTES = {'float32': 4, 'int32': 4}
 
   Args:
     weight_groups: An list of groups. Each group is an array of weight entries.
-      Each entry is a dict that maps a unique name to a numpy array, for example:
+      Each entry is a dict that maps a unique name to a numpy array, for
+      example:
       entry = {
         'name': 'weight1',
         'data': np.array([1, 2, 3], 'float32')
@@ -48,21 +49,23 @@ DTYPE_BYTES = {'float32': 4, 'int32': 4}
       The 'name' must be unique across all groups. The 'data' field must be a
       numpy ndarray.
     write_dir: A directory to write the files to.
-    shard_size: The size of shards in bytes. Defaults to 4MB, which is Chrome's
-      max file size for caching.
+    shard_size_bytes: The size of shards in bytes. Defaults to 4MB, which is
+      Chrome's max file size for caching.
     write_manifest: Whether to write the manifest JSON to disk.
   Returns:
     The weights manifest JSON string.
 """
 def write_weights(
-    weight_groups, write_dir, shard_size = 1024 * 1024 * 4, write_manifest=True):
+    weight_groups, write_dir, shard_size_bytes = 1024 * 1024 * 4,
+    write_manifest=True):
   if not isinstance(weight_groups, list):
     raise Exception('weight_groups must be a list of groups')
   if len(weight_groups) == 0:
     raise Exception('weight_groups must have more than one list element')
   for i in range(len(weight_groups)):
     if not isinstance(weight_groups[i], list):
-      raise Exception('weight_groups[' + i + '] must be a list of weight entries')
+      raise Exception(
+          'weight_groups[' + i + '] must be a list of weight entries')
     for j in range(len(weight_groups[i])):
       if 'name' not in weight_groups[i][j]:
         raise Exception(
@@ -96,7 +99,8 @@ def write_weights(
         group_bytes += bytes
 
         if name in weight_names:
-          raise Exception('Error dumping weights, duplicate weight name ' + name)
+          raise Exception(
+              'Error dumping weights, duplicate weight name ' + name)
         weight_names.add(name)
 
         var_manifest = {
@@ -107,19 +111,20 @@ def write_weights(
         weights_entries.append(var_manifest)
 
     # Shard the bytes for the group.
-    if shard_size is None:
-      shard_size = len(group_bytes)
+    if shard_size_bytes is None:
+      shard_size_bytes = len(group_bytes)
 
-    num_shards = int(math.ceil(float(len(group_bytes)) / shard_size))
+    num_shards = int(math.ceil(float(len(group_bytes)) / shard_size_bytes))
 
     filenames = []
     total_shards_display = '{:0>6d}'.format(num_shards)
     for i in range(num_shards):
-      offset = i * shard_size
-      shard = group_bytes[offset : offset + shard_size]
+      offset = i * shard_size_bytes
+      shard = group_bytes[offset : offset + shard_size_bytes]
 
       shard_idx = '{:0>6d}'.format(i + 1)
-      filename ='group' + str(group_index) + '-' + shard_idx + '-of-' + total_shards_display
+      filename ='group' + str(group_index) + '-' + shard_idx + '-of-' + \
+          total_shards_display
       filenames.append(filename)
       filepath = os.path.join(write_dir, filename)
       # Write the shard to disk.

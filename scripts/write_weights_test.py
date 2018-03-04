@@ -40,7 +40,7 @@ class TestWriteWeights(unittest.TestCase):
       }]
     ]
 
-    manifest_json = write_weights(groups, TMP_DIR, shard_size = 4 * 4)
+    manifest_json = write_weights(groups, TMP_DIR, shard_size_bytes = 4 * 4)
     manifest = json.loads(manifest_json)
 
     self.assertTrue(
@@ -71,7 +71,7 @@ class TestWriteWeights(unittest.TestCase):
     ]
     # Shard size is smaller than the size of the array so it gets split between
     # multiple files.
-    manifest_json = write_weights(groups, TMP_DIR, shard_size = 2 * 4)
+    manifest_json = write_weights(groups, TMP_DIR, shard_size_bytes = 2 * 4)
     manifest = json.loads(manifest_json)
 
     self.assertTrue(
@@ -109,7 +109,7 @@ class TestWriteWeights(unittest.TestCase):
     ]
 
     # Shard size is larger than the sum of the two weights so they get packed.
-    manifest_json = write_weights(groups, TMP_DIR, shard_size = 8 * 4)
+    manifest_json = write_weights(groups, TMP_DIR, shard_size_bytes = 8 * 4)
     manifest = json.loads(manifest_json)
 
     self.assertTrue(
@@ -148,7 +148,7 @@ class TestWriteWeights(unittest.TestCase):
     # Shard size is smaller than the sum of the weights so they get packed and
     # then sharded. The two buffers will get sharded into 3 files, with shapes
     # [2], [2], and [1]. The second shard is a mixed dtype.
-    manifest_json = write_weights(groups, TMP_DIR, shard_size = 2 * 4)
+    manifest_json = write_weights(groups, TMP_DIR, shard_size_bytes = 2 * 4)
     manifest = json.loads(manifest_json)
 
     self.assertTrue(
@@ -210,7 +210,7 @@ class TestWriteWeights(unittest.TestCase):
       }]
     ]
 
-    manifest_json = write_weights(groups, TMP_DIR, shard_size = 4 * 4)
+    manifest_json = write_weights(groups, TMP_DIR, shard_size_bytes = 4 * 4)
     manifest = json.loads(manifest_json)
 
     self.assertTrue(
