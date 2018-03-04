@@ -18,6 +18,8 @@
 
 import * as seedrandom from 'seedrandom';
 
+import {dispose} from '../../../globals';
+import {extractTensorsFromAny, isTensorInList} from '../../../util';
 import {GrowingRingBuffer} from '../util/growing_ring_buffer';
 import {RingBuffer} from '../util/ring_buffer';
 
@@ -39,14 +41,14 @@ export function streamFromItems<T>(items: T[]): DataStream<T> {
  */
 export function streamFromIncrementing(start: number): DataStream<number> {
   let i = start;
-  return streamFromFunction(() => i++);
+  return streamFromFunction(() => ({value: i++, done: false}));
 }
 
 /**
  * Create a `DataStream` from a function.
  */
-export function streamFromFunction<T>(func: () => T | Promise<T>):
-    DataStream<T> {
+export function streamFromFunction<T>(
+    func: () => IteratorResult<T>| Promise<IteratorResult<T>>): DataStream<T> {
   return new FunctionCallStream(func);
 }
 
@@ -76,7 +78,8 @@ export function streamFromConcatenated<T>(
  * @param count: The number of times to call the function.
  */
 export function streamFromConcatenatedFunction<T>(
-    streamFunc: () => DataStream<T>, count: number): DataStream<T> {
+    streamFunc: () => IteratorResult<DataStream<T>>,
+    count: number): DataStream<T> {
   return streamFromConcatenated(streamFromFunction(streamFunc).take(count));
 }
 
@@ -85,12 +88,18 @@ export function streamFromConcatenatedFunction<T>(
  * stream of elements.
  */
 export abstract class DataStream<T> {
+  // This class implements AsyncIterator<T>, but we have not yet set the
+  // TypeScript --downlevelIteration flag to enable that.
+
   /**
    * Returns a `Promise` for the next element in the stream.
    *
-   * Calling next() on a closed stream returns `undefined`.
+   * When an item can be provided successfully, the return value is
+   * `{value:T, done:false}`.
+   *
+   * Calling next() on a closed stream returns `{value:null, done:true}`.
    */
-  abstract async next(): Promise<T>;
+  abstract async next(): Promise<IteratorResult<T>>;
 
   /**
    * Collect all remaining elements of a bounded stream into an array.
@@ -103,8 +112,8 @@ export abstract class DataStream<T> {
   async collectRemaining(): Promise<T[]> {
     const result: T[] = [];
     let x = await this.next();
-    while (x != null) {
-      result.push(x);
+    while (!x.done) {
+      result.push(x.value);
       x = await this.next();
     }
     return result;
@@ -119,7 +128,7 @@ export abstract class DataStream<T> {
    */
   async resolveFully(): Promise<void> {
     let x = await this.next();
-    while (x != null) {
+    while (!x.done) {
       x = await this.next();
     }
   }
@@ -134,7 +143,7 @@ export abstract class DataStream<T> {
    *
    * @returns A `DataStream` of elements for which the predicate was true.
    */
-  filter(predicate: (value: T) => boolean | Promise<boolean>): DataStream<T> {
+  filter(predicate: (value: T) => boolean): DataStream<T> {
     return new FilterStream(this, predicate);
   }
 
@@ -146,7 +155,7 @@ export abstract class DataStream<T> {
    *
    * @returns A `DataStream` of transformed elements.
    */
-  map<S>(transform: (value: T) => S | Promise<S>): DataStream<S> {
+  map<O>(transform: (value: T) => O): DataStream<O> {
     return new MapStream(this, transform);
   }
 
@@ -155,7 +164,7 @@ export abstract class DataStream<T> {
    *
    * @param f A function to apply to each stream element.
    */
-  async forEach(f: (value: T) => {} | Promise<{}>): Promise<void> {
+  async forEach(f: (value: T) => void): Promise<void> {
     return this.map(f).resolveFully();
   }
 
@@ -252,22 +261,23 @@ class ArrayStream<T> extends DataStream<T> {
     super();
   }
 
-  async next(): Promise<T> {
+  async next(): Promise<IteratorResult<T>> {
     if (this.trav >= this.items.length) {
-      return undefined;
+      return {value: null, done: true};
     }
     const result = this.items[this.trav];
     this.trav++;
-    return result;
+    return {value: result, done: false};
   }
 }
 
 class FunctionCallStream<T> extends DataStream<T> {
-  constructor(protected nextFn: () => T | Promise<T>) {
+  constructor(
+      protected nextFn: () => IteratorResult<T>| Promise<IteratorResult<T>>) {
     super();
   }
 
-  async next(): Promise<T> {
+  async next(): Promise<IteratorResult<T>> {
     return this.nextFn();
   }
 }
@@ -278,13 +288,17 @@ class SkipStream<T> extends DataStream<T> {
     super();
   }
 
-  async next(): Promise<T> {
+  async next(): Promise<IteratorResult<T>> {
+    // TODO(soergel): consider tradeoffs of reading in parallel, eg. collecting
+    // next() promises in an Array and then waiting for Promise.all() of those.
+    // Benefit: pseudo-parallel execution.  Drawback: maybe delayed GC.
     while (this.count++ < this.maxCount) {
       const skipped = await this.upstream.next();
       // short-circuit if upstream is already empty
-      if (skipped == null) {
-        return undefined;
+      if (skipped.done) {
+        return skipped;
       }
+      dispose(skipped.value);
     }
     return this.upstream.next();
   }
@@ -296,9 +310,9 @@ class TakeStream<T> extends DataStream<T> {
     super();
   }
 
-  async next(): Promise<T> {
+  async next(): Promise<IteratorResult<T>> {
     if (this.count++ >= this.maxCount) {
-      return undefined;
+      return {value: null, done: true};
     }
     return this.upstream.next();
   }
@@ -335,16 +349,17 @@ export abstract class QueueStream<T> extends DataStream<T> {
    */
   protected abstract async pump(): Promise<boolean>;
 
-  async next(): Promise<T> {
+  async next(): Promise<IteratorResult<T>> {
     // Fetch so that the queue contains at least one item if possible.
     // If the upstream source is exhausted, AND there are no items left in the
     // output queue, then this stream is also exhausted.
     while (this.outputQueue.length() === 0) {
+      // TODO(soergel): consider parallel reads.
       if (!await this.pump()) {
-        return undefined;
+        return {value: null, done: true};
       }
     }
-    return this.outputQueue.shift();
+    return {value: this.outputQueue.shift(), done: false};
   }
 }
 
@@ -359,7 +374,7 @@ class BatchStream<T> extends QueueStream<T[]> {
 
   async pump(): Promise<boolean> {
     const item = await this.upstream.next();
-    if (item == null) {
+    if (item.done) {
       if (this.enableSmallLastBatch && this.currentBatch.length > 0) {
         this.outputQueue.push(this.currentBatch);
         this.currentBatch = [];
@@ -370,7 +385,8 @@ class BatchStream<T> extends QueueStream<T[]> {
       }
       return false;
     }
-    this.currentBatch.push(item);
+
+    this.currentBatch.push(item.value);
     if (this.currentBatch.length === this.batchSize) {
       this.outputQueue.push(this.currentBatch);
       this.currentBatch = [];
@@ -382,42 +398,53 @@ class BatchStream<T> extends QueueStream<T[]> {
 class FilterStream<T> extends QueueStream<T> {
   constructor(
       protected upstream: DataStream<T>,
-      protected predicate: (value: T) => boolean | Promise<boolean>) {
+      protected predicate: (value: T) => boolean) {
     super();
   }
 
-  async pump() {
+  async pump(): Promise<boolean> {
     const item = await this.upstream.next();
-    if (item == null) {
+    if (item.done) {
       return false;
     }
-    let accept = this.predicate(item);
-    if (accept instanceof Promise) {
-      accept = await accept;
-    }
-    if (accept) {
-      this.outputQueue.push(item);
+    if (this.predicate(item.value)) {
+      this.outputQueue.push(item.value);
+    } else {
+      dispose(item.value);
     }
     return true;
   }
 }
 
-class MapStream<T, S> extends QueueStream<S> {
+class MapStream<I, O> extends QueueStream<O> {
   constructor(
-      protected upstream: DataStream<T>,
-      protected transform: (value: T) => S | Promise<S>) {
+      protected upstream: DataStream<I>, protected transform: (value: I) => O) {
     super();
   }
 
   async pump() {
     const item = await this.upstream.next();
-    if (item == null) {
+    if (item.done) {
       return false;
     }
-    let mapped = this.transform(item);
-    if (mapped instanceof Promise) {
-      mapped = await mapped;
+    const inputTensors = extractTensorsFromAny(item.value);
+    // Careful: the transform may mutate the item in place.
+    // that's why we have to remember the input Tensors above, and then below
+    // dispose only those that were not passed through to the output.
+    // Note too that the transform function is responsible for tidying any
+    // intermediate Tensors.  Here we are concerned only about the inputs.
+    const mapped = this.transform(item.value);
+
+    const outputTensors = extractTensorsFromAny(mapped);
+
+    // TODO(soergel) faster intersection
+    // TODO(soergel) move to dl.disposeExcept(in, out)?
+    for (const t of inputTensors) {
+      if (!isTensorInList(t, outputTensors)) {
+        t.dispose();
+      }
     }
+
     this.outputQueue.push(mapped);
     return true;
   }
@@ -434,7 +461,7 @@ class MapStream<T, S> extends QueueStream<S> {
 export class ChainedStream<T> extends DataStream<T> {
   private stream: DataStream<T> = null;
   private moreStreams: DataStream<DataStream<T>>;
-  private lastRead: Promise<T> = null;
+  private lastRead: Promise<IteratorResult<T>> = null;
 
   static create<T>(streams: DataStream<DataStream<T>>): ChainedStream<T> {
     const c = new ChainedStream<T>();
@@ -442,12 +469,13 @@ export class ChainedStream<T> extends DataStream<T> {
     return c;
   }
 
-  async next(): Promise<T> {
+  async next(): Promise<IteratorResult<T>> {
     this.lastRead = this.readFromChain(this.lastRead);
     return this.lastRead;
   }
 
-  private async readFromChain(lastRead: Promise<T>): Promise<T> {
+  private async readFromChain(lastRead: Promise<IteratorResult<T>>):
+      Promise<IteratorResult<T>> {
     // Must await on the previous read since the previous read may have advanced
     // the stream of streams, from which we need to read.
     // This is unfortunate since we can't parallelize reads. Which means
@@ -455,18 +483,19 @@ export class ChainedStream<T> extends DataStream<T> {
     // TODO(smilkov): Rework logic to allow parallel reads.
     await lastRead;
     if (this.stream == null) {
-      this.stream = await this.moreStreams.next();
-      if (this.stream == null) {
+      const streamResult = await this.moreStreams.next();
+      if (streamResult.done) {
         // No more streams to stream from.
-        return null;
+        return {value: null, done: true};
       }
+      this.stream = streamResult.value;
     }
-    const item = await this.stream.next();
-    if (item == null) {
+    const itemResult = await this.stream.next();
+    if (itemResult.done) {
       this.stream = null;
       return this.readFromChain(lastRead);
     }
-    return item;
+    return itemResult;
   }
 }
 
@@ -481,13 +510,13 @@ export class ChainedStream<T> extends DataStream<T> {
  * Promises resolve.
  */
 export class PrefetchStream<T> extends DataStream<T> {
-  protected buffer: RingBuffer<Promise<T>>;
+  protected buffer: RingBuffer<Promise<IteratorResult<T>>>;
 
   total = 0;
 
   constructor(protected upstream: DataStream<T>, protected bufferSize: number) {
     super();
-    this.buffer = new RingBuffer<Promise<T>>(bufferSize);
+    this.buffer = new RingBuffer<Promise<IteratorResult<T>>>(bufferSize);
   }
 
   /**
@@ -501,7 +530,7 @@ export class PrefetchStream<T> extends DataStream<T> {
     }
   }
 
-  next(): Promise<T> {
+  next(): Promise<IteratorResult<T>> {
     this.refill();
     // This shift will never throw an error because the buffer is always full
     // after a refill. If the stream is exhausted, the buffer will be full of
@@ -535,7 +564,7 @@ export class ShuffleStream<T> extends PrefetchStream<T> {
     return this.randomInt(this.buffer.length());
   }
 
-  async next(): Promise<T> {
+  async next(): Promise<IteratorResult<T>> {
     // TODO(soergel): consider performance
     if (!this.upstreamExhausted) {
       this.refill();
@@ -543,13 +572,13 @@ export class ShuffleStream<T> extends PrefetchStream<T> {
     while (!this.buffer.isEmpty()) {
       const chosenIndex = this.chooseIndex();
       const result = await this.buffer.shuffleExcise(chosenIndex);
-      if (result == null) {
+      if (result.done) {
         this.upstreamExhausted = true;
       } else {
         this.refill();
         return result;
       }
     }
-    return undefined;
+    return {value: null, done: true};
   }
 }
