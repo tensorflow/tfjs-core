@@ -30,9 +30,9 @@ export class TestIntegerStream extends DataStream<number> {
     this.data = Array.from({length}, (v, k) => k);
   }
 
-  async next() {
+  async next(): Promise<IteratorResult<number>> {
     if (this.currentIndex >= this.length) {
-      return undefined;
+      return {value: null, done: true};
     }
     const result = this.data[this.currentIndex];
     this.currentIndex++;
@@ -43,7 +43,7 @@ export class TestIntegerStream extends DataStream<number> {
     if (Math.random() < 0.1) {
       await new Promise(res => setTimeout(res, 1));
     }
-    return result;
+    return {value: result, done: false};
   }
 }
 
@@ -182,7 +182,8 @@ describe('DataStream', () => {
 
   it('can be created from a function', done => {
     let i = -1;
-    const func = () => ++i < 7 ? i : undefined;
+    const func = () =>
+        ++i < 7 ? {value: i, done: false} : {value: null, done: true};
 
     const readStream = streamFromFunction(func);
     readStream.collectRemaining()
@@ -206,11 +207,11 @@ describe('DataStream', () => {
   it('can be concatenated', done => {
     const a = streamFromItems([1, 2, 3]);
     const b = streamFromItems([4, 5, 6]);
-    const readStreamPromise = a.concatenate(b);
-    readStreamPromise
-        .then(readStream => readStream.collectRemaining().then(result => {
+    const readStream = a.concatenate(b);
+    readStream.collectRemaining()
+        .then(result => {
           expect(result).toEqual([1, 2, 3, 4, 5, 6]);
-        }))
+        })
         .then(done)
         .catch(done.fail);
   });
@@ -218,18 +219,18 @@ describe('DataStream', () => {
   it('can be created by concatenating streams', done => {
     const a = new TestIntegerStream();
     const b = new TestIntegerStream();
-    const readStreamPromise = streamFromConcatenated(streamFromItems([a, b]));
-    readStreamPromise
-        .then(readStream => readStream.collectRemaining().then(result => {
+    const readStream = streamFromConcatenated(streamFromItems([a, b]));
+    readStream.collectRemaining()
+        .then(result => {
           expect(result.length).toEqual(200);
-        }))
+        })
         .then(done)
         .catch(done.fail);
   });
 
   it('can be created by concatenating streams from a function', done => {
-    const readStreamPromise =
-        streamFromConcatenatedFunction(() => new TestIntegerStream(), 3);
+    const readStream = streamFromConcatenatedFunction(
+        () => ({value: new TestIntegerStream(), done: false}), 3);
     const expectedResult: number[] = [];
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 100; j++) {
@@ -237,10 +238,10 @@ describe('DataStream', () => {
       }
     }
 
-    readStreamPromise
-        .then(readStream => readStream.collectRemaining().then(result => {
+    readStream.collectRemaining()
+        .then(result => {
           expect(result).toEqual(expectedResult);
-        }))
+        })
         .then(done)
         .catch(done.fail);
   });

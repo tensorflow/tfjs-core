@@ -66,19 +66,19 @@ export function scaleTo01(min: number, max: number): (value: ElementArray) =>
 export async function computeDatasetStatistics(
     dataset: Dataset, sampleSize?: number,
     shuffleWindowSize?: number): Promise<DatasetStatistics> {
-  let stream = await dataset.getStream();
+  let sampleDataset = dataset;
   // TODO(soergel): allow for deep shuffle where possible.
   if (shuffleWindowSize != null) {
-    stream = stream.shuffle(shuffleWindowSize);
+    sampleDataset = sampleDataset.shuffle(shuffleWindowSize);
   }
   if (sampleSize != null) {
-    stream = stream.take(sampleSize);
+    sampleDataset = sampleDataset.take(sampleSize);
   }
 
-  // TODO(soergel): prepare the column objects based on a schema.q
+  // TODO(soergel): prepare the column objects based on a schema.
   const result: DatasetStatistics = {};
 
-  await stream.forEach(e => {
+  await sampleDataset.forEach(e => {
     for (const key in e) {
       const value = e[key];
       if (typeof (value) === 'string') {
@@ -110,10 +110,6 @@ export async function computeDatasetStatistics(
         columnStats.max = Math.max(columnStats.max, recordMax);
       }
     }
-    // Returning undefined or null (i.e, type void) would indicate that the
-    // stream is exhausted.  So, we have to return *something* in order for
-    // resolveFully() to operate.
-    return {};
   });
   return result;
 }

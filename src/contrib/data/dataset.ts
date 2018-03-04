@@ -18,11 +18,12 @@
 
 import * as seedrandom from 'seedrandom';
 
+import {tidy} from '../../globals';
+
 import {BatchDataset} from './batch_dataset';
 import {computeDatasetStatistics, DatasetStatistics} from './statistics';
-import {DataStream} from './streams/data_stream';
+import {DataStream, streamFromFunction} from './streams/data_stream';
 import {streamFromConcatenated} from './streams/data_stream';
-import {streamFromFunction} from './streams/data_stream';
 import {streamFromItems} from './streams/data_stream';
 import {DatasetElement} from './types';
 
@@ -44,8 +45,12 @@ export abstract class Dataset {
   /*
    * Provide a new stream of elements.  Note this will also start new streams
    * from any underlying `Dataset`s.
+   *
+   * CAUTION: Any Tensors contained within the DatasetElements returned from
+   * this stream *must* be manually disposed to avoid a GPU memory leak.
+   * The dl.tidy() approach cannot be used in a asynchronous context.
    */
-  abstract async getStream(): Promise<DataStream<DatasetElement>>;
+  abstract getStream(): DataStream<DatasetElement>;
 
   // TODO(soergel): Make Datasets report whether repeated getStream() calls
   // produce the same result (e.g., reading from a file) or different results
@@ -92,11 +97,10 @@ export abstract class Dataset {
    *
    * @returns A `Dataset` of elements for which the predicate was true.
    */
-  filter(filterer: (value: DatasetElement) => boolean | Promise<boolean>):
-      Dataset {
+  filter(filterer: (value: DatasetElement) => boolean): Dataset {
     const base = this;
-    return datasetFromStreamFn(async () => {
-      return (await base.getStream()).filter(filterer);
+    return datasetFromStreamFn(() => {
+      return base.getStream().filter(x => tidy(() => filterer(x)));
     });
   }
 
@@ -108,11 +112,10 @@ export abstract class Dataset {
    *
    * @returns A `Dataset` of transformed elements.
    */
-  map(transform: (value: DatasetElement) => DatasetElement |
-          Promise<DatasetElement>): Dataset {
+  map(transform: (value: DatasetElement) => DatasetElement): Dataset {
     const base = this;
-    return datasetFromStreamFn(async () => {
-      return (await base.getStream()).map(transform);
+    return datasetFromStreamFn(() => {
+      return base.getStream().map(x => tidy(() => transform(x)));
     });
   }
 
@@ -144,9 +147,8 @@ export abstract class Dataset {
    */
   concatenate(dataset: Dataset): Dataset {
     const base = this;
-    return datasetFromStreamFn(async () => {
-      return (await base.getStream()).concatenate(await dataset.getStream());
-    });
+    return datasetFromStreamFn(
+        () => base.getStream().concatenate(dataset.getStream()));
   }
 
   /**
@@ -162,9 +164,10 @@ export abstract class Dataset {
    */
   repeat(count?: number): Dataset {
     const base = this;
-    return datasetFromStreamFn(async () => {
-      const streamStream = streamFromFunction(() => base.getStream());
-      return (await streamFromConcatenated(streamStream.take(count)));
+    return datasetFromStreamFn(() => {
+      const streamStream =
+          streamFromFunction(() => ({value: base.getStream(), done: false}));
+      return streamFromConcatenated(streamStream.take(count));
     });
   }
 
@@ -179,9 +182,7 @@ export abstract class Dataset {
    */
   take(count: number): Dataset {
     const base = this;
-    return datasetFromStreamFn(async () => {
-      return (await base.getStream()).take(count);
-    });
+    return datasetFromStreamFn(() => base.getStream().take(count));
   }
 
   /**
@@ -196,9 +197,7 @@ export abstract class Dataset {
    */
   skip(count: number): Dataset {
     const base = this;
-    return datasetFromStreamFn(async () => {
-      return (await base.getStream()).skip(count);
-    });
+    return datasetFromStreamFn(() => base.getStream().skip(count));
   }
 
   // TODO(soergel): deep sharded shuffle, where supported
@@ -219,12 +218,12 @@ export abstract class Dataset {
       Dataset {
     const base = this;
     const random = seedrandom(seed);
-    return datasetFromStreamFn(async () => {
+    return datasetFromStreamFn(() => {
       let seed2 = random.int32();
       if (reshuffleEachIteration) {
         seed2 += random.int32();
       }
-      return (await base.getStream()).shuffle(bufferSize, seed2.toString());
+      return base.getStream().shuffle(bufferSize, seed2.toString());
     });
   }
 
@@ -237,9 +236,32 @@ export abstract class Dataset {
    */
   prefetch(bufferSize: number): Dataset {
     const base = this;
-    return datasetFromStreamFn(async () => {
-      return (await base.getStream()).prefetch(bufferSize);
-    });
+    return datasetFromStreamFn(() => base.getStream().prefetch(bufferSize));
+  }
+
+  /**
+   * Collect all elements of this dataset into an array.
+   * Obviously this will succeed only for small datasets that fit in memory.
+   * Useful for testing.
+   *
+   * @returns A Promise for an array of elements, which will resolve
+   *   when a new stream has been obtained and fully consumed.
+   */
+  async collectAll() {
+    return this.getStream().collectRemaining();
+  }
+
+  /**
+   * Apply a function to every element of the dataset.
+   *
+   * After the function is applied to a `DatasetElement`, any Tensors contained
+   * within that element are disposed.
+   *
+   * @param f A function to apply to each dataset element.
+   * @returns A `Promise` that resolves after all elements have been processed.
+   */
+  async forEach(f: (input: DatasetElement) => void): Promise<void> {
+    return this.getStream().forEach(f);
   }
 
   /* TODO(soergel): for parity with tf.data:
@@ -255,13 +277,13 @@ export abstract class Dataset {
  * Create a `Dataset` defined by a provided getStream() function.
  */
 export function datasetFromStreamFn(
-    getStreamFn: () => Promise<DataStream<DatasetElement>>): Dataset {
+    getStreamFn: () => DataStream<DatasetElement>): Dataset {
   return new class extends Dataset {
     /*
      * Provide a new stream of elements.  Note this will also start new streams
      * from any underlying `Dataset`s.
      */
-    async getStream(): Promise<DataStream<DatasetElement>> {
+    getStream(): DataStream<DatasetElement> {
       return getStreamFn();
     }
   }
@@ -272,20 +294,5 @@ export function datasetFromStreamFn(
  * Create a `Dataset` from an array of elements.
  */
 export function datasetFromElements(items: DatasetElement[]): Dataset {
-  return datasetFromStreamFn(async () => {
-    return Promise.resolve(streamFromItems(items));
-  });
-}
-
-/**
- * Create a `Dataset` by concatenating underlying `Dataset`s.
- *
- * Note that if the underlying `Dataset`s return elements in a
- * nondeterministic order, then this concatenated `Dataset` will do the same.
- */
-export function datasetFromConcatenated(datasets: Dataset[]) {
-  return datasetFromStreamFn(async () => {
-    const streamStream = await Promise.all(datasets.map((d) => d.getStream()));
-    return streamFromConcatenated(streamFromItems(streamStream));
-  });
+  return datasetFromStreamFn(() => streamFromItems(items));
 }
