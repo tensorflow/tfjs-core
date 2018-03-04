@@ -19,6 +19,11 @@ from weights_writer import write_weights
 class TestWeightsWrite(unittest.TestCase):
   def test_upper(self):
       self.assertEqual('foo'.upper(), 'FOO')
+      with open('/tmp/test', 'w') as f:
+        f.write('test')
+      with open('/tmp/test', 'r') as f:
+        print 'contents: ' + f.read()
+
 
 if __name__ == '__main__':
     unittest.main()
