@@ -198,10 +198,10 @@ describe('DataStream', () => {
 
   it('can be created from a function', done => {
     let i = -1;
-    const func = () => ++i < 100 ? i : undefined;
+    const func = () =>
+        ++i < 7 ? {value: i, done: false} : {value: null, done: true};
 
-    // streamFromFunction never ends, so we truncate it
-    const readStream = streamFromFunction(func).take(7);
+    const readStream = streamFromFunction(func);
     readStream.collectRemaining()
         .then(result => {
           expect(result).toEqual([0, 1, 2, 3, 4, 5, 6]);
@@ -245,8 +245,8 @@ describe('DataStream', () => {
   });
 
   it('can be created by concatenating streams from a function', done => {
-    const readStream =
-        streamFromConcatenatedFunction(() => new TestIntegerStream(), 3);
+    const readStream = streamFromConcatenatedFunction(
+        () => ({value: new TestIntegerStream(), done: false}), 3);
     const expectedResult: number[] = [];
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 100; j++) {

@@ -42,14 +42,14 @@ export function streamFromItems<T>(items: T[]): DataStream<T> {
  */
 export function streamFromIncrementing(start: number): DataStream<number> {
   let i = start;
-  return streamFromFunction(() => i++);
+  return streamFromFunction(() => ({value: i++, done: false}));
 }
 
 /**
  * Create a `DataStream` from a function.
  */
-export function streamFromFunction<T>(func: () => T | Promise<T>):
-    DataStream<T> {
+export function streamFromFunction<T>(
+    func: () => IteratorResult<T>| Promise<IteratorResult<T>>): DataStream<T> {
   return new FunctionCallStream(func);
 }
 
@@ -79,7 +79,8 @@ export function streamFromConcatenated<T>(
  * @param count: The number of times to call the function.
  */
 export function streamFromConcatenatedFunction<T>(
-    streamFunc: () => DataStream<T>, count: number): DataStream<T> {
+    streamFunc: () => IteratorResult<DataStream<T>>,
+    count: number): DataStream<T> {
   return streamFromConcatenated(streamFromFunction(streamFunc).take(count));
 }
 
@@ -284,13 +285,13 @@ class ArrayStream<T> extends DataStream<T> {
 }
 
 class FunctionCallStream<T> extends DataStream<T> {
-  constructor(protected nextFn: () => T | Promise<T>) {
+  constructor(
+      protected nextFn: () => IteratorResult<T>| Promise<IteratorResult<T>>) {
     super();
   }
 
   async next(): Promise<IteratorResult<T>> {
-    // a function call stream never ends.
-    return {value: await this.nextFn(), done: false};
+    return this.nextFn();
   }
 }
 
@@ -301,6 +302,9 @@ class SkipStream<T> extends DataStream<T> {
   }
 
   async next(): Promise<IteratorResult<T>> {
+    // TODO(soergel): consider tradeoffs of reading in parallel, eg. collecting
+    // next() promises in an Array and then waiting for Promise.all() of those.
+    // Benefit: pseudo-parallel execution.  Drawback: maybe delayed GC.
     while (this.count++ < this.maxCount) {
       const skipped = await this.upstream.next();
       // short-circuit if upstream is already empty
@@ -438,6 +442,7 @@ export abstract class QueueStream<T> extends DataStream<T> {
     // If the upstream source is exhausted, AND there are no items left in the
     // output queue, then this stream is also exhausted.
     while (this.outputQueue.length() === 0) {
+      // TODO(soergel): consider parallel reads.
       if (!await this.pump()) {
         return {value: null, done: true};
       }
@@ -453,7 +458,7 @@ class FlatmapStream<I, O> extends QueueStream<O> {
     super();
   }
 
-  async pump() {
+  async pump(): Promise<boolean> {
     const item = await this.upstream.next();
     if (item.done) {
       return false;
