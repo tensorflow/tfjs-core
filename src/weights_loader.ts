@@ -41,6 +41,8 @@ export class WeightsLoader {
    * returns them as `Tensor`s.
    *
    * @param manifest The weights manifest JSON.
+   * @param filePathPrefix The path prefix for filenames given in the manifest.
+   *     Defaults to the empty string.
    * @param weightNames The names of the weights to be fetched.
    */
   static async loadWeights(

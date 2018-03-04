@@ -379,7 +379,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
           expect((window.fetch as jasmine.Spy).calls.count()).toBe(2);
 
           const weightNames = Object.keys(weights);
-          expect(weightNames.length).toEqual(2);
+          expect(weightNames.length).toEqual(4);
 
           const weight0 = weights['weight0'];
           expectArraysClose(weight0, [1, 2]);
@@ -387,7 +387,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
           expect(weight0.dtype).toEqual('float32');
 
           const weight1 = weights['weight1'];
-          expectArraysClose(weight1, [4, 5, 6]);
+          expectArraysClose(weight1, [3, 4, 5]);
           expect(weight1.shape).toEqual([3]);
           expect(weight1.dtype).toEqual('float32');
 
@@ -414,8 +414,11 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     const weightsNamesToFetch = ['doesntexist'];
-    expect(() => dl.loadWeights(manifest, './', weightsNamesToFetch))
-        .toThrowError();
+    dl.loadWeights(manifest, './', weightsNamesToFetch)
+        // We're expecting an asynchronous call to fail here so we need to use
+        // this approach over .toThrowError().
+        .then(() => done.fail())
+        .catch(done);
   });
 
   it('throws if requested weight has unknown dtype', done => {
