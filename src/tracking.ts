@@ -16,9 +16,11 @@
  */
 
 import {doc} from './doc';
-import {ScopeFn, ScopeResult, TimingInfo} from './engine';
+import {ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
 import {Tensor} from './tensor';
+import {TensorContainer} from './types';
+import {extractTensorsFromAny} from './util';
 
 export class Tracking {
   /**
@@ -62,7 +64,7 @@ export class Tracking {
    * @param gradMode If true, starts a tape and doesn't dispose tensors.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
-  static tidy<T extends ScopeResult>(
+  static tidy<T extends TensorContainer>(
       nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
     let name = null;
     if (fn == null) {
@@ -95,6 +97,21 @@ export class Tracking {
     }
     ENV.engine.endScope(result, gradMode);
     return result;
+  }
+
+  /**
+   * Disposes any `Tensor`s found within the provided object up to depth 1.
+   *
+   * @param container an object that may be a `Tensor` or may directly contain
+   *   `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  If the
+   *   object is not a `Tensor` or does not contain `Tensors`, nothing happens.
+   *   In general it is safe to pass any object here, except that `Promise`s are
+   *   not supported.
+   */
+  // tslint:disable-next-line:no-any
+  static dispose(container: any) {
+    const tensors = extractTensorsFromAny(container);
+    tensors.forEach(tensor => tensor.dispose());
   }
 
   /**
@@ -137,11 +154,11 @@ export class Tracking {
    *
    * The result is an object with the following properties:
    *
-   * - `wallMs`: wall execution time.
-   * - `kernelMs`: kernel execution time, ignoring data transfer.
-   * - On `WebGL` the following additional properties exist:
-   *   - `uploadWaitMs`: cpu blocking time on texture uploads.
-   *   - `downloadWaitMs`: cpu blocking time on texture downloads (readPixels).
+   * - `wallMs`: Wall execution time.
+   * - `kernelMs`: Kernel execution time, ignoring data transfer.
+   * - On `WebGL` The following additional properties exist:
+   *   - `uploadWaitMs`: CPU blocking time on texture uploads.
+   *   - `downloadWaitMs`: CPU blocking time on texture downloads (readPixels).
    *
    * ```js
    * const x = dl.randomNormal([20, 20]);
