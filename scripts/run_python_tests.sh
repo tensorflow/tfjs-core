@@ -15,4 +15,9 @@
 # =============================================================================
 
 pip install -r ./scripts/requirements.txt --user
+echo
+echo "Running Python 2 unit tests..."
 python -m unittest discover scripts "*_test.py"
+echo
+echo "Running Python 3 unit tests..."
+python3 -m unittest discover scripts "*_test.py"

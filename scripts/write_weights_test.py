@@ -47,7 +47,7 @@ class TestWriteWeights(unittest.TestCase):
         os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
         'weights_manifest.json does not exist')
 
-    self.assertEquals(
+    self.assertEqual(
       manifest,
       [{
         'filepaths': ['group0-000001-of-000001'],
@@ -78,7 +78,7 @@ class TestWriteWeights(unittest.TestCase):
         os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
         'weights_manifest.json does not exist')
 
-    self.assertEquals(
+    self.assertEqual(
       manifest,
       [{
         'filepaths': ['group0-000001-of-000002', 'group0-000002-of-000002'],
@@ -115,7 +115,7 @@ class TestWriteWeights(unittest.TestCase):
     self.assertTrue(
         os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
         'weights_manifest.json does not exist')
-    self.assertEquals(
+    self.assertEqual(
       manifest,
       [{
         'filepaths': ['group0-000001-of-000001'],
@@ -154,7 +154,7 @@ class TestWriteWeights(unittest.TestCase):
     self.assertTrue(
         os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
         'weights_manifest.json does not exist')
-    self.assertEquals(
+    self.assertEqual(
       manifest,
       [{
         'filepaths': [
@@ -179,7 +179,7 @@ class TestWriteWeights(unittest.TestCase):
 
     # Shard 2 has a mixed dtype so we parse the bytes directly.
     shard_2_path = os.path.join(TMP_DIR, 'group0-000002-of-000003')
-    with open(shard_2_path, 'r') as f:
+    with open(shard_2_path, 'rb') as f:
       shard_2_bytes = f.read()
     shard_2_int = np.frombuffer(shard_2_bytes[:4], 'int32')
     np.testing.assert_array_equal(shard_2_int, np.array([3], 'int32'))
@@ -216,7 +216,7 @@ class TestWriteWeights(unittest.TestCase):
     self.assertTrue(
         os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
         'weights_manifest.json does not exist')
-    self.assertEquals(
+    self.assertEqual(
       manifest,
       [{
         'filepaths': ['group0-000001-of-000002', 'group0-000002-of-000002'],
@@ -280,7 +280,7 @@ class TestWriteWeights(unittest.TestCase):
     self.assertFalse(
         os.path.isfile(os.path.join(TMP_DIR, 'weights_manifest.json')),
         'weights_manifest.json exists, but expected not to exist')
-    self.assertEquals(
+    self.assertEqual(
       manifest,
       [{
         'filepaths': ['group0-000001-of-000001'],

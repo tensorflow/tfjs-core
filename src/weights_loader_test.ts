@@ -405,7 +405,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
         .catch(done.fail);
   });
 
-  it('throws if requested weight not found', done => {
+  it('throws if requested weight not found', async done => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3])});
 
     const manifest: WeightsManifestConfig = [{
@@ -414,14 +414,15 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     const weightsNamesToFetch = ['doesntexist'];
-    dl.loadWeights(manifest, './', weightsNamesToFetch)
-        // We're expecting an asynchronous call to fail here so we need to use
-        // this approach over .toThrowError().
-        .then(() => done.fail())
-        .catch(done);
+    try {
+      await dl.loadWeights(manifest, './', weightsNamesToFetch);
+      done.fail();
+    } catch (e) {
+      done();
+    }
   });
 
-  it('throws if requested weight has unknown dtype', done => {
+  it('throws if requested weight has unknown dtype', async done => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3])});
 
     const manifest: WeightsManifestConfig = [{
@@ -435,10 +436,11 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     }];
 
     const weightsNamesToFetch = ['weight0'];
-    dl.loadWeights(manifest, './', weightsNamesToFetch)
-        // We're expecting an asynchronous call to fail here so we need to use
-        // this approach over .toThrowError().
-        .then(() => done.fail())
-        .catch(done);
+    try {
+      await dl.loadWeights(manifest, './', weightsNamesToFetch);
+      done.fail();
+    } catch (e) {
+      done();
+    }
   });
 });

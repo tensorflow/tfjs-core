@@ -13,11 +13,11 @@
 # limitations under the License.
 # =============================================================================
 
+import io
 import json
 import math
 import numpy as np
 import os
-from sets import Set
 import string
 
 FILENAME_CHARS = string.ascii_letters + string.digits + '_'
@@ -50,10 +50,31 @@ DTYPE_BYTES = {'float32': 4, 'int32': 4}
       numpy ndarray.
     write_dir: A directory to write the files to.
     shard_size_bytes: The size of shards in bytes. Defaults to 4MB, which is
-      Chrome's max file size for caching.
-    write_manifest: Whether to write the manifest JSON to disk.
+      the max file size for caching for most major browsers.
+    write_manifest: Whether to write the manifest JSON to disk. Defaults to
+      True.
   Returns:
     The weights manifest JSON string.
+
+    An example manifest with 2 groups, 2 weights, and each weight sharded
+    into 2:
+
+    The manifest looks like the following:
+    [{
+      'filepaths': ['group0-000001-of-000002', 'group0-000002-of-000002'],
+      'weights': [{
+        'name': 'weight1',
+        'shape': [1000, 1000],
+        'dtype': 'float32'
+      }]
+    }, {
+      'filepaths': ['group1-000001-of-000002', 'group1-000002-of-000002'],
+      'weights': [{
+        'name': 'weight2',
+        'shape': [2000, 2000],
+        'dtype': 'float32'
+      }]
+    }]
 """
 def write_weights(
     weight_groups, write_dir, shard_size_bytes = 1024 * 1024 * 4,
@@ -79,13 +100,16 @@ def write_weights(
             'weight_groups[' + i + '][' + j + '][\'data\'] is not a numpy ' + \
             'array')
 
-  weight_names = Set([])
+  weight_names = {}
   manifest = []
 
   for group_index, group in enumerate(weight_groups):
     # Stack all of the bytes for the group into a flat byte array before
     # sharding.
-    group_bytes = ''
+    group_bytes = io.BytesIO()
+    group_bytes_writer = io.BufferedWriter(group_bytes)
+    total_bytes = 0
+
     weights_entries = []
     for entry in group:
       data = entry['data']
@@ -96,12 +120,13 @@ def write_weights(
               data.dtype.name + ' from not supported.')
 
         bytes = data.tobytes()
-        group_bytes += bytes
+        group_bytes_writer.write(bytes)
+        total_bytes += len(bytes)
 
         if name in weight_names:
           raise Exception(
               'Error dumping weights, duplicate weight name ' + name)
-        weight_names.add(name)
+        weight_names[name] = True
 
         var_manifest = {
           'name': name,
@@ -110,17 +135,20 @@ def write_weights(
         }
         weights_entries.append(var_manifest)
 
+    group_bytes_writer.flush()
+    group_bytes.seek(0)
+
     # Shard the bytes for the group.
     if shard_size_bytes is None:
-      shard_size_bytes = len(group_bytes)
+      shard_size_bytes = total_bytes
 
-    num_shards = int(math.ceil(float(len(group_bytes)) / shard_size_bytes))
+    num_shards = int(math.ceil(float(total_bytes) / shard_size_bytes))
 
     filenames = []
     total_shards_display = '{:0>6d}'.format(num_shards)
     for i in range(num_shards):
       offset = i * shard_size_bytes
-      shard = group_bytes[offset : offset + shard_size_bytes]
+      shard = group_bytes.read(shard_size_bytes)
 
       shard_idx = '{:0>6d}'.format(i + 1)
       filename ='group' + str(group_index) + '-' + shard_idx + '-of-' + \
@@ -142,6 +170,6 @@ def write_weights(
   if write_manifest:
     manifest_path = os.path.join(write_dir, 'weights_manifest.json')
     with open(manifest_path, 'wb') as f:
-      f.write(manifest_json)
+      f.write(manifest_json.encode())
 
   return manifest_json
