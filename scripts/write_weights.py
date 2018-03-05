@@ -253,11 +253,3 @@ def assert_shard_size_bytes_valid(shard_size_bytes):
   if not isinstance(shard_size_bytes, int):
     raise ValueError(
         'shard_size_bytes must be an integer, but got ' + shard_size_bytes)
-
-groups = [
-  [{
-    'name': 'weights0',
-    'data': np.linspace(0, 100, 10 + 1024 * 1024 * 4, dtype='float32')
-  }]
-]
-write_weights(groups, './demos/test/weights')
