@@ -14,12 +14,14 @@
 # limitations under the License.
 # =============================================================================
 
-pip install -r ./scripts/requirements.txt --user --quiet
 echo
+echo "Installing python3 dependencies..."
+pip install -r ./scripts/requirements.txt --user --quiet
 echo "Running Python 2 unit tests..."
 python -m unittest discover scripts "*_test.py"
 
-python3 -m pip install -r ./scripts/requirements.txt --user --quiet
 echo
-echo "Running Python 3 unit tests..."
+echo "Installing python3 dependencies..."
+python3 -m pip install -r ./scripts/requirements.txt --user --quiet
+echo "Running python3 unit tests..."
 python3 -m unittest discover scripts "*_test.py"
