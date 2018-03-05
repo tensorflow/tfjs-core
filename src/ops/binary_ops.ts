@@ -198,7 +198,7 @@ export class BinaryOps {
       }
       const derBase = () => {
         const dx = exp.toFloat().mul(
-                       base.pow(exp.sub(scalar(1, 'int32'))).toFloat()) as T;
+                       base.pow(exp.sub(scalar(1))).toFloat()) as T;
         return dy.mulStrict(dx) as T;
       };
       return {base: derBase};
