@@ -499,8 +499,8 @@ describeWithFlags('pow', ALL_ENVS, () => {
     const b = dl.tensor1d([.5, 1.2]);
 
     const result = dl.pow(a, b);
-    const expected = [1.414, 5.278];
-    expectArraysClose(result, expected, 0.001);
+    const expected = [Math.pow(2, 0.5), Math.pow(4, 1.2)];
+    expectArraysClose(result, expected);
   });
 
   it('broadcasting same rank Tensors different shape', () => {
@@ -549,8 +549,8 @@ describeWithFlags('pow', ALL_ENVS, () => {
     const b = dl.tensor1d([.5, 1.2]);
 
     const result = dl.powStrict(a, b);
-    const expected = [1.414, 5.278];
-    expectArraysClose(result, expected, 0.001);
+    const expected = [Math.pow(2, 0.5), Math.pow(4, 1.2)];
+    expectArraysClose(result, expected);
   });
 
   it('gradients: Scalar ^ Scalar', () => {
