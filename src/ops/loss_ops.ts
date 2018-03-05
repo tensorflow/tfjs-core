@@ -30,19 +30,19 @@ export enum Reduction {
 
 export class LossOps {
   /**
-   * Computes the weighted loss.
+   * Computes the weighted loss between two tensors.
    *
-   * @param losses `Tensor` of shape `[batch_size, d1, ... dN]`.
-   * @param weights `Tensor` whose rank is either 0, or the same rank as
+   * @param losses Tensor of shape `[batch_size, d1, ... dN]`.
+   * @param weights Tensor whose rank is either 0, or the same rank as
    *    `losses`, and must be broadcastable to `losses` (i.e., all
-   * dimensions must be either `1`, or the same as the corresponding
-   * `losses` dimension).
+   *    dimensions must be either `1`, or the same as the corresponding
+   *    `losses` dimension).
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
       losses: T, weights?: Tensor, reduction = Reduction.NONE): O {
-    if (weights === undefined) {
+    if (weights == null) {
       weights = ops.scalar(1);
     }
 
@@ -62,7 +62,7 @@ export class LossOps {
   }
 
   /**
-   * Adds an Absolute Difference loss to the training procedure.
+   * Computes the absolute difference loss between two tensors.
    *
    * @param labels The ground truth output tensor, same dimensions as
    *    'predictions'.
