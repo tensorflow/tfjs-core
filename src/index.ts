@@ -58,6 +58,7 @@ export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
 export {Rank} from './types';
+export {loadWeights} from './weights_loader';
 export {version};
 // Second level exports.
 export {
@@ -80,5 +81,3 @@ export const getBackend = Environment.getBackend;
 export const memory = Environment.memory;
 
 export const nextFrame = BrowserUtil.nextFrame;
-
-export {loadWeights} from './weights_loader';
