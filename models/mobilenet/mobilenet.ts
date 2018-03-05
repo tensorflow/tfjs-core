@@ -19,6 +19,9 @@ import * as dl from 'deeplearn';
 import * as model_util from '../util';
 import {IMAGENET_CLASSES} from './imagenet_classes';
 
+const GOOGLE_CLOUD_STORAGE_DIR =
+    'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/';
+
 export class MobileNet {
   private variables: {[varName: string]: dl.Tensor};
 
@@ -30,7 +33,8 @@ export class MobileNet {
    * Loads necessary variables for MobileNet.
    */
   async load(): Promise<void> {
-    const checkpointLoader = new dl.CheckpointLoader('weights/');
+    const checkpointLoader = new dl.CheckpointLoader(
+        GOOGLE_CLOUD_STORAGE_DIR + 'mobilenet_v1_1.0_224/');
     this.variables = await checkpointLoader.getAllVariables();
   }
 
@@ -46,7 +50,7 @@ export class MobileNet {
     return dl.tidy(() => {
       // Normalize the pixels [0, 255] to be between [-1, 1].
       const preprocessedInput =
-           input.div(this.PREPROCESS_DIVISOR).sub(this.ONE) as dl.Tensor3D;
+          input.div(this.PREPROCESS_DIVISOR).sub(this.ONE) as dl.Tensor3D;
       const x1 = this.convBlock(preprocessedInput, 2);
       console.log('conv2d_0 shape', x1.shape);
       const min = x1.min().dataSync()[0];

@@ -1,4 +1,4 @@
-<script src="node_modules/deeplearn/dist/deeplearn.js"></script>
+<script src="https://unpkg.com/deeplearn"></script>
 <script src="dist/bundle.js"></script>
 
 <img id="cat"></img>
@@ -17,10 +17,8 @@
 
     resultElement.innerText = 'Predicting...';
 
-    // const pixels = dl.fill([1, 224, 224, 3], 127.5);
     const pixels = dl.Array3D.fromPixels(cat);
     const result = await mobileNet.predict(pixels);
-    console.log(result.dataSync());
     resultElement.innerText = '';
 
     const topK = await mobileNet.getTopKClasses(result, 5);

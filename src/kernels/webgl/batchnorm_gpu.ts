@@ -54,8 +54,8 @@ export class BatchNormProgram implements GPGPUProgram {
         float variance = getVarianceAtOutCoords();
         float offset = ${offsetSnippet};
         float scale = ${scaleSnippet};
-        float inv = scale * inversesqrt(variance + float(${varianceEpsilon}));
-        setOutput(x * inv + (offset - mean * inv));
+        float inv = scale / sqrt(variance + float(${varianceEpsilon}));
+        setOutput((x - mean) * inv + offset);
       }
     `;
   }
