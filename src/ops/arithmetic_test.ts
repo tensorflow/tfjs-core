@@ -566,6 +566,19 @@ describeWithFlags('pow', ALL_ENVS, () => {
     expectArraysClose(da, [2 * 5 * 3]);
   });
 
+  it('gradients: Scalar ^ Scalar fractional exponent', () => {
+    const a = dl.scalar(4.0);
+    const b = dl.scalar(1.5);
+    const dy = dl.scalar(3.0);
+
+    const grad = dl.grad(a => dl.pow(a, b));
+    const da = grad(a, dy);
+
+    expect(da.shape).toEqual(a.shape);
+    expect(da.dtype).toEqual('float32');
+    expectArraysClose(da, [1.5 * Math.pow(4, 0.5) * 3]);
+  });
+  
   it('gradients: Tensor ^ Tensor', () => {
     const a = dl.tensor1d([-1, .5, 2]);
     const b = dl.tensor1d([3, 2, -1], 'int32');
