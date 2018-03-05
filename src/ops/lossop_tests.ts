@@ -26,17 +26,34 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
 
     const y = dl.losses.absoluteDifference(label, predictions);
 
-    expect(y.shape).toEqual([3]);
-    expectArraysClose(
-        y, [Math.abs(1 - 0.3), Math.abs(2 - (-0.6)), Math.abs(3 - (-0.1))]);
+    expect(y.shape).toEqual([]);
+    expectNumbersClose(
+        y.get(),
+        Math.abs(1 - 0.3) + Math.abs(2 - (-0.6)) + Math.abs(3 - (-0.1)));
   });
 
-  it('1D - weighted', () => {
+  it('1D - weighted - Reduction.SUM_BY_NONZERO_WEIGHTS', () => {
     const predictions = dl.tensor1d([1, 2, 3]);
     const label = dl.tensor1d([0.3, -0.6, -0.1]);
     const weights = dl.tensor1d([0.1, 0.2, 0.3]);
 
     const y = dl.losses.absoluteDifference(label, predictions, weights);
+
+    expect(y.shape).toEqual([]);
+    expectNumbersClose(
+        y.get(),
+        (Math.abs(1 - 0.3) * 0.1 + Math.abs(2 - (-0.6)) * 0.2 +
+         Math.abs(3 - (-0.1)) * 0.3) /
+            3);
+  });
+
+  it('1D - weighted - Reduction.NONE', () => {
+    const predictions = dl.tensor1d([1, 2, 3]);
+    const label = dl.tensor1d([0.3, -0.6, -0.1]);
+    const weights = dl.tensor1d([0.1, 0.2, 0.3]);
+
+    const y = dl.losses.absoluteDifference(
+        label, predictions, weights, dl.Reduction.NONE);
 
     expect(y.shape).toEqual([3]);
     expectArraysClose(y, [
@@ -45,7 +62,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
     ]);
   });
 
-  it('1D - reduced', () => {
+  it('1D - Reduction.MEAN', () => {
     const predictions = dl.tensor1d([1, 2, 3]);
     const label = dl.tensor1d([0.3, -0.6, -0.1]);
 
@@ -58,7 +75,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
         (Math.abs(1 - 0.3) + Math.abs(2 - (-0.6)) + Math.abs(3 - (-0.1))) / 3);
   });
 
-  it('1D - weighted reduction', () => {
+  it('1D - weighted - Reduction.MEAN', () => {
     const predictions = dl.tensor1d([1, 2, 3]);
     const label = dl.tensor1d([0.3, -0.6, -0.1]);
     const weights = dl.tensor1d([0.1, 0.2, 0.3]);
@@ -80,19 +97,36 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
 
     const y = dl.losses.absoluteDifference(label, predictions);
 
-    expect(y.shape).toEqual([2, 3]);
-    expectArraysClose(y, [
-      Math.abs(4 - 1), Math.abs(8 - 9), Math.abs(12 - 2), Math.abs(8 - (-5)),
-      Math.abs(1 - (-2)), Math.abs(3 - 6)
-    ]);
+    expect(y.shape).toEqual([]);
+    expectNumbersClose(
+        y.get(),
+        Math.abs(4 - 1) + Math.abs(8 - 9) + Math.abs(12 - 2) +
+            Math.abs(8 - (-5)) + Math.abs(1 - (-2)) + Math.abs(3 - 6));
   });
 
-  it('2D - weighted', () => {
+  it('2D - weighted - Reduction.SUM_BY_NONZERO_WEIGHTS', () => {
+    const predictions = dl.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
+    const label = dl.tensor2d([1, 9, 2, -5, -2, 6], [2, 3]);
+    const weights = dl.tensor2d([3, 0, 5, 0, 4, 2], [2, 3]);
+
+    const y = dl.losses.absoluteDifference(label, predictions, weights);
+
+    expect(y.shape).toEqual([]);
+    expectNumbersClose(
+        y.get(),
+        (Math.abs(4 - 1) * 3 + Math.abs(8 - 9) * 0 + Math.abs(12 - 2) * 5 +
+         Math.abs(8 - (-5)) * 0 + Math.abs(1 - (-2)) * 4 +
+         Math.abs(3 - 6) * 2) /
+            4);
+  });
+
+  it('2D - weighted - Reduction.NONE', () => {
     const predictions = dl.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const label = dl.tensor2d([1, 9, 2, -5, -2, 6], [2, 3]);
     const weights = dl.tensor2d([3, 6, 5, 0, 4, 2], [2, 3]);
 
-    const y = dl.losses.absoluteDifference(label, predictions, weights);
+    const y = dl.losses.absoluteDifference(
+        label, predictions, weights, dl.Reduction.NONE);
 
     expect(y.shape).toEqual([2, 3]);
     expectArraysClose(y, [
@@ -101,7 +135,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
     ]);
   });
 
-  it('2D - reduced', () => {
+  it('2D - Reduction.MEAN', () => {
     const predictions = dl.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const label = dl.tensor2d([1, 9, 2, -5, -2, 6], [2, 3]);
 
@@ -116,7 +150,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
             6);
   });
 
-  it('2D - weighted reduction', () => {
+  it('2D - weighted - Reduction.MEAN', () => {
     const predictions = dl.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const label = dl.tensor2d([1, 9, 2, -5, -2, 6], [2, 3]);
     const weights = dl.tensor2d([3, 6, 5, 0, 4, 2], [2, 3]);

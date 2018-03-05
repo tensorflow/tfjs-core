@@ -23,9 +23,10 @@ import {operation} from './operation';
 import * as ops from './ops';
 
 export enum Reduction {
-  NONE = 'none',
-  MEAN = 'mean',
-  SUM = 'sum'
+  NONE,
+  MEAN,
+  SUM,
+  SUM_BY_NONZERO_WEIGHTS
 }
 
 export class LossOps {
@@ -41,7 +42,8 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
-      losses: T, weights?: Tensor, reduction = Reduction.NONE): O {
+      losses: T, weights?: Tensor,
+      reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
     if (weights == null) {
       weights = ops.scalar(1);
     }
@@ -55,6 +57,11 @@ export class LossOps {
       loss = weightedLoss.sum() as O;
       if (reduction === Reduction.MEAN) {
         loss = loss.div(ops.onesLike(losses).mul(weights).sum()) as O;
+      } else if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
+        const mask = ops.where(
+            weights.equal(ops.scalar(0)), ops.zerosLike(weights),
+            ops.onesLike(weights));
+        loss = loss.div(mask.sum()) as O;
       }
     }
 
@@ -67,7 +74,7 @@ export class LossOps {
    * @param labels The ground truth output tensor, same dimensions as
    *    'predictions'.
    * @param predictions The predicted outputs.
-   * @param weights `Tensor` whose rank is either 0, or the same rank as
+   * @param weights Tensor whose rank is either 0, or the same rank as
    *    `labels`, and must be broadcastable to `labels` (i.e., all dimensions
    *    must be either `1`, or the same as the corresponding `losses`
    *    dimension).
@@ -77,8 +84,8 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static absoluteDifference<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: Tensor, reduction = Reduction.NONE):
-      O {
+      labels: T, predictions: T, weights?: Tensor,
+      reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in absoluteDifference: ');
     const losses = labels.sub(predictions).abs();
