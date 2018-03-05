@@ -52,11 +52,6 @@ export class MobileNet {
       const preprocessedInput =
           input.div(this.PREPROCESS_DIVISOR).sub(this.ONE) as dl.Tensor3D;
       const x1 = this.convBlock(preprocessedInput, 2);
-      console.log('conv2d_0 shape', x1.shape);
-      const min = x1.min().dataSync()[0];
-      const mean = x1.mean().dataSync()[0];
-      const max = x1.max().dataSync()[0];
-      console.log('conv2d_0 min/mean/max', min, mean, max);
       const x2 = this.depthwiseConvBlock(x1, 1, 1);
 
       const x3 = this.depthwiseConvBlock(x2, 2, 2);
@@ -93,19 +88,13 @@ export class MobileNet {
     const x1 = inputs.conv2d(
         this.variables[convPadding + '/weights'] as dl.Tensor4D, stride,
         'same');
-    console.log('x1', x1.dataSync());
     const x2 = x1.batchNormalization(
         this.variables[convPadding + '/BatchNorm/moving_mean'] as dl.Tensor1D,
         this.variables[convPadding + '/BatchNorm/moving_variance'] as
             dl.Tensor1D,
         .001, this.variables[convPadding + '/BatchNorm/gamma'] as dl.Tensor1D,
         this.variables[convPadding + '/BatchNorm/beta'] as dl.Tensor1D);
-    console.log(
-        'variance',
-        this.variables[convPadding + '/BatchNorm/moving_variance'].dataSync());
-    console.log('x2', x2.dataSync());
     const res = x2.clipByValue(0, 6);  // simple implementation of Relu6
-    console.log('res', res.dataSync());
     return res;
   }
 
