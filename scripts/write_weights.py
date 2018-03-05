@@ -199,14 +199,14 @@ def _get_weights_manifest_for_group(group):
   return weights_entries
 
 def _assert_no_duplicate_weight_names(weight_groups):
-  weight_names = {}
+  weight_names = set()
   for group_index, group in enumerate(weight_groups):
     for entry_index, entry in enumerate(group):
       name = entry['name']
       if name in weight_names:
         raise Exception(
             'Error dumping weights, duplicate weight name ' + name)
-      weight_names[name] = True
+      weight_names.add(name)
 
 def _assert_valid_weight_entry(entry):
   if not 'name' in entry:
