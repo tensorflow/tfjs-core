@@ -25,76 +25,77 @@ FILENAME_CHARS = string.ascii_letters + string.digits + '_'
 # TODO(nsthorat): Support more than just float32 and int32 for weight dumping.
 DTYPE_BYTES = {'float32': 4, 'int32': 4}
 
-"""Writes weights to a binary format on disk for ingestion by JavaScript.
 
-  Weights are organized into groups. When writing to disk, the bytes from all
-  weights in each group are concatenated together and then split into shards
-  (default is 4MB). This means that large weights (> shard_size) get sharded
-  and small weights (< shard_size) will be packed. If the bytes can't be split
-  evenly into shards, there will be a leftover shard that is smaller than the
-  shard size.
-
-  Args:
-    weight_groups: An list of groups. Each group is an array of weight entries.
-      Each entry is a dict that maps a unique name to a numpy array, for
-      example:
-      entry = {
-        'name': 'weight1',
-        'data': np.array([1, 2, 3], 'float32')
-      }
-
-      Weights groups would then look like:
-      weight_groups = [
-        [group_0_entry1, group_0_entry2],
-        [group_1_entry1, group_1_entry2],
-      ]
-
-      The 'name' must be unique across all groups and all entries. The 'data'
-      field must be a numpy ndarray.
-    write_dir: A directory to write the files to.
-    shard_size_bytes: The size of shards in bytes. Defaults to 4MB, which is
-      the max file size for caching for all major browsers.
-    write_manifest: Whether to write the manifest JSON to disk. Defaults to
-      True.
-  Returns:
-    The weights manifest JSON string.
-
-    An example manifest with 2 groups, 2 weights, and each weight sharded
-    into 2:
-
-    The manifest JSON looks like the following:
-    [{
-      'paths': ['group1-shard1of2', 'group1-shard2of2'],
-      'weights': [{
-        'name': 'weight1',
-        'shape': [1000, 1000],
-        'dtype': 'float32'
-      }]
-    }, {
-      'paths': ['group2-shard1of2', 'group2-shard2of2'],
-      'weights': [{
-        'name': 'weight2',
-        'shape': [2000, 2000],
-        'dtype': 'float32'
-      }]
-    }]
-"""
 def write_weights(
     weight_groups, write_dir, shard_size_bytes = 1024 * 1024 * 4,
     write_manifest=True):
-  assert_weight_groups_valid(weight_groups)
-  assert_shard_size_bytes_valid(shard_size_bytes)
-  assert_no_duplicate_weight_names(weight_groups)
+  """Writes weights to a binary format on disk for ingestion by JavaScript.
+
+    Weights are organized into groups. When writing to disk, the bytes from all
+    weights in each group are concatenated together and then split into shards
+    (default is 4MB). This means that large weights (> shard_size) get sharded
+    and small weights (< shard_size) will be packed. If the bytes can't be split
+    evenly into shards, there will be a leftover shard that is smaller than the
+    shard size.
+
+    Args:
+      weight_groups: An list of groups. Each group is an array of weight entries.
+        Each entry is a dict that maps a unique name to a numpy array, for
+        example:
+        entry = {
+          'name': 'weight1',
+          'data': np.array([1, 2, 3], 'float32')
+        }
+
+        Weights groups would then look like:
+        weight_groups = [
+          [group_0_entry1, group_0_entry2],
+          [group_1_entry1, group_1_entry2],
+        ]
+
+        The 'name' must be unique across all groups and all entries. The 'data'
+        field must be a numpy ndarray.
+      write_dir: A directory to write the files to.
+      shard_size_bytes: The size of shards in bytes. Defaults to 4MB, which is
+        the max file size for caching for all major browsers.
+      write_manifest: Whether to write the manifest JSON to disk. Defaults to
+        True.
+    Returns:
+      The weights manifest JSON string.
+
+      An example manifest with 2 groups, 2 weights, and each weight sharded
+      into 2:
+
+      The manifest JSON looks like the following:
+      [{
+        'paths': ['group1-shard1of2', 'group1-shard2of2'],
+        'weights': [{
+          'name': 'weight1',
+          'shape': [1000, 1000],
+          'dtype': 'float32'
+        }]
+      }, {
+        'paths': ['group2-shard1of2', 'group2-shard2of2'],
+        'weights': [{
+          'name': 'weight2',
+          'shape': [2000, 2000],
+          'dtype': 'float32'
+        }]
+      }]
+  """
+  _assert_weight_groups_valid(weight_groups)
+  _assert_shard_size_bytes_valid(shard_size_bytes)
+  _assert_no_duplicate_weight_names(weight_groups)
 
   manifest = []
 
   for group_index, group in enumerate(weight_groups):
-    group_bytes, total_bytes, _ = stack_group_bytes(group)
+    group_bytes, total_bytes, _ = _stack_group_bytes(group)
 
-    shard_filenames = shard_group_bytes_to_disk(
+    shard_filenames = _shard_group_bytes_to_disk(
         write_dir, group_index, group_bytes, total_bytes, shard_size_bytes)
 
-    weights_entries = get_weights_manifest_for_group(group)
+    weights_entries = _get_weights_manifest_for_group(group)
     manifest_entry = {
       'paths': shard_filenames,
       'weights': weights_entries
@@ -122,13 +123,13 @@ def write_weights(
       group_bytes does not get garbage collected and closed.
 
 """
-def stack_group_bytes(group):
+def _stack_group_bytes(group):
   group_bytes = io.BytesIO()
   group_bytes_writer = io.BufferedWriter(group_bytes)
   total_bytes = 0
 
   for entry in group:
-    assert_valid_weight_entry(entry)
+    _assert_valid_weight_entry(entry)
 
     data = entry['data']
     name = entry['name']
@@ -156,7 +157,7 @@ def stack_group_bytes(group):
   Returns:
     A list of filenames that were written to disk.
 """
-def shard_group_bytes_to_disk(
+def _shard_group_bytes_to_disk(
     write_dir, group_index, group_bytes, total_bytes, shard_size_bytes):
   if shard_size_bytes is None:
     shard_size_bytes = total_bytes
@@ -186,7 +187,7 @@ def shard_group_bytes_to_disk(
   Returns:
     An list of manifest entries (dicts) to be written in the weights manifest.
 """
-def get_weights_manifest_for_group(group):
+def _get_weights_manifest_for_group(group):
   weights_entries = []
   for entry in group:
     var_manifest = {
@@ -197,7 +198,7 @@ def get_weights_manifest_for_group(group):
     weights_entries.append(var_manifest)
   return weights_entries
 
-def assert_no_duplicate_weight_names(weight_groups):
+def _assert_no_duplicate_weight_names(weight_groups):
   weight_names = {}
   for group_index, group in enumerate(weight_groups):
     for entry_index, entry in enumerate(group):
@@ -207,7 +208,7 @@ def assert_no_duplicate_weight_names(weight_groups):
             'Error dumping weights, duplicate weight name ' + name)
       weight_names[name] = True
 
-def assert_valid_weight_entry(entry):
+def _assert_valid_weight_entry(entry):
   if not 'name' in entry:
     raise ValueError('Error dumping weight, no name field found.')
   if not 'data' in entry:
@@ -224,7 +225,7 @@ def assert_valid_weight_entry(entry):
     raise ValueError('Error dumping weight ' + name + ', data ' +
         'must be a numpy ndarray.')
 
-def assert_weight_groups_valid(weight_groups):
+def _assert_weight_groups_valid(weight_groups):
   if not isinstance(weight_groups, list):
     raise Exception('weight_groups must be a list of groups')
   if not weight_groups:
@@ -246,7 +247,7 @@ def assert_weight_groups_valid(weight_groups):
             'weight_groups[' + i + '][' + j + '][\'data\'] is not a numpy ' + \
             'array')
 
-def assert_shard_size_bytes_valid(shard_size_bytes):
+def _assert_shard_size_bytes_valid(shard_size_bytes):
   if shard_size_bytes < 0:
     raise ValueError(
         'shard_size_bytes must be greater than 0, but got ' + shard_size_bytes)
