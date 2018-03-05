@@ -31,7 +31,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3])});
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0'],
+      'paths': ['weightfile0'],
       'weights': [{'name': 'weight0', 'dtype': 'float32', 'shape': [3]}]
     }];
 
@@ -56,7 +56,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3, 4, 5])});
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0'],
+      'paths': ['weightfile0'],
       'weights': [
         {'name': 'weight0', 'dtype': 'float32', 'shape': [2]},
         {'name': 'weight1', 'dtype': 'float32', 'shape': [3]}
@@ -84,7 +84,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3, 4, 5])});
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0'],
+      'paths': ['weightfile0'],
       'weights': [
         {'name': 'weight0', 'dtype': 'float32', 'shape': [2]},
         {'name': 'weight1', 'dtype': 'float32', 'shape': [3]}
@@ -112,7 +112,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3, 4, 5])});
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0'],
+      'paths': ['weightfile0'],
       'weights': [
         {'name': 'weight0', 'dtype': 'float32', 'shape': [2]},
         {'name': 'weight1', 'dtype': 'float32', 'shape': [3]}
@@ -151,7 +151,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     setupFakeWeightFiles({'./weightfile0': buffer});
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0'],
+      'paths': ['weightfile0'],
       'weights': [
         {'name': 'weight0', 'dtype': 'int32', 'shape': [2]},
         {'name': 'weight1', 'dtype': 'float32', 'shape': [3]}
@@ -192,7 +192,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     });
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0', 'weightsfile1', 'weightsfile2'],
+      'paths': ['weightfile0', 'weightsfile1', 'weightsfile2'],
       'weights': [{'name': 'weight0', 'dtype': 'float32', 'shape': [5, 2]}]
     }];
 
@@ -231,7 +231,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     });
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0', 'weightsfile1', 'weightsfile2'],
+      'paths': ['weightfile0', 'weightsfile1', 'weightsfile2'],
       'weights': [
         {'name': 'weight0', 'dtype': 'int32', 'shape': [7, 1]},
         {'name': 'weight1', 'dtype': 'float32', 'shape': [3, 2]}
@@ -267,14 +267,14 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
 
     const manifest: WeightsManifestConfig = [
       {
-        'filepaths': ['weightfile0'],
+        'paths': ['weightfile0'],
         'weights': [
           {'name': 'weight0', 'dtype': 'float32', 'shape': [2]},
           {'name': 'weight1', 'dtype': 'float32', 'shape': [3]}
         ]
       },
       {
-        'filepaths': ['weightfile1'],
+        'paths': ['weightfile1'],
         'weights': [
           {'name': 'weight2', 'dtype': 'float32', 'shape': [3, 1]},
           {'name': 'weight3', 'dtype': 'float32', 'shape': []}
@@ -312,14 +312,14 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
 
     const manifest: WeightsManifestConfig = [
       {
-        'filepaths': ['weightfile0'],
+        'paths': ['weightfile0'],
         'weights': [
           {'name': 'weight0', 'dtype': 'float32', 'shape': [2]},
           {'name': 'weight1', 'dtype': 'float32', 'shape': [3]}
         ]
       },
       {
-        'filepaths': ['weightfile1'],
+        'paths': ['weightfile1'],
         'weights': [
           {'name': 'weight2', 'dtype': 'float32', 'shape': [3, 1]},
           {'name': 'weight3', 'dtype': 'float32', 'shape': []}
@@ -357,14 +357,14 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
 
     const manifest: WeightsManifestConfig = [
       {
-        'filepaths': ['weightfile0'],
+        'paths': ['weightfile0'],
         'weights': [
           {'name': 'weight0', 'dtype': 'float32', 'shape': [2]},
           {'name': 'weight1', 'dtype': 'float32', 'shape': [3]}
         ]
       },
       {
-        'filepaths': ['weightfile1'],
+        'paths': ['weightfile1'],
         'weights': [
           {'name': 'weight2', 'dtype': 'float32', 'shape': [3, 1]},
           {'name': 'weight3', 'dtype': 'float32', 'shape': []}
@@ -409,7 +409,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3])});
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0'],
+      'paths': ['weightfile0'],
       'weights': [{'name': 'weight0', 'dtype': 'float32', 'shape': [3]}]
     }];
 
@@ -426,7 +426,7 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
     setupFakeWeightFiles({'./weightfile0': new Float32Array([1, 2, 3])});
 
     const manifest: WeightsManifestConfig = [{
-      'filepaths': ['weightfile0'],
+      'paths': ['weightfile0'],
       'weights': [{
         'name': 'weight0',
         // tslint:disable-next-line:no-any

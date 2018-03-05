@@ -21,7 +21,7 @@ import * as util from './util';
 
 export type WeightsManifestConfig = WeightsManifestGroupConfig[];
 export interface WeightsManifestGroupConfig {
-  filepaths: string[];
+  paths: string[];
   weights: WeightsManifestEntry[];
 }
 export interface WeightsManifestEntry {
@@ -121,7 +121,7 @@ export async function loadWeights(
   // Create the requests for all of the weights in parallel.
   const requests: Array<Promise<Response>> = [];
   groupIndicesToFetch.forEach(i => {
-    manifest[i].filepaths.forEach(filepath => {
+    manifest[i].paths.forEach(filepath => {
       const fetchUrl = filePathPrefix +
           (!filePathPrefix.endsWith('/') ? '/' : '') + filepath;
       requests.push(fetch(fetchUrl));
@@ -135,7 +135,7 @@ export async function loadWeights(
   const weightsTensorMap: NamedTensorMap = {};
   let bufferIndexOffset = 0;
   groupIndicesToFetch.forEach(i => {
-    const numBuffers = manifest[i].filepaths.length;
+    const numBuffers = manifest[i].paths.length;
 
     let groupBytes = 0;
     for (let i = 0; i < numBuffers; i++) {
@@ -170,7 +170,13 @@ export async function loadWeights(
             `${weightsEntry.manifestEntry.dtype}.`);
       }
 
-      weightsTensorMap[weightsEntry.manifestEntry.name] = tensor(
+      const weightName = weightsEntry.manifestEntry.name;
+      if (weightsTensorMap[weightName] != null) {
+        throw new Error(
+            `Duplicate weight with name ${weightName}. ` +
+            `Please make sure weights names are unique in the manifest JSON.`);
+      }
+      weightsTensorMap[weightName] = tensor(
           typedArray, weightsEntry.manifestEntry.shape,
           weightsEntry.manifestEntry.dtype);
     });
