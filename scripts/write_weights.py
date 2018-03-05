@@ -50,7 +50,7 @@ DTYPE_BYTES = {'float32': 4, 'int32': 4}
       numpy ndarray.
     write_dir: A directory to write the files to.
     shard_size_bytes: The size of shards in bytes. Defaults to 4MB, which is
-      the max file size for caching for most major browsers.
+      the max file size for caching for all major browsers.
     write_manifest: Whether to write the manifest JSON to disk. Defaults to
       True.
   Returns:
