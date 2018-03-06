@@ -36,16 +36,13 @@ export {ENV, Environment, Features} from './environment';
 export {Graph, SymbolicTensor} from './graph/graph';
 // tslint:disable-next-line:max-line-length
 export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
-// tslint:disable-next-line:max-line-length
-export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './graph/initializers';
 export {CostReduction, FeedEntry, Session} from './graph/session';
 export {MathBackendCPU, NDArrayMathCPU} from './kernels/backend_cpu';
 // tslint:disable-next-line:max-line-length
 export {MathBackendWebGL, NDArrayMathGPU, WebGLTimingInfo} from './kernels/backend_webgl';
 export {GPGPUContext} from './kernels/webgl/gpgpu_context';
 export {NDArrayMath} from './math';
-export {Model} from './model';
-export {LSTMCell} from './ops/lstm';
+export {LSTMCellFunc} from './ops/lstm';
 export {MatrixOrientation} from './ops/matmul';
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
