@@ -69,14 +69,9 @@ export class AdagradOptimizer extends Optimizer {
   dispose() {
     this.epsilon.dispose();
     this.c.dispose();
-    if (this.one != null) {
-      this.one.dispose();
-    }
     if (this.accumulatedGrads != null) {
       Object.keys(this.accumulatedGrads)
           .forEach(name => this.accumulatedGrads[name].dispose());
     }
   }
-
-  private one: Scalar;
 }

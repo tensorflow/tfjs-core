@@ -59,10 +59,5 @@ export class SGDOptimizer extends Optimizer {
 
   dispose() {
     this.c.dispose();
-    if (this.one != null) {
-      this.one.dispose();
-    }
   }
-
-  protected one: Scalar;
 }

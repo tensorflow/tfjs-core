@@ -90,9 +90,6 @@ export class AdadeltaOptimizer extends Optimizer {
     this.epsilon.dispose();
     this.rho.dispose();
     this.oneMinusRho.dispose();
-    if (this.one != null) {
-      this.one.dispose();
-    }
     if (this.accumulatedUpdates != null) {
       Object.keys(this.accumulatedUpdates)
           .forEach(name => this.accumulatedUpdates[name].dispose());
@@ -100,6 +97,4 @@ export class AdadeltaOptimizer extends Optimizer {
           .forEach(name => this.accumulatedGrads[name].dispose());
     }
   }
-
-  private one: Scalar;
 }
