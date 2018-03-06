@@ -26,27 +26,19 @@ import * as conv_util from './ops/conv_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
-
 export {CheckpointLoader} from './data/checkpoint_loader';
 export {DataStats, InMemoryDataset} from './data/dataset';
 // tslint:disable-next-line:max-line-length
 export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider} from './data/input_provider';
 export {XhrDataset, XhrDatasetConfig, XhrModelConfig} from './data/xhr-dataset';
 export {ENV, Environment, Features} from './environment';
-export {Graph, SymbolicTensor} from './graph/graph';
-// tslint:disable-next-line:max-line-length
-export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
-// tslint:disable-next-line:max-line-length
-export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './graph/initializers';
-export {CostReduction, FeedEntry, Session} from './graph/session';
 export {MathBackendCPU, NDArrayMathCPU} from './kernels/backend_cpu';
 // tslint:disable-next-line:max-line-length
 export {MathBackendWebGL, NDArrayMathGPU, WebGLTimingInfo} from './kernels/backend_webgl';
 export {GPGPUContext} from './kernels/webgl/gpgpu_context';
 export {NDArrayMath} from './math';
-export {Model} from './model';
 export {Reduction} from './ops/loss_ops';
-export {LSTMCell} from './ops/lstm';
+export {LSTMCellFunc} from './ops/lstm';
 export {MatrixOrientation} from './ops/matmul';
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
@@ -59,6 +51,7 @@ export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
 export {Rank} from './types';
+export {loadWeights} from './weights_loader';
 export {version};
 // Second level exports.
 export {

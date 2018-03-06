@@ -16,12 +16,7 @@
  */
 
 import {ENV} from '../environment';
-import {keep, tidy} from '../globals';
-import {Node} from '../graph/graph';
-import {SessionRuntime} from '../graph/session';
-// tslint:disable-next-line:max-line-length
-import {SummedTensorArrayMap, TensorArrayMap} from '../graph/tensor_array_map';
-import {NDArrayMath} from '../math';
+import {tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
 import {Scalar, Tensor} from '../tensor';
 import {NamedVariableMap} from '../types';
@@ -34,8 +29,8 @@ export class MomentumOptimizer extends SGDOptimizer {
 
   constructor(
       protected learningRate: number, private momentum: number,
-      specifiedVariableList?: Node[]) {
-    super(learningRate, specifiedVariableList);
+      private useNesterov = false) {
+    super(learningRate);
     this.m = scalar(this.momentum);
     this.accumulations = {};
   }
@@ -55,74 +50,23 @@ export class MomentumOptimizer extends SGDOptimizer {
       const gradient = variableGradients[variableName];
 
       tidy(() => {
+        let newValue: Tensor;
         const newAccumulation = this.m.mul(accumulation).add(gradient);
+        if (this.useNesterov) {
+          newValue =
+              this.c.mul(gradient.add(newAccumulation.mul(this.m))).add(value);
+        } else {
+          newValue = this.c.mul(newAccumulation).add(value);
+        }
         this.accumulations[variableName].assign(newAccumulation);
-
-        const newValue = this.c.mul(newAccumulation).add(value);
         value.assign(newValue);
       });
     }
   }
 
-  beforeBatch(
-      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap,
-      gradientArrayMap: SummedTensorArrayMap) {
-    if (this.variableVelocitiesGraph == null) {
-      this.variableVelocitiesGraph = new TensorArrayMap();
-    }
-
-    super.beforeBatch(
-        math, batchSize, runtime, activationArrayMap, gradientArrayMap);
-
-    if (this.variableVelocitiesGraph.size() === 0) {
-      this.variableNodes.forEach(node => {
-        this.variableVelocitiesGraph.set(
-            node.output, Tensor.zeros(node.output.shape));
-      });
-    }
-  }
-
-  afterBatch(
-      math: NDArrayMath, batchSize: number, runtime: SessionRuntime,
-      activationArrayMap: TensorArrayMap,
-      gradientArrayMap: SummedTensorArrayMap) {
-    if (this.one == null) {
-      this.one = keep(scalar(1));
-    }
-    tidy(() => {
-      this.variableNodes.forEach(node => {
-        const oldVariable = activationArrayMap.get(node.output);
-        const gradient = this.variableGradients.get(node.output);
-        const oldVelocity = this.variableVelocitiesGraph.get(node.output);
-
-        const velocity =
-            math.scaledArrayAdd(this.m, oldVelocity, this.one, gradient);
-        const variable =
-            math.scaledArrayAdd(this.cGraph, velocity, this.one, oldVariable);
-
-        this.variableVelocitiesGraph.set(node.output, keep(velocity));
-        activationArrayMap.set(node.output, keep(variable));
-        node.data = variable;
-
-        oldVariable.dispose();
-        oldVelocity.dispose();
-      });
-    });
-
-    this.variableGradients.dispose();
-    this.variableGradients = new TensorArrayMap();
-  }
-
   dispose() {
     super.dispose();
     this.m.dispose();
-    if (this.one != null) {
-      this.one.dispose();
-    }
-    if (this.variableVelocitiesGraph != null) {
-      this.variableVelocitiesGraph.dispose();
-    }
     if (this.accumulations != null) {
       for (const variableName in this.accumulations) {
         this.accumulations[variableName].dispose();
@@ -138,7 +82,4 @@ export class MomentumOptimizer extends SGDOptimizer {
   setMomentum(momentum: number) {
     this.momentum = momentum;
   }
-
-  // Graph.
-  private variableVelocitiesGraph: TensorArrayMap;
 }
