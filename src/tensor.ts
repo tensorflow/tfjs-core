@@ -294,7 +294,14 @@ export class Tensor<R extends Rank = Rank> {
    */
   get(...locs: number[]) {
     this.throwIfDisposed();
-    return this.buffer().get(...locs);
+    if (locs.length === 0) {
+      locs = [0];
+    }
+    let index = locs[locs.length - 1];
+    for (let i = 0; i < locs.length - 1; ++i) {
+      index += this.strides[i] * locs[i];
+    }
+    return this.dataSync()[index];
   }
 
   /** Returns a `TensorBuffer` that holds the underlying data. */

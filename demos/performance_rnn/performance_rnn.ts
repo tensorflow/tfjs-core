@@ -458,7 +458,7 @@ async function generateStep(loopId: number) {
   await outputs[outputs.length - 1].data();
 
   for (let i = 0; i < outputs.length; i++) {
-    playOutput(await outputs[i].val());
+    playOutput((await outputs[i].data())[0]);
   }
 
   if (piano.now() - currentPianoTimeSec > MAX_GENERATION_LAG_SECONDS) {

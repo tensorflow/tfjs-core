@@ -1020,7 +1020,7 @@ export class MathBackendCPU implements KernelBackend {
       newShape[i] = x.shape[i] * reps[i];
     }
     const result = ops.buffer(newShape, x.dtype);
-    const values = x.dataSync();
+    const xBuf = x.buffer();
     for (let i = 0; i < result.values.length; ++i) {
       const newLoc = result.indexToLoc(i);
 
@@ -1029,9 +1029,9 @@ export class MathBackendCPU implements KernelBackend {
         originalLoc[i] = newLoc[i] % x.shape[i];
       }
 
-      const originalIndex = x.buffer().locToIndex(originalLoc);
+      const originalIndex = xBuf.locToIndex(originalLoc);
 
-      result.values[i] = values[originalIndex];
+      result.values[i] = xBuf.values[originalIndex];
     }
     return result.toTensor() as T;
   }
