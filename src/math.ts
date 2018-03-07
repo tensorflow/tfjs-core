@@ -344,7 +344,7 @@ export class NDArrayMath {
   /** @deprecated */
   conv1d<T extends Tensor2D|Tensor3D>(
       input: T, filter: Tensor3D, bias: Tensor1D|null, stride: number,
-      dilation: number, pad: 'valid'|'same'|number,
+      pad: 'valid'|'same'|number, dataFormat: 'NWC'|'NCW' = 'NWC', dilation = 1,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     if (bias != null) {
       util.assert(
@@ -352,16 +352,18 @@ export class NDArrayMath {
           `Error in conv1d: bias must be rank 1, but got rank ` +
               `${bias.rank}.`);
     }
-    const res =
-        ops.conv1d(input, filter, stride, dilation, pad, dimRoundingMode);
+    const res = ops.conv1d(
+        input, filter, stride, pad, dataFormat, dilation, dimRoundingMode);
     return res.add(bias) as T;
   }
 
   /** @deprecated */
   conv2d<T extends Tensor3D|Tensor4D>(
       x: T, filter: Tensor4D, bias: Tensor1D|null,
-      strides: [number, number]|number, dilations: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dataFormat: 'NHWC'|'NCHW' = 'NHWC',
+      dilations: [number, number]|number = [1, 1],
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     if (bias != null) {
       util.assert(
           bias.rank === 1,
@@ -369,7 +371,8 @@ export class NDArrayMath {
               `${bias.rank}.`);
     }
 
-    const res = ops.conv2d(x, filter, strides, dilations, pad, dimRoundingMode);
+    const res = ops.conv2d(
+        x, filter, strides, pad, dataFormat, dilations, dimRoundingMode);
     return res.add(bias) as T;
   }
 

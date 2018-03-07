@@ -40,6 +40,12 @@ export class ConvOps {
    *   - For more info, see this guide:
    *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
    *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
+   * @param dataFormat An optional string from "NWC", "NCW". Defaults to "NWC",
+   *     the data is stored in the order of [batch, in_width, in_channels]. Only
+   *     "NWC" is currently supported.
+   * @param dilation The dilation rate in which we sample input values in
+   *     atrous convolution. Defaults to `1`. If it is greater than 1, then
+   *     stride must be `1`.
    * @param dimRoundingMode The rounding mode used when computing output
    *     dimensions if pad is a number. If none is provided, it will not round
    *     and error if the output is of fractional size.
@@ -47,8 +53,9 @@ export class ConvOps {
   @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
   static conv1d<T extends Tensor2D|Tensor3D>(
-      input: T, filter: Tensor3D, stride: number, dilation: number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      input: T, filter: Tensor3D, stride: number, pad: 'valid'|'same'|number,
+      dataFormat: 'NWC'|'NCW' = 'NWC', dilation = 1,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input3D = input as Tensor3D;
     let reshapedTo3D = false;
     if (input.rank === 2) {
@@ -78,6 +85,10 @@ export class ConvOps {
         eitherStridesOrDilationsAreOne(stride, dilation),
         'Error in conv1D: Either stride or dilation must be 1.' +
             `Got stride ${stride} and dilation '${dilation}'`);
+    util.assert(
+        dataFormat === 'NWC',
+        `Error in conv1d: got dataFormat of ${
+            dataFormat} but only NWC is currently supported.`);
 
     const filter4D =
         filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
@@ -86,8 +97,11 @@ export class ConvOps {
     const strides: [number, number] = [1, stride];
     const dilations: [number, number] = [1, dilation];
 
+    const conv2dDataFormat = 'NHWC';
+
     const res = ConvOps.conv2d(
-        input4D, filter4D, strides, dilations, pad, dimRoundingMode);
+        input4D, filter4D, strides, pad, conv2dDataFormat, dilations,
+        dimRoundingMode);
 
     if (reshapedTo3D) {
       return res.as2D(res.shape[2], res.shape[3]) as T;
@@ -105,11 +119,6 @@ export class ConvOps {
    *     `[filterHeight, filterWidth, inDepth, outDepth]`.
    * @param strides The strides of the convolution: `[strideHeight,
    * strideWidth]`.
-   * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
-   *     in which we sample input values across the height and width dimensions
-   *     in atrous convolution. Defaults to `[1, 1]`. If `rate` is a single
-   *     number, then `dilationHeight == dilationWidth`. If it is greater than
-   *     1, then all values of `strides` must be 1.
    * @param pad The type of padding algorithm.
    *    - `same` and stride 1: output will be of same size as input,
    *       regardless of filter size.
@@ -118,6 +127,15 @@ export class ConvOps {
    *   - For more info, see this guide:
    *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
    *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
+   * @param dataFormat: An optional string from: "NHWC", "NCHW". Defaults to
+   *     "NHWC". Specify the data format of the input and output data. With the
+   *     default format "NHWC", the data is stored in the order of: [batch,
+   *     height, width, channels]. Only "NHWC" is currently supported.
+   * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+   *     in which we sample input values across the height and width dimensions
+   *     in atrous convolution. Defaults to `[1, 1]`. If `dilations` is a single
+   *     number, then `dilationHeight == dilationWidth`. If it is greater than
+   *     1, then all values of `strides` must be 1.
    * @param dimRoundingMode The rounding mode used when computing output
    *     dimensions if pad is a number. If none is provided, it will not round
    *     and error if the output is of fractional size.
@@ -126,7 +144,8 @@ export class ConvOps {
   @operation
   static conv2d<T extends Tensor3D|Tensor4D>(
       x: T, filter: Tensor4D, strides: [number, number]|number,
-      dilations: [number, number]|number = [1, 1], pad: 'valid'|'same'|number,
+      pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW' = 'NHWC',
+      dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let x4D = x as Tensor4D;
     let reshapedTo4D = false;
@@ -157,6 +176,10 @@ export class ConvOps {
         eitherStridesOrDilationsAreOne(strides, dilations),
         'Error in conv2D: Either strides or dilations must be 1.' +
             `Got strides ${strides} and dilations '${dilations}'`);
+    util.assert(
+        dataFormat === 'NHWC',
+        `Error in conv2d: got dataFormat of ${
+            dataFormat} but only NHWC is currently supported.`);
 
     const convInfo = conv_util.computeConv2DInfo(
         x4D.shape, filter.shape, strides, dilations, pad, dimRoundingMode);
@@ -391,6 +414,10 @@ export class ConvOps {
    *     in atrous convolution. Defaults to `[1, 1]`. If `rate` is a single
    *     number, then `dilationHeight == dilationWidth`. If it is greater than
    *     1, then all values of `strides` must be 1.
+   * @param dataFormat: An optional string from: "NHWC", "NCHW". Defaults to
+   *     "NHWC". Specify the data format of the input and output data. With the
+   *     default format "NHWC", the data is stored in the order of: [batch,
+   *     height, width, channels]. Only "NHWC" is currently supported.
    * @param dimRoundingMode The rounding mode used when computing output
    *     dimensions if pad is a number. If none is provided, it will not round
    *     and error if the output is of fractional size.
@@ -400,6 +427,7 @@ export class ConvOps {
   static depthwiseConv2d<T extends Tensor3D|Tensor4D>(
       input: T, filter: Tensor4D, strides: [number, number]|number,
       pad: 'valid'|'same'|number, dilations: [number, number]|number = [1, 1],
+      dataFormat: 'NHWC'|'NCHW' = 'NHWC',
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as Tensor4D;
     let reshapedTo4D = false;
