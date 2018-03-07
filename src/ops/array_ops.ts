@@ -27,6 +27,7 @@ import * as util from '../util';
 import {parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
 import {operation} from './operation';
+import * as ops from './ops';
 import {MPRandGauss} from './rand';
 
 export class ArrayOps {
@@ -474,19 +475,22 @@ export class ArrayOps {
    * dl.multinomial(probs, 3).print();
    * ```
    *
-   * @param probabilities 1D array with normalized outcome probabilities, or
-   *     2D array of shape `[batchSize, numOutcomes]`.
+   * @param logits 1D array with unnormalized log-probabilities, or
+   *     2D array of shape `[batchSize, numOutcomes]`. See the `normalized`
+   *     parameter.
    * @param numSamples Number of samples to draw for each row slice.
    * @param seed The seed number.
+   * @param normalized Whether the provided `logits` are normalized true
+   *     probabilities (sum to 1). Defaults to false.
    * @return 1D array of shape `[numSamples]`, or 2D array of shape
    *     `[batchSize, numSamples]`, depending on the rank of the input.
    */
   @operation
   static multinomial(
-      probabilities: Tensor1D|Tensor2D, numSamples: number, seed?: number):
-      Tensor1D|Tensor2D {
-    const numOutcomes = probabilities.size;
-    const origRank = probabilities.rank;
+      logits: Tensor1D|Tensor2D, numSamples: number, seed?: number,
+      normalized = false): Tensor1D|Tensor2D {
+    const numOutcomes = logits.size;
+    const origRank = logits.rank;
     if (numOutcomes < 2) {
       throw new Error(
           `Error in multinomial: you need at least 2 outcomes, but got ` +
@@ -496,10 +500,12 @@ export class ArrayOps {
       throw new Error(
           `Rank of probabilities must be 1 or 2, but is ${origRank}`);
     }
+    if (!normalized) {
+      logits = ops.softmax(logits);
+    }
     seed = seed || Math.random();
 
-    const prob2D =
-        origRank === 1 ? probabilities.as2D(1, -1) : probabilities as Tensor2D;
+    const prob2D = origRank === 1 ? logits.as2D(1, -1) : logits as Tensor2D;
     const res = ENV.engine.runKernel(
         backend => backend.multinomial(prob2D, numSamples, seed), {prob2D});
 
