@@ -185,6 +185,11 @@ export class ConvOps {
         x4D.shape, filter.shape, strides, dilations, pad, dimRoundingMode);
 
     const grad = (dy: Tensor4D) => {
+      util.assert(
+          tupleValuesAreOne(dilations),
+          'Error in gradient of conv2D: dilation rates greater than 1 are not' +
+              `yet supported in gradients. Got dilations '${dilations}'`);
+
       return {
         x: () => ConvOps.conv2dDerInput(x4D.shape, dy, filter, strides, pad),
         filter: () =>
@@ -480,13 +485,13 @@ function parseTupleParam(param: number|[number, number]): [number, number] {
   return typeof param === 'number' ? [param, param] : param;
 }
 
+function tupleValuesAreOne(param: number|[number, number]): boolean {
+  const [dimA, dimB] = parseTupleParam(param);
+  return dimA === 1 && dimB === 1;
+}
+
 function eitherStridesOrDilationsAreOne(
     strides: number|[number, number],
     dilations: number|[number, number]): boolean {
-  const [strideHeight, strideWidth] = parseTupleParam(strides);
-  const [dilationHeight, dilationWidth] = parseTupleParam(dilations);
-
-  return (
-      (strideHeight === 1 && strideWidth === 1) ||
-      (dilationHeight === 1 && dilationWidth === 1));
+  return tupleValuesAreOne(strides) || tupleValuesAreOne(dilations);
 }
