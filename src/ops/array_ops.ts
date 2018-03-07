@@ -362,7 +362,11 @@ export class ArrayOps {
     }
     const randGauss =
         new MPRandGauss(mean, stdDev, dtype, false /* truncated */, seed);
-    return Tensor.rand(shape, () => randGauss.nextValue(), dtype);
+    const res = ArrayOps.buffer(shape, dtype);
+    for (let i = 0; i < res.values.length; i++) {
+      res.values[i] = randGauss.nextValue();
+    }
+    return res.toTensor();
   }
 
   /**
@@ -393,7 +397,11 @@ export class ArrayOps {
     }
     const randGauss =
         new MPRandGauss(mean, stdDev, dtype, true /* truncated */, seed);
-    return Tensor.rand(shape, () => randGauss.nextValue(), dtype);
+    const res = ArrayOps.buffer(shape, dtype);
+    for (let i = 0; i < res.values.length; i++) {
+      res.values[i] = randGauss.nextValue();
+    }
+    return res.toTensor();
   }
 
   /**
@@ -419,7 +427,11 @@ export class ArrayOps {
   static randomUniform<R extends Rank>(
       shape: ShapeMap[R], minval = 0, maxval = 1, dtype: DataType = 'float32'):
       Tensor<R> {
-    return Tensor.rand(shape, () => util.randUniform(minval, maxval), dtype);
+    const res = ArrayOps.buffer(shape, dtype);
+    for (let i = 0; i < res.values.length; i++) {
+      res.values[i] = util.randUniform(minval, maxval);
+    }
+    return res.toTensor();
   }
 
   /**
@@ -684,8 +696,8 @@ export class ArrayOps {
         } else if (x.rank === 2) {
           for (let i = 0; i < reps[0]; ++i) {
             for (let j = 0; j < reps[1]; ++j) {
-              xGrad = xGrad.add(dy.slice([i * x.shape[0], j * x.shape[1]],
-                                          [x.shape[0], x.shape[1]]));
+              xGrad = xGrad.add(dy.slice(
+                  [i * x.shape[0], j * x.shape[1]], [x.shape[0], x.shape[1]]));
             }
           }
         } else if (x.rank === 3) {
@@ -693,8 +705,8 @@ export class ArrayOps {
             for (let j = 0; j < reps[1]; ++j) {
               for (let k = 0; k < reps[2]; ++k) {
                 xGrad = xGrad.add(dy.slice(
-                  [i * x.shape[0], j * x.shape[1], k * x.shape[2]],
-                  [x.shape[0], x.shape[1], x.shape[2]]));
+                    [i * x.shape[0], j * x.shape[1], k * x.shape[2]],
+                    [x.shape[0], x.shape[1], x.shape[2]]));
               }
             }
           }
@@ -704,13 +716,15 @@ export class ArrayOps {
               for (let k = 0; k < reps[2]; ++k) {
                 for (let l = 0; l < reps[3]; ++l) {
                   xGrad = xGrad.add(dy.slice(
-                   [i * x.shape[0], j * x.shape[1], k * x.shape[2],
-                    l * x.shape[3]],
-                   [x.shape[0], x.shape[1], x.shape[2], x.shape[3]]));
+                      [
+                        i * x.shape[0], j * x.shape[1], k * x.shape[2],
+                        l * x.shape[3]
+                      ],
+                      [x.shape[0], x.shape[1], x.shape[2], x.shape[3]]));
                 }
               }
             }
-         }
+          }
         } else {
           throw new Error(
               `Gradient for tile operation is not implemented for rank-` +
