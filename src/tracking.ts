@@ -16,7 +16,7 @@
  */
 
 import {doc} from './doc';
-import {ScopeFn, TimingInfo} from './engine';
+import {Engine, ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
 import {Tensor} from './tensor';
 import {TensorContainer} from './types';
@@ -86,7 +86,8 @@ export class Tracking {
             'to dl.tidy() must be a function');
       }
       name = nameOrFn as string;
-      // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
+      // TODO(nsthorat,smilkov): Do operation logging and performance
+      // profiling.
     }
     ENV.engine.startScope(name, gradMode);
     const result = fn();
@@ -102,9 +103,9 @@ export class Tracking {
    *
    * @param container an object that may be a `Tensor` or may directly contain
    *   `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  If the
-   *   object is not a `Tensor` or does not contain `Tensors`, nothing happens.
-   *   In general it is safe to pass any object here, except that `Promise`s are
-   *   not supported.
+   *   object is not a `Tensor` or does not contain `Tensors`, nothing
+   * happens. In general it is safe to pass any object here, except that
+   * `Promise`s are not supported.
    */
   // tslint:disable-next-line:no-any
   static dispose(container: any) {
@@ -148,7 +149,8 @@ export class Tracking {
   }
 
   /**
-   * Executes `f()` and returns a promise that resolves with timing information.
+   * Executes `f()` and returns a promise that resolves with timing
+   * information.
    *
    * The result is an object with the following properties:
    *
@@ -156,7 +158,8 @@ export class Tracking {
    * - `kernelMs`: Kernel execution time, ignoring data transfer.
    * - On `WebGL` The following additional properties exist:
    *   - `uploadWaitMs`: CPU blocking time on texture uploads.
-   *   - `downloadWaitMs`: CPU blocking time on texture downloads (readPixels).
+   *   - `downloadWaitMs`: CPU blocking time on texture downloads
+   * (readPixels).
    *
    * ```js
    * const x = dl.randomNormal([20, 20]);
