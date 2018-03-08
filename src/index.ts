@@ -48,6 +48,7 @@ export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
+export {NamedTensorMap} from './types';
 export {Rank} from './types';
 export {WeightsManifestConfig} from './weights_loader';
 export {loadWeights} from './weights_loader';
