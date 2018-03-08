@@ -16,7 +16,7 @@
  */
 
 import {doc} from './doc';
-import {Engine, ScopeFn, TimingInfo} from './engine';
+import {ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
 import {Tensor} from './tensor';
 import {TensorContainer} from './types';
@@ -102,10 +102,10 @@ export class Tracking {
    * Disposes any `Tensor`s found within the provided object up to depth 1.
    *
    * @param container an object that may be a `Tensor` or may directly contain
-   *   `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  If the
-   *   object is not a `Tensor` or does not contain `Tensors`, nothing
-   * happens. In general it is safe to pass any object here, except that
-   * `Promise`s are not supported.
+   *     `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  If the
+   *     object is not a `Tensor` or does not contain `Tensors`, nothing
+   *     happens. In general it is safe to pass any object here, except that
+   *     `Promise`s are not supported.
    */
   // tslint:disable-next-line:no-any
   static dispose(container: any) {
@@ -158,8 +158,7 @@ export class Tracking {
    * - `kernelMs`: Kernel execution time, ignoring data transfer.
    * - On `WebGL` The following additional properties exist:
    *   - `uploadWaitMs`: CPU blocking time on texture uploads.
-   *   - `downloadWaitMs`: CPU blocking time on texture downloads
-   * (readPixels).
+   *   - `downloadWaitMs`: CPU blocking time on texture downloads (readPixels).
    *
    * ```js
    * const x = dl.randomNormal([20, 20]);
