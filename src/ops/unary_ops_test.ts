@@ -459,14 +459,14 @@ describeWithFlags('log', ALL_ENVS, () => {
 });
 
 describeWithFlags('log1p', ALL_ENVS, () => {
-  it('log', () => {
+  it('log1p', () => {
     const a = dl.tensor1d([1, 2]);
     const r = dl.log1p(a);
     expectNumbersClose(r.get(0), Math.log(1 + 1));
     expectNumbersClose(r.get(1), Math.log(1 + 2));
   });
 
-  it('log propagates NaNs', () => {
+  it('log1p propagates NaNs', () => {
     const a = dl.tensor1d([1, NaN]);
     const r = dl.log1p(a);
     expectArraysClose(r, [Math.log(1 + 1), NaN]);
