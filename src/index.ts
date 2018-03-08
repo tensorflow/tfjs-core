@@ -32,14 +32,11 @@ export {DataStats, InMemoryDataset} from './data/dataset';
 export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider} from './data/input_provider';
 export {XhrDataset, XhrDatasetConfig, XhrModelConfig} from './data/xhr-dataset';
 export {ENV, Environment, Features} from './environment';
-export {MathBackendCPU, NDArrayMathCPU} from './kernels/backend_cpu';
-// tslint:disable-next-line:max-line-length
-export {MathBackendWebGL, NDArrayMathGPU, WebGLTimingInfo} from './kernels/backend_webgl';
+export {MathBackendCPU} from './kernels/backend_cpu';
+export {MathBackendWebGL, WebGLTimingInfo} from './kernels/backend_webgl';
 export {GPGPUContext} from './kernels/webgl/gpgpu_context';
-export {NDArrayMath} from './math';
 export {Reduction} from './ops/loss_ops';
 export {LSTMCellFunc} from './ops/lstm';
-export {MatrixOrientation} from './ops/matmul';
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
 export {AdamOptimizer} from './optimizers/adam_optimizer';
@@ -49,7 +46,7 @@ export {Optimizer} from './optimizers/optimizer';
 export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
-export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
+export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {Rank} from './types';
 export {loadWeights} from './weights_loader';
 export {version};
