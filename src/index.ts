@@ -26,11 +26,13 @@ import * as conv_util from './ops/conv_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
+
 export {CheckpointLoader} from './data/checkpoint_loader';
 export {DataStats, InMemoryDataset} from './data/dataset';
 // tslint:disable-next-line:max-line-length
 export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider} from './data/input_provider';
 export {XhrDataset, XhrDatasetConfig, XhrModelConfig} from './data/xhr-dataset';
+export {doc} from './doc';
 export {ENV, Environment, Features} from './environment';
 export {MathBackendCPU} from './kernels/backend_cpu';
 export {MathBackendWebGL, WebGLTimingInfo} from './kernels/backend_webgl';
@@ -47,6 +49,7 @@ export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {Rank} from './types';
+export {WeightsManifestConfig} from './weights_loader';
 export {loadWeights} from './weights_loader';
 export {version};
 // Second level exports.
