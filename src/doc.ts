@@ -30,9 +30,10 @@ export type Namespace = 'losses'|'image'|'train';
 export interface DocInfo {  //<H extends Heading> {
   heading: string;          // H;
   subheading?: string;      // HeadingMap[H];
-  namespace?: Namespace;
+  namespace?: string;       // Namespace;
   subclasses?: string[];
   useDocsFrom?: string;
+  configParamIndices?: number[];
 }
 
 // Pass through function that does nothing. Only used for documentation.
