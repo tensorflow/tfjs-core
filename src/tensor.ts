@@ -177,7 +177,7 @@ export class Tensor<R extends Rank = Rank> {
    */
   readonly strides: number[];
 
-  private constructor(
+  protected constructor(
       shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
       dataId?: DataId) {
     this.size = util.sizeFromShape(shape);
