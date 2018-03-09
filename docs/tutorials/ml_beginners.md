@@ -37,14 +37,14 @@ import * as dl from 'deeplearn';
 // Step 1. Set up variables, these are the things we want the model
 // to learn in order to do prediction accurately. We will initialize
 // them with random values.
-const a = dl.variable(dl.scalar(Math.random()));
-const b = dl.variable(dl.scalar(Math.random()));
-const c = dl.variable(dl.scalar(Math.random()));
+const a = dl.Scalar.new(Math.random()).variable();
+const b = dl.Scalar.new(Math.random()).variable();
+const c = dl.Scalar.new(Math.random()).variable();
 
 
 // Step 2. Create an optimizer, we will use this later
 const learningRate = 0.01;
-const optimizer = dl.train.sgd(learningRate);
+const optimizer = new dl.SGDOptimizer(learningRate);
 
 // Step 3. Write our training process functions.
 
@@ -62,17 +62,17 @@ const optimizer = dl.train.sgd(learningRate);
  *
  * @return number predicted y value
  */
-function predict(input) {
+const predict = (input) => {
   // y = a * x ^ 2 + b * x + c
   return dl.tidy(() => {
-    const x = dl.scalar(input);
+    const x = dl.Scalar.new(input);
 
     const ax2 = a.mul(x.square());
     const bx = b.mul(x);
     const y = ax2.add(bx).add(c);
 
     return y;
-  });
+  })
 }
 
 /*
@@ -81,9 +81,9 @@ function predict(input) {
  * prediction is a tensor with our predicted y value.
  * actual number is a number with the y value the model should have predicted.
  */
-function loss(prediction, actual) {
+const loss = (prediction, actual) => {
   // Having a good error metric is key for training a machine learning model
-  const error = dl.scalar(actual).sub(prediction).square();
+  const error = dl.Scalar.new(actual).sub(prediction).square();
   return error.asScalar();
 }
 
@@ -95,7 +95,9 @@ function loss(prediction, actual) {
  * xs - training data x values
  * ys — training data y values
  */
-async function train(xs, ys, numIterations, done) {
+const train = async (xs, ys, numIterations, done) => {
+  let currentIteration = 0;
+
   for (let iter = 0; iter < numIterations; iter++) {
     for (let i = 0; i < xs.length; i++) {
       // Minimize is where the magic happens, we must return a
@@ -120,15 +122,16 @@ async function train(xs, ys, numIterations, done) {
 
   done();
 }
+
 /*
  * This function compare expected results with the predicted results from
  * our model.
  */
-function test(xs, ys) {
+const test = (xs, ys) => {
   dl.tidy(() => {
     const predictedYs = xs.map(predict);
-    console.log('Expected', ys);
-    console.log('Got', predictedYs.map((p) => p.dataSync()[0]));
+    console.log(`Expected: ${ys}`);
+    console.log(`Got ${predictedYs.map((p) => p.dataSync()[0])}`);
   })
 }
 
