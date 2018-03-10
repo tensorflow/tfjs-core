@@ -585,7 +585,7 @@ export class MathBackendCPU implements KernelBackend {
     const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
-      newValues[i] = Math.exp(values[i]) - 1;
+      newValues[i] = Math.expm1(values[i]);
     }
     return Tensor.make(x.shape, {values: newValues}) as T;
   }

@@ -618,15 +618,15 @@ describeWithFlags('expm1', ALL_ENVS, () => {
     const a = dl.tensor1d([1, 2, 0]);
     const r = dl.expm1(a);
 
-    expectNumbersClose(r.get(0), Math.exp(1) - 1);
-    expectNumbersClose(r.get(1), Math.exp(2) - 1);
-    expectNumbersClose(r.get(2), Math.exp(0) - 1);
+    expectNumbersClose(r.get(0), Math.expm1(1));
+    expectNumbersClose(r.get(1), Math.expm1(2));
+    expectNumbersClose(r.get(2), Math.expm1(0));
   });
 
   it('expm1 propagates NaNs', () => {
     const a = dl.tensor1d([1, NaN, 0]);
     const r = dl.expm1(a);
-    expectArraysClose(r, [Math.exp(1) - 1, NaN, Math.exp(0) - 1]);
+    expectArraysClose(r, [Math.expm1(1), NaN, Math.expm1(0)]);
   });
 
   it('gradients: Scalar', () => {
