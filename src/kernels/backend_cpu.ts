@@ -596,7 +596,7 @@ export class MathBackendCPU implements KernelBackend {
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
-      newValues[i] = Math.log(1 + value);
+      newValues[i] = Math.log1p(value);
     }
     return Tensor.make(x.shape, {values: newValues}) as T;
   }
