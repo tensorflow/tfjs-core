@@ -112,6 +112,7 @@ export const cos = UnaryOps.cos;
 export const cosh = UnaryOps.cosh;
 export const elu = UnaryOps.elu;
 export const exp = UnaryOps.exp;
+export const exp2 = UnaryOps.exp2;
 export const floor = UnaryOps.floor;
 export const leakyRelu = UnaryOps.leakyRelu;
 export const log = UnaryOps.log;
