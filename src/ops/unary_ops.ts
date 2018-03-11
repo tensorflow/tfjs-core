@@ -140,7 +140,7 @@ export class UnaryOps {
   @operation
   static log2<T extends Tensor>(x: T): T {
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(x.toFloat().mul(ops.scalar(2).log()))};
+      return {x: () => dy.divStrict(x.mul(ops.scalar(2).log()))};
     };
     return ENV.engine.runKernel(backend => backend.log2(x), {x}, grad);
   }
