@@ -141,7 +141,7 @@ export class UnaryOps {
   @operation
   static log1p<T extends Tensor>(x: T): T {
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(x.add(ops.scalar(1).toFloat()))};
+      return {x: () => dy.divStrict(x.add(ops.scalar(1)))};
     };
     return ENV.engine.runKernel(backend => backend.log1p(x), {x}, grad);
   }
