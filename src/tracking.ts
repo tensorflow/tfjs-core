@@ -86,14 +86,13 @@ export class Tracking {
             'to dl.tidy() must be a function');
       }
       name = nameOrFn as string;
-      // TODO(nsthorat,smilkov): Do operation logging and performance profiling.
+      // TODO(nsthorat,smilkov): Do operation logging and performance
+      // profiling.
     }
     ENV.engine.startScope(name, gradMode);
     const result = fn();
     if (result instanceof Promise) {
-      console.warn(
-          'Returning a promise inside of tidy is dangerous. ' +
-          'This will be a run-time error in 0.6.0');
+      console.error('Cannot return a Promise inside of tidy.');
     }
     ENV.engine.endScope(result, gradMode);
     return result;
@@ -103,10 +102,10 @@ export class Tracking {
    * Disposes any `Tensor`s found within the provided object up to depth 1.
    *
    * @param container an object that may be a `Tensor` or may directly contain
-   *   `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  If the
-   *   object is not a `Tensor` or does not contain `Tensors`, nothing happens.
-   *   In general it is safe to pass any object here, except that `Promise`s are
-   *   not supported.
+   *     `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  If the
+   *     object is not a `Tensor` or does not contain `Tensors`, nothing
+   *     happens. In general it is safe to pass any object here, except that
+   *     `Promise`s are not supported.
    */
   // tslint:disable-next-line:no-any
   static dispose(container: any) {
@@ -150,7 +149,8 @@ export class Tracking {
   }
 
   /**
-   * Executes `f()` and returns a promise that resolves with timing information.
+   * Executes `f()` and returns a promise that resolves with timing
+   * information.
    *
    * The result is an object with the following properties:
    *
