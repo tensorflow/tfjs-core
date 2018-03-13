@@ -145,6 +145,9 @@ describe('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', () => {
     });
   });
 
+  /* TODO(nsthorat): Uncomment this block when we fix
+     https://github.com/PAIR-code/deeplearnjs/issues/848
+
   it('WebGL 2 enabled', () => {
     const features: Features = {'WEBGL_VERSION': 2};
 
@@ -153,6 +156,7 @@ describe('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', () => {
     expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
         .toBe(true);
   });
+  */
 
   it('WebGL 1 disabled', () => {
     const features: Features = {'WEBGL_VERSION': 1};
