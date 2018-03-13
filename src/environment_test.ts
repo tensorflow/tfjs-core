@@ -145,7 +145,6 @@ describe('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', () => {
     });
   });
 
-
   it('WebGL 2 enabled', () => {
     const features: Features = {'WEBGL_VERSION': 2};
 
