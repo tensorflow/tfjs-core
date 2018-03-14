@@ -198,8 +198,8 @@ export class BinaryOps {
       }
       const derBase = () => {
         const expFloat = exp.toFloat();
-        const dx = expFloat.mul(
-                       base.toFloat().pow(expFloat.sub(scalar(1)))) as T;
+        const dx =
+            expFloat.mul(base.toFloat().pow(expFloat.sub(scalar(1)))) as T;
         return dy.mulStrict(dx) as T;
       };
       return {base: derBase};
@@ -319,6 +319,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static div<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: Tensor) => {
