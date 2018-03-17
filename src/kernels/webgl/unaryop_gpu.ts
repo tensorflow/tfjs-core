@@ -101,6 +101,10 @@ export const LOG = `
   return log(x);
 `;
 
+export const LOG1P = `
+  return log(1.0 + x);
+`;
+
 export const LOG2 = `
   return log2(x);
 `;
