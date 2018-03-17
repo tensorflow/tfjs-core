@@ -26,7 +26,8 @@ module.exports = function(config) {
       tsconfig: 'tsconfig.json',
       compilerOptions: {
         module: 'commonjs'
-      }
+      },
+      reports: {} // Do not produce coverage html.
     },
     reporters: ['progress', 'karma-typescript'],
     browsers: ['Chrome', 'Firefox'],
