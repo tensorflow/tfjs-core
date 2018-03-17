@@ -80,8 +80,8 @@ const NUM_TEXTURES_BEFORE_PAGING = 1000;
 
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
-  // List of data ids that have a pending read operation.
-  private pendingRead = new WeakSet<DataId>();
+  // Maps data ids that have a pending read operation, to list of subscribers.
+  private pendingRead = new WeakMap<DataId, Array<(arr: TypedArray) => void>>();
   // List of data ids that are scheduled for disposal, but are waiting on a
   // pending read operation.
   private pendingDisposal = new WeakSet<DataId>();
@@ -187,9 +187,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
   async read(dataId: DataId): Promise<TypedArray> {
     if (this.pendingRead.has(dataId)) {
-      // TODO(smilkov): Fix this. Attach this observer
-      // to the existing read promise.
-      return null;
+      const subscribers = this.pendingRead.get(dataId);
+      return new Promise<TypedArray>(resolve => subscribers.push(resolve));
     }
     this.throwIfNoData(dataId);
     const texData = this.texData.get(dataId);
@@ -211,10 +210,13 @@ export class MathBackendWebGL implements KernelBackend {
 
     // Construct an empty query. We're just interested in getting a callback
     // when the GPU command queue has executed until this point in time.
-    this.pendingRead.add(dataId);
+    this.pendingRead.set(dataId, []);
     await this.gpgpu.runQuery(() => {});
+    const subscribers = this.pendingRead.get(dataId);
     this.pendingRead.delete(dataId);
     const vals = this.readSync(dataId);
+    // Notify all pending reads.
+    subscribers.forEach(resolve => resolve(vals));
     if (this.pendingDisposal.has(dataId)) {
       this.pendingDisposal.delete(dataId);
       this.disposeData(dataId);
