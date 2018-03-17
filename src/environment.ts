@@ -19,7 +19,6 @@ import * as device_util from './device_util';
 import {doc} from './doc';
 import {Engine, MemoryInfo} from './engine';
 import {KernelBackend} from './kernels/backend';
-import {NDArrayMath} from './math';
 import * as util from './util';
 
 export enum Type {
@@ -175,6 +174,12 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
 }
 
 function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
+  // TODO(nsthorat): Remove this once we fix
+  // https://github.com/PAIR-code/deeplearnjs/issues/848
+  if (webGLVersion > 0) {
+    return false;
+  }
+
   if (webGLVersion !== 2) {
     return false;
   }
@@ -186,14 +191,13 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
 }
 
 /** @docalias 'webgl'|'cpu' */
-export type BackendType = 'webgl'|'cpu';
+export type BackendType = 'webgl'|'cpu'|string;
 
 /** List of currently supported backends ordered by preference. */
 const SUPPORTED_BACKENDS: BackendType[] = ['webgl', 'cpu'];
 
 export class Environment {
   private features: Features = {};
-  private globalMath: NDArrayMath;
   private globalEngine: Engine;
   private BACKEND_REGISTRY: {[id: string]: KernelBackend} = {};
   private backends: {[id: string]: KernelBackend} = this.BACKEND_REGISTRY;
@@ -216,9 +220,9 @@ export class Environment {
    * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
    * executing operations on those tensors.
    *
-   * @param backendType The backend type. Currently supports 'webgl'|'cpu'.
+   * @param backendType The backend type. Currently supports `'webgl'|'cpu'`.
    * @param safeMode Defaults to false. In safe mode, you are forced to
-   *     construct tensors and call math operations inside a dl.tidy() which
+   *     construct tensors and call math operations inside a `dl.tidy()` which
    *     will automatically clean up intermediate tensors.
    */
   @doc({heading: 'Environment'})
@@ -226,7 +230,7 @@ export class Environment {
     if (!(backendType in ENV.backends)) {
       throw new Error(`Backend type '${backendType}' not found in registry`);
     }
-    ENV.globalMath = new NDArrayMath(backendType, safeMode);
+    ENV.initBackend(backendType, safeMode);
   }
 
   /**
@@ -235,7 +239,7 @@ export class Environment {
    */
   @doc({heading: 'Environment'})
   static getBackend(): BackendType {
-    ENV.initEngine();
+    ENV.initDefaultBackend();
     return ENV.currentBackendType;
   }
 
@@ -243,13 +247,13 @@ export class Environment {
    * Returns memory info at the current time in the program. The result is an
    * object with the following properties:
    *
-   * - `numBytes`: number of bytes allocated (undisposed) at this time.
-   * - `numTensors`: number of unique tensors allocated
-   * - `numDataBuffers`: number of unique data buffers allocated
+   * - `numBytes`: Number of bytes allocated (undisposed) at this time.
+   * - `numTensors`: Number of unique tensors allocated.
+   * - `numDataBuffers`: Number of unique data buffers allocated
    *   (undisposed) at this time, which is ≤ the number of tensors
    *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same
    *   data buffer with `a`).
-   * - `unreliable`: optional boolean:
+   * - `unreliable`: `Optional` `boolean`:
    *    - On WebGL, not present (always reliable).
    *    - On CPU, true. Due to automatic garbage collection, these numbers
    *     represent undisposed tensors, i.e. not wrapped in `dl.tidy()`, or
@@ -325,9 +329,8 @@ export class Environment {
 
   reset() {
     this.features = getFeaturesFromURL();
-    if (this.globalMath != null) {
-      this.globalMath.dispose();
-      this.globalMath = null;
+    if (this.globalEngine != null) {
+      this.globalEngine.dispose();
       this.globalEngine = null;
     }
     if (this.backends !== this.BACKEND_REGISTRY) {
@@ -338,12 +341,7 @@ export class Environment {
     }
   }
 
-  setMath(
-      math: NDArrayMath, backend?: BackendType|KernelBackend,
-      safeMode = false) {
-    if (this.globalMath === math) {
-      return;
-    }
+  private initBackend(backend?: BackendType|KernelBackend, safeMode = false) {
     let customBackend = false;
     if (typeof backend === 'string') {
       this.currentBackendType = backend;
@@ -353,7 +351,6 @@ export class Environment {
       this.currentBackendType = 'custom' as BackendType;
     }
     this.globalEngine = new Engine(backend, customBackend, safeMode);
-    this.globalMath = math;
   }
 
   findBackend(name: BackendType): KernelBackend {
@@ -403,21 +400,14 @@ export class Environment {
     }
   }
 
-  /** @deprecated. Use ENV.engine. */
-  get math(): NDArrayMath {
-    this.initEngine();
-    return this.globalMath;
-  }
-
   get engine(): Engine {
-    this.initEngine();
+    this.initDefaultBackend();
     return this.globalEngine;
   }
 
-  private initEngine() {
+  private initDefaultBackend() {
     if (this.globalEngine == null) {
-      this.globalMath =
-          new NDArrayMath(ENV.get('BACKEND'), false /* safeMode */);
+      this.initBackend(ENV.get('BACKEND'), false /* safeMode */);
     }
   }
 }

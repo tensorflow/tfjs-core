@@ -116,3 +116,12 @@ export function upcastType(typeA: DataType, typeB: DataType): DataType {
 export function sumOutType(type: DataType) {
   return upcastType(type, 'int32');
 }
+
+/**
+ * @docalias void|number|string|Tensor|Tensor[]|{[key:
+ * string]:Tensor|number|string}
+ */
+export type TensorContainer = void|Tensor|string|number|boolean|
+    TensorContainerObject|TensorContainerArray;
+export interface TensorContainerObject { [x: string]: TensorContainer; }
+export interface TensorContainerArray extends Array<TensorContainer> {}

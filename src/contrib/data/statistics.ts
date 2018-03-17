@@ -16,8 +16,8 @@
  * =============================================================================
  */
 
-import {Scalar, Tensor} from '../../tensor';
-
+import * as ops from '../../ops/ops';
+import {Tensor} from '../../tensor';
 import {Dataset} from './dataset';
 import {ElementArray} from './types';
 
@@ -45,8 +45,8 @@ export type DatasetStatistics = {
 export function scaleTo01(min: number, max: number): (value: ElementArray) =>
     ElementArray {
   const range = max - min;
-  const minTensor: Tensor = Scalar.new(min);
-  const rangeTensor: Tensor = Scalar.new(range);
+  const minTensor: Tensor = ops.scalar(min);
+  const rangeTensor: Tensor = ops.scalar(range);
   return (value: ElementArray): ElementArray => {
     if (typeof (value) === 'string') {
       throw new Error('Can\'t scale a string.');
@@ -66,19 +66,19 @@ export function scaleTo01(min: number, max: number): (value: ElementArray) =>
 export async function computeDatasetStatistics(
     dataset: Dataset, sampleSize?: number,
     shuffleWindowSize?: number): Promise<DatasetStatistics> {
-  let stream = await dataset.getStream();
+  let sampleDataset = dataset;
   // TODO(soergel): allow for deep shuffle where possible.
   if (shuffleWindowSize != null) {
-    stream = stream.shuffle(shuffleWindowSize);
+    sampleDataset = sampleDataset.shuffle(shuffleWindowSize);
   }
   if (sampleSize != null) {
-    stream = stream.take(sampleSize);
+    sampleDataset = sampleDataset.take(sampleSize);
   }
 
-  // TODO(soergel): prepare the column objects based on a schema.q
+  // TODO(soergel): prepare the column objects based on a schema.
   const result: DatasetStatistics = {};
 
-  await stream.forEach(e => {
+  await sampleDataset.forEach(e => {
     for (const key in e) {
       const value = e[key];
       if (typeof (value) === 'string') {
@@ -110,10 +110,6 @@ export async function computeDatasetStatistics(
         columnStats.max = Math.max(columnStats.max, recordMax);
       }
     }
-    // Returning undefined or null (i.e, type void) would indicate that the
-    // stream is exhausted.  So, we have to return *something* in order for
-    // resolveFully() to operate.
-    return {};
   });
   return result;
 }

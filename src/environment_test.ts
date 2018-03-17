@@ -150,8 +150,10 @@ describe('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', () => {
 
     const env = new Environment(features);
 
+    // TODO(nsthorat): Expect true when we fix
+    // https://github.com/PAIR-code/deeplearnjs/issues/848
     expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-        .toBe(true);
+        .toBe(false);
   });
 
   it('WebGL 1 disabled', () => {
@@ -238,7 +240,6 @@ describe('Backend', () => {
     });
 
     expect(ENV.findBackend('webgl')).toBe(backend);
-    expect(ENV.math).not.toBeNull();
   });
 
   it('double registration fails', () => {
@@ -255,5 +256,16 @@ describe('Backend', () => {
     expect(success).toBe(false);
     expect(ENV.findBackend('webgl') == null).toBe(true);
     expect(ENV.getBestBackendType()).toBe('cpu');
+  });
+
+  it('default custom background null', () => {
+    expect(ENV.findBackend('custom')).not.toBeDefined();
+  });
+
+  it('allow custom backend', () => {
+    const backend = new MathBackendCPU();
+    const success = ENV.registerBackend('custom', () => backend);
+    expect(success).toBeTruthy();
+    expect(ENV.findBackend('custom')).toEqual(backend);
   });
 });

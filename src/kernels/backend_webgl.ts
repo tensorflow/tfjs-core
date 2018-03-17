@@ -17,7 +17,6 @@
 
 import {TimingInfo} from '../engine';
 import {ENV} from '../environment';
-import {NDArrayMath} from '../math';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as reduce_util from '../ops/reduce_util';
@@ -658,6 +657,11 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  log1p<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.LOG1P);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   sqrt<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SQRT);
     return this.compileAndRun(program, [x]) as T;
@@ -1015,16 +1019,6 @@ export class MathBackendWebGL implements KernelBackend {
 }
 
 ENV.registerBackend('webgl', () => new MathBackendWebGL());
-
-/** @deprecated Call dl.setBackend('webgl') instead. */
-export class NDArrayMathGPU extends NDArrayMath {
-  constructor(gpgpu?: GPGPUContext, safeMode = false) {
-    console.warn(
-        'new NDArrayMathGPU() is deprecated. Please use ' +
-        'dl.setBackend(\'webgl\').');
-    super(new MathBackendWebGL(gpgpu), safeMode);
-  }
-}
 
 function float32ToTypedArray<D extends DataType>(
     a: Float32Array, dtype: D): DataTypeMap[D] {

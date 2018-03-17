@@ -1325,6 +1325,43 @@ describeWithFlags('tile', ALL_ENVS, () => {
     expectArraysEqual(
         t2, [1, 3, util.getNaN('int32'), 1, 3, util.getNaN('int32')]);
   });
+
+  it('1D (tile) gradient', () => {
+    const x = dl.tensor1d([1, 2, 3]);
+    const dy = dl.tensor1d([0.1, 0.2, 0.3, 1, 2, 3, 10, 20, 30]);
+    const gradients = dl.grad(x => dl.tile(x, [3]))(x, dy);
+    expectArraysClose(gradients, dl.tensor1d([11.1, 22.2, 33.3]));
+  });
+
+  it('2D (tile) gradient', () => {
+    const x = dl.tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const dy = dl.tensor2d([[1, 2, 10, 20], [3, 4, 30, 40]], [2, 4]);
+    const gradients = dl.grad(x => dl.tile(x, [1, 2]))(x, dy);
+    expectArraysClose(gradients, dl.tensor2d([[11, 22], [33, 44]], [2, 2]));
+  });
+
+  it('3D (tile) gradient', () => {
+    const x = dl.tensor3d([[[1], [2]], [[3], [4]]], [2, 2, 1]);
+    const dy = dl.tensor3d([[[1, 10], [2, 20]], [[3, 30], [4, 40]]], [2, 2, 2]);
+    const gradients = dl.grad(x => dl.tile(x, [1, 1, 2]))(x, dy);
+    expectArraysClose(
+        gradients, dl.tensor3d([[[11], [22]], [[33], [44]]], [2, 2, 1]));
+  });
+
+  it('4D (tile) gradient', () => {
+    const x = dl.tensor4d([[[[1]], [[2]]], [[[3]], [[4]]]], [2, 2, 1, 1]);
+    const dy = dl.tensor4d(
+        [
+          [[[1, 10], [100, 1000]], [[2, 20], [200, 2000]]],
+          [[[3, 30], [300, 3000]], [[4, 40], [400, 4000]]]
+        ],
+        [2, 2, 2, 2]);
+    const gradients = dl.grad(x => dl.tile(x, [1, 1, 2, 2]))(x, dy);
+    expectArraysClose(
+        gradients,
+        dl.tensor4d(
+            [[[[1111]], [[2222]]], [[[3333]], [[4444]]]], [2, 2, 1, 1]));
+  });
 });
 
 describeWithFlags('gather', ALL_ENVS, () => {
@@ -1364,7 +1401,7 @@ describeWithFlags('gather', ALL_ENVS, () => {
 
     expect(t2.shape).toEqual([4]);
     expect(t2.dtype).toBe('bool');
-    expect(t2.getValues()).toEqual(new Uint8Array([1, 1, 1, 0]));
+    expect(t2.dataSync()).toEqual(new Uint8Array([1, 1, 1, 0]));
   });
 
   it('int32 (gather)', () => {
@@ -1374,7 +1411,7 @@ describeWithFlags('gather', ALL_ENVS, () => {
 
     expect(t2.shape).toEqual([4]);
     expect(t2.dtype).toBe('int32');
-    expect(t2.getValues()).toEqual(new Int32Array([1, 5, 1, 2]));
+    expect(t2.dataSync()).toEqual(new Int32Array([1, 5, 1, 2]));
   });
 
   it('propagates NaNs', () => {
@@ -1384,6 +1421,14 @@ describeWithFlags('gather', ALL_ENVS, () => {
 
     expect(t2.shape).toEqual([4]);
     expectArraysClose(t2, [1, NaN, 1, 2]);
+  });
+
+  it('chaining, axis=1', () => {
+    const x = dl.zeros([2, 4, 6]);
+    // [0, 2, 4]
+    const indices = dl.range(0, 6, 2);
+    const axis = 2;
+    expect(x.gather(indices, axis).shape).toEqual([2, 4, 3]);
   });
 });
 

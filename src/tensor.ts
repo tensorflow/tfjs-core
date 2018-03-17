@@ -18,9 +18,8 @@
 import {doc} from './doc';
 import {ENV} from './environment';
 import * as ops from './ops/ops';
-import {RandNormalDataTypes} from './ops/rand';
 import * as tensor_util from './tensor_util';
-import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
+import {DataType, Rank, ShapeMap, TypedArray} from './types';
 import * as util from './util';
 
 /** @hidden */
@@ -200,32 +199,6 @@ export class Tensor<R extends Rank = Rank> {
     }
   }
 
-  /** @deprecated Please use dl.ones() */
-  static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType): Tensor<R> {
-    return ops.ones(shape, dtype);
-  }
-
-  /** @deprecated Please use dl.zeros() */
-  static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType):
-      Tensor<R> {
-    return ops.zeros(shape, dtype);
-  }
-
-  /** @deprecated Please use dl.onesLike() */
-  static onesLike<T extends Tensor>(x: T): T {
-    return ops.onesLike(x);
-  }
-
-  /** @deprecated Please use dl.zerosLike() */
-  static zerosLike<T extends Tensor>(x: T): T {
-    return ops.zerosLike(x);
-  }
-
-  /** @deprecated Please use dl.clone() */
-  static like<T extends Tensor>(x: T): T {
-    return ops.clone(x);
-  }
-
   /**
    * Makes a new tensor with the provided shape and values. Values should be in
    * a flat array.
@@ -234,40 +207,6 @@ export class Tensor<R extends Rank = Rank> {
                                              R extends Rank = Rank>(
       shape: ShapeMap[R], data: TensorData, dtype?: D): T {
     return new Tensor(shape, dtype, data.values, data.dataId) as T;
-  }
-
-  /** @deprecated Please use dl.fromPixels() */
-  static fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels = 3): Tensor3D {
-    return ops.fromPixels(pixels, numChannels);
-  }
-
-  /** @deprecated Please use dl.rand() */
-  static rand<R extends Rank>(
-      shape: ShapeMap[R], randFunction: () => number,
-      dtype?: DataType): Tensor<R> {
-    return ops.rand(shape, randFunction, dtype);
-  }
-
-  /** @deprecated Please use dl.randomNormal() */
-  static randNormal<R extends Rank>(
-      shape: ShapeMap[R], mean = 0, stdDev = 1,
-      dtype?: keyof RandNormalDataTypes, seed?: number): Tensor<R> {
-    return ops.randomNormal(shape, mean, stdDev, dtype, seed);
-  }
-
-  /** @deprecated Please use dl.truncatedNormal() */
-  static randTruncatedNormal<R extends Rank>(
-      shape: ShapeMap[R], mean = 0, stdDev = 1,
-      dtype?: keyof RandNormalDataTypes, seed?: number): Tensor<R> {
-    return ops.truncatedNormal(shape, mean, stdDev, dtype, seed);
-  }
-
-  /** @deprecated Please use dl.randomUniform() */
-  static randUniform<R extends Rank>(
-      shape: ShapeMap[R], a: number, b: number, dtype?: DataType): Tensor<R> {
-    return ops.randomUniform(shape, a, b, dtype);
   }
 
   /** Flatten a Tensor to a 1D array. */
@@ -292,28 +231,50 @@ export class Tensor<R extends Rank = Rank> {
     return this.reshape<Rank.R1>([this.size]);
   }
 
-  /** Converts a `Tensor` to a `Tensor2D`. */
+  /**
+   * Converts a `Tensor` to a `Tensor2D`.
+   *
+   * @param rows Number of rows in `Tensor2D`.
+   * @param columns Number of columns in `Tensor2D`.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   as2D(rows: number, columns: number): Tensor2D {
     this.throwIfDisposed();
     return this.reshape<Rank.R2>([rows, columns]);
   }
 
-  /** Converts a `Tensor` to a `Tensor3D`. */
+  /**
+   * Converts a `Tensor` to a `Tensor3D`.
+   *
+   * @param rows Number of rows in `Tensor3D`.
+   * @param columns Number of columns in `Tensor3D`.
+   * @param depth Depth of `Tensor3D`.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   as3D(rows: number, columns: number, depth: number): Tensor3D {
     this.throwIfDisposed();
     return this.reshape<Rank.R3>([rows, columns, depth]);
   }
 
-  /** Converts a `Tensor` to a `Tensor4D`. */
+  /**
+   * Converts a `Tensor` to a `Tensor4D`.
+   *
+   * @param rows Number of rows in `Tensor4D`.
+   * @param columns Number of columns in `Tensor4D`.
+   * @param depth Depth of `Tensor4D`.
+   * @param depth2 4th dimension of `Tensor4D`.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   as4D(rows: number, columns: number, depth: number, depth2: number): Tensor4D {
     this.throwIfDisposed();
     return this.reshape<Rank.R4>([rows, columns, depth, depth2]);
   }
 
-  /** Casts a `Tensor` to a specified dtype. */
+  /**
+   * Casts a `Tensor` to a specified dtype.
+   *
+   * @param dtype Data-type to cast the tensor to.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   asType<T extends this>(this: T, dtype: DataType): T {
     this.throwIfDisposed();
@@ -324,7 +285,13 @@ export class Tensor<R extends Rank = Rank> {
     return this.shape.length;
   }
 
-  /** @deprecated. Use `tensor.buffer().get(...locs)` */
+  /**
+   * Returns the value in the tensor at the provided location.
+   * If using WebGL backend, this is a blocking call.
+   * Prefer calling the `async data()[flatIndex]` method instead.
+   *
+   * @param locs The location indices.
+   */
   get(...locs: number[]) {
     this.throwIfDisposed();
     if (locs.length === 0) {
@@ -335,58 +302,6 @@ export class Tensor<R extends Rank = Rank> {
       index += this.strides[i] * locs[i];
     }
     return this.dataSync()[index];
-  }
-
-  /** @deprecated. Use `tensor.buffer().get(...locs)` */
-  async val(...locs: number[]): Promise<number> {
-    if (locs.length === 0) {
-      locs = [0];
-    }
-    this.throwIfDisposed();
-    const vals = await this.data();
-    return ops.buffer(this.shape, this.dtype, vals).get(...locs);
-  }
-
-  /** @deprecated. Use `tensor.buffer().locToIndex(locs)` */
-  locToIndex(locs: number[]): number {
-    this.throwIfDisposed();
-    if (this.rank === 0) {
-      return 0;
-    } else if (this.rank === 1) {
-      return locs[0];
-    }
-    let index = locs[locs.length - 1];
-    for (let i = 0; i < locs.length - 1; ++i) {
-      index += this.strides[i] * locs[i];
-    }
-    return index;
-  }
-
-  /** @deprecated. Use `tensor.buffer().indexToLoc(index)` */
-  indexToLoc(index: number): number[] {
-    this.throwIfDisposed();
-    if (this.rank === 0) {
-      return [];
-    } else if (this.rank === 1) {
-      return [index];
-    }
-    const locs: number[] = new Array(this.shape.length);
-    for (let i = 0; i < locs.length - 1; ++i) {
-      locs[i] = Math.floor(index / this.strides[i]);
-      index -= locs[i] * this.strides[i];
-    }
-    locs[locs.length - 1] = index;
-    return locs;
-  }
-
-  /** @deprecated Use dataSync() instead. */
-  getValues(): TypedArray {
-    return this.dataSync();
-  }
-
-  /** @deprecated Use data() instead. */
-  getValuesAsync(): Promise<TypedArray> {
-    return this.data();
   }
 
   /** Returns a `TensorBuffer` that holds the underlying data. */
@@ -415,6 +330,9 @@ export class Tensor<R extends Rank = Rank> {
     return ENV.engine.readSync(this.dataId);
   }
 
+  /**
+   * Disposes `Tensor` from memory.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   dispose(): void {
     if (this.isDisposed) {
@@ -425,7 +343,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   private isDisposed = false;
-  protected throwIfDisposed() {
+  private throwIfDisposed() {
     if (this.isDisposed) {
       throw new Error(`Tensor is disposed.`);
     }
@@ -449,7 +367,12 @@ export class Tensor<R extends Rank = Rank> {
     return this.asType('bool');
   }
 
-  /** Prints the tensor. See `print` for details. */
+  /**
+   * Prints the `Tensor`. See `print` for details.
+   *
+   * @param verbose Whether to print verbose information about the tensor,
+   *    including dtype and size.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   print(verbose = false): void {
     return ops.print(this, verbose);
@@ -458,6 +381,8 @@ export class Tensor<R extends Rank = Rank> {
   /**
    * Reshapes the tensor into the provided shape.
    * See `reshape` for more details.
+   *
+   * @param newShape An array of integers defining the output tensor shape.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   reshape<R2 extends Rank>(newShape: ShapeMap[R2]): Tensor<R2> {
@@ -465,7 +390,11 @@ export class Tensor<R extends Rank = Rank> {
     return ops.reshape(this, newShape);
   }
 
-  /** Reshapes the tensor into the shape of the provided tensor. */
+  /**
+   * Reshapes the tensor into the shape of the provided tensor.
+   *
+   * @param x The tensor of required shape.
+   */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   reshapeAs<T extends Tensor>(x: T): T {
     this.throwIfDisposed();
@@ -475,6 +404,9 @@ export class Tensor<R extends Rank = Rank> {
   /**
    * Returns a `Tensor` that has expanded rank, by inserting a dimension
    * into the tensor's shape. See `expandDims` for details.
+   *
+   * @param axis The dimension index at which to insert shape of 1. Defaults to
+   *    0 (the first dimension).
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   expandDims<R2 extends Rank>(axis = 0): Tensor<R2> {
@@ -484,6 +416,10 @@ export class Tensor<R extends Rank = Rank> {
   /**
    * Returns a `Tensor` with dimensions of size 1 removed from the shape.
    * See `squeeze` for more details.
+   *
+   * @param axis A list of numbers. If specified, only squeezes the
+   *    dimensions listed. The dimension index starts at 0. It is an error to
+   *    squeeze a dimension that is not 1.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   squeeze<T extends Tensor>(axis?: number[]): T {
@@ -514,7 +450,7 @@ export class Tensor<R extends Rank = Rank> {
 
   gather<T extends this>(this: T, indices: Tensor1D, axis = 0): T {
     this.throwIfDisposed();
-    return ops.gather(this, indices);
+    return ops.gather(this, indices, axis);
   }
 
   matMul(b: Tensor2D, transposeA = false, transposeB = false): Tensor2D {
@@ -741,6 +677,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.log(this);
   }
+  log1p<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.log1p(this);
+  }
   sqrt<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sqrt(this);
@@ -857,11 +797,11 @@ export class Tensor<R extends Rank = Rank> {
   }
   depthwiseConv2D<T extends Tensor3D|Tensor4D>(
       this: T, filter: Tensor4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, rates: [number, number]|number = [1, 1],
+      pad: 'valid'|'same'|number, dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
     return ops.depthwiseConv2d(
-        this, filter, strides, pad, rates, dimRoundingMode);
+        this, filter, strides, pad, dilations, dimRoundingMode);
   }
 
   // Pooling.
@@ -899,50 +839,11 @@ export class Tensor<R extends Rank = Rank> {
   }
 }
 
-/** @doclink Tensor */
-export class Scalar extends Tensor<Rank.R0> {
-  static new(value: number|boolean, dtype?: DataType): Scalar {
-    return ops.scalar(value, dtype);
-  }
-}
-
-/** @doclink Tensor */
-export class Tensor1D extends Tensor<Rank.R1> {
-  static new<D extends DataType = 'float32'>(
-      values: DataTypeMap[D]|number[]|boolean[], dtype?: D): Tensor1D {
-    return ops.tensor1d(values, dtype);
-  }
-}
-
-/** @doclink Tensor */
-export class Tensor2D extends Tensor<Rank.R2> {
-  static new<D extends DataType = 'float32'>(
-      shape: [number, number],
-      values: DataTypeMap[D]|number[]|number[][]|boolean[]|boolean[][],
-      dtype?: D): Tensor2D {
-    return ops.tensor2d(values, shape, dtype);
-  }
-}
-
-/** @doclink Tensor */
-export class Tensor3D extends Tensor<Rank.R3> {
-  static new<D extends DataType = 'float32'>(
-      shape: [number, number, number],
-      values: DataTypeMap[D]|number[]|number[][][]|boolean[]|boolean[][][],
-      dtype?: D): Tensor3D {
-    return ops.tensor3d(values, shape, dtype);
-  }
-}
-
-/** @doclink Tensor */
-export class Tensor4D extends Tensor<Rank.R4> {
-  static new<D extends DataType = 'float32'>(
-      shape: [number, number, number, number],
-      values: DataTypeMap[D]|number[]|number[][][][]|boolean[]|boolean[][][][],
-      dtype?: D): Tensor4D {
-    return ops.tensor4d(values, shape, dtype);
-  }
-}
+export type Scalar = Tensor<Rank.R0>;
+export type Tensor1D = Tensor<Rank.R1>;
+export type Tensor2D = Tensor<Rank.R2>;
+export type Tensor3D = Tensor<Rank.R3>;
+export type Tensor4D = Tensor<Rank.R4>;
 
 /**
  * A mutable `Tensor`, useful for persisting state, e.g. for training.
@@ -979,7 +880,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
    * x.print();
    * ```
    *
-   * @param initialValue A tensor.
+   * @param initialValue Initial value for the tensor.
    * @param trainable If true, optimizers are allowed to update it.
    * @param name Name of the variable. Defaults to a unique id.
    * @param dtype If set, initialValue will be converted to the given type.
@@ -997,6 +898,8 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   /**
    * Assign a new `Tensor` to this variable. The new `Tensor` must have the
    * same shape and dtype as the old `Tensor`.
+   *
+   * @param newValue New tensor to be assigned to this variable.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   assign(newValue: Tensor<R>): void {
@@ -1034,12 +937,3 @@ function computeStrides(shape: number[]): number[] {
   }
   return strides;
 }
-
-// Aliases for backwards compatibility.
-export {
-  Tensor as NDArray,
-  Tensor1D as Array1D,
-  Tensor2D as Array2D,
-  Tensor3D as Array3D,
-  Tensor4D as Array4D
-};

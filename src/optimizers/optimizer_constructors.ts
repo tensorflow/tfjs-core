@@ -70,14 +70,19 @@ export class OptimizerConstructors {
    * Constructs a `MomentumOptimizer` that uses momentum gradient
    * descent.
    *
-   * @param learningRate The learning rate to use for the momentum gradient
+   * See
+   * [http://proceedings.mlr.press/v28/sutskever13.pdf](
+   * http://proceedings.mlr.press/v28/sutskever13.pdf)
+   *
+   * @param learningRate The learning rate to use for the Momentum gradient
    * descent algorithm.
    * @param momentum The momentum to use for the momentum gradient descent
    * algorithm.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
-  static momentum(learningRate: number, momentum: number): MomentumOptimizer {
-    return new MomentumOptimizer(learningRate, momentum);
+  static momentum(learningRate: number, momentum: number, useNesterov = false):
+      MomentumOptimizer {
+    return new MomentumOptimizer(learningRate, momentum, useNesterov);
   }
 
   /**
@@ -91,7 +96,7 @@ export class OptimizerConstructors {
    *
    * @param learningRate The learning rate to use for the RMSProp gradient
    * descent algorithm.
-   * @param decay The discounting factor for the history/coming gradient
+   * @param decay The discounting factor for the history/coming gradient.
    * @param momentum The momentum to use for the RMSProp gradient descent
    * algorithm.
    * @param epsilon Small value to avoid zero denominator.
@@ -100,63 +105,60 @@ export class OptimizerConstructors {
   static rmsprop(
       learningRate: number, decay = .9, momentum = 0.0, epsilon = 1e-8):
       RMSPropOptimizer {
-    return new RMSPropOptimizer(
-        learningRate, decay, momentum,
-        undefined /** @deprecated specifiedVariableList */, epsilon);
+    return new RMSPropOptimizer(learningRate, decay, momentum, epsilon);
   }
 
   /**
    * Constructs a `AdamOptimizer` that uses the Adam algorithm.
    * See [https://arxiv.org/abs/1412.6980](https://arxiv.org/abs/1412.6980)
    *
-   * @param learningRate
-   * @param beta1
-   * @param beta2
+   * @param learningRate The learning rate to use for the Adam gradient
+   * descent algorithm.
+   * @param beta1 The exponential decay rate for the 1st moment estimates.
+   * @param beta2 The exponential decay rate for the 2nd moment estimates.
+   * @param epsilon A small constant for numerical stability.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static adam(learningRate = 0.001, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8):
       AdamOptimizer {
-    return new AdamOptimizer(
-        learningRate, beta1, beta2, epsilon,
-        undefined /** @deprecated specifiedVariableList */);
+    return new AdamOptimizer(learningRate, beta1, beta2, epsilon);
   }
 
   /**
    * Constructs a `AdadeltaOptimizer` that uses the Adadelta algorithm.
    * See [https://arxiv.org/abs/1212.5701](https://arxiv.org/abs/1212.5701)
    *
-   * @param learningRate
-   * @param rho
-   * @param epsilon
+   * @param learningRate The learning rate to use for the Adadelta gradient
+   * descent algorithm.
+   * @param rho The learning rate decay over each update.
+   * @param epsilon A constant epsilon used to better condition the grad
+   * update.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static adadelta(learningRate = .001, rho = .95, epsilon = 1e-8):
       AdadeltaOptimizer {
-    return new AdadeltaOptimizer(
-        learningRate, rho, undefined /** @deprecated specifiedVariableList */,
-        epsilon);
+    return new AdadeltaOptimizer(learningRate, rho, epsilon);
   }
 
   /**
-   * Constructs a `AdamaxOptimizer` that uses the Adam algorithm.
+   * Constructs a `AdamaxOptimizer` that uses the Adamax algorithm.
    * See [https://arxiv.org/abs/1412.6980](https://arxiv.org/abs/1412.6980)
    *
-   * @param learningRate
-   * @param beta1
-   * @param beta2
-   * @param decay
+   * @param learningRate The learning rate to use for the Adamax gradient
+   * descent algorithm.
+   * @param beta1 The exponential decay rate for the 1st moment estimates.
+   * @param beta2 The exponential decay rate for the 2nd moment estimates.
+   * @param epsilon A small constant for numerical stability.
+   * @param decay The learning rate decay over each update.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static adamax(
       learningRate = 0.002, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8,
       decay = 0.0): AdamaxOptimizer {
-    return new AdamaxOptimizer(
-        learningRate, beta1, beta2, epsilon, decay,
-        undefined /** @deprecated specifiedVariableList */);
+    return new AdamaxOptimizer(learningRate, beta1, beta2, epsilon, decay);
   }
 
   /**
-   * Constructs a `dl.train.AdagradOptimizer` that uses the Adagrad algorithm.
    * Constructs a `AdagradOptimizer` that uses the Adagrad algorithm.
    * See
    * [http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf](
@@ -165,14 +167,14 @@ export class OptimizerConstructors {
    * [http://ruder.io/optimizing-gradient-descent/index.html#adagrad](
    * http://ruder.io/optimizing-gradient-descent/index.html#adagrad)
    *
-   * @param learningRate
-   * @param initialAccumulatorValue
+   * @param learningRate The learning rate to use for the Adagrad gradient
+   * descent algorithm.
+   * @param initialAccumulatorValue Starting value for the accumulators, must be
+   * positive.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static adagrad(learningRate: number, initialAccumulatorValue = 0.1):
       AdagradOptimizer {
-    return new AdagradOptimizer(
-        learningRate, undefined /** @deprecated specifiedVariableList */,
-        initialAccumulatorValue);
+    return new AdagradOptimizer(learningRate, initialAccumulatorValue);
   }
 }

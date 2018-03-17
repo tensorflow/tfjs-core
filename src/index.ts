@@ -32,21 +32,12 @@ export {DataStats, InMemoryDataset} from './data/dataset';
 // tslint:disable-next-line:max-line-length
 export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider} from './data/input_provider';
 export {XhrDataset, XhrDatasetConfig, XhrModelConfig} from './data/xhr-dataset';
+export {doc} from './doc';
 export {ENV, Environment, Features} from './environment';
-export {Graph, SymbolicTensor} from './graph/graph';
-// tslint:disable-next-line:max-line-length
-export {GraphRunner, GraphRunnerEventObserver, MetricReduction} from './graph/graph_runner';
-// tslint:disable-next-line:max-line-length
-export {ConstantInitializer, Initializer, OnesInitializer, RandomNormalInitializer, RandomTruncatedNormalInitializer, RandomUniformInitializer, TensorInitializer, VarianceScalingInitializer, ZerosInitializer} from './graph/initializers';
-export {CostReduction, FeedEntry, Session} from './graph/session';
-export {MathBackendCPU, NDArrayMathCPU} from './kernels/backend_cpu';
-// tslint:disable-next-line:max-line-length
-export {MathBackendWebGL, NDArrayMathGPU, WebGLTimingInfo} from './kernels/backend_webgl';
+export {MathBackendCPU} from './kernels/backend_cpu';
+export {MathBackendWebGL, WebGLTimingInfo} from './kernels/backend_webgl';
 export {GPGPUContext} from './kernels/webgl/gpgpu_context';
-export {NDArrayMath} from './math';
-export {Model} from './model';
-export {LSTMCell} from './ops/lstm';
-export {MatrixOrientation} from './ops/matmul';
+export {LSTMCellFunc} from './ops/lstm';
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
 export {AdamOptimizer} from './optimizers/adam_optimizer';
@@ -56,9 +47,11 @@ export {Optimizer} from './optimizers/optimizer';
 export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
-export {Array1D, Array2D, Array3D, Array4D, NDArray, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, variable, Variable} from './tensor';
+export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {Rank} from './types';
-export {version};
+export {WeightsManifestConfig} from './weights_loader';
+export {loadWeights} from './weights_loader';
+export {version as version_core};
 // Second level exports.
 export {
   contrib,

@@ -115,6 +115,7 @@ export const exp = UnaryOps.exp;
 export const floor = UnaryOps.floor;
 export const leakyRelu = UnaryOps.leakyRelu;
 export const log = UnaryOps.log;
+export const log1p = UnaryOps.log1p;
 export const neg = UnaryOps.neg;
 export const prelu = UnaryOps.prelu;
 export const relu = UnaryOps.relu;
@@ -156,6 +157,7 @@ export const rand = ArrayOps.rand;
 export const randomNormal = ArrayOps.randomNormal;
 export const truncatedNormal = ArrayOps.truncatedNormal;
 export const randomUniform = ArrayOps.randomUniform;
+export const multinomial = ArrayOps.multinomial;
 export const reshape = ArrayOps.reshape;
 export const squeeze = ArrayOps.squeeze;
 export const tile = ArrayOps.tile;
@@ -189,10 +191,10 @@ export const softmax = SoftmaxOps.softmax;
 export const localResponseNormalization = LRNOps.localResponseNormalization;
 
 // So typings can propagate.
-import {Tensor, Tensor3D, Tensor4D} from '../tensor';
+import {Tensor} from '../tensor';
 import {Rank} from '../types';
 // tslint:disable-next-line:no-unused-expression
-[Tensor, Rank, Tensor3D, Tensor4D];
+[Tensor, Rank];
 
 export const losses = {
   softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
