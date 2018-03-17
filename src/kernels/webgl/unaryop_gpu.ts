@@ -93,6 +93,10 @@ export const FLOOR = `
   return floor(x);
 `;
 
+export const SIGN = `
+  return (x > 0.0) ? 1.0 : ((x < 0.0) ? -1.0 : 0.0);
+`;
+
 export const EXP = `
   return exp(x);
 `;
