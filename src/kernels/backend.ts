@@ -110,6 +110,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   exp<T extends Tensor>(x: T): T;
   exp2<T extends Tensor>(x: T): T;
   log<T extends Tensor>(x: T): T;
+  log1p<T extends Tensor>(x: T): T;
   sqrt<T extends Tensor>(x: T): T;
 
   square<T extends Tensor>(x: T): T;
