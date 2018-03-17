@@ -586,6 +586,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.squaredDifference(this, x);
   }
+  squaredDifferenceStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.squaredDifferenceStrict(this, x);
+  }
   transpose<T extends Tensor>(this: T, perm?: number[]): T {
     this.throwIfDisposed();
     return ops.transpose(this, perm);

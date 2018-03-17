@@ -145,6 +145,7 @@ export const sub = BinaryOps.sub;
 export const subStrict = BinaryOps.subStrict;
 
 export const squaredDifference = BinaryOps.squaredDifference;
+export const squaredDifferenceStrict = BinaryOps.squaredDifferenceStrict;
 
 export const norm = NormOps.norm;
 
