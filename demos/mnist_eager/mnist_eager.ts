@@ -1,6 +1,6 @@
-import * as dl from 'deeplearn';
 import {MnistData} from './data';
 import * as model from './model';
+import * as ui from './ui';
 
 let data: MnistData;
 async function load() {
@@ -9,24 +9,22 @@ async function load() {
 }
 
 async function train() {
-  await model.train(data);
+  ui.isTraining();
+  await model.train(data, ui.trainingLog);
 }
 
-// async function test() {
-//   const testExamples = 50;
-//   const batch = data.nextTestBatch(testExamples);
-//   const predictions = model.predict(batch.xs);
-//   const labels = model.classesFromLabel(batch.labels);
+async function test() {
+  const testExamples = 50;
+  const batch = data.nextTestBatch(testExamples);
+  const predictions = model.predict(batch.xs);
+  const labels = model.classesFromLabel(batch.labels);
 
-//   ui.showTestResults(batch, predictions, labels);
-// }
+  ui.showTestResults(batch, predictions, labels);
+}
 
 async function mnist() {
   await load();
-  // test();
+  await train();
+  test();
 }
 mnist();
-document.getElementById('train').onclick = async () => {
-  await train();
-  console.log(dl.memory());
-};
