@@ -94,7 +94,7 @@ export const FLOOR = `
 `;
 
 export const SIGN = `
-  return (x > 0.0) ? 1.0 : ((x < 0.0) ? -1.0 : 0.0);
+  return sign(x);
 `;
 
 export const EXP = `
