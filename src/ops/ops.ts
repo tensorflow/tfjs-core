@@ -144,6 +144,8 @@ export const powStrict = BinaryOps.powStrict;
 export const sub = BinaryOps.sub;
 export const subStrict = BinaryOps.subStrict;
 
+export const reciprocal = UnaryOps.reciprocal;
+
 export const norm = NormOps.norm;
 
 export const cast = ArrayOps.cast;
