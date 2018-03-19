@@ -424,7 +424,7 @@ describeWithFlags('reciprocal', ALL_ENVS, () => {
     expectArraysClose(r, [1 / 1, 0, Infinity, NaN]);
   });
 
-  it('square propagates NaNs', () => {
+  it('reciprocal propagates NaNs', () => {
     const a = dl.tensor1d([1.5, NaN]);
     const r = dl.reciprocal(a);
     expectArraysClose(r, [1 / 1.5, NaN]);
