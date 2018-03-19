@@ -70,7 +70,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
         [fSizeDilated, fSizeDilated, inDepth, chMul],
     );
 
-    const result = dl.depthwiseConv2d(x, w, stride, pad, dilation);
+    const result = dl.depthwiseConv2d(x, w, stride, pad, 'NHWC', dilation);
 
     const expectedResult = dl.depthwiseConv2d(x, wDilated, stride, pad);
 
@@ -210,7 +210,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
 
     const x = dl.zeros<Rank.R3>([3, 3, inDepth]);
     const w = dl.zeros<Rank.R4>([fSize, fSize, inDepth, chMul]);
-    const result = dl.depthwiseConv2d(x, w, stride, pad, dilations);
+    const result = dl.depthwiseConv2d(x, w, stride, pad, 'NHWC', dilations);
     expect(result.shape).toEqual([3, 3, inDepth * chMul]);
   });
 });

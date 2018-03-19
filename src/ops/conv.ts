@@ -431,8 +431,8 @@ export class ConvOps {
   @operation
   static depthwiseConv2d<T extends Tensor3D|Tensor4D>(
       input: T, filter: Tensor4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, dilations: [number, number]|number = [1, 1],
-      dataFormat: 'NHWC'|'NCHW' = 'NHWC',
+      pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW' = 'NHWC',
+      dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     let input4D = input as Tensor4D;
     let reshapedTo4D = false;
