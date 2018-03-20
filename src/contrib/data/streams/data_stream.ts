@@ -18,6 +18,7 @@
 
 import * as seedrandom from 'seedrandom';
 
+import {Tensor} from '../../..';
 import {dispose} from '../../../globals';
 import {extractTensorsFromAny, isTensorInList} from '../../../util';
 import {GrowingRingBuffer} from '../util/growing_ring_buffer';
@@ -157,6 +158,18 @@ export abstract class DataStream<T> {
    */
   map<O>(transform: (value: T) => O): DataStream<O> {
     return new MapStream(this, transform);
+  }
+
+  /**
+   * Maps this stream through a 1-to-many transform.
+   *
+   * @param predicate A function mapping a stream element to an array of
+   *   transformed elements.
+   *
+   * @returns A `DataStream` of transformed elements.
+   */
+  flatmap<O>(transform: (value: T) => O[]): DataStream<O> {
+    return new FlatmapStream(this, transform);
   }
 
   /**
@@ -318,15 +331,90 @@ class TakeStream<T> extends DataStream<T> {
   }
 }
 
+class BatchStream<T> extends DataStream<T[]> {
+  constructor(
+      protected upstream: DataStream<T>, protected batchSize: number,
+      protected enableSmallLastBatch = true) {
+    super();
+  }
+
+  async next(): Promise<IteratorResult<T[]>> {
+    const batch: T[] = [];
+    while (batch.length < this.batchSize) {
+      const item = await this.upstream.next();
+      if (item.done) {
+        if (this.enableSmallLastBatch && batch.length > 0) {
+          return {value: batch, done: false};
+        }
+        return {value: null, done: true};
+      }
+      batch.push(item.value);
+    }
+    return {value: batch, done: false};
+  }
+}
+
+class FilterStream<T> extends DataStream<T> {
+  constructor(
+      protected upstream: DataStream<T>,
+      protected predicate: (value: T) => boolean) {
+    super();
+  }
+
+  async next(): Promise<IteratorResult<T>> {
+    while (true) {
+      const item = await this.upstream.next();
+      if (item.done || this.predicate(item.value)) {
+        return item;
+      }
+      dispose(item.value);
+    }
+  }
+}
+
+class MapStream<I, O> extends DataStream<O> {
+  constructor(
+      protected upstream: DataStream<I>, protected transform: (value: I) => O) {
+    super();
+  }
+
+  async next(): Promise<IteratorResult<O>> {
+    const item = await this.upstream.next();
+    if (item.done) {
+      return {value: null, done: true};
+    }
+    const inputTensors = extractTensorsFromAny(item.value);
+    // Careful: the transform may mutate the item in place.
+    // that's why we have to remember the input Tensors above, and then below
+    // dispose only those that were not passed through to the output.
+    // Note too that the transform function is responsible for tidying any
+    // intermediate Tensors.  Here we are concerned only about the inputs.
+    const mapped = this.transform(item.value);
+
+    const outputTensors = extractTensorsFromAny(mapped);
+
+    // TODO(soergel) faster intersection
+    // TODO(soergel) move to dl.disposeExcept(in, out)?
+    for (const t of inputTensors) {
+      if (!isTensorInList(t, outputTensors)) {
+        t.dispose();
+      }
+    }
+
+    return {value: mapped, done: false};
+  }
+}
+
 // Streams that maintain a queue of pending items
 // ============================================================================
 
 /**
  * A base class for transforming streams that operate by maintaining an
  * output queue of elements that are ready to return via next().  This is
- * commonly required when the transformation is not 1-to-1, so a variable number
- * of calls to the underlying stream may be needed to provide each element of
- * this stream.
+ * commonly required when the transformation is 1-to-many:  A call to next()
+ * may trigger a call to the underlying stream, which will produce many mapped
+ * elements of this stream-- of which we need to return only one, so we have to
+ * queue the rest.
  */
 export abstract class QueueStream<T> extends DataStream<T> {
   protected outputQueue: RingBuffer<T>;
@@ -363,66 +451,14 @@ export abstract class QueueStream<T> extends DataStream<T> {
   }
 }
 
-class BatchStream<T> extends QueueStream<T[]> {
+class FlatmapStream<I, O> extends QueueStream<O> {
   constructor(
-      protected upstream: DataStream<T>, protected batchSize: number,
-      protected enableSmallLastBatch = true) {
-    super();
-  }
-
-  private currentBatch: T[] = [];
-
-  async pump(): Promise<boolean> {
-    const item = await this.upstream.next();
-    if (item.done) {
-      if (this.enableSmallLastBatch && this.currentBatch.length > 0) {
-        this.outputQueue.push(this.currentBatch);
-        this.currentBatch = [];
-
-        // Pretend that the pump succeeded in order to emit the small last
-        // batch. The next pump() call will actually fail.
-        return true;
-      }
-      return false;
-    }
-
-    this.currentBatch.push(item.value);
-    if (this.currentBatch.length === this.batchSize) {
-      this.outputQueue.push(this.currentBatch);
-      this.currentBatch = [];
-    }
-    return true;
-  }
-}
-
-class FilterStream<T> extends QueueStream<T> {
-  constructor(
-      protected upstream: DataStream<T>,
-      protected predicate: (value: T) => boolean) {
+      protected upstream: DataStream<I>,
+      protected transform: (value: I) => O[]) {
     super();
   }
 
   async pump(): Promise<boolean> {
-    const item = await this.upstream.next();
-    if (item.done) {
-      return false;
-    }
-    if (this.predicate(item.value)) {
-      this.outputQueue.push(item.value);
-    } else {
-      dispose(item.value);
-    }
-    return true;
-  }
-}
-
-class MapStream<I, O> extends QueueStream<O> {
-  constructor(
-      protected upstream: DataStream<I>, protected transform: (value: I) => O) {
-    super();
-  }
-
-  async pump() {
     const item = await this.upstream.next();
     if (item.done) {
       return false;
@@ -433,11 +469,15 @@ class MapStream<I, O> extends QueueStream<O> {
     // dispose only those that were not passed through to the output.
     // Note too that the transform function is responsible for tidying any
     // intermediate Tensors.  Here we are concerned only about the inputs.
-    const mapped = this.transform(item.value);
+    const outputTensors: Tensor[] = [];
 
-    const outputTensors = extractTensorsFromAny(mapped);
+    const mappedArray = this.transform(item.value);
+    for (const mapped of mappedArray) {
+      outputTensors.push(...extractTensorsFromAny(mapped));
+      this.outputQueue.push(mapped);
+    }
 
-    // TODO(soergel) faster intersection
+    // TODO(soergel) faster intersection, and deduplicate outputTensors
     // TODO(soergel) move to dl.disposeExcept(in, out)?
     for (const t of inputTensors) {
       if (!isTensorInList(t, outputTensors)) {
@@ -445,7 +485,6 @@ class MapStream<I, O> extends QueueStream<O> {
       }
     }
 
-    this.outputQueue.push(mapped);
     return true;
   }
 }
