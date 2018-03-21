@@ -120,8 +120,9 @@ class ComplementaryColorModel {
           input: input.slice(i, i + this.batchSize),
           target: target.slice(i, i + this.batchSize),
         };
+        const batchCost = this.train1Batch(batchData, shouldFetchCost);
         if (shouldFetchCost) {
-          cost = cost.add(this.train1Batch(batchData, shouldFetchCost));
+          cost = cost.add(batchCost);
         }
       }
       return shouldFetchCost ?
