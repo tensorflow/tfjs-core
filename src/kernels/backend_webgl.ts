@@ -98,6 +98,11 @@ export class MathBackendWebGL implements KernelBackend {
       texType: TextureType.FLOAT
     });
   }
+  updateShape(dataId: object, shape: number[], dtype: DataType): void {
+    if (!this.texData.has(dataId)) {
+      throw new Error(`Data buffer was not registered`);
+    }
+  }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D {

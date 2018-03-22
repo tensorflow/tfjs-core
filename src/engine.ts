@@ -141,6 +141,8 @@ export class Engine implements TensorManager {
       this.numBytes +=
           util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
       this.backend.register(a.dataId, a.shape, a.dtype);
+    } else {
+      this.backend.updateShape(a.dataId, a.shape, a.dtype);
     }
     this.refCounter.set(a.dataId, refCount + 1);
     if (!(a instanceof Variable)) {

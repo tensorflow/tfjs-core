@@ -49,6 +49,11 @@ export class MathBackendCPU implements KernelBackend {
     }
     this.data.set(dataId, null);
   }
+  updateShape(dataId: object, shape: number[], dtype: DataType): void {
+    if (!this.data.has(dataId)) {
+      throw new Error(`Data buffer was not registered`);
+    }
+  }
   write(dataId: DataId, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
