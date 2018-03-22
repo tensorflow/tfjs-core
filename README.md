@@ -79,7 +79,7 @@ the dev environment:
 ```bash
 $ git clone https://github.com/PAIR-code/deeplearnjs.git
 $ cd deeplearnjs
-$ yarn prep # Installs dependencies.
+$ yarn # Installs dependencies.
 ```
 
 #### Yarn vs NPM

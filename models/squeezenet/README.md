@@ -25,7 +25,7 @@ To run the demo, use the following:
 ```bash
 cd models/squeezenet
 
-yarn prep
+yarn
 yarn build
 
 # Starts a webserver, navigate to localhost:8000/demo.html.

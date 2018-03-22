@@ -19,7 +19,7 @@
 
 TMP_DIR="/tmp/deeplearn-website"
 
-yarn prep
+yarn
 rm -rf "$TMP_DIR"
 mkdir "$TMP_DIR"
 
