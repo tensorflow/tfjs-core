@@ -29,13 +29,15 @@ export class RMSPropOptimizer extends Optimizer {
   private decay: Scalar;
   private momentum: Scalar;
   private oneMinusDecay: Scalar;
+  private centered: boolean;
 
   private accumulatedMeanSquares: NamedVariableMap = {};
+  private accumulatedMeanGrads: NamedVariableMap = {};
   private accumulatedMoments: NamedVariableMap = {};
 
   constructor(
       protected learningRate: number, decay = 0.9, momentum = 0.0,
-      epsilon = 1e-8) {
+      epsilon = 1e-8, centered = false) {
     super();
 
     this.c = keep(scalar(learningRate));
@@ -43,9 +45,69 @@ export class RMSPropOptimizer extends Optimizer {
     this.decay = keep(scalar(decay));
     this.momentum = keep(scalar(momentum));
     this.oneMinusDecay = keep(scalar(1 - decay));
+    this.centered = centered;
   }
 
-  applyGradients(variableGradients: NamedVariableMap) {
+  // The centered version additionally maintains a moving (discounted) average
+  // of the gradients, and uses that average to estimate the variance.
+  private applyGradientsWithCentered(variableGradients: NamedVariableMap) {
+    for (const variableName in variableGradients) {
+      const value = ENV.engine.registeredVariables[variableName];
+      if (this.accumulatedMeanSquares[variableName] == null) {
+        const trainable = false;
+        tidy(() => {
+          this.accumulatedMeanSquares[variableName] =
+              zerosLike(value).variable(trainable);
+        });
+      }
+      if (this.accumulatedMeanGrads[variableName] == null) {
+        const trainable = false;
+        tidy(() => {
+          this.accumulatedMeanGrads[variableName] =
+              zerosLike(value).variable(trainable);
+        });
+      }
+      if (this.accumulatedMoments[variableName] == null) {
+        const trainable = false;
+        tidy(() => {
+          this.accumulatedMoments[variableName] =
+              zerosLike(value).variable(trainable);
+        });
+      }
+
+      const accumulatedMeanSquare = this.accumulatedMeanSquares[variableName];
+      const accumulatedMeanGrad = this.accumulatedMeanGrads[variableName];
+      const accumulatedMoments = this.accumulatedMoments[variableName];
+      const gradient = variableGradients[variableName];
+
+      tidy(() => {
+        const newAccumulatedMeanSquare =
+            this.decay.mul(accumulatedMeanSquare)
+                .add(this.oneMinusDecay.mul(gradient.square()));
+
+        const newAccumulatedMeanGrad =
+            this.decay.mul(accumulatedMeanGrad)
+                .add(this.oneMinusDecay.mul(gradient));
+
+        const newAccumulatedMoments =
+            this.momentum.mul(accumulatedMoments)
+                .add(this.c.mul(gradient).div(
+                    newAccumulatedMeanSquare.sub(
+                      newAccumulatedMeanGrad.square().add(
+                        this.epsilon)).sqrt()));
+
+        this.accumulatedMeanSquares[variableName].assign(
+            newAccumulatedMeanSquare);
+        this.accumulatedMeanGrads[variableName].assign(newAccumulatedMeanGrad);
+        this.accumulatedMoments[variableName].assign(newAccumulatedMoments);
+
+        const newValue = value.sub(newAccumulatedMoments);
+        value.assign(newValue);
+      });
+    }
+  }
+
+  private applyGradientsWithPlain(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
       const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedMeanSquares[variableName] == null) {
@@ -87,6 +149,14 @@ export class RMSPropOptimizer extends Optimizer {
     }
   }
 
+  applyGradients(variableGradients: NamedVariableMap) {
+    if (this.centered) {
+      this.applyGradientsWithCentered(variableGradients);
+    } else {
+      this.applyGradientsWithPlain(variableGradients);
+    }
+  }
+
   dispose() {
     this.c.dispose();
     this.epsilon.dispose();
@@ -96,6 +166,10 @@ export class RMSPropOptimizer extends Optimizer {
     if (this.accumulatedMeanSquares != null) {
       Object.keys(this.accumulatedMeanSquares)
           .forEach(name => this.accumulatedMeanSquares[name].dispose());
+    }
+    if (this.accumulatedMeanGrads != null) {
+      Object.keys(this.accumulatedMeanGrads)
+          .forEach(name => this.accumulatedMeanGrads[name].dispose());
     }
     if (this.accumulatedMoments != null) {
       Object.keys(this.accumulatedMoments)
