@@ -101,4 +101,13 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     backend.dispose();
     expect(texManager.getNumUsedTextures()).toBe(0);
   });
+
+  it('should handle invalid shapeUpdates', () => {
+    const delayedStorage = false;
+    const backend = new MathBackendWebGL(null, delayedStorage);
+    const dataId = {};
+    expect(() => {
+      backend.updateShape(dataId, [3], 'float32');
+    }).toThrowError();
+  });
 });
