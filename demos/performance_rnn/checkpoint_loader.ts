@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Tensor} from '../tensor';
+import {Tensor} from 'deeplearn';
 
 /**
  * @hidden
