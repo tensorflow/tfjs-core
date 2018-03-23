@@ -78,7 +78,6 @@ export const MOD = CHECK_NAN_SNIPPET + `
   } else {
     return mod(rem + b, b);
   }
-  return mod(a, b);
 `;
 
 export class BinaryOpProgram implements GPGPUProgram {
