@@ -582,6 +582,14 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.maximumStrict(this, x);
   }
+  mod<T extends Tensor>(x: Tensor): T {
+    this.throwIfDisposed();
+    return ops.mod(this, x);
+  }
+  modStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.modStrict(this, x);
+  }
   transpose<T extends Tensor>(this: T, perm?: number[]): T {
     this.throwIfDisposed();
     return ops.transpose(this, perm);

@@ -22,7 +22,7 @@ import * as util from '../util';
 
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
-import {scalar} from './ops';
+import {onesLike, scalar} from './ops';
 
 export class BinaryOps {
   /**
@@ -198,8 +198,8 @@ export class BinaryOps {
       }
       const derBase = () => {
         const expFloat = exp.toFloat();
-        const dx = expFloat.mul(
-                       base.toFloat().pow(expFloat.sub(scalar(1)))) as T;
+        const dx =
+            expFloat.mul(base.toFloat().pow(expFloat.sub(scalar(1)))) as T;
         return dy.mulStrict(dx) as T;
       };
       return {base: derBase};
@@ -356,6 +356,58 @@ export class BinaryOps {
   static divStrict<T extends Tensor>(a: T, b: T): T {
     util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
     return a.div(b) as T;
+  }
+
+  /**
+   * Returns the mod of a and b element-wise.
+   * `floor(x / y) * y + mod(x, y) = x`
+   * Supports broadcasting.
+   *
+   * We also expose `modStrict` which has the same signature as this op and
+   * asserts that `a` and `b` are the same shape (does not broadcast).
+   *
+   * ```js
+   * const a = dl.tensor1d([1, 4, 3, 16]);
+   * const b = dl.tensor1d([1, 2, 9, 4]);
+   *
+   * a.mod(b).print();  // or dl.mod(a, b)
+   * ```
+   *
+   * ```js
+   * // Broadcast a mod b.
+   * const a = dl.tensor1d([2, 4, 6, 8]);
+   * const b = dl.scalar(5);
+   *
+   * a.mod(b).print();  // or dl.mod(a, b)
+   * ```
+   *
+   * @param a The first tensor.
+   * @param b The second tensor. Must have the same type as `a`.
+   */
+  @doc({heading: 'Operations', subheading: 'Arithmetic'})
+  @operation
+  static mod<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertTypesMatch(a, b);
+    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const der = (dy: Tensor) => {
+      const derA = () => dy.mul(onesLike(a));
+      const derB = () => dy.mul(a.div(b).floor().neg());
+      return {a: derA, b: derB};
+    };
+    return ENV.engine.runKernel(backend => backend.mod(a, b), {a, b}, der) as T;
+  }
+
+  /**
+   * Returns the mod of a and b (`a < b ? a : b`) element-wise. Inputs must
+   * be the same shape. For broadcasting support, use mod().
+   *
+   * @param a The first tensor.
+   * @param b The second tensor. Must have the same dtype as `a`.
+   */
+  @operation
+  static modStrict<T extends Tensor>(a: T, b: T): T {
+    util.assertShapesMatch(a.shape, b.shape, 'Error in modStrict: ');
+    return a.mod(b);
   }
 
   /**
