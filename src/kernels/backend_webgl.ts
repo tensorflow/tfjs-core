@@ -75,6 +75,11 @@ export interface WebGLTimingInfo extends TimingInfo {
 }
 
 export class MathBackendWebGL implements KernelBackend {
+  reshape<T extends Tensor<types.Rank>, R extends types.Rank>(
+      x: T, shape: types.ShapeMap[R]): Tensor<R> {
+    return Tensor.make(shape, {dataId: x.dataId}, x.dtype);
+  }
+
   private texData = new WeakMap<DataId, TextureData>();
   private canvas: HTMLCanvasElement;
 

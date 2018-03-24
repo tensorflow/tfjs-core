@@ -606,7 +606,7 @@ export class ArrayOps {
       return {x: () => dy.reshape(x.shape)};
     };
     return ENV.engine.runKernel(
-        backend => Tensor.make(shape, {dataId: x.dataId}, x.dtype), {x}, grad);
+        backend => backend.reshape(x, shape), {x}, grad);
   }
 
   /**
@@ -657,6 +657,9 @@ export class ArrayOps {
     const grad = (dy: T) => {
       return {x: () => dy.clone()};
     };
+    //
+    // TODO(kreeger): Move this to the backend as well.
+    //
     return ENV.engine.runKernel(forw, {x}, grad) as T;
   }
 

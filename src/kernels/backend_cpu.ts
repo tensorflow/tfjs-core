@@ -34,6 +34,11 @@ import * as util from '../util';
 import {BackendTimingInfo, KernelBackend} from './backend';
 
 export class MathBackendCPU implements KernelBackend {
+  reshape<T extends Tensor<types.Rank>, R extends types.Rank>(
+      x: T, shape: types.ShapeMap[R]): Tensor<R> {
+    return Tensor.make(shape, {dataId: x.dataId}, x.dtype);
+  }
+
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
 
