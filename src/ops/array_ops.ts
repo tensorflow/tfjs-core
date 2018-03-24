@@ -640,26 +640,9 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
   static cast<T extends Tensor>(x: T, dtype: DataType): T {
-    // const forw: ForwardFunc<T> = backend => {
-    //   if (!util.hasEncodingLoss(x.dtype, dtype)) {
-    //     // We don't change the underlying data, since we cast to higher
-    //     // precision.
-    //     return Tensor.make(x.shape, {dataId: x.dataId}, dtype) as T;
-    //   }
-    //   if (dtype === 'int32') {
-    //     return backend.int(x);
-    //   } else if (dtype === 'bool') {
-    //     return backend.notEqual(x, ArrayOps.scalar(0, x.dtype)) as T;
-    //   } else {
-    //     throw new Error(`Error in Cast: unknown dtype argument (${dtype})`);
-    //   }
-    // };
     const grad = (dy: T) => {
       return {x: () => dy.clone()};
     };
-    //
-    // TODO(kreeger): Move this to the backend as well.
-    //
     return ENV.engine.runKernel(backend => backend.cast(x, dtype), {x}, grad) as
         T;
   }
