@@ -160,6 +160,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   reshape<T extends Tensor, R extends Rank>(x: T, shape: ShapeMap[R]):
       Tensor<R>;
+  cast<T extends Tensor>(x: T, dtype: DataType): T;
 
   tile<T extends Tensor>(x: T, reps: number[]): T;
 

@@ -75,6 +75,9 @@ export interface WebGLTimingInfo extends TimingInfo {
 }
 
 export class MathBackendWebGL implements KernelBackend {
+  cast<T extends Tensor<types.Rank>>(x: T, dtype: 'float32'|'int32'|'bool'): T {
+    throw new Error('Method not implemented.');
+  }
   reshape<T extends Tensor<types.Rank>, R extends types.Rank>(
       x: T, shape: types.ShapeMap[R]): Tensor<R> {
     return Tensor.make(shape, {dataId: x.dataId}, x.dtype);
