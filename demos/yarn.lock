@@ -2277,6 +2277,10 @@ deeplearn-knn-image-classifier@~0.3.0:
   dependencies:
     deeplearn-squeezenet "~0.2.0"
 
+deeplearn-legacy-loader@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/deeplearn-legacy-loader/-/deeplearn-legacy-loader-0.0.1.tgz#7e850a33e5dfbed174a5c1a1cb3bcdabb42f569c"
+
 deeplearn-squeezenet@~0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/deeplearn-squeezenet/-/deeplearn-squeezenet-0.2.0.tgz#b5d37317defe4ee2cd71cffe5a9af30ccb13145f"

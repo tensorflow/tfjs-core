@@ -12,7 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 import * as dl from 'deeplearn';
-import {CheckpointLoader} from './checkpoint_loader';
+import {CheckpointLoader} from 'deeplearn-legacy-loader';
 import {Cache} from './ModelCache';
 
 const NUM_LAYERS = 4;

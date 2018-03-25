@@ -135,19 +135,11 @@ $ yarn test --single-run
 ```
 
 #### Packaging (browser and npm)
-To build a standalone ES5 library that can be imported in the browser with a
-`<script>` tag:
 
 ```bash
-$ ./scripts/build-standalone.sh # Builds standalone library.
->> Stored standalone library at dist/deeplearn(.min).js
+$ yarn build-npm
 ```
 
-To build an npm package:
-
-```bash
-$ ./scripts/build-npm.sh
-...
 Stored standalone library at dist/deeplearn(.min).js
 deeplearn-VERSION.tgz
 ```

@@ -13,11 +13,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-rm -rf dist/ && \
-yarn && \
-node_modules/.bin/mkdirp dist && \
-yarn make-version && \
-node_modules/.bin/browserify --standalone deeplearn src/index.ts -p [tsify] > dist/deeplearn.js && \
-printf '\nthis.dl = this.deeplearn;\n' >> dist/deeplearn.js
-node_modules/.bin/uglifyjs dist/deeplearn.js -c -m -o dist/deeplearn.min.js && \
-echo "Stored standalone library at dist/deeplearn(.min).js"

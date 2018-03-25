@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import * as dl from 'deeplearn';
-import {CheckpointLoader} from './checkpoint_loader';
+import {CheckpointLoader} from 'deeplearn-legacy-loader';
 
 const GOOGLE_CLOUD_STORAGE_DIR =
     'https://storage.googleapis.com/learnjs-data/checkpoint_zoo/transformnet/';
