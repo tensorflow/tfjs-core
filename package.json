@@ -4,8 +4,8 @@
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
-  "jsdelivr": "dist/deeplearn.js",
-  "unpkg": "dist/deeplearn.js",
+  "jsdelivr": "dist/deeplearn.min.js",
+  "unpkg": "dist/deeplearn.min.js",
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
