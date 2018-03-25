@@ -138,10 +138,8 @@ $ yarn test --single-run
 
 ```bash
 $ yarn build-npm
-```
-
-Stored standalone library at dist/deeplearn(.min).js
-deeplearn-VERSION.tgz
+> Stored standalone library at dist/deeplearn(.min).js
+> deeplearn-VERSION.tgz
 ```
 
 To install it locally, run `npm install ./deeplearn-VERSION.tgz`.
