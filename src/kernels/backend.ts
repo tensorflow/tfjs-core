@@ -32,6 +32,7 @@ export interface TensorStorage {
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D;
   register(dataId: DataId, shape: number[], dtype: DataType): void;
+  updateShape(dataId: DataId, shape: number[], dtype: DataType): void;
   memory(): {unreliable: boolean;};  // Backend-specific information.
 }
 
