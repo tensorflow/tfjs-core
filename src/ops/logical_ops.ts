@@ -29,6 +29,7 @@ export class LogicalOps {
    *
    *```js
    * var a = dl.tensor1d([0,1],'bool')
+   *
    * dl.logicalNot(a)
    *```
    *
@@ -45,9 +46,9 @@ export class LogicalOps {
    * Returns the truth value of a AND b element-wise. Supports broadcasting.
    *
    *```js
-   *
    * var a = dl.tensor1d([0,0,1,1],'bool')
    * var b = dl.tensor1d([0,1,0,1],'bool')
+   *
    * a.logicalAnd(b).print()
    *```
    *
@@ -69,9 +70,9 @@ export class LogicalOps {
    * Returns the truth value of `a OR b` element-wise. Supports broadcasting.
    *
    *```js
-   *
    * var a = dl.tensor1d([0,0,1,1],'bool')
    * var b = dl.tensor1d([0,1,0,1],'bool')
+   *
    * a.logicalOr(b).print()
    *```
    * @param a The first input tensor. Must be of dtype bool.
@@ -92,9 +93,9 @@ export class LogicalOps {
    * Returns the truth value of `a XOR b` element-wise. Supports broadcasting.
    *
    *```js
-   *
    * var a = dl.tensor1d([0,0,1,1],'bool')
    * var b = dl.tensor1d([0,1,0,1],'bool')
+   *
    * a.logicalXor(b).print()
    *```
    *
@@ -121,6 +122,7 @@ export class LogicalOps {
    * var cond = dl.tensor1d([0,0,1],'bool')
    * var a = dl.tensor1d([1,2,3])
    * var b = dl.tensor1d([-1,-2,-3])
+   *
    * dl.where(cond,a,b).print()
    *```
    * 
