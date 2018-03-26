@@ -29,6 +29,11 @@ export class CompareOps {
    * We also expose `notEqualStrict` which has the same signature as this op and
    * asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * var a = dl.tensor1d([1,2,3])
+   * var b = dl.tensor1d([0,2,3])
+   * dl.notEqual(a,b).print()
+   * ```
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
@@ -60,6 +65,11 @@ export class CompareOps {
    * We also expose `lessStrict` which has the same signature as this op and
    * asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * var a = dl.tensor1d([1,2,3])
+   * var b = dl.tensor1d([2,2,2])
+   * dl.less(a,b).print()
+   * ```
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
@@ -91,6 +101,12 @@ export class CompareOps {
    * We also expose `equalStrict` which has the same signature as this op
    * and asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * var a = dl.tensor1d([1,2,3])
+   * var b = dl.tensor1d([2,2,2])
+   * dl.equal(a,b).print()
+   * ```
+   *
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
@@ -113,6 +129,12 @@ export class CompareOps {
    *
    * We also expose `lessEqualStrict` which has the same signature as this op
    * and asserts that `a` and `b` are the same shape (does not broadcast).
+   *
+   * ```js
+   * var a = dl.tensor1d([1,2,3])
+   * var b = dl.tensor1d([2,2,2])
+   * dl.lessEqual(a,b).print()
+   * ```
    *
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
@@ -138,6 +160,12 @@ export class CompareOps {
    * We also expose `greaterStrict` which has the same signature as this
    * op and asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * var a = dl.tensor1d([1,2,3])
+   * var b = dl.tensor1d([2,2,2])
+   * dl.greater(a,b).print()
+   * ```
+   *
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
@@ -160,6 +188,12 @@ export class CompareOps {
    *
    * We also expose `greaterStrict` which has the same signature as this
    * op and asserts that `a` and `b` are the same shape (does not broadcast).
+   *
+   * ```js
+   * var a = dl.tensor1d([1,2,3])
+   * var b = dl.tensor1d([2,2,2])
+   * dl.greaterEqual(a,b).print()
+   * ```
    *
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
