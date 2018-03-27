@@ -27,11 +27,11 @@ export class LogicalOps {
   /**
    * Returns the truth value of `NOT x` element-wise.
    *
-   *```js
+   * ```js
    * var a = dl.tensor1d([0,1],'bool')
    *
    * dl.logicalNot(a)
-   *```
+   * ```
    *
    * @param x The input tensor. Must be of dtype 'bool'.
    */
@@ -45,12 +45,12 @@ export class LogicalOps {
   /**
    * Returns the truth value of a AND b element-wise. Supports broadcasting.
    *
-   *```js
+   * ```js
    * var a = dl.tensor1d([0,0,1,1],'bool')
    * var b = dl.tensor1d([0,1,0,1],'bool')
    *
    * a.logicalAnd(b).print()
-   *```
+   * ```
    *
    * @param a The first input tensor. Must be of dtype bool.
    * @param b The second input tensor. Must be of dtype bool.
@@ -69,12 +69,12 @@ export class LogicalOps {
   /**
    * Returns the truth value of `a OR b` element-wise. Supports broadcasting.
    *
-   *```js
+   * ```js
    * var a = dl.tensor1d([0,0,1,1],'bool')
    * var b = dl.tensor1d([0,1,0,1],'bool')
    *
    * a.logicalOr(b).print()
-   *```
+   * ```
    * @param a The first input tensor. Must be of dtype bool.
    * @param b The second input tensor. Must be of dtype bool.
    */
@@ -92,12 +92,12 @@ export class LogicalOps {
   /**
    * Returns the truth value of `a XOR b` element-wise. Supports broadcasting.
    *
-   *```js
+   * ```js
    * var a = dl.tensor1d([0,0,1,1],'bool')
    * var b = dl.tensor1d([0,1,0,1],'bool')
    *
    * a.logicalXor(b).print()
-   *```
+   * ```
    *
    * @param a The first input tensor. Must be of dtype bool.
    * @param b The second input tensor. Must be of dtype bool.
@@ -118,13 +118,13 @@ export class LogicalOps {
    *
    * If the condition is true, select from `a`, otherwise select from `b`.
    *
-   *```js
+   * ```js
    * var cond = dl.tensor1d([0,0,1],'bool')
    * var a = dl.tensor1d([1,2,3])
    * var b = dl.tensor1d([-1,-2,-3])
    *
    * dl.where(cond,a,b).print()
-   *```
+   * ```
    * 
    * @param condition The input condition. Must be of dtype bool.
    * @param a If `condition` is rank 1, `a` may have a higher rank but
