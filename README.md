@@ -44,7 +44,7 @@ For info about development, check out [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## For more information
 
-- [TensorFlow.js API documentation](https://js.tensorflow.org/api/)
+- [TensorFlow.js API documentation](https://js.tensorflow.org/api/latest/)
 - [TensorFlow.js Tutorials](https://js.tensorflow.org/tutorials/)
 
 Thanks <a href="https://www.browserstack.com/">BrowserStack</a> for providing testing support.
