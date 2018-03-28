@@ -41,6 +41,4 @@ For info about development, check out [DEVELOPMENT.md](./DEVELOPMENT.md).
 - [TensorFlow.js API documentation](https://js.tensorflow.org/api/index.html)
 - [TensorFlow.js Tutorials](https://js.tensorflow.org/tutorials/)
 
-Thanks <span><a href="https://www.browserstack.com/">
-  <img src="https://www.browserstack.com/images/layout/browserstack-logo-600x315.png" height="70" style="height:70px;">
-</a></span> for providing testing support.
+Thanks <a href="https://www.browserstack.com/">BrowserStack</a> for providing testing support.
