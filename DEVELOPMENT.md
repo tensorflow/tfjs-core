@@ -9,8 +9,9 @@ $ cd tfjs-core
 $ yarn # Installs dependencies.
 ```
 
-#### Yarn vs NPM
-Generally speaking it's up to you. Yarn is fully interoperable with npm. You can either do `yarn` or `npm install`. However we use yarn, and if you are adding or removing dependencies you should use yarn to keep the `yarn.lock` file up to date.
+#### Yarn
+We use yarn, and if you are adding or removing dependencies you should use yarn
+to keep the `yarn.lock` file up to date.
 
 #### Code editor
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
