@@ -2,7 +2,7 @@
   <img src="https://travis-ci.org/PAIR-code/deeplearnjs.svg?branch=master" />
 </a>
 
-> HEADS UP: We moved from `PAIR-code/deeplearnjs` to `tensorflow/tfjs-core`. Stay tuned for more updates in the next 24 hours.
+### HEADS UP: We moved from `PAIR-code/deeplearnjs` to `tensorflow/tfjs-core`. Stay tuned for more updates in the next 24 hours.
 
 # Getting started
 
