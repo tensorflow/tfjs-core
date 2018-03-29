@@ -4,7 +4,7 @@
 
 # TensorFlow.js Core API
 
-> Building on the momentum of deeplearn.js, we have joined the TensorFlow
+> NOTE: Building on the momentum of deeplearn.js, we have joined the TensorFlow
 family and we are starting a new ecosystem of libraries and tools for Machine
 Learning in Javascript, called [TensorFlow.js](https://js.tensorflow.org).
 This repo moved from `PAIR-code/deeplearnjs` to `tensorflow/tfjs-core`.
