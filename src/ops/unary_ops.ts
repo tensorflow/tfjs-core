@@ -108,6 +108,27 @@ export class UnaryOps {
   }
 
   /**
+   * Computes `2 ^ x` of the input `Tensor` element-wise.
+   *
+   * ```js
+   * const x = dl.tensor1d([1, 2, -3]);
+   *
+   * x.exp2().print();  // or dl.exp2(x)
+   * ```
+   * @param x The input tensor.
+   */
+  @doc({heading: 'Operations', subheading: 'Basic math'})
+  @operation
+  static exp2<T extends Tensor>(x: T): T {
+    const bck = (dy: T, saved: Tensor[]) => {
+      const [y] = saved;
+      return {x: () => dy.mulStrict(y.mul(ops.scalar(2).log()))};
+    };
+    return ENV.engine.runKernel(
+        (backend, save) => save(backend.exp2(x)), {x}, bck);
+  }
+
+  /**
    * Computes natural logarithm of the input `Tensor` element-wise: `ln(x)`
    *
    * ```js

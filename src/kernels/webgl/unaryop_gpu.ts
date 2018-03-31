@@ -97,6 +97,10 @@ export const EXP = `
   return exp(x);
 `;
 
+export const EXP2 = `
+  return exp2(x);
+`;
+
 export const LOG = `
   return log(x);
 `;
