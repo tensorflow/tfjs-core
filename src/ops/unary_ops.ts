@@ -147,6 +147,25 @@ export class UnaryOps {
   }
 
   /**
+   * Computes base-10 logarithm of the input `Tensor` element-wise: `log10(x)`
+   *
+   * ```js
+   * const x = dl.tensor1d([1e-1, 2, 10]);
+   *
+   * x.log10().print();  // or dl.log10(x)
+   * ```
+   * @param x The input tensor.
+   */
+  @doc({heading: 'Operations', subheading: 'Basic math'})
+  @operation
+  static log10<T extends Tensor>(x: T): T {
+    const grad = (dy: T) => {
+      return {x: () => dy.divStrict(x.mul(ops.scalar(10).log()))};
+    };
+    return ENV.engine.runKernel(backend => backend.log10(x), {x}, grad);
+  }
+
+  /**
    * Computes square root of the input `Tensor` element-wise: `y = sqrt(x)`
    *
    * ```js
