@@ -105,6 +105,10 @@ export const LOG1P = `
   return log(1.0 + x);
 `;
 
+export const LOG2 = `
+  return log2(x);
+`;
+
 export const SQRT = CHECK_NAN_SNIPPET + `
   return sqrt(x);
 `;
