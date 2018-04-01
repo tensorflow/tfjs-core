@@ -463,17 +463,18 @@ export class BinaryOps {
   }
 
   /*
-   * Computes arctangent of 'Tensor's a / b element-wise: `atan2(a, b)`.
+   * Computes arctangent of `Tensor`s a / b element-wise: `atan2(a, b)`.
    * Supports broadcasting.
    *
    * ```js
    * const a = tf.tensor1d([1.0, 1.0, -1.0, .7]);
    * const b = tf.tensor1d([2.0, 13.0, 3.5, .21]);
    *
-   * tf.atan2(x, y)
+   * tf.atan2(x, y).print()
    *
    * @param a The first tensor.
    * @param b The second tensor. Must have the same dtype as `a`.
+   * ```
    */
   @operation
   static atan2<T extends Tensor>(a: Tensor, b: Tensor): T {
