@@ -32,6 +32,7 @@ import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
 
 import {BackendTimingInfo, KernelBackend} from './backend';
+import * as backend_util from './backend_util';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -830,6 +831,12 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
+  atan2<T extends Tensor>(a: T, b: T): T {
+    return this.broadcastedBinaryOp(
+               a, b, a.dtype, (aValue, bValue) => Math.atan2(aValue, bValue)) as
+        T;
+  }
+
   sinh<T extends Tensor>(x: T): T {
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
@@ -1325,6 +1332,15 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return dx.toTensor();
+  }
+
+  cast<T extends Tensor<types.Rank>>(x: T, dtype: DataType): T {
+    return backend_util.castTensor(x, dtype, this);
+  }
+
+  reshape<T extends Tensor<types.Rank>, R extends types.Rank>(
+      x: T, shape: types.ShapeMap[R]): Tensor<R> {
+    return backend_util.reshapeTensor(x, shape);
   }
 
   minPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {

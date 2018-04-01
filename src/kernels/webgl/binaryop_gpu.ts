@@ -80,6 +80,10 @@ export const MOD = CHECK_NAN_SNIPPET + `
   }
 `;
 
+export const ATAN2 = CHECK_NAN_SNIPPET + `
+  return atan(a, b);
+`;
+
 export class BinaryOpProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
   outputShape: number[];
