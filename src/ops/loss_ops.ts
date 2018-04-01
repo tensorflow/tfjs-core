@@ -52,7 +52,7 @@ export class LossOps {
     let loss;
 
     if (reduction === Reduction.NONE) {
-      loss = weightedLoss as O;
+      return weightedLoss as O;
     } else {
       loss = weightedLoss.sum() as O;
 
