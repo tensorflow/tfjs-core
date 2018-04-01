@@ -471,18 +471,18 @@ export class BinaryOps {
    * broadcast).
    *
    * ```js
-   * const a = dl.tensor1d([1, 4, 3, 16]);
-   * const b = dl.tensor1d([1, 2, 9, 4]);
+   * const a = tf.tensor1d([1, 4, 3, 16]);
+   * const b = tf.tensor1d([1, 2, 9, 4]);
    *
-   * a.squaredDifference(b).print();  // or dl.squaredDifference(a, b)
+   * a.squaredDifference(b).print();  // or tf.squaredDifference(a, b)
    * ```
    *
    * ```js
    * // Broadcast squared difference  a with b.
-   * const a = dl.tensor1d([2, 4, 6, 8]);
-   * const b = dl.scalar(5);
+   * const a = tf.tensor1d([2, 4, 6, 8]);
+   * const b = tf.scalar(5);
    *
-   * a.squaredDifference(b).print();  // or dl.squaredDifference(a, b)
+   * a.squaredDifference(b).print();  // or tf.squaredDifference(a, b)
    * ```
    *
    * @param a The first tensor.
