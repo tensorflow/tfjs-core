@@ -112,9 +112,9 @@ export class UnaryOps {
    * `e ^ x - 1`
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, -3]);
+   * const x = tf.tensor1d([1, 2, -3]);
    *
-   * x.expm1().print();  // or dl.expm1(x)
+   * x.expm1().print();  // or tf.expm1(x)
    * ```
    * @param x The input tensor.
    */
@@ -124,8 +124,7 @@ export class UnaryOps {
     const grad = (dy: T) => {
       return {x: () => dy.mulStrict(x.exp())};
     };
-    return ENV.engine.runKernel(
-        (backend, save) => save(backend.expm1(x)), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.expm1(x), {x}, grad);
   }
 
   /**
