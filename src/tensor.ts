@@ -343,7 +343,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   private isDisposed = false;
-  protected throwIfDisposed() {
+  private throwIfDisposed() {
     if (this.isDisposed) {
       throw new Error(`Tensor is disposed.`);
     }
@@ -450,7 +450,7 @@ export class Tensor<R extends Rank = Rank> {
 
   gather<T extends this>(this: T, indices: Tensor1D, axis = 0): T {
     this.throwIfDisposed();
-    return ops.gather(this, indices);
+    return ops.gather(this, indices, axis);
   }
 
   matMul(b: Tensor2D, transposeA = false, transposeB = false): Tensor2D {
@@ -681,6 +681,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.log(this);
   }
+  log1p<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.log1p(this);
+  }
   sqrt<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sqrt(this);
@@ -776,15 +780,20 @@ export class Tensor<R extends Rank = Rank> {
   // Convolutions.
   conv1d<T extends Tensor2D|Tensor3D>(
       this: T, filter: Tensor3D, stride: number, pad: 'valid'|'same'|number,
+      dataFormat: 'NWC'|'NCW' = 'NWC', dilation = 1,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
-    return ops.conv1d(this, filter, stride, pad, dimRoundingMode);
+    return ops.conv1d(
+        this, filter, stride, pad, dataFormat, dilation, dimRoundingMode);
   }
   conv2d<T extends Tensor3D|Tensor4D>(
       this: T, filter: Tensor4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW' = 'NHWC',
+      dilations: [number, number]|number = [1, 1],
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
-    return ops.conv2d(this, filter, strides, pad, dimRoundingMode);
+    return ops.conv2d(
+        this, filter, strides, pad, dataFormat, dilations, dimRoundingMode);
   }
   conv2dTranspose<T extends Tensor3D|Tensor4D>(
       this: T, filter: Tensor4D,
@@ -797,11 +806,12 @@ export class Tensor<R extends Rank = Rank> {
   }
   depthwiseConv2D<T extends Tensor3D|Tensor4D>(
       this: T, filter: Tensor4D, strides: [number, number]|number,
-      pad: 'valid'|'same'|number, dilations: [number, number]|number = [1, 1],
+      pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW' = 'NHWC',
+      dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
     return ops.depthwiseConv2d(
-        this, filter, strides, pad, dilations, dimRoundingMode);
+        this, filter, strides, pad, dataFormat, dilations, dimRoundingMode);
   }
 
   // Pooling.
@@ -839,10 +849,15 @@ export class Tensor<R extends Rank = Rank> {
   }
 }
 
+/** @doclink Tensor */
 export type Scalar = Tensor<Rank.R0>;
+/** @doclink Tensor */
 export type Tensor1D = Tensor<Rank.R1>;
+/** @doclink Tensor */
 export type Tensor2D = Tensor<Rank.R2>;
+/** @doclink Tensor */
 export type Tensor3D = Tensor<Rank.R3>;
+/** @doclink Tensor */
 export type Tensor4D = Tensor<Rank.R4>;
 
 /**
@@ -874,8 +889,8 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   /**
    * Creates a new variable with the provided initial value.
    * ```js
-   * const x = dl.variable(dl.tensor([1, 2, 3]));
-   * x.assign(dl.tensor([4, 5, 6]));
+   * const x = tf.variable(tf.tensor([1, 2, 3]));
+   * x.assign(tf.tensor([4, 5, 6]));
    *
    * x.print();
    * ```
