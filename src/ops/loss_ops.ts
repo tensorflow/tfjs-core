@@ -45,7 +45,7 @@ export class LossOps {
       losses: T, weights?: Tensor,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
     if (weights == null) {
-      weights = ops.scalar(1);
+      weights = ops.onesLike(losses);
     }
 
     const weightedLoss = losses.mul(weights);
@@ -55,13 +55,14 @@ export class LossOps {
       loss = weightedLoss as O;
     } else {
       loss = weightedLoss.sum() as O;
-      if (reduction === Reduction.MEAN) {
-        loss = loss.div(ops.onesLike(losses).mul(weights).sum()) as O;
+
+      if (reduction === Reduction.SUM) {
+        return loss;
+      } else if (reduction === Reduction.MEAN) {
+        return loss.div(weights.sum());
       } else if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
-        const mask = ops.where(
-            weights.equal(ops.scalar(0)), ops.zerosLike(weights),
-            ops.onesLike(weights));
-        loss = loss.div(mask.sum()) as O;
+        const numNonZeros = weights.notEqual(ops.scalar(0)).sum();
+        return loss.div(numNonZeros);
       }
     }
 

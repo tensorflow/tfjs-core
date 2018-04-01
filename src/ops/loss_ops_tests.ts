@@ -26,7 +26,7 @@ describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
     const y = dl.losses.computeWeightedLoss(losses);
 
     expect(y.shape).toEqual([]);
-    expectNumbersClose(y.get(), 1 + 2 + 3);
+    expectNumbersClose(y.get(), (1 + 2 + 3) / 3);
   });
 
   it('1D - no weights - Reduction.NONE', () => {
@@ -105,7 +105,7 @@ describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
     const y = dl.losses.computeWeightedLoss(losses);
 
     expect(y.shape).toEqual([]);
-    expectNumbersClose(y.get(), (4 + 8 + 12 + 8 + 1 + 3));
+    expectNumbersClose(y.get(), (4 + 8 + 12 + 8 + 1 + 3) / 6);
   });
 
   it('2D - weights', () => {
@@ -192,7 +192,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
     expect(y.shape).toEqual([]);
     expectNumbersClose(
         y.get(),
-        Math.abs(1 - 0.3) + Math.abs(2 - (-0.6)) + Math.abs(3 - (-0.1)));
+        (Math.abs(1 - 0.3) + Math.abs(2 - (-0.6)) + Math.abs(3 - (-0.1))) / 3);
   });
 
   it('1D - weighted - Reduction.SUM_BY_NONZERO_WEIGHTS', () => {
@@ -263,8 +263,9 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
     expect(y.shape).toEqual([]);
     expectNumbersClose(
         y.get(),
-        Math.abs(4 - 1) + Math.abs(8 - 9) + Math.abs(12 - 2) +
-            Math.abs(8 - (-5)) + Math.abs(1 - (-2)) + Math.abs(3 - 6));
+        (Math.abs(4 - 1) + Math.abs(8 - 9) + Math.abs(12 - 2) +
+         Math.abs(8 - (-5)) + Math.abs(1 - (-2)) + Math.abs(3 - 6)) /
+            6);
   });
 
   it('2D - weighted - Reduction.SUM_BY_NONZERO_WEIGHTS', () => {
