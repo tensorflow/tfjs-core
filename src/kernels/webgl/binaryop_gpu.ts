@@ -73,12 +73,7 @@ export const MIN = CHECK_NAN_SNIPPET + `
 `;
 
 export const MOD = CHECK_NAN_SNIPPET + `
-  float rem = mod(a, b);
-  if ((a < 0.0 && b < 0.0) || (a >= 0.0 && b >= 0.0)) {
-    return rem;
-  } else {
-    return mod(rem + b, b);
-  }
+  return mod(a, b);
 `;
 
 export const ATAN2 = CHECK_NAN_SNIPPET + `

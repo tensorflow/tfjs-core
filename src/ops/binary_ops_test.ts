@@ -493,7 +493,7 @@ describeWithFlags('mod', ALL_ENVS, () => {
     const result = dl.mod(a, b);
 
     expect(result.shape).toEqual(a.shape);
-    expectArraysClose(result, [0.09999999, 0.19999996, 0.15, 0.05000016]);
+    expectArraysClose(result, [0.1, 0.2, 0.15, 0.05]);
   });
 
   it('int32 and int32', () => {
@@ -528,7 +528,7 @@ describeWithFlags('mod', ALL_ENVS, () => {
     const result = dl.mod(a, b);
 
     expect(result.shape).toEqual(a.shape);
-    expectArraysClose(result, [0.5, 0.0999999, 0.5, 0.20000017]);
+    expectArraysClose(result, [0.5, 0.1, 0.5, 0.2]);
   });
 
   it('broadcasts scalar and Tensor1D', () => {
@@ -537,7 +537,7 @@ describeWithFlags('mod', ALL_ENVS, () => {
     const result = dl.mod(a, b);
 
     expect(result.shape).toEqual(b.shape);
-    expectArraysClose(result, [0.10000002, 0.6, -0.09999999, -3.4]);
+    expectArraysClose(result, [0.1, 0.6, -0.1, -3.4]);
   });
 
   it('broadcasts Tensor1D and Tensor2D', () => {
@@ -546,7 +546,7 @@ describeWithFlags('mod', ALL_ENVS, () => {
     const result = dl.mod(a, b);
 
     expect(result.shape).toEqual(b.shape);
-    expectArraysClose(result, [0.09999999, 0.3, 0.5, 0.0]);
+    expectArraysClose(result, [0.1, 0.3, 0.5, 0.0]);
   });
 
   it('broadcasts 2x1 Tensor2D and 2x2 Tensor2D', () => {
@@ -555,7 +555,7 @@ describeWithFlags('mod', ALL_ENVS, () => {
     const result = dl.mod(a, b);
 
     expect(result.shape).toEqual(b.shape);
-    expectArraysClose(result, [0.09999999, 0.09999999, 0.3, 0.0]);
+    expectArraysClose(result, [0.1, 0.1, 0.3, 0.0]);
   });
 
   it('gradients: Scalar', () => {
