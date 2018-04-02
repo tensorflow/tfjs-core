@@ -57,11 +57,15 @@ export class LossOps {
                                  weightedLoss.sum().div(weights.sum());
     }
     if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
-      const numNonZeros = weights.notEqual(ops.scalar(0)).sum();
-      return weightedLoss.sum().div(numNonZeros);
+      if (weights == null) {
+        return weightedLoss.sum().div(ops.scalar(losses.size));
+      } else {
+        const numNonZeros = weights.notEqual(ops.scalar(0)).sum();
+        return weightedLoss.sum().div(numNonZeros);
+      }
     }
 
-    return weightedLoss as O;
+    throw Error(`Unknown reduction: ${reduction}`);
   }
 
   /**
