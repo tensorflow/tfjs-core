@@ -44,29 +44,24 @@ export class LossOps {
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
       losses: T, weights?: Tensor,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    if (weights == null) {
-      weights = ops.onesLike(losses);
-    }
-
-    const weightedLoss = losses.mul(weights);
-    let loss;
+    const weightedLoss = (weights == null) ? losses : losses.mul(weights);
 
     if (reduction === Reduction.NONE) {
       return weightedLoss as O;
-    } else {
-      loss = weightedLoss.sum() as O;
-
-      if (reduction === Reduction.SUM) {
-        return loss;
-      } else if (reduction === Reduction.MEAN) {
-        return loss.div(weights.sum());
-      } else if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
-        const numNonZeros = weights.notEqual(ops.scalar(0)).sum();
-        return loss.div(numNonZeros);
-      }
+    }
+    if (reduction === Reduction.SUM) {
+      return weightedLoss.sum();
+    }
+    if (reduction === Reduction.MEAN) {
+      return (weights == null) ? weightedLoss.mean() :
+                                 weightedLoss.sum().div(weights.sum());
+    }
+    if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
+      const numNonZeros = weights.notEqual(ops.scalar(0)).sum();
+      return weightedLoss.sum().div(numNonZeros);
     }
 
-    return loss;
+    return weightedLoss as O;
   }
 
   /**
