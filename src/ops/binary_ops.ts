@@ -367,18 +367,18 @@ export class BinaryOps {
    * asserts that `a` and `b` are the same shape (does not broadcast).
    *
    * ```js
-   * const a = dl.tensor1d([1, 4, 3, 16]);
-   * const b = dl.tensor1d([1, 2, 9, 4]);
+   * const a = tf.tensor1d([1, 4, 3, 16]);
+   * const b = tf.tensor1d([1, 2, 9, 4]);
    *
-   * a.mod(b).print();  // or dl.mod(a, b)
+   * a.mod(b).print();  // or tf.mod(a, b)
    * ```
    *
    * ```js
    * // Broadcast a mod b.
-   * const a = dl.tensor1d([2, 4, 6, 8]);
-   * const b = dl.scalar(5);
+   * const a = tf.tensor1d([2, 4, 6, 8]);
+   * const b = tf.scalar(5);
    *
-   * a.mod(b).print();  // or dl.mod(a, b)
+   * a.mod(b).print();  // or tf.mod(a, b)
    * ```
    *
    * @param a The first tensor.
