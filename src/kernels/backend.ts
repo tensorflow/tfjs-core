@@ -102,12 +102,15 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   max(x: Tensor, axes: number[]): Tensor;
   maximum(a: Tensor, b: Tensor): Tensor;
 
+  squaredDifference(a: Tensor, b: Tensor): Tensor;
+
   ceil<T extends Tensor>(x: T): T;
   floor<T extends Tensor>(x: T): T;
   round<T extends Tensor>(x: T): T;
 
   pow<T extends Tensor>(a: T, b: Tensor): T;
   exp<T extends Tensor>(x: T): T;
+  expm1<T extends Tensor>(x: T): T;
   log<T extends Tensor>(x: T): T;
   log1p<T extends Tensor>(x: T): T;
   sqrt<T extends Tensor>(x: T): T;
