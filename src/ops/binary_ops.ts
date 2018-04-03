@@ -22,7 +22,7 @@ import * as util from '../util';
 
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
-import {neg, onesLike, scalar, square} from './ops';
+import {neg, scalar, square} from './ops';
 
 export class BinaryOps {
   /**
@@ -388,10 +388,24 @@ export class BinaryOps {
   @operation
   static mod<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertTypesMatch(a, b);
-    broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const outShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: Tensor) => {
-      const derA = () => dy.mul(onesLike(a));
-      const derB = () => dy.mul(a.div(b).floor().neg());
+      const derA = () => {
+        const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+        if (reduceAxes.length > 0) {
+          return dy.sum(reduceAxes).reshape(a.shape);
+        }
+        return dy;
+      };
+      const derB = () => {
+        const res = dy.mul(a.div(b).floor().neg());
+        const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+        if (reduceAxes.length > 0) {
+          return res.sum(reduceAxes).reshape(b.shape);
+        }
+        return res;
+      };
       return {a: derA, b: derB};
     };
     return ENV.engine.runKernel(backend => backend.mod(a, b), {a, b}, der) as T;
