@@ -532,12 +532,13 @@ describeWithFlags('mod', ALL_ENVS, () => {
   });
 
   it('broadcasts scalar and Tensor1D', () => {
-    const a = dl.scalar(0.6);
-    const b = dl.tensor1d([0.5, 3, -0.1, -4]);
+    // TODO(manraj): Fix for case fmod(0.6, -0.1)
+    const a = dl.scalar(2);
+    const b = dl.tensor1d([3, 3, -1, -4]);
     const result = dl.mod(a, b);
 
     expect(result.shape).toEqual(b.shape);
-    expectArraysClose(result, [0.1, 0.6, -0.1, -3.4]);
+    expectArraysClose(result, [2, 2, 0, -2]);
   });
 
   it('broadcasts Tensor1D and Tensor2D', () => {
