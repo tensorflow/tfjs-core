@@ -1,7 +1,6 @@
-
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +18,7 @@
 import {Conv2DInfo} from '../ops/conv_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {DataType, TypedArray} from '../types';
+import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 
 // Required information for all backends.
 export interface BackendTimingInfo { kernelMs: number; }
@@ -103,12 +102,16 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   max(x: Tensor, axes: number[]): Tensor;
   maximum(a: Tensor, b: Tensor): Tensor;
 
+  squaredDifference(a: Tensor, b: Tensor): Tensor;
+
   ceil<T extends Tensor>(x: T): T;
   floor<T extends Tensor>(x: T): T;
 
   pow<T extends Tensor>(a: T, b: Tensor): T;
   exp<T extends Tensor>(x: T): T;
+  expm1<T extends Tensor>(x: T): T;
   log<T extends Tensor>(x: T): T;
+  log1p<T extends Tensor>(x: T): T;
   sqrt<T extends Tensor>(x: T): T;
 
   square<T extends Tensor>(x: T): T;
@@ -135,6 +138,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   asin<T extends Tensor>(x: T): T;
   acos<T extends Tensor>(x: T): T;
   atan<T extends Tensor>(x: T): T;
+  atan2<T extends Tensor>(a: T, b: T): T;
 
   sinh<T extends Tensor>(x: T): T;
   cosh<T extends Tensor>(x: T): T;
@@ -156,6 +160,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   minPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   avgPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+
+  reshape<T extends Tensor, R extends Rank>(x: T, shape: ShapeMap[R]):
+      Tensor<R>;
+  cast<T extends Tensor>(x: T, dtype: DataType): T;
 
   tile<T extends Tensor>(x: T, reps: number[]): T;
 

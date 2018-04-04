@@ -174,6 +174,12 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
 }
 
 function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
+  // TODO(nsthorat): Remove this once we fix
+  // https://github.com/PAIR-code/deeplearnjs/issues/848
+  if (webGLVersion > 0) {
+    return false;
+  }
+
   if (webGLVersion !== 2) {
     return false;
   }
@@ -216,7 +222,7 @@ export class Environment {
    *
    * @param backendType The backend type. Currently supports `'webgl'|'cpu'`.
    * @param safeMode Defaults to false. In safe mode, you are forced to
-   *     construct tensors and call math operations inside a `dl.tidy()` which
+   *     construct tensors and call math operations inside a `tidy()` which
    *     will automatically clean up intermediate tensors.
    */
   @doc({heading: 'Environment'})
@@ -250,7 +256,7 @@ export class Environment {
    * - `unreliable`: `Optional` `boolean`:
    *    - On WebGL, not present (always reliable).
    *    - On CPU, true. Due to automatic garbage collection, these numbers
-   *     represent undisposed tensors, i.e. not wrapped in `dl.tidy()`, or
+   *     represent undisposed tensors, i.e. not wrapped in `tidy()`, or
    *     lacking a call to `tensor.dispose()`.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})

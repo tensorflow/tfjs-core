@@ -97,8 +97,16 @@ export const EXP = `
   return exp(x);
 `;
 
+export const EXPM1 = `
+  return exp(x) - 1.0;
+`;
+
 export const LOG = `
   return log(x);
+`;
+
+export const LOG1P = `
+  return log(1.0 + x);
 `;
 
 export const SQRT = CHECK_NAN_SNIPPET + `
