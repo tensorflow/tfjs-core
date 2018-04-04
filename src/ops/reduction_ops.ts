@@ -176,7 +176,7 @@ export class ReductionOps {
     // Use a custom gradient to bypass 2 gradient backprops since mean is used
     // extremely often.
     const customOp = customGrad(x => {
-      const reduceSizeScalar = ops.scalar(reduceSize);
+      const reduceSizeScalar = ops.scalar(reduceSize, x.dtype);
       const res = x.div(reduceSizeScalar);
       const value = res.sum(axis, keepDims);
 
