@@ -588,6 +588,14 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.maximumStrict(this, x);
   }
+  squaredDifference<T extends Tensor>(x: Tensor): T {
+    this.throwIfDisposed();
+    return ops.squaredDifference(this, x);
+  }
+  squaredDifferenceStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.squaredDifferenceStrict(this, x);
+  }
   transpose<T extends Tensor>(this: T, perm?: number[]): T {
     this.throwIfDisposed();
     return ops.transpose(this, perm);
@@ -678,6 +686,10 @@ export class Tensor<R extends Rank = Rank> {
   exp<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.exp(this);
+  }
+  expm1<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.expm1(this);
   }
   log<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
@@ -851,10 +863,15 @@ export class Tensor<R extends Rank = Rank> {
   }
 }
 
+/** @doclink Tensor */
 export type Scalar = Tensor<Rank.R0>;
+/** @doclink Tensor */
 export type Tensor1D = Tensor<Rank.R1>;
+/** @doclink Tensor */
 export type Tensor2D = Tensor<Rank.R2>;
+/** @doclink Tensor */
 export type Tensor3D = Tensor<Rank.R3>;
+/** @doclink Tensor */
 export type Tensor4D = Tensor<Rank.R4>;
 
 /**
@@ -886,8 +903,8 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   /**
    * Creates a new variable with the provided initial value.
    * ```js
-   * const x = dl.variable(dl.tensor([1, 2, 3]));
-   * x.assign(dl.tensor([4, 5, 6]));
+   * const x = tf.variable(tf.tensor([1, 2, 3]));
+   * x.assign(tf.tensor([4, 5, 6]));
    *
    * x.print();
    * ```

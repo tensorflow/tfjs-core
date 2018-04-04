@@ -112,6 +112,7 @@ export const cos = UnaryOps.cos;
 export const cosh = UnaryOps.cosh;
 export const elu = UnaryOps.elu;
 export const exp = UnaryOps.exp;
+export const expm1 = UnaryOps.expm1;
 export const floor = UnaryOps.floor;
 export const leakyRelu = UnaryOps.leakyRelu;
 export const log = UnaryOps.log;
@@ -130,6 +131,7 @@ export const tan = UnaryOps.tan;
 export const tanh = UnaryOps.tanh;
 
 export const add = BinaryOps.add;
+export const atan2 = BinaryOps.atan2;
 export const addStrict = BinaryOps.addStrict;
 export const div = BinaryOps.div;
 export const divStrict = BinaryOps.divStrict;
@@ -143,6 +145,9 @@ export const pow = BinaryOps.pow;
 export const powStrict = BinaryOps.powStrict;
 export const sub = BinaryOps.sub;
 export const subStrict = BinaryOps.subStrict;
+
+export const squaredDifference = BinaryOps.squaredDifference;
+export const squaredDifferenceStrict = BinaryOps.squaredDifferenceStrict;
 
 export const norm = NormOps.norm;
 
