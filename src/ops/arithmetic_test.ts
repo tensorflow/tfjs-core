@@ -169,7 +169,7 @@ describeWithFlags('div', ALL_ENVS, () => {
     const b = dl.tensor1d([1, 2, 3], 'int32');
     const dy = dl.tensor1d([1, 19, 20]);
 
-    const grads = dl.grads((a, b) => dl.div(a.cast('int32'), b));
+    const grads = dl.grads((a, b) => dl.div(a.toInt(), b));
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);
