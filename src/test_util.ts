@@ -138,24 +138,47 @@ export function expectValuesInRange(
 
 export function describeWithFlags(
     name: string, featuresList: Features[], tests: () => void) {
+  if (customFeatures != null) {
+    featuresList = customFeatures;
+  }
   featuresList.forEach(features => {
     const testName = name + ' ' + JSON.stringify(features);
     executeTests(testName, tests, features);
   });
 }
 
+let customBeforeAll: () => void = null;
+let customAfterAll: () => void = null;
+let customFeatures: Features[] = null;
+
+export function setBeforeAll(f: () => void) {
+  customBeforeAll = f;
+}
+
+export function setAfterAll(f: () => void) {
+  customAfterAll = f;
+}
+
+export function setEnvironmentFeatures(features: Features[]) {
+  customFeatures = features;
+}
+
 function executeTests(
     testName: string, tests: () => void, features?: Features) {
   describe(testName, () => {
     beforeAll(() => {
-      ENV.setFeatures(features || {});
-      ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
-      ENV.addCustomBackend('cpu', () => new MathBackendCPU());
+      if (customBeforeAll != null) {
+        customBeforeAll();
+      } else {
+        ENV.setFeatures(features || {});
+        ENV.registerBackend('test-webgl', () => new MathBackendWebGL());
+        ENV.registerBackend('test-cpu', () => new MathBackendCPU());
+      }
     });
 
     beforeEach(() => {
       if (features && features.BACKEND != null) {
-        Environment.setBackend(features.BACKEND);
+        Environment.setBackend('test-' + features.BACKEND);
       }
       ENV.engine.startScope();
     });
@@ -165,7 +188,13 @@ function executeTests(
     });
 
     afterAll(() => {
-      ENV.reset();
+      if (customAfterAll != null) {
+        customAfterAll();
+      } else {
+        ENV.removeBackend('test-webgl');
+        ENV.removeBackend('test-cpu');
+        ENV.reset();
+      }
     });
 
     tests();

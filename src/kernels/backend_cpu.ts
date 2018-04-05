@@ -1558,4 +1558,4 @@ export class MathBackendCPU implements KernelBackend {
   dispose() {}
 }
 
-ENV.registerBackend('cpu', () => new MathBackendCPU());
+ENV.registerBackend('cpu', () => new MathBackendCPU(), 1 /* priority */);

@@ -234,32 +234,37 @@ describe('Backend', () => {
     ENV.setFeatures(features);
 
     let backend: KernelBackend;
-    ENV.addCustomBackend('webgl', () => {
+    ENV.registerBackend('custom-webgl', () => {
       backend = new MathBackendWebGL();
       return backend;
     });
 
-    expect(ENV.findBackend('webgl')).toBe(backend);
+    expect(ENV.findBackend('custom-webgl')).toBe(backend);
+    ENV.removeBackend('custom-webgl');
   });
 
   it('double registration fails', () => {
     ENV.setFeatures({'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2});
-    ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
-    expect(() => ENV.addCustomBackend('webgl', () => new MathBackendWebGL()))
+    ENV.registerBackend('custom-webgl', () => new MathBackendWebGL());
+    expect(
+        () => ENV.registerBackend('custom-webgl', () => new MathBackendWebGL()))
         .toThrowError();
+    ENV.removeBackend('custom-webgl');
   });
 
   it('webgl not supported, falls back to cpu', () => {
     ENV.setFeatures({'WEBGL_VERSION': 0});
-    ENV.addCustomBackend('cpu', () => new MathBackendCPU());
-    const success = ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
+    ENV.registerBackend('custom-cpu', () => new MathBackendCPU(), 3);
+    const success =
+        ENV.registerBackend('custom-webgl', () => new MathBackendWebGL(), 4);
     expect(success).toBe(false);
-    expect(ENV.findBackend('webgl') == null).toBe(true);
-    expect(ENV.getBestBackendType()).toBe('cpu');
+    expect(ENV.findBackend('custom-webgl') == null).toBe(true);
+    expect(ENV.getBestBackendType()).toBe('custom-cpu');
+    ENV.removeBackend('custom-cpu');
   });
 
   it('default custom background null', () => {
-    expect(ENV.findBackend('custom')).not.toBeDefined();
+    expect(ENV.findBackend('custom')).toBeNull();
   });
 
   it('allow custom backend', () => {
@@ -267,5 +272,6 @@ describe('Backend', () => {
     const success = ENV.registerBackend('custom', () => backend);
     expect(success).toBeTruthy();
     expect(ENV.findBackend('custom')).toEqual(backend);
+    ENV.removeBackend('custom');
   });
 });
