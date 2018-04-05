@@ -88,8 +88,8 @@ function getInputSamplingSnippet(
   res += getSamplerFromInInfo(inInfo);
 
   // If input and output have matching logical shapes, add
-  // getTexNameAtOutCoord() method that samples the input textureSampler using the
-  // output coordinates.
+  // getTexNameAtOutCoord() method that samples the input
+  // textureSampler using the output coordinates.
   if (broadcast ||
       util.arraysEqual(
           inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
