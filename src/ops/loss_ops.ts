@@ -60,7 +60,7 @@ export class LossOps {
       if (weights == null) {
         return weightedLoss.sum().div(ops.scalar(losses.size));
       } else {
-        const numNonZeros = weights.notEqual(ops.scalar(0)).sum();
+        const numNonZeros = weights.notEqual(ops.scalar(0)).sum().toFloat();
         return weightedLoss.sum().div(numNonZeros);
       }
     }
