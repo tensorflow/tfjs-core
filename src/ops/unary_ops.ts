@@ -208,9 +208,9 @@ export class UnaryOps {
    * Computes reciprocal of x element-wise: `1 / x`
    *
    * ```js
-   * const x = dl.tensor1d([0, 1, 2]);
+   * const x = tf.tensor1d([0, 1, 2]);
    *
-   * x.reciprocal().print();  // or dl.reciprocal(x)
+   * x.reciprocal().print();  // or tf.reciprocal(x)
    * ```
    * @param x The input tensor.
    */
