@@ -977,10 +977,6 @@ describe('tensor.toString', () => {
     const str = dl.scalar(5).toString();
     expect(str).toEqual(
         'Tensor\n' +
-        '  dtype: float32\n' +
-        '  rank: 0\n' +
-        '  shape: []\n' +
-        '  values:\n' +
         '    5');
   });
 
