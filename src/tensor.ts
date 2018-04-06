@@ -524,6 +524,12 @@ export class Tensor<R extends Rank = Rank> {
     return ops.argMax(this, axis);
   }
 
+  // Transformations
+  cast<T extends this>(dtype: DataType): T {
+    this.throwIfDisposed();
+    return ops.cast(this as T, dtype);
+  }
+
   // Binary ops.
 
   add<T extends Tensor>(x: Tensor): T {
@@ -704,6 +710,10 @@ export class Tensor<R extends Rank = Rank> {
   sqrt<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sqrt(this);
+  }
+  rsqrt<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.rsqrt(this);
   }
   square<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
