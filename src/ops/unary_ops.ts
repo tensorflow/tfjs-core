@@ -190,9 +190,9 @@ export class UnaryOps {
    * `y = 1 / sqrt(x)`
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 4, -1]);
+   * const x = tf.tensor1d([1, 2, 4, -1]);
    *
-   * x.rsqrt().print();  // or dl.rsqrt(x)
+   * x.rsqrt().print();  // or tf.rsqrt(x)
    * ```
    * @param x The input tensor.
    */
