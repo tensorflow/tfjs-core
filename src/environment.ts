@@ -357,10 +357,10 @@ export class Environment {
    * return an instance of the backend.
    * @param priority The priority of the backend (higher = more important).
    *     In case multiple backends are registered, `getBestBackendType` uses
-   *     priority to find the best backend. Defaults to 3.
+   *     priority to find the best backend. Defaults to 1.
    * @return False if the creation/registration failed. True otherwise.
    */
-  registerBackend(name: string, factory: () => KernelBackend, priority = 3):
+  registerBackend(name: string, factory: () => KernelBackend, priority = 1):
       boolean {
     if (name in this.registry) {
       throw new Error(`${name} backend was already registered`);

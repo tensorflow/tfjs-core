@@ -172,41 +172,42 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   });
 });
 
-describe('GPGPUContext setOutputPackedMatrixTexture', () => {
-  let gpgpu: GPGPUContext;
-  let texture: WebGLTexture;
+describeWithFlags(
+    'GPGPUContext setOutputPackedMatrixTexture', WEBGL_ENVS, () => {
+      let gpgpu: GPGPUContext;
+      let texture: WebGLTexture;
 
-  beforeEach(() => {
-    gpgpu = new GPGPUContext();
-    gpgpu.enableAutomaticDebugValidation(true);
-  });
+      beforeEach(() => {
+        gpgpu = new GPGPUContext();
+        gpgpu.enableAutomaticDebugValidation(true);
+      });
 
-  afterEach(() => {
-    if (texture != null) {
-      gpgpu.deleteMatrixTexture(texture);
-    }
-    gpgpu.dispose();
-  });
+      afterEach(() => {
+        if (texture != null) {
+          gpgpu.deleteMatrixTexture(texture);
+        }
+        gpgpu.dispose();
+      });
 
-  it('sets the output texture property to the output texture', () => {
-    texture = gpgpu.createPackedMatrixTexture(1, 1);
-    gpgpu.setOutputPackedMatrixTexture(texture, 1, 1);
-    expect(gpgpu.outputTexture).toBe(texture);
-  });
+      it('sets the output texture property to the output texture', () => {
+        texture = gpgpu.createPackedMatrixTexture(1, 1);
+        gpgpu.setOutputPackedMatrixTexture(texture, 1, 1);
+        expect(gpgpu.outputTexture).toBe(texture);
+      });
 
-  it('sets the gl viewport to the output packed texture dimensions', () => {
-    const columns = 456;
-    const rows = 123;
-    texture = gpgpu.createPackedMatrixTexture(rows, columns);
-    gpgpu.setOutputPackedMatrixTexture(texture, rows, columns);
-    const [width, height] =
-        tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
-    const expected = new Int32Array([0, 0, width, height]);
-    expect(gpgpu.gl.getParameter(gpgpu.gl.VIEWPORT)).toEqual(expected);
-  });
-});
+      it('sets the gl viewport to the output packed texture dimensions', () => {
+        const columns = 456;
+        const rows = 123;
+        texture = gpgpu.createPackedMatrixTexture(rows, columns);
+        gpgpu.setOutputPackedMatrixTexture(texture, rows, columns);
+        const [width, height] =
+            tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
+        const expected = new Int32Array([0, 0, width, height]);
+        expect(gpgpu.gl.getParameter(gpgpu.gl.VIEWPORT)).toEqual(expected);
+      });
+    });
 
-describe('GPGPUContext setOutputMatrixWriteRegion', () => {
+describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
   let program: WebGLProgram;
   let output: WebGLTexture;
@@ -280,7 +281,7 @@ describe('GPGPUContext setOutputMatrixWriteRegion', () => {
   });
 });
 
-describe('GPGPUContext', () => {
+describeWithFlags('GPGPUContext', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
 
   beforeEach(() => {
