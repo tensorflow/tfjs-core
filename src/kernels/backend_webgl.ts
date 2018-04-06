@@ -890,7 +890,6 @@ export class MathBackendWebGL implements KernelBackend {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
-    console.log(binary.source);
     const shouldTimeProgram = this.activeTimers != null;
     let query: WebGLQuery|CPUTimerQuery;
     if (shouldTimeProgram) {
@@ -910,9 +909,6 @@ export class MathBackendWebGL implements KernelBackend {
       GPGPUBinary {
     if (!(key in this.binaryCache)) {
       this.binaryCache[key] = getBinary();
-      console.log('Not reusing cache');
-    } else {
-      console.log('!!!!!!!!!!!!!!!!!! Reusing cache!!');
     }
     return this.binaryCache[key];
   }

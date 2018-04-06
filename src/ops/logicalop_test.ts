@@ -382,16 +382,14 @@ describeWithFlags('logicalXor', ALL_ENVS, () => {
 });
 
 describeWithFlags('where', ALL_ENVS, () => {
-  // tslint:disable-next-line:ban
-  fit('Scalars.', () => {
+  it('Scalars.', () => {
     const a = dl.scalar(10);
     const b = dl.scalar(20);
     const c = dl.scalar(1, 'bool');
 
     expectArraysClose(dl.where(c, a, b), [10]);
   });
-  // tslint:disable-next-line:ban
-  fit('Tensor1D', () => {
+  it('Tensor1D', () => {
     const c = dl.tensor1d([1, 0, 1, 0], 'bool');
     const a = dl.tensor1d([10, 10, 10, 10]);
     const b = dl.tensor1d([20, 20, 20, 20]);

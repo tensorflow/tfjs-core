@@ -53,10 +53,9 @@ export class WhereProgram implements GPGPUProgram {
 
     this.userCode = `
       void main() {
-        ${dtype} resRC = int(resultUV.y * 4.0);
+        ${dtype} resRC = getOutputCoords();
         float cVal = getC(${cCoords});
-        if (cVal >= -0.1) { setOutput(float(resRC)); }
-        else if (cVal >= 1.0) {
+        if (cVal >= 1.0) {
           setOutput(getA(${abCoords}));
         } else {
           setOutput(getB(${abCoords}));

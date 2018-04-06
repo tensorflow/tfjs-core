@@ -195,7 +195,7 @@ export class Environment {
   private globalEngine: Engine;
   private registry:
       {[id: string]: {backend: KernelBackend, priority: number}} = {};
-  private currentBackendType: string;
+  private currentBackend: string;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -234,7 +234,7 @@ export class Environment {
   @doc({heading: 'Environment'})
   static getBackend(): string {
     ENV.initDefaultBackend();
-    return ENV.currentBackendType;
+    return ENV.currentBackend;
   }
 
   /**
@@ -332,16 +332,13 @@ export class Environment {
     }
   }
 
-  private initBackend(backend?: string|KernelBackend, safeMode = false) {
-    let customBackend = false;
-    if (typeof backend === 'string') {
-      this.currentBackendType = backend;
-      backend = ENV.findBackend(backend);
-    } else {
-      customBackend = true;
-      this.currentBackendType = 'custom';
+  private initBackend(backendType?: string, safeMode = false) {
+    this.currentBackend = backendType;
+    if (this.globalEngine != null) {
+      this.globalEngine.dispose();
     }
-    this.globalEngine = new Engine(backend, customBackend, safeMode);
+    const backend = ENV.findBackend(backendType);
+    this.globalEngine = new Engine(backend, safeMode);
   }
 
   findBackend(name: string): KernelBackend {

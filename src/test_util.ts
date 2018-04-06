@@ -22,19 +22,14 @@ import {Tensor} from './tensor';
 import {DataType, TypedArray} from './types';
 import * as util from './util';
 
-export const WEBGL_ENVS: Features[] = [
-  {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  // TODO(nsthorat,smilkov): Enable when byte-backed textures are fixed.
-  // {
-  // 'BACKEND': 'webgl',
-  // 'WEBGL_FLOAT_TEXTURE_ENABLED': false,
-  // 'WEBGL_VERSION': 1
-  // }
-];
-
-export const CPU_ENVS: Features[] = [{'BACKEND': 'cpu'}];
-export const ALL_ENVS = WEBGL_ENVS.concat(CPU_ENVS);
+// Constraints for testing.
+export const WEBGL_ENVS: Features = {
+  'BACKEND': 'test-webgl'
+};
+export const CPU_ENVS: Features = {
+  'BACKEND': 'test-cpu'
+};
+export const ALL_ENVS = {};
 
 /** Accuracy for tests. */
 export const TEST_EPSILON = 1e-3;
@@ -137,48 +132,70 @@ export function expectValuesInRange(
 }
 
 export function describeWithFlags(
-    name: string, featuresList: Features[], tests: () => void) {
-  if (customFeatures != null) {
-    featuresList = customFeatures;
-  }
-  featuresList.forEach(features => {
+    name: string, constraints: Features, tests: () => void) {
+  const envFeatures = TEST_ENV_FEATURES.filter(f => {
+    return Object.keys(constraints).every(key => {
+      // tslint:disable-next-line:no-any
+      return (constraints as any)[key] === (f as any)[key];
+    });
+  });
+  envFeatures.forEach(features => {
     const testName = name + ' ' + JSON.stringify(features);
     executeTests(testName, tests, features);
   });
 }
 
-let customBeforeAll: () => void = null;
-let customAfterAll: () => void = null;
-let customFeatures: Features[] = null;
+let CUSTOM_BEFORE_ALL = () => {
+  ENV.registerBackend('test-webgl', () => new MathBackendWebGL());
+  ENV.registerBackend('test-cpu', () => new MathBackendCPU());
+};
+let CUSTOM_AFTER_ALL = () => {
+  ENV.removeBackend('test-webgl');
+  ENV.removeBackend('test-cpu');
+  ENV.reset();
+};
+let TEST_ENV_FEATURES: Features[] = [
+  {
+    'BACKEND': 'test-webgl',
+    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+    'WEBGL_VERSION': 1
+  },
+  {
+    'BACKEND': 'test-webgl',
+    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+    'WEBGL_VERSION': 2
+  },
+  {'BACKEND': 'test-cpu'}
+  // TODO(nsthorat,smilkov): Enable when byte-backed textures are fixed.
+  // {
+  // 'BACKEND': 'webgl',
+  // 'WEBGL_FLOAT_TEXTURE_ENABLED': false,
+  // 'WEBGL_VERSION': 1
+  // }
+];
 
 export function setBeforeAll(f: () => void) {
-  customBeforeAll = f;
+  CUSTOM_BEFORE_ALL = f;
 }
 
 export function setAfterAll(f: () => void) {
-  customAfterAll = f;
+  CUSTOM_AFTER_ALL = f;
 }
 
-export function setEnvironmentFeatures(features: Features[]) {
-  customFeatures = features;
+export function setTestEnvFeatures(features: Features[]) {
+  TEST_ENV_FEATURES = features;
 }
 
-function executeTests(
-    testName: string, tests: () => void, features?: Features) {
+function executeTests(testName: string, tests: () => void, features: Features) {
   describe(testName, () => {
     beforeAll(() => {
-      if (customBeforeAll != null) {
-        customBeforeAll();
-      } else {
-        ENV.setFeatures(features || {});
-        ENV.registerBackend('test-webgl', () => new MathBackendWebGL());
-        ENV.registerBackend('test-cpu', () => new MathBackendCPU());
-      }
+      ENV.setFeatures(features);
+      CUSTOM_BEFORE_ALL();
     });
 
     beforeEach(() => {
       if (features && features.BACKEND != null) {
-        Environment.setBackend('test-' + features.BACKEND);
+        Environment.setBackend(features.BACKEND);
       }
       ENV.engine.startScope();
     });
@@ -188,13 +205,7 @@ function executeTests(
     });
 
     afterAll(() => {
-      if (customAfterAll != null) {
-        customAfterAll();
-      } else {
-        ENV.removeBackend('test-webgl');
-        ENV.removeBackend('test-cpu');
-        ENV.reset();
-      }
+      CUSTOM_AFTER_ALL();
     });
 
     tests();

@@ -64,11 +64,7 @@ describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
   });
 });
 
-const FLOAT_ENVS = [
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-];
-describeWithFlags('GPGPUContext color texture with float', FLOAT_ENVS, () => {
+describeWithFlags('GPGPUContext color texture with float', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
   let texture: WebGLTexture;
 
@@ -90,31 +86,32 @@ describeWithFlags('GPGPUContext color texture with float', FLOAT_ENVS, () => {
   });
 });
 
-const BYTE_ENV = [{'WEBGL_FLOAT_TEXTURE_ENABLED': false, 'WEBGL_VERSION': 1}];
-describeWithFlags('GPGPUContext color texture with byte', BYTE_ENV, () => {
-  let gpgpu: GPGPUContext;
-  let texture: WebGLTexture;
+describeWithFlags(
+    'GPGPUContext color texture with byte',
+    {'WEBGL_FLOAT_TEXTURE_ENABLED': false}, () => {
+      let gpgpu: GPGPUContext;
+      let texture: WebGLTexture;
 
-  afterEach(() => {
-    gpgpu.deleteMatrixTexture(texture);
-    gpgpu.dispose();
-  });
+      afterEach(() => {
+        gpgpu.deleteMatrixTexture(texture);
+        gpgpu.dispose();
+      });
 
-  it('basic', () => {
-    gpgpu = new GPGPUContext();
-    gpgpu.enableAutomaticDebugValidation(true);
-    texture = gpgpu.createMatrixTexture(1, 1);
+      it('basic', () => {
+        gpgpu = new GPGPUContext();
+        gpgpu.enableAutomaticDebugValidation(true);
+        texture = gpgpu.createMatrixTexture(1, 1);
 
-    gpgpu.setOutputMatrixTexture(texture, 1, 1);
-    const uintArray = tex_util.encodeFloatArray(new Float32Array([0.123]));
-    gpgpu.gl.clearColor(
-        uintArray[0] / 255, uintArray[1] / 255, uintArray[2] / 255,
-        uintArray[3] / 255);
-    gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
-    const result = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
-    expectNumbersClose(result[0], 0.123);
-  });
-});
+        gpgpu.setOutputMatrixTexture(texture, 1, 1);
+        const uintArray = tex_util.encodeFloatArray(new Float32Array([0.123]));
+        gpgpu.gl.clearColor(
+            uintArray[0] / 255, uintArray[1] / 255, uintArray[2] / 255,
+            uintArray[3] / 255);
+        gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
+        const result = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+        expectNumbersClose(result[0], 0.123);
+      });
+    });
 
 describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
