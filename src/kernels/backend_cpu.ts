@@ -523,6 +523,17 @@ export class MathBackendCPU implements KernelBackend {
         a, b, a.dtype, (aVal, bVal) => Math.min(aVal, bVal));
   }
 
+  mod(a: Tensor, b: Tensor): Tensor {
+    return this.broadcastedBinaryOp(a, b, a.dtype, (aVal, bVal) => {
+      const rem = aVal % bVal;
+      if ((aVal < 0 && bVal < 0) || (aVal >= 0 && bVal >= 0)) {
+        return rem;
+      } else {
+        return (rem + bVal) % bVal;
+      }
+    });
+  }
+
   max(x: Tensor, axes: number[]): Tensor {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
@@ -624,6 +635,16 @@ export class MathBackendCPU implements KernelBackend {
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
       newValues[i] = Math.sqrt(value);
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
+  rsqrt<T extends Tensor>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      const value = values[i];
+      newValues[i] = 1 / Math.sqrt(value);
     }
     return Tensor.make(x.shape, {values: newValues}) as T;
   }

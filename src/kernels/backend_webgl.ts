@@ -564,6 +564,11 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b]);
   }
 
+  mod(a: Tensor, b: Tensor): Tensor {
+    const program = new BinaryOpProgram(binaryop_gpu.MOD, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]);
+  }
+
   max(x: Tensor, axes: number[]): Tensor {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
@@ -646,6 +651,11 @@ export class MathBackendWebGL implements KernelBackend {
 
   sqrt<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SQRT);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  rsqrt<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.RSQRT);
     return this.compileAndRun(program, [x]) as T;
   }
 
