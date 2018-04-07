@@ -23,6 +23,7 @@ import {ConcatOps} from './concat';
 import {ConvOps} from './conv';
 import {ImageOps} from './image_ops';
 import {LogicalOps} from './logical_ops';
+import {LossOps, Reduction} from './loss_ops';
 import {LRNOps} from './lrn';
 import {LSTMOps} from './lstm';
 import {MatmulOps} from './matmul';
@@ -114,17 +115,20 @@ export const elu = UnaryOps.elu;
 export const exp = UnaryOps.exp;
 export const expm1 = UnaryOps.expm1;
 export const floor = UnaryOps.floor;
+export const sign = UnaryOps.sign;
 export const leakyRelu = UnaryOps.leakyRelu;
 export const log = UnaryOps.log;
 export const log1p = UnaryOps.log1p;
 export const neg = UnaryOps.neg;
 export const prelu = UnaryOps.prelu;
 export const relu = UnaryOps.relu;
+export const reciprocal = UnaryOps.reciprocal;
 export const selu = UnaryOps.selu;
 export const sigmoid = UnaryOps.sigmoid;
 export const sin = UnaryOps.sin;
 export const sinh = UnaryOps.sinh;
 export const sqrt = UnaryOps.sqrt;
+export const rsqrt = UnaryOps.rsqrt;
 export const square = UnaryOps.square;
 export const step = UnaryOps.step;
 export const tan = UnaryOps.tan;
@@ -139,6 +143,8 @@ export const maximum = BinaryOps.maximum;
 export const maximumStrict = BinaryOps.maximumStrict;
 export const minimum = BinaryOps.minimum;
 export const minimumStrict = BinaryOps.minimumStrict;
+export const mod = BinaryOps.mod;
+export const modStrict = BinaryOps.modStrict;
 export const mul = BinaryOps.mul;
 export const mulStrict = BinaryOps.mulStrict;
 export const pow = BinaryOps.pow;
@@ -201,8 +207,13 @@ import {Rank} from '../types';
 // tslint:disable-next-line:no-unused-expression
 [Tensor, Rank];
 
+// tslint:disable-next-line:no-unused-expression
+[Reduction];
+
 export const losses = {
-  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
+  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy,
+  absoluteDifference: LossOps.absoluteDifference,
+  computeWeightedLoss: LossOps.computeWeightedLoss
 };
 
 export const image = {
