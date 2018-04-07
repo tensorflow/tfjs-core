@@ -590,6 +590,14 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.maximumStrict(this, x);
   }
+  mod<T extends Tensor>(x: Tensor): T {
+    this.throwIfDisposed();
+    return ops.mod(this, x);
+  }
+  modStrict<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return ops.modStrict(this, x);
+  }
   squaredDifference<T extends Tensor>(x: Tensor): T {
     this.throwIfDisposed();
     return ops.squaredDifference(this, x);
@@ -685,6 +693,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.floor(this);
   }
+  sign<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.sign(this);
+  }
   exp<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.exp(this);
@@ -712,6 +724,10 @@ export class Tensor<R extends Rank = Rank> {
   square<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.square(this);
+  }
+  reciprocal<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.reciprocal(this);
   }
   abs<T extends Tensor>(this: T): T {
     this.throwIfDisposed();

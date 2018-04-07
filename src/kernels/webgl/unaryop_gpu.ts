@@ -93,6 +93,10 @@ export const FLOOR = `
   return floor(x);
 `;
 
+export const SIGN = `
+  return sign(x);
+`;
+
 export const EXP = `
   return exp(x);
 `;
@@ -162,6 +166,10 @@ export const TANH = `
 
 export const SQUARE = `
   return x * x;
+`;
+
+export const RECIPROCAL = CHECK_NAN_SNIPPET + `
+  return 1.0 / x;
 `;
 
 export const LOGICAL_NOT = CHECK_NAN_SNIPPET + `
