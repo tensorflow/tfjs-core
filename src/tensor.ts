@@ -187,7 +187,7 @@ export class Tensor<R extends Rank = Rank> {
           `Constructing tensor of shape (${this.size}) should match the ` +
               `length of values (${values.length})`);
     }
-    this.shape = shape;
+    this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
