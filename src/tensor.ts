@@ -37,12 +37,13 @@ export interface TensorData {
 @doc({heading: 'Tensors', subheading: 'Classes'})
 export class TensorBuffer<R extends Rank> {
   size: number;
+  shape: ShapeMap[R];
+  values: TypedArray;
 
   private strides: number[];
 
   constructor(
-      public shape: ShapeMap[R], public dtype: DataType,
-      public values: TypedArray) {
+      shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
     if (values != null) {
       const n = values.length;
       const size = util.sizeFromShape(shape);
@@ -51,6 +52,7 @@ export class TensorBuffer<R extends Rank> {
           `Length of values '${n}' does not match the size ` +
               `inferred by the shape '${size}'`);
     }
+    this.shape = shape.slice();
     this.values =
         values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
     this.strides = computeStrides(shape);
@@ -187,7 +189,7 @@ export class Tensor<R extends Rank = Rank> {
           `Constructing tensor of shape (${this.size}) should match the ` +
               `length of values (${values.length})`);
     }
-    this.shape = shape;
+    this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
@@ -436,8 +438,8 @@ export class Tensor<R extends Rank = Rank> {
 
   /** Returns a human-readable description of the tensor. Useful for logging. */
   @doc({heading: 'Tensors', subheading: 'Classes'})
-  toString(): string {
-    return tensor_util.tensorToString(this, true /* verbose */);
+  toString(verbose = false): string {
+    return tensor_util.tensorToString(this, verbose);
   }
 
   // Below is chain API that is not exposed to docs to avoid repetition. To
@@ -522,6 +524,12 @@ export class Tensor<R extends Rank = Rank> {
   argMax<T extends Tensor>(axis: number = null): T {
     this.throwIfDisposed();
     return ops.argMax(this, axis);
+  }
+
+  // Transformations
+  cast<T extends this>(dtype: DataType): T {
+    this.throwIfDisposed();
+    return ops.cast(this as T, dtype);
   }
 
   // Binary ops.
@@ -696,6 +704,10 @@ export class Tensor<R extends Rank = Rank> {
   sqrt<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sqrt(this);
+  }
+  rsqrt<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.rsqrt(this);
   }
   square<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
