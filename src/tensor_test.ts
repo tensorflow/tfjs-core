@@ -714,6 +714,51 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysClose(a, [2.4]);
   });
 
+  it('cast bool -> bool', () => {
+    const a = dl.tensor1d([1, 0], 'bool');
+    expect(a.cast('bool').dtype).toEqual('bool');
+  });
+
+  it('cast bool -> int32', () => {
+    const a = dl.tensor1d([1, 0], 'bool');
+    expect(a.cast('int32').dtype).toEqual('int32');
+  });
+
+  it('cast bool -> float32', () => {
+    const a = dl.tensor1d([1, 0], 'bool');
+    expect(a.cast('float32').dtype).toEqual('float32');
+  });
+
+  it('cast int32 -> bool', () => {
+    const a = dl.tensor1d([1, 0], 'int32');
+    expect(a.cast('bool').dtype).toEqual('bool');
+  });
+
+  it('cast int32 -> int32', () => {
+    const a = dl.tensor1d([1, 2], 'int32');
+    expect(a.cast('int32').dtype).toEqual('int32');
+  });
+
+  it('cast int32 -> float32', () => {
+    const a = dl.tensor1d([1, 2], 'int32');
+    expect(a.cast('float32').dtype).toEqual('float32');
+  });
+
+  it('cast float32 -> bool', () => {
+    const a = dl.tensor1d([1.0, 0.0]);
+    expect(a.cast('bool').dtype).toEqual('bool');
+  });
+
+  it('cast float32 -> int32', () => {
+    const a = dl.tensor1d([1.0, 2.0]);
+    expect(a.cast('int32').dtype).toEqual('int32');
+  });
+
+  it('cast float32 -> float32', () => {
+    const a = dl.tensor1d([1.0, 2.0]);
+    expect(a.cast('float32').dtype).toEqual('float32');
+  });
+
   it('scalar bool -> int32', () => {
     const a = dl.scalar(true, 'bool').toInt();
     expect(a.dtype).toBe('int32');
@@ -823,8 +868,9 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 });
 
 describe('tensor.toString', () => {
-  it('scalar', () => {
-    const str = dl.scalar(5).toString();
+  it('scalar verbose', () => {
+    const verbose = true;
+    const str = dl.scalar(5).toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
         '  dtype: float32\n' +
@@ -834,8 +880,9 @@ describe('tensor.toString', () => {
         '    5');
   });
 
-  it('1d tensor', () => {
-    const str = dl.zeros([4]).toString();
+  it('1d tensor verbose', () => {
+    const verbose = true;
+    const str = dl.zeros([4]).toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
         '  dtype: float32\n' +
@@ -845,8 +892,9 @@ describe('tensor.toString', () => {
         '    [0, 0, 0, 0]');
   });
 
-  it('2d tensor', () => {
-    const str = dl.zeros([3, 3]).toString();
+  it('2d tensor verbose', () => {
+    const verbose = true;
+    const str = dl.zeros([3, 3]).toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
         '  dtype: float32\n' +
@@ -858,8 +906,9 @@ describe('tensor.toString', () => {
         '     [0, 0, 0]]');
   });
 
-  it('3d tensor', () => {
-    const str = dl.zeros([3, 3, 2]).toString();
+  it('3d tensor verbose', () => {
+    const verbose = true;
+    const str = dl.zeros([3, 3, 2]).toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
         '  dtype: float32\n' +
@@ -877,8 +926,9 @@ describe('tensor.toString', () => {
         '      [0, 0]]]');
   });
 
-  it('1d long tensor', () => {
-    const str = dl.zeros([100]).toString();
+  it('1d long tensor verbose', () => {
+    const verbose = true;
+    const str = dl.zeros([100]).toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
         '  dtype: float32\n' +
@@ -888,14 +938,90 @@ describe('tensor.toString', () => {
         '    [0, 0, 0, ..., 0, 0, 0]');
   });
 
-  it('2d long tensor', () => {
-    const str = dl.zeros([100, 100]).toString();
+  it('2d long tensor verbose', () => {
+    const verbose = true;
+    const str = dl.zeros([100, 100]).toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
         '  dtype: float32\n' +
         '  rank: 2\n' +
         '  shape: [100,100]\n' +
         '  values:\n' +
+        '    [[0, 0, 0, ..., 0, 0, 0],\n' +
+        '     [0, 0, 0, ..., 0, 0, 0],\n' +
+        '     [0, 0, 0, ..., 0, 0, 0],\n' +
+        '     ...,\n' +
+        '     [0, 0, 0, ..., 0, 0, 0],\n' +
+        '     [0, 0, 0, ..., 0, 0, 0],\n' +
+        '     [0, 0, 0, ..., 0, 0, 0]]');
+  });
+
+  it('2d with padding to align columns verbose', () => {
+    const verbose = true;
+    const str = dl.tensor([
+                    [0.8597712, 3, 0.2740789], [0.6696132, 0.4825962, 2.75],
+                    [1.991, 0.0640865, 0.2983858]
+                  ]).toString(verbose);
+    expect(str).toEqual(
+        'Tensor\n' +
+        '  dtype: float32\n' +
+        '  rank: 2\n' +
+        '  shape: [3,3]\n' +
+        '  values:\n' +
+        '    [[0.8597712, 3        , 0.2740789],\n' +
+        '     [0.6696132, 0.4825962, 2.75     ],\n' +
+        '     [1.9910001, 0.0640865, 0.2983858]]');
+  });
+
+  it('scalar', () => {
+    const str = dl.scalar(5).toString();
+    expect(str).toEqual(
+        'Tensor\n' +
+        '    5');
+  });
+
+  it('1d tensor', () => {
+    const str = dl.zeros([4]).toString();
+    expect(str).toEqual(
+        'Tensor\n' +
+        '    [0, 0, 0, 0]');
+  });
+
+  it('2d tensor', () => {
+    const str = dl.zeros([3, 3]).toString();
+    expect(str).toEqual(
+        'Tensor\n' +
+        '    [[0, 0, 0],\n' +
+        '     [0, 0, 0],\n' +
+        '     [0, 0, 0]]');
+  });
+
+  it('3d tensor', () => {
+    const str = dl.zeros([3, 3, 2]).toString();
+    expect(str).toEqual(
+        'Tensor\n' +
+        '    [[[0, 0],\n' +
+        '      [0, 0],\n' +
+        '      [0, 0]],\n\n' +
+        '     [[0, 0],\n' +
+        '      [0, 0],\n' +
+        '      [0, 0]],\n\n' +
+        '     [[0, 0],\n' +
+        '      [0, 0],\n' +
+        '      [0, 0]]]');
+  });
+
+  it('1d long tensor', () => {
+    const str = dl.zeros([100]).toString();
+    expect(str).toEqual(
+        'Tensor\n' +
+        '    [0, 0, 0, ..., 0, 0, 0]');
+  });
+
+  it('2d long tensor', () => {
+    const str = dl.zeros([100, 100]).toString();
+    expect(str).toEqual(
+        'Tensor\n' +
         '    [[0, 0, 0, ..., 0, 0, 0],\n' +
         '     [0, 0, 0, ..., 0, 0, 0],\n' +
         '     [0, 0, 0, ..., 0, 0, 0],\n' +
@@ -912,10 +1038,6 @@ describe('tensor.toString', () => {
                   ]).toString();
     expect(str).toEqual(
         'Tensor\n' +
-        '  dtype: float32\n' +
-        '  rank: 2\n' +
-        '  shape: [3,3]\n' +
-        '  values:\n' +
         '    [[0.8597712, 3        , 0.2740789],\n' +
         '     [0.6696132, 0.4825962, 2.75     ],\n' +
         '     [1.9910001, 0.0640865, 0.2983858]]');
