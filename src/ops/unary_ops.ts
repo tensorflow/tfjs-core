@@ -107,7 +107,7 @@ export class UnaryOps {
 
   /**
    * Computes round of input `Tensor` element-wise: `round(x)`.
-   * It implements banker's rounding as tf.round does.
+   * It implements banker's rounding.
    *
    * ```js
    * const x = dl.tensor1d([.6, 1.1, -3.3]);
