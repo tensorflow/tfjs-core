@@ -42,8 +42,7 @@ export class TensorBuffer<R extends Rank> {
 
   private strides: number[];
 
-  constructor(
-      shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
+  constructor(shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
     if (values != null) {
       const n = values.length;
       const size = util.sizeFromShape(shape);
@@ -760,6 +759,10 @@ export class Tensor<R extends Rank = Rank> {
   sigmoid<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.sigmoid(this);
+  }
+  log_sigmoid<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.log_sigmoid(this);
   }
   sin<T extends Tensor>(this: T): T {
     this.throwIfDisposed();

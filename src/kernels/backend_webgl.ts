@@ -731,6 +731,11 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  log_sigmoid<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.LOG_SIGMOID);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   sin<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SIN);
     return this.compileAndRun(program, [x]) as T;

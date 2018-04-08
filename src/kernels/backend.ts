@@ -137,6 +137,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   sigmoid<T extends Tensor>(x: T): T;
 
+  log_sigmoid<T extends Tensor>(x: T): T;
+
   sin<T extends Tensor>(x: T): T;
   cos<T extends Tensor>(x: T): T;
   tan<T extends Tensor>(x: T): T;

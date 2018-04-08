@@ -1606,6 +1606,15 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor();
   }
   dispose() {}
+
+  log_sigmoid<T extends Tensor>(x: T): T {
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
+    for (let i = 0; i < values.length; ++i) {
+      resultValues[i] = Math.log(1 / (1 + Math.exp(-values[i])));
+    }
+    return Tensor.make(x.shape, {values: resultValues}) as T;
+  }
 }
 
 ENV.registerBackend('cpu', () => new MathBackendCPU());

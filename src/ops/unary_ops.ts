@@ -459,6 +459,26 @@ export class UnaryOps {
   }
 
   /**
+   * Computes log sigmoid of the input `Tensor` element-wise:
+   * `log_sigmoid(x)`
+   *
+   * ```js
+   * const x = tf.tensor1d([0, 1, -1, .7]);
+   *
+   * x.log_sigmoid().print();  // or tf.log_sigmoid(x)
+   * ```
+   * @param x The input tensor.
+   */
+  @doc({heading: 'Operations', subheading: 'Basic math'})
+  @operation
+  static log_sigmoid<T extends Tensor>(x: T): T {
+    const grad = (dy: T) => {
+      return {x: () => dy.mulStrict(x.neg().sigmoid())};
+    };
+    return ENV.engine.runKernel(backend => backend.log_sigmoid(x), {x}, grad);
+  }
+
+  /**
    * Computes sin of the input Tensor element-wise: `sin(x)`
    *
    * ```js

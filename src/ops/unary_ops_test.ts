@@ -296,6 +296,94 @@ describeWithFlags('sigmoid', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('log_sigmoid', ALL_ENVS, () => {
+  it('basic', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = dl.tensor1d(values);
+
+    const result = dl.log_sigmoid(a);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.log(1 / (1 + Math.exp(-values[i])));
+    }
+    expectArraysClose(result, expected);
+  });
+
+  it('scalar', () => {
+    const a = dl.scalar(-2);
+
+    const result = dl.log_sigmoid(a);
+
+    const expected = [Math.log(1 / (1 + Math.exp(2)))];
+    expectArraysClose(result, expected);
+  });
+
+  it('tensor2D', () => {
+    const values = [1, 2, -3, 5];
+    const a = dl.tensor2d(values, [2, 2]);
+
+    const result = dl.log_sigmoid(a);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.log(1 / (1 + Math.exp(-values[i])));
+    }
+    expectArraysClose(result, expected);
+  });
+
+  it('propagates NaNs', () => {
+    const a = dl.tensor1d([3, NaN]);
+    const res = dl.log_sigmoid(a);
+    expectArraysClose(res, [Math.log(1 / (1 + Math.exp(-3))), NaN]);
+  });
+
+  it('gradients: Scalar', () => {
+    const a = dl.scalar(3);
+    const dy = dl.scalar(4);
+
+    const da = dl.grad(a => dl.log_sigmoid(a))(a, dy);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      const y = 1 / (1 + Math.exp(a.get(i)));
+      expected[i] = dy.get(i) * y;
+    }
+
+    expectArraysClose(da, expected);
+  });
+
+  it('gradients: Tensor1D', () => {
+    const a = dl.tensor1d([1, 2, -3, 5]);
+    const dy = dl.tensor1d([1, 2, 3, 4]);
+
+    const da = dl.grad(a => dl.log_sigmoid(a))(a, dy);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      const y = 1 / (1 + Math.exp(a.get(i)));
+      expected[i] = dy.get(i) * y;
+    }
+
+    expectArraysClose(da, expected);
+  });
+
+  it('gradients: Tensor2D', () => {
+    const a = dl.tensor2d([1, 2, -3, 5], [2, 2]);
+    const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+
+    const da = dl.grad(a => dl.log_sigmoid(a))(a, dy);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      const y = 1 / (1 + Math.exp(a.get(i)));
+      expected[i] = dy.get(i) * y;
+    }
+
+    expectArraysClose(da, expected);
+  });
+});
+
 describeWithFlags('sqrt', ALL_ENVS, () => {
   it('sqrt', () => {
     const a = dl.tensor1d([2, 4]);

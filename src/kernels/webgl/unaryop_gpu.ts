@@ -125,6 +125,10 @@ export const SIGMOID = `
   return 1.0 / (1.0 + exp(-1.0 * x));
 `;
 
+export const LOG_SIGMOID = `
+  return log(1.0 / (1.0 + exp(-1.0 * x)));
+`;
+
 export const SIN = CHECK_NAN_SNIPPET + `
   return sin(x);
 `;

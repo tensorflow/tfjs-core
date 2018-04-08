@@ -119,6 +119,7 @@ export const sign = UnaryOps.sign;
 export const leakyRelu = UnaryOps.leakyRelu;
 export const log = UnaryOps.log;
 export const log1p = UnaryOps.log1p;
+export const log_sigmoid = UnaryOps.log_sigmoid;
 export const neg = UnaryOps.neg;
 export const prelu = UnaryOps.prelu;
 export const relu = UnaryOps.relu;
