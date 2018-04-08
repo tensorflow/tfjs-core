@@ -48,9 +48,7 @@ export class RMSPropOptimizer extends Optimizer {
     this.centered = centered;
   }
 
-  // The centered version additionally maintains a moving (discounted) average
-  // of the gradients, and uses that average to estimate the variance.
-  private applyGradientsWithCentered(variableGradients: NamedVariableMap) {
+  applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
       const value = ENV.engine.registeredVariables[variableName];
       if (this.accumulatedMeanSquares[variableName] == null) {
@@ -60,7 +58,7 @@ export class RMSPropOptimizer extends Optimizer {
               zerosLike(value).variable(trainable);
         });
       }
-      if (this.accumulatedMeanGrads[variableName] == null) {
+      if (this.accumulatedMeanGrads[variableName] == null && this.centered) {
         const trainable = false;
         tidy(() => {
           this.accumulatedMeanGrads[variableName] =
@@ -85,75 +83,46 @@ export class RMSPropOptimizer extends Optimizer {
             this.decay.mul(accumulatedMeanSquare)
                 .add(this.oneMinusDecay.mul(gradient.square()));
 
-        const newAccumulatedMeanGrad =
-            this.decay.mul(accumulatedMeanGrad)
-                .add(this.oneMinusDecay.mul(gradient));
+        if (this.centered) {
+          // Centered gradient
+          const newAccumulatedMeanGrad =
+              this.decay.mul(accumulatedMeanGrad)
+                  .add(this.oneMinusDecay.mul(gradient));
 
-        const newAccumulatedMoments =
-            this.momentum.mul(accumulatedMoments)
-                .add(this.c.mul(gradient).div(
-                    newAccumulatedMeanSquare.sub(
-                      newAccumulatedMeanGrad.square().add(
-                        this.epsilon)).sqrt()));
+          const newAccumulatedMoments =
+              this.momentum.mul(accumulatedMoments)
+                  .add(this.c.mul(gradient).div(
+                      newAccumulatedMeanSquare.sub(
+                        newAccumulatedMeanGrad.square().add(
+                          this.epsilon)).sqrt()));
 
-        this.accumulatedMeanSquares[variableName].assign(
-            newAccumulatedMeanSquare);
-        this.accumulatedMeanGrads[variableName].assign(newAccumulatedMeanGrad);
-        this.accumulatedMoments[variableName].assign(newAccumulatedMoments);
+          this.accumulatedMeanSquares[variableName].assign(
+              newAccumulatedMeanSquare);
+          this.accumulatedMeanGrads[variableName].assign(
+              newAccumulatedMeanGrad);
+          this.accumulatedMoments[variableName].assign(newAccumulatedMoments);
 
-        const newValue = value.sub(newAccumulatedMoments);
-        value.assign(newValue);
+          const newValue = value.sub(newAccumulatedMoments);
+          value.assign(newValue);
+        } else {
+          // Plain gradient
+          const newAccumulatedMeanSquare =
+              this.decay.mul(accumulatedMeanSquare)
+                  .add(this.oneMinusDecay.mul(gradient.square()));
+
+          const newAccumulatedMoments =
+              this.momentum.mul(accumulatedMoments)
+                  .add(this.c.mul(gradient).div(
+                      newAccumulatedMeanSquare.add(this.epsilon).sqrt()));
+
+          this.accumulatedMeanSquares[variableName].assign(
+              newAccumulatedMeanSquare);
+          this.accumulatedMoments[variableName].assign(newAccumulatedMoments);
+
+          const newValue = value.sub(newAccumulatedMoments);
+          value.assign(newValue);
+        }
       });
-    }
-  }
-
-  private applyGradientsWithPlain(variableGradients: NamedVariableMap) {
-    for (const variableName in variableGradients) {
-      const value = ENV.engine.registeredVariables[variableName];
-      if (this.accumulatedMeanSquares[variableName] == null) {
-        const trainable = false;
-        tidy(() => {
-          this.accumulatedMeanSquares[variableName] =
-              zerosLike(value).variable(trainable);
-        });
-      }
-      if (this.accumulatedMoments[variableName] == null) {
-        const trainable = false;
-        tidy(() => {
-          this.accumulatedMoments[variableName] =
-              zerosLike(value).variable(trainable);
-        });
-      }
-
-      const accumulatedMeanSquare = this.accumulatedMeanSquares[variableName];
-      const accumulatedMoments = this.accumulatedMoments[variableName];
-      const gradient = variableGradients[variableName];
-
-      tidy(() => {
-        const newAccumulatedMeanSquare =
-            this.decay.mul(accumulatedMeanSquare)
-                .add(this.oneMinusDecay.mul(gradient.square()));
-
-        const newAccumulatedMoments =
-            this.momentum.mul(accumulatedMoments)
-                .add(this.c.mul(gradient).div(
-                    newAccumulatedMeanSquare.add(this.epsilon).sqrt()));
-
-        this.accumulatedMeanSquares[variableName].assign(
-            newAccumulatedMeanSquare);
-        this.accumulatedMoments[variableName].assign(newAccumulatedMoments);
-
-        const newValue = value.sub(newAccumulatedMoments);
-        value.assign(newValue);
-      });
-    }
-  }
-
-  applyGradients(variableGradients: NamedVariableMap) {
-    if (this.centered) {
-      this.applyGradientsWithCentered(variableGradients);
-    } else {
-      this.applyGradientsWithPlain(variableGradients);
     }
   }
 
@@ -167,7 +136,7 @@ export class RMSPropOptimizer extends Optimizer {
       Object.keys(this.accumulatedMeanSquares)
           .forEach(name => this.accumulatedMeanSquares[name].dispose());
     }
-    if (this.accumulatedMeanGrads != null) {
+    if (this.accumulatedMeanGrads != null && this.centered) {
       Object.keys(this.accumulatedMeanGrads)
           .forEach(name => this.accumulatedMeanGrads[name].dispose());
     }
