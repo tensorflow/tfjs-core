@@ -1720,6 +1720,7 @@ describeWithFlags('clip', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [0]);
   });
+});
 
 describeWithFlags('round', ALL_ENVS, () => {
   it('basic', () => {
@@ -1771,5 +1772,4 @@ describeWithFlags('round', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [0, 0, 0, 0]);
   });
-});  
 });
