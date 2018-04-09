@@ -670,6 +670,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.logicalOr(this, x);
   }
+  logicalNot<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.logicalNot(this);
+  }
   logicalXor(x: Tensor): Tensor {
     this.throwIfDisposed();
     return ops.logicalXor(this, x);
