@@ -539,7 +539,7 @@ export class ConvOps {
 
     if (dataFormat === 'NCHW') {
       throw new Error(
-          'separableConv2d currently does notsupport dataFormat NCHW; only ' +
+          'separableConv2d currently does not support dataFormat NCHW; only ' +
           'NHWC is supported');
     }
 
@@ -574,8 +574,9 @@ export class ConvOps {
 
     const depthwise = ConvOps.depthwiseConv2d(
         input4D, depthwiseFilter, strides, pad, dataFormat, dilation);
-    const res =
-        ConvOps.conv2d(depthwise, pointwiseFilter, 1, 'valid', dataFormat);
+    const pointwiseStride = 1;
+    const res = ConvOps.conv2d(
+        depthwise, pointwiseFilter, pointwiseStride, 'valid', dataFormat);
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
