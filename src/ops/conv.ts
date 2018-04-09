@@ -500,7 +500,7 @@ export class ConvOps {
    *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`. This is
    *     the filter used in the first step.
    * @param pointwiseFilter The pointwise filter tensor, rank 4, of shape
-   *     `[filterHeight, filterWidth, inChannels, channelMultiplier]`. This is
+   *     `[1, 1, inChannels * channelMultiplier, outChannels]`. This is
    *     the filter used in the second step.
    * @param strides The strides of the convolution: `[strideHeight,
    * strideWidth]`. If strides is a single number, then `strideHeight ==
