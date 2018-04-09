@@ -470,6 +470,66 @@ describeWithFlags('square', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('reciprocal', ALL_ENVS, () => {
+  it('1D array', () => {
+    const a = dl.tensor1d([2, 3, 0, NaN]);
+    const r = dl.reciprocal(a);
+    expectArraysClose(r, [1 / 2, 1 / 3, Infinity, NaN]);
+  });
+
+  it('2D array', () => {
+    const a = dl.tensor2d([1, Infinity, 0, NaN], [2, 2]);
+    const r = dl.reciprocal(a);
+    expect(r.shape).toEqual([2, 2]);
+    expectArraysClose(r, [1 / 1, 0, Infinity, NaN]);
+  });
+
+  it('reciprocal propagates NaNs', () => {
+    const a = dl.tensor1d([1.5, NaN]);
+    const r = dl.reciprocal(a);
+    expectArraysClose(r, [1 / 1.5, NaN]);
+  });
+
+  it('gradients: Scalar', () => {
+    const a = dl.scalar(5);
+    const dy = dl.scalar(8);
+
+    const gradients = dl.grad(a => dl.reciprocal(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [-1 * 8 * (1 / (5 * 5))]);
+  });
+
+  it('gradients: Tensor1D', () => {
+    const a = dl.tensor1d([-1, 2, 3, -5]);
+    const dy = dl.tensor1d([1, 2, 3, 4]);
+
+    const gradients = dl.grad(a => dl.reciprocal(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [
+      -1 * 1 * (1 / (-1 * -1)), -1 * 2 * (1 / (2 * 2)), -1 * 3 * (1 / (3 * 3)),
+      -1 * 4 * (1 / (-5 * -5))
+    ]);
+  });
+
+  it('gradients: Tensor2D', () => {
+    const a = dl.tensor2d([-1, 2, 3, -5], [2, 2]);
+    const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+
+    const gradients = dl.grad(a => dl.reciprocal(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [
+      -1 * 1 * (1 / (-1 * -1)), -1 * 2 * (1 / (2 * 2)), -1 * 3 * (1 / (3 * 3)),
+      -1 * 4 * (1 / (-5 * -5))
+    ]);
+  });
+});
+
 describeWithFlags('log', ALL_ENVS, () => {
   it('log', () => {
     const a = dl.tensor1d([1, 2]);
@@ -637,7 +697,7 @@ describeWithFlags('floor', ALL_ENVS, () => {
     const a = dl.scalar(5.2);
     const dy = dl.scalar(3);
 
-    const gradients = dl.grad(a => dl.ceil(a))(a, dy);
+    const gradients = dl.grad(a => dl.floor(a))(a, dy);
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
@@ -660,6 +720,56 @@ describeWithFlags('floor', ALL_ENVS, () => {
     const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
 
     const gradients = dl.grad(a => dl.floor(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [0, 0, 0, 0]);
+  });
+});
+
+describeWithFlags('sign', ALL_ENVS, () => {
+  it('basic', () => {
+    const a = dl.tensor1d([1.5, 0, NaN, -1.4]);
+    const r = dl.sign(a);
+    expectNumbersClose(r.get(0), 1);
+    expectNumbersClose(r.get(1), 0);
+    expectNumbersClose(r.get(2), 0);
+    expectNumbersClose(r.get(3), -1);
+  });
+
+  it('propagates NaNs', () => {
+    const a = dl.tensor1d([1.5, NaN, -1.4]);
+    const r = dl.sign(a);
+    expectArraysClose(r, [1, 0, -1]);
+  });
+
+  it('gradients: Scalar', () => {
+    const a = dl.scalar(5.2);
+    const dy = dl.scalar(3);
+
+    const gradients = dl.grad(a => dl.sign(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [0]);
+  });
+
+  it('gradients: Tensor1D', () => {
+    const a = dl.tensor1d([-1.1, 2.6, 3, -5.9]);
+    const dy = dl.tensor1d([-1, 1, 1, -1]);
+
+    const gradients = dl.grad(a => dl.sign(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [0, 0, 0, 0]);
+  });
+
+  it('gradients: Tensor2D', () => {
+    const a = dl.tensor2d([-3, 1, 2.2, 3], [2, 2]);
+    const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+
+    const gradients = dl.grad(a => dl.sign(a))(a, dy);
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');

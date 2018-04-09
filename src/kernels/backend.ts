@@ -99,6 +99,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   min(x: Tensor, axes: number[]): Tensor;
   minimum(a: Tensor, b: Tensor): Tensor;
 
+  mod(a: Tensor, b: Tensor): Tensor;
+
   max(x: Tensor, axes: number[]): Tensor;
   maximum(a: Tensor, b: Tensor): Tensor;
 
@@ -106,6 +108,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   ceil<T extends Tensor>(x: T): T;
   floor<T extends Tensor>(x: T): T;
+
+  sign<T extends Tensor>(x: T): T;
 
   pow<T extends Tensor>(a: T, b: Tensor): T;
   exp<T extends Tensor>(x: T): T;
@@ -116,6 +120,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   rsqrt<T extends Tensor>(x: T): T;
 
   square<T extends Tensor>(x: T): T;
+  reciprocal<T extends Tensor>(x: T): T;
 
   relu<T extends Tensor>(x: T): T;
   elu<T extends Tensor>(x: T): T;
