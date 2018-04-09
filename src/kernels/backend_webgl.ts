@@ -25,7 +25,9 @@ import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor'
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
+
 import {KernelBackend} from './backend';
+import * as backend_util from './backend_util';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -562,6 +564,11 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b]);
   }
 
+  mod(a: Tensor, b: Tensor): Tensor {
+    const program = new BinaryOpProgram(binaryop_gpu.MOD, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]);
+  }
+
   max(x: Tensor, axes: number[]): Tensor {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
@@ -573,6 +580,12 @@ export class MathBackendWebGL implements KernelBackend {
 
   maximum(a: Tensor, b: Tensor): Tensor {
     const program = new BinaryOpProgram(binaryop_gpu.MAX, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]);
+  }
+
+  squaredDifference(a: Tensor, b: Tensor): Tensor {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.SQUARED_DIFFERENCE, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
@@ -616,8 +629,23 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  sign<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.SIGN);
+    return this.compileAndRun(program, [x]) as T;
+  }    
+
+  round<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ROUND);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   exp<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.EXP);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  expm1<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.EXPM1);
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -636,8 +664,18 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  rsqrt<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.RSQRT);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   square<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SQUARE);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  reciprocal<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.RECIPROCAL);
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -728,6 +766,11 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  atan2<T extends Tensor>(a: T, b: T): T {
+    const program = new BinaryOpProgram(binaryop_gpu.ATAN2, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]) as T;
+  }
+
   sinh<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SINH);
     return this.compileAndRun(program, [x]) as T;
@@ -811,6 +854,15 @@ export class MathBackendWebGL implements KernelBackend {
     const output =
         this.makeOutputArray(avgPoolBackpropProgram.outputShape, x.dtype);
     return this.compileAndRun(avgPoolBackpropProgram, [dy], output) as Tensor4D;
+  }
+
+  cast<T extends Tensor<types.Rank>>(x: T, dtype: DataType): T {
+    return backend_util.castTensor(x, dtype, this);
+  }
+
+  reshape<T extends Tensor<types.Rank>, R extends types.Rank>(
+      x: T, shape: types.ShapeMap[R]): Tensor<R> {
+    return backend_util.reshapeTensor(x, shape);
   }
 
   resizeBilinear(

@@ -32,6 +32,7 @@ import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
 
 import {BackendTimingInfo, KernelBackend} from './backend';
+import * as backend_util from './backend_util';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -522,6 +523,17 @@ export class MathBackendCPU implements KernelBackend {
         a, b, a.dtype, (aVal, bVal) => Math.min(aVal, bVal));
   }
 
+  mod(a: Tensor, b: Tensor): Tensor {
+    return this.broadcastedBinaryOp(a, b, a.dtype, (aVal, bVal) => {
+      const rem = aVal % bVal;
+      if ((aVal < 0 && bVal < 0) || (aVal >= 0 && bVal >= 0)) {
+        return rem;
+      } else {
+        return (rem + bVal) % bVal;
+      }
+    });
+  }
+
   max(x: Tensor, axes: number[]): Tensor {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
@@ -554,6 +566,13 @@ export class MathBackendCPU implements KernelBackend {
         a, b, a.dtype, (aVal, bVal) => Math.max(aVal, bVal));
   }
 
+  squaredDifference(a: Tensor, b: Tensor): Tensor {
+    return this.broadcastedBinaryOp(a, b, a.dtype, (aVal, bVal) => {
+      const diff = aVal - bVal;
+      return diff * diff;
+    });
+  }
+
   ceil<T extends Tensor>(x: T): T {
     const values = x.dataSync();
     const newValues = new Float32Array(values.length);
@@ -572,11 +591,56 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: newValues}) as T;
   }
 
+  sign<T extends Tensor>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (values[i] < 0) {
+        newValues[i] = -1;
+      } else if (values[i] > 0) {
+        newValues[i] = 1;
+      } else {
+        newValues[i] = 0;
+      }
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
+  round<T extends Tensor>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      // The algorithm is based on banker's rounding.
+      const base = Math.floor(values[i]);
+      if (values[i] - base < 0.5) {
+        newValues[i] = Math.floor(values[i]);
+      } else if (values[i] - base > 0.5) {
+        newValues[i] = Math.ceil(values[i]);
+      } else {
+        if (base % 2.0 === 0.0) {
+          newValues[i] = base;
+        } else {
+          newValues[i] = base + 1.0;
+        }
+      }
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }  
+
   exp<T extends Tensor>(x: T): T {
     const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.exp(values[i]);
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
+  expm1<T extends Tensor>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      newValues[i] = Math.expm1(values[i]);
     }
     return Tensor.make(x.shape, {values: newValues}) as T;
   }
@@ -611,12 +675,36 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: newValues}) as T;
   }
 
+  rsqrt<T extends Tensor>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      const value = values[i];
+      newValues[i] = 1 / Math.sqrt(value);
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
   square<T extends Tensor>(x: T): T {
     const values = x.dataSync();
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
       newValues[i] = value * value;
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
+  reciprocal<T extends Tensor>(x: T): T {
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      const value = values[i];
+      if (util.isValNaN(value, x.dtype)) {
+        newValues[i] = util.getNaN(x.dtype);
+      } else {
+        newValues[i] = 1 / value;
+      }
     }
     return Tensor.make(x.shape, {values: newValues}) as T;
   }
@@ -817,6 +905,12 @@ export class MathBackendCPU implements KernelBackend {
       resultValues[i] = Math.atan(values[i]);
     }
     return Tensor.make(x.shape, {values: resultValues}) as T;
+  }
+
+  atan2<T extends Tensor>(a: T, b: T): T {
+    return this.broadcastedBinaryOp(
+               a, b, a.dtype, (aValue, bValue) => Math.atan2(aValue, bValue)) as
+        T;
   }
 
   sinh<T extends Tensor>(x: T): T {
@@ -1314,6 +1408,15 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return dx.toTensor();
+  }
+
+  cast<T extends Tensor<types.Rank>>(x: T, dtype: DataType): T {
+    return backend_util.castTensor(x, dtype, this);
+  }
+
+  reshape<T extends Tensor<types.Rank>, R extends types.Rank>(
+      x: T, shape: types.ShapeMap[R]): Tensor<R> {
+    return backend_util.reshapeTensor(x, shape);
   }
 
   minPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
