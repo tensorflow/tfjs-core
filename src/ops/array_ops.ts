@@ -914,7 +914,7 @@ export class ArrayOps {
    * @param numOrSizeSplits Either an integer indicating the number of
    * splits along the axis or an array of integers containing the sizes of each
    * output tensor along the axis. If a number then it must evenly divide
-   * `x.shape[axis]`; otherwise he sum of sizes must match `x.shape[axis]`.
+   * `x.shape[axis]`; otherwise the sum of sizes must match `x.shape[axis]`.
    * @param axis The dimension along which to split. Defaults to 0 (the first
    * dim).
    */
