@@ -51,6 +51,7 @@ export const conv1d = ConvOps.conv1d;
 export const conv2d = ConvOps.conv2d;
 export const conv2dTranspose = ConvOps.conv2dTranspose;
 export const depthwiseConv2d = ConvOps.depthwiseConv2d;
+export const separableConv2d = ConvOps.separableConv2d;
 
 export const matMul = MatmulOps.matMul;
 export const matrixTimesVector = MatmulOps.matrixTimesVector;
@@ -123,6 +124,7 @@ export const neg = UnaryOps.neg;
 export const prelu = UnaryOps.prelu;
 export const relu = UnaryOps.relu;
 export const reciprocal = UnaryOps.reciprocal;
+export const round = UnaryOps.round;
 export const selu = UnaryOps.selu;
 export const sigmoid = UnaryOps.sigmoid;
 export const sin = UnaryOps.sin;
@@ -187,6 +189,7 @@ export const tensor4d = ArrayOps.tensor4d;
 export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
+export const split = ArrayOps.split;
 
 export const pad = ArrayOps.pad;
 export const pad1d = ArrayOps.pad1d;
