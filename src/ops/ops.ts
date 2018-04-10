@@ -106,8 +106,11 @@ export const where = LogicalOps.where;
 
 export const abs = UnaryOps.abs;
 export const acos = UnaryOps.acos;
+export const acosh = UnaryOps.acosh;
 export const asin = UnaryOps.asin;
+export const asinh = UnaryOps.asinh;
 export const atan = UnaryOps.atan;
+export const atanh = UnaryOps.atanh;
 export const ceil = UnaryOps.ceil;
 export const clipByValue = UnaryOps.clipByValue;
 export const cos = UnaryOps.cos;
@@ -137,8 +140,8 @@ export const tan = UnaryOps.tan;
 export const tanh = UnaryOps.tanh;
 
 export const add = BinaryOps.add;
-export const atan2 = BinaryOps.atan2;
 export const addStrict = BinaryOps.addStrict;
+export const atan2 = BinaryOps.atan2;
 export const div = BinaryOps.div;
 export const divStrict = BinaryOps.divStrict;
 export const maximum = BinaryOps.maximum;
@@ -189,6 +192,7 @@ export const tensor4d = ArrayOps.tensor4d;
 export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
+export const split = ArrayOps.split;
 
 export const pad = ArrayOps.pad;
 export const pad1d = ArrayOps.pad1d;
