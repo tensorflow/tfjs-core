@@ -864,7 +864,10 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static stack<T extends Tensor>(tensors: T[], axis = 0): Tensor {
-    util.assert(tensors.length >= 2, 'Pass at least two tensors to dl.stack');
+    util.assert(tensors.length >= 1, 'Pass at least one tensor to dl.stack');
+    if (tensors.length === 1) {
+      return tensors[0].expandDims(axis);
+    }
     const rank = tensors[0].rank;
     const shape = tensors[0].shape;
     const dtype = tensors[0].dtype;
