@@ -337,7 +337,7 @@ export class ArrayOps {
   @operation
   static clone<T extends Tensor>(x: T): T {
     const der = (dy: T) => {
-      return {x: () => dy.clone().toFloat()};
+      return {x: () => dy.toFloat()};
     };
 
     return ENV.engine.runKernel(
