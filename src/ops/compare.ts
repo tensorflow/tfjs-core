@@ -32,6 +32,7 @@ export class CompareOps {
    * ```js
    * const a = tf.tensor1d([1, 2, 3]);
    * const b = tf.tensor1d([0, 2, 3]);
+   *
    * a.notEqual(b).print();
    * ```
    * @param a The first input tensor.
@@ -68,6 +69,7 @@ export class CompareOps {
    * ```js
    * const a = tf.tensor1d([1, 2, 3]);
    * const b = tf.tensor1d([2, 2, 2]);
+   *
    * a.less(b).print();
    * ```
    * @param a The first input tensor.
@@ -102,8 +104,9 @@ export class CompareOps {
    * and asserts that `a` and `b` are the same shape (does not broadcast).
    *
    * ```js
-   * const a = dl.tensor1d([1, 2, 3]);
-   * const b = dl.tensor1d([2, 2, 2]);
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([2, 2, 2]);
+   *
    * a.equal(b).print();
    * ```
    *
@@ -133,6 +136,7 @@ export class CompareOps {
    * ```js
    * const a = tf.tensor1d([1, 2, 3]);
    * const b = tf.tensor1d([2, 2, 2]);
+   *
    * a.lessEqual(b).print();
    * ```
    *
@@ -163,6 +167,7 @@ export class CompareOps {
    * ```js
    * const a = tf.tensor1d([1, 2, 3]);
    * const b = tf.tensor1d([2, 2, 2]);
+   *
    * a.greater(b).print();
    * ```
    *
@@ -190,8 +195,9 @@ export class CompareOps {
    * op and asserts that `a` and `b` are the same shape (does not broadcast).
    *
    * ```js
-   * const a = dl.tensor1d([1, 2, 3]);
-   * const b = dl.tensor1d([2, 2, 2]);
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([2, 2, 2]);
+   *
    * a.greaterEqual(b).print();
    * ```
    *
