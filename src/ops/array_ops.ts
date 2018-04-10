@@ -471,8 +471,8 @@ export class ArrayOps {
    * Creates a `Tensor` with values drawn from a multinomial distribution.
    *
    * ```js
-   * const probs = dl.tensor([.75, .25]);
-   * dl.multinomial(probs, 3).print();
+   * const probs = tf.tensor([.75, .25]);
+   * tf.multinomial(probs, 3).print();
    * ```
    *
    * @param logits 1D array with unnormalized log-probabilities, or
@@ -864,7 +864,7 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static stack<T extends Tensor>(tensors: T[], axis = 0): Tensor {
-    util.assert(tensors.length >= 1, 'Pass at least one tensor to dl.stack');
+    util.assert(tensors.length >= 1, 'Pass at least one tensor to tf.stack');
     if (tensors.length === 1) {
       return tensors[0].expandDims(axis);
     }
