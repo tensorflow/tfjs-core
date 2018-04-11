@@ -145,15 +145,25 @@ export function describeWithFlags(
   });
 }
 
-let CUSTOM_BEFORE_ALL = () => {
+let BEFORE_ALL = (features: Features) => {
   ENV.registerBackend('test-webgl', () => new MathBackendWebGL());
   ENV.registerBackend('test-cpu', () => new MathBackendCPU());
 };
-let CUSTOM_AFTER_ALL = () => {
+let AFTER_ALL = (features: Features) => {
   ENV.removeBackend('test-webgl');
   ENV.removeBackend('test-cpu');
   ENV.reset();
 };
+let BEFORE_EACH = (features: Features) => {
+  if (features && features.BACKEND != null) {
+    Environment.setBackend(features.BACKEND);
+  }
+  ENV.engine.startScope();
+};
+let AFTER_EACH = (features: Features) => {
+  ENV.engine.endScope(null);
+};
+
 let TEST_ENV_FEATURES: Features[] = [
   {
     'BACKEND': 'test-webgl',
@@ -174,12 +184,17 @@ let TEST_ENV_FEATURES: Features[] = [
   // }
 ];
 
-export function setBeforeAll(f: () => void) {
-  CUSTOM_BEFORE_ALL = f;
+export function setBeforeAll(f: (features: Features) => void) {
+  BEFORE_ALL = f;
 }
-
-export function setAfterAll(f: () => void) {
-  CUSTOM_AFTER_ALL = f;
+export function setAfterAll(f: (features: Features) => void) {
+  AFTER_ALL = f;
+}
+export function setBeforeEach(f: (features: Features) => void) {
+  BEFORE_EACH = f;
+}
+export function setAfterEach(f: (features: Features) => void) {
+  AFTER_EACH = f;
 }
 
 export function setTestEnvFeatures(features: Features[]) {
@@ -190,23 +205,11 @@ function executeTests(testName: string, tests: () => void, features: Features) {
   describe(testName, () => {
     beforeAll(() => {
       ENV.setFeatures(features);
-      CUSTOM_BEFORE_ALL();
+      BEFORE_ALL(features);
     });
-
-    beforeEach(() => {
-      if (features && features.BACKEND != null) {
-        Environment.setBackend(features.BACKEND);
-      }
-      ENV.engine.startScope();
-    });
-
-    afterEach(() => {
-      ENV.engine.endScope(null);
-    });
-
-    afterAll(() => {
-      CUSTOM_AFTER_ALL();
-    });
+    beforeEach(() => BEFORE_EACH(features));
+    afterEach(() => AFTER_EACH(features));
+    afterAll(() => AFTER_ALL(features));
 
     tests();
   });

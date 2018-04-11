@@ -99,6 +99,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   min(x: Tensor, axes: number[]): Tensor;
   minimum(a: Tensor, b: Tensor): Tensor;
 
+  mod(a: Tensor, b: Tensor): Tensor;
+
   max(x: Tensor, axes: number[]): Tensor;
   maximum(a: Tensor, b: Tensor): Tensor;
 
@@ -106,6 +108,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   ceil<T extends Tensor>(x: T): T;
   floor<T extends Tensor>(x: T): T;
+  round<T extends Tensor>(x: T): T;
+
+  sign<T extends Tensor>(x: T): T;
 
   pow<T extends Tensor>(a: T, b: Tensor): T;
   exp<T extends Tensor>(x: T): T;
@@ -113,8 +118,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   log<T extends Tensor>(x: T): T;
   log1p<T extends Tensor>(x: T): T;
   sqrt<T extends Tensor>(x: T): T;
+  rsqrt<T extends Tensor>(x: T): T;
 
   square<T extends Tensor>(x: T): T;
+  reciprocal<T extends Tensor>(x: T): T;
 
   relu<T extends Tensor>(x: T): T;
   elu<T extends Tensor>(x: T): T;
@@ -143,6 +150,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   sinh<T extends Tensor>(x: T): T;
   cosh<T extends Tensor>(x: T): T;
   tanh<T extends Tensor>(x: T): T;
+
+  asinh<T extends Tensor>(x: T): T;
+  acosh<T extends Tensor>(x: T): T;
+  atanh<T extends Tensor>(x: T): T;
 
   step<T extends Tensor>(x: T, alpha: number): T;
 

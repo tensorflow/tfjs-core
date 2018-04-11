@@ -215,8 +215,8 @@ export class Engine implements TensorManager {
   keep<T extends Tensor>(result: T): T {
     if (this.scopeStack.length === 1 && ENV.engine.safeMode) {
       throw new Error(
-          'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +
-          'dl.tidy(() => {...}) to avoid memory leaks.');
+          'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
+          'tf.tidy(() => {...}) to avoid memory leaks.');
     }
     this.activeScope.keep.push(result);
     return result;
@@ -405,8 +405,8 @@ export class Engine implements TensorManager {
   private track<T extends Tensor>(result: T): T {
     if (this.scopeStack.length === 1 && this.safeMode) {
       throw new Error(
-          'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +
-          'dl.tidy(() => {op();...}); to avoid memory leaks.');
+          'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
+          'tf.tidy(() => {op();...}); to avoid memory leaks.');
     }
     this.activeScope.track.push(result);
     return result;
