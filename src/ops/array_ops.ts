@@ -595,12 +595,12 @@ export class ArrayOps {
   @doc({heading: 'Visualization'})
   static async toPixels(img: Tensor2D|Tensor3D, canvas: HTMLCanvasElement):
       Promise<void> {
-    if (img.rank != 2 && img.rank != 3) {
+    if (img.rank !== 2 && img.rank !== 3) {
       throw new Error(
           `toPixels only supports rank 2 or 3 tensors, got rank ${img.rank}.`);
     }
     const [height, width] = img.shape.slice(0, 2);
-    const depth = img.rank == 2 ? 1 : img.shape[2];
+    const depth = img.rank === 2 ? 1 : img.shape[2];
 
     if (depth > 4 || depth === 2) {
       throw new Error(
