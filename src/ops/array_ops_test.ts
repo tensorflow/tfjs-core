@@ -1163,9 +1163,8 @@ describeWithFlags('toPixels', ALL_ENVS, () => {
       const imgData = ctx.getImageData(0, 0, 1, 2);
 
       expect(imgData.data).toEqual(new Uint8ClampedArray([
-        Math.floor(.1 * 255), Math.floor(.2 * 255), Math.floor(.3 * 255),
-        Math.floor(.4 * 255), 255, Math.floor(.6 * 255), Math.floor(.7 * 255),
-        255
+        Math.floor(.1 * 255), Math.floor(.2 * 255), Math.floor(.3 * 255), 255,
+        Math.floor(.4 * 255), Math.floor(.5 * 255), Math.floor(.6 * 255), 255
       ]));
       done();
     });
