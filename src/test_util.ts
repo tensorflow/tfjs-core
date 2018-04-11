@@ -145,17 +145,16 @@ export function describeWithFlags(
   });
 }
 
-let BEFORE_ALL = (features: Features) => {
+let BEFORE_ALL = (features: Features) => {};
+let AFTER_ALL = (features: Features) => {};
+let BEFORE_EACH = (features: Features) => {
   ENV.registerBackend('test-webgl', () => new MathBackendWebGL());
   ENV.registerBackend('test-cpu', () => new MathBackendCPU());
 };
-let AFTER_ALL = (features: Features) => {
+let AFTER_EACH = (features: Features) => {
   ENV.removeBackend('test-webgl');
   ENV.removeBackend('test-cpu');
-  ENV.reset();
 };
-let BEFORE_EACH = (features: Features) => {};
-let AFTER_EACH = (features: Features) => {};
 
 let TEST_ENV_FEATURES: Features[] = [
   {
@@ -200,18 +199,25 @@ function executeTests(testName: string, tests: () => void, features: Features) {
       ENV.setFeatures(features);
       BEFORE_ALL(features);
     });
+
     beforeEach(() => {
+      BEFORE_EACH(features);
       if (features && features.BACKEND != null) {
         Environment.setBackend(features.BACKEND);
       }
       ENV.engine.startScope();
-      BEFORE_EACH(features);
     });
+
     afterEach(() => {
-      AFTER_EACH(features);
       ENV.engine.endScope(null);
+      AFTER_EACH(features);
     });
-    afterAll(() => AFTER_ALL(features));
+
+    afterAll(() => {
+      AFTER_ALL(features);
+      ENV.reset();
+    });
+
     tests();
   });
 }
