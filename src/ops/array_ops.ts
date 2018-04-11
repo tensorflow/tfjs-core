@@ -577,7 +577,7 @@ export class ArrayOps {
   }
 
   /**
-   * Draws a `Tensor` to a canvas.
+   * Draws a `Tensor` shaped as an image to a canvas.
    *
    * When the dtype of the input is 'float32', we assume values in the range
    * [0-1]. Otherwise, when input is 'int32', we assume values in the range
