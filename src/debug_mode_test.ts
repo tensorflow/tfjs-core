@@ -22,11 +22,11 @@ import * as util from './util';
 
 describeWithFlags('debug on', ALL_ENVS, () => {
   beforeAll(() => {
-    dl.ENV.set('DEBUG', true);
+    tf.ENV.set('DEBUG', true);
   });
 
   afterAll(() => {
-    dl.ENV.set('DEBUG', false);
+    tf.ENV.set('DEBUG', false);
   });
 
   it('debug mode does not error when no nans', () => {
@@ -66,7 +66,7 @@ describeWithFlags('debug on', ALL_ENVS, () => {
 
 describeWithFlags('debug off', ALL_ENVS, () => {
   beforeAll(() => {
-    dl.ENV.set('DEBUG', false);
+    tf.ENV.set('DEBUG', false);
   });
 
   it('no errors where there are nans, and debug mode is disabled', () => {

@@ -154,15 +154,8 @@ let AFTER_ALL = (features: Features) => {
   ENV.removeBackend('test-cpu');
   ENV.reset();
 };
-let BEFORE_EACH = (features: Features) => {
-  if (features && features.BACKEND != null) {
-    Environment.setBackend(features.BACKEND);
-  }
-  ENV.engine.startScope();
-};
-let AFTER_EACH = (features: Features) => {
-  ENV.engine.endScope(null);
-};
+let BEFORE_EACH = (features: Features) => {};
+let AFTER_EACH = (features: Features) => {};
 
 let TEST_ENV_FEATURES: Features[] = [
   {
@@ -207,8 +200,17 @@ function executeTests(testName: string, tests: () => void, features: Features) {
       ENV.setFeatures(features);
       BEFORE_ALL(features);
     });
-    beforeEach(() => BEFORE_EACH(features));
-    afterEach(() => AFTER_EACH(features));
+    beforeEach(() => {
+      if (features && features.BACKEND != null) {
+        Environment.setBackend(features.BACKEND);
+      }
+      ENV.engine.startScope();
+      BEFORE_EACH(features);
+    });
+    afterEach(() => {
+      AFTER_EACH(features);
+      ENV.engine.endScope(null);
+    });
     afterAll(() => AFTER_ALL(features));
     tests();
   });
