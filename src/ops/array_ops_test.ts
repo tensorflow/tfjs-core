@@ -1057,6 +1057,140 @@ describeWithFlags('fromPixels', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('toPixels', ALL_ENVS, () => {
+  it('draws a rank-2 float32 tensor', done => {
+    const x = dl.tensor2d([.1, .2], [2, 1], 'float32');
+    const canvas = document.createElement('canvas');
+
+    dl.toPixels(x, canvas).then(() => {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, 1, 2);
+
+      expect(imgData.data).toEqual(new Uint8ClampedArray([
+        Math.floor(.1 * 255), Math.floor(.1 * 255), Math.floor(.1 * 255), 255,
+        Math.floor(.2 * 255), Math.floor(.2 * 255), Math.floor(.2 * 255), 255
+      ]));
+      done();
+    });
+  });
+
+  it('draws a rank-2 int32 tensor', done => {
+    const x = dl.tensor2d([10, 20], [2, 1], 'int32');
+    const canvas = document.createElement('canvas');
+
+    dl.toPixels(x, canvas).then(() => {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, 1, 2);
+
+      expect(imgData.data).toEqual(new Uint8ClampedArray([
+        10, 10, 10, 255, 20, 20, 20, 255
+      ]));
+      done();
+    });
+  });
+
+  it('draws a rank-3 float32 tensor, 1 channel', done => {
+    const x = dl.tensor3d([.1, .2], [2, 1, 1], 'float32');
+    const canvas = document.createElement('canvas');
+
+    dl.toPixels(x, canvas).then(() => {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, 1, 2);
+
+      expect(imgData.data).toEqual(new Uint8ClampedArray([
+        Math.floor(.1 * 255), Math.floor(.1 * 255), Math.floor(.1 * 255), 255,
+        Math.floor(.2 * 255), Math.floor(.2 * 255), Math.floor(.2 * 255), 255
+      ]));
+      done();
+    });
+  });
+
+  it('draws a rank-3 int32 tensor, 1 channel', done => {
+    const x = dl.tensor3d([10, 20], [2, 1, 1], 'int32');
+    const canvas = document.createElement('canvas');
+
+    dl.toPixels(x, canvas).then(() => {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, 1, 2);
+
+      expect(imgData.data).toEqual(new Uint8ClampedArray([
+        10, 10, 10, 255, 20, 20, 20, 255
+      ]));
+      done();
+    });
+  });
+
+  it('draws a rank-3 float32 tensor, 3 channel', done => {
+    const x = dl.tensor3d([.1, .2, .3, .4, .5, .6], [2, 1, 3], 'float32');
+    const canvas = document.createElement('canvas');
+
+    dl.toPixels(x, canvas).then(() => {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, 1, 2);
+
+      expect(imgData.data).toEqual(new Uint8ClampedArray([
+        Math.floor(.1 * 255), Math.floor(.2 * 255), Math.floor(.3 * 255), 255,
+        Math.floor(.4 * 255), Math.floor(.5 * 255), Math.floor(.6 * 255), 255
+      ]));
+      done();
+    });
+  });
+
+  it('draws a rank-3 int32 tensor, 3 channel', done => {
+    const x = dl.tensor3d([10, 20, 30, 40, 50, 60], [2, 1, 3], 'int32');
+    const canvas = document.createElement('canvas');
+
+    dl.toPixels(x, canvas).then(() => {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, 1, 2);
+
+      expect(imgData.data).toEqual(new Uint8ClampedArray([
+        10, 20, 30, 255, 40, 50, 60, 255
+      ]));
+      done();
+    });
+  });
+
+  it('draws a rank-3 float32 tensor, 4 channel', done => {
+    // ImageData roundtrips are lossy because of pre-multiplied alphas, so we
+    // use an alpha = 1 to avoid losing precision on r, g, b channels in these
+    // tests https://www.w3.org/TR/2dcontext/
+    const x = dl.tensor3d([.1, .2, .3, 1, .5, .6, .7, 1], [2, 1, 4], 'float32');
+    const canvas = document.createElement('canvas');
+
+    dl.toPixels(x, canvas).then(() => {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, 1, 2);
+
+      expect(imgData.data).toEqual(new Uint8ClampedArray([
+        Math.floor(.1 * 255), Math.floor(.2 * 255), Math.floor(.3 * 255),
+        Math.floor(.4 * 255), 255, Math.floor(.6 * 255), Math.floor(.7 * 255),
+        255
+      ]));
+      done();
+    });
+  });
+
+  it('draws a rank-3 int32 tensor, 4 channel', done => {
+    // ImageData roundtrips are lossy because of pre-multiplied alphas, so we
+    // use an alpha = 1 to avoid losing precision on r, g, b channels in these
+    // tests https://www.w3.org/TR/2dcontext/
+    const x =
+        dl.tensor3d([10, 20, 30, 255, 50, 60, 70, 255], [2, 1, 4], 'int32');
+    const canvas = document.createElement('canvas');
+
+    dl.toPixels(x, canvas).then(() => {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, 1, 2);
+
+      expect(imgData.data).toEqual(new Uint8ClampedArray([
+        10, 20, 30, 255, 50, 60, 70, 255
+      ]));
+      done();
+    });
+  });
+});
+
 describeWithFlags('clone', ALL_ENVS, () => {
   it('1D default dtype', () => {
     const a = dl.tensor1d([1, 2, 3]);

@@ -577,6 +577,72 @@ export class ArrayOps {
   }
 
   /**
+   * Draws a `Tensor` to a canvas.
+   *
+   * When the dtype of the input is 'float32', we assume values in the range
+   * [0-1]. Otherwise, when input is 'int32', we assume values in the range
+   * [0-255].
+   *
+   * Returns a promise that resolves when the canvas has been drawn to.
+   *
+   * @param img A rank-2 or rank-3 tensor. If rank-2, draws grayscale. If
+   * rank-3, must have depth of 1, 3 or 4. When depth of 1, draw grayscale.
+   * When depth of 3, we draw with the first three components of the depth
+   * dimension corresponding to r, g, b and alpha = 1. When depth of 4,
+   * all four components of the depth dimension correspond to r, g, b, a.
+   * @param canvas The canvas to draw to.
+   */
+  @doc({heading: 'Visualization'})
+  static async toPixels(img: Tensor2D|Tensor3D, canvas: HTMLCanvasElement):
+      Promise<void> {
+    if (img.rank != 2 && img.rank != 3) {
+      throw new Error(
+          `toPixels only supports rank 2 or 3 tensors, got rank ${img.rank}.`);
+    }
+    const [height, width] = img.shape.slice(0, 2);
+    const depth = img.rank == 2 ? 1 : img.shape[2];
+
+    if (depth > 4 || depth === 2) {
+      throw new Error(
+          `toPixels only supports depth of size ` +
+          `1, 3 or 4 but got ${img.shape[2]}`);
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const imageData = new ImageData(width, height);
+    const data = await img.data();
+    const multiplier = img.dtype === 'float32' ? 255 : 1;
+    for (let i = 0; i < height * width; ++i) {
+      let r, g, b, a;
+      if (depth === 1) {
+        r = data[i] * multiplier;
+        g = data[i] * multiplier;
+        b = data[i] * multiplier;
+        a = 255;
+      } else if (depth === 3) {
+        r = data[i * 3] * multiplier;
+        g = data[i * 3 + 1] * multiplier;
+        b = data[i * 3 + 2] * multiplier;
+        a = 255;
+      } else if (depth === 4) {
+        r = data[i * 4] * multiplier;
+        g = data[i * 4 + 1] * multiplier;
+        b = data[i * 4 + 2] * multiplier;
+        a = data[i * 4 + 3] * multiplier;
+      }
+
+      const j = i * 4;
+      imageData.data[j + 0] = Math.floor(r);
+      imageData.data[j + 1] = Math.floor(g);
+      imageData.data[j + 2] = Math.floor(b);
+      imageData.data[j + 3] = Math.floor(a);
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  /**
    * Reshapes a `Tensor` to a given shape.
    *
    * Given a input tensor, returns a new tensor with the same values as the
