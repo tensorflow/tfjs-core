@@ -1,1 +1,0 @@
-{"dependencies":[{"name":"./index.js","dynamic":true}],"generated":{"html":"<script src=\"/dist/tfjs-examples-mnist.js\"></script>\n\n<canvas id=\"canvas\"></canvas>\n"},"hash":"3cb249ef18b32b0035aed549e41bda85","cacheData":{}}
