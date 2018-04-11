@@ -586,10 +586,10 @@ export class ArrayOps {
    * Returns a promise that resolves when the canvas has been drawn to.
    *
    * @param img A rank-2 or rank-3 tensor. If rank-2, draws grayscale. If
-   * rank-3, must have depth of 1, 3 or 4. When depth of 1, draw grayscale.
-   * When depth of 3, we draw with the first three components of the depth
-   * dimension corresponding to r, g, b and alpha = 1. When depth of 4,
-   * all four components of the depth dimension correspond to r, g, b, a.
+   *     rank-3, must have depth of 1, 3 or 4. When depth of 1, draw grayscale.
+   *     When depth of 3, we draw with the first three components of the depth
+   *     dimension corresponding to r, g, b and alpha = 1. When depth of 4,
+   *     all four components of the depth dimension correspond to r, g, b, a.
    * @param canvas The canvas to draw to.
    */
   @doc({heading: 'Visualization'})
