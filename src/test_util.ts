@@ -210,7 +210,6 @@ function executeTests(testName: string, tests: () => void, features: Features) {
     beforeEach(() => BEFORE_EACH(features));
     afterEach(() => AFTER_EACH(features));
     afterAll(() => AFTER_ALL(features));
-
     tests();
   });
 }
