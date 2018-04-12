@@ -352,6 +352,9 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static relu<T extends Tensor>(x: T): T {
+    if (x.dtype === 'bool') {
+      return x.toInt();
+    }
     const grad = (dy: T) => {
       const stepRes = x.step();
       return {x: () => dy.mulStrict(stepRes.toFloat())};
