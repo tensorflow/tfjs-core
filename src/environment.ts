@@ -370,6 +370,7 @@ export class Environment {
       this.registry[name] = {backend, priority};
       return true;
     } catch (err) {
+      console.warn(err.message);
       return false;
     }
   }
