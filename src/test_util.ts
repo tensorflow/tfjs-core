@@ -92,6 +92,10 @@ export function expectArraysClose(
   }
 }
 
+export function expectPromiseToFail(fn: () => Promise<{}>, done: DoneFn): void {
+  fn().then(() => done.fail(), () => done());
+}
+
 export function expectArraysEqual(
     actual: Tensor|TypedArray|number[],
     expected: Tensor|TypedArray|number[]|boolean[]) {

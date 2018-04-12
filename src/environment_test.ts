@@ -237,13 +237,6 @@ describe('Backend', () => {
     ENV.removeBackend('custom-cpu');
   });
 
-  it('double registration fails', () => {
-    ENV.registerBackend('custom-cpu', () => new MathBackendCPU());
-    expect(() => ENV.registerBackend('custom-cpu', () => new MathBackendCPU()))
-        .toThrowError();
-    ENV.removeBackend('custom-cpu');
-  });
-
   it('webgl not supported, falls back to cpu', () => {
     ENV.setFeatures({'WEBGL_VERSION': 0});
     ENV.registerBackend('custom-cpu', () => new MathBackendCPU(), 3);
