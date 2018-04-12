@@ -102,6 +102,9 @@ export class ReductionOps {
   @operation
   static sum<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
+    if (x.dtype === 'bool') {
+      x = x.toInt();
+    }
     const axes = axis_util.parseAxisParam(axis, x.shape);
 
     // Use a custom gradient to bypass 2 gradient backprops since sum is used
