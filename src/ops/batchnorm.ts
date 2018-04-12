@@ -193,12 +193,16 @@ export class BatchNormOps {
       x4D = x as Tensor4D;
     }
 
+    const grad = (dy: Tensor4D) => {
+      return {x: () => dy, mean: () => dy, variance: () => dy};
+    };
+
     const res = ENV.engine.runKernel(
         backend => backend.batchNormalization4D(
             x4D, batchnormReshape4D(mean), batchnormReshape4D(variance),
             varianceEpsilon, batchnormReshape4D(scale),
             batchnormReshape4D(offset)),
-        {x, mean, variance});
+        {x: x4D, mean, variance}, grad);
     return res.reshape(x.shape);
   }
 }
