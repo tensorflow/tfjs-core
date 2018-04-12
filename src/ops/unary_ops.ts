@@ -475,7 +475,8 @@ export class UnaryOps {
     const grad = (dy: T) => {
       return {x: () => dy.mulStrict(x.neg().sigmoid())};
     };
-    return ENV.engine.runKernel(backend => backend.log_sigmoid(x), {x}, grad);
+    return ENV.engine.runKernel(
+        backend => backend.softplus(x.neg()).neg(), {x}, grad);
   }
 
   /**

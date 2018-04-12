@@ -332,6 +332,28 @@ describeWithFlags('log_sigmoid', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
+  it('small x', () => {
+    const values = [-100, -200, -3000, -50000];
+    const a = dl.tensor1d(values);
+
+    const result = dl.log_sigmoid(a);
+
+    const expected = [-100, -200, -3000, -50000];
+
+    expectArraysClose(result, expected);
+  });
+
+  it('large x', () => {
+    const values = [100, 200, 3000, 50000];
+    const a = dl.tensor1d(values);
+
+    const result = dl.log_sigmoid(a);
+
+    const expected = [0, 0, 0, 0];
+
+    expectArraysClose(result, expected);
+  });
+
   it('propagates NaNs', () => {
     const a = dl.tensor1d([3, NaN]);
     const res = dl.log_sigmoid(a);
