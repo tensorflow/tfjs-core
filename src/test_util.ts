@@ -145,16 +145,16 @@ export function describeWithFlags(
   });
 }
 
-let BEFORE_ALL = (features: Features) => {};
-let AFTER_ALL = (features: Features) => {};
-let BEFORE_EACH = (features: Features) => {
+let BEFORE_ALL = (features: Features) => {
   ENV.registerBackend('test-webgl', () => new MathBackendWebGL());
   ENV.registerBackend('test-cpu', () => new MathBackendCPU());
 };
-let AFTER_EACH = (features: Features) => {
+let AFTER_ALL = (features: Features) => {
   ENV.removeBackend('test-webgl');
   ENV.removeBackend('test-cpu');
 };
+let BEFORE_EACH = (features: Features) => {};
+let AFTER_EACH = (features: Features) => {};
 
 let TEST_ENV_FEATURES: Features[] = [
   {
