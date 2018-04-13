@@ -951,7 +951,7 @@ describeWithFlags('randomUniform', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('fromPixels', ALL_ENVS, () => {
+describeWithFlags('fromPixels', WEBGL_ENVS, () => {
   it('ImageData 1x1x3', () => {
     const pixels = new ImageData(1, 1);
     pixels.data[0] = 0;
