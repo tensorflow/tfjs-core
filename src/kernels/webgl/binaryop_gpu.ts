@@ -35,9 +35,7 @@ export const SQUARED_DIFFERENCE = 'return (a - b) * (a - b);';
 export const EQUAL = CHECK_NAN_SNIPPET + `
   return float(a == b);
 `;
-export const NOT_EQUAL = CHECK_NAN_SNIPPET + `
-  return float(a != b);
-`;
+export const NOT_EQUAL = `return float(a != b);`;
 export const LESS = CHECK_NAN_SNIPPET + `
   return float(a < b);
 `;

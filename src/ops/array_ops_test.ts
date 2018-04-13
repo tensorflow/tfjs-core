@@ -1592,16 +1592,6 @@ describeWithFlags('tile', ALL_ENVS, () => {
     expectArraysEqual(t2, [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]);
   });
 
-  it('bool propagates NaNs', () => {
-    const t = tf.tensor1d([true, false, NaN] as boolean[], 'bool');
-    const t2 = tf.tile(t, [2]);
-
-    expect(t2.shape).toEqual([6]);
-    expect(t2.dtype).toBe('bool');
-    expectArraysEqual(
-        t2, [1, 0, util.getNaN('bool'), 1, 0, util.getNaN('bool')]);
-  });
-
   it('1D int32 (tile)', () => {
     const t = tf.tensor1d([1, 2, 5], 'int32');
     const t2 = tf.tile(t, [2]);
@@ -1637,16 +1627,6 @@ describeWithFlags('tile', ALL_ENVS, () => {
     expect(t2.shape).toEqual([2, 4, 2]);
     expect(t2.dtype).toBe('int32');
     expectArraysEqual(t2, [1, 2, 3, 4, 1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8]);
-  });
-
-  it('int32 propagates NaNs', () => {
-    const t = tf.tensor1d([1, 3, NaN], 'int32');
-    const t2 = tf.tile(t, [2]);
-
-    expect(t2.shape).toEqual([6]);
-    expect(t2.dtype).toBe('int32');
-    expectArraysEqual(
-        t2, [1, 3, util.getNaN('int32'), 1, 3, util.getNaN('int32')]);
   });
 
   it('1D (tile) gradient', () => {
