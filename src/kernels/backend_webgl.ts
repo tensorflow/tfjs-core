@@ -632,6 +632,11 @@ export class MathBackendWebGL implements KernelBackend {
   sign<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SIGN);
     return this.compileAndRun(program, [x]) as T;
+  }    
+
+  round<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ROUND);
+    return this.compileAndRun(program, [x]) as T;
   }
 
   exp<T extends Tensor>(x: T): T {
@@ -786,6 +791,21 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  asinh<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ASINH);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  acosh<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ACOSH);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  atanh<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ATANH);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   step<T extends Tensor>(x: T, alpha: number): T {
     const program = new UnaryOpProgram(x.shape, unary_op.STEP(alpha));
     return this.compileAndRun(program, [x]) as T;
@@ -915,7 +935,6 @@ export class MathBackendWebGL implements KernelBackend {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
-
     const shouldTimeProgram = this.activeTimers != null;
     let query: WebGLQuery|CPUTimerQuery;
     if (shouldTimeProgram) {
@@ -1018,7 +1037,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 }
 
-ENV.registerBackend('webgl', () => new MathBackendWebGL());
+ENV.registerBackend('webgl', () => new MathBackendWebGL(), 2 /* priority */);
 
 function float32ToTypedArray<D extends DataType>(
     a: Float32Array, dtype: D): DataTypeMap[D] {

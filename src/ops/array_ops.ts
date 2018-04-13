@@ -329,6 +329,7 @@ export class ArrayOps {
    *
    * ```js
    * const x = tf.tensor([1, 2]);
+   *
    * x.clone().print();
    * ```
    *
@@ -337,7 +338,14 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static clone<T extends Tensor>(x: T): T {
-    return Tensor.make(x.shape, {dataId: x.dataId}, x.dtype) as T;
+    const der = (dy: T) => {
+      return {x: () => dy.toFloat()};
+    };
+
+    return ENV.engine.runKernel(
+               backend =>
+                   Tensor.make(x.shape, {dataId: x.dataId}, x.dtype) as T,
+               {x}, der) as T;
   }
 
   /**
@@ -471,8 +479,8 @@ export class ArrayOps {
    * Creates a `Tensor` with values drawn from a multinomial distribution.
    *
    * ```js
-   * const probs = dl.tensor([.75, .25]);
-   * dl.multinomial(probs, 3).print();
+   * const probs = tf.tensor([.75, .25]);
+   * tf.multinomial(probs, 3).print();
    * ```
    *
    * @param logits 1D array with unnormalized log-probabilities, or
@@ -568,6 +576,100 @@ export class ArrayOps {
           'Cannot construct Tensor with more than 4 channels from pixels.');
     }
     return ENV.engine.fromPixels(pixels, numChannels);
+  }
+
+  /**
+   * Draws a `Tensor` of pixel values to a byte array or optionally a
+   * canvas.
+   *
+   * When the dtype of the input is 'float32', we assume values in the range
+   * [0-1]. Otherwise, when input is 'int32', we assume values in the range
+   * [0-255].
+   *
+   * Returns a promise that resolves when the canvas has been drawn to.
+   *
+   * @param img A rank-2 or rank-3 tensor. If rank-2, draws grayscale. If
+   *     rank-3, must have depth of 1, 3 or 4. When depth of 1, draws grayscale.
+   *     When depth of 3, we draw with the first three components of the depth
+   *     dimension corresponding to r, g, b and alpha = 1. When depth of 4,
+   *     all four components of the depth dimension correspond to r, g, b, a.
+   * @param canvas The canvas to draw to.
+   */
+  @doc({heading: 'Visualization'})
+  static async toPixels(img: Tensor2D|Tensor3D, canvas?: HTMLCanvasElement):
+      Promise<Uint8ClampedArray> {
+    if (img.rank !== 2 && img.rank !== 3) {
+      throw new Error(
+          `toPixels only supports rank 2 or 3 tensors, got rank ${img.rank}.`);
+    }
+    const [height, width] = img.shape.slice(0, 2);
+    const depth = img.rank === 2 ? 1 : img.shape[2];
+
+    if (depth > 4 || depth === 2) {
+      throw new Error(
+          `toPixels only supports depth of size ` +
+          `1, 3 or 4 but got ${depth}`);
+    }
+
+    const min = (await img.min().data())[0];
+    const max = (await img.max().data())[0];
+    if (img.dtype === 'float32') {
+      if (min < 0 || max > 1) {
+        throw new Error(
+            `Tensor values for a float32 Tensor must be in the ` +
+            `range [0 - 1] but got range [${min} - ${max}].`);
+      }
+    } else if (img.dtype === 'int32') {
+      if (min < 0 || max > 255) {
+        throw new Error(
+            `Tensor values for a int32 Tensor must be in the ` +
+            `range [0 - 255] but got range [${min} - ${max}].`);
+      }
+    } else {
+      throw new Error(
+          `Unsupported type for toPixels: ${img.dtype}.` +
+          ` Please use float32 or int32 tensors.`);
+    }
+
+    const data = await img.data();
+    const multiplier = img.dtype === 'float32' ? 255 : 1;
+    const bytes = new Uint8ClampedArray(width * height * 4);
+
+    for (let i = 0; i < height * width; ++i) {
+      let r, g, b, a;
+      if (depth === 1) {
+        r = data[i] * multiplier;
+        g = data[i] * multiplier;
+        b = data[i] * multiplier;
+        a = 255;
+      } else if (depth === 3) {
+        r = data[i * 3] * multiplier;
+        g = data[i * 3 + 1] * multiplier;
+        b = data[i * 3 + 2] * multiplier;
+        a = 255;
+      } else if (depth === 4) {
+        r = data[i * 4] * multiplier;
+        g = data[i * 4 + 1] * multiplier;
+        b = data[i * 4 + 2] * multiplier;
+        a = data[i * 4 + 3] * multiplier;
+      }
+
+      const j = i * 4;
+      bytes[j + 0] = Math.round(r);
+      bytes[j + 1] = Math.round(g);
+      bytes[j + 2] = Math.round(b);
+      bytes[j + 3] = Math.round(a);
+    }
+
+    if (canvas != null) {
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      const imageData = new ImageData(bytes, width, height);
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    return bytes;
   }
 
   /**
@@ -864,7 +966,10 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static stack<T extends Tensor>(tensors: T[], axis = 0): Tensor {
-    util.assert(tensors.length >= 2, 'Pass at least two tensors to dl.stack');
+    util.assert(tensors.length >= 1, 'Pass at least one tensor to tf.stack');
+    if (tensors.length === 1) {
+      return tensors[0].expandDims(axis);
+    }
     const rank = tensors[0].rank;
     const shape = tensors[0].shape;
     const dtype = tensors[0].dtype;
@@ -884,6 +989,64 @@ export class ArrayOps {
     });
     const expandedTensors = tensors.map(t => t.expandDims(axis));
     return ConcatOps.concat(expandedTensors, axis);
+  }
+
+  /**
+   * Splits a `Tensor` into sub tensors.
+   *
+   * If `numOrSizeSplits` is a number, splits `x` along dimension `axis`
+   * into `numOrSizeSplits` smaller tensors.
+   * Requires that `numOrSizeSplits` evenly divides `x.shape[axis]`.
+   *
+   * If `numOrSizeSplits` is a number array, splits `x` into
+   * `(numOrSizeSplits.length` pieces. The shape of the `i`-th piece has the
+   * same size as `x` except along dimension `axis` where the size is
+   * `numOrSizeSplits[i]`.
+   *
+   * ```js
+   * const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+   * const [a, b] = tf.split(x, 2, 1);
+   * a.print();
+   * b.print();
+   *
+   * const [c, d, e] = tf.split(x, [1, 2, 1], 1);
+   * c.print();
+   * d.print();
+   * e.print();
+   * ```
+   *
+   * @param x The input tensor to split.
+   * @param numOrSizeSplits Either an integer indicating the number of
+   * splits along the axis or an array of integers containing the sizes of each
+   * output tensor along the axis. If a number then it must evenly divide
+   * `x.shape[axis]`; otherwise the sum of sizes must match `x.shape[axis]`.
+   * @param axis The dimension along which to split. Defaults to 0 (the first
+   * dim).
+   */
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
+  @operation
+  static split(x: Tensor, numOrSizeSplits: number[]|number, axis = 0) {
+    axis = parseAxisParam(axis, x.shape)[0];
+    let splitSizes: number[];
+    if (typeof (numOrSizeSplits) === 'number') {
+      util.assert(
+          x.shape[axis] % numOrSizeSplits === 0,
+          'Number of splits must evenly divide the axis.');
+      splitSizes = Array(numOrSizeSplits).fill(x.shape[axis] / numOrSizeSplits);
+    } else {
+      util.assert(
+          x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),
+          'The sum of sizes must match the size of the axis dimension.');
+      splitSizes = numOrSizeSplits;
+    }
+    const begin = Array(x.rank).fill(0);
+    const size = x.shape.slice();
+    return splitSizes.map(s => {
+      size[axis] = s;
+      const slice = x.slice(begin, size);
+      begin[axis] += s;
+      return slice;
+    });
   }
 
   /**
@@ -997,8 +1160,8 @@ export class ArrayOps {
    * `buffer.set()`, or by modifying directly `buffer.values`. When done,
    * call `buffer.toTensor()` to get an immutable `Tensor` with those values.
    *
-   * When done, call `buffer.toTensor()` to get an immutable `Tensor` with those
-   * values.
+   * When done, call `buffer.toTensor()` to get an immutable `Tensor` with
+   * those values.
    *
    * ```js
    * // Create a buffer and set values at particular indices.
@@ -1012,7 +1175,8 @@ export class ArrayOps {
    *
    * @param shape An array of integers defining the output tensor shape.
    * @param dtype The dtype of the buffer. Defaults to 'float32'.
-   * @param values The values of the buffer as `TypedArray`. Defaults to zeros.
+   * @param values The values of the buffer as `TypedArray`. Defaults to
+   * zeros.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static buffer<R extends Rank>(
