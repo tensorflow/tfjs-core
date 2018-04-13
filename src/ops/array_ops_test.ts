@@ -650,7 +650,7 @@ describeWithFlags('randomNormal', ALL_ENVS, () => {
   });
 
   it('should return a float32 2D of random normal values', () => {
-    const SAMPLES = 250;
+    const SAMPLES = 100;
 
     // Ensure defaults to float32.
     let result = tf.randomNormal([SAMPLES, SAMPLES], 0, 2.5, null, SEED);
@@ -676,60 +676,54 @@ describeWithFlags('randomNormal', ALL_ENVS, () => {
   });
 
   it('should return a float32 3D of random normal values', () => {
-    const SAMPLES = 50;
+    const SAMPLES_SHAPE = [20, 20, 20];
 
     // Ensure defaults to float32.
-    let result =
-        tf.randomNormal([SAMPLES, SAMPLES, SAMPLES], 0, 0.5, null, SEED);
+    let result = tf.randomNormal(SAMPLES_SHAPE, 0, 0.5, null, SEED);
     expect(result.dtype).toBe('float32');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
+    expect(result.shape).toEqual(SAMPLES_SHAPE);
     jarqueBeraNormalityTest(result);
     expectArrayInMeanStdRange(result, 0, 0.5, EPSILON);
 
-    result =
-        tf.randomNormal([SAMPLES, SAMPLES, SAMPLES], 0, 1.5, 'float32', SEED);
+    result = tf.randomNormal(SAMPLES_SHAPE, 0, 1.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
+    expect(result.shape).toEqual(SAMPLES_SHAPE);
     jarqueBeraNormalityTest(result);
     expectArrayInMeanStdRange(result, 0, 1.5, EPSILON);
   });
 
   it('should return a int32 3D of random normal values', () => {
-    const SAMPLES = 50;
-    const result =
-        tf.randomNormal([SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
+    const SAMPLES_SHAPE = [20, 20, 20];
+    const result = tf.randomNormal(SAMPLES_SHAPE, 0, 2, 'int32', SEED);
     expect(result.dtype).toBe('int32');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES]);
+    expect(result.shape).toEqual(SAMPLES_SHAPE);
     jarqueBeraNormalityTest(result);
     expectArrayInMeanStdRange(result, 0, 2, EPSILON);
   });
 
   it('should return a float32 4D of random normal values', () => {
-    const SAMPLES = 25;
+    const SAMPLES_SHAPE = [10, 10, 10, 10];
 
     // Ensure defaults to float32.
-    let result = tf.randomNormal(
-        [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 0.5, null, SEED);
+    let result = tf.randomNormal(SAMPLES_SHAPE, 0, 0.5, null, SEED);
     expect(result.dtype).toBe('float32');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
+    expect(result.shape).toEqual(SAMPLES_SHAPE);
     jarqueBeraNormalityTest(result);
     expectArrayInMeanStdRange(result, 0, 0.5, EPSILON);
 
-    result = tf.randomNormal(
-        [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 1.5, 'float32', SEED);
+    result = tf.randomNormal(SAMPLES_SHAPE, 0, 1.5, 'float32', SEED);
     expect(result.dtype).toBe('float32');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
+    expect(result.shape).toEqual(SAMPLES_SHAPE);
     jarqueBeraNormalityTest(result);
     expectArrayInMeanStdRange(result, 0, 1.5, EPSILON);
   });
 
   it('should return a int32 4D of random normal values', () => {
-    const SAMPLES = 25;
+    const SAMPLES_SHAPE = [10, 10, 10, 10];
 
-    const result = tf.randomNormal(
-        [SAMPLES, SAMPLES, SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
+    const result = tf.randomNormal(SAMPLES_SHAPE, 0, 2, 'int32', SEED);
     expect(result.dtype).toBe('int32');
-    expect(result.shape).toEqual([SAMPLES, SAMPLES, SAMPLES, SAMPLES]);
+    expect(result.shape).toEqual(SAMPLES_SHAPE);
     jarqueBeraNormalityTest(result);
     expectArrayInMeanStdRange(result, 0, 2, EPSILON);
   });

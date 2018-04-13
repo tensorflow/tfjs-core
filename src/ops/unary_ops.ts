@@ -347,7 +347,8 @@ export class UnaryOps {
    *
    * x.relu().print();  // or tf.relu(x)
    * ```
-   * @param x The input tensor.
+   * @param x The input tensor. If the dtype is `bool`, the output dtype will be
+   *     `int32'.
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
