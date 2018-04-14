@@ -857,7 +857,9 @@ export class ArrayOps {
   static gather<T extends Tensor>(x: T, indices: Tensor1D, axis = 0): T {
     const axes = parseAxisParam(axis, x.shape);
     return ENV.engine.runKernel(
-        backend => backend.gather(x, indices, axes[0]), {x, indices});
+        backend => backend.gather(
+            x, indices.dtype === 'int32' ? indices : indices.toInt(), axes[0]),
+        {x, indices});
   }
 
   /**
