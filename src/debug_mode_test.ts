@@ -16,15 +16,17 @@
  */
 
 import * as tf from './index';
-// tslint:disable-next-line:max-line-length
 import {ALL_ENVS, describeWithFlags, expectArraysClose} from './test_util';
-import * as util from './util';
 
-const ALL_ENVS_DEBUG = ALL_ENVS.map(env => Object.assign({'DEBUG': true}, env));
-const ALL_ENVS_NO_DEBUG =
-    ALL_ENVS.map(env => Object.assign({'DEBUG': false}, env));
+describeWithFlags('debug on', ALL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('DEBUG', true);
+  });
 
-describeWithFlags('debug on', ALL_ENVS_DEBUG, () => {
+  afterAll(() => {
+    tf.ENV.set('DEBUG', false);
+  });
+
   it('debug mode does not error when no nans', () => {
     const a = tf.tensor1d([2, -1, 0, 3]);
     const res = tf.relu(a);
@@ -33,18 +35,6 @@ describeWithFlags('debug on', ALL_ENVS_DEBUG, () => {
 
   it('debug mode errors when there are nans, float32', () => {
     const a = tf.tensor1d([2, NaN]);
-    const f = () => tf.relu(a);
-    expect(f).toThrowError();
-  });
-
-  it('debug mode errors when there are nans, int32', () => {
-    const a = tf.tensor1d([2, util.NAN_INT32], 'int32');
-    const f = () => tf.relu(a);
-    expect(f).toThrowError();
-  });
-
-  it('debug mode errors when there are nans, bool', () => {
-    const a = tf.tensor1d([1, util.NAN_BOOL], 'bool');
     const f = () => tf.relu(a);
     expect(f).toThrowError();
   });
@@ -60,7 +50,11 @@ describeWithFlags('debug on', ALL_ENVS_DEBUG, () => {
   });
 });
 
-describeWithFlags('debug off', ALL_ENVS_NO_DEBUG, () => {
+describeWithFlags('debug off', ALL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('DEBUG', false);
+  });
+
   it('no errors where there are nans, and debug mode is disabled', () => {
     const a = tf.tensor1d([2, NaN]);
     const res = tf.relu(a);
