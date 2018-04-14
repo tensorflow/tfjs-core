@@ -142,21 +142,24 @@ export const SIGMOID = `
   return 1.0 / (1.0 + exp(-1.0 * x));
 `;
 
+/**
+ * mirrors the implementation of tf.nn.softplus: https://goo.gl/vkcvwX
+ *
+ * epsilon is the difference between 1.0 and the next representable
+ * float. For a single precision 32 bit float this should be 2^-23, see:
+ * https://math.byu.edu/~schow/work/IEEEFloatingPoint.htm
+ *
+ * too_large = (x > -threshold) is value above which exp(x) may overflow
+ * but softplus(x) == x is within machine epsilon
+ *
+ * too_small = (x < threshold) is value below which exp(x) may underflow,
+ * but softplus(x) == exp(x) is within machine epsilon.
+ */
 export const SOFTPLUS = `
-  // mirrors the implementation of tf.nn.softplus: https://goo.gl/vkcvwX
-
-  // epsilon is the difference between 1.0 and the next representable float.
-  // For a single precision 32 bit float this should be 2^-23, see:
-  // https://math.byu.edu/~schow/work/IEEEFloatingPoint.htm
   float epsilon = 1.1920928955078125e-7;
   float threshold = log(epsilon) + 2.0;
 
-  // Value above which exp(x) may overflow, but softplus(x) == x
-  // is within machine epsilon.
   bool too_large = x > -threshold;
-
-  // Value below which exp(x) may underflow, but softplus(x) == exp(x)
-  // is within machine epsilon.
   bool too_small = x < threshold;
 
   float result;

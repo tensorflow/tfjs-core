@@ -764,9 +764,13 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.sigmoid(this);
   }
-  log_sigmoid<T extends Tensor>(this: T): T {
+  logSigmoid<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
-    return ops.log_sigmoid(this);
+    return ops.logSigmoid(this);
+  }
+  softplus<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.softplus(this);
   }
   sin<T extends Tensor>(this: T): T {
     this.throwIfDisposed();

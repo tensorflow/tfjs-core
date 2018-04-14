@@ -296,12 +296,12 @@ describeWithFlags('sigmoid', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('log_sigmoid', ALL_ENVS, () => {
+describeWithFlags('logSigmoid', ALL_ENVS, () => {
   it('basic', () => {
     const values = [1, -3, 2, 7, -4];
-    const a = dl.tensor1d(values);
+    const a = tf.tensor1d(values);
 
-    const result = dl.log_sigmoid(a);
+    const result = tf.logSigmoid(a);
 
     const expected = [];
     for (let i = 0; i < a.size; i++) {
@@ -311,9 +311,9 @@ describeWithFlags('log_sigmoid', ALL_ENVS, () => {
   });
 
   it('scalar', () => {
-    const a = dl.scalar(-2);
+    const a = tf.scalar(-2);
 
-    const result = dl.log_sigmoid(a);
+    const result = tf.logSigmoid(a);
 
     const expected = [Math.log(1 / (1 + Math.exp(2)))];
     expectArraysClose(result, expected);
@@ -321,9 +321,9 @@ describeWithFlags('log_sigmoid', ALL_ENVS, () => {
 
   it('tensor2D', () => {
     const values = [1, 2, -3, 5];
-    const a = dl.tensor2d(values, [2, 2]);
+    const a = tf.tensor2d(values, [2, 2]);
 
-    const result = dl.log_sigmoid(a);
+    const result = tf.logSigmoid(a);
 
     const expected = [];
     for (let i = 0; i < a.size; i++) {
@@ -332,22 +332,22 @@ describeWithFlags('log_sigmoid', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
-  it('small x', () => {
+  it('larger magnitude negative inputs', () => {
     const values = [-100, -200, -3000, -50000];
-    const a = dl.tensor1d(values);
+    const a = tf.tensor1d(values);
 
-    const result = dl.log_sigmoid(a);
+    const result = tf.logSigmoid(a);
 
     const expected = [-100, -200, -3000, -50000];
 
     expectArraysClose(result, expected);
   });
 
-  it('large x', () => {
+  it('larger magnitude positive inputs', () => {
     const values = [100, 200, 3000, 50000];
-    const a = dl.tensor1d(values);
+    const a = tf.tensor1d(values);
 
-    const result = dl.log_sigmoid(a);
+    const result = tf.logSigmoid(a);
 
     const expected = [0, 0, 0, 0];
 
@@ -355,16 +355,16 @@ describeWithFlags('log_sigmoid', ALL_ENVS, () => {
   });
 
   it('propagates NaNs', () => {
-    const a = dl.tensor1d([3, NaN]);
-    const res = dl.log_sigmoid(a);
+    const a = tf.tensor1d([3, NaN]);
+    const res = tf.logSigmoid(a);
     expectArraysClose(res, [Math.log(1 / (1 + Math.exp(-3))), NaN]);
   });
 
   it('gradients: Scalar', () => {
-    const a = dl.scalar(3);
-    const dy = dl.scalar(4);
+    const a = tf.scalar(3);
+    const dy = tf.scalar(4);
 
-    const da = dl.grad(a => dl.log_sigmoid(a))(a, dy);
+    const da = tf.grad(a => tf.logSigmoid(a))(a, dy);
 
     const expected = [];
     for (let i = 0; i < a.size; i++) {
@@ -376,10 +376,10 @@ describeWithFlags('log_sigmoid', ALL_ENVS, () => {
   });
 
   it('gradients: Tensor1D', () => {
-    const a = dl.tensor1d([1, 2, -3, 5]);
-    const dy = dl.tensor1d([1, 2, 3, 4]);
+    const a = tf.tensor1d([1, 2, -3, 5]);
+    const dy = tf.tensor1d([1, 2, 3, 4]);
 
-    const da = dl.grad(a => dl.log_sigmoid(a))(a, dy);
+    const da = tf.grad(a => tf.logSigmoid(a))(a, dy);
 
     const expected = [];
     for (let i = 0; i < a.size; i++) {
@@ -391,14 +391,124 @@ describeWithFlags('log_sigmoid', ALL_ENVS, () => {
   });
 
   it('gradients: Tensor2D', () => {
-    const a = dl.tensor2d([1, 2, -3, 5], [2, 2]);
-    const dy = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+    const a = tf.tensor2d([1, 2, -3, 5], [2, 2]);
+    const dy = tf.tensor2d([1, 2, 3, 4], [2, 2]);
 
-    const da = dl.grad(a => dl.log_sigmoid(a))(a, dy);
+    const da = tf.grad(a => tf.logSigmoid(a))(a, dy);
 
     const expected = [];
     for (let i = 0; i < a.size; i++) {
       const y = 1 / (1 + Math.exp(a.get(i)));
+      expected[i] = dy.get(i) * y;
+    }
+
+    expectArraysClose(da, expected);
+  });
+});
+
+describeWithFlags('softplus', ALL_ENVS, () => {
+  it('basic', () => {
+    const values = [1, -3, 2, 7, -4];
+    const a = tf.tensor1d(values);
+
+    const result = tf.softplus(a);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.log((1 + Math.exp(values[i])));
+    }
+    expectArraysClose(result, expected);
+  });
+
+  it('scalar', () => {
+    const a = tf.scalar(-2);
+
+    const result = tf.softplus(a);
+
+    const expected = [Math.log((1 + Math.exp(-2)))];
+    expectArraysClose(result, expected);
+  });
+
+  it('tensor2D', () => {
+    const values = [1, 2, -3, 5];
+    const a = tf.tensor2d(values, [2, 2]);
+
+    const result = tf.softplus(a);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.log((1 + Math.exp(values[i])));
+    }
+    expectArraysClose(result, expected);
+  });
+
+  it('larger magnitude negative inputs', () => {
+    const values = [-100, -200, -3000, -50000];
+    const a = tf.tensor1d(values);
+
+    const result = tf.softplus(a);
+
+    const expected = [0, 0, 0, 0];
+
+    expectArraysClose(result, expected);
+  });
+
+  it('larger magnitude positive inputs', () => {
+    const values = [100, 200, 3000, 50000];
+    const a = tf.tensor1d(values);
+
+    const result = tf.softplus(a);
+
+    const expected = [100, 200, 3000, 50000];
+
+    expectArraysClose(result, expected);
+  });
+
+  it('propagates NaNs', () => {
+    const a = tf.tensor1d([3, NaN]);
+    const res = tf.softplus(a);
+    expectArraysClose(res, [Math.log((1 + Math.exp(3))), NaN]);
+  });
+
+  it('gradients: Scalar', () => {
+    const a = tf.scalar(3);
+    const dy = tf.scalar(4);
+
+    const da = tf.grad(a => tf.softplus(a))(a, dy);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      const y = 1 / (1 + Math.exp(-a.get(i)));
+      expected[i] = dy.get(i) * y;
+    }
+
+    expectArraysClose(da, expected);
+  });
+
+  it('gradients: Tensor1D', () => {
+    const a = tf.tensor1d([1, 2, -3, 5]);
+    const dy = tf.tensor1d([1, 2, 3, 4]);
+
+    const da = tf.grad(a => tf.softplus(a))(a, dy);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      const y = 1 / (1 + Math.exp(-a.get(i)));
+      expected[i] = dy.get(i) * y;
+    }
+
+    expectArraysClose(da, expected);
+  });
+
+  it('gradients: Tensor2D', () => {
+    const a = tf.tensor2d([1, 2, -3, 5], [2, 2]);
+    const dy = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+
+    const da = tf.grad(a => tf.softplus(a))(a, dy);
+
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      const y = 1 / (1 + Math.exp(-a.get(i)));
       expected[i] = dy.get(i) * y;
     }
 
