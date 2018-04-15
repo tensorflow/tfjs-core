@@ -1391,7 +1391,7 @@ export class MathBackendCPU implements KernelBackend {
     return output.toTensor();
   }
 
-  batchNormalization4D(
+  batchNormalization(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
@@ -1413,45 +1413,27 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   localResponseNormalization4D(
-      x: Tensor4D, radius: number, bias: number, alpha: number, beta: number,
-      normRegion: 'acrossChannels'|'withinChannel'): Tensor4D {
+      x: Tensor4D, radius: number, bias: number, alpha: number,
+      beta: number): Tensor4D {
     const output = ops.buffer<Rank.R4>(x.shape, 'float32');
     const rad = radius;
-    const maxW = output.shape[1] - 1;
-    const maxH = output.shape[2] - 1;
     const maxD = output.shape[3] - 1;
 
-    const sumAcrossChannels =
-        (b: number, r: number, c: number, d: number): number => {
-          let sum = 0.0;
-          for (let j = Math.max(0, d - rad); j <= Math.min(d + rad, maxD);
-               j++) {
-            const z = x.get(b, r, c, j);
-            sum += z * z;
-          }
-          return sum;
-        };
-
-    const sumWithinChannel =
-        (b: number, r: number, c: number, d: number): number => {
-          let sum = 0.0;
-          for (let u = Math.max(0, r - rad); u <= Math.min(r + rad, maxW);
-               u++) {
-            for (let v = Math.max(0, c - rad); v <= Math.min(c + rad, maxH);
-                 v++) {
-              sum += Math.pow(x.get(b, u, v, d), 2);
-            }
-          }
-          return sum;
-        };
+    function sumAcrossChannels(
+        b: number, r: number, c: number, d: number): number {
+      let sum = 0.0;
+      for (let j = Math.max(0, d - rad); j <= Math.min(d + rad, maxD); j++) {
+        const z = x.get(b, r, c, j);
+        sum += z * z;
+      }
+      return sum;
+    }
 
     for (let b = 0; b < output.shape[0]; b++) {
       for (let r = 0; r <= output.shape[1]; r++) {
         for (let c = 0; c < output.shape[2]; c++) {
           for (let d = 0; d < output.shape[3]; d++) {
-            const sum = normRegion === 'withinChannel' ?
-                sumWithinChannel(b, r, c, d) :
-                sumAcrossChannels(b, r, c, d);
+            const sum = sumAcrossChannels(b, r, c, d);
             const val = x.get(b, r, c, d) * Math.pow(bias + alpha * sum, -beta);
             output.set(val, b, r, c, d);
           }

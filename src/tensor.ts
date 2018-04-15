@@ -881,10 +881,8 @@ export class Tensor<R extends Rank = Rank> {
     return ops.maxPool(this, filterSize, strides, pad, dimRoundingMode);
   }
   localResponseNormalization<T extends Tensor3D|Tensor4D>(
-      this: T, radius = 5, bias = 1, alpha = 1, beta = 0.5,
-      normRegion: 'acrossChannels'|'withinChannel' = 'acrossChannels'): T {
-    return ops.localResponseNormalization(
-        this, radius, bias, alpha, beta, normRegion);
+      this: T, radius = 5, bias = 1, alpha = 1, beta = 0.5): T {
+    return ops.localResponseNormalization(this, radius, bias, alpha, beta);
   }
 
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {

@@ -185,14 +185,14 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       x: Tensor4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Tensor4D;
 
-  batchNormalization4D(
+  batchNormalization(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
-      varianceEpsilon: number, scale: Tensor4D|Tensor1D,
-      offset: Tensor4D|Tensor1D): Tensor4D;
+      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
+      offset?: Tensor4D|Tensor1D): Tensor4D;
 
   localResponseNormalization4D(
-      x: Tensor4D, radius: number, bias: number, alpha: number, beta: number,
-      normRegion: 'acrossChannels'|'withinChannel'): Tensor4D;
+      x: Tensor4D, radius: number, bias: number, alpha: number,
+      beta: number): Tensor4D;
 
   multinomial(
       logits: Tensor2D, normalized: boolean, numSamples: number,
