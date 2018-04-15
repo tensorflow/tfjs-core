@@ -226,5 +226,6 @@ export const losses = {
 };
 
 export const image = {
-  resizeBilinear: ImageOps.resizeBilinear
+  resizeBilinear: ImageOps.resizeBilinear,
+  resizeNearestNeighbor: ImageOps.resizeNearestNeighbor,
 };
