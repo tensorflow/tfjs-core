@@ -21,6 +21,7 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {Rank} from '../types';
 import * as util from '../util';
 
+import * as ops from './ops';
 import {operation} from './operation';
 
 export class BatchNormOps {
@@ -193,16 +194,51 @@ export class BatchNormOps {
       x4D = x as Tensor4D;
     }
 
-    const grad = (dy: Tensor4D) => {
-      return {x: () => dy, mean: () => dy, variance: () => dy};
+    const grad = (dy: Tensor, saved: Tensor[]) => {
+      const [y] = saved;
+
+      const derXHat = dy.mul(scale);
+
+      const xOffset = x4D.sub(mean);
+
+      const xHat = y.sub(offset).div(scale);  // get back xHat?
+
+      const scalarVarEps = ops.scalar(varianceEpsilon);
+
+      const derVariance =
+          derXHat.mul(xOffset)
+              .mul(ops.scalar(-1 / 2).mul(
+                  variance.add(scalarVarEps).pow(ops.scalar(-3 / 2))))
+              .sum(0);
+
+      const rsqrtVarEps = variance.add(scalarVarEps).rsqrt();
+
+      const derMean = ops.add(
+          derXHat.sum(0).mul(ops.neg(rsqrtVarEps)),
+          derVariance.mul(xOffset.mul(ops.scalar(-2)).mean(0)));
+
+      // TODO: reshape correctly
+      // const m = ops.scalar(y.shape[0]);
+      // const derX = derXHat.mul(ops.scalar(-1).mul(rsqrtVarEps))
+      //                  .add(derVariance.mul(ops.scalar(2)
+      //                  .mul(xOffset).div(m)))
+      //                  .add(derMean.div(m));
+
+      return {
+        x: () => x4D,  // will replace with derX
+        mean: () => derMean.reshape(mean.shape),
+        variance: () => derVariance.reshape(variance.shape),
+        scale: () => dy.mul(xHat).sum(0).reshape(scale.shape),
+        offset: () => dy.sum(0).reshape(offset.shape),
+      };
     };
 
     const res = ENV.engine.runKernel(
-        backend => backend.batchNormalization4D(
+        (backend, save) => save(backend.batchNormalization4D(
             x4D, batchnormReshape4D(mean), batchnormReshape4D(variance),
             varianceEpsilon, batchnormReshape4D(scale),
-            batchnormReshape4D(offset)),
-        {x: x4D, mean, variance}, grad);
+            batchnormReshape4D(offset))),
+        {x: x4D, mean, variance, scale, offset}, grad);
     return res.reshape(x.shape);
   }
 }
