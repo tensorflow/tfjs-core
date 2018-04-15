@@ -74,8 +74,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   sum(x: Tensor, axes: number[]): Tensor;
 
-  argMin(x: Tensor, axes: number[]): Tensor;
-  argMax(x: Tensor, axes: number[]): Tensor;
+  argMin(x: Tensor, axis: number): Tensor;
+  argMax(x: Tensor, axis: number): Tensor;
 
   equal(a: Tensor, b: Tensor): Tensor;
   notEqual(a: Tensor, b: Tensor): Tensor;
@@ -166,9 +166,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       Tensor4D;
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
-  maxPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
-
-  minPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+  maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D;
   avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   avgPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
 

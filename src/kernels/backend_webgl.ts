@@ -453,7 +453,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.reduce(a2D, 'sum', outputDType).reshape(outShape);
   }
 
-  argMin(x: Tensor, axes: number[]): Tensor {
+  argMin(x: Tensor, axis: number): Tensor {
+    const axes = [axis];
     axis_util.assertAxesAreInnerMostDims('argMin', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -462,7 +463,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.argReduce(a2D, 'min').reshape(outShape);
   }
 
-  argMax(x: Tensor, axes: number[]): Tensor {
+  argMax(x: Tensor, axis: number): Tensor {
+    const axes = [axis];
     axis_util.assertAxesAreInnerMostDims('argMax', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -835,20 +837,14 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x], output);
   }
 
-  minPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    const program = new Pool2DProgram(convInfo, 'min', false);
-    const output =
-        this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
-    return this.compileAndRun(program, [x], output);
-  }
-
   avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const program = new Pool2DProgram(convInfo, 'avg', false);
     const output = this.makeOutputArray(program.outputShape, 'float32');
     return this.compileAndRun(program, [x], output) as Tensor4D;
   }
 
-  maxPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
     const getPositions = true;
     const maxPoolPositionsProgram =
         new Pool2DProgram(convInfo, 'max', getPositions);

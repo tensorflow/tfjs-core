@@ -276,7 +276,8 @@ export class MathBackendCPU implements KernelBackend {
     return result;
   }
 
-  argMin(x: Tensor, axes: number[]): Tensor {
+  argMin(x: Tensor, axis: number): Tensor {
+    const axes = [axis];
     axis_util.assertAxesAreInnerMostDims('argMin', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -301,7 +302,8 @@ export class MathBackendCPU implements KernelBackend {
     return result;
   }
 
-  argMax(x: Tensor, axes: number[]): Tensor {
+  argMax(x: Tensor, axis: number): Tensor {
+    const axes = [axis];
     axis_util.assertAxesAreInnerMostDims('argMax', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -1181,7 +1183,7 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as T;
   }
 
-  private pool(x: Tensor4D, convInfo: Conv2DInfo, poolType: 'max'|'min'|'avg'):
+  private pool(x: Tensor4D, convInfo: Conv2DInfo, poolType: 'max'|'avg'):
       Tensor4D {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1205,26 +1207,24 @@ export class MathBackendCPU implements KernelBackend {
                 (poolType === 'max' ? Number.NEGATIVE_INFINITY :
                                       Number.POSITIVE_INFINITY);
             let avgValue = 0;
+            let count = 0;
             for (let xR = xRMin; xR < xRMax; ++xR) {
               for (let xC = xCMin; xC < xCMax; ++xC) {
                 const pixel = x.get(b, xR, xC, d);
-                if (isNaN(pixel)) {
-                  minMaxValue = NaN;
-                  avgValue = NaN;
-                  break;
-                }
-                if ((poolType === 'max' && pixel > minMaxValue) ||
-                    (poolType === 'min' && pixel < minMaxValue)) {
+                if ((poolType === 'max' && pixel > minMaxValue)) {
                   minMaxValue = pixel;
                 } else if (poolType === 'avg') {
-                  avgValue += pixel / (filterHeight * filterWidth);
+                  avgValue += pixel;
+                  count++;
                 }
               }
               if (isNaN(minMaxValue)) {
                 break;
               }
             }
-            y.set(poolType === 'avg' ? avgValue : minMaxValue, b, yR, yC, d);
+            y.set(
+                poolType === 'avg' ? avgValue / count : minMaxValue, b, yR, yC,
+                d);
           }
         }
       }
@@ -1276,7 +1276,8 @@ export class MathBackendCPU implements KernelBackend {
     return maxPositions.toTensor();
   }
 
-  maxPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
     const maxPositions = this.maxPoolPositions(x, convInfo);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1378,10 +1379,6 @@ export class MathBackendCPU implements KernelBackend {
   reshape<T extends Tensor<types.Rank>, R extends types.Rank>(
       x: T, shape: types.ShapeMap[R]): Tensor<R> {
     return backend_util.reshapeTensor(x, shape);
-  }
-
-  minPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    return this.pool(x, convInfo, 'min');
   }
 
   avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
