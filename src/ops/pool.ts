@@ -89,9 +89,10 @@ export class PoolOps {
    * @param dy The dy error, of rank 4 or rank 3 of shape
    *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
    * assumed.
-   * @param input The input image, of rank 4 or rank 3 of shape
-   *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
-   * assumed.
+   * @param input The original input image, of rank 4, of shape
+   *     [batchSize, height, width, channels].
+   * @param output The original output image, of rank 4, of shape
+   *     [batchSize, outHeight, outWidth, channels].
    * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
    * @param strides The strides of the pooling: [strideHeight, strideWidth].
    * @param pad A string from: 'same', 'valid'. The type of padding algorithm

@@ -674,18 +674,19 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
-  eluDer<T extends Tensor>(x: T): T {
-    const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+  eluDer<T extends Tensor>(dy: T, y: T): T {
+    const resultValues = new Float32Array(y.size);
+    const values = y.dataSync();
+    const dyValues = dy.dataSync();
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
-      if (v >= 0) {
-        resultValues[i] = 1;
+      if (v >= 1) {
+        resultValues[i] = dyValues[i];
       } else {
-        resultValues[i] = Math.exp(v);
+        resultValues[i] = dyValues[i] * (v + 1);
       }
     }
-    return Tensor.make(x.shape, {values: resultValues}) as T;
+    return Tensor.make(y.shape, {values: resultValues}) as T;
   }
 
   selu<T extends Tensor>(x: T): T {

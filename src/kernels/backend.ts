@@ -125,7 +125,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   relu<T extends Tensor>(x: T): T;
   elu<T extends Tensor>(x: T): T;
-  eluDer<T extends Tensor>(x: T): T;
+  eluDer<T extends Tensor>(dy: T, y: T): T;
   selu<T extends Tensor>(x: T): T;
   leakyRelu<T extends Tensor>(x: T, alpha: number): T;
   prelu<T extends Tensor>(x: T, alpha: T): T;

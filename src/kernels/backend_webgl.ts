@@ -691,9 +691,10 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  eluDer<T extends Tensor>(x: T): T {
-    const program = new UnaryOpProgram(x.shape, unary_op.ELU_DER);
-    return this.compileAndRun(program, [x]) as T;
+  eluDer<T extends Tensor>(dy: T, y: T): T {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.ELU_DER, dy.shape, y.shape);
+    return this.compileAndRun(program, [dy, y]) as T;
   }
 
   selu<T extends Tensor>(x: T): T {

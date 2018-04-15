@@ -376,10 +376,15 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static elu<T extends Tensor>(x: T): T {
-    const grad = (dy: T) => {
-      return {x: () => dy.mulStrict(eluDer(x))};
+    const grad = (dy: T, saved: Tensor[]) => {
+      const [y] = saved;
+      return {
+        x: () =>
+            ENV.engine.runKernel(backend => backend.eluDer(dy, y), {dy, y}) as T
+      };
     };
-    return ENV.engine.runKernel(backend => backend.elu(x), {x}, grad);
+    return ENV.engine.runKernel(
+        (backend, save) => save(backend.elu(x)), {x}, grad);
   }
 
   /**
@@ -755,8 +760,4 @@ export class UnaryOps {
 function preluDer<T extends Tensor>(x: T, alpha: T): T {
   return ENV.engine.runKernel(
       backend => backend.preluDer(x, alpha), {x, alpha});
-}
-
-function eluDer<T extends Tensor>(x: T): T {
-  return ENV.engine.runKernel(backend => backend.eluDer(x), {x});
 }
