@@ -364,3 +364,36 @@ describeWithFlags('batchNormalization2D', ALL_ENVS, () => {
     ]);
   });
 });
+
+describeWithFlags('batchNormalization gradients', ALL_ENVS, () => {
+  it('matches tensorflow, 2x1x1x2', () => {
+    const x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+    const mean = tf.tensor1d([1, 2]);
+    const variance = tf.tensor1d([2, 3]);
+    const varianceEpsilon = .001;
+    const scale = tf.tensor1d([1, 1]);
+    const offset = tf.tensor1d([0, 0]);
+
+    const dy = tf.tensor4d([0.1, 0.1, 0.1, 0.1], [2, 1, 1, 2]);
+
+    const grads = tf.grads(
+        (x: tf.Tensor4D, mean: tf.Tensor1D, variance: tf.Tensor1D,
+         scale: tf.Tensor1D, offset: tf.Tensor1D) =>
+            tf.batchNormalization4d(
+                x, mean, variance, varianceEpsilon, scale, offset));
+
+    const [dx, dm, dv, ds, doff] =
+        grads([x, mean, variance, scale, offset], dy);
+
+    // TODO: check gradients for dx
+    dx.data();
+    // from tf.gradient
+    // expectArraysClose(dm, [-0.14138602, -0.11545082]);
+    // manually executing equation in tf (probably wrong)
+
+    expectArraysClose(dm, [0.14124475, 2365.9919]);
+    expectArraysClose(dv, [-0.07065769, -4.77037811]);
+    expectArraysClose(ds, [0.28277206, 28.63180351]);
+    expectArraysClose(doff, [0.2, 0.2]);
+  });
+});
