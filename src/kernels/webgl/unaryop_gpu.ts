@@ -57,10 +57,6 @@ export const SELU = `
   return (x >= 0.0) ? scale * x : scaleAlpha * (exp(x) - 1.0);
 `;
 
-export function LEAKY_RELU(alpha: number) {
-  return `return (x >= 0.0) ? x : ${alpha} * x;`;
-}
-
 export function STEP(alpha = 0.0) {
   return CHECK_NAN_SNIPPET + `
     return x > 0.0 ? 1.0 : float(${alpha});

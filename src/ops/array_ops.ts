@@ -27,7 +27,6 @@ import * as util from '../util';
 import {parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
 import {operation} from './operation';
-import * as ops from './ops';
 import {MPRandGauss} from './rand';
 
 export class ArrayOps {
@@ -508,14 +507,11 @@ export class ArrayOps {
       throw new Error(
           `Rank of probabilities must be 1 or 2, but is ${origRank}`);
     }
-    if (!normalized) {
-      logits = ops.softmax(logits);
-    }
     seed = seed || Math.random();
-
-    const prob2D = origRank === 1 ? logits.as2D(1, -1) : logits as Tensor2D;
+    const logits2D = origRank === 1 ? logits.as2D(1, -1) : logits as Tensor2D;
     const res = ENV.engine.runKernel(
-        backend => backend.multinomial(prob2D, numSamples, seed), {prob2D});
+        backend => backend.multinomial(logits2D, normalized, numSamples, seed),
+        {logits2D});
 
     return origRank === 1 ? res.as1D() : res;
   }

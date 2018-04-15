@@ -708,52 +708,6 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
-  leakyRelu<T extends Tensor>(x: T, alpha: number) {
-    const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
-    for (let i = 0; i < values.length; i++) {
-      const v = values[i];
-      if (v >= 0) {
-        resultValues[i] = v;
-      } else {
-        resultValues[i] = alpha * v;
-      }
-    }
-    return Tensor.make(x.shape, {values: resultValues}) as T;
-  }
-
-  prelu<T extends Tensor>(x: T, alpha: T) {
-    const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
-    const alphas = alpha.dataSync();
-    for (let i = 0; i < values.length; i++) {
-      const v = values[i];
-      if (v >= 0) {
-        resultValues[i] = v;
-      } else {
-        resultValues[i] = alphas[i] * v;
-      }
-    }
-    return Tensor.make(x.shape, {values: resultValues}) as T;
-  }
-
-  preluDer<T extends Tensor>(x: T, alpha: T) {
-    const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
-    const alphas = alpha.dataSync();
-    for (let i = 0; i < values.length; i++) {
-      const v = values[i];
-      if (v > 0) {
-        resultValues[i] = 1;
-      } else if (v < 0) {
-        resultValues[i] = alphas[i];
-      } else {
-        resultValues[i] = v;
-      }
-    }
-    return Tensor.make(x.shape, {values: resultValues}) as T;
-  }
-
   clip<T extends Tensor>(x: T, min: number, max: number): T {
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
@@ -1508,8 +1462,10 @@ export class MathBackendCPU implements KernelBackend {
     return output.toTensor();
   }
 
-  multinomial(probabilities: Tensor2D, numSamples: number, seed: number):
-      Tensor2D {
+  multinomial(
+      logits: Tensor2D, normalized: boolean, numSamples: number,
+      seed: number): Tensor2D {
+    const probabilities = normalized ? logits : ops.softmax(logits);
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
     const res = ops.zeros<Rank.R2>([batchSize, numSamples], 'int32');

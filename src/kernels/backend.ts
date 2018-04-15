@@ -127,9 +127,6 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   elu<T extends Tensor>(x: T): T;
   eluDer<T extends Tensor>(dy: T, y: T): T;
   selu<T extends Tensor>(x: T): T;
-  leakyRelu<T extends Tensor>(x: T, alpha: number): T;
-  prelu<T extends Tensor>(x: T, alpha: T): T;
-  preluDer<T extends Tensor>(x: T, alpha: T): T;
   int<T extends Tensor>(x: T): T;
 
   clip<T extends Tensor>(x: T, min: number, max: number): T;
@@ -197,8 +194,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       x: Tensor4D, radius: number, bias: number, alpha: number, beta: number,
       normRegion: 'acrossChannels'|'withinChannel'): Tensor4D;
 
-  multinomial(probabilities: Tensor2D, numSamples: number, seed: number):
-      Tensor2D;
+  multinomial(
+      logits: Tensor2D, normalized: boolean, numSamples: number,
+      seed: number): Tensor2D;
 
   oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number):
       Tensor2D;

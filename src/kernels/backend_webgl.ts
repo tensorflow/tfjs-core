@@ -19,13 +19,13 @@ import {TimingInfo} from '../engine';
 import {ENV} from '../environment';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
+import * as ops from '../ops/ops';
 import * as reduce_util from '../ops/reduce_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
-
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -702,22 +702,6 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  leakyRelu<T extends Tensor>(x: T, alpha: number): T {
-    const program = new UnaryOpProgram(x.shape, unary_op.LEAKY_RELU(alpha));
-    return this.compileAndRun(program, [x]) as T;
-  }
-
-  prelu<T extends Tensor>(a: T, b: T): T {
-    const program = new BinaryOpProgram(binaryop_gpu.PRELU, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]) as T;
-  }
-
-  preluDer<T extends Tensor>(a: T, b: T): T {
-    const program =
-        new BinaryOpProgram(binaryop_gpu.PRELU_DER, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]) as T;
-  }
-
   int<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.TO_INT);
     const output = this.makeOutputArray(program.outputShape, 'int32');
@@ -885,7 +869,10 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  multinomial(probs: Tensor2D, numSamples: number, seed: number): Tensor2D {
+  multinomial(
+      logits: Tensor2D, normalized: boolean, numSamples: number,
+      seed: number): Tensor2D {
+    const probs = normalized ? logits : ops.softmax(logits);
     const batchSize = probs.shape[0];
     const numOutcomes = probs.shape[1];
     const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);
