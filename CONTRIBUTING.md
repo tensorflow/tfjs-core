@@ -17,10 +17,16 @@ again.
 
 ## Adding functionality
 
-In general, we're trying to add ops that are driven by use-cases over just
-having parity with all of the ops in TensorFlow python. This will help us keep
-the bundle size smaller and have fewer kernels to maintain as we add new
-backends.
+In general, we're trying to add functionality when driven by use-cases instead of
+adding functionality for the sake of parity with TensorFlow python. This will
+help us keep the bundle size smaller and have less to maintain especially as we
+add new backends.
+
+One way to ensure that your PR will be accepted is to add functionality that
+has been requested in Github issues. If there is something you think is
+important and we're missing it but does not show up in Github issues, it would
+be good to file an issue there first so we can have the discussion before
+sending us a PR (we don't want to waste your time).
 
 ## Code reviews
 
