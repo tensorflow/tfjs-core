@@ -29,6 +29,16 @@ describeWithFlags('div', ALL_ENVS, () => {
     expectArraysClose(r, [1, 1, 1, 1, 2.5, 6 / 5]);
   });
 
+  it('integer division implements floor divide', () => {
+    const a = tf.tensor1d([-5, -4, 3, 2], 'int32');
+    const c = tf.tensor1d([2, 2, 2, 2], 'int32');
+
+    const r = tf.div(a, c);
+
+    expect(r.dtype).toEqual('int32');
+    expectArraysClose(r, [-3, -2, 1, 1]);
+  });
+
   it('propagates NaNs', () => {
     const a = tf.tensor2d([1, 2], [2, 1]);
     const c = tf.tensor2d([3, NaN], [2, 1]);

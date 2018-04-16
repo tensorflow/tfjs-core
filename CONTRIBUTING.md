@@ -15,6 +15,13 @@ You generally only need to submit a CLA once, so if you've already submitted one
 (even if it was for a different project), you probably don't need to do it
 again.
 
+## Adding functionality
+
+In general, we're trying to add ops that are driven by use-cases over just
+having parity with all of the ops in TensorFlow python. This will help us keep
+the bundle size smaller and have fewer kernels to maintain as we add new
+backends.
+
 ## Code reviews
 
 All submissions, including submissions by project members, require review. We
