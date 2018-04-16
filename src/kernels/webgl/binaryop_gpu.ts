@@ -53,12 +53,6 @@ export const LOGICAL_AND = `return float(a >= 1.0 && b >= 1.0);`;
 
 export const LOGICAL_OR = `return float(a >= 1.0 || b >= 1.0);`;
 
-export const LOGICAL_XOR = `return float(a >= 1.0 ^^ b >= 1.0);`;
-
-export const PRELU = `return (a >= 0.0) ? a : b * a;`;
-
-export const PRELU_DER = `return (a > 0.0) ? 1.0 : ((a < 0.0) ? b : a);`;
-
 export const MAX = CHECK_NAN_SNIPPET + `
   return max(a, b);
 `;
@@ -70,6 +64,8 @@ export const MOD = `return mod(a, b);`;
 export const ATAN2 = CHECK_NAN_SNIPPET + `
   return atan(a, b);
 `;
+
+export const ELU_DER = `return (b >= 1.0) ? a : a * (b + 1.0);`;
 
 export class BinaryOpProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
