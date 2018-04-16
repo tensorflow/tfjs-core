@@ -46,7 +46,7 @@ describeWithFlags('div', ALL_ENVS, () => {
     const r = tf.div(a, c);
 
     expect(r.dtype).toEqual('int32');
-    expectArraysClose(r, [-2, -2, 1, 1]);
+    expectArraysClose(r, [-3, -2, 1, 1]);
   });
 
   it('propagates NaNs', () => {
