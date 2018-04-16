@@ -49,8 +49,6 @@ export const LOGICAL_AND = `return float(a >= 1.0 && b >= 1.0);`;
 
 export const LOGICAL_OR = `return float(a >= 1.0 || b >= 1.0);`;
 
-export const LOGICAL_XOR = `return float(a >= 1.0 ^^ b >= 1.0);`;
-
 export const MAX = CHECK_NAN_SNIPPET + `
   return max(a, b);
 `;

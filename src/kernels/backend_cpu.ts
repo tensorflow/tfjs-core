@@ -385,12 +385,6 @@ export class MathBackendCPU implements KernelBackend {
     });
   }
 
-  logicalXor(a: Tensor, b: Tensor): Tensor {
-    return this.broadcastedBinaryOp(a, b, 'bool', (aVal, bVal) => {
-      return aVal ^ bVal;
-    });
-  }
-
   where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor {
     const values = condition.dataSync();
     const aValues = a.dataSync();

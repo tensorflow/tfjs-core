@@ -89,7 +89,6 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   logicalNot<T extends Tensor>(a: T): T;
   logicalAnd(a: Tensor, b: Tensor): Tensor;
   logicalOr(a: Tensor, b: Tensor): Tensor;
-  logicalXor(a: Tensor, b: Tensor): Tensor;
 
   where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor;
 

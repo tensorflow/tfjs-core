@@ -530,13 +530,6 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
-  logicalXor(a: Tensor, b: Tensor): Tensor {
-    const program =
-        new BinaryOpProgram(binaryop_gpu.LOGICAL_XOR, a.shape, b.shape);
-    const output = this.makeOutputArray(program.outputShape, 'bool');
-    return this.compileAndRun(program, [a, b], output);
-  }
-
   where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor {
     const program = new WhereProgram(condition.rank, a.shape, a.rank);
     const output = this.makeOutputArray(program.outputShape, dtype);
