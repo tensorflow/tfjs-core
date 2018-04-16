@@ -60,7 +60,6 @@ export const vectorTimesMatrix = MatmulOps.vectorTimesMatrix;
 
 export const avgPool = PoolOps.avgPool;
 export const maxPool = PoolOps.maxPool;
-export const minPool = PoolOps.minPool;
 
 export const transpose = TransposeOps.transpose;
 
@@ -123,6 +122,7 @@ export const sign = UnaryOps.sign;
 export const leakyRelu = UnaryOps.leakyRelu;
 export const log = UnaryOps.log;
 export const log1p = UnaryOps.log1p;
+export const logSigmoid = UnaryOps.logSigmoid;
 export const neg = UnaryOps.neg;
 export const prelu = UnaryOps.prelu;
 export const relu = UnaryOps.relu;
@@ -132,6 +132,7 @@ export const selu = UnaryOps.selu;
 export const sigmoid = UnaryOps.sigmoid;
 export const sin = UnaryOps.sin;
 export const sinh = UnaryOps.sinh;
+export const softplus = UnaryOps.softplus;
 export const sqrt = UnaryOps.sqrt;
 export const rsqrt = UnaryOps.rsqrt;
 export const square = UnaryOps.square;
