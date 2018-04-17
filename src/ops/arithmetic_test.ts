@@ -29,7 +29,7 @@ describeWithFlags('div', ALL_ENVS, () => {
     expectArraysClose(r, [1, 1, 1, 1, 2.5, 6 / 5]);
   });
 
-  it('nikhil integer division implements floor divide', () => {
+  it('integer division implements floor divide', () => {
     const a = tf.tensor1d([-5, -4, 3, 2], 'int32');
     const c = tf.tensor1d([3, 2, 2, 2], 'int32');
 
@@ -39,7 +39,7 @@ describeWithFlags('div', ALL_ENVS, () => {
     expectArraysClose(r, [-2, -2, 1, 1]);
   });
 
-  it('nikhil integer division broadcasts', () => {
+  it('integer division broadcasts', () => {
     const a = tf.tensor1d([-5, -4, 3, 2], 'int32');
     const c = tf.scalar(2, 'int32');
 
