@@ -2260,29 +2260,36 @@ describeWithFlags('erf', ALL_ENVS, () => {
     const values = [-0.25, 0.25, 0.5, .75, -0.4];
     const a = tf.tensor1d(values);
     const result = tf.erf(a);
-    const expected = [-0.2763, 0.2763, 0.5204, 0.7111, -0.4283];
+    const expected = [-0.2763264, 0.2763264, 0.5204999, 0.7111556, -0.4283924];
     expectArraysClose(result, expected);
   });
 
   it('scalar', () => {
     const a = tf.scalar(1);
     const result = tf.erf(a);
-    const expected = [0.8427];
+    const expected = [0.8427008];
     expectArraysClose(result, expected);
+  });
+
+  it('scalar in int32', () => {
+    const a = tf.scalar(1, "int32");
+    const result = tf.erf(a);
+      const expected = [0.8427008];
+      expectArraysClose(result, expected);
   });
 
   it('tensor2d', () => {
     const values = [0.2, 0.3, 0.4, 0.5];
     const a = tf.tensor2d(values, [2, 2]);
     const result = tf.erf(a);
-    const expected = [0.2227, 0.3286, 0.4283, 0.5204];
+    const expected = [0.2227026 , 0.32862678, 0.42839235, 0.5204999];
     expectArraysClose(result, expected);
   });
 
   it('propagates NaNs', () => {
     const a = tf.tensor1d([0.5, NaN, 0]);
     const res = tf.erf(a);
-    expectArraysClose(res, [0.5204, NaN, 0.0]);
+    expectArraysClose(res, [0.5204999, NaN, 0.0]);
   });
 
   it('gradients: Scalar', () => {

@@ -783,6 +783,13 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static erf<T extends Tensor>(x: T): T {
+    util.assert(x.dtype === 'int32' || x.dtype === 'float32',
+        'Input dtype must be `int32` or `float32`.');
+
+    if (x.dtype === 'int32') {
+      x = x.toFloat();
+    }
+
     const grad = (dy: T) => {
       return {
         x: () =>
