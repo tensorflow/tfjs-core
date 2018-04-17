@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as dl from './index';
+import * as tf from './index';
 import {Tensor} from './tensor';
 import {CPU_ENVS, describeWithFlags} from './test_util';
 import {NamedTensorMap} from './types';
@@ -170,64 +170,6 @@ describe('util.inferFromImplicitShape', () => {
   });
 });
 
-describe('util.getNaN', () => {
-  it('float32', () => {
-    expect(isNaN(util.getNaN('float32'))).toBe(true);
-  });
-
-  it('int32', () => {
-    expect(util.getNaN('int32')).toBe(util.NAN_INT32);
-  });
-
-  it('bool', () => {
-    expect(util.getNaN('bool')).toBe(util.NAN_BOOL);
-  });
-
-  it('unknown type throws error', () => {
-    // tslint:disable-next-line:no-any
-    expect(() => util.getNaN('hello' as any)).toThrowError();
-  });
-});
-
-describe('util.isValNaN', () => {
-  it('NaN for float32', () => {
-    expect(util.isValNaN(NaN, 'float32')).toBe(true);
-  });
-
-  it('2 for float32', () => {
-    expect(util.isValNaN(3, 'float32')).toBe(false);
-  });
-
-  it('255 for float32', () => {
-    expect(util.isValNaN(255, 'float32')).toBe(false);
-  });
-
-  it('255 for int32', () => {
-    expect(util.isValNaN(255, 'int32')).toBe(false);
-  });
-
-  it('NAN_INT32 for int32', () => {
-    expect(util.isValNaN(util.NAN_INT32, 'int32')).toBe(true);
-  });
-
-  it('NAN_INT32 for bool', () => {
-    expect(util.isValNaN(util.NAN_INT32, 'bool')).toBe(false);
-  });
-
-  it('NAN_BOOL for bool', () => {
-    expect(util.isValNaN(util.NAN_BOOL, 'bool')).toBe(true);
-  });
-
-  it('2 for bool', () => {
-    expect(util.isValNaN(2, 'bool')).toBe(false);
-  });
-
-  it('throws error for unknown dtype', () => {
-    // tslint:disable-next-line:no-any
-    expect(() => util.isValNaN(0, 'hello' as any)).toThrowError();
-  });
-});
-
 describe('util.squeezeShape', () => {
   it('scalar', () => {
     const {newShape, keptDims} = util.squeezeShape([]);
@@ -273,15 +215,15 @@ describe('util.squeezeShape', () => {
 
 describe('util.isTensorInList', () => {
   it('not in list', () => {
-    const a = dl.scalar(1);
-    const list: Tensor[] = [dl.scalar(1), dl.tensor1d([1, 2, 3])];
+    const a = tf.scalar(1);
+    const list: Tensor[] = [tf.scalar(1), tf.tensor1d([1, 2, 3])];
 
     expect(util.isTensorInList(a, list)).toBe(false);
   });
 
   it('in list', () => {
-    const a = dl.scalar(1);
-    const list: Tensor[] = [dl.scalar(2), dl.tensor1d([1, 2, 3]), a];
+    const a = tf.scalar(1);
+    const list: Tensor[] = [tf.scalar(2), tf.tensor1d([1, 2, 3]), a];
 
     expect(util.isTensorInList(a, list)).toBe(true);
   });
@@ -299,46 +241,16 @@ describe('util.checkForNaN', () => {
     // Int32 and Bool NaNs should not trigger an error.
     expect(
         () => util.checkForNaN(
-            new Float32Array(
-                [1, 2, 3, 4, -1, 255, util.NAN_INT32, util.NAN_BOOL]),
-            'float32', ''))
-        .not.toThrowError();
-  });
-
-  it('Int32Array has NaN', () => {
-    expect(
-        () => util.checkForNaN(
-            new Int32Array([1, 2, 3, util.NAN_INT32, 4, 255]), 'int32', ''))
-        .toThrowError();
-  });
-
-  it('Int32Array no NaN', () => {
-    expect(
-        () => util.checkForNaN(
-            new Int32Array([1, 2, 3, 4, -1, 255, util.NAN_BOOL]), 'int32', ''))
-        .not.toThrowError();
-  });
-
-  it('Bool has NaN', () => {
-    expect(
-        () => util.checkForNaN(
-            new Uint8Array([1, 2, 3, util.NAN_BOOL, 4, 10]), 'bool', ''))
-        .toThrowError();
-  });
-
-  it('Bool no NaN', () => {
-    expect(
-        () => util.checkForNaN(
-            new Uint8Array([1, 2, 3, 4, 1, util.NAN_INT32]), 'bool', ''))
+            new Float32Array([1, 2, 3, 4, -1, 255]), 'float32', ''))
         .not.toThrowError();
   });
 });
 
 describe('util.flattenNameArrayMap', () => {
   it('basic', () => {
-    const a = dl.scalar(1);
-    const b = dl.scalar(3);
-    const c = dl.tensor1d([1, 2, 3]);
+    const a = tf.scalar(1);
+    const b = tf.scalar(3);
+    const c = tf.tensor1d([1, 2, 3]);
 
     const map: NamedTensorMap = {a, b, c};
     expect(util.flattenNameArrayMap(map, Object.keys(map))).toEqual([a, b, c]);
@@ -347,9 +259,9 @@ describe('util.flattenNameArrayMap', () => {
 
 describe('util.unflattenToNameArrayMap', () => {
   it('basic', () => {
-    const a = dl.scalar(1);
-    const b = dl.scalar(3);
-    const c = dl.tensor1d([1, 2, 3]);
+    const a = tf.scalar(1);
+    const b = tf.scalar(3);
+    const c = tf.tensor1d([1, 2, 3]);
 
     expect(util.unflattenToNameArrayMap(['a', 'b', 'c'], [
       a, b, c
@@ -392,16 +304,16 @@ describeWithFlags('extractTensorsFromAny', CPU_ENVS, () => {
   });
 
   it('tensor input returns one element tensor', () => {
-    const x = dl.scalar(1);
+    const x = tf.scalar(1);
     const results = util.extractTensorsFromAny(x);
 
     expect(results).toEqual([x]);
   });
 
   it('name tensor map returns flattened tensor', () => {
-    const x1 = dl.scalar(1);
-    const x2 = dl.scalar(3);
-    const x3 = dl.scalar(4);
+    const x1 = tf.scalar(1);
+    const x2 = tf.scalar(3);
+    const x3 = tf.scalar(4);
     const results = util.extractTensorsFromAny({x1, x2, x3});
 
     expect(results).toEqual([x1, x2, x3]);

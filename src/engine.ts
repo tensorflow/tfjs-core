@@ -83,9 +83,7 @@ export class Engine implements TensorManager {
   private scopeStack: ScopeState[];
   private profiler: Profiler;
 
-  constructor(
-      private backend: KernelBackend, private customBackend: boolean,
-      public safeMode: boolean) {
+  constructor(private backend: KernelBackend, public safeMode: boolean) {
     // Create a default outer scope.
     this.activeScope = {keep: [], track: []};
     this.scopeStack = [this.activeScope];
@@ -217,8 +215,8 @@ export class Engine implements TensorManager {
   keep<T extends Tensor>(result: T): T {
     if (this.scopeStack.length === 1 && ENV.engine.safeMode) {
       throw new Error(
-          'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +
-          'dl.tidy(() => {...}) to avoid memory leaks.');
+          'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
+          'tf.tidy(() => {...}) to avoid memory leaks.');
     }
     this.activeScope.keep.push(result);
     return result;
@@ -287,11 +285,7 @@ export class Engine implements TensorManager {
     });
   }
 
-  dispose() {
-    if (this.customBackend) {
-      this.backend.dispose();
-    }
-  }
+  dispose() {}
 
   /**
    * Returns gradients of `f` with respect to each of the `xs`. The gradients
@@ -411,8 +405,8 @@ export class Engine implements TensorManager {
   private track<T extends Tensor>(result: T): T {
     if (this.scopeStack.length === 1 && this.safeMode) {
       throw new Error(
-          'Safe mode is ON. Enclose all tensor operations inside dl.tidy(): ' +
-          'dl.tidy(() => {op();...}); to avoid memory leaks.');
+          'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
+          'tf.tidy(() => {op();...}); to avoid memory leaks.');
     }
     this.activeScope.track.push(result);
     return result;

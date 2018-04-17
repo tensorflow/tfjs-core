@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import * as dl from '../index';
-import {describeWithFlags, expectArraysClose} from '../test_util';
+import * as tf from '../index';
+import {CPU_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
 import * as axis_util from './axis_util';
 
 describe('axis_util combineLocations', () => {
@@ -263,7 +263,7 @@ describe('axis_util parseAxisParam', () => {
   });
 });
 
-describeWithFlags('axis_util getUndoAxesPermutation', [{}], () => {
+describeWithFlags('axis_util getUndoAxesPermutation', CPU_ENVS, () => {
   it('4d axes', () => {
     const axes = [2, 0, 1, 3];
     expect(axis_util.getUndoAxesPermutation(axes)).toEqual([1, 2, 0, 3]);
@@ -283,9 +283,9 @@ describeWithFlags('axis_util getUndoAxesPermutation', [{}], () => {
     const axes = [2, 0, 1, 3];
     const undoPermutation = axis_util.getUndoAxesPermutation(axes);
 
-    const a = dl.randomNormal([2, 3, 4, 5]);
-    const aT = dl.transpose(a, axes);
-    const aTT = dl.transpose(aT, undoPermutation);
+    const a = tf.randomNormal([2, 3, 4, 5]);
+    const aT = tf.transpose(a, axes);
+    const aTT = tf.transpose(aT, undoPermutation);
     expectArraysClose(a, aTT);
   });
 });
