@@ -27,8 +27,10 @@ export const ADD = 'return a + b;';
 export const SUB = 'return a - b;';
 export const MUL = 'return a * b;';
 export const DIV = 'return a / b;';
+// Round and cast to float to deal with imprecision and then floor to implement
+// floordiv.
 export const INT_DIV = `
-  return floor(float(round(a) / round(b)));
+  return floor(float(round(a)) / float(round(b)));
 `;
 
 export const POW = `
