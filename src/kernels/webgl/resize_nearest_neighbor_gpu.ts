@@ -48,7 +48,7 @@ export class ResizeNearestNeighborProgram implements GPGPUProgram {
         // Fractional source index.
         vec2 sourceFracIndexRC = vec2(yRC) * effectiveInputOverOutputRatioRC;
 
-        // Compute the four integer indices.
+        // Compute the coordinators of nearest neighbor point.
         ivec2 sourceNearestRC = ivec2(
           min(inputShapeRC - 1.0, floor(sourceFracIndexRC + 0.5)));
 

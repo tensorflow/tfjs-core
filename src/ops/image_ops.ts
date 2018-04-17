@@ -88,6 +88,8 @@ export class ImageOps {
         size.length === 2,
         `Error in resizeNearestNeighbor: new shape must 2D, but got shape ` +
         `${size}.`);
+    util.assert(images.dtype === 'float32' || images.dtype === 'int32',
+        '`images` must have `int32` or `float32` as dtype');
     let batchImages = images as Tensor4D;
     let reshapedTo4D = false;
     if (images.rank === 3) {

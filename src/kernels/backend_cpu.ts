@@ -1459,7 +1459,7 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
 
-    return output.toTensor()
+    return output.toTensor();
   }
 
   batchNormalization(
