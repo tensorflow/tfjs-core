@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {rsqrt} from '..';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
@@ -24,6 +23,7 @@ import * as util from '../util';
 
 import {ArrayOps} from './array_ops';
 import {operation} from './operation';
+import {rsqrt} from './ops';
 
 export class BatchNormOps {
   /**
@@ -184,6 +184,19 @@ export class BatchNormOps {
       x: Tensor<R>, mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
       varianceEpsilon = .001, scale?: Tensor<R>|Tensor1D,
       offset?: Tensor<R>|Tensor1D): Tensor<R> {
+    util.assert(
+        mean.rank === variance.rank,
+        'Batch normalization gradient requires mean and variance to have ' +
+            'equal ranks.');
+    util.assert(
+        offset == null || mean.rank === offset.rank,
+        'Batch normalization gradient requires mean and offset to have ' +
+            'equal ranks.');
+    util.assert(
+        scale == null || mean.rank === scale.rank,
+        'Batch normalization gradient requires mean and scale to have ' +
+            'equal ranks.');
+
     let x4D: Tensor4D;
     if (x.rank === 0 || x.rank === 1) {
       x4D = x.as4D(1, 1, 1, x.size);
@@ -196,19 +209,6 @@ export class BatchNormOps {
     }
 
     const der = (dy: Tensor) => {
-      util.assert(
-          mean.rank === variance.rank,
-          'Batch normalization gradient requires mean and variance to have ' +
-              'equal ranks.');
-      util.assert(
-          offset == null || mean.rank === offset.rank,
-          'Batch normalization gradient requires mean and offset to have ' +
-              'equal ranks.');
-      util.assert(
-          scale == null || mean.rank === scale.rank,
-          'Batch normalization gradient requires mean and scale to have ' +
-              'equal ranks.');
-
       const scaleValue = scale == null ? ArrayOps.scalar(1) : scale;
 
       let nonDepthMultiplier = 1;
