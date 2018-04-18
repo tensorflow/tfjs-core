@@ -727,13 +727,13 @@ describeWithFlags('pow', ALL_ENVS, () => {
     ]);
   });
 
-  it('throws when passed a as a non-tensor', () => {
+  it('throws when passed base as a non-tensor', () => {
     expect(() => tf.pow({} as tf.Tensor, tf.scalar(1)))
-        .toThrowError(/Argument 'a' passed to 'pow' must be a Tensor/);
+        .toThrowError(/Argument 'base' passed to 'pow' must be a Tensor/);
   });
-  it('throws when passed b as a non-tensor', () => {
+  it('throws when passed exp as a non-tensor', () => {
     expect(() => tf.pow(tf.scalar(1), {} as tf.Tensor))
-        .toThrowError(/Argument 'b' passed to 'pow' must be a Tensor/);
+        .toThrowError(/Argument 'exp' passed to 'pow' must be a Tensor/);
   });
 });
 

@@ -458,6 +458,8 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static prelu<T extends Tensor>(x: T, alpha: T): T {
+    util.assertArgumentsAreTensors({x, alpha}, 'prelu');
+
     const zero = ops.scalar(0);
     return ops.maximum(zero, x).add(alpha.mul(ops.minimum(zero, x)));
   }

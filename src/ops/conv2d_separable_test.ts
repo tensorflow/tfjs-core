@@ -379,4 +379,78 @@ describeWithFlags('separableConv2d', ALL_ENVS, () => {
             tf.separableConv2d(x, depthwiseFilter, pointwiseFilter, 1, 'valid'))
         .toThrowError(/must be 3, but got 4/);
   });
+
+  it('throws when passed x as a non-tensor', () => {
+    const fSize = 2;
+    const pad = 'valid';
+    const stride = 1;
+    const chMul = 1;
+    const inDepth = 1;
+    const outDepth = 2;
+
+    const depthwiseFilter = tf.tensor4d(
+        [0.303873, 0.229223, 0.144333, 0.803373],
+        [fSize, fSize, inDepth, chMul],
+    );
+    const pointwiseFilter =
+        tf.tensor4d([0.1, -0.2], [1, 1, inDepth * chMul, outDepth]);
+
+    const e = /Argument 'x' passed to 'separableConv2d' must be a Tensor/;
+    expect(
+        () => tf.separableConv2d(
+            {} as tf.Tensor3D, depthwiseFilter, pointwiseFilter, stride, pad))
+        .toThrowError(e);
+  });
+
+  it('throws when passed depthwiseFilter as a non-tensor', () => {
+    const pad = 'valid';
+    const stride = 1;
+    const chMul = 1;
+    const inDepth = 1;
+    const outDepth = 2;
+
+    const x = tf.tensor4d(
+        [
+          0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
+          0.0741907, 0.409265, 0.351377
+        ],
+        [1, 3, 3, inDepth]);
+    const pointwiseFilter =
+        tf.tensor4d([0.1, -0.2], [1, 1, inDepth * chMul, outDepth]);
+
+    const e = new RegExp(
+        'Argument \'depthwiseFilter\' passed to \'separableConv2d\'' +
+        ' must be a Tensor');
+    expect(
+        () => tf.separableConv2d(
+            x, {} as tf.Tensor4D, pointwiseFilter, stride, pad))
+        .toThrowError(e);
+  });
+
+  it('throws when passed pointwiseFilter as a non-tensor', () => {
+    const fSize = 2;
+    const pad = 'valid';
+    const stride = 1;
+    const chMul = 1;
+    const inDepth = 1;
+
+    const x = tf.tensor4d(
+        [
+          0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
+          0.0741907, 0.409265, 0.351377
+        ],
+        [1, 3, 3, inDepth]);
+    const depthwiseFilter = tf.tensor4d(
+        [0.303873, 0.229223, 0.144333, 0.803373],
+        [fSize, fSize, inDepth, chMul],
+    );
+
+    const e = new RegExp(
+        'Argument \'pointwiseFilter\' passed to \'separableConv2d\'' +
+        ' must be a Tensor');
+    expect(
+        () => tf.separableConv2d(
+            x, depthwiseFilter, {} as tf.Tensor4D, stride, pad))
+        .toThrowError(e);
+  });
 });
