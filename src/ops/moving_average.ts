@@ -17,7 +17,6 @@
 
 import {doc} from '../doc';
 import {Scalar, Tensor} from '../tensor';
-import {Rank} from '../types';
 import * as util from '../util';
 import {ArrayOps} from './array_ops';
 import {BinaryOps} from './binary_ops';
@@ -43,16 +42,16 @@ export class MovingAverageOps {
    * step count. The step count needs to be maintained by the caller and passed
    * in as `step`.
    *
-   * @param v: The current moving average value.
-   * @param x: New input value, must have the same shape and dtype as `v`.
-   * @param decay: The decay factor. Typical values are 0.95 and 0.99.
-   * @param step: Step count.
+   * @param v The current moving average value.
+   * @param x New input value, must have the same shape and dtype as `v`.
+   * @param decay The decay factor. Typical values are 0.95 and 0.99.
+   * @param step Step count.
    * @param zeroDebias: Whether zeroDebias is to be performed (default: `true`).
    * @returns The new moving average value.
    */
   @doc({heading: 'Operations', subheading: 'Moving Average'})
   @operation
-  static movingAverage<R extends Rank, T extends Tensor<R>>(
+  static movingAverage<T extends Tensor>(
       v: T, x: T, decay: number|Scalar, step?: number|Scalar,
       zeroDebias = true): T {
     util.assertTypesMatch(v, x);
@@ -63,7 +62,7 @@ export class MovingAverageOps {
     decay = typeof decay === 'number' ? ArrayOps.scalar(decay) : decay;
     const oneMinusDecay = one.sub(decay);
 
-    let update = (x.sub(v)).mul(oneMinusDecay);
+    let update = x.sub(v).mul(oneMinusDecay);
     if (zeroDebias) {
       util.assert(
           step != null, 'When using zeroDebias: true, step is required.');
