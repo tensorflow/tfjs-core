@@ -18,6 +18,16 @@ import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TypedArray} from './types';
 
+export function assertArgumentsAreTensors(
+    args: {[argName: string]: Tensor}, functionName: string) {
+  for (const argName in args) {
+    assert(
+        args[argName] instanceof Tensor,
+        `Argument '${argName}' passed to '${functionName}' must be a Tensor, ` +
+            `but got ${typeof args[argName]}.`);
+  }
+}
+
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
@@ -68,14 +78,14 @@ export function assertShapesMatch(
     shapeA: number[], shapeB: number[], errorMessagePrefix = ''): void {
   assert(
       arraysEqual(shapeA, shapeB),
-      errorMessagePrefix + `Shapes ${shapeA} and ${shapeB} must match`);
+      errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
 }
 
 export function assertTypesMatch(a: Tensor, b: Tensor): void {
   assert(
       a.dtype === b.dtype,
-      `The dtypes of the first (${a.dtype}) and ` +
-          `second (${b.dtype}) input must match`);
+      ` The dtypes of the first(${a.dtype}) and` +
+          ` second(${b.dtype}) input must match`);
 }
 
 // NOTE: We explicitly type out what T extends instead of any so that
@@ -243,25 +253,34 @@ export function inferFromImplicitShape(
     } else if (shape[i] === -1) {
       if (implicitIdx !== -1) {
         throw Error(
-            `Shapes can only have 1 implicit size. ` +
-            `Found -1 at dim ${implicitIdx} and dim ${i}`);
+            ` Shapes can only have 1 implicit size.` +
+            ` Found -
+                1 at dim ${implicitIdx} and dim $ {
+                  i
+                } `);
       }
       implicitIdx = i;
     } else if (shape[i] <= 0) {
-      throw Error(`Shapes can not be <= 0. Found ${shape[i]} at dim ${i}`);
+      throw Error(` Shapes can not be <=
+            0. Found ${shape[i]} at dim $ {
+              i
+            } `);
     }
   }
 
   if (implicitIdx === -1) {
     if (size > 0 && size !== shapeProd) {
-      throw Error(`Size (${size}) must match the product of shape ${shape}`);
+      throw Error(` Size(${size}) must match the product of shape $ {
+              shape
+            } `);
     }
     return shape;
   }
 
   if (size % shapeProd !== 0) {
     throw Error(
-        `The implicit shape can't be a fractional number. ` +
+        ` The implicit shape
+                can't be a fractional number. ` +
         `Got ${size} / ${shapeProd}`);
   }
 
