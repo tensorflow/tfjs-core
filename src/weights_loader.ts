@@ -172,11 +172,6 @@ export async function loadWeights(
 
       if (weightsEntry.manifestEntry.quantization !== null) {
         const quantization = weightsEntry.manifestEntry.quantization;
-        if (dtype !== 'float32') {
-          throw new Error(
-              `Quantized weight ${weightsEntry.manifestEntry.name} has ` +
-              `invalid dtype ${dtype}.`);
-        }
         let quantizedArray: Float32Array;
         if (quantization.dtype === 'uint8') {
           quantizedArray = Float32Array.from(new Uint8Array(byteBuffer));
@@ -193,8 +188,18 @@ export async function loadWeights(
               ((quantization.max - quantization.min) /
                (Math.pow(2, DTYPE_VALUE_SIZE_MAP[quantization.dtype] * 8) - 1));
         }
-        typedArray =
+        const unquantizedArray =
             quantizedArray.map(v => v * quantConstant + quantization.min);
+        if (dtype === 'float32') {
+          typedArray = unquantizedArray;
+        } else if (dtype === 'int32') {
+          typedArray =
+              Int32Array.from(unquantizedArray.map(v => Math.round(v)));
+        } else {
+          throw new Error(
+              `Weight ${weightsEntry.manifestEntry.name} has unknown dtype ` +
+              `${dtype}.`);
+        }
       } else {
         if (dtype === 'float32') {
           typedArray = new Float32Array(byteBuffer);
