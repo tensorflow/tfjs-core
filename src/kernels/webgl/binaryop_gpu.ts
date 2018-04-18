@@ -30,7 +30,16 @@ export const DIV = 'return a / b;';
 // Round and cast to float to deal with imprecision and then floor to implement
 // floordiv.
 export const INT_DIV = `
-  return floor(float(round(a)) / float(round(b)));
+  float resultSign = sign(a) * sign(b);
+  int ia = round(a);
+  int ib = round(b);
+  int result = ia / ib;
+  int amodb = ia - ib * result;
+
+  if (resultSign < 0.0 && amodb != 0) {
+    result -= 1;
+  }
+  return float(result);
 `;
 
 export const POW = `
