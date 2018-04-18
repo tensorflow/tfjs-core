@@ -123,6 +123,43 @@ describeWithFlags('slice3d', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('slice ergonomics', ALL_ENVS, () => {
+  it('slices 2x2x2 array into 2x1x1 no size', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice([0, 1, 1]);
+    expect(result.shape).toEqual([2, 1, 1]);
+    expectArraysClose(result, [4, 8]);
+  });
+
+  it('slices 2x2x2 array into 1x2x2 with scalar begin no size', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice(1);
+    expect(result.shape).toEqual([1, 2, 2]);
+    expectArraysClose(result, [5, 6, 7, 8]);
+  });
+
+  it('slices 2x2x2 array using 2d size and 2d end', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice([0, 1]);
+    expect(result.shape).toEqual([2, 1, 2]);
+    expectArraysClose(result, [3, 4, 7, 8]);
+  });
+
+  it('slices 2x2x2 array using negative end', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice([0, 1], [-1, 1]);
+    expect(result.shape).toEqual([2, 1, 2]);
+    expectArraysClose(result, [3, 4, 7, 8]);
+  });
+
+  it('slices 2x2x2 array using 1d end', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice(0, 1);
+    expect(result.shape).toEqual([1, 2, 2]);
+    expectArraysClose(result, [1, 2, 3, 4]);
+  });
+});
+
 describeWithFlags('slice4d', ALL_ENVS, () => {
   it('slices 1x1x1x1 into shape 1x1x1x1 (effectively a copy)', () => {
     const a = tf.tensor4d([[[[5]]]], [1, 1, 1, 1]);
