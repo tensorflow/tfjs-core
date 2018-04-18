@@ -188,13 +188,13 @@ export async function loadWeights(
               ((quantization.max - quantization.min) /
                (Math.pow(2, DTYPE_VALUE_SIZE_MAP[quantization.dtype] * 8) - 1));
         }
-        const unquantizedArray =
+        const dequantizedArray =
             quantizedArray.map(v => v * quantConstant + quantization.min);
         if (dtype === 'float32') {
-          typedArray = unquantizedArray;
+          typedArray = dequantizedArray;
         } else if (dtype === 'int32') {
           typedArray =
-              Int32Array.from(unquantizedArray.map(v => Math.round(v)));
+              Int32Array.from(dequantizedArray.map(v => Math.round(v)));
         } else {
           throw new Error(
               `Weight ${weightsEntry.manifestEntry.name} has unknown dtype ` +
