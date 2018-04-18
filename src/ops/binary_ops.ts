@@ -54,6 +54,7 @@ export class BinaryOps {
   static add<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'add');
     util.assertTypesMatch(a, b);
+
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
@@ -122,6 +123,7 @@ export class BinaryOps {
   static sub<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'sub');
     util.assertTypesMatch(a, b);
+
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
@@ -193,6 +195,7 @@ export class BinaryOps {
   @operation
   static pow<T extends Tensor>(base: T, exp: Tensor): T {
     util.assertArgumentsAreTensors({base, exp}, 'pow');
+
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(base.shape, exp.shape);
     base = base.cast(upcastType(base.dtype, exp.dtype));
@@ -266,6 +269,7 @@ export class BinaryOps {
   static mul<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'mul');
     util.assertTypesMatch(a, b);
+
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
@@ -337,6 +341,7 @@ export class BinaryOps {
   static div<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'div');
     util.assertTypesMatch(a, b);
+
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: Tensor) => {
@@ -407,6 +412,7 @@ export class BinaryOps {
   static mod<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'mod');
     util.assertTypesMatch(a, b);
+
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: Tensor) => {
@@ -473,6 +479,7 @@ export class BinaryOps {
   static minimum<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'minimum');
     util.assertTypesMatch(a, b);
+
     if (a.dtype === 'bool') {
       a = a.toInt();
     }
@@ -532,6 +539,7 @@ export class BinaryOps {
   static maximum<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'maximum');
     util.assertTypesMatch(a, b);
+
     if (a.dtype === 'bool') {
       a = a.toInt();
     }
@@ -592,6 +600,7 @@ export class BinaryOps {
   static squaredDifference<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'squaredDifference');
     util.assertTypesMatch(a, b);
+
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: Tensor) => {
       const two = scalar(2);
@@ -638,6 +647,7 @@ export class BinaryOps {
   static atan2<T extends Tensor>(a: Tensor, b: Tensor): T {
     util.assertArgumentsAreTensors({a, b}, 'atan2');
     util.assertTypesMatch(a, b);
+
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
