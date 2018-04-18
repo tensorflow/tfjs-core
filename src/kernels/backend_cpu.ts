@@ -258,8 +258,16 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   divide(a: Tensor, b: Tensor): Tensor {
-    return this.broadcastedBinaryOp(
-               a, b, 'float32', (aValue, bValue) => aValue / bValue) as Tensor;
+    let op: (a: number, b: number) => number;
+    let outputDtype: 'float32'|'int32';
+    if (a.dtype === 'int32' && b.dtype === 'int32') {
+      outputDtype = 'int32';
+      op = (a: number, b: number) => Math.floor(a / b);
+    } else {
+      outputDtype = 'float32';
+      op = (a: number, b: number) => a / b;
+    }
+    return this.broadcastedBinaryOp(a, b, outputDtype, op) as Tensor;
   }
 
   sum(x: Tensor, axes: number[]): Tensor {
@@ -1419,6 +1427,40 @@ export class MathBackendCPU implements KernelBackend {
             const bottom = bottomLeft + (bottomRight - bottomLeft) * colFrac;
             const newValue = top + (bottom - top) * rowFrac;
 
+            output.set(newValue, b, r, c, d);
+          }
+        }
+      }
+    }
+
+    return output.toTensor();
+  }
+
+  resizeNearestNeighbor(
+    x: Tensor4D, newHeight: number, newWidth: number,
+    alignCorners: boolean): Tensor4D {
+    const [batch, oldHeight, oldWidth, numChannels] = x.shape;
+    const output =
+        ops.buffer<Rank.R4>([batch, newHeight, newWidth, numChannels], x.dtype);
+    const effectiveInputSize: [number, number] =
+        alignCorners ? [oldHeight - 1, oldWidth - 1] : [oldHeight, oldWidth];
+    const effectiveOutputSize: [number, number] =
+        alignCorners ? [newHeight - 1, newWidth - 1] : [newHeight, newWidth];
+    for (let b = 0; b < batch; b++) {
+      for (let r = 0; r < newHeight; r++) {
+        for (let c = 0; c < newWidth; c++) {
+          for (let d = 0; d < numChannels; d++) {
+            // Begin shader.
+            // Compute the fractional index of the source.
+            const sourceFracRow =
+                (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
+            const sourceFracCol =
+                (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
+            const sourceNearestRow =
+                Math.min(oldHeight - 1, Math.round(sourceFracRow));
+            const sourceNearestCol =
+                Math.min(oldWidth - 1, Math.round(sourceFracCol));
+            const newValue = x.get(b, sourceNearestRow, sourceNearestCol, d);
             output.set(newValue, b, r, c, d);
           }
         }
