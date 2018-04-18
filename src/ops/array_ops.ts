@@ -981,6 +981,8 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static stack<T extends Tensor>(tensors: T[], axis = 0): Tensor {
+    util.assertArgumentsAreTensors({tensors}, 'stack');
+
     util.assert(tensors.length >= 1, 'Pass at least one tensor to tf.stack');
     if (tensors.length === 1) {
       return tensors[0].expandDims(axis);
@@ -998,8 +1000,6 @@ export class ArrayOps {
     });
 
     tensors.forEach(t => {
-      util.assertArgumentsAreTensors({t}, 'stack');
-
       util.assert(
           dtype === t.dtype,
           'All tensors passed to stack must have matching dtypes');

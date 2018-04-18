@@ -52,6 +52,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static add<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'add');
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
@@ -119,6 +120,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static sub<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'sub');
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
@@ -190,6 +192,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static pow<T extends Tensor>(base: T, exp: Tensor): T {
+    util.assertArgumentsAreTensors({base, exp}, 'pow');
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(base.shape, exp.shape);
     base = base.cast(upcastType(base.dtype, exp.dtype));
@@ -261,6 +264,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static mul<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'mul');
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
@@ -331,6 +335,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static div<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'div');
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
@@ -400,6 +405,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static mod<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'mod');
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
@@ -465,6 +471,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static minimum<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'minimum');
     util.assertTypesMatch(a, b);
     if (a.dtype === 'bool') {
       a = a.toInt();
@@ -523,6 +530,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static maximum<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'maximum');
     util.assertTypesMatch(a, b);
     if (a.dtype === 'bool') {
       a = a.toInt();
@@ -582,6 +590,7 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static squaredDifference<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'squaredDifference');
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: Tensor) => {
@@ -627,6 +636,7 @@ export class BinaryOps {
    */
   @operation
   static atan2<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'atan2');
     util.assertTypesMatch(a, b);
     const outShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);

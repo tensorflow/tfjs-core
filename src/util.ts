@@ -18,13 +18,25 @@ import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TypedArray} from './types';
 
+export function assertArgumentIsTensor(
+    x: Tensor, argName: string, functionName: string) {
+  assert(
+      x instanceof Tensor,
+      `Argument '${argName}' passed to '${functionName}' must be a Tensor, ` +
+          `but got ${typeof x}.`);
+}
+
 export function assertArgumentsAreTensors(
-    args: {[argName: string]: Tensor}, functionName: string) {
+    args: {[argName: string]: Tensor|Tensor[]}, functionName: string) {
   for (const argName in args) {
-    assert(
-        args[argName] instanceof Tensor,
-        `Argument '${argName}' passed to '${functionName}' must be a Tensor, ` +
-            `but got ${typeof args[argName]}.`);
+    const arg = args[argName];
+    if (Array.isArray(arg)) {
+      arg.forEach((t, i) => {
+        assertArgumentIsTensor(t, `${argName}[${i}]`, functionName);
+      });
+    } else {
+      assertArgumentIsTensor(arg, argName, functionName);
+    }
   }
 }
 
