@@ -253,34 +253,25 @@ export function inferFromImplicitShape(
     } else if (shape[i] === -1) {
       if (implicitIdx !== -1) {
         throw Error(
-            ` Shapes can only have 1 implicit size.` +
-            ` Found -
-                1 at dim ${implicitIdx} and dim $ {
-                  i
-                } `);
+            `Shapes can only have 1 implicit size. ` +
+            `Found - 1 at dim ${implicitIdx} and dim ${i}`);
       }
       implicitIdx = i;
     } else if (shape[i] <= 0) {
-      throw Error(` Shapes can not be <=
-            0. Found ${shape[i]} at dim $ {
-              i
-            } `);
+      throw Error(`Shapes can not be <= 0. Found ${shape[i]} at dim ${i}`);
     }
   }
 
   if (implicitIdx === -1) {
     if (size > 0 && size !== shapeProd) {
-      throw Error(` Size(${size}) must match the product of shape $ {
-              shape
-            } `);
+      throw Error(`Size(${size}) must match the product of shape ${shape}`);
     }
     return shape;
   }
 
   if (size % shapeProd !== 0) {
     throw Error(
-        ` The implicit shape
-                can't be a fractional number. ` +
+        `The implicit shape can't be a fractional number. ` +
         `Got ${size} / ${shapeProd}`);
   }
 
