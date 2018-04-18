@@ -28,11 +28,14 @@ export interface WeightsManifestEntry {
   name: string;
   shape: number[];
   dtype: 'float32'|'int32';
+  quantization: {min: number, max: number, dtype: 'uint16'|'uint8'};
 }
 
 const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
   'float32': 4,
-  'int32': 4
+  'int32': 4,
+  'uint16': 2,
+  'uint8': 1
 };
 
 /**
@@ -46,8 +49,7 @@ const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
  */
 export async function loadWeights(
     manifest: WeightsManifestConfig, filePathPrefix = '',
-    weightNames?: string[],
-    requestOptions?: RequestInit): Promise<NamedTensorMap> {
+    weightNames?: string[]): Promise<NamedTensorMap> {
   // TODO(nsthorat): Groups are currently fetched atomically. If you need a
   // single weight from a group, the whole group will be fetched. At a future
   // date, we should support fetching only the individual shards within a
@@ -68,7 +70,11 @@ export async function loadWeights(
   manifest.forEach((manifestGroupConfig, groupIndex) => {
     let groupOffset = 0;
     manifestGroupConfig.weights.forEach(weightsEntry => {
-      const weightsBytes = DTYPE_VALUE_SIZE_MAP[weightsEntry.dtype] *
+      const rawDtype = weightsEntry.quantization === null ?
+          weightsEntry.dtype :
+          weightsEntry.quantization.dtype;
+
+      const weightsBytes = DTYPE_VALUE_SIZE_MAP[rawDtype] *
           util.sizeFromShape(weightsEntry.shape);
 
       const enqueueWeightsForFetchingFn = () => {
@@ -125,7 +131,7 @@ export async function loadWeights(
     manifest[i].paths.forEach(filepath => {
       const fetchUrl = filePathPrefix +
           (!filePathPrefix.endsWith('/') ? '/' : '') + filepath;
-      requests.push(fetch(fetchUrl, requestOptions));
+      requests.push(fetch(fetchUrl));
     });
   });
 
@@ -161,14 +167,44 @@ export async function loadWeights(
           weightsEntry.groupOffset + weightsEntry.sizeBytes);
 
       let typedArray: Float32Array|Int32Array;
-      if (weightsEntry.manifestEntry.dtype === 'float32') {
-        typedArray = new Float32Array(byteBuffer);
-      } else if (weightsEntry.manifestEntry.dtype === 'int32') {
-        typedArray = new Int32Array(byteBuffer);
+
+      const dtype = weightsEntry.manifestEntry.dtype;
+
+      if (weightsEntry.manifestEntry.quantization !== null) {
+        const quantization = weightsEntry.manifestEntry.quantization;
+        if (dtype !== 'float32') {
+          throw new Error(
+              `Quantized weight ${weightsEntry.manifestEntry.name} has ` +
+              `invalid dtype ${dtype}.`);
+        }
+        let quantizedArray: Float32Array;
+        if (quantization.dtype === 'uint8') {
+          quantizedArray = Float32Array.from(new Uint8Array(byteBuffer));
+        } else if (quantization.dtype === 'uint16') {
+          quantizedArray = Float32Array.from(new Uint16Array(byteBuffer));
+        } else {
+          throw new Error(
+              `Weight ${weightsEntry.manifestEntry.name} has unknown ` +
+              `quantization dtype ${quantization.dtype}.`);
+        }
+        let quantConstant = 1.0;
+        if (quantization.max !== quantization.min) {
+          quantConstant =
+              ((quantization.max - quantization.min) /
+               (Math.pow(2, DTYPE_VALUE_SIZE_MAP[quantization.dtype] * 8) - 1));
+        }
+        typedArray =
+            quantizedArray.map(v => v * quantConstant + quantization.min);
       } else {
-        throw new Error(
-            `Weight ${weightsEntry.manifestEntry.name} has unknown dtype ` +
-            `${weightsEntry.manifestEntry.dtype}.`);
+        if (dtype === 'float32') {
+          typedArray = new Float32Array(byteBuffer);
+        } else if (dtype === 'int32') {
+          typedArray = new Int32Array(byteBuffer);
+        } else {
+          throw new Error(
+              `Weight ${weightsEntry.manifestEntry.name} has unknown dtype ` +
+              `${dtype}.`);
+        }
       }
 
       const weightName = weightsEntry.manifestEntry.name;
