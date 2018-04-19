@@ -27,6 +27,7 @@ import {LossOps, Reduction} from './loss_ops';
 import {LRNOps} from './lrn';
 import {LSTMOps} from './lstm';
 import {MatmulOps} from './matmul';
+import {MovingAverageOps} from './moving_average';
 import {NormOps} from './norm';
 import {PoolOps} from './pool';
 import {ReductionOps} from './reduction_ops';
@@ -203,6 +204,8 @@ export const pad2d = ArrayOps.pad2d;
 export const pad3d = ArrayOps.pad3d;
 export const pad4d = ArrayOps.pad4d;
 
+export const movingAverage = MovingAverageOps.movingAverage;
+
 export const basicLSTMCell = LSTMOps.basicLSTMCell;
 export const multiRNNCell = LSTMOps.multiRNNCell;
 
@@ -226,5 +229,6 @@ export const losses = {
 };
 
 export const image = {
-  resizeBilinear: ImageOps.resizeBilinear
+  resizeBilinear: ImageOps.resizeBilinear,
+  resizeNearestNeighbor: ImageOps.resizeNearestNeighbor,
 };
