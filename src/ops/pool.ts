@@ -217,7 +217,7 @@ export class PoolOps {
   static avgPoolBackprop<T extends Tensor3D|Tensor4D>(
       dy: T, input: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number): T {
-    util.assertArgumentsAreTensors({dy, input}, 'maxPoolBackprop');
+    util.assertArgumentsAreTensors({dy, input}, 'avgPoolBackprop');
     util.assert(
         input.rank === dy.rank,
         `Rank of input (${input.rank}) does not match rank of dy (${dy.rank})`);
