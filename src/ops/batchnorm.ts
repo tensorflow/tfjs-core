@@ -210,22 +210,19 @@ export class BatchNormOps {
 
     const der = (dy: Tensor) => {
       const scaleValue = scale == null ? ArrayOps.scalar(1) : scale;
-
-      let nonDepthMultiplier = 1;
-      let xMinusMean: Tensor;
+      const reductionAxes: number[] = [];
       const tileShape: number[] = [];
-
       if (mean.rank === 1) {
         for (let i = 0; i < x4D.shape.length - 1; ++i) {
-          nonDepthMultiplier *= x4D.shape[i];
+          reductionAxes.push(i);
           tileShape.push(x4D.shape[i]);
         }
         tileShape.push(1);
-        xMinusMean = x.sub(mean).sum(0).reshape(mean.shape);
       } else {
-        xMinusMean = x.sub(mean);
       }
 
+      const xMinusMean = x.sub(mean);
+      const dyTimesScaleValue = dy.mul(scaleValue);
       const oneOverSqrtVariance =
           rsqrt(variance.add(ArrayOps.scalar(varianceEpsilon)));
       const minusHalfRCube = oneOverSqrtVariance.mul(oneOverSqrtVariance)
@@ -233,35 +230,44 @@ export class BatchNormOps {
                                  .mul(ArrayOps.scalar(-0.5));
       const derX = () => {
         if (mean.rank === 1) {
-          return ArrayOps
-              .tile(oneOverSqrtVariance.as4D(1, 1, 1, mean.shape[0]), tileShape)
+          return dy
+              .mul(ArrayOps.tile(
+                  oneOverSqrtVariance.as4D(1, 1, 1, mean.shape[0]), tileShape))
               .mul(scaleValue)
               .reshape(x.shape);
         } else {
-          return oneOverSqrtVariance.mul(scaleValue).reshape(x.shape);
+          return dy.mul(oneOverSqrtVariance).mul(scaleValue).reshape(x.shape);
         }
       };
       const derMean = () => {
-        return oneOverSqrtVariance.mul(ArrayOps.scalar(-1 * nonDepthMultiplier))
-            .mul(scaleValue)
-            .reshape(mean.shape);
+        let meanDer =
+            oneOverSqrtVariance.mul(ArrayOps.scalar(-1)).mul(dyTimesScaleValue);
+        if (mean.rank === 1) {
+          meanDer = meanDer.sum(reductionAxes);
+        }
+        return meanDer.reshape(mean.shape);
       };
       const derVariance = () => {
-        return minusHalfRCube.mul(xMinusMean)
-            .mul(scaleValue)
-            .reshape(variance.shape);
+        let varianceDer = minusHalfRCube.mul(xMinusMean).mul(dyTimesScaleValue);
+        if (mean.rank === 1) {
+          varianceDer = varianceDer.sum(reductionAxes);
+        }
+        return varianceDer.reshape(mean.shape);
       };
       const derScale = () => {
-        return xMinusMean.mul(oneOverSqrtVariance).reshape(mean.shape);
+        const xMinusMean2TimesRsqrt = xMinusMean.mul(oneOverSqrtVariance);
+        let scaleDer = dy.mul(xMinusMean2TimesRsqrt);
+        if (mean.rank === 1) {
+          scaleDer = scaleDer.sum(reductionAxes);
+        }
+        return scaleDer.reshape(mean.shape);
       };
       const derOffset = () => {
+        let offsetDer = dy;
         if (mean.rank === 1) {
-          return ArrayOps.onesLike(mean)
-              .mul(ArrayOps.scalar(nonDepthMultiplier))
-              .reshape(mean.shape);
-        } else {
-          return ArrayOps.onesLike(mean);
+          offsetDer = offsetDer.sum(reductionAxes);
         }
+        return offsetDer.reshape(mean.shape);
       };
       return {
         x: derX,
