@@ -409,12 +409,7 @@ describeWithFlags('separableConv2d', ALL_ENVS, () => {
     const inDepth = 1;
     const outDepth = 2;
 
-    const x = tf.tensor4d(
-        [
-          0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
-          0.0741907, 0.409265, 0.351377
-        ],
-        [1, 3, 3, inDepth]);
+    const x: tf.Tensor4D = tf.zeros([1, 3, 3, inDepth]);
     const pointwiseFilter =
         tf.tensor4d([0.1, -0.2], [1, 1, inDepth * chMul, outDepth]);
 
@@ -434,12 +429,7 @@ describeWithFlags('separableConv2d', ALL_ENVS, () => {
     const chMul = 1;
     const inDepth = 1;
 
-    const x = tf.tensor4d(
-        [
-          0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
-          0.0741907, 0.409265, 0.351377
-        ],
-        [1, 3, 3, inDepth]);
+    const x: tf.Tensor4D = tf.zeros([1, 3, 3, inDepth]);
     const depthwiseFilter = tf.tensor4d(
         [0.303873, 0.229223, 0.144333, 0.803373],
         [fSize, fSize, inDepth, chMul],
