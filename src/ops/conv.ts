@@ -148,7 +148,7 @@ export class ConvOps {
       pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW' = 'NHWC',
       dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    util.assertArgumentsAreTensors({x, filter}, 'conv1d');
+    util.assertArgumentsAreTensors({x, filter}, 'conv2d');
 
     let x4D = x as Tensor4D;
     let reshapedTo4D = false;

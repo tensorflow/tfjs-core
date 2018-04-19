@@ -358,7 +358,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
     const weights = tf.tensor2d([3, 6, 5, 0, 4, 2], [2, 3]);
 
     const e =
-        /Argument 'label' passed to 'absoluteDifference' must be a Tensor/;
+        /Argument 'labels' passed to 'absoluteDifference' must be a Tensor/;
     expect(
         () => tf.losses.absoluteDifference(
             {} as tf.Tensor, predictions, weights, tf.Reduction.MEAN))
