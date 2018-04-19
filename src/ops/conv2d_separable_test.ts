@@ -388,12 +388,10 @@ describeWithFlags('separableConv2d', ALL_ENVS, () => {
     const inDepth = 1;
     const outDepth = 2;
 
-    const depthwiseFilter = tf.tensor4d(
-        [0.303873, 0.229223, 0.144333, 0.803373],
-        [fSize, fSize, inDepth, chMul],
-    );
-    const pointwiseFilter =
-        tf.tensor4d([0.1, -0.2], [1, 1, inDepth * chMul, outDepth]);
+    const depthwiseFilter: tf.Tensor4D =
+        tf.zeros([fSize, fSize, inDepth, chMul]);
+    const pointwiseFilter: tf.Tensor4D =
+        tf.zeros([1, 1, inDepth * chMul, outDepth]);
 
     const e = /Argument 'x' passed to 'separableConv2d' must be a Tensor/;
     expect(
@@ -410,8 +408,8 @@ describeWithFlags('separableConv2d', ALL_ENVS, () => {
     const outDepth = 2;
 
     const x: tf.Tensor4D = tf.zeros([1, 3, 3, inDepth]);
-    const pointwiseFilter =
-        tf.tensor4d([0.1, -0.2], [1, 1, inDepth * chMul, outDepth]);
+    const pointwiseFilter: tf.Tensor4D =
+        tf.zeros([1, 1, inDepth * chMul, outDepth]);
 
     const e = new RegExp(
         'Argument \'depthwiseFilter\' passed to \'separableConv2d\'' +
@@ -430,10 +428,8 @@ describeWithFlags('separableConv2d', ALL_ENVS, () => {
     const inDepth = 1;
 
     const x: tf.Tensor4D = tf.zeros([1, 3, 3, inDepth]);
-    const depthwiseFilter = tf.tensor4d(
-        [0.303873, 0.229223, 0.144333, 0.803373],
-        [fSize, fSize, inDepth, chMul],
-    );
+    const depthwiseFilter: tf.Tensor4D =
+        tf.zeros([fSize, fSize, inDepth, chMul]);
 
     const e = new RegExp(
         'Argument \'pointwiseFilter\' passed to \'separableConv2d\'' +
