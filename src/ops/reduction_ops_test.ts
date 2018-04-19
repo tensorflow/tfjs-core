@@ -960,4 +960,9 @@ describeWithFlags('norm', ALL_ENVS, () => {
     expect(norm.dtype).toBe('float32');
     expectArraysClose(norm, [4, 3, 4, 3]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.norm({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'norm' must be a Tensor/);
+  });
 });
