@@ -199,7 +199,7 @@ describeWithFlags('conv1d', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'conv1d' must be a Tensor/);
   });
 
-  it('throws when passed x as a non-tensor', () => {
+  it('throws when passed filter as a non-tensor', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const pad = 'same';
