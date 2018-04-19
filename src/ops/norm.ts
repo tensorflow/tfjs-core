@@ -65,7 +65,7 @@ export class NormOps {
   static norm(
       x: Tensor, ord: number|'euclidean'|'fro' = 'euclidean',
       axis: number|number[] = null, keepDims = false): Tensor {
-    util.assertArgumentsAreTensors({x}, 'movingAverage');
+    util.assertArgumentsAreTensors({x}, 'norm');
 
     const norm = normImpl(x, ord, axis);
     let keepDimsShape = norm.shape;

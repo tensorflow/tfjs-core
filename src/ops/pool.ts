@@ -163,7 +163,7 @@ export class PoolOps {
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    util.assertArgumentsAreTensors({x}, 'maxPoolBackprop');
+    util.assertArgumentsAreTensors({x}, 'avgPool');
     util.assert(
         x.dtype === 'float32', 'The input dtype to avgPool must be float32');
     let x4D = x as Tensor4D;
