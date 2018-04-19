@@ -18,7 +18,7 @@ import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TypedArray} from './types';
 
-export function assertArgumentIsTensor(
+function assertArgumentIsTensor(
     x: Tensor, argName: string, functionName: string) {
   assert(
       x instanceof Tensor,
