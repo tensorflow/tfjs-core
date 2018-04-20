@@ -22,6 +22,7 @@ import {Rank} from '../types';
 import * as util from '../util';
 
 import {ArrayOps} from './array_ops';
+import {getReductionAxes} from './broadcast_util';
 import {operation} from './operation';
 import {rsqrt} from './ops';
 
@@ -210,15 +211,13 @@ export class BatchNormOps {
 
     const der = (dy: Tensor) => {
       const scaleValue = scale == null ? ArrayOps.scalar(1) : scale;
-      const reductionAxes: number[] = [];
+      const reductionAxes = getReductionAxes(mean.shape, x4D.shape);
       const tileShape: number[] = [];
       if (mean.rank === 1) {
         for (let i = 0; i < x4D.shape.length - 1; ++i) {
-          reductionAxes.push(i);
           tileShape.push(x4D.shape[i]);
         }
         tileShape.push(1);
-      } else {
       }
 
       const xMinusMean = x.sub(mean);
