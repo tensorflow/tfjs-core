@@ -30,13 +30,13 @@ describeWithFlags('div', ALL_ENVS, () => {
   });
 
   it('integer division implements floor divide', () => {
-    const a = tf.tensor1d([-5, -4, 3, 2], 'int32');
-    const c = tf.tensor1d([3, 2, 2, 2], 'int32');
+    const a = tf.tensor1d([-6, -6, -5, -4, -3, -3, 3, 3, 2], 'int32');
+    const c = tf.tensor1d([-2, 2, 3, 2, -3, 3, 2, 3, 2], 'int32');
 
     const r = tf.div(a, c);
 
     expect(r.dtype).toEqual('int32');
-    expectArraysClose(r, [-2, -2, 1, 1]);
+    expectArraysClose(r, [3, -3, -2, -2, 1, -1, 1, 1, 1]);
   });
 
   it('integer division broadcasts', () => {
@@ -269,6 +269,15 @@ describeWithFlags('div', ALL_ENVS, () => {
     expect(db.dtype).toEqual('float32');
     expectArraysClose(db, [-6 * 3 / 4, -7 * 3 / 9, -8 * 4 / 16, -9 * 4 / 25]);
   });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.div({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'a' passed to 'div' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.div(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'b' passed to 'div' must be a Tensor/);
+  });
 });
 
 describeWithFlags('mul', ALL_ENVS, () => {
@@ -479,6 +488,15 @@ describeWithFlags('mul', ALL_ENVS, () => {
     expect(db.shape).toEqual(b.shape);
     expect(db.dtype).toEqual('float32');
     expectArraysClose(db, [6 * 3, 7 * 3, 8 * 4, 9 * 4]);
+  });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.mul({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'a' passed to 'mul' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.mul(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'b' passed to 'mul' must be a Tensor/);
   });
 });
 
@@ -708,6 +726,15 @@ describeWithFlags('pow', ALL_ENVS, () => {
       8 * Math.pow(4, 4) * Math.log(4), 9 * Math.pow(4, 5) * Math.log(4)
     ]);
   });
+
+  it('throws when passed base as a non-tensor', () => {
+    expect(() => tf.pow({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'base' passed to 'pow' must be a Tensor/);
+  });
+  it('throws when passed exp as a non-tensor', () => {
+    expect(() => tf.pow(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'exp' passed to 'pow' must be a Tensor/);
+  });
 });
 
 describeWithFlags('add', ALL_ENVS, () => {
@@ -851,6 +878,15 @@ describeWithFlags('add', ALL_ENVS, () => {
     expect(db.shape).toEqual(b.shape);
     expect(db.dtype).toEqual('float32');
     expectArraysClose(db, [5, 4, 3, 2]);
+  });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.add({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'a' passed to 'add' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.add(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'b' passed to 'add' must be a Tensor/);
   });
 });
 
@@ -1056,5 +1092,14 @@ describeWithFlags('sub', ALL_ENVS, () => {
     expect(db.shape).toEqual(b.shape);
     expect(db.dtype).toEqual('float32');
     expectArraysClose(db, [-5 - 4, -3 - 2]);
+  });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.sub({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'a' passed to 'sub' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.sub(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'b' passed to 'sub' must be a Tensor/);
   });
 });
