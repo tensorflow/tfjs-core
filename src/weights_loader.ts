@@ -28,7 +28,7 @@ export interface WeightsManifestEntry {
   name: string;
   shape: number[];
   dtype: 'float32'|'int32';
-  quantization: {min: number, max: number, dtype: 'uint16'|'uint8'};
+  quantization: {min: number, scale: number, dtype: 'uint16'|'uint8'};
 }
 
 const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
@@ -182,14 +182,8 @@ export async function loadWeights(
               `Weight ${weightsEntry.manifestEntry.name} has unknown ` +
               `quantization dtype ${quantization.dtype}.`);
         }
-        let quantConstant = 1.0;
-        if (quantization.max !== quantization.min) {
-          quantConstant =
-              ((quantization.max - quantization.min) /
-               (Math.pow(2, DTYPE_VALUE_SIZE_MAP[quantization.dtype] * 8) - 1));
-        }
         const dequantizedArray =
-            quantizedArray.map(v => v * quantConstant + quantization.min);
+            quantizedArray.map(v => v * quantization.scale + quantization.min);
         if (dtype === 'float32') {
           typedArray = dequantizedArray;
         } else if (dtype === 'int32') {
