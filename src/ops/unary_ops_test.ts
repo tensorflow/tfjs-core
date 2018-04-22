@@ -488,14 +488,9 @@ describeWithFlags('softplus', ALL_ENVS, () => {
     const dy = tf.scalar(4);
 
     const da = tf.grad(a => tf.softplus(a))(a, dy);
+    const y = 1 / (1 + Math.exp(-a.get()));
 
-    const expected = [];
-    for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(-a.get(i)));
-      expected[i] = dy.get(i) * y;
-    }
-
-    expectArraysClose(da, expected);
+    expectNumbersClose(da.get(), dy.get() * y);
   });
 
   it('gradients: Tensor1D', () => {
