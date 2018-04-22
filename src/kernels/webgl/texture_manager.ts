@@ -48,7 +48,12 @@ export class TextureManager {
     this.numUsedTextures++;
     this.log();
 
-    const newTexture = this.gpgpu.createMatrixTexture(shapeRC[0], shapeRC[1]);
+    let newTexture: WebGLTexture;
+    if (texType === TextureType.FLOAT) {
+      newTexture = this.gpgpu.createMatrixTexture(shapeRC[0], shapeRC[1]);
+    } else {
+      newTexture = this.gpgpu.createColorMatrixTexture(shapeRC[0], shapeRC[1]);
+    }
     this.allocatedTextures.push(newTexture);
     return newTexture;
   }

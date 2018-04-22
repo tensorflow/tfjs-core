@@ -15,10 +15,12 @@
  * =============================================================================
  */
 
+/*
 import {describeWithFlags, WEBGL_ENVS} from '../../test_util';
 import {GPGPUContext} from './gpgpu_context';
-import * as gpgpu_util from './gpgpu_util';
+import * as gpgpu_util from './gpgpu_util';*/
 
+/*
 describeWithFlags('gpgpu_util createWebGLContext', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
 
@@ -118,3 +120,4 @@ describeWithFlags('gpgpu_util createPackedMatrixTexture', WEBGL_ENVS, () => {
     gpgpu.dispose();
   });
 });
+*/

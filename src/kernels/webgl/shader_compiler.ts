@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
-import * as util from '../../util';
 import * as broadcast_util from '../../ops/broadcast_util';
-import * as tex_util from './tex_util';
+import * as util from '../../util';
+
+// import * as tex_util from './tex_util';
 
 export type ShapeInfo = {
   logicalShape: number[],
@@ -51,15 +51,17 @@ export function makeShader(
 }
 
 function getSampleSnippet() {
-  return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
-      FLOAT_TEXTURE_SAMPLE_SNIPPET :
-      UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET;
+  return FLOAT_TEXTURE_SAMPLE_SNIPPET;
+  // return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
+  //    FLOAT_TEXTURE_SAMPLE_SNIPPET :
+  //    UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET;
 }
 
 function getSetOutputSnippet() {
-  return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
-      FLOAT_TEXTURE_SETOUTPUT_SNIPPET :
-      UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET;
+  return FLOAT_TEXTURE_SETOUTPUT_SNIPPET;
+  // return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
+  //    FLOAT_TEXTURE_SETOUTPUT_SNIPPET :
+  //    UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET;
 }
 
 function getSamplerFromInInfo(inInfo: InputInfo): string {
@@ -159,6 +161,7 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
 }
 `;
 
+/*
 const UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET = `
   uniform float NaN;
 
@@ -215,7 +218,7 @@ const UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET = `
     // vec4 f = normValue * floatPowers;
     // gl_FragColor = floor(fract(f) * 255.0) / 255.0;
   }
-`;
+`;*/
 
 const FLOAT_TEXTURE_SAMPLE_SNIPPET = `
   float sampleTexture(sampler2D textureSampler, vec2 uv) {

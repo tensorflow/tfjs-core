@@ -311,7 +311,10 @@ export class Environment {
       }
       return 0;
     } else if (feature === 'WEBGL_FLOAT_TEXTURE_ENABLED') {
-      return isFloatTextureReadPixelsEnabled(this.get('WEBGL_VERSION'));
+      // return false;
+      return isFloatTextureReadPixelsEnabled(
+          this.get('WEBGL_VERSION'));  // &&
+                                       // false;
     } else if (
         feature === 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') {
       return isWebGLGetBufferSubDataAsyncExtensionEnabled(

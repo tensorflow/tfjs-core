@@ -297,6 +297,7 @@ describe('tex_util decodeMatrixFromPackedRGBA', () => {
   });
 });
 
+/*
 describe('tex_util_float_packing', () => {
   it('packs a float32array as a uint8 array', () => {
     const elements =
@@ -309,6 +310,7 @@ describe('tex_util_float_packing', () => {
   });
 });
 
+
 function randomArrayInRange(
     n: number, minValue: number, maxValue: number): Float32Array {
   const v = new Float32Array(n);
@@ -318,3 +320,4 @@ function randomArrayInRange(
   }
   return v;
 }
+*/

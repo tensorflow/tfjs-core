@@ -60,7 +60,8 @@ export function getMatrixSizeFromUnpackedArraySize(
 export type TypedArray = Float32Array|Uint8Array;
 
 export function encodeMatrixToUnpackedArray(
-    matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {
+    matrix: TypedArray|Uint16Array, unpackedArray: TypedArray|Uint16Array,
+    channelsPerTexture: number) {
   const requiredSize =
       getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture);
   if (unpackedArray.length < requiredSize) {
@@ -82,8 +83,92 @@ const FLOAT_RANGE = (FLOAT_MAX - FLOAT_MIN) / 255;
 const FLOAT_DELTAS = [1, 1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255)];
 const FLOAT_POWERS = [1, 255, 255 * 255];
 
+export function encodeFloatArrayAsUint16Array(floatArray: Float32Array):
+    Uint16Array {
+  const int32View = new Int32Array(floatArray.buffer);
+  const uint16View = new Uint16Array(floatArray.length);
+  for (let i = 0; i < floatArray.length; i++) {
+    const x = int32View[i];
+
+    let bits = (x >> 16) & 0x8000; /* Get the sign */
+    let m = (x >> 12) & 0x07ff;    /* Keep one extra bit for rounding */
+    const e = (x >> 23) & 0xff;    /* Using int is faster here */
+
+    /* If zero, or denormal, or exponent underflows too much for a denormal
+     * half, return signed zero. */
+    if (e < 103) {
+      uint16View[i] = bits;
+      continue;
+    }
+
+    /* If NaN, return NaN. If Inf or exponent overflow, return Inf. */
+    if (e > 142) {
+      bits |= 0x7c00;
+      /* If exponent was 0xff and one mantissa bit was set, it means NaN,
+       * not Inf, so make sure we set one mantissa bit too. */
+      bits |= ((e === 255) ? 0 : 1) && (x & 0x007fffff);
+      uint16View[i] = bits;
+      continue;
+    }
+
+    /* If exponent underflows but not too much, return a denormal */
+    if (e < 113) {
+      m |= 0x0800;
+      /* Extra rounding may overflow and set mantissa to 0 and exponent
+       * to 1, which is OK. */
+      bits |= (m >> (114 - e)) + ((m >> (113 - e)) & 1);
+      uint16View[i] = bits;
+      continue;
+    }
+
+    bits |= ((e - 112) << 10) | (m >> 1);
+    /* Extra rounding. An overflow will set mantissa to 0 and increment
+     * the exponent, which is OK. */
+    bits += m & 1;
+    uint16View[i] = bits;
+  }
+  return uint16View;
+}
+
+export function decodeUint16ArrayAsFloatArray(uint16Array: Uint16Array):
+    Float32Array {
+  console.log('decoding', uint16Array);
+  const int32View = new Int32Array(uint16Array);
+
+  for (let i = 0; i < uint16Array.length; i++) {
+    const hbits = uint16Array[i];
+
+    let mant = hbits & 0x03ff;            // 10 bits mantissa
+    let exp = hbits & 0x7c00;             // 5 bits exponent
+    if (exp === 0x7c00) {                 // NaN/Inf
+      exp = 0x3fc00;                      // -> NaN/Inf
+    } else if (exp !== 0) {               // normalized value
+      exp += 0x1c000;                     // exp - 15 + 127
+      if (mant === 0 && exp > 0x1c400) {  // smooth transition
+        int32View[i] = (hbits & 0x8000) << 16 | exp << 13 | 0x3ff;
+        continue;
+      }
+    } else if (mant !== 0) {  // && exp==0 -> subnormal
+      exp = 0x1c400;          // make it normal
+      do {
+        mant <<= 1;                    // mantissa * 2
+        exp -= 0x400;                  // decrease exp by 1
+      } while ((mant & 0x400) === 0);  // while not normal
+      mant &= 0x3ff;                   // discard subnormal bit
+    }                                  // else +/-0 -> +/-0
+    int32View[i] =                     // combine all parts
+        (hbits & 0x8000) << 16         // sign  << ( 31 - 15 )
+        | (exp | mant) << 13;          // value << ( 23 - 10 )
+  }
+
+  // console.log(floatArray);
+  return new Float32Array(int32View.buffer);
+
+  // return floatArray;
+}
+
 export const BYTE_NAN_VALUE = 0;
-export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
+export function encodeFloatArray2(floatArray: Float32Array): Uint8Array {
   const uintArray = new Uint8Array(floatArray.length * 4);
   for (let i = 0; i < uintArray.length; i += 4) {
     const value = floatArray[i / 4];
