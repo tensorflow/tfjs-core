@@ -1232,6 +1232,25 @@ export class ArrayOps {
   static print<T extends Tensor>(x: T, verbose = false): void {
     console.log(tensor_util.tensorToString(x, verbose));
   }
+
+  /**
+   * Returns a 0-D int32 Tensor representing the rank of input.
+   * @param x The tensor whose rank is returned.
+   */
+  @doc({heading: 'Tensors', subheading: 'Transformations'})
+  static rank<T extends Tensor>(x: T): Scalar {
+    return ArrayOps.tensor(x.rank, [], 'int32');
+  }
+
+  /**
+   * Returns a 0-D Tensor representing the number of elements
+   * in input of type out_type. Defaults to tf.int32.
+   * @param x The tensor whose sie is returned.
+   */
+  @doc({heading: 'Tensors', subheading: 'Transformations'})
+  static size<T extends Tensor>(x: T): Scalar {
+    return ArrayOps.tensor(x.size, [], 'int32');
+  }
 }
 
 function makeZerosTypedArray<D extends DataType>(

@@ -2198,3 +2198,47 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'expandDims' must be a Tensor/);
   });
 });
+
+describeWithFlags('rank ops', ALL_ENVS, () => {
+  it('rank of scalar', () => {
+    const res = tf.rank(tf.scalar(1));
+    expect(res.get()).toEqual(0);
+  });
+
+  it('rank of tensor1d', () => {
+    const res = tf.rank(tf.tensor1d([1]));
+    expect(res.get()).toEqual(1);
+  });
+
+  it('rank of tensor2d', () => {
+    const res = tf.rank(tf.tensor2d([[1,2,3], [4,5,6]], [2, 3]));
+    expect(res.get()).toEqual(2);
+  });
+
+  it('rank of tensor3d', () => {
+    const res = tf.rank(tf.tensor3d([1,2,3,4,5,6], [1, 2, 3]));
+    expect(res.get()).toEqual(3);
+  });
+});
+
+describeWithFlags('size ops', ALL_ENVS, () => {
+  it('size of scalar', () => {
+    const res = tf.size(tf.scalar(1));
+    expect(res.get()).toEqual(1);
+  });
+
+  it('size of tensor1d', () => {
+    const res = tf.size(tf.tensor1d([1]));
+    expect(res.get()).toEqual(1);
+  });
+
+  it('size of tensor2d', () => {
+    const res = tf.size(tf.tensor2d([[1,2,3], [4,5,6]], [2, 3]));
+    expect(res.get()).toEqual(6);
+  });
+
+  it('size of tensor3d', () => {
+    const res = tf.size(tf.tensor3d([1,2,3,4,5,6], [1, 2, 3]));
+    expect(res.get()).toEqual(6);
+  });
+});

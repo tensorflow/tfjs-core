@@ -204,6 +204,9 @@ export const pad2d = ArrayOps.pad2d;
 export const pad3d = ArrayOps.pad3d;
 export const pad4d = ArrayOps.pad4d;
 
+export const rank = ArrayOps.rank;
+export const size = ArrayOps.size;
+
 export const movingAverage = MovingAverageOps.movingAverage;
 
 export const basicLSTMCell = LSTMOps.basicLSTMCell;
