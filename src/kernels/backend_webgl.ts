@@ -311,6 +311,9 @@ export class MathBackendWebGL implements KernelBackend {
   getGPGPUContext(): GPGPUContext {
     return this.gpgpu;
   }
+  getCanvas(): HTMLCanvasElement {
+    return this.canvas;
+  }
 
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     const program = new SliceProgram(size);
@@ -886,10 +889,9 @@ export class MathBackendWebGL implements KernelBackend {
   resizeNearestNeighbor(
       x: Tensor4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Tensor4D {
-      const program =
-          new ResizeNearestNeighborProgram(x.shape, newHeight,
-              newWidth, alignCorners);
-      return this.compileAndRun(program, [x]);
+    const program = new ResizeNearestNeighborProgram(
+        x.shape, newHeight, newWidth, alignCorners);
+    return this.compileAndRun(program, [x]);
   }
 
   multinomial(
