@@ -18,6 +18,7 @@
 import {BrowserUtil} from './browser_util';
 import * as environment from './environment';
 import {Environment} from './environment';
+import {MathBackendWebGL} from './kernels/backend_webgl';
 import {GPGPUContext} from './kernels/webgl/gpgpu_context';
 import * as gpgpu_util from './kernels/webgl/gpgpu_util';
 import * as webgl_util from './kernels/webgl/webgl_util';
@@ -65,7 +66,8 @@ export {environment, test_util, util};
 export const webgl = {
   webgl_util,
   gpgpu_util,
-  GPGPUContext
+  GPGPUContext,
+  MathBackendWebGL
 };
 export {WebGLTimingInfo} from './kernels/backend_webgl';
 
