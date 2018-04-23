@@ -21,7 +21,8 @@ import {WeightsManifestConfig} from './weights_loader';
 
 describeWithFlags('loadWeights', CPU_ENVS, () => {
   const setupFakeWeightFiles = (fileBufferMap: {
-    [filename: string]: Float32Array|Int32Array|ArrayBuffer|Uint8Array
+    [filename: string]: Float32Array|Int32Array|ArrayBuffer|Uint8Array|
+    Uint16Array
   }) => {
     spyOn(window, 'fetch').and.callFake((path: string) => {
       return new Response(fileBufferMap[path]);
@@ -466,47 +467,60 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
         .catch(done.fail);
   });
 
-  it('quantized weights', done => {
-    setupFakeWeightFiles(
-        {'./weightfile0': new Uint8Array([0, 48, 255, 0, 48, 255])});
+  const quantizationTest =
+      (quantizationDtype: 'uint8'|'uint16', done: DoneFn) => {
+        const arrayType =
+            quantizationDtype === 'uint8' ? Uint8Array : Uint16Array;
+        setupFakeWeightFiles(
+            {'./weightfile0': new arrayType([0, 48, 255, 0, 48, 255])});
 
-    const manifest: WeightsManifestConfig = [{
-      'paths': ['weightfile0'],
-      'weights': [
-        {
-          'name': 'weight0',
-          'dtype': 'float32',
-          'shape': [3],
-          'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint8'}
-        },
-        {
-          'name': 'weight1',
-          'dtype': 'int32',
-          'shape': [3],
-          'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint8'}
-        }
-      ]
-    }];
+        const manifest: WeightsManifestConfig = [{
+          'paths': ['weightfile0'],
+          'weights': [
+            {
+              'name': 'weight0',
+              'dtype': 'float32',
+              'shape': [3],
+              'quantization':
+                  {'min': -1, 'scale': 0.1, 'dtype': quantizationDtype}
+            },
+            {
+              'name': 'weight1',
+              'dtype': 'int32',
+              'shape': [3],
+              'quantization':
+                  {'min': -1, 'scale': 0.1, 'dtype': quantizationDtype}
+            }
+          ]
+        }];
 
-    const weightsNamesToFetch = ['weight0', 'weight1'];
-    tf.loadWeights(manifest, './', weightsNamesToFetch)
-        .then(weights => {
-          expect((window.fetch as jasmine.Spy).calls.count()).toBe(1);
+        const weightsNamesToFetch = ['weight0', 'weight1'];
+        tf.loadWeights(manifest, './', weightsNamesToFetch)
+            .then(weights => {
+              expect((window.fetch as jasmine.Spy).calls.count()).toBe(1);
 
-          const weightNames = Object.keys(weights);
-          expect(weightNames.length).toEqual(weightsNamesToFetch.length);
+              const weightNames = Object.keys(weights);
+              expect(weightNames.length).toEqual(weightsNamesToFetch.length);
 
-          const weight0 = weights['weight0'];
-          expectArraysClose(weight0, [-1, 3.8, 24.5]);
-          expect(weight0.shape).toEqual([3]);
-          expect(weight0.dtype).toEqual('float32');
+              const weight0 = weights['weight0'];
+              expectArraysClose(weight0, [-1, 3.8, 24.5]);
+              expect(weight0.shape).toEqual([3]);
+              expect(weight0.dtype).toEqual('float32');
 
-          const weight1 = weights['weight1'];
-          expectArraysEqual(weight1, [-1, 4, 25]);
-          expect(weight1.shape).toEqual([3]);
-          expect(weight1.dtype).toEqual('int32');
-        })
-        .then(done)
-        .catch(done.fail);
+              const weight1 = weights['weight1'];
+              expectArraysEqual(weight1, [-1, 4, 25]);
+              expect(weight1.shape).toEqual([3]);
+              expect(weight1.dtype).toEqual('int32');
+            })
+            .then(done)
+            .catch(done.fail);
+      };
+
+  it('quantized weights (uint8)', done => {
+    quantizationTest('uint8', done);
+  });
+
+  it('quantized weights (uint16)', done => {
+    quantizationTest('uint16', done);
   });
 });
