@@ -36,11 +36,14 @@
   "scripts": {
     "build": "tsc",
     "build-npm": "./scripts/build-npm.sh",
+    "link-local": "yalc link",
+    "publish-local": "yarn build-npm && yalc push",
     "lint": "tslint -p . -t verbose",
     "test": "karma start",
     "test-travis": "karma start --browsers='bs_firefox_mac,bs_chrome_mac' --singleRun"
   },
   "dependencies": {
-    "seedrandom": "~2.4.3"
+    "seedrandom": "~2.4.3",
+    "yalc": "^1.0.0-pre.21"
   }
 }
