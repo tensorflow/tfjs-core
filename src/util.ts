@@ -18,6 +18,28 @@ import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TypedArray} from './types';
 
+function assertArgumentIsTensor(
+    x: Tensor, argName: string, functionName: string) {
+  assert(
+      x instanceof Tensor,
+      `Argument '${argName}' passed to '${functionName}' must be a Tensor, ` +
+          `but got ${typeof x}.`);
+}
+
+export function assertArgumentsAreTensors(
+    args: {[argName: string]: Tensor|Tensor[]}, functionName: string) {
+  for (const argName in args) {
+    const arg = args[argName];
+    if (Array.isArray(arg)) {
+      arg.forEach((t, i) => {
+        assertArgumentIsTensor(t, `${argName}[${i}]`, functionName);
+      });
+    } else {
+      assertArgumentIsTensor(arg, argName, functionName);
+    }
+  }
+}
+
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
@@ -68,14 +90,14 @@ export function assertShapesMatch(
     shapeA: number[], shapeB: number[], errorMessagePrefix = ''): void {
   assert(
       arraysEqual(shapeA, shapeB),
-      errorMessagePrefix + `Shapes ${shapeA} and ${shapeB} must match`);
+      errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
 }
 
 export function assertTypesMatch(a: Tensor, b: Tensor): void {
   assert(
       a.dtype === b.dtype,
-      `The dtypes of the first (${a.dtype}) and ` +
-          `second (${b.dtype}) input must match`);
+      ` The dtypes of the first(${a.dtype}) and` +
+          ` second(${b.dtype}) input must match`);
 }
 
 // NOTE: We explicitly type out what T extends instead of any so that
@@ -244,7 +266,7 @@ export function inferFromImplicitShape(
       if (implicitIdx !== -1) {
         throw Error(
             `Shapes can only have 1 implicit size. ` +
-            `Found -1 at dim ${implicitIdx} and dim ${i}`);
+            `Found - 1 at dim ${implicitIdx} and dim ${i}`);
       }
       implicitIdx = i;
     } else if (shape[i] <= 0) {
@@ -254,7 +276,7 @@ export function inferFromImplicitShape(
 
   if (implicitIdx === -1) {
     if (size > 0 && size !== shapeProd) {
-      throw Error(`Size (${size}) must match the product of shape ${shape}`);
+      throw Error(`Size(${size}) must match the product of shape ${shape}`);
     }
     return shape;
   }
@@ -268,37 +290,6 @@ export function inferFromImplicitShape(
   const newShape = shape.slice();
   newShape[implicitIdx] = size / shapeProd;
   return newShape;
-}
-
-export const NAN_INT32 = 1 << 31;
-export const NAN_BOOL = 255;
-export const NAN_FLOAT32 = NaN;
-
-export function getNaN(dtype: DataType): number {
-  if (dtype === 'float32') {
-    return NAN_FLOAT32;
-  } else if (dtype === 'int32') {
-    return NAN_INT32;
-  } else if (dtype === 'bool') {
-    return NAN_BOOL;
-  } else {
-    throw new Error(`Unknown dtype ${dtype}`);
-  }
-}
-
-export function isValNaN(val: number, dtype: DataType): boolean {
-  if (isNaN(val)) {
-    return true;
-  }
-  if (dtype === 'float32') {
-    return false;
-  } else if (dtype === 'int32') {
-    return val === NAN_INT32;
-  } else if (dtype === 'bool') {
-    return val === NAN_BOOL;
-  } else {
-    throw new Error(`Unknown dtype ${dtype}`);
-  }
 }
 
 /** Reduces the shape by removing all dimensions of shape 1. */
@@ -355,8 +346,12 @@ export function isTensorInList(tensor: Tensor, tensorList: Tensor[]): boolean {
 
 export function checkForNaN<D extends DataType>(
     vals: DataTypeMap[D], dtype: D, name: string): void {
+  if (dtype !== 'float32') {
+    // NaN is a floating point concept.
+    return;
+  }
   for (let i = 0; i < vals.length; i++) {
-    if (isValNaN(vals[i], dtype)) {
+    if (isNaN(vals[i])) {
       throw Error(`The result of the '${name}' has NaNs.`);
     }
   }
@@ -411,23 +406,11 @@ export function copyTypedArray<D extends DataType>(
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
-    const vals = new Int32Array(array.length);
-    for (let i = 0; i < vals.length; ++i) {
-      const val = array[i] as number;
-      if (isValNaN(val, 'int32')) {
-        vals[i] = getNaN('int32');
-      } else {
-        vals[i] = val;
-      }
-    }
-    return vals;
+    return new Int32Array(array as number[]);
   } else if (dtype === 'bool') {
     const bool = new Uint8Array(array.length);
     for (let i = 0; i < bool.length; ++i) {
-      const val = array[i] as number;
-      if (isValNaN(val as number, 'bool')) {
-        bool[i] = getNaN('bool');
-      } else if (Math.round(val) !== 0) {
+      if (Math.round(array[i] as number) !== 0) {
         bool[i] = 1;
       }
     }

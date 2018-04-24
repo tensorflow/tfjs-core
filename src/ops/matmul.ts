@@ -26,10 +26,10 @@ export class MatmulOps {
    * Computes the dot product of two matrices, A * B. These must be matrices.
    *
    * ```js
-   * const a = dl.tensor2d([1, 2], [1, 2]);
-   * const b = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   * const a = tf.tensor2d([1, 2], [1, 2]);
+   * const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
    *
-   * a.matMul(b).print();  // or dl.matMul(a, b)
+   * a.matMul(b).print();  // or tf.matMul(a, b)
    * ```
    * @param a First matrix in dot product operation.
    * @param b Second matrix in dot product operation.
@@ -41,6 +41,8 @@ export class MatmulOps {
   static matMul(
       a: Tensor2D, b: Tensor2D, transposeA = false, transposeB = false):
       Tensor2D {
+    util.assertArgumentsAreTensors({a, b}, 'matMul');
+
     const innerShapeA = transposeA ? a.shape[0] : a.shape[1];
     const innerShapeB = transposeB ? b.shape[1] : b.shape[0];
 
@@ -57,13 +59,27 @@ export class MatmulOps {
             ` and transposeB=${transposeB} must match.`);
 
     const grad = (dy: Tensor2D) => {
-      if (transposeA || transposeB) {
-        throw new Error(`Backprop for transposed MatMul not yet implemented.`);
+      if (!transposeA && !transposeB) {
+        return {
+          a: () => dy.matMul(b.toFloat(), false, true),
+          b: () => a.toFloat().matMul(dy, true, false)
+        };
+      } else if (!transposeA && transposeB) {
+        return {
+          a: () => dy.matMul(b.toFloat(), false, false),
+          b: () => dy.matMul(a.toFloat(), true, false)
+        };
+      } else if (transposeA && !transposeB) {
+        return {
+          a: () => b.toFloat().matMul(dy, false, true),
+          b: () => a.toFloat().matMul(dy, false, false)
+        };
+      } else {
+        return {
+          a: () => b.toFloat().matMul(dy, true, true),
+          b: () => dy.matMul(a.toFloat(), true, true)
+        };
       }
-      return {
-        a: () => dy.matMul(b.toFloat(), false, true),
-        b: () => a.toFloat().matMul(dy, true, false)
-      };
     };
     return ENV.engine.runKernel(
         backend => backend.matMul(a, b, transposeA, transposeB), {a, b}, grad);
@@ -140,10 +156,10 @@ export class MatmulOps {
    * Computes the outer product of two vectors, v1 and v2.
    *
    * ```js
-   * const a = dl.tensor1d([1, 2, 3]);
-   * const b = dl.tensor1d([3, 4, 5]);
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([3, 4, 5]);
    *
-   * dl.outerProduct(a, b).print();
+   * tf.outerProduct(a, b).print();
    * ```
    * @param v1 The first vector in the outer product operation.
    * @param v2 The second vector in the dot product operation.

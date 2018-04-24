@@ -15,26 +15,19 @@
  * =============================================================================
  */
 
-import {ENV, Environment, Features} from './environment';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {Features} from './environment';
 import {Tensor} from './tensor';
-import {DataType, TypedArray} from './types';
+import {TypedArray} from './types';
 import * as util from './util';
 
-export const WEBGL_ENVS: Features[] = [
-  {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 1},
-  {'BACKEND': 'webgl', 'WEBGL_FLOAT_TEXTURE_ENABLED': true, 'WEBGL_VERSION': 2},
-  // TODO(nsthorat,smilkov): Enable when byte-backed textures are fixed.
-  // {
-  // 'BACKEND': 'webgl',
-  // 'WEBGL_FLOAT_TEXTURE_ENABLED': false,
-  // 'WEBGL_VERSION': 1
-  // }
-];
-
-export const CPU_ENVS: Features[] = [{'BACKEND': 'cpu'}];
-export const ALL_ENVS = WEBGL_ENVS.concat(CPU_ENVS);
+// Constraints for testing.
+export const WEBGL_ENVS: Features = {
+  'BACKEND': 'test-webgl'
+};
+export const CPU_ENVS: Features = {
+  'BACKEND': 'test-cpu'
+};
+export const ALL_ENVS = {};
 
 /** Accuracy for tests. */
 export const TEST_EPSILON = 1e-3;
@@ -97,6 +90,15 @@ export function expectArraysClose(
   }
 }
 
+export interface DoneFn {
+  (): void;
+  fail: (message?: Error|string) => void;
+}
+
+export function expectPromiseToFail(fn: () => Promise<{}>, done: DoneFn): void {
+  fn().then(() => done.fail(), () => done());
+}
+
 export function expectArraysEqual(
     actual: Tensor|TypedArray|number[],
     expected: Tensor|TypedArray|number[]|boolean[]) {
@@ -133,41 +135,5 @@ export function expectValuesInRange(
       throw new Error(
           `Value out of range:${actualVals[i]} low: ${low}, high: ${high}`);
     }
-  }
-}
-
-export function describeWithFlags(
-    name: string, featuresList: Features[], tests: () => void) {
-  featuresList.forEach(features => {
-    const testName = name + ' ' + JSON.stringify(features);
-    executeTests(testName, tests, features);
-  });
-}
-
-function executeTests(
-    testName: string, tests: () => void, features?: Features) {
-  describe(testName, () => {
-    beforeEach(() => {
-      ENV.setFeatures(features || {});
-      ENV.addCustomBackend('webgl', () => new MathBackendWebGL());
-      ENV.addCustomBackend('cpu', () => new MathBackendCPU());
-      if (features && features.BACKEND != null) {
-        Environment.setBackend(features.BACKEND);
-      }
-      ENV.engine.startScope();
-    });
-
-    afterEach(() => {
-      ENV.engine.endScope(null);
-      ENV.reset();
-    });
-
-    tests();
-  });
-}
-
-export function assertIsNan(val: number, dtype: DataType) {
-  if (!util.isValNaN(val, dtype)) {
-    throw new Error(`Value ${val} does not represent NaN for dtype ${dtype}`);
   }
 }

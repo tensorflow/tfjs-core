@@ -35,13 +35,12 @@ export class LRNOps {
    * @param bias A constant bias term for the basis.
    * @param alpha A scale factor, usually positive.
    * @param beta An exponent.
-   * @param normRegion Default is 'acrossChannels'.
    */
   @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
   static localResponseNormalization<T extends Tensor3D|Tensor4D>(
-      x: T, radius = 5, bias = 1, alpha = 1, beta = 0.5,
-      normRegion: 'acrossChannels'|'withinChannel' = 'acrossChannels'): T {
+      x: T, radius = 5, bias = 1, alpha = 1, beta = 0.5): T {
+    util.assertArgumentsAreTensors({x}, 'localResponseNormalization');
     util.assert(
         x.rank === 4 || x.rank === 3,
         `Error in localResponseNormalization: x must be rank 3 or 4 but got
@@ -50,6 +49,7 @@ export class LRNOps {
         util.isInt(radius),
         `Error in localResponseNormalization3D: radius must be an integer
                      but got radius ${radius}.`);
+
     let x4D = x as Tensor4D;
     let reshapedTo4D = false;
     if (x.rank === 3) {
@@ -58,7 +58,7 @@ export class LRNOps {
     }
     const res = ENV.engine.runKernel(
         backend => backend.localResponseNormalization4D(
-            x4D, radius, bias, alpha, beta, normRegion),
+            x4D, radius, bias, alpha, beta),
         {x4D});
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;

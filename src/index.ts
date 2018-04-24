@@ -15,28 +15,22 @@
  * =============================================================================
  */
 
+// backend_cpu.ts and backend_webgl.ts are standalone files and should be
+// explicily included here. Below, there is an export from backend_webgl, but
+// that doesn't count since it's exporting a Typescript interface.
+import './kernels/backend_webgl';
+import './kernels/backend_cpu';
+
 import {BrowserUtil} from './browser_util';
-import * as xhr_dataset from './data/xhr-dataset';
 import * as environment from './environment';
 import {Environment} from './environment';
 import * as gpgpu_util from './kernels/webgl/gpgpu_util';
 import * as webgl_util from './kernels/webgl/webgl_util';
-import * as conv_util from './ops/conv_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
 
-export {CheckpointLoader} from './data/checkpoint_loader';
-export {DataStats, InMemoryDataset} from './data/dataset';
-// tslint:disable-next-line:max-line-length
-export {InCPUMemoryShuffledInputProviderBuilder, InGPUMemoryShuffledInputProviderBuilder, InputProvider} from './data/input_provider';
-export {XhrDataset, XhrDatasetConfig, XhrModelConfig} from './data/xhr-dataset';
-export {doc} from './doc';
-export {ENV, Environment, Features} from './environment';
-export {MathBackendCPU} from './kernels/backend_cpu';
-export {MathBackendWebGL, WebGLTimingInfo} from './kernels/backend_webgl';
-export {GPGPUContext} from './kernels/webgl/gpgpu_context';
-export {LSTMCellFunc} from './ops/lstm';
+// Optimizers.
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
 export {AdamOptimizer} from './optimizers/adam_optimizer';
@@ -47,27 +41,37 @@ export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
-export {Rank} from './types';
+export {DataType, Rank, ShapeMap} from './types';
+// Serialization.
 export {WeightsManifestConfig} from './weights_loader';
 export {loadWeights} from './weights_loader';
-export {version as version_core};
-// Second level exports.
-export {
-  conv_util,
-  environment,
-  gpgpu_util,
-  test_util,
-  util,
-  webgl_util,
-  xhr_dataset
-};
 
 export * from './ops/ops';
+export {LSTMCellFunc} from './ops/lstm';
+export {Reduction} from './ops/loss_ops';
+
 export * from './train';
 export * from './globals';
 
+export {ENV, Environment, Features} from './environment';
 export const setBackend = Environment.setBackend;
 export const getBackend = Environment.getBackend;
 export const memory = Environment.memory;
+export {TimingInfo} from './engine';
+export {version as version_core};
+export {doc} from './doc';
 
 export const nextFrame = BrowserUtil.nextFrame;
+
+// Second level exports.
+export {environment, test_util, util};
+
+// WebGL specific utils.
+export const webgl = {
+  webgl_util,
+  gpgpu_util
+};
+export {WebGLTimingInfo} from './kernels/backend_webgl';
+
+// Backend specific.
+export {KernelBackend, BackendTimingInfo} from './kernels/backend';

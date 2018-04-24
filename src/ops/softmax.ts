@@ -29,15 +29,15 @@ export class SoftmaxOps {
    * Computes the softmax normalized vector given the logits.
    *
    * ```js
-   * const a = dl.tensor1d([1, 2, 3]);
+   * const a = tf.tensor1d([1, 2, 3]);
    *
-   * a.softmax().print();  // or dl.softmax(a)
+   * a.softmax().print();  // or tf.softmax(a)
    * ```
    *
    * ```js
-   * const a = dl.tensor2d([2, 4, 6, 1, 2, 3], [2, 3]);
+   * const a = tf.tensor2d([2, 4, 6, 1, 2, 3], [2, 3]);
    *
-   * a.softmax().print();  // or dl.softmax(a)
+   * a.softmax().print();  // or tf.softmax(a)
    * ```
    *
    * @param logits The logits array.
@@ -47,6 +47,8 @@ export class SoftmaxOps {
   @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
   static softmax<T extends Tensor>(logits: T, dim = -1): T {
+    util.assertArgumentsAreTensors({logits}, 'softmax');
+
     if (dim === -1) {
       dim = logits.rank - 1;
     }
@@ -104,8 +106,10 @@ export class SoftmaxOps {
   @operation
   static softmaxCrossEntropy<T extends Tensor, O extends Tensor>(
       labels: T, logits: T, dim = -1): O {
+    util.assertArgumentsAreTensors({labels, logits}, 'softmaxCrossEntropy');
     util.assertShapesMatch(
         labels.shape, logits.shape, 'Error in softmaxCrossEntropy: ');
+
     if (dim === -1) {
       dim = logits.rank - 1;
     }

@@ -29,14 +29,22 @@ export class CompareOps {
    * We also expose `notEqualStrict` which has the same signature as this op and
    * asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([0, 2, 3]);
+   *
+   * a.notEqual(b).print();
+   * ```
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static notEqual<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'notEqual');
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
     return ENV.engine.runKernel(backend => backend.notEqual(a, b), {a, b}) as T;
   }
 
@@ -60,14 +68,22 @@ export class CompareOps {
    * We also expose `lessStrict` which has the same signature as this op and
    * asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([2, 2, 2]);
+   *
+   * a.less(b).print();
+   * ```
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static less<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'less');
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
     return ENV.engine.runKernel(backend => backend.less(a, b), {a, b}) as T;
   }
 
@@ -91,14 +107,23 @@ export class CompareOps {
    * We also expose `equalStrict` which has the same signature as this op
    * and asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([2, 2, 2]);
+   *
+   * a.equal(b).print();
+   * ```
+   *
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static equal<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'equal');
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
     return ENV.engine.runKernel(backend => backend.equal(a, b), {a, b}) as T;
   }
 
@@ -114,14 +139,23 @@ export class CompareOps {
    * We also expose `lessEqualStrict` which has the same signature as this op
    * and asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([2, 2, 2]);
+   *
+   * a.lessEqual(b).print();
+   * ```
+   *
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static lessEqual<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'lessEqual');
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
     return ENV.engine.runKernel(backend => backend.lessEqual(a, b), {a, b}) as
         T;
   }
@@ -138,14 +172,23 @@ export class CompareOps {
    * We also expose `greaterStrict` which has the same signature as this
    * op and asserts that `a` and `b` are the same shape (does not broadcast).
    *
+   * ```js
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([2, 2, 2]);
+   *
+   * a.greater(b).print();
+   * ```
+   *
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static greater<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'greater');
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
     return ENV.engine.runKernel(backend => backend.greater(a, b), {a, b}) as T;
   }
 
@@ -158,8 +201,15 @@ export class CompareOps {
   /**
    * Returns the truth value of (a >= b) element-wise. Supports broadcasting.
    *
-   * We also expose `greaterStrict` which has the same signature as this
+   * We also expose `greaterEqualStrict` which has the same signature as this
    * op and asserts that `a` and `b` are the same shape (does not broadcast).
+   *
+   * ```js
+   * const a = tf.tensor1d([1, 2, 3]);
+   * const b = tf.tensor1d([2, 2, 2]);
+   *
+   * a.greaterEqual(b).print();
+   * ```
    *
    * @param a The first input tensor.
    * @param b The second input tensor. Must have the same dtype as `a`.
@@ -167,8 +217,10 @@ export class CompareOps {
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static greaterEqual<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'greaterEqual');
     util.assertTypesMatch(a, b);
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
     return ENV.engine.runKernel(
                backend => backend.greaterEqual(a, b), {a, b}) as T;
   }

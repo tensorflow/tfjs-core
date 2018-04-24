@@ -17,6 +17,7 @@
 
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
+import * as util from '../util';
 
 import * as axis_util from './axis_util';
 import {operation} from './operation';
@@ -30,9 +31,9 @@ export class NormOps {
    * and matrix norms (Frobenius, 1-norm, and inf-norm).
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3, 4]);
+   * const x = tf.tensor1d([1, 2, 3, 4]);
    *
-   * x.norm().print();  // or dl.norm(x)
+   * x.norm().print();  // or tf.norm(x)
    * ```
    *
    * @param x The input array.
@@ -64,6 +65,8 @@ export class NormOps {
   static norm(
       x: Tensor, ord: number|'euclidean'|'fro' = 'euclidean',
       axis: number|number[] = null, keepDims = false): Tensor {
+    util.assertArgumentsAreTensors({x}, 'norm');
+
     const norm = normImpl(x, ord, axis);
     let keepDimsShape = norm.shape;
     if (keepDims) {

@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
-import * as dl from '../index';
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import * as tf from '../index';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
 
 describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
@@ -28,11 +29,11 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     const origPad = 0;
     const origStride = 1;
 
-    const x = dl.tensor3d([2], inputShape);
-    const w = dl.tensor4d(
+    const x = tf.tensor3d([2], inputShape);
+    const w = tf.tensor4d(
         [3, 1, 5, 0], [fSize, fSize, origInputDepth, origOutputDepth]);
 
-    const result = dl.conv2dTranspose(x, w, [2, 2, 1], origStride, origPad);
+    const result = tf.conv2dTranspose(x, w, [2, 2, 1], origStride, origPad);
     const expected = [6, 2, 10, 0];
 
     expect(result.shape).toEqual([2, 2, 1]);
@@ -48,11 +49,11 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     const origPad = 0;
     const origStride = 1;
 
-    const x = dl.tensor4d([2, 3], inputShape);
-    const w = dl.tensor4d(
+    const x = tf.tensor4d([2, 3], inputShape);
+    const w = tf.tensor4d(
         [3, 1, 5, 0], [fSize, fSize, origInputDepth, origOutputDepth]);
 
-    const result = dl.conv2dTranspose(x, w, [2, 2, 2, 1], origStride, origPad);
+    const result = tf.conv2dTranspose(x, w, [2, 2, 2, 1], origStride, origPad);
     const expected = [6, 2, 10, 0, 9, 3, 15, 0];
 
     expect(result.shape).toEqual([2, 2, 2, 1]);
@@ -67,11 +68,11 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     const origStride = 1;
 
     // tslint:disable-next-line:no-any
-    const x: any = dl.tensor2d([2, 2], [2, 1]);
-    const w = dl.tensor4d(
+    const x: any = tf.tensor2d([2, 2], [2, 1]);
+    const w = tf.tensor4d(
         [3, 1, 5, 0], [fSize, fSize, origInputDepth, origOutputDepth]);
 
-    expect(() => dl.conv2dTranspose(x, w, [2, 2, 1], origStride, origPad))
+    expect(() => tf.conv2dTranspose(x, w, [2, 2, 1], origStride, origPad))
         .toThrowError();
   });
 
@@ -83,11 +84,11 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     const origPad = 0;
     const origStride = 1;
 
-    const x = dl.tensor3d([2], inputShape);
+    const x = tf.tensor3d([2], inputShape);
     // tslint:disable-next-line:no-any
-    const w: any = dl.tensor3d([3, 1, 5, 0], [fSize, fSize, origInputDepth]);
+    const w: any = tf.tensor3d([3, 1, 5, 0], [fSize, fSize, origInputDepth]);
 
-    expect(() => dl.conv2dTranspose(x, w, [2, 2, 1], origStride, origPad))
+    expect(() => tf.conv2dTranspose(x, w, [2, 2, 1], origStride, origPad))
         .toThrowError();
   });
 
@@ -100,11 +101,43 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     const origPad = 0;
     const origStride = 1;
 
-    const x = dl.tensor3d([2, 2], inputShape);
-    const w = dl.randomNormal<Rank.R4>(
+    const x = tf.tensor3d([2, 2], inputShape);
+    const w = tf.randomNormal<Rank.R4>(
         [fSize, fSize, origInputDepth, wrongOrigOutputDepth]);
 
-    expect(() => dl.conv2dTranspose(x, w, [2, 2, 2], origStride, origPad))
+    expect(() => tf.conv2dTranspose(x, w, [2, 2, 2], origStride, origPad))
         .toThrowError();
+  });
+
+  it('throws when passed x as a non-tensor', () => {
+    const origInputDepth = 1;
+    const origOutputDepth = 1;
+    const fSize = 2;
+    const origPad = 0;
+    const origStride = 1;
+
+    const w = tf.tensor4d(
+        [3, 1, 5, 0], [fSize, fSize, origInputDepth, origOutputDepth]);
+
+    expect(
+        () => tf.conv2dTranspose(
+            {} as tf.Tensor3D, w, [2, 2, 1], origStride, origPad))
+        .toThrowError(
+            /Argument 'x' passed to 'conv2dTranspose' must be a Tensor/);
+  });
+
+  it('throws when passed filter as a non-tensor', () => {
+    const origOutputDepth = 1;
+    const inputShape: [number, number, number] = [1, 1, origOutputDepth];
+    const origPad = 0;
+    const origStride = 1;
+
+    const x = tf.tensor3d([2], inputShape);
+
+    expect(
+        () => tf.conv2dTranspose(
+            x, {} as tf.Tensor4D, [2, 2, 1], origStride, origPad))
+        .toThrowError(
+            /Argument 'filter' passed to 'conv2dTranspose' must be a Tensor/);
   });
 });

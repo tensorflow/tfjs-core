@@ -19,13 +19,13 @@ import {TimingInfo} from '../engine';
 import {ENV} from '../environment';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
+import * as ops from '../ops/ops';
 import * as reduce_util from '../ops/reduce_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
-
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -54,6 +54,8 @@ import {PadProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
+// tslint:disable-next-line:max-line-length
+import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {TextureData, TextureType} from './webgl/tex_util';
@@ -346,7 +348,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b], output) as Tensor;
   }
 
-  batchNormalization4D(
+  batchNormalization(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
@@ -371,10 +373,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   localResponseNormalization4D(
-      x: Tensor4D, radius: number, bias: number, alpha: number, beta: number,
-      normRegion: 'acrossChannels'|'withinChannel'): Tensor4D {
-    const program =
-        new LRNProgram(x.shape, radius, bias, alpha, beta, normRegion);
+      x: Tensor4D, radius: number, bias: number, alpha: number,
+      beta: number): Tensor4D {
+    const program = new LRNProgram(x.shape, radius, bias, alpha, beta);
     return this.compileAndRun(program, [x]);
   }
 
@@ -453,7 +454,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.reduce(a2D, 'sum', outputDType).reshape(outShape);
   }
 
-  argMin(x: Tensor, axes: number[]): Tensor {
+  argMin(x: Tensor, axis: number): Tensor {
+    const axes = [axis];
     axis_util.assertAxesAreInnerMostDims('argMin', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -462,7 +464,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.argReduce(a2D, 'min').reshape(outShape);
   }
 
-  argMax(x: Tensor, axes: number[]): Tensor {
+  argMax(x: Tensor, axis: number): Tensor {
+    const axes = [axis];
     axis_util.assertAxesAreInnerMostDims('argMax', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -529,13 +532,6 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
-  logicalXor(a: Tensor, b: Tensor): Tensor {
-    const program =
-        new BinaryOpProgram(binaryop_gpu.LOGICAL_XOR, a.shape, b.shape);
-    const output = this.makeOutputArray(program.outputShape, 'bool');
-    return this.compileAndRun(program, [a, b], output);
-  }
-
   where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor {
     const program = new WhereProgram(condition.rank, a.shape, a.rank);
     const output = this.makeOutputArray(program.outputShape, dtype);
@@ -564,6 +560,11 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b]);
   }
 
+  mod(a: Tensor, b: Tensor): Tensor {
+    const program = new BinaryOpProgram(binaryop_gpu.MOD, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]);
+  }
+
   max(x: Tensor, axes: number[]): Tensor {
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
@@ -578,9 +579,25 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b]);
   }
 
+  squaredDifference(a: Tensor, b: Tensor): Tensor {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.SQUARED_DIFFERENCE, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]);
+  }
+
   divide(a: Tensor, b: Tensor): Tensor {
-    const program = new BinaryOpProgram(binaryop_gpu.DIV, a.shape, b.shape);
-    const output = this.makeOutputArray(program.outputShape, 'float32');
+    let op: string;
+    let outputDtype: 'float32'|'int32';
+    if (a.dtype === 'int32' && b.dtype === 'int32') {
+      op = binaryop_gpu.INT_DIV;
+      outputDtype = 'int32';
+    } else {
+      op = binaryop_gpu.DIV;
+      outputDtype = 'float32';
+    }
+
+    const program = new BinaryOpProgram(op, a.shape, b.shape);
+    const output = this.makeOutputArray(program.outputShape, outputDtype);
     return this.compileAndRun<Tensor, Tensor>(program, [a, b], output);
   }
 
@@ -618,8 +635,23 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  sign<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.SIGN);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  round<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ROUND);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   exp<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.EXP);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  expm1<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.EXPM1);
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -638,8 +670,18 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  rsqrt<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.RSQRT);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   square<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SQUARE);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  reciprocal<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.RECIPROCAL);
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -653,30 +695,15 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  eluDer<T extends Tensor>(x: T): T {
-    const program = new UnaryOpProgram(x.shape, unary_op.ELU_DER);
-    return this.compileAndRun(program, [x]) as T;
+  eluDer<T extends Tensor>(dy: T, y: T): T {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.ELU_DER, dy.shape, y.shape);
+    return this.compileAndRun(program, [dy, y]) as T;
   }
 
   selu<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SELU);
     return this.compileAndRun(program, [x]) as T;
-  }
-
-  leakyRelu<T extends Tensor>(x: T, alpha: number): T {
-    const program = new UnaryOpProgram(x.shape, unary_op.LEAKY_RELU(alpha));
-    return this.compileAndRun(program, [x]) as T;
-  }
-
-  prelu<T extends Tensor>(a: T, b: T): T {
-    const program = new BinaryOpProgram(binaryop_gpu.PRELU, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]) as T;
-  }
-
-  preluDer<T extends Tensor>(a: T, b: T): T {
-    const program =
-        new BinaryOpProgram(binaryop_gpu.PRELU_DER, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]) as T;
   }
 
   int<T extends Tensor>(x: T): T {
@@ -697,6 +724,11 @@ export class MathBackendWebGL implements KernelBackend {
 
   sigmoid<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SIGMOID);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  softplus<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.SOFTPLUS);
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -730,6 +762,11 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  atan2<T extends Tensor>(a: T, b: T): T {
+    const program = new BinaryOpProgram(binaryop_gpu.ATAN2, a.shape, b.shape);
+    return this.compileAndRun(program, [a, b]) as T;
+  }
+
   sinh<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SINH);
     return this.compileAndRun(program, [x]) as T;
@@ -742,6 +779,26 @@ export class MathBackendWebGL implements KernelBackend {
 
   tanh<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.TANH);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  asinh<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ASINH);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  acosh<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ACOSH);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  atanh<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ATANH);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  erf<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.ERF);
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -779,20 +836,14 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x], output);
   }
 
-  minPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    const program = new Pool2DProgram(convInfo, 'min', false);
-    const output =
-        this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
-    return this.compileAndRun(program, [x], output);
-  }
-
   avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const program = new Pool2DProgram(convInfo, 'avg', false);
     const output = this.makeOutputArray(program.outputShape, 'float32');
     return this.compileAndRun(program, [x], output) as Tensor4D;
   }
 
-  maxPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
     const getPositions = true;
     const maxPoolPositionsProgram =
         new Pool2DProgram(convInfo, 'max', getPositions);
@@ -832,7 +883,19 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  multinomial(probs: Tensor2D, numSamples: number, seed: number): Tensor2D {
+  resizeNearestNeighbor(
+      x: Tensor4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Tensor4D {
+      const program =
+          new ResizeNearestNeighborProgram(x.shape, newHeight,
+              newWidth, alignCorners);
+      return this.compileAndRun(program, [x]);
+  }
+
+  multinomial(
+      logits: Tensor2D, normalized: boolean, numSamples: number,
+      seed: number): Tensor2D {
+    const probs = normalized ? logits : ops.softmax(logits);
     const batchSize = probs.shape[0];
     const numOutcomes = probs.shape[1];
     const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);
@@ -874,7 +937,6 @@ export class MathBackendWebGL implements KernelBackend {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
-
     const shouldTimeProgram = this.activeTimers != null;
     let query: WebGLQuery|CPUTimerQuery;
     if (shouldTimeProgram) {
@@ -977,7 +1039,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 }
 
-ENV.registerBackend('webgl', () => new MathBackendWebGL());
+ENV.registerBackend('webgl', () => new MathBackendWebGL(), 2 /* priority */);
 
 function float32ToTypedArray<D extends DataType>(
     a: Float32Array, dtype: D): DataTypeMap[D] {
@@ -987,9 +1049,7 @@ function float32ToTypedArray<D extends DataType>(
     const result = (dtype === 'int32') ? new Int32Array(a.length) :
                                          new Uint8Array(a.length);
     for (let i = 0; i < result.length; ++i) {
-      let val = a[i];
-      val = isNaN(val) ? util.getNaN(dtype) : Math.round(val);
-      result[i] = val;
+      result[i] = Math.round(a[i]);
     }
     return result;
   } else {
@@ -999,14 +1059,5 @@ function float32ToTypedArray<D extends DataType>(
 
 function typedArrayToFloat32<D extends DataType>(
     a: DataTypeMap[D], dtype: D): Float32Array {
-  if (a instanceof Float32Array) {
-    return a;
-  } else {
-    const res = new Float32Array(a.length);
-    for (let i = 0; i < res.length; i++) {
-      const val = a[i];
-      res[i] = util.isValNaN(val, dtype) ? NaN : val;
-    }
-    return res;
-  }
+  return (a instanceof Float32Array) ? a : new Float32Array(a);
 }

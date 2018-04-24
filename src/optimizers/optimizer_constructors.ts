@@ -31,19 +31,19 @@ export class OptimizerConstructors {
    *
    * ```js
    * // Fit a quadratic function by learning the coefficients a, b, c.
-   * const xs = dl.tensor1d([0, 1, 2, 3]);
-   * const ys = dl.tensor1d([1.1, 5.9, 16.8, 33.9]);
+   * const xs = tf.tensor1d([0, 1, 2, 3]);
+   * const ys = tf.tensor1d([1.1, 5.9, 16.8, 33.9]);
    *
-   * const a = dl.scalar(Math.random()).variable();
-   * const b = dl.scalar(Math.random()).variable();
-   * const c = dl.scalar(Math.random()).variable();
+   * const a = tf.scalar(Math.random()).variable();
+   * const b = tf.scalar(Math.random()).variable();
+   * const c = tf.scalar(Math.random()).variable();
    *
    * // y = a * x^2 + b * x + c.
    * const f = x => a.mul(x.square()).add(b.mul(x)).add(c);
    * const loss = (pred, label) => pred.sub(label).square().mean();
    *
    * const learningRate = 0.01;
-   * const optimizer = dl.train.sgd(learningRate);
+   * const optimizer = tf.train.sgd(learningRate);
    *
    * // Train the model.
    * for (let i = 0; i < 10; i++) {
@@ -100,12 +100,16 @@ export class OptimizerConstructors {
    * @param momentum The momentum to use for the RMSProp gradient descent
    * algorithm.
    * @param epsilon Small value to avoid zero denominator.
+   * @param centered If true, gradients are normalized by the estimated
+   * variance of the gradient.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static rmsprop(
-      learningRate: number, decay = .9, momentum = 0.0, epsilon = 1e-8):
+      learningRate: number, decay = .9, momentum = 0.0, epsilon = 1e-8,
+      centered = false):
       RMSPropOptimizer {
-    return new RMSPropOptimizer(learningRate, decay, momentum, epsilon);
+    return new RMSPropOptimizer(learningRate, decay, momentum, epsilon,
+      centered);
   }
 
   /**

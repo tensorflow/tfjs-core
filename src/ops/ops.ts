@@ -23,9 +23,11 @@ import {ConcatOps} from './concat';
 import {ConvOps} from './conv';
 import {ImageOps} from './image_ops';
 import {LogicalOps} from './logical_ops';
+import {LossOps, Reduction} from './loss_ops';
 import {LRNOps} from './lrn';
 import {LSTMOps} from './lstm';
 import {MatmulOps} from './matmul';
+import {MovingAverageOps} from './moving_average';
 import {NormOps} from './norm';
 import {PoolOps} from './pool';
 import {ReductionOps} from './reduction_ops';
@@ -50,6 +52,7 @@ export const conv1d = ConvOps.conv1d;
 export const conv2d = ConvOps.conv2d;
 export const conv2dTranspose = ConvOps.conv2dTranspose;
 export const depthwiseConv2d = ConvOps.depthwiseConv2d;
+export const separableConv2d = ConvOps.separableConv2d;
 
 export const matMul = MatmulOps.matMul;
 export const matrixTimesVector = MatmulOps.matrixTimesVector;
@@ -58,7 +61,6 @@ export const vectorTimesMatrix = MatmulOps.vectorTimesMatrix;
 
 export const avgPool = PoolOps.avgPool;
 export const maxPool = PoolOps.maxPool;
-export const minPool = PoolOps.minPool;
 
 export const transpose = TransposeOps.transpose;
 
@@ -104,39 +106,53 @@ export const where = LogicalOps.where;
 
 export const abs = UnaryOps.abs;
 export const acos = UnaryOps.acos;
+export const acosh = UnaryOps.acosh;
 export const asin = UnaryOps.asin;
+export const asinh = UnaryOps.asinh;
 export const atan = UnaryOps.atan;
+export const atanh = UnaryOps.atanh;
 export const ceil = UnaryOps.ceil;
 export const clipByValue = UnaryOps.clipByValue;
 export const cos = UnaryOps.cos;
 export const cosh = UnaryOps.cosh;
 export const elu = UnaryOps.elu;
 export const exp = UnaryOps.exp;
+export const expm1 = UnaryOps.expm1;
 export const floor = UnaryOps.floor;
+export const sign = UnaryOps.sign;
 export const leakyRelu = UnaryOps.leakyRelu;
 export const log = UnaryOps.log;
 export const log1p = UnaryOps.log1p;
+export const logSigmoid = UnaryOps.logSigmoid;
 export const neg = UnaryOps.neg;
 export const prelu = UnaryOps.prelu;
 export const relu = UnaryOps.relu;
+export const reciprocal = UnaryOps.reciprocal;
+export const round = UnaryOps.round;
 export const selu = UnaryOps.selu;
 export const sigmoid = UnaryOps.sigmoid;
 export const sin = UnaryOps.sin;
 export const sinh = UnaryOps.sinh;
+export const softplus = UnaryOps.softplus;
 export const sqrt = UnaryOps.sqrt;
+export const rsqrt = UnaryOps.rsqrt;
 export const square = UnaryOps.square;
 export const step = UnaryOps.step;
 export const tan = UnaryOps.tan;
 export const tanh = UnaryOps.tanh;
+export const erf = UnaryOps.erf;
 
 export const add = BinaryOps.add;
 export const addStrict = BinaryOps.addStrict;
+export const atan2 = BinaryOps.atan2;
 export const div = BinaryOps.div;
 export const divStrict = BinaryOps.divStrict;
 export const maximum = BinaryOps.maximum;
 export const maximumStrict = BinaryOps.maximumStrict;
 export const minimum = BinaryOps.minimum;
 export const minimumStrict = BinaryOps.minimumStrict;
+export const mod = BinaryOps.mod;
+export const modStrict = BinaryOps.modStrict;
 export const mul = BinaryOps.mul;
 export const mulStrict = BinaryOps.mulStrict;
 export const pow = BinaryOps.pow;
@@ -144,11 +160,15 @@ export const powStrict = BinaryOps.powStrict;
 export const sub = BinaryOps.sub;
 export const subStrict = BinaryOps.subStrict;
 
+export const squaredDifference = BinaryOps.squaredDifference;
+export const squaredDifferenceStrict = BinaryOps.squaredDifferenceStrict;
+
 export const norm = NormOps.norm;
 
 export const cast = ArrayOps.cast;
 export const clone = ArrayOps.clone;
 export const fromPixels = ArrayOps.fromPixels;
+export const toPixels = ArrayOps.toPixels;
 export const ones = ArrayOps.ones;
 export const onesLike = ArrayOps.onesLike;
 export const zeros = ArrayOps.zeros;
@@ -176,12 +196,15 @@ export const tensor4d = ArrayOps.tensor4d;
 export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
+export const split = ArrayOps.split;
 
 export const pad = ArrayOps.pad;
 export const pad1d = ArrayOps.pad1d;
 export const pad2d = ArrayOps.pad2d;
 export const pad3d = ArrayOps.pad3d;
 export const pad4d = ArrayOps.pad4d;
+
+export const movingAverage = MovingAverageOps.movingAverage;
 
 export const basicLSTMCell = LSTMOps.basicLSTMCell;
 export const multiRNNCell = LSTMOps.multiRNNCell;
@@ -196,10 +219,16 @@ import {Rank} from '../types';
 // tslint:disable-next-line:no-unused-expression
 [Tensor, Rank];
 
+// tslint:disable-next-line:no-unused-expression
+[Reduction];
+
 export const losses = {
-  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
+  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy,
+  absoluteDifference: LossOps.absoluteDifference,
+  computeWeightedLoss: LossOps.computeWeightedLoss
 };
 
 export const image = {
-  resizeBilinear: ImageOps.resizeBilinear
+  resizeBilinear: ImageOps.resizeBilinear,
+  resizeNearestNeighbor: ImageOps.resizeNearestNeighbor,
 };

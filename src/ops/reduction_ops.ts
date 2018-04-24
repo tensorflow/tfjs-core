@@ -35,18 +35,18 @@ export class ReductionOps {
    * single element is returned.
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3]);
+   * const x = tf.tensor1d([1, 2, 3]);
    *
-   * x.logSumExp().print();  // or dl.logSumExp(x)
+   * x.logSumExp().print();  // or tf.logSumExp(x)
    * ```
    *
    * ```js
-   * const x = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
    *
    * const axis = 1;
-   * x.logSumExp(axis).print();  // or dl.logSumExp(a, axis)
+   * x.logSumExp(axis).print();  // or tf.logSumExp(a, axis)
    * ```
-   * @param input The input tensor.
+   * @param x The input tensor.
    * @param axis The dimension(s) to reduce. If null (the default),
    *     reduces all dimensions.
    * @param keepDims If true, retains reduced dimensions with length
@@ -55,10 +55,12 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static logSumExp<T extends Tensor>(
-      input: Tensor, axis: number|number[] = null, keepDims = false): T {
-    const axes = axis_util.parseAxisParam(axis, input.shape);
-    const xMax = input.max(axes, true /* keepDims */);
-    const a = input.sub(xMax);
+      x: Tensor, axis: number|number[] = null, keepDims = false): T {
+    util.assertArgumentsAreTensors({x}, 'logSumExp');
+
+    const axes = axis_util.parseAxisParam(axis, x.shape);
+    const xMax = x.max(axes, true /* keepDims */);
+    const a = x.sub(xMax);
     const b = a.exp();
     const c = b.sum(axes);
     const d = c.log();
@@ -81,19 +83,20 @@ export class ReductionOps {
    * single element is returned.
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3]);
+   * const x = tf.tensor1d([1, 2, 3]);
    *
-   * x.sum().print();  // or dl.logSumExp(x)
+   * x.sum().print();  // or tf.sum(x)
    * ```
    *
    * ```js
-   * const x = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
    *
    * const axis = 1;
-   * x.sum(axis).print();  // or dl.sum(x, axis)
+   * x.sum(axis).print();  // or tf.sum(x, axis)
    * ```
    *
-   * @param x The input tensor to compute the sum over.
+   * @param x The input tensor to compute the sum over. If the dtype is `bool`
+   *   it will be converted to `int32` and the output dtype will be `int32`.
    * @param axis The dimension(s) to reduce. By default it reduces
    *     all dimensions.
    * @param keepDims If true, retains reduced dimensions with size 1.
@@ -102,6 +105,11 @@ export class ReductionOps {
   @operation
   static sum<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
+    util.assertArgumentsAreTensors({x}, 'sum');
+
+    if (x.dtype === 'bool') {
+      x = x.toInt();
+    }
     const axes = axis_util.parseAxisParam(axis, x.shape);
 
     // Use a custom gradient to bypass 2 gradient backprops since sum is used
@@ -147,16 +155,16 @@ export class ReductionOps {
    * a single element is returned.
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3]);
+   * const x = tf.tensor1d([1, 2, 3]);
    *
-   * x.mean().print();  // or dl.logSumExp(a)
+   * x.mean().print();  // or tf.mean(a)
    * ```
    *
    * ```js
-   * const x = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
    *
    * const axis = 1;
-   * x.mean(axis).print();  // or dl.mean(x, axis)
+   * x.mean(axis).print();  // or tf.mean(x, axis)
    * ```
    *
    * @param x The input tensor.
@@ -168,6 +176,8 @@ export class ReductionOps {
   @operation
   static mean<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
+    util.assertArgumentsAreTensors({x}, 'mean');
+
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
     const reduceShape = shapes[1];
@@ -177,7 +187,11 @@ export class ReductionOps {
     // extremely often.
     const customOp = customGrad(x => {
       const reduceSizeScalar = ops.scalar(reduceSize);
-      const res = x.div(reduceSizeScalar);
+      // Cast if needed.
+      const xReduce = reduceSizeScalar.dtype === x.dtype ?
+          x :
+          x.cast(reduceSizeScalar.dtype);
+      const res = xReduce.div(reduceSizeScalar);
       const value = res.sum(axis, keepDims);
 
       const gradFunc = (dy: Tensor) => {
@@ -206,16 +220,16 @@ export class ReductionOps {
    * single element is returned.
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3]);
+   * const x = tf.tensor1d([1, 2, 3]);
    *
-   * x.min().print();  // or dl.min(x)
+   * x.min().print();  // or tf.min(x)
    * ```
    *
    * ```js
-   * const x = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
    *
    * const axis = 1;
-   * x.min(axis).print();  // or dl.min(x, axis)
+   * x.min(axis).print();  // or tf.min(x, axis)
    * ```
    *
    * @param x The input Tensor.
@@ -227,6 +241,8 @@ export class ReductionOps {
   @operation
   static min<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
+    util.assertArgumentsAreTensors({x}, 'min');
+
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
@@ -252,16 +268,16 @@ export class ReductionOps {
    * a single element is returned.
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3]);
+   * const x = tf.tensor1d([1, 2, 3]);
    *
-   * x.max().print();  // or dl.max(x)
+   * x.max().print();  // or tf.max(x)
    * ```
    *
    * ```js
-   * const x = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
    *
    * const axis = 1;
-   * x.max(axis).print();  // or dl.max(x, axis)
+   * x.max(axis).print();  // or tf.max(x, axis)
    * ```
    *
    * @param x The input tensor.
@@ -273,6 +289,8 @@ export class ReductionOps {
   @operation
   static max<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
+    util.assertArgumentsAreTensors({x}, 'max');
+
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
@@ -295,33 +313,38 @@ export class ReductionOps {
    * removed.
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3]);
+   * const x = tf.tensor1d([1, 2, 3]);
    *
-   * x.argMin().print();  // or dl.argMin(x)
+   * x.argMin().print();  // or tf.argMin(x)
    * ```
    *
    * ```js
-   * const x = dl.tensor2d([1, 2, 4, 3], [2, 2]);
+   * const x = tf.tensor2d([1, 2, 4, 3], [2, 2]);
    *
    * const axis = 1;
-   * x.argMin(axis).print();  // or dl.argMin(x, axis)
+   * x.argMin(axis).print();  // or tf.argMin(x, axis)
    * ```
    *
    * @param x The input tensor.
-   * @param axis The dimension to reduce. By default it reduces
-   * across all axes and returns the flat index.
+   * @param axis The dimension to reduce. Defaults to 0 (outer-most dimension).
    *
    */
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
-  static argMin<T extends Tensor>(x: Tensor, axis: number = null): T {
+  static argMin<T extends Tensor>(x: Tensor, axis = 0): T {
+    util.assertArgumentsAreTensors({x}, 'argMin');
+
+    if (axis == null) {
+      axis = 0;
+    }
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
       x = x.transpose(permutedAxes);
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
-    return ENV.engine.runKernel(backend => backend.argMin(x, axes), {x}) as T;
+    return ENV.engine.runKernel(backend => backend.argMin(x, axes[0]), {x}) as
+        T;
   }
 
   /**
@@ -331,25 +354,29 @@ export class ReductionOps {
    * removed.
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3]);
+   * const x = tf.tensor1d([1, 2, 3]);
    *
-   * x.argMax().print();  // or dl.argMax(x)
+   * x.argMax().print();  // or tf.argMax(x)
    * ```
    *
    * ```js
-   * const x = dl.tensor2d([1, 2, 4, 3], [2, 2]);
+   * const x = tf.tensor2d([1, 2, 4, 3], [2, 2]);
    *
    * const axis = 1;
-   * x.argMax(axis).print();  // or dl.argMax(x, axis)
+   * x.argMax(axis).print();  // or tf.argMax(x, axis)
    * ```
    *
    * @param x The input tensor.
-   * @param axis The dimension to reduce. By default it reduces
-   *     across all axes and returns the flat index
+   * @param axis The dimension to reduce. Defaults to 0 (outer-most dimension).
    */
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
-  static argMax<T extends Tensor>(x: Tensor, axis: number = null): T {
+  static argMax<T extends Tensor>(x: Tensor, axis = 0): T {
+    util.assertArgumentsAreTensors({x}, 'argMax');
+
+    if (axis == null) {
+      axis = 0;
+    }
     let axes = axis_util.parseAxisParam(axis, x.shape);
     const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
     if (permutedAxes != null) {
@@ -357,7 +384,8 @@ export class ReductionOps {
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
 
-    return ENV.engine.runKernel(backend => backend.argMax(x, axes), {x}) as T;
+    return ENV.engine.runKernel(backend => backend.argMax(x, axes[0]), {x}) as
+        T;
   }
 
   /**
@@ -376,6 +404,8 @@ export class ReductionOps {
   @operation
   static moments(x: Tensor, axis: number|number[] = null, keepDims = false):
       {mean: Tensor, variance: Tensor} {
+    util.assertArgumentsAreTensors({x}, 'moments');
+
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const mean = x.mean(axes, keepDims);
     let keepDimsShape = mean.shape;
