@@ -14,10 +14,10 @@
  * limitations under the License.
  * =============================================================================
  */
-import * as tf from './index';
-import {CPU_ENVS, expectArraysClose} from './test_util';
-import {describeWithFlags} from './jasmine_util';
-import {WeightsManifestConfig} from './weights_loader';
+import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
+import {CPU_ENVS, expectArraysClose} from '../test_util';
+import {WeightsManifestConfig} from './types';
 
 describeWithFlags('loadWeights', CPU_ENVS, () => {
   const setupFakeWeightFiles =

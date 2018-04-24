@@ -24,6 +24,11 @@ import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
 
+// Serialization.
+// tslint:disable-next-line:max-line-length
+export {decodeTensors, encodeTensors} from './io/io_utils';
+export {WeightsManifestConfig} from './io/types';
+export {loadWeights} from './io/weights_loader';
 // Optimizers.
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
@@ -36,9 +41,6 @@ export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {DataType, Rank, ShapeMap} from './types';
-// Serialization.
-export {WeightsManifestConfig} from './weights_loader';
-export {loadWeights} from './weights_loader';
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';

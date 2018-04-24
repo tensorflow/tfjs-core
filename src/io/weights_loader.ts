@@ -15,20 +15,10 @@
  * =============================================================================
  */
 
-import {tensor} from './ops/ops';
-import {NamedTensorMap} from './types';
-import * as util from './util';
-
-export type WeightsManifestConfig = WeightsManifestGroupConfig[];
-export interface WeightsManifestGroupConfig {
-  paths: string[];
-  weights: WeightsManifestEntry[];
-}
-export interface WeightsManifestEntry {
-  name: string;
-  shape: number[];
-  dtype: 'float32'|'int32';
-}
+import {tensor} from '../ops/ops';
+import {NamedTensorMap} from '../types';
+import * as util from '../util';
+import {WeightsManifestConfig, WeightsManifestEntry} from './types';
 
 const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
   'float32': 4,
@@ -58,8 +48,7 @@ export async function loadWeights(
   const groupIndicesToFetchMap = manifest.map(() => false);
   const groupWeightsToFetch: {
     [group: number]: Array<{
-      manifestEntry: WeightsManifestEntry;
-      groupOffset: number;
+      manifestEntry: WeightsManifestEntry; groupOffset: number;
       sizeBytes: number;
     }>
   } = {};
