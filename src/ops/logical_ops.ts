@@ -28,7 +28,7 @@ export class LogicalOps {
    * Returns the truth value of `NOT x` element-wise.
    *
    * ```js
-   * const a = tf.tensor1d([0, 1], 'bool');
+   * const a = tf.tensor1d([false, true], 'bool');
    *
    * a.logicalNot().print();
    * ```
@@ -48,8 +48,8 @@ export class LogicalOps {
    * Returns the truth value of a AND b element-wise. Supports broadcasting.
    *
    * ```js
-   * const a = tf.tensor1d([0, 0, 1, 1], 'bool');
-   * const b = tf.tensor1d([0, 1, 0, 1], 'bool');
+   * const a = tf.tensor1d([false, false, true, true], 'bool');
+   * const b = tf.tensor1d([false, true, false, true], 'bool');
    *
    * a.logicalAnd(b).print();
    * ```
@@ -74,8 +74,8 @@ export class LogicalOps {
    * Returns the truth value of `a OR b` element-wise. Supports broadcasting.
    *
    * ```js
-   * const a = tf.tensor1d([0, 0, 1, 1], 'bool');
-   * const b = tf.tensor1d([0, 1, 0, 1], 'bool');
+   * const a = tf.tensor1d([false, false, true, true], 'bool');
+   * const b = tf.tensor1d([false, true, false, true], 'bool');
    *
    * a.logicalOr(b).print();
    * ```
@@ -99,8 +99,8 @@ export class LogicalOps {
    * Returns the truth value of `a XOR b` element-wise. Supports broadcasting.
    *
    * ```js
-   * const a = tf.tensor1d([0, 0, 1, 1], 'bool');
-   * const b = tf.tensor1d([0, 1, 0, 1], 'bool');
+   * const a = tf.tensor1d([false, false, true, true], 'bool');
+   * const b = tf.tensor1d([false, true, false, true], 'bool');
    *
    * a.logicalXor(b).print();
    * ```
@@ -128,13 +128,13 @@ export class LogicalOps {
    * If the condition is true, select from `a`, otherwise select from `b`.
    *
    * ```js
-   * const cond = tf.tensor1d([0, 0, 1], 'bool');
+   * const cond = tf.tensor1d([false, false, true], 'bool');
    * const a = tf.tensor1d([1 , 2, 3]);
    * const b = tf.tensor1d([-1, -2, -3]);
    *
    * a.where(cond, b).print();
    * ```
-   * 
+   *
    * @param condition The input condition. Must be of dtype bool.
    * @param a If `condition` is rank 1, `a` may have a higher rank but
    *     its first dimension must match the size of `condition`.
