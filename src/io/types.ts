@@ -31,7 +31,7 @@ export type WeightsManifestConfig = WeightsManifestGroupConfig[];
  * A weight-manifest group.
  *
  * Consists of an ordered list of weight values encoded in binary format,
- * sotred in an ordered list of paths.
+ * stored in an ordered list of paths.
  */
 export interface WeightsManifestGroupConfig {
   /**
@@ -71,11 +71,24 @@ export interface WeightsManifestEntry {
 }
 
 /**
+ * Options for saving a model.
+ */
+export interface SaveConfig {
+  /**
+   * Whether to save only the trainable weights of the model, ignoring the
+   * untrainable ones.
+   */
+  trainableOnly?: boolean;
+
+  // TODO(cais): Add more fields if necessary.
+}
+
+/**
  * Result of a saving operation.
  */
-export class SaveResult {
+export interface SaveResult {
   /**
-   * Whether the saving was successful.
+   * Whether the saving succeeded.
    */
   success: boolean;
 

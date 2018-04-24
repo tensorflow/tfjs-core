@@ -49,6 +49,17 @@ export async function encodeTensors(tensors: NamedTensorMap):
   return [concatenateTypedArrays(tensorValues), specs];
 }
 
+/**
+ * Decode flat ArrayBuffer as named Tensors.
+ *
+ * @param buffer A flat ArrayBuffer carrying the binary values of the tensors
+ *   concatenated in the order specified in `specs`.
+ * @param specs Specifications of the names, dtypes and shapes of the tensors
+ *   whose value are encoded by `buffer`.
+ * @return A map from tensor name to tensor value, with the names corresponding
+ *   to names in `specs`.
+ * @throws Error, if any of the tensors has unsupported dtype.
+ */
 export function decodeTensors(
     buffer: ArrayBuffer, specs: WeightsManifestEntry[]): NamedTensorMap {
   const out: NamedTensorMap = {};
