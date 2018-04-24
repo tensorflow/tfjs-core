@@ -529,3 +529,16 @@ describeWithFlags('memory', ALL_ENVS, () => {
     expectArraysClose(sum, [1 + 1 + 0 + 1]);
   });
 });
+
+describeWithFlags('disposeVariables', ALL_ENVS, () => {
+  it('reuse same naem variable', () => {
+    tf.tensor1d([1,2,3]).variable(true, 'v1');
+    tf.tensor1d([1,2,3]).variable(true, 'v2');
+    expect(() => {
+      tf.tensor1d([1, 2, 3]).variable(true, 'v1');
+    }).toThrowError();
+    tf.environment.ENV.engine.disposeVariables();
+    tf.tensor1d([1,2,3]).variable(true, 'v1');
+    tf.tensor1d([1,2,3]).variable(true, 'v2');
+  });
+});
