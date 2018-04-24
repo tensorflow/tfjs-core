@@ -1,0 +1,21 @@
+<script src="dist/tf-core.js"></script>
+
+<div id="canvas-div"></div>
+
+<script type="text/javascript">
+
+const backend = tfc.ENV.findBackend('webgl');
+const canvas = backend.getCanvas();
+const gpgpu = backend.getGPGPUContext();
+
+document.getElementById('canvas-div').appendChild(canvas);
+canvas.height = 800;
+canvas.width = 800;
+
+
+const webglContext = gpgpu.gl;
+webglContext.clearColor(1,0,0,1);
+console.log(webglContext.getParameter(webglContext.COLOR_CLEAR_VALUE));
+webglContext.clear(webglContext.COLOR_BUFFER_BIT);
+
+</script>
