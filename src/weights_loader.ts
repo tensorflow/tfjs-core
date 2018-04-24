@@ -173,27 +173,29 @@ export async function loadWeights(
 
       if ('quantization' in weightsEntry.manifestEntry) {
         const quantization = weightsEntry.manifestEntry.quantization;
-        let quantizedArray: Float32Array;
-        if (quantization.dtype === 'uint8') {
-          quantizedArray = Float32Array.from(new Uint8Array(byteBuffer));
-        } else if (quantization.dtype === 'uint16') {
-          quantizedArray = Float32Array.from(new Uint16Array(byteBuffer));
-        } else {
+        if (quantization.dtype !== 'uint8' && quantization.dtype !== 'uint16') {
           throw new Error(
               `Weight ${weightsEntry.manifestEntry.name} has unknown ` +
               `quantization dtype ${quantization.dtype}.`);
         }
-        const dequantizedArray =
-            quantizedArray.map(v => v * quantization.scale + quantization.min);
+        const quantizedArray = (quantization.dtype === 'uint8') ?
+            new Uint8Array(byteBuffer) :
+            new Uint16Array(byteBuffer);
+        let dequantize: (v: number) => number;
         if (dtype === 'float32') {
-          typedArray = dequantizedArray;
+          dequantize = v => v * quantization.scale + quantization.min;
+          typedArray = new Float32Array(quantizedArray.length);
         } else if (dtype === 'int32') {
-          typedArray =
-              Int32Array.from(dequantizedArray.map(v => Math.round(v)));
+          dequantize = v =>
+              Math.round(v * quantization.scale + quantization.min);
+          typedArray = new Int32Array(quantizedArray.length);
         } else {
           throw new Error(
               `Weight ${weightsEntry.manifestEntry.name} has unknown dtype ` +
               `${dtype}.`);
+        }
+        for (let i = 0; i < typedArray.length; ++i) {
+          typedArray[i] = dequantize(quantizedArray[i]);
         }
       } else {
         if (dtype === 'float32') {
