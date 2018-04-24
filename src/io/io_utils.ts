@@ -38,7 +38,8 @@ export async function encodeTensors(tensors: NamedTensorMap):
   for (const name in tensors) {
     const tensor = tensors[name];
 
-    if (tensor.dtype !== 'float32' && tensor.dtype !== 'int32') {
+    if (tensor.dtype !== 'float32' && tensor.dtype !== 'int32' &&
+        tensor.dtype !== 'bool') {
       throw new Error(`Unsupported dtype: ${tensor.dtype}`);
     }
     specs.push({name, shape: tensor.shape, dtype: tensor.dtype});
@@ -76,7 +77,7 @@ export function decodeTensors(
       throw new Error(`Unsupported dtype: ${dtype}`);
     }
     out[name] = value;
-    offset +=  bytes;
+    offset += bytes;
   }
   return out;
 }
@@ -105,7 +106,7 @@ export function concatenateTypedArrays(
     } else if (x as any instanceof Uint8Array) {
       totalByteLength += x.length;
     } else {
-      throw new Error(`Unsupported type array subtype: ${x.constructor.name}`);
+      throw new Error(`Unsupported TypedArray subtype: ${x.constructor.name}`);
     }
   }
 

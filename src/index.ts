@@ -25,9 +25,9 @@ import * as util from './util';
 import {version} from './version';
 
 // Serialization.
-// tslint:disable-next-line:max-line-length
 export {decodeTensors, encodeTensors} from './io/io_utils';
-export {WeightsManifestConfig} from './io/types';
+// tslint:disable-next-line:max-line-length
+export {IOHandler, LoadHandler, ModelArtifacts, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './io/types';
 export {loadWeights} from './io/weights_loader';
 // Optimizers.
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
