@@ -16,8 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose, expectNumbersClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
 import * as util from '../util';
 
 import * as selu_util from './selu_util';
@@ -375,15 +376,9 @@ describeWithFlags('logSigmoid', ALL_ENVS, () => {
     const a = tf.scalar(3);
     const dy = tf.scalar(4);
 
-    const da = tf.grad(a => tf.logSigmoid(a))(a, dy);
-
-    const expected = [];
-    for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(a.get(i)));
-      expected[i] = dy.get(i) * y;
-    }
-
-    expectArraysClose(da, expected);
+    const da = tf.grad(a => tf.logSigmoid(a))(a, dy).get();
+    const y = 1 / (1 + Math.exp(a.get()));
+    expectNumbersClose(da, dy.get() * y);
   });
 
   it('gradients: Tensor1D', () => {
@@ -408,9 +403,11 @@ describeWithFlags('logSigmoid', ALL_ENVS, () => {
     const da = tf.grad(a => tf.logSigmoid(a))(a, dy);
 
     const expected = [];
+    const aVals = a.dataSync();
+    const dyVals = dy.dataSync();
     for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(a.get(i)));
-      expected[i] = dy.get(i) * y;
+      const y = 1 / (1 + Math.exp(aVals[i]));
+      expected[i] = dyVals[i] * y;
     }
 
     expectArraysClose(da, expected);
@@ -491,14 +488,9 @@ describeWithFlags('softplus', ALL_ENVS, () => {
     const dy = tf.scalar(4);
 
     const da = tf.grad(a => tf.softplus(a))(a, dy);
+    const y = 1 / (1 + Math.exp(-a.get()));
 
-    const expected = [];
-    for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(-a.get(i)));
-      expected[i] = dy.get(i) * y;
-    }
-
-    expectArraysClose(da, expected);
+    expectNumbersClose(da.get(), dy.get() * y);
   });
 
   it('gradients: Tensor1D', () => {
@@ -523,9 +515,12 @@ describeWithFlags('softplus', ALL_ENVS, () => {
     const da = tf.grad(a => tf.softplus(a))(a, dy);
 
     const expected = [];
+    const aVals = a.dataSync();
+    const dyVals = dy.dataSync();
+
     for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(-a.get(i)));
-      expected[i] = dy.get(i) * y;
+      const y = 1 / (1 + Math.exp(-aVals[i]));
+      expected[i] = dyVals[i] * y;
     }
 
     expectArraysClose(da, expected);
@@ -2447,17 +2442,17 @@ describeWithFlags('erf', ALL_ENVS, () => {
   });
 
   it('scalar in int32', () => {
-    const a = tf.scalar(1, "int32");
+    const a = tf.scalar(1, 'int32');
     const result = tf.erf(a);
-      const expected = [0.8427008];
-      expectArraysClose(result, expected);
+    const expected = [0.8427008];
+    expectArraysClose(result, expected);
   });
 
   it('tensor2d', () => {
     const values = [0.2, 0.3, 0.4, 0.5];
     const a = tf.tensor2d(values, [2, 2]);
     const result = tf.erf(a);
-    const expected = [0.2227026 , 0.32862678, 0.42839235, 0.5204999];
+    const expected = [0.2227026, 0.32862678, 0.42839235, 0.5204999];
     expectArraysClose(result, expected);
   });
 
@@ -2473,8 +2468,8 @@ describeWithFlags('erf', ALL_ENVS, () => {
     const gradients = tf.grad(a => tf.erf(a))(a, dy);
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
-    expectArraysClose(gradients,
-        [8 * 2 * Math.exp(-0.5 * 0.5) / Math.sqrt(Math.PI)]);
+    expectArraysClose(
+        gradients, [8 * 2 * Math.exp(-0.5 * 0.5) / Math.sqrt(Math.PI)]);
   });
 
   it('gradients: Tensor1D', () => {
@@ -2485,8 +2480,8 @@ describeWithFlags('erf', ALL_ENVS, () => {
     const gradients = tf.grad(a => tf.erf(a))(a, dy);
     const expected = [];
     for (let i = 0; i < a.size; i++) {
-        expected[i] = dyValues[i] * 2 *
-            Math.exp(-aValues[i] * aValues[i]) / Math.sqrt(Math.PI);
+      expected[i] = dyValues[i] * 2 * Math.exp(-aValues[i] * aValues[i]) /
+          Math.sqrt(Math.PI);
     }
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
@@ -2501,8 +2496,8 @@ describeWithFlags('erf', ALL_ENVS, () => {
     const gradients = tf.grad(a => tf.erf(a))(a, dy);
     const expected = [];
     for (let i = 0; i < a.size; i++) {
-        expected[i] = dyValues[i] * 2 *
-            Math.exp(-aValues[i] * aValues[i]) / Math.sqrt(Math.PI);
+      expected[i] = dyValues[i] * 2 * Math.exp(-aValues[i] * aValues[i]) /
+          Math.sqrt(Math.PI);
     }
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
