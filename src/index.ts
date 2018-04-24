@@ -15,6 +15,9 @@
  * =============================================================================
  */
 
+import './kernels/backend_webgl';
+import './kernels/backend_cpu';
+
 import {BrowserUtil} from './browser_util';
 import * as environment from './environment';
 import {Environment} from './environment';
