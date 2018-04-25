@@ -1012,7 +1012,8 @@ describeWithFlags('sign', ALL_ENVS, () => {
     expectNumbersClose(r.get(2), 0);
     expectNumbersClose(r.get(3), -1);
   });
-    it('propagates NaNs', () => {
+
+  it('propagates NaNs', () => {
     const a = tf.tensor1d([1.5, NaN, -1.4]);
     const r = tf.sign(a);
     expectArraysClose(r, [1, 0, -1]);
