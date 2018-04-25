@@ -44,7 +44,6 @@ export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {DataType, Rank, ShapeMap} from './types';
-export {io};
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';
@@ -64,7 +63,7 @@ export {doc} from './doc';
 export const nextFrame = BrowserUtil.nextFrame;
 
 // Second level exports.
-export {environment, test_util, util};
+export {environment, io, test_util, util};
 
 // WebGL specific utils.
 export const webgl = {

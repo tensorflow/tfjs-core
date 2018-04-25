@@ -20,7 +20,6 @@ import {decodeWeights, encodeWeights} from './io_utils';
 import {IOHandler, LoadHandler, ModelArtifacts, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeights} from './weights_loader';
 
-// tslint:disable-next-line:max-line-length
 export {
   decodeWeights,
   encodeWeights,
