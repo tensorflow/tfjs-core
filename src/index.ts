@@ -43,6 +43,7 @@ export {SGDOptimizer} from './optimizers/sgd_optimizer';
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {DataType, Rank, ShapeMap} from './types';
 // Serialization.
+export * from './serialization';
 export {WeightsManifestConfig} from './weights_loader';
 export {loadWeights} from './weights_loader';
 
